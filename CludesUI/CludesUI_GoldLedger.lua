@@ -41,8 +41,8 @@ local function Build()
     local type, pairs = type, pairs
     local issecretvalue = issecretvalue
 
-    local function IsUsable(v)
-        return type(v) == "number" and not (issecretvalue and issecretvalue(v))
+    local function IsUsable(val)
+        return type(val) == "number" and not (issecretvalue and issecretvalue(val))
     end
 
     -- "Name-Realm": a character name never contains a hyphen, a realm name can (Azjol-Nerub).
@@ -61,8 +61,8 @@ local function Build()
     --  PLAYER_MONEY, ungated) and the entry has no age until that character next
     --  plays. Runs lazily from Data(); idempotent, and the old keys are dropped.
     --------------------------------------------------------------------------------
-    local function MigrateLegacy(db, ledger)
-        local bags, dbars, wband = db.characterGold, db.dataBarsGold, db.warbandGold
+    local function MigrateLegacy(saved, ledger)
+        local bags, dbars, wband = saved.characterGold, saved.dataBarsGold, saved.warbandGold
         if bags == nil and dbars == nil and wband == nil then
             return
         end
@@ -90,11 +90,11 @@ local function Build()
                     and IsUsable(e.currentMoney)
                     and e.currentMoney >= 0
                 then
-                    local cur = chars[key]
+                    local current = chars[key]
                     local name, realm = SplitKey(key)
-                    if cur and cur.money == e.currentMoney then
-                        cur.class = cur.class or e.class
-                        cur.name, cur.realm = e.name or cur.name, e.realm or cur.realm
+                    if current and current.money == e.currentMoney then
+                        current.class = current.class or e.class
+                        current.name, current.realm = e.name or current.name, e.realm or current.realm
                     else
                         chars[key] = {
                             money = e.currentMoney,
@@ -111,17 +111,17 @@ local function Build()
                 { money = wband.gold, updated = IsUsable(wband.lastUpdated) and wband.lastUpdated or nil }
         end
 
-        db.characterGold, db.dataBarsGold, db.warbandGold = nil, nil, nil
+        saved.characterGold, saved.dataBarsGold, saved.warbandGold = nil, nil, nil
     end
 
     -- Bags used to keep the tracking switch per profile (addons.CludesUIBags.enableGoldTracking).
     -- Absorbed once: a profile that had it off turns it off for the account, and the key goes.
     -- Later sessions skip it, so an imported profile cannot flip the account switch.
-    local function AbsorbTrackingSwitch(db, ledger)
-        if ledger.trackingMigrated or type(db.profiles) ~= "table" then
+    local function AbsorbTrackingSwitch(saved, ledger)
+        if ledger.trackingMigrated or type(saved.profiles) ~= "table" then
             return
         end
-        for _, pd in pairs(db.profiles) do
+        for _, pd in pairs(saved.profiles) do
             local addons = type(pd) == "table" and pd.addons
             local bags = type(addons) == "table" and addons.CludesUIBags
             if type(bags) == "table" and bags.enableGoldTracking ~= nil then
@@ -138,30 +138,30 @@ local function Build()
     --- absent (never assign the global here: a pre-SavedVariables call could
     --- shadow the real table).
     function GL.Data()
-        local db = _G.CludesUIDB
-        if type(db) ~= "table" then
+        local saved = _G.CludesUIDB
+        if type(saved) ~= "table" then
             return { chars = {} }
         end
-        local ledger = db.goldLedger
+        local ledger = saved.goldLedger
         if type(ledger) ~= "table" then
             ledger = {}
-            db.goldLedger = ledger
+            saved.goldLedger = ledger
         end
         if type(ledger.chars) ~= "table" then
             ledger.chars = {}
         end
-        MigrateLegacy(db, ledger)
-        AbsorbTrackingSwitch(db, ledger)
+        MigrateLegacy(saved, ledger)
+        AbsorbTrackingSwitch(saved, ledger)
         return ledger
     end
 
     --- The current character's GUID, or nil while it cannot be read.
     function GL.CharKey()
-        local guid = UnitGUID("player")
-        if not guid or (issecretvalue and issecretvalue(guid)) then
+        local unitGuid = UnitGUID("player")
+        if not unitGuid or (issecretvalue and issecretvalue(unitGuid)) then
             return nil
         end
-        return guid
+        return unitGuid
     end
 
     -- The only places the modules touch the money APIs. A secret or non-number
@@ -205,8 +205,8 @@ local function Build()
         if money then
             return money
         end
-        local w = GL.Data().warband
-        return w and w.money
+        local wid = GL.Data().warband
+        return wid and wid.money
     end
 
     --- Store the current character's balance. `money` defaults to a live read.
@@ -239,11 +239,11 @@ local function Build()
             e = {}
             chars[key] = e
         end
-        local _, class = UnitClass("player")
+        local _, classFile = UnitClass("player")
         -- The full name whatever the show-surname preference.
         local name, surname = (UnitNameUnmodified or UnitName)("player")
         e.money, e.class, e.name, e.realm, e.updated =
-            money, class, CUI.WithSurname(name, surname, true), CUI.RealmGroupName(), time()
+            money, classFile, CUI.WithSurname(name, surname, true), CUI.RealmGroupName(), time()
         return money
     end
 
@@ -258,12 +258,12 @@ local function Build()
             return nil
         end
         local ledger = GL.Data()
-        local w = ledger.warband
-        if not w then
-            w = {}
-            ledger.warband = w
+        local wid = ledger.warband
+        if not wid then
+            wid = {}
+            ledger.warband = wid
         end
-        w.money, w.updated = money, time()
+        wid.money, wid.updated = money, time()
         return money
     end
 
@@ -272,15 +272,15 @@ local function Build()
         return GL.Data().tracking ~= false
     end
 
-    function GL.SetTracking(on)
+    function GL.SetTracking(enabled)
         local ledger = GL.Data()
-        if on == false then
+        if enabled == false then
             ledger.tracking = false
         else
             ledger.tracking = nil
         end
         GL.SyncEvents()
-        if on ~= false then
+        if enabled ~= false then
             GL.RecordCharacter()
             GL.RecordWarband()
         end
@@ -332,25 +332,25 @@ local function Build()
         end
     end
 
-    local function OnMoneyEvent(_, event)
+    local function OnMoneyEvent(_, evt)
         local money
-        if event ~= "ACCOUNT_MONEY" and event ~= "BANKFRAME_OPENED" then
+        if evt ~= "ACCOUNT_MONEY" and evt ~= "BANKFRAME_OPENED" then
             money = LiveMoney()
             if GL.IsTracking() then
                 dirtyChar = true
             end
         end
-        if event ~= "PLAYER_MONEY" then
+        if evt ~= "PLAYER_MONEY" then
             dirtyWarband = true
         end
         if (dirtyChar or dirtyWarband) and not flushQueued then
             flushQueued = true
             C_Timer.After(WRITE_DELAY, FlushWrites)
         end
-        for owner, fn in pairs(consumers) do
-            if fn ~= true then
-                local ok, err = pcall(fn, event, money)
-                if not ok then
+        for ownerFrame, func in pairs(consumers) do
+            if func ~= true then
+                local success, err = pcall(func, evt, money)
+                if not success then
                     geterrorhandler()(err)
                 end
             end
@@ -359,11 +359,11 @@ local function Build()
 
     --- Start money tracking for `owner` (any unique key). `fn` is optional.
     --- Registering twice for one owner just replaces its callback.
-    function GL.Register(owner, fn)
-        if consumers[owner] == nil then
+    function GL.Register(ownerFrame, func)
+        if consumers[ownerFrame] == nil then
             consumerCount = consumerCount + 1
         end
-        consumers[owner] = fn or true
+        consumers[ownerFrame] = func or true
         if not eventFrame then
             eventFrame = CreateFrame("Frame")
             eventFrame:SetScript("OnEvent", OnMoneyEvent)
@@ -375,11 +375,11 @@ local function Build()
         end
     end
 
-    function GL.Unregister(owner)
-        if consumers[owner] == nil then
+    function GL.Unregister(ownerFrame)
+        if consumers[ownerFrame] == nil then
             return
         end
-        consumers[owner] = nil
+        consumers[ownerFrame] = nil
         consumerCount = consumerCount - 1
         GL.SyncEvents()
     end

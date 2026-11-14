@@ -16,19 +16,19 @@ local ICON_SIZE = 40
 -------------------------------------------------------------------------------
 --  Helpers (self-contained, no ABR imports)
 -------------------------------------------------------------------------------
-local function Known(id)
-    return id and (IsPlayerSpell(id) or IsSpellKnown(id))
+local function Known(ident)
+    return ident and (IsPlayerSpell(ident) or IsSpellKnown(ident))
 end
 
 local texCache = {}
-local function Tex(id)
-    local c = texCache[id]
+local function Tex(ident)
+    local c = texCache[ident]
     if c then
         return c
     end
-    local t = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id)
+    local t = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident)
     if t then
-        texCache[id] = t
+        texCache[ident] = t
     end
     return t
 end
@@ -134,10 +134,10 @@ _G._CUABR_TALENT_REMINDER_ZONES = TALENT_REMINDER_ZONES
 -------------------------------------------------------------------------------
 --  DB access (reads from ABR SavedVariables, set up after PLAYER_LOGIN)
 -------------------------------------------------------------------------------
-local db -- set during Init
+local saved -- set during Init
 
 local function GetReminders()
-    return db and db.profile and db.profile.talentReminders
+    return saved and saved.profile and saved.profile.talentReminders
 end
 
 -------------------------------------------------------------------------------
@@ -147,71 +147,71 @@ local talentIconAnchor
 local talentIconPool = {}
 local talentActiveIcons = {}
 
-local function GetOrCreateIcon(index)
-    if talentIconPool[index] then
-        return talentIconPool[index]
+local function GetOrCreateIcon(slotPos)
+    if talentIconPool[slotPos] then
+        return talentIconPool[slotPos]
     end
-    local btn =
-        CreateFrame("Button", "EABR_TalentIcon" .. index, talentIconAnchor, "SecureActionButtonTemplate")
-    btn:SetSize(ICON_SIZE, ICON_SIZE)
-    btn:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
-    securecallfunction(btn.SetPassThroughButtons, btn, "RightButton", "MiddleButton")
-    btn:SetFrameStrata("MEDIUM")
-    btn:SetFrameLevel(100)
-    btn:Hide()
-    local icon = btn:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    btn._icon = icon
-    local PP = CludesUI and CludesUI.PP
-    if PP then
-        PP.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", 7)
+    local button =
+        CreateFrame("Button", "EABR_TalentIcon" .. slotPos, talentIconAnchor, "SecureActionButtonTemplate")
+    button:SetSize(ICON_SIZE, ICON_SIZE)
+    button:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
+    securecallfunction(button.SetPassThroughButtons, button, "RightButton", "MiddleButton")
+    button:SetFrameStrata("MEDIUM")
+    button:SetFrameLevel(100)
+    button:Hide()
+    local glyph = button:CreateTexture(nil, "ARTWORK")
+    glyph:SetAllPoints()
+    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    button._icon = glyph
+    local Pix = CludesUI and CludesUI.PP
+    if Pix then
+        Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7)
     end
-    local text = btn:CreateFontString(nil, "OVERLAY")
-    text:SetPoint("TOP", btn, "BOTTOM", 0, -2)
-    CludesUI.ApplyModuleFont(text, nil, 11, "auraBuff")
-    text:SetTextColor(1, 1, 1, 1)
-    btn._text = text
-    talentIconPool[index] = btn
-    return btn
+    local textValue = button:CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", button, "BOTTOM", 0, -2)
+    CludesUI.ApplyModuleFont(textValue, nil, 11, "auraBuff")
+    textValue:SetTextColor(1, 1, 1, 1)
+    button._text = textValue
+    talentIconPool[slotPos] = button
+    return button
 end
 
-local function SetupIcon(btn, entry)
+local function SetupIcon(button, record)
     if not InCombat() then
-        btn:SetAttribute("type", nil)
-        btn:SetAttribute("spell", nil)
-        btn:SetAttribute("item", nil)
-        btn:SetAttribute("macrotext", nil)
+        button:SetAttribute("type", nil)
+        button:SetAttribute("spell", nil)
+        button:SetAttribute("item", nil)
+        button:SetAttribute("macrotext", nil)
     end
-    btn._icon:SetTexture(entry.texture or 134400)
-    btn._text:SetText(entry.label or "")
-    btn._icon:SetDesaturated(false)
+    button._icon:SetTexture(record.texture or 134400)
+    button._text:SetText(record.label or "")
+    button._icon:SetDesaturated(false)
 end
 
-local function ShowIcon(iconIdx, entry)
-    local btn = GetOrCreateIcon(iconIdx)
-    SetupIcon(btn, entry)
-    CludesUI.ApplyModuleFont(btn._text, nil, 11, "auraBuff")
-    btn._text:SetTextColor(1, 1, 1, 1)
-    btn._text:Show()
-    btn:Show()
-    talentActiveIcons[#talentActiveIcons + 1] = btn
+local function ShowIcon(iconIdx, record)
+    local button = GetOrCreateIcon(iconIdx)
+    SetupIcon(button, record)
+    CludesUI.ApplyModuleFont(button._text, nil, 11, "auraBuff")
+    button._text:SetTextColor(1, 1, 1, 1)
+    button._text:Show()
+    button:Show()
+    talentActiveIcons[#talentActiveIcons + 1] = button
 end
 
 local function LayoutIcons()
-    local count = #talentActiveIcons
-    if count == 0 then
+    local total = #talentActiveIcons
+    if total == 0 then
         return
     end
     local spacing = 40
     local sz = ICON_SIZE
-    local totalW = (count * sz) + ((count - 1) * spacing)
+    local totalW = (total * sz) + ((total - 1) * spacing)
     local startX = -totalW / 2
-    for i, btn in ipairs(talentActiveIcons) do
-        btn:SetSize(sz, sz)
-        btn:SetAlpha(1)
-        btn:ClearAllPoints()
-        btn:SetPoint("TOPLEFT", talentIconAnchor, "TOP", startX + (i - 1) * (sz + spacing), 0)
+    for idx, button in ipairs(talentActiveIcons) do
+        button:SetSize(sz, sz)
+        button:SetAlpha(1)
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", talentIconAnchor, "TOP", startX + (idx - 1) * (sz + spacing), 0)
     end
 end
 
@@ -219,11 +219,11 @@ local function HideIcons()
     if InCombat() then
         return
     end
-    for i = 1, #talentActiveIcons do
-        local btn = talentActiveIcons[i]
-        if btn then
-            btn._text:SetText("")
-            btn:Hide()
+    for idx = 1, #talentActiveIcons do
+        local button = talentActiveIcons[idx]
+        if button then
+            button._text:SetText("")
+            button:Hide()
         end
     end
     wipe(talentActiveIcons)
@@ -329,8 +329,8 @@ local function Collect()
             local zoneMatch = false
             local zns = reminder.zoneNames
             if zns and #zns > 0 then
-                for i = 1, #zns do
-                    local zn = zns[i]
+                for idx = 1, #zns do
+                    local zn = zns[idx]
                     if zn == idName or zn == mapName or zn == currentInstance then
                         zoneMatch = true
                         break
@@ -350,8 +350,8 @@ local function Collect()
                     label = reminder.spellName or "Unknown",
                 }
             elseif not zoneMatch and hasTalent then
-                local mode = NotNeededMode(reminder)
-                if mode == "all" or (mode == "season" and inSeasonZone) then
+                local modeName = NotNeededMode(reminder)
+                if modeName == "all" or (modeName == "season" and inSeasonZone) then
                     _missing[#_missing + 1] = {
                         texture = Tex(reminder.spellID) or 134400,
                         spellID = reminder.spellID,
@@ -388,7 +388,7 @@ local function Refresh()
     _refreshQueued = false
     _lastRefresh = GetTime()
 
-    if not db then
+    if not saved then
         return
     end
 
@@ -407,8 +407,8 @@ local function Refresh()
     Collect()
 
     if #_missing > 0 and talentIconAnchor then
-        for i, m in ipairs(_missing) do
-            ShowIcon(i, m)
+        for idx, m in ipairs(_missing) do
+            ShowIcon(idx, m)
         end
         LayoutIcons()
         CludesUI.SetElementVisibility(talentIconAnchor, true)
@@ -439,11 +439,11 @@ end
 -------------------------------------------------------------------------------
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
-eventFrame:SetScript("OnEvent", function(_, event, ...)
-    if event == "PLAYER_LOGIN" then
+eventFrame:SetScript("OnEvent", function(_, evt, ...)
+    if evt == "PLAYER_LOGIN" then
         -- Get DB reference from ABR
-        db = _G._CUABR_AceDB
-        if not db then
+        saved = _G._CUABR_AceDB
+        if not saved then
             return
         end
 
@@ -484,23 +484,23 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         return
     end
 
-    if event == "PLAYER_ENTERING_WORLD" then
+    if evt == "PLAYER_ENTERING_WORLD" then
         RequestRefresh()
         C_Timer.After(0.5, RequestRefresh)
         return
     end
 
-    if event == "PLAYER_REGEN_DISABLED" then
+    if evt == "PLAYER_REGEN_DISABLED" then
         HideIcons()
         return
     end
 
-    if event == "PLAYER_REGEN_ENABLED" then
+    if evt == "PLAYER_REGEN_ENABLED" then
         RequestRefresh()
         return
     end
 
-    if event == "PLAYER_DEAD" or event == "PLAYER_ALIVE" then
+    if evt == "PLAYER_DEAD" or evt == "PLAYER_ALIVE" then
         RequestRefresh()
         return
     end
@@ -508,11 +508,11 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
     -- Talent/zone change events
     if _migNeeded then
         if
-            event == "ZONE_CHANGED_NEW_AREA"
-            or event == "TRAIT_CONFIG_UPDATED"
-            or event == "PLAYER_TALENT_UPDATE"
-            or event == "PLAYER_SPECIALIZATION_CHANGED"
-            or event == "SPELLS_CHANGED"
+            evt == "ZONE_CHANGED_NEW_AREA"
+            or evt == "TRAIT_CONFIG_UPDATED"
+            or evt == "PLAYER_TALENT_UPDATE"
+            or evt == "PLAYER_SPECIALIZATION_CHANGED"
+            or evt == "SPELLS_CHANGED"
         then
             _migPending = true
         end

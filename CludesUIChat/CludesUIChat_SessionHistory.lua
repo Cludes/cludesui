@@ -15,9 +15,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the prefix is re-applied on restore from serverTime with the current
 --  timestamp format).
 -------------------------------------------------------------------------------
-local _, ns = ...
-local ECHAT = ns.ECHAT
-if not ECHAT then
+local _, mod = ...
+local CHAT = mod.ECHAT
+if not CHAT then
     return
 end
 
@@ -70,14 +70,14 @@ local CAPTURE_EVENTS = {
 --  Helpers
 -------------------------------------------------------------------------------
 local function PersistEnabled()
-    if not ECHAT.DB then
+    if not CHAT.DB then
         return false
     end
-    local db = ECHAT.DB()
-    if not db then
+    local saved = CHAT.DB()
+    if not saved then
         return false
     end
-    return db.persistChatHistory == true
+    return saved.persistChatHistory == true
 end
 
 local function SessionHistorySafe()
@@ -120,10 +120,10 @@ end
 
 local function MaxLines()
     local maxN = 100
-    if ECHAT.DB then
-        local db = ECHAT.DB()
-        if db and db.persistChatHistoryMaxLines then
-            maxN = db.persistChatHistoryMaxLines
+    if CHAT.DB then
+        local saved = CHAT.DB()
+        if saved and saved.persistChatHistoryMaxLines then
+            maxN = saved.persistChatHistoryMaxLines
         end
     end
     if maxN < 10 then
@@ -139,36 +139,36 @@ local function MarkSessionEpoch()
     sessionEpochTime = GetTime()
 end
 
-local function IsCombatLogChatFrame(cf)
-    if not cf then
+local function IsCombatLogChatFrame(castFrame)
+    if not castFrame then
         return false
     end
     local combat = _G.COMBATLOG
-    if combat and cf == combat then
+    if combat and castFrame == combat then
         return true
     end
-    local fn = _G.IsCombatLog
-    if type(fn) == "function" then
-        local ok, r = pcall(fn, cf)
-        if ok and r then
+    local func = _G.IsCombatLog
+    if type(func) == "function" then
+        local success, r = pcall(func, castFrame)
+        if success and r then
             return true
         end
     end
     return false
 end
 
-local function ShouldTrackFrame(cf)
-    if not cf or not cf.GetName then
+local function ShouldTrackFrame(castFrame)
+    if not castFrame or not castFrame.GetName then
         return false
     end
-    if cf.isTemporary then
+    if castFrame.isTemporary then
         return false
     end
-    local name = cf:GetName()
+    local name = castFrame:GetName()
     if not name or not name:match("^ChatFrame%d+$") then
         return false
     end
-    return not IsCombatLogChatFrame(cf)
+    return not IsCombatLogChatFrame(castFrame)
 end
 
 local function GetSV()
@@ -193,23 +193,23 @@ local function IsValidMessage(msg)
     if issecretvalue and issecretvalue(msg) then
         return false
     end
-    local ok, valid = pcall(function()
+    local success, valid = pcall(function()
         return type(msg) == "string" and msg ~= ""
     end)
-    return ok and valid
+    return success and valid
 end
 
 local function MessageForStorage(msg)
     if not IsValidMessage(msg) then
         return nil
     end
-    local ok, stored = pcall(function()
+    local success, stored = pcall(function()
         if #msg > MAX_TEXT_LEN then
             return strsub(msg, 1, MAX_TEXT_LEN)
         end
         return msg
     end)
-    if ok then
+    if success then
         return stored
     end
     return nil
@@ -235,11 +235,11 @@ local function StripTimestampPrefix(msg)
 end
 
 local function TimestampFormatFromDB()
-    if not ECHAT.DB then
+    if not CHAT.DB then
         return nil
     end
-    local db = ECHAT.DB()
-    local fmt = db and db.timestampFormat
+    local saved = CHAT.DB()
+    local fmt = saved and saved.timestampFormat
     if fmt == "none" or fmt == "__blizzard" then
         return nil
     end
@@ -255,8 +255,8 @@ local function EffectiveTimestampFormat()
         return fmt
     end
     if ChatFrameUtil and ChatFrameUtil.GetTimestampFormat then
-        local ok, f = pcall(ChatFrameUtil.GetTimestampFormat)
-        if ok and f then
+        local success, f = pcall(ChatFrameUtil.GetTimestampFormat)
+        if success and f then
             return f
         end
     end
@@ -274,48 +274,48 @@ local function FormatTimestampPrefix(serverTime)
     if not fmt or not serverTime or not date then
         return ""
     end
-    local ok, ts = pcall(date, fmt, serverTime)
-    if ok and type(ts) == "string" and ts ~= "" then
+    local success, ts = pcall(date, fmt, serverTime)
+    if success and type(ts) == "string" and ts ~= "" then
         return ts
     end
     return ""
 end
 
-local function RestoreDisplayMessage(entry)
-    local body = MessageForStorage(entry and entry.message)
+local function RestoreDisplayMessage(record)
+    local body = MessageForStorage(record and record.message)
     if not body then
         return nil
     end
     body = StripTimestampPrefix(body)
-    local prefix = FormatTimestampPrefix(entry.serverTime)
-    if prefix ~= "" then
-        return prefix .. body
+    local prefixText = FormatTimestampPrefix(record.serverTime)
+    if prefixText ~= "" then
+        return prefixText .. body
     end
     return body
 end
 
 local function NormalizeForDedup(msg)
-    local text = StripTimestampPrefix(msg)
-    if not text then
+    local textValue = StripTimestampPrefix(msg)
+    if not textValue then
         return nil
     end
-    text = text:gsub("|H.-|h(.-)|h", "%1")
-    text = text:gsub("|c%x%x%x%x%x%x%x%x", "")
-    text = text:gsub("|r", "")
-    return text
+    textValue = textValue:gsub("|H.-|h(.-)|h", "%1")
+    textValue = textValue:gsub("|c%x%x%x%x%x%x%x%x", "")
+    textValue = textValue:gsub("|r", "")
+    return textValue
 end
 
 local TrimLinesToMax = function(lines, maxN)
-    local n = #lines
-    if n <= maxN then
+    local num = #lines
+    if num <= maxN then
         return lines
     end
-    local out = {}
-    local start = n - maxN + 1
-    for i = start, n do
-        out[#out + 1] = lines[i]
+    local result = {}
+    local start = num - maxN + 1
+    for idx = start, num do
+        result[#result + 1] = lines[idx]
     end
-    return out
+    return result
 end
 
 local function SortLinesChronological(lines)
@@ -334,7 +334,7 @@ local function SanitizeLineList(lines)
     if type(lines) ~= "table" then
         return nil
     end
-    local out = {}
+    local result = {}
     for _, L in ipairs(lines) do
         if type(L) == "table" then
             local msg = MessageForStorage(L.message)
@@ -350,7 +350,7 @@ local function SanitizeLineList(lines)
                 msg = nil
             end
             if msg then
-                out[#out + 1] = {
+                result[#result + 1] = {
                     message = msg,
                     event = L.event,
                     r = (type(L.r) == "number" and L.r) or 1,
@@ -364,7 +364,7 @@ local function SanitizeLineList(lines)
             end
         end
     end
-    return TrimLinesToMax(out, MaxLines())
+    return TrimLinesToMax(result, MaxLines())
 end
 
 local function SanitizeSV()
@@ -377,38 +377,38 @@ local function SanitizeSV()
     end
 end
 
-local function FrameShowsEvent(cf, event)
-    if not cf or not event then
+local function FrameShowsEvent(castFrame, evt)
+    if not castFrame or not evt then
         return false
     end
-    local chatType = gsub(strsub(event, 10), "_INFORM", "")
-    local list = cf.messageTypeList
-    if type(list) ~= "table" then
+    local chatType = gsub(strsub(evt, 10), "_INFORM", "")
+    local entries = castFrame.messageTypeList
+    if type(entries) ~= "table" then
         return true
     end
-    for i = 1, #list do
-        if list[i] == chatType then
+    for idx = 1, #entries do
+        if entries[idx] == chatType then
             return true
         end
     end
     return false
 end
 
-local function AppendLogEntry(entry)
+local function AppendLogEntry(record)
     local sv = GetSV()
     local log = sv.sessionLog
-    local norm = NormalizeForDedup(entry.message)
+    local norm = NormalizeForDedup(record.message)
     if norm then
         -- The bridge tail fires once per window that displays the line, so
         -- the same message can arrive more than once back to back.
         local checkN = math.min(#log, 10)
-        for i = #log, #log - checkN + 1, -1 do
-            if NormalizeForDedup(log[i].message) == norm then
+        for idx = #log, #log - checkN + 1, -1 do
+            if NormalizeForDedup(log[idx].message) == norm then
                 return
             end
         end
     end
-    log[#log + 1] = entry
+    log[#log + 1] = record
     sv.sessionLog = TrimLinesToMax(log, MaxLines())
 end
 
@@ -431,15 +431,15 @@ end
 -- token format never matters. Returns nil when any token is left unresolved
 -- (friend removed mid-session, non-friend token) -- wrong attribution is
 -- worse than a missing line, so such lines are never stored.
-local function ResolveBNetTokens(text)
-    if not text:find("|K", 1, true) then
-        return text
+local function ResolveBNetTokens(textValue)
+    if not textValue:find("|K", 1, true) then
+        return textValue
     end
     local map
     local numFriends = BNGetNumFriends and BNGetNumFriends()
     if numFriends and C_BattleNet and C_BattleNet.GetFriendAccountInfo then
-        for i = 1, numFriends do
-            local acc = C_BattleNet.GetFriendAccountInfo(i)
+        for idx = 1, numFriends do
+            local acc = C_BattleNet.GetFriendAccountInfo(idx)
             local tokenName = acc and acc.accountName
             local tag = acc and acc.battleTag
             if
@@ -459,17 +459,17 @@ local function ResolveBNetTokens(text)
     end
     if map then
         for token, tag in pairs(map) do
-            text = text:gsub(token:gsub("(%W)", "%%%1"), tag)
+            textValue = textValue:gsub(token:gsub("(%W)", "%%%1"), tag)
         end
     end
-    if text:find("|K", 1, true) then
+    if textValue:find("|K", 1, true) then
         return nil
     end
-    return text
+    return textValue
 end
 
-local function OnBridgeLine(cf, msg, r, g, b, chatTypeID, event)
-    if not event or not CAPTURE_EVENTS[event] then
+local function OnBridgeLine(castFrame, msg, r, g, b, chatTypeID, evt)
+    if not evt or not CAPTURE_EVENTS[evt] then
         return
     end
     if not sessionEpochTime or GetTime() < sessionEpochTime then
@@ -478,7 +478,7 @@ local function OnBridgeLine(cf, msg, r, g, b, chatTypeID, event)
     if not CaptureAllowed() then
         return
     end
-    if not ShouldTrackFrame(cf) then
+    if not ShouldTrackFrame(castFrame) then
         return
     end
 
@@ -497,7 +497,7 @@ local function OnBridgeLine(cf, msg, r, g, b, chatTypeID, event)
 
     captureSeq = captureSeq + 1
     AppendLogEntry({
-        event = event,
+        event = evt,
         message = body,
         r = (type(r) == "number" and r) or 1,
         g = (type(g) == "number" and g) or 1,
@@ -513,11 +513,11 @@ local function InstallCapture()
     if observerInstalled then
         return
     end
-    if not ECHAT.EngineSetTailObserver then
+    if not CHAT.EngineSetTailObserver then
         return
     end
     observerInstalled = true
-    ECHAT.EngineSetTailObserver(OnBridgeLine)
+    CHAT.EngineSetTailObserver(OnBridgeLine)
 end
 
 local function UninstallCapture()
@@ -525,8 +525,8 @@ local function UninstallCapture()
         return
     end
     observerInstalled = false
-    if ECHAT.EngineSetTailObserver then
-        ECHAT.EngineSetTailObserver(nil)
+    if CHAT.EngineSetTailObserver then
+        CHAT.EngineSetTailObserver(nil)
     end
 end
 
@@ -539,7 +539,7 @@ local function ClearSavedSessionHistory()
     GetSV().sessionLog = {}
 end
 
-function ECHAT.SnapshotChatSessionHistory()
+function CHAT.SnapshotChatSessionHistory()
     if not PersistEnabled() then
         return
     end
@@ -557,36 +557,36 @@ end
 
 -- Normalized hashes of what a window already shows, so relog restores do not
 -- duplicate lines that survived in the engine (O(n) once per window).
-local function BuildWindowMessageSet(cf)
-    local set = {}
-    if not ECHAT.EngineGetMessageLines then
-        return set
+local function BuildWindowMessageSet(castFrame)
+    local group = {}
+    if not CHAT.EngineGetMessageLines then
+        return group
     end
     local raw = {}
-    ECHAT.EngineGetMessageLines(cf, raw)
-    for i = 1, #raw do
-        local stored = MessageForStorage(raw[i])
+    CHAT.EngineGetMessageLines(castFrame, raw)
+    for idx = 1, #raw do
+        local stored = MessageForStorage(raw[idx])
         if stored then
-            local ok, norm = pcall(NormalizeForDedup, stored)
-            if ok and norm then
-                set[norm] = true
+            local success, norm = pcall(NormalizeForDedup, stored)
+            if success and norm then
+                group[norm] = true
             end
         end
     end
-    return set
+    return group
 end
 
-local function RestoreWindow(cf, frameName, log)
-    if not cf or not log or #log == 0 then
+local function RestoreWindow(castFrame, frameName, log)
+    if not castFrame or not log or #log == 0 then
         return false
     end
-    if not ShouldTrackFrame(cf) then
+    if not ShouldTrackFrame(castFrame) then
         return false
     end
     if restoredFrames[frameName] then
         return false
     end
-    if not (ns._chatWins and ns._chatWins[cf]) then
+    if not (mod._chatWins and mod._chatWins[castFrame]) then
         return false
     end
 
@@ -596,18 +596,21 @@ local function RestoreWindow(cf, frameName, log)
     end
     lines = SortLinesChronological(lines)
 
-    local existingSet = BuildWindowMessageSet(cf)
+    local existingSet = BuildWindowMessageSet(castFrame)
 
     local pushed = 0
     -- Newest first: each BackFill lands above the previous push, so the final
     -- on-screen order is chronological, above whatever login produced.
-    for i = #lines, 1, -1 do
-        local entry = lines[i]
-        if entry and entry.event and entry.message and FrameShowsEvent(cf, entry.event) then
-            local norm = NormalizeForDedup(entry.message)
+    for idx = #lines, 1, -1 do
+        local record = lines[idx]
+        if record and record.event and record.message and FrameShowsEvent(castFrame, record.event) then
+            local norm = NormalizeForDedup(record.message)
             if not (norm and existingSet[norm]) then
-                local text = RestoreDisplayMessage(entry)
-                if text and ECHAT.EngineBackfillLine(cf, text, entry.r, entry.g, entry.b, entry.id) then
+                local textValue = RestoreDisplayMessage(record)
+                if
+                    textValue
+                    and CHAT.EngineBackfillLine(castFrame, textValue, record.r, record.g, record.b, record.id)
+                then
                     pushed = pushed + 1
                 end
             end
@@ -636,10 +639,10 @@ local function RunRestore(token)
     end
 
     local any = false
-    for i = 1, 10 do
-        local name = "ChatFrame" .. i
-        local cf = _G[name]
-        if cf and RestoreWindow(cf, name, log) then
+    for idx = 1, 10 do
+        local name = "ChatFrame" .. idx
+        local castFrame = _G[name]
+        if castFrame and RestoreWindow(castFrame, name, log) then
             any = true
         end
     end
@@ -700,7 +703,7 @@ TryRestore = function(token, attempt)
     end
 end
 
-function ECHAT.RestoreChatSessionHistory()
+function CHAT.RestoreChatSessionHistory()
     UnarmDeferredRestore()
     restoreToken = restoreToken + 1
     wipe(restoredFrames)
@@ -713,10 +716,10 @@ function ECHAT.RestoreChatSessionHistory()
     end)
 end
 
-function ECHAT.OnSessionHistoryToggled(enabled)
+function CHAT.OnSessionHistoryToggled(enabled)
     if enabled then
-        ECHAT.InitChatSessionHistory()
-        ECHAT.RestoreChatSessionHistory()
+        CHAT.InitChatSessionHistory()
+        CHAT.RestoreChatSessionHistory()
     else
         UninstallCapture()
         ClearSavedSessionHistory()
@@ -727,7 +730,7 @@ local function ScheduleSessionEpochAfterLogin()
     C_Timer.After(RESTORE_DELAY_SEC + SESSION_EPOCH_DELAY_SEC, MarkSessionEpoch)
 end
 
-function ECHAT.InitChatSessionHistory()
+function CHAT.InitChatSessionHistory()
     if not PersistEnabled() then
         UninstallCapture()
         ClearSavedSessionHistory()
@@ -744,29 +747,29 @@ eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:RegisterEvent("PLAYER_LOGOUT")
 eventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
 
-eventFrame:SetScript("OnEvent", function(_, event, ...)
-    if event == "PLAYER_LOGOUT" or event == "PLAYER_LEAVING_WORLD" then
+eventFrame:SetScript("OnEvent", function(_, evt, ...)
+    if evt == "PLAYER_LOGOUT" or evt == "PLAYER_LEAVING_WORLD" then
         if PersistEnabled() then
-            ECHAT.SnapshotChatSessionHistory()
+            CHAT.SnapshotChatSessionHistory()
         else
             ClearSavedSessionHistory()
         end
         return
     end
 
-    if event == "PLAYER_ENTERING_WORLD" then
+    if evt == "PLAYER_ENTERING_WORLD" then
         local isInitialLogin, isReloadingUi = ...
         if not isInitialLogin and not isReloadingUi then
             if SessionHistorySafe() then
-                ECHAT.RestoreChatSessionHistory()
+                CHAT.RestoreChatSessionHistory()
             end
             return
         end
         sessionEpochTime = nil
         captureSeq = 0
-        ECHAT.InitChatSessionHistory()
+        CHAT.InitChatSessionHistory()
         if PersistEnabled() then
-            ECHAT.RestoreChatSessionHistory()
+            CHAT.RestoreChatSessionHistory()
             ScheduleSessionEpochAfterLogin()
         end
     end

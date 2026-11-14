@@ -4,22 +4,22 @@
 -- Layout, top to bottom: header, stat tiles (which double as the legend and
 -- toggle the lines), the plot, the per-key strip, notes.
 
-local _, ns = ...
-if ns.standalone then
+local _, mod = ...
+if mod.standalone then
     return
 end
-local DAY = ns.DAY
-local C = ns.COLORS
+local DAY = mod.DAY
+local C = mod.COLORS
 
 local Graph = {}
-ns.Graph = Graph
+mod.Graph = Graph
 
-local W, PAD = 700, 16
+local Widgets, PAD = 700, 16
 local HEADER_H = 46
 local TILE_T, TILE_H, TILE_GAP = HEADER_H + 14, 94, 8
 local PL, PR = 62, 58 -- plot margins: value axis on the left, end labels on the right
 local PT, PH = TILE_T + TILE_H + 28, 220
-local PW = W - PL - PR
+local PW = Widgets - PL - PR
 local STRIP_T, STRIP_H = PT + PH + 34, 30
 local FOOT_T = STRIP_T + STRIP_H + 16
 local H = FOOT_T + 34
@@ -35,7 +35,7 @@ local MIN_AHEAD, MAX_AHEAD = 14, 90 -- days drawn past today
 local MEDIA = "Interface\\AddOns\\CludesUITitleLine\\Media\\"
 local SHAPE_FILL = 0.85 -- the dot and diamond leave a clear margin in their 16px textures
 
-local frame, plot, strip, hover, cross, tip, segmented, message, group, panel
+local widget, plot, strip, hover, cross, tipText, segmented, message, group, panelFrame
 local tiles = {}
 local pools = {}
 local fonts
@@ -43,31 +43,31 @@ local view -- the last render's scales and context, read by the hover
 
 -- Building blocks ------------------------------------------------------------------
 
-local function Color(region, c, a)
-    region:SetColorTexture(c[1], c[2], c[3], a or c[4] or 1)
+local function Color(regionFrame, c, a)
+    regionFrame:SetColorTexture(c[1], c[2], c[3], a or c[4] or 1)
 end
 
 -- The game's own face, so every locale renders, at sizes of our choosing.
 local function MakeFonts()
     fonts = {}
-    local path, _, flags = GameFontHighlight:GetFont()
-    for name, size in pairs({ title = 15, value = 20, body = 12, small = 11, tiny = 10 }) do
+    local filePath, _, flags = GameFontHighlight:GetFont()
+    for name, dim in pairs({ title = 15, value = 20, body = 12, small = 11, tiny = 10 }) do
         local f = CreateFont("TitleLineFont_" .. name)
-        f:SetFont(path, size, flags or "")
+        f:SetFont(filePath, dim, flags or "")
         fonts[name] = f
     end
 end
 
-local function Paint(fs, font, c)
-    fs:SetFontObject(fonts[font])
-    fs:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+local function Paint(fontStr, font, c)
+    fontStr:SetFontObject(fonts[font])
+    fontStr:SetTextColor(c[1], c[2], c[3], c[4] or 1)
 end
 
-local function FS(parent, font, c, layer)
-    local fs = parent:CreateFontString(nil, layer or "OVERLAY")
-    Paint(fs, font, c)
-    fs:SetWordWrap(false)
-    return fs
+local function FS(hostFrame, font, c, layer)
+    local fontStr = hostFrame:CreateFontString(nil, layer or "OVERLAY")
+    Paint(fontStr, font, c)
+    fontStr:SetWordWrap(false)
+    return fontStr
 end
 
 local function Hairlines(f, alpha)
@@ -111,8 +111,8 @@ local function Pool(make)
         return o
     end
     function p:Reset()
-        for i = 1, #self.items do
-            self.items[i]:Hide()
+        for idx = 1, #self.items do
+            self.items[idx]:Hide()
         end
         self.used = 0
     end
@@ -122,11 +122,11 @@ end
 -- The client draws lines and solid fills with hard, aliased edges, so anything
 -- that is not axis-aligned uses a white texture with a soft alpha edge, tinted
 -- per use. Snapping is off so a fractional position stays smooth.
-local function Smooth(region, file)
-    region:SetTexture(MEDIA .. file, "CLAMP", "CLAMP", "LINEAR")
-    region:SetSnapToPixelGrid(false)
-    region:SetTexelSnappingBias(0)
-    return region
+local function Smooth(regionFrame, file)
+    regionFrame:SetTexture(MEDIA .. file, "CLAMP", "CLAMP", "LINEAR")
+    regionFrame:SetSnapToPixelGrid(false)
+    regionFrame:SetTexelSnappingBias(0)
+    return regionFrame
 end
 
 -- `th` is the stroke as it should look. A smooth line is drawn twice as thick,
@@ -147,24 +147,24 @@ end
 
 -- A dot or diamond `size` across, on a ring in the surface colour so it reads
 -- over any line. The shape fills SHAPE_FILL of its texture.
-local function Marker(rings, marks, rel, x, y, c, size)
-    for _, m in ipairs({ { rings, size + 4, C.surface }, { marks, size, c } }) do
+local function Marker(rings, marks, rel, posX, posY, c, dim)
+    for _, m in ipairs({ { rings, dim + 4, C.surface }, { marks, dim, c } }) do
         local t = m[1]:Get()
         local s = m[2] / SHAPE_FILL
         t:SetSize(s, s)
         t:ClearAllPoints()
-        t:SetPoint("CENTER", rel, "BOTTOMLEFT", x, y)
+        t:SetPoint("CENTER", rel, "BOTTOMLEFT", posX, posY)
         t:SetVertexColor(m[3][1], m[3][2], m[3][3], 1)
     end
 end
 
-local function Text(pool, font, c, point, rel, relPoint, x, y, s)
-    local fs = pool:Get()
-    Paint(fs, font, c)
-    fs:ClearAllPoints()
-    fs:SetPoint(point, rel, relPoint, x, y)
-    fs:SetText(s)
-    return fs
+local function Text(pool, font, c, anchorPoint, rel, relPoint, posX, posY, s)
+    local fontStr = pool:Get()
+    Paint(fontStr, font, c)
+    fontStr:ClearAllPoints()
+    fontStr:SetPoint(anchorPoint, rel, relPoint, posX, posY)
+    fontStr:SetText(s)
+    return fontStr
 end
 
 -- Scales ------------------------------------------------------------------------------
@@ -173,37 +173,37 @@ local function X(t)
     return (t - view.x0) / (view.x1 - view.x0) * PW
 end
 
-local function Y(v)
-    return (v - view.y0) / (view.y1 - view.y0) * PH
+local function Y(val)
+    return (val - view.y0) / (view.y1 - view.y0) * PH
 end
 
 -- Dashes along a path of plot points, the pattern running on across joins so
 -- a curve dashes as evenly as a straight line.
 local DASH_ON, DASH_OFF = 5, 4
-local function DashedPath(pool, path, c)
+local function DashedPath(pool, filePath, c)
     local phase = 0
-    for i = 2, #path do
-        local x1, y1, x2, y2 = path[i - 1][1], path[i - 1][2], path[i][1], path[i][2]
+    for idx = 2, #filePath do
+        local x1, y1, x2, y2 = filePath[idx - 1][1], filePath[idx - 1][2], filePath[idx][1], filePath[idx][2]
         local dx, dy = x2 - x1, y2 - y1
         local len = math.sqrt(dx * dx + dy * dy)
-        local pos = 0
-        while pos < len do
+        local place = 0
+        while place < len do
             local cycle = phase % (DASH_ON + DASH_OFF)
-            local on = cycle < DASH_ON
-            local e = math.min(len, pos + (on and (DASH_ON - cycle) or (DASH_ON + DASH_OFF - cycle)))
-            if on then
+            local enabled = cycle < DASH_ON
+            local e = math.min(len, place + (enabled and (DASH_ON - cycle) or (DASH_ON + DASH_OFF - cycle)))
+            if enabled then
                 Line(
                     pool,
                     plot,
-                    x1 + dx * pos / len,
-                    y1 + dy * pos / len,
+                    x1 + dx * place / len,
+                    y1 + dy * place / len,
                     x1 + dx * e / len,
                     y1 + dy * e / len,
                     c
                 )
             end
-            phase = phase + (e - pos)
-            pos = e
+            phase = phase + (e - place)
+            place = e
         end
     end
 end
@@ -237,15 +237,15 @@ local function Band(s, c)
     local last = s.pts[#s.pts]
     local ta = math.max(last[1], view.x0)
     local xa = X(ta)
-    for x = xa, PW - 1, 3 do
-        local t = view.x0 + (x + 1.5) / PW * (view.x1 - view.x0)
-        local lo, _, hi = ns.LineRange(s.pts, s.fit, t)
+    for posX = xa, PW - 1, 3 do
+        local t = view.x0 + (posX + 1.5) / PW * (view.x1 - view.x0)
+        local lo, _, hi = mod.LineRange(s.pts, s.fit, t)
         local y0, y1 = math.max(0, Y(lo)), math.min(PH, Y(hi))
         if y1 > y0 then
             local r = pools.band:Get()
             r:ClearAllPoints()
-            r:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", x, y0)
-            r:SetSize(math.min(3, PW - x), y1 - y0)
+            r:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", posX, y0)
+            r:SetSize(math.min(3, PW - posX), y1 - y0)
             Color(r, c, 0.10)
         end
     end
@@ -257,17 +257,17 @@ local function Projection(pool, s, c)
     if ta >= view.x1 then
         return
     end
-    local n = math.max(2, math.ceil((X(view.x1) - X(ta)) / 6))
-    local path = {}
-    for i = 0, n do
-        local t = ta + (view.x1 - ta) * i / n
-        path[#path + 1] = { X(t), Y(ns.LineValue(s.pts, s.fit, t)) }
+    local num = math.max(2, math.ceil((X(view.x1) - X(ta)) / 6))
+    local filePath = {}
+    for idx = 0, num do
+        local t = ta + (view.x1 - ta) * idx / num
+        filePath[#filePath + 1] = { X(t), Y(mod.LineValue(s.pts, s.fit, t)) }
     end
-    DashedPath(pool, path, c)
+    DashedPath(pool, filePath, c)
 end
 
-function ns.NiceStep(range, target)
-    local raw = range / target
+function mod.NiceStep(range, targetUnit)
+    local raw = range / targetUnit
     local mag = 10 ^ math.floor(math.log(raw) / math.log(10))
     local norm = raw / mag
     local step = norm < 1.5 and 1 or norm < 3 and 2 or norm < 7 and 5 or 10
@@ -275,11 +275,11 @@ function ns.NiceStep(range, target)
 end
 
 -- The time window and value range for this render.
-function ns.Window(ctx, mode, hidden)
-    local now, region, sum = ctx.now, ctx.region, ctx.summary
-    local x0 = region.startsAt
-    if mode ~= "season" then
-        x0 = math.max(x0, now - RECENT_DAYS * DAY)
+function mod.Window(context, modeName, hidden)
+    local nowTime, regionFrame, sum = context.now, context.region, context.summary
+    local x0 = regionFrame.startsAt
+    if modeName ~= "season" then
+        x0 = math.max(x0, nowTime - RECENT_DAYS * DAY)
     end
 
     -- Reach far enough ahead to show the crossings, within reason.
@@ -289,34 +289,34 @@ function ns.Window(ctx, mode, hidden)
             ahead = math.max(ahead, math.min(s.days * 1.15 + 1, MAX_AHEAD))
         end
     end
-    local x1 = now + ahead * DAY
+    local x1 = nowTime + ahead * DAY
     -- The season view runs to the season's end.
-    if mode == "season" and sum.endsAt and sum.endsAt > x1 then
+    if modeName == "season" and sum.endsAt and sum.endsAt > x1 then
         x1 = sum.endsAt
     end
 
     local lo, hi = math.huge, -math.huge
-    local function take(v)
-        if v then
-            lo, hi = math.min(lo, v), math.max(hi, v)
+    local function take(val)
+        if val then
+            lo, hi = math.min(lo, val), math.max(hi, val)
         end
     end
-    take(ns.ScoreAt(ctx.history.points, x0))
-    for _, p in ipairs(ctx.history.points) do
+    take(mod.ScoreAt(context.history.points, x0))
+    for _, p in ipairs(context.history.points) do
         if p.t >= x0 then
             take(p.score)
         end
     end
-    take(sum.you + sum.pace * (x1 - now) / DAY)
+    take(sum.you + sum.pace * (x1 - nowTime) / DAY)
     for _, s in ipairs(sum.tiers) do
         if not hidden[s.tier.key] then
-            take(ns.LineValue(s.pts, s.fit, x0))
+            take(mod.LineValue(s.pts, s.fit, x0))
             for _, p in ipairs(s.pts) do
                 if p[1] >= x0 then
                     take(p[2])
                 end
             end
-            local low, _, high = ns.LineRange(s.pts, s.fit, x1)
+            local low, _, high = mod.LineRange(s.pts, s.fit, x1)
             take(low)
             take(high)
         end
@@ -326,12 +326,12 @@ function ns.Window(ctx, mode, hidden)
     -- edge, labelled with their rating (see DrawParty).
     local reach = math.max(hi - lo, 100) * PARTY_REACH
     local floor, ceil = lo - reach, hi + reach
-    local function near(v)
-        if v >= floor and v <= ceil then
-            take(v)
+    local function near(val)
+        if val >= floor and val <= ceil then
+            take(val)
         end
     end
-    for _, m in ipairs(ctx.party or {}) do
+    for _, m in ipairs(context.party or {}) do
         if m.score > 0 then
             near(m.score)
             for _, p in ipairs(m.seen and m.seen.pts or {}) do
@@ -344,7 +344,7 @@ function ns.Window(ctx, mode, hidden)
     if hi - lo < 50 then
         lo, hi = lo - 25, hi + 25
     end
-    local step = ns.NiceStep(hi - lo, 5)
+    local step = mod.NiceStep(hi - lo, 5)
     return {
         x0 = x0,
         x1 = x1,
@@ -356,24 +356,24 @@ end
 
 -- The window ----------------------------------------------------------------------------
 
-local function MakeSegmented(parent, options)
-    local box = CreateFrame("Frame", nil, parent)
+local function MakeSegmented(hostFrame, options)
+    local boxFrame = CreateFrame("Frame", nil, hostFrame)
     local bw = 72
-    box:SetSize(#options * bw + 2, 24)
-    Hairlines(box, 0.10)
-    box.buttons = {}
-    function box:Refresh()
+    boxFrame:SetSize(#options * bw + 2, 24)
+    Hairlines(boxFrame, 0.10)
+    boxFrame.buttons = {}
+    function boxFrame:Refresh()
         for _, b in ipairs(self.buttons) do
-            local on = CludesUITitleLineDB.view == b.value
-            Color(b.bg, C.raised, on and 1 or 0)
-            local c = on and C.ink or (b:IsMouseOver() and C.ink2 or C.muted)
+            local enabled = CludesUITitleLineDB.view == b.value
+            Color(b.bg, C.raised, enabled and 1 or 0)
+            local c = enabled and C.ink or (b:IsMouseOver() and C.ink2 or C.muted)
             b.text:SetTextColor(c[1], c[2], c[3])
         end
     end
-    for i, o in ipairs(options) do
-        local b = CreateFrame("Button", nil, box)
+    for idx, o in ipairs(options) do
+        local b = CreateFrame("Button", nil, boxFrame)
         b:SetSize(bw, 22)
-        b:SetPoint("LEFT", 1 + (i - 1) * bw, 0)
+        b:SetPoint("LEFT", 1 + (idx - 1) * bw, 0)
         b.bg = b:CreateTexture(nil, "BACKGROUND")
         b.bg:SetAllPoints()
         b.text = FS(b, "small", C.muted)
@@ -388,26 +388,26 @@ local function MakeSegmented(parent, options)
             Graph:Render()
         end)
         b:SetScript("OnEnter", function()
-            box:Refresh()
+            boxFrame:Refresh()
         end)
         b:SetScript("OnLeave", function()
-            box:Refresh()
+            boxFrame:Refresh()
         end)
-        box.buttons[i] = b
+        boxFrame.buttons[idx] = b
     end
-    return box
+    return boxFrame
 end
 
-local function MakeClose(parent)
-    local b = CreateFrame("Button", nil, parent)
+local function MakeClose(hostFrame)
+    local b = CreateFrame("Button", nil, hostFrame)
     b:SetSize(24, 24)
     b.lines = {}
-    for i, d in ipairs({ { -5, -5, 5, 5 }, { -5, 5, 5, -5 } }) do
+    for idx, d in ipairs({ { -5, -5, 5, 5 }, { -5, 5, 5, -5 } }) do
         local l = Smooth(b:CreateLine(nil, "OVERLAY"), "Line")
         l:SetThickness(3)
         l:SetStartPoint("CENTER", b, d[1], d[2])
         l:SetEndPoint("CENTER", b, d[3], d[4])
-        b.lines[i] = l
+        b.lines[idx] = l
     end
     local function tint(c)
         for _, l in ipairs(b.lines) do
@@ -422,20 +422,20 @@ local function MakeClose(parent)
         tint(C.muted)
     end)
     b:SetScript("OnClick", function()
-        parent:Hide()
+        hostFrame:Hide()
     end)
     return b
 end
 
-local function MakeTile(i, key)
-    local count = #ns.TIERS + 1
-    local w = (W - 2 * PAD - (count - 1) * TILE_GAP) / count
-    local t = CreateFrame("Button", nil, frame)
-    t:SetSize(w, TILE_H)
-    t:SetPoint("TOPLEFT", PAD + (i - 1) * (w + TILE_GAP), -TILE_T)
-    local bg = t:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    Color(bg, C.raised)
+local function MakeTile(idx, key)
+    local total = #mod.TIERS + 1
+    local wid = (Widgets - 2 * PAD - (total - 1) * TILE_GAP) / total
+    local t = CreateFrame("Button", nil, widget)
+    t:SetSize(wid, TILE_H)
+    t:SetPoint("TOPLEFT", PAD + (idx - 1) * (wid + TILE_GAP), -TILE_T)
+    local backdrop = t:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    Color(backdrop, C.raised)
     t.edges = Hairlines(t, 0.06)
     t.swatch = t:CreateTexture(nil, "ARTWORK")
     t.swatch:SetSize(12, 2)
@@ -469,7 +469,7 @@ local function MakeTile(i, key)
         end)
         t:SetScript("OnLeave", function()
             SetEdges(t.edges, 0.06)
-            tip:Hide()
+            tipText:Hide()
         end)
     else
         t:SetScript("OnClick", function()
@@ -482,26 +482,26 @@ local function MakeTile(i, key)
         end)
         t:SetScript("OnLeave", function()
             SetEdges(t.edges, 0.06)
-            tip:Hide()
+            tipText:Hide()
         end)
     end
     return t
 end
 
 local function MakeTip()
-    tip = CreateFrame("Frame", nil, frame)
-    tip:SetFrameLevel(frame:GetFrameLevel() + 30)
-    tip:SetWidth(210)
-    local bg = tip:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    Color(bg, C.raised)
-    Hairlines(tip, 0.12)
-    tip.title = FS(tip, "small", C.ink)
-    tip.title:SetPoint("TOPLEFT", 10, -9)
-    tip.tag = FS(tip, "tiny", C.muted)
-    tip.tag:SetPoint("TOPRIGHT", -10, -10)
-    tip.rows = Pool(function()
-        local r = CreateFrame("Frame", nil, tip)
+    tipText = CreateFrame("Frame", nil, widget)
+    tipText:SetFrameLevel(widget:GetFrameLevel() + 30)
+    tipText:SetWidth(210)
+    local backdrop = tipText:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    Color(backdrop, C.raised)
+    Hairlines(tipText, 0.12)
+    tipText.title = FS(tipText, "small", C.ink)
+    tipText.title:SetPoint("TOPLEFT", 10, -9)
+    tipText.tag = FS(tipText, "tiny", C.muted)
+    tipText.tag:SetPoint("TOPRIGHT", -10, -10)
+    tipText.rows = Pool(function()
+        local r = CreateFrame("Frame", nil, tipText)
         r:SetSize(190, 16)
         r.swatch = r:CreateTexture(nil, "ARTWORK")
         r.swatch:SetSize(10, 2)
@@ -512,136 +512,136 @@ local function MakeTip()
         r.value:SetPoint("RIGHT", 0, 0)
         return r
     end)
-    tip.note = FS(tip, "tiny", C.muted)
-    tip.note:SetWordWrap(true)
-    tip.note:SetJustifyH("LEFT")
-    tip:Hide()
+    tipText.note = FS(tipText, "tiny", C.muted)
+    tipText.note:SetWordWrap(true)
+    tipText.note:SetJustifyH("LEFT")
+    tipText:Hide()
 end
 
 local function Create()
     MakeFonts()
-    frame = CreateFrame("Frame", "TitleLineFrame", UIParent)
-    frame:SetSize(W, H)
-    frame:SetFrameStrata("DIALOG")
-    frame:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE)
-    frame:SetToplevel(true)
-    frame:SetClampedToScreen(true)
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", function(f)
+    widget = CreateFrame("Frame", "TitleLineFrame", UIParent)
+    widget:SetSize(Widgets, H)
+    widget:SetFrameStrata("DIALOG")
+    widget:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE)
+    widget:SetToplevel(true)
+    widget:SetClampedToScreen(true)
+    widget:SetMovable(true)
+    widget:EnableMouse(true)
+    widget:RegisterForDrag("LeftButton")
+    widget:SetScript("OnDragStart", widget.StartMoving)
+    widget:SetScript("OnDragStop", function(f)
         f:StopMovingOrSizing()
-        local p, _, rp, x, y = f:GetPoint()
-        CludesUITitleLineDB.point = { p, rp, x, y }
+        local p, _, rp, posX, posY = f:GetPoint()
+        CludesUITitleLineDB.point = { p, rp, posX, posY }
     end)
     local pt = CludesUITitleLineDB.point
     if pt then
-        frame:SetPoint(pt[1], UIParent, pt[2], pt[3], pt[4])
+        widget:SetPoint(pt[1], UIParent, pt[2], pt[3], pt[4])
     else
-        frame:SetPoint("CENTER")
+        widget:SetPoint("CENTER")
     end
-    frame:Hide()
+    widget:Hide()
     tinsert(UISpecialFrames, "TitleLineFrame")
-    frame:SetScript("OnShow", function()
+    widget:SetScript("OnShow", function()
         C_MythicPlus.RequestMapInfo()
         Graph:Render()
     end)
 
-    local bg = frame:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    Color(bg, C.surface, 0.98)
-    Hairlines(frame, 0.10)
+    local backdrop = widget:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    Color(backdrop, C.surface, 0.98)
+    Hairlines(widget, 0.10)
 
     -- Header.
-    local icon = frame:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture(MEDIA .. "Icon", "CLAMP", "CLAMP", "LINEAR")
-    icon:SetSize(24, 24)
-    icon:SetPoint("TOPLEFT", PAD, -11)
-    frame.title = FS(frame, "title", C.ink)
-    frame.title:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-    frame.title:SetText("TitleLine")
-    frame.region = FS(frame, "small", C.ink2)
-    frame.region:SetPoint("LEFT", frame.title, "RIGHT", 12, -1)
-    frame.season = FS(frame, "small", C.muted)
-    frame.season:SetPoint("LEFT", frame.region, "RIGHT", 8, 0)
+    local glyph = widget:CreateTexture(nil, "ARTWORK")
+    glyph:SetTexture(MEDIA .. "Icon", "CLAMP", "CLAMP", "LINEAR")
+    glyph:SetSize(24, 24)
+    glyph:SetPoint("TOPLEFT", PAD, -11)
+    widget.title = FS(widget, "title", C.ink)
+    widget.title:SetPoint("LEFT", glyph, "RIGHT", 8, 0)
+    widget.title:SetText("TitleLine")
+    widget.region = FS(widget, "small", C.ink2)
+    widget.region:SetPoint("LEFT", widget.title, "RIGHT", 12, -1)
+    widget.season = FS(widget, "small", C.muted)
+    widget.season:SetPoint("LEFT", widget.region, "RIGHT", 8, 0)
 
-    local close = MakeClose(frame)
+    local close = MakeClose(widget)
     close:SetPoint("TOPRIGHT", -10, -11)
     segmented = MakeSegmented(
-        frame,
+        widget,
         { { "recent", "4 weeks" }, { "season", "Season" }, { "keys", "Keys" }, { "guild", "Guild" } }
     )
     segmented:SetPoint("RIGHT", close, "LEFT", -10, 0)
 
-    local rule = frame:CreateTexture(nil, "BORDER")
+    local rule = widget:CreateTexture(nil, "BORDER")
     rule:SetColorTexture(1, 1, 1, 0.08)
     rule:SetHeight(1)
     rule:SetPoint("TOPLEFT", 0, -HEADER_H)
     rule:SetPoint("TOPRIGHT", 0, -HEADER_H)
 
     tiles[1] = MakeTile(1, "you")
-    for i, tier in ipairs(ns.TIERS) do
-        tiles[i + 1] = MakeTile(i + 1, tier.key)
+    for idx, tier in ipairs(mod.TIERS) do
+        tiles[idx + 1] = MakeTile(idx + 1, tier.key)
     end
 
     -- The group row: one cell per party member, shown while you are grouped.
-    group = CreateFrame("Frame", nil, frame)
+    group = CreateFrame("Frame", nil, widget)
     group:SetPoint("TOPLEFT", PAD, -GROUP_T)
-    group:SetSize(W - 2 * PAD, GROUP_H)
-    local label = FS(group, "tiny", C.muted)
-    label:SetPoint("LEFT", 0, 0)
-    label:SetText("Group")
+    group:SetSize(Widgets - 2 * PAD, GROUP_H)
+    local labelText = FS(group, "tiny", C.muted)
+    labelText:SetPoint("LEFT", 0, 0)
+    labelText:SetText("Group")
     group.cells = {}
-    local cw = (W - 2 * PAD - GROUP_LABEL_W + TILE_GAP) / 4
-    for i = 1, 4 do
-        local cell = CreateFrame("Button", nil, group)
-        cell:SetSize(cw - TILE_GAP, GROUP_H)
-        cell:SetPoint("LEFT", GROUP_LABEL_W + (i - 1) * cw, 0)
-        local cbg = cell:CreateTexture(nil, "BACKGROUND")
+    local cw = (Widgets - 2 * PAD - GROUP_LABEL_W + TILE_GAP) / 4
+    for idx = 1, 4 do
+        local cellFrame = CreateFrame("Button", nil, group)
+        cellFrame:SetSize(cw - TILE_GAP, GROUP_H)
+        cellFrame:SetPoint("LEFT", GROUP_LABEL_W + (idx - 1) * cw, 0)
+        local cbg = cellFrame:CreateTexture(nil, "BACKGROUND")
         cbg:SetAllPoints()
         Color(cbg, C.raised)
-        cell.edges = Hairlines(cell, 0.06)
-        cell.name = FS(cell, "small", C.ink)
-        cell.name:SetPoint("TOPLEFT", 10, -8)
-        cell.value = FS(cell, "body", C.ink)
-        cell.value:SetPoint("BOTTOMLEFT", 10, 7)
-        cell.sub = FS(cell, "tiny", C.muted)
-        cell.sub:SetPoint("BOTTOMRIGHT", -10, 8)
-        cell:SetScript("OnEnter", function(self)
+        cellFrame.edges = Hairlines(cellFrame, 0.06)
+        cellFrame.name = FS(cellFrame, "small", C.ink)
+        cellFrame.name:SetPoint("TOPLEFT", 10, -8)
+        cellFrame.value = FS(cellFrame, "body", C.ink)
+        cellFrame.value:SetPoint("BOTTOMLEFT", 10, 7)
+        cellFrame.sub = FS(cellFrame, "tiny", C.muted)
+        cellFrame.sub:SetPoint("BOTTOMRIGHT", -10, 8)
+        cellFrame:SetScript("OnEnter", function(self)
             SetEdges(self.edges, 0.18)
             Graph.ShowMember(self)
         end)
-        cell:SetScript("OnLeave", function(self)
+        cellFrame:SetScript("OnLeave", function(self)
             SetEdges(self.edges, 0.06)
-            tip:Hide()
+            tipText:Hide()
         end)
-        group.cells[i] = cell
+        group.cells[idx] = cellFrame
     end
 
-    plot = CreateFrame("Frame", nil, frame)
+    plot = CreateFrame("Frame", nil, widget)
     plot:SetPoint("TOPLEFT", PL, -PT)
     plot:SetSize(PW, PH)
 
-    strip = CreateFrame("Frame", nil, frame)
+    strip = CreateFrame("Frame", nil, widget)
     strip:SetPoint("TOPLEFT", PL, -STRIP_T)
     strip:SetSize(PW, STRIP_H)
-    local base = strip:CreateTexture(nil, "BORDER")
-    Color(base, C.axis)
-    base:SetHeight(1)
-    base:SetPoint("BOTTOMLEFT")
-    base:SetPoint("BOTTOMRIGHT")
+    local baseValue = strip:CreateTexture(nil, "BORDER")
+    Color(baseValue, C.axis)
+    baseValue:SetHeight(1)
+    baseValue:SetPoint("BOTTOMLEFT")
+    baseValue:SetPoint("BOTTOMRIGHT")
 
     -- Where the Keys and Guild views draw (Views.lua).
-    panel = CreateFrame("Frame", nil, frame)
-    panel:SetSize(W - 2 * PAD, STRIP_T + STRIP_H - PT)
-    panel:Hide()
+    panelFrame = CreateFrame("Frame", nil, widget)
+    panelFrame:SetSize(Widgets - 2 * PAD, STRIP_T + STRIP_H - PT)
+    panelFrame:Hide()
 
     message = FS(plot, "body", C.ink2)
     message:SetPoint("CENTER")
 
     -- One hover layer over the plot and the strip, so the crosshair spans both.
-    hover = CreateFrame("Frame", nil, frame)
+    hover = CreateFrame("Frame", nil, widget)
     hover:SetPoint("TOPLEFT", plot, "TOPLEFT")
     hover:SetPoint("BOTTOMRIGHT", strip, "BOTTOMRIGHT")
     hover:SetFrameLevel(plot:GetFrameLevel() + 5)
@@ -651,25 +651,25 @@ local function Create()
     cross:SetWidth(1)
     cross:Hide()
 
-    local function lines(parent, layer, sub, smooth)
+    local function lines(hostFrame, layer, subFrame, smooth)
         local p = Pool(function()
-            local l = parent:CreateLine(nil, layer, nil, sub)
+            local l = hostFrame:CreateLine(nil, layer, nil, subFrame)
             return smooth and Smooth(l, "Line") or l
         end)
         p.smooth = smooth
         return p
     end
-    local function textures(parent, layer, sub, file)
+    local function textures(hostFrame, layer, subFrame, file)
         return Pool(function()
-            local t = parent:CreateTexture(nil, layer, nil, sub)
+            local t = hostFrame:CreateTexture(nil, layer, nil, subFrame)
             return file and Smooth(t, file) or t
         end)
     end
-    local function texts(parent)
+    local function texts(hostFrame)
         return Pool(function()
-            local fs = parent:CreateFontString(nil, "OVERLAY")
-            fs:SetWordWrap(false)
-            return fs
+            local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
+            fontStr:SetWordWrap(false)
+            return fontStr
         end)
     end
     pools.shade = textures(plot, "BACKGROUND", 0)
@@ -684,9 +684,9 @@ local function Create()
     pools.diamondRings = textures(plot, "OVERLAY", 3, "Diamond")
     pools.diamonds = textures(plot, "OVERLAY", 4, "Diamond")
     pools.labels = texts(plot)
-    pools.axis = texts(frame)
+    pools.axis = texts(widget)
     pools.bars = textures(strip, "ARTWORK", 0)
-    pools.notes = texts(frame)
+    pools.notes = texts(widget)
     pools.hoverRings = textures(hover, "OVERLAY", 3, "Dot")
     pools.hoverMarks = textures(hover, "OVERLAY", 4, "Dot")
 
@@ -707,17 +707,17 @@ local function LevelText(level)
     return ("+%d"):format(math.floor(level + 0.5))
 end
 
-local function DrawTiles(ctx, hidden)
-    local sum = ctx.summary
+local function DrawTiles(context, hidden)
+    local sum = context.summary
     local you = tiles[1]
     -- The character shown: your best unless you chose the one you are playing.
-    local subject, chars = ctx.subject, ctx.chars
-    you.ctx = ctx
-    you.swatch:SetColorTexture(ns.YOU_COLOR[1], ns.YOU_COLOR[2], ns.YOU_COLOR[3])
+    local subject, chars = context.subject, context.chars
+    you.ctx = context
+    you.swatch:SetColorTexture(mod.YOU_COLOR[1], mod.YOU_COLOR[2], mod.YOU_COLOR[3])
     you.label:SetText(subject.name or "Your rating")
-    local cc = ns.ClassColor(subject.class)
+    local cc = mod.ClassColor(subject.class)
     you.label:SetTextColor(cc[1], cc[2], cc[3])
-    you.value:SetText(ns.Fmt(sum.you))
+    you.value:SetText(mod.Fmt(sum.you))
     you.unit:SetText("")
     you.eta:SetText("")
     you.canSwitch = #chars > 1 and not (subject.isCurrent and subject.isBest)
@@ -745,10 +745,10 @@ local function DrawTiles(ctx, hidden)
         you.sub:SetText("The season has just started")
     end
 
-    for i, s in ipairs(sum.tiers) do
-        local t = tiles[i + 1]
+    for idx, s in ipairs(sum.tiers) do
+        local t = tiles[idx + 1]
         local c = s.tier.color
-        t.summary, t.ctx = s, ctx
+        t.summary, t.ctx = s, context
         t.swatch:SetColorTexture(c[1], c[2], c[3])
         t.label:SetText(s.tier.label)
         -- The same level the Keys view draws: at the season end where known.
@@ -757,10 +757,10 @@ local function DrawTiles(ctx, hidden)
             level and level >= 2 and (LevelText(level) .. (s.levelEnd and " by the end" or " now")) or ""
         )
         if s.gap > 0 then
-            t.value:SetText(ns.Fmt(s.gap))
+            t.value:SetText(mod.Fmt(s.gap))
             t.unit:SetText("to go")
         else
-            t.value:SetText("+" .. ns.Fmt(-s.gap))
+            t.value:SetText("+" .. mod.Fmt(-s.gap))
             t.unit:SetText("above")
         end
         if hidden[s.tier.key] then
@@ -770,22 +770,22 @@ local function DrawTiles(ctx, hidden)
             t:SetAlpha(0.45)
         else
             if s.lineEnd then
-                t.sub:SetText(("Line %s now, ~%s at the end"):format(ns.Fmt(s.lineNow), ns.Fmt(s.lineEnd)))
+                t.sub:SetText(("Line %s now, ~%s at the end"):format(mod.Fmt(s.lineNow), mod.Fmt(s.lineEnd)))
             else
-                t.sub:SetText("Line " .. ns.Fmt(s.lineNow))
+                t.sub:SetText("Line " .. mod.Fmt(s.lineNow))
             end
             if s.need then
                 t.need:SetText(s.need > 0 and ("Need +%.1f a day"):format(s.need) or "On course")
             else
                 t.need:SetText("")
             end
-            t.eta:SetText(s.gap > 0 and ns.EtaText(s, sum.pace, sum.endsAt) or "")
+            t.eta:SetText(s.gap > 0 and mod.EtaText(s, sum.pace, sum.endsAt) or "")
             t:SetAlpha(1)
         end
     end
 end
 
-local function DrawAxes(ctx, hidden)
+local function DrawAxes(context, hidden)
     -- The projected stretch gets a faint wash, so actual and forecast never blur.
     local today = X(view.now)
     local shade = pools.shade:Get()
@@ -798,20 +798,20 @@ local function DrawAxes(ctx, hidden)
     -- top first. With both busy it is left out; the wash and dashes still say it.
     local tag
     if PW - today > 70 then
-        local sum, ys = ctx.summary, {}
+        local sum, ys = context.summary, {}
         for _, dx in ipairs({ 8, 68 }) do
             local t = view.now + dx / PW * (view.x1 - view.x0)
             ys[#ys + 1] = Y(sum.you + sum.pace * (t - view.now) / DAY)
             for _, s in ipairs(sum.tiers) do
                 if not hidden[s.tier.key] then
-                    ys[#ys + 1] = Y(ns.LineValue(s.pts, s.fit, t))
+                    ys[#ys + 1] = Y(mod.LineValue(s.pts, s.fit, t))
                 end
             end
         end
         for _, band in ipairs({ { PH - 20, PH - 2 }, { 2, 20 } }) do
             local free = true
-            for _, y in ipairs(ys) do
-                if y > band[1] - 8 and y < band[2] + 8 then
+            for _, posY in ipairs(ys) do
+                if posY > band[1] - 8 and posY < band[2] + 8 then
                     free = false
                 end
             end
@@ -833,10 +833,10 @@ local function DrawAxes(ctx, hidden)
         end
     end
 
-    for v = view.y0, view.y1 + 0.001, view.step do
-        local y = Y(v)
-        Line(pools.grid, plot, 0, y, PW, y, v == view.y0 and C.axis or C.grid, 1, 1)
-        Text(pools.axis, "tiny", C.muted, "RIGHT", plot, "BOTTOMLEFT", -8, y, ns.Fmt(v))
+    for val = view.y0, view.y1 + 0.001, view.step do
+        local posY = Y(val)
+        Line(pools.grid, plot, 0, posY, PW, posY, val == view.y0 and C.axis or C.grid, 1, 1)
+        Text(pools.axis, "tiny", C.muted, "RIGHT", plot, "BOTTOMLEFT", -8, posY, mod.Fmt(val))
     end
 
     local span = (view.x1 - view.x0) / DAY
@@ -850,10 +850,10 @@ local function DrawAxes(ctx, hidden)
     local d = date("*t", view.x0)
     local t = time({ year = d.year, month = d.month, day = d.day + 1, hour = 0 })
     while t < view.x1 do
-        local x = X(t)
-        Line(pools.grid, plot, x, 0, x, -4, C.axis, 1, 1)
-        if math.abs(x - today) > 34 then
-            Text(pools.axis, "tiny", C.muted, "TOP", plot, "BOTTOMLEFT", x, -7, ns.DateText(t))
+        local posX = X(t)
+        Line(pools.grid, plot, posX, 0, posX, -4, C.axis, 1, 1)
+        if math.abs(posX - today) > 34 then
+            Text(pools.axis, "tiny", C.muted, "TOP", plot, "BOTTOMLEFT", posX, -7, mod.DateText(t))
         end
         t = t + stepDays * DAY
     end
@@ -863,11 +863,11 @@ local function DrawAxes(ctx, hidden)
 
     -- The season's end, when it falls in view.
     local taken = { tag }
-    local endsAt = ctx.summary.endsAt
+    local endsAt = context.summary.endsAt
     if endsAt and endsAt > view.x0 and endsAt <= view.x1 then
         local xe = X(endsAt)
         Line(pools.grid, plot, xe, 0, xe, PH, C.muted, 0.6, 1)
-        local fs = Text(
+        local fontStr = Text(
             pools.labels,
             "tiny",
             C.muted,
@@ -876,21 +876,21 @@ local function DrawAxes(ctx, hidden)
             "TOPLEFT",
             xe - 5,
             -6,
-            ctx.summary.endsEstimated and "Season end (est.)" or "Season end"
+            context.summary.endsEstimated and "Season end (est.)" or "Season end"
         )
-        local w = fs:GetStringWidth() + 8
-        taken[#taken + 1] = { xe - 5 - w, PH - 20, w + 6, 18 }
+        local wid = fontStr:GetStringWidth() + 8
+        taken[#taken + 1] = { xe - 5 - wid, PH - 20, wid + 6, 18 }
     end
     return taken
 end
 
-local function DrawSeries(ctx, hidden)
-    local sum = ctx.summary
+local function DrawSeries(context, hidden)
+    local sum = context.summary
     for _, s in ipairs(sum.tiers) do
         if not hidden[s.tier.key] then
             local pts, c = s.pts, s.tier.color
-            for i = 2, #pts do
-                Segment(pools.series, pts[i - 1][1], pts[i - 1][2], pts[i][1], pts[i][2], c)
+            for idx = 2, #pts do
+                Segment(pools.series, pts[idx - 1][1], pts[idx - 1][2], pts[idx][1], pts[idx][2], c)
             end
             Band(s, c)
             Projection(pools.series, s, c)
@@ -898,37 +898,45 @@ local function DrawSeries(ctx, hidden)
     end
 
     -- Your rating moves in steps: flat until a key raises a best.
-    local pts, c = ctx.history.points, ns.YOU_COLOR
-    local pt, pv = view.x0, ns.ScoreAt(pts, view.x0)
+    local pts, c = context.history.points, mod.YOU_COLOR
+    local pt, pv = view.x0, mod.ScoreAt(pts, view.x0)
     for _, p in ipairs(pts) do
         if p.t > view.x0 then
             Segment(pools.you, pt, pv, p.t, pv, c)
             if p.score ~= pv then
-                local x = X(p.t)
-                Line(pools.you, plot, x, Y(pv), x, Y(p.score), c)
+                local posX = X(p.t)
+                Line(pools.you, plot, posX, Y(pv), posX, Y(p.score), c)
             end
             pt, pv = p.t, p.score
         end
     end
-    Segment(pools.you, ctx.now, sum.you, view.x1, sum.you + sum.pace * (view.x1 - ctx.now) / DAY, c, true)
+    Segment(
+        pools.you,
+        context.now,
+        sum.you,
+        view.x1,
+        sum.you + sum.pace * (view.x1 - context.now) / DAY,
+        c,
+        true
+    )
 end
 
 local function Overlaps(a, b)
     return a[1] < b[1] + b[3] and b[1] < a[1] + a[3] and a[2] < b[2] + b[4] and b[2] < a[2] + a[4]
 end
 
-local function DrawMarkers(ctx, hidden, taken)
-    local sum, today = ctx.summary, X(ctx.now)
+local function DrawMarkers(context, hidden, taken)
+    local sum, today = context.summary, X(context.now)
     -- Boxes (left, bottom, width, height) that a label must not cover.
     -- `taken` arrives holding the axis tags ("Projected", "Season end").
 
-    local function mark(x, y, c, size, diamond)
+    local function mark(posX, posY, c, dim, diamond)
         if diamond then
-            Marker(pools.diamondRings, pools.diamonds, plot, x, y, c, size)
+            Marker(pools.diamondRings, pools.diamonds, plot, posX, posY, c, dim)
         else
-            Marker(pools.dotRings, pools.dots, plot, x, y, c, size)
+            Marker(pools.dotRings, pools.dots, plot, posX, posY, c, dim)
         end
-        taken[#taken + 1] = { x - 7, y - 7, 14, 14 }
+        taken[#taken + 1] = { posX - 7, posY - 7, 14, 14 }
     end
 
     -- Where every series stands today.
@@ -937,7 +945,7 @@ local function DrawMarkers(ctx, hidden, taken)
             mark(today, Y(s.lineNow), s.tier.color, 8)
         end
     end
-    mark(today, Y(sum.you), ns.YOU_COLOR, 9)
+    mark(today, Y(sum.you), mod.YOU_COLOR, 9)
 
     -- Where your pace meets each line, labelled with the date. Each label tries
     -- above, below, right, then left of its marker, and takes the first spot
@@ -945,13 +953,13 @@ local function DrawMarkers(ctx, hidden, taken)
     local crossings = {}
     for _, s in ipairs(sum.tiers) do
         if s.eta and s.eta <= view.x1 and not hidden[s.tier.key] then
-            local x, y = X(s.eta), Y(sum.you + sum.pace * s.days)
-            mark(x, y, ns.YOU_COLOR, 12, true)
-            crossings[#crossings + 1] = { s = s, x = x, y = y }
+            local posX, posY = X(s.eta), Y(sum.you + sum.pace * s.days)
+            mark(posX, posY, mod.YOU_COLOR, 12, true)
+            crossings[#crossings + 1] = { s = s, x = posX, y = posY }
         end
     end
     for _, cr in ipairs(crossings) do
-        local fs = Text(
+        local fontStr = Text(
             pools.labels,
             "tiny",
             C.ink,
@@ -960,17 +968,17 @@ local function DrawMarkers(ctx, hidden, taken)
             "BOTTOMLEFT",
             0,
             0,
-            cr.s.tier.short .. " by " .. ns.DateText(cr.s.eta)
+            cr.s.tier.short .. " by " .. mod.DateText(cr.s.eta)
         )
-        local w, h, x, y = fs:GetStringWidth() + 8, 15, cr.x, cr.y
-        local box
+        local wid, hgt, posX, posY = fontStr:GetStringWidth() + 8, 15, cr.x, cr.y
+        local boxFrame
         for _, b in ipairs({
-            { x - w / 2, y + 9, w, h },
-            { x - w / 2, y - 9 - h, w, h },
-            { x + 10, y - h / 2, w, h },
-            { x - 10 - w, y - h / 2, w, h },
+            { posX - wid / 2, posY + 9, wid, hgt },
+            { posX - wid / 2, posY - 9 - hgt, wid, hgt },
+            { posX + 10, posY - hgt / 2, wid, hgt },
+            { posX - 10 - wid, posY - hgt / 2, wid, hgt },
         }) do
-            local inside = b[1] >= 0 and b[1] + w <= PW and b[2] >= 0 and b[2] + h <= PH
+            local inside = b[1] >= 0 and b[1] + wid <= PW and b[2] >= 0 and b[2] + hgt <= PH
             local clear = inside
             for _, t in ipairs(taken) do
                 if clear and Overlaps(b, t) then
@@ -978,50 +986,50 @@ local function DrawMarkers(ctx, hidden, taken)
                 end
             end
             if clear then
-                box = b
+                boxFrame = b
                 break
             end
         end
-        box = box or { x - w / 2, y + 9, w, h }
-        taken[#taken + 1] = box
-        fs:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", box[1] + 4, box[2] + 2)
-        local bg = pools.labelBg:Get()
-        bg:ClearAllPoints()
-        bg:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", box[1], box[2])
-        bg:SetSize(w, h)
-        Color(bg, C.surface, 0.92)
+        boxFrame = boxFrame or { posX - wid / 2, posY + 9, wid, hgt }
+        taken[#taken + 1] = boxFrame
+        fontStr:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", boxFrame[1] + 4, boxFrame[2] + 2)
+        local backdrop = pools.labelBg:Get()
+        backdrop:ClearAllPoints()
+        backdrop:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", boxFrame[1], boxFrame[2])
+        backdrop:SetSize(wid, hgt)
+        Color(backdrop, C.surface, 0.92)
     end
 end
 
 -- Series names at the right edge, where each line ends. When two would touch,
 -- the later one is dropped rather than nudged off its line; the tiles carry it.
-local function DrawEndLabels(ctx, hidden)
-    local sum = ctx.summary
-    local entries = { { "You", sum.you + sum.pace * (view.x1 - ctx.now) / DAY, C.ink } }
+local function DrawEndLabels(context, hidden)
+    local sum = context.summary
+    local entries = { { "You", sum.you + sum.pace * (view.x1 - context.now) / DAY, C.ink } }
     for _, s in ipairs(sum.tiers) do
         if not hidden[s.tier.key] then
-            entries[#entries + 1] = { s.tier.short, ns.LineValue(s.pts, s.fit, view.x1), C.ink2 }
+            entries[#entries + 1] = { s.tier.short, mod.LineValue(s.pts, s.fit, view.x1), C.ink2 }
         end
     end
     local placed = {}
     for _, e in ipairs(entries) do
-        local y = Y(e[2])
+        local posY = Y(e[2])
         local clear = true
         for _, py in ipairs(placed) do
-            if math.abs(py - y) < 13 then
+            if math.abs(py - posY) < 13 then
                 clear = false
             end
         end
         if clear then
-            placed[#placed + 1] = y
-            Text(pools.labels, "tiny", e[3], "LEFT", plot, "BOTTOMLEFT", PW + 8, y, e[1])
+            placed[#placed + 1] = posY
+            Text(pools.labels, "tiny", e[3], "LEFT", plot, "BOTTOMLEFT", PW + 8, posY, e[1])
         end
     end
 end
 
-local function DrawStrip(ctx)
+local function DrawStrip(context)
     local maxGain = 0
-    for _, p in ipairs(ctx.history.points) do
+    for _, p in ipairs(context.history.points) do
         if p.gain and p.t >= view.x0 then
             maxGain = math.max(maxGain, p.gain)
         end
@@ -1030,9 +1038,9 @@ local function DrawStrip(ctx)
     if maxGain <= 0 then
         return
     end
-    Text(pools.axis, "tiny", C.muted, "TOPRIGHT", strip, "TOPLEFT", -8, 0, "+" .. ns.Fmt(maxGain))
-    local c = ns.YOU_COLOR
-    for _, p in ipairs(ctx.history.points) do
+    Text(pools.axis, "tiny", C.muted, "TOPRIGHT", strip, "TOPLEFT", -8, 0, "+" .. mod.Fmt(maxGain))
+    local c = mod.YOU_COLOR
+    for _, p in ipairs(context.history.points) do
         if p.gain and p.t >= view.x0 then
             local b = pools.bars:Get()
             Color(b, c, 0.9)
@@ -1043,59 +1051,59 @@ local function DrawStrip(ctx)
     end
 end
 
-local function DrawNotes(ctx)
-    local y = -(FOOT_T + view.shift)
+local function DrawNotes(context)
+    local posY = -(FOOT_T + view.shift)
     local function note(s, c)
-        local fs = Text(pools.notes, "tiny", c, "TOPLEFT", frame, "TOPLEFT", PAD, y, s)
-        fs:SetWordWrap(true)
-        fs:SetWidth(W - 2 * PAD)
-        fs:SetJustifyH("LEFT")
-        y = y - fs:GetStringHeight() - 5
+        local fontStr = Text(pools.notes, "tiny", c, "TOPLEFT", widget, "TOPLEFT", PAD, posY, s)
+        fontStr:SetWordWrap(true)
+        fontStr:SetWidth(Widgets - 2 * PAD)
+        fontStr:SetJustifyH("LEFT")
+        posY = posY - fontStr:GetStringHeight() - 5
     end
 
-    local key, last = ctx.regionKey, ns.Data.lastSeason
-    local source = "Lines from Raider.IO, updated " .. ns.DateText(ctx.region.updatedAt) .. "."
+    local key, last = context.regionKey, mod.Data.lastSeason
+    local source = "Lines from Raider.IO, updated " .. mod.DateText(context.region.updatedAt) .. "."
     if last and last.p999 and last.p999.awarded[key] then
         source = source
             .. (" They are estimates: last season Blizzard awarded the 0.1%% title at %s, %s below Raider.IO's final line."):format(
-                ns.Fmt(last.p999.awarded[key]),
-                ns.Fmt(last.p999.raiderio[key] - last.p999.awarded[key])
+                mod.Fmt(last.p999.awarded[key]),
+                mod.Fmt(last.p999.raiderio[key] - last.p999.awarded[key])
             )
     end
     note(source, C.muted)
-    for _, w in ipairs(ctx.warnings) do
-        note(ns.Hex(C.warn) .. "!|r  " .. w, C.ink2)
+    for _, wid in ipairs(context.warnings) do
+        note(mod.Hex(C.warn) .. "!|r  " .. wid, C.ink2)
     end
-    frame:SetHeight(math.max(H + view.shift, -y + PAD - 4))
+    widget:SetHeight(math.max(H + view.shift, -posY + PAD - 4))
 end
 
 -- How far a groupmate is from the next line up, in a few words.
-local function NextLine(ctx, score)
-    local sum = ctx.summary
-    for i = #sum.tiers, 1, -1 do
-        local s = sum.tiers[i]
+local function NextLine(context, score)
+    local sum = context.summary
+    for idx = #sum.tiers, 1, -1 do
+        local s = sum.tiers[idx]
         if score < s.lineNow then
-            return ns.Fmt(s.lineNow - score) .. " to " .. s.tier.short
+            return mod.Fmt(s.lineNow - score) .. " to " .. s.tier.short
         end
     end
     return "above " .. sum.tiers[1].tier.short
 end
 
-local function DrawGroup(ctx)
-    for i, cell in ipairs(group.cells) do
-        local m = ctx.party[i]
-        cell.member = m
-        cell:SetShown(m ~= nil)
+local function DrawGroup(context)
+    for idx, cellFrame in ipairs(group.cells) do
+        local m = context.party[idx]
+        cellFrame.member = m
+        cellFrame:SetShown(m ~= nil)
         if m then
-            local c = ns.ClassColor(m.class)
-            cell.name:SetText(m.name)
-            cell.name:SetTextColor(c[1], c[2], c[3])
+            local c = mod.ClassColor(m.class)
+            cellFrame.name:SetText(m.name)
+            cellFrame.name:SetTextColor(c[1], c[2], c[3])
             if m.score > 0 then
-                cell.value:SetText(ns.Fmt(m.score))
-                cell.sub:SetText(NextLine(ctx, m.score))
+                cellFrame.value:SetText(mod.Fmt(m.score))
+                cellFrame.sub:SetText(NextLine(context, m.score))
             else
-                cell.value:SetText("-")
-                cell.sub:SetText("no rating yet")
+                cellFrame.value:SetText("-")
+                cellFrame.sub:SetText("no rating yet")
             end
         end
     end
@@ -1103,66 +1111,66 @@ end
 
 -- Groupmates on the graph: a marker on today's line at their rating, named in
 -- their class colour, and the line remembered from earlier groups behind it.
-local function DrawParty(ctx)
-    local today, placed = X(ctx.now), { Y(ctx.summary.you) }
+local function DrawParty(context)
+    local today, placed = X(context.now), { Y(context.summary.you) }
     -- Off-scale ratings ride the plot's edge rather than leave it.
-    local function edge(v)
-        return math.max(view.y0, math.min(view.y1, v))
+    local function edge(val)
+        return math.max(view.y0, math.min(view.y1, val))
     end
-    for _, m in ipairs(ctx.party) do
+    for _, m in ipairs(context.party) do
         if m.score > 0 then
             local pts = m.seen and m.seen.pts or {}
             local pt, pv
             for _, p in ipairs(pts) do
                 if pt then
                     Segment(pools.party, pt, edge(pv), p[1], edge(pv), C.ink2, false, 0.5, 1.5)
-                    local x = X(p[1])
+                    local posX = X(p[1])
                     if p[1] > view.x0 and edge(p[2]) ~= edge(pv) then
-                        Line(pools.party, plot, x, Y(edge(pv)), x, Y(edge(p[2])), C.ink2, 0.5, 1.5)
+                        Line(pools.party, plot, posX, Y(edge(pv)), posX, Y(edge(p[2])), C.ink2, 0.5, 1.5)
                     end
                 end
                 pt, pv = p[1], p[2]
             end
-            if pt and pt < ctx.now then
-                Segment(pools.party, pt, edge(pv), ctx.now, edge(pv), C.ink2, false, 0.5, 1.5)
+            if pt and pt < context.now then
+                Segment(pools.party, pt, edge(pv), context.now, edge(pv), C.ink2, false, 0.5, 1.5)
             end
 
             local offScale = edge(m.score) ~= m.score
-            local y = Y(edge(m.score))
-            Marker(pools.dotRings, pools.dots, plot, today, y, C.ink2, 7)
+            local posY = Y(edge(m.score))
+            Marker(pools.dotRings, pools.dots, plot, today, posY, C.ink2, 7)
             local clear = true
             for _, py in ipairs(placed) do
-                if math.abs(py - y) < 12 then
+                if math.abs(py - posY) < 12 then
                     clear = false
                 end
             end
             if clear then
-                placed[#placed + 1] = y
-                local name = offScale and (m.name .. "  " .. ns.Fmt(m.score)) or m.name
-                local fs = Text(
+                placed[#placed + 1] = posY
+                local name = offScale and (m.name .. "  " .. mod.Fmt(m.score)) or m.name
+                local fontStr = Text(
                     pools.labels,
                     "tiny",
-                    ns.ClassColor(m.class),
+                    mod.ClassColor(m.class),
                     "RIGHT",
                     plot,
                     "BOTTOMLEFT",
                     today - 10,
-                    y,
+                    posY,
                     name
                 )
-                local w = fs:GetStringWidth() + 8
-                local bg = pools.labelBg:Get()
-                bg:ClearAllPoints()
-                bg:SetPoint("RIGHT", plot, "BOTTOMLEFT", today - 6, y)
-                bg:SetSize(w, 14)
-                Color(bg, C.surface, 0.92)
+                local wid = fontStr:GetStringWidth() + 8
+                local backdrop = pools.labelBg:Get()
+                backdrop:ClearAllPoints()
+                backdrop:SetPoint("RIGHT", plot, "BOTTOMLEFT", today - 6, posY)
+                backdrop:SetSize(wid, 14)
+                Color(backdrop, C.surface, 0.92)
             end
         end
     end
 end
 
 function Graph:Render()
-    if not frame or not frame:IsShown() then
+    if not widget or not widget:IsShown() then
         return
     end
     for _, p in pairs(pools) do
@@ -1171,21 +1179,21 @@ function Graph:Render()
     self:ClearHover()
     segmented:Refresh()
 
-    local ctx = ns.Context()
-    frame.region:SetText(ctx.regionKey and ctx.regionKey:upper() or "")
-    frame.season:SetText(ns.Data and ns.Data.season.name or "")
+    local context = mod.Context()
+    widget.region:SetText(context.regionKey and context.regionKey:upper() or "")
+    widget.season:SetText(mod.Data and mod.Data.season.name or "")
 
-    if ctx.error then
+    if context.error then
         view = nil
         for _, t in ipairs(tiles) do
             t:Hide()
         end
-        message:SetText(ctx.error)
+        message:SetText(context.error)
         message:Show()
         group:Hide()
-        panel:Hide()
+        panelFrame:Hide()
         plot:Show()
-        frame:SetHeight(H)
+        widget:SetHeight(H)
         return
     end
     message:Hide()
@@ -1194,45 +1202,45 @@ function Graph:Render()
     end
 
     -- In a party, the group row opens under the tiles and the rest moves down.
-    local grouped = #ctx.party > 0
+    local grouped = #context.party > 0
     local shift = grouped and GROUP_SHIFT or 0
     group:SetShown(grouped)
     plot:ClearAllPoints()
     plot:SetPoint("TOPLEFT", PL, -(PT + shift))
     strip:ClearAllPoints()
     strip:SetPoint("TOPLEFT", PL, -(STRIP_T + shift))
-    panel:ClearAllPoints()
-    panel:SetPoint("TOPLEFT", PAD, -(PT + shift))
+    panelFrame:ClearAllPoints()
+    panelFrame:SetPoint("TOPLEFT", PAD, -(PT + shift))
 
     local hidden = CludesUITitleLineDB.hidden
-    DrawTiles(ctx, hidden)
+    DrawTiles(context, hidden)
     if grouped then
-        DrawGroup(ctx)
+        DrawGroup(context)
     end
 
     -- The Keys and Guild views are tables in the plot's place.
-    local list = ns.Views and ns.Views[CludesUITitleLineDB.view]
+    local list = mod.Views and mod.Views[CludesUITitleLineDB.view]
     plot:SetShown(not list)
     strip:SetShown(not list)
     hover:SetShown(not list)
-    panel:SetShown(list ~= nil)
+    panelFrame:SetShown(list ~= nil)
     if list then
-        view = { now = ctx.now, ctx = ctx, shift = shift }
-        list(panel, ctx)
-        DrawNotes(ctx)
+        view = { now = context.now, ctx = context, shift = shift }
+        list(panelFrame, context)
+        DrawNotes(context)
         return
     end
 
-    view = ns.Window(ctx, CludesUITitleLineDB.view, hidden)
-    view.now, view.ctx, view.shift = ctx.now, ctx, shift
+    view = mod.Window(context, CludesUITitleLineDB.view, hidden)
+    view.now, view.ctx, view.shift = context.now, context, shift
 
-    local taken = DrawAxes(ctx, hidden)
-    DrawSeries(ctx, hidden)
-    DrawParty(ctx)
-    DrawMarkers(ctx, hidden, taken)
-    DrawEndLabels(ctx, hidden)
-    DrawStrip(ctx)
-    DrawNotes(ctx)
+    local taken = DrawAxes(context, hidden)
+    DrawSeries(context, hidden)
+    DrawParty(context)
+    DrawMarkers(context, hidden, taken)
+    DrawEndLabels(context, hidden)
+    DrawStrip(context)
+    DrawNotes(context)
 end
 
 -- Hover readout --------------------------------------------------------------------------
@@ -1245,37 +1253,37 @@ function Graph:ClearHover()
         view.hoverX = nil
     end
     cross:Hide()
-    tip:Hide()
+    tipText:Hide()
     pools.hoverRings:Reset()
     pools.hoverMarks:Reset()
 end
 
 -- The readout is as wide as its use needs: a date's values, or a groupmate's dungeons.
-local function SizeTip(w)
-    tip.w = w
-    tip:SetWidth(w)
+local function SizeTip(wid)
+    tipText.w = wid
+    tipText:SetWidth(wid)
 end
 
-local function TipRow(swatch, label, value, y, muted, labelColor)
-    local r = tip.rows:Get()
-    r:SetWidth(tip.w - 20)
+local function TipRow(colorSwatch, labelText, value, posY, muted, labelColor)
+    local r = tipText.rows:Get()
+    r:SetWidth(tipText.w - 20)
     r:ClearAllPoints()
-    r:SetPoint("TOPLEFT", tip, "TOPLEFT", 10, y)
-    if swatch then
-        r.swatch:SetColorTexture(swatch[1], swatch[2], swatch[3])
+    r:SetPoint("TOPLEFT", tipText, "TOPLEFT", 10, posY)
+    if colorSwatch then
+        r.swatch:SetColorTexture(colorSwatch[1], colorSwatch[2], colorSwatch[3])
         r.swatch:Show()
         r.label:SetPoint("LEFT", 16, 0)
     else
         r.swatch:Hide()
         r.label:SetPoint("LEFT", 0, 0)
     end
-    r.label:SetText(label)
+    r.label:SetText(labelText)
     local lc = labelColor or C.ink2
     r.label:SetTextColor(lc[1], lc[2], lc[3])
     r.value:SetText(value)
     local c = muted and C.muted or C.ink
     r.value:SetTextColor(c[1], c[2], c[3])
-    return y - 17
+    return posY - 17
 end
 
 function Graph.OnHover()
@@ -1287,102 +1295,105 @@ function Graph.OnHover()
     -- Snap to whole days from the window's start: readers aim at a date.
     local t = view.x0 + math.floor((cx / PW * (view.x1 - view.x0)) / DAY + 0.5) * DAY
     t = math.min(t, view.x1)
-    local x = X(t)
-    if view.hoverX == x then
+    local posX = X(t)
+    if view.hoverX == posX then
         return
     end
-    view.hoverX = x
+    view.hoverX = posX
 
-    local ctx, sum = view.ctx, view.ctx.summary
-    local future = t > ctx.now
+    local context, sum = view.ctx, view.ctx.summary
+    local future = t > context.now
     cross:ClearAllPoints()
-    cross:SetPoint("TOP", plot, "TOPLEFT", x, 0)
-    cross:SetPoint("BOTTOM", strip, "BOTTOMLEFT", x, 0)
+    cross:SetPoint("TOP", plot, "TOPLEFT", posX, 0)
+    cross:SetPoint("BOTTOM", strip, "BOTTOMLEFT", posX, 0)
     cross:Show()
 
     pools.hoverRings:Reset()
     pools.hoverMarks:Reset()
-    tip.rows:Reset()
+    tipText.rows:Reset()
     SizeTip(210)
-    tip.note:Hide()
-    tip.title:SetText(ns.DateText(t, true))
-    tip.title:SetTextColor(C.ink[1], C.ink[2], C.ink[3])
-    tip.tag:SetText(future and "Projected" or "")
+    tipText.note:Hide()
+    tipText.title:SetText(mod.DateText(t, true))
+    tipText.title:SetTextColor(C.ink[1], C.ink[2], C.ink[3])
+    tipText.tag:SetText(future and "Projected" or "")
 
-    local y = -30
-    local you = future and (sum.you + sum.pace * (t - ctx.now) / DAY) or ns.ScoreAt(ctx.history.points, t)
-    Marker(pools.hoverRings, pools.hoverMarks, plot, x, Y(you), ns.YOU_COLOR, 8)
-    y = TipRow(ns.YOU_COLOR, "You", ns.Fmt(you), y)
+    local posY = -30
+    local you = future and (sum.you + sum.pace * (t - context.now) / DAY)
+        or mod.ScoreAt(context.history.points, t)
+    Marker(pools.hoverRings, pools.hoverMarks, plot, posX, Y(you), mod.YOU_COLOR, 8)
+    posY = TipRow(mod.YOU_COLOR, "You", mod.Fmt(you), posY)
     for _, s in ipairs(sum.tiers) do
         if not CludesUITitleLineDB.hidden[s.tier.key] then
-            local lo, v, hi = ns.LineRange(s.pts, s.fit, t)
-            Marker(pools.hoverRings, pools.hoverMarks, plot, x, Y(v), s.tier.color, 8)
-            local text = ns.Fmt(v)
+            local lo, val, hi = mod.LineRange(s.pts, s.fit, t)
+            Marker(pools.hoverRings, pools.hoverMarks, plot, posX, Y(val), s.tier.color, 8)
+            local textValue = mod.Fmt(val)
             if hi - lo >= 2 then
-                text = ns.Fmt(lo) .. "-" .. ns.Fmt(hi)
+                textValue = mod.Fmt(lo) .. "-" .. mod.Fmt(hi)
             end
-            y = TipRow(s.tier.color, s.tier.label, text, y)
+            posY = TipRow(s.tier.color, s.tier.label, textValue, posY)
         end
     end
 
     -- Groupmates, where TitleLine has seen them by that day.
     local gap = true
-    for _, m in ipairs(ctx.party) do
-        local v
-        if m.score > 0 and math.abs(t - ctx.now) < DAY / 2 then
-            v = m.score
+    for _, m in ipairs(context.party) do
+        local val
+        if m.score > 0 and math.abs(t - context.now) < DAY / 2 then
+            val = m.score
         elseif not future and m.seen then
             for _, p in ipairs(m.seen.pts) do
                 if p[1] <= t then
-                    v = p[2]
+                    val = p[2]
                 end
             end
         end
-        if v then
+        if val then
             if gap then
-                y = y - 4
+                posY = posY - 4
                 gap = false
             end
-            y = TipRow(C.ink2, m.name, ns.Fmt(v), y, false, ns.ClassColor(m.class))
+            posY = TipRow(C.ink2, m.name, mod.Fmt(val), posY, false, mod.ClassColor(m.class))
         end
     end
 
     -- The keys that raised your rating that day.
     local first = true
-    for _, p in ipairs(ctx.history.points) do
+    for _, p in ipairs(context.history.points) do
         if p.gain and math.abs(p.t - t) < DAY / 2 then
             if first then
-                y = y - 4
+                posY = posY - 4
                 first = false
             end
             local name = C_ChallengeMode.GetMapUIInfo(p.map) or "?"
-            y = TipRow(nil, ("%s +%d"):format(name, p.level), "+" .. ns.Fmt(p.gain), y, true)
+            posY = TipRow(nil, ("%s +%d"):format(name, p.level), "+" .. mod.Fmt(p.gain), posY, true)
         end
     end
 
-    tip:SetHeight(-y + 6)
-    tip:ClearAllPoints()
-    if x > PW / 2 then
-        tip:SetPoint("TOPRIGHT", plot, "TOPLEFT", x - 14, -6)
+    tipText:SetHeight(-posY + 6)
+    tipText:ClearAllPoints()
+    if posX > PW / 2 then
+        tipText:SetPoint("TOPRIGHT", plot, "TOPLEFT", posX - 14, -6)
     else
-        tip:SetPoint("TOPLEFT", plot, "TOPLEFT", x + 14, -6)
+        tipText:SetPoint("TOPLEFT", plot, "TOPLEFT", posX + 14, -6)
     end
-    tip:Show()
+    tipText:Show()
 end
 
 -- A groupmate's best key and score in every dungeon, under their cell.
-function Graph.ShowMember(cell)
-    local m = cell.member
+function Graph.ShowMember(cellFrame)
+    local m = cellFrame.member
     if not m then
         return
     end
-    tip.rows:Reset()
-    local c = ns.ClassColor(m.class)
+    tipText.rows:Reset()
+    local c = mod.ClassColor(m.class)
     SizeTip(260)
-    tip.note:Hide()
-    tip.title:SetText(m.name)
-    tip.title:SetTextColor(c[1], c[2], c[3])
-    tip.tag:SetText(m.seen and #m.seen.pts > 1 and ("seen since " .. ns.DateText(m.seen.pts[1][1])) or "")
+    tipText.note:Hide()
+    tipText.title:SetText(m.name)
+    tipText.title:SetTextColor(c[1], c[2], c[3])
+    tipText.tag:SetText(
+        m.seen and #m.seen.pts > 1 and ("seen since " .. mod.DateText(m.seen.pts[1][1])) or ""
+    )
 
     local runs = {}
     for _, r in ipairs(m.runs) do
@@ -1393,20 +1404,21 @@ function Graph.ShowMember(cell)
     table.sort(runs, function(a, b)
         return a.mapScore > b.mapScore
     end)
-    local y = -30
+    local posY = -30
     for _, r in ipairs(runs) do
         local name = C_ChallengeMode.GetMapUIInfo(r.challengeModeID) or "?"
-        local label = ("%s +%d"):format(name, r.bestRunLevel) .. (r.finishedSuccess and "" or "  (over time)")
-        y = TipRow(nil, label, ns.Fmt(r.mapScore), y, not r.finishedSuccess)
+        local labelText = ("%s +%d"):format(name, r.bestRunLevel)
+            .. (r.finishedSuccess and "" or "  (over time)")
+        posY = TipRow(nil, labelText, mod.Fmt(r.mapScore), posY, not r.finishedSuccess)
     end
     if #runs == 0 then
-        y = TipRow(nil, "No rated runs shared yet", "", y, true)
+        posY = TipRow(nil, "No rated runs shared yet", "", posY, true)
     end
 
-    tip:SetHeight(-y + 6)
-    tip:ClearAllPoints()
-    tip:SetPoint("TOPLEFT", cell, "BOTTOMLEFT", 0, -6)
-    tip:Show()
+    tipText:SetHeight(-posY + 6)
+    tipText:ClearAllPoints()
+    tipText:SetPoint("TOPLEFT", cellFrame, "BOTTOMLEFT", 0, -6)
+    tipText:Show()
 end
 
 -- A title tile's detail: the line now and at the season end, what that is in
@@ -1414,116 +1426,121 @@ end
 -- Your characters this season, best first, with how far each is from the
 -- next line; says what a click on the tile does.
 function Graph.ShowChars(t)
-    local ctx = t.ctx
-    if not ctx or #ctx.chars == 0 then
+    local context = t.ctx
+    if not context or #context.chars == 0 then
         return
     end
-    tip.rows:Reset()
+    tipText.rows:Reset()
     SizeTip(250)
-    tip.title:SetText("Your characters")
-    tip.title:SetTextColor(C.ink[1], C.ink[2], C.ink[3])
-    tip.tag:SetText("titles are account-wide")
-    local y = -30
-    for _, c in ipairs(ctx.chars) do
-        y = TipRow(nil, c.name, ns.Fmt(c.score), y, false, ns.ClassColor(c.class))
+    tipText.title:SetText("Your characters")
+    tipText.title:SetTextColor(C.ink[1], C.ink[2], C.ink[3])
+    tipText.tag:SetText("titles are account-wide")
+    local posY = -30
+    for _, c in ipairs(context.chars) do
+        posY = TipRow(nil, c.name, mod.Fmt(c.score), posY, false, mod.ClassColor(c.class))
     end
-    tip.note:SetWidth(tip.w - 20)
-    tip.note:ClearAllPoints()
-    tip.note:SetPoint("TOPLEFT", tip, "TOPLEFT", 10, y - 4)
+    tipText.note:SetWidth(tipText.w - 20)
+    tipText.note:ClearAllPoints()
+    tipText.note:SetPoint("TOPLEFT", tipText, "TOPLEFT", 10, posY - 4)
     local note = "A character appears here once you have logged in on it this season."
     if t.canSwitch then
         note = (
-            ctx.subject.isCurrent and "Click to show your best character."
+            context.subject.isCurrent and "Click to show your best character."
             or "Click to show the character you are playing."
         )
             .. " "
             .. note
     end
-    tip.note:SetText(note)
-    tip.note:Show()
-    y = y - 4 - tip.note:GetStringHeight()
-    tip:SetHeight(-y + 10)
-    tip:ClearAllPoints()
-    tip:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
-    tip:Show()
+    tipText.note:SetText(note)
+    tipText.note:Show()
+    posY = posY - 4 - tipText.note:GetStringHeight()
+    tipText:SetHeight(-posY + 10)
+    tipText:ClearAllPoints()
+    tipText:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
+    tipText:Show()
 end
 
 function Graph.ShowTile(t)
-    local s, ctx = t.summary, t.ctx
+    local s, context = t.summary, t.ctx
     if not s or CludesUITitleLineDB.hidden[s.tier.key] then
         return
     end
-    local sum = ctx.summary
-    tip.rows:Reset()
+    local sum = context.summary
+    tipText.rows:Reset()
     SizeTip(250)
-    tip.title:SetText(s.tier.label)
-    tip.title:SetTextColor(C.ink[1], C.ink[2], C.ink[3])
-    tip.tag:SetText("")
+    tipText.title:SetText(s.tier.label)
+    tipText.title:SetTextColor(C.ink[1], C.ink[2], C.ink[3])
+    tipText.tag:SetText("")
 
-    local y = -30
-    y = TipRow(nil, "Line today", ns.Fmt(s.lineNow), y)
+    local posY = -30
+    posY = TipRow(nil, "Line today", mod.Fmt(s.lineNow), posY)
     if s.lineEnd then
-        y = TipRow(
+        posY = TipRow(
             nil,
             sum.endsEstimated and "At the season end (est.)" or "At the season end",
-            "~" .. ns.Fmt(s.lineEnd),
-            y
+            "~" .. mod.Fmt(s.lineEnd),
+            posY
         )
-        y = TipRow(nil, "Likely range at the end", ns.Fmt(s.lineEndLow) .. "-" .. ns.Fmt(s.lineEndHigh), y)
+        posY = TipRow(
+            nil,
+            "Likely range at the end",
+            mod.Fmt(s.lineEndLow) .. "-" .. mod.Fmt(s.lineEndHigh),
+            posY
+        )
     end
     if s.levelNow then
-        y = TipRow(nil, "Timed in every dungeon, today", LevelText(s.levelNow), y)
+        posY = TipRow(nil, "Timed in every dungeon, today", LevelText(s.levelNow), posY)
     end
     if s.levelEnd then
-        y = TipRow(nil, "Timed in every dungeon, at the end", LevelText(s.levelEnd), y)
+        posY = TipRow(nil, "Timed in every dungeon, at the end", LevelText(s.levelEnd), posY)
     end
     if s.need then
-        y = TipRow(nil, "Daily gain it takes", ("+%.1f"):format(s.need), y)
-        y = TipRow(nil, "Your daily gain", ("+%.1f"):format(sum.pace), y)
+        posY = TipRow(nil, "Daily gain it takes", ("+%.1f"):format(s.need), posY)
+        posY = TipRow(nil, "Your daily gain", ("+%.1f"):format(sum.pace), posY)
     end
 
-    tip.note:SetWidth(tip.w - 20)
-    tip.note:ClearAllPoints()
-    tip.note:SetPoint("TOPLEFT", tip, "TOPLEFT", 10, y - 4)
-    tip.note:SetText(ns.SCORING_NOTE)
-    tip.note:Show()
-    y = y - 4 - tip.note:GetStringHeight()
+    tipText.note:SetWidth(tipText.w - 20)
+    tipText.note:ClearAllPoints()
+    tipText.note:SetPoint("TOPLEFT", tipText, "TOPLEFT", 10, posY - 4)
+    tipText.note:SetText(mod.SCORING_NOTE)
+    tipText.note:Show()
+    posY = posY - 4 - tipText.note:GetStringHeight()
 
-    tip:SetHeight(-y + 10)
-    tip:ClearAllPoints()
-    tip:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
-    tip:Show()
+    tipText:SetHeight(-posY + 10)
+    tipText:ClearAllPoints()
+    tipText:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
+    tipText:Show()
 end
 
 -- The drawing kit Views.lua shares, so its tables match the graph.
-ns.UI = {
+mod.UI = {
     Pool = Pool,
     Text = Text,
     Color = Color,
     Hairlines = Hairlines,
     LevelText = LevelText,
     MakeClose = MakeClose,
-    PANEL_W = W - 2 * PAD,
+    PANEL_W = Widgets - 2 * PAD,
     PANEL_H = STRIP_T + STRIP_H - PT,
 }
 
 -- Public ------------------------------------------------------------------------------------
 
 function Graph:Toggle()
-    if not frame then
+    if not widget then
         Create()
     end
-    frame:SetShown(not frame:IsShown())
+    widget:SetShown(not widget:IsShown())
 end
 
 function Graph:ApplyScale()
-    if frame then
-        frame:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE)
+    if widget then
+        widget:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE)
     end
 end
 
 function Graph:Refresh()
-    if frame and frame:IsShown() then
+    if widget and widget:IsShown() then
         self:Render()
     end
 end

@@ -33,8 +33,8 @@ do
         -- from the shared season list (CludesUI.SEASON_PORTALS) -- one place
         -- to update per season.
         for _, e in ipairs(CludesUI.SEASON_PORTALS) do
-            for _, n in ipairs(e.names) do
-                TELEPORT_BY_NAME[n] = e.spellID
+            for _, num in ipairs(e.names) do
+                TELEPORT_BY_NAME[num] = e.spellID
             end
             -- Locale-agnostic: GetLFGDungeonInfo returns the dungeon's name in
             -- whatever locale THIS client is running -- the same source the LFG
@@ -43,8 +43,8 @@ do
             -- hardcoded in `names` above (English/Russian only, so e.g. a German
             -- client never got a match and the LFG Reminder popup silently never fired).
             if e.dungeonID and GetLFGDungeonInfo then
-                local ok, localName = pcall(GetLFGDungeonInfo, e.dungeonID)
-                if ok and type(localName) == "string" and localName ~= "" then
+                local success, localName = pcall(GetLFGDungeonInfo, e.dungeonID)
+                if success and type(localName) == "string" and localName ~= "" then
                     TELEPORT_BY_NAME[localName:lower()] = e.spellID
                 end
             end
@@ -54,9 +54,9 @@ do
             for _, mapID in ipairs(maps) do
                 local name = C_ChallengeMode.GetMapUIInfo(mapID)
                 if name then
-                    local spellID = TELEPORT_BY_NAME[name:lower()]
-                    if spellID then
-                        MAP_TELEPORT_SPELLS[mapID] = spellID
+                    local spellId = TELEPORT_BY_NAME[name:lower()]
+                    if spellId then
+                        MAP_TELEPORT_SPELLS[mapID] = spellId
                     end
                 end
             end
@@ -74,13 +74,13 @@ do
         if type(displayName) ~= "string" then
             return nil
         end
-        local n = displayName:lower():gsub("%s*%b()%s*$", "")
-        local spellID = TELEPORT_BY_NAME[n]
-        if not spellID and not next(MAP_TELEPORT_SPELLS) then
+        local num = displayName:lower():gsub("%s*%b()%s*$", "")
+        local spellId = TELEPORT_BY_NAME[num]
+        if not spellId and not next(MAP_TELEPORT_SPELLS) then
             RebuildTeleportTables()
-            spellID = TELEPORT_BY_NAME[n]
+            spellId = TELEPORT_BY_NAME[num]
         end
-        return spellID
+        return spellId
     end
 end
 local guildKeys = {} -- [playerName] = { dungeon = mapID, keyLevel = N, rating = N }
@@ -88,10 +88,10 @@ local guildKeys = {} -- [playerName] = { dungeon = mapID, keyLevel = N, rating =
 -------------------------------------------------------------------------------
 --  Helpers
 -------------------------------------------------------------------------------
-local function PlayerName(unit)
-    local name, realm = UnitFullName(unit or "player")
+local function PlayerName(unitToken)
+    local name, realm = UnitFullName(unitToken or "player")
     if not name then
-        return UnitName(unit or "player") or "Unknown"
+        return UnitName(unitToken or "player") or "Unknown"
     end
     if realm and realm ~= "" and realm ~= myRealm then
         return name .. "-" .. realm
@@ -118,9 +118,9 @@ local function BuildClassColorMap()
     local map = {}
     -- Guild roster first so group/player entries below win on name collisions
     if IsInGuild() and GetNumGuildMembers then
-        local total = GetNumGuildMembers()
-        for i = 1, total do
-            local gName, _, _, _, _, _, _, _, _, _, classFile = GetGuildRosterInfo(i)
+        local sum = GetNumGuildMembers()
+        for idx = 1, sum do
+            local gName, _, _, _, _, _, _, _, _, _, classFile = GetGuildRosterInfo(idx)
             if gName and classFile then
                 local gShort = Ambiguate and Ambiguate(gName, "short") or gName:match("^([^%-]+)")
                 if gShort then
@@ -129,20 +129,20 @@ local function BuildClassColorMap()
             end
         end
     end
-    local prefix, count
+    local prefixText, count
     if IsInRaid() then
-        prefix, count = "raid", GetNumGroupMembers()
+        prefixText, count = "raid", GetNumGroupMembers()
     elseif IsInGroup() then
-        prefix, count = "party", GetNumGroupMembers() - 1
+        prefixText, count = "party", GetNumGroupMembers() - 1
     else
-        prefix, count = nil, 0
+        prefixText, count = nil, 0
     end
-    if prefix then
-        for i = 1, count do
-            local unit = prefix .. i
-            local uName = UnitName(unit)
+    if prefixText then
+        for idx = 1, count do
+            local unitToken = prefixText .. idx
+            local uName = UnitName(unitToken)
             if uName then
-                local _, classFile = UnitClass(unit)
+                local _, classFile = UnitClass(unitToken)
                 if classFile then
                     map[uName] = classFile
                 end
@@ -213,7 +213,7 @@ end
 --  Popup UI
 -------------------------------------------------------------------------------
 local CUI = CludesUI
-local PP = CUI and CUI.PP
+local Pix = CUI and CUI.PP
 local POPUP_W = 330
 local ROW_H = 20
 local ROW_GAP = 4
@@ -224,7 +224,7 @@ local HDR_GAP = 1 -- gap after section header
 local SEC_GAP = 20 -- gap before Guild section
 local MAX_CONTENT_H = 300
 
-local popup, rowFrames
+local dialog, rowFrames
 local ShowKeystonePopup -- forward declaration
 
 local function ResolveFont()
@@ -237,72 +237,72 @@ end
 
 -- family: a text that shows a player's name takes the font as a font family,
 -- which draws the scripts the font lacks
-local function MakeLabel(parent, size, _, r, g, b, a, family)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
+local function MakeLabel(hostFrame, dim, _, r, g, b, a, family)
+    local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     if family then
-        CludesUI.SetFontFamily(fs, ResolveFont(), size, flags, flags == "")
+        CludesUI.SetFontFamily(fontStr, ResolveFont(), dim, flags, flags == "")
     else
-        CludesUI.PrimeFontShadow(fs, flags == "")
-        fs:SetFont(ResolveFont(), size, flags)
+        CludesUI.PrimeFontShadow(fontStr, flags == "")
+        fontStr:SetFont(ResolveFont(), dim, flags)
     end
     if r then
-        fs:SetTextColor(r, g or 1, b or 1, a or 1)
+        fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
     end
-    return fs
+    return fontStr
 end
 
-local function MakeSolid(parent, layer, r, g, b, a, sub)
-    local t = parent:CreateTexture(nil, layer, nil, sub or 0)
+local function MakeSolid(hostFrame, layer, r, g, b, a, subFrame)
+    local t = hostFrame:CreateTexture(nil, layer, nil, subFrame or 0)
     t:SetColorTexture(r, g, b, a)
     return t
 end
 
 local function BuildPopup()
-    if popup then
-        return popup
+    if dialog then
+        return dialog
     end
     rowFrames = {}
 
-    popup = CreateFrame("Frame", "CUIKeysPopup", UIParent)
-    popup:SetSize(POPUP_W, 100)
-    popup:SetPoint("CENTER", UIParent, "CENTER", 0, 100)
-    popup:SetFrameStrata("DIALOG")
-    popup:SetMovable(true)
-    popup:EnableMouse(true)
-    popup:RegisterForDrag("LeftButton")
-    popup:SetScript("OnDragStart", function(s)
+    dialog = CreateFrame("Frame", "CUIKeysPopup", UIParent)
+    dialog:SetSize(POPUP_W, 100)
+    dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 100)
+    dialog:SetFrameStrata("DIALOG")
+    dialog:SetMovable(true)
+    dialog:EnableMouse(true)
+    dialog:RegisterForDrag("LeftButton")
+    dialog:SetScript("OnDragStart", function(s)
         s:StartMoving()
     end)
-    popup:SetScript("OnDragStop", function(s)
+    dialog:SetScript("OnDragStop", function(s)
         s:StopMovingOrSizing()
     end)
 
-    local bg = popup:CreateTexture(nil, "BACKGROUND", nil, 0)
-    bg:SetAllPoints()
-    bg:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
-    bg:SetTexCoord(0.25, 1, 0, 0.75)
-    local overlay = popup:CreateTexture(nil, "BACKGROUND", nil, 1)
-    overlay:SetAllPoints()
-    overlay:SetColorTexture(0, 0, 0, 0.55)
+    local backdrop = dialog:CreateTexture(nil, "BACKGROUND", nil, 0)
+    backdrop:SetAllPoints()
+    backdrop:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
+    backdrop:SetTexCoord(0.25, 1, 0, 0.75)
+    local overlayFrame = dialog:CreateTexture(nil, "BACKGROUND", nil, 1)
+    overlayFrame:SetAllPoints()
+    overlayFrame:SetColorTexture(0, 0, 0, 0.55)
 
-    if PP and PP.CreateBorder then
-        PP.CreateBorder(popup, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
+    if Pix and Pix.CreateBorder then
+        Pix.CreateBorder(dialog, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
     end
 
-    local hdrBg = MakeSolid(popup, "BORDER", 0, 0, 0, 0.25)
+    local hdrBg = MakeSolid(dialog, "BORDER", 0, 0, 0, 0.25)
     hdrBg:SetPoint("TOPLEFT", 1, -1)
     hdrBg:SetPoint("TOPRIGHT", -1, 0)
     hdrBg:SetHeight(TITLE_H)
 
-    local title = MakeLabel(popup, 11, "OUTLINE", 1, 1, 1, 1)
-    title:SetPoint("TOPLEFT", PAD, -8)
-    title:SetText("CludesUI Keystones")
+    local titleText = MakeLabel(dialog, 11, "OUTLINE", 1, 1, 1, 1)
+    titleText:SetPoint("TOPLEFT", PAD, -8)
+    titleText:SetText("CludesUI Keystones")
 
     local ICON_SZ = 14
     local ICON_ALPHA = 0.5
 
-    local xBtn = CreateFrame("Button", nil, popup)
+    local xBtn = CreateFrame("Button", nil, dialog)
     xBtn:SetSize(ICON_SZ, ICON_SZ)
     xBtn:SetPoint("RIGHT", hdrBg, "RIGHT", -8, 0)
     local xTex = xBtn:CreateTexture(nil, "ARTWORK")
@@ -316,11 +316,11 @@ local function BuildPopup()
         xTex:SetAlpha(ICON_ALPHA)
     end)
     xBtn:SetScript("OnClick", function()
-        popup:Hide()
+        dialog:Hide()
     end)
 
     -- Refresh button
-    local refBtn = CreateFrame("Button", nil, popup)
+    local refBtn = CreateFrame("Button", nil, dialog)
     refBtn:SetSize(ICON_SZ, ICON_SZ)
     refBtn:SetPoint("RIGHT", xBtn, "LEFT", -6, 0)
     local refTex = refBtn:CreateTexture(nil, "ARTWORK")
@@ -359,43 +359,43 @@ local function BuildPopup()
     end)
 
     if CUI and CUI.RegisterEscapeClose then
-        CUI.RegisterEscapeClose(popup)
+        CUI.RegisterEscapeClose(dialog)
     end
 
     -- Scroll frame for content
-    local sf = CreateFrame("ScrollFrame", nil, popup)
-    sf:SetPoint("TOPLEFT", PAD, -(TITLE_H + 8))
-    sf:SetPoint("BOTTOMRIGHT", -PAD, PAD)
-    sf:EnableMouseWheel(true)
-    sf:SetScript("OnMouseWheel", function(self, delta)
-        local cur = self:GetVerticalScroll()
-        local child = self:GetScrollChild()
-        local maxS = math.max(0, (child and child:GetHeight() or 0) - self:GetHeight())
-        self:SetVerticalScroll(math.max(0, math.min(maxS, cur - delta * 20)))
+    local scrollFrame = CreateFrame("ScrollFrame", nil, dialog)
+    scrollFrame:SetPoint("TOPLEFT", PAD, -(TITLE_H + 8))
+    scrollFrame:SetPoint("BOTTOMRIGHT", -PAD, PAD)
+    scrollFrame:EnableMouseWheel(true)
+    scrollFrame:SetScript("OnMouseWheel", function(self, delta)
+        local current = self:GetVerticalScroll()
+        local childFrame = self:GetScrollChild()
+        local maxS = math.max(0, (childFrame and childFrame:GetHeight() or 0) - self:GetHeight())
+        self:SetVerticalScroll(math.max(0, math.min(maxS, current - delta * 20)))
     end)
-    popup._body = CreateFrame("Frame", nil, sf)
-    popup._body:SetWidth(POPUP_W - PAD * 2)
-    popup._body:SetHeight(1)
-    sf:SetScrollChild(popup._body)
-    popup._sf = sf
+    dialog._body = CreateFrame("Frame", nil, scrollFrame)
+    dialog._body:SetWidth(POPUP_W - PAD * 2)
+    dialog._body:SetHeight(1)
+    scrollFrame:SetScrollChild(dialog._body)
+    dialog._sf = scrollFrame
 
     -- Apply saved scale
-    local cfg = CludesUIDB and CludesUIDB.keystonePopup
-    popup:SetScale(cfg and cfg.scale or 1.05)
+    local conf = CludesUIDB and CludesUIDB.keystonePopup
+    dialog:SetScale(conf and conf.scale or 1.05)
 
-    popup:Hide()
-    return popup
+    dialog:Hide()
+    return dialog
 end
 
-local function AcquireRow(i)
-    if rowFrames[i] then
-        return rowFrames[i]
+local function AcquireRow(idx)
+    if rowFrames[idx] then
+        return rowFrames[idx]
     end
     local p = BuildPopup()
     local r = CreateFrame("Frame", nil, p._body)
     r:SetHeight(ROW_H)
 
-    if i % 2 == 0 then
+    if idx % 2 == 0 then
         local alt = MakeSolid(r, "BACKGROUND", 0, 0, 0, 0.15)
         alt:SetAllPoints()
     end
@@ -425,18 +425,18 @@ local function AcquireRow(i)
     tpBtn:SetFrameLevel(r:GetFrameLevel() + 5)
     tpBtn:RegisterForClicks("AnyUp", "AnyDown")
     tpBtn:SetAttribute("type", "spell")
-    local EG = CludesUI.CLUDES_GREEN
+    local ACC = CludesUI.CLUDES_GREEN
     tpBtn:SetScript("OnEnter", function()
-        local sid = tpBtn._spellID
-        if not sid then
+        local spellRef = tpBtn._spellID
+        if not spellRef then
             return
         end
-        local known = IsPlayerSpell(sid)
+        local known = IsPlayerSpell(spellRef)
         if known then
-            if EG then
-                r._dungeonFS:SetTextColor(EG.r, EG.g, EG.b, 1)
+            if ACC then
+                r._dungeonFS:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
             end
-            local cdInfo = C_Spell.GetSpellCooldown(sid)
+            local cdInfo = C_Spell.GetSpellCooldown(spellRef)
             if cdInfo and cdInfo.duration and cdInfo.duration > 0 then
                 CludesUI.ShowWidgetTooltip(tpBtn, "Portal on Cooldown")
             end
@@ -455,37 +455,37 @@ local function AcquireRow(i)
 
     local sep = r:CreateTexture(nil, "ARTWORK")
     sep:SetColorTexture(1, 1, 1, 0.10)
-    if PP and PP.DisablePixelSnap then
-        PP.DisablePixelSnap(sep)
+    if Pix and Pix.DisablePixelSnap then
+        Pix.DisablePixelSnap(sep)
     end
-    sep:SetHeight((PP and PP.mult) or 1)
+    sep:SetHeight((Pix and Pix.mult) or 1)
     local gapMid = -math.floor(ROW_GAP / 2)
     sep:SetPoint("BOTTOMLEFT", 0, gapMid)
     sep:SetPoint("BOTTOMRIGHT", 0, gapMid)
 
-    rowFrames[i] = r
+    rowFrames[idx] = r
     return r
 end
 
 -- Section header pool
 local secHeaders = {}
-local function AcquireSecHeader(i)
-    if secHeaders[i] then
-        return secHeaders[i]
+local function AcquireSecHeader(idx)
+    if secHeaders[idx] then
+        return secHeaders[idx]
     end
     local p = BuildPopup()
-    local h = CreateFrame("Frame", nil, p._body)
-    h:SetHeight(HDR_H)
-    h._label = MakeLabel(h, 10, "OUTLINE", 1, 1, 1, 0.56)
-    h._label:SetPoint("LEFT", 0, 0)
-    h._label:SetJustifyH("LEFT")
-    secHeaders[i] = h
-    return h
+    local hgt = CreateFrame("Frame", nil, p._body)
+    hgt:SetHeight(HDR_H)
+    hgt._label = MakeLabel(hgt, 10, "OUTLINE", 1, 1, 1, 0.56)
+    hgt._label:SetPoint("LEFT", 0, 0)
+    hgt._label:SetJustifyH("LEFT")
+    secHeaders[idx] = hgt
+    return hgt
 end
 
 local function GetTextSize()
-    local cfg = CludesUIDB and CludesUIDB.keystonePopup
-    return cfg and cfg.textSize or 11
+    local conf = CludesUIDB and CludesUIDB.keystonePopup
+    return conf and conf.textSize or 11
 end
 
 local function ApplyRowFontSize(r)
@@ -503,11 +503,11 @@ local function PopulateRow(r, e, ccMap)
     r._nameFS:SetText(StripRealm(e.name))
     r._nameFS:SetWidth(80)
     -- Cheap paths first: the entry's own classFile, then the per-rebuild map
-    local cf = e.classFile
-    if not cf and ccMap then
-        cf = ccMap[StripRealm(e.name)]
+    local castFrame = e.classFile
+    if not castFrame and ccMap then
+        castFrame = ccMap[StripRealm(e.name)]
     end
-    local cc = cf and RAID_CLASS_COLORS[cf]
+    local cc = castFrame and RAID_CLASS_COLORS[castFrame]
     if cc then
         r._nameFS:SetTextColor(cc.r, cc.g, cc.b, 1)
     else
@@ -530,10 +530,10 @@ local function PopulateRow(r, e, ccMap)
             r._levelFS:SetTextColor(1, 1, 1, 1)
         end
         -- Teleport button
-        local spellID = e.mapID and MAP_TELEPORT_SPELLS[e.mapID]
-        if spellID and r._tpBtn then
-            r._tpBtn._spellID = spellID
-            r._tpBtn:SetAttribute("spell", spellID)
+        local spellId = e.mapID and MAP_TELEPORT_SPELLS[e.mapID]
+        if spellId and r._tpBtn then
+            r._tpBtn._spellID = spellId
+            r._tpBtn:SetAttribute("spell", spellId)
             r._tpBtn:Show()
         elseif r._tpBtn then
             r._tpBtn._spellID = nil
@@ -562,26 +562,26 @@ ShowKeystonePopup = function()
     local currentMembers = {}
     currentMembers[PlayerName("player")] = true
     if IsInGroup() then
-        local prefix = IsInRaid() and "raid" or "party"
+        local prefixText = IsInRaid() and "raid" or "party"
         local count = GetNumGroupMembers()
-        for i = 1, (IsInRaid() and count or count - 1) do
-            local name = PlayerName(prefix .. i)
+        for idx = 1, (IsInRaid() and count or count - 1) do
+            local name = PlayerName(prefixText .. idx)
             if name then
                 currentMembers[name] = true
             end
         end
     end
     local partyEntries = {}
-    for name, info in pairs(partyKeys) do
+    for name, details in pairs(partyKeys) do
         if currentMembers[name] or currentMembers[StripRealm(name)] then
-            local dName = DungeonNameFromMap(info.dungeon)
+            local dName = DungeonNameFromMap(details.dungeon)
             partyEntries[#partyEntries + 1] = {
                 name = name,
                 dungeonName = dName,
-                lvl = info.keyLevel or 0,
-                rating = info.rating or 0,
-                classFile = info.classFile,
-                mapID = info.dungeon,
+                lvl = details.keyLevel or 0,
+                rating = details.rating or 0,
+                classFile = details.classFile,
+                mapID = details.dungeon,
             }
         end
     end
@@ -595,16 +595,16 @@ ShowKeystonePopup = function()
     -- Collect guild keys (exclude ourselves)
     local guildEntries = {}
     local myName = PlayerName("player")
-    for name, info in pairs(guildKeys) do
-        if name ~= myName and StripRealm(name) ~= StripRealm(myName) and (info.keyLevel or 0) > 0 then
-            local dName = DungeonNameFromMap(info.dungeon)
+    for name, details in pairs(guildKeys) do
+        if name ~= myName and StripRealm(name) ~= StripRealm(myName) and (details.keyLevel or 0) > 0 then
+            local dName = DungeonNameFromMap(details.dungeon)
             guildEntries[#guildEntries + 1] = {
                 name = name,
                 dungeonName = dName,
-                lvl = info.keyLevel,
-                rating = info.rating or 0,
-                classFile = info.classFile,
-                mapID = info.dungeon,
+                lvl = details.keyLevel,
+                rating = details.rating or 0,
+                classFile = details.classFile,
+                mapID = details.dungeon,
             }
         end
     end
@@ -640,11 +640,11 @@ ShowKeystonePopup = function()
     end
 
     -- Hide all pooled frames
-    for i = 1, #rowFrames do
-        rowFrames[i]:Hide()
+    for idx = 1, #rowFrames do
+        rowFrames[idx]:Hide()
     end
-    for i = 1, #secHeaders do
-        secHeaders[i]:Hide()
+    for idx = 1, #secHeaders do
+        secHeaders[idx]:Hide()
     end
 
     local curY = 0
@@ -744,7 +744,7 @@ end
 -- rebuild re-lays-out every row. Coalesce bursts into one rebuild per 0.2s.
 local refreshQueued = false
 local function RefreshPopupIfOpen()
-    if not (popup and popup:IsShown()) then
+    if not (dialog and dialog:IsShown()) then
         return
     end
     if refreshQueued then
@@ -753,7 +753,7 @@ local function RefreshPopupIfOpen()
     refreshQueued = true
     C_Timer.After(0.2, function()
         refreshQueued = false
-        if popup and popup:IsShown() then
+        if dialog and dialog:IsShown() then
             ShowKeystonePopup()
         end
     end)
@@ -770,8 +770,8 @@ _G._CUI_RefreshKeystonePopup = RefreshPopupIfOpen
 -- disabled popup pays nothing per incoming keystone message.
 local lksCallbackTable = {}
 do
-    local cfg = CludesUIDB and CludesUIDB.keystonePopup
-    local enabled = not cfg or cfg.enabled ~= false
+    local conf = CludesUIDB and CludesUIDB.keystonePopup
+    local enabled = not conf or conf.enabled ~= false
     if LibKeystone and enabled then
         LibKeystone.Register(lksCallbackTable, function(keyLevel, keyMapID, playerRating, playerName, channel)
             if not playerName then
@@ -788,8 +788,8 @@ end
 --  Slash commands
 -------------------------------------------------------------------------------
 do
-    local cfg = CludesUIDB and CludesUIDB.keystonePopup
-    local enabled = not cfg or cfg.enabled ~= false
+    local conf = CludesUIDB and CludesUIDB.keystonePopup
+    local enabled = not conf or conf.enabled ~= false
 
     SLASH_CUIKEYS1 = "/keys"
     SLASH_CUIKEYS2 = "/ckeys"

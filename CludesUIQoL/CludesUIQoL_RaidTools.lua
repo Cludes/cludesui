@@ -99,7 +99,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  collapsed icon wear the same value, whichever windows the Show as choice
 --  puts on screen.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local InCombatLockdown = InCombatLockdown
 local UnitIsGroupLeader, UnitIsGroupAssistant = UnitIsGroupLeader, UnitIsGroupAssistant
@@ -130,7 +130,7 @@ local COMPACT_GAP = 4
 local COMPACT_DIVIDER_OFFSET = 5
 local PULL_SLOTS = 3
 local PULL_DEFAULTS = { 3, 5, 10 } -- also seeded into DB_DEFAULTS below
-ns.PULL_DEFAULTS = PULL_DEFAULTS
+mod.PULL_DEFAULTS = PULL_DEFAULTS
 
 -------------------------------------------------------------------------------
 --  Window Skins look, replicated
@@ -157,19 +157,19 @@ local BRD_R, BRD_G, BRD_B, BRD_A = 0.2, 0.2, 0.2, 1
 -- Shell backdrop: art + wash + title band, and a re-crop function the layout
 -- pass calls after any height change so the art never stretches.
 local function SkinPanelBg(f)
-    local bg = f:CreateTexture(nil, "BACKGROUND", nil, -8)
-    bg:SetTexture(SKIN_BG_TEX)
-    bg:SetAllPoints(f)
-    local overlay = f:CreateTexture(nil, "BACKGROUND", nil, -7)
-    overlay:SetColorTexture(0, 0, 0, 0.62)
-    overlay:SetAllPoints(f)
+    local backdrop = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    backdrop:SetTexture(SKIN_BG_TEX)
+    backdrop:SetAllPoints(f)
+    local overlayFrame = f:CreateTexture(nil, "BACKGROUND", nil, -7)
+    overlayFrame:SetColorTexture(0, 0, 0, 0.62)
+    overlayFrame:SetAllPoints(f)
     local topBar = f:CreateTexture(nil, "BACKGROUND", nil, -5)
     topBar:SetColorTexture(0, 0, 0, 0.5)
     topBar:SetPoint("TOPLEFT")
     topBar:SetPoint("TOPRIGHT")
     topBar:SetHeight(TOPBAR_H)
-    f._bgArt = bg
-    f._bgOverlay = overlay
+    f._bgArt = backdrop
+    f._bgOverlay = overlayFrame
     f._titleBar = topBar
     f._bgFit = function()
         local fw, fh = f:GetSize()
@@ -180,11 +180,11 @@ local function SkinPanelBg(f)
         if fa > BG_ASPECT then
             local visV = BASE_V * (BG_ASPECT / fa)
             local trimV = (BASE_V - visV) / 2
-            bg:SetTexCoord(BASE_L, BASE_R, BASE_T + trimV, BASE_B - trimV)
+            backdrop:SetTexCoord(BASE_L, BASE_R, BASE_T + trimV, BASE_B - trimV)
         else
             local visU = BASE_U * (fa / BG_ASPECT)
             local trimU = (BASE_U - visU) / 2
-            bg:SetTexCoord(BASE_L + trimU, BASE_R - trimU, BASE_T, BASE_B)
+            backdrop:SetTexCoord(BASE_L + trimU, BASE_R - trimU, BASE_T, BASE_B)
         end
     end
     f._bgFit()
@@ -193,27 +193,27 @@ end
 -- Window frame: the atlas border the skins use, 1px gray line if the atlas
 -- ever disappears from the client.
 local function SkinPanelBorder(f)
-    local info = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(BORDER_ATLAS)
-    if not info then
+    local details = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(BORDER_ATLAS)
+    if not details then
         local fallback = CludesUI.MakeBorder(f, BRD_R, BRD_G, BRD_B, BRD_A, CludesUI.PP)
         f._windowBorder = fallback and fallback._frame
         return
     end
-    local ov = CreateFrame("Frame", nil, f)
-    ov:SetAllPoints(f)
-    ov:SetFrameLevel(f:GetFrameLevel() + 6)
-    local tex = ov:CreateTexture(nil, "OVERLAY", nil, 7)
-    tex:SetAtlas(BORDER_ATLAS)
-    tex:SetAllPoints(ov)
-    f._windowBorder = ov
+    local shade = CreateFrame("Frame", nil, f)
+    shade:SetAllPoints(f)
+    shade:SetFrameLevel(f:GetFrameLevel() + 6)
+    local texture = shade:CreateTexture(nil, "OVERLAY", nil, 7)
+    texture:SetAtlas(BORDER_ATLAS)
+    texture:SetAllPoints(shade)
+    f._windowBorder = shade
 end
 
 -- Button chrome: flat fill, 1px line, white hover on the HIGHLIGHT layer
 -- (Buttons show that layer on mouseover natively, so no scripts).
 local function SkinButtonChrome(b)
-    local fill = b:CreateTexture(nil, "BACKGROUND")
-    fill:SetColorTexture(BTN_R, BTN_G, BTN_B, BTN_A)
-    fill:SetAllPoints(b)
+    local fillTex = b:CreateTexture(nil, "BACKGROUND")
+    fillTex:SetColorTexture(BTN_R, BTN_G, BTN_B, BTN_A)
+    fillTex:SetAllPoints(b)
     CludesUI.MakeBorder(b, BRD_R, BRD_G, BRD_B, BRD_A, CludesUI.PP)
     local hover = b:CreateTexture(nil, "HIGHLIGHT")
     hover:SetColorTexture(1, 1, 1, 0.1)
@@ -246,12 +246,12 @@ local COMPACT_UNLOCK_KEY = UNLOCK_KEY .. "Compact"
 
 local SECTION_KEYS = {}
 local SECTION_LABEL = {}
-for _, def in ipairs(SECTIONS) do
-    SECTION_KEYS[#SECTION_KEYS + 1] = def.key
-    SECTION_LABEL[def.key] = def.label
+for _, spec_def in ipairs(SECTIONS) do
+    SECTION_KEYS[#SECTION_KEYS + 1] = spec_def.key
+    SECTION_LABEL[spec_def.key] = spec_def.label
 end
 
-local db
+local saved
 local applyPending -- true when combat blocked an Apply()
 local previewOn = false -- Raid Tools settings page is in front (see ApplyVisibility)
 local lastSuppressed -- assist gate verdict currently ON SCREEN (see AssistSuppressed)
@@ -389,18 +389,18 @@ local FONT_KEY = "extras" -- QoL's key in CludesUI._addonKeyToFolder
 local fontOwners = {} -- filled at build: shells + holders
 -- family: a font family string (a text that shows players' names), which takes
 -- every font through SetFontFamily, never a plain SetFont
-local function TrackFont(owner, fs, size, family)
+local function TrackFont(owner, fontStr, dim, family)
     local t = owner._fonts
     if not t then
         t = {}
         owner._fonts = t
     end
-    t[#t + 1] = { fs = fs, size = size, family = family }
-    return fs
+    t[#t + 1] = { fs = fontStr, size = dim, family = family }
+    return fontStr
 end
 local function ApplyFonts()
-    local path = CludesUI.GetFontPath(FONT_KEY)
-    if not path then
+    local filePath = CludesUI.GetFontPath(FONT_KEY)
+    if not filePath then
         return
     end
     for _, owner in ipairs(fontOwners) do
@@ -408,10 +408,10 @@ local function ApplyFonts()
         if t then
             for _, e in ipairs(t) do
                 if e.family then
-                    CludesUI.SetFontFamily(e.fs, path, e.size, "", false)
+                    CludesUI.SetFontFamily(e.fs, filePath, e.size, "", false)
                 else
                     local _, _, flags = e.fs:GetFont()
-                    e.fs:SetFont(path, e.size, flags or "")
+                    e.fs:SetFont(filePath, e.size, flags or "")
                 end
             end
         end
@@ -524,40 +524,40 @@ local DB_DEFAULTS = {
 -- that proxy in another, and reading through the stack overflows the C stack.
 -- DB_DEFAULTS already guarantees the slice exists; the seeding was never
 -- needed and is actively harmful here.
-local function P()
-    return db and db.profile and db.profile.raidTools
+local function Prm()
+    return saved and saved.profile and saved.profile.raidTools
 end
-ns.RaidToolsProfile = P
+mod.RaidToolsProfile = Prm
 
 local function Mode()
-    local p = P()
+    local p = Prm()
     return (p and p.mode) or "never"
 end
 
 -- The Show as choice, normalized: any unset/unknown value preserves the
 -- original One Window behavior. Compact Band is selected explicitly.
 local function ShowAs()
-    local p = P()
-    local v = p and p.showAs
-    if v ~= "compact" and v ~= "one" and v ~= "two" and v ~= "group" and v ~= "markers" then
-        v = "one"
+    local p = Prm()
+    local val = p and p.showAs
+    if val ~= "compact" and val ~= "one" and val ~= "two" and val ~= "group" and val ~= "markers" then
+        val = "one"
     end
-    return v
+    return val
 end
-ns.ShowAs = ShowAs
+mod.ShowAs = ShowAs
 
 local function CompactWidth()
-    local p = P()
+    local p = Prm()
     return math.max(COMPACT_MIN_W, (p and p.compactWidth) or COMPACT_W)
 end
 
 local function CompactHeight()
-    local p = P()
+    local p = Prm()
     return math.max(COMPACT_MIN_H, (p and p.compactHeight) or COMPACT_H)
 end
 
 local function WindowScale()
-    local p = P()
+    local p = Prm()
     return (p and p.scale) or 1
 end
 
@@ -572,25 +572,25 @@ end
 -- Enable state without touching the button's own scripts: dimming the whole
 -- frame and cutting mouse input is both
 -- simpler and immune to a hover re-lighting a disabled control.
-local function SetButtonEnabled(b, on)
-    b:SetAlpha(on and 1 or 0.35)
-    b:EnableMouse(on)
+local function SetButtonEnabled(b, enabled)
+    b:SetAlpha(enabled and 1 or 0.35)
+    b:EnableMouse(enabled)
 end
 
 -- Action button in the Window Skins style: flat fill, 1px line, white hover,
 -- white label (WSkin.Button + WhiteButtonLabel, replicated). `needsLeader`
 -- narrows the gate from assist to leader.
-local function MakeGroupButton(parent, text, width, onClick, needsLeader)
-    local b = CreateFrame("Button", nil, parent)
+local function MakeGroupButton(hostFrame, textValue, width, onClick, needsLeader)
+    local b = CreateFrame("Button", nil, hostFrame)
     b:SetSize(width, ROW_H)
     SkinButtonChrome(b)
-    local lbl = TrackFont(parent, CludesUI.MakeFont(b, 11, nil, 1, 1, 1), 11)
-    lbl:SetPoint("CENTER")
-    if text ~= "" then
-        lbl:SetText(CludesUI.L(text))
+    local labelFS = TrackFont(hostFrame, CludesUI.MakeFont(b, 11, nil, 1, 1, 1), 11)
+    labelFS:SetPoint("CENTER")
+    if textValue ~= "" then
+        labelFS:SetText(CludesUI.L(textValue))
     end
     b:SetScript("OnClick", onClick)
-    b._lbl = lbl
+    b._lbl = labelFS
     b.needsLeader = needsLeader
     groupButtons[#groupButtons + 1] = b
     return b
@@ -606,11 +606,11 @@ end
 --     including this one.
 --   * the worldmarker type takes `marker` as a STRING, and splits placing from
 --     clearing across action1 and action2.
-local function MakeMarkerButton(parent, index, kind)
-    local b = CreateFrame("Button", nil, parent, "SecureActionButtonTemplate")
-    local compact = kind == "compact" or kind == "compact-clear"
-    local size = compact and COMPACT_ICON or MARKER_SZ
-    b:SetSize(size, size)
+local function MakeMarkerButton(hostFrame, slotPos, kindOf)
+    local b = CreateFrame("Button", nil, hostFrame, "SecureActionButtonTemplate")
+    local compact = kindOf == "compact" or kindOf == "compact-clear"
+    local dim = compact and COMPACT_ICON or MARKER_SZ
+    b:SetSize(dim, dim)
     -- One phase only: the "!" prefix toggles the marker, so firing on both the
     -- down and the up would set it and immediately clear it again. useOnKeyDown
     -- is pinned because left unset it follows the ActionButtonUseKeyDown CVar,
@@ -619,16 +619,16 @@ local function MakeMarkerButton(parent, index, kind)
     b:RegisterForClicks("AnyDown")
     b:SetAttribute("useOnKeyDown", true)
 
-    local icon = b:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    b.icon = icon
+    local glyph = b:CreateTexture(nil, "ARTWORK")
+    glyph:SetAllPoints()
+    b.icon = glyph
 
-    if kind == "compact" then
-        local worldID = SYMBOL_TO_WORLD[index]
+    if kindOf == "compact" then
+        local worldID = SYMBOL_TO_WORLD[slotPos]
         -- One symbol, four combat-safe actions. The ordinary clicks perform
         -- the frequent actions; Shift exposes their explicit clear variants.
         b:SetAttribute("type1", "macro")
-        b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. index)
+        b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. slotPos)
         b:SetAttribute("type2", "worldmarker")
         b:SetAttribute("marker2", tostring(worldID))
         b:SetAttribute("action2", "set")
@@ -638,21 +638,21 @@ local function MakeMarkerButton(parent, index, kind)
         b:SetAttribute("shift-marker2", tostring(worldID))
         b:SetAttribute("shift-action2", "clear")
         b._worldID = worldID
-    elseif kind == "compact-clear" then
+    elseif kindOf == "compact-clear" then
         b:SetAttribute("type1", "macro")
         b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
         b:SetAttribute("type2", "macro")
         b:SetAttribute("macrotext2", (SLASH_CLEAR_WORLD_MARKER1 or "/cwm") .. " " .. (ALL or "All"))
-    elseif kind == "target" then
+    elseif kindOf == "target" then
         -- Left: toggle this marker on the target. Right: clear it.
         b:SetAttribute("type", "macro")
-        if index == 0 then
+        if slotPos == 0 then
             b:SetAttribute("macrotext", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
         else
-            b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. index)
+            b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. slotPos)
             b:SetAttribute("macrotext2", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
         end
-    elseif index == 0 then
+    elseif slotPos == 0 then
         -- Clear-all is a macro, not a worldmarker action: the attribute form
         -- clears one index at a time.
         b:SetAttribute("type", "macro")
@@ -661,16 +661,16 @@ local function MakeMarkerButton(parent, index, kind)
         b:SetAttribute("type", "worldmarker")
         -- `index` is the SYMBOL the button shows; the attribute wants the
         -- world-marker ID of the flare carrying that symbol (see the map).
-        b:SetAttribute("marker", tostring(SYMBOL_TO_WORLD[index]))
+        b:SetAttribute("marker", tostring(SYMBOL_TO_WORLD[slotPos]))
         b:SetAttribute("action1", "set")
         b:SetAttribute("action2", "clear")
     end
 
-    if index == 0 then
-        icon:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
+    if slotPos == 0 then
+        glyph:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
     else
-        icon:SetTexture(MARKER_SHEET)
-        SetRaidTargetIconTexture(icon, index)
+        glyph:SetTexture(MARKER_SHEET)
+        SetRaidTargetIconTexture(glyph, slotPos)
     end
 
     -- No chrome on the marker grid: the symbols read best bare. Hover is an
@@ -678,37 +678,37 @@ local function MakeMarkerButton(parent, index, kind)
     -- and the no-assist dim keeps priority -- a 0.4-dimmed button does not
     -- brighten on hover, so the dim never lies. _baseAlpha is ours to write
     -- (our CreateFrame'd button); RefreshPermissions owns its value.
-    icon:SetAlpha(0.8)
+    glyph:SetAlpha(0.8)
     b._baseAlpha = 0.8
-    if kind == "compact" then
+    if kindOf == "compact" then
         -- The "marker is down" underline rides its own child FRAME: its
         -- visibility follows an answer that can be secret (see
         -- RefreshCompactMarkerState), and SetAlphaFromBoolean -- the
         -- secret-safe switch -- renders nothing on a texture. A plain frame
         -- takes no mouse input, so the host never eats the button's clicks.
-        local host = CreateFrame("Frame", nil, b)
-        host:SetAllPoints(b)
-        host:SetAlpha(0)
-        local active = host:CreateTexture(nil, "OVERLAY")
-        active:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 2, -2)
-        active:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, -2)
-        active:SetHeight(2)
+        local hostRegion = CreateFrame("Frame", nil, b)
+        hostRegion:SetAllPoints(b)
+        hostRegion:SetAlpha(0)
+        local isActive = hostRegion:CreateTexture(nil, "OVERLAY")
+        isActive:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 2, -2)
+        isActive:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, -2)
+        isActive:SetHeight(2)
         local ar, ag, ab = 0.30, 0.79, 0.94
         if CludesUI.GetAccentColor then
             ar, ag, ab = CludesUI.GetAccentColor()
         end
-        active:SetColorTexture(ar, ag, ab, 0.95)
-        b._activeHost = host
+        isActive:SetColorTexture(ar, ag, ab, 0.95)
+        b._activeHost = hostRegion
     end
     b:SetScript("OnEnter", function(self)
         if (self._baseAlpha or 0.8) >= 0.8 then
             self.icon:SetAlpha(1)
         end
         if compact and ShowCompactTip then
-            if kind == "compact-clear" then
+            if kindOf == "compact-clear" then
                 ShowCompactTip(self, "Clear Markers", COMPACT_CLEAR_TIP_ROWS)
             else
-                ShowCompactTip(self, MARKER_NAME[index] or "Raid Marker", COMPACT_MARKER_TIP_ROWS)
+                ShowCompactTip(self, MARKER_NAME[slotPos] or "Raid Marker", COMPACT_MARKER_TIP_ROWS)
             end
         end
     end)
@@ -749,7 +749,7 @@ end
 -- The Raid Buff Check window (CludesUIQoL_RaidBuffCheck.lua) wears these panels'
 -- dress and font. Text: a font string on parent in the QoL font, kept current by
 -- ApplyFonts through owner (registered with AddFontOwner).
-ns.RT = {
+mod.RT = {
     TOPBAR_H = TOPBAR_H,
     SkinPanelBg = SkinPanelBg,
     SkinPanelBorder = SkinPanelBorder,
@@ -758,24 +758,24 @@ ns.RT = {
     AddFontOwner = function(owner)
         fontOwners[#fontOwners + 1] = owner
     end,
-    Text = function(owner, parent, size, r, g, b)
-        local fs = TrackFont(owner, CludesUI.MakeFont(parent, size, nil, r, g, b), size)
-        local path = CludesUI.GetFontPath(FONT_KEY)
-        if path then
-            local _, _, flags = fs:GetFont()
-            fs:SetFont(path, size, flags or "")
+    Text = function(owner, hostFrame, dim, r, g, b)
+        local fontStr = TrackFont(owner, CludesUI.MakeFont(hostFrame, dim, nil, r, g, b), dim)
+        local filePath = CludesUI.GetFontPath(FONT_KEY)
+        if filePath then
+            local _, _, flags = fontStr:GetFont()
+            fontStr:SetFont(filePath, dim, flags or "")
         end
-        return fs
+        return fontStr
     end,
     -- Text for a player's name: the same font as a font family, which draws the
     -- scripts the font lacks (no outline, no shadow, as Text has)
-    NameText = function(owner, parent, size, r, g, b)
-        local fs = TrackFont(owner, parent:CreateFontString(nil, "OVERLAY"), size, true)
-        CludesUI.SetFontFamily(fs, CludesUI.GetFontPath(FONT_KEY) or CludesUI.EXPRESSWAY, size, "", false)
+    NameText = function(owner, hostFrame, dim, r, g, b)
+        local fontStr = TrackFont(owner, hostFrame:CreateFontString(nil, "OVERLAY"), dim, true)
+        CludesUI.SetFontFamily(fontStr, CludesUI.GetFontPath(FONT_KEY) or CludesUI.EXPRESSWAY, dim, "", false)
         if r then
-            fs:SetTextColor(r, g, b, 1)
+            fontStr:SetTextColor(r, g, b, 1)
         end
-        return fs
+        return fontStr
     end,
 }
 
@@ -801,38 +801,38 @@ end
 
 -- An optional button's switch, defaulting to shown for an unset profile.
 local function ButtonShown(key)
-    local p = P()
+    local p = Prm()
     return not p or p[key] ~= false
 end
 
 -- The Buff Check button needs Raid Buff Check on (and a retail client: the
 -- feature file publishes ns.ToggleBuffCheck only there).
 local function BuffCheckShown()
-    local p = P()
-    return p and p.showBuffCheck == true and p.buffCheck == true and ns.ToggleBuffCheck ~= nil
+    local p = Prm()
+    return p and p.showBuffCheck == true and p.buffCheck == true and mod.ToggleBuffCheck ~= nil
 end
 
 local function ToggleBuffCheck()
-    if ns.ToggleBuffCheck then
-        ns.ToggleBuffCheck()
+    if mod.ToggleBuffCheck then
+        mod.ToggleBuffCheck()
     end
 end
 
 -- The pull durations worth a button, in slot order. 0 (and anything below it)
 -- means the user turned that slot off.
 local function VisiblePullTimes()
-    local times = (P() and P().pullTimes) or {}
-    local out = {}
-    for i = 1, PULL_SLOTS do
-        local secs = times[i]
+    local times = (Prm() and Prm().pullTimes) or {}
+    local result = {}
+    for idx = 1, PULL_SLOTS do
+        local secs = times[idx]
         if secs == nil then
-            secs = PULL_DEFAULTS[i]
+            secs = PULL_DEFAULTS[idx]
         end
         if secs and secs > 0 then
-            out[#out + 1] = secs
+            result[#result + 1] = secs
         end
     end
-    return out
+    return result
 end
 
 -- GROUP_ROSTER_UPDATE is one of the chattiest events in a raid -- it bursts on
@@ -930,15 +930,15 @@ local function DisbandGroup()
         return
     end
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local name = GetRaidRosterInfo(i)
+        for idx = 1, GetNumGroupMembers() do
+            local name = GetRaidRosterInfo(idx)
             if name and name ~= UnitName("player") then
                 C_PartyInfo.UninviteUnit(name)
             end
         end
     else
-        for i = 1, GetNumSubgroupMembers() do
-            local name = UnitName("party" .. i)
+        for idx = 1, GetNumSubgroupMembers() do
+            local name = UnitName("party" .. idx)
             if name then
                 C_PartyInfo.UninviteUnit(name)
             end
@@ -1033,31 +1033,31 @@ local function MakeShell(key)
 
     -- White title, vertically centered in the black band (the skins' title
     -- treatment; the accent stays on interactions, not chrome).
-    local fs = TrackFont(f, CludesUI.MakeFont(f, 12, nil, 1, 1, 1), 12)
-    fs:SetPoint("LEFT", f, "TOPLEFT", PAD, -TOPBAR_H / 2)
-    fs:SetText(CludesUI.L(SECTION_LABEL[key]))
-    shellTitle[key] = fs
+    local fontStr = TrackFont(f, CludesUI.MakeFont(f, 12, nil, 1, 1, 1), 12)
+    fontStr:SetPoint("LEFT", f, "TOPLEFT", PAD, -TOPBAR_H / 2)
+    fontStr:SetText(CludesUI.L(SECTION_LABEL[key]))
+    shellTitle[key] = fontStr
 
     -- Collapse button: small secure corner control riding the title band,
     -- only meaningful (and only shown -- ApplyLayout owns that) while Default
     -- to Collapsed Icon is on. Wears the skins' button chrome.
-    local col = CreateFrame("Button", nil, f, "SecureHandlerClickTemplate")
-    col:SetSize(14, 14)
-    col:SetPoint("RIGHT", f, "TOPRIGHT", -6, -TOPBAR_H / 2)
-    col:RegisterForClicks("AnyDown")
-    SkinButtonChrome(col)
-    local colFs = TrackFont(f, CludesUI.MakeFont(col, 14, nil, 1, 1, 1), 14)
-    colFs:SetPoint("CENTER", col, "CENTER", 0, 1)
+    local column = CreateFrame("Button", nil, f, "SecureHandlerClickTemplate")
+    column:SetSize(14, 14)
+    column:SetPoint("RIGHT", f, "TOPRIGHT", -6, -TOPBAR_H / 2)
+    column:RegisterForClicks("AnyDown")
+    SkinButtonChrome(column)
+    local colFs = TrackFont(f, CludesUI.MakeFont(column, 14, nil, 1, 1, 1), 14)
+    colFs:SetPoint("CENTER", column, "CENTER", 0, 1)
     colFs:SetText("-")
     colFs:SetAlpha(0.7)
-    col:SetScript("OnEnter", function()
+    column:SetScript("OnEnter", function()
         colFs:SetAlpha(1)
     end)
-    col:SetScript("OnLeave", function()
+    column:SetScript("OnLeave", function()
         colFs:SetAlpha(0.7)
     end)
-    col:SetAttribute("_onclick", COLLAPSE_SNIPPET)
-    f._collapseBtn = col
+    column:SetAttribute("_onclick", COLLAPSE_SNIPPET)
+    f._collapseBtn = column
 
     sections[key] = f
     fontOwners[#fontOwners + 1] = f
@@ -1075,11 +1075,11 @@ local function LayoutGroupContent()
 
     -- Row plan: two action buttons per row in fixed order; hidden buttons close
     -- the gap, a lone button takes the full width.
-    local rows, pair = {}, {}
+    local rowList, pair = {}, {}
     local function Add(b)
         pair[#pair + 1] = b
         if #pair == 2 then
-            rows[#rows + 1] = pair
+            rowList[#rowList + 1] = pair
             pair = {}
         end
     end
@@ -1097,7 +1097,7 @@ local function LayoutGroupContent()
         Add(disbandButton)
     end
     if #pair > 0 then
-        rows[#rows + 1] = pair
+        rowList[#rowList + 1] = pair
     end
 
     -- Pull row: surviving durations move onto the leading buttons (the click
@@ -1105,14 +1105,14 @@ local function LayoutGroupContent()
     local times = VisiblePullTimes()
     if #times > 0 then
         local pull = {}
-        for i, secs in ipairs(times) do
-            local b = pullButtons[i]
+        for idx, secs in ipairs(times) do
+            local b = pullButtons[idx]
             b.secs = secs
             b._lbl:SetText(tostring(secs))
-            pull[i] = b
+            pull[idx] = b
         end
         pull[#pull + 1] = stopButton
-        rows[#rows + 1] = pull
+        rowList[#rowList + 1] = pull
     end
 
     -- Hide all, then show only what the plan placed.
@@ -1120,21 +1120,21 @@ local function LayoutGroupContent()
         b:Hide()
     end
 
-    local y = 0
-    for _, row in ipairs(rows) do
-        local n = #row
-        local w = (PANEL_W - PAD * 2 - ROW_GAP * (n - 1)) / n
-        for i, b in ipairs(row) do
-            b:SetWidth(w)
+    local posY = 0
+    for _, rowFrame in ipairs(rowList) do
+        local num = #rowFrame
+        local wid = (PANEL_W - PAD * 2 - ROW_GAP * (num - 1)) / num
+        for idx, b in ipairs(rowFrame) do
+            b:SetWidth(wid)
             b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", f, "TOPLEFT", PAD + (w + ROW_GAP) * (i - 1), y)
+            b:SetPoint("TOPLEFT", f, "TOPLEFT", PAD + (wid + ROW_GAP) * (idx - 1), posY)
             b:Show()
         end
-        y = y - ROW_H - ROW_GAP
+        posY = posY - ROW_H - ROW_GAP
     end
-    y = y + ROW_GAP -- the last row's trailing gap is not content
+    posY = posY + ROW_GAP -- the last row's trailing gap is not content
 
-    GROUP_CONTENT_H = -y
+    GROUP_CONTENT_H = -posY
     f:SetHeight(GROUP_CONTENT_H)
 end
 
@@ -1170,14 +1170,14 @@ local function BuildGroupContent()
         ConfirmDisband()
     end, true)
 
-    for i = 1, PULL_SLOTS do
+    for idx = 1, PULL_SLOTS do
         -- The pull duration lives on the button and changes at runtime, so
         -- the click reads it through the closure.
         local b
         b = MakeGroupButton(f, "", full, function()
             StartPull(b.secs)
         end)
-        pullButtons[i] = b
+        pullButtons[idx] = b
     end
     stopButton = MakeGroupButton(f, "Stop", full, StopPull)
 
@@ -1198,28 +1198,28 @@ local function BuildMarkersContent()
     markersHolder:SetWidth(PANEL_W)
     fontOwners[#fontOwners + 1] = markersHolder
     local f = markersHolder
-    local y = 0
+    local posY = 0
 
     -- 8 markers + a clear button per row, evenly spread across the width.
     local step = (PANEL_W - PAD * 2 - MARKER_SZ) / 8
-    for r, row in ipairs(MARKER_ROWS) do
-        local lbl = TrackFont(f, CludesUI.MakeFont(f, 9, nil, 1, 1, 1), 9)
-        lbl:SetAlpha(0.55)
-        lbl:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
-        lbl:SetText(CludesUI.L(row.label))
-        y = y - MARKER_LBL_H - 2
+    for r, rowFrame in ipairs(MARKER_ROWS) do
+        local labelFS = TrackFont(f, CludesUI.MakeFont(f, 9, nil, 1, 1, 1), 9)
+        labelFS:SetAlpha(0.55)
+        labelFS:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, posY)
+        labelFS:SetText(CludesUI.L(rowFrame.label))
+        posY = posY - MARKER_LBL_H - 2
 
-        for i = 0, 8 do
-            local b = MakeMarkerButton(f, i == 8 and 0 or (i + 1), row.kind)
-            b:SetPoint("TOPLEFT", f, "TOPLEFT", PAD + step * i, y)
+        for idx = 0, 8 do
+            local b = MakeMarkerButton(f, idx == 8 and 0 or (idx + 1), rowFrame.kind)
+            b:SetPoint("TOPLEFT", f, "TOPLEFT", PAD + step * idx, posY)
         end
-        y = y - MARKER_SZ
+        posY = posY - MARKER_SZ
         if r < #MARKER_ROWS then
-            y = y - ROW_GAP * 2
+            posY = posY - ROW_GAP * 2
         end
     end
 
-    MARKERS_CONTENT_H = -y
+    MARKERS_CONTENT_H = -posY
     f:SetHeight(MARKERS_CONTENT_H)
 end
 
@@ -1228,112 +1228,112 @@ end
 -- Its tooltip copies the established Data Bars grammar locally because that
 -- child addon is optional: bracketed title, input left and result right.
 do
-    local tip, owner
-    local rows = {}
+    local tipText, owner
+    local rowList = {}
     local TIP_PAD, TIP_ROW_GAP, TIP_COL_GAP, TIP_FONT_SIZE = 10, 3, 18, 12
 
-    local function SetTipFont(fs)
-        local path = CludesUI.GetFontPath(FONT_KEY)
-        local _, _, flags = fs:GetFont()
-        if not path and GameFontNormal then
+    local function SetTipFont(fontStr)
+        local filePath = CludesUI.GetFontPath(FONT_KEY)
+        local _, _, flags = fontStr:GetFont()
+        if not filePath and GameFontNormal then
             local fallbackPath, _, fallbackFlags = GameFontNormal:GetFont()
-            path, flags = fallbackPath, fallbackFlags
+            filePath, flags = fallbackPath, fallbackFlags
         end
-        if path then
-            fs:SetFont(path, TIP_FONT_SIZE, flags or "")
+        if filePath then
+            fontStr:SetFont(filePath, TIP_FONT_SIZE, flags or "")
         end
     end
 
     local function EnsureTip()
-        if tip then
-            return tip
+        if tipText then
+            return tipText
         end
-        tip = CreateFrame("Frame", "CludesUIRaidToolsTip", UIParent)
-        tip:SetFrameStrata("TOOLTIP")
-        tip:SetFrameLevel(900)
-        tip:SetClampedToScreen(true)
-        tip:Hide()
-        local bg = tip:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.067, 0.067, 0.067, 0.97)
+        tipText = CreateFrame("Frame", "CludesUIRaidToolsTip", UIParent)
+        tipText:SetFrameStrata("TOOLTIP")
+        tipText:SetFrameLevel(900)
+        tipText:SetClampedToScreen(true)
+        tipText:Hide()
+        local backdrop = tipText:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.97)
         if CludesUI.PP and CludesUI.PP.CreateBorder then
-            CludesUI.PP.CreateBorder(tip, 0, 0, 0, 0.9, 1, "OVERLAY", 7)
+            CludesUI.PP.CreateBorder(tipText, 0, 0, 0, 0.9, 1, "OVERLAY", 7)
         end
-        return tip
+        return tipText
     end
 
-    local function EnsureRow(i)
-        local row = rows[i]
-        if not row then
-            row = {
-                left = tip:CreateFontString(nil, "OVERLAY"),
-                right = tip:CreateFontString(nil, "OVERLAY"),
+    local function EnsureRow(idx)
+        local rowFrame = rowList[idx]
+        if not rowFrame then
+            rowFrame = {
+                left = tipText:CreateFontString(nil, "OVERLAY"),
+                right = tipText:CreateFontString(nil, "OVERLAY"),
             }
-            rows[i] = row
+            rowList[idx] = rowFrame
         end
-        SetTipFont(row.left)
-        SetTipFont(row.right)
-        return row
+        SetTipFont(rowFrame.left)
+        SetTipFont(rowFrame.right)
+        return rowFrame
     end
 
-    ShowCompactTip = function(ownerFrame, title, actions)
+    ShowCompactTip = function(ownerFrame, titleText, actions)
         EnsureTip()
         owner = ownerFrame
-        local count = #actions + 2
+        local total = #actions + 2
         local maxLeft, maxRight, totalH = 0, 0, 0
-        for i = 1, count do
-            local row = EnsureRow(i)
-            row.left:ClearAllPoints()
-            row.right:ClearAllPoints()
-            row.left:SetWordWrap(false)
-            row.right:SetWordWrap(false)
-            row.left:SetWidth(0)
-            row.right:SetWidth(0)
+        for idx = 1, total do
+            local rowFrame = EnsureRow(idx)
+            rowFrame.left:ClearAllPoints()
+            rowFrame.right:ClearAllPoints()
+            rowFrame.left:SetWordWrap(false)
+            rowFrame.right:SetWordWrap(false)
+            rowFrame.left:SetWidth(0)
+            rowFrame.right:SetWidth(0)
 
-            if i == 1 then
-                row.left:SetText("[" .. CludesUI.L(title) .. "]")
-                row.right:SetText("")
-                row.right:Hide()
-                row._h = row.left:GetStringHeight() or TIP_FONT_SIZE
-            elseif i == 2 then
-                row.left:SetText("")
-                row.right:SetText("")
-                row.right:Hide()
-                row._h = 4
+            if idx == 1 then
+                rowFrame.left:SetText("[" .. CludesUI.L(titleText) .. "]")
+                rowFrame.right:SetText("")
+                rowFrame.right:Hide()
+                rowFrame._h = rowFrame.left:GetStringHeight() or TIP_FONT_SIZE
+            elseif idx == 2 then
+                rowFrame.left:SetText("")
+                rowFrame.right:SetText("")
+                rowFrame.right:Hide()
+                rowFrame._h = 4
             else
-                local action = actions[i - 2]
-                row.left:SetText(CludesUI.L(action[1]))
-                row.right:SetText(CludesUI.L(action[2]))
-                row.right:Show()
-                row._h = math.max(
-                    row.left:GetStringHeight() or TIP_FONT_SIZE,
-                    row.right:GetStringHeight() or TIP_FONT_SIZE
+                local action = actions[idx - 2]
+                rowFrame.left:SetText(CludesUI.L(action[1]))
+                rowFrame.right:SetText(CludesUI.L(action[2]))
+                rowFrame.right:Show()
+                rowFrame._h = math.max(
+                    rowFrame.left:GetStringHeight() or TIP_FONT_SIZE,
+                    rowFrame.right:GetStringHeight() or TIP_FONT_SIZE
                 )
             end
-            row.left:SetTextColor(1, 1, 1, 1)
-            row.right:SetTextColor(1, 1, 1, 1)
-            row.left:Show()
-            maxLeft = math.max(maxLeft, row.left:GetStringWidth() or 0)
-            if row.right:IsShown() then
-                maxRight = math.max(maxRight, row.right:GetStringWidth() or 0)
+            rowFrame.left:SetTextColor(1, 1, 1, 1)
+            rowFrame.right:SetTextColor(1, 1, 1, 1)
+            rowFrame.left:Show()
+            maxLeft = math.max(maxLeft, rowFrame.left:GetStringWidth() or 0)
+            if rowFrame.right:IsShown() then
+                maxRight = math.max(maxRight, rowFrame.right:GetStringWidth() or 0)
             end
-            totalH = totalH + row._h + (i > 1 and TIP_ROW_GAP or 0)
+            totalH = totalH + rowFrame._h + (idx > 1 and TIP_ROW_GAP or 0)
         end
-        for i = count + 1, #rows do
-            rows[i].left:Hide()
-            rows[i].right:Hide()
+        for idx = total + 1, #rowList do
+            rowList[idx].left:Hide()
+            rowList[idx].right:Hide()
         end
 
         local innerW = maxLeft + (maxRight > 0 and TIP_COL_GAP + maxRight or 0)
-        tip:SetSize(math.max(60, innerW + TIP_PAD * 2), math.max(24, totalH + TIP_PAD * 2))
-        local y = -TIP_PAD
-        for i = 1, count do
-            local row = rows[i]
-            row.left:SetPoint("TOPLEFT", tip, "TOPLEFT", TIP_PAD, y)
-            if row.right:IsShown() then
-                row.right:SetPoint("TOPRIGHT", tip, "TOPRIGHT", -TIP_PAD, y)
+        tipText:SetSize(math.max(60, innerW + TIP_PAD * 2), math.max(24, totalH + TIP_PAD * 2))
+        local posY = -TIP_PAD
+        for idx = 1, total do
+            local rowFrame = rowList[idx]
+            rowFrame.left:SetPoint("TOPLEFT", tipText, "TOPLEFT", TIP_PAD, posY)
+            if rowFrame.right:IsShown() then
+                rowFrame.right:SetPoint("TOPRIGHT", tipText, "TOPRIGHT", -TIP_PAD, posY)
             end
-            y = y - row._h - TIP_ROW_GAP
+            posY = posY - rowFrame._h - TIP_ROW_GAP
         end
 
         local level = 900
@@ -1343,42 +1343,42 @@ do
                 level = math.max(level, gameTipLevel + 10)
             end
         end
-        if tip:GetFrameLevel() < level then
-            tip:SetFrameLevel(level)
+        if tipText:GetFrameLevel() < level then
+            tipText:SetFrameLevel(level)
         end
-        tip:ClearAllPoints()
+        tipText:ClearAllPoints()
         local _, cy = ownerFrame:GetCenter()
         if cy and cy < UIParent:GetHeight() / 2 then
-            tip:SetPoint("BOTTOM", ownerFrame, "TOP", 0, 6)
+            tipText:SetPoint("BOTTOM", ownerFrame, "TOP", 0, 6)
         else
-            tip:SetPoint("TOP", ownerFrame, "BOTTOM", 0, -6)
+            tipText:SetPoint("TOP", ownerFrame, "BOTTOM", 0, -6)
         end
-        tip:Show()
+        tipText:Show()
     end
 
     HideCompactTip = function(ownerFrame)
-        if not tip or (ownerFrame and owner ~= ownerFrame) then
+        if not tipText or (ownerFrame and owner ~= ownerFrame) then
             return
         end
         owner = nil
-        tip:Hide()
+        tipText:Hide()
     end
 end
 
-local function MakeCompactActionButton(parent, label, tipBuilder, onClick)
-    local b = CreateFrame("Button", nil, parent)
+local function MakeCompactActionButton(hostFrame, labelText, tipBuilder, onClick)
+    local b = CreateFrame("Button", nil, hostFrame)
     b:SetSize(COMPACT_ICON, COMPACT_ICON)
     b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     b:SetScript("OnClick", onClick)
-    local fs = TrackFont(parent, CludesUI.MakeFont(b, 11, nil, 1, 1, 1), 11)
-    fs:SetPoint("CENTER")
-    fs:SetText(label)
-    fs:SetAlpha(0.8)
-    b.label = fs
+    local fontStr = TrackFont(hostFrame, CludesUI.MakeFont(b, 11, nil, 1, 1, 1), 11)
+    fontStr:SetPoint("CENTER")
+    fontStr:SetText(labelText)
+    fontStr:SetAlpha(0.8)
+    b.label = fontStr
     b:SetScript("OnEnter", function(self)
         self.label:SetAlpha(1)
-        local title, actions = tipBuilder()
-        ShowCompactTip(self, title, actions)
+        local titleText, actions = tipBuilder()
+        ShowCompactTip(self, titleText, actions)
     end)
     b:SetScript("OnLeave", function(self)
         self.label:SetAlpha(0.8)
@@ -1388,11 +1388,11 @@ local function MakeCompactActionButton(parent, label, tipBuilder, onClick)
     return b
 end
 
-local function CompactPullTime(slot)
-    local times = (P() and P().pullTimes) or {}
-    local value = times[slot]
+local function CompactPullTime(slotIndex)
+    local times = (Prm() and Prm().pullTimes) or {}
+    local value = times[slotIndex]
     if value == nil then
-        value = PULL_DEFAULTS[slot]
+        value = PULL_DEFAULTS[slotIndex]
     end
     return value and value > 0 and value or nil
 end
@@ -1415,10 +1415,10 @@ local function LayoutCompactMarkers()
     local lastLeft = width - COMPACT_PAD - utilityWidth - COMPACT_DIVIDER_OFFSET - COMPACT_GAP - COMPACT_ICON
     local stride = (lastLeft - firstLeft) / (#compactMarkerButtons - 1)
 
-    for i, button in ipairs(compactMarkerButtons) do
-        button:ClearAllPoints()
-        local x = math.floor(firstLeft + (i - 1) * stride + 0.5)
-        button:SetPoint("LEFT", compactHolder, "LEFT", x, 0)
+    for idx, btnFrame in ipairs(compactMarkerButtons) do
+        btnFrame:ClearAllPoints()
+        local posX = math.floor(firstLeft + (idx - 1) * stride + 0.5)
+        btnFrame:SetPoint("LEFT", compactHolder, "LEFT", posX, 0)
     end
 end
 
@@ -1464,11 +1464,11 @@ local function RefreshCompactMarkerState()
     end
     for _, b in ipairs(compactMarkerButtons) do
         -- The clear button carries no world marker and never greys out.
-        local id = b._worldID
-        if id and IsRaidMarkerActive then
-            local active = IsRaidMarkerActive(id)
-            b.icon:SetDesaturation(C_CurveUtil.EvaluateColorValueFromBoolean(active, 1, 0))
-            b._activeHost:SetAlphaFromBoolean(active, 1, 0)
+        local ident = b._worldID
+        if ident and IsRaidMarkerActive then
+            local isActive = IsRaidMarkerActive(ident)
+            b.icon:SetDesaturation(C_CurveUtil.EvaluateColorValueFromBoolean(isActive, 1, 0))
+            b._activeHost:SetAlphaFromBoolean(isActive, 1, 0)
         end
     end
 end
@@ -1480,8 +1480,8 @@ local function BuildCompactContent()
     -- Blizzard's marker menus and the supplied references both read
     -- Star -> Skull from left to right, followed by one clear action.
     local markerOrder = { 1, 2, 3, 4, 5, 6, 7, 8 }
-    for _, index in ipairs(markerOrder) do
-        local b = MakeMarkerButton(compactHolder, index, "compact")
+    for _, slotPos in ipairs(markerOrder) do
+        local b = MakeMarkerButton(compactHolder, slotPos, "compact")
         compactMarkerButtons[#compactMarkerButtons + 1] = b
     end
     local clear = MakeMarkerButton(compactHolder, 0, "compact-clear")
@@ -1496,8 +1496,8 @@ local function BuildCompactContent()
             actions[#actions + 1] = { "Shift + Left Click", "Buff Check" }
         end
         return "Ready Check", actions
-    end, function(_, button)
-        if button == "RightButton" then
+    end, function(_, btnFrame)
+        if btnFrame == "RightButton" then
             if ButtonShown("showRoleCheck") then
                 InitiateRolePoll()
             end
@@ -1519,8 +1519,8 @@ local function BuildCompactContent()
                 { "Ctrl + Left Click", "Pull " .. a },
                 { "Right Click", "Stop pull timer" },
             }
-    end, function(_, button)
-        if button == "RightButton" then
+    end, function(_, btnFrame)
+        if btnFrame == "RightButton" then
             StopPull()
             return
         end
@@ -1569,20 +1569,20 @@ local function BuildCollapsedIcon()
 
     -- The button IS the art: full-bleed image at full opacity, no chrome and
     -- no tooltip.
-    local tex = iconBtn:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints(iconBtn)
-    tex:SetTexture(COLLAPSED_ICON_TEX)
+    local texture = iconBtn:CreateTexture(nil, "ARTWORK")
+    texture:SetAllPoints(iconBtn)
+    texture:SetTexture(COLLAPSED_ICON_TEX)
 
     -- Hover whitens the art by 10%: the SAME image additively at 0.1 on the
     -- native HIGHLIGHT layer (auto shown on mouseover, no scripts). Re-using
     -- the image keeps the lift inside its alpha channel -- a plain white ADD
     -- rect would glow the transparent corners too. Vertex color cannot do
     -- this; it only multiplies downward.
-    local hl = iconBtn:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints(iconBtn)
-    hl:SetTexture(COLLAPSED_ICON_TEX)
-    hl:SetBlendMode("ADD")
-    hl:SetAlpha(0.5)
+    local highlight = iconBtn:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetAllPoints(iconBtn)
+    highlight:SetTexture(COLLAPSED_ICON_TEX)
+    highlight:SetBlendMode("ADD")
+    highlight:SetAlpha(0.5)
 
     iconBtn:SetAttribute("enabled", true)
     iconBtn:SetAttribute("visible", false)
@@ -1640,16 +1640,16 @@ local function BuildAll()
 
     -- Frame refs: the toggle, the icon and each collapse button all reach the
     -- same set; the shells reach the icon for the _onstate fan-out.
-    for i, key in ipairs(SECTION_KEYS) do
+    for idx, key in ipairs(SECTION_KEYS) do
         local shell = sections[key]
-        toggleButton:SetFrameRef("s" .. i, shell)
+        toggleButton:SetFrameRef("s" .. idx, shell)
         shell:SetFrameRef("icon", iconBtn)
         shell._collapseBtn:SetAttribute("count", #SECTION_KEYS)
-        for j, k2 in ipairs(SECTION_KEYS) do
-            shell._collapseBtn:SetFrameRef("s" .. j, sections[k2])
+        for jdx, k2 in ipairs(SECTION_KEYS) do
+            shell._collapseBtn:SetFrameRef("s" .. jdx, sections[k2])
         end
         shell._collapseBtn:SetFrameRef("icon", iconBtn)
-        iconBtn:SetFrameRef("s" .. i, shell)
+        iconBtn:SetFrameRef("s" .. idx, shell)
     end
     toggleButton:SetFrameRef("icon", iconBtn)
     iconBtn:SetAttribute("count", #SECTION_KEYS)
@@ -1689,7 +1689,7 @@ end
 -- Show-as arrangement. OOC only (Apply gates); the holders are plain frames,
 -- so the re-parent is an ordinary SetParent.
 local function ApplyLayout()
-    local p = P()
+    local p = Prm()
     local showAs = ShowAs()
     local winGroup, winMarkers = sections.Group, sections.Markers
 
@@ -1791,13 +1791,13 @@ local function DefaultPos(key)
     -- the screen (a small margin off the edges); two-window mode stacks
     -- Markers under Group & Pull. A saved position always wins over this.
     local MARGIN = 20
-    local top = -MARGIN
+    local topY = -MARGIN
     if key == "Markers" then
-        top = top - (sections.Group:GetHeight() * WindowScale() + ROW_GAP)
+        topY = topY - (sections.Group:GetHeight() * WindowScale() + ROW_GAP)
     end
     -- Screen-space margin converted into the frame's own scaled units.
     local s = WindowScale()
-    return { point = "TOPLEFT", relPoint = "TOPLEFT", x = MARGIN / s, y = top / s }
+    return { point = "TOPLEFT", relPoint = "TOPLEFT", x = MARGIN / s, y = topY / s }
 end
 
 local function ApplySectionPosition(key, unlockKey, posKey)
@@ -1810,7 +1810,7 @@ local function ApplySectionPosition(key, unlockKey, posKey)
         return
     end
 
-    local p = P()
+    local p = Prm()
     unlockKey = unlockKey or (UNLOCK_KEY .. key)
     posKey = posKey or key
     local pos = ((p and p.pos) or {})[posKey] or DefaultPos(key)
@@ -1865,18 +1865,18 @@ local MODE_DRIVERS = {
 
 -- Reached only from Apply, which has already returned if we are in combat.
 local function ApplyVisibility()
-    local p = P()
-    local mode = Mode()
-    local driver = MODE_DRIVERS[mode]
+    local p = Prm()
+    local modeName = Mode()
+    local driver = MODE_DRIVERS[modeName]
     -- The out-of-combat settle for the state a driver will not re-fire
     -- (registering one only fires _onstate on a CHANGE). Always mode has no
     -- driver at all: the settle IS its entire visibility source.
     local visNow = false
-    if mode == "raid" then
+    if modeName == "raid" then
         visNow = IsInRaid()
-    elseif mode == "group" then
+    elseif modeName == "group" then
         visNow = IsInGroup()
-    elseif mode == "always" then
+    elseif modeName == "always" then
         visNow = true
     end
 
@@ -1914,16 +1914,16 @@ local function ApplyVisibility()
 
     for _, key in ipairs(SECTION_KEYS) do
         local f = sections[key]
-        local on = shellOn[key] and true or false
+        local enabled = shellOn[key] and true or false
 
-        f:SetAttribute("enabled", on)
+        f:SetAttribute("enabled", enabled)
         f:SetAttribute("visible", visNow)
         f:SetAttribute("override", "")
         f:SetAttribute("startexpanded", startExpanded)
         f:SetAttribute("expanded", expandedNow)
 
         UnregisterStateDriver(f, "cuirt_vis")
-        if on and driver then
+        if enabled and driver then
             RegisterStateDriver(f, "cuirt_vis", driver)
         end
     end
@@ -1960,7 +1960,7 @@ local function ApplyToggleKeybind()
         return
     end
     ClearOverrideBindings(toggleButton)
-    local p = P()
+    local p = Prm()
     local k = p and p.toggleKey
     -- The gate takes the binding with it rather than leaving a key that eats
     -- its own keypress: the snippet would refuse a disabled frame, and an
@@ -1999,36 +1999,36 @@ local function PrimeQuickFire(place)
         free = {}
         runtime.qfFree = free
     end
-    for i = 1, 8 do
-        local active = IsRaidMarkerActive and IsRaidMarkerActive(SYMBOL_TO_WORLD[i])
-        if issecretvalue(active) then
-            local n = tonumber(place:GetAttribute("qfAvailCount"))
-            if zoned or not n or (tonumber(place:GetAttribute("qfAvailPos")) or 0) >= n then
-                for j = 1, 8 do
-                    place:SetAttribute("qfAvail" .. j, j)
+    for idx = 1, 8 do
+        local isActive = IsRaidMarkerActive and IsRaidMarkerActive(SYMBOL_TO_WORLD[idx])
+        if issecretvalue(isActive) then
+            local num = tonumber(place:GetAttribute("qfAvailCount"))
+            if zoned or not num or (tonumber(place:GetAttribute("qfAvailPos")) or 0) >= num then
+                for jdx = 1, 8 do
+                    place:SetAttribute("qfAvail" .. jdx, jdx)
                 end
                 place:SetAttribute("qfAvailCount", 8)
                 place:SetAttribute("qfAvailPos", 0)
-                if zoned or not n then
+                if zoned or not num then
                     place:SetAttribute("qfDepth", 0)
                 end
                 runtime.qfZonedPending = nil
             end
             return
         end
-        free[i] = not active
+        free[idx] = not isActive
     end
-    local count = 0
-    for i = 1, 8 do
-        if free[i] then
-            count = count + 1
-            place:SetAttribute("qfAvail" .. count, i)
+    local total = 0
+    for idx = 1, 8 do
+        if free[idx] then
+            total = total + 1
+            place:SetAttribute("qfAvail" .. total, idx)
         end
     end
-    for i = count + 1, 8 do
-        place:SetAttribute("qfAvail" .. i, nil)
+    for idx = total + 1, 8 do
+        place:SetAttribute("qfAvail" .. idx, nil)
     end
-    place:SetAttribute("qfAvailCount", count)
+    place:SetAttribute("qfAvailCount", total)
     place:SetAttribute("qfAvailPos", 0)
     if zoned then
         place:SetAttribute("qfDepth", 0)
@@ -2058,11 +2058,11 @@ local function BuildQuickFire()
     place:Show()
     place:SetAttribute("qfCount", 8)
     place:SetAttribute("qfDepth", 0)
-    for i = 1, 8 do
-        place:SetAttribute("qfMarker" .. i, SYMBOL_TO_WORLD[i])
+    for idx = 1, 8 do
+        place:SetAttribute("qfMarker" .. idx, SYMBOL_TO_WORLD[idx])
         place:SetAttribute(
-            "qfPlaceMacro" .. i,
-            (SLASH_WORLD_MARKER1 or "/wm") .. " [@cursor] " .. SYMBOL_TO_WORLD[i]
+            "qfPlaceMacro" .. idx,
+            (SLASH_WORLD_MARKER1 or "/wm") .. " [@cursor] " .. SYMBOL_TO_WORLD[idx]
         )
     end
     place:SetScript("PreClick", function(self)
@@ -2186,7 +2186,7 @@ local function BuildQuickFire()
 end
 
 local function ApplyQuickFireBindings()
-    local p = P()
+    local p = Prm()
     if runtime.qfBindingOwner then
         ClearOverrideBindings(runtime.qfBindingOwner)
     end
@@ -2237,11 +2237,11 @@ local ev
 local function EnsureEvents()
     if not ev then
         ev = CreateFrame("Frame")
-        ev:SetScript("OnEvent", function(_, event)
+        ev:SetScript("OnEvent", function(_, evt)
             -- Pending work FIRST, before the mode gate: a switch TO "never" deferred by
             -- combat must complete even though the profile already reads never --
             -- swallowing it here is how panels get stranded on screen.
-            if event == "PLAYER_REGEN_ENABLED" and applyPending then
+            if evt == "PLAYER_REGEN_ENABLED" and applyPending then
                 Apply()
                 return
             end
@@ -2250,17 +2250,14 @@ local function EnsureEvents()
             end
             -- A zone change repaints the band too: the markers it showed belong
             -- to the ground just left.
-            if
-                (event == "RAID_TARGET_UPDATE" or event == "PLAYER_ENTERING_WORLD")
-                and ShowAs() == "compact"
-            then
+            if (evt == "RAID_TARGET_UPDATE" or evt == "PLAYER_ENTERING_WORLD") and ShowAs() == "compact" then
                 RefreshCompactMarkerState()
             end
             -- Both features share these events, but each only does work while
             -- enabled. An old Quick Fire frame can survive being disabled. An
             -- instance change is latched for the next prime out of combat (see
             -- PrimeQuickFire); a loading screen inside the same instance is not one.
-            if event == "PLAYER_ENTERING_WORLD" then
+            if evt == "PLAYER_ENTERING_WORLD" then
                 local zone = select(8, GetInstanceInfo())
                 if zone ~= runtime.qfZone then
                     runtime.qfZone = zone
@@ -2268,11 +2265,11 @@ local function EnsureEvents()
                 end
             end
             if
-                event == "RAID_TARGET_UPDATE"
-                or event == "PLAYER_REGEN_ENABLED"
-                or event == "PLAYER_ENTERING_WORLD"
+                evt == "RAID_TARGET_UPDATE"
+                or evt == "PLAYER_REGEN_ENABLED"
+                or evt == "PLAYER_ENTERING_WORLD"
             then
-                local p = P()
+                local p = Prm()
                 if p and p.quickFire == true and runtime.qfPlace then
                     PrimeQuickFire(runtime.qfPlace)
                 end
@@ -2285,7 +2282,7 @@ local function EnsureEvents()
     ev:RegisterEvent("PARTY_LEADER_CHANGED")
     ev:RegisterEvent("PLAYER_ENTERING_WORLD")
     ev:RegisterEvent("PLAYER_REGEN_ENABLED")
-    local p = P()
+    local p = Prm()
     if Mode() ~= "never" and (ShowAs() == "compact" or (p and p.quickFire == true)) then
         ev:RegisterEvent("RAID_TARGET_UPDATE")
     else
@@ -2314,13 +2311,13 @@ local function RegisterUnlock()
     unlockRegistered = true
 
     local elements = {}
-    for i, key in ipairs(SECTION_KEYS) do
+    for idx, key in ipairs(SECTION_KEYS) do
         local unlockKey = UNLOCK_KEY .. key
         elements[#elements + 1] = MK({
             key = unlockKey,
             label = SECTION_LABEL[key],
             group = "Raid Tools",
-            order = 540 + i,
+            order = 540 + idx,
             noResize = true,
             getFrame = function()
                 if Mode() == "never" then
@@ -2355,11 +2352,11 @@ local function RegisterUnlock()
                 end
                 return PANEL_W * s, 60 * s
             end,
-            savePos = function(_, point, relPoint, x, y)
-                if not point then
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                if not anchorPoint then
                     return
                 end
-                local p = P()
+                local p = Prm()
                 if not p then
                     return
                 end
@@ -2369,7 +2366,8 @@ local function RegisterUnlock()
                 -- ConvertToCenterPos passes an already-CENTER value through
                 -- untouched, so the drag path is unaffected.
                 if CludesUI.ConvertToCenterPos then
-                    point, relPoint, x, y = CludesUI.ConvertToCenterPos(unlockKey, point, relPoint, x, y)
+                    anchorPoint, relPoint, posX, posY =
+                        CludesUI.ConvertToCenterPos(unlockKey, anchorPoint, relPoint, posX, posY)
                 end
                 -- Direct index, no `p.pos = p.pos or {}` reseed: DB_DEFAULTS
                 -- guarantees the table, and under a Spec Overrides capture
@@ -2379,16 +2377,16 @@ local function RegisterUnlock()
                 if not p.pos then
                     return
                 end
-                p.pos[key] = { point = point, relPoint = relPoint, x = x, y = y }
+                p.pos[key] = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
                     ApplySectionPosition(key)
                 end
             end,
             loadPos = function()
-                return ((P() and P().pos) or {})[key]
+                return ((Prm() and Prm().pos) or {})[key]
             end,
             clearPos = function()
-                local p = P()
+                local p = Prm()
                 if p and p.pos then
                     p.pos[key] = nil
                 end
@@ -2426,48 +2424,49 @@ local function RegisterUnlock()
             return CompactWidth(), CompactHeight()
         end,
         setWidth = function(_, newW)
-            local p = P()
+            local p = Prm()
             if not (p and newW) then
                 return
             end
-            local PP = CludesUI and CludesUI.PP
-            p.compactWidth = math.max(COMPACT_MIN_W, PP and PP.Snap(newW) or math.floor(newW + 0.5))
+            local Pix = CludesUI and CludesUI.PP
+            p.compactWidth = math.max(COMPACT_MIN_W, Pix and Pix.Snap(newW) or math.floor(newW + 0.5))
             if sections.Group then
                 ApplyLayout()
             end
         end,
         setHeight = function(_, newH)
-            local p = P()
+            local p = Prm()
             if not (p and newH) then
                 return
             end
-            local PP = CludesUI and CludesUI.PP
-            p.compactHeight = math.max(COMPACT_MIN_H, PP and PP.Snap(newH) or math.floor(newH + 0.5))
+            local Pix = CludesUI and CludesUI.PP
+            p.compactHeight = math.max(COMPACT_MIN_H, Pix and Pix.Snap(newH) or math.floor(newH + 0.5))
             if sections.Group then
                 ApplyLayout()
             end
         end,
-        savePos = function(_, point, relPoint, x, y)
-            if not point then
+        savePos = function(_, anchorPoint, relPoint, posX, posY)
+            if not anchorPoint then
                 return
             end
-            local p = P()
+            local p = Prm()
             if not (p and p.pos) then
                 return
             end
             if CludesUI.ConvertToCenterPos then
-                point, relPoint, x, y = CludesUI.ConvertToCenterPos(COMPACT_UNLOCK_KEY, point, relPoint, x, y)
+                anchorPoint, relPoint, posX, posY =
+                    CludesUI.ConvertToCenterPos(COMPACT_UNLOCK_KEY, anchorPoint, relPoint, posX, posY)
             end
-            p.pos.Compact = { point = point, relPoint = relPoint, x = x, y = y }
+            p.pos.Compact = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
                 ApplySectionPosition("Group", COMPACT_UNLOCK_KEY, "Compact")
             end
         end,
         loadPos = function()
-            return ((P() and P().pos) or {}).Compact
+            return ((Prm() and Prm().pos) or {}).Compact
         end,
         clearPos = function()
-            local p = P()
+            local p = Prm()
             if p and p.pos then
                 p.pos.Compact = nil
             end
@@ -2493,8 +2492,8 @@ end
 function Apply()
     -- Raid Buff Check registers plain events only, so it follows the settings
     -- even in combat and with the panels on Never.
-    if ns.BuffCheckSync then
-        ns.BuffCheckSync()
+    if mod.BuffCheckSync then
+        mod.BuffCheckSync()
     end
     if InCombatLockdown() then
         applyPending = true
@@ -2553,12 +2552,12 @@ _G._CUI_RaidTools_Apply = Apply
 -- ns export on purpose: the QoL page dispatcher in CUI_QoL_Options.lua has no
 -- ns capture, and it is the one that must end the preview when another QoL
 -- page builds. Same convention as _CUI_RaidTools_Apply.
-_G._CUI_RaidTools_Preview = function(on)
-    on = on and true or false
-    if previewOn == on then
+_G._CUI_RaidTools_Preview = function(enabled)
+    enabled = enabled and true or false
+    if previewOn == enabled then
         return
     end
-    previewOn = on
+    previewOn = enabled
     Apply()
 end
 
@@ -2624,9 +2623,9 @@ boot:SetScript("OnEvent", function(self)
     if not (CludesUI and CludesUI.Lite and CludesUI.Lite.NewDB) then
         return
     end
-    db = CludesUI.Lite.NewDB("CludesUIQoLDB", DB_DEFAULTS, true)
+    saved = CludesUI.Lite.NewDB("CludesUIQoLDB", DB_DEFAULTS, true)
     _G._CUI_RaidTools_DB = function()
-        return db
+        return saved
     end
     Apply()
 end)

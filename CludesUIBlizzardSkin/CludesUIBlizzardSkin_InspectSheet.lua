@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Shared helpers (CludesUI.GetUpgradeTrack, CludesUI.GetEnchantText)
 --  are exported by CharacterSheet and loaded before this file.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 local skinned = false
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
@@ -65,8 +65,8 @@ local slotGridMap = {
 -- are parked in per-slot cache fields and reused by the next pass: the
 -- client never frees frames or font strings, so recreating them on every
 -- pass would grow the widget count for the rest of the session.
-local function CUI_ClearSlotLabels(slot)
-    local d = GetFFD(slot)
+local function CUI_ClearSlotLabels(slotIndex)
+    local d = GetFFD(slotIndex)
     if d.iLvlText then
         d.iLvlText:Hide()
         d.cachedILvlText = d.iLvlText
@@ -92,8 +92,8 @@ end
 -- Returns true when the slot's item or tooltip data has not arrived yet (its
 -- labels wait for it: RefreshSlotStyles reads the slot again as it comes).
 local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightColumn)
-    local slot = _G[slotName]
-    if not slot or not textOverlayFrame then
+    local slotIndex = _G[slotName]
+    if not slotIndex or not textOverlayFrame then
         return
     end
     local pending = false
@@ -107,7 +107,7 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
     -- had that unit cached) kept the old values indefinitely -- the reported
     -- "shows the first player's item levels". Clear here instead, so EVERY
     -- styling pass rebuilds from the live item link no matter who calls.
-    CUI_ClearSlotLabels(slot)
+    CUI_ClearSlotLabels(slotIndex)
 
     local skipLabels = (slotName == "InspectShirtSlot" or slotName == "InspectTabardSlot")
     -- WoW Forever's ranged slot sits right of the off hand, so there the off
@@ -119,9 +119,9 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
         return
     end
 
-    local fontPath = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+    local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
     local itemLink = GetInventoryItemLink(inspectUnit, slotID)
-    GetFFD(slot).itemLink = itemLink
+    GetFFD(slotIndex).itemLink = itemLink
 
     local borderR, borderG, borderB = 0.4, 0.4, 0.4
     if itemLink then
@@ -132,34 +132,35 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
     end
 
     if CludesUI and CludesUI.PanelPP then
-        CludesUI.PanelPP.SetBorderColor(slot, borderR, borderG, borderB, 1)
+        CludesUI.PanelPP.SetBorderColor(slotIndex, borderR, borderG, borderB, 1)
     end
-    GetFFD(slot).border = true
+    GetFFD(slotIndex).border = true
 
     -- Item level label (font size matches CharacterSheet)
-    if itemLink and not GetFFD(slot).iLvlText and not skipLabels then
+    if itemLink and not GetFFD(slotIndex).iLvlText and not skipLabels then
         -- GetItemInfo's itemLevel is the cached base level, wrong for upgrade-track
         -- pieces; the detailed level reads the link's bonus IDs.
         local _, _, quality, baseIlvl = GetItemInfo(itemLink)
         local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink) or baseIlvl
         if ilvl and ilvl > 0 then
             local itemLevelSize = CludesUIDB and CludesUIDB.charSheetItemLevelSize or 11
-            local ilvlText = GetFFD(slot).cachedILvlText or textOverlayFrame:CreateFontString(nil, "OVERLAY")
-            ilvlText:SetFont(fontPath, itemLevelSize, "")
+            local ilvlText = GetFFD(slotIndex).cachedILvlText
+                or textOverlayFrame:CreateFontString(nil, "OVERLAY")
+            ilvlText:SetFont(fontFile, itemLevelSize, "")
             ilvlText:SetTextColor(1, 1, 1, 0.8)
             ilvlText:SetJustifyH("CENTER")
             ilvlText:ClearAllPoints()
 
             if above then
-                ilvlText:SetPoint("BOTTOM", slot, "TOP", 0, 3)
+                ilvlText:SetPoint("BOTTOM", slotIndex, "TOP", 0, 3)
             elseif slotName == "InspectMainHandSlot" then
-                ilvlText:SetPoint("CENTER", slot, "LEFT", -15, 10)
+                ilvlText:SetPoint("CENTER", slotIndex, "LEFT", -15, 10)
             elseif slotName == "InspectSecondaryHandSlot" then
-                ilvlText:SetPoint("CENTER", slot, "RIGHT", 15, 10)
+                ilvlText:SetPoint("CENTER", slotIndex, "RIGHT", 15, 10)
             elseif isRightColumn then
-                ilvlText:SetPoint("CENTER", slot, "LEFT", -15, 10)
+                ilvlText:SetPoint("CENTER", slotIndex, "LEFT", -15, 10)
             else
-                ilvlText:SetPoint("CENTER", slot, "RIGHT", 15, 10)
+                ilvlText:SetPoint("CENTER", slotIndex, "RIGHT", 15, 10)
             end
 
             ilvlText:SetText(ilvl)
@@ -168,7 +169,7 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
             ilvlText:SetTextColor(displayColor.r, displayColor.g, displayColor.b, 0.9)
             ilvlText:Show()
 
-            GetFFD(slot).iLvlText = ilvlText
+            GetFFD(slotIndex).iLvlText = ilvlText
         else
             pending = true
         end
@@ -180,7 +181,7 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
     -- enchants carry no icon, so the name always shows there (plain unless
     -- Colored Text), named as that client's character sheet names it.
     local enchantText = itemLink
-        and not GetFFD(slot).enchantText
+        and not GetFFD(slotIndex).enchantText
         and not skipLabels
         and CludesUI.GetEnchantText(slotID, inspectUnit)
     -- An enchanted item whose tooltip has not arrived reads as no enchant:
@@ -194,9 +195,9 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
     end
     if enchantText then
         local iconOnly, tooltipText, _, hasEnchant =
-            ns.ParseEnchantLabel(enchantText, slotID, itemLink, inspectUnit)
-        if ns.ForeverEnchantName then
-            tooltipText = ns.ForeverEnchantName(enchantText)
+            mod.ParseEnchantLabel(enchantText, slotID, itemLink, inspectUnit)
+        if mod.ForeverEnchantName then
+            tooltipText = mod.ForeverEnchantName(enchantText)
         end
 
         local showEnchants = (not CludesUIDB) or (CludesUIDB.inspectShowEnchants ~= false)
@@ -209,10 +210,10 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
             local enchantSize = (
                 CludesUIDB and (CludesUIDB.inspectEnchantSize or CludesUIDB.charSheetEnchantSize)
             ) or 9
-            local enchantLabel = GetFFD(slot).cachedEnchantText
+            local enchantLabel = GetFFD(slotIndex).cachedEnchantText
                 or textOverlayFrame:CreateFontString(nil, "OVERLAY")
             if useName and styled then
-                enchantLabel:SetFont(fontPath, enchantSize, CludesUI.SlugFlag("OUTLINE, SLUG"))
+                enchantLabel:SetFont(fontFile, enchantSize, CludesUI.SlugFlag("OUTLINE, SLUG"))
                 local _, _, quality = GetItemInfo(itemLink)
                 local c = CludesUI.GetItemLevelColor(itemLink, quality)
                 enchantLabel:SetTextColor(
@@ -222,7 +223,7 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
                     0.9
                 )
             else
-                enchantLabel:SetFont(fontPath, enchantSize, "")
+                enchantLabel:SetFont(fontFile, enchantSize, "")
                 enchantLabel:SetTextColor(1, 1, 1, 0.8)
             end
             -- A name is capped at 45% of the gap between the two columns, so
@@ -247,41 +248,42 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
 
             -- Justified toward its slot, so a capped name hugs it
             if above then
-                local lvlText = GetFFD(slot).iLvlText
-                enchantLabel:SetPoint("BOTTOM", lvlText or slot, "TOP", 0, lvlText and 1 or 3)
+                local lvlText = GetFFD(slotIndex).iLvlText
+                enchantLabel:SetPoint("BOTTOM", lvlText or slotIndex, "TOP", 0, lvlText and 1 or 3)
                 enchantLabel:SetJustifyH("CENTER")
             elseif slotName == "InspectMainHandSlot" then
-                enchantLabel:SetPoint("RIGHT", slot, "LEFT", -5, -5)
+                enchantLabel:SetPoint("RIGHT", slotIndex, "LEFT", -5, -5)
                 enchantLabel:SetJustifyH("RIGHT")
             elseif slotName == "InspectSecondaryHandSlot" then
-                enchantLabel:SetPoint("LEFT", slot, "RIGHT", 5, -5)
+                enchantLabel:SetPoint("LEFT", slotIndex, "RIGHT", 5, -5)
                 enchantLabel:SetJustifyH("LEFT")
             elseif isRightColumn then
-                enchantLabel:SetPoint("RIGHT", slot, "LEFT", -5, -5)
+                enchantLabel:SetPoint("RIGHT", slotIndex, "LEFT", -5, -5)
                 enchantLabel:SetJustifyH("RIGHT")
             else
-                enchantLabel:SetPoint("LEFT", slot, "RIGHT", 5, -5)
+                enchantLabel:SetPoint("LEFT", slotIndex, "RIGHT", 5, -5)
                 enchantLabel:SetJustifyH("LEFT")
             end
 
             enchantLabel:SetText(labelText)
             enchantLabel:Show()
-            GetFFD(slot).enchantText = enchantLabel
+            GetFFD(slotIndex).enchantText = enchantLabel
 
-            local hoverFrame = GetFFD(slot).cachedEnchantHover or CreateFrame("Frame", nil, textOverlayFrame)
+            local hoverFrame = GetFFD(slotIndex).cachedEnchantHover
+                or CreateFrame("Frame", nil, textOverlayFrame)
             hoverFrame:SetSize(20, 20)
             hoverFrame:SetFrameLevel(textOverlayFrame:GetFrameLevel() + 20)
             hoverFrame:ClearAllPoints()
             if above then
                 hoverFrame:SetPoint("CENTER", enchantLabel, "CENTER", 0, 0)
             elseif slotName == "InspectMainHandSlot" then
-                hoverFrame:SetPoint("RIGHT", slot, "LEFT", -5, -5)
+                hoverFrame:SetPoint("RIGHT", slotIndex, "LEFT", -5, -5)
             elseif slotName == "InspectSecondaryHandSlot" then
-                hoverFrame:SetPoint("LEFT", slot, "RIGHT", 5, -5)
+                hoverFrame:SetPoint("LEFT", slotIndex, "RIGHT", 5, -5)
             elseif isRightColumn then
-                hoverFrame:SetPoint("RIGHT", slot, "LEFT", -5, -5)
+                hoverFrame:SetPoint("RIGHT", slotIndex, "LEFT", -5, -5)
             else
-                hoverFrame:SetPoint("LEFT", slot, "RIGHT", 5, -5)
+                hoverFrame:SetPoint("LEFT", slotIndex, "RIGHT", 5, -5)
             end
             hoverFrame:EnableMouse(true)
 
@@ -295,37 +297,37 @@ local function CUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
             end)
             hoverFrame:Show()
 
-            GetFFD(slot).enchantHoverFrame = hoverFrame
+            GetFFD(slotIndex).enchantHoverFrame = hoverFrame
         end
     end
 
     -- Upgrade track label (font size matches CharacterSheet)
-    if itemLink and not GetFFD(slot).upgradeText and GetFFD(slot).iLvlText and not skipLabels then
+    if itemLink and not GetFFD(slotIndex).upgradeText and GetFFD(slotIndex).iLvlText and not skipLabels then
         local upgradeTrackSize = CludesUIDB and CludesUIDB.charSheetUpgradeTrackSize or 11
         local upgradeText, upgradeColor = CludesUI.GetUpgradeTrack(itemLink)
         if upgradeText and upgradeText ~= "" then
-            local upgradeLabel = GetFFD(slot).cachedUpgradeText
+            local upgradeLabel = GetFFD(slotIndex).cachedUpgradeText
                 or textOverlayFrame:CreateFontString(nil, "OVERLAY")
-            upgradeLabel:SetFont(fontPath, upgradeTrackSize, "")
+            upgradeLabel:SetFont(fontFile, upgradeTrackSize, "")
             upgradeLabel:SetTextColor(upgradeColor.r, upgradeColor.g, upgradeColor.b, 0.8)
             upgradeLabel:SetJustifyH("CENTER")
             upgradeLabel:ClearAllPoints()
 
             if above then
-                upgradeLabel:SetPoint("LEFT", GetFFD(slot).iLvlText, "RIGHT", 3, 0)
+                upgradeLabel:SetPoint("LEFT", GetFFD(slotIndex).iLvlText, "RIGHT", 3, 0)
             elseif slotName == "InspectMainHandSlot" then
-                upgradeLabel:SetPoint("RIGHT", GetFFD(slot).iLvlText, "LEFT", -3, 0)
+                upgradeLabel:SetPoint("RIGHT", GetFFD(slotIndex).iLvlText, "LEFT", -3, 0)
             elseif slotName == "InspectSecondaryHandSlot" then
-                upgradeLabel:SetPoint("LEFT", GetFFD(slot).iLvlText, "RIGHT", 3, 0)
+                upgradeLabel:SetPoint("LEFT", GetFFD(slotIndex).iLvlText, "RIGHT", 3, 0)
             elseif isRightColumn then
-                upgradeLabel:SetPoint("RIGHT", GetFFD(slot).iLvlText, "LEFT", -3, 0)
+                upgradeLabel:SetPoint("RIGHT", GetFFD(slotIndex).iLvlText, "LEFT", -3, 0)
             else
-                upgradeLabel:SetPoint("LEFT", GetFFD(slot).iLvlText, "RIGHT", 3, 0)
+                upgradeLabel:SetPoint("LEFT", GetFFD(slotIndex).iLvlText, "RIGHT", 3, 0)
             end
 
             upgradeLabel:SetText("(" .. upgradeText .. ")")
             upgradeLabel:Show()
-            GetFFD(slot).upgradeText = upgradeLabel
+            GetFFD(slotIndex).upgradeText = upgradeLabel
         end
     end
     return pending
@@ -335,8 +337,8 @@ end
 -- Similar to ApplyTabVisibility in CharacterSheet.lua
 -- Takes a boolean parameter: true = show labels (Tab 1), false = hide labels (Tab 2/3)
 local function ApplyTabVisibility(showLabels)
-    local frame = InspectFrame
-    if not frame then
+    local widget = InspectFrame
+    if not widget then
         return
     end
 
@@ -346,33 +348,33 @@ local function ApplyTabVisibility(showLabels)
     local showEnchants = (not CludesUIDB) or (CludesUIDB.inspectShowEnchants ~= false)
 
     for slotName, _ in pairs(slotGridMap) do
-        local slot = _G[slotName]
-        if slot then
+        local slotIndex = _G[slotName]
+        if slotIndex then
             -- Only show labels if on Tab 1 and settings allow
-            if GetFFD(slot).iLvlText then
-                GetFFD(slot).iLvlText:SetShown(showLabels and showItemLevel)
+            if GetFFD(slotIndex).iLvlText then
+                GetFFD(slotIndex).iLvlText:SetShown(showLabels and showItemLevel)
             end
-            if GetFFD(slot).upgradeText then
-                GetFFD(slot).upgradeText:SetShown(showLabels and showUpgradeTrack)
+            if GetFFD(slotIndex).upgradeText then
+                GetFFD(slotIndex).upgradeText:SetShown(showLabels and showUpgradeTrack)
             end
-            if GetFFD(slot).enchantText then
-                GetFFD(slot).enchantText:SetShown(showLabels and showEnchants)
+            if GetFFD(slotIndex).enchantText then
+                GetFFD(slotIndex).enchantText:SetShown(showLabels and showEnchants)
             end
             -- Its hover spot too, or the other tabs keep an invisible tooltip
-            if GetFFD(slot).enchantHoverFrame then
-                GetFFD(slot).enchantHoverFrame:SetShown(showLabels and showEnchants)
+            if GetFFD(slotIndex).enchantHoverFrame then
+                GetFFD(slotIndex).enchantHoverFrame:SetShown(showLabels and showEnchants)
             end
         end
     end
 
     -- Hide/show avg ilvl + M+ score
-    local frame = InspectFrame
-    if frame then
-        if GetFFD(frame).avgIlvlText then
-            GetFFD(frame).avgIlvlText:SetShown(showLabels)
+    local widget = InspectFrame
+    if widget then
+        if GetFFD(widget).avgIlvlText then
+            GetFFD(widget).avgIlvlText:SetShown(showLabels)
         end
-        if GetFFD(frame).mPlusScoreText then
-            GetFFD(frame).mPlusScoreText:SetShown(showLabels)
+        if GetFFD(widget).mPlusScoreText then
+            GetFFD(widget).mPlusScoreText:SetShown(showLabels)
         end
     end
 end
@@ -383,11 +385,11 @@ local function CalculateAverageItemLevel()
         return 0
     end
 
-    local unit = InspectFrame.unit
+    local unitToken = InspectFrame.unit
 
     -- Use the proper WoW API for getting inspect item level
     if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
-        local ilvl = C_PaperDollInfo.GetInspectItemLevel(unit)
+        local ilvl = C_PaperDollInfo.GetInspectItemLevel(unitToken)
         if ilvl and ilvl > 0 then
             return ilvl
         end
@@ -402,41 +404,41 @@ local function SkinInspectSheet()
     end
     skinned = true
 
-    local frame = InspectFrame
-    if not frame then
+    local widget = InspectFrame
+    if not widget then
         return
     end
 
     local FRAME_BG_R, FRAME_BG_G, FRAME_BG_B = 0.03, 0.045, 0.05
 
     -- Create custom background texture FIRST before hiding anything
-    if GetFFD(frame).bg then
-        GetFFD(frame).bg:Show()
+    if GetFFD(widget).bg then
+        GetFFD(widget).bg:Show()
     else
-        local bg, bgOverlay = ns.SheetBackdrop(frame)
-        GetFFD(frame).bg = bg
-        GetFFD(frame).bgOverlay = bgOverlay
+        local backdrop, bgOverlay = mod.SheetBackdrop(widget)
+        GetFFD(widget).bg = backdrop
+        GetFFD(widget).bgOverlay = bgOverlay
         -- Follows the Character Sheet window's style pick (the two share one
         -- enable + style setting).
-        if ns.WSkin and ns.WSkin.AdoptShell then
-            ns.WSkin.AdoptShell("charsheet", frame, bg, GetFFD(frame).bgOverlay)
+        if mod.WSkin and mod.WSkin.AdoptShell then
+            mod.WSkin.AdoptShell("charsheet", widget, backdrop, GetFFD(widget).bgOverlay)
         end
     end
 
     -- Standard window-reskin border (the AdventureMap_TopBorder atlas texture),
     -- same as the character sheet and every other skinned Blizzard window.
-    if ns.WSkin and ns.WSkin.AtlasBorder then
-        ns.WSkin.AtlasBorder(frame)
+    if mod.WSkin and mod.WSkin.AtlasBorder then
+        mod.WSkin.AtlasBorder(widget)
     end
 
     -- Hide Blizzard backgrounds and borders
     for _, elem in ipairs({
-        frame.NineSlice,
-        frame.Background,
-        frame.TitleBg,
-        frame.TopTileStreaks,
-        frame.Portrait,
-        frame.Bg,
+        widget.NineSlice,
+        widget.Background,
+        widget.TitleBg,
+        widget.TopTileStreaks,
+        widget.Portrait,
+        widget.Bg,
         InspectModelFrameBackgroundOverlay,
         InspectModelFrameBorderRight,
         InspectModelFrameBorderLeft,
@@ -459,7 +461,7 @@ local function SkinInspectSheet()
     -- Create model background (matches character sheet: character-bg.png, no glow/gradient)
     -- Deferred until InspectModelFrame exists (created lazily by Blizzard)
     local function TryCreateModelBg()
-        if GetFFD(frame).modelBgFrame then
+        if GetFFD(widget).modelBgFrame then
             return
         end
         local myModel = _G.InspectModelFrame
@@ -493,17 +495,17 @@ local function SkinInspectSheet()
         bgTex:SetTexture("Interface\\AddOns\\CludesUIBlizzardSkin\\Media\\character-bg.png")
         bgTex:SetAlpha(1)
 
-        GetFFD(frame).modelBg = bgTex
-        GetFFD(frame).modelBgFrame = bgFrame
+        GetFFD(widget).modelBg = bgTex
+        GetFFD(widget).modelBgFrame = bgFrame
     end
     TryCreateModelBg()
     -- Retry on show in case model frame wasn't ready on first skin.
     -- Staggered retries: Blizzard creates InspectModelFrame lazily
     -- after the inspect target is set, which can take multiple frames.
     -- HookScript only once to prevent accumulation on repeated reskins.
-    if not GetFFD(frame)._modelBgHooked then
-        GetFFD(frame)._modelBgHooked = true
-        frame:HookScript("OnShow", function()
+    if not GetFFD(widget)._modelBgHooked then
+        GetFFD(widget)._modelBgHooked = true
+        widget:HookScript("OnShow", function()
             C_Timer.After(0, TryCreateModelBg)
             C_Timer.After(0.2, TryCreateModelBg)
             C_Timer.After(0.5, TryCreateModelBg)
@@ -517,9 +519,9 @@ local function SkinInspectSheet()
     end
 
     -- Hide TopTileStreaks explicitly
-    if frame.TopTileStreaks then
-        frame.TopTileStreaks:Hide()
-        frame.TopTileStreaks:SetAlpha(0)
+    if widget.TopTileStreaks then
+        widget.TopTileStreaks:Hide()
+        widget.TopTileStreaks:SetAlpha(0)
     end
 
     -- Hide InspectModelScene ControlFrame (similar to CharacterModelScene in CharacterSheet)
@@ -543,10 +545,10 @@ local function SkinInspectSheet()
         "InspectModelFrameControlFrameRight",
     }
     for _, buttonName in ipairs(controlButtons) do
-        local btn = _G[buttonName]
-        if btn then
-            btn:SetAlpha(0)
-            btn:EnableMouse(false)
+        local button = _G[buttonName]
+        if button then
+            button:SetAlpha(0)
+            button:EnableMouse(false)
         end
     end
 
@@ -595,7 +597,7 @@ local function SkinInspectSheet()
         end
     end
 
-    if frame.PaperDollFrame and frame.PaperDollFrame.InnerBorder then
+    if widget.PaperDollFrame and widget.PaperDollFrame.InnerBorder then
         for _, name in ipairs({
             "Top",
             "Bottom",
@@ -606,8 +608,8 @@ local function SkinInspectSheet()
             "BottomLeft",
             "BottomRight",
         }) do
-            if frame.PaperDollFrame.InnerBorder[name] then
-                frame.PaperDollFrame.InnerBorder[name]:Hide()
+            if widget.PaperDollFrame.InnerBorder[name] then
+                widget.PaperDollFrame.InnerBorder[name]:Hide()
             end
         end
     end
@@ -615,19 +617,19 @@ local function SkinInspectSheet()
     -- Hide PVP Frame background elements. Frames other addons parent in here
     -- are theirs to draw (see WSkin.IsForeignFrame), and the WoW Forever PvP
     -- frame keeps all of its content in one unnamed child, MainInfoFrame.
-    local IsForeign = ns.WSkin and ns.WSkin.IsForeignFrame
+    local IsForeign = mod.WSkin and mod.WSkin.IsForeignFrame
     if InspectPVPFrame then
-        local content = InspectPVPFrame.MainInfoFrame
+        local contentFrame = InspectPVPFrame.MainInfoFrame
         local children = { InspectPVPFrame:GetChildren() }
-        for i = 1, #children do
-            local child = children[i]
+        for idx = 1, #children do
+            local childFrame = children[idx]
             if
-                child
-                and child ~= content
-                and not child:GetName()
-                and not (IsForeign and IsForeign(child, InspectPVPFrame))
+                childFrame
+                and childFrame ~= contentFrame
+                and not childFrame:GetName()
+                and not (IsForeign and IsForeign(childFrame, InspectPVPFrame))
             then
-                child:Hide()
+                childFrame:Hide()
             end
         end
     end
@@ -635,119 +637,125 @@ local function SkinInspectSheet()
     -- Hide Guild Frame background elements
     if InspectGuildFrame then
         local children = { InspectGuildFrame:GetChildren() }
-        for i = 1, #children do
-            local child = children[i]
-            if child and not child:GetName() and not (IsForeign and IsForeign(child, InspectGuildFrame)) then
-                child:Hide()
+        for idx = 1, #children do
+            local childFrame = children[idx]
+            if
+                childFrame
+                and not childFrame:GetName()
+                and not (IsForeign and IsForeign(childFrame, InspectGuildFrame))
+            then
+                childFrame:Hide()
             end
         end
     end
 
     -- Hide unnamed decoration frames in main InspectFrame
-    local children = { frame:GetChildren() }
-    for i = 1, #children do
-        local child = children[i]
+    local children = { widget:GetChildren() }
+    for idx = 1, #children do
+        local childFrame = children[idx]
         if
-            child
-            and not child:GetName()
-            and child:GetObjectType() == "Frame"
-            and not (IsForeign and IsForeign(child, frame))
+            childFrame
+            and not childFrame:GetName()
+            and childFrame:GetObjectType() == "Frame"
+            and not (IsForeign and IsForeign(childFrame, widget))
         then
             -- Only hide if it's not one of our known frames and not the TitleFrame or title parent
-            local isTitleFrame = (frame.TitleFrame and child == frame.TitleFrame)
-            local isTitleParent = (_G.inspectFrameTitleText and child == _G.inspectFrameTitleText:GetParent())
+            local isTitleFrame = (widget.TitleFrame and childFrame == widget.TitleFrame)
+            local isTitleParent = (
+                _G.inspectFrameTitleText and childFrame == _G.inspectFrameTitleText:GetParent()
+            )
             if
-                child ~= frame.PaperDollFrame
-                and child ~= InspectPVPFrame
-                and child ~= InspectGuildFrame
+                childFrame ~= widget.PaperDollFrame
+                and childFrame ~= InspectPVPFrame
+                and childFrame ~= InspectGuildFrame
                 and not isTitleFrame
                 and not isTitleParent
             then
-                child:Hide()
+                childFrame:Hide()
             end
         end
     end
 
     -- Add pixel-perfect border to the frame
     if CludesUI and CludesUI.PanelPP then
-        CludesUI.PanelPP.CreateBorder(frame, 0.2, 0.2, 0.2, 1, 1, "OVERLAY", 7)
+        CludesUI.PanelPP.CreateBorder(widget, 0.2, 0.2, 0.2, 1, 1, "OVERLAY", 7)
     end
 
     -- Style close button
-    local closeBtn = frame.CloseButton or _G.InspectFrameCloseButton
-    if closeBtn and ns.WSkin and ns.WSkin.CloseButton then
-        ns.WSkin.CloseButton(closeBtn)
+    local closeBtn = widget.CloseButton or _G.InspectFrameCloseButton
+    if closeBtn and mod.WSkin and mod.WSkin.CloseButton then
+        mod.WSkin.CloseButton(closeBtn)
     end
 
     -- Restyle Blizzard's Talents + View (dressing room) buttons in place.
     -- User clicks the actual Blizzard button so the secure handler fires
     -- natively with no addon taint in the call stack.
     do
-        local fontPath = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+        local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
         -- Narrower beside Forever's three-slot weapon row.
         local BTN_W, BTN_H = InspectRangedSlot and 76 or 90, 21
         local BTN_Y = 8
 
-        local function RestyleButton(btn, labelText, anchor, anchorPoint, xOff)
-            if not btn then
+        local function RestyleButton(button, labelText, anchorFrame, anchorPoint, xOff)
+            if not button then
                 return
             end
-            local ffd = GetFFD(btn)
+            local ffd = GetFFD(button)
             if ffd.restyled then
                 return
             end
             ffd.restyled = true
 
-            btn:ClearAllPoints()
-            btn:SetPoint(anchor, frame, anchorPoint, xOff, BTN_Y)
-            btn:SetSize(BTN_W, BTN_H)
-            btn:SetFrameLevel(frame:GetFrameLevel() + 20)
+            button:ClearAllPoints()
+            button:SetPoint(anchorFrame, widget, anchorPoint, xOff, BTN_Y)
+            button:SetSize(BTN_W, BTN_H)
+            button:SetFrameLevel(widget:GetFrameLevel() + 20)
 
             -- Standard Blizzard-window-skin button look: dark fill + theme
             -- border + hover highlight. WSkin.Button fades the native textures.
-            if ns.WSkin and ns.WSkin.Button then
-                ns.WSkin.Button(btn)
+            if mod.WSkin and mod.WSkin.Button then
+                mod.WSkin.Button(button)
             end
 
             -- Hide the native label (the View button is a dressing-room icon,
             -- not "Transmog") and draw our own, white like other skinned buttons.
-            for _, region in ipairs({ btn:GetRegions() }) do
-                if region.GetObjectType and region:GetObjectType() == "FontString" then
-                    region:SetTextColor(0, 0, 0, 0)
+            for _, regionFrame in ipairs({ button:GetRegions() }) do
+                if regionFrame.GetObjectType and regionFrame:GetObjectType() == "FontString" then
+                    regionFrame:SetTextColor(0, 0, 0, 0)
                 end
             end
-            local label = btn:CreateFontString(nil, "OVERLAY")
-            label:SetFont(fontPath, 10, "")
-            label:SetPoint("CENTER", btn, "CENTER", 0, 0)
+            local label = button:CreateFontString(nil, "OVERLAY")
+            label:SetFont(fontFile, 10, "")
+            label:SetPoint("CENTER", button, "CENTER", 0, 0)
             label:SetJustifyH("CENTER")
             label:SetText(labelText)
             label:SetTextColor(1, 1, 1, 1)
             ffd.label = label
 
-            btn:SetAlpha(1)
-            btn:EnableMouse(true)
-            btn:Show()
+            button:SetAlpha(1)
+            button:EnableMouse(true)
+            button:Show()
         end
 
         -- Suppress other unnamed buttons in InspectPaperDollItemsFrame.
         -- Never touch buttons other addons parent in here (theirs to run).
         local paperDollItemsFrame = InspectPaperDollItemsFrame
         if paperDollItemsFrame then
-            local IsForeignBtn = ns.WSkin and ns.WSkin.IsForeignFrame
+            local IsForeignBtn = mod.WSkin and mod.WSkin.IsForeignFrame
             -- Retail only: WoW Forever's inspect window has no Talents button.
             local talentsBtn = paperDollItemsFrame.InspectTalents
             local children2 = { paperDollItemsFrame:GetChildren() }
-            for i = 1, #children2 do
-                local child = children2[i]
+            for idx = 1, #children2 do
+                local childFrame = children2[idx]
                 if
-                    child
-                    and child:GetObjectType() == "Button"
-                    and not child:GetName()
-                    and child ~= talentsBtn
-                    and not (IsForeignBtn and IsForeignBtn(child, paperDollItemsFrame))
+                    childFrame
+                    and childFrame:GetObjectType() == "Button"
+                    and not childFrame:GetName()
+                    and childFrame ~= talentsBtn
+                    and not (IsForeignBtn and IsForeignBtn(childFrame, paperDollItemsFrame))
                 then
-                    child:SetAlpha(0)
-                    child:EnableMouse(false)
+                    childFrame:SetAlpha(0)
+                    childFrame:EnableMouse(false)
                 end
             end
             RestyleButton(talentsBtn, "Talents", "BOTTOMRIGHT", "BOTTOMRIGHT", -7)
@@ -767,38 +775,38 @@ local function SkinInspectSheet()
 
     -- Show actual slot buttons and style them
     for _, slotName in ipairs(CUI_ALL_SLOTS) do
-        local slot = _G[slotName]
-        if slot then
-            slot:Show()
+        local slotIndex = _G[slotName]
+        if slotIndex then
+            slotIndex:Show()
 
             -- Hide ALL unnamed Texturen in den Slots (die Dekoration)
-            local regions = { slot:GetRegions() }
-            for i = 1, #regions do
-                local region = regions[i]
-                if region and region:IsObjectType("Texture") then
-                    local regionName = region:GetName()
+            local regions = { slotIndex:GetRegions() }
+            for idx = 1, #regions do
+                local regionFrame = regions[idx]
+                if regionFrame and regionFrame:IsObjectType("Texture") then
+                    local regionName = regionFrame:GetName()
                     -- Hide nur unnamed Texturen (nicht die Icon)
                     if not regionName or regionName ~= (slotName .. "IconTexture") then
-                        region:SetAlpha(0)
+                        regionFrame:SetAlpha(0)
                     end
                 end
             end
 
             -- Hide Blizzard border and textures
-            if slot.IconBorder then
-                slot.IconBorder:Hide()
+            if slotIndex.IconBorder then
+                slotIndex.IconBorder:Hide()
             end
-            if slot.IconOverlay then
-                slot.IconOverlay:Hide()
+            if slotIndex.IconOverlay then
+                slotIndex.IconOverlay:Hide()
             end
-            if slot.IconOverlay2 then
-                slot.IconOverlay2:Hide()
+            if slotIndex.IconOverlay2 then
+                slotIndex.IconOverlay2:Hide()
             end
 
             -- Crop icon
-            if slot.icon then
+            if slotIndex.icon then
                 local z = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
-                slot.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+                slotIndex.icon:SetTexCoord(z, 1 - z, z, 1 - z)
             end
 
             local normalTexture = _G[slotName .. "NormalTexture"]
@@ -807,7 +815,7 @@ local function SkinInspectSheet()
             end
 
             -- Get item rarity for border color
-            local itemLink = GetInventoryItemLink("inspect", slot:GetID())
+            local itemLink = GetInventoryItemLink("inspect", slotIndex:GetID())
             local borderR, borderG, borderB = 0.4, 0.4, 0.4 -- Default gray
             if itemLink then
                 local _, _, rarity = GetItemInfo(itemLink)
@@ -818,12 +826,12 @@ local function SkinInspectSheet()
 
             -- Add rarity-colored border
             if CludesUI and CludesUI.PanelPP then
-                CludesUI.PanelPP.CreateBorder(slot, borderR, borderG, borderB, 1, 2, "OVERLAY", 7)
+                CludesUI.PanelPP.CreateBorder(slotIndex, borderR, borderG, borderB, 1, 2, "OVERLAY", 7)
             end
 
-            local parent = slot:GetParent()
-            if parent then
-                parent:Show()
+            local hostFrame = slotIndex:GetParent()
+            if hostFrame then
+                hostFrame:Show()
             end
         end
     end
@@ -836,46 +844,46 @@ local function SkinInspectSheet()
 
     -- Create overlay frame for text labels (above items, transparent, no mouse input)
     -- Reuse existing overlay to prevent frame multiplication on repeated reskins
-    local textOverlayFrame = GetFFD(frame).textOverlayFrame
+    local textOverlayFrame = GetFFD(widget).textOverlayFrame
     if not textOverlayFrame then
-        textOverlayFrame = CreateFrame("Frame", "CUI_InspectSheet_TextOverlay", frame)
-        textOverlayFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-        textOverlayFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-        textOverlayFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
+        textOverlayFrame = CreateFrame("Frame", "CUI_InspectSheet_TextOverlay", widget)
+        textOverlayFrame:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
+        textOverlayFrame:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", 0, 0)
+        textOverlayFrame:SetFrameLevel(widget:GetFrameLevel() + 10)
         textOverlayFrame:EnableMouse(false)
-        GetFFD(frame).textOverlayFrame = textOverlayFrame
+        GetFFD(widget).textOverlayFrame = textOverlayFrame
     end
-    textOverlayFrame:SetAlpha(GetFFD(frame).textHidden and 0 or 1)
+    textOverlayFrame:SetAlpha(GetFFD(widget).textHidden and 0 or 1)
     textOverlayFrame:Show()
 
     -- Top-left eyeball toggle: temporarily hides all item slot text (item level,
     -- upgrade track, enchants) by alpha-ing the shared overlay. Session-only,
     -- matches the CharacterSheet eyeball. State lives in FFD so it survives the
     -- frequent inspect re-skins (the SetAlpha above re-applies it each pass).
-    if not GetFFD(frame).textEyeBtn then
+    if not GetFFD(widget).textEyeBtn then
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-        local eyeBtn = CreateFrame("Button", "CUI_InspectSheet_TextEyeBtn", frame)
+        local eyeBtn = CreateFrame("Button", "CUI_InspectSheet_TextEyeBtn", widget)
         eyeBtn:SetSize(20, 20)
-        eyeBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -6)
-        eyeBtn:SetFrameLevel(frame:GetFrameLevel() + 20)
+        eyeBtn:SetPoint("TOPLEFT", widget, "TOPLEFT", 14, -6)
+        eyeBtn:SetFrameLevel(widget:GetFrameLevel() + 20)
         eyeBtn:SetAlpha(0.4)
         local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
-        eyeTex:SetTexture(GetFFD(frame).textHidden and EYE_INVISIBLE or EYE_VISIBLE)
+        eyeTex:SetTexture(GetFFD(widget).textHidden and EYE_INVISIBLE or EYE_VISIBLE)
         eyeBtn:SetScript("OnClick", function()
-            local hidden = not GetFFD(frame).textHidden
-            GetFFD(frame).textHidden = hidden
+            local hidden = not GetFFD(widget).textHidden
+            GetFFD(widget).textHidden = hidden
             eyeTex:SetTexture(hidden and EYE_INVISIBLE or EYE_VISIBLE)
-            if GetFFD(frame).textOverlayFrame then
-                GetFFD(frame).textOverlayFrame:SetAlpha(hidden and 0 or 1)
+            if GetFFD(widget).textOverlayFrame then
+                GetFFD(widget).textOverlayFrame:SetAlpha(hidden and 0 or 1)
             end
         end)
         eyeBtn:SetScript("OnEnter", function(self)
             self:SetAlpha(0.8)
             CludesUI.ShowWidgetTooltip(
                 self,
-                GetFFD(frame).textHidden and "Show Item Text" or "Hide Item Text",
+                GetFFD(widget).textHidden and "Show Item Text" or "Hide Item Text",
                 { width = 135 }
             )
         end)
@@ -883,28 +891,28 @@ local function SkinInspectSheet()
             self:SetAlpha(0.4)
             CludesUI.HideWidgetTooltip()
         end)
-        GetFFD(frame).textEyeBtn = eyeBtn
+        GetFFD(widget).textEyeBtn = eyeBtn
     end
 
     -- Position slots and style them
     if InspectPaperDollItemsFrame then
         for slotName, gridPos in pairs(slotGridMap) do
-            local slot = _G[slotName]
-            if slot then
+            local slotIndex = _G[slotName]
+            if slotIndex then
                 -- Skip weapon slots (they have no col/row, positioned separately)
                 if not gridPos.col then
                     -- Still style them, but don't position
                     local isRightColumn = false
-                    CUI_UpdateSlotStyle(slotName, slot:GetID(), textOverlayFrame, isRightColumn)
+                    CUI_UpdateSlotStyle(slotName, slotIndex:GetID(), textOverlayFrame, isRightColumn)
                 else
-                    slot:ClearAllPoints()
+                    slotIndex:ClearAllPoints()
                     local xOffset = gridStartX + (gridPos.col * cellWidth)
                     local yOffset = gridStartY - (gridPos.row * cellHeight)
-                    slot:SetPoint("TOPLEFT", InspectPaperDollItemsFrame, "TOPLEFT", xOffset, yOffset)
+                    slotIndex:SetPoint("TOPLEFT", InspectPaperDollItemsFrame, "TOPLEFT", xOffset, yOffset)
 
                     -- Style the slot with borders, ilvl, enchants (right column = col 1)
                     local isRightColumn = gridPos.col == 1
-                    CUI_UpdateSlotStyle(slotName, slot:GetID(), textOverlayFrame, isRightColumn)
+                    CUI_UpdateSlotStyle(slotName, slotIndex:GetID(), textOverlayFrame, isRightColumn)
                 end
             end
         end
@@ -914,7 +922,7 @@ local function SkinInspectSheet()
     -- hardcoded offset, no GetWidth which can return a secret value).
     if InspectMainHandSlot and InspectSecondaryHandSlot then
         InspectMainHandSlot:ClearAllPoints()
-        InspectMainHandSlot:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", InspectRangedSlot and 104 or 128, 10)
+        InspectMainHandSlot:SetPoint("BOTTOMLEFT", widget, "BOTTOMLEFT", InspectRangedSlot and 104 or 128, 10)
         InspectSecondaryHandSlot:ClearAllPoints()
         InspectSecondaryHandSlot:SetPoint("TOPLEFT", InspectMainHandSlot, "TOPRIGHT", 12, 0)
         -- Forever only: a third weapon slot, the row recentred for it.
@@ -927,24 +935,24 @@ local function SkinInspectSheet()
     -- Average item level + M+ score, centered below the title/level text.
     -- Anchored to frame TOP so they sit below the character info header.
     do
-        local fontPath = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+        local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
 
         -- Text overlay frame above model bg and fade
-        if not GetFFD(frame).textOverlay then
-            local txo = CreateFrame("Frame", nil, frame)
-            txo:SetAllPoints(frame)
+        if not GetFFD(widget).textOverlay then
+            local txo = CreateFrame("Frame", nil, widget)
+            txo:SetAllPoints(widget)
             txo:SetFrameLevel(
-                (_G.InspectModelFrame and _G.InspectModelFrame:GetFrameLevel() or frame:GetFrameLevel()) + 5
+                (_G.InspectModelFrame and _G.InspectModelFrame:GetFrameLevel() or widget:GetFrameLevel()) + 5
             )
             txo:EnableMouse(false)
-            GetFFD(frame).textOverlay = txo
+            GetFFD(widget).textOverlay = txo
         end
-        local txo = GetFFD(frame).textOverlay
+        local txo = GetFFD(widget).textOverlay
         txo:Show()
 
-        if not GetFFD(frame).avgIlvlText then
+        if not GetFFD(widget).avgIlvlText then
             local ilvlFS = txo:CreateFontString(nil, "OVERLAY")
-            ilvlFS:SetFont(fontPath, 16, "")
+            ilvlFS:SetFont(fontFile, 16, "")
             ilvlFS:SetTextColor(0.6, 0.2, 1, 1)
             ilvlFS:SetJustifyH("CENTER")
             -- Under Blizzard's level line wherever the client draws it (WoW
@@ -953,29 +961,29 @@ local function SkinInspectSheet()
             if levelText then
                 ilvlFS:SetPoint("TOP", levelText, "BOTTOM", 0, -3)
             else
-                ilvlFS:SetPoint("TOP", frame, "TOP", 0, -43)
+                ilvlFS:SetPoint("TOP", widget, "TOP", 0, -43)
             end
-            GetFFD(frame).avgIlvlText = ilvlFS
+            GetFFD(widget).avgIlvlText = ilvlFS
         end
 
-        if not GetFFD(frame).mPlusScoreText then
+        if not GetFFD(widget).mPlusScoreText then
             local mpFS = txo:CreateFontString(nil, "OVERLAY")
-            mpFS:SetFont(fontPath, 12, "")
+            mpFS:SetFont(fontFile, 12, "")
             mpFS:SetTextColor(0.8, 0.8, 0.8, 1)
             mpFS:SetJustifyH("CENTER")
-            mpFS:SetPoint("TOP", GetFFD(frame).avgIlvlText, "BOTTOM", 0, -2)
-            GetFFD(frame).mPlusScoreText = mpFS
+            mpFS:SetPoint("TOP", GetFFD(widget).avgIlvlText, "BOTTOM", 0, -2)
+            GetFFD(widget).mPlusScoreText = mpFS
         end
 
         local avg = CalculateAverageItemLevel()
         if avg and avg > 0 then
-            GetFFD(frame).avgIlvlText:SetFormattedText("%.2f", avg)
-            GetFFD(frame).avgIlvlText:Show()
+            GetFFD(widget).avgIlvlText:SetFormattedText("%.2f", avg)
+            GetFFD(widget).avgIlvlText:Show()
         else
-            GetFFD(frame).avgIlvlText:Hide()
+            GetFFD(widget).avgIlvlText:Hide()
         end
 
-        local inspectUnit = frame.unit
+        local inspectUnit = widget.unit
         local mpScore = 0
         if inspectUnit and C_PlayerInfo and C_PlayerInfo.GetPlayerMythicPlusRatingSummary then
             local summary = C_PlayerInfo.GetPlayerMythicPlusRatingSummary(inspectUnit)
@@ -984,105 +992,105 @@ local function SkinInspectSheet()
             end
         end
         if mpScore > 0 then
-            local hex = ns.GetMPScoreHex(mpScore)
-            GetFFD(frame).mPlusScoreText:SetFormattedText("M+ Score: |cff%s%d|r", hex, math.floor(mpScore))
-            GetFFD(frame).mPlusScoreText:Show()
+            local hex = mod.GetMPScoreHex(mpScore)
+            GetFFD(widget).mPlusScoreText:SetFormattedText("M+ Score: |cff%s%d|r", hex, math.floor(mpScore))
+            GetFFD(widget).mPlusScoreText:Show()
         else
-            GetFFD(frame).mPlusScoreText:Hide()
+            GetFFD(widget).mPlusScoreText:Hide()
         end
     end
 
     -- Style Tabs (InspectFrameTab1, 2, 3)
-    local fontPath = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.51, g = 0.784, b = 1 }
+    local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
+    local ACC = CludesUI.CLUDES_GREEN or { r = 0.51, g = 0.784, b = 1 }
     local FRAME_BG_R, FRAME_BG_G, FRAME_BG_B = 0.03, 0.045, 0.05
 
     local inspTabs = {}
-    for i = 1, 3 do
-        local tab = _G["InspectFrameTab" .. i]
-        if tab then
-            inspTabs[#inspTabs + 1] = tab
+    for idx = 1, 3 do
+        local tabButton = _G["InspectFrameTab" .. idx]
+        if tabButton then
+            inspTabs[#inspTabs + 1] = tabButton
             -- Remove Blizzard textures
-            local regions = { tab:GetRegions() }
-            for j = 1, #regions do
-                local region = regions[j]
-                if region and region:IsObjectType("Texture") then
-                    region:SetTexture("")
-                    if region.SetAtlas then
-                        region:SetAtlas("")
+            local regions = { tabButton:GetRegions() }
+            for jdx = 1, #regions do
+                local regionFrame = regions[jdx]
+                if regionFrame and regionFrame:IsObjectType("Texture") then
+                    regionFrame:SetTexture("")
+                    if regionFrame.SetAtlas then
+                        regionFrame:SetAtlas("")
                     end
                 end
             end
 
-            if tab.Left then
-                tab.Left:SetTexture("")
+            if tabButton.Left then
+                tabButton.Left:SetTexture("")
             end
-            if tab.Middle then
-                tab.Middle:SetTexture("")
+            if tabButton.Middle then
+                tabButton.Middle:SetTexture("")
             end
-            if tab.Right then
-                tab.Right:SetTexture("")
+            if tabButton.Right then
+                tabButton.Right:SetTexture("")
             end
-            if tab.LeftDisabled then
-                tab.LeftDisabled:SetTexture("")
+            if tabButton.LeftDisabled then
+                tabButton.LeftDisabled:SetTexture("")
             end
-            if tab.MiddleDisabled then
-                tab.MiddleDisabled:SetTexture("")
+            if tabButton.MiddleDisabled then
+                tabButton.MiddleDisabled:SetTexture("")
             end
-            if tab.RightDisabled then
-                tab.RightDisabled:SetTexture("")
+            if tabButton.RightDisabled then
+                tabButton.RightDisabled:SetTexture("")
             end
 
-            local hl = tab:GetHighlightTexture()
-            if hl then
-                hl:SetTexture("")
+            local highlight = tabButton:GetHighlightTexture()
+            if highlight then
+                highlight:SetTexture("")
             end
 
             -- Add custom background (matches character sheet tab color)
-            if not GetFFD(tab).bg then
-                GetFFD(tab).bg = tab:CreateTexture(nil, "BACKGROUND")
-                GetFFD(tab).bg:SetAllPoints()
-                GetFFD(tab).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
+            if not GetFFD(tabButton).bg then
+                GetFFD(tabButton).bg = tabButton:CreateTexture(nil, "BACKGROUND")
+                GetFFD(tabButton).bg:SetAllPoints()
+                GetFFD(tabButton).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
             else
-                GetFFD(tab).bg:Show()
-                GetFFD(tab).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
+                GetFFD(tabButton).bg:Show()
+                GetFFD(tabButton).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
             end
 
             -- Add active highlight
-            if not GetFFD(tab).activeHL then
-                local activeHL = tab:CreateTexture(nil, "ARTWORK", nil, -6)
+            if not GetFFD(tabButton).activeHL then
+                local activeHL = tabButton:CreateTexture(nil, "ARTWORK", nil, -6)
                 activeHL:SetAllPoints()
                 activeHL:SetColorTexture(1, 1, 1, 0.02)
                 activeHL:SetBlendMode("ADD")
                 activeHL:Hide()
-                GetFFD(tab).activeHL = activeHL
+                GetFFD(tabButton).activeHL = activeHL
             else
                 -- The Blizzard-texture strip loop above clears EVERY one of the
                 -- tab's texture regions, including this one, on each re-skin
                 -- (inspect re-skins on every INSPECT_READY as data streams in).
                 -- Restore the fill, or the active-tab highlight blanks out --
                 -- the same reason the background is re-colored above.
-                GetFFD(tab).activeHL:SetColorTexture(1, 1, 1, 0.02)
-                GetFFD(tab).activeHL:SetBlendMode("ADD")
+                GetFFD(tabButton).activeHL:SetColorTexture(1, 1, 1, 0.02)
+                GetFFD(tabButton).activeHL:SetBlendMode("ADD")
             end
 
             -- Replace Blizzard label with custom font
-            local blizLabel = tab:GetFontString()
-            local labelText = blizLabel and blizLabel:GetText() or ("Tab " .. i)
+            local blizLabel = tabButton:GetFontString()
+            local labelText = blizLabel and blizLabel:GetText() or ("Tab " .. idx)
             if blizLabel then
                 blizLabel:SetTextColor(0, 0, 0, 0)
             end
-            tab:SetPushedTextOffset(0, 0)
+            tabButton:SetPushedTextOffset(0, 0)
 
-            if not GetFFD(tab).label then
-                local label = tab:CreateFontString(nil, "OVERLAY")
-                label:SetFont(fontPath, 9, nil)
-                label:SetPoint("CENTER", tab, "CENTER", 0, 0)
+            if not GetFFD(tabButton).label then
+                local label = tabButton:CreateFontString(nil, "OVERLAY")
+                label:SetFont(fontFile, 9, nil)
+                label:SetPoint("CENTER", tabButton, "CENTER", 0, 0)
                 label:SetJustifyH("CENTER")
                 label:SetText(labelText)
-                GetFFD(tab).label = label
+                GetFFD(tabButton).label = label
 
-                hooksecurefunc(tab, "SetText", function(_, newText)
+                hooksecurefunc(tabButton, "SetText", function(_, newText)
                     if newText and label then
                         label:SetText(newText)
                     end
@@ -1090,74 +1098,74 @@ local function SkinInspectSheet()
             end
 
             -- Add underline for active tab
-            if not GetFFD(tab).underline then
-                local underline = tab:CreateTexture(nil, "OVERLAY", nil, 6)
+            if not GetFFD(tabButton).underline then
+                local underline = tabButton:CreateTexture(nil, "OVERLAY", nil, 6)
                 if CludesUI and CludesUI.PanelPP and CludesUI.PanelPP.DisablePixelSnap then
                     CludesUI.PanelPP.DisablePixelSnap(underline)
                     underline:SetHeight(CludesUI.PanelPP.mult or 1)
                 else
                     underline:SetHeight(1)
                 end
-                underline:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
-                underline:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
-                underline:SetColorTexture(EG.r or 0.51, EG.g or 0.784, EG.b or 1, 1)
+                underline:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 0, 0)
+                underline:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", 0, 0)
+                underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
                 CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
                 underline:Hide()
-                GetFFD(tab).underline = underline
+                GetFFD(tabButton).underline = underline
             else
                 -- Same strip-loop restore as activeHL above: re-apply the accent
                 -- fill so the active-tab underline does not blank out on re-skin.
-                GetFFD(tab).underline:SetColorTexture(EG.r or 0.51, EG.g or 0.784, EG.b or 1, 1)
+                GetFFD(tabButton).underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
             end
         end
     end
-    if ns.WSkin and ns.WSkin.NormalizeTabRow then
-        ns.WSkin.NormalizeTabRow(inspTabs)
+    if mod.WSkin and mod.WSkin.NormalizeTabRow then
+        mod.WSkin.NormalizeTabRow(inspTabs)
     end
 
     -- Update tab visuals on show
     local function UpdateTabVisuals()
-        local isTab1 = (frame.selectedTab or 1) == 1
+        local isTab1 = (widget.selectedTab or 1) == 1
 
         -- Show model background only on Tab 1
-        if GetFFD(frame).modelBg then
-            GetFFD(frame).modelBg:SetShown(isTab1)
+        if GetFFD(widget).modelBg then
+            GetFFD(widget).modelBg:SetShown(isTab1)
         end
-        if GetFFD(frame).modelBgGlow then
-            GetFFD(frame).modelBgGlow:SetShown(isTab1)
+        if GetFFD(widget).modelBgGlow then
+            GetFFD(widget).modelBgGlow:SetShown(isTab1)
         end
 
         -- Show Talents/Transmog buttons only on Tab 1 (Character sheet)
-        if GetFFD(frame).talentsBtn then
-            GetFFD(frame).talentsBtn:SetShown(isTab1)
+        if GetFFD(widget).talentsBtn then
+            GetFFD(widget).talentsBtn:SetShown(isTab1)
         end
-        if GetFFD(frame).transmogBtn then
-            GetFFD(frame).transmogBtn:SetShown(isTab1)
+        if GetFFD(widget).transmogBtn then
+            GetFFD(widget).transmogBtn:SetShown(isTab1)
         end
         -- The item text eyeball only has slots to act on on Tab 1
-        if GetFFD(frame).textEyeBtn then
-            GetFFD(frame).textEyeBtn:SetShown(isTab1)
+        if GetFFD(widget).textEyeBtn then
+            GetFFD(widget).textEyeBtn:SetShown(isTab1)
         end
 
         -- Update label visibility with ApplyTabVisibility - only show on Tab 1
         ApplyTabVisibility(isTab1)
 
-        for i = 1, 3 do
-            local tab = _G["InspectFrameTab" .. i]
-            if tab then
-                local isActive = (frame.selectedTab or 1) == i
+        for idx = 1, 3 do
+            local tabButton = _G["InspectFrameTab" .. idx]
+            if tabButton then
+                local isActive = (widget.selectedTab or 1) == idx
                 -- Ensure background is always visible
-                if GetFFD(tab).bg then
-                    GetFFD(tab).bg:Show()
+                if GetFFD(tabButton).bg then
+                    GetFFD(tabButton).bg:Show()
                 end
-                if GetFFD(tab).label then
-                    GetFFD(tab).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
+                if GetFFD(tabButton).label then
+                    GetFFD(tabButton).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
                 end
-                if GetFFD(tab).underline then
-                    GetFFD(tab).underline:SetShown(isActive)
+                if GetFFD(tabButton).underline then
+                    GetFFD(tabButton).underline:SetShown(isActive)
                 end
-                if GetFFD(tab).activeHL then
-                    GetFFD(tab).activeHL:SetShown(isActive)
+                if GetFFD(tabButton).activeHL then
+                    GetFFD(tabButton).activeHL:SetShown(isActive)
                 end
             end
         end
@@ -1166,9 +1174,9 @@ local function SkinInspectSheet()
     -- Hook to update tabs when they change (once only). Every switch goes
     -- through InspectSwitchTabs: the bottom tabs on retail, the side tabs on
     -- WoW Forever and Blizzard's own resets to the character tab.
-    if frame.HookScript and not GetFFD(frame)._tabHooked then
-        GetFFD(frame)._tabHooked = true
-        frame:HookScript("OnShow", function()
+    if widget.HookScript and not GetFFD(widget)._tabHooked then
+        GetFFD(widget)._tabHooked = true
+        widget:HookScript("OnShow", function()
             UpdateTabVisuals()
         end)
         if _G.InspectSwitchTabs then
@@ -1182,24 +1190,24 @@ local function SkinInspectSheet()
 
     -- Scale fully owned by Blizzard (SetScale on secure panels taints
     -- UIParentPanelManager execution context).
-    frame:SetFrameStrata("HIGH")
+    widget:SetFrameStrata("HIGH")
 
     -- Center the title within the frame (406px wide). Hardcoded to avoid
     -- frame:GetWidth() which can return a secret value and cause taint.
-    if frame.TitleContainer then
-        frame.TitleContainer:Show()
-        frame.TitleContainer:SetAlpha(1)
-        frame.TitleContainer:SetFrameStrata("HIGH")
-        frame.TitleContainer:SetFrameLevel(20)
-        frame.TitleContainer:ClearAllPoints()
-        frame.TitleContainer:SetWidth(406)
-        frame.TitleContainer:SetPoint("TOP", frame, "TOP", 0, 0)
+    if widget.TitleContainer then
+        widget.TitleContainer:Show()
+        widget.TitleContainer:SetAlpha(1)
+        widget.TitleContainer:SetFrameStrata("HIGH")
+        widget.TitleContainer:SetFrameLevel(20)
+        widget.TitleContainer:ClearAllPoints()
+        widget.TitleContainer:SetWidth(406)
+        widget.TitleContainer:SetPoint("TOP", widget, "TOP", 0, 0)
 
-        local children2 = { frame.TitleContainer:GetChildren() }
-        for i = 1, #children2 do
-            local child = children2[i]
-            if child and child:GetObjectType() == "FontString" then
-                child:SetJustifyH("CENTER")
+        local children2 = { widget.TitleContainer:GetChildren() }
+        for idx = 1, #children2 do
+            local childFrame = children2[idx]
+            if childFrame and childFrame:GetObjectType() == "FontString" then
+                childFrame:SetJustifyH("CENTER")
             end
         end
     end
@@ -1219,15 +1227,15 @@ local DOCK_MARGIN = 4
 -- snippet IS UIParent and the frame anchors relative to UIParent. Combat-gated,
 -- since secure repositioning of a protected frame is blocked in combat.
 local securePositioner = CreateFrame("Frame", nil, UIParent, "SecureHandlerBaseTemplate")
-local function SecureSetPoint(frame, point, relPoint, x, y)
+local function SecureSetPoint(widget, point, relPoint, posX, posY)
     if InCombatLockdown() then
         return false
     end
-    securePositioner:SetFrameRef("f", frame)
+    securePositioner:SetFrameRef("f", widget)
     securePositioner:SetAttribute("p", point)
     securePositioner:SetAttribute("rp", relPoint)
-    securePositioner:SetAttribute("x", x)
-    securePositioner:SetAttribute("y", y)
+    securePositioner:SetAttribute("x", posX)
+    securePositioner:SetAttribute("y", posY)
     securePositioner:Execute([[
         local f = self:GetFrameRef("f")
         if not f then return end
@@ -1247,16 +1255,16 @@ end
 -- screen and back into an overlap. A protected mover goes through SecureSetPoint (never
 -- a raw SetPoint -> taint); since that only anchors to UIParent, the beside-anchor
 -- target is converted to a UIParent- CENTER offset.
-local function DockBeside(mover, anchor)
-    if not mover or not anchor then
+local function DockBeside(mover, anchorFrame)
+    if not mover or not anchorFrame then
         return
     end
-    local as = anchor:GetEffectiveScale() or 1
+    local as = anchorFrame:GetEffectiveScale() or 1
     local ms = mover:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
     local wAbs = (mover:GetWidth() or 0) * ms
-    local leftRoom = (anchor:GetLeft() or 0) * as
-    local rightRoom = (GetScreenWidth() or 0) * ues - (anchor:GetRight() or 0) * as
+    local leftRoom = (anchorFrame:GetLeft() or 0) * as
+    local rightRoom = (GetScreenWidth() or 0) * ues - (anchorFrame:GetRight() or 0) * as
     local dockLeft = leftRoom >= wAbs + DOCK_MARGIN * ms or leftRoom >= rightRoom
 
     if mover:IsProtected() then
@@ -1268,9 +1276,9 @@ local function DockBeside(mover, anchor)
         if dockLeft then
             absCenterX = leftRoom - DOCK_MARGIN * ms - wAbs / 2
         else
-            absCenterX = (anchor:GetRight() or 0) * as + DOCK_MARGIN * ms + wAbs / 2
+            absCenterX = (anchorFrame:GetRight() or 0) * as + DOCK_MARGIN * ms + wAbs / 2
         end
-        local absCenterY = (anchor:GetTop() or 0) * as - hAbs / 2
+        local absCenterY = (anchorFrame:GetTop() or 0) * as - hAbs / 2
         local ucx, ucy = UIParent:GetCenter()
         if ucx and ms > 0 then
             SecureSetPoint(
@@ -1284,9 +1292,9 @@ local function DockBeside(mover, anchor)
     else
         mover:ClearAllPoints()
         if dockLeft then
-            mover:SetPoint("TOPRIGHT", anchor, "TOPLEFT", -DOCK_MARGIN, 0)
+            mover:SetPoint("TOPRIGHT", anchorFrame, "TOPLEFT", -DOCK_MARGIN, 0)
         else
-            mover:SetPoint("TOPLEFT", anchor, "TOPRIGHT", DOCK_MARGIN, 0)
+            mover:SetPoint("TOPLEFT", anchorFrame, "TOPRIGHT", DOCK_MARGIN, 0)
         end
     end
 end
@@ -1299,31 +1307,31 @@ local _savedPoint = {}
 local _moved = {}
 local _ignoreSP = false
 
-local function CapturePoint(frame)
-    if not frame or _savedPoint[frame] then
+local function CapturePoint(widget)
+    if not widget or _savedPoint[widget] then
         return
     end
-    local p, rel, rp, x, y = frame:GetPoint(1)
+    local p, rel, rp, posX, posY = widget:GetPoint(1)
     if p then
-        _savedPoint[frame] = { p, rel, rp, x, y }
+        _savedPoint[widget] = { p, rel, rp, posX, posY }
     end
 end
 
-local function RestorePoint(frame)
-    local p = _savedPoint[frame]
-    if not p or not frame then
+local function RestorePoint(widget)
+    local p = _savedPoint[widget]
+    if not p or not widget then
         return
     end
-    if frame:IsProtected() then
+    if widget:IsProtected() then
         -- Secure restore reproduces the native anchor only when it was
         -- UIParent-relative (the usual case for a top-level panel; a nil
         -- relativeTo defaults to the parent, UIParent, inside the snippet).
         if p[2] == nil or p[2] == UIParent then
-            SecureSetPoint(frame, p[1], p[3], p[4], p[5])
+            SecureSetPoint(widget, p[1], p[3], p[4], p[5])
         end
     else
-        frame:ClearAllPoints()
-        frame:SetPoint(p[1], p[2], p[3], p[4], p[5])
+        widget:ClearAllPoints()
+        widget:SetPoint(p[1], p[2], p[3], p[4], p[5])
     end
 end
 
@@ -1332,20 +1340,20 @@ end
 -- If the user has pinned the character sheet with the Shifter, that is respected (it
 -- stays put) and the inspect window yields instead; if both are pinned, neither moves.
 local function RefreshDock()
-    local insp, cf = InspectFrame, _G.CharacterFrame
-    if not insp or not cf then
+    local insp, castFrame = InspectFrame, _G.CharacterFrame
+    if not insp or not castFrame then
         return
     end
     if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
         return
     end
 
-    if not (insp:IsShown() and cf:IsShown()) then
+    if not (insp:IsShown() and castFrame:IsShown()) then
         _ignoreSP = true
-        if _moved[cf] then
-            _moved[cf] = nil
-            RestorePoint(cf)
-            _savedPoint[cf] = nil
+        if _moved[castFrame] then
+            _moved[castFrame] = nil
+            RestorePoint(castFrame)
+            _savedPoint[castFrame] = nil
         end
         if _moved[insp] then
             _moved[insp] = nil
@@ -1356,11 +1364,11 @@ local function RefreshDock()
         return
     end
 
-    local mover, anchor
+    local mover, anchorFrame
     if not ShifterPinned("CharacterFrame") then
-        mover, anchor = cf, insp
+        mover, anchorFrame = castFrame, insp
     elseif not ShifterPinned("InspectFrame") then
-        mover, anchor = insp, cf
+        mover, anchorFrame = insp, castFrame
     else
         return
     end
@@ -1368,7 +1376,7 @@ local function RefreshDock()
     _ignoreSP = true
     CapturePoint(mover)
     _moved[mover] = true
-    DockBeside(mover, anchor)
+    DockBeside(mover, anchorFrame)
     _ignoreSP = false
 end
 
@@ -1394,12 +1402,12 @@ local function EnsureInspectNineSliceHidden()
         return
     end
 
-    local frame = InspectFrame
+    local widget = InspectFrame
 
     -- Hide InspectFrame.NineSlice
-    if frame.NineSlice then
-        frame.NineSlice:Hide()
-        frame.NineSlice:SetAlpha(0)
+    if widget.NineSlice then
+        widget.NineSlice:Hide()
+        widget.NineSlice:SetAlpha(0)
     end
 
     -- Hide InspectFrameInset.NineSlice (borders). The inset is left transparent
@@ -1476,7 +1484,7 @@ if CludesUI then
         local nineSliceHiddenFrame = CreateFrame("Frame")
         nineSliceHiddenFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         nineSliceHiddenFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
-        nineSliceHiddenFrame:SetScript("OnEvent", function(self, event, ...)
+        nineSliceHiddenFrame:SetScript("OnEvent", function(self, evt, ...)
             if InspectFrame and InspectFrame:IsShown() then
                 EnsureInspectNineSliceHidden()
             end
@@ -1487,10 +1495,10 @@ if CludesUI then
 
     initFrame:RegisterEvent("PLAYER_LOGIN")
     initFrame:RegisterEvent("ADDON_LOADED")
-    initFrame:SetScript("OnEvent", function(self, event, arg1)
-        if event == "PLAYER_LOGIN" then
+    initFrame:SetScript("OnEvent", function(self, evt, arg1)
+        if evt == "PLAYER_LOGIN" then
             HookInspectFrame()
-        elseif event == "ADDON_LOADED" and arg1 == "Blizzard_InspectUI" then
+        elseif evt == "ADDON_LOADED" and arg1 == "Blizzard_InspectUI" then
             self:UnregisterEvent("ADDON_LOADED")
             HookInspectFrame()
         end
@@ -1507,24 +1515,24 @@ if CludesUI then
     local function StopWait()
         dataWatch:UnregisterAllEvents()
     end
-    local function EquippedByInspected(itemID)
-        local unit = InspectFrame and InspectFrame.unit
-        if not unit or not itemID then
+    local function EquippedByInspected(itemId)
+        local unitToken = InspectFrame and InspectFrame.unit
+        if not unitToken or not itemId then
             return false
         end
         for slotName in pairs(slotGridMap) do
-            local slot = _G[slotName]
-            if slot and GetInventoryItemID(unit, slot:GetID()) == itemID then
+            local slotIndex = _G[slotName]
+            if slotIndex and GetInventoryItemID(unitToken, slotIndex:GetID()) == itemId then
                 return true
             end
         end
         return false
     end
-    dataWatch:SetScript("OnEvent", function(_, event, arg1)
+    dataWatch:SetScript("OnEvent", function(_, evt, arg1)
         if retryTimer then
             return
         end
-        if event == "GET_ITEM_INFO_RECEIVED" and not EquippedByInspected(arg1) then
+        if evt == "GET_ITEM_INFO_RECEIVED" and not EquippedByInspected(arg1) then
             return
         end
         retryTimer = C_Timer.NewTimer(0.12, function()
@@ -1552,29 +1560,29 @@ if CludesUI then
 
         local pending = false
         for slotName, gridPos in pairs(slotGridMap) do
-            local slot = _G[slotName]
-            if slot then
+            local slotIndex = _G[slotName]
+            if slotIndex then
                 -- Label clearing now lives in CUI_UpdateSlotStyle, so it covers
                 -- ApplyThemedInspectSheet's styling pass too, not just this one.
-                GetFFD(slot).border = false
+                GetFFD(slotIndex).border = false
                 -- Re-style (right column = col 1)
                 local isRightColumn = gridPos.col == 1
-                if CUI_UpdateSlotStyle(slotName, slot:GetID(), textOverlayFrame, isRightColumn) then
+                if CUI_UpdateSlotStyle(slotName, slotIndex:GetID(), textOverlayFrame, isRightColumn) then
                     pending = true
                 end
             end
         end
-        local now = GetTime()
-        if pending and now - (waitStart or now) < WAIT_SECS then
-            waitStart = waitStart or now
+        local nowTime = GetTime()
+        if pending and nowTime - (waitStart or nowTime) < WAIT_SECS then
+            waitStart = waitStart or nowTime
             dataWatch:RegisterEvent("GET_ITEM_INFO_RECEIVED")
             dataWatch:RegisterEvent("TOOLTIP_DATA_UPDATE")
         else
             StopWait()
         end
         -- Update label visibility after all slots have been styled
-        local frame = InspectFrame
-        if frame then
+        local widget = InspectFrame
+        if widget then
             ApplyTabVisibility(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
         end
     end
@@ -1594,7 +1602,7 @@ if CludesUI then
     -- Also hook to INSPECT_READY to reskin when new inspection data arrives
     local inspectHook = CreateFrame("Frame")
     inspectHook:RegisterEvent("INSPECT_READY")
-    inspectHook:SetScript("OnEvent", function(self, event, guid)
+    inspectHook:SetScript("OnEvent", function(self, evt, unitGuid)
         if not InspectFrame or not InspectFrame:IsShown() then
             return
         end
@@ -1603,8 +1611,8 @@ if CludesUI then
         ApplyThemedInspectSheet()
         EnsureInspectNineSliceHidden()
         RefreshSlotStyles()
-        local frame = InspectFrame
-        if frame then
+        local widget = InspectFrame
+        if widget then
             ApplyTabVisibility(InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown())
             -- Apply visibility settings after styling
             if CludesUI._refreshInspectItemLevelVisibility then
@@ -1640,15 +1648,15 @@ do
         if not CludesUIDB then
             CludesUIDB = {}
         end
-        local defaults = {
+        local defaultSet = {
             themedInspectSheet = true,
             inspectShowItemLevel = true,
             inspectShowUpgradeTrack = true,
             inspectShowEnchants = true,
         }
-        for k, v in pairs(defaults) do
-            if CludesUIDB[k] == nil then
-                CludesUIDB[k] = v
+        for key, val in pairs(defaultSet) do
+            if CludesUIDB[key] == nil then
+                CludesUIDB[key] = val
             end
         end
     end)
@@ -1664,10 +1672,10 @@ function CludesUI._refreshInspectItemLevelVisibility()
     local isTab1 = InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown()
 
     for slotName, _ in pairs(slotGridMap) do
-        local slot = _G[slotName]
-        if slot and GetFFD(slot).iLvlText then
+        local slotIndex = _G[slotName]
+        if slotIndex and GetFFD(slotIndex).iLvlText then
             -- Only show if Tab 1 AND setting is enabled
-            GetFFD(slot).iLvlText:SetShown(isTab1 and showItemLevel)
+            GetFFD(slotIndex).iLvlText:SetShown(isTab1 and showItemLevel)
         end
     end
 end
@@ -1682,10 +1690,10 @@ function CludesUI._refreshInspectUpgradeTrackVisibility()
     local isTab1 = InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown()
 
     for slotName, _ in pairs(slotGridMap) do
-        local slot = _G[slotName]
-        if slot and GetFFD(slot).upgradeText then
+        local slotIndex = _G[slotName]
+        if slotIndex and GetFFD(slotIndex).upgradeText then
             -- Only show if Tab 1 AND setting is enabled
-            GetFFD(slot).upgradeText:SetShown(isTab1 and showUpgradeTrack)
+            GetFFD(slotIndex).upgradeText:SetShown(isTab1 and showUpgradeTrack)
         end
     end
 end
@@ -1700,12 +1708,12 @@ function CludesUI._refreshInspectEnchantsVisibility()
     local isTab1 = InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown()
 
     for slotName, _ in pairs(slotGridMap) do
-        local slot = _G[slotName]
-        if slot and GetFFD(slot).enchantText then
+        local slotIndex = _G[slotName]
+        if slotIndex and GetFFD(slotIndex).enchantText then
             -- Only show if Tab 1 AND setting is enabled (its hover spot too)
-            GetFFD(slot).enchantText:SetShown(isTab1 and showEnchants)
-            if GetFFD(slot).enchantHoverFrame then
-                GetFFD(slot).enchantHoverFrame:SetShown(isTab1 and showEnchants)
+            GetFFD(slotIndex).enchantText:SetShown(isTab1 and showEnchants)
+            if GetFFD(slotIndex).enchantHoverFrame then
+                GetFFD(slotIndex).enchantHoverFrame:SetShown(isTab1 and showEnchants)
             end
         end
     end

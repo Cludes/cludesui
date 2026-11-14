@@ -7,9 +7,9 @@ end -- no Great Vault on WoW Forever: no factory, no keystone feed (the main fil
 -- Blocks\GreatVault.lua
 -- Great Vault block factory.
 
-local ADDON_NAME, ns = ...
-local L = ns.L
-local K = ns.BlockKit
+local ADDON_NAME, mod = ...
+local L = mod.L
+local Keys = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -21,21 +21,21 @@ local wipe = wipe
 local format = string.format
 local tsort = table.sort
 local floor = math.floor
-local max = math.max
+local upper = math.max
 local min = math.min
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
+local ICON_GAP = Keys.ICON_GAP
+local CONTENT_BASE = Keys.CONTENT_BASE
+local InstKey = Keys.InstKey
+local MakeEventFrame = Keys.MakeEventFrame
+local RegisterInstEvents = Keys.RegisterInstEvents
+local UnregisterInstEvents = Keys.UnregisterInstEvents
+local HBudget = Keys.HBudget
+local VSlotW = Keys.VSlotW
+local MaybeRelayout = Keys.MaybeRelayout
+local AttachTextOffset = Keys.AttachTextOffset
+local BlockColorOf = Keys.BlockColorOf
+local IconColorOf = Keys.IconColorOf
 
 -------------------------------------------------------------------------------
 --  GREAT VAULT (weekly reward progress + owned / party keystones)
@@ -58,18 +58,18 @@ local GV_MPLUS = (
 local GV_WORLD = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.World)
     or 6
 
-local function GVTokenColor(state)
-    if state == "done" then
+local function GVTokenColor(status)
+    if status == "done" then
         return 0.176, 0.796, 0.349
     end
-    if state == "partial" then
+    if status == "partial" then
         return 0.812, 0.592, 0.212
     end
     return 0.58, 0.58, 0.58
 end
 
-local function GVColorize(text, r, g, b)
-    return format("%s%s|r", CludesUI.HexColor(r, g, b), text)
+local function GVColorize(textValue, r, g, b)
+    return format("%s%s|r", CludesUI.HexColor(r, g, b), textValue)
 end
 
 local function GVSortActivities(a, b)
@@ -96,38 +96,38 @@ local function GVRowTokens(activityType, isRaid)
         acts = nil
     else
         wipe(_gvSortBuf)
-        for i = 1, #acts do
-            _gvSortBuf[i] = acts[i]
+        for idx = 1, #acts do
+            _gvSortBuf[idx] = acts[idx]
         end
         tsort(_gvSortBuf, GVSortActivities)
         acts = _gvSortBuf
     end
 
-    for i = 1, 3 do
-        local info = acts and acts[i]
-        local text, state = "-", "empty"
-        if info then
-            local progress = max(0, tonumber(info.progress) or 0)
-            local threshold = max(0, tonumber(info.threshold) or 0)
-            local level = max(0, tonumber(info.level) or 0)
+    for idx = 1, 3 do
+        local details = acts and acts[idx]
+        local textValue, status = "-", "empty"
+        if details then
+            local progress = upper(0, tonumber(details.progress) or 0)
+            local threshold = upper(0, tonumber(details.threshold) or 0)
+            local level = upper(0, tonumber(details.level) or 0)
             if threshold > 0 then
                 if progress >= threshold then
-                    state = "done"
+                    status = "done"
                     -- A cleared M+ / world slot reports the reward level it earned; raids have no such level and keep the count.
                     if not isRaid and level > 0 then
-                        text = "+" .. level
+                        textValue = "+" .. level
                     else
-                        text = format("%d/%d", progress, threshold)
+                        textValue = format("%d/%d", progress, threshold)
                     end
                 else
-                    text = format("%d/%d", progress, threshold)
+                    textValue = format("%d/%d", progress, threshold)
                     if progress > 0 then
-                        state = "partial"
+                        status = "partial"
                     end
                 end
             end
         end
-        _gvTokenBuf[i] = GVColorize(text, GVTokenColor(state))
+        _gvTokenBuf[idx] = GVColorize(textValue, GVTokenColor(status))
     end
     return _gvTokenBuf
 end
@@ -188,7 +188,7 @@ local function GVRepaintOpenTooltip()
     _gvRepaintQueued = true
     C_Timer.After(0.2, function()
         _gvRepaintQueued = false
-        if _gvOpenFn and _gvOpenBtn and ns.Tip_IsOwned(_gvOpenBtn) then
+        if _gvOpenFn and _gvOpenBtn and mod.Tip_IsOwned(_gvOpenBtn) then
             _gvOpenFn()
         end
     end)
@@ -236,12 +236,12 @@ local function GVRequestKeys(emptyHand)
     if not lib or not IsInGroup(LE_PARTY_CATEGORY_HOME) then
         return
     end
-    local now = GetTime()
+    local nowTime = GetTime()
     local wait = emptyHand and GV_REQUEST_FLOOR or GV_REQUEST_THROTTLE
-    if now - _gvLastRequest < wait then
+    if nowTime - _gvLastRequest < wait then
         return
     end
-    _gvLastRequest = now
+    _gvLastRequest = nowTime
     lib.Request("PARTY")
 end
 
@@ -262,9 +262,9 @@ function GVInGroup(playerName)
     if not short then
         return false
     end
-    local prefix, count = GVGroupRange()
-    for i = 1, count do
-        if GVShortName(GetUnitName(prefix .. i, true)) == short then
+    local prefixText, total = GVGroupRange()
+    for idx = 1, total do
+        if GVShortName(GetUnitName(prefixText .. idx, true)) == short then
             return true
         end
     end
@@ -284,10 +284,10 @@ local function GVPruneKeys()
     end
 
     -- GROUP_ROSTER_UPDATE can land before units resolve; pruning an unresolved roster discards live keys and costs a request round-trip on next hover.
-    local prefix, count = GVGroupRange()
+    local prefixText, total = GVGroupRange()
     local resolved = false
-    for i = 1, count do
-        if GetUnitName(prefix .. i, true) then
+    for idx = 1, total do
+        if GetUnitName(prefixText .. idx, true) then
             resolved = true
             break
         end
@@ -337,12 +337,12 @@ local function GVBuildPartyRows()
 
     wipe(_gvShortIdx)
     local any = false
-    for name, info in pairs(_gvKeys) do
-        if info and (info.level or 0) > 0 then
+    for name, details in pairs(_gvKeys) do
+        if details and (details.level or 0) > 0 then
             local short = GVShortName(name)
             if short then
                 if _gvShortIdx[short] == nil then
-                    _gvShortIdx[short] = info
+                    _gvShortIdx[short] = details
                 else
                     _gvShortIdx[short] = false
                 end
@@ -354,23 +354,23 @@ local function GVBuildPartyRows()
         return 0
     end
 
-    local prefix, count = GVGroupRange()
-    for i = 1, count do
-        local unit = prefix .. i
-        if UnitExists(unit) and not UnitIsUnit(unit, "player") then
-            local unitName = GetUnitName(unit, true)
-            local info = _gvKeys[unitName]
-            if not (info and (info.level or 0) > 0) then
-                info = _gvShortIdx[GVShortName(unitName)] or nil
+    local prefixText, total = GVGroupRange()
+    for idx = 1, total do
+        local unitToken = prefixText .. idx
+        if UnitExists(unitToken) and not UnitIsUnit(unitToken, "player") then
+            local unitName = GetUnitName(unitToken, true)
+            local details = _gvKeys[unitName]
+            if not (details and (details.level or 0) > 0) then
+                details = _gvShortIdx[GVShortName(unitName)] or nil
             end
-            local dungeon = info and GVDungeonName(info.mapID)
+            local dungeon = details and GVDungeonName(details.mapID)
             if dungeon then
-                local _, classFile = UnitClass(unit)
+                local _, classFile = UnitClass(unitToken)
                 local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                 GVAddPartyRow(
-                    GetUnitName(unit) or unit,
+                    GetUnitName(unitToken) or unitToken,
                     dungeon,
-                    info.level,
+                    details.level,
                     (cc and cc.r) or 1,
                     (cc and cc.g) or 1,
                     (cc and cc.b) or 1
@@ -379,110 +379,110 @@ local function GVBuildPartyRows()
         end
     end
 
-    for i = 2, _gvPartyCount do
-        local j = i
-        while j > 1 and GVSortPartyRows(_gvPartyBuf[j], _gvPartyBuf[j - 1]) do
-            _gvPartyBuf[j], _gvPartyBuf[j - 1] = _gvPartyBuf[j - 1], _gvPartyBuf[j]
-            j = j - 1
+    for idx = 2, _gvPartyCount do
+        local jdx = idx
+        while jdx > 1 and GVSortPartyRows(_gvPartyBuf[jdx], _gvPartyBuf[jdx - 1]) do
+            _gvPartyBuf[jdx], _gvPartyBuf[jdx - 1] = _gvPartyBuf[jdx - 1], _gvPartyBuf[jdx]
+            jdx = jdx - 1
         end
     end
     return _gvPartyCount
 end
 
-ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
-    local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
-    inst.events = { "GROUP_ROSTER_UPDATE", "PLAYER_ENTERING_WORLD" }
+mod.BlockFactories.greatvault = function(blockCfg, slotIndex, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+    instance.key = InstKey(barCtx, blockCfg)
+    instance.events = { "GROUP_ROSTER_UPDATE", "PLAYER_ENTERING_WORLD" }
 
     local mouseOver = false
 
-    local button = CreateFrame("Button", nil, content)
-    button:SetAllPoints()
-    button:EnableMouse(true)
-    button:RegisterForClicks("AnyUp")
+    local btnFrame = CreateFrame("Button", nil, contentFrame)
+    btnFrame:SetAllPoints()
+    btnFrame:EnableMouse(true)
+    btnFrame:RegisterForClicks("AnyUp")
 
-    local icon = button:CreateTexture(nil, "OVERLAY")
-    K.SetBlockIcon(icon, blockCfg)
-    local label = button:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(inst, label)
+    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    Keys.SetBlockIcon(glyph, blockCfg)
+    local labelText = btnFrame:CreateFontString(nil, "OVERLAY")
+    AttachTextOffset(instance, labelText)
 
-    function inst:Refresh()
+    function instance:Refresh()
         local barCfg = barCtx.cfg
         local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         -- Core translator, not the file's English-only `L` table: vault terms share catalog entries with the minimap's vault tooltip.
-        local text = CludesUI.L("Great Vault")
+        local textValue = CludesUI.L("Great Vault")
         local iconSz = fontSize + 4
 
         if isSide then
-            local slotW = VSlotW(inst)
-            local innerW = max(24, slotW - 8)
-            ns.SetFont(label, fontSize, barCfg)
-            label:SetText(text)
-            icon:SetSize(iconSz, iconSz)
-            icon:ClearAllPoints()
-            icon:SetPoint("TOP", button, "TOP", 0, -4)
-            ns.SetWrappedText(label, innerW, "CENTER")
-            label:ClearAllPoints()
-            label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
-            local totalH = 8 + iconSz + 2 + ns.SnapToPixelGrid(label:GetStringHeight()) + 4
-            totalH = max(totalH, barH)
-            content:SetSize(slotW, totalH)
-            button:SetSize(slotW, totalH)
+            local slotW = VSlotW(instance)
+            local innerW = upper(24, slotW - 8)
+            mod.SetFont(labelText, fontSize, barCfg)
+            labelText:SetText(textValue)
+            glyph:SetSize(iconSz, iconSz)
+            glyph:ClearAllPoints()
+            glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+            mod.SetWrappedText(labelText, innerW, "CENTER")
+            labelText:ClearAllPoints()
+            labelText:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
+            local totalH = 8 + iconSz + 2 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4
+            totalH = upper(totalH, barH)
+            contentFrame:SetSize(slotW, totalH)
+            btnFrame:SetSize(slotW, totalH)
         else
-            local slotW = HBudget(inst, 120)
+            local slotW = HBudget(instance, 120)
             local gap = ICON_GAP
-            ns.SetFont(label, fontSize, barCfg)
-            ns.ResetInlineText(label, "LEFT")
-            label:SetText(text)
-            icon:SetSize(iconSz, iconSz)
-            icon:ClearAllPoints()
-            icon:SetPoint("LEFT", button, "LEFT", 0, 0)
-            label:ClearAllPoints()
-            label:SetPoint("LEFT", button, "LEFT", iconSz + gap, 0)
-            local tw = ns.SnapToPixelGrid(label:GetStringWidth())
+            mod.SetFont(labelText, fontSize, barCfg)
+            mod.ResetInlineText(labelText, "LEFT")
+            labelText:SetText(textValue)
+            glyph:SetSize(iconSz, iconSz)
+            glyph:ClearAllPoints()
+            glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+            labelText:ClearAllPoints()
+            labelText:SetPoint("LEFT", btnFrame, "LEFT", iconSz + gap, 0)
+            local tw = mod.SnapToPixelGrid(labelText:GetStringWidth())
             local totalW = min(slotW, iconSz + gap + tw + 4)
-            content:SetSize(max(totalW, 10), barH)
-            button:SetSize(max(totalW, 10), barH)
+            contentFrame:SetSize(upper(totalW, 10), barH)
+            btnFrame:SetSize(upper(totalW, 10), barH)
         end
 
         if mouseOver then
-            local ar, ag, ab = ns.GetAccent()
-            label:SetTextColor(ar, ag, ab, 1)
-            icon:SetVertexColor(ar, ag, ab, 1)
+            local ar, ag, ab = mod.GetAccent()
+            labelText:SetTextColor(ar, ag, ab, 1)
+            glyph:SetVertexColor(ar, ag, ab, 1)
         else
             local cbr, cbg, cbb = BlockColorOf(blockCfg)
             local ir, ig, ib = IconColorOf(blockCfg)
-            label:SetTextColor(cbr, cbg, cbb, 1)
-            icon:SetVertexColor(ir, ig, ib, 1)
+            labelText:SetTextColor(cbr, cbg, cbb, 1)
+            glyph:SetVertexColor(ir, ig, ib, 1)
         end
-        MaybeRelayout(inst)
+        MaybeRelayout(instance)
     end
 
     local function ShowVaultTooltip()
-        local ar, ag, ab = ns.GetAccent()
-        ns.Tip_Begin(button)
-        ns.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", ar, ag, ab)
-        ns.Tip_AddLine(" ")
-        ns.Tip_AddColumns(CludesUI.L("Raids"), GVRowTokens(GV_RAID, true), 0.8, 0.8, 0.8)
-        ns.Tip_AddColumns(CludesUI.L("Mythic+"), GVRowTokens(GV_MPLUS, false), 0.8, 0.8, 0.8)
-        ns.Tip_AddColumns(CludesUI.L("World"), GVRowTokens(GV_WORLD, false), 0.8, 0.8, 0.8)
+        local ar, ag, ab = mod.GetAccent()
+        mod.Tip_Begin(btnFrame)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", ar, ag, ab)
+        mod.Tip_AddLine(" ")
+        mod.Tip_AddColumns(CludesUI.L("Raids"), GVRowTokens(GV_RAID, true), 0.8, 0.8, 0.8)
+        mod.Tip_AddColumns(CludesUI.L("Mythic+"), GVRowTokens(GV_MPLUS, false), 0.8, 0.8, 0.8)
+        mod.Tip_AddColumns(CludesUI.L("World"), GVRowTokens(GV_WORLD, false), 0.8, 0.8, 0.8)
 
         local myDungeon, myLevel = GVOwnedKeystone()
         if myDungeon then
-            ns.Tip_AddLine(" ")
-            ns.Tip_AddLine(CludesUI.L("Your Keystone"), ar, ag, ab)
-            ns.Tip_AddDouble(myDungeon, "+" .. myLevel, 0.8, 0.8, 0.8, 1, 1, 1)
+            mod.Tip_AddLine(" ")
+            mod.Tip_AddLine(CludesUI.L("Your Keystone"), ar, ag, ab)
+            mod.Tip_AddDouble(myDungeon, "+" .. myLevel, 0.8, 0.8, 0.8, 1, 1, 1)
         end
 
         local partyCount = GVBuildPartyRows()
         if partyCount > 0 then
-            ns.Tip_AddLine(" ")
-            ns.Tip_AddLine(CludesUI.L("Party Keystones"), ar, ag, ab)
-            for i = 1, partyCount do
-                local e = _gvPartyBuf[i]
-                ns.Tip_AddDouble(
+            mod.Tip_AddLine(" ")
+            mod.Tip_AddLine(CludesUI.L("Party Keystones"), ar, ag, ab)
+            for idx = 1, partyCount do
+                local e = _gvPartyBuf[idx]
+                mod.Tip_AddDouble(
                     e.name,
                     e.dungeon .. " |cffffffff+" .. e.level .. "|r",
                     e.r,
@@ -495,36 +495,36 @@ ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
             end
         end
 
-        ns.Tip_AddLine(" ")
-        ns.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, ar, ag, ab)
-        ns.Tip_Show()
+        mod.Tip_AddLine(" ")
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, ar, ag, ab)
+        mod.Tip_Show()
         return partyCount
     end
 
-    button:SetScript("OnEnter", function()
+    btnFrame:SetScript("OnEnter", function()
         mouseOver = true
-        inst:Refresh()
+        instance:Refresh()
         -- Paint from the cache first, then poll: a member can pick up a new key without
         -- the group changing, and the painted row count says whether we had anything --
         -- an empty section bypasses the throttle. Replies land ~1s later and repaint the tip in place.
-        local shown = ShowVaultTooltip()
-        _gvOpenBtn, _gvOpenFn = button, ShowVaultTooltip
-        GVRequestKeys(shown == 0)
+        local isShown = ShowVaultTooltip()
+        _gvOpenBtn, _gvOpenFn = btnFrame, ShowVaultTooltip
+        GVRequestKeys(isShown == 0)
     end)
-    button:SetScript("OnLeave", function()
+    btnFrame:SetScript("OnLeave", function()
         mouseOver = false
         _gvOpenBtn, _gvOpenFn = nil, nil
-        ns.Tip_Hide(button)
-        inst:Refresh()
+        mod.Tip_Hide(btnFrame)
+        instance:Refresh()
     end)
-    button:SetScript("OnClick", function(_, mb)
+    btnFrame:SetScript("OnClick", function(_, mb)
         if mb == "LeftButton" then
             CludesUI.ToggleGreatVault()
         end
     end)
 
     -- The block's visuals never change with the roster; these events exist only to drop departed members and keep the cache warm for the next hover.
-    inst.eventFrame = MakeEventFrame(inst, function()
+    instance.eventFrame = MakeEventFrame(instance, function()
         GVPruneKeys()
         GVRequestKeys()
     end)
@@ -532,36 +532,36 @@ ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
     -- Teardown can happen while the tip is open (a bar rebuild never fires OnLeave),
     -- and _gvOpenFn is module-level: left set, it would pin this factory's whole scope for the rest of the session.
     local function ForgetOpenTip()
-        if _gvOpenBtn == button then
+        if _gvOpenBtn == btnFrame then
             _gvOpenBtn, _gvOpenFn = nil, nil
         end
     end
 
-    function inst:Enable()
-        content:Show()
+    function instance:Enable()
+        contentFrame:Show()
         GVEnsureKeystoneFeed()
         RegisterInstEvents(self)
         GVRequestKeys()
     end
 
-    function inst:Disable()
+    function instance:Disable()
         ForgetOpenTip()
         UnregisterInstEvents(self)
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    function inst:GetAutoLength()
+    function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return max(content:GetHeight() or 40, 30)
+            return upper(contentFrame:GetHeight() or 40, 30)
         end
-        return max(content:GetWidth() or 60, 24)
+        return upper(contentFrame:GetWidth() or 60, 24)
     end
 
-    function inst:Destroy()
+    function instance:Destroy()
         self._dead = true
         ForgetOpenTip()
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    return inst
+    return instance
 end

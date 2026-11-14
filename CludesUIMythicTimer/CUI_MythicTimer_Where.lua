@@ -12,20 +12,20 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the last one leaves. Each feature walks its own key set, so a bucket its filter does not
 --  offer never hides it.
 --------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 
 local MTWhere = {}
-ns.MTWhere = MTWhere
+mod.MTWhere = MTWhere
 
 -- The nameplate unit tokens, as the ordered list and the set, for every
 -- feature that walks or recognizes plates (this file loads first).
 local NAMEPLATE_TOKENS, NAMEPLATE_UNITS = {}, {}
-for i = 1, 40 do
-    local token = "nameplate" .. i
-    NAMEPLATE_TOKENS[i] = token
+for idx = 1, 40 do
+    local token = "nameplate" .. idx
+    NAMEPLATE_TOKENS[idx] = token
     NAMEPLATE_UNITS[token] = true
 end
-ns.NAMEPLATE_TOKENS, ns.NAMEPLATE_UNITS = NAMEPLATE_TOKENS, NAMEPLATE_UNITS
+mod.NAMEPLATE_TOKENS, mod.NAMEPLATE_UNITS = NAMEPLATE_TOKENS, NAMEPLATE_UNITS
 
 -- Every location bucket Bucket() can answer. A feature's filter offers all of
 -- them or a subset (NewKeySet).
@@ -46,12 +46,12 @@ MTWhere.LOCATION_KEYS = {
 
 -- A feature's location keys: the list its filter walks plus a lookup set.
 -- Built once per feature at file load.
-function MTWhere.NewKeySet(list)
-    local set = {}
-    for i = 1, #list do
-        set[list[i]] = true
+function MTWhere.NewKeySet(entries)
+    local group = {}
+    for idx = 1, #entries do
+        group[entries[idx]] = true
     end
-    return { list = list, set = set }
+    return { list = entries, set = group }
 end
 
 --------------------------------------------------------------------------------
@@ -131,17 +131,17 @@ local function ReadCombatFlag()
     if not InCombatLockdown then
         return false
     end
-    local ok, v = pcall(InCombatLockdown)
-    if not ok then
+    local success, val = pcall(InCombatLockdown)
+    if not success then
         return false
     end
     if issecretvalue then
-        local sok, secret = pcall(issecretvalue, v)
+        local sok, secret = pcall(issecretvalue, val)
         if sok and secret then
             return false
         end
     end
-    return v and true or false
+    return val and true or false
 end
 
 function MTWhere.InCombat()
@@ -165,10 +165,10 @@ function MTWhere.Shows(whereToShow, keySet)
             return false
         end
     end
-    local keys = keySet.list
+    local keyList = keySet.list
     local anyLoc = false
-    for i = 1, #keys do
-        if whereToShow[keys[i]] == true then
+    for idx = 1, #keyList do
+        if whereToShow[keyList[idx]] == true then
             anyLoc = true
             break
         end
@@ -208,11 +208,11 @@ local subIndex = {} -- key -> i
 -- call goes through securecallfunction, so an error in one feature is
 -- reported and the others still see the edge.
 local securecallfunction = securecallfunction
-local function Dispatch(event)
-    for i = #subFns, 1, -1 do
-        local fn = subFns[i]
-        if fn then
-            securecallfunction(fn, event)
+local function Dispatch(evt)
+    for idx = #subFns, 1, -1 do
+        local func = subFns[idx]
+        if func then
+            securecallfunction(func, evt)
         end
     end
 end
@@ -231,16 +231,16 @@ end
 
 local whereEvt -- the watcher frame; built on the first subscribe
 
-local function OnWhereEvent(_, event)
-    if event == "PLAYER_REGEN_DISABLED" then
+local function OnWhereEvent(_, evt)
+    if evt == "PLAYER_REGEN_DISABLED" then
         inCombat = true
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "PLAYER_REGEN_ENABLED" then
         inCombat = false
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         inCombat = ReadCombatFlag()
     end
-    Dispatch(event)
-    if event == "PLAYER_ENTERING_WORLD" and not recheckPending then
+    Dispatch(evt)
+    if evt == "PLAYER_ENTERING_WORLD" and not recheckPending then
         recheckPending = true
         C_Timer.After(0.5, Recheck)
     end
@@ -249,44 +249,44 @@ end
 -- Subscribing an existing key replaces its fn. The first subscriber builds
 -- the watcher if needed, arms it and seeds the combat flag; the regen edges
 -- keep it exact from there.
-function MTWhere.Subscribe(key, fn)
-    if not fn then
+function MTWhere.Subscribe(key, func)
+    if not func then
         MTWhere.Unsubscribe(key)
         return
     end
-    local i = subIndex[key]
-    if i then
-        subFns[i] = fn
+    local idx = subIndex[key]
+    if idx then
+        subFns[idx] = func
         return
     end
-    i = #subFns + 1
-    subFns[i] = fn
-    subKeys[i] = key
-    subIndex[key] = i
-    if i == 1 then
+    idx = #subFns + 1
+    subFns[idx] = func
+    subKeys[idx] = key
+    subIndex[key] = idx
+    if idx == 1 then
         if not whereEvt then
             whereEvt = CreateFrame("Frame")
             whereEvt:SetScript("OnEvent", OnWhereEvent)
         end
         inCombat = ReadCombatFlag()
-        for j = 1, #WHERE_EVENTS do
-            whereEvt:RegisterEvent(WHERE_EVENTS[j])
+        for jdx = 1, #WHERE_EVENTS do
+            whereEvt:RegisterEvent(WHERE_EVENTS[jdx])
         end
     end
 end
 
 -- The last subscriber leaving unregisters the watcher.
 function MTWhere.Unsubscribe(key)
-    local i = subIndex[key]
-    if not i then
+    local idx = subIndex[key]
+    if not idx then
         return
     end
-    local n = #subFns
-    subFns[i], subKeys[i] = subFns[n], subKeys[n]
-    subIndex[subKeys[i]] = i
-    subFns[n], subKeys[n] = nil, nil
+    local num = #subFns
+    subFns[idx], subKeys[idx] = subFns[num], subKeys[num]
+    subIndex[subKeys[idx]] = idx
+    subFns[num], subKeys[num] = nil, nil
     subIndex[key] = nil
-    if n == 1 then
+    if num == 1 then
         whereEvt:UnregisterAllEvents()
     end
 end

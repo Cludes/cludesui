@@ -118,8 +118,8 @@ for _, s in ipairs(STATS) do
     STAT_KEY[s[1]], STAT_NAME[s[1]] = true, s[2]
 end
 
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 local function StatsSecret()
     return C_Secrets and C_Secrets.ShouldUnitStatsBeSecret and C_Secrets.ShouldUnitStatsBeSecret()
@@ -131,10 +131,10 @@ end
 local byKey, classSpecs
 local function Index()
     byKey, classSpecs = {}, {}
-    for _, spec in ipairs(module.StatWeightDefaults or {}) do
-        byKey[spec.key] = spec
-        if spec.class == CLASS then
-            classSpecs[#classSpecs + 1] = spec
+    for _, specInfo in ipairs(module.StatWeightDefaults or {}) do
+        byKey[specInfo.key] = specInfo
+        if specInfo.class == CLASS then
+            classSpecs[#classSpecs + 1] = specInfo
         end
     end
 end
@@ -168,18 +168,18 @@ local function ReadTalents()
     end
     local groups = C_Traits.GetGroupDisplayInfoByTreeID(treeID) or {}
     local ids, spent = {}, {}
-    for i, g in ipairs(groups) do
-        ids[i] = g.groupID
+    for idx, g in ipairs(groups) do
+        ids[idx] = g.groupID
     end
-    for _, info in ipairs(C_Traits.GetGroupCurrencyInfo(configID, ids) or {}) do
-        local c = info.currencyInfos and info.currencyInfos[1]
-        spent[info.traitNodeGroupID] = c and c.spent or 0
+    for _, details in ipairs(C_Traits.GetGroupCurrencyInfo(configID, ids) or {}) do
+        local c = details.currencyInfos and details.currencyInfos[1]
+        spent[details.traitNodeGroupID] = c and c.spent or 0
     end
     local best, most = nil, 0
-    for i, g in ipairs(groups) do
-        local n = spent[g.groupID] or 0
-        if n > most then
-            best, most = trees[i], n
+    for idx, g in ipairs(groups) do
+        local num = spent[g.groupID] or 0
+        if num > most then
+            best, most = trees[idx], num
         end
     end
     return best
@@ -193,8 +193,8 @@ end)
 
 local function TalentSpec()
     if not talentRead then
-        local ok, spec = pcall(ReadTalents)
-        talentSpec, talentRead = ok and spec or nil, true
+        local success, specInfo = pcall(ReadTalents)
+        talentSpec, talentRead = success and specInfo or nil, true
     end
     return talentSpec
 end
@@ -231,22 +231,22 @@ local function For(key)
     if merged[key] then
         return merged[key]
     end
-    local spec = Spec(key)
-    if not spec then
+    local specInfo = Spec(key)
+    if not specInfo then
         return nil
     end
-    local w = {}
-    for stat, v in pairs(spec.weights) do
-        w[stat] = v
+    local wid = {}
+    for stat, val in pairs(specInfo.weights) do
+        wid[stat] = val
     end
     local ch = Changes()
-    for stat, v in pairs(ch and ch[key] or {}) do
-        if STAT_KEY[stat] and type(v) == "number" then
-            w[stat] = v
+    for stat, val in pairs(ch and ch[key] or {}) do
+        if STAT_KEY[stat] and type(val) == "number" then
+            wid[stat] = val
         end
     end
-    merged[key] = w
-    return w
+    merged[key] = wid
+    return wid
 end
 
 local function Default(key, stat)
@@ -254,16 +254,16 @@ local function Default(key, stat)
     return s and s.weights[stat] or 0
 end
 
-local function Set(key, stat, v)
+local function Set(key, stat, val)
     if not (Spec(key) and STAT_KEY[stat]) then
         return
     end
     local ch = Changes(true)
-    if v ~= nil and math.abs(v - Default(key, stat)) < SAME then
-        v = nil
+    if val ~= nil and math.abs(val - Default(key, stat)) < SAME then
+        val = nil
     end
     ch[key] = ch[key] or {}
-    ch[key][stat] = v
+    ch[key][stat] = val
     if next(ch[key]) == nil then
         ch[key] = nil
     end
@@ -293,25 +293,25 @@ forget:SetScript("OnEvent", function()
     lastMain, lastOff = nil, nil
 end)
 
-local function Stats(item)
-    local s = statsOf[item]
+local function Stats(itemInfo)
+    local s = statsOf[itemInfo]
     if s then
         return s
     end
-    if type(item) == "number" and not C_Item.IsItemDataCachedByID(item) then
+    if type(itemInfo) == "number" and not C_Item.IsItemDataCachedByID(itemInfo) then
         return nil
     end
-    s = C_Item.GetItemStats(type(item) == "number" and ("item:" .. item) or item) or {}
+    s = C_Item.GetItemStats(type(itemInfo) == "number" and ("item:" .. itemInfo) or itemInfo) or {}
     if cached >= CACHE_MAX then
         wipe(statsOf)
         cached = 0
     end
-    statsOf[item], cached = s, cached + 1
+    statsOf[itemInfo], cached = s, cached + 1
     return s
 end
 
-local function DpsShare(slot)
-    return ((CLASS == "HUNTER") and HUNTER_DPS_SHARE or DPS_SHARE)[slot] or 0
+local function DpsShare(slotIndex)
+    return ((CLASS == "HUNTER") and HUNTER_DPS_SHARE or DPS_SHARE)[slotIndex] or 0
 end
 
 local function Worth(stats, weights, dpsShare, skipPrimary)
@@ -323,8 +323,8 @@ local function Worth(stats, weights, dpsShare, skipPrimary)
             value = value / per
         end
         if type(mine) == "table" then
-            for i = 1, #mine do
-                worth = worth + (weights[mine[i]] or 0) * value
+            for idx = 1, #mine do
+                worth = worth + (weights[mine[idx]] or 0) * value
             end
         elseif mine == "dps" then
             worth = worth + (weights.dps or 0) * value * (dpsShare or 0)
@@ -335,13 +335,13 @@ local function Worth(stats, weights, dpsShare, skipPrimary)
     return worth
 end
 
-local function WornWorth(slot, weights)
-    local link = GetInventoryItemLink("player", slot)
-    if not link then
+local function WornWorth(slotIndex, weights)
+    local itemLink = GetInventoryItemLink("player", slotIndex)
+    if not itemLink then
         return 0
     end
-    local worn = Stats(link)
-    return worn and Worth(worn, weights, DpsShare(slot))
+    local worn = Stats(itemLink)
+    return worn and Worth(worn, weights, DpsShare(slotIndex))
 end
 
 --- What your stats are worth now: the five stats as the game sums them, the
@@ -351,39 +351,39 @@ local function Power(weights)
         return lastPower[weights]
     end
     local power = 0
-    for i, key in ipairs(PRIMARY) do
-        local _, effective = UnitStat("player", i)
+    for idx, key in ipairs(PRIMARY) do
+        local _, effective = UnitStat("player", idx)
         if type(effective) == "number" and not Secret(effective) then
             power = power + (weights[key] or 0) * effective
         end
     end
-    for _, slot in ipairs(GEAR_SLOTS) do
-        local link = GetInventoryItemLink("player", slot)
-        local s = link and Stats(link)
+    for _, slotIndex in ipairs(GEAR_SLOTS) do
+        local itemLink = GetInventoryItemLink("player", slotIndex)
+        local s = itemLink and Stats(itemLink)
         if s then
-            power = power + Worth(s, weights, DpsShare(slot), true)
+            power = power + Worth(s, weights, DpsShare(slotIndex), true)
         end
     end
     lastPower[weights] = power
     return power
 end
 
-local function Gain(item, slot, weights, power, also)
+local function Gain(itemInfo, slotIndex, weights, power, also)
     if not (weights and power and power > 0) then
         return nil
     end
-    local s = Stats(item)
-    local worn = WornWorth(slot, weights)
+    local s = Stats(itemInfo)
+    local worn = WornWorth(slotIndex, weights)
     local other = also and WornWorth(also, weights) or 0
     if not (s and worn and other) then
         return nil
     end
-    return 100 * (Worth(s, weights, DpsShare(slot)) - worn - other) / power
+    return 100 * (Worth(s, weights, DpsShare(slotIndex)) - worn - other) / power
 end
 
-local function Wearing(id, slots)
-    for _, slot in ipairs(slots) do
-        if GetInventoryItemID("player", slot) == id then
+local function Wearing(ident, slots)
+    for _, slotIndex in ipairs(slots) do
+        if GetInventoryItemID("player", slotIndex) == ident then
             return true
         end
     end
@@ -392,19 +392,25 @@ end
 
 --- The best gain over the slots an item can go in, or nil (not gear, worn,
 --- unusable, or under half a percent).
-function module.BestGain(id, link, weights, power)
-    local _, _, _, equipLoc = C_Item.GetItemInfoInstant(id)
+function module.BestGain(ident, itemLink, weights, power)
+    local _, _, _, equipLoc = C_Item.GetItemInfoInstant(ident)
     local slots = module.BIS_EQUIP_SLOTS and module.BIS_EQUIP_SLOTS[equipLoc or ""]
-    if not (slots and weights) or Wearing(id, slots) then
+    if not (slots and weights) or Wearing(ident, slots) then
         return nil
     end
-    if C_PlayerInfo and C_PlayerInfo.CanUseItem and not C_PlayerInfo.CanUseItem(id) then
+    if C_PlayerInfo and C_PlayerInfo.CanUseItem and not C_PlayerInfo.CanUseItem(ident) then
         return nil
     end
     local twoHand = equipLoc == "INVTYPE_2HWEAPON"
     local best
-    for _, slot in ipairs(slots) do
-        local g = Gain(link or id, slot, weights, power, twoHand and slot == MAIN_HAND and OFF_HAND or nil)
+    for _, slotIndex in ipairs(slots) do
+        local g = Gain(
+            itemLink or ident,
+            slotIndex,
+            weights,
+            power,
+            twoHand and slotIndex == MAIN_HAND and OFF_HAND or nil
+        )
         if g and (not best or g > best) then
             best = g
         end
@@ -413,32 +419,32 @@ function module.BestGain(id, link, weights, power)
 end
 
 --- The active spec's gain for an item, for other modules (the BiS window).
-function module.ItemGain(id, link)
+function module.ItemGain(ident, itemLink)
     if not Get("enabled") then
         return nil
     end
     local key = ActiveSpec()
-    local w = For(key)
-    return w and module.BestGain(id, link, w, Power(w)), key and Spec(key) and Spec(key).name
+    local wid = For(key)
+    return wid and module.BestGain(ident, itemLink, wid, Power(wid)), key and Spec(key) and Spec(key).name
 end
 
 -------------------------------------------------------------------------------
 --  Tooltip
 -------------------------------------------------------------------------------
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, payload)
         if not Get("enabled") or (tooltip.IsForbidden and tooltip:IsForbidden()) then
             return
         end
-        local id = data and data.id
-        if type(id) ~= "number" or Secret(id) then
+        local ident = payload and payload.id
+        if type(ident) ~= "number" or Secret(ident) then
             return
         end
-        local link = tooltip.GetItem and select(2, tooltip:GetItem())
-        if link and Secret(link) then
-            link = nil
+        local itemLink = tooltip.GetItem and select(2, tooltip:GetItem())
+        if itemLink and Secret(itemLink) then
+            itemLink = nil
         end
-        local gain, specName = module.ItemGain(id, link)
+        local gain, specName = module.ItemGain(ident, itemLink)
         if gain then
             tooltip:AddLine(("|cff60d080+%.1f%% upgrade|r |cff9aa6b2(%s)|r"):format(gain, specName or ""))
         end

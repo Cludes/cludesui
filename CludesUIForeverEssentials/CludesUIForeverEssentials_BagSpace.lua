@@ -23,7 +23,7 @@ local F = module.Feature(
 local Get, Enabled = F.Get, F.Enabled
 
 local CHEAPEST = 6
-local frame, text
+local widget, textValue
 local warnedAt
 
 local function Font()
@@ -32,51 +32,52 @@ end
 
 --- free, total for general bags.
 local function Space()
-    local free, total = 0, 0
+    local free, sum = 0, 0
     for bag = 0, NUM_BAG_SLOTS or 4 do
-        local n, family = C_Container.GetContainerNumFreeSlots(bag)
+        local num, family = C_Container.GetContainerNumFreeSlots(bag)
         if (family or 0) == 0 then
-            free = free + (n or 0)
-            total = total + (C_Container.GetContainerNumSlots(bag) or 0)
+            free = free + (num or 0)
+            sum = sum + (C_Container.GetContainerNumSlots(bag) or 0)
         end
     end
-    return free, total
+    return free, sum
 end
 module.BagSpace = Space
 
 local function Cheapest()
-    local list = {}
+    local entries = {}
     for bag = 0, NUM_BAG_SLOTS or 4 do
-        for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local info = C_Container.GetContainerItemInfo(bag, slot)
-            if info and info.itemID and not info.hasNoValue then
-                local price = select(11, C_Item.GetItemInfo(info.itemID))
+        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+            if details and details.itemID and not details.hasNoValue then
+                local price = select(11, C_Item.GetItemInfo(details.itemID))
                 if price and price > 0 then
-                    list[#list + 1] = { link = info.hyperlink, value = price * (info.stackCount or 1) }
+                    entries[#entries + 1] =
+                        { link = details.hyperlink, value = price * (details.stackCount or 1) }
                 end
             end
         end
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         return a.value < b.value
     end)
-    return list
+    return entries
 end
 
 local function Paint()
-    if not frame then
+    if not widget then
         return
     end
     if not Enabled() then
-        frame:Hide()
+        widget:Hide()
         return
     end
-    local free, total = Space()
+    local free, sum = Space()
     local colour = free == 0 and "|cffff4040"
-        or (free < total / 10 and "|cffffb040" or CludesUI.Kit.AccentHex())
-    text:SetText(("%sBags %d/%d|r"):format(colour, free, total))
-    frame:SetWidth(text:GetStringWidth() + 8)
-    frame:Show()
+        or (free < sum / 10 and "|cffffb040" or CludesUI.Kit.AccentHex())
+    textValue:SetText(("%sBags %d/%d|r"):format(colour, free, sum))
+    widget:SetWidth(textValue:GetStringWidth() + 8)
+    widget:Show()
     if Get("warn") then
         if free <= 2 and warnedAt ~= free then
             warnedAt = free
@@ -91,36 +92,45 @@ local function Paint()
 end
 
 local function Build()
-    if frame then
-        return frame
+    if widget then
+        return widget
     end
-    frame = CreateFrame("Button", "CludesUIBagSpace", UIParent)
-    frame:SetSize(90, 20)
-    text = frame:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(text, 13, "essentials")
-    text:SetPoint("CENTER")
-    frame:SetScript("OnClick", function()
+    widget = CreateFrame("Button", "CludesUIBagSpace", UIParent)
+    widget:SetSize(90, 20)
+    textValue = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(textValue, 13, "essentials")
+    textValue:SetPoint("CENTER")
+    widget:SetScript("OnClick", function()
         if ToggleAllBags then
             ToggleAllBags()
         end
     end)
-    frame:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine(CludesUI.L("Cheapest items you carry"), CludesUI.Kit.Accent())
-        local list = Cheapest()
-        if #list == 0 then
+        local entries = Cheapest()
+        if #entries == 0 then
             GameTooltip:AddLine(CludesUI.L("Nothing a vendor buys."), 0.6, 0.6, 0.6)
         end
-        for i = 1, math.min(CHEAPEST, #list) do
-            GameTooltip:AddDoubleLine(list[i].link, GetCoinTextureString(list[i].value), 1, 1, 1, 1, 1, 1)
+        for idx = 1, math.min(CHEAPEST, #entries) do
+            GameTooltip:AddDoubleLine(
+                entries[idx].link,
+                GetCoinTextureString(entries[idx].value),
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            )
         end
         GameTooltip:AddLine(CludesUI.L("Click to open your bags."), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
-    frame:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    return frame
+    return widget
 end
 
 local ev = CreateFrame("Frame")
@@ -142,7 +152,7 @@ local function Apply()
         ev:RegisterEvent("BAG_UPDATE_DELAYED")
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
         if not CludesUI._unlockActive then
-            F.Place(frame)
+            F.Place(widget)
         end
     else
         ev:UnregisterAllEvents()
@@ -161,7 +171,7 @@ F.Start(Apply, {
             Build()
             Paint()
         end
-        return frame
+        return widget
     end,
     size = function()
         return 90, 20

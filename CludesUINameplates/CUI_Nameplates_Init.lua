@@ -8,27 +8,28 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  enemy plates out of combat.
 --  Reads the earlier nameplate files through ns and ns._npInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._npInternals
+local _, mod = ...
+local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs, ipairs, type = pairs, ipairs, type
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local UnitCanAttack = UnitCanAttack
 
-local defaults, ENP, GetNPOutline, SetFSFont = I.defaults, I.ENP, I.GetNPOutline, I.SetFSFont
-local GetTextSlot, SetupAuraCVars = I.GetTextSlot, I.SetupAuraCVars
-local ApplyClassPowerSetting = I.ApplyClassPowerSetting
-local RefreshThreatCache, SetProfile = I.RefreshThreatCache, I.SetProfile
-local SetRawSetTex = I.SetRawSetTex
+local defaultSet, ENP, GetNPOutline, SetFSFont =
+    Inner.defaults, Inner.ENP, Inner.GetNPOutline, Inner.SetFSFont
+local GetTextSlot, SetupAuraCVars = Inner.GetTextSlot, Inner.SetupAuraCVars
+local ApplyClassPowerSetting = Inner.ApplyClassPowerSetting
+local RefreshThreatCache, SetProfile = Inner.RefreshThreatCache, Inner.SetProfile
+local SetRawSetTex = Inner.SetRawSetTex
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v)
-    p = v
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
+    p = val
 end
 
 -------------------------------------------------------------------------------
@@ -40,12 +41,12 @@ end
 do
     -- True when any preset's assigned spec list holds spec id (the store
     -- test for the WoW Forever spec pick below).
-    ns.NP_PresetHoldsSpec = function(id, specMap)
+    mod.NP_PresetHoldsSpec = function(ident, specMap)
         if not specMap then
             return false
         end
         for _, specList in pairs(specMap) do
-            if specList[id] then
+            if specList[ident] then
                 return true
             end
         end
@@ -62,7 +63,7 @@ do
         -- WoW Forever: the class counts as each of its retail specs; the first
         -- one in class order that a preset is assigned to picks the preset.
         if CludesUI.IS_FOREVER then
-            specID = CludesUI.ForeverClassSpec(nil, ns.NP_PresetHoldsSpec, p._specAssignments)
+            specID = CludesUI.ForeverClassSpec(nil, mod.NP_PresetHoldsSpec, p._specAssignments)
         end
         if not specID then
             return
@@ -114,30 +115,30 @@ do
         end -- already correct
 
         -- Apply the snapshot for targetKey
-        local presetKeys = ns._displayPresetKeys -- set below
+        local presetKeys = mod._displayPresetKeys -- set below
         if not presetKeys then
             return
         end
 
         if targetKey == "cludesui" then
             for _, key in ipairs(presetKeys) do
-                local def = ns.defaults[key]
-                if type(def) == "table" and def.r then
-                    p[key] = { r = def.r, g = def.g, b = def.b }
+                local spec_def = mod.defaults[key]
+                if type(spec_def) == "table" and spec_def.r then
+                    p[key] = { r = spec_def.r, g = spec_def.g, b = spec_def.b }
                 else
-                    p[key] = def
+                    p[key] = spec_def
                 end
             end
             p[K_SNAP] = nil
         elseif targetKey == "custom" then
             if p[K_CUSTOM] then
                 for _, key in ipairs(presetKeys) do
-                    local v = p[K_CUSTOM][key]
-                    if v ~= nil then
-                        if type(v) == "table" and v.r then
-                            p[key] = { r = v.r, g = v.g, b = v.b }
+                    local val = p[K_CUSTOM][key]
+                    if val ~= nil then
+                        if type(val) == "table" and val.r then
+                            p[key] = { r = val.r, g = val.g, b = val.b }
                         else
-                            p[key] = v
+                            p[key] = val
                         end
                     end
                 end
@@ -147,12 +148,12 @@ do
             local snap = p[K_PRESETS] and p[K_PRESETS][name]
             if snap then
                 for _, key in ipairs(presetKeys) do
-                    local v = snap[key]
-                    if v ~= nil then
-                        if type(v) == "table" and v.r then
-                            p[key] = { r = v.r, g = v.g, b = v.b }
+                    local val = snap[key]
+                    if val ~= nil then
+                        if type(val) == "table" and val.r then
+                            p[key] = { r = val.r, g = val.g, b = val.b }
                         else
-                            p[key] = v
+                            p[key] = val
                         end
                     end
                 end
@@ -165,7 +166,7 @@ do
 
     -- Preset keys for the login handler (set once, never changes). Split into two
     -- tables and concatenated to stay under Lua 5.1's per-function constant limit.
-    ns._displayPresetKeys = {
+    mod._displayPresetKeys = {
         "showBorder",
         "borderSize",
         "borderColor",
@@ -198,13 +199,13 @@ do
         "healthBarWidth",
         "castBarHeight",
     }
-    ns._appendDisplayPresetKeys(ns._displayPresetKeys)
+    mod._appendDisplayPresetKeys(mod._displayPresetKeys)
 
     -- Also handle spec changes that happen before the UI is ever opened
     local specLoginFrame = CreateFrame("Frame")
     specLoginFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-    specLoginFrame:SetScript("OnEvent", function(_, event, unit)
-        if unit ~= "player" then
+    specLoginFrame:SetScript("OnEvent", function(_, evt, unitToken)
+        if unitToken ~= "player" then
             return
         end
         -- Re-read the profile reference: a spec swap may have changed the active
@@ -216,39 +217,39 @@ do
             return
         end
         ApplySpecPresetFromDB()
-        if ns.RefreshAllSettings then
-            ns.RefreshAllSettings()
+        if mod.RefreshAllSettings then
+            mod.RefreshAllSettings()
         end
     end)
 
     -- Expose for calling from OnEnable (login time)
-    ns._ApplySpecPresetFromDB = ApplySpecPresetFromDB
+    mod._ApplySpecPresetFromDB = ApplySpecPresetFromDB
     _G._CUNP_RefreshAllSettings = function()
-        if ns.RefreshAllSettings then
-            ns.RefreshAllSettings()
+        if mod.RefreshAllSettings then
+            mod.RefreshAllSettings()
         end
     end
 end
 
 local npAddon = ENP
 function npAddon:OnInitialize()
-    ENP.db = CludesUI.Lite.NewDB("CludesUINameplatesDB", { profile = defaults })
+    ENP.db = CludesUI.Lite.NewDB("CludesUINameplatesDB", { profile = defaultSet })
     SetProfile(ENP.db.profile)
-    ns.db = ENP.db
+    mod.db = ENP.db
     -- Non-Target Opacity: derive the cached value at login (no plates exist yet,
     -- so the apply loop no-ops; SetUnit fades new plates as they spawn).
-    if ns.NT_RefreshSetting then
-        ns.NT_RefreshSetting()
+    if mod.NT_RefreshSetting then
+        mod.NT_RefreshSetting()
     end
-    if ns.NP_RefreshTypeScaleSetting then
-        ns.NP_RefreshTypeScaleSetting()
+    if mod.NP_RefreshTypeScaleSetting then
+        mod.NP_RefreshTypeScaleSetting()
     end
     -- Append SharedMedia textures to runtime tables so SM texture keys resolve at runtime
     CludesUI.AppendSharedMediaTextures(
-        ns.healthBarTextureNames,
-        ns.healthBarTextureOrder,
+        mod.healthBarTextureNames,
+        mod.healthBarTextureOrder,
         nil,
-        ns.healthBarTextures
+        mod.healthBarTextures
     )
 end
 function npAddon:OnEnable()
@@ -258,36 +259,36 @@ function npAddon:OnEnable()
     -- before the first plate builds (the Style page seeds on the switch);
     -- its own textures go to the CludesUI slot first, so a switch back
     -- restores them.
-    if ns.NP_Blizz() then
+    if mod.NP_Blizz() then
         if not p.stockBarTextureSeeded and CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(p, ns._npStyleSlotKeys)
+            CludesUI.BankEuiStyleSlot(p, mod._npStyleSlotKeys)
         end
-        ns.NP_SeedStock(p)
+        mod.NP_SeedStock(p)
     end
     -- The same for the Classic cast colours. An CludesUI slot banked before
     -- they rode the slots gains their current values first, so a switch back
     -- still restores the user's own.
-    if ns.NP_Classic() and not p.classicCastSeeded then
+    if mod.NP_Classic() and not p.classicCastSeeded then
         local slots = p._styleSlots
         local cui = type(slots) == "table" and slots.cui
         if type(cui) == "table" then
-            local keys = ns._npClassicCastKeys
-            for i = 1, #keys do
-                local k = keys[i]
+            local keyList = mod._npClassicCastKeys
+            for idx = 1, #keyList do
+                local k = keyList[idx]
                 if cui[k] == nil then
                     cui[k] = p[k]
                 end
             end
         elseif CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(p, ns._npStyleSlotKeys)
+            CludesUI.BankEuiStyleSlot(p, mod._npStyleSlotKeys)
         end
-        ns.NP_SeedClassic(p)
+        mod.NP_SeedClassic(p)
     end
     -- WoW Forever: the same for its own seeds (Left Text, the Elite/Rare
     -- Indicator box), the other looks' value of each unseeded key going to
     -- its Forever-only slot first, and the level edges the box follows (armed
     -- only while it shows).
-    if ns.NP_Forever() then
+    if mod.NP_Forever() then
         if not (p.foreverLevelSlotSeeded and p.foreverRareSeeded) then
             local s = p._foreverStyleSlots
             if type(s) ~= "table" then
@@ -305,37 +306,37 @@ function npAddon:OnEnable()
             if not p.foreverRareSeeded then
                 cui.classificationHideRare = p.classificationHideRare
             end
-            ns.NP_SeedForever(p)
+            mod.NP_SeedForever(p)
         end
-        ns.NP_ForeverWatchLevels()
+        mod.NP_ForeverWatchLevels()
     end
-    SetRawSetTex((PP and PP.RawSetTexture) or function(t, v)
-        t:SetTexture(v)
+    SetRawSetTex((Pix and Pix.RawSetTexture) or function(t, val)
+        t:SetTexture(val)
     end)
     SetupAuraCVars()
-    ns.ApplyKeptNameplateCVars()
+    mod.ApplyKeptNameplateCVars()
     ApplyClassPowerSetting()
     -- Apply spec-assigned preset on login (before UI is opened)
-    if ns._ApplySpecPresetFromDB then
-        ns._ApplySpecPresetFromDB()
+    if mod._ApplySpecPresetFromDB then
+        mod._ApplySpecPresetFromDB()
     end
     -- Text Coloring slot (with Target of Target and the bottom slots), Threat %
     -- and Show Threat Colors flags for the first plates, after the seeds and the
     -- spec preset above rewrote the slots (RefreshAllSettings keeps them after).
-    ns.NP_RefreshSlotClassFlags()
-    ns.NP_RefreshThreatPctFlag()
-    ns.NP_RefreshThreatColorFlag()
+    mod.NP_RefreshSlotClassFlags()
+    mod.NP_RefreshThreatPctFlag()
+    mod.NP_RefreshThreatColorFlag()
     -- PreSeedSpecProfile / the spec preset above may have changed the type scales.
-    if ns.NP_RefreshTypeScaleSetting then
-        ns.NP_RefreshTypeScaleSetting()
+    if mod.NP_RefreshTypeScaleSetting then
+        mod.NP_RefreshTypeScaleSetting()
     end
-    if ns.RangeText_Apply then
-        ns.RangeText_Apply()
+    if mod.RangeText_Apply then
+        mod.RangeText_Apply()
     end
     -- Debuff coloring last: it reads the final profile, and Color Border reads
     -- the plate style, which latches for the session on its first read.
-    if ns.DebuffColors_Refresh then
-        ns.DebuffColors_Refresh()
+    if mod.DebuffColors_Refresh then
+        mod.DebuffColors_Refresh()
     end
 end
 
@@ -353,25 +354,25 @@ do
     -- Single-table state: this file sits at Lua 5.1's 200-local cap, so the whole feature uses ONE chunk local (RT), everything else as table fields.
     local RT = { acc = 0 }
 
-    function RT.Anchor(plate)
+    function RT.Anchor(backing)
         RT.fs:ClearAllPoints()
         local offX = (p and p.rangeTextOffsetX) or 0
         local offY = (p and p.rangeTextOffsetY) or 0
         local rightEl = GetTextSlot("textSlotRight")
         local anchorTo
-        if ns.IsNameElement(rightEl) then
-            anchorTo = plate.name
+        if mod.IsNameElement(rightEl) then
+            anchorTo = backing.name
         elseif rightEl == "level" then
-            anchorTo = plate.levelText
+            anchorTo = backing.levelText
         elseif rightEl == "targetOfTarget" then
-            anchorTo = plate.totText
+            anchorTo = backing.totText
         elseif rightEl == "custom" then
-            anchorTo = plate.customRight
+            anchorTo = backing.customRight
         elseif rightEl and rightEl ~= "none" then
-            local ca = plate._cachedHealthSlots
+            local ca = backing._cachedHealthSlots
             if ca then
-                for i = 1, ca._count or 0 do
-                    local e = ca[i]
+                for idx = 1, ca._count or 0 do
+                    local e = ca[idx]
                     if e and e.slotKey == "textSlotRight" and e.fs then
                         anchorTo = e.fs
                         break
@@ -383,13 +384,13 @@ do
             RT.fs:SetPoint("RIGHT", anchorTo, "LEFT", -5 + offX, offY)
         else
             -- WoW Forever: past the level box right of the bar.
-            RT.fs:SetPoint("LEFT", plate.health or plate, "RIGHT", 5 + offX + ns.NP_ForeverSide(), offY)
+            RT.fs:SetPoint("LEFT", backing.health or backing, "RIGHT", 5 + offX + mod.NP_ForeverSide(), offY)
         end
     end
 
     function RT.Appearance()
-        SetFSFont(RT.fs, (p and p.rangeTextSize) or defaults.rangeTextSize, GetNPOutline())
-        local c = (p and p.rangeTextColor) or defaults.rangeTextColor
+        SetFSFont(RT.fs, (p and p.rangeTextSize) or defaultSet.rangeTextSize, GetNPOutline())
+        local c = (p and p.rangeTextColor) or defaultSet.rangeTextColor
         RT.fs:SetTextColor(c.r, c.g, c.b, 1)
     end
 
@@ -402,27 +403,27 @@ do
     end
 
     function RT.Tick()
-        local plate = ns._cachedTargetPlate
-        if not plate or not plate.unit or not plate:IsShown() then
+        local backing = mod._cachedTargetPlate
+        if not backing or not backing.unit or not backing:IsShown() then
             if RT.plate then
                 RT.Detach()
             end
             return
         end
-        if plate ~= RT.plate then
+        if backing ~= RT.plate then
             if not RT.carrier then
                 RT.carrier = CreateFrame("Frame")
                 RT.carrier:SetSize(2, 2)
                 RT.fs = RT.carrier:CreateFontString(nil, "OVERLAY")
             end
-            RT.carrier:SetParent(plate)
-            RT.carrier:SetPoint("CENTER", plate, "CENTER", 0, 0)
+            RT.carrier:SetParent(backing)
+            RT.carrier:SetPoint("CENTER", backing, "CENTER", 0, 0)
             -- Well above the health bar/text frames: with the Right Text slot occupied the
             -- text sits ON the bar, and a low frame level would draw it underneath the fill.
-            RT.carrier:SetFrameLevel(plate:GetFrameLevel() + 30)
-            RT.plate = plate
+            RT.carrier:SetFrameLevel(backing:GetFrameLevel() + 30)
+            RT.plate = backing
             RT.Appearance()
-            RT.Anchor(plate)
+            RT.Anchor(backing)
             RT.carrier:Show()
         end
         -- "0+" (basically melee) shows nothing: the indicator only matters at distance. Queried
@@ -459,32 +460,32 @@ do
             -- New cycle: snapshot the live plate set (reused table, one wipe
             -- per cycle). Plates that detach mid-cycle are re-checked below.
             wipe(q)
-            for _, plate in pairs(ns.plates) do
-                q[#q + 1] = plate
+            for _, backing in pairs(mod.plates) do
+                q[#q + 1] = backing
             end
             RT.fadeIdx = 1
         end
         local budget = 8
         while RT.fadeIdx <= #q and budget > 0 do
-            local plate = q[RT.fadeIdx]
+            local backing = q[RT.fadeIdx]
             RT.fadeIdx = RT.fadeIdx + 1
             budget = budget - 1
-            local unit = plate.unit
-            if unit and ns.plates[unit] == plate then
+            local unitToken = backing.unit
+            if unitToken and mod.plates[unitToken] == backing then
                 local beyond
                 -- Cleanly-non-attackable plates (friendly/neutral NPCs) can
                 -- never answer an attack-range probe; skip the whole walk.
                 -- Only a READABLY-false flag skips -- a secret answer falls
                 -- through to the probes, whose own gates fail open.
-                local okAtt, att = pcall(UnitCanAttack, "player", unit)
+                local okAtt, att = pcall(UnitCanAttack, "player", unitToken)
                 local skip = okAtt and not (issecretvalue and issecretvalue(att)) and att == false
                 if not skip then
-                    beyond = CludesUI.Range_SweepBeyond(unit, cutoff)
+                    beyond = CludesUI.Range_SweepBeyond(unitToken, cutoff)
                 end
-                local alpha = beyond == true and ns._oorAlpha or 1
-                if (plate._oorCurAlpha or 1) ~= alpha then
-                    plate._oorCurAlpha = alpha
-                    ns.NT_Apply(plate)
+                local alpha = beyond == true and mod._oorAlpha or 1
+                if (backing._oorCurAlpha or 1) ~= alpha then
+                    backing._oorCurAlpha = alpha
+                    mod.NT_Apply(backing)
                 end
             end
         end
@@ -497,34 +498,34 @@ do
             wipe(RT.fadeQ)
         end
         RT.fadeIdx = nil
-        for _, plate in pairs(ns.plates) do
-            if plate._oorCurAlpha then
-                plate._oorCurAlpha = nil
-                ns.NT_Apply(plate)
+        for _, backing in pairs(mod.plates) do
+            if backing._oorCurAlpha then
+                backing._oorCurAlpha = nil
+                mod.NT_Apply(backing)
             end
         end
     end
 
     -- Options: re-apply font/color/anchor on the live attachment.
-    ns.RangeText_Refresh = function()
+    mod.RangeText_Refresh = function()
         if RT.plate and RT.fs then
             RT.Appearance()
             RT.Anchor(RT.plate)
         end
     end
 
-    ns.RangeText_Apply = function()
-        local alpha = tonumber(p and p.outOfRangeAlpha) or defaults.outOfRangeAlpha
+    mod.RangeText_Apply = function()
+        local alpha = tonumber(p and p.outOfRangeAlpha) or defaultSet.outOfRangeAlpha
         if alpha < 0 then
             alpha = 0
         elseif alpha > 100 then
             alpha = 100
         end
-        ns._oorAlpha = alpha / 100
+        mod._oorAlpha = alpha / 100
         local textEnabled = p and p.rangeTextEnabled
-        ns._oorFadeEnabled = ((p and p.outOfRangeMode) or defaults.outOfRangeMode) ~= "disabled"
-            and ns._oorAlpha < 1
-        local fadeEnabled = ns._oorFadeEnabled
+        mod._oorFadeEnabled = ((p and p.outOfRangeMode) or defaultSet.outOfRangeMode) ~= "disabled"
+            and mod._oorAlpha < 1
+        local fadeEnabled = mod._oorFadeEnabled
         if textEnabled or fadeEnabled then
             if not RT.drv then
                 RT.drv = CreateFrame("Frame")
@@ -538,7 +539,7 @@ do
                     if p and p.rangeTextEnabled then
                         RT.Tick()
                     end
-                    if ns._oorFadeEnabled then
+                    if mod._oorFadeEnabled then
                         RT.FadeTick()
                     end
                 end)
@@ -569,45 +570,45 @@ end
 --  setting restores plates ON only if this feature ever hid them. All state
 --  lives on ns -- this chunk is at the 200-local cap.
 -------------------------------------------------------------------------------
-ns._oocPlatesCtl = CreateFrame("Frame")
-ns.ApplyOOCPlates = function()
-    local ctl = ns._oocPlatesCtl
-    local on = p and p.hideEnemyPlatesOOC == true
-    if on then
+mod._oocPlatesCtl = CreateFrame("Frame")
+mod.ApplyOOCPlates = function()
+    local ctl = mod._oocPlatesCtl
+    local enabled = p and p.hideEnemyPlatesOOC == true
+    if enabled then
         ctl:RegisterEvent("PLAYER_REGEN_DISABLED")
         ctl:RegisterEvent("PLAYER_REGEN_ENABLED")
         ctl:RegisterEvent("PLAYER_ENTERING_WORLD")
-        ns._oocPlatesOwned = true
+        mod._oocPlatesOwned = true
         -- Read-guarded: RefreshAllSettings calls this on every nameplate settings
         -- change, and a redundant SetCVar broadcasts CVAR_UPDATE to the whole UI.
-        local want = InCombatLockdown() and "1" or "0"
-        if GetCVar("nameplateShowEnemies") ~= want then
-            CludesUI.SetCVar("nameplateShowEnemies", want, "CludesUINameplates")
+        local wanted = InCombatLockdown() and "1" or "0"
+        if GetCVar("nameplateShowEnemies") ~= wanted then
+            CludesUI.SetCVar("nameplateShowEnemies", wanted, "CludesUINameplates")
         end
     else
         ctl:UnregisterEvent("PLAYER_REGEN_DISABLED")
         ctl:UnregisterEvent("PLAYER_REGEN_ENABLED")
         ctl:UnregisterEvent("PLAYER_ENTERING_WORLD")
-        if ns._oocPlatesOwned then
-            ns._oocPlatesOwned = nil
+        if mod._oocPlatesOwned then
+            mod._oocPlatesOwned = nil
             CludesUI.SetCVar("nameplateShowEnemies", "1", "CludesUINameplates")
         end
     end
 end
-ns._oocPlatesCtl:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_LOGIN" then
+mod._oocPlatesCtl:SetScript("OnEvent", function(self, evt)
+    if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
-        ns.ApplyOOCPlates()
+        mod.ApplyOOCPlates()
         return
     end
-    if event == "PLAYER_REGEN_DISABLED" then
+    if evt == "PLAYER_REGEN_DISABLED" then
         CludesUI.SetCVar("nameplateShowEnemies", "1", "CludesUINameplates")
     elseif not InCombatLockdown() then
         -- REGEN_ENABLED, or a world entry that lands out of combat.
         CludesUI.SetCVar("nameplateShowEnemies", "0", "CludesUINameplates")
     end
 end)
-ns._oocPlatesCtl:RegisterEvent("PLAYER_LOGIN")
+mod._oocPlatesCtl:RegisterEvent("PLAYER_LOGIN")
 
 -------------------------------------------------------------------------------
 --  Stacking Speed and Top Screen Inset (General): the client does not save
@@ -618,31 +619,31 @@ ns._oocPlatesCtl:RegisterEvent("PLAYER_LOGIN")
 --  two names are ever read from the table. All state lives on ns -- this chunk
 --  is at the 200-local cap.
 -------------------------------------------------------------------------------
-ns._keptCVarNames = { "nameplateMotionSpeed", "nameplateTopInset" }
+mod._keptCVarNames = { "nameplateMotionSpeed", "nameplateTopInset" }
 
 -- Equal as numbers: the client keeps its own number format.
-ns.KeptCVarSame = function(a, b)
-    local x, y = tonumber(a), tonumber(b)
-    if x and y then
-        return math.abs(x - y) < 1e-6
+mod.KeptCVarSame = function(a, b)
+    local posX, posY = tonumber(a), tonumber(b)
+    if posX and posY then
+        return math.abs(posX - posY) < 1e-6
     end
     return a == b
 end
 
 -- The sliders' write: sets the CVar, then keeps what the client holds.
-ns.KeepNameplateCVar = function(name, value)
+mod.KeepNameplateCVar = function(name, value)
     if not CludesUI.SetCVar(name, value, "CludesUINameplates") then
         return
     end
-    local cur = tonumber(GetCVar(name))
-    if not (cur and CludesUIDB) then
+    local current = tonumber(GetCVar(name))
+    if not (current and CludesUIDB) then
         return
     end
     local kept = CludesUIDB.nameplateKeptCVars
     if type(kept) ~= "table" then
         kept = nil
     end
-    if ns.KeptCVarSame(cur, C_CVar.GetCVarDefault(name)) then
+    if mod.KeptCVarSame(current, C_CVar.GetCVarDefault(name)) then
         if kept then
             kept[name] = nil
         end
@@ -654,27 +655,27 @@ ns.KeepNameplateCVar = function(name, value)
             kept = {}
             CludesUIDB.nameplateKeptCVars = kept
         end
-        kept[name] = cur
+        kept[name] = current
     end
 end
 
-ns.ApplyKeptNameplateCVars = function()
+mod.ApplyKeptNameplateCVars = function()
     local kept = CludesUIDB and CludesUIDB.nameplateKeptCVars
     if type(kept) ~= "table" then
         return
     end
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("NPKeptCVars", ns.ApplyKeptNameplateCVars)
+        mod.CombatQueue.Defer("NPKeptCVars", mod.ApplyKeptNameplateCVars)
         return
     end
-    local names = ns._keptCVarNames
-    for i = 1, #names do
-        local name = names[i]
-        local v = tonumber(kept[name])
-        if v and C_CVar.GetCVarInfo(name) and not ns.KeptCVarSame(GetCVar(name), v) then
-            CludesUI.SetCVar(name, v, "CludesUINameplates")
+    local nameList = mod._keptCVarNames
+    for idx = 1, #nameList do
+        local name = nameList[idx]
+        local val = tonumber(kept[name])
+        if val and C_CVar.GetCVarInfo(name) and not mod.KeptCVarSame(GetCVar(name), val) then
+            CludesUI.SetCVar(name, val, "CludesUINameplates")
         end
     end
 end
 
-I.broken = false
+Inner.broken = false

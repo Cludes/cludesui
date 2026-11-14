@@ -4,9 +4,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\LDB.lua
 -- LibDataBroker plugin block factory.
 
-local ADDON_NAME, ns = ...
-local L = ns.L
-local K = ns.BlockKit
+local ADDON_NAME, mod = ...
+local L = mod.L
+local Keys = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -14,19 +14,19 @@ local InCombatLockdown = InCombatLockdown
 local type = type
 local pcall = pcall
 local floor = math.floor
-local max = math.max
+local upper = math.max
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
+local ICON_GAP = Keys.ICON_GAP
+local CONTENT_BASE = Keys.CONTENT_BASE
+local InstKey = Keys.InstKey
+local MakeEventFrame = Keys.MakeEventFrame
+local RegisterInstEvents = Keys.RegisterInstEvents
+local UnregisterInstEvents = Keys.UnregisterInstEvents
+local VSlotW = Keys.VSlotW
+local MaybeRelayout = Keys.MaybeRelayout
+local AttachTextOffset = Keys.AttachTextOffset
+local BlockColorOf = Keys.BlockColorOf
+local IconColorOf = Keys.IconColorOf
 
 -------------------------------------------------------------------------------
 --  BROKER PLUGIN (LibDataBroker) -- one block type for every data source
@@ -84,18 +84,18 @@ end
 
 -- text is the display string; value+suffix is the fallback pair for plugins
 -- that publish the number and its unit separately.
-local function LDBDisplayText(obj)
-    if not obj then
+local function LDBDisplayText(object)
+    if not object then
         return nil
     end
-    local t = obj.text
+    local t = object.text
     if type(t) == "string" and t ~= "" then
         return t
     end
-    local v = obj.value
-    if v ~= nil then
-        local str = tostring(v)
-        local suf = obj.suffix
+    local val = object.value
+    if val ~= nil then
+        local str = tostring(val)
+        local suf = object.suffix
         if type(suf) == "string" and suf ~= "" then
             str = str .. " " .. suf
         end
@@ -104,9 +104,9 @@ local function LDBDisplayText(obj)
     return nil
 end
 
-ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
-    local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
+mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+    instance.key = InstKey(barCtx, blockCfg)
 
     local mouseOver = false
     local bound -- source name we currently hold attribute callbacks for
@@ -115,7 +115,7 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
     -- The collapse flip below is a Show/Hide, which lockdown can refuse. A block
     -- built or re-sourced mid-combat therefore settles here rather than waiting
     -- for a plugin update that may never come.
-    inst.events = { "PLAYER_REGEN_ENABLED" }
+    instance.events = { "PLAYER_REGEN_ENABLED" }
 
     local function D()
         return blockCfg.settings or {}
@@ -124,13 +124,13 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
         return barCtx.cfg
     end
 
-    local button = CreateFrame("Button", nil, content)
-    button:EnableMouse(true)
-    button:RegisterForClicks("AnyUp")
+    local btnFrame = CreateFrame("Button", nil, contentFrame)
+    btnFrame:EnableMouse(true)
+    btnFrame:RegisterForClicks("AnyUp")
 
-    local icon = button:CreateTexture(nil, "OVERLAY")
-    local text = button:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(inst, text)
+    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local textValue = btnFrame:CreateFontString(nil, "OVERLAY")
+    AttachTextOffset(instance, textValue)
 
     -- The chosen source, or nil while its addon has not registered it yet.
     local function Obj()
@@ -138,7 +138,7 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
         if not name then
             return nil
         end
-        local LDB = ns.GetLDB()
+        local LDB = mod.GetLDB()
         if not LDB then
             return nil
         end
@@ -146,9 +146,9 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
     end
 
     local function Unbind()
-        local LDB = ns.GetLDB()
+        local LDB = mod.GetLDB()
         if LDB and bound then
-            pcall(LDB.UnregisterCallback, inst, "LibDataBroker_AttributeChanged_" .. bound)
+            pcall(LDB.UnregisterCallback, instance, "LibDataBroker_AttributeChanged_" .. bound)
         end
         bound = nil
     end
@@ -163,60 +163,60 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
         if not name then
             return
         end
-        local LDB = ns.GetLDB()
+        local LDB = mod.GetLDB()
         if not LDB then
             return
         end
         -- Args are (event, sourceName, key, value, obj); only the key matters.
         local function OnAttr(_, _, key)
-            if LDB_WATCH[key] and not inst._dead then
-                inst:Refresh()
+            if LDB_WATCH[key] and not instance._dead then
+                instance:Refresh()
             end
         end
-        pcall(LDB.RegisterCallback, inst, "LibDataBroker_AttributeChanged_" .. name, OnAttr)
+        pcall(LDB.RegisterCallback, instance, "LibDataBroker_AttributeChanged_" .. name, OnAttr)
         bound = name
     end
 
     -- Untouched Icon Color leaves the plugin's artwork alone, honouring the
     -- iconR/G/B tint if it declares one; any explicit choice in the options wins,
     -- exactly as on every other icon-bearing block.
-    local function IconTint(obj)
+    local function IconTint(object)
         local b = blockCfg
         if b.iconColor or b.useIconClassColor or b.useIconAccentColor or b.useIconDefaultColor then
             return IconColorOf(b)
         end
-        if obj and type(obj.iconR) == "number" then
-            return obj.iconR, obj.iconG or 1, obj.iconB or 1
+        if object and type(object.iconR) == "number" then
+            return object.iconR, object.iconG or 1, object.iconB or 1
         end
         return 1, 1, 1
     end
 
-    function inst:Refresh()
+    function instance:Refresh()
         local s = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local gap = ICON_GAP
         Bind()
 
-        local obj = Obj()
+        local object = Obj()
 
         -- A source picked on a session where its addon WAS loaded, opened on one
         -- where it is not: collapse rather than show a dead slot. GetAutoLength
         -- reports 0 and the solver drops the block and its gaps entirely.
-        local collapsed = (s.source ~= nil) and (obj == nil)
+        local collapsed = (s.source ~= nil) and (object == nil)
         -- Show/Hide can be protected (another block on this bar may hold a
         -- secure child): flip only on a real state change, never in lockdown.
-        if content:IsShown() == collapsed and not InCombatLockdown() then
+        if contentFrame:IsShown() == collapsed and not InCombatLockdown() then
             if collapsed then
-                content:Hide()
+                contentFrame:Hide()
             else
-                content:Show()
+                contentFrame:Show()
             end
         end
         if collapsed then
-            MaybeRelayout(inst)
+            MaybeRelayout(instance)
             return
         end
 
@@ -228,16 +228,16 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
             str = CludesUI.L(L["SELECT_PLUGIN"])
             placeholder = true
         else
-            local body = LDBDisplayText(obj)
+            local body = LDBDisplayText(object)
             if s.showText == false then
                 body = nil
             end
-            local lbl = obj.label
-            if s.showLabel and type(lbl) == "string" and lbl ~= "" then
+            local labelFS = object.label
+            if s.showLabel and type(labelFS) == "string" and labelFS ~= "" then
                 if body then
-                    str = lbl .. ": " .. body
+                    str = labelFS .. ": " .. body
                 else
-                    str = lbl
+                    str = labelFS
                 end
             else
                 str = body
@@ -251,147 +251,147 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
         end
 
         local iconSz = 0
-        local tex = obj and obj.icon
-        if s.showIcon ~= false and tex then
+        local texture = object and object.icon
+        if s.showIcon ~= false and texture then
             iconSz = fontSize + 2
-            icon:SetTexture(tex)
-            local c = obj.iconCoords
+            glyph:SetTexture(texture)
+            local c = object.iconCoords
             if type(c) == "table" and #c == 4 then
-                icon:SetTexCoord(c[1], c[2], c[3], c[4])
+                glyph:SetTexCoord(c[1], c[2], c[3], c[4])
             else
-                icon:SetTexCoord(0, 1, 0, 1)
+                glyph:SetTexCoord(0, 1, 0, 1)
             end
-            icon:SetSize(iconSz, iconSz)
-            local ir, ig, ib = IconTint(obj)
-            icon:SetVertexColor(ir, ig, ib, 1)
-            icon:Show()
+            glyph:SetSize(iconSz, iconSz)
+            local ir, ig, ib = IconTint(object)
+            glyph:SetVertexColor(ir, ig, ib, 1)
+            glyph:Show()
         else
-            icon:Hide()
+            glyph:Hide()
         end
 
         -- Only steal the wheel for a plugin that asked for it.
-        button:EnableMouseWheel((obj and obj.OnMouseWheel) ~= nil)
+        btnFrame:EnableMouseWheel((object and object.OnMouseWheel) ~= nil)
 
         if placeholder then
-            text:SetTextColor(0.55, 0.55, 0.55, 1)
+            textValue:SetTextColor(0.55, 0.55, 0.55, 1)
         elseif mouseOver then
-            local ar, ag, ab = ns.GetAccent()
-            text:SetTextColor(ar, ag, ab, 1)
+            local ar, ag, ab = mod.GetAccent()
+            textValue:SetTextColor(ar, ag, ab, 1)
         else
             local tr, tg, tb = BlockColorOf(blockCfg)
-            text:SetTextColor(tr, tg, tb, 1)
+            textValue:SetTextColor(tr, tg, tb, 1)
         end
 
-        ns.SetFont(text, fontSize, barCfg)
+        mod.SetFont(textValue, fontSize, barCfg)
 
         if isSide then
-            local slotW = VSlotW(inst)
-            local innerW = max(24, slotW - 8)
+            local slotW = VSlotW(instance)
+            local innerW = upper(24, slotW - 8)
             local totalH = 8
             if iconSz > 0 then
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                glyph:ClearAllPoints()
+                glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
                 totalH = totalH + iconSz + 2
             end
-            ns.SetWrappedText(text, innerW, "CENTER")
-            text:SetText(str)
-            text:ClearAllPoints()
+            mod.SetWrappedText(textValue, innerW, "CENTER")
+            textValue:SetText(str)
+            textValue:ClearAllPoints()
             if iconSz > 0 then
-                text:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                textValue:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
             else
-                text:SetPoint("TOP", button, "TOP", 0, -4)
+                textValue:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             end
-            totalH = totalH + ns.SnapToPixelGrid(text:GetStringHeight() or fontSize) + 4
-            totalH = max(totalH, barH)
-            content:SetSize(slotW, totalH)
-            button:SetSize(slotW, totalH)
+            totalH = totalH + mod.SnapToPixelGrid(textValue:GetStringHeight() or fontSize) + 4
+            totalH = upper(totalH, barH)
+            contentFrame:SetSize(slotW, totalH)
+            btnFrame:SetSize(slotW, totalH)
         else
-            ns.ResetInlineText(text, "LEFT")
-            text:SetText(str)
+            mod.ResetInlineText(textValue, "LEFT")
+            textValue:SetText(str)
             local iconPad = 0
             if iconSz > 0 then
                 iconPad = iconSz + gap
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                glyph:ClearAllPoints()
+                glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             end
-            text:ClearAllPoints()
-            text:SetPoint("LEFT", button, "LEFT", iconPad, 0)
-            local w = s.maxWidth
-            if w then
+            textValue:ClearAllPoints()
+            textValue:SetPoint("LEFT", btnFrame, "LEFT", iconPad, 0)
+            local wid = s.maxWidth
+            if wid then
                 -- Max Width: the block holds this width whatever the plugin
                 -- publishes, and longer strings clip. The setting that stops a
                 -- chatty broker from shoving its neighbours on every update.
-                text:SetWidth(max(20, w - iconPad - 2))
-                text:SetWordWrap(false)
+                textValue:SetWidth(upper(20, wid - iconPad - 2))
+                textValue:SetWordWrap(false)
             else
-                w = iconPad + ns.SnapToPixelGrid(text:GetStringWidth() or 40) + 2
+                wid = iconPad + mod.SnapToPixelGrid(textValue:GetStringWidth() or 40) + 2
             end
-            if w < 24 then
-                w = 24
+            if wid < 24 then
+                wid = 24
             end
-            content:SetSize(w, barH)
-            button:SetSize(w, barH)
+            contentFrame:SetSize(wid, barH)
+            btnFrame:SetSize(wid, barH)
         end
 
-        button:ClearAllPoints()
-        button:SetPoint("CENTER", content, "CENTER", 0, 0)
-        MaybeRelayout(inst)
+        btnFrame:ClearAllPoints()
+        btnFrame:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
+        MaybeRelayout(instance)
     end
 
     local function HideTip()
         if tipMode == "own" then
-            local obj = Obj()
-            if obj and obj.OnLeave then
-                pcall(obj.OnLeave, button)
+            local object = Obj()
+            if object and object.OnLeave then
+                pcall(object.OnLeave, btnFrame)
             end
         elseif tipMode == "gametip" then
-            if GameTooltip:IsOwned(button) then
+            if GameTooltip:IsOwned(btnFrame) then
                 GameTooltip:Hide()
             end
         else
-            ns.Tip_Hide(button)
+            mod.Tip_Hide(btnFrame)
         end
         tipMode = nil
     end
 
     local function ShowTip()
         local s = D()
-        local ar, ag, ab = ns.GetAccent()
+        local ar, ag, ab = mod.GetAccent()
         -- Cleared up front so every early return below leaves the LAST hover's
         -- route behind: HideTip reads this to decide whose tooltip to take away.
         tipMode = nil
         -- Unconfigured: the placeholder is the whole block, so the tooltip has
         -- to say where a plugin is actually picked.
         if not s.source then
-            ns.Tip_Begin(button)
-            ns.Tip_AddLine(L["SELECT_PLUGIN"], 1, 1, 1)
-            ns.Tip_AddLine(" ")
-            ns.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
-            ns.Tip_Show()
+            mod.Tip_Begin(btnFrame)
+            mod.Tip_AddLine(L["SELECT_PLUGIN"], 1, 1, 1)
+            mod.Tip_AddLine(" ")
+            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
+            mod.Tip_Show()
             return
         end
-        local obj = Obj()
-        if not obj then
+        local object = Obj()
+        if not object then
             return
         end
-        if obj.OnEnter then
+        if object.OnEnter then
             tipMode = "own"
-            pcall(obj.OnEnter, button)
+            pcall(object.OnEnter, btnFrame)
             return
         end
-        if obj.OnTooltipShow then
+        if object.OnTooltipShow then
             tipMode = "gametip"
-            GameTooltip:SetOwner(button, "ANCHOR_NONE")
+            GameTooltip:SetOwner(btnFrame, "ANCHOR_NONE")
             GameTooltip:ClearAllPoints()
             -- Same flip the owned tooltip does: a top bar drops its tooltip
             -- below itself, a bottom bar lifts it above.
             if barCtx.IsBarAtTop() then
-                GameTooltip:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -6)
+                GameTooltip:SetPoint("TOPLEFT", btnFrame, "BOTTOMLEFT", 0, -6)
             else
-                GameTooltip:SetPoint("BOTTOMLEFT", button, "TOPLEFT", 0, 6)
+                GameTooltip:SetPoint("BOTTOMLEFT", btnFrame, "TOPLEFT", 0, 6)
             end
             GameTooltip:ClearLines()
-            if pcall(obj.OnTooltipShow, GameTooltip) then
+            if pcall(object.OnTooltipShow, GameTooltip) then
                 GameTooltip:Show()
             else
                 GameTooltip:Hide()
@@ -399,27 +399,27 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
             end
             return
         end
-        ns.Tip_Begin(button)
-        ns.Tip_AddLine(ns.LDBLabel(s.source, obj), 1, 1, 1)
-        local body = LDBDisplayText(obj)
+        mod.Tip_Begin(btnFrame)
+        mod.Tip_AddLine(mod.LDBLabel(s.source, object), 1, 1, 1)
+        local body = LDBDisplayText(object)
         if body then
-            ns.Tip_AddLine(" ")
-            ns.Tip_AddLine(LDBStripColors(body), 0.8, 0.8, 0.8)
+            mod.Tip_AddLine(" ")
+            mod.Tip_AddLine(LDBStripColors(body), 0.8, 0.8, 0.8)
         end
-        ns.Tip_Show()
+        mod.Tip_Show()
     end
 
-    button:SetScript("OnEnter", function()
+    btnFrame:SetScript("OnEnter", function()
         mouseOver = true
-        inst:Refresh()
+        instance:Refresh()
         ShowTip()
     end)
-    button:SetScript("OnLeave", function()
+    btnFrame:SetScript("OnLeave", function()
         mouseOver = false
         HideTip()
-        inst:Refresh()
+        instance:Refresh()
     end)
-    button:SetScript("OnClick", function(_, mb)
+    btnFrame:SetScript("OnClick", function(_, mb)
         -- No plugin picked yet: nothing to forward the click to, so send the
         -- player to the picker instead of dead-ending there.
         if not D().source then
@@ -429,23 +429,23 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
                 return
             end
             -- Options surface is LoadOnDemand; load it so OpenBlockSettings exists.
-            if not ns.OpenBlockSettings then
+            if not mod.OpenBlockSettings then
                 CludesUI:EnsureLoaded()
             end
-            if ns.OpenBlockSettings then
-                ns.OpenBlockSettings(barCtx.id, blockCfg.id, "ldb")
+            if mod.OpenBlockSettings then
+                mod.OpenBlockSettings(barCtx.id, blockCfg.id, "ldb")
             end
             return
         end
-        local obj = Obj()
-        if obj and obj.OnClick then
-            pcall(obj.OnClick, button, mb)
+        local object = Obj()
+        if object and object.OnClick then
+            pcall(object.OnClick, btnFrame, mb)
         end
     end)
-    button:SetScript("OnMouseWheel", function(_, delta)
-        local obj = Obj()
-        if obj and obj.OnMouseWheel then
-            pcall(obj.OnMouseWheel, button, delta)
+    btnFrame:SetScript("OnMouseWheel", function(_, delta)
+        local object = Obj()
+        if object and object.OnMouseWheel then
+            pcall(object.OnMouseWheel, btnFrame, delta)
         end
     end)
 
@@ -453,14 +453,14 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
     -- demand -- binds the moment it appears; without this the block would sit
     -- collapsed until something else happened to force a Refresh.
     local function OnCreated(_, name)
-        if name == D().source and not inst._dead then
+        if name == D().source and not instance._dead then
             Bind()
-            inst:Refresh()
+            instance:Refresh()
         end
     end
 
-    function inst:Enable()
-        content:Show()
+    function instance:Enable()
+        contentFrame:Show()
         if not self.eventFrame then
             self.eventFrame = MakeEventFrame(self, function(me)
                 if not me._dead then
@@ -469,44 +469,44 @@ ns.BlockFactories.ldb = function(blockCfg, slot, content, barCtx)
             end)
         end
         RegisterInstEvents(self)
-        local LDB = ns.GetLDB()
+        local LDB = mod.GetLDB()
         if LDB then
-            pcall(LDB.RegisterCallback, inst, "LibDataBroker_DataObjectCreated", OnCreated)
+            pcall(LDB.RegisterCallback, instance, "LibDataBroker_DataObjectCreated", OnCreated)
         end
         Bind()
     end
 
-    function inst:Disable()
+    function instance:Disable()
         UnregisterInstEvents(self)
-        local LDB = ns.GetLDB()
+        local LDB = mod.GetLDB()
         if LDB then
-            pcall(LDB.UnregisterCallback, inst, "LibDataBroker_DataObjectCreated")
+            pcall(LDB.UnregisterCallback, instance, "LibDataBroker_DataObjectCreated")
         end
         Unbind()
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    function inst:GetAutoLength()
-        if not content:IsShown() then
+    function instance:GetAutoLength()
+        if not contentFrame:IsShown() then
             return 0
         end
         if barCtx.IsVertical() then
-            return max(content:GetHeight() or 40, 30)
+            return upper(contentFrame:GetHeight() or 40, 30)
         end
-        return max(content:GetWidth() or 60, 24)
+        return upper(contentFrame:GetWidth() or 60, 24)
     end
 
-    function inst:Destroy()
+    function instance:Destroy()
         self._dead = true
         UnregisterInstEvents(self)
-        local LDB = ns.GetLDB()
+        local LDB = mod.GetLDB()
         if LDB then
-            pcall(LDB.UnregisterCallback, inst, "LibDataBroker_DataObjectCreated")
+            pcall(LDB.UnregisterCallback, instance, "LibDataBroker_DataObjectCreated")
         end
         Unbind()
         HideTip()
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    return inst
+    return instance
 end

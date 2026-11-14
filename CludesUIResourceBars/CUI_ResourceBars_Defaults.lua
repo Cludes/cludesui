@@ -7,13 +7,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The druid hide-per-form checks and the DEFAULTS table.
 --  Reads the earlier Resource Bars files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local UnitClass, GetShapeshiftFormID = UnitClass, GetShapeshiftFormID
 
@@ -32,11 +32,11 @@ local function FormBucket()
         or "mana"
 end
 -- Druid "hide bar text per form", driven by cfg.textDisabledForms.
-_G._CURB_TextHiddenByForm = function(cfg)
+_G._CURB_TextHiddenByForm = function(conf)
     if playerClassFile ~= "DRUID" then
         return false
     end
-    local df = cfg and cfg.textDisabledForms
+    local df = conf and conf.textDisabledForms
     if not df then
         return false
     end
@@ -44,11 +44,11 @@ _G._CURB_TextHiddenByForm = function(cfg)
 end
 -- Druid "hide whole bar per form", driven by cfg.barDisabledForms (the WoW
 -- Forever swing timer reads it too). Alpha-based hide, safe to flip mid-combat.
-_G._CURB_BarHiddenByForm = function(cfg)
+_G._CURB_BarHiddenByForm = function(conf)
     if playerClassFile ~= "DRUID" then
         return false
     end
-    local df = cfg and cfg.barDisabledForms
+    local df = conf and conf.barDisabledForms
     if not df then
         return false
     end
@@ -729,5 +729,5 @@ local DEFAULTS = {
     },
 }
 
-I.DEFAULTS = DEFAULTS
-I.broken = false
+Inner.DEFAULTS = DEFAULTS
+Inner.broken = false

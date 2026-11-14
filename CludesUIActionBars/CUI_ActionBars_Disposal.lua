@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  bars, which runs while this file loads.
 --  Loads after CludesUIActionBars.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, pairs, type, pcall = ipairs, pairs, type, pcall
@@ -16,9 +16,9 @@ local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
 local GetBindingKey = GetBindingKey
 
-local ForceCooldownPaint = ns.ForceCooldownPaint
-local I = ns._internals
-local FormatHotkeyText = I.FormatHotkeyText
+local ForceCooldownPaint = mod.ForceCooldownPaint
+local Inner = mod._internals
+local FormatHotkeyText = Inner.FormatHotkeyText
 
 -------------------------------------------------------------------------------
 --  Hidden Dump Frame -- reparenting stock frames here is safer than :Hide(),
@@ -36,7 +36,7 @@ hiddenParent:Hide()
 -- the button reports Hidden right away -- every caller already reparents or
 -- hides the button's bar ancestor first, which is what keeps it invisible
 -- in the meantime. On ns, not a file local.
-function ns.QuietlyHideBlizzButton(btn)
+function mod.QuietlyHideBlizzButton(btn)
     btn:UnregisterAllEvents()
     btn:SetAttributeNoHandler("statehidden", true)
 end
@@ -50,7 +50,7 @@ end
 -- play. Reparenting under hiddenParent needs no protected call and achieves
 -- the same result: the bar stays effectively invisible regardless of its
 -- own Shown state. On ns, not a file local.
-function ns.ReassertHiddenOnShow(bar)
+function mod.ReassertHiddenOnShow(bar)
     bar:HookScript("OnShow", function(self)
         if not InCombatLockdown() then
             self:SetParent(hiddenParent)
@@ -130,7 +130,7 @@ do
     -- UnregisterAllEvents on ActionBarButtonEventsFrame anywhere: it would take
     -- the seeding registrations with it, and nothing of ours can put them
     -- back untainted.
-    ns.QuietBroadcasters = function()
+    mod.QuietBroadcasters = function()
         local abef = ActionBarButtonEventsFrame
         if abef and not KeepBlizzBroadcasters() then
             for _, ev in ipairs(_abefQuiet) do
@@ -150,7 +150,7 @@ do
     -- then on asks for a reload when the player switches to the Gamepad style
     -- with the broadcasters already quiet (its bars would stay unpainted).
     if CludesUI.IS_FOREVER and not IsLoggedIn() then
-        local loginFrame = ns.TakeShell()
+        local loginFrame = mod.TakeShell()
         local styleAsked = false
         local function StyleCheck()
             if styleAsked or not CludesUI.PadGamepadUI() then
@@ -172,10 +172,10 @@ do
             })
         end
         loginFrame:RegisterEvent("PLAYER_LOGIN")
-        loginFrame:SetScript("OnEvent", function(self, event)
-            if event == "PLAYER_LOGIN" then
+        loginFrame:SetScript("OnEvent", function(self, evt)
+            if evt == "PLAYER_LOGIN" then
                 self:UnregisterEvent("PLAYER_LOGIN")
-                ns.QuietBroadcasters()
+                mod.QuietBroadcasters()
                 if
                     not KeepBlizzBroadcasters()
                     and not (
@@ -192,7 +192,7 @@ do
             C_Timer.After(0, StyleCheck)
         end)
     else
-        ns.QuietBroadcasters()
+        mod.QuietBroadcasters()
     end
     -- Add the tick set back only while needed, tracked as two independent
     -- flags so one turning off never strands the other: the vehicle/override
@@ -215,8 +215,8 @@ do
         if not (C_Secrets and C_Secrets.ShouldCooldownsBeSecret) then
             return false
         end
-        local ok, secret = pcall(C_Secrets.ShouldCooldownsBeSecret)
-        return (ok and secret) and true or false
+        local success, secret = pcall(C_Secrets.ShouldCooldownsBeSecret)
+        return (success and secret) and true or false
     end
     -- Never on WoW Forever. Its UpdateAction reads the cast-animation fields
     -- (actionButtonCastType) before anything else, and our dispatch of the
@@ -226,20 +226,20 @@ do
     -- the gamepad bars' class flyout). Kept broadcasters need nothing added,
     -- and our dispatcher paints ExtraActionButton1 and the override bar.
     local function ApplyBroadcaster()
-        local want = (_vehNeed or _extraNeed) and "full" or "off"
+        local wanted = (_vehNeed or _extraNeed) and "full" or "off"
         -- Folded into `want` so the mode comparison below sees the change and
         -- re-applies; PLAYER_ENTERING_WORLD and the REGEN edges re-run this.
-        if want == "full" and (CludesUI.IS_FOREVER or CooldownsSecret()) then
-            want = "off"
+        if wanted == "full" and (CludesUI.IS_FOREVER or CooldownsSecret()) then
+            wanted = "off"
         end
-        if want == _broadcasterMode then
+        if wanted == _broadcasterMode then
             return
         end
-        _broadcasterMode = want
+        _broadcasterMode = wanted
         -- Drop to the quiet state first (the two seeding registrations survive
         -- it), then add the tick set.
-        ns.QuietBroadcasters()
-        if want == "full" then
+        mod.QuietBroadcasters()
+        if wanted == "full" then
             if ActionBarButtonEventsFrame then
                 for _, ev in ipairs(_abefEvents) do
                     ActionBarButtonEventsFrame:RegisterEvent(ev)
@@ -257,7 +257,7 @@ do
     -- has registered): the tick set is gone while _broadcasterMode still claims
     -- it, and the mode check above would early-out forever. Any direct
     -- quieting must come back through here.
-    ns.ResyncBroadcaster = function()
+    mod.ResyncBroadcaster = function()
         _broadcasterMode = nil -- the caller has just quieted the frames; never early-out
         ApplyBroadcaster()
     end
@@ -274,8 +274,8 @@ do
     end
     -- Exposed for the extra action button's Show-hook refresh in
     -- SetupBlizzardMovableFrame (a reliable trigger for delve entry).
-    ns.RefreshBroadcaster = RefreshBroadcasterNeeds
-    local barFrame = ns.TakeShell()
+    mod.RefreshBroadcaster = RefreshBroadcasterNeeds
+    local barFrame = mod.TakeShell()
     barFrame:RegisterEvent("UNIT_ENTERED_VEHICLE")
     barFrame:RegisterEvent("UNIT_EXITED_VEHICLE")
     barFrame:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
@@ -287,8 +287,8 @@ do
         barFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
         barFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
     end
-    barFrame:SetScript("OnEvent", function(_, event, unit)
-        if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
+    barFrame:SetScript("OnEvent", function(_, evt, unitToken)
+        if evt == "PLAYER_REGEN_DISABLED" or evt == "PLAYER_REGEN_ENABLED" then
             -- Undeferred, and a secrecy re-check only: the needs are unchanged
             -- at a combat edge, so this early-outs unless the secret state moved.
             ApplyBroadcaster()
@@ -300,20 +300,20 @@ do
         -- cooldown needs an initial paint.
         if
             (
-                event == "UNIT_ENTERED_VEHICLE"
-                or event == "UPDATE_VEHICLE_ACTIONBAR"
-                or event == "UPDATE_OVERRIDE_ACTIONBAR"
-            ) and not (unit and unit ~= "player")
+                evt == "UNIT_ENTERED_VEHICLE"
+                or evt == "UPDATE_VEHICLE_ACTIONBAR"
+                or evt == "UPDATE_OVERRIDE_ACTIONBAR"
+            ) and not (unitToken and unitToken ~= "player")
         then
             C_Timer.After(0, function()
-                for i = 1, 6 do
-                    local btn = _G["OverrideActionBarButton" .. i]
+                for idx = 1, 6 do
+                    local btn = _G["OverrideActionBarButton" .. idx]
                     if btn then
                         -- Cooldown-only refresh; avoids passing secret cooldown values through a tainted call.
                         ForceCooldownPaint(btn)
                         local hk = btn.HotKey
                         if hk then
-                            local key1 = GetBindingKey("ACTIONBUTTON" .. i)
+                            local key1 = GetBindingKey("ACTIONBUTTON" .. idx)
                             if key1 then
                                 hk:SetText(FormatHotkeyText(key1))
                                 hk:Show()
@@ -369,8 +369,8 @@ do
         -- Runs on every MainActionBar Show (form, stance and page flips), so
         -- it reads the live list instead of building a table.
         if type(pager.GetChildren) == "function" then
-            for i = 1, pager:GetNumChildren() do
-                killOne((select(i, pager:GetChildren())))
+            for idx = 1, pager:GetNumChildren() do
+                killOne((select(idx, pager:GetChildren())))
             end
         end
     end
@@ -391,44 +391,44 @@ do
     }
 
     for _, frameName in ipairs(framesToHide) do
-        local frame = _G[frameName]
-        if frame then
+        local widget = _G[frameName]
+        if widget then
             if not keepEvents[frameName] then
-                frame:UnregisterAllEvents()
+                widget:UnregisterAllEvents()
             end
 
             -- MainActionBar stays in Blizzard's parent chain so pet battle
             -- restoration of MicroMenu works; all others safely reparent.
             if frameName == "MainActionBar" then
-                CludesUI.HideFrame(frame)
+                CludesUI.HideFrame(widget)
                 -- Keep MainActionBar invisible when Blizzard re-shows it on
                 -- spec/zone/vehicle/bonus-bar transitions WITHOUT touching its
                 -- protected shown state: Hide() from this insecure hook taints the
                 -- frame, and ValidateActionBarTransition then hits ADDON_ACTION_BLOCKED
                 -- on the next combat SetShownBase. SetAlpha is unprotected, inherits to
                 -- children, and works in combat, so the bar stays hidden taint-free.
-                hooksecurefunc(frame, "Show", function(self)
+                hooksecurefunc(widget, "Show", function(self)
                     self:SetAlpha(0)
                     KillPagerMouse(self) -- re-assert: layout apply can re-enable pager mouse
                 end)
                 -- Disable mouse on MainActionBar: Blizzard can Show() it in
                 -- combat (mount/dismount), and at alpha 0 / level 50 it would
                 -- invisibly intercept clicks above our EABButtons.
-                frame:EnableMouse(false)
-                if frame.EnableMouseClicks then
-                    frame:EnableMouseClicks(false)
+                widget:EnableMouse(false)
+                if widget.EnableMouseClicks then
+                    widget:EnableMouseClicks(false)
                 end
-                if frame.EnableMouseMotion then
-                    frame:EnableMouseMotion(false)
+                if widget.EnableMouseMotion then
+                    widget:EnableMouseMotion(false)
                 end
                 -- EnableMouse(false) on a parent does NOT disable children, so
                 -- the pager's invisible arrows would still eat clicks.
-                KillPagerMouse(frame)
-                if frame.Selection then
-                    frame.Selection:Hide()
-                    frame.Selection:SetAlpha(0)
+                KillPagerMouse(widget)
+                if widget.Selection then
+                    widget.Selection:Hide()
+                    widget.Selection:SetAlpha(0)
                 end -- Edit Mode selection/mover
-                local caps = frame.EndCaps
+                local caps = widget.EndCaps
                 if caps then
                     caps:Hide() -- artwork (gryphons/endcaps/border)
                     -- WoW Forever: each end cap is an Edit Mode system of its own that
@@ -445,21 +445,21 @@ do
                         r.Selection:EnableMouse(false)
                     end
                 end
-                if frame.BorderArt then
-                    frame.BorderArt:Hide()
+                if widget.BorderArt then
+                    widget.BorderArt:Hide()
                 end
-                frame:SetAlpha(0)
+                widget:SetAlpha(0)
             else
                 -- No Hide()/HideBase() here: reparenting to hiddenParent (kept
                 -- permanently Hidden) makes the bar effectively invisible
                 -- regardless of its own Shown state -- see ReassertHiddenOnShow's
                 -- note above hiddenParent's creation for the taint this avoids.
-                frame:SetParent(hiddenParent)
+                widget:SetParent(hiddenParent)
             end
 
-            if frame.actionButtons and type(frame.actionButtons) == "table" then
-                for _, button in pairs(frame.actionButtons) do
-                    ns.QuietlyHideBlizzButton(button)
+            if widget.actionButtons and type(widget.actionButtons) == "table" then
+                for _, btnFrame in pairs(widget.actionButtons) do
+                    mod.QuietlyHideBlizzButton(btnFrame)
                 end
             end
         end
@@ -476,4 +476,4 @@ do
 end
 
 -- Entry points the files after this one re-import by name.
-I.hiddenParent = hiddenParent
+Inner.hiddenParent = hiddenParent

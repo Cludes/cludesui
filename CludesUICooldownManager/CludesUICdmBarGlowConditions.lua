@@ -23,60 +23,60 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  events of our own; ns._barGlowAnyHero (set by SetupOverlays) lets the
 --  talent-change handler re-run the glow pass only while such an entry exists.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local function ActiveHeroTree()
     local CT = C_ClassTalents
-    local id = CT and CT.GetActiveHeroTalentSpec and CT.GetActiveHeroTalentSpec()
-    if type(id) == "number" and id > 0 then
-        return id
+    local ident = CT and CT.GetActiveHeroTalentSpec and CT.GetActiveHeroTalentSpec()
+    if type(ident) == "number" and ident > 0 then
+        return ident
     end
     return nil
 end
 
 -- The current spec's hero trees, for the options dropdown:
 -- { { id = subTreeID, name = "Spellslinger" }, ... }
-function ns.BarGlowHeroTrees()
-    local out = {}
+function mod.BarGlowHeroTrees()
+    local result = {}
     local CT = C_ClassTalents
     if not (CT and CT.GetHeroTalentSpecsForClassSpec and CT.GetActiveConfigID) then
-        return out
+        return result
     end
     local configID = CT.GetActiveConfigID()
-    local ok, ids = pcall(CT.GetHeroTalentSpecsForClassSpec, configID)
-    if not ok or type(ids) ~= "table" then
-        return out
+    local success, ids = pcall(CT.GetHeroTalentSpecsForClassSpec, configID)
+    if not success or type(ids) ~= "table" then
+        return result
     end
-    for _, id in ipairs(ids) do
-        local info = configID
+    for _, ident in ipairs(ids) do
+        local details = configID
             and C_Traits
             and C_Traits.GetSubTreeInfo
-            and C_Traits.GetSubTreeInfo(configID, id)
-        out[#out + 1] = { id = id, name = (info and info.name) or ("Hero Tree " .. id) }
+            and C_Traits.GetSubTreeInfo(configID, ident)
+        result[#result + 1] = { id = ident, name = (details and details.name) or ("Hero Tree " .. ident) }
     end
-    return out
+    return result
 end
 
 -- The entry's final glow state, given its own Glow When result `main`.
-function ns.BarGlowCombine(entry, main, cache)
-    local hero = entry.heroTree
+function mod.BarGlowCombine(record, main, cache)
+    local hero = record.heroTree
     if hero and not CludesUI.IS_FOREVER and ActiveHeroTree() ~= hero then
         return false
     end
-    if entry.andMode ~= "and" then
+    if record.andMode ~= "and" then
         return main
     end
-    local c = type(entry.conditions) == "table" and entry.conditions[1]
-    local sid = type(c) == "table" and tonumber(c.spellID)
-    if not sid or sid <= 0 then
+    local c = type(record.conditions) == "table" and record.conditions[1]
+    local spellRef = type(c) == "table" and tonumber(c.spellID)
+    if not spellRef or spellRef <= 0 then
         return main
     end
-    local active = (cache ~= nil and cache[sid] == true)
-    local ok
+    local isActive = (cache ~= nil and cache[spellRef] == true)
+    local success
     if c.state == "missing" then
-        ok = not active
+        success = not isActive
     else
-        ok = active
+        success = isActive
     end
-    return (main and ok) and true or false
+    return (main and success) and true or false
 end

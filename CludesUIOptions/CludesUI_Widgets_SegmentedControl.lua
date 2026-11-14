@@ -12,7 +12,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- (CludesUI_FramePool.lua), which hands a kept page or popup its previous
     -- build's frames back reset to new; on any other parent it creates as before.
     local CreateFrame = CludesUI._Pool.CreateFrame
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local CLUDES_GREEN = CludesUI.CLUDES_GREEN
     local MEDIA_PATH = CludesUI.MEDIA_PATH
     local ShowWidgetTooltip = CludesUI.ShowWidgetTooltip
@@ -38,9 +38,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- the first build, shown only while it measures, as a new one was).
     local measureFS
 
-    local function BuildSegmentedControl(cfg)
+    local function BuildSegmentedControl(conf)
         local ACCENT = CLUDES_GREEN
-        local SEG_H = cfg.height or 28
+        local SEG_H = conf.height or 28
         local FONT_SZ = 13
         local SEG_PAD = 22
         local PILL_BG = { 0.125, 0.125, 0.137 } -- #202023
@@ -50,7 +50,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local ACTIVE_R, ACTIVE_G, ACTIVE_B = ACCENT.r, ACCENT.g, ACCENT.b
         local BG_HOVER_BOOST = 0.04 -- 4% brightness on hover for background
 
-        local numKeys = #cfg.keys
+        local numKeys = #conf.keys
 
         local tmpFS = measureFS
         if tmpFS then
@@ -62,27 +62,27 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         tmpFS:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", FONT_SZ, "")
         local segWidths, textW = {}, {}
         local pillW = 0
-        for _, key in ipairs(cfg.keys) do
-            tmpFS:SetText(CludesUI.L(cfg.labels[key] or key))
+        for _, key in ipairs(conf.keys) do
+            tmpFS:SetText(CludesUI.L(conf.labels[key] or key))
             textW[key] = math.ceil(tmpFS:GetStringWidth())
-            local w = textW[key] + SEG_PAD * 2
-            segWidths[key] = w
-            pillW = pillW + w
+            local wid = textW[key] + SEG_PAD * 2
+            segWidths[key] = wid
+            pillW = pillW + wid
         end
         tmpFS:Hide()
 
         -- Square mode: a box with rounded corners. Its segments sit BOX_PAD inside
         -- one outline, BOX_GAP apart; the checked one carries a rounded marker.
-        local SQUARE = cfg.square and true or false
+        local SQUARE = conf.square and true or false
         local BOX_PAD, BOX_GAP = 2, 2
         local boxExtra = SQUARE and (BOX_PAD * 2 + BOX_GAP * (numKeys - 1)) or 0
 
-        if not cfg.autoWidth then
-            pillW = cfg.width - boxExtra
+        if not conf.autoWidth then
+            pillW = conf.width - boxExtra
             local baseW = math.floor(pillW / numKeys)
             local remainder = pillW - baseW * numKeys
-            for idx, key in ipairs(cfg.keys) do
-                segWidths[key] = baseW + (idx <= remainder and 1 or 0)
+            for position, key in ipairs(conf.keys) do
+                segWidths[key] = baseW + (position <= remainder and 1 or 0)
                 -- A long translated label widens its segment instead of overflowing it.
                 segWidths[key] = math.max(segWidths[key], textW[key] + 16)
             end
@@ -90,30 +90,38 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local capW = SQUARE and 0 or SEG_H
         if not SQUARE then
-            segWidths[cfg.keys[1]] = math.floor(segWidths[cfg.keys[1]] - capW)
-            segWidths[cfg.keys[numKeys]] = math.floor(segWidths[cfg.keys[numKeys]] - capW)
+            segWidths[conf.keys[1]] = math.floor(segWidths[conf.keys[1]] - capW)
+            segWidths[conf.keys[numKeys]] = math.floor(segWidths[conf.keys[numKeys]] - capW)
         end
         pillW = 0
-        for _, key in ipairs(cfg.keys) do
+        for _, key in ipairs(conf.keys) do
             pillW = pillW + segWidths[key]
         end
         -- Account for 1px overlap between adjacent segments
         local overlapTotal = SQUARE and 0 or (numKeys - 1) * 1
         local totalW = pillW + capW * 2 - overlapTotal + boxExtra
 
-        local frame = CreateFrame("Frame", nil, cfg.parent)
-        frame:SetSize(totalW, SEG_H)
+        local widget = CreateFrame("Frame", nil, conf.parent)
+        widget:SetSize(totalW, SEG_H)
 
-        local pillBody = CreateFrame("Frame", nil, frame)
+        local pillBody = CreateFrame("Frame", nil, widget)
         pillBody:SetSize(pillW - overlapTotal + boxExtra, SEG_H)
-        PP.Point(pillBody, "TOP", frame, "TOP", 0, 0)
-        pillBody:SetFrameLevel(frame:GetFrameLevel() + 1)
+        Pix.Point(pillBody, "TOP", widget, "TOP", 0, 0)
+        pillBody:SetFrameLevel(widget:GetFrameLevel() + 1)
 
-        local bg = pillBody:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0) -- transparent; per-segment segBg handles background
+        local backdrop = pillBody:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0, 0, 0, 0) -- transparent; per-segment segBg handles background
         local boxBdr = SQUARE
-            and CludesUI.MakeRoundedBorder(pillBody, INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A, bg, 2)
+            and CludesUI.MakeRoundedBorder(
+                pillBody,
+                INACTIVE_R,
+                INACTIVE_G,
+                INACTIVE_B,
+                INACTIVE_A,
+                backdrop,
+                2
+            )
 
         -------------------------------------------------------------------
         -- Pill caps
@@ -155,77 +163,77 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         capRightAccent:Hide()
 
         -- Cap click zones anchored to pillBody for now, re-anchored after segments
-        local capLeftBtn = CreateFrame("Button", nil, frame)
+        local capLeftBtn = CreateFrame("Button", nil, widget)
         capLeftBtn:SetSize(capW, SEG_H)
-        PP.Point(capLeftBtn, "RIGHT", pillBody, "LEFT", 0, 0)
+        Pix.Point(capLeftBtn, "RIGHT", pillBody, "LEFT", 0, 0)
         capLeftBtn:SetFrameLevel(pillBody:GetFrameLevel() + 4)
         capLeftBtn:SetScript("OnClick", function()
-            local key = cfg.keys[1]
-            if cfg.isDisabled and cfg.isDisabled(key) then
+            local key = conf.keys[1]
+            if conf.isDisabled and conf.isDisabled(key) then
                 return
             end
-            if cfg.onToggle then
-                cfg.onToggle(key)
+            if conf.onToggle then
+                conf.onToggle(key)
             end
         end)
         capLeftBtn:SetScript("OnEnter", function()
-            local key = cfg.keys[1]
-            if cfg.isDisabled and cfg.isDisabled(key) then
-                if cfg.disabledTip then
-                    local tip = cfg.disabledTip(key)
-                    if tip then
-                        ShowWidgetTooltip(capLeftBtn, tip)
+            local key = conf.keys[1]
+            if conf.isDisabled and conf.isDisabled(key) then
+                if conf.disabledTip then
+                    local tipText = conf.disabledTip(key)
+                    if tipText then
+                        ShowWidgetTooltip(capLeftBtn, tipText)
                     end
                 end
                 return
             end
-            frame._hoverIdx = 1
-            if frame._refreshAll then
-                frame._refreshAll()
+            widget._hoverIdx = 1
+            if widget._refreshAll then
+                widget._refreshAll()
             end
         end)
         capLeftBtn:SetScript("OnLeave", function()
             HideWidgetTooltip()
-            frame._hoverIdx = nil
-            if frame._refreshAll then
-                frame._refreshAll()
+            widget._hoverIdx = nil
+            if widget._refreshAll then
+                widget._refreshAll()
             end
         end)
 
-        local capRightBtn = CreateFrame("Button", nil, frame)
+        local capRightBtn = CreateFrame("Button", nil, widget)
         capRightBtn:SetSize(capW, SEG_H)
-        PP.Point(capRightBtn, "LEFT", pillBody, "RIGHT", 0, 0)
+        Pix.Point(capRightBtn, "LEFT", pillBody, "RIGHT", 0, 0)
         capRightBtn:SetFrameLevel(pillBody:GetFrameLevel() + 4)
         capRightBtn:SetScript("OnClick", function()
-            local key = cfg.keys[numKeys]
-            if cfg.isDisabled and cfg.isDisabled(key) then
+            local key = conf.keys[numKeys]
+            if conf.isDisabled and conf.isDisabled(key) then
                 return
             end
-            if cfg.onToggle then
-                cfg.onToggle(key)
+            if conf.onToggle then
+                conf.onToggle(key)
             end
         end)
         capRightBtn:SetScript("OnEnter", function()
-            local key = cfg.keys[numKeys]
-            if cfg.isDisabled and cfg.isDisabled(key) then
-                if cfg.disabledTip then
-                    local tip = cfg.disabledTip(key)
-                    if tip then
-                        ShowWidgetTooltip(capRightBtn, tip)
+            local key = conf.keys[numKeys]
+            if conf.isDisabled and conf.isDisabled(key) then
+                if conf.disabledTip then
+                    local tipText = conf.disabledTip(key)
+                    if tipText then
+                        ShowWidgetTooltip(capRightBtn, tipText)
                     end
                 end
                 return
             end
-            frame._hoverIdx = numKeys
-            if frame._refreshAll then
-                frame._refreshAll()
+            widget._hoverIdx = numKeys
+            if widget._refreshAll then
+                widget._refreshAll()
             end
         end)
         capRightBtn:SetScript("OnLeave", function()
             HideWidgetTooltip()
-            frame._hoverIdx = nil
-            if frame._refreshAll then
-                frame._refreshAll()
+            widget._hoverIdx = nil
+            if widget._refreshAll then
+                widget._refreshAll()
             end
         end)
 
@@ -237,35 +245,35 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local BASE_LEVEL = pillBody:GetFrameLevel() + 3
         local CHECKED_LEVEL = BASE_LEVEL + 1 -- checked segments draw on top
 
-        for i, key in ipairs(cfg.keys) do
+        for i, key in ipairs(conf.keys) do
             local thisW = segWidths[key]
 
-            local btn = CreateFrame("Button", nil, pillBody)
+            local button = CreateFrame("Button", nil, pillBody)
             if SQUARE then
-                PP.Size(btn, thisW, SEG_H - BOX_PAD * 2)
+                Pix.Size(button, thisW, SEG_H - BOX_PAD * 2)
                 if i == 1 then
-                    PP.Point(btn, "TOPLEFT", pillBody, "TOPLEFT", BOX_PAD, -BOX_PAD)
+                    Pix.Point(button, "TOPLEFT", pillBody, "TOPLEFT", BOX_PAD, -BOX_PAD)
                 else
-                    PP.Point(btn, "TOPLEFT", segments[i - 1].btn, "TOPRIGHT", BOX_GAP, 0)
+                    Pix.Point(button, "TOPLEFT", segments[i - 1].btn, "TOPRIGHT", BOX_GAP, 0)
                 end
             else
-                PP.Size(btn, thisW, SEG_H)
+                Pix.Size(button, thisW, SEG_H)
                 if i == 1 then
-                    PP.Point(btn, "TOPLEFT", pillBody, "TOPLEFT", 0, 0)
+                    Pix.Point(button, "TOPLEFT", pillBody, "TOPLEFT", 0, 0)
                 else
                     -- Anchor to previous segment's right edge, shifted 1px left for overlap
-                    PP.Point(btn, "TOPLEFT", segments[i - 1].btn, "TOPRIGHT", -1, 0)
+                    Pix.Point(button, "TOPLEFT", segments[i - 1].btn, "TOPRIGHT", -1, 0)
                 end
             end
-            btn:SetFrameLevel(BASE_LEVEL)
+            button:SetFrameLevel(BASE_LEVEL)
 
             -- Per-segment hover background overlay
-            local segBg = btn:CreateTexture(nil, "BACKGROUND", nil, 1)
+            local segBg = button:CreateTexture(nil, "BACKGROUND", nil, 1)
             segBg:SetAllPoints()
             segBg:SetColorTexture(PILL_BG[1], PILL_BG[2], PILL_BG[3], PILL_BGA)
 
             -- Accent tint overlay for checked/active segments (5% opacity)
-            local accentBg = btn:CreateTexture(nil, "BACKGROUND", nil, 2)
+            local accentBg = button:CreateTexture(nil, "BACKGROUND", nil, 2)
             accentBg:SetAllPoints()
             accentBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.05)
             accentBg:Hide()
@@ -273,37 +281,37 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Square mode: the marker, a rounded outline with segBg as its body.
             local segTop, segBot, segLeft, segRight, marker
             if SQUARE then
-                marker = CludesUI.MakeRoundedBorder(btn, ACTIVE_R, ACTIVE_G, ACTIVE_B, 0, segBg, 1)
+                marker = CludesUI.MakeRoundedBorder(button, ACTIVE_R, ACTIVE_G, ACTIVE_B, 0, segBg, 1)
             else
                 -- Full 1px border on all 4 sides matches MakeBorder's pixel-perfect technique: vertical edges inset by 1px to avoid overlapping corners.
-                segTop = btn:CreateTexture(nil, "ARTWORK", nil, 7)
+                segTop = button:CreateTexture(nil, "ARTWORK", nil, 7)
                 segTop:SetColorTexture(INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A)
                 segTop:SetHeight(1)
-                PP.Point(segTop, "TOPLEFT", btn, "TOPLEFT", 0, 0)
-                PP.Point(segTop, "TOPRIGHT", btn, "TOPRIGHT", 0, 0)
+                Pix.Point(segTop, "TOPLEFT", button, "TOPLEFT", 0, 0)
+                Pix.Point(segTop, "TOPRIGHT", button, "TOPRIGHT", 0, 0)
 
-                segBot = btn:CreateTexture(nil, "ARTWORK", nil, 7)
+                segBot = button:CreateTexture(nil, "ARTWORK", nil, 7)
                 segBot:SetColorTexture(INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A)
                 segBot:SetHeight(1)
-                PP.Point(segBot, "BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
-                PP.Point(segBot, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+                Pix.Point(segBot, "BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+                Pix.Point(segBot, "BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
 
                 -- Vertical edges anchored to horizontal edges (inset 1px) to avoid bright corners
-                segLeft = btn:CreateTexture(nil, "ARTWORK", nil, 7)
+                segLeft = button:CreateTexture(nil, "ARTWORK", nil, 7)
                 segLeft:SetColorTexture(INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A)
                 segLeft:SetWidth(1)
-                PP.Point(segLeft, "TOPLEFT", segTop, "BOTTOMLEFT", 0, 0)
-                PP.Point(segLeft, "BOTTOMLEFT", segBot, "TOPLEFT", 0, 0)
+                Pix.Point(segLeft, "TOPLEFT", segTop, "BOTTOMLEFT", 0, 0)
+                Pix.Point(segLeft, "BOTTOMLEFT", segBot, "TOPLEFT", 0, 0)
 
-                segRight = btn:CreateTexture(nil, "ARTWORK", nil, 7)
+                segRight = button:CreateTexture(nil, "ARTWORK", nil, 7)
                 segRight:SetColorTexture(INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A)
                 segRight:SetWidth(1)
-                PP.Point(segRight, "TOPRIGHT", segTop, "BOTTOMRIGHT", 0, 0)
-                PP.Point(segRight, "BOTTOMRIGHT", segBot, "TOPRIGHT", 0, 0)
+                Pix.Point(segRight, "TOPRIGHT", segTop, "BOTTOMRIGHT", 0, 0)
+                Pix.Point(segRight, "BOTTOMRIGHT", segBot, "TOPRIGHT", 0, 0)
             end
 
-            local lbl = btn:CreateFontString(nil, "OVERLAY")
-            lbl:SetFont(CludesUI.EXPRESSWAY, FONT_SZ, "")
+            local labelFS = button:CreateFontString(nil, "OVERLAY")
+            labelFS:SetFont(CludesUI.EXPRESSWAY, FONT_SZ, "")
             local lblOfsX = 0
             if i == 1 then
                 lblOfsX = -capW / 2
@@ -311,13 +319,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if i == numKeys then
                 lblOfsX = capW / 2
             end
-            lbl:SetPoint("CENTER", lblOfsX, 0)
-            lbl:SetText(CludesUI.L(cfg.labels[key] or key))
+            labelFS:SetPoint("CENTER", lblOfsX, 0)
+            labelFS:SetText(CludesUI.L(conf.labels[key] or key))
 
             segments[i] = {
                 key = key,
-                btn = btn,
-                lbl = lbl,
+                btn = button,
+                lbl = labelFS,
                 w = thisW,
                 segBg = segBg,
                 accentBg = accentBg,
@@ -327,38 +335,38 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 segRight = segRight,
                 marker = marker,
             }
-            btnByKey[key] = btn
+            btnByKey[key] = button
 
-            btn:SetScript("OnClick", function()
-                if cfg.isDisabled and cfg.isDisabled(key) then
+            button:SetScript("OnClick", function()
+                if conf.isDisabled and conf.isDisabled(key) then
                     return
                 end
-                if cfg.onToggle then
-                    cfg.onToggle(key)
+                if conf.onToggle then
+                    conf.onToggle(key)
                 end
             end)
 
-            btn:SetScript("OnEnter", function()
-                if cfg.isDisabled and cfg.isDisabled(key) then
-                    if cfg.disabledTip then
-                        local tip = cfg.disabledTip(key)
-                        if tip then
-                            ShowWidgetTooltip(btn, tip)
+            button:SetScript("OnEnter", function()
+                if conf.isDisabled and conf.isDisabled(key) then
+                    if conf.disabledTip then
+                        local tipText = conf.disabledTip(key)
+                        if tipText then
+                            ShowWidgetTooltip(button, tipText)
                         end
                     end
                     return
                 end
-                frame._hoverIdx = i
-                if frame._refreshAll then
-                    frame._refreshAll()
+                widget._hoverIdx = i
+                if widget._refreshAll then
+                    widget._refreshAll()
                 end
             end)
 
-            btn:SetScript("OnLeave", function()
+            button:SetScript("OnLeave", function()
                 HideWidgetTooltip()
-                frame._hoverIdx = nil
-                if frame._refreshAll then
-                    frame._refreshAll()
+                widget._hoverIdx = nil
+                if widget._refreshAll then
+                    widget._refreshAll()
                 end
             end)
         end
@@ -396,13 +404,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- RefreshAll
         -------------------------------------------------------------------
         local function RefreshAll()
-            local eyeKey = cfg.getEyeball and cfg.getEyeball()
-            local hoverIdx = frame._hoverIdx
+            local eyeKey = conf.getEyeball and conf.getEyeball()
+            local hoverIdx = widget._hoverIdx
 
-            for idx, seg in ipairs(segments) do
-                local disabled = cfg.isDisabled and cfg.isDisabled(seg.key)
-                local checked = cfg.getChecked(seg.key)
-                local isHover = (hoverIdx == idx)
+            for position, seg in ipairs(segments) do
+                local disabled = conf.isDisabled and conf.isDisabled(seg.key)
+                local checked = conf.getChecked(seg.key)
+                local isHover = (hoverIdx == position)
 
                 -- Label color
                 if disabled then
@@ -438,8 +446,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- All 4 borders visible, except: first segment hides its left, last hides its right -- the rounded caps draw those edges. (Square mode refreshes in RefreshBox.)
                 seg.segTop:Show()
                 seg.segBot:Show()
-                local isFirst = (idx == 1)
-                local isLast = (idx == #segments)
+                local isFirst = (position == 1)
+                local isLast = (position == #segments)
                 if isFirst then
                     seg.segLeft:Hide()
                 else
@@ -477,12 +485,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             -- Cap borders & fills: match adjacent segment's state (checked/disabled/hover)
-            local firstKey = cfg.keys[1]
-            local lastKey = cfg.keys[numKeys]
-            local firstDisabled = cfg.isDisabled and cfg.isDisabled(firstKey)
-            local lastDisabled = cfg.isDisabled and cfg.isDisabled(lastKey)
-            local firstChecked = cfg.getChecked(firstKey) and not firstDisabled
-            local lastChecked = cfg.getChecked(lastKey) and not lastDisabled
+            local firstKey = conf.keys[1]
+            local lastKey = conf.keys[numKeys]
+            local firstDisabled = conf.isDisabled and conf.isDisabled(firstKey)
+            local lastDisabled = conf.isDisabled and conf.isDisabled(lastKey)
+            local firstChecked = conf.getChecked(firstKey) and not firstDisabled
+            local lastChecked = conf.getChecked(lastKey) and not lastDisabled
             local firstHover = (hoverIdx == 1) and not firstDisabled
             local lastHover = (hoverIdx == numKeys) and not lastDisabled
 
@@ -538,12 +546,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- disabled; the checked segment shows its marker and a 5% accent tint,
         -- a hovered one lightens by 4%, both as rounded fills inside the box.
         local function RefreshBox()
-            local hoverIdx = frame._hoverIdx
+            local hoverIdx = widget._hoverIdx
             local allDisabled = true
-            for idx, seg in ipairs(segments) do
-                local disabled = cfg.isDisabled and cfg.isDisabled(seg.key)
-                local checked = cfg.getChecked(seg.key)
-                local boost = (hoverIdx == idx) and BG_HOVER_BOOST or 0
+            for position, seg in ipairs(segments) do
+                local disabled = conf.isDisabled and conf.isDisabled(seg.key)
+                local checked = conf.getChecked(seg.key)
+                local boost = (hoverIdx == position) and BG_HOVER_BOOST or 0
                 if disabled then
                     seg.lbl:SetTextColor(1, 1, 1, 0.20)
                 elseif checked then
@@ -575,18 +583,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
             boxBdr:SetColor(INACTIVE_R, INACTIVE_G, INACTIVE_B, allDisabled and 0.10 or INACTIVE_A)
-            bg:SetColorTexture(PILL_BG[1], PILL_BG[2], PILL_BG[3], allDisabled and 0.50 or PILL_BGA)
+            backdrop:SetColorTexture(PILL_BG[1], PILL_BG[2], PILL_BG[3], allDisabled and 0.50 or PILL_BGA)
         end
         if SQUARE then
             RefreshAll = RefreshBox
         end
 
-        frame._refreshAll = RefreshAll
+        widget._refreshAll = RefreshAll
         RefreshAll()
 
         -- Pill sits at 90% opacity permanently
-        frame:SetAlpha(0.9)
-        return frame, SEG_H, RefreshAll, btnByKey
+        widget:SetAlpha(0.9)
+        return widget, SEG_H, RefreshAll, btnByKey
     end
 
     CludesUI.BuildSegmentedControl = BuildSegmentedControl

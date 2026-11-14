@@ -12,8 +12,8 @@ local PoolKeep, PoolGen = CludesUI._Pool.Keep, CludesUI._Pool.Gen
 -- An accent-coloured piece repaints itself (paint(r, g, b)) when the accent
 -- changes. Keyed by the piece: the page pool forgets the entry when it resets
 -- it, and the kept Legends page registers each piece once.
-local function OnAccent(obj, paint)
-    CludesUI.RegAccent({ type = "callback", obj = obj, fn = paint })
+local function OnAccent(object, paint)
+    CludesUI.RegAccent({ type = "callback", obj = object, fn = paint })
 end
 
 -------------------------------------------------------------------------------
@@ -29,19 +29,19 @@ end
 -------------------------------------------------------------------------------
 local whatsNewOpen = {}
 local NOTES_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\sidebar\\notes-off.png"
-function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
-    local PP = CludesUI.PanelPP
-    local EG = CludesUI.CLUDES_GREEN
+function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
+    local Pix = CludesUI.PanelPP
+    local ACC = CludesUI.CLUDES_GREEN
     local PAD = CludesUI.CONTENT_PAD
     local W = CludesUI.Widgets
     local MakeFont = CludesUI.MakeFont
     local MakeBorder = CludesUI.MakeBorder
 
     -- This page is a free-form feed, not a DualRow split layout.
-    parent._showRowDivider = nil
+    hostFrame._showRowDivider = nil
 
-    local y = yOffset
-    local totalW = parent:GetWidth() - PAD * 2
+    local posY = yOffset
+    local totalW = hostFrame:GetWidth() - PAD * 2
     local CARD_GAP = 14
 
     -- Display prefix: "Module: " on every entry, and "WoW Forever - " in the
@@ -67,12 +67,12 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
     end
 
     -- Stable sort by module display name; preserves authored order per module.
-    local function SortByModule(list)
-        local idx = {}
-        for i, e in ipairs(list) do
-            idx[i] = { e, i }
+    local function SortByModule(entries)
+        local position = {}
+        for i, e in ipairs(entries) do
+            position[i] = { e, i }
         end
-        table.sort(idx, function(a, b)
+        table.sort(position, function(a, b)
             local am, bm = a[1].module or "", b[1].module or ""
             if am ~= bm then
                 -- Localization always closes the list.
@@ -83,11 +83,11 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
             end
             return a[2] < b[2]
         end)
-        local out = {}
-        for i = 1, #idx do
-            out[i] = idx[i][1]
+        local result = {}
+        for i = 1, #position do
+            result[i] = position[i][1]
         end
-        return out
+        return result
     end
 
     -- An entry's nav target: its nav while the nav's module is registered, else nil.
@@ -114,59 +114,59 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
     end
 
     -- Tier 1: clickable hero card -- dark fill, faint border, green top accent, title + wrapping description, hover lift.
-    local function MakeHeroCard(x, cy, w, hgt, entry)
-        local card = CreateFrame("Button", nil, parent)
-        PP.Size(card, w, hgt)
-        PP.Point(card, "TOPLEFT", parent, "TOPLEFT", x, cy)
-        card:SetFrameLevel(parent:GetFrameLevel() + 2)
+    local function MakeHeroCard(posX, cy, wid, hgt, record)
+        local cardFrame = CreateFrame("Button", nil, hostFrame)
+        Pix.Size(cardFrame, wid, hgt)
+        Pix.Point(cardFrame, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy)
+        cardFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
-        local brd = CludesUI.MakeRoundedCard(card, 0.12, 0.50, 2)
-        local bg, accent = brd.bg, brd.accent
+        local brd = CludesUI.MakeRoundedCard(cardFrame, 0.12, 0.50, 2)
+        local backdrop, accent = brd.bg, brd.accent
 
-        accent:SetColorTexture(EG.r, EG.g, EG.b, 0.6)
+        accent:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.6)
         OnAccent(accent, function(r, g, b)
             accent:SetColorTexture(r, g, b, 0.6)
         end)
 
-        local titleFs = MakeFont(card, 14, nil, EG.r, EG.g, EG.b, 0.9)
+        local titleFs = MakeFont(cardFrame, 14, nil, ACC.r, ACC.g, ACC.b, 0.9)
         OnAccent(titleFs, function(r, g, b)
             titleFs:SetTextColor(r, g, b, 0.9)
         end)
-        PP.Point(titleFs, "TOPLEFT", card, "TOPLEFT", 16, -14)
-        PP.Point(titleFs, "RIGHT", card, "RIGHT", -16, 0)
+        Pix.Point(titleFs, "TOPLEFT", cardFrame, "TOPLEFT", 16, -14)
+        Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -16, 0)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        titleFs:SetText(TitleOf(entry))
+        titleFs:SetText(TitleOf(record))
 
-        local descFs = MakeFont(card, 12, nil, 1, 1, 1, 0.45)
-        PP.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -7)
-        PP.Point(descFs, "RIGHT", card, "RIGHT", -16, 0)
+        local descFs = MakeFont(cardFrame, 12, nil, 1, 1, 1, 0.45)
+        Pix.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -7)
+        Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -16, 0)
         descFs:SetJustifyH("LEFT")
         descFs:SetJustifyV("TOP")
         descFs:SetWordWrap(true)
-        descFs:SetText(CludesUI.L(entry.desc) or "")
+        descFs:SetText(CludesUI.L(record.desc) or "")
 
         -- Clickable only with a nav target. No nav renders a static card: no hover lift, no click, mouse disabled so nothing invites a dead click.
-        if entry.onClick or NavTarget(entry.nav) then
-            card:SetScript("OnEnter", function()
-                bg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
+        if record.onClick or NavTarget(record.nav) then
+            cardFrame:SetScript("OnEnter", function()
+                backdrop:SetColorTexture(0.100, 0.110, 0.124, 0.50)
                 brd:SetColor(1, 1, 1, 0.22)
                 titleFs:SetAlpha(1)
             end)
-            card:SetScript("OnLeave", function()
-                bg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
+            cardFrame:SetScript("OnLeave", function()
+                backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.50)
                 brd:SetColor(1, 1, 1, 0.12)
                 titleFs:SetAlpha(0.9)
             end)
-            card:SetScript("OnClick", function()
-                if entry.onClick then
-                    entry.onClick()
+            cardFrame:SetScript("OnClick", function()
+                if record.onClick then
+                    record.onClick()
                 else
-                    GoTo(entry.nav)
+                    GoTo(record.nav)
                 end
             end)
         else
-            card:EnableMouse(false)
+            cardFrame:EnableMouse(false)
         end
     end
 
@@ -175,22 +175,22 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
     -- + large centered title/description, plus mirrored mini bar-chart art flanking the
     -- text (cost stepping down left, fps stepping up right). Takes a whole row; height
     -- follows description. Static unless the entry carries a nav.
-    local function MakeBannerCard(x, cy, w, entry)
-        local card = CreateFrame("Button", nil, parent)
+    local function MakeBannerCard(posX, cy, wid, record)
+        local cardFrame = CreateFrame("Button", nil, hostFrame)
         -- Width set FIRST (height provisional): description anchors L+R to the card, so a width-0 card would truncate it to one line instead of wrapping.
-        PP.Size(card, w, 100)
-        PP.Point(card, "TOPLEFT", parent, "TOPLEFT", x, cy)
-        card:SetFrameLevel(parent:GetFrameLevel() + 2)
+        Pix.Size(cardFrame, wid, 100)
+        Pix.Point(cardFrame, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy)
+        cardFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
-        local brd = CludesUI.MakeRoundedCard(card, 0.15, 0.92, 2)
-        local bg, accent = brd.bg, brd.accent
+        local brd = CludesUI.MakeRoundedCard(cardFrame, 0.15, 0.92, 2)
+        local backdrop, accent = brd.bg, brd.accent
 
         -- Per-entry accent (entry.accent = {r,g,b}); the theme accent otherwise.
-        local ac = entry.accent or EG
+        local ac = record.accent or ACC
         -- Only the theme accent follows accent changes; a per-entry one is fixed.
-        local function OnBannerAccent(obj, paint)
-            if not entry.accent then
-                OnAccent(obj, paint)
+        local function OnBannerAccent(object, paint)
+            if not record.accent then
+                OnAccent(object, paint)
             end
         end
         accent:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
@@ -204,236 +204,236 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         local BAR_W, BAR_GAP2 = 8, 4
         local function MakeChart(anchorSide, inset, heights, alphas)
             local groupW = #heights * BAR_W + (#heights - 1) * BAR_GAP2
-            local base = card:CreateTexture(nil, "ARTWORK")
-            base:SetColorTexture(1, 1, 1, 0.12)
-            PP.Size(base, groupW, 1)
+            local baseValue = cardFrame:CreateTexture(nil, "ARTWORK")
+            baseValue:SetColorTexture(1, 1, 1, 0.12)
+            Pix.Size(baseValue, groupW, 1)
             if anchorSide == "LEFT" then
-                PP.Point(base, "LEFT", card, "LEFT", inset, -12)
+                Pix.Point(baseValue, "LEFT", cardFrame, "LEFT", inset, -12)
             else
-                PP.Point(base, "RIGHT", card, "RIGHT", -inset, -12)
+                Pix.Point(baseValue, "RIGHT", cardFrame, "RIGHT", -inset, -12)
             end
-            if PP.DisablePixelSnap then
-                PP.DisablePixelSnap(base)
+            if Pix.DisablePixelSnap then
+                Pix.DisablePixelSnap(baseValue)
             end
             for i = 1, #heights do
-                local bar = card:CreateTexture(nil, "ARTWORK")
+                local barFrame = cardFrame:CreateTexture(nil, "ARTWORK")
                 local a = alphas[i]
                 if a == "green" then
-                    bar:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
-                    OnBannerAccent(bar, function(r, g, b)
-                        bar:SetColorTexture(r, g, b, 0.9)
+                    barFrame:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
+                    OnBannerAccent(barFrame, function(r, g, b)
+                        barFrame:SetColorTexture(r, g, b, 0.9)
                     end)
                 else
-                    bar:SetColorTexture(1, 1, 1, a)
+                    barFrame:SetColorTexture(1, 1, 1, a)
                 end
-                PP.Size(bar, BAR_W, heights[i])
-                PP.Point(bar, "BOTTOMLEFT", base, "TOPLEFT", (i - 1) * (BAR_W + BAR_GAP2), 1)
-                if PP.DisablePixelSnap then
-                    PP.DisablePixelSnap(bar)
+                Pix.Size(barFrame, BAR_W, heights[i])
+                Pix.Point(barFrame, "BOTTOMLEFT", baseValue, "TOPLEFT", (i - 1) * (BAR_W + BAR_GAP2), 1)
+                if Pix.DisablePixelSnap then
+                    Pix.DisablePixelSnap(barFrame)
                 end
             end
         end
-        if not entry.logo then
+        if not record.logo then
             -- Left: cost falling to a low accent bar. Right: fps rising to a tall one.
             MakeChart("LEFT", 36, { 34, 26, 19, 13, 8 }, { 0.28, 0.23, 0.18, 0.14, "green" })
             MakeChart("RIGHT", 36, { 8, 13, 19, 26, 34 }, { 0.14, 0.18, 0.23, 0.28, "green" })
         end
 
-        local eyebrow = MakeFont(card, 11, nil, ac.r, ac.g, ac.b, 0.9)
+        local eyebrow = MakeFont(cardFrame, 11, nil, ac.r, ac.g, ac.b, 0.9)
         OnBannerAccent(eyebrow, function(r, g, b)
             eyebrow:SetTextColor(r, g, b, 0.9)
         end)
-        PP.Point(eyebrow, "TOP", card, "TOP", 0, -18)
+        Pix.Point(eyebrow, "TOP", cardFrame, "TOP", 0, -18)
         eyebrow:SetJustifyH("CENTER")
         eyebrow:SetWordWrap(false)
-        eyebrow:SetText(CludesUI.L(entry.eyebrow or "SPECIAL UPDATE"))
+        eyebrow:SetText(CludesUI.L(record.eyebrow or "SPECIAL UPDATE"))
 
         -- Headline: banner titles stand alone (no "Module:" prefix), rendered
         -- LARGE like popup headlines -- or a logo texture stands in for the
         -- title (entry.logo = { path, coords = {l,r,t,b}, w, h }), the way the
         -- Forever launch popup uses the Forever wordmark as its headline.
         local headline, headH
-        if entry.logo then
-            local lg = card:CreateTexture(nil, "ARTWORK")
-            lg:SetTexture(entry.logo.path)
-            local c = entry.logo.coords
+        if record.logo then
+            local lg = cardFrame:CreateTexture(nil, "ARTWORK")
+            lg:SetTexture(record.logo.path)
+            local c = record.logo.coords
             if c then
                 lg:SetTexCoord(c[1], c[2], c[3], c[4])
             end
-            PP.Size(lg, entry.logo.w or 250, entry.logo.h or 100)
-            PP.Point(lg, "TOP", eyebrow, "BOTTOM", 0, -8)
-            headline, headH = lg, entry.logo.h or 100
+            Pix.Size(lg, record.logo.w or 250, record.logo.h or 100)
+            Pix.Point(lg, "TOP", eyebrow, "BOTTOM", 0, -8)
+            headline, headH = lg, record.logo.h or 100
         else
-            local titleFs = MakeFont(card, 24, nil, 1, 1, 1, 1)
-            PP.Point(titleFs, "TOP", eyebrow, "BOTTOM", 0, -8)
+            local titleFs = MakeFont(cardFrame, 24, nil, 1, 1, 1, 1)
+            Pix.Point(titleFs, "TOP", eyebrow, "BOTTOM", 0, -8)
             titleFs:SetJustifyH("CENTER")
             titleFs:SetWordWrap(false)
-            titleFs:SetText(CludesUI.L(entry.title) or "")
+            titleFs:SetText(CludesUI.L(record.title) or "")
             headline, headH = titleFs, 24
         end
 
-        local descFs = MakeFont(card, 13, nil, 1, 1, 1, 0.5)
-        PP.Point(descFs, "TOP", headline, "BOTTOM", 0, -10)
-        PP.Point(descFs, "LEFT", card, "LEFT", 110, 0)
-        PP.Point(descFs, "RIGHT", card, "RIGHT", -110, 0)
+        local descFs = MakeFont(cardFrame, 13, nil, 1, 1, 1, 0.5)
+        Pix.Point(descFs, "TOP", headline, "BOTTOM", 0, -10)
+        Pix.Point(descFs, "LEFT", cardFrame, "LEFT", 110, 0)
+        Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -110, 0)
         descFs:SetJustifyH("CENTER")
         descFs:SetJustifyV("TOP")
         descFs:SetWordWrap(true)
-        descFs:SetText(CludesUI.L(entry.desc) or "")
+        descFs:SetText(CludesUI.L(record.desc) or "")
 
         local dh = math.ceil(descFs:GetStringHeight() or 14)
         local bh = 18 + 11 + 8 + headH + 10 + dh + 28
-        PP.Size(card, w, bh)
+        Pix.Size(cardFrame, wid, bh)
 
-        if entry.onClick or NavTarget(entry.nav) then
-            card:SetScript("OnEnter", function()
+        if record.onClick or NavTarget(record.nav) then
+            cardFrame:SetScript("OnEnter", function()
                 brd:SetColor(1, 1, 1, 0.30)
                 descFs:SetAlpha(0.65)
             end)
-            card:SetScript("OnLeave", function()
+            cardFrame:SetScript("OnLeave", function()
                 brd:SetColor(1, 1, 1, 0.15)
                 descFs:SetAlpha(0.5)
             end)
-            card:SetScript("OnClick", function()
-                if entry.onClick then
-                    entry.onClick()
+            cardFrame:SetScript("OnClick", function()
+                if record.onClick then
+                    record.onClick()
                 else
-                    GoTo(entry.nav)
+                    GoTo(record.nav)
                 end
             end)
         else
-            card:EnableMouse(false)
+            cardFrame:EnableMouse(false)
         end
         return bh
     end
 
     -- Tier 2: clickable small listing -- title + subtitle, no card chrome, faint row highlight on hover.
-    local function MakeListing(x, cy, w, entry)
+    local function MakeListing(posX, cy, wid, record)
         local ROW_H = 48
-        local row = CreateFrame("Button", nil, parent)
-        PP.Size(row, w, ROW_H)
-        PP.Point(row, "TOPLEFT", parent, "TOPLEFT", x, cy)
-        row:SetFrameLevel(parent:GetFrameLevel() + 2)
+        local rowFrame = CreateFrame("Button", nil, hostFrame)
+        Pix.Size(rowFrame, wid, ROW_H)
+        Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy)
+        rowFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
-        local hov = row:CreateTexture(nil, "BACKGROUND")
+        local hov = rowFrame:CreateTexture(nil, "BACKGROUND")
         hov:SetAllPoints()
         hov:SetColorTexture(1, 1, 1, 0.07)
         hov:SetAlpha(0)
 
-        local titleFs = MakeFont(row, 13, nil, 1, 1, 1, 0.9)
-        PP.Point(titleFs, "TOPLEFT", row, "TOPLEFT", 6, -5)
+        local titleFs = MakeFont(rowFrame, 13, nil, 1, 1, 1, 0.9)
+        Pix.Point(titleFs, "TOPLEFT", rowFrame, "TOPLEFT", 6, -5)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        titleFs:SetText(TitleOf(entry))
+        titleFs:SetText(TitleOf(record))
 
-        local subFs = MakeFont(row, 11, nil, 1, 1, 1, 0.4)
-        PP.Point(subFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
-        PP.Point(subFs, "RIGHT", row, "RIGHT", -10, 0)
+        local subFs = MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.4)
+        Pix.Point(subFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
+        Pix.Point(subFs, "RIGHT", rowFrame, "RIGHT", -10, 0)
         subFs:SetJustifyH("LEFT")
         subFs:SetWordWrap(false)
-        subFs:SetText(CludesUI.L(entry.desc) or "")
+        subFs:SetText(CludesUI.L(record.desc) or "")
 
         -- Clickable only with a nav target (see MakeHeroCard); else static.
-        if entry.onClick or NavTarget(entry.nav) then
-            row:SetScript("OnEnter", function()
+        if record.onClick or NavTarget(record.nav) then
+            rowFrame:SetScript("OnEnter", function()
                 hov:SetAlpha(1)
                 titleFs:SetAlpha(1)
             end)
-            row:SetScript("OnLeave", function()
+            rowFrame:SetScript("OnLeave", function()
                 hov:SetAlpha(0)
                 titleFs:SetAlpha(0.9)
             end)
-            row:SetScript("OnClick", function()
-                if entry.onClick then
-                    entry.onClick()
+            rowFrame:SetScript("OnClick", function()
+                if record.onClick then
+                    record.onClick()
                 else
-                    GoTo(entry.nav)
+                    GoTo(record.nav)
                 end
             end)
         else
-            row:EnableMouse(false)
+            rowFrame:EnableMouse(false)
         end
         return ROW_H
     end
 
     -- Tier 3: a plain bug-fix line (bullet + wrapping text, not clickable),
     -- drawn on `host` (above the patch card's fill) from x to the card's inset.
-    local function MakeFixLine(host, x, rightInset, cy, text)
-        local dot = MakeFont(host, 12, nil, EG.r, EG.g, EG.b, 0.55)
+    local function MakeFixLine(hostRegion, posX, rightInset, cy, textValue)
+        local dot = MakeFont(hostRegion, 12, nil, ACC.r, ACC.g, ACC.b, 0.55)
         OnAccent(dot, function(r, g, b)
             dot:SetTextColor(r, g, b, 0.55)
         end)
-        PP.Point(dot, "TOPLEFT", parent, "TOPLEFT", x + 2, cy - 1)
+        Pix.Point(dot, "TOPLEFT", hostFrame, "TOPLEFT", posX + 2, cy - 1)
         dot:SetText("\226\128\162") -- bullet glyph (ASCII-safe UTF-8 escape)
-        local fs = MakeFont(host, 12, nil, 1, 1, 1, 0.5)
-        PP.Point(fs, "TOPLEFT", parent, "TOPLEFT", x + 18, cy)
-        PP.Point(fs, "RIGHT", parent, "RIGHT", -rightInset, 0)
-        fs:SetJustifyH("LEFT")
-        fs:SetWordWrap(true)
-        fs:SetText(text or "")
-        local th = fs:GetStringHeight() or 14
+        local fontStr = MakeFont(hostRegion, 12, nil, 1, 1, 1, 0.5)
+        Pix.Point(fontStr, "TOPLEFT", hostFrame, "TOPLEFT", posX + 18, cy)
+        Pix.Point(fontStr, "RIGHT", hostFrame, "RIGHT", -rightInset, 0)
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetWordWrap(true)
+        fontStr:SetText(textValue or "")
+        local th = fontStr:GetStringHeight() or 14
         return math.max(22, math.ceil(th) + 8)
     end
 
     -- A tier's title (already localized) inside a patch card: the section label
     -- colour and a faint rule under it, inset with the card's content.
-    local function TierHeader(host, x, cy, w, text)
+    local function TierHeader(hostRegion, posX, cy, wid, textValue)
         local ts = CludesUI.TEXT_SECTION
-        local label = MakeFont(host, 12, nil, ts.r, ts.g, ts.b, ts.a)
-        PP.Point(label, "TOPLEFT", parent, "TOPLEFT", x, cy - 16)
-        label:SetText(text)
-        local rule = host:CreateTexture(nil, "ARTWORK")
+        local labelText = MakeFont(hostRegion, 12, nil, ts.r, ts.g, ts.b, ts.a)
+        Pix.Point(labelText, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy - 16)
+        labelText:SetText(textValue)
+        local rule = hostRegion:CreateTexture(nil, "ARTWORK")
         rule:SetColorTexture(1, 1, 1, 0.07)
-        PP.Size(rule, w, 1)
-        PP.Point(rule, "TOPLEFT", parent, "TOPLEFT", x, cy - 34)
-        if PP.DisablePixelSnap then
-            PP.DisablePixelSnap(rule)
+        Pix.Size(rule, wid, 1)
+        Pix.Point(rule, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy - 34)
+        if Pix.DisablePixelSnap then
+            Pix.DisablePixelSnap(rule)
         end
         return 40
     end
 
     local patches = CludesUI._WHATSNEW_PATCHES
     if not patches or #patches == 0 then
-        local none = MakeFont(parent, 13, nil, 1, 1, 1, 0.5)
-        PP.Point(none, "TOPLEFT", parent, "TOPLEFT", PAD, y - 20)
+        local none = MakeFont(hostFrame, 13, nil, 1, 1, 1, 0.5)
+        Pix.Point(none, "TOPLEFT", hostFrame, "TOPLEFT", PAD, posY - 20)
         none:SetText(CludesUI.L("No patch notes yet."))
-        return math.abs(y) + 60
+        return math.abs(posY) + 60
     end
 
     -- Intro hint: centered, with 20px of breathing room above and below.
-    y = y - 20
-    local hint = MakeFont(parent, 14, nil, 1, 1, 1, 0.5)
-    PP.Point(hint, "TOP", parent, "TOP", 0, y)
+    posY = posY - 20
+    local hint = MakeFont(hostFrame, 14, nil, 1, 1, 1, 0.5)
+    Pix.Point(hint, "TOP", hostFrame, "TOP", 0, posY)
     hint:SetJustifyH("CENTER")
     hint:SetText(CludesUI.L("Click any new feature to go directly to the setting"))
 
     -- "New Patch Reminder Dot" opt-out for the pulsing sidebar dot shown when the account version increases (Patch Notes button in CludesUI.lua).
     do
         local BOX = 14
-        local row = CreateFrame("Button", nil, parent)
-        row:SetFrameLevel(parent:GetFrameLevel() + 2)
-        local box = CreateFrame("Frame", nil, row)
-        PP.Size(box, BOX, BOX)
-        PP.Point(box, "LEFT", row, "LEFT", 0, 0)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        local rowFrame = CreateFrame("Button", nil, hostFrame)
+        rowFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
+        local boxFrame = CreateFrame("Frame", nil, rowFrame)
+        Pix.Size(boxFrame, BOX, BOX)
+        Pix.Point(boxFrame, "LEFT", rowFrame, "LEFT", 0, 0)
+        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.088, 0.098, 0.111, 1)
-        local boxBrd = CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.25, boxBg)
-        local check = box:CreateTexture(nil, "ARTWORK")
-        PP.Point(check, "TOPLEFT", box, "TOPLEFT", 3, -3)
-        PP.Point(check, "BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-        CludesUI.RoundBody(box, check, 1)
-        local lbl = MakeFont(row, 12, nil, 1, 1, 1, 0.5)
-        PP.Point(lbl, "LEFT", box, "RIGHT", 7, 0)
-        lbl:SetText(CludesUI.L("New Patch Reminder Dot"))
-        row:SetSize(BOX + 10 + (lbl:GetStringWidth() or 130), 20)
-        PP.Point(row, "TOPRIGHT", parent, "TOPRIGHT", -PAD, y + 2)
+        local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.25, boxBg)
+        local check = boxFrame:CreateTexture(nil, "ARTWORK")
+        Pix.Point(check, "TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
+        Pix.Point(check, "BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
+        CludesUI.RoundBody(boxFrame, check, 1)
+        local labelFS = MakeFont(rowFrame, 12, nil, 1, 1, 1, 0.5)
+        Pix.Point(labelFS, "LEFT", boxFrame, "RIGHT", 7, 0)
+        labelFS:SetText(CludesUI.L("New Patch Reminder Dot"))
+        rowFrame:SetSize(BOX + 10 + (labelFS:GetStringWidth() or 130), 20)
+        Pix.Point(rowFrame, "TOPRIGHT", hostFrame, "TOPRIGHT", -PAD, posY + 2)
         local function Paint()
             local on = not (CludesUIDB and CludesUIDB.patchDotDisabled)
             check:SetShown(on)
-            check:SetColorTexture(EG.r, EG.g, EG.b, 1)
+            check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
             if on then
-                boxBrd:SetColor(EG.r, EG.g, EG.b, 0.85)
+                boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.85)
             else
                 boxBrd:SetColor(1, 1, 1, 0.25)
             end
@@ -442,7 +442,7 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         OnAccent(check, function()
             Paint()
         end)
-        row:SetScript("OnClick", function()
+        rowFrame:SetScript("OnClick", function()
             if not CludesUIDB then
                 CludesUIDB = {}
             end
@@ -452,8 +452,8 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
                 CludesUI._UpdatePatchDot()
             end
         end)
-        row:SetScript("OnEnter", function(self)
-            lbl:SetAlpha(0.85)
+        rowFrame:SetScript("OnEnter", function(self)
+            labelFS:SetAlpha(0.85)
             CludesUI.ShowWidgetTooltip(
                 self,
                 CludesUI.L(
@@ -461,13 +461,13 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
                 )
             )
         end)
-        row:SetScript("OnLeave", function()
-            lbl:SetAlpha(0.5)
+        rowFrame:SetScript("OnLeave", function()
+            labelFS:SetAlpha(0.5)
             CludesUI.HideWidgetTooltip()
         end)
     end
 
-    y = y - math.ceil(hint:GetStringHeight() or 14) - 20
+    posY = posY - math.ceil(hint:GetStringHeight() or 14) - 20
 
     -- A patch card's content sits inset from the card's edges.
     local INSET = 16
@@ -478,9 +478,9 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
     local function BuildPatchContent(patch, cy)
         -- A "mini" patch is bugfix-only: just a `fixes` tier.
         local isMini = patch.mini
-        local host = CreateFrame("Frame", nil, parent)
-        host:SetAllPoints(parent)
-        host:SetFrameLevel(parent:GetFrameLevel() + 2)
+        local hostRegion = CreateFrame("Frame", nil, hostFrame)
+        hostRegion:SetAllPoints(hostFrame)
+        hostRegion:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
         cy = cy - 6
 
         -- Tier 1: hero cards, two per row, AUTHORED order (not module-sorted like features/fixes) -- reorder entries in _WHATSNEW_PATCHES to reorder cards.
@@ -489,26 +489,26 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
             local cardW = math.floor((innerW - CARD_GAP) / 2)
             local CARD_H = 96
             -- Column state: heroes flow 2/row in authored order; a `banner` hero takes a full row, breaking then resuming the flow.
-            local col = 0
+            local column = 0
             for _, hero in ipairs(heroes) do
                 if hero.banner then
-                    if col == 1 then
+                    if column == 1 then
                         cy = cy - CARD_H - CARD_GAP
-                        col = 0
+                        column = 0
                     end
                     local bh = MakeBannerCard(innerX, cy, innerW, hero)
                     cy = cy - bh - CARD_GAP
                 else
-                    local cx = innerX + col * (cardW + CARD_GAP)
+                    local cx = innerX + column * (cardW + CARD_GAP)
                     MakeHeroCard(cx, cy, cardW, CARD_H, hero)
-                    col = col + 1
-                    if col == 2 then
+                    column = column + 1
+                    if column == 2 then
                         cy = cy - CARD_H - CARD_GAP
-                        col = 0
+                        column = 0
                     end
                 end
             end
-            if col == 1 then
+            if column == 1 then
                 cy = cy - CARD_H - CARD_GAP
             end
             cy = cy + CARD_GAP - 4
@@ -517,7 +517,7 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         -- Tier 2: small listings.
         local feats = SortByModule(patch.features or {})
         if #feats > 0 then
-            cy = cy - TierHeader(host, innerX, cy, innerW, CludesUI.L("ADDITIONAL FEATURES"))
+            cy = cy - TierHeader(hostRegion, innerX, cy, innerW, CludesUI.L("ADDITIONAL FEATURES"))
             cy = cy - 5 -- extra spacing below the divider
             for _, f in ipairs(feats) do
                 local rh = MakeListing(innerX, cy, innerW, f)
@@ -530,12 +530,17 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         local fixes = SortByModule(patch.fixes or {})
         if #fixes > 0 then
             if not isMini or #feats > 0 then
-                cy = cy - TierHeader(host, innerX, cy, innerW, CludesUI.L("BUG FIXES"))
+                cy = cy - TierHeader(hostRegion, innerX, cy, innerW, CludesUI.L("BUG FIXES"))
                 cy = cy - 10 -- extra spacing below the divider
             end
             for _, fx in ipairs(fixes) do
-                local fh =
-                    MakeFixLine(host, innerX, PAD + INSET, cy, PrefixOf(fx) .. (CludesUI.L(fx.text) or ""))
+                local fh = MakeFixLine(
+                    hostRegion,
+                    innerX,
+                    PAD + INSET,
+                    cy,
+                    PrefixOf(fx) .. (CludesUI.L(fx.text) or "")
+                )
                 cy = cy - fh
             end
         end
@@ -545,12 +550,12 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
     -- One card per patch, newest first: the newest starts open. Show only the
     -- newest MAX_PATCHES entries; older ones may stay in the data table unshown.
     local MAX_PATCHES = 10
-    local shown = math.min(#patches, MAX_PATCHES)
+    local isShown = math.min(#patches, MAX_PATCHES)
     local newestKey = patches[1].version or 1
     if whatsNewOpen[newestKey] == nil then
         whatsNewOpen[newestKey] = true
     end
-    for pi = 1, shown do
+    for pi = 1, isShown do
         local patch = patches[pi]
         -- Header counts: hero cards (a launch-video banner is no feature), listings, fix lines.
         local heroN = 0
@@ -580,21 +585,21 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
             end,
         }
         local newest = pi == 1
-        y = CludesUI.BuildModuleCard(parent, y, W, tile, {
+        posY = CludesUI.BuildModuleCard(hostFrame, posY, W, tile, {
             enabled = true,
             expanded = whatsNewOpen,
             descW = 560,
             noSearch = true,
-            glyph = function(hdr)
-                local icon = hdr:CreateTexture(nil, "ARTWORK")
-                PP.Size(icon, 28, 20)
-                PP.Point(icon, "LEFT", hdr, "LEFT", 14, 0)
+            glyph = function(heading)
+                local icon = heading:CreateTexture(nil, "ARTWORK")
+                Pix.Size(icon, 28, 20)
+                Pix.Point(icon, "LEFT", heading, "LEFT", 14, 0)
                 icon:SetTexture(NOTES_ICON)
-                if PP.DisablePixelSnap then
-                    PP.DisablePixelSnap(icon)
+                if Pix.DisablePixelSnap then
+                    Pix.DisablePixelSnap(icon)
                 end
                 if newest then
-                    icon:SetVertexColor(EG.r, EG.g, EG.b, 0.9)
+                    icon:SetVertexColor(ACC.r, ACC.g, ACC.b, 0.9)
                     OnAccent(icon, function(r, g, b)
                         icon:SetVertexColor(r, g, b, 0.9)
                     end)
@@ -605,17 +610,17 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         })
         -- "Latest" beside the newest card's title (its description hangs off the title).
         if newest then
-            local _, title = tile._descFS:GetPoint(1)
-            if title then
-                local tag = MakeFont(tile._hdr, 11, nil, EG.r, EG.g, EG.b, 0.9)
+            local _, titleText = tile._descFS:GetPoint(1)
+            if titleText then
+                local tag = MakeFont(tile._hdr, 11, nil, ACC.r, ACC.g, ACC.b, 0.9)
                 OnAccent(tag, function(r, g, b)
                     tag:SetTextColor(r, g, b, 0.9)
                 end)
-                PP.Point(tag, "LEFT", title, "RIGHT", 10, 0)
+                Pix.Point(tag, "LEFT", titleText, "RIGHT", 10, 0)
                 tag:SetText(CludesUI.L("Latest"))
             end
         end
     end
 
-    return math.abs(y) + 20
+    return math.abs(posY) + 20
 end

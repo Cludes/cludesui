@@ -8,27 +8,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and the Edit Mode lock.
 --  Reads the earlier hook files through ns and ns._hookInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._hookInternals
+local _, mod = ...
+local Inner = mod._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local ECME = ns.ECME
-local cdmBarFrames = ns.cdmBarFrames
-local cdmBarIcons = ns.cdmBarIcons
-local _ecmeFC = ns._ecmeFC
+local ECME = mod.ECME
+local cdmBarFrames = mod.cdmBarFrames
+local cdmBarIcons = mod.cdmBarIcons
+local _ecmeFC = mod._ecmeFC
 local GetTime = GetTime
 
-local GetViewerFrame, hookFrameData = I.GetViewerFrame, I.hookFrameData
-local VIEWER_NAMES, ResolveFrameSpellID = I.VIEWER_NAMES, I.ResolveFrameSpellID
-local _activeCache, _activeStacksCache = I._activeCache, I._activeStacksCache
-local _smHookedIcons, SwiftmendEnabled = I._smHookedIcons, I.SwiftmendEnabled
-local ProcessPresetCooldowns = I.ProcessPresetCooldowns
-local CollectAndReanchor, UpdateCustomBuffBars = I.CollectAndReanchor, I.UpdateCustomBuffBars
-local QueueViewerAnchor, RestoreViewerAnchors = I.QueueViewerAnchor, I.RestoreViewerAnchors
+local GetViewerFrame, hookFrameData = Inner.GetViewerFrame, Inner.hookFrameData
+local VIEWER_NAMES, ResolveFrameSpellID = Inner.VIEWER_NAMES, Inner.ResolveFrameSpellID
+local _activeCache, _activeStacksCache = Inner._activeCache, Inner._activeStacksCache
+local _smHookedIcons, SwiftmendEnabled = Inner._smHookedIcons, Inner.SwiftmendEnabled
+local ProcessPresetCooldowns = Inner.ProcessPresetCooldowns
+local CollectAndReanchor, UpdateCustomBuffBars = Inner.CollectAndReanchor, Inner.UpdateCustomBuffBars
+local QueueViewerAnchor, RestoreViewerAnchors = Inner.QueueViewerAnchor, Inner.RestoreViewerAnchors
 
 local reanchorDirty = false
 local reanchorFrame = nil
@@ -39,15 +39,15 @@ local viewerHooksInstalled = false
 --  viewer's layout measurement or re-enumerating its pool.
 -------------------------------------------------------------------------------
 local function ReapplyPositions()
-    for barKey, icons in pairs(cdmBarIcons) do
+    for barId, icons in pairs(cdmBarIcons) do
         if icons then
-            for i = 1, #icons do
-                local frame = icons[i]
-                if frame then
-                    local fd = hookFrameData[frame]
-                    local anchor = fd and fd._cdmAnchor
-                    if anchor then
-                        QueueViewerAnchor(frame)
+            for idx = 1, #icons do
+                local widget = icons[idx]
+                if widget then
+                    local fd = hookFrameData[widget]
+                    local anchorFrame = fd and fd._cdmAnchor
+                    if anchorFrame then
+                        QueueViewerAnchor(widget)
                     end
                 end
             end
@@ -70,7 +70,7 @@ local function QueueReanchor()
         reanchorFrame:Show()
     end
 end
-ns.QueueReanchor = QueueReanchor
+mod.QueueReanchor = QueueReanchor
 
 -- Cancel any pending queued reanchor. Used by FullCDMRebuild's spec swap branch when it
 -- runs CollectAndReanchor directly -- without this, the reanchor BuildAllCDMBars queued
@@ -78,27 +78,27 @@ ns.QueueReanchor = QueueReanchor
 local function ClearQueuedReanchor()
     reanchorDirty = false
 end
-ns.ClearQueuedReanchor = ClearQueuedReanchor
+mod.ClearQueuedReanchor = ClearQueuedReanchor
 
 local function ProcessReanchorQueue(self)
     if not reanchorDirty then
         self:Hide()
         return
     end
-    local now = GetTime()
-    if now - _lastReanchorTime < REANCHOR_THROTTLE then
+    local nowTime = GetTime()
+    if nowTime - _lastReanchorTime < REANCHOR_THROTTLE then
         return
     end
     reanchorDirty = false
-    _lastReanchorTime = now
+    _lastReanchorTime = nowTime
     CollectAndReanchor()
     -- WoW Forever: the anti-clip glow draws the icons this placed.
-    if ns.CDM_AntiClipPlaced then
-        ns.CDM_AntiClipPlaced()
+    if mod.CDM_AntiClipPlaced then
+        mod.CDM_AntiClipPlaced()
     end
     -- Reapply visibility: newly collected icons may be at alpha 0.
-    if ns.CDMApplyVisibility then
-        ns.CDMApplyVisibility()
+    if mod.CDMApplyVisibility then
+        mod.CDMApplyVisibility()
     end
 end
 
@@ -128,7 +128,7 @@ end
 --  on this spec remains a harmless non-rendering preview entry (removable
 --  by hand), consistent with the CD/utility side.
 -------------------------------------------------------------------------------
-function ns.SyncExtraBuffBarsWithViewer()
+function mod.SyncExtraBuffBarsWithViewer()
     QueueReanchor()
 end
 
@@ -141,14 +141,14 @@ end
 --    3. Viewer Layout -> QueueReanchor (catches frame removals)
 --    4. Buff ticker (0.1s) for staleness + glow
 -------------------------------------------------------------------------------
-function ns.SetupViewerHooks()
+function mod.SetupViewerHooks()
     if viewerHooksInstalled then
         return
     end
     viewerHooksInstalled = true
 
     -- Reanchor queue frame
-    reanchorFrame = ns.TakeShell()
+    reanchorFrame = mod.TakeShell()
     reanchorFrame:SetScript("OnUpdate", ProcessReanchorQueue)
     reanchorFrame:Hide()
 
@@ -161,15 +161,15 @@ function ns.SetupViewerHooks()
     --    pools (e.g. Lightsmith Holy Armaments), so we only clear the FC cache
     --    for the next rebuild. Buff bars ARE dynamic (appear/disappear at
     --    runtime), so they still need real-time OnCooldownIDSet reanchors.
-    local function ResetFrameCache(frame)
+    local function ResetFrameCache(widget)
         -- Content churn: re-arm the buff ticker's dirty + pool gates.
-        ns._acGen = (ns._acGen or 0) + 1
-        ns._btDirty = true
-        if ns.ArmBuffTicker then
-            ns.ArmBuffTicker()
+        mod._acGen = (mod._acGen or 0) + 1
+        mod._btDirty = true
+        if mod.ArmBuffTicker then
+            mod.ArmBuffTicker()
         end
-        if frame then
-            local fc = _ecmeFC[frame]
+        if widget then
+            local fc = _ecmeFC[widget]
             if fc then
                 fc.resolvedSid = nil
                 fc.baseSpellID = nil
@@ -180,22 +180,22 @@ function ns.SetupViewerHooks()
     end
     -- Buff mixins: clear cache + reanchor (dynamic)
     if CooldownViewerBuffIconItemMixin and CooldownViewerBuffIconItemMixin.OnCooldownIDSet then
-        hooksecurefunc(CooldownViewerBuffIconItemMixin, "OnCooldownIDSet", function(frame)
-            ResetFrameCache(frame)
+        hooksecurefunc(CooldownViewerBuffIconItemMixin, "OnCooldownIDSet", function(widget)
+            ResetFrameCache(widget)
             QueueReanchor()
         end)
     end
     if CooldownViewerBuffBarItemMixin and CooldownViewerBuffBarItemMixin.OnCooldownIDSet then
-        hooksecurefunc(CooldownViewerBuffBarItemMixin, "OnCooldownIDSet", function(frame)
-            ns._acGen = (ns._acGen or 0) + 1
-            ns._btDirty = true
-            if ns.ArmBuffTicker then
-                ns.ArmBuffTicker()
+        hooksecurefunc(CooldownViewerBuffBarItemMixin, "OnCooldownIDSet", function(widget)
+            mod._acGen = (mod._acGen or 0) + 1
+            mod._btDirty = true
+            if mod.ArmBuffTicker then
+                mod.ArmBuffTicker()
             end
-            if ns.InvalidateTBBFrameCache then
-                ns.InvalidateTBBFrameCache()
+            if mod.InvalidateTBBFrameCache then
+                mod.InvalidateTBBFrameCache()
             end
-            ResetFrameCache(frame)
+            ResetFrameCache(widget)
             QueueReanchor()
         end)
     end
@@ -227,20 +227,20 @@ function ns.SetupViewerHooks()
         -- too late on a frame's FIRST activation, so the very first "buff gained" cue
         -- was missed (loss + later gains worked because the hook then persisted).
         -- EnsureBuffSoundHook self-guards (hooks once), gated 0-cost on the feature.
-        local ensureSound = ns._cdmAnyBuffSound and ns.EnsureBuffSoundHook
-        for frame in viewer.itemFramePool:EnumerateActive() do
+        local ensureSound = mod._cdmAnyBuffSound and mod.EnsureBuffSoundHook
+        for widget in viewer.itemFramePool:EnumerateActive() do
             if ensureSound then
-                ns.EnsureBuffSoundHook(frame)
+                mod.EnsureBuffSoundHook(widget)
             end
-            if not _activeStateHooked[frame] then
-                _activeStateHooked[frame] = true
+            if not _activeStateHooked[widget] then
+                _activeStateHooked[widget] = true
                 -- Hook OnActiveStateChanged: Blizzard calls this when a buff
                 -- becomes active/inactive. Run a full reanchor so new/removed
                 -- icons get collected and centered. Batched via C_Timer to
                 -- collapse the spam (fires many times per frame).
                 -- Use the throttled queue here, not a direct call, so bursts
                 -- of state changes can't stack up multiple full reanchors.
-                if frame.OnActiveStateChanged then
+                if widget.OnActiveStateChanged then
                     local _asDeferFrame = CreateFrame("Frame")
                     _asDeferFrame:Hide()
                     local _asDeferTicks = 0
@@ -254,14 +254,14 @@ function ns.SetupViewerHooks()
                         QueueReanchor()
                     end)
                     local isBarViewer = viewer == _G["BuffBarCooldownViewer"]
-                    hooksecurefunc(frame, "OnActiveStateChanged", function(itemFrame)
+                    hooksecurefunc(widget, "OnActiveStateChanged", function(itemFrame)
                         -- Wake a parked Tracking Bars tick when this item activates (a
                         -- deactivation has nothing to show): the sleeper's probe can run
                         -- before the item binds its aura, reads a secret aura as nil and
                         -- hears no target auras. Keep this ahead of the shared pending
                         -- return below, which any buff item's change holds for two frames.
-                        if isBarViewer and ns.WakeTBBTickIfParked then
-                            ns.WakeTBBTickIfParked(itemFrame)
+                        if isBarViewer and mod.WakeTBBTickIfParked then
+                            mod.WakeTBBTickIfParked(itemFrame)
                         end
                         ReapplyPositions()
                         if _activeStateReanchorPending then
@@ -277,30 +277,30 @@ function ns.SetupViewerHooks()
     end
 
     for vi, vName in ipairs(VIEWER_NAMES) do
-        local v = _G[vName]
-        if v and v.itemFramePool then
-            if v.RefreshLayout then
-                hooksecurefunc(v, "RefreshLayout", RestoreViewerAnchors)
+        local val = _G[vName]
+        if val and val.itemFramePool then
+            if val.RefreshLayout then
+                hooksecurefunc(val, "RefreshLayout", RestoreViewerAnchors)
             end
             local isBuff = (vi == 3 or vi == 4) -- BuffIcon or BuffBar
             local isBarViewer = (vi == 4) -- BuffBarCooldownViewer
-            hooksecurefunc(v.itemFramePool, "Acquire", function()
-                ns._acGen = (ns._acGen or 0) + 1
-                ns._btDirty = true
-                if ns.ArmBuffTicker then
-                    ns.ArmBuffTicker()
+            hooksecurefunc(val.itemFramePool, "Acquire", function()
+                mod._acGen = (mod._acGen or 0) + 1
+                mod._btDirty = true
+                if mod.ArmBuffTicker then
+                    mod.ArmBuffTicker()
                 end
                 if isBuff then
-                    InstallBuffFrameHooks(v)
+                    InstallBuffFrameHooks(val)
                 end
-                if isBarViewer and ns.InvalidateTBBFrameCache then
-                    ns.InvalidateTBBFrameCache()
+                if isBarViewer and mod.InvalidateTBBFrameCache then
+                    mod.InvalidateTBBFrameCache()
                 end
                 -- A new tracked-bar spell acquires a pool frame here: let the
                 -- Tracking Bars auto-add pass pick it up (debounced, no-op
                 -- unless a never-seen spell appeared).
-                if isBarViewer and ns.QueueTBBAutoAdd then
-                    ns.QueueTBBAutoAdd()
+                if isBarViewer and mod.QueueTBBAutoAdd then
+                    mod.QueueTBBAutoAdd()
                 end
                 -- Only buff viewers need real-time reanchors on Acquire.
                 -- CD/utility spell sets are static (rebuilt by FullCDMRebuild).
@@ -310,7 +310,7 @@ function ns.SetupViewerHooks()
             end)
             -- Hook existing frames too
             if isBuff then
-                InstallBuffFrameHooks(v)
+                InstallBuffFrameHooks(val)
             end
 
             -- Intercept newly acquired frames the instant Blizzard creates them, before
@@ -319,9 +319,9 @@ function ns.SetupViewerHooks()
             -- reanchor. Skip during init: on /reload ALL frames are acquired at once
             -- and our reanchor hasn't run yet, so blanking them would hide all buffs
             -- until the first buff change.
-            if v.OnAcquireItemFrame then
-                hooksecurefunc(v, "OnAcquireItemFrame", function(_, itemFrame)
-                    if not ns._initialReanchorDone then
+            if val.OnAcquireItemFrame then
+                hooksecurefunc(val, "OnAcquireItemFrame", function(_, itemFrame)
+                    if not mod._initialReanchorDone then
                         return
                     end
                     -- Skip blanking bar viewer children when user wants Blizzard tracked bars
@@ -374,7 +374,7 @@ function ns.SetupViewerHooks()
         EssentialCooldownViewer = "cooldowns",
         UtilityCooldownViewer = "utility",
     }
-    for viewerName, barKey in pairs(SYNC_VIEWERS) do
+    for viewerName, barId in pairs(SYNC_VIEWERS) do
         local viewer = _G[viewerName]
         if viewer then
             -- CD/utility spell sets are rebuilt by FullCDMRebuild, while the
@@ -384,19 +384,19 @@ function ns.SetupViewerHooks()
             -- The SetPoint hook below watches Blizzard's own writes only.
             -- A pin asked for in combat runs once combat ends (one queued pin
             -- per viewer, however many asks).
-            local pinKey = "CDMViewerPin" .. barKey
+            local pinKey = "CDMViewerPin" .. barId
             local function SyncViewerToBar()
                 if InCombatLockdown() then
-                    ns.CombatQueue.Defer(pinKey, SyncViewerToBar)
+                    mod.CombatQueue.Defer(pinKey, SyncViewerToBar)
                     return
                 end
-                local container = cdmBarFrames[barKey]
-                if not container then
+                local boxHolder = cdmBarFrames[barId]
+                if not boxHolder then
                     return
                 end
                 CludesUI.ClearFramePoints(viewer)
-                CludesUI.SetFramePoint(viewer, "TOPLEFT", container, "TOPLEFT", 0, 0)
-                CludesUI.SetFramePoint(viewer, "BOTTOMRIGHT", container, "BOTTOMRIGHT", 0, 0)
+                CludesUI.SetFramePoint(viewer, "TOPLEFT", boxHolder, "TOPLEFT", 0, 0)
+                CludesUI.SetFramePoint(viewer, "BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", 0, 0)
             end
             -- After a Blizzard SetPoint, a viewer in the bottom managed column
             -- is pinned at once, so the column's next pass measures our bar. A
@@ -411,17 +411,17 @@ function ns.SetupViewerHooks()
                     SyncViewerToBar() -- queues the pin for combat end
                     return
                 end
-                local container = cdmBarFrames[barKey]
-                if relativeTo == container then
+                local boxHolder = cdmBarFrames[barId]
+                if relativeTo == boxHolder then
                     return
                 end
-                local parent = viewer:GetParent()
-                if not issecretvalue(parent) and parent == BottomManagedFrameContainer then
+                local hostFrame = viewer:GetParent()
+                if not issecretvalue(hostFrame) and hostFrame == BottomManagedFrameContainer then
                     SyncViewerToBar()
                     return
                 end
                 if not pinLater then
-                    pinLater = ns.TakeShell()
+                    pinLater = mod.TakeShell()
                     pinLater:SetScript("OnUpdate", function(self)
                         self:Hide()
                         SyncViewerToBar()
@@ -442,14 +442,14 @@ function ns.SetupViewerHooks()
     local DIRECT_REANCHOR_GUARD = 0.05
     local function DirectBuffReanchor()
         -- The shared RefreshLayout hook restores anchors before this throttle.
-        local now = GetTime()
-        if now - _lastDirectReanchor < DIRECT_REANCHOR_GUARD then
+        local nowTime = GetTime()
+        if nowTime - _lastDirectReanchor < DIRECT_REANCHOR_GUARD then
             return
         end
-        _lastDirectReanchor = now
+        _lastDirectReanchor = nowTime
         CollectAndReanchor()
-        if ns.CDM_AntiClipPlaced then
-            ns.CDM_AntiClipPlaced()
+        if mod.CDM_AntiClipPlaced then
+            mod.CDM_AntiClipPlaced()
         end
     end
     local buffViewer = _G["BuffIconCooldownViewer"]
@@ -479,20 +479,20 @@ function ns.SetupViewerHooks()
             -- also fires that from RefreshFromExternalUpdate on SPELLS_CHANGED
             -- / PLAYER_EQUIPMENT_CHANGED / PvP talent updates, which would
             -- re-run a full reseed pass on every form swap or gear change.
-            if ns._reseededSpecsSession then
-                wipe(ns._reseededSpecsSession)
+            if mod._reseededSpecsSession then
+                wipe(mod._reseededSpecsSession)
             end
             C_Timer.After(0.1, QueueReanchor)
             -- Delay sync slightly longer so Blizzard finishes rebuilding pools
             C_Timer.After(0.3, function()
-                ns.SyncExtraBuffBarsWithViewer()
+                mod.SyncExtraBuffBarsWithViewer()
             end)
             -- Reconcile keep/drop after Blizzard's layout writes settle and
             -- our own sync/reanchor above have run, so the pass sees the
             -- post-close viewer state rather than a mid-close transient.
             C_Timer.After(0.4, function()
-                if ns.RequestCDMDropPass then
-                    ns.RequestCDMDropPass("settings")
+                if mod.RequestCDMDropPass then
+                    mod.RequestCDMDropPass("settings")
                 end
             end)
         end, cdmSettingsOwner)
@@ -503,8 +503,8 @@ function ns.SetupViewerHooks()
     -- viewer finishes its deferred layout pass. Also invalidate TBB cache
     -- so tracking bars re-scan for late-loading BuffBar viewer frames.
     local function DelayedFullRefresh()
-        if ns.InvalidateTBBFrameCache then
-            ns.InvalidateTBBFrameCache()
+        if mod.InvalidateTBBFrameCache then
+            mod.InvalidateTBBFrameCache()
         end
         QueueReanchor()
     end
@@ -514,7 +514,7 @@ function ns.SetupViewerHooks()
 
     -- 5. Buff ticker: staleness check + buff/pandemic glow (0.1s)
     do
-        local cdmBuffTickFrame = ns.TakeShell()
+        local cdmBuffTickFrame = mod.TakeShell()
         local _, _cachedClassToken = UnitClass("player")
         -- 10 Hz anim ticker: the C engine fires the body at cadence and
         -- sleeps between fires, replacing a per-frame OnUpdate whose
@@ -532,66 +532,70 @@ function ns.SetupViewerHooks()
             local _btNow = GetTime()
             -- Park integrity lives on event edges now (ns._parkEdges in the
             -- CUI_CDM_Blizzard.lua + the QueueRepark hooksecurefuncs) -- no patrol here.
-            if not ns._btDirty then
+            if not mod._btDirty then
                 -- Preset cooldowns drain independently on clean fires, capped at 1 Hz:
                 -- the dirty flag re-arms ~22x/sec from the racial/ trinket catch-alls,
                 -- so an uncapped drain runs at full tick cadence. Casts bypass the cap
                 -- (the racial listener's fast lane zeroes ns._pcLast), and swipes are
                 -- engine-animated once pushed, so the slow lane is imperceptible.
-                local presetDirty = ns._isPresetCdDirty()
-                if presetDirty and _btNow - (ns._pcLast or 0) >= 1 then
-                    ns._pcLast = _btNow
+                local presetDirty = mod._isPresetCdDirty()
+                if presetDirty and _btNow - (mod._pcLast or 0) >= 1 then
+                    mod._pcLast = _btNow
                     ProcessPresetCooldowns()
-                    presetDirty = ns._isPresetCdDirty()
+                    presetDirty = mod._isPresetCdDirty()
                 end
                 if presetDirty then
-                    ns._btCleanFires = 0
-                elseif (ns._btCleanFires or 0) < 10 then
-                    ns._btCleanFires = (ns._btCleanFires or 0) + 1
+                    mod._btCleanFires = 0
+                elseif (mod._btCleanFires or 0) < 10 then
+                    mod._btCleanFires = (mod._btCleanFires or 0) + 1
                 else
                     -- Settled for ~1s (no dirty edge, presets drained): stop
                     -- the ticker outright. Zero fires until the next edge.
-                    ns._btCleanFires = 0
+                    mod._btCleanFires = 0
                     return false
                 end
                 return true
             end
-            ns._btCleanFires = 0
-            ns._btDirty = nil
-            local antiClip = ns.CDM_ANTI_CLIP
+            mod._btCleanFires = 0
+            mod._btDirty = nil
+            local antiClip = mod.CDM_ANTI_CLIP
             local p = ECME and ECME.db and ECME.db.profile
             if not p or not p.cdmBars or not p.cdmBars.bars then
                 return true
             end
             local needsReanchor = false
-            for _, bd in ipairs(p.cdmBars.bars) do
-                if bd.enabled then
-                    local isBuff = (bd.barType == "buffs" or bd.key == "buffs" or bd.barType == "custom_buff")
-                    local buffGlowType = isBuff and (bd.buffGlowType or 0) or 0
-                    local pandemicOn = bd.pandemicGlow
-                    local icons = cdmBarIcons[bd.key]
+            for _, edge in ipairs(p.cdmBars.bars) do
+                if edge.enabled then
+                    local isBuff = (
+                        edge.barType == "buffs"
+                        or edge.key == "buffs"
+                        or edge.barType == "custom_buff"
+                    )
+                    local buffGlowType = isBuff and (edge.buffGlowType or 0) or 0
+                    local pandemicOn = edge.pandemicGlow
+                    local icons = cdmBarIcons[edge.key]
                     if icons then
                         for fi = 1, #icons do
-                            local frame = icons[fi]
-                            if frame and frame:IsShown() then
-                                local fc = _ecmeFC[frame]
-                                local sid = fc and fc.resolvedSid
-                                local fd = hookFrameData[frame]
+                            local widget = icons[fi]
+                            if widget and widget:IsShown() then
+                                local fc = _ecmeFC[widget]
+                                local spellRef = fc and fc.resolvedSid
+                                local fd = hookFrameData[widget]
                                 -- A buff ICON (whether on a buffs bar, or a real Blizzard
                                 -- buff frame hosted on a CD/util bar, or a placeholder for
                                 -- an inactive hosted buff) gets the buff glow/desat logic
                                 -- below regardless of the hosting bar's family.
                                 local isBuffIcon = isBuff
                                     or (fd and fd._isBuffViewerFrame)
-                                    or frame._isPlaceholderFrame
+                                    or widget._isPlaceholderFrame
                                     or false
                                 if fc and fc._missingN then
-                                    ns.MissingRecheck(frame, fc)
+                                    mod.MissingRecheck(widget, fc)
                                 end
 
                                 local isActiveBuff = (
-                                    frame.wasSetFromAura == true
-                                    or frame.auraInstanceID ~= nil
+                                    widget.wasSetFromAura == true
+                                    or widget.auraInstanceID ~= nil
                                 )
                                 -- Totems and other non-aura buff-viewer items never set
                                 -- wasSetFromAura/auraInstanceID even while up, so the aura
@@ -603,7 +607,7 @@ function ns.SetupViewerHooks()
                                 -- frame that is NOT a placeholder is active regardless of
                                 -- aura props -- this is what catches totems and presets
                                 -- (for both the glow and the desaturate-inactive logic).
-                                if not isActiveBuff and isBuffIcon and not frame._isPlaceholderFrame then
+                                if not isActiveBuff and isBuffIcon and not widget._isPlaceholderFrame then
                                     isActiveBuff = true
                                 end
 
@@ -615,7 +619,7 @@ function ns.SetupViewerHooks()
                                 -- greyed when this bar's Always Show Buffs +
                                 -- Desaturate Off CD are on. Per-bar now -- not a
                                 -- global. Active real auras stay full color.
-                                if isBuffIcon and bd.barType ~= "custom_buff" and fd and fd.tex then
+                                if isBuffIcon and edge.barType ~= "custom_buff" and fd and fd.tex then
                                     -- A shown, inactive buff icon is present only because
                                     -- Always Show Buffs resolved true for it (bar-level OR
                                     -- per-icon -> placeholder frame). Per-icon Desaturate
@@ -624,14 +628,14 @@ function ns.SetupViewerHooks()
                                     -- A HOSTED buff (on a CD/util bar) has no bar toggle, so
                                     -- it defaults ON (desaturate the inactive placeholder --
                                     -- the baked-in "cd ability" look), with no per-icon row.
-                                    local desatOn = (bd.desaturateInactiveBuffs ~= false)
+                                    local desatOn = (edge.desaturateInactiveBuffs ~= false)
                                     if fd._desatOverride == "on" then
                                         desatOn = true
                                     elseif fd._desatOverride == "off" then
                                         desatOn = false
                                     end
                                     if
-                                        (bd.showInactiveBuffIcons or frame._isPlaceholderFrame)
+                                        (edge.showInactiveBuffIcons or widget._isPlaceholderFrame)
                                         and desatOn
                                         and not isActiveBuff
                                     then
@@ -645,7 +649,7 @@ function ns.SetupViewerHooks()
                                 -- already counts shown totems and our preset/custom
                                 -- own-frames as active, so this just reads it.
                                 local buffPresent = isActiveBuff
-                                    or (bd.barType == "custom_buff" and frame:IsShown())
+                                    or (edge.barType == "custom_buff" and widget:IsShown())
                                 local glowActive = buffPresent
                                 -- Glow When Visible: lit exactly while the icon paints (a Show
                                 -- When Missing placeholder, an Always Show icon, a present buff).
@@ -653,13 +657,13 @@ function ns.SetupViewerHooks()
                                     glowActive = not (
                                             fc and (fc._missingActiveHidden or fc._cdStateHidden)
                                         )
-                                        and not ns.IsPlaceholderRenderHidden(frame, bd)
+                                        and not mod.IsPlaceholderRenderHidden(widget, edge)
                                 end
                                 -- Glow at Stacks REPLACES the presence glow for
                                 -- thresholded icons: route to the gate instead.
                                 if fd and fd._bgThreshold then
                                     glowActive = false
-                                    ns.StackGlow_Feed(frame, buffPresent)
+                                    mod.StackGlow_Feed(widget, buffPresent)
                                 end
                                 -- Effective Buff Glow = per-icon override (fd._bgT,
                                 -- stashed by RefreshCDMIconAppearance) falling back to
@@ -674,10 +678,10 @@ function ns.SetupViewerHooks()
                                 end
                                 if effGlowType > 0 and fd and glowActive then
                                     if not fd.buffGlowOverlay then
-                                        local ov = CreateFrame("Frame", nil, frame)
-                                        ov:SetAllPoints(frame)
-                                        ov:EnableMouse(false)
-                                        fd.buffGlowOverlay = ov
+                                        local shade = CreateFrame("Frame", nil, widget)
+                                        shade:SetAllPoints(widget)
+                                        shade:EnableMouse(false)
+                                        fd.buffGlowOverlay = shade
                                     end
                                     -- Keep the glow above Blizzard's cooldown swipe on
                                     -- every icon. Blizzard increments each viewer icon's
@@ -686,13 +690,13 @@ function ns.SetupViewerHooks()
                                     -- clips the inner edge of the ring, making it look
                                     -- thinner). Track the icon's base level and re-apply
                                     -- each pass, matching the primary glowOverlay (+16).
-                                    fd.buffGlowOverlay:SetFrameLevel(frame:GetFrameLevel() + 16)
+                                    fd.buffGlowOverlay:SetFrameLevel(widget:GetFrameLevel() + 16)
                                     if not fd.buffGlowActive then
                                         local cr, cg, cb
-                                        if bd.buffGlowMode == "custom" then
-                                            cr, cg, cb = bd.buffGlowR, bd.buffGlowG, bd.buffGlowB
+                                        if edge.buffGlowMode == "custom" then
+                                            cr, cg, cb = edge.buffGlowR, edge.buffGlowG, edge.buffGlowB
                                         end
-                                        local classColor = bd.buffGlowMode == "class"
+                                        local classColor = edge.buffGlowMode == "class"
                                         if fd._bgColor == "class" then
                                             classColor = true
                                         elseif fd._bgColor == "custom" then
@@ -704,22 +708,22 @@ function ns.SetupViewerHooks()
                                             cr, cg, cb = cc.r, cc.g, cc.b
                                         end
                                         fd.buffGlowOverlay:SetAlpha(1)
-                                        ns.StartNativeGlow(fd.buffGlowOverlay, effGlowType, cr, cg, cb, {
-                                            N = bd.buffGlowLines or 8,
-                                            th = bd.buffGlowThickness or 2,
-                                            period = bd.buffGlowSpeed or 4,
-                                            bg = bd.buffGlowBackground
+                                        mod.StartNativeGlow(fd.buffGlowOverlay, effGlowType, cr, cg, cb, {
+                                            N = edge.buffGlowLines or 8,
+                                            th = edge.buffGlowThickness or 2,
+                                            period = edge.buffGlowSpeed or 4,
+                                            bg = edge.buffGlowBackground
                                                     and {
-                                                        r = bd.buffGlowBackgroundR or 0,
-                                                        g = bd.buffGlowBackgroundG or 0,
-                                                        b = bd.buffGlowBackgroundB or 0,
+                                                        r = edge.buffGlowBackgroundR or 0,
+                                                        g = edge.buffGlowBackgroundG or 0,
+                                                        b = edge.buffGlowBackgroundB or 0,
                                                     }
                                                 or nil,
                                         })
                                         fd.buffGlowActive = true
                                     end
                                 elseif fd and fd.buffGlowActive and fd.buffGlowOverlay then
-                                    ns.StopNativeGlow(fd.buffGlowOverlay)
+                                    mod.StopNativeGlow(fd.buffGlowOverlay)
                                     fd.buffGlowActive = false
                                 end
 
@@ -738,10 +742,10 @@ function ns.SetupViewerHooks()
                                     -- Default (-1) and None draw nothing.
                                     if
                                         pandemicOn
-                                        and (bd.pandemicGlowStyle or 1) ~= -1
-                                        and ns.CDM_AntiClip
+                                        and (edge.pandemicGlowStyle or 1) ~= -1
+                                        and mod.CDM_AntiClip
                                     then
-                                        inPandemic = ns.CDM_AntiClip(frame, true)
+                                        inPandemic = mod.CDM_AntiClip(widget, true)
                                     end
                                 elseif fd then
                                     -- Blizzard Default (-1) is the ONLY config that
@@ -765,24 +769,24 @@ function ns.SetupViewerHooks()
                                     -- seed the key, while every seeding template ships true +
                                     -- style -1) -- only an EXPLICIT false (user picks None)
                                     -- suppresses, so this fix can't silently strip the pandemic icon from anyone who never touched it.
-                                    local pStyle = bd.pandemicGlowStyle or 1
+                                    local pStyle = edge.pandemicGlowStyle or 1
                                     local custom = pandemicOn and pStyle ~= -1
-                                    local isNone = (bd.pandemicGlow == false)
+                                    local isNone = (edge.pandemicGlow == false)
                                     if custom or isNone then
                                         if
-                                            ns._pandemicHooked
-                                            and not ns._pandemicHooked[frame]
-                                            and ns.HookPandemicState
+                                            mod._pandemicHooked
+                                            and not mod._pandemicHooked[widget]
+                                            and mod.HookPandemicState
                                         then
-                                            ns.HookPandemicState(frame)
+                                            mod.HookPandemicState(widget)
                                         end
                                     end
                                     if custom then
                                         -- Not while the flag is describing an aura
                                         -- that already ended (ns._PandemicIconHide).
                                         inPandemic = not fd._panStale
-                                            and ns._pandemicState
-                                            and ns._pandemicState[frame]
+                                            and mod._pandemicState
+                                            and mod._pandemicState[widget]
                                     elseif isNone then
                                         -- The hook only fires on the NEXT
                                         -- ShowPandemicStateFrame, so an icon already
@@ -790,7 +794,7 @@ function ns.SetupViewerHooks()
                                         -- until the aura lapsed. Take it down here
                                         -- too; Hide is idempotent and this only runs
                                         -- for bars actually set to None.
-                                        local pi = frame.PandemicIcon
+                                        local pi = widget.PandemicIcon
                                         if pi and pi:IsShown() then
                                             pi:Hide()
                                         end
@@ -798,55 +802,55 @@ function ns.SetupViewerHooks()
                                 end
                                 if inPandemic and fd then
                                     if not fd.pandemicOverlay then
-                                        local ov = CreateFrame("Frame", nil, frame)
-                                        ov:SetAllPoints(frame)
-                                        ov:EnableMouse(false)
-                                        fd.pandemicOverlay = ov
+                                        local shade = CreateFrame("Frame", nil, widget)
+                                        shade:SetAllPoints(widget)
+                                        shade:EnableMouse(false)
+                                        fd.pandemicOverlay = shade
                                         -- Once per frame, and only for icons that
                                         -- actually glow: the stop edge the tick
                                         -- cannot see, and the window edge that
                                         -- says the flag is current again (see
                                         -- ns._PandemicIconHide).
-                                        frame:HookScript("OnHide", ns._PandemicIconHide)
-                                        if frame.SetPandemicAlertTriggerTime then
+                                        widget:HookScript("OnHide", mod._PandemicIconHide)
+                                        if widget.SetPandemicAlertTriggerTime then
                                             hooksecurefunc(
-                                                frame,
+                                                widget,
                                                 "SetPandemicAlertTriggerTime",
-                                                ns._PandemicWindowSet
+                                                mod._PandemicWindowSet
                                             )
                                         end
                                     end
                                     -- Same base-level tracking as the buff glow, one
                                     -- level higher so pandemic sits above buff glow.
-                                    fd.pandemicOverlay:SetFrameLevel(frame:GetFrameLevel() + 17)
+                                    fd.pandemicOverlay:SetFrameLevel(widget:GetFrameLevel() + 17)
                                     if not fd.pandemicGlowActive then
                                         local c
-                                        if bd.pandemicGlowMode == "class" then
+                                        if edge.pandemicGlowMode == "class" then
                                             c = CludesUI.GetClassColor(CludesUI._playerClass)
-                                        elseif bd.pandemicGlowMode == "custom" then
-                                            c = bd.pandemicGlowColor
+                                        elseif edge.pandemicGlowMode == "custom" then
+                                            c = edge.pandemicGlowColor
                                         end
-                                        local style = bd.pandemicGlowStyle or 1
-                                        local glowOpts = (style == 1)
+                                        local look = edge.pandemicGlowStyle or 1
+                                        local glowOpts = (look == 1)
                                                 and {
-                                                    N = bd.pandemicGlowLines or 8,
-                                                    th = bd.pandemicGlowThickness or 2,
-                                                    period = bd.pandemicGlowSpeed or 4,
-                                                    bg = bd.pandemicGlowBackground
+                                                    N = edge.pandemicGlowLines or 8,
+                                                    th = edge.pandemicGlowThickness or 2,
+                                                    period = edge.pandemicGlowSpeed or 4,
+                                                    bg = edge.pandemicGlowBackground
                                                             and {
                                                                 r = (
-                                                                    bd.pandemicGlowBackgroundColor
-                                                                    and bd.pandemicGlowBackgroundColor.r
+                                                                    edge.pandemicGlowBackgroundColor
+                                                                    and edge.pandemicGlowBackgroundColor.r
                                                                 )
                                                                     or 0,
                                                                 g = (
-                                                                    bd.pandemicGlowBackgroundColor
-                                                                    and bd.pandemicGlowBackgroundColor.g
+                                                                    edge.pandemicGlowBackgroundColor
+                                                                    and edge.pandemicGlowBackgroundColor.g
                                                                 )
                                                                     or 0,
                                                                 b = (
-                                                                    bd.pandemicGlowBackgroundColor
-                                                                    and bd.pandemicGlowBackgroundColor.b
+                                                                    edge.pandemicGlowBackgroundColor
+                                                                    and edge.pandemicGlowBackgroundColor.b
                                                                 )
                                                                     or 0,
                                                             }
@@ -854,9 +858,9 @@ function ns.SetupViewerHooks()
                                                 }
                                             or nil
                                         fd.pandemicOverlay:SetAlpha(1)
-                                        ns.StartNativeGlow(
+                                        mod.StartNativeGlow(
                                             fd.pandemicOverlay,
-                                            style,
+                                            look,
                                             c and c.r,
                                             c and c.g,
                                             c and c.b,
@@ -865,7 +869,7 @@ function ns.SetupViewerHooks()
                                         fd.pandemicGlowActive = true
                                     end
                                 elseif fd and fd.pandemicGlowActive and fd.pandemicOverlay then
-                                    ns.StopNativeGlow(fd.pandemicOverlay)
+                                    mod.StopNativeGlow(fd.pandemicOverlay)
                                     fd.pandemicGlowActive = false
                                 end
 
@@ -886,9 +890,9 @@ function ns.SetupViewerHooks()
                                 if
                                     fd
                                     and not fd._isBuffViewerFrame
-                                    and (fd._activeGlowOn or ns._cdmAnyActiveGlow)
+                                    and (fd._activeGlowOn or mod._cdmAnyActiveGlow)
                                 then
-                                    local swipeColor = frame.cooldownSwipeColor
+                                    local swipeColor = widget.cooldownSwipeColor
                                     local r
                                     if swipeColor and type(swipeColor) ~= "number" and swipeColor.GetRGBA then
                                         r = swipeColor:GetRGBA()
@@ -905,19 +909,19 @@ function ns.SetupViewerHooks()
                                         fd._activeGlowNoCfg = nil
                                         if fd._activeGlowOn then
                                             if fd.glowOverlay then
-                                                ns.StopNativeGlow(fd.glowOverlay)
+                                                mod.StopNativeGlow(fd.glowOverlay)
                                             end
                                             fd._activeGlowOn = false
                                             -- The falling edge Blizzard pushed no
                                             -- swipe for: light an owed CD-state
                                             -- glow now (see ApplyActiveOverlays).
                                             if fd._cdGlowOwed then
-                                                ns.CdGlowKick(frame)
+                                                mod.CdGlowKick(widget)
                                             end
                                         end
                                     elseif
                                         r
-                                        and ns._cdmAnyActiveGlow
+                                        and mod._cdmAnyActiveGlow
                                         and not fd._activeGlowNoCfg
                                         and not (
                                             fd._activeGlowOn
@@ -930,9 +934,9 @@ function ns.SetupViewerHooks()
                                         -- so ApplyActiveOverlays really restarts,
                                         -- then let it re-resolve style + colour.
                                         fd._activeGlowOn = false
-                                        local ssA = ns._ResolveCdmSS(frame)
+                                        local ssA = mod._ResolveCdmSS(widget)
                                         if ssA and (tonumber(ssA.activeGlow) or 0) > 0 then
-                                            ns.ApplyActiveOverlays(frame, fd, ssA, true, bd)
+                                            mod.ApplyActiveOverlays(widget, fd, ssA, true, edge)
                                         else
                                             -- No active glow configured for THIS
                                             -- icon, so the resolve can only answer
@@ -974,9 +978,9 @@ function ns.SetupViewerHooks()
             -- but do not reshuffle viewer pools, so the four-pool enumeration below
             -- only reruns after actual pool churn (Acquire/Release/OnCooldownIDSet
             -- bump the generation) or on a 1s staleness net.
-            if ns._acGen ~= ns._acSeenGen or _btNow - (ns._acLastFull or 0) >= 1 then
-                ns._acSeenGen = ns._acGen
-                ns._acLastFull = _btNow
+            if mod._acGen ~= mod._acSeenGen or _btNow - (mod._acLastFull or 0) >= 1 then
+                mod._acSeenGen = mod._acGen
+                mod._acLastFull = _btNow
                 do
                     local ac = _activeCache
                     local asc = _activeStacksCache
@@ -993,25 +997,25 @@ function ns.SetupViewerHooks()
                         -- auraInstanceID. Mirrors the buff-bar glow logic in BuffTicker.
                         local isBuffViewer = (vi >= 3)
                         if vf and vf.itemFramePool and vf.itemFramePool.EnumerateActive then
-                            for frame in vf.itemFramePool:EnumerateActive() do
-                                local active = frame.wasSetFromAura == true or frame.auraInstanceID ~= nil
+                            for widget in vf.itemFramePool:EnumerateActive() do
+                                local isActive = widget.wasSetFromAura == true or widget.auraInstanceID ~= nil
                                 if
-                                    not active
+                                    not isActive
                                     and isBuffViewer
-                                    and frame:IsShown()
-                                    and not frame._isPlaceholderFrame
+                                    and widget:IsShown()
+                                    and not widget._isPlaceholderFrame
                                 then
-                                    active = true
+                                    isActive = true
                                 end
-                                if active then
-                                    local sid, baseSID = ResolveFrameSpellID(frame)
-                                    if sid and sid > 0 then
-                                        ac[sid] = true
+                                if isActive then
+                                    local spellRef, baseSID = ResolveFrameSpellID(widget)
+                                    if spellRef and spellRef > 0 then
+                                        ac[spellRef] = true
                                         local hasBase = baseSID and baseSID > 0
                                         if hasBase then
                                             ac[baseSID] = true
                                         end
-                                        local fc = _ecmeFC[frame]
+                                        local fc = _ecmeFC[widget]
                                         local linked = fc and fc.linkedSpellIDs
                                         if linked then
                                             for li = 1, #linked do
@@ -1027,24 +1031,24 @@ function ns.SetupViewerHooks()
                                         -- CdmBarGlows.lua's SetupOverlays; nil with no gated
                                         -- entry). The live read allocates a data table per
                                         -- call, so it never runs for unrelated frames.
-                                        local sids = ns._barGlowStackSids
+                                        local sids = mod._barGlowStackSids
                                         if sids then
-                                            local want = sids[sid] or (hasBase and sids[baseSID])
-                                            if not want and linked then
+                                            local wanted = sids[spellRef] or (hasBase and sids[baseSID])
+                                            if not wanted and linked then
                                                 for li = 1, #linked do
                                                     local lsid = linked[li]
                                                     if lsid and sids[lsid] then
-                                                        want = true
+                                                        wanted = true
                                                         break
                                                     end
                                                 end
                                             end
-                                            if want and ns._ReadBuffApplications then
-                                                local apps = ns._ReadBuffApplications(frame)
+                                            if wanted and mod._ReadBuffApplications then
+                                                local apps = mod._ReadBuffApplications(widget)
                                                 -- Secret probe FIRST: a nil test on a secret
                                                 -- value hard-errors.
                                                 if (issecretvalue and issecretvalue(apps)) or apps ~= nil then
-                                                    asc[sid] = apps
+                                                    asc[spellRef] = apps
                                                     if hasBase then
                                                         asc[baseSID] = apps
                                                     end
@@ -1064,19 +1068,19 @@ function ns.SetupViewerHooks()
                             end
                         end
                     end
-                    if ns.UpdateOverlayVisuals then
-                        ns.UpdateOverlayVisuals()
+                    if mod.UpdateOverlayVisuals then
+                        mod.UpdateOverlayVisuals()
                     end
                 end
             end -- pool-generation gate
             -- Process preset cooldowns (trinkets/items/racials) if any event
             -- dirtied the flag since the last tick. Coalesces dozens of per-GCD
             -- SPELL_UPDATE_COOLDOWN events into a single 10Hz update pass.
-            if ns._isPresetCdDirty and ns._isPresetCdDirty() and _btNow - (ns._pcLast or 0) >= 1 then
+            if mod._isPresetCdDirty and mod._isPresetCdDirty() and _btNow - (mod._pcLast or 0) >= 1 then
                 -- Same 1 Hz slow lane as the clean-fire drain (casts reset
                 -- the cap in the racial listener's fast lane).
-                ns._pcLast = _btNow
-                ns._ProcessPresetCooldowns()
+                mod._pcLast = _btNow
+                mod._ProcessPresetCooldowns()
             end
             return true
         end
@@ -1101,27 +1105,27 @@ function ns.SetupViewerHooks()
         -- Glows' SetupOverlays calls this with its want, remembered in
         -- ns._bgWantTargetAuras in case it runs before this block), so glows on
         -- your own buffs never pay for target (raid boss) aura churn.
-        ns.SetBarGlowTargetAuras = function(want)
-            want = want and true or false
-            if want == ns._bgTargetAuras then
+        mod.SetBarGlowTargetAuras = function(wanted)
+            wanted = wanted and true or false
+            if wanted == mod._bgTargetAuras then
                 return
             end
-            ns._bgTargetAuras = want
-            if want then
+            mod._bgTargetAuras = wanted
+            if wanted then
                 cdmBuffTickFrame:RegisterUnitEvent("UNIT_AURA", "player", "target")
             else
                 cdmBuffTickFrame:RegisterUnitEvent("UNIT_AURA", "player")
             end
         end
-        ns.SetBarGlowTargetAuras(ns._bgWantTargetAuras)
+        mod.SetBarGlowTargetAuras(mod._bgWantTargetAuras)
         cdmBuffTickFrame:RegisterEvent("PLAYER_TOTEM_UPDATE")
         cdmBuffTickFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         -- Target-applied auras bind and release on this edge and on no player-scoped
         -- one, so without it a tracked debuff's glow could only be picked up by the
         -- 1s staleness net below, or not at all once the ticker had settled.
         cdmBuffTickFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-        cdmBuffTickFrame:SetScript("OnEvent", function(_, event, _, updateInfo)
-            ns._btDirty = true
+        cdmBuffTickFrame:SetScript("OnEvent", function(_, evt, _, updateInfo)
+            mod._btDirty = true
             -- Gen bump on anything that can CHANGE which auras are active: additions
             -- (a glow must LIGHT), plus anything that can release a pool frame --
             -- removals/full updates, totem drops/despawns, world entry. Additions
@@ -1134,8 +1138,8 @@ function ns.SetupViewerHooks()
             -- window. Only UNIT_AURA carries an updateInfo table in this slot --
             -- PLAYER_ENTERING_WORLD's second arg is the isReconnect BOOLEAN (true on
             -- /reload), so the payload must never be indexed for the other events.
-            if event ~= "UNIT_AURA" then
-                ns._acGen = (ns._acGen or 0) + 1
+            if evt ~= "UNIT_AURA" then
+                mod._acGen = (mod._acGen or 0) + 1
             elseif updateInfo then
                 -- SECRET-SAFE: the payload TABLE and each of its fields can all arrive
                 -- secret in instanced content, and a secret can never be boolean-tested
@@ -1145,7 +1149,7 @@ function ns.SetupViewerHooks()
                 -- churn -- one extra pool rebuild costs far less than a cache still
                 -- holding released frames. Same guard shape as the lust listener in CUI_CDM_BuffBarPresets.lua.
                 if issecretvalue(updateInfo) then
-                    ns._acGen = (ns._acGen or 0) + 1
+                    mod._acGen = (mod._acGen or 0) + 1
                 else
                     local full = updateInfo.isFullUpdate
                     local removed = updateInfo.removedAuraInstanceIDs
@@ -1153,7 +1157,7 @@ function ns.SetupViewerHooks()
                     -- A stack change arrives as an UPDATE (no add/remove), so a
                     -- stack-gated Bar Glow's count stayed stale until some other
                     -- edge. Read only while a stack-gated glow exists (nil otherwise).
-                    local updated = ns._barGlowStackSids and updateInfo.updatedAuraInstanceIDs
+                    local updated = mod._barGlowStackSids and updateInfo.updatedAuraInstanceIDs
                     if
                         issecretvalue(full)
                         or issecretvalue(removed)
@@ -1164,7 +1168,7 @@ function ns.SetupViewerHooks()
                         or added
                         or updated
                     then
-                        ns._acGen = (ns._acGen or 0) + 1
+                        mod._acGen = (mod._acGen or 0) + 1
                     end
                 end
             end
@@ -1178,7 +1182,7 @@ function ns.SetupViewerHooks()
         -- Creation is EXCLUSIVELY the OnEvent above's job (guaranteed CDM execution
         -- context -- see the attribution note), so a pre-first-event arm is a no-op;
         -- PLAYER_ENTERING_WORLD always creates it at login.
-        ns.ArmBuffTicker = function()
+        mod.ArmBuffTicker = function()
             if _btTicker then
                 _btTicker.Start()
             end
@@ -1213,8 +1217,8 @@ function ns.SetupViewerHooks()
         if emf then
             hooksecurefunc(emf, "Hide", function()
                 C_Timer.After(0.1, function()
-                    if ns.FullCDMRebuild then
-                        ns.FullCDMRebuild("editmode_close")
+                    if mod.FullCDMRebuild then
+                        mod.FullCDMRebuild("editmode_close")
                     end
                 end)
             end)
@@ -1225,7 +1229,7 @@ function ns.SetupViewerHooks()
     -- pools when applying a layout (happens on spec swap). Reanchor to
     -- recollect the new frames. No flag manipulation -- just reanchor.
     do
-        local emEventFrame = ns.TakeShell()
+        local emEventFrame = mod.TakeShell()
         emEventFrame:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
         emEventFrame:SetScript("OnEvent", function()
             QueueReanchor()
@@ -1233,7 +1237,7 @@ function ns.SetupViewerHooks()
     end
 
     -- Lock EditMode for CDM frames (prevent user changes, avoid taint)
-    ns.SetupEditModeLock()
+    mod.SetupEditModeLock()
 
     -- Initial reanchor
     C_Timer.After(0.2, function()
@@ -1242,7 +1246,7 @@ function ns.SetupViewerHooks()
     end)
 end
 
-function ns.IsViewerHooked()
+function mod.IsViewerHooked()
     return viewerHooksInstalled
 end
 
@@ -1254,16 +1258,16 @@ end
 local _editModeLockInstalled = false
 local _editModeLockNoticeShown = false
 
-local function IsCooldownViewerSystemFrame(frame)
+local function IsCooldownViewerSystemFrame(widget)
     local cooldownSystem = Enum and Enum.EditModeSystem and Enum.EditModeSystem.CooldownViewer
-    return cooldownSystem and frame and frame.system == cooldownSystem
+    return cooldownSystem and widget and widget.system == cooldownSystem
 end
 
 -- Skip locking the BuffBarCooldownViewer when the user has enabled "Use Blizzard CDM
 -- Bars" -- they want to drag/configure that frame in Edit Mode themselves. All other
 -- CDM viewers stay locked because CUI manages their position via icon-level anchoring.
-local function ShouldLockViewer(frame)
-    if frame == _G["BuffBarCooldownViewer"] then
+local function ShouldLockViewer(widget)
+    if widget == _G["BuffBarCooldownViewer"] then
         local p = ECME and ECME.db and ECME.db.profile
         if p and p.cdmBars and p.cdmBars.useBlizzardBuffBars then
             return false
@@ -1285,12 +1289,12 @@ end
 
 local function LockCooldownViewerFrames()
     for _, vName in ipairs(VIEWER_NAMES) do
-        local frame = _G[vName]
-        if IsCooldownViewerSystemFrame(frame) and ShouldLockViewer(frame) then
-            frame:SetMovable(false)
+        local widget = _G[vName]
+        if IsCooldownViewerSystemFrame(widget) and ShouldLockViewer(widget) then
+            widget:SetMovable(false)
             -- No drag button on the selection box: a drag never starts there, so
             -- Edit Mode's own OnDragStart / OnDragStop (left in place) never run.
-            local selection = frame.Selection
+            local selection = widget.Selection
             if selection then
                 selection:RegisterForDrag()
             end
@@ -1298,7 +1302,7 @@ local function LockCooldownViewerFrames()
     end
 end
 
-function ns.SetupEditModeLock()
+function mod.SetupEditModeLock()
     if _editModeLockInstalled then
         return
     end
@@ -1323,14 +1327,14 @@ function ns.SetupEditModeLock()
 
         -- When a CDM frame is selected in EditMode, lock it
         for _, vName in ipairs(VIEWER_NAMES) do
-            local frame = _G[vName]
-            if IsCooldownViewerSystemFrame(frame) then
-                hooksecurefunc(frame, "SelectSystem", function(sf)
-                    if not ShouldLockViewer(sf) then
+            local widget = _G[vName]
+            if IsCooldownViewerSystemFrame(widget) then
+                hooksecurefunc(widget, "SelectSystem", function(scrollFrame)
+                    if not ShouldLockViewer(scrollFrame) then
                         return
                     end
-                    sf:SetMovable(false)
-                    if dialog.attachedToSystem == sf then
+                    scrollFrame:SetMovable(false)
+                    if dialog.attachedToSystem == scrollFrame then
                         dialog:Hide()
                     end
                     ShowEditModeLockNotice()
@@ -1358,9 +1362,9 @@ _G._CUCDM_ScanSwiftmend = function()
     if not SwiftmendEnabled() then
         return
     end
-    for i = 1, #_smHookedIcons do
-        _smHookedIcons[i]:SetVertexColor(1, 1, 1)
+    for idx = 1, #_smHookedIcons do
+        _smHookedIcons[idx]:SetVertexColor(1, 1, 1)
     end
 end
 
-I.broken = false
+Inner.broken = false

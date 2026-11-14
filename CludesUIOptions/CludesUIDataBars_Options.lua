@@ -20,8 +20,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 
 local ADDON_NAME = "CludesUIDataBars"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -36,7 +36,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local PP = CludesUI.PP
+    local Pix = CludesUI.PP
     local L = CludesUI.L
     local Lf = CludesUI.Lf
     local format = string.format
@@ -84,7 +84,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  Block-type registry views
     ---------------------------------------------------------------------------
     local TYPE_LABEL = {}
-    for _, t in ipairs(ns.BLOCK_TYPES) do
+    for _, t in ipairs(mod.BLOCK_TYPES) do
         TYPE_LABEL[t.key] = t.label
     end
 
@@ -99,7 +99,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- bar's saved list untouched, so the profile still carries it back to
     -- the other client.
     local function BlockHidden(b)
-        return not ns.BlockFactories[b.type]
+        return not mod.BlockFactories[b.type]
     end
 
     -- Typical content extents (real-bar px) for auto-fit blocks that have no
@@ -134,7 +134,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  Profile helpers
     ---------------------------------------------------------------------------
     local function Profile()
-        return ns.GetProfile()
+        return mod.GetProfile()
     end
 
     -- Selected bar, validated (falls back to the first bar).
@@ -143,29 +143,29 @@ initFrame:SetScript("OnEvent", function(self)
         if not p then
             return nil
         end
-        local bars = p.bars
-        if #bars == 0 then
+        local barList = p.bars
+        if #barList == 0 then
             return nil
         end
         if p.selectedBarId then
-            local b = ns.GetBar(p.selectedBarId)
+            local b = mod.GetBar(p.selectedBarId)
             if b then
                 return b
             end
         end
-        p.selectedBarId = bars[1].id
-        return bars[1]
+        p.selectedBarId = barList[1].id
+        return barList[1]
     end
 
-    local function ResolvedBarLength(cfg)
-        if cfg.lengthMode == "full" then
-            if cfg.orientation == "V" then
+    local function ResolvedBarLength(conf)
+        if conf.lengthMode == "full" then
+            if conf.orientation == "V" then
                 return UIParent:GetHeight()
             end
             return UIParent:GetWidth()
         end
-        if cfg.length then
-            return cfg.length
+        if conf.length then
+            return conf.length
         end
         return 400
     end
@@ -190,17 +190,17 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Live theme feedback for the preview strip (swatch drag / dim slider).
     local function RefreshPreviewTheme()
-        local cfg = SelectedBar()
-        if _edbPreviewHost and _edbPreviewHost:IsShown() and cfg then
-            ns.MakePreviewBackdrop(_edbPreviewHost, cfg.theme, not cfg.hideBorder)
+        local conf = SelectedBar()
+        if _edbPreviewHost and _edbPreviewHost:IsShown() and conf then
+            mod.MakePreviewBackdrop(_edbPreviewHost, conf.theme, not conf.hideBorder)
         end
     end
 
     ---------------------------------------------------------------------------
     --  Shared popup flows (header menu + body buttons)
     ---------------------------------------------------------------------------
-    local function PromptRenameBar(cfg)
-        local oldName = cfg.name
+    local function PromptRenameBar(conf)
+        local oldName = conf.name
         if oldName == nil then
             oldName = ""
         end
@@ -219,15 +219,15 @@ initFrame:SetScript("OnEvent", function(self)
                 if newName == "" or newName == oldName then
                     return
                 end
-                ns.RenameBar(cfg.id, newName)
+                mod.RenameBar(conf.id, newName)
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
                 HardRefresh()
             end,
         })
     end
 
-    local function PromptDeleteBar(cfg)
-        local delName = cfg.name
+    local function PromptDeleteBar(conf)
+        local delName = conf.name
         if delName == nil then
             delName = ""
         end
@@ -237,11 +237,11 @@ initFrame:SetScript("OnEvent", function(self)
             confirmText = "Delete",
             cancelText = "Cancel",
             onConfirm = function()
-                ns.DeleteBar(cfg.id)
+                mod.DeleteBar(conf.id)
                 local p = Profile()
-                local bars = ns.BarsInOrder()
-                if p and bars[1] then
-                    p.selectedBarId = bars[1].id
+                local barList = mod.BarsInOrder()
+                if p and barList[1] then
+                    p.selectedBarId = barList[1].id
                 end
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
                 HardRefresh()
@@ -257,7 +257,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function CreateBarFromTemplate(key)
-        ns.CreateBar(key)
+        mod.CreateBar(key)
         _cardsExpanded = false
         HardRefresh()
     end
@@ -293,22 +293,22 @@ initFrame:SetScript("OnEvent", function(self)
     }
     local MEDIA_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
-    local function MakeTemplateCard(host, x, y, w, cardH, def)
+    local function MakeTemplateCard(hostRegion, posX, posY, wid, cardH, spec_def)
         local EGc = CludesUI.CLUDES_GREEN
-        local card = CreateFrame("Button", nil, host)
-        PP.Size(card, w, cardH)
-        PP.Point(card, "TOPLEFT", host, "TOPLEFT", x, y)
-        card:SetFrameLevel(host:GetFrameLevel() + 2)
+        local cardFrame = CreateFrame("Button", nil, hostRegion)
+        Pix.Size(cardFrame, wid, cardH)
+        Pix.Point(cardFrame, "TOPLEFT", hostRegion, "TOPLEFT", posX, posY)
+        cardFrame:SetFrameLevel(hostRegion:GetFrameLevel() + 2)
 
-        local cbrd = CludesUI.MakeRoundedCard(card, 0.12, 0.50, 2)
+        local cbrd = CludesUI.MakeRoundedCard(cardFrame, 0.12, 0.50, 2)
         local cbg, accentLine = cbrd.bg, cbrd.accent
 
         accentLine:SetColorTexture(EGc.r, EGc.g, EGc.b, 0.6)
 
-        local cIcon = card:CreateTexture(nil, "ARTWORK")
+        local cIcon = cardFrame:CreateTexture(nil, "ARTWORK")
         cIcon:SetSize(24, 24)
-        PP.Point(cIcon, "LEFT", card, "LEFT", 14, 0)
-        cIcon:SetTexture(MEDIA_ICONS .. def.icon)
+        Pix.Point(cIcon, "LEFT", cardFrame, "LEFT", 14, 0)
+        cIcon:SetTexture(MEDIA_ICONS .. spec_def.icon)
         cIcon:SetVertexColor(EGc.r, EGc.g, EGc.b)
         cIcon:SetAlpha(0.6)
         if cIcon.SetSnapToPixelGrid then
@@ -316,36 +316,36 @@ initFrame:SetScript("OnEvent", function(self)
             cIcon:SetTexelSnappingBias(0)
         end
 
-        local titleFs = CludesUI.MakeFont(card, 12, nil, 1, 1, 1, 0.9)
-        PP.Point(titleFs, "TOPLEFT", cIcon, "TOPRIGHT", 12, 1)
-        PP.Point(titleFs, "RIGHT", card, "RIGHT", -8, 0)
+        local titleFs = CludesUI.MakeFont(cardFrame, 12, nil, 1, 1, 1, 0.9)
+        Pix.Point(titleFs, "TOPLEFT", cIcon, "TOPRIGHT", 12, 1)
+        Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -8, 0)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        titleFs:SetText(L(def.title))
+        titleFs:SetText(L(spec_def.title))
 
-        local descFs = CludesUI.MakeFont(card, 10, nil, 1, 1, 1, 0.35)
-        PP.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
-        PP.Point(descFs, "RIGHT", card, "RIGHT", -8, 0)
+        local descFs = CludesUI.MakeFont(cardFrame, 10, nil, 1, 1, 1, 0.35)
+        Pix.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
+        Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -8, 0)
         descFs:SetJustifyH("LEFT")
         descFs:SetWordWrap(false)
-        descFs:SetText(L(def.desc))
+        descFs:SetText(L(spec_def.desc))
 
-        card:SetScript("OnEnter", function()
+        cardFrame:SetScript("OnEnter", function()
             cbg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
             cbrd:SetColor(1, 1, 1, 0.22)
             titleFs:SetAlpha(1)
             cIcon:SetAlpha(0.85)
         end)
-        card:SetScript("OnLeave", function()
+        cardFrame:SetScript("OnLeave", function()
             cbg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
             cbrd:SetColor(1, 1, 1, 0.12)
             titleFs:SetAlpha(0.9)
             cIcon:SetAlpha(0.6)
         end)
-        card:SetScript("OnClick", function()
-            CreateBarFromTemplate(def.key)
+        cardFrame:SetScript("OnClick", function()
+            CreateBarFromTemplate(spec_def.key)
         end)
-        return card
+        return cardFrame
     end
 
     ---------------------------------------------------------------------------
@@ -387,13 +387,13 @@ initFrame:SetScript("OnEvent", function(self)
         oc:SetFrameLevel(10)
         oc:SetClampedToScreen(true)
         oc:Hide()
-        local bg = oc:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0.9)
-        local title = CludesUI.MakeFont(oc, 13, nil, 1, 1, 1, 0.9)
-        title:SetPoint("TOP", oc, "TOP", 0, -7)
-        title:SetText(L("Preview"))
-        oc._title = title
+        local backdrop = oc:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0, 0, 0, 0.9)
+        local titleText = CludesUI.MakeFont(oc, 13, nil, 1, 1, 1, 0.9)
+        titleText:SetPoint("TOP", oc, "TOP", 0, -7)
+        titleText:SetText(L("Preview"))
+        oc._title = titleText
         local hint = CludesUI.MakeFont(oc, 10, nil, 1, 1, 1, 0.4)
         -- Edge-anchored so the text wraps inside the narrow popout instead
         -- of spilling past its sides (height grows upward from the bottom).
@@ -422,21 +422,21 @@ initFrame:SetScript("OnEvent", function(self)
     -- The popout sits on UIParent beside the panel: it folds away with the panel
     -- and comes back with it while a vertical bar is still the one selected (the
     -- header's own condition for showing it).
-    CludesUI:RegisterOnCollapse(function(on)
+    CludesUI:RegisterOnCollapse(function(enabled)
         if not _edbPopout then
             return
         end
-        if on then
+        if enabled then
             _edbPopout:Hide()
         elseif _edbPopout._strip and PreviewPopoutAllowed() then
-            local cfg = SelectedBar()
-            if cfg and cfg.orientation == "V" then
+            local conf = SelectedBar()
+            if conf and conf.orientation == "V" then
                 _edbPopout:Show()
             end
         end
     end)
 
-    _edbHeaderBuilder = function(hdr, hdrW)
+    _edbHeaderBuilder = function(heading, hdrW)
         local PAD = CludesUI.CONTENT_PAD
         if not PAD then
             PAD = 10
@@ -461,7 +461,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
         local fy = -8
 
-        local cfg = SelectedBar()
+        local conf = SelectedBar()
         _edbPreviewHost = nil
         _edbStripRelayout = nil
         _edbStripBarId = nil
@@ -472,10 +472,10 @@ initFrame:SetScript("OnEvent", function(self)
         local DD_H = 30
         local ddW = 280
         local NEWBTN_W = 110
-        local ddBtn = CreateFrame("Button", nil, hdr)
-        PP.Size(ddBtn, ddW, DD_H)
-        PP.Point(ddBtn, "TOPLEFT", hdr, "TOPLEFT", (hdrW - (ddW + 10 + NEWBTN_W)) / 2, fy)
-        ddBtn:SetFrameLevel(hdr:GetFrameLevel() + 5)
+        local ddBtn = CreateFrame("Button", nil, heading)
+        Pix.Size(ddBtn, ddW, DD_H)
+        Pix.Point(ddBtn, "TOPLEFT", heading, "TOPLEFT", (hdrW - (ddW + 10 + NEWBTN_W)) / 2, fy)
+        ddBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
         local ddBg = ddBtn:CreateTexture(nil, "BACKGROUND")
         ddBg:SetAllPoints()
         ddBg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_A)
@@ -487,8 +487,8 @@ initFrame:SetScript("OnEvent", function(self)
         ddLbl:SetPoint("LEFT", ddBtn, "LEFT", 12, 0)
         local arrow = CludesUI.MakeDropdownArrow(ddBtn, 12, CludesUI.PanelPP)
         ddLbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
-        if cfg then
-            local nm = cfg.name
+        if conf then
+            local nm = conf.name
             if nm == nil then
                 nm = ""
             end
@@ -505,46 +505,46 @@ initFrame:SetScript("OnEvent", function(self)
             local ICON_SZ = 14
             local hlA = DDS.ITEM_HL_A
             local selA = DDS.ITEM_SEL_A
-            local menu = _edbMenus.bar
-            if menu then
-                if menu:IsShown() then
-                    menu:Hide()
+            local dropMenu = _edbMenus.bar
+            if dropMenu then
+                if dropMenu:IsShown() then
+                    dropMenu:Hide()
                 end
             else
-                menu = CreateFrame("Frame", nil, UIParent)
-                menu:SetFrameStrata("FULLSCREEN_DIALOG")
-                menu:SetFrameLevel(300)
-                menu:SetClampedToScreen(true)
-                menu:Hide()
-                local bg = menu:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
-                bg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-                CludesUI.MakeRoundedBorder(menu, 1, 1, 1, DDS.BRD_A, bg, nil, true)
-                menu._rows = {}
+                dropMenu = CreateFrame("Frame", nil, UIParent)
+                dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+                dropMenu:SetFrameLevel(300)
+                dropMenu:SetClampedToScreen(true)
+                dropMenu:Hide()
+                local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
+                backdrop:SetAllPoints()
+                backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
+                CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+                dropMenu._rows = {}
 
                 -- One bar row; its bar and selected state are set per open
                 -- (item._bar, item._isSel), and item._rest puts it in its
                 -- resting look.
-                menu._makeRow = function()
-                    local item = CreateFrame("Button", nil, menu)
-                    item:SetHeight(ITEM_H)
-                    item:SetFrameLevel(menu:GetFrameLevel() + 2)
+                dropMenu._makeRow = function()
+                    local itemInfo = CreateFrame("Button", nil, dropMenu)
+                    itemInfo:SetHeight(ITEM_H)
+                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-                    local iLbl = CludesUI.MakeFont(item, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                    local iLbl = CludesUI.MakeFont(itemInfo, 11, nil, tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetWordWrap(false)
                     iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
+                    iLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
 
-                    local iHl = item:CreateTexture(nil, "ARTWORK")
+                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
 
                     -- Inline delete + rename (every DataBar is user-created)
-                    local delBtn = CreateFrame("Button", nil, item)
+                    local delBtn = CreateFrame("Button", nil, itemInfo)
                     delBtn:SetSize(ICON_SZ, ICON_SZ)
-                    delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                    delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
+                    delBtn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
+                    delBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
                     local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                     delIcon:SetSize(ICON_SZ, ICON_SZ)
                     delIcon:SetPoint("CENTER", delBtn, "CENTER", 0, 0)
@@ -554,10 +554,10 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     delIcon:SetTexture(MEDIA_ICONS .. "cui-close.png")
 
-                    local editBtn = CreateFrame("Button", nil, item)
+                    local editBtn = CreateFrame("Button", nil, itemInfo)
                     editBtn:SetSize(ICON_SZ, ICON_SZ)
                     editBtn:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
-                    editBtn:SetFrameLevel(item:GetFrameLevel() + 2)
+                    editBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
                     local edIcon = editBtn:CreateTexture(nil, "OVERLAY")
                     edIcon:SetSize(ICON_SZ, ICON_SZ)
                     edIcon:SetPoint("CENTER", editBtn, "CENTER", 0, 0)
@@ -573,14 +573,14 @@ initFrame:SetScript("OnEvent", function(self)
                         delBtn:SetAlpha(0.75)
                         editBtn:SetAlpha(0.75)
                         iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        if item._isSel then
+                        if itemInfo._isSel then
                             iHl:SetAlpha(selA)
                         else
                             iHl:SetAlpha(0)
                         end
                     end
-                    item._rest = Rest
-                    item._lbl = iLbl
+                    itemInfo._rest = Rest
+                    itemInfo._lbl = iLbl
 
                     local function InlineBtnEnter(btnSelf)
                         btnSelf:SetAlpha(1)
@@ -590,7 +590,7 @@ initFrame:SetScript("OnEvent", function(self)
                         editBtn:SetAlpha(0.85)
                     end
                     local function InlineBtnLeave(btnSelf)
-                        if item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
+                        if itemInfo:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
                             btnSelf:SetAlpha(0.85)
                             return
                         end
@@ -614,21 +614,21 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI.HideWidgetTooltip()
                     end)
                     delBtn:SetScript("OnClick", function()
-                        menu:Hide()
-                        PromptDeleteBar(item._bar)
+                        dropMenu:Hide()
+                        PromptDeleteBar(itemInfo._bar)
                     end)
                     editBtn:SetScript("OnClick", function()
-                        menu:Hide()
-                        PromptRenameBar(item._bar)
+                        dropMenu:Hide()
+                        PromptRenameBar(itemInfo._bar)
                     end)
 
-                    item:SetScript("OnEnter", function()
+                    itemInfo:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                         delBtn:SetAlpha(1)
                         editBtn:SetAlpha(1)
                     end)
-                    item:SetScript("OnLeave", function()
+                    itemInfo:SetScript("OnLeave", function()
                         if delBtn:IsMouseOver() then
                             return
                         end
@@ -637,26 +637,26 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                         Rest()
                     end)
-                    item:SetScript("OnClick", function()
-                        menu:Hide()
+                    itemInfo:SetScript("OnClick", function()
+                        dropMenu:Hide()
                         local p = Profile()
                         if p then
-                            p.selectedBarId = item._bar.id
+                            p.selectedBarId = itemInfo._bar.id
                         end
                         HardRefresh()
                     end)
-                    return item
+                    return itemInfo
                 end
 
-                local div = menu:CreateTexture(nil, "ARTWORK")
+                local div = dropMenu:CreateTexture(nil, "ARTWORK")
                 div:SetHeight(1)
                 div:SetColorTexture(1, 1, 1, 0.10)
-                menu._div = div
+                dropMenu._div = div
 
                 -- "+ Create New DataBar..." action row (expands the card strip)
-                local addItem = CreateFrame("Button", nil, menu)
+                local addItem = CreateFrame("Button", nil, dropMenu)
                 addItem:SetHeight(ITEM_H)
-                addItem:SetFrameLevel(menu:GetFrameLevel() + 2)
+                addItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                 local addLbl = CludesUI.MakeFont(addItem, 11, nil, tDimR, tDimG, tDimB, tDimA)
                 addLbl:SetPoint("LEFT", addItem, "LEFT", 10, 0)
                 addLbl:SetJustifyH("LEFT")
@@ -673,15 +673,15 @@ initFrame:SetScript("OnEvent", function(self)
                     addHl:SetAlpha(0)
                 end)
                 addItem:SetScript("OnClick", function()
-                    menu:Hide()
+                    dropMenu:Hide()
                     _cardsExpanded = true
                     HeaderOnly()
                 end)
                 addItem._lbl, addItem._hl = addLbl, addHl
-                menu._addItem = addItem
+                dropMenu._addItem = addItem
 
                 -- Close on left-click outside (non-blocking)
-                menu._closeOutside = function(m)
+                dropMenu._closeOutside = function(m)
                     if
                         not m:IsMouseOver()
                         and not m._anchor:IsMouseOver()
@@ -690,67 +690,67 @@ initFrame:SetScript("OnEvent", function(self)
                         m:Hide()
                     end
                 end
-                menu:HookScript("OnHide", function(m)
+                dropMenu:HookScript("OnHide", function(m)
                     m:SetScript("OnUpdate", nil)
                 end)
-                _edbMenus.bar = menu
+                _edbMenus.bar = dropMenu
             end
 
-            menu._anchor = ddBtn
-            menu:ClearAllPoints()
-            menu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
-            menu:SetPoint("TOPRIGHT", ddBtn, "BOTTOMRIGHT", 0, -2)
+            dropMenu._anchor = ddBtn
+            dropMenu:ClearAllPoints()
+            dropMenu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
+            dropMenu:SetPoint("TOPRIGHT", ddBtn, "BOTTOMRIGHT", 0, -2)
 
             local mH = 4
-            local bars = ns.BarsInOrder()
-            local rows = menu._rows
-            for idx = 1, #bars do
-                local b = bars[idx]
-                local item = rows[idx]
-                if not item then
-                    item = menu._makeRow()
-                    rows[idx] = item
+            local barList = mod.BarsInOrder()
+            local rowList = dropMenu._rows
+            for position = 1, #barList do
+                local b = barList[position]
+                local itemInfo = rowList[position]
+                if not itemInfo then
+                    itemInfo = dropMenu._makeRow()
+                    rowList[position] = itemInfo
                 end
-                item._bar = b
-                item._isSel = cfg ~= nil and b.id == cfg.id
-                item:ClearAllPoints()
-                item:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -mH)
-                item:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -mH)
+                itemInfo._bar = b
+                itemInfo._isSel = conf ~= nil and b.id == conf.id
+                itemInfo:ClearAllPoints()
+                itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+                itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
                 local nm = b.name
                 if nm == nil then
                     nm = ""
                 end
-                item._lbl:SetText(nm)
-                item._rest()
-                item:Show()
+                itemInfo._lbl:SetText(nm)
+                itemInfo._rest()
+                itemInfo:Show()
                 mH = mH + ITEM_H
             end
-            for idx = #bars + 1, #rows do
-                rows[idx]:Hide()
+            for position = #barList + 1, #rowList do
+                rowList[position]:Hide()
             end
 
-            local div = menu._div
-            if #bars > 0 then
+            local div = dropMenu._div
+            if #barList > 0 then
                 div:ClearAllPoints()
-                div:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -mH - 4)
-                div:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -mH - 4)
+                div:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH - 4)
+                div:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH - 4)
                 div:Show()
                 mH = mH + 9
             else
                 div:Hide()
             end
 
-            local addItem = menu._addItem
+            local addItem = dropMenu._addItem
             addItem:ClearAllPoints()
-            addItem:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -mH)
-            addItem:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -mH)
+            addItem:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+            addItem:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
             addItem._lbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             addItem._hl:SetAlpha(0)
             mH = mH + ITEM_H
 
-            menu:SetHeight(mH + 4)
-            menu:SetScript("OnUpdate", menu._closeOutside)
-            menu:Show()
+            dropMenu:SetHeight(mH + 4)
+            dropMenu:SetScript("OnUpdate", dropMenu._closeOutside)
+            dropMenu:Show()
         end
 
         -- The value's alpha lives in its text colour alone (built at TXT_A),
@@ -788,10 +788,10 @@ initFrame:SetScript("OnEvent", function(self)
         end)
 
         -- "+ New Bar" (toggles the template card strip)
-        local newBtn = CreateFrame("Button", nil, hdr)
-        PP.Size(newBtn, 110, DD_H)
-        PP.Point(newBtn, "LEFT", ddBtn, "RIGHT", 10, 0)
-        newBtn:SetFrameLevel(hdr:GetFrameLevel() + 5)
+        local newBtn = CreateFrame("Button", nil, heading)
+        Pix.Size(newBtn, 110, DD_H)
+        Pix.Point(newBtn, "LEFT", ddBtn, "RIGHT", 10, 0)
+        newBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
         CludesUI.MakeStyledButton(newBtn, "+ New Bar", 12, CludesUI.WB_COLOURS, function()
             _cardsExpanded = not _cardsExpanded
             HeaderOnly()
@@ -809,11 +809,11 @@ initFrame:SetScript("OnEvent", function(self)
             local gap = 10
             local cw = floor((stripW - gap * 3) / 4)
             local ch = 64
-            local host = CreateFrame("Frame", nil, hdr)
-            PP.Size(host, stripW, ch)
-            PP.Point(host, "TOPLEFT", hdr, "TOPLEFT", PAD, fy)
+            local hostRegion = CreateFrame("Frame", nil, heading)
+            Pix.Size(hostRegion, stripW, ch)
+            Pix.Point(hostRegion, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
             for i = 1, 4 do
-                MakeTemplateCard(host, (i - 1) * (cw + gap), 0, cw, ch, TEMPLATE_CARDS[i])
+                MakeTemplateCard(hostRegion, (i - 1) * (cw + gap), 0, cw, ch, TEMPLATE_CARDS[i])
             end
             fy = fy - ch - 12
         end
@@ -821,9 +821,9 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         --  Zero bars: hint only, no preview
         -----------------------------------------------------------------------
-        if not cfg then
-            local hint = CludesUI.MakeFont(hdr, 12, nil, 1, 1, 1, 0.4)
-            hint:SetPoint("TOPLEFT", hdr, "TOPLEFT", PAD + 4, fy - 2)
+        if not conf then
+            local hint = CludesUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
+            hint:SetPoint("TOPLEFT", heading, "TOPLEFT", PAD + 4, fy - 2)
             hint:SetText(L("Create a DataBar to get started."))
             fy = fy - 24
             return math.abs(fy) + 6
@@ -835,9 +835,9 @@ initFrame:SetScript("OnEvent", function(self)
         -- Extra breathing room above the preview strip.
         fy = fy - 10
 
-        local vertical = cfg.orientation == "V"
+        local vertical = conf.orientation == "V"
         local stripLen, stripThick
-        local stripParent = hdr
+        local stripParent = heading
         if vertical then
             -- Vertical: the strip lives in the docked overlay popout, which persists
             -- across header rebuilds. The strip and its add tile (parented to the
@@ -848,8 +848,8 @@ initFrame:SetScript("OnEvent", function(self)
             stripParent = oc
             stripThick = STRIP_V_THICK
             stripLen = STRIP_V_LEN
-            local sf = CludesUI._scrollFrame
-            local sfH = sf and sf:GetHeight()
+            local scrollFrame = CludesUI._scrollFrame
+            local sfH = scrollFrame and scrollFrame:GetHeight()
             if sfH and sfH > 260 then
                 stripLen = math.min(520, sfH - 150)
             end
@@ -868,9 +868,9 @@ initFrame:SetScript("OnEvent", function(self)
             strip = CreateFrame("Frame", nil, stripParent)
         end
         if vertical then
-            PP.Size(strip, stripThick, stripLen)
+            Pix.Size(strip, stripThick, stripLen)
         else
-            PP.Size(strip, stripLen, stripThick)
+            Pix.Size(strip, stripLen, stripThick)
         end
         if vertical then
             local oc = stripParent
@@ -878,30 +878,30 @@ initFrame:SetScript("OnEvent", function(self)
             -- Sized around strip + title/hint chrome + the add tile below.
             -- The extra tail room is for the bottom hint, which wraps to
             -- multiple lines inside the narrow popout.
-            PP.Size(oc, math.max(stripThick + 90, 150), stripLen + stripThick + 92)
+            Pix.Size(oc, math.max(stripThick + 90, 150), stripLen + stripThick + 92)
             strip:ClearAllPoints()
             strip:SetPoint("TOP", oc, "TOP", 0, -28)
             strip:SetFrameLevel(oc:GetFrameLevel() + 3)
             oc:ClearAllPoints()
-            local sf = CludesUI._scrollFrame
-            if sf then
-                oc:SetPoint("RIGHT", sf, "LEFT", 0, 0)
+            local scrollFrame = CludesUI._scrollFrame
+            if scrollFrame then
+                oc:SetPoint("RIGHT", scrollFrame, "LEFT", 0, 0)
             else
                 oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
             oc:Show()
         else
-            PP.Point(strip, "TOPLEFT", hdr, "TOPLEFT", PAD, fy)
-            strip:SetFrameLevel(hdr:GetFrameLevel() + 3)
+            Pix.Point(strip, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
+            strip:SetFrameLevel(heading:GetFrameLevel() + 3)
         end
         -- Border handle set BEFORE the backdrop so the theme pass can fade
         -- it with Bar Opacity, exactly like the live bar.
-        strip._edbBorder = PP.CreateBorder(strip, 0, 0, 0, 0.8, 1, "OVERLAY", 7)
-        ns.MakePreviewBackdrop(strip, cfg.theme, not cfg.hideBorder)
+        strip._edbBorder = Pix.CreateBorder(strip, 0, 0, 0, 0.8, 1, "OVERLAY", 7)
+        mod.MakePreviewBackdrop(strip, conf.theme, not conf.hideBorder)
         _edbPreviewHost = strip
 
         local stripUsable = stripLen - SEDGE * 2
-        local blocks = cfg.blocks
+        local blocks = conf.blocks
         local nBlocks = #blocks
         -- Hidden blocks keep their index in every per-segment array below (the
         -- reorder commit works in the bar's own order) but draw nothing.
@@ -933,12 +933,12 @@ initFrame:SetScript("OnEvent", function(self)
         local segBtns, shareFSs = {}, {}
         for i = 1, nBlocks do
             local b = blocks[i]
-            local btn = CreateFrame("Button", nil, strip)
-            btn:SetFrameLevel(strip:GetFrameLevel() + 5)
-            local hb = PP.CreateBorder(btn, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
+            local button = CreateFrame("Button", nil, strip)
+            button:SetFrameLevel(strip:GetFrameLevel() + 5)
+            local hb = Pix.CreateBorder(button, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
             hb:Hide()
-            btn._brd = hb
-            btn:SetScript("OnEnter", function(s2)
+            button._brd = hb
+            button:SetScript("OnEnter", function(s2)
                 if dragIdx then
                     return
                 end
@@ -946,16 +946,16 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Hovering a preview segment lights the real bar's block
                 -- the same way hovering its Width % setting does.
                 _edbSegHoverId = b.id
-                if ns.SetBlockEditHighlight then
-                    ns.SetBlockEditHighlight(cfg.id, b.id)
+                if mod.SetBlockEditHighlight then
+                    mod.SetBlockEditHighlight(conf.id, b.id)
                 end
             end)
-            btn:SetScript("OnLeave", function(s2)
+            button:SetScript("OnLeave", function(s2)
                 s2._brd:Hide()
                 if _edbSegHoverId == b.id then
                     _edbSegHoverId = nil
-                    if ns.SetBlockEditHighlight then
-                        ns.SetBlockEditHighlight(nil, nil)
+                    if mod.SetBlockEditHighlight then
+                        mod.SetBlockEditHighlight(nil, nil)
                     end
                 end
             end)
@@ -964,41 +964,41 @@ initFrame:SetScript("OnEvent", function(self)
             if not typeLabel then
                 typeLabel = b.type
             end
-            local nameFS = CludesUI.MakeFont(btn, 10, nil, 1, 1, 1, 0.85)
-            nameFS:SetPoint("LEFT", btn, "LEFT", 2, 6)
-            nameFS:SetPoint("RIGHT", btn, "RIGHT", -2, 6)
+            local nameFS = CludesUI.MakeFont(button, 10, nil, 1, 1, 1, 0.85)
+            nameFS:SetPoint("LEFT", button, "LEFT", 2, 6)
+            nameFS:SetPoint("RIGHT", button, "RIGHT", -2, 6)
             nameFS:SetJustifyH("CENTER")
             nameFS:SetWordWrap(false)
             nameFS:SetMaxLines(1)
             nameFS:SetText(L(typeLabel))
 
-            local shareFS = CludesUI.MakeFont(btn, 9, nil, 1, 1, 1, 0.5)
-            shareFS:SetPoint("LEFT", btn, "LEFT", 2, -7)
-            shareFS:SetPoint("RIGHT", btn, "RIGHT", -2, -7)
+            local shareFS = CludesUI.MakeFont(button, 9, nil, 1, 1, 1, 0.5)
+            shareFS:SetPoint("LEFT", button, "LEFT", 2, -7)
+            shareFS:SetPoint("RIGHT", button, "RIGHT", -2, -7)
             shareFS:SetJustifyH("CENTER")
             shareFS:SetWordWrap(false)
             shareFS:SetMaxLines(1)
 
             -- Settings-section hover wash (driven by the body watcher).
-            local ehl = btn:CreateTexture(nil, "OVERLAY", nil, 5)
+            local ehl = button:CreateTexture(nil, "OVERLAY", nil, 5)
             ehl:SetAllPoints()
             ehl:SetColorTexture(1, 1, 1, 0.08)
             ehl:Hide()
-            btn._editHL = ehl
+            button._editHL = ehl
 
-            segBtns[i] = btn
+            segBtns[i] = button
             shareFSs[i] = shareFS
             if BlockHidden(b) then
-                btn:Hide()
+                button:Hide()
             end
         end
 
         -- Hovering a block's settings section washes its preview segment.
         _edbSegHighlightFn = function(hlBlockId)
             for k = 1, nBlocks do
-                local sb = segBtns[k]
-                if sb and sb._editHL then
-                    sb._editHL:SetShown(hlBlockId ~= nil and blocks[k].id == hlBlockId)
+                local scrollBar = segBtns[k]
+                if scrollBar and scrollBar._editHL then
+                    scrollBar._editHL:SetShown(hlBlockId ~= nil and blocks[k].id == hlBlockId)
                 end
             end
         end
@@ -1023,7 +1023,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local line = div:CreateTexture(nil, "OVERLAY", nil, 2)
                 line:SetColorTexture(1, 1, 1, 0.15)
-                local ar, ag, ab2 = ns.GetAccent()
+                local ar, ag, ab2 = mod.GetAccent()
                 local accent = div:CreateTexture(nil, "OVERLAY", nil, 3)
                 accent:SetColorTexture(ar, ag, ab2, 0.9)
                 accent:Hide()
@@ -1068,7 +1068,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- and Length sliders for live feedback (no header rebuild).
         local lastSegs
         local function LayoutStrip()
-            local barUsable = ResolvedBarLength(cfg) - 2 * ns.EDGE_PAD
+            local barUsable = ResolvedBarLength(conf) - 2 * mod.EDGE_PAD
             if barUsable < 1 then
                 barUsable = 1
             end
@@ -1078,18 +1078,18 @@ initFrame:SetScript("OnEvent", function(self)
                 if BlockHidden(bc) then
                     return 0
                 end
-                local w = ns.GetLiveAutoLength(cfg.id, bc.id)
-                if not w or w <= 0 then
-                    w = EST_LEN[bc.type] or 80
+                local wid = mod.GetLiveAutoLength(conf.id, bc.id)
+                if not wid or wid <= 0 then
+                    wid = EST_LEN[bc.type] or 80
                 end
-                return w
+                return wid
             end
             -- Solve in REAL bar px (Auto Sized extents and gaps are real pixels), then
             -- map each segment's own edges into strip px. Segments may be
             -- NON-contiguous (a Force Centered block leaves pads beside it); touching
             -- neighbors still telescope because they share the same real edge. _touch
             -- marks real seams -- boundary lines draw only there.
-            local segs = ns.SolveLayout(cfg, barUsable, measure)
+            local segs = mod.SolveLayout(conf, barUsable, measure)
             for i = 1, #segs do
                 local seg = segs[i]
                 local rAt = seg.at or 0
@@ -1122,24 +1122,24 @@ initFrame:SetScript("OnEvent", function(self)
                     px = 1
                 end
                 local cursor = seg.pos
-                local btn = segBtns[i]
-                if btn then
-                    btn:ClearAllPoints()
+                local button = segBtns[i]
+                if button then
+                    button:ClearAllPoints()
                     if vertical then
-                        btn:SetSize(stripThick, px)
-                        btn:SetPoint("TOP", strip, "TOP", 0, -cursor)
+                        button:SetSize(stripThick, px)
+                        button:SetPoint("TOP", strip, "TOP", 0, -cursor)
                     else
-                        btn:SetSize(px, stripThick)
-                        btn:SetPoint("LEFT", strip, "LEFT", cursor, 0)
+                        button:SetSize(px, stripThick)
+                        button:SetPoint("LEFT", strip, "LEFT", cursor, 0)
                     end
                     -- Base position for the drag-reorder nudge animation.
-                    btn._basePos = cursor
-                    btn._curOff = 0
-                    btn._tgtOff = 0
+                    button._basePos = cursor
+                    button._curOff = 0
+                    button._tgtOff = 0
                     if seg.isFill then
                         shareFSs[i]:SetText(L("fill"))
                     else
-                        shareFSs[i]:SetText(format("%.1f%%", ns.NormalizedShare(cfg, seg.block.id)))
+                        shareFSs[i]:SetText(format("%.1f%%", mod.NormalizedShare(conf, seg.block.id)))
                     end
                 end
                 cursor = cursor + px
@@ -1167,14 +1167,14 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
         _edbStripRelayout = LayoutStrip
-        _edbStripBarId = cfg.id
+        _edbStripBarId = conf.id
         LayoutStrip()
 
         -- Divider drag: zero-sum weight transfer between the two neighbors.
         -- All geometry is FROZEN at drag start (BeginDrag freeze technique);
         -- only the two segment frames and their readouts update per tick.
         for boundaryIdx, div in pairs(dividers) do
-            local idx = boundaryIdx
+            local position = boundaryIdx
             div:SetScript("OnMouseDown", function(divSelf)
                 if _dividerDragging then
                     return
@@ -1182,8 +1182,8 @@ initFrame:SetScript("OnEvent", function(self)
                 if not lastSegs then
                     return
                 end
-                local segA = lastSegs[idx]
-                local segB = lastSegs[idx + 1]
+                local segA = lastSegs[position]
+                local segB = lastSegs[position + 1]
                 if not segA or not segB then
                     return
                 end
@@ -1214,8 +1214,8 @@ initFrame:SetScript("OnEvent", function(self)
 
                 _dividerDragging = true
                 divSelf._accent:Show()
-                local btnA, btnB = segBtns[idx], segBtns[idx + 1]
-                local fsA, fsB = shareFSs[idx], shareFSs[idx + 1]
+                local btnA, btnB = segBtns[position], segBtns[position + 1]
+                local fsA, fsB = shareFSs[position], shareFSs[position + 1]
 
                 local function ApplyLive(aW)
                     local pxA = aW * drag.pxPerW
@@ -1265,7 +1265,7 @@ initFrame:SetScript("OnEvent", function(self)
                     if a < 0 then
                         a = 0
                     end
-                    ns.TransferPct(cfg.id, blkA.id, blkB.id, a)
+                    mod.TransferPct(conf.id, blkA.id, blkB.id, a)
                     LayoutStrip()
                     CludesUI:RefreshPage()
                 end
@@ -1275,12 +1275,12 @@ initFrame:SetScript("OnEvent", function(self)
                         Commit()
                         return
                     end
-                    local x, y = GetCursorPosition()
+                    local posX, posY = GetCursorPosition()
                     local d
                     if vertical then
-                        d = y - drag.start
+                        d = posY - drag.start
                     else
-                        d = x - drag.start
+                        d = posX - drag.start
                     end
                     d = d / drag.scale
                     -- Dragging DOWN grows the top segment on vertical bars.
@@ -1311,7 +1311,7 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         local reorderLine = strip:CreateTexture(nil, "OVERLAY", nil, 7)
         do
-            local ar2, ag2, ab3 = ns.GetAccent()
+            local ar2, ag2, ab3 = mod.GetAccent()
             reorderLine:SetColorTexture(ar2, ag2, ab3, 0.9)
         end
         if vertical then
@@ -1338,22 +1338,22 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local moving = false
                 for k = 1, #segBtns do
-                    local sb = segBtns[k]
-                    local cur = sb._curOff or 0
-                    local tgt = sb._tgtOff or 0
-                    if math.abs(cur - tgt) > 0.4 then
-                        cur = cur + (tgt - cur) * 0.35
+                    local scrollBar = segBtns[k]
+                    local current = scrollBar._curOff or 0
+                    local tgt = scrollBar._tgtOff or 0
+                    if math.abs(current - tgt) > 0.4 then
+                        current = current + (tgt - current) * 0.35
                         moving = true
                     else
-                        cur = tgt
+                        current = tgt
                     end
-                    sb._curOff = cur
-                    if sb._basePos then
-                        sb:ClearAllPoints()
+                    scrollBar._curOff = current
+                    if scrollBar._basePos then
+                        scrollBar:ClearAllPoints()
                         if vertical then
-                            sb:SetPoint("TOP", strip, "TOP", 0, -(sb._basePos + cur))
+                            scrollBar:SetPoint("TOP", strip, "TOP", 0, -(scrollBar._basePos + current))
                         else
-                            sb:SetPoint("LEFT", strip, "LEFT", sb._basePos + cur, 0)
+                            scrollBar:SetPoint("LEFT", strip, "LEFT", scrollBar._basePos + current, 0)
                         end
                     end
                 end
@@ -1380,15 +1380,15 @@ initFrame:SetScript("OnEvent", function(self)
             if not lastSegs then
                 return nil
             end
-            local pos = CursorStripPos()
-            local n = #lastSegs
-            for k = 1, n do
+            local place = CursorStripPos()
+            local num = #lastSegs
+            for k = 1, num do
                 local s2 = lastSegs[k]
-                if pos < (s2.pos or 0) + (s2.px or 0) / 2 then
+                if place < (s2.pos or 0) + (s2.px or 0) / 2 then
                     return k
                 end
             end
-            return n + 1
+            return num + 1
         end
 
         -- A drop is a no-op when only hidden segments (see BlockHidden) lie
@@ -1444,12 +1444,12 @@ initFrame:SetScript("OnEvent", function(self)
                 reorderLine:Hide()
                 return
             end
-            local n = #lastSegs
+            local num = #lastSegs
             local linePos
-            if targetIdx <= n then
+            if targetIdx <= num then
                 linePos = lastSegs[targetIdx].pos or SEDGE
             else
-                local lastSeg = lastSegs[n]
+                local lastSeg = lastSegs[num]
                 linePos = (lastSeg.pos or SEDGE) + (lastSeg.px or 0)
             end
             reorderLine:ClearAllPoints()
@@ -1477,8 +1477,8 @@ initFrame:SetScript("OnEvent", function(self)
             local gBg = dragGhost:CreateTexture(nil, "BACKGROUND")
             gBg:SetAllPoints()
             gBg:SetColorTexture(0.111, 0.103, 0.096, 0.95)
-            local ar2, ag2, ab3 = ns.GetAccent()
-            CludesUI.MakeBorder(dragGhost, ar2, ag2, ab3, 0.9, PP)
+            local ar2, ag2, ab3 = mod.GetAccent()
+            CludesUI.MakeBorder(dragGhost, ar2, ag2, ab3, 0.9, Pix)
             local gl = CludesUI.MakeFont(dragGhost, 10, nil, 1, 1, 1, 0.9)
             gl:SetPoint("CENTER")
             dragGhost._lbl = gl
@@ -1508,7 +1508,7 @@ initFrame:SetScript("OnEvent", function(self)
             if IsNoopDrop(from, targetIdx) then
                 return
             end
-            ns.MoveBlockTo(cfg.id, blocks[from].id, targetIdx)
+            mod.MoveBlockTo(conf.id, blocks[from].id, targetIdx)
             -- Full refresh: the preview strip lives in the content header,
             -- which a plain RefreshPage never rebuilds.
             HardRefresh()
@@ -1516,13 +1516,13 @@ initFrame:SetScript("OnEvent", function(self)
 
         local function BeginDrag(fromIdx)
             dragIdx = fromIdx
-            local sb = segBtns[fromIdx]
-            if sb._brd then
-                sb._brd:Hide()
+            local scrollBar = segBtns[fromIdx]
+            if scrollBar._brd then
+                scrollBar._brd:Hide()
             end
-            sb:SetAlpha(0.3)
+            scrollBar:SetAlpha(0.3)
             local ghost = EnsureDragGhost()
-            local gw, gh = sb:GetSize()
+            local gw, gh = scrollBar:GetSize()
             if not gw or gw < 24 then
                 gw = 24
             end
@@ -1556,43 +1556,43 @@ initFrame:SetScript("OnEvent", function(self)
         -- first open and kept across header builds (_edbMenus.seg); each open
         -- points it at that segment's bar and block.
         local function ShowSegmentMenu(anchorBtn, blockId)
-            local menu = _edbMenus.seg
-            if menu then
-                if menu:IsShown() then
-                    menu:Hide()
+            local dropMenu = _edbMenus.seg
+            if dropMenu then
+                if dropMenu:IsShown() then
+                    dropMenu:Hide()
                 end
             else
                 local ROW_H2 = 24
-                menu = CreateFrame("Frame", nil, UIParent)
-                menu:SetFrameStrata("FULLSCREEN_DIALOG")
-                menu:SetFrameLevel(300)
-                menu:SetClampedToScreen(true)
-                menu:SetWidth(150)
-                menu:Hide()
-                local bg = menu:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
-                bg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-                CludesUI.MakeRoundedBorder(menu, 1, 1, 1, DDS.BRD_A, bg, nil, true)
+                dropMenu = CreateFrame("Frame", nil, UIParent)
+                dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+                dropMenu:SetFrameLevel(300)
+                dropMenu:SetClampedToScreen(true)
+                dropMenu:SetWidth(150)
+                dropMenu:Hide()
+                local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
+                backdrop:SetAllPoints()
+                backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
+                CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
                 local rowY = -3
-                local function AddRow(text, onClick)
-                    local row = CreateFrame("Button", nil, menu)
-                    row:SetHeight(ROW_H2)
-                    row:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, rowY)
-                    row:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, rowY)
-                    local hl = row:CreateTexture(nil, "HIGHLIGHT")
-                    hl:SetAllPoints()
-                    hl:SetColorTexture(1, 1, 1, 0.08)
-                    local lbl = CludesUI.MakeFont(row, 11, nil, 1, 1, 1, 0.9)
-                    lbl:SetPoint("LEFT", row, "LEFT", 10, 0)
-                    lbl:SetText(text)
-                    row:SetScript("OnClick", function()
-                        menu:Hide()
+                local function AddRow(textValue, onClick)
+                    local rowFrame = CreateFrame("Button", nil, dropMenu)
+                    rowFrame:SetHeight(ROW_H2)
+                    rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, rowY)
+                    rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, rowY)
+                    local highlight = rowFrame:CreateTexture(nil, "HIGHLIGHT")
+                    highlight:SetAllPoints()
+                    highlight:SetColorTexture(1, 1, 1, 0.08)
+                    local labelFS = CludesUI.MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.9)
+                    labelFS:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
+                    labelFS:SetText(textValue)
+                    rowFrame:SetScript("OnClick", function()
+                        dropMenu:Hide()
                         onClick()
                     end)
                     rowY = rowY - ROW_H2
                 end
                 AddRow(L("Remove Block"), function()
-                    ns.RemoveBlock(menu._barId, menu._blockId)
+                    mod.RemoveBlock(dropMenu._barId, dropMenu._blockId)
                     -- Full refresh: the preview strip lives in the content
                     -- header, which a plain RefreshPage never rebuilds.
                     HardRefresh()
@@ -1602,12 +1602,12 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI.SmoothScrollTo(0)
                     end
                 end)
-                menu:SetHeight(-rowY + 3)
+                dropMenu:SetHeight(-rowY + 3)
                 -- Click-away dismiss. The opening right-button is STILL DOWN on
                 -- the first frames (the menu opens on RightButtonDown) -- without
                 -- the guard (menu._openGuard, set per open) the menu dismissed
                 -- itself instantly.
-                menu:SetScript("OnUpdate", function(m)
+                dropMenu:SetScript("OnUpdate", function(m)
                     if m._openGuard then
                         if not IsMouseButtonDown("RightButton") then
                             m._openGuard = nil
@@ -1621,14 +1621,14 @@ initFrame:SetScript("OnEvent", function(self)
                         m:Hide()
                     end
                 end)
-                _edbMenus.seg = menu
+                _edbMenus.seg = dropMenu
             end
-            menu._barId = cfg.id
-            menu._blockId = blockId
-            menu:ClearAllPoints()
-            menu:SetPoint("TOPLEFT", anchorBtn, "BOTTOMLEFT", 0, -2)
-            menu._openGuard = true
-            menu:Show()
+            dropMenu._barId = conf.id
+            dropMenu._blockId = blockId
+            dropMenu:ClearAllPoints()
+            dropMenu:SetPoint("TOPLEFT", anchorBtn, "BOTTOMLEFT", 0, -2)
+            dropMenu._openGuard = true
+            dropMenu:Show()
         end
 
         -- Manual 3px drag threshold (CDM preview pattern -- WoW's native
@@ -1640,7 +1640,7 @@ initFrame:SetScript("OnEvent", function(self)
             local segBtn = segBtns[i]
             local segBlockId = blocks[i].id
             segBtn:RegisterForClicks("LeftButtonUp", "RightButtonDown")
-            segBtn:SetScript("OnClick", function(sb, mbtn)
+            segBtn:SetScript("OnClick", function(scrollBar, mbtn)
                 -- The dragEndTime guard swallows the release-click of a
                 -- drag; a press that never crossed the 3px threshold is a
                 -- TRUE click (drag starts never fire OnClick at all).
@@ -1648,14 +1648,14 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 if mbtn == "RightButton" then
-                    ShowSegmentMenu(sb, segBlockId)
+                    ShowSegmentMenu(scrollBar, segBlockId)
                 elseif mbtn == "LeftButton" then
                     if _edbNavigateFn then
                         _edbNavigateFn("block:" .. segBlockId)
                     end
                 end
             end)
-            segBtn:SetScript("OnMouseDown", function(sb, mbtn)
+            segBtn:SetScript("OnMouseDown", function(scrollBar, mbtn)
                 if mbtn ~= "LeftButton" then
                     return
                 end
@@ -1663,8 +1663,8 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 local cx, cy = GetCursorPosition()
-                sb._pendX, sb._pendY = cx, cy
-                sb:SetScript("OnUpdate", function(s3)
+                scrollBar._pendX, scrollBar._pendY = cx, cy
+                scrollBar:SetScript("OnUpdate", function(s3)
                     if not IsMouseButtonDown("LeftButton") then
                         s3:SetScript("OnUpdate", nil)
                         s3._pendX, s3._pendY = nil, nil
@@ -1693,11 +1693,11 @@ initFrame:SetScript("OnEvent", function(self)
         else
             addBtn = CreateFrame("Button", nil, stripParent)
         end
-        PP.Size(addBtn, stripThick, stripThick)
+        Pix.Size(addBtn, stripThick, stripThick)
         if vertical then
-            PP.Point(addBtn, "TOP", strip, "BOTTOM", 0, -4)
+            Pix.Point(addBtn, "TOP", strip, "BOTTOM", 0, -4)
         else
-            PP.Point(addBtn, "LEFT", strip, "RIGHT", 4, 0)
+            Pix.Point(addBtn, "LEFT", strip, "RIGHT", 4, 0)
         end
         addBtn:SetFrameLevel(strip:GetFrameLevel() + 2)
         local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
@@ -1707,66 +1707,66 @@ initFrame:SetScript("OnEvent", function(self)
             addBg:SetSnapToPixelGrid(false)
             addBg:SetTexelSnappingBias(0)
         end
-        PP.CreateBorder(addBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7)
+        Pix.CreateBorder(addBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7)
         local addLbl = CludesUI.MakeFont(addBtn, 22, nil, EGc.r, EGc.g, EGc.b, 0.7)
         addLbl:SetPoint("CENTER", 0, 1)
         addLbl:SetText("+")
         local addHlCont = CreateFrame("Frame", nil, addBtn)
         addHlCont:SetAllPoints()
         addHlCont:SetFrameLevel(addBtn:GetFrameLevel() + 1)
-        local addBrd = PP.CreateBorder(addHlCont, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
+        local addBrd = Pix.CreateBorder(addHlCont, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
         addBrd:Hide()
 
         -- The add-block menu: built on its first open and kept across header
         -- builds (_edbMenus.add); each open points it at this header's tile
         -- and re-applies the on-bar dimming for this bar.
         local function ToggleAddMenu()
-            local menu = _edbMenus.add
-            if menu and menu:IsShown() then
-                menu:Hide()
+            local dropMenu = _edbMenus.add
+            if dropMenu and dropMenu:IsShown() then
+                dropMenu:Hide()
                 return
             end
             local ITEM_H = 24
             local hlA = DDS.ITEM_HL_A
-            if not menu then
-                menu = CreateFrame("Frame", nil, UIParent)
-                menu:SetFrameStrata("FULLSCREEN_DIALOG")
-                menu:SetFrameLevel(300)
-                menu:SetClampedToScreen(true)
-                menu:SetWidth(190)
-                menu:Hide()
-                local bg = menu:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
-                bg:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-                CludesUI.MakeRoundedBorder(menu, 1, 1, 1, DDS.BRD_A, bg, nil, true)
-                menu._rows = {}
+            if not dropMenu then
+                dropMenu = CreateFrame("Frame", nil, UIParent)
+                dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+                dropMenu:SetFrameLevel(300)
+                dropMenu:SetClampedToScreen(true)
+                dropMenu:SetWidth(190)
+                dropMenu:Hide()
+                local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
+                backdrop:SetAllPoints()
+                backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
+                CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+                dropMenu._rows = {}
                 local mH = 4
-                for _, t in ipairs(ns.OfferedBlockTypes()) do
-                    local item = CreateFrame("Button", nil, menu)
-                    item:SetHeight(ITEM_H)
-                    item:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -mH)
-                    item:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -mH)
-                    item:SetFrameLevel(menu:GetFrameLevel() + 2)
-                    local iLbl = CludesUI.MakeFont(item, 11, nil, tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
+                for _, t in ipairs(mod.OfferedBlockTypes()) do
+                    local itemInfo = CreateFrame("Button", nil, dropMenu)
+                    itemInfo:SetHeight(ITEM_H)
+                    itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+                    itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
+                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local iLbl = CludesUI.MakeFont(itemInfo, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                    iLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetText(L(t.label))
-                    local iHl = item:CreateTexture(nil, "ARTWORK")
+                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     -- item._baseA / item._hoverA: this open's label alphas.
-                    item:SetScript("OnEnter", function()
-                        iLbl:SetTextColor(1, 1, 1, item._hoverA)
+                    itemInfo:SetScript("OnEnter", function()
+                        iLbl:SetTextColor(1, 1, 1, itemInfo._hoverA)
                         iHl:SetAlpha(hlA)
                     end)
-                    item:SetScript("OnLeave", function()
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, item._baseA)
+                    itemInfo:SetScript("OnLeave", function()
+                        iLbl:SetTextColor(tDimR, tDimG, tDimB, itemInfo._baseA)
                         iHl:SetAlpha(0)
                     end)
                     local typeKey = t.key
-                    item:SetScript("OnClick", function()
-                        menu:Hide()
-                        local nb = ns.AddBlock(menu._barId, typeKey)
+                    itemInfo:SetScript("OnClick", function()
+                        dropMenu:Hide()
+                        local nb = mod.AddBlock(dropMenu._barId, typeKey)
                         HardRefresh()
                         if nb then
                             local navKey = "block:" .. nb.id
@@ -1787,12 +1787,12 @@ initFrame:SetScript("OnEvent", function(self)
                             end)
                         end
                     end)
-                    item._typeKey, item._lbl, item._hl = typeKey, iLbl, iHl
-                    menu._rows[#menu._rows + 1] = item
+                    itemInfo._typeKey, itemInfo._lbl, itemInfo._hl = typeKey, iLbl, iHl
+                    dropMenu._rows[#dropMenu._rows + 1] = itemInfo
                     mH = mH + ITEM_H
                 end
-                menu:SetHeight(mH + 4)
-                menu._closeOutside = function(m)
+                dropMenu:SetHeight(mH + 4)
+                dropMenu._closeOutside = function(m)
                     if
                         not m:IsMouseOver()
                         and not m._anchor:IsMouseOver()
@@ -1801,21 +1801,21 @@ initFrame:SetScript("OnEvent", function(self)
                         m:Hide()
                     end
                 end
-                menu:HookScript("OnHide", function(m)
+                dropMenu:HookScript("OnHide", function(m)
                     m:SetScript("OnUpdate", nil)
                 end)
-                _edbMenus.add = menu
+                _edbMenus.add = dropMenu
             end
-            local rows = menu._rows
-            for i = 1, #rows do
-                local item = rows[i]
-                local typeKey = item._typeKey
+            local rowList = dropMenu._rows
+            for i = 1, #rowList do
+                local itemInfo = rowList[i]
+                local typeKey = itemInfo._typeKey
                 -- Types already on this bar render dimmed -- still fully clickable
                 -- (duplicates are legal), just an at-a-glance cue for what the bar is
                 -- missing. Re-applied on every open, so this never goes stale.
                 local onBar = false
-                for bi = 1, #cfg.blocks do
-                    if cfg.blocks[bi].type == typeKey then
+                for bi = 1, #conf.blocks do
+                    if conf.blocks[bi].type == typeKey then
                         onBar = true
                         break
                     end
@@ -1833,16 +1833,16 @@ initFrame:SetScript("OnEvent", function(self)
                     baseA = 0.28
                     hoverA = 0.55
                 end
-                item._baseA, item._hoverA = baseA, hoverA
-                item._lbl:SetTextColor(tDimR, tDimG, tDimB, baseA)
-                item._hl:SetAlpha(0)
+                itemInfo._baseA, itemInfo._hoverA = baseA, hoverA
+                itemInfo._lbl:SetTextColor(tDimR, tDimG, tDimB, baseA)
+                itemInfo._hl:SetAlpha(0)
             end
-            menu._barId = cfg.id
-            menu._anchor = addBtn
-            menu:ClearAllPoints()
-            menu:SetPoint("TOPRIGHT", addBtn, "BOTTOMRIGHT", 0, -2)
-            menu:SetScript("OnUpdate", menu._closeOutside)
-            menu:Show()
+            dropMenu._barId = conf.id
+            dropMenu._anchor = addBtn
+            dropMenu:ClearAllPoints()
+            dropMenu:SetPoint("TOPRIGHT", addBtn, "BOTTOMRIGHT", 0, -2)
+            dropMenu:SetScript("OnUpdate", dropMenu._closeOutside)
+            dropMenu:Show()
         end
         addBtn:SetScript("OnClick", ToggleAddMenu)
         addBtn:SetScript("OnEnter", function()
@@ -1864,15 +1864,15 @@ initFrame:SetScript("OnEvent", function(self)
         if vertical then
             -- The strip lives in the docked popout; the header only carries
             -- a pointer to it.
-            local vh = CludesUI.MakeFont(hdr, 12, nil, 1, 1, 1, 0.4)
-            vh:SetPoint("TOP", hdr, "TOP", 0, fy - 2)
+            local vh = CludesUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
+            vh:SetPoint("TOP", heading, "TOP", 0, fy - 2)
             vh:SetJustifyH("CENTER")
             vh:SetText(L("Vertical bar: the interactive preview is docked beside this window."))
             fy = fy - 24
         else
             fy = fy - stripThick - 8
             -- Interaction hint directly below the preview (CDM preview pattern).
-            local ph = CludesUI.MakeFont(hdr, 11, nil, 0.62, 0.62, 0.62, 0.9)
+            local ph = CludesUI.MakeFont(heading, 11, nil, 0.62, 0.62, 0.62, 0.9)
             ph:SetPoint("TOP", strip, "BOTTOM", 0, -8)
             ph:SetWidth(stripLen - 20)
             ph:SetJustifyH("CENTER")
@@ -1887,14 +1887,14 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  Page body
     ---------------------------------------------------------------------------
-    local function BuildDataBarsPage(pageName, parent, yOffset)
+    local function BuildDataBarsPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h, hdr
-        local row
+        local posY = yOffset
+        local _, hgt, heading
+        local rowFrame
 
-        parent._showRowDivider = true
-        parent._edbClickTargets = {}
+        hostFrame._showRowDivider = true
+        hostFrame._edbClickTargets = {}
 
         -------------------------------------------------------------------
         --  Click navigation (preview segments -> block sections). The map
@@ -1910,17 +1910,17 @@ initFrame:SetScript("OnEvent", function(self)
             if not m.slotSide then
                 return m.target
             end
-            local region
+            local regionFrame
             if m.slotSide == "left" then
-                region = m.target._leftRegion
+                regionFrame = m.target._leftRegion
             else
-                region = m.target._rightRegion
+                regionFrame = m.target._rightRegion
             end
-            return region or m.target
+            return regionFrame or m.target
         end
 
         local function NavigateToSetting(key)
-            local targets = parent._edbClickTargets
+            local targets = hostFrame._edbClickTargets
             if not targets then
                 return
             end
@@ -1963,7 +1963,7 @@ initFrame:SetScript("OnEvent", function(self)
             if not _edbHeldGlowKey then
                 return
             end
-            local targets = parent._edbClickTargets
+            local targets = hostFrame._edbClickTargets
             local m = targets and targets[_edbHeldGlowKey]
             -- Absent from this build (another bar is selected): keep the key so
             -- coming back re-arms. Only a satisfied predicate retires it.
@@ -1996,13 +1996,13 @@ initFrame:SetScript("OnEvent", function(self)
 
         local p = Profile()
         if not p then
-            return math.abs(y)
+            return math.abs(posY)
         end
-        local cfg = SelectedBar()
+        local conf = SelectedBar()
 
         -- Bar selected -> editor chrome; zero bars -> no header, the body
         -- below renders the full starting screen.
-        if cfg then
+        if conf then
             CludesUI:SetContentHeader(_edbHeaderBuilder)
         else
             CludesUI:ClearContentHeader()
@@ -2011,46 +2011,53 @@ initFrame:SetScript("OnEvent", function(self)
         -------------------------------------------------------------------
         --  Zero bars: template-card empty state
         -------------------------------------------------------------------
-        if not cfg then
+        if not conf then
             local PADC = CludesUI.CONTENT_PAD
             if not PADC then
                 PADC = 10
             end
-            local hostW = parent:GetWidth() - PADC * 2
+            local hostW = hostFrame:GetWidth() - PADC * 2
             local gap = 12
             local cw = floor((hostW - gap) / 2)
             local ch = 76
             local hostH = 40 + ch * 2 + gap + 10
             -- Explicit size + single TOPLEFT anchor (search contract); the
             -- host doubles as a search pseudo-section.
-            local host = CreateFrame("Frame", nil, parent)
-            PP.Size(host, hostW, hostH)
-            PP.Point(host, "TOPLEFT", parent, "TOPLEFT", PADC, y)
-            host._isSectionHeader = true
-            host._sectionName = "Create New DataBar"
-            local hint = CludesUI.MakeFont(host, 13, nil, 1, 1, 1, 0.55)
-            hint:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
+            local hostRegion = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(hostRegion, hostW, hostH)
+            Pix.Point(hostRegion, "TOPLEFT", hostFrame, "TOPLEFT", PADC, posY)
+            hostRegion._isSectionHeader = true
+            hostRegion._sectionName = "Create New DataBar"
+            local hint = CludesUI.MakeFont(hostRegion, 13, nil, 1, 1, 1, 0.55)
+            hint:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 4, -8)
             hint:SetText(L("Create your first DataBar from a starter template, or start empty."))
             for i = 1, 4 do
-                local col = (i - 1) % 2
+                local column = (i - 1) % 2
                 local rowI = floor((i - 1) / 2)
-                MakeTemplateCard(host, col * (cw + gap), -40 - rowI * (ch + gap), cw, ch, TEMPLATE_CARDS[i])
+                MakeTemplateCard(
+                    hostRegion,
+                    column * (cw + gap),
+                    -40 - rowI * (ch + gap),
+                    cw,
+                    ch,
+                    TEMPLATE_CARDS[i]
+                )
             end
-            y = y - hostH - 10
-            return math.abs(y)
+            posY = posY - hostH - 10
+            return math.abs(posY)
         end
 
-        local barId = cfg.id
-        local vertical = cfg.orientation == "V"
-        local theme = cfg.theme
+        local barId = conf.id
+        local vertical = conf.orientation == "V"
+        local theme = conf.theme
         if not theme then
             theme =
                 { style = "cui", cuiAlpha = 0.5, modernColor = { r = 0.067, g = 0.067, b = 0.067, a = 0.95 } }
-            cfg.theme = theme
+            conf.theme = theme
         end
 
         local function Apply()
-            ns.ApplyBar(barId)
+            mod.ApplyBar(barId)
         end
 
         -- Sizing mode: centered segmented two-button toggle (the shared
@@ -2060,40 +2067,40 @@ initFrame:SetScript("OnEvent", function(self)
         -- per-side gaps with one Fill Remaining block; Even Split = equal
         -- segments. Switching rebuilds the page (block sections gain/lose
         -- their sizing rows).
-        y = y - 15
+        posY = posY - 15
         do
             local BTN_W, BTN_H = 150, 26
             local seg = CludesUI.BuildSegmentedControl({
-                parent = parent,
+                parent = hostFrame,
                 keys = { "auto", "even" },
                 labels = { auto = "Auto Sized", even = "Even Split" },
                 width = BTN_W * 2,
                 square = true,
                 height = BTN_H,
                 getChecked = function(key)
-                    return ns.BarSizingMode(cfg) == key
+                    return mod.BarSizingMode(conf) == key
                 end,
                 onToggle = function(key)
-                    if ns.BarSizingMode(cfg) == key then
+                    if mod.BarSizingMode(conf) == key then
                         return
                     end
-                    cfg.sizingMode = key
-                    ns.ApplyBar(barId)
+                    conf.sizingMode = key
+                    mod.ApplyBar(barId)
                     HardRefresh()
                 end,
             })
-            seg:SetPoint("TOP", parent, "TOP", 0, y)
-            y = y - (BTN_H + 15)
+            seg:SetPoint("TOP", hostFrame, "TOP", 0, posY)
+            posY = posY - (BTN_H + 15)
         end
 
         -------------------------------------------------------------------
         --  BAR SETTINGS
         -------------------------------------------------------------------
-        hdr, h = W:SectionHeader(parent, "BAR SETTINGS", y)
-        y = y - h
+        heading, hgt = W:SectionHeader(hostFrame, "BAR SETTINGS", posY)
+        posY = posY - hgt
         -- The Move in Unlock Mode button on the selected bar's first section:
         -- the key is read at the click, so it highlights the bar the selector shows.
-        CludesUI.BuildSectionUnlockJump(hdr, {
+        CludesUI.BuildSectionUnlockJump(heading, {
             key = function()
                 local c = SelectedBar()
                 return c and ("EDB_" .. c.id) or nil
@@ -2103,24 +2110,24 @@ initFrame:SetScript("OnEvent", function(self)
         -- Visibility | Visibility Options (renaming lives in the selector's
         -- inline edit; "Never" visibility fully disables the bar's work).
         local visRow
-        visRow, h = CludesUI.BuildVisibilityRow(
+        visRow, hgt = CludesUI.BuildVisibilityRow(
             W,
-            parent,
-            y,
+            hostFrame,
+            posY,
             {
                 getStore = function()
-                    return ns.GetBar(barId)
+                    return mod.GetBar(barId)
                 end,
                 legacyKey = "visibility",
-                caps = ns.EDB_VIS_CAPS,
+                caps = mod.EDB_VIS_CAPS,
                 onChanged = function()
                     -- "Never" tears the bar down entirely (and un-Never
                     -- rebuilds), so run the full apply, not just the vis pass.
-                    ns.ApplyBar(barId)
-                    ns.UpdateAllBarVisibility()
+                    mod.ApplyBar(barId)
+                    mod.UpdateAllBarVisibility()
                 end,
                 onOptionChanged = function()
-                    ns.UpdateAllBarVisibility()
+                    mod.UpdateAllBarVisibility()
                 end,
             },
             -- Hide Border moved up from the section's old trailing half-row into the slot
@@ -2130,16 +2137,16 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Hide Border",
                 tooltip = "Hide the 1-pixel outline around the bar.",
                 getValue = function()
-                    return cfg.hideBorder == true
+                    return conf.hideBorder == true
                 end,
-                setValue = function(v)
-                    cfg.hideBorder = v and true or false
-                    ns.ApplyTheme(barId)
+                setValue = function(val)
+                    conf.hideBorder = val and true or false
+                    mod.ApplyTheme(barId)
                     RefreshPreviewTheme()
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
         -- Inline cog on the Visibility dropdown: Bar Strata. Lives here rather
         -- than as a row of its own because it answers the same question the
         -- visibility controls do -- when and where this bar shows up -- and it
@@ -2156,16 +2163,16 @@ initFrame:SetScript("OnEvent", function(self)
                         values = CludesUI.FRAME_STRATA_LABELS,
                         order = CludesUI.FRAME_STRATA_ORDER_BASE,
                         get = function()
-                            local c = ns.GetBar(barId)
+                            local c = mod.GetBar(barId)
                             return (c and c.barStrata) or "MEDIUM"
                         end,
-                        set = function(v)
-                            local c = ns.GetBar(barId)
+                        set = function(val)
+                            local c = mod.GetBar(barId)
                             if not c then
                                 return
                             end
-                            c.barStrata = v
-                            ns.ApplyBar(barId)
+                            c.barStrata = val
+                            mod.ApplyBar(barId)
                         end,
                     },
                 },
@@ -2174,29 +2181,29 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Orientation | Theme (inline cog = CludesUI Backdrop Dim)
         local themeRow
-        themeRow, h = W:DualRow(parent, y, {
+        themeRow, hgt = W:DualRow(hostFrame, posY, {
             type = "segmented",
             text = "Orientation",
             tooltip = "Horizontal bars lay blocks left to right; vertical bars stack them top to bottom.",
             values = { H = "Horizontal", V = "Vertical" },
             order = { "H", "V" },
             getValue = function()
-                if cfg.orientation == "V" then
+                if conf.orientation == "V" then
                     return "V"
                 end
                 return "H"
             end,
-            setValue = function(v)
-                cfg.orientation = v
+            setValue = function(val)
+                conf.orientation = val
                 -- An edge snap that no longer matches the orientation
                 -- remaps to the nearest valid edge.
-                local e = cfg.snapEdge
-                if v == "V" and (e == "bottom" or e == "top") then
-                    cfg.snapEdge = "left"
-                elseif v == "H" and (e == "left" or e == "right") then
-                    cfg.snapEdge = "bottom"
+                local e = conf.snapEdge
+                if val == "V" and (e == "bottom" or e == "top") then
+                    conf.snapEdge = "left"
+                elseif val == "H" and (e == "left" or e == "right") then
+                    conf.snapEdge = "bottom"
                 end
-                ns.ApplyBar(barId)
+                mod.ApplyBar(barId)
                 HardRefresh()
             end,
         }, {
@@ -2211,10 +2218,10 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 return "cui"
             end,
-            setValue = function(v)
-                theme.style = v
+            setValue = function(val)
+                theme.style = val
                 -- Selecting Modern starts Bar Opacity at 95.
-                if v == "modern" then
+                if val == "modern" then
                     local c = theme.modernColor
                     if not c then
                         c = { r = 0.067, g = 0.067, b = 0.067 }
@@ -2222,11 +2229,11 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     c.a = 0.95
                 end
-                ns.ApplyTheme(barId)
+                mod.ApplyTheme(barId)
                 HardRefresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         CludesUI.BuildInlineCog(themeRow._rightRegion, {
             title = "CludesUI Background",
             disabled = function()
@@ -2247,9 +2254,9 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                         return floor(a * 100 + 0.5)
                     end,
-                    set = function(v)
-                        theme.cuiAlpha = v / 100
-                        ns.ApplyTheme(barId)
+                    set = function(val)
+                        theme.cuiAlpha = val / 100
+                        mod.ApplyTheme(barId)
                         RefreshPreviewTheme()
                     end,
                 },
@@ -2261,21 +2268,21 @@ initFrame:SetScript("OnEvent", function(self)
         -- packs always appear), with texture preview backgrounds on the menu items.
         local function BuildBarTexDropdown()
             CludesUI.AppendSharedMediaTextures(
-                ns.barTextureNames or {},
-                ns.barTextureOrder or {},
+                mod.barTextureNames or {},
+                mod.barTextureOrder or {},
                 nil,
-                ns.barTextures
+                mod.barTextures
             )
             local btValues, btOrder = {}, {}
-            local texNames = ns.barTextureNames or {}
-            local texOrder = ns.barTextureOrder or {}
+            local texNames = mod.barTextureNames or {}
+            local texOrder = mod.barTextureOrder or {}
             for _, key in ipairs(texOrder) do
                 if key ~= "---" then
                     btValues[key] = texNames[key] or key
                     btOrder[#btOrder + 1] = key
                 end
             end
-            local texLookup = ns.barTextures or {}
+            local texLookup = mod.barTextures or {}
             btValues._menuOpts = {
                 itemHeight = 28,
                 background = function(key)
@@ -2298,12 +2305,12 @@ initFrame:SetScript("OnEvent", function(self)
             values = btValues,
             order = btOrder,
             getValue = function()
-                return cfg.barTexture or "none"
+                return conf.barTexture or "none"
             end,
-            setValue = function(v)
-                cfg.barTexture = v
-                if ns.ApplyTheme then
-                    ns.ApplyTheme(barId)
+            setValue = function(val)
+                conf.barTexture = val
+                if mod.ApplyTheme then
+                    mod.ApplyTheme(barId)
                 end
                 Apply()
             end,
@@ -2316,14 +2323,14 @@ initFrame:SetScript("OnEvent", function(self)
             step = 5,
             tooltip = "Scales every text element on this bar.",
             getValue = function()
-                local v = cfg.fontScale
-                if v == nil then
-                    v = 100
+                local val = conf.fontScale
+                if val == nil then
+                    val = 100
                 end
-                return v
+                return val
             end,
-            setValue = function(v)
-                cfg.fontScale = v
+            setValue = function(val)
+                conf.fontScale = val
                 Apply()
             end,
         }
@@ -2333,17 +2340,17 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Hover Highlight Blocks",
             tooltip = "Shows a faint white wash over each block on mouseover.",
             getValue = function()
-                return cfg.hoverHighlight == true
+                return conf.hoverHighlight == true
             end,
-            setValue = function(v)
-                cfg.hoverHighlight = v and true or false
+            setValue = function(val)
+                conf.hoverHighlight = val and true or false
                 Apply()
             end,
         }
         -- Bar Opacity drives BOTH styles: the Modern flat color's alpha or
         -- the CludesUI shell's backdrop dim, whichever is active.
         local opacityRow
-        opacityRow, h = W:DualRow(parent, y, {
+        opacityRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Opacity",
             min = 0,
@@ -2365,28 +2372,28 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 return floor(a * 100 + 0.5)
             end,
-            setValue = function(v)
+            setValue = function(val)
                 if theme.style == "modern" then
                     local c = theme.modernColor
                     if not c then
                         c = { r = 0.067, g = 0.067, b = 0.067 }
                         theme.modernColor = c
                     end
-                    c.a = v / 100
+                    c.a = val / 100
                 else
-                    theme.cuiOpacity = v / 100
+                    theme.cuiOpacity = val / 100
                 end
-                ns.ApplyTheme(barId)
+                mod.ApplyTheme(barId)
                 RefreshPreviewTheme()
             end,
         }, barTexCfg)
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             -- Inline Modern-background swatch: always present, disabled
             -- (house pattern) while the CludesUI style is active. Style
             -- changes HardRefresh, so the state re-evaluates on switch.
             local rgn = opacityRow._leftRegion
-            local swatch = CludesUI.BuildColorSwatch(rgn, opacityRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CludesUI.BuildColorSwatch(rgn, opacityRow:GetFrameLevel() + 3, function()
                 local c = theme.modernColor
                 if not c then
                     return 0.067, 0.067, 0.067
@@ -2413,19 +2420,19 @@ initFrame:SetScript("OnEvent", function(self)
                 c.r = r
                 c.g = g
                 c.b = b2
-                ns.ApplyTheme(barId)
+                mod.ApplyTheme(barId)
                 RefreshPreviewTheme()
             end, false, 20)
-            PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
             if theme.style ~= "modern" then
-                swatch:SetAlpha(0.3)
-                local blk = CreateFrame("Frame", nil, swatch)
+                colorSwatch:SetAlpha(0.3)
+                local blk = CreateFrame("Frame", nil, colorSwatch)
                 blk:SetAllPoints()
-                blk:SetFrameLevel(swatch:GetFrameLevel() + 5)
+                blk:SetFrameLevel(colorSwatch:GetFrameLevel() + 5)
                 blk:EnableMouse(true)
                 blk:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
-                        swatch,
+                        colorSwatch,
                         CludesUI.DisabledTooltip("the Modern background style")
                     )
                 end)
@@ -2446,20 +2453,20 @@ initFrame:SetScript("OnEvent", function(self)
         else
             lenLabel, fullLabel, thickLabel = "Width", "Full Screen Width", "Height"
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = fullLabel,
             tooltip = "Sizes the bar to the full screen extent along its axis.",
             getValue = function()
-                return cfg.lengthMode == "full"
+                return conf.lengthMode == "full"
             end,
-            setValue = function(v)
-                if v then
-                    cfg.lengthMode = "full"
+            setValue = function(val)
+                if val then
+                    conf.lengthMode = "full"
                 else
-                    cfg.lengthMode = "custom"
+                    conf.lengthMode = "custom"
                 end
-                ns.ApplyBar(barId)
+                mod.ApplyBar(barId)
                 if _edbStripRelayout then
                     _edbStripRelayout()
                 end
@@ -2471,34 +2478,34 @@ initFrame:SetScript("OnEvent", function(self)
             tooltip = "Pins the bar flush against a screen edge; moving the bar in layout mode sets this back to None.",
             values = { none = "None", bottom = "Bottom", top = "Top", left = "Left", right = "Right" },
             order = { "none", "bottom", "top", "left", "right" },
-            itemDisabled = function(v)
+            itemDisabled = function(val)
                 if vertical then
-                    return v == "bottom" or v == "top"
+                    return val == "bottom" or val == "top"
                 end
-                return v == "left" or v == "right"
+                return val == "left" or val == "right"
             end,
-            itemDisabledTooltip = function(v)
-                if v == "bottom" or v == "top" then
+            itemDisabledTooltip = function(val)
+                if val == "bottom" or val == "top" then
                     return "Not available for vertical bars"
                 end
                 return "Not available for horizontal bars"
             end,
             getValue = function()
-                local v = cfg.snapEdge
-                if v == nil then
-                    v = "none"
+                local val = conf.snapEdge
+                if val == nil then
+                    val = "none"
                 end
-                return v
+                return val
             end,
-            setValue = function(v)
-                cfg.snapEdge = v
-                ns.ApplyBar(barId)
+            setValue = function(val)
+                conf.snapEdge = val
+                mod.ApplyBar(barId)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Width | Height (length + thickness in screen terms)
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = lenLabel,
             min = 100,
@@ -2506,20 +2513,20 @@ initFrame:SetScript("OnEvent", function(self)
             step = 10,
             tooltip = "Size of the bar along its block axis in pixels.",
             disabled = function()
-                return cfg.lengthMode == "full"
+                return conf.lengthMode == "full"
             end,
             disabledTooltip = CludesUI.Lf("Disabled while %1$s is enabled.", CludesUI.L(fullLabel)),
             rawTooltip = true,
             getValue = function()
-                local v = cfg.length
-                if v == nil then
-                    v = 400
+                local val = conf.length
+                if val == nil then
+                    val = 400
                 end
-                return v
+                return val
             end,
-            setValue = function(v)
-                cfg.length = v
-                ns.ApplyBar(barId)
+            setValue = function(val)
+                conf.length = val
+                mod.ApplyBar(barId)
                 if _edbStripRelayout then
                     _edbStripRelayout()
                 end
@@ -2532,21 +2539,21 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "Size of the bar across its block axis in pixels.",
             getValue = function()
-                local v = cfg.thickness
-                if v == nil then
-                    v = 30
+                local val = conf.thickness
+                if val == nil then
+                    val = 30
                 end
-                return v
+                return val
             end,
-            setValue = function(v)
-                cfg.thickness = v
+            setValue = function(val)
+                conf.thickness = val
                 Apply()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, scaleCfg, hoverBlocksCfg)
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, scaleCfg, hoverBlocksCfg)
+        posY = posY - hgt
 
         -- Bar deletion lives in the selector dropdown's inline delete -- no
         -- body row. Visibility moved to the top of the section; rename =
@@ -2555,17 +2562,17 @@ initFrame:SetScript("OnEvent", function(self)
         -------------------------------------------------------------------
         --  One section per block
         -------------------------------------------------------------------
-        local blocks = cfg.blocks
+        local blocks = conf.blocks
         if CludesUI.IS_FOREVER then
             -- Hidden blocks get no section (see BlockHidden); the rest keep
             -- bar order.
-            local shown = {}
+            local isShown = {}
             for i = 1, #blocks do
                 if not BlockHidden(blocks[i]) then
-                    shown[#shown + 1] = blocks[i]
+                    isShown[#isShown + 1] = blocks[i]
                 end
             end
-            blocks = shown
+            blocks = isShown
         end
         local blockHoverRegions = {} -- { id, rgn } Width % control regions
         for i = 1, #blocks do
@@ -2583,15 +2590,15 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             local secHdr
-            secHdr, h = W:SectionHeader(parent, string.upper(CludesUI.L(typeLabel)), y)
-            y = y - h
+            secHdr, hgt = W:SectionHeader(hostFrame, string.upper(CludesUI.L(typeLabel)), posY)
+            posY = posY - hgt
 
             -- Bar-level sizing owns all widths now (Auto Sized / Even Split toggle at
             -- the top of Bar Settings). Auto mode: every block except the single Fill
             -- Remaining block gets a per-side gaps row, and every block gets the fill
             -- designation toggle. Even Split: no per-block sizing rows at all.
-            local barMode = ns.BarSizingMode(cfg)
-            local isFillBlock = barMode == "auto" and ns.EnsureFillBlock(cfg) == blockId
+            local barMode = mod.BarSizingMode(conf)
+            local isFillBlock = barMode == "auto" and mod.EnsureFillBlock(conf) == blockId
             local sizingRow
             if barMode == "auto" and not isFillBlock then
                 local gapLLabel, gapRLabel
@@ -2600,7 +2607,7 @@ initFrame:SetScript("OnEvent", function(self)
                 else
                     gapLLabel, gapRLabel = "Left Gap", "Right Gap"
                 end
-                sizingRow, h = W:DualRow(parent, y, {
+                sizingRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "slider",
                     text = gapLLabel,
                     min = 0,
@@ -2608,11 +2615,11 @@ initFrame:SetScript("OnEvent", function(self)
                     step = 1,
                     tooltip = "Empty space reserved on this side of the block's content.",
                     getValue = function()
-                        local l = ns.ContentGapsOf(b)
+                        local l = mod.ContentGapsOf(b)
                         return l
                     end,
-                    setValue = function(v)
-                        b.contentGapL = v
+                    setValue = function(val)
+                        b.contentGapL = val
                         Apply()
                         if _edbStripRelayout then
                             _edbStripRelayout()
@@ -2626,36 +2633,36 @@ initFrame:SetScript("OnEvent", function(self)
                     step = 1,
                     tooltip = "Empty space reserved on this side of the block's content.",
                     getValue = function()
-                        local _, r = ns.ContentGapsOf(b)
+                        local _, r = mod.ContentGapsOf(b)
                         return r
                     end,
-                    setValue = function(v)
-                        b.contentGapR = v
+                    setValue = function(val)
+                        b.contentGapR = val
                         Apply()
                         if _edbStripRelayout then
                             _edbStripRelayout()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
             end
             if barMode == "auto" then
                 local fillRow
-                fillRow, h = W:DualRow(parent, y, {
+                fillRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Set as 'Fill Remaining Space' Block",
                     tooltip = "Stretches this block to absorb the space the sized blocks leave over; exactly one block per bar fills.",
                     disabled = function()
-                        return ns.EnsureFillBlock(cfg) == blockId
+                        return mod.EnsureFillBlock(conf) == blockId
                     end,
                     disabledTooltip = "This block is already the 'Fill Remaining Space' block. Check another block to move the role.",
                     rawTooltip = true,
                     getValue = function()
-                        return ns.EnsureFillBlock(cfg) == blockId
+                        return mod.EnsureFillBlock(conf) == blockId
                     end,
-                    setValue = function(v)
-                        if v then
-                            ns.SetFillBlock(barId, blockId)
+                    setValue = function(val)
+                        if val then
+                            mod.SetFillBlock(barId, blockId)
                             HardRefresh()
                         end
                     end,
@@ -2664,18 +2671,18 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Force Centered",
                     tooltip = "Pins this block's content to the exact center of the bar; blocks before it pack left, blocks after pack right. Combined with Fill Remaining, the block also absorbs the leftover space around the center.",
                     getValue = function()
-                        return cfg.centerBlockId == blockId
+                        return conf.centerBlockId == blockId
                     end,
-                    setValue = function(v)
-                        if v then
-                            ns.SetCenterBlock(barId, blockId)
-                        elseif cfg.centerBlockId == blockId then
-                            ns.SetCenterBlock(barId, nil)
+                    setValue = function(val)
+                        if val then
+                            mod.SetCenterBlock(barId, blockId)
+                        elseif conf.centerBlockId == blockId then
+                            mod.SetCenterBlock(barId, nil)
                         end
                         HardRefresh()
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
                 if not sizingRow then
                     sizingRow = fillRow
                 end
@@ -2690,7 +2697,8 @@ initFrame:SetScript("OnEvent", function(self)
                 }
             end
 
-            parent._edbClickTargets["block:" .. blockId] = { section = secHdr, target = sizingRow or secHdr }
+            hostFrame._edbClickTargets["block:" .. blockId] =
+                { section = secHdr, target = sizingRow or secHdr }
 
             -- Text Align + X/Y offsets (skipped for spacers)
             if not isSpacer then
@@ -2715,8 +2723,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.hideSocialText ~= true
                         end,
-                        setValue = function(v)
-                            s.hideSocialText = not v
+                        setValue = function(val)
+                            s.hideSocialText = not val
                             Apply()
                         end,
                     }
@@ -2734,19 +2742,19 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return a
                         end,
-                        setValue = function(v)
-                            b.align = v
+                        setValue = function(val)
+                            b.align = val
                             -- XP / Rep: a picked alignment also places the bar's
                             -- label (unset keeps the label left, as it always was).
                             if b.type == "xprep" then
-                                b.labelAlign = v
+                                b.labelAlign = val
                             end
                             Apply()
                         end,
                     }
                 end
                 local alignRow
-                alignRow, h = W:DualRow(parent, y, alignLeftCfg, {
+                alignRow, hgt = W:DualRow(hostFrame, posY, alignLeftCfg, {
                     type = "slider",
                     text = "Content Scale",
                     min = 50,
@@ -2754,18 +2762,18 @@ initFrame:SetScript("OnEvent", function(self)
                     step = 5,
                     tooltip = "Scales this block's content as a group inside its slot.",
                     getValue = function()
-                        local v = b.scale
-                        if v == nil then
-                            v = 100
+                        local val = b.scale
+                        if val == nil then
+                            val = 100
                         end
-                        return v
+                        return val
                     end,
-                    setValue = function(v)
-                        b.scale = v
+                    setValue = function(val)
+                        b.scale = val
                         Apply()
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
                 do
                     -- Text Position cog: offsets the TEXT only (factories
                     -- inject these into every text anchor; icons stay put).
@@ -2779,16 +2787,16 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local v = b.textXOff
-                                    if v == nil then
-                                        v = 0
+                                    local val = b.textXOff
+                                    if val == nil then
+                                        val = 0
                                     end
-                                    return v
+                                    return val
                                 end,
-                                set = function(v)
-                                    b.textXOff = v
-                                    if ns.ReflowBlocks then
-                                        ns.ReflowBlocks(barId)
+                                set = function(val)
+                                    b.textXOff = val
+                                    if mod.ReflowBlocks then
+                                        mod.ReflowBlocks(barId)
                                     end
                                 end,
                             },
@@ -2799,16 +2807,16 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local v = b.textYOff
-                                    if v == nil then
-                                        v = 0
+                                    local val = b.textYOff
+                                    if val == nil then
+                                        val = 0
                                     end
-                                    return v
+                                    return val
                                 end,
-                                set = function(v)
-                                    b.textYOff = v
-                                    if ns.ReflowBlocks then
-                                        ns.ReflowBlocks(barId)
+                                set = function(val)
+                                    b.textYOff = val
+                                    if mod.ReflowBlocks then
+                                        mod.ReflowBlocks(barId)
                                     end
                                 end,
                             },
@@ -2827,14 +2835,14 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local v = b.xOff
-                                    if v == nil then
-                                        v = 0
+                                    local val = b.xOff
+                                    if val == nil then
+                                        val = 0
                                     end
-                                    return v
+                                    return val
                                 end,
-                                set = function(v)
-                                    b.xOff = v
+                                set = function(val)
+                                    b.xOff = val
                                     Apply()
                                 end,
                             },
@@ -2845,14 +2853,14 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 50,
                                 step = 1,
                                 get = function()
-                                    local v = b.yOff
-                                    if v == nil then
-                                        v = 0
+                                    local val = b.yOff
+                                    if val == nil then
+                                        val = 0
                                     end
-                                    return v
+                                    return val
                                 end,
-                                set = function(v)
-                                    b.yOff = v
+                                set = function(val)
+                                    b.yOff = val
                                     Apply()
                                 end,
                             },
@@ -2868,8 +2876,8 @@ initFrame:SetScript("OnEvent", function(self)
             -- SETTINGS now.) Colors apply during block re-render, so force a full
             -- reflow (a plain apply skips blocks whose width did not change).
             local function ApplyBlockColor()
-                if ns.ReflowBlocks then
-                    ns.ReflowBlocks(barId)
+                if mod.ReflowBlocks then
+                    mod.ReflowBlocks(barId)
                 end
             end
             local colorCfg = {
@@ -2932,7 +2940,7 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Accent Color",
                         hasAlpha = false,
                         getValue = function()
-                            return ns.GetAccent()
+                            return mod.GetAccent()
                         end,
                         setValue = function() end,
                         onClick = function()
@@ -3007,7 +3015,7 @@ initFrame:SetScript("OnEvent", function(self)
                 local sw = colorCfg.swatches
                 local origCustomClick = sw[1].onClick
                 sw[1].onClick = function(self)
-                    if ns.CrestColorMode(b) or b.useClassColor or b.useAccentColor then
+                    if mod.CrestColorMode(b) or b.useClassColor or b.useAccentColor then
                         b.useCrestColor = nil
                         b.useClassColor = nil
                         b.useAccentColor = nil
@@ -3021,7 +3029,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origCustomClick(self)
                 end
                 sw[1].refreshAlpha = function()
-                    if ns.CrestColorMode(b) or b.useClassColor or b.useAccentColor then
+                    if mod.CrestColorMode(b) or b.useClassColor or b.useAccentColor then
                         return 0.3
                     end
                     return 1
@@ -3050,7 +3058,7 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return ns.CrestColorMode(b) and 1 or 0.3
+                        return mod.CrestColorMode(b) and 1 or 0.3
                     end,
                 }
             end
@@ -3096,7 +3104,7 @@ initFrame:SetScript("OnEvent", function(self)
                     tooltip = DYNAMIC_TEXT_BLOCKS[b.type],
                     hasAlpha = false,
                     getValue = function()
-                        return ns.BlockTextDynamic(b.type)
+                        return mod.BlockTextDynamic(b.type)
                     end,
                     setValue = function() end,
                     onClick = function()
@@ -3118,15 +3126,15 @@ initFrame:SetScript("OnEvent", function(self)
             else
                 bgRightCfg = colorCfg
             end
-            bgRow, h = W:DualRow(parent, y, {
+            bgRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Block Background",
                 tooltip = "Tints this block's slot with its own color.",
                 getValue = function()
                     return b.bg ~= nil
                 end,
-                setValue = function(v)
-                    if v then
+                setValue = function(val)
+                    if val then
                         if not b.bg then
                             b.bg = { r = 0, g = 0, b = 0, a = 0.5 }
                         end
@@ -3137,11 +3145,11 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUI:RefreshPage()
                 end,
             }, bgRightCfg)
-            y = y - h
+            posY = posY - hgt
             if not CludesUI._prebuilding then
                 local rgn = bgRow._leftRegion
                 local ctrl = rgn._control
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     rgn,
                     bgRow:GetFrameLevel() + 3,
                     function()
@@ -3174,24 +3182,27 @@ initFrame:SetScript("OnEvent", function(self)
                     true,
                     20
                 )
-                PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                local block = CreateFrame("Frame", nil, swatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Enable Block Background"))
+                Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                local blockData = CreateFrame("Frame", nil, colorSwatch)
+                blockData:SetAllPoints()
+                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                blockData:EnableMouse(true)
+                blockData:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(
+                        colorSwatch,
+                        CludesUI.DisabledTooltip("Enable Block Background")
+                    )
                 end)
-                block:SetScript("OnLeave", function()
+                blockData:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateState()
                     if b.bg then
-                        swatch:SetAlpha(1)
-                        block:Hide()
+                        colorSwatch:SetAlpha(1)
+                        blockData:Hide()
                     else
-                        swatch:SetAlpha(0.3)
-                        block:Show()
+                        colorSwatch:SetAlpha(0.3)
+                        blockData:Show()
                     end
                 end
                 CludesUI.RegisterWidgetRefresh(function()
@@ -3204,16 +3215,16 @@ initFrame:SetScript("OnEvent", function(self)
             -- Toggle row for a setting whose default is ON: nil has to read as
             -- true, which the `== true` of MkToggle (further down) cannot
             -- express. Declared here because the icon row below needs it too.
-            local function MkToggleOn(label, key, tip)
+            local function MkToggleOn(labelText, key, tipText)
                 return {
                     type = "toggle",
-                    text = label,
-                    tooltip = tip,
+                    text = labelText,
+                    tooltip = tipText,
                     getValue = function()
                         return s[key] ~= false
                     end,
-                    setValue = function(v)
-                        s[key] = v and true or false
+                    setValue = function(val)
+                        s[key] = val and true or false
                         Apply()
                     end,
                 }
@@ -3262,7 +3273,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 if c then
                                     return c.r or 1, c.g or 1, c.b or 1
                                 end
-                                return ns.BlockIconDefault(b.type, s)
+                                return mod.BlockIconDefault(b.type, s)
                             end,
                             setValue = function(r, g, bl)
                                 b.iconColor = { r = r, g = g, b = bl }
@@ -3280,7 +3291,7 @@ initFrame:SetScript("OnEvent", function(self)
                                     b.useIconAccentColor = nil
                                     b.useIconDefaultColor = nil
                                     if b.iconColor == nil then
-                                        local dr, dg2, db2 = ns.BlockIconDefault(b.type, s)
+                                        local dr, dg2, db2 = mod.BlockIconDefault(b.type, s)
                                         b.iconColor = { r = dr, g = dg2, b = db2 }
                                     end
                                     ApplyBlockColor()
@@ -3322,7 +3333,7 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Accent Color",
                             hasAlpha = false,
                             getValue = function()
-                                return ns.GetAccent()
+                                return mod.GetAccent()
                             end,
                             setValue = function() end,
                             onClick = function()
@@ -3340,7 +3351,7 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Default",
                             hasAlpha = false,
                             getValue = function()
-                                return ns.BlockIconDefault(b.type, s)
+                                return mod.BlockIconDefault(b.type, s)
                             end,
                             setValue = function() end,
                             onClick = function()
@@ -3403,8 +3414,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.clickableTeleports ~= false
                         end,
-                        setValue = function(v)
-                            s.clickableTeleports = v and true or false
+                        setValue = function(val)
+                            s.clickableTeleports = val and true or false
                             Apply()
                         end,
                     }
@@ -3419,8 +3430,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.showIcon ~= false
                         end,
-                        setValue = function(v)
-                            s.showIcon = v and true or false
+                        setValue = function(val)
+                            s.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3435,8 +3446,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.showIcon ~= false
                         end,
-                        setValue = function(v)
-                            s.showIcon = v and true or false
+                        setValue = function(val)
+                            s.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3451,8 +3462,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.showIcon ~= false
                         end,
-                        setValue = function(v)
-                            s.showIcon = v and true or false
+                        setValue = function(val)
+                            s.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3477,8 +3488,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.showIcon == true
                         end,
-                        setValue = function(v)
-                            s.showIcon = v and true or false
+                        setValue = function(val)
+                            s.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3504,8 +3515,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return p
                         end,
-                        setValue = function(v)
-                            s.prefix = v
+                        setValue = function(val)
+                            s.prefix = val
                             Apply()
                         end,
                     }
@@ -3518,8 +3529,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.showSmall == true
                         end,
-                        setValue = function(v)
-                            s.showSmall = v and true or false
+                        setValue = function(val)
+                            s.showSmall = val and true or false
                             Apply()
                         end,
                     }
@@ -3527,23 +3538,23 @@ initFrame:SetScript("OnEvent", function(self)
                 if b.type == "travel" and CludesUI.IS_FOREVER then
                     travelIconCfg = iconColorCfg
                 else
-                    _, h = W:DualRow(parent, y, iconColorCfg, iconRowRight)
-                    y = y - h
+                    _, hgt = W:DualRow(hostFrame, posY, iconColorCfg, iconRowRight)
+                    posY = posY - hgt
                 end
             end
 
             -- Type-specific rows (sequential DualRow fill; odd tail gets a
             -- blank label in the remaining slot)
-            local function MkToggle(label, key, tip)
+            local function MkToggle(labelText, key, tipText)
                 return {
                     type = "toggle",
-                    text = label,
-                    tooltip = tip,
+                    text = labelText,
+                    tooltip = tipText,
                     getValue = function()
                         return s[key] == true
                     end,
-                    setValue = function(v)
-                        s[key] = v and true or false
+                    setValue = function(val)
+                        s[key] = val and true or false
                         Apply()
                     end,
                 }
@@ -3569,8 +3580,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.channel or "master"
                         end,
-                        setValue = function(v)
-                            s.channel = v
+                        setValue = function(val)
+                            s.channel = val
                             Apply()
                         end,
                     },
@@ -3590,8 +3601,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return s.localTime == true
                         end,
-                        setValue = function(v)
-                            s.localTime = v and true or false
+                        setValue = function(val)
+                            s.localTime = val and true or false
                             Apply()
                         end,
                     },
@@ -3605,8 +3616,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return s.twentyFour == true
                         end,
-                        setValue = function(v)
-                            s.twentyFour = v and true or false
+                        setValue = function(val)
+                            s.twentyFour = val and true or false
                             Apply()
                         end,
                     },
@@ -3634,10 +3645,10 @@ initFrame:SetScript("OnEvent", function(self)
                         values = { home = "Home", world = "World", both = "Both" },
                         order = { "home", "world", "both" },
                         getValue = function()
-                            return ns.LatencyMode(s)
+                            return mod.LatencyMode(s)
                         end,
-                        setValue = function(v)
-                            s.latencyMode = v
+                        setValue = function(val)
+                            s.latencyMode = val
                             Apply()
                         end,
                     },
@@ -3651,8 +3662,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.showIcon == true
                         end,
-                        setValue = function(v)
-                            s.showIcon = v and true or false
+                        setValue = function(val)
+                            s.showIcon = val and true or false
                             Apply()
                             CludesUI:RefreshPage()
                         end,
@@ -3668,10 +3679,10 @@ initFrame:SetScript("OnEvent", function(self)
                 -- reading the field directly would leave the control enabled on a block
                 -- that IS the fill -- the very case this guards.
                 local function WidthInert()
-                    if ns.BarSizingMode(cfg) ~= "auto" then
+                    if mod.BarSizingMode(conf) ~= "auto" then
                         return true
                     end
-                    return ns.EnsureFillBlock(cfg) == blockId
+                    return mod.EnsureFillBlock(conf) == blockId
                 end
                 local INERT_TIP =
                     "This bar sizes its blocks itself, so the width is not this block's to choose."
@@ -3685,21 +3696,21 @@ initFrame:SetScript("OnEvent", function(self)
                         disabled = WidthInert,
                         disabledTooltip = INERT_TIP,
                         getValue = function()
-                            return ns.LocationWidthMode(s)
+                            return mod.LocationWidthMode(s)
                         end,
-                        setValue = function(v)
-                            s.widthMode = v
+                        setValue = function(val)
+                            s.widthMode = val
                             -- Every switch to Manual re-arms the pulse, whether
                             -- the block is new or was already configured: the
                             -- slider is the control that just took over, so it
                             -- has to announce itself each time.
-                            _edbWidthPulse[b] = (v == "manual") or nil
+                            _edbWidthPulse[b] = (val == "manual") or nil
                             Apply()
                             -- The slider's disabled state keys off this value.
                             CludesUI:RefreshPage()
                             -- Deferred so the REBUILT row is the one that lights
                             -- up, not the one this handler is running on.
-                            if v == "manual" then
+                            if val == "manual" then
                                 C_Timer.After(0, function()
                                     if _edbNavigateFn then
                                         _edbNavigateFn("block:" .. blockId .. ":maxwidth")
@@ -3720,7 +3731,7 @@ initFrame:SetScript("OnEvent", function(self)
                             if WidthInert() then
                                 return true
                             end
-                            return ns.LocationWidthMode(s) ~= "manual"
+                            return mod.LocationWidthMode(s) ~= "manual"
                         end,
                         -- Two reasons to be disabled, two different sentences:
                         -- a fixed "Manual width is required." would be plainly
@@ -3732,14 +3743,14 @@ initFrame:SetScript("OnEvent", function(self)
                             return "Manual width is required."
                         end,
                         getValue = function()
-                            local v = s.maxWidth
-                            if v == nil then
-                                v = ns.LOC_MAX_WIDTH_DEFAULT
+                            local val = s.maxWidth
+                            if val == nil then
+                                val = mod.LOC_MAX_WIDTH_DEFAULT
                             end
-                            return v
+                            return val
                         end,
-                        setValue = function(v)
-                            s.maxWidth = v
+                        setValue = function(val)
+                            s.maxWidth = val
                             -- Touched: the pulse has done its job.
                             _edbWidthPulse[b] = nil
                             Apply()
@@ -3766,8 +3777,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return p
                         end,
-                        setValue = function(v)
-                            s.precision = v
+                        setValue = function(val)
+                            s.precision = val
                             Apply()
                         end,
                     },
@@ -3816,8 +3827,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return CludesUI.GetGoldLedger().IsTracking()
                         end,
-                        setValue = function(v)
-                            CludesUI.GetGoldLedger().SetTracking(v)
+                        setValue = function(val)
+                            CludesUI.GetGoldLedger().SetTracking(val)
                         end,
                     },
                 }
@@ -3843,8 +3854,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.textDisplay or "name"
                         end,
-                        setValue = function(v)
-                            s.textDisplay = v
+                        setValue = function(val)
+                            s.textDisplay = val
                             Apply()
                         end,
                     },
@@ -3857,10 +3868,10 @@ initFrame:SetScript("OnEvent", function(self)
                         values = { off = "Off", values = "Values", percentage = "Percentage" },
                         order = { "off", "values", "percentage" },
                         getValue = function()
-                            return ns.GetXPRepTextDisplay(s)
+                            return mod.GetXPRepTextDisplay(s)
                         end,
-                        setValue = function(v)
-                            s.textDisplay = v
+                        setValue = function(val)
+                            s.textDisplay = val
                             Apply()
                         end,
                     },
@@ -3872,12 +3883,12 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.textFormat or "context"
                         end,
-                        setValue = function(v)
-                            s.textFormat = v
+                        setValue = function(val)
+                            s.textFormat = val
                             Apply()
                         end,
                         disabled = function()
-                            return ns.GetXPRepTextDisplay(s) == "off"
+                            return mod.GetXPRepTextDisplay(s) == "off"
                         end,
                     },
                     {
@@ -3893,8 +3904,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return m
                         end,
-                        setValue = function(v)
-                            s.mode = v
+                        setValue = function(val)
+                            s.mode = val
                             Apply()
                         end,
                     },
@@ -3905,79 +3916,79 @@ initFrame:SetScript("OnEvent", function(self)
                     MkToggle("Uppercase Text", "useUppercase", "Renders the spec text in uppercase."),
                 }
             elseif b.type == "travel" then
-                local function ChoiceOf(btn)
-                    return ns.TravelClickChoice(s, btn)
+                local function ChoiceOf(button)
+                    return mod.TravelClickChoice(s, button)
                 end
                 -- Houses arrive asynchronously: the page refresh lists them (the refill below).
-                ns.TravelRequestHouseList(function()
+                mod.TravelRequestHouseList(function()
                     if CludesUI:GetActiveModule() == "CludesUIDataBars" then
                         CludesUI:RefreshPage()
                     end
                 end)
                 -- Fills values / order in place: a built dropdown keeps reading these tables.
-                local function BuildClickValues(btn, values, order)
+                local function BuildClickValues(button, values, sequence)
                     wipe(values)
-                    wipe(order)
-                    if btn == 3 then
+                    wipe(sequence)
+                    if button == 3 then
                         values.none = "None"
-                        order[1] = "none"
+                        sequence[1] = "none"
                     end
                     values.random = "Random Hearthstone"
-                    order[#order + 1] = "random"
-                    local cur = ChoiceOf(btn)
+                    sequence[#sequence + 1] = "random"
+                    local current = ChoiceOf(button)
                     -- A saved house missing from the list (not loaded yet, or sold) stays listed as "Home".
-                    local houses = ns.TravelHouseChoices()
-                    local curIsHouse = type(cur) == "string" and cur:find("house:", 1, true) == 1
+                    local houses = mod.TravelHouseChoices()
+                    local curIsHouse = type(current) == "string" and current:find("house:", 1, true) == 1
                     if #houses > 0 or curIsHouse then
-                        order[#order + 1] = "---house"
+                        sequence[#sequence + 1] = "---house"
                         for _, house in ipairs(houses) do
                             values[house.key] = house.name
-                            order[#order + 1] = house.key
+                            sequence[#sequence + 1] = house.key
                         end
-                        if curIsHouse and not values[cur] then
-                            values[cur] = "Home"
-                            order[#order + 1] = cur
+                        if curIsHouse and not values[current] then
+                            values[current] = "Home"
+                            sequence[#sequence + 1] = current
                         end
                     end
-                    local curPlaced = type(cur) ~= "number"
+                    local curPlaced = type(current) ~= "number"
                     local groups = {
-                        { key = "---travel", ids = ns.TravelExtraIDs, usable = ns.TravelExtraUsable },
-                        { key = "---hearth", ids = ns.TravelHearthstoneIDs, usable = ns.TravelIsUsable },
+                        { key = "---travel", ids = mod.TravelExtraIDs, usable = mod.TravelExtraUsable },
+                        { key = "---hearth", ids = mod.TravelHearthstoneIDs, usable = mod.TravelIsUsable },
                     }
                     for gi, g in ipairs(groups) do
-                        local list, curInGroup = {}, false
+                        local entries, curInGroup = {}, false
                         if g.ids and g.usable then
-                            for _, id in ipairs(g.ids) do
-                                if id == cur then
+                            for _, ident in ipairs(g.ids) do
+                                if ident == current then
                                     curInGroup = true
                                 end
-                                if g.usable(id) and id ~= cur then
-                                    list[#list + 1] = id
+                                if g.usable(ident) and ident ~= current then
+                                    entries[#entries + 1] = ident
                                 end
                             end
                         end
                         -- Keep the current pick listed even if it went unowned,
                         -- so the dropdown shows its label instead of a blank.
                         if not curPlaced and (curInGroup or gi == #groups) then
-                            list[#list + 1] = cur
+                            entries[#entries + 1] = current
                             curPlaced = true
                         end
-                        if #list > 0 then
-                            local names = {}
-                            for _, id in ipairs(list) do
-                                names[id] = ns.TravelEntryName(id) or ("Item " .. id)
+                        if #entries > 0 then
+                            local nameList = {}
+                            for _, ident in ipairs(entries) do
+                                nameList[ident] = mod.TravelEntryName(ident) or ("Item " .. ident)
                             end
-                            table.sort(list, function(a, z)
-                                return names[a] < names[z]
+                            table.sort(entries, function(a, z)
+                                return nameList[a] < nameList[z]
                             end)
-                            order[#order + 1] = g.key
-                            for _, id in ipairs(list) do
-                                values[id] = names[id]
-                                order[#order + 1] = id
+                            sequence[#sequence + 1] = g.key
+                            for _, ident in ipairs(entries) do
+                                values[ident] = nameList[ident]
+                                sequence[#sequence + 1] = ident
                             end
                         end
                     end
-                    return values, order
+                    return values, sequence
                 end
                 local CLICK_LABELS = { "Left Click", "Right Click", "Middle Click" }
                 local CLICK_KEYS = { "hsChoice", "hsChoiceRight", "hsChoiceMiddle" }
@@ -3998,23 +4009,23 @@ initFrame:SetScript("OnEvent", function(self)
                 local TEXT_ORDER = { "location", "smart", "both", "cooldown", "none" }
                 typeRows = {}
                 local clickVals, clickOrd = {}, {}
-                for btn = 1, 3 do
-                    local vals, ord = BuildClickValues(btn, {}, {})
-                    clickVals[btn], clickOrd[btn] = vals, ord
+                for button = 1, 3 do
+                    local vals, ord = BuildClickValues(button, {}, {})
+                    clickVals[button], clickOrd[button] = vals, ord
                     typeRows[#typeRows + 1] = {
                         type = "dropdown",
-                        text = CLICK_LABELS[btn],
-                        tooltip = CLICK_TIPS[btn],
+                        text = CLICK_LABELS[button],
+                        tooltip = CLICK_TIPS[button],
                         values = vals,
                         order = ord,
                         getValue = function()
-                            return ChoiceOf(btn)
+                            return ChoiceOf(button)
                         end,
-                        setValue = function(v)
-                            s[CLICK_KEYS[btn]] = v
+                        setValue = function(val)
+                            s[CLICK_KEYS[button]] = val
                             -- Mirrored for old readers/exports of the legacy boolean.
-                            if btn == 1 then
-                                s.randomizeHs = (v == "random")
+                            if button == 1 then
+                                s.randomizeHs = (val == "random")
                             end
                             Apply()
                             CludesUI:RefreshPage()
@@ -4022,19 +4033,19 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                     typeRows[#typeRows + 1] = {
                         type = "dropdown",
-                        text = TEXT_LABELS[btn],
+                        text = TEXT_LABELS[button],
                         tooltip = "What the bar shows for this click.",
                         values = TEXT_VALUES,
                         order = TEXT_ORDER,
                         getValue = function()
-                            return ns.TravelClickTextMode(s, btn)
+                            return mod.TravelClickTextMode(s, button)
                         end,
-                        setValue = function(v)
-                            s[TEXT_KEYS[btn]] = v
+                        setValue = function(val)
+                            s[TEXT_KEYS[button]] = val
                             Apply()
                         end,
                         disabled = function()
-                            return ChoiceOf(btn) == "none"
+                            return ChoiceOf(button) == "none"
                         end,
                         disabledTooltip = "Set this click to something other than None.",
                         rawTooltip = true,
@@ -4052,16 +4063,16 @@ initFrame:SetScript("OnEvent", function(self)
                 -- A house list that arrived after the build: refill the three menus in place.
                 if not CludesUI._prebuilding then
                     travelClickDD = {}
-                    local clickDD, listGen = travelClickDD, ns.TravelHouseListGen()
+                    local clickDD, listGen = travelClickDD, mod.TravelHouseListGen()
                     CludesUI.RegisterWidgetRefresh(function()
-                        local gen = ns.TravelHouseListGen()
+                        local gen = mod.TravelHouseListGen()
                         if gen == listGen then
                             return
                         end
                         listGen = gen
-                        for btn = 1, 3 do
-                            BuildClickValues(btn, clickVals[btn], clickOrd[btn])
-                            local dd = clickDD[btn]
+                        for button = 1, 3 do
+                            BuildClickValues(button, clickVals[button], clickOrd[button])
+                            local dd = clickDD[button]
                             if dd and dd._invalidateMenu then
                                 dd._invalidateMenu()
                             end
@@ -4092,8 +4103,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return a
                         end,
-                        setValue = function(v)
-                            b.align = v
+                        setValue = function(val)
+                            b.align = val
                             Apply()
                         end,
                     },
@@ -4111,14 +4122,14 @@ initFrame:SetScript("OnEvent", function(self)
                         step = 1,
                         tooltip = "Gap between the main menu button and the icon row.",
                         getValue = function()
-                            local v = s.mainMenuSpacing
-                            if v == nil then
-                                v = 4
+                            local val = s.mainMenuSpacing
+                            if val == nil then
+                                val = 4
                             end
-                            return v
+                            return val
                         end,
-                        setValue = function(v)
-                            s.mainMenuSpacing = v
+                        setValue = function(val)
+                            s.mainMenuSpacing = val
                             Apply()
                         end,
                     },
@@ -4131,14 +4142,14 @@ initFrame:SetScript("OnEvent", function(self)
                         step = 1,
                         tooltip = "Gap between the micro menu icons.",
                         getValue = function()
-                            local v = s.iconSpacing
-                            if v == nil then
-                                v = 2
+                            local val = s.iconSpacing
+                            if val == nil then
+                                val = 2
                             end
-                            return v
+                            return val
                         end,
-                        setValue = function(v)
-                            s.iconSpacing = v
+                        setValue = function(val)
+                            s.iconSpacing = val
                             Apply()
                         end,
                     },
@@ -4160,7 +4171,7 @@ initFrame:SetScript("OnEvent", function(self)
                     MkToggle("Show Label", "showLabel"),
                 }
             elseif b.type == "currency" then
-                local cValues, cOrder = ns.BuildCurrencyList()
+                local cValues, cOrder = mod.BuildCurrencyList()
                 cValues._noLoc = true
                 cValues._menuOpts = { searchable = true, itemHeight = 26 }
                 cValues[0] = L("Select a currency")
@@ -4173,17 +4184,17 @@ initFrame:SetScript("OnEvent", function(self)
                         values = cValues,
                         order = cOrder,
                         getValue = function()
-                            local id = s.currencyId
-                            if id == nil then
-                                id = 0
+                            local ident = s.currencyId
+                            if ident == nil then
+                                ident = 0
                             end
-                            return id
+                            return ident
                         end,
-                        setValue = function(v)
-                            if v == 0 then
+                        setValue = function(val)
+                            if val == 0 then
                                 s.currencyId = nil
                             else
-                                s.currencyId = v
+                                s.currencyId = val
                             end
                             Apply()
                         end,
@@ -4223,14 +4234,14 @@ initFrame:SetScript("OnEvent", function(self)
                         },
                         order = { "slash", "line", "dash", "space" },
                         getValue = function()
-                            local v = s.separator
-                            if v == nil then
-                                v = "slash"
+                            local val = s.separator
+                            if val == nil then
+                                val = "slash"
                             end
-                            return v
+                            return val
                         end,
-                        setValue = function(v)
-                            s.separator = v
+                        setValue = function(val)
+                            s.separator = val
                             Apply()
                         end,
                     },
@@ -4260,8 +4271,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return "asc"
                         end,
-                        setValue = function(v)
-                            s.reverse = (v == "desc")
+                        setValue = function(val)
+                            s.reverse = (val == "desc")
                             Apply()
                         end,
                     },
@@ -4283,8 +4294,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.value or "free"
                         end,
-                        setValue = function(v)
-                            s.value = v
+                        setValue = function(val)
+                            s.value = val
                             Apply()
                         end,
                     },
@@ -4304,12 +4315,12 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.lowThreshold or 0
                         end,
-                        setValue = function(v)
+                        setValue = function(val)
                             local wasOn = (s.lowThreshold or 0) > 0
-                            s.lowThreshold = v
+                            s.lowThreshold = val
                             Apply()
                             -- Swatch enable state flips only when crossing zero.
-                            if wasOn ~= (v > 0) then
+                            if wasOn ~= (val > 0) then
                                 CludesUI:RefreshPage()
                             end
                         end,
@@ -4341,14 +4352,14 @@ initFrame:SetScript("OnEvent", function(self)
                         values = { equipped = "Equipped", total = "Total", both = "Both" },
                         order = { "equipped", "total", "both" },
                         getValue = function()
-                            local v = s.value
-                            if v == nil then
-                                v = "equipped"
+                            local val = s.value
+                            if val == nil then
+                                val = "equipped"
                             end
-                            return v
+                            return val
                         end,
-                        setValue = function(v)
-                            s.value = v
+                        setValue = function(val)
+                            s.value = val
                             Apply()
                         end,
                     },
@@ -4365,8 +4376,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                             return p
                         end,
-                        setValue = function(v)
-                            s.precision = v
+                        setValue = function(val)
+                            s.precision = val
                             Apply()
                         end,
                     },
@@ -4375,7 +4386,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Rebuilt on every page draw, never cached: plugins register on
                 -- their own schedule and some only appear once their addon has
                 -- finished loading.
-                local lValues, lOrder = ns.BuildLDBList()
+                local lValues, lOrder = mod.BuildLDBList()
                 lValues._noLoc = true
                 lValues._menuOpts = { searchable = true, itemHeight = 26 }
                 lValues[""] = L("Select a plugin")
@@ -4398,11 +4409,11 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.source or ""
                         end,
-                        setValue = function(v)
-                            if v == "" then
+                        setValue = function(val)
+                            if val == "" then
                                 s.source = nil
                             else
-                                s.source = v
+                                s.source = val
                             end
                             Apply()
                         end,
@@ -4433,11 +4444,11 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return s.maxWidth or 0
                         end,
-                        setValue = function(v)
-                            if v == 0 then
+                        setValue = function(val)
+                            if val == 0 then
                                 s.maxWidth = nil
                             else
-                                s.maxWidth = v
+                                s.maxWidth = val
                             end
                             Apply()
                         end,
@@ -4454,7 +4465,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Menu Elements instead. The page refresh re-evaluates the
             -- style-dependent swatches.
             local iconStyleCfg
-            if ns.BlockHasIconStyle(b.type) then
+            if mod.BlockHasIconStyle(b.type) then
                 iconStyleCfg = {
                     type = "segmented",
                     text = "Icon Style",
@@ -4474,8 +4485,8 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return s.iconStyle or "custom"
                     end,
-                    setValue = function(v)
-                        s.iconStyle = v
+                    setValue = function(val)
+                        s.iconStyle = val
                         Apply()
                         -- Rebuild: the icon color swatches depend on the style.
                         CludesUI:RefreshPage(true)
@@ -4490,24 +4501,24 @@ initFrame:SetScript("OnEvent", function(self)
                 if not rightCfg then
                     rightCfg = { type = "label", text = "" }
                 end
-                row, h = W:DualRow(parent, y, typeRows[k], rightCfg)
-                y = y - h
+                rowFrame, hgt = W:DualRow(hostFrame, posY, typeRows[k], rightCfg)
+                posY = posY - hgt
                 -- Travel: the first three rows hold the click dropdowns on their left.
                 if travelClickDD and k <= 5 then
-                    travelClickDD[(k + 1) / 2] = row._leftRegion._control
+                    travelClickDD[(k + 1) / 2] = rowFrame._leftRegion._control
                 end
                 if b.type == "supplies" and k == 1 and not CludesUI._prebuilding then
-                    local region = row._leftRegion
-                    if region._control then
-                        region._control:Hide()
+                    local regionFrame = rowFrame._leftRegion
+                    if regionFrame._control then
+                        regionFrame._control:Hide()
                     end
                     local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
-                        region,
+                        regionFrame,
                         210,
-                        region:GetFrameLevel() + 2,
-                        ns.ClassResourceChoices,
+                        regionFrame:GetFrameLevel() + 2,
+                        mod.ClassResourceChoices,
                         function(key)
-                            return ns.ClassResourceShown(s, key)
+                            return mod.ClassResourceShown(s, key)
                         end,
                         function(key, value)
                             s.hiddenItems = s.hiddenItems or {}
@@ -4518,32 +4529,32 @@ initFrame:SetScript("OnEvent", function(self)
                         10,
                         true
                     )
-                    CludesUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
-                    region._control = dropdown
-                    region._lastInline = nil
+                    CludesUI.PanelPP.Point(dropdown, "RIGHT", regionFrame, "RIGHT", -20, 0)
+                    regionFrame._control = dropdown
+                    regionFrame._lastInline = nil
                     if refresh then
                         CludesUI.RegisterWidgetRefresh(refresh)
                     end
-                    parent._edbClickTargets["block:" .. blockId .. ":resources"] =
-                        { section = secHdr, target = row, slotSide = "left" }
+                    hostFrame._edbClickTargets["block:" .. blockId .. ":resources"] =
+                        { section = secHdr, target = rowFrame, slotSide = "left" }
                 end
                 -- Latency: the Show Icon toggle rides this row's right slot and
                 -- carries the inline icon-color swatches built after the loop.
                 if b.type == "ms" and k == 1 then
-                    msIconRow = row
+                    msIconRow = rowFrame
                 end
                 -- Gold: Show Tooltip Data rides the Coin Icons row's right slot.
                 if b.type == "gold" and k == 3 then
-                    goldTipRow = row
+                    goldTipRow = rowFrame
                 end
                 -- Crests: the Crests Shown checklist heads the type rows, so
                 -- its placeholder is this row's LEFT slot.
                 if b.type == "crests" and k == 1 then
-                    crestListRow = row
+                    crestListRow = rowFrame
                 end
                 -- Bags: Low Space Warning heads the second row (left slot).
                 if b.type == "bags" and k == 3 then
-                    bagsLowRow = row
+                    bagsLowRow = rowFrame
                 end
                 -- Deep-link target for an unconfigured currency block: clicking
                 -- its "Select a currency" placeholder on the live bar lands on
@@ -4551,9 +4562,9 @@ initFrame:SetScript("OnEvent", function(self)
                 -- k == 1 IS the Currency dropdown: it heads the currency
                 -- typeRows built above. Prepend a row there and retarget here.
                 if b.type == "currency" and k == 1 then
-                    parent._edbClickTargets["block:" .. blockId .. ":currency"] = {
+                    hostFrame._edbClickTargets["block:" .. blockId .. ":currency"] = {
                         section = secHdr,
-                        target = row,
+                        target = rowFrame,
                         slotSide = "left",
                         -- Pulse until the player actually picks one.
                         holdWhile = function()
@@ -4570,9 +4581,9 @@ initFrame:SetScript("OnEvent", function(self)
                 -- clicking its placeholder on the live bar lands on the picker,
                 -- which pulses until it is filled in.
                 if b.type == "ldb" and k == 1 then
-                    parent._edbClickTargets["block:" .. blockId .. ":ldb"] = {
+                    hostFrame._edbClickTargets["block:" .. blockId .. ":ldb"] = {
                         section = secHdr,
-                        target = row,
+                        target = rowFrame,
                         slotSide = "left",
                         holdWhile = function()
                             return s.source == nil
@@ -4580,9 +4591,9 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                 end
                 if b.type == "location" and k == 1 then
-                    parent._edbClickTargets["block:" .. blockId .. ":maxwidth"] = {
+                    hostFrame._edbClickTargets["block:" .. blockId .. ":maxwidth"] = {
                         section = secHdr,
-                        target = row,
+                        target = rowFrame,
                         slotSide = "right",
                         holdWhile = function()
                             return _edbWidthPulse[b] == true
@@ -4599,7 +4610,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- untinted default -- no migration and no new default key.
             if msIconRow and not CludesUI._prebuilding then
                 local rgn = msIconRow._rightRegion
-                local anchor = rgn._control
+                local anchorFrame = rgn._control
                 local function IconOn()
                     return s.showIcon == true
                 end
@@ -4618,7 +4629,7 @@ initFrame:SetScript("OnEvent", function(self)
                     {
                         tip = "Accent Color",
                         get = function()
-                            return ns.GetAccent()
+                            return mod.GetAccent()
                         end,
                         click = function()
                             ClearFlags()
@@ -4683,7 +4694,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 for i = 1, #specs do
                     local sp = specs[i]
-                    local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                    local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                         rgn,
                         msIconRow:GetFrameLevel() + 3,
                         function()
@@ -4694,39 +4705,39 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    swatch._eabOrigClick = swatch:GetScript("OnClick")
-                    swatch:SetScript("OnClick", function(self)
+                    colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
+                    colorSwatch:SetScript("OnClick", function(self)
                         sp.click(self)
                     end)
-                    swatch:HookScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(swatch, sp.tip)
+                    colorSwatch:HookScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(colorSwatch, sp.tip)
                     end)
-                    swatch:HookScript("OnLeave", function()
+                    colorSwatch:HookScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
-                    PP.Point(swatch, "RIGHT", anchor, "LEFT", -8, 0)
-                    anchor = swatch
+                    Pix.Point(colorSwatch, "RIGHT", anchorFrame, "LEFT", -8, 0)
+                    anchorFrame = colorSwatch
 
                     -- Blocking overlay while Show Icon is off: the icons are
                     -- not drawn, so their color is not editable.
-                    local block = CreateFrame("Frame", nil, swatch)
-                    block:SetAllPoints()
-                    block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-                    block:EnableMouse(true)
-                    block:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Icon"))
+                    local blockData = CreateFrame("Frame", nil, colorSwatch)
+                    blockData:SetAllPoints()
+                    blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                    blockData:EnableMouse(true)
+                    blockData:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Show Icon"))
                     end)
-                    block:SetScript("OnLeave", function()
+                    blockData:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
 
                     local function UpdateState()
                         if not IconOn() then
-                            swatch:SetAlpha(0.3)
-                            block:Show()
+                            colorSwatch:SetAlpha(0.3)
+                            blockData:Show()
                         else
-                            swatch:SetAlpha(sp.on() and 1 or 0.3)
-                            block:Hide()
+                            colorSwatch:SetAlpha(sp.on() and 1 or 0.3)
+                            blockData:Hide()
                         end
                     end
                     CludesUI.RegisterWidgetRefresh(function()
@@ -4735,18 +4746,18 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                     UpdateState()
                 end
-                rgn._lastInline = anchor
+                rgn._lastInline = anchorFrame
             end
 
             -- Bags low space color: inline on the threshold slider, disabled
             -- (house pattern) while the threshold is zero.
             if bagsLowRow and not CludesUI._prebuilding then
                 local rgn = bagsLowRow._leftRegion
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     rgn,
                     bagsLowRow:GetFrameLevel() + 3,
                     function()
-                        local d = ns.BAGS_LOW_COLOR
+                        local d = mod.BAGS_LOW_COLOR
                         local c = s.lowColor
                         if c then
                             return c.r or d[1], c.g or d[2], c.b or d[3]
@@ -4760,23 +4771,23 @@ initFrame:SetScript("OnEvent", function(self)
                     false,
                     20
                 )
-                PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -8, 0)
-                local blk = CreateFrame("Frame", nil, swatch)
+                Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
+                local blk = CreateFrame("Frame", nil, colorSwatch)
                 blk:SetAllPoints()
-                blk:SetFrameLevel(swatch:GetFrameLevel() + 5)
+                blk:SetFrameLevel(colorSwatch:GetFrameLevel() + 5)
                 blk:EnableMouse(true)
                 blk:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Low Space Warning"))
+                    CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Low Space Warning"))
                 end)
                 blk:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateState()
                     if (s.lowThreshold or 0) > 0 then
-                        swatch:SetAlpha(1)
+                        colorSwatch:SetAlpha(1)
                         blk:Hide()
                     else
-                        swatch:SetAlpha(0.3)
+                        colorSwatch:SetAlpha(0.3)
                         blk:Show()
                     end
                 end
@@ -4785,7 +4796,7 @@ initFrame:SetScript("OnEvent", function(self)
                     UpdateState()
                 end)
                 UpdateState()
-                rgn._lastInline = swatch
+                rgn._lastInline = colorSwatch
             end
 
             if b.type == "gold" and goldTipRow then
@@ -4812,8 +4823,8 @@ initFrame:SetScript("OnEvent", function(self)
                         function(k)
                             return s[k] ~= false
                         end,
-                        function(k, v)
-                            if v then
+                        function(k, val)
+                            if val then
                                 s[k] = true
                             else
                                 s[k] = false
@@ -4839,19 +4850,19 @@ initFrame:SetScript("OnEvent", function(self)
                 -- crest whose name had not landed yet at page-build time is not
                 -- stuck showing its id.
                 local function CrestElements()
-                    local out = {}
-                    for i = 1, #ns.CRESTS do
-                        local c = ns.CRESTS[i]
+                    local result = {}
+                    for i = 1, #mod.CRESTS do
+                        local c = mod.CRESTS[i]
                         local name
                         if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
-                            local info = C_CurrencyInfo.GetCurrencyInfo(c.id)
-                            if info then
-                                name = info.name
+                            local details = C_CurrencyInfo.GetCurrencyInfo(c.id)
+                            if details then
+                                name = details.name
                             end
                         end
-                        out[i] = { key = c.key, label = name or ("#" .. c.id) }
+                        result[i] = { key = c.key, label = name or ("#" .. c.id) }
                     end
-                    return out
+                    return result
                 end
                 if not CludesUI._prebuilding then
                     local leftRgn = crestListRow._leftRegion
@@ -4866,8 +4877,8 @@ initFrame:SetScript("OnEvent", function(self)
                         function(k)
                             return s[k] ~= false
                         end,
-                        function(k, v)
-                            if v then
+                        function(k, val)
+                            if val then
                                 s[k] = true
                             else
                                 s[k] = false
@@ -4917,7 +4928,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end
                 local mmRow
-                mmRow, h = W:DualRow(parent, y, {
+                mmRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Menu Elements",
                     tooltip = "Which micro menu buttons this block shows, and their order.",
@@ -4928,32 +4939,32 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                     setValue = function() end,
                 }, iconStyleCfg or CludesUI.BlankRowCfg())
-                y = y - h
+                posY = posY - hgt
                 do
                     local leftRgn = mmRow._leftRegion
                     if leftRgn._control then
                         leftRgn._control:Hide()
                     end
                     -- Rows follow the block's saved button order.
-                    local labels, items = {}, {}
+                    local labels, itemList = {}, {}
                     for _, el in ipairs(MM_ELEMENTS) do
                         labels[el.key] = el.label
                     end
-                    for _, key in ipairs(ns.GetMicroMenuOrder(s, {})) do
+                    for _, key in ipairs(mod.GetMicroMenuOrder(s, {})) do
                         if labels[key] then
-                            items[#items + 1] = { key = key, label = labels[key] }
+                            itemList[#itemList + 1] = { key = key, label = labels[key] }
                         end
                     end
                     local cbDD, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
                         leftRgn,
                         210,
                         leftRgn:GetFrameLevel() + 2,
-                        items,
+                        itemList,
                         function(k)
-                            return ns.MicroMenuButtonOn(s, k)
+                            return mod.MicroMenuButtonOn(s, k)
                         end,
-                        function(k, v)
-                            if v then
+                        function(k, val)
+                            if val then
                                 s[k] = true
                             else
                                 s[k] = false
@@ -4961,8 +4972,8 @@ initFrame:SetScript("OnEvent", function(self)
                             Apply()
                         end,
                         {
-                            setOrder = function(keys)
-                                ns.SetMicroMenuOrder(s, keys)
+                            setOrder = function(keyList)
+                                mod.SetMicroMenuOrder(s, keyList)
                                 Apply()
                             end,
                         }
@@ -4976,23 +4987,23 @@ initFrame:SetScript("OnEvent", function(self)
                 end
 
                 local notesRow
-                notesRow, h = W:DualRow(parent, y, {
+                notesRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Show Guild Notes",
                     tooltip = "Shows each online member's public note after their name in the Guild tooltip.",
                     getValue = function()
                         return s.showGuildNotes == true
                     end,
-                    setValue = function(v)
-                        s.showGuildNotes = v and true or false
+                    setValue = function(val)
+                        s.showGuildNotes = val and true or false
                         Apply()
                         CludesUI:RefreshPage()
                     end,
                 }, CludesUI.BlankRowCfg())
-                y = y - h
+                posY = posY - hgt
                 if not CludesUI._prebuilding then
                     local rgn = notesRow._leftRegion
-                    local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                    local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                         rgn,
                         notesRow:GetFrameLevel() + 3,
                         function()
@@ -5009,25 +5020,25 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = swatch
-                    local block = CreateFrame("Frame", nil, swatch)
-                    block:SetAllPoints()
-                    block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-                    block:EnableMouse(true)
-                    block:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Guild Notes"))
+                    Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
+                    rgn._lastInline = colorSwatch
+                    local blockData = CreateFrame("Frame", nil, colorSwatch)
+                    blockData:SetAllPoints()
+                    blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                    blockData:EnableMouse(true)
+                    blockData:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Show Guild Notes"))
                     end)
-                    block:SetScript("OnLeave", function()
+                    blockData:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
                     local function UpdateState()
                         if s.showGuildNotes == true then
-                            swatch:SetAlpha(1)
-                            block:Hide()
+                            colorSwatch:SetAlpha(1)
+                            blockData:Hide()
                         else
-                            swatch:SetAlpha(0.3)
-                            block:Show()
+                            colorSwatch:SetAlpha(0.3)
+                            blockData:Show()
                         end
                     end
                     CludesUI.RegisterWidgetRefresh(function()
@@ -5047,25 +5058,25 @@ initFrame:SetScript("OnEvent", function(self)
         -- on BOTH the preview segment and the live bar slot. Poll watcher is parented
         -- to the page wrapper, so it stops (and clears) when the page hides.
         if #blockHoverRegions > 0 and not CludesUI._prebuilding then
-            local watcher = CreateFrame("Frame", nil, parent)
+            local watcher = CreateFrame("Frame", nil, hostFrame)
             watcher:SetSize(1, 1)
             local acc = 0
             local curHL
-            local function SetHL(id)
-                if id == curHL then
+            local function SetHL(ident)
+                if ident == curHL then
                     return
                 end
-                curHL = id
+                curHL = ident
                 if _edbSegHighlightFn then
-                    _edbSegHighlightFn(id)
+                    _edbSegHighlightFn(ident)
                 end
-                if ns.SetBlockEditHighlight then
-                    if id then
-                        ns.SetBlockEditHighlight(barId, id)
+                if mod.SetBlockEditHighlight then
+                    if ident then
+                        mod.SetBlockEditHighlight(barId, ident)
                     elseif not _edbSegHoverId then
                         -- A segment hover owns the live highlight right now;
                         -- clearing here would kill it 0.1s after OnEnter.
-                        ns.SetBlockEditHighlight(nil, nil)
+                        mod.SetBlockEditHighlight(nil, nil)
                     end
                 end
             end
@@ -5075,7 +5086,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 acc = 0
-                if not parent:GetTop() or not parent:IsMouseOver() then
+                if not hostFrame:GetTop() or not hostFrame:IsMouseOver() then
                     SetHL(nil)
                     return
                 end
@@ -5083,8 +5094,8 @@ initFrame:SetScript("OnEvent", function(self)
                 -- body, and IsMouseOver is a pure rect test that ignores clipping -- a
                 -- control scrolled under the preview would highlight while the cursor
                 -- is on the strip. Only count the cursor inside the scroll viewport.
-                local sf = CludesUI._scrollFrame
-                if sf and not sf:IsMouseOver() then
+                local scrollFrame = CludesUI._scrollFrame
+                if scrollFrame and not scrollFrame:IsMouseOver() then
                     SetHL(nil)
                     return
                 end
@@ -5104,8 +5115,8 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Adding blocks lives in the preview strip's "+" tile only -- no body section.
-        W:Spacer(parent, y, 20)
-        y = y - 20
+        W:Spacer(hostFrame, posY, 20)
+        posY = posY - 20
 
         -- Every click target of this build is registered by now. Same settle delay the
         -- navigation paths use, and the same pre-build guard: a hidden search pre-build
@@ -5113,16 +5124,16 @@ initFrame:SetScript("OnEvent", function(self)
         if not CludesUI._prebuilding then
             -- A kept page wrapper dressed again by a newer build by then holds
             -- that build's rows, and that build re-arms on its own.
-            local gen = Pool.Gen(parent)
+            local gen = Pool.Gen(hostFrame)
             C_Timer.After(0.05, function()
-                if Pool.Gen(parent) ~= gen then
+                if Pool.Gen(hostFrame) ~= gen then
                     return
                 end
                 RearmHeldGlow()
             end)
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -5131,7 +5142,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  this so the invitation leads to the control that fulfills it; the
     --  preview strip navigates through _edbNavigateFn directly.
     ---------------------------------------------------------------------------
-    function ns.OpenBlockSettings(barId, blockId, settingKey)
+    function mod.OpenBlockSettings(barId, blockId, settingKey)
         -- The options never open in combat; nor does the scroll below run then.
         if InCombatLockdown() then
             CludesUI.PrintError("Cannot open options during combat.")
@@ -5161,14 +5172,14 @@ initFrame:SetScript("OnEvent", function(self)
     --  holds the extents from before that pass. The runtime reports each
     --  finished pass here, and the strip re-solves while it shows that bar.
     ---------------------------------------------------------------------------
-    function ns.OnBarLaidOut(barId)
-        local host = _edbPreviewHost
-        if barId ~= _edbStripBarId or not (_edbStripRelayout and host and host:IsVisible()) then
+    function mod.OnBarLaidOut(barId)
+        local hostRegion = _edbPreviewHost
+        if barId ~= _edbStripBarId or not (_edbStripRelayout and hostRegion and hostRegion:IsVisible()) then
             return
         end
         -- A reorder drag (the strip's only OnUpdate) owns the segment
         -- positions until it ends.
-        if host:GetScript("OnUpdate") then
+        if hostRegion:GetScript("OnUpdate") then
             return
         end
         _edbStripRelayout()
@@ -5181,71 +5192,71 @@ initFrame:SetScript("OnEvent", function(self)
         title = "Info Bar",
         description = "User-created info bars: clock, gold, XP, micro menu and more.",
         pages = { PAGE_DATABARS },
-        buildPage = function(pageName, parent, yOffset)
-            return BuildDataBarsPage(pageName, parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            return BuildDataBarsPage(page, hostFrame, yOffset)
         end,
-        getHeaderBuilder = function(pageName)
-            if pageName == PAGE_DATABARS then
+        getHeaderBuilder = function(page)
+            if page == PAGE_DATABARS then
                 return _edbHeaderBuilder
             end
             return nil
         end,
-        onPageCacheRestore = function(pageName)
+        onPageCacheRestore = function(page)
             -- Bars can be resized/width-matched via unlock mode between
             -- visits; re-solve the restored preview from the live cfg.
-            if pageName == PAGE_DATABARS and _edbStripRelayout then
+            if page == PAGE_DATABARS and _edbStripRelayout then
                 _edbStripRelayout()
             end
         end,
         -- Reset CUI Module Settings' question names the one bar this reset touches.
         resetMessage = function()
-            local p = ns.GetProfile()
-            local cfg = p and ((p.selectedBarId and ns.GetBar(p.selectedBarId)) or (p.bars and p.bars[1]))
-            if not (cfg and cfg.name) then
+            local p = mod.GetProfile()
+            local conf = p and ((p.selectedBarId and mod.GetBar(p.selectedBarId)) or (p.bars and p.bars[1]))
+            if not (conf and conf.name) then
                 return nil
             end
             return CludesUI.Lf(
                 "Are you sure you want to reset the data bar selected on the Data Bars page (%1$s) to its default look? Its blocks are kept. This will reload your UI.",
-                cfg.name
+                conf.name
             )
         end,
         onReset = function()
             -- Resets the SELECTED bar's appearance/behavior to defaults;
             -- keeps its id, name and blocks. Never wipes the bar list.
             -- (Reset CUI Module Settings confirms and reloads for us.)
-            local p = ns.GetProfile()
+            local p = mod.GetProfile()
             if not p then
                 return
             end
-            local cfg = nil
+            local conf = nil
             if p.selectedBarId then
-                cfg = ns.GetBar(p.selectedBarId)
+                conf = mod.GetBar(p.selectedBarId)
             end
-            if not cfg then
-                cfg = p.bars[1]
+            if not conf then
+                conf = p.bars[1]
             end
-            if not cfg then
+            if not conf then
                 return
             end
-            cfg.orientation = "H"
-            cfg.lengthMode = "custom"
-            cfg.length = 400
-            cfg.thickness = 30
-            cfg.fontScale = 100
-            cfg.theme =
+            conf.orientation = "H"
+            conf.lengthMode = "custom"
+            conf.length = 400
+            conf.thickness = 30
+            conf.fontScale = 100
+            conf.theme =
                 { style = "cui", cuiAlpha = 0.5, modernColor = { r = 0.067, g = 0.067, b = 0.067, a = 0.95 } }
-            cfg.hideBorder = nil
-            cfg.visibility = "always"
-            cfg.visibilityModes = nil
-            cfg.visibilityMatch = nil
+            conf.hideBorder = nil
+            conf.visibility = "always"
+            conf.visibilityModes = nil
+            conf.visibilityMatch = nil
             -- VIS_OPT_KEYS, not VIS_OPT_ITEMS: the counter-lane keys have no row in the
             -- legacy item list, and a reset that skipped them would leave a bar hidden.
             for _, k in ipairs(CludesUI.VIS_OPT_KEYS) do
-                cfg[k] = nil
+                conf[k] = nil
             end
-            cfg.savedPos = nil
-            ns.ApplyBar(cfg.id)
-            ns.UpdateAllBarVisibility()
+            conf.savedPos = nil
+            mod.ApplyBar(conf.id)
+            mod.UpdateAllBarVisibility()
             CludesUI:InvalidatePageCache()
         end,
     })

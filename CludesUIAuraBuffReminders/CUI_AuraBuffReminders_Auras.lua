@@ -9,28 +9,28 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  buff beneficiaries.
 --  Reads the earlier AuraBuff Reminders files through ns._abrInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._abrInternals
+local _, mod = ...
+local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local AURA_SCAN_LIMIT, EABR, GetSpecID = I.AURA_SCAN_LIMIT, I.EABR, I.GetSpecID
-local InCombat, isSecret, NON_SECRET_SPELL_IDS = I.InCombat, I.isSecret, I.NON_SECRET_SPELL_IDS
-local SpellName = I.SpellName
+local AURA_SCAN_LIMIT, REMIND, GetSpecID = Inner.AURA_SCAN_LIMIT, Inner.EABR, Inner.GetSpecID
+local InCombat, isSecret, NON_SECRET_SPELL_IDS = Inner.InCombat, Inner.isSecret, Inner.NON_SECRET_SPELL_IDS
+local SpellName = Inner.SpellName
 
 -------------------------------------------------------------------------------
 --  Pre-combat aura snapshot
 -------------------------------------------------------------------------------
 local _preCombatAuraCache = {} -- [spellID] = true/false, snapshotted at REGEN_DISABLED
 
-function EABR.IsRuntimeNonSecret(id)
+function REMIND.IsRuntimeNonSecret(ident)
     if C_Secrets and C_Secrets.ShouldSpellAuraBeSecret then
-        local ok, secret = pcall(C_Secrets.ShouldSpellAuraBeSecret, id)
-        if not ok or isSecret(secret) then
+        local success, secret = pcall(C_Secrets.ShouldSpellAuraBeSecret, ident)
+        if not success or isSecret(secret) then
             return false
         end
         return secret == false
@@ -41,7 +41,7 @@ end
 -- Soulstone is readable on clients/builds where Blizzard explicitly exposes
 -- it. Do not hard-whitelist it on restricted builds: source ownership is the
 -- defining part of this reminder and must never be guessed from secret data.
-if EABR.IsRuntimeNonSecret(20707) then
+if REMIND.IsRuntimeNonSecret(20707) then
     NON_SECRET_SPELL_IDS[20707] = true
 end
 
@@ -49,26 +49,26 @@ local function SnapshotPlayerAuras()
     wipe(_preCombatAuraCache)
     -- WoW Forever reads nothing from it: its own section shows nothing in
     -- combat, and its Raid Buffs read the live auras.
-    if EABR.FOREVER then
+    if REMIND.FOREVER then
         return
     end
-    for id in pairs(NON_SECRET_SPELL_IDS) do
-        local result = C_UnitAuras.GetPlayerAuraBySpellID(id)
-        _preCombatAuraCache[id] = (result ~= nil)
+    for ident in pairs(NON_SECRET_SPELL_IDS) do
+        local result = C_UnitAuras.GetPlayerAuraBySpellID(ident)
+        _preCombatAuraCache[ident] = (result ~= nil)
     end
     -- Also snapshots non-whitelisted auras (e.g. Devotion Aura) going secret when a
     -- partymate combats first. 12.1: index scan hard-errors under restrictions (M+/raid) even OOC; whitelisted lookups still work, extras skipped.
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
         return
     end
-    for i = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+    for idx = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
         if not aura then
             break
         end
-        local sid = aura.spellId
-        if sid and not isSecret(sid) and not NON_SECRET_SPELL_IDS[sid] then
-            _preCombatAuraCache[sid] = true
+        local spellRef = aura.spellId
+        if spellRef and not isSecret(spellRef) and not NON_SECRET_SPELL_IDS[spellRef] then
+            _preCombatAuraCache[spellRef] = true
         end
     end
 end
@@ -118,8 +118,8 @@ function _AC.ensureNames()
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
         return
     end
-    for i = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+    for idx = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
         if not aura then
             break
         end
@@ -138,7 +138,7 @@ function _AC.ensureNames()
 end
 
 local function IsUnderDuration(duration, expirationTime, sectionKey)
-    return EABR.IsUnderDuration(duration, expirationTime, sectionKey)
+    return REMIND.IsUnderDuration(duration, expirationTime, sectionKey)
 end
 
 local function PlayerHasAuraByID(spellIDs, sectionKey)
@@ -147,29 +147,29 @@ local function PlayerHasAuraByID(spellIDs, sectionKey)
     end
     local inCombat = InCombat()
     -- Direct GetPlayerAuraBySpellID lookup (zero-alloc, OOC+combat for whitelisted IDs); non-whitelisted IDs fall back to the pre-combat snapshot.
-    for j = 1, #spellIDs do
-        local id = spellIDs[j]
-        if NON_SECRET_SPELL_IDS[id] then
-            local ok, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-            if ok then
+    for jdx = 1, #spellIDs do
+        local ident = spellIDs[jdx]
+        if NON_SECRET_SPELL_IDS[ident] then
+            local success, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+            if success then
                 if result ~= nil then
                     if sectionKey and IsUnderDuration(result.duration, result.expirationTime, sectionKey) then
                         return false
                     end
                     return true
                 end
-                if inCombat and _preCombatAuraCache[id] then
+                if inCombat and _preCombatAuraCache[ident] then
                     return true
                 end
             else
-                if inCombat and _preCombatAuraCache[id] then
+                if inCombat and _preCombatAuraCache[ident] then
                     return true
                 end
             end
         elseif not inCombat then
             -- Non-whitelisted OOC: GetPlayerAuraBySpellID may return secret values, but non-nil still means the aura exists.
-            local ok, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-            if ok and result ~= nil then
+            local success, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+            if success and result ~= nil then
                 -- 12.1: fields can be secret even OOC in restricted content; math on secrets errors, so presence alone counts then.
                 local dur, exp = result.duration, result.expirationTime
                 if dur ~= nil and exp ~= nil and not isSecret(dur) and not isSecret(exp) then
@@ -180,7 +180,7 @@ local function PlayerHasAuraByID(spellIDs, sectionKey)
                 return true
             end
         else
-            if _preCombatAuraCache[id] then
+            if _preCombatAuraCache[ident] then
                 return true
             end
         end
@@ -191,8 +191,8 @@ end
 -- Stances are shapeshift forms, not auras (GetPlayerAuraBySpellID can't see them); scan the stance bar instead. Returns (known-in-bar, currently-active).
 local function GetStanceState(stanceSpellID)
     local numForms = GetNumShapeshiftForms()
-    for i = 1, numForms do
-        local _, isActive, _, spellID = GetShapeshiftFormInfo(i)
+    for idx = 1, numForms do
+        local _, isActive, _, spellID = GetShapeshiftFormInfo(idx)
         if spellID == stanceSpellID then
             return true, isActive
         end
@@ -203,11 +203,11 @@ end
 -- Same idea, but checks a list of spellIDs instead of one fixed form index.
 local function IsAnyShapeshiftFormActive(spellIDs)
     local numForms = GetNumShapeshiftForms()
-    for i = 1, numForms do
-        local _, isActive, _, spellID = GetShapeshiftFormInfo(i)
+    for idx = 1, numForms do
+        local _, isActive, _, spellID = GetShapeshiftFormInfo(idx)
         if isActive then
-            for _, id in ipairs(spellIDs) do
-                if spellID == id then
+            for _, ident in ipairs(spellIDs) do
+                if spellID == ident then
                     return true
                 end
             end
@@ -227,19 +227,19 @@ local function _unitHasBuff(u, spellIDs)
     local inCombat = InCombat()
     -- Fast path for player: use GetPlayerAuraBySpellID for whitelisted IDs
     if UnitIsUnit(u, "player") then
-        for j = 1, #spellIDs do
-            local id = spellIDs[j]
-            if NON_SECRET_SPELL_IDS[id] then
-                local ok, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-                if ok then
+        for jdx = 1, #spellIDs do
+            local ident = spellIDs[jdx]
+            if NON_SECRET_SPELL_IDS[ident] then
+                local success, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+                if success then
                     if result ~= nil then
                         return true
                     end
-                    if inCombat and _preCombatAuraCache[id] then
+                    if inCombat and _preCombatAuraCache[ident] then
                         return true
                     end
                 else
-                    if inCombat and _preCombatAuraCache[id] then
+                    if inCombat and _preCombatAuraCache[ident] then
                         return true
                     end
                 end
@@ -247,11 +247,11 @@ local function _unitHasBuff(u, spellIDs)
         end
     else
         -- Non-player units: GetUnitAuraBySpellID for whitelisted IDs; works in combat for non-secret IDs.
-        for j = 1, #spellIDs do
-            local id = spellIDs[j]
-            if NON_SECRET_SPELL_IDS[id] then
-                local ok, result = pcall(C_UnitAuras.GetUnitAuraBySpellID, u, id)
-                if ok and result ~= nil and not isSecret(result) then
+        for jdx = 1, #spellIDs do
+            local ident = spellIDs[jdx]
+            if NON_SECRET_SPELL_IDS[ident] then
+                local success, result = pcall(C_UnitAuras.GetUnitAuraBySpellID, u, ident)
+                if success and result ~= nil and not isSecret(result) then
                     return true
                 end
             end
@@ -263,15 +263,15 @@ local function _unitHasBuff(u, spellIDs)
         and not UnitIsUnit(u, "player")
         and not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted())
     then
-        for i = 1, AURA_SCAN_LIMIT do
-            local aura = C_UnitAuras.GetAuraDataByIndex(u, i, "HELPFUL")
+        for idx = 1, AURA_SCAN_LIMIT do
+            local aura = C_UnitAuras.GetAuraDataByIndex(u, idx, "HELPFUL")
             if not aura then
                 break
             end
-            local sid = aura.spellId
-            if sid and not isSecret(sid) then
-                for j = 1, #spellIDs do
-                    if sid == spellIDs[j] then
+            local spellRef = aura.spellId
+            if spellRef and not isSecret(spellRef) then
+                for jdx = 1, #spellIDs do
+                    if spellRef == spellIDs[jdx] then
                         return true
                     end
                 end
@@ -285,37 +285,37 @@ end
 -- did, nil = cannot tell (the caller suppresses rather than false-fires).
 -- isFromPlayerOrPlayerPet is true for ANY player's (or player pet's) cast, so it
 -- only rules an aura out (false = an NPC applied it); sourceUnit proves it.
-function EABR._StrictAuraFromMe(aura)
+function REMIND._StrictAuraFromMe(aura)
     local fromPlayer = aura.isFromPlayerOrPlayerPet
     if not isSecret(fromPlayer) and fromPlayer == false then
         return false
     end
-    local src = aura.sourceUnit
-    if src == nil or isSecret(src) then
+    local source = aura.sourceUnit
+    if source == nil or isSecret(source) then
         return nil
     end
-    return UnitIsUnit(src, "player") == true
+    return UnitIsUnit(source, "player") == true
 end
 
 -- Whether the player's OWN cast of `id` is on `unit`, for the in-combat cache
 -- updates where sourceUnit is secret: the PLAYER filter returns only auras the
 -- player applied, so another caster's copy never counts. Presence only.
-function EABR._OwnCastOn(unit, id)
-    local names = EABR._ownCastNames
-    if not names then
-        names = {}
-        EABR._ownCastNames = names
+function REMIND._OwnCastOn(unitToken, ident)
+    local nameList = REMIND._ownCastNames
+    if not nameList then
+        nameList = {}
+        REMIND._ownCastNames = nameList
     end
-    local name = names[id]
+    local name = nameList[ident]
     if name == nil then
-        name = C_Spell.GetSpellName(id) or false
-        names[id] = name
+        name = C_Spell.GetSpellName(ident) or false
+        nameList[ident] = name
     end
     if not name then
         return false
     end
-    local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unit, name, "HELPFUL|PLAYER")
-    return ok and aura ~= nil and not isSecret(aura)
+    local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unitToken, name, "HELPFUL|PLAYER")
+    return success and aura ~= nil and not isSecret(aura)
 end
 
 -- True if the buff's source is the player. Non-player units: OOC iteration only, false in combat (caller uses the snapshot).
@@ -324,25 +324,25 @@ local function _unitHasBuffFromPlayer(u, spellIDs, strictSource)
     local restricted = CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()
     local idLookup = _idLookupScratch
     wipe(idLookup)
-    for j = 1, #spellIDs do
-        idLookup[spellIDs[j]] = true
+    for jdx = 1, #spellIDs do
+        idLookup[spellIDs[jdx]] = true
     end
 
     if UnitIsUnit(u, "player") then
         -- Player-self: GetPlayerAuraBySpellID for whitelisted IDs
-        for id in pairs(idLookup) do
-            if NON_SECRET_SPELL_IDS[id] or (strictSource and not restricted) then
-                local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-                if strictSource and (not ok or isSecret(aura)) then
+        for ident in pairs(idLookup) do
+            if NON_SECRET_SPELL_IDS[ident] or (strictSource and not restricted) then
+                local success, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+                if strictSource and (not success or isSecret(aura)) then
                     return nil
                 end
-                if ok and aura ~= nil and not isSecret(aura) then
+                if success and aura ~= nil and not isSecret(aura) then
                     if strictSource then
-                        return EABR._StrictAuraFromMe(aura)
+                        return REMIND._StrictAuraFromMe(aura)
                     end
-                    local src = aura.sourceUnit
-                    if src and not isSecret(src) then
-                        if UnitIsUnit(src, "player") then
+                    local source = aura.sourceUnit
+                    if source and not isSecret(source) then
+                        if UnitIsUnit(source, "player") then
                             return true
                         end
                     else
@@ -362,15 +362,15 @@ local function _unitHasBuffFromPlayer(u, spellIDs, strictSource)
             return false
         end
         if not inCombat and not restricted then
-            for i = 1, AURA_SCAN_LIMIT do
-                local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+            for idx = 1, AURA_SCAN_LIMIT do
+                local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
                 if not aura then
                     break
                 end
-                local sid = aura.spellId
-                if sid and not isSecret(sid) and idLookup[sid] then
-                    local src = aura.sourceUnit
-                    if src and not isSecret(src) and UnitIsUnit(src, "player") then
+                local spellRef = aura.spellId
+                if spellRef and not isSecret(spellRef) and idLookup[spellRef] then
+                    local source = aura.sourceUnit
+                    if source and not isSecret(source) and UnitIsUnit(source, "player") then
                         return true
                     end
                 end
@@ -384,19 +384,19 @@ local function _unitHasBuffFromPlayer(u, spellIDs, strictSource)
     end -- sourceUnit secret in combat, caller uses snapshot
     -- Fast path: 1 API call per whitelisted ID instead of scanning every aura on the unit via GetAuraDataByIndex.
     local needScan = false
-    for id in pairs(idLookup) do
-        if NON_SECRET_SPELL_IDS[id] or (strictSource and not restricted) then
-            local ok, aura = pcall(C_UnitAuras.GetUnitAuraBySpellID, u, id)
-            if strictSource and (not ok or isSecret(aura)) then
+    for ident in pairs(idLookup) do
+        if NON_SECRET_SPELL_IDS[ident] or (strictSource and not restricted) then
+            local success, aura = pcall(C_UnitAuras.GetUnitAuraBySpellID, u, ident)
+            if strictSource and (not success or isSecret(aura)) then
                 return nil
             end
-            if ok and aura and not isSecret(aura) then
+            if success and aura and not isSecret(aura) then
                 if strictSource then
-                    return EABR._StrictAuraFromMe(aura)
+                    return REMIND._StrictAuraFromMe(aura)
                 end
-                local src = aura.sourceUnit
-                if src and not isSecret(src) then
-                    if UnitIsUnit(src, "player") then
+                local source = aura.sourceUnit
+                if source and not isSecret(source) then
+                    if UnitIsUnit(source, "player") then
                         return true
                     end
                 else
@@ -418,19 +418,19 @@ local function _unitHasBuffFromPlayer(u, spellIDs, strictSource)
         return false
     end
     -- Fallback: full scan for non-whitelisted IDs only
-    for i = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex(u, i, "HELPFUL")
+    for idx = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras.GetAuraDataByIndex(u, idx, "HELPFUL")
         if not aura then
             break
         end
-        local sid = aura.spellId
-        if sid and not isSecret(sid) and idLookup[sid] then
+        local spellRef = aura.spellId
+        if spellRef and not isSecret(spellRef) and idLookup[spellRef] then
             if strictSource then
-                return EABR._StrictAuraFromMe(aura)
+                return REMIND._StrictAuraFromMe(aura)
             end
-            local src = aura.sourceUnit
-            if src and not isSecret(src) then
-                if UnitIsUnit(src, "player") then
+            local source = aura.sourceUnit
+            if source and not isSecret(source) then
+                if UnitIsUnit(source, "player") then
                     return true
                 end
             else
@@ -448,33 +448,33 @@ end
 local _snapScratch = {} -- reused for SnapshotOwnOnRaidBuffs
 SnapshotOwnOnRaidBuffs = function()
     wipe(_preCombatOwnOnRaidCache)
-    for _, id in ipairs(_ownOnRaidIDs) do
+    for _, ident in ipairs(_ownOnRaidIDs) do
         -- Secret right now (Blistering Scales in a key): no lookup can see it,
         -- so leave the entry nil (unknown, suppressed) instead of a false miss.
-        if EABR.IsRuntimeNonSecret(id) then
+        if REMIND.IsRuntimeNonSecret(ident) then
             local found = false
-            _snapScratch[1] = id
+            _snapScratch[1] = ident
             if _unitHasBuffFromPlayer("player", _snapScratch) then
                 found = true
             end
             if not found then
                 if IsInRaid() then
-                    for i = 1, GetNumGroupMembers() do
-                        if _unitHasBuffFromPlayer("raid" .. i, _snapScratch) then
+                    for idx = 1, GetNumGroupMembers() do
+                        if _unitHasBuffFromPlayer("raid" .. idx, _snapScratch) then
                             found = true
                             break
                         end
                     end
                 elseif IsInGroup() then
-                    for i = 1, GetNumSubgroupMembers() do
-                        if _unitHasBuffFromPlayer("party" .. i, _snapScratch) then
+                    for idx = 1, GetNumSubgroupMembers() do
+                        if _unitHasBuffFromPlayer("party" .. idx, _snapScratch) then
                             found = true
                             break
                         end
                     end
                 end
             end
-            _preCombatOwnOnRaidCache[id] = found
+            _preCombatOwnOnRaidCache[ident] = found
         end
     end
 end
@@ -488,16 +488,16 @@ local function PlayerHasSelfCastAuraByID(spellIDs)
         return false
     end -- safety: can't read sourceUnit in combat
     -- Direct lookup: for whitelisted IDs, GetPlayerAuraBySpellID returns full aura data incl. sourceUnit (zero iteration needed).
-    for j = 1, #spellIDs do
-        local id = spellIDs[j]
-        local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-        if ok and aura ~= nil and not isSecret(aura) then
-            local src = aura.sourceUnit
-            if src and not isSecret(src) and UnitIsUnit(src, "player") then
+    for jdx = 1, #spellIDs do
+        local ident = spellIDs[jdx]
+        local success, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+        if success and aura ~= nil and not isSecret(aura) then
+            local source = aura.sourceUnit
+            if source and not isSecret(source) and UnitIsUnit(source, "player") then
                 return true
             end
             -- If sourceUnit is unavailable OOC, assume ours
-            if not src or isSecret(src) then
+            if not source or isSecret(source) then
                 return true
             end
         end
@@ -534,22 +534,22 @@ end
 -- whose identity reads come back secret (teardown/restriction edges).
 -- Returns have, total.
 local function CountGroupBuffCoverage(spellIDs, benefit)
-    local have, total = 0, 0
+    local have, sum = 0, 0
     if not IsInGroup() then
-        if EABR.UnitBenefits("player", benefit) and _unitOk("player") then
-            total = 1
+        if REMIND.UnitBenefits("player", benefit) and _unitOk("player") then
+            sum = 1
             if _unitHasBuff("player", spellIDs) then
                 have = 1
             end
         end
-        return have, total
+        return have, sum
     end
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local u = "raid" .. i
+        for idx = 1, GetNumGroupMembers() do
+            local u = "raid" .. idx
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
-                if EABR.UnitBenefits(u, benefit) then
-                    total = total + 1
+                if REMIND.UnitBenefits(u, benefit) then
+                    sum = sum + 1
                     if _unitHasBuff(u, spellIDs) then
                         have = have + 1
                     end
@@ -557,17 +557,17 @@ local function CountGroupBuffCoverage(spellIDs, benefit)
             end
         end
     else
-        if EABR.UnitBenefits("player", benefit) and _unitOk("player") then
-            total = total + 1
+        if REMIND.UnitBenefits("player", benefit) and _unitOk("player") then
+            sum = sum + 1
             if _unitHasBuff("player", spellIDs) then
                 have = have + 1
             end
         end
-        for i = 1, GetNumSubgroupMembers() do
-            local u = "party" .. i
+        for idx = 1, GetNumSubgroupMembers() do
+            local u = "party" .. idx
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
-                if EABR.UnitBenefits(u, benefit) then
-                    total = total + 1
+                if REMIND.UnitBenefits(u, benefit) then
+                    sum = sum + 1
                     if _unitHasBuff(u, spellIDs) then
                         have = have + 1
                     end
@@ -575,7 +575,7 @@ local function CountGroupBuffCoverage(spellIDs, benefit)
             end
         end
     end
-    return have, total
+    return have, sum
 end
 
 -- True if the buff exists on any group member, any source. Used for Symbiotic Relationship.
@@ -584,14 +584,14 @@ local function BuffExistsOnAnyGroupMember(spellIDs)
         return true
     end
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            if _unitHasBuff("raid" .. i, spellIDs) then
+        for idx = 1, GetNumGroupMembers() do
+            if _unitHasBuff("raid" .. idx, spellIDs) then
                 return true
             end
         end
     elseif IsInGroup() then
-        for i = 1, GetNumSubgroupMembers() do
-            if _unitHasBuff("party" .. i, spellIDs) then
+        for idx = 1, GetNumSubgroupMembers() do
+            if _unitHasBuff("party" .. idx, spellIDs) then
                 return true
             end
         end
@@ -602,34 +602,34 @@ end
 -- Generic event-driven tracker for player-owned targeted auras on OTHER group members.
 -- Reminder-specific policy (which spell/class/talent/location enables tracking) stays
 -- in UpdateGroupAuraRegistration; this block only owns lookup/cache/synchronization.
-EABR._ownOtherAuraCache = {}
-EABR._ownOtherAuraTargetGUID = {}
-EABR._ownOtherAuraDuration = {}
-EABR._ownOtherAuraExpiration = {}
-EABR._ownOtherAuraStateVersion = 0
-EABR._trackOwnOtherAuraID = nil
-EABR._ownOtherAuraScanGeneration = 0
+REMIND._ownOtherAuraCache = {}
+REMIND._ownOtherAuraTargetGUID = {}
+REMIND._ownOtherAuraDuration = {}
+REMIND._ownOtherAuraExpiration = {}
+REMIND._ownOtherAuraStateVersion = 0
+REMIND._trackOwnOtherAuraID = nil
+REMIND._ownOtherAuraScanGeneration = 0
 
 -- Generic ownership lookup. The PLAYER filter is defined by Blizzard as auras
 -- cast by the local player/pet/vehicle, so another Shaman/Evoker cannot satisfy
 -- this lookup. Spell-name lookup remains usable for explicitly non-secret auras
 -- when generic aura payloads are restricted.
-function EABR.GetOwnOtherAuraData(unit, spellID)
-    if not unit or not spellID then
+function REMIND.GetOwnOtherAuraData(unitToken, spellID)
+    if not unitToken or not spellID then
         return nil, nil
     end
-    if not (unit:match("^party%d+$") or unit:match("^raid%d+$")) then
+    if not (unitToken:match("^party%d+$") or unitToken:match("^raid%d+$")) then
         return nil, nil
     end
     -- A dead/ghost unit is not a reliable negative aura lookup. Preserve the
     -- last known state until the unit is alive again, leaves the group, or an
     -- authoritative aura update/rescan can establish a new state.
-    if UnitIsDeadOrGhost(unit) then
+    if UnitIsDeadOrGhost(unitToken) then
         return nil, nil
     end
     -- Nor is an out-of-view member (another map or phase): the client holds no
     -- aura data for it.
-    local vis = UnitIsVisible(unit)
+    local vis = UnitIsVisible(unitToken)
     if not isSecret(vis) and not vis then
         return nil, nil
     end
@@ -637,8 +637,8 @@ function EABR.GetOwnOtherAuraData(unit, spellID)
     if not name or isSecret(name) then
         return nil, nil
     end
-    local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unit, name, "HELPFUL|PLAYER")
-    if not ok or isSecret(aura) then
+    local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unitToken, name, "HELPFUL|PLAYER")
+    if not success or isSecret(aura) then
         return nil, nil
     end
     if aura == nil then
@@ -659,89 +659,89 @@ end
 -- One cache writer shared by live events and recovery scans. It deliberately
 -- does not touch scan generations; callers decide whether their write is an
 -- authoritative live update or the result of the currently valid scan.
-function EABR.WriteOwnOtherAuraState(spellID, state, unit, aura)
-    if state == nil then
+function REMIND.WriteOwnOtherAuraState(spellID, status, unitToken, aura)
+    if status == nil then
         return
     end
-    local old = EABR._ownOtherAuraCache[spellID]
-    EABR._ownOtherAuraCache[spellID] = state
-    if state then
-        EABR._ownOtherAuraTargetGUID[spellID] = unit and UnitGUID(unit) or nil
+    local old = REMIND._ownOtherAuraCache[spellID]
+    REMIND._ownOtherAuraCache[spellID] = status
+    if status then
+        REMIND._ownOtherAuraTargetGUID[spellID] = unitToken and UnitGUID(unitToken) or nil
         local dur = aura and aura.duration
         local exp = aura and aura.expirationTime
-        EABR._ownOtherAuraDuration[spellID] = (type(dur) == "number" and not isSecret(dur)) and dur or nil
-        EABR._ownOtherAuraExpiration[spellID] = (type(exp) == "number" and not isSecret(exp)) and exp or nil
+        REMIND._ownOtherAuraDuration[spellID] = (type(dur) == "number" and not isSecret(dur)) and dur or nil
+        REMIND._ownOtherAuraExpiration[spellID] = (type(exp) == "number" and not isSecret(exp)) and exp or nil
     else
-        EABR._ownOtherAuraTargetGUID[spellID] = nil
-        EABR._ownOtherAuraDuration[spellID] = nil
-        EABR._ownOtherAuraExpiration[spellID] = nil
+        REMIND._ownOtherAuraTargetGUID[spellID] = nil
+        REMIND._ownOtherAuraDuration[spellID] = nil
+        REMIND._ownOtherAuraExpiration[spellID] = nil
     end
-    if old ~= state and _G._CUABR_RequestRefresh then
+    if old ~= status and _G._CUABR_RequestRefresh then
         _G._CUABR_RequestRefresh()
     end
 end
 
 -- Authoritative live updates invalidate older recovery work before publishing.
-function EABR.SetOwnOtherAuraState(spellID, state, unit, aura)
-    if state == nil then
+function REMIND.SetOwnOtherAuraState(spellID, status, unitToken, aura)
+    if status == nil then
         return
     end
-    EABR._ownOtherAuraStateVersion = EABR._ownOtherAuraStateVersion + 1
-    EABR._ownOtherAuraScanGeneration = EABR._ownOtherAuraScanGeneration + 1
-    EABR.WriteOwnOtherAuraState(spellID, state, unit, aura)
+    REMIND._ownOtherAuraStateVersion = REMIND._ownOtherAuraStateVersion + 1
+    REMIND._ownOtherAuraScanGeneration = REMIND._ownOtherAuraScanGeneration + 1
+    REMIND.WriteOwnOtherAuraState(spellID, status, unitToken, aura)
 end
 
 -- Incremental recovery scan: one unit per frame. It never wins a race against
 -- newer live data: any UNIT_AURA/cast state change bumps stateVersion/generation,
 -- invalidating this scan before it can publish its result.
-function EABR.RescanOwnOtherAura(spellID)
-    if InCombat() or EABR._trackOwnOtherAuraID ~= spellID then
+function REMIND.RescanOwnOtherAura(spellID)
+    if InCombat() or REMIND._trackOwnOtherAuraID ~= spellID then
         return
     end
 
-    EABR._ownOtherAuraScanGeneration = EABR._ownOtherAuraScanGeneration + 1
-    local generation = EABR._ownOtherAuraScanGeneration
-    local stateVersion = EABR._ownOtherAuraStateVersion
+    REMIND._ownOtherAuraScanGeneration = REMIND._ownOtherAuraScanGeneration + 1
+    local generation = REMIND._ownOtherAuraScanGeneration
+    local stateVersion = REMIND._ownOtherAuraStateVersion
     local isRaid = IsInRaid()
     local count = isRaid and GetNumGroupMembers() or (IsInGroup() and GetNumSubgroupMembers() or 0)
-    local index = 1
+    local slotPos = 1
     local sawUnknown = false
 
     local function scanNext()
         if
-            generation ~= EABR._ownOtherAuraScanGeneration
-            or stateVersion ~= EABR._ownOtherAuraStateVersion
+            generation ~= REMIND._ownOtherAuraScanGeneration
+            or stateVersion ~= REMIND._ownOtherAuraStateVersion
         then
             return
         end
-        if InCombat() or EABR._trackOwnOtherAuraID ~= spellID then
+        if InCombat() or REMIND._trackOwnOtherAuraID ~= spellID then
             return
         end
 
-        while index <= count do
-            local u = (isRaid and "raid" or "party") .. index
-            index = index + 1
+        while slotPos <= count do
+            local u = (isRaid and "raid" or "party") .. slotPos
+            slotPos = slotPos + 1
             -- If our last known target is dead, its aura cannot be reliably
             -- disproved. Do not let a recovery scan publish false and flash the
             -- reminder while that target remains in the group.
             if UnitExists(u) and UnitIsConnected(u) and not UnitIsUnit(u, "player") then
-                local guid = UnitGUID(u)
+                local unitGuid = UnitGUID(u)
                 if
                     UnitIsDeadOrGhost(u)
-                    and guid
-                    and EABR._ownOtherAuraCache[spellID] == true
-                    and EABR._ownOtherAuraTargetGUID[spellID] == guid
+                    and unitGuid
+                    and REMIND._ownOtherAuraCache[spellID] == true
+                    and REMIND._ownOtherAuraTargetGUID[spellID] == unitGuid
                 then
                     return
                 end
-                local state, aura = EABR.GetOwnOtherAuraData(u, spellID)
-                if state == true then
+                local status, aura = REMIND.GetOwnOtherAuraData(u, spellID)
+                if status == true then
                     -- The generation/version guards above prove this scan is still
                     -- current, so publish through the shared writer without
                     -- invalidating the scan that produced the result.
-                    EABR.WriteOwnOtherAuraState(spellID, true, u, aura)
+                    REMIND.WriteOwnOtherAuraState(spellID, true, u, aura)
                     return
-                elseif state == nil then
+                elseif status == nil then
                     -- Unknown must never become "missing": the scan then ends
                     -- without a verdict and keeps the previous cache.
                     sawUnknown = true
@@ -752,15 +752,15 @@ function EABR.RescanOwnOtherAura(spellID)
         end
 
         if
-            generation ~= EABR._ownOtherAuraScanGeneration
-            or stateVersion ~= EABR._ownOtherAuraStateVersion
+            generation ~= REMIND._ownOtherAuraScanGeneration
+            or stateVersion ~= REMIND._ownOtherAuraStateVersion
         then
             return
         end
         if sawUnknown then
             return
         end
-        EABR.WriteOwnOtherAuraState(spellID, false)
+        REMIND.WriteOwnOtherAuraState(spellID, false)
     end
 
     scanNext()
@@ -770,80 +770,80 @@ end
 -- fully secret, so do not depend on addedAuras/sourceUnit. Query exactly the
 -- changed party/raid unit with HELPFUL|PLAYER instead. This same generic path is
 -- used by Earth Shield and Source of Magic.
-function EABR.UpdateOwnOtherAuraForUnit(unit)
-    local spellID = EABR._trackOwnOtherAuraID
-    if not spellID or not unit or UnitIsUnit(unit, "player") then
+function REMIND.UpdateOwnOtherAuraForUnit(unitToken)
+    local spellID = REMIND._trackOwnOtherAuraID
+    if not spellID or not unitToken or UnitIsUnit(unitToken, "player") then
         return
     end
-    if not (unit:match("^party%d+$") or unit:match("^raid%d+$")) then
+    if not (unitToken:match("^party%d+$") or unitToken:match("^raid%d+$")) then
         return
     end
 
-    local state, aura = EABR.GetOwnOtherAuraData(unit, spellID)
-    if state == true then
-        EABR.SetOwnOtherAuraState(spellID, true, unit, aura)
+    local status, aura = REMIND.GetOwnOtherAuraData(unitToken, spellID)
+    if status == true then
+        REMIND.SetOwnOtherAuraState(spellID, true, unitToken, aura)
         return
     end
     -- Unknown (secret, dead, out of view) never clears. A miss is authoritative only for
     -- the unit holding our cached aura; another unit's miss proves nothing, and
     -- recovery/roster scans establish a group-wide false.
-    if state == nil then
+    if status == nil then
         return
     end
-    local guid = UnitGUID(unit)
-    if guid and EABR._ownOtherAuraTargetGUID[spellID] == guid then
-        EABR.SetOwnOtherAuraState(spellID, false)
+    local unitGuid = UnitGUID(unitToken)
+    if unitGuid and REMIND._ownOtherAuraTargetGUID[spellID] == unitGuid then
+        REMIND.SetOwnOtherAuraState(spellID, false)
     end
 end
 
-function EABR.RescanOwnOtherAuras()
-    local spellID = EABR._trackOwnOtherAuraID
+function REMIND.RescanOwnOtherAuras()
+    local spellID = REMIND._trackOwnOtherAuraID
     if spellID then
-        EABR.RescanOwnOtherAura(spellID)
+        REMIND.RescanOwnOtherAura(spellID)
     end
 end
 
 -- Registration pass for the roster, loading-screen and talent edges. A
 -- tracking change clears or rescans inside the pass, so only an unchanged
 -- tracker rescans here.
-function EABR.ReevaluateOwnOtherAuraTracking()
-    local before = EABR._trackOwnOtherAuraID
+function REMIND.ReevaluateOwnOtherAuraTracking()
+    local before = REMIND._trackOwnOtherAuraID
     if _G._CUABR_UpdateGroupAuraRegistration then
         _G._CUABR_UpdateGroupAuraRegistration()
     end
-    if before and EABR._trackOwnOtherAuraID == before then
-        EABR.RescanOwnOtherAuras()
+    if before and REMIND._trackOwnOtherAuraID == before then
+        REMIND.RescanOwnOtherAuras()
     end
 end
 
 -- Early rebuff for a targeted aura follows the Display "Show Below" / "Show
 -- Below Pre-Key" window (never in combat or an active key); sectionKey is the
 -- owning section ("aura" / "special").
-function EABR.OwnOtherAuraNeedsRebuff(spellID, sectionKey)
-    if EABR._ownOtherAuraCache[spellID] ~= true then
+function REMIND.OwnOtherAuraNeedsRebuff(spellID, sectionKey)
+    if REMIND._ownOtherAuraCache[spellID] ~= true then
         return false
     end
-    local dur = EABR._ownOtherAuraDuration[spellID]
-    local exp = EABR._ownOtherAuraExpiration[spellID]
+    local dur = REMIND._ownOtherAuraDuration[spellID]
+    local exp = REMIND._ownOtherAuraExpiration[spellID]
     if type(dur) ~= "number" or type(exp) ~= "number" then
         return false
     end
-    return EABR.IsUnderDuration(dur, exp, sectionKey)
+    return REMIND.IsUnderDuration(dur, exp, sectionKey)
 end
 
 -- True when another group member is alive, connected and in range: a targeted
 -- buff reminder has nobody to go on otherwise.
-function EABR.AnyReachableGroupMember()
+function REMIND.AnyReachableGroupMember()
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local u = "raid" .. i
+        for idx = 1, GetNumGroupMembers() do
+            local u = "raid" .. idx
             if _unitOk(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
                 return true
             end
         end
     elseif IsInGroup() then
-        for i = 1, GetNumSubgroupMembers() do
-            local u = "party" .. i
+        for idx = 1, GetNumSubgroupMembers() do
+            local u = "party" .. idx
             if _unitOk(u) and _unitInRange(u) then
                 return true
             end
@@ -859,8 +859,8 @@ local function PlayerOwnBuffOnAnyGroupMember(spellIDs)
     end
     local anyInRangeWithoutBuff = false
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local u = "raid" .. i
+        for idx = 1, GetNumGroupMembers() do
+            local u = "raid" .. idx
             if _unitOk(u) and not UnitIsUnit(u, "player") then
                 if _unitHasBuffFromPlayer(u, spellIDs) then
                     return true
@@ -871,8 +871,8 @@ local function PlayerOwnBuffOnAnyGroupMember(spellIDs)
             end
         end
     elseif IsInGroup() then
-        for i = 1, GetNumSubgroupMembers() do
-            local u = "party" .. i
+        for idx = 1, GetNumSubgroupMembers() do
+            local u = "party" .. idx
             if _unitOk(u) then
                 if _unitHasBuffFromPlayer(u, spellIDs) then
                     return true
@@ -891,44 +891,44 @@ end
 -- destination, and an existing cast on an out-of-range group member still
 -- satisfies the reminder. Returns nil when restricted aura data cannot prove
 -- ownership, allowing the caller to suppress rather than false-fire.
-function EABR.PlayerOwnBuffOnGroupOrSelf(spellIDs)
+function REMIND.PlayerOwnBuffOnGroupOrSelf(spellIDs)
     if not spellIDs or not spellIDs[1] then
         return true
     end
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
-        for i = 1, #spellIDs do
-            if not NON_SECRET_SPELL_IDS[spellIDs[i]] then
+        for idx = 1, #spellIDs do
+            if not NON_SECRET_SPELL_IDS[spellIDs[idx]] then
                 return nil
             end
         end
     end
     local uncertain = false
-    local state = _unitHasBuffFromPlayer("player", spellIDs, true)
-    if state == true then
+    local status = _unitHasBuffFromPlayer("player", spellIDs, true)
+    if status == true then
         return true
-    elseif state == nil then
+    elseif status == nil then
         uncertain = true
     end
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local u = "raid" .. i
+        for idx = 1, GetNumGroupMembers() do
+            local u = "raid" .. idx
             if not UnitIsUnit(u, "player") and UnitExists(u) and UnitIsConnected(u) and UnitIsPlayer(u) then
-                state = _unitHasBuffFromPlayer(u, spellIDs, true)
-                if state == true then
+                status = _unitHasBuffFromPlayer(u, spellIDs, true)
+                if status == true then
                     return true
-                elseif state == nil then
+                elseif status == nil then
                     uncertain = true
                 end
             end
         end
     elseif IsInGroup() then
-        for i = 1, GetNumSubgroupMembers() do
-            local u = "party" .. i
+        for idx = 1, GetNumSubgroupMembers() do
+            local u = "party" .. idx
             if UnitExists(u) and UnitIsConnected(u) and UnitIsPlayer(u) then
-                state = _unitHasBuffFromPlayer(u, spellIDs, true)
-                if state == true then
+                status = _unitHasBuffFromPlayer(u, spellIDs, true)
+                if status == true then
                     return true
-                elseif state == nil then
+                elseif status == nil then
                     uncertain = true
                 end
             end
@@ -945,32 +945,40 @@ end
 -------------------------------------------------------------------------------
 local BLADED_SET, BLUNT_SET, RANGED_SET
 do
-    local W = (Enum and Enum.ItemWeaponSubclass) or {}
+    local Widgets = (Enum and Enum.ItemWeaponSubclass) or {}
     local function setFrom(...)
         local t = {}
-        for i = 1, select("#", ...) do
-            local v = select(i, ...)
-            if v ~= nil then
-                t[v] = true
+        for idx = 1, select("#", ...) do
+            local val = select(idx, ...)
+            if val ~= nil then
+                t[val] = true
             end
         end
         return t
     end
-    BLADED_SET = setFrom(W.Axe1H, W.Axe2H, W.Sword1H, W.Sword2H, W.Dagger, W.Polearm, W.Warglaive)
-    BLUNT_SET = setFrom(W.Mace1H, W.Mace2H, W.Staff, W.Fist)
-    RANGED_SET = setFrom(W.Bow, W.Gun, W.Crossbow, W.Wand)
+    BLADED_SET = setFrom(
+        Widgets.Axe1H,
+        Widgets.Axe2H,
+        Widgets.Sword1H,
+        Widgets.Sword2H,
+        Widgets.Dagger,
+        Widgets.Polearm,
+        Widgets.Warglaive
+    )
+    BLUNT_SET = setFrom(Widgets.Mace1H, Widgets.Mace2H, Widgets.Staff, Widgets.Fist)
+    RANGED_SET = setFrom(Widgets.Bow, Widgets.Gun, Widgets.Crossbow, Widgets.Wand)
 end
 
 local function GetWeaponCategory(slotID)
-    local itemID = GetInventoryItemID("player", slotID)
-    if not itemID then
+    local itemId = GetInventoryItemID("player", slotID)
+    if not itemId then
         return nil
     end
     local _, _, _, equipLoc, _, classID, subClassID
     if C_Item and C_Item.GetItemInfoInstant then
-        _, _, _, equipLoc, _, classID, subClassID = C_Item.GetItemInfoInstant(itemID)
+        _, _, _, equipLoc, _, classID, subClassID = C_Item.GetItemInfoInstant(itemId)
     else
-        _, _, _, equipLoc, _, classID, subClassID = C_Item.GetItemInfoInstant(itemID)
+        _, _, _, equipLoc, _, classID, subClassID = C_Item.GetItemInfoInstant(itemId)
     end
     if not classID or classID ~= ((Enum and Enum.ItemClass and Enum.ItemClass.Weapon) or 2) then
         return nil
@@ -993,16 +1001,16 @@ end
 -- Off-hand slot holds a shield. Gates the shield-only imbue reminders
 -- (requireShield rows); on EABR, not a local.
 -- UNIT_INVENTORY_CHANGED already refreshes, so no new event.
-function EABR.HasShieldEquipped()
-    local itemID = GetInventoryItemID("player", 17)
-    if not itemID then
+function REMIND.HasShieldEquipped()
+    local itemId = GetInventoryItemID("player", 17)
+    if not itemId then
         return false
     end
     local _, _, _, equipLoc
     if C_Item and C_Item.GetItemInfoInstant then
-        _, _, _, equipLoc = C_Item.GetItemInfoInstant(itemID)
+        _, _, _, equipLoc = C_Item.GetItemInfoInstant(itemId)
     else
-        _, _, _, equipLoc = C_Item.GetItemInfoInstant(itemID)
+        _, _, _, equipLoc = C_Item.GetItemInfoInstant(itemId)
     end
     return equipLoc == "INVTYPE_SHIELD"
 end
@@ -1037,7 +1045,7 @@ local BUFF_BENEFICIARIES = {
 }
 -- WoW Forever: Intellect serves every mana user (hunters included) and Battle
 -- Shout raises melee attack power only (a hunter shoots with ranged).
-if EABR.FOREVER then
+if REMIND.FOREVER then
     -- The shared Intellect family's list (the Raid Frames Missing Buffs reads it too).
     BUFF_BENEFICIARIES.intellect = CludesUI.FOREVER_BUFF_FAMILIES.ai.beneficiaries
     BUFF_BENEFICIARIES.attackPower = {
@@ -1054,31 +1062,31 @@ end
 -- missing others' buffs") so a buff is only flagged when someone who can
 -- cast it is actually nearby. Secret class tokens are skipped (identity
 -- restriction edges). Hung on EABR.
-EABR._groupClassSet = EABR._groupClassSet or {}
-function EABR.BuildGroupClassSet()
-    local set = wipe(EABR._groupClassSet)
+REMIND._groupClassSet = REMIND._groupClassSet or {}
+function REMIND.BuildGroupClassSet()
+    local group = wipe(REMIND._groupClassSet)
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local u = "raid" .. i
+        for idx = 1, GetNumGroupMembers() do
+            local u = "raid" .. idx
             if _unitOk(u) and UnitIsPlayer(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
-                local _, class = UnitClass(u)
-                if class ~= nil and not isSecret(class) then
-                    set[class] = true
+                local _, classFile = UnitClass(u)
+                if classFile ~= nil and not isSecret(classFile) then
+                    group[classFile] = true
                 end
             end
         end
     elseif IsInGroup() then
-        for i = 1, GetNumSubgroupMembers() do
-            local u = "party" .. i
+        for idx = 1, GetNumSubgroupMembers() do
+            local u = "party" .. idx
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
-                local _, class = UnitClass(u)
-                if class ~= nil and not isSecret(class) then
-                    set[class] = true
+                local _, classFile = UnitClass(u)
+                if classFile ~= nil and not isSecret(classFile) then
+                    group[classFile] = true
                 end
             end
         end
     end
-    return set
+    return group
 end
 
 -------------------------------------------------------------------------------
@@ -1088,7 +1096,7 @@ end
 --  above is the fallback -- spec sharpens, class never under-counts. Only
 --  the two stat-filtered buffs consult these sets.
 -------------------------------------------------------------------------------
-EABR.SPEC_BENEFITS = {
+REMIND.SPEC_BENEFITS = {
     intellect = {
         [62] = true,
         [63] = true,
@@ -1139,23 +1147,23 @@ EABR.SPEC_BENEFITS = {
 -- (wired in OnEnable). Entries self-heal: a rejoining player rebroadcasts
 -- on their own group-join, overwriting any stale spec. Bounded growth
 -- (name -> number), so no pruning needed.
-EABR._groupSpecs = EABR._groupSpecs or {}
+REMIND._groupSpecs = REMIND._groupSpecs or {}
 
 -- Resolves a unit's specID: own spec directly (always readable), others
 -- from the comm cache keyed the way the lib keys senders (Name for same
 -- realm, Name-Realm cross-realm).
-function EABR.GroupSpecFor(u)
+function REMIND.GroupSpecFor(u)
     if UnitIsUnit(u, "player") then
         return GetSpecID()
     end
-    local n, r = UnitNameUnmodified(u)
-    if n == nil or isSecret(n) then
+    local num, r = UnitNameUnmodified(u)
+    if num == nil or isSecret(num) then
         return nil
     end
     if r ~= nil and not isSecret(r) and r ~= "" then
-        n = n .. "-" .. r
+        num = num .. "-" .. r
     end
-    return EABR._groupSpecs[n]
+    return REMIND._groupSpecs[num]
 end
 
 -- Whether a unit benefits from a stat-filtered buff. Resolution ladder:
@@ -1163,23 +1171,23 @@ end
 -- fall through); (2) assigned-ROLE refinement for combos the role alone
 -- decides (no comms needed); (3) the class table. Unreadable class = not
 -- counted (coverage skips the unit).
-function EABR.UnitBenefits(u, benefit)
+function REMIND.UnitBenefits(u, benefit)
     if not benefit then
         return true
     end
     -- WoW Forever has no spec data to look up (no comms cache, no specs).
-    local specSet = not EABR.FOREVER and EABR.SPEC_BENEFITS[benefit]
+    local specSet = not REMIND.FOREVER and REMIND.SPEC_BENEFITS[benefit]
     if specSet then
-        local spec = EABR.GroupSpecFor(u)
-        if spec then
-            if specSet[spec] then
+        local specInfo = REMIND.GroupSpecFor(u)
+        if specInfo then
+            if specSet[specInfo] then
                 return true
             end
             -- A spec listed under any benefit set is a real, mapped spec:
             -- its absence here is a definitive no. Anything else (starter
             -- specs, future IDs) falls back to the checks below.
-            for _, set in pairs(EABR.SPEC_BENEFITS) do
-                if set[spec] then
+            for _, group in pairs(REMIND.SPEC_BENEFITS) do
+                if group[specInfo] then
                     return false
                 end
             end
@@ -1189,11 +1197,11 @@ function EABR.UnitBenefits(u, benefit)
     if not classSet then
         return true
     end
-    local _, class = UnitClass(u)
-    if class == nil or isSecret(class) then
+    local _, classFile = UnitClass(u)
+    if classFile == nil or isSecret(classFile) then
         return false
     end
-    if not classSet[class] then
+    if not classSet[classFile] then
         return false
     end
     -- Role refinement for members with no spec data: some class+benefit
@@ -1206,17 +1214,22 @@ function EABR.UnitBenefits(u, benefit)
     -- WoW Forever every mana user wants Intellect, whatever the role.
     local role = CludesUI.UnitEffectiveRole(u)
     if role ~= nil and not isSecret(role) then
-        if benefit == "intellect" and not EABR.FOREVER then
-            if (class == "PALADIN" or class == "MONK") and (role == "DAMAGER" or role == "TANK") then
+        if benefit == "intellect" and not REMIND.FOREVER then
+            if (classFile == "PALADIN" or classFile == "MONK") and (role == "DAMAGER" or role == "TANK") then
                 return false
             end
-            if class == "DRUID" and role == "TANK" then
+            if classFile == "DRUID" and role == "TANK" then
                 return false
             end
         elseif benefit == "attackPower" then
             if
                 role == "HEALER"
-                and (class == "PALADIN" or class == "MONK" or class == "DRUID" or class == "SHAMAN")
+                and (
+                    classFile == "PALADIN"
+                    or classFile == "MONK"
+                    or classFile == "DRUID"
+                    or classFile == "SHAMAN"
+                )
             then
                 return false
             end
@@ -1227,17 +1240,17 @@ end
 
 -- Whether the local player benefits from a raid buff (spec-aware; class
 -- fallback). Buffs with no benefit key help everyone.
-function EABR.PlayerBenefitsFromBuff(buff)
-    return EABR.UnitBenefits("player", buff.benefit) and true or false
+function REMIND.PlayerBenefitsFromBuff(buff)
+    return REMIND.UnitBenefits("player", buff.benefit) and true or false
 end
 
-I._AC, I._ownOnRaidIDs = _AC, _ownOnRaidIDs
-I._preCombatOwnOnRaidCache, I._unitInRange = _preCombatOwnOnRaidCache, _unitInRange
-I._unitOk, I.BuffExistsOnAnyGroupMember = _unitOk, BuffExistsOnAnyGroupMember
-I.BuildPlayerAuraCache, I.CountGroupBuffCoverage = BuildPlayerAuraCache, CountGroupBuffCoverage
-I.GetStanceState, I.GetWeaponCategory = GetStanceState, GetWeaponCategory
-I.IsAnyShapeshiftFormActive, I.IsUnderDuration = IsAnyShapeshiftFormActive, IsUnderDuration
-I.PlayerHasAuraByID, I.PlayerHasSelfCastAuraByID = PlayerHasAuraByID, PlayerHasSelfCastAuraByID
-I.PlayerOwnBuffOnAnyGroupMember = PlayerOwnBuffOnAnyGroupMember
-I.SnapshotOwnOnRaidBuffs, I.SnapshotPlayerAuras = SnapshotOwnOnRaidBuffs, SnapshotPlayerAuras
-I.broken = false
+Inner._AC, Inner._ownOnRaidIDs = _AC, _ownOnRaidIDs
+Inner._preCombatOwnOnRaidCache, Inner._unitInRange = _preCombatOwnOnRaidCache, _unitInRange
+Inner._unitOk, Inner.BuffExistsOnAnyGroupMember = _unitOk, BuffExistsOnAnyGroupMember
+Inner.BuildPlayerAuraCache, Inner.CountGroupBuffCoverage = BuildPlayerAuraCache, CountGroupBuffCoverage
+Inner.GetStanceState, Inner.GetWeaponCategory = GetStanceState, GetWeaponCategory
+Inner.IsAnyShapeshiftFormActive, Inner.IsUnderDuration = IsAnyShapeshiftFormActive, IsUnderDuration
+Inner.PlayerHasAuraByID, Inner.PlayerHasSelfCastAuraByID = PlayerHasAuraByID, PlayerHasSelfCastAuraByID
+Inner.PlayerOwnBuffOnAnyGroupMember = PlayerOwnBuffOnAnyGroupMember
+Inner.SnapshotOwnOnRaidBuffs, Inner.SnapshotPlayerAuras = SnapshotOwnOnRaidBuffs, SnapshotPlayerAuras
+Inner.broken = false

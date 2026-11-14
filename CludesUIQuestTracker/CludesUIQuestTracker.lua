@@ -11,16 +11,16 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- The three feature modules are wired up on PLAYER_LOGIN after
 -- Blizzard_ObjectiveTracker has loaded.
 -------------------------------------------------------------------------------
-local addonName, ns = ...
+local addonName, mod = ...
 if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewCombatQueue) then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[addonName] = ns -- LOD options files read this module ns via the registry
-ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CludesUI._ModuleNS[addonName] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 local EQT = {}
-ns.EQT = EQT
+mod.EQT = EQT
 _G.CludesUIQuestTracker = EQT
 
 -------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ local QT_DEFAULTS = {
 }
 -- WoW Forever's quest tools add their keys to this table at load
 -- (CludesUIQuestTracker_Forever.lua), before the DB is made.
-ns.QT_DEFAULTS = QT_DEFAULTS
+mod.QT_DEFAULTS = QT_DEFAULTS
 
 local _qtDB
 local function EnsureDB()
@@ -128,8 +128,8 @@ end
 function EQT.Cfg(k)
     return EQT.DB()[k]
 end
-function EQT.Set(k, v)
-    EQT.DB()[k] = v
+function EQT.Set(k, val)
+    EQT.DB()[k] = val
 end
 
 -- The style this module RENDERS this session: "cui" | "blizzard" | "classic".
@@ -142,18 +142,18 @@ local function StyleOf(qt)
     return (qt.useClassicStyle and "classic") or (qt.useBlizzardStyle and "blizzard") or "cui"
 end
 
-function ns.QT_Style()
-    local v = ns._qtStyle
-    if v == nil then
+function mod.QT_Style()
+    local val = mod._qtStyle
+    if val == nil then
         local d = EnsureDB()
         local qt = d and d.profile and d.profile.questTracker
         if not qt then
             return "cui"
         end
-        v = StyleOf(qt)
-        ns._qtStyle = v
+        val = StyleOf(qt)
+        mod._qtStyle = val
     end
-    return v
+    return val
 end
 
 -- WoW Forever: whether a profile asks for our own tracker in place of
@@ -163,7 +163,7 @@ end
 -- in the older customTracker key is a pick as well: that key read on for
 -- everyone who had not turned it off, so a true in it never was one and is
 -- not read.
-function ns.CustomTrackerWanted(qt)
+function mod.CustomTrackerWanted(qt)
     if CludesUI.IS_FOREVER ~= true then
         return false
     end
@@ -178,7 +178,7 @@ function ns.CustomTrackerWanted(qt)
 end
 
 -- The options toggle's pick (the tracker in use is latched until a reload).
-function ns.SetCustomTrackerWanted(qt, on)
+function mod.SetCustomTrackerWanted(qt, on)
     on = on and true or false
     qt.customTracker = nil
     if on == (StyleOf(qt) == "cui") then
@@ -190,25 +190,25 @@ end
 
 -- Stock mode: true for both stock styles (Blizzard's own tracker art and text).
 -- WoW Forever: our own tracker replaces Blizzard's. Latched like the style.
-function ns.UseCustomTracker()
-    local v = ns._customTracker
-    if v == nil then
+function mod.UseCustomTracker()
+    local val = mod._customTracker
+    if val == nil then
         local d = EnsureDB()
         local qt = d and d.profile and d.profile.questTracker
         if not qt then
             return false
         end
-        v = ns.CustomTrackerWanted(qt)
-        ns._customTracker = v
+        val = mod.CustomTrackerWanted(qt)
+        mod._customTracker = val
     end
-    return v
+    return val
 end
 
 function EQT.Blizz()
-    return ns.QT_Style() ~= "cui"
+    return mod.QT_Style() ~= "cui"
 end
 function EQT.Classic()
-    return ns.QT_Style() == "classic"
+    return mod.QT_Style() == "classic"
 end
 
 -------------------------------------------------------------------------------
@@ -253,7 +253,7 @@ local function TryInit()
         return
     end
     EnsureDB()
-    if ns.UseCustomTracker() then
+    if mod.UseCustomTracker() then
         EQT.InitCustom()
     else
         if EQT.InitSkin then
@@ -267,21 +267,21 @@ local function TryInit()
         EQT.InitQoL()
     end
     -- The custom tracker has its own mover; this one drives Blizzard's frame.
-    if EQT.InitPosition and not ns.UseCustomTracker() then
+    if EQT.InitPosition and not mod.UseCustomTracker() then
         EQT.InitPosition()
     end
     loader:UnregisterAllEvents()
 end
 
-loader:SetScript("OnEvent", function(_, event, arg1)
-    if event == "ADDON_LOADED" then
+loader:SetScript("OnEvent", function(_, evt, arg1)
+    if evt == "ADDON_LOADED" then
         if arg1 == addonName then
             _sawSelf = true
         end
         if arg1 == "Blizzard_ObjectiveTracker" then
             _sawOT = true
         end
-    elseif event == "PLAYER_LOGIN" then
+    elseif evt == "PLAYER_LOGIN" then
         _loggedIn = true
     end
     TryInit()

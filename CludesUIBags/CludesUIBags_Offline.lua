@@ -28,7 +28,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  gets saved, hooked or listened to while both are off.
 -------------------------------------------------------------------------------
 local CUI = CludesUI
-local ns = select(2, ...)
+local mod = select(2, ...)
 
 local _emptyP = {}
 local function Acct()
@@ -36,7 +36,7 @@ local function Acct()
 end
 
 local Offline = {}
-ns.Offline = Offline
+mod.Offline = Offline
 
 function Offline.Enabled()
     return Acct().bagOfflineBank == true
@@ -52,22 +52,22 @@ end
 --  item strings
 -------------------------------------------------------------------------------
 -- "item:..." for items, the whole link for anything else
-local function ItemString(link)
-    local s = link:match("|H(item:[^|]+)|h")
-    return s or link
+local function ItemString(itemLink)
+    local s = itemLink:match("|H(item:[^|]+)|h")
+    return s or itemLink
 end
 Offline.ItemString = ItemString
 
 -- item id from a string or link (pet cages count as the cage item)
 local function ItemID(s)
-    local kind, id = s:match("^(%a+):(%d+)")
-    if not kind then
-        kind, id = s:match("|H(%a+):(%d+)")
+    local kindOf, ident = s:match("^(%a+):(%d+)")
+    if not kindOf then
+        kindOf, ident = s:match("|H(%a+):(%d+)")
     end
-    if kind == "battlepet" then
+    if kindOf == "battlepet" then
         return 82800
     end
-    return tonumber(id)
+    return tonumber(ident)
 end
 Offline.ItemID = ItemID
 
@@ -76,61 +76,61 @@ Offline.ItemID = ItemID
 -------------------------------------------------------------------------------
 local rev = 0 -- goes up on every write so the tooltip index knows to rebuild
 local listeners = {}
-local index, indexRev -- tooltip index, below
+local slotPos, indexRev -- tooltip index, below
 -- per saved list: goes up only when that list changes, so a view of it can
 -- tell its own list apart from every other save
 local listRev = setmetatable({}, { __mode = "k" })
 local listGen = 0
-local function Bump(list)
+local function Bump(entries)
     listGen = listGen + 1
-    listRev[list] = listGen
+    listRev[entries] = listGen
 end
-function Offline.ListRev(list)
-    return list and listRev[list] or 0
+function Offline.ListRev(entries)
+    return entries and listRev[entries] or 0
 end
 
 -- saves from before item strings kept whole colored links
-local function Upgrade(list)
-    if type(list) ~= "table" then
+local function Upgrade(entries)
+    if type(entries) ~= "table" then
         return
     end
-    for _, t in ipairs(list) do
+    for _, t in ipairs(entries) do
         if type(t) == "table" and type(t.links) == "table" then
-            local items = {}
-            for slot, link in pairs(t.links) do
-                items[slot] = ItemString(link)
+            local itemList = {}
+            for slotIndex, itemLink in pairs(t.links) do
+                itemList[slotIndex] = ItemString(itemLink)
             end
-            t.items, t.links = items, nil
+            t.items, t.links = itemList, nil
         end
     end
 end
 
 function Offline.Store()
-    local db = _G.CludesUIBagsInventoryDB
-    if type(db) ~= "table" then
-        db = { v = 2 }
-        _G.CludesUIBagsInventoryDB = db
+    local saved = _G.CludesUIBagsInventoryDB
+    if type(saved) ~= "table" then
+        saved = { v = 2 }
+        _G.CludesUIBagsInventoryDB = saved
     end
-    if type(db.chars) ~= "table" then
-        db.chars = {}
+    if type(saved.chars) ~= "table" then
+        saved.chars = {}
     end
-    if type(db.warband) ~= "table" then
-        db.warband = { tabs = {} }
+    if type(saved.warband) ~= "table" then
+        saved.warband = { tabs = {} }
     end
-    if type(db.warband.tabs) ~= "table" then
-        db.warband.tabs = {}
+    if type(saved.warband.tabs) ~= "table" then
+        saved.warband.tabs = {}
     end
-    if db.v ~= 2 then
-        for _, c in pairs(db.chars) do
+    if saved.v ~= 2 then
+        for _, c in pairs(saved.chars) do
             if type(c) == "table" then
                 Upgrade(c.bags)
                 Upgrade(c.bank)
             end
         end
-        Upgrade(db.warband.tabs)
-        db.v = 2
+        Upgrade(saved.warband.tabs)
+        saved.v = 2
     end
-    return db
+    return saved
 end
 
 local function OwnKey()
@@ -142,8 +142,8 @@ end
 Offline.CurrentKey = OwnKey
 
 -- a class's colour code, custom class colours included
-local function ClassHex(class)
-    local c = class and CUI.GetClassColor(class)
+local function ClassHex(classFile)
+    local c = classFile and CUI.GetClassColor(classFile)
     return c and CUI.HexColor(c.r, c.g, c.b) or "|cffffffff"
 end
 Offline.ClassHex = ClassHex
@@ -168,17 +168,17 @@ end
 -- something changed, so the viewer and tooltip index catch up. patched: the
 -- index was already fixed up in place for this write
 local function Changed(what, patched)
-    local current = patched and index and indexRev == rev
+    local current = patched and slotPos and indexRev == rev
     rev = rev + 1
     if current then
         indexRev = rev
     end
-    for _, fn in ipairs(listeners) do
-        fn(what)
+    for _, func in ipairs(listeners) do
+        func(what)
     end
 end
-function Offline.OnChange(fn)
-    listeners[#listeners + 1] = fn
+function Offline.OnChange(func)
+    listeners[#listeners + 1] = func
 end
 
 function Offline.CanForget(key)
@@ -204,10 +204,10 @@ end
 
 -- characters for the picker, by realm then name, current one flagged
 function Offline.Characters()
-    local list, me = {}, OwnKey()
+    local entries, me = {}, OwnKey()
     for key, c in pairs(Offline.Store().chars) do
         if type(c) == "table" then
-            list[#list + 1] = {
+            entries[#entries + 1] = {
                 key = key,
                 name = c.name or key,
                 realm = c.realm or "",
@@ -216,13 +216,13 @@ function Offline.Characters()
             }
         end
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         if a.realm ~= b.realm then
             return a.realm < b.realm
         end
         return a.name < b.name
     end)
-    return list
+    return entries
 end
 
 local function MyEntry()
@@ -236,27 +236,27 @@ local function MyEntry()
         c = {}
         chars[key] = c
     end
-    local _, class = UnitClass("player")
+    local _, classFile = UnitClass("player")
     local name = UnitName("player")
     if CUI.IS_FOREVER then
         -- the full name whatever the show-surname preference, as the gold ledger keeps it
         local first, surname = (UnitNameUnmodified or UnitName)("player")
         name = CUI.WithSurname(first, surname, true)
     end
-    c.name, c.realm, c.class, c.level = name, CUI.RealmGroupName(), class, UnitLevel("player")
+    c.name, c.realm, c.class, c.level = name, CUI.RealmGroupName(), classFile, UnitLevel("player")
     -- a rename keeps the guid: its old entry goes and the bank moves over (the
     -- bags save again at once). a new character under a reused name has another
     -- guid and starts empty. a realm transfer gets a new guid too, so its old
     -- entry stays until it's deleted from the picker.
-    local guid = UnitGUID("player")
-    if guid and c.guid ~= guid then
+    local unitGuid = UnitGUID("player")
+    if unitGuid and c.guid ~= unitGuid then
         local moved = c.guid ~= nil
         if moved then
             c.bags, c.bank, c.bagsTime, c.bankTime = nil, nil, nil, nil
         end
-        c.guid = guid
+        c.guid = unitGuid
         for k, o in pairs(chars) do
-            if k ~= key and type(o) == "table" and o.guid == guid then
+            if k ~= key and type(o) == "table" and o.guid == unitGuid then
                 if c.bank == nil then
                     c.bank, c.bankTime = o.bank, o.bankTime
                 end
@@ -273,28 +273,28 @@ end
 
 -- one container's stuff, nil if the game says it has no slots
 local function ReadContainer(bagID)
-    local size = C_Container.GetContainerNumSlots(bagID) or 0
-    if size <= 0 then
+    local dim = C_Container.GetContainerNumSlots(bagID) or 0
+    if dim <= 0 then
         return nil
     end
-    local items, counts = {}, {}
-    for slot = 1, size do
-        local info = C_Container.GetContainerItemInfo(bagID, slot)
-        local link = info and (info.hyperlink or C_Container.GetContainerItemLink(bagID, slot))
-        if link then
-            items[slot] = ItemString(link)
-            if (info.stackCount or 1) > 1 then
-                counts[slot] = info.stackCount
+    local itemList, counts = {}, {}
+    for slotIndex = 1, dim do
+        local details = C_Container.GetContainerItemInfo(bagID, slotIndex)
+        local itemLink = details and (details.hyperlink or C_Container.GetContainerItemLink(bagID, slotIndex))
+        if itemLink then
+            itemList[slotIndex] = ItemString(itemLink)
+            if (details.stackCount or 1) > 1 then
+                counts[slotIndex] = details.stackCount
             end
         end
     end
-    return { size = size, items = items, counts = counts }
+    return { size = dim, items = itemList, counts = counts }
 end
 
 -- true when two saved containers hold the same items
 local function SameMap(a, b)
-    for k, v in pairs(a) do
-        if b[k] ~= v then
+    for k, val in pairs(a) do
+        if b[k] ~= val then
             return false
         end
     end
@@ -305,18 +305,18 @@ local function SameMap(a, b)
     end
     return true
 end
-local function Same(x, y)
-    if type(x) ~= type(y) then
+local function Same(posX, posY)
+    if type(posX) ~= type(posY) then
         return false
     end
-    if type(x) ~= "table" then
-        return x == y
+    if type(posX) ~= "table" then
+        return posX == posY
     end
-    return x.size == y.size
-        and x.name == y.name
-        and x.icon == y.icon
-        and SameMap(x.items, y.items)
-        and SameMap(x.counts, y.counts)
+    return posX.size == posY.size
+        and posX.name == posY.name
+        and posX.icon == posY.icon
+        and SameMap(posX.items, posY.items)
+        and SameMap(posX.counts, posY.counts)
 end
 
 local Patch -- below, with the tooltip index
@@ -327,45 +327,45 @@ local Patch -- below, with the tooltip index
 local BAGS = { 0, 1, 2, 3, 4, 5 }
 local CHAR_BANK, WARBAND_BANK = {}, {}
 for i = 1, CUI.IS_FOREVER and 9 or 6 do
-    local id = Enum.BagIndex["CharacterBankTab_" .. i]
-    if id then
-        CHAR_BANK[#CHAR_BANK + 1] = id
+    local ident = Enum.BagIndex["CharacterBankTab_" .. i]
+    if ident then
+        CHAR_BANK[#CHAR_BANK + 1] = ident
     end
 end
 for i = 1, 5 do
-    local id = Enum.BagIndex["AccountBankTab_" .. i]
-    if id then
-        WARBAND_BANK[#WARBAND_BANK + 1] = id
+    local ident = Enum.BagIndex["AccountBankTab_" .. i]
+    if ident then
+        WARBAND_BANK[#WARBAND_BANK + 1] = ident
     end
 end
 -- bag id -> its spot in the saved list
 local BAG_POS, CHAR_POS, WARBAND_POS = {}, {}, {}
-for i, id in ipairs(BAGS) do
-    BAG_POS[id] = i
+for i, ident in ipairs(BAGS) do
+    BAG_POS[ident] = i
 end
-for i, id in ipairs(CHAR_BANK) do
-    CHAR_POS[id] = i
+for i, ident in ipairs(CHAR_BANK) do
+    CHAR_POS[ident] = i
 end
-for i, id in ipairs(WARBAND_BANK) do
-    WARBAND_POS[id] = i
+for i, ident in ipairs(WARBAND_BANK) do
+    WARBAND_POS[ident] = i
 end
 
 local dirty = {} -- bag ids to read on the next save
 
 local function MarkAll(ids)
-    for _, id in ipairs(ids) do
-        dirty[id] = true
+    for _, ident in ipairs(ids) do
+        dirty[ident] = true
     end
 end
 
 -- read the dirty ones of ids into list; true if anything changed
-local function SaveList(list, ids, pos, field, owner, meta)
+local function SaveList(entries, ids, place, field, ownerFrame, meta)
     local changed = false
-    for _, id in ipairs(ids) do
-        if dirty[id] then
-            dirty[id] = nil
-            local i = pos[id]
-            local new = ReadContainer(id)
+    for _, ident in ipairs(ids) do
+        if dirty[ident] then
+            dirty[ident] = nil
+            local i = place[ident]
+            local new = ReadContainer(ident)
             if new and meta then
                 local m = meta[i]
                 new.name, new.icon = m and m.name, m and m.icon
@@ -375,15 +375,15 @@ local function SaveList(list, ids, pos, field, owner, meta)
             if not new and (not meta or (CUI.IS_FOREVER and meta[i])) then
                 new = false
             end
-            if new ~= nil and not Same(list[i], new) then
-                Patch(list[i], new, field, owner)
-                list[i] = new
+            if new ~= nil and not Same(entries[i], new) then
+                Patch(entries[i], new, field, ownerFrame)
+                entries[i] = new
                 changed = true
             end
         end
     end
     if changed then
-        Bump(list)
+        Bump(entries)
     end
     return changed
 end
@@ -429,9 +429,9 @@ local function SaveBanks()
         and C_Bank.FetchBankLockedReason
         and C_Bank.FetchBankLockedReason(Enum.BankType.Account)
     if locked == nil and Offline.HasWarband() then
-        local w = Offline.Store().warband
-        w.time = time()
-        if SaveList(w.tabs, WARBAND_BANK, WARBAND_POS, nil, nil, Meta(Enum.BankType.Account) or {}) then
+        local wid = Offline.Store().warband
+        wid.time = time()
+        if SaveList(wid.tabs, WARBAND_BANK, WARBAND_POS, nil, nil, Meta(Enum.BankType.Account) or {}) then
             changed = true
         end
     end
@@ -493,17 +493,17 @@ if PIT.AccountBanker then
     BANKERS[PIT.AccountBanker] = false
 end
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event, arg)
-    if event == "BAG_UPDATE" then
+ev:SetScript("OnEvent", function(_, evt, arg)
+    if evt == "BAG_UPDATE" then
         if BAG_POS[arg] then
             dirty[arg] = true
         elseif atBank and (CHAR_POS[arg] or WARBAND_POS[arg]) then
             dirty[arg] = true
             Queue(false, true)
         end
-    elseif event == "BAG_UPDATE_DELAYED" then
+    elseif evt == "BAG_UPDATE_DELAYED" then
         Queue(true, false)
-    elseif event == "BAG_CONTAINER_UPDATE" then
+    elseif evt == "BAG_CONTAINER_UPDATE" then
         MarkAll(BAGS)
         Queue(true, false)
         -- forever: a bag went in or out of a bank tab
@@ -511,14 +511,14 @@ ev:SetScript("OnEvent", function(_, event, arg)
             MarkAll(CHAR_BANK)
             Queue(false, true)
         end
-    elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
+    elseif evt == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
         if BANKERS[arg] ~= nil then
             atBank, atCharBank = true, BANKERS[arg]
             MarkAll(CHAR_BANK)
             MarkAll(WARBAND_BANK)
             Queue(false, true)
         end
-    elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
+    elseif evt == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
         if BANKERS[arg] ~= nil then
             Flush() -- save before the contents go unreadable
             atBank, atCharBank = false, false
@@ -549,19 +549,19 @@ local EVENTS = {
 local listening = false
 local IndexSoon -- below
 function Offline.Sync()
-    local on = Active()
-    if on == listening then
+    local enabled = Active()
+    if enabled == listening then
         return
     end
-    listening = on
+    listening = enabled
     for _, e in ipairs(EVENTS) do
-        if on then
+        if enabled then
             pcall(ev.RegisterEvent, ev, e)
         else
             ev:UnregisterEvent(e)
         end
     end
-    if on then
+    if enabled then
         MarkAll(BAGS)
         Queue(true, false)
     end
@@ -570,7 +570,7 @@ end
 -- the bags module reset: every saved inventory goes
 function Offline.Wipe()
     _G.CludesUIBagsInventoryDB = nil
-    index = nil
+    slotPos = nil
     wipe(listRev)
     listGen = listGen + 1
     Changed("forget")
@@ -582,11 +582,11 @@ function Offline.Wipe()
 end
 
 -- an options toggle: key is bagOfflineBank or bagTooltipCounts
-function Offline.Set(key, on)
+function Offline.Set(key, enabled)
     if not _G.CludesUIDB then
         return
     end
-    _G.CludesUIDB[key] = on and true or nil
+    _G.CludesUIDB[key] = enabled and true or nil
     Offline.Sync()
     Offline.SyncTooltip()
     Offline.SyncButton()
@@ -597,49 +597,49 @@ end
 -------------------------------------------------------------------------------
 -- index: chars[itemID][key] = { bags, bank }, warband[itemID].n
 -- sign -1 takes a container back out (rows that hit zero go away)
-local function AddContainer(t, into, field, owner, sign)
+local function AddContainer(t, into, field, ownerFrame, sign)
     if type(t) ~= "table" or type(t.items) ~= "table" then
         return
     end
-    for slot, s in pairs(t.items) do
-        local id = ItemID(s)
-        if id then
-            local n = ((t.counts and t.counts[slot]) or 1) * sign
-            local row = into[id]
-            if not row then
-                row = {}
-                into[id] = row
+    for slotIndex, s in pairs(t.items) do
+        local ident = ItemID(s)
+        if ident then
+            local num = ((t.counts and t.counts[slotIndex]) or 1) * sign
+            local rowFrame = into[ident]
+            if not rowFrame then
+                rowFrame = {}
+                into[ident] = rowFrame
             end
-            if owner then
-                local e = row[owner]
+            if ownerFrame then
+                local e = rowFrame[ownerFrame]
                 if not e then
                     e = { bags = 0, bank = 0 }
-                    row[owner] = e
+                    rowFrame[ownerFrame] = e
                 end
-                e[field] = e[field] + n
+                e[field] = e[field] + num
                 if e.bags + e.bank <= 0 then
-                    row[owner] = nil
+                    rowFrame[ownerFrame] = nil
                 end
             else
-                row.n = (row.n or 0) + n
-                if row.n <= 0 then
-                    row.n = nil
+                rowFrame.n = (rowFrame.n or 0) + num
+                if rowFrame.n <= 0 then
+                    rowFrame.n = nil
                 end
             end
-            if next(row) == nil then
-                into[id] = nil
+            if next(rowFrame) == nil then
+                into[ident] = nil
             end
         end
     end
 end
 
 local function Index()
-    if index and indexRev == rev then
-        return index
+    if slotPos and indexRev == rev then
+        return slotPos
     end
     local chars, war = {}, {}
-    local db = Offline.Store()
-    for key, c in pairs(db.chars) do
+    local saved = Offline.Store()
+    for key, c in pairs(saved.chars) do
         if type(c) == "table" then
             for _, t in ipairs(type(c.bags) == "table" and c.bags or _emptyP) do
                 AddContainer(t, chars, "bags", key, 1)
@@ -649,22 +649,22 @@ local function Index()
             end
         end
     end
-    for _, t in ipairs(db.warband.tabs) do
+    for _, t in ipairs(saved.warband.tabs) do
         AddContainer(t, war, nil, nil, 1)
     end
-    index, indexRev = { chars = chars, warband = war }, rev
-    return index
+    slotPos, indexRev = { chars = chars, warband = war }, rev
+    return slotPos
 end
 
 -- one container swapped for another: fix the index up in place instead of a
 -- full rebuild on the next hover (Changed keeps it current). no owner = warband
-Patch = function(old, new, field, owner)
-    if not (index and indexRev == rev) then
+Patch = function(old, new, field, ownerFrame)
+    if not (slotPos and indexRev == rev) then
         return
     end
-    local into = owner and index.chars or index.warband
-    AddContainer(old, into, field, owner, -1)
-    AddContainer(new, into, field, owner, 1)
+    local into = ownerFrame and slotPos.chars or slotPos.warband
+    AddContainer(old, into, field, ownerFrame, -1)
+    AddContainer(new, into, field, ownerFrame, 1)
 end
 
 -- built a moment after login, not inside the first hover
@@ -679,25 +679,25 @@ end
 -- finished lines per item id, until the next write
 local lineCache, lineRev = {}, -1
 local sameName = {}
-local function BuildLines(id)
-    local idx = Index()
-    local row, war = idx.chars[id], idx.warband[id]
-    if not row and not (war and war.n) then
+local function BuildLines(ident)
+    local position = Index()
+    local rowFrame, war = position.chars[ident], position.warband[ident]
+    if not rowFrame and not (war and war.n) then
         return false
     end
-    local db, lines, total = Offline.Store(), {}, 0
+    local saved, lines, sum = Offline.Store(), {}, 0
     -- two characters of one name (other realms) get their realm added
     wipe(sameName)
-    for key in pairs(row or _emptyP) do
-        local c = db.chars[key]
+    for key in pairs(rowFrame or _emptyP) do
+        local c = saved.chars[key]
         if c and c.name then
             sameName[c.name] = (sameName[c.name] or 0) + 1
         end
     end
-    for key, e in pairs(row or _emptyP) do
-        local c = db.chars[key]
-        local n = e.bags + e.bank
-        if c and n > 0 then
+    for key, e in pairs(rowFrame or _emptyP) do
+        local c = saved.chars[key]
+        local num = e.bags + e.bank
+        if c and num > 0 then
             local parts = {}
             if e.bags > 0 then
                 parts[#parts + 1] = CludesUI.Lf("Bags %1$d", e.bags)
@@ -710,24 +710,24 @@ local function BuildLines(id)
                 name = name .. "-" .. c.realm
             end
             lines[#lines + 1] =
-                { ClassHex(c.class) .. name .. "|r", table.concat(parts, "  "), 1, 1, 1, n = n }
-            total = total + n
+                { ClassHex(c.class) .. name .. "|r", table.concat(parts, "  "), 1, 1, 1, n = num }
+            sum = sum + num
         end
     end
     table.sort(lines, function(a, b)
         return a.n > b.n
     end)
     if war and war.n then
-        total = total + war.n
+        sum = sum + war.n
         lines[#lines + 1] = { CludesUI.L("Warband Bank"), war.n, 0.4, 0.78, 1 }
     end
     if #lines > 1 then
-        lines[#lines + 1] = { CludesUI.L("Total"), total, 1, 0.82, 0, total = true }
+        lines[#lines + 1] = { CludesUI.L("Total"), sum, 1, 0.82, 0, total = true }
     end
     return lines
 end
 
-local function OnItemTooltip(tooltip, data)
+local function OnItemTooltip(tooltip, payload)
     if not (listening and Offline.CountsEnabled()) then
         return
     end
@@ -737,18 +737,18 @@ local function OnItemTooltip(tooltip, data)
     if tooltip:IsForbidden() then
         return
     end
-    local id = data and data.id
-    if type(id) ~= "number" or (issecretvalue and issecretvalue(id)) then
+    local ident = payload and payload.id
+    if type(ident) ~= "number" or (issecretvalue and issecretvalue(ident)) then
         return
     end
     if lineRev ~= rev then
         wipe(lineCache)
         lineRev = rev
     end
-    local lines = lineCache[id]
+    local lines = lineCache[ident]
     if lines == nil then
-        lines = BuildLines(id)
-        lineCache[id] = lines
+        lines = BuildLines(ident)
+        lineCache[ident] = lines
     end
     if not lines then
         return

@@ -8,39 +8,39 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and the cast, channel and empower handlers.
 --  Reads the earlier Resource Bars files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local PP = CludesUI.PP
-local floor, min, max = math.floor, math.min, math.max
+local Pix = CludesUI.PP
+local floor, min, upper = math.floor, math.min, math.max
 local format = string.format
 local IsPlayerSpell, GetInventoryItemID = IsPlayerSpell, GetInventoryItemID
 
-local CHANNEL_TICK_DATA, CLASS_COLORS, ERB = I.CHANNEL_TICK_DATA, I.CLASS_COLORS, I.ERB
-local GetRBFont, SetRBFont, SnapXY = I.GetRBFont, I.SetRBFont, I.SnapXY
-local empowerColorA, empowerColorB = I.empowerColorA, I.empowerColorB
-local GetCurrentEmpowerStage = I.GetCurrentEmpowerStage
-local GetEmpowerStageColor, SmoothBarAnimate = I.GetEmpowerStageColor, I.SmoothBarAnimate
-local CAST_BAR_TEXTURES, SPARK_TEX = I.CAST_BAR_TEXTURES, I.SPARK_TEX
-local SetCastBarFrame, SetUpdateCastBar = I.SetCastBarFrame, I.SetUpdateCastBar
-local SetStageThresholds = I.SetStageThresholds
+local CHANNEL_TICK_DATA, CLASS_COLORS, ERB = Inner.CHANNEL_TICK_DATA, Inner.CLASS_COLORS, Inner.ERB
+local GetRBFont, SetRBFont, SnapXY = Inner.GetRBFont, Inner.SetRBFont, Inner.SnapXY
+local empowerColorA, empowerColorB = Inner.empowerColorA, Inner.empowerColorB
+local GetCurrentEmpowerStage = Inner.GetCurrentEmpowerStage
+local GetEmpowerStageColor, SmoothBarAnimate = Inner.GetEmpowerStageColor, Inner.SmoothBarAnimate
+local CAST_BAR_TEXTURES, SPARK_TEX = Inner.CAST_BAR_TEXTURES, Inner.SPARK_TEX
+local SetCastBarFrame, SetUpdateCastBar = Inner.SetCastBarFrame, Inner.SetUpdateCastBar
+local SetStageThresholds = Inner.SetStageThresholds
 
 local castBarFrame
-I.castBarFrameSetters[#I.castBarFrameSetters + 1] = function(v)
-    castBarFrame = v
+Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val)
+    castBarFrame = val
 end
 local cachedClass
-I.cachedClassSetters[#I.cachedClassSetters + 1] = function(v)
-    cachedClass = v
+Inner.cachedClassSetters[#Inner.cachedClassSetters + 1] = function(val)
+    cachedClass = val
 end
 local cachedStageThresholds
-I.stageThresholdsSetters[#I.stageThresholdsSetters + 1] = function(v)
-    cachedStageThresholds = v
+Inner.stageThresholdsSetters[#Inner.stageThresholdsSetters + 1] = function(val)
+    cachedStageThresholds = val
 end
 
 -- Forward declarations
@@ -56,22 +56,22 @@ BuildCastBar = function()
     if uf and uf.UF_WatchPlayerPortrait then
         uf.UF_WatchPlayerPortrait(
             "ResourceBars",
-            (cb.enabled and cb.iconOnPortrait) and ns.ERB_RefreshCastPortrait or nil
+            (cb.enabled and cb.iconOnPortrait) and mod.ERB_RefreshCastPortrait or nil
         )
     end
     -- blizz = a stock style dictates the geometry (both stock styles);
     -- blizzKit = the 12.1 kit (atlas fill, background, pip and text box);
     -- classic keeps the user's fill under the vanilla frame and spark.
-    local blizz = ns.ERB_CastBlizz()
-    local classic = ns.ERB_CastClassic()
+    local blizz = mod.ERB_CastBlizz()
+    local classic = mod.ERB_CastClassic()
     local blizzKit = blizz and not classic
 
     -- ResourceBars only claims Blizzard's player cast bar while its own
     -- replacement bar is active. The shared helper arbitrates ownership
     -- across CUI modules and releases control cleanly for other addons.
-    ns.RB_SyncBlizzCastSuppress()
-    ns.ERB_SyncUninterruptWatch(cb.enabled and cb.uninterruptibleOverride and not blizzKit)
-    ns.ERB_LatencySendWatch(cb.enabled and cb.latencyEnabled)
+    mod.RB_SyncBlizzCastSuppress()
+    mod.ERB_SyncUninterruptWatch(cb.enabled and cb.uninterruptibleOverride and not blizzKit)
+    mod.ERB_LatencySendWatch(cb.enabled and cb.latencyEnabled)
 
     if not cb.enabled then
         if castBarFrame then
@@ -85,18 +85,18 @@ BuildCastBar = function()
         castBarFrame:SetFrameStrata(cb.frameStrata or "MEDIUM")
         castBarFrame:SetFrameLevel(15)
 
-        local bg = castBarFrame:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        castBarFrame._bg = bg
+        local backdrop = castBarFrame:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        castBarFrame._bg = backdrop
 
         -- Border frame: child that covers the full cast bar (bar + icon)
         local bdrFrame = CreateFrame("Frame", nil, castBarFrame)
         bdrFrame:SetAllPoints(castBarFrame)
         bdrFrame:SetFrameLevel(castBarFrame:GetFrameLevel() + 5)
         castBarFrame._border = bdrFrame
-        local PP = CludesUI and CludesUI.PP
-        if PP then
-            PP.CreateBorder(bdrFrame, 0, 0, 0, 1, 1)
+        local Pix = CludesUI and CludesUI.PP
+        if Pix then
+            Pix.CreateBorder(bdrFrame, 0, 0, 0, 1, 1)
         end
 
         -- Clip frame to prevent bar fill from bleeding past the border
@@ -105,10 +105,10 @@ BuildCastBar = function()
         castBarFrame._barClip = clipFrame
 
         -- Status bar (inside clip frame)
-        local bar = CreateFrame("StatusBar", "ERB_CastBar", clipFrame)
-        bar:SetMinMaxValues(0, 1)
-        bar:SetValue(0)
-        castBarFrame._bar = bar
+        local barFrame = CreateFrame("StatusBar", "ERB_CastBar", clipFrame)
+        barFrame:SetMinMaxValues(0, 1)
+        barFrame:SetValue(0)
+        castBarFrame._bar = barFrame
         -- NO native interpolation on this fill: the value is recomputed from
         -- GetTime() every frame and is already smooth. Easing toward a per-frame
         -- moving target makes the fill trail real progress (worst on short casts),
@@ -116,8 +116,8 @@ BuildCastBar = function()
 
         -- Spark (in its own child frame inside clip so it gets clipped)
         local sparkFrame = CreateFrame("Frame", nil, clipFrame)
-        sparkFrame:SetAllPoints(bar)
-        sparkFrame:SetFrameLevel(bar:GetFrameLevel() + 2)
+        sparkFrame:SetAllPoints(barFrame)
+        sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 2)
         local spark = sparkFrame:CreateTexture(nil, "OVERLAY", nil, 1)
         spark:SetTexture(SPARK_TEX)
         spark:SetBlendMode("ADD")
@@ -132,17 +132,17 @@ BuildCastBar = function()
         -- Channel twin on the bar frame: a channel starts FULL, so the
         -- drain-side zone spends the whole channel under the fill unless it
         -- draws above it (OVERLAY 0: over the fill, under ticks and spark).
-        local latOverlayFront = bar:CreateTexture(nil, "OVERLAY", nil, 0)
+        local latOverlayFront = barFrame:CreateTexture(nil, "OVERLAY", nil, 0)
         latOverlayFront:Hide()
         castBarFrame._latencyOverlayFront = latOverlayFront
 
         -- Spell icon
         local iconFrame = CreateFrame("Frame", nil, castBarFrame)
-        local icon = iconFrame:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        local glyph = iconFrame:CreateTexture(nil, "ARTWORK")
+        glyph:SetAllPoints()
+        glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         castBarFrame._iconFrame = iconFrame
-        castBarFrame._icon = icon
+        castBarFrame._icon = glyph
 
         -- Optional 1px divider at the icon/bar seam (opt-in: "Show Icon Divider").
         -- That seam is otherwise interior with no border by design (see the clip-inset
@@ -161,14 +161,14 @@ BuildCastBar = function()
 
         -- Text overlay frame (above all bar borders)
         local textFrame = CreateFrame("Frame", nil, castBarFrame)
-        textFrame:SetAllPoints(bar)
+        textFrame:SetAllPoints(barFrame)
         textFrame:SetFrameLevel(25)
         castBarFrame._textFrame = textFrame
 
         -- Spell name text
         local nameText = textFrame:CreateFontString(nil, "OVERLAY")
         SetRBFont(nameText, GetRBFont(), 11)
-        nameText:SetPoint("LEFT", bar, "LEFT", 4, 0)
+        nameText:SetPoint("LEFT", barFrame, "LEFT", 4, 0)
         nameText:SetJustifyH("LEFT")
         nameText:SetWordWrap(false)
         nameText:SetNonSpaceWrap(false)
@@ -177,7 +177,7 @@ BuildCastBar = function()
         -- Timer text
         local timerText = textFrame:CreateFontString(nil, "OVERLAY")
         SetRBFont(timerText, GetRBFont(), 11)
-        timerText:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
+        timerText:SetPoint("RIGHT", barFrame, "RIGHT", -4, 0)
         timerText:SetJustifyH("RIGHT")
         timerText:SetWordWrap(false)
         timerText:SetNonSpaceWrap(false)
@@ -199,16 +199,16 @@ BuildCastBar = function()
     -- profile lookup. Blizzard Style only: the classic fill is the user's.
     castBarFrame._blizzFill = blizzKit or nil
 
-    local w, h = cb.width, cb.height
+    local wid, hgt = cb.width, cb.height
     local hasIcon = cb.showIcon ~= false
     -- Total frame width includes the icon only when it is shown (a square of
     -- the bar height; under the style it also spans the text box, so the
     -- bar keeps its configured width beside it).
-    local iconW = ns.ERB_CastIconW(cb)
-    local totalW = w + iconW
+    local iconW = mod.ERB_CastIconW(cb)
+    local totalW = wid + iconW
     if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_CastBar", castBarFrame) then
         -- Override anchor owns position; just set size directly
-        castBarFrame:SetSize(totalW, h)
+        castBarFrame:SetSize(totalW, hgt)
     elseif cb.unlockPos and cb.unlockPos.point then
         -- Position managed by unlock mode -- only animate size changes.
         -- Skip reposition during unlock mode so resize does not snap the bar.
@@ -216,14 +216,14 @@ BuildCastBar = function()
         local px, py = cb.unlockPos.x or 0, cb.unlockPos.y or 0
         local anchored = CludesUI.IsUnlockAnchored("ERB_CastBar")
         if CludesUI._unlockActive then
-            castBarFrame:SetSize(totalW, h)
+            castBarFrame:SetSize(totalW, hgt)
         elseif anchored and castBarFrame:GetLeft() then
             -- Anchor system owns position; just set size directly
-            castBarFrame:SetSize(totalW, h)
+            castBarFrame:SetSize(totalW, hgt)
         else
             local function ApplyCastUnlockTransform()
                 local aw = castBarFrame["_barAnim_w"] or totalW
-                local ah = castBarFrame["_barAnim_h"] or h
+                local ah = castBarFrame["_barAnim_h"] or hgt
                 castBarFrame:SetSize(aw, ah)
                 castBarFrame:ClearAllPoints()
                 -- Snap the stored CENTER/CENTER position to the pixel grid, dimension-
@@ -239,12 +239,12 @@ BuildCastBar = function()
             SmoothBarAnimate(castBarFrame, "w", totalW, function()
                 ApplyCastUnlockTransform()
             end)
-            SmoothBarAnimate(castBarFrame, "h", h, function()
+            SmoothBarAnimate(castBarFrame, "h", hgt, function()
                 ApplyCastUnlockTransform()
             end)
         end
     else
-        castBarFrame:SetSize(totalW, h)
+        castBarFrame:SetSize(totalW, hgt)
         if not CludesUI._unlockActive then
             castBarFrame:ClearAllPoints()
             castBarFrame:SetPoint("CENTER", UIParent, "CENTER", cb.anchorX, cb.anchorY)
@@ -265,10 +265,10 @@ BuildCastBar = function()
         -- stops this child's rect from resolving and the border silently vanishes.
         -- Extend Top / Extend Bottom seat it past the bar; none under a stock
         -- style, whose frame art rides this child.
-        ns.ERB_AnchorBorderHost(
+        mod.ERB_AnchorBorderHost(
             castBarFrame._border,
             castBarFrame,
-            ns.ERB_BorderExtents((not blizz) and cb or nil)
+            mod.ERB_BorderExtents((not blizz) and cb or nil)
         )
         -- Exact size only for the bar's own step: the forced 0 under the style is a substitute.
         local bpx = (not blizz) and CludesUI.BorderPx(cb.borderSizePx, bs, texKey) or nil
@@ -293,17 +293,17 @@ BuildCastBar = function()
     -- Bottom Separator: across the whole bar (icon included), above its border;
     -- none under a stock style or a Solid border (inert unless it was ever on).
     if cb.edgeSep or castBarFrame._erbSep then
-        ns.ERB_Separators(
+        mod.ERB_Separators(
             castBarFrame,
             cb,
-            (cb.edgeSep and not blizz and ns.ERB_Textured(cb)) and true or false,
+            (cb.edgeSep and not blizz and mod.ERB_Textured(cb)) and true or false,
             castBarFrame:GetFrameLevel() + 7
         )
     end
 
     -- Icon: left or right side (iconOnRight), full height, no inset
     local iconFrame = castBarFrame._iconFrame
-    local portrait, portraitSettings = ns.ERB_CastIconPortrait(cb)
+    local portrait, portraitSettings = mod.ERB_CastIconPortrait(cb)
     if uf and (portrait or iconFrame._pbd) then
         uf.UF_CastIconPortraitLayout(iconFrame, castBarFrame._icon, portrait, portraitSettings)
         if not portrait then
@@ -312,8 +312,8 @@ BuildCastBar = function()
         end
     end
     local iconOnRight = hasIcon and cb.iconOnRight
-    local iconFree = ns.ERB_CastIconFree(cb)
-    ns.ERB_LayoutFreeCastIcon(iconFrame, castBarFrame, cb, iconFree)
+    local iconFree = mod.ERB_CastIconFree(cb)
+    mod.ERB_LayoutFreeCastIcon(iconFrame, castBarFrame, cb, iconFree)
     if portrait or iconFree then
         iconFrame:Show()
     elseif hasIcon then
@@ -351,11 +351,11 @@ BuildCastBar = function()
     -- Border Art Divider: the border style's vertical companion art in place of
     -- the solid line below (ns.ERB_CastDividerArt; inert unless it was ever on).
     local showDivider = hasIcon and not portrait and not iconFree and cb.showIconDivider
-    if ns.ERB_CastDividerArt(iconDivider, showDivider, iconFrame, iconOnRight, cb, blizz) then
+    if mod.ERB_CastDividerArt(iconDivider, showDivider, iconFrame, iconOnRight, cb, blizz) then
         iconDivider:Show()
     elseif showDivider then
         local des = castBarFrame:GetEffectiveScale()
-        local onePixel = des > 0 and (PP.perfect / des) or PP.mult
+        local onePixel = des > 0 and (Pix.perfect / des) or Pix.mult
         local dbs = cb.borderSize or 1
         -- An exact SOLID size drives the divider too; a textured one keeps the step.
         local dtex = cb.borderTexture
@@ -379,10 +379,10 @@ BuildCastBar = function()
 
     -- Clip frame + bar: beside the icon (or full width), full height
     local clipFrame = castBarFrame._barClip
-    local bar = castBarFrame._bar
+    local barFrame = castBarFrame._bar
     -- No border, no inset: the bg spans the frame, so an inset with no border
     -- over it reads as a 1px background ring around the fill.
-    local bdrInset = (not blizz and (cb.borderSize or 0) > 0 and PP and PP.mult) or 0
+    local bdrInset = (not blizz and (cb.borderSize or 0) > 0 and Pix and Pix.mult) or 0
     clipFrame:ClearAllPoints()
     -- The icon-adjacent side sits FLUSH against the icon (no inset): that seam is
     -- interior with no border, and insetting it exposes a 1px background column
@@ -392,25 +392,25 @@ BuildCastBar = function()
     clipFrame:SetPoint("TOPLEFT", castBarFrame, "TOPLEFT", clipLeft, -bdrInset)
     clipFrame:SetPoint("BOTTOMRIGHT", castBarFrame, "BOTTOMRIGHT", -clipRight, bdrInset)
     clipFrame:SetFrameLevel(castBarFrame:GetFrameLevel() + 1)
-    bar:ClearAllPoints()
-    bar:SetAllPoints(clipFrame)
+    barFrame:ClearAllPoints()
+    barFrame:SetAllPoints(clipFrame)
 
     local texKey = cb.texture
     local isBlizzard = (texKey == "blizzard")
     -- Textured Background: back to the plain background before a branch repaints it.
     if castBarFrame._bg._erbBgTex then
-        ns.ERB_BgTexture(castBarFrame._bg, nil)
+        mod.ERB_BgTexture(castBarFrame._bg, nil)
     end
     if blizzKit then
         -- Blizzard Style: the stock fill art follows the cast kind
         -- (ns.ERB_SetBlizzCastFill) and the background hugs the bar the way
         -- the stock frame anchors it.
-        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+        barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         castBarFrame._blizzFillKind = nil
-        ns.ERB_SetBlizzCastFill(castBarFrame._channeling and "channel" or "cast")
+        mod.ERB_SetBlizzCastFill(castBarFrame._channeling and "channel" or "cast")
         -- A bar texture, not frame chrome: the retail background under
         -- Blizzard Style, WoW Forever included.
-        local bgAtlas = ns.ERB_BlizzAtlas("bg")
+        local bgAtlas = mod.ERB_BlizzAtlas("bg")
         if bgAtlas then
             CludesUI.StockAtlas(castBarFrame._bg, bgAtlas)
         else
@@ -421,12 +421,12 @@ BuildCastBar = function()
         castBarFrame._bg:SetPoint("TOPLEFT", clipFrame, "TOPLEFT", -1, 1)
         castBarFrame._bg:SetPoint("BOTTOMRIGHT", clipFrame, "BOTTOMRIGHT", 1, -1)
     elseif isBlizzard then
-        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-        bar:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
+        barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+        barFrame:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
         -- Classic WoW UI's seeded fill: the retail background on WoW Forever
         -- too (the CludesUI look keeps the client's).
         if classic then
-            ns.ERB_StockAtlas(castBarFrame._bg, "UI-CastingBar-Background", true)
+            mod.ERB_StockAtlas(castBarFrame._bg, "UI-CastingBar-Background", true)
         else
             castBarFrame._bg:SetAtlas("UI-CastingBar-Background", true)
         end
@@ -434,12 +434,12 @@ BuildCastBar = function()
         castBarFrame._bg:SetAllPoints(castBarFrame)
     else
         local texPath = CludesUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, "Interface\\Buttons\\WHITE8x8")
-        bar:SetStatusBarTexture(texPath)
+        barFrame:SetStatusBarTexture(texPath)
         castBarFrame._bg:SetTexture(nil)
         castBarFrame._bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
         -- Textured Background: flat while Fill Color is below 100.
         if cb.textureBg and (cb.fillOpacity or 100) >= 100 then
-            ns.ERB_BgTexture(
+            mod.ERB_BgTexture(
                 castBarFrame._bg,
                 CludesUI.ResolveTexturePath(CAST_BAR_TEXTURES, texKey, nil),
                 cb.bgR,
@@ -448,13 +448,13 @@ BuildCastBar = function()
                 cb.bgA
             )
         end
-        ns.ApplyCastBgAnchor()
+        mod.ApplyCastBgAnchor()
     end
 
     -- Bar color / gradient. Fill Opacity multiplies into the fill alpha (solid
     -- color and both gradient endpoints), so the fill turns translucent without
     -- double-dimming through a separate region alpha.
-    local fillTex = bar:GetStatusBarTexture()
+    local fillTex = barFrame:GetStatusBarTexture()
     local fillOp = (cb.fillOpacity or 100) / 100
 
     if blizzKit then
@@ -519,16 +519,16 @@ BuildCastBar = function()
     castBarFrame._cstKey = nil
     castBarFrame._uninterrupt = nil
     castBarFrame._channelPaint = nil
-    ns.ERB_CastOverrideApply()
+    mod.ERB_CastOverrideApply()
 
     local spark = castBarFrame._spark
     -- Blizzard Style: the stock pip replaces the spark art (once; the swap is
     -- reload-gated so it never needs undoing).
     if blizzKit and not castBarFrame._blizzSpark then
-        local pip = ns.ERB_BlizzAtlas("spark")
-        if pip then
+        local pipTex = mod.ERB_BlizzAtlas("spark")
+        if pipTex then
             castBarFrame._blizzSpark = true
-            spark:SetAtlas(pip)
+            spark:SetAtlas(pipTex)
             -- The stock pip is drawn plain (the CUI spark art is additive).
             spark:SetBlendMode("BLEND")
         end
@@ -538,11 +538,11 @@ BuildCastBar = function()
     -- host leaves the clip frame for the bar frame itself (anchors kept).
     if classic and not castBarFrame._classicSpark then
         castBarFrame._classicSpark = true
-        spark:SetTexture(ns.ERB_CLASSIC.spark)
-        local sf = spark:GetParent()
-        sf:SetParent(castBarFrame)
-        sf:ClearAllPoints()
-        sf:SetAllPoints(bar)
+        spark:SetTexture(mod.ERB_CLASSIC.spark)
+        local scrollFrame = spark:GetParent()
+        scrollFrame:SetParent(castBarFrame)
+        scrollFrame:ClearAllPoints()
+        scrollFrame:SetAllPoints(barFrame)
     end
     -- Above the frame art (+5) and the icon (+6), under the texts (25);
     -- re-asserted like the art frame's level.
@@ -554,12 +554,12 @@ BuildCastBar = function()
         -- little above the bar's centre line.
         local sparkY = 0
         if classic then
-            local C = ns.ERB_CLASSIC
-            local ss = C.sparkSize * h / C.barH
+            local C = mod.ERB_CLASSIC
+            local ss = C.sparkSize * hgt / C.barH
             spark:SetSize(ss, ss)
-            sparkY = C.sparkY * h / C.barH
+            sparkY = C.sparkY * hgt / C.barH
         else
-            spark:SetSize(8, h)
+            spark:SetSize(8, hgt)
         end
         spark:ClearAllPoints()
 
@@ -586,8 +586,8 @@ BuildCastBar = function()
         end
         -- Style both overlays; ShowLatencyOverlay picks one per cast kind
         -- (channels use the front twin so the zone survives the full fill).
-        for i = 1, 2 do
-            local lo = (i == 1) and castBarFrame._latencyOverlay or castBarFrame._latencyOverlayFront
+        for idx = 1, 2 do
+            local lo = (idx == 1) and castBarFrame._latencyOverlay or castBarFrame._latencyOverlayFront
             if lo then
                 if texPath then
                     lo:SetTexture(texPath)
@@ -608,7 +608,7 @@ BuildCastBar = function()
     end
     -- Text width cap from the bar's RENDERED width, so width-matching and border
     -- insets are accounted for. Falls back to cb.width before first layout.
-    local barW = bar:GetWidth()
+    local barW = barFrame:GetWidth()
     if not barW or barW < 10 then
         barW = cb.width
     end
@@ -625,12 +625,12 @@ BuildCastBar = function()
     local timerText = castBarFrame._timerText
     if cb.showTimer then
         SetRBFont(timerText, GetRBFont(), cb.timerSize or 11)
-        local pt, xb, jh = ns.GetCastTextAnchor(durSide, false, timerW)
+        local pt, xb, jh = mod.GetCastTextAnchor(durSide, false, timerW)
         timerText:ClearAllPoints()
         timerText:SetJustifyH(jh)
-        timerText:SetPoint(pt, bar, pt, xb + (cb.timerX or 0), cb.timerY or 0)
+        timerText:SetPoint(pt, barFrame, pt, xb + (cb.timerX or 0), cb.timerY or 0)
         timerText:Show()
-        ns.ERB_CastTextColor(timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
+        mod.ERB_CastTextColor(timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
     else
         timerText:Hide()
     end
@@ -639,31 +639,31 @@ BuildCastBar = function()
     local nameText = castBarFrame._nameText
     if cb.showSpellText then
         SetRBFont(nameText, GetRBFont(), cb.spellTextSize or 11)
-        local pt, xb, jh = ns.GetCastTextAnchor(spellSide, cb.showTimer and durSide == spellSide, timerW)
+        local pt, xb, jh = mod.GetCastTextAnchor(spellSide, cb.showTimer and durSide == spellSide, timerW)
         nameText:ClearAllPoints()
         nameText:SetJustifyH(jh)
-        nameText:SetPoint(pt, bar, pt, xb + (cb.spellTextX or 0), cb.spellTextY or 0)
+        nameText:SetPoint(pt, barFrame, pt, xb + (cb.spellTextX or 0), cb.spellTextY or 0)
         if spellSide == "center" then
             nameText:SetWidth(barW - 8 - (cb.showTimer and 2 * timerW or 0))
         else
             nameText:SetWidth(barW - 8 - (cb.showTimer and timerW or 0))
         end
         nameText:Show()
-        ns.ERB_CastTextColor(nameText, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
+        mod.ERB_CastTextColor(nameText, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
     else
         nameText:Hide()
     end
     -- Re-flow so a live JustifyH change takes effect on already-rendered text.
-    ns.ReflowFontString(timerText)
-    ns.ReflowFontString(nameText)
+    mod.ReflowFontString(timerText)
+    mod.ReflowFontString(nameText)
     -- Blizzard Style chrome: frame art + text box (moves the spell name under the bar).
     if blizz then
-        ns.ERB_ApplyBlizzCastChrome(cb, barW)
+        mod.ERB_ApplyBlizzCastChrome(cb, barW)
     end
     -- Show Full Spell Name: the font above reset the name to its configured
     -- size; re-fit a cast in flight to the width it now has.
     if cb.fitSpellName then
-        ns.ERB_FitCastName(cb)
+        mod.ERB_FitCastName(cb)
     end
 
     -- Hide pips (build reset), then RE-LAY them for an in-flight empower:
@@ -672,12 +672,12 @@ BuildCastBar = function()
     -- width-match/anchor re-apply landed mid-cast). Geometry is final here,
     -- so the pips re-anchor against the rebuilt bar.
     if castBarFrame._pips then
-        for i = 1, #castBarFrame._pips do
-            castBarFrame._pips[i]:Hide()
+        for idx = 1, #castBarFrame._pips do
+            castBarFrame._pips[idx]:Hide()
         end
     end
     if castBarFrame._empowering and castBarFrame._empStages then
-        ns.ERB_LayoutEmpowerPips(castBarFrame._empStages)
+        mod.ERB_LayoutEmpowerPips(castBarFrame._empStages)
     end
 
     -- Hide channel ticks (build reset), then RE-SHOW them for an in-flight
@@ -697,13 +697,13 @@ BuildCastBar = function()
     -- on purpose: the idle state re-suppresses the spark and icon the style pass
     -- above just re-showed.
     if not castBarFrame._casting and not castBarFrame._channeling and not castBarFrame._empowering then
-        ns.ShowIdleCastBar()
+        mod.ShowIdleCastBar()
     else
-        ns.ActivateCastBar()
+        mod.ActivateCastBar()
     end
 end
 
-function ns.ERB_RefreshCastPortrait()
+function mod.ERB_RefreshCastPortrait()
     BuildCastBar()
     CludesUI.NotifyElementResized("ERB_CastBar")
 end
@@ -711,7 +711,7 @@ end
 -- Some set bonuses never register via IsPlayerSpell or a player aura.
 -- Count equipped items whose set-bonus data lists this spellID; two or
 -- more equipped means the 2pc bonus is up.
-local function IsSetBonusSpellActive(spellID)
+local function IsSetBonusSpellActive(spellId)
     if not (C_Item and C_Item.GetSetBonusesForSpecializationByItemID) then
         return false
     end
@@ -720,13 +720,14 @@ local function IsSetBonusSpellActive(spellID)
         return false
     end
     local matches = 0
-    for slot = 1, 19 do
-        local itemID = GetInventoryItemID and GetInventoryItemID("player", slot)
-        if itemID then
-            local ok, bonusSpellIDs = pcall(C_Item.GetSetBonusesForSpecializationByItemID, specID, itemID)
-            if ok and type(bonusSpellIDs) == "table" then
-                for _, id in ipairs(bonusSpellIDs) do
-                    if id == spellID then
+    for slotIndex = 1, 19 do
+        local itemId = GetInventoryItemID and GetInventoryItemID("player", slotIndex)
+        if itemId then
+            local success, bonusSpellIDs =
+                pcall(C_Item.GetSetBonusesForSpecializationByItemID, specID, itemId)
+            if success and type(bonusSpellIDs) == "table" then
+                for _, ident in ipairs(bonusSpellIDs) do
+                    if ident == spellId then
                         matches = matches + 1
                         break
                     end
@@ -740,26 +741,26 @@ end
 -- Channel tick marks: vertical marks on the cast bar for channeled spells
 -- listed in CHANNEL_TICK_DATA. The penultimate tick (last safe chain/clip
 -- point) draws slightly wider in gold. Layout mirrors the empower pip code above.
-ShowChannelTicks = function(spellID)
+ShowChannelTicks = function(spellId)
     if not castBarFrame then
         return
     end
     -- Stashed so a mid-channel bar rebuild can re-show this channel's marks
     -- (see the BuildCastBar tail). Stale values are inert: the re-show gates
     -- on _channeling, and every channel start restores the stash.
-    castBarFrame._tickSpellID = spellID
+    castBarFrame._tickSpellID = spellId
     local cb = ERB.db.profile.castBar
     if not cb.showChannelTicks then
         return
     end
 
-    local tickData = CHANNEL_TICK_DATA[spellID]
+    local tickData = CHANNEL_TICK_DATA[spellId]
     local wantTicks = tickData and (cb.showTickMarks or cb.showLastTick)
 
     -- Nothing to draw: hide stale marks and bail
     if not wantTicks then
-        for i = 1, #castBarFrame._ticks do
-            castBarFrame._ticks[i]:Hide()
+        for idx = 1, #castBarFrame._ticks do
+            castBarFrame._ticks[idx]:Hide()
         end
         castBarFrame._numTicks = 0
         if castBarFrame._gcdMark then
@@ -768,9 +769,9 @@ ShowChannelTicks = function(spellID)
         return
     end
 
-    local bar = castBarFrame._bar
-    local barWidth = bar:GetWidth()
-    local barHeight = bar:GetHeight()
+    local barFrame = castBarFrame._bar
+    local barWidth = barFrame:GetWidth()
+    local barHeight = barFrame:GetHeight()
     if barWidth <= 0 or barHeight <= 0 then
         return
     end
@@ -780,7 +781,7 @@ ShowChannelTicks = function(spellID)
     -- widths are exact physical pixel counts at every UI scale. The old
     -- effectiveScale rounding treated the target as UI units and drifted
     -- between 1 and 3 physical pixels depending on scale.
-    local effectiveScale = bar:GetEffectiveScale()
+    local effectiveScale = barFrame:GetEffectiveScale()
     local PPc = CludesUI and CludesUI.PP
     local onePx = ((PPc and PPc.perfect) or 1) / effectiveScale
     local tickWidth = 2 * onePx
@@ -867,14 +868,14 @@ ShowChannelTicks = function(spellID)
             -- much longer -- one more interior mark than a fresh cast.
             local M = tickData.missiles
             if tickData.addMissiles then
-                for id, extra in pairs(tickData.addMissiles) do
+                for ident, extra in pairs(tickData.addMissiles) do
                     -- Talent, player aura, or item set bonus -- any counts.
                     if
-                        IsPlayerSpell(id)
+                        IsPlayerSpell(ident)
                         or (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID and C_UnitAuras.GetPlayerAuraBySpellID(
-                            id
+                            ident
                         ))
-                        or IsSetBonusSpellActive(id)
+                        or IsSetBonusSpellActive(ident)
                     then
                         M = M + extra
                     end
@@ -901,7 +902,7 @@ ShowChannelTicks = function(spellID)
                 local pEnd = castBarFrame._mslPrevEnd
                 local pInt = castBarFrame._mslPrevInterval
                 if
-                    castBarFrame._mslPrevSpell == spellID
+                    castBarFrame._mslPrevSpell == spellId
                     and pEnd
                     and pInt
                     and pInt > 0
@@ -949,15 +950,15 @@ ShowChannelTicks = function(spellID)
             -- a mid-channel re-report can never blank the marks outright.
             if not positions then
                 positions = {}
-                for i = 1, min(M - 2, 12) do
-                    positions[i] = i / (M - 1)
+                for idx = 1, min(M - 2, 12) do
+                    positions[idx] = idx / (M - 1)
                 end
             end
             -- Bank this cast's cadence for a possible chain into the next.
             if dur > 0 then
                 castBarFrame._mslPrevEnd = castBarFrame._endTime
                 castBarFrame._mslPrevInterval = (chained and (dur - carry) or dur) / (M - 1)
-                castBarFrame._mslPrevSpell = spellID
+                castBarFrame._mslPrevSpell = spellId
             end
         else
             local numTicks
@@ -976,8 +977,8 @@ ShowChannelTicks = function(spellID)
             end
             if numTicks and numTicks > 1 then
                 positions = {}
-                for i = 1, numTicks - 1 do
-                    positions[i] = i / numTicks
+                for idx = 1, numTicks - 1 do
+                    positions[idx] = idx / numTicks
                 end
             end
         end
@@ -992,37 +993,37 @@ ShowChannelTicks = function(spellID)
         local ltR, ltG, ltB, ltA =
             cb.lastTickR or 1.0, cb.lastTickG or 0.82, cb.lastTickB or 0.0, cb.lastTickA or 0.95
 
-        for i = 1, count do
-            local isLastTick = (i == count)
+        for idx = 1, count do
+            local isLastTick = (idx == count)
 
             -- Every index is filled, including the ones this pass hides: _ticks
             -- is walked with # (the stale-mark trims below, HideChannelTicks),
             -- so a hole at [1] would make the length 0 and end every sweep.
-            local tick = castBarFrame._ticks[i]
+            local tick = castBarFrame._ticks[idx]
             if not tick then
-                tick = bar:CreateTexture(nil, "OVERLAY", nil, 3)
+                tick = barFrame:CreateTexture(nil, "OVERLAY", nil, 3)
                 -- Exact-width 1px-class art: keep the engine's texel
                 -- snapping out of it or it re-rounds our aligned edges.
                 if tick.SetSnapToPixelGrid then
                     tick:SetSnapToPixelGrid(false)
                     tick:SetTexelSnappingBias(0)
                 end
-                castBarFrame._ticks[i] = tick
+                castBarFrame._ticks[idx] = tick
             end
 
             if not showTickMarks and not isLastTick then
                 tick:Hide()
             else
                 local isGold = isLastTick and showLastTick
-                local w = isGold and highlightWidth or tickWidth
+                local wid = isGold and highlightWidth or tickWidth
                 -- The bar drains, so a mark at time-fraction f draws at
                 -- (1 - f) of the width from the left. The center is snapped
                 -- WIDTH-AWARE so both edges land on the physical grid -- an
                 -- odd-pixel mark centered on a plain grid point straddles it
                 -- and blurs.
-                local rawOffset = barWidth * (1 - positions[i])
+                local rawOffset = barWidth * (1 - positions[idx])
                 local snappedOffset = (PPc and PPc.SnapCenterForDim)
-                        and PPc.SnapCenterForDim(rawOffset, w, effectiveScale)
+                        and PPc.SnapCenterForDim(rawOffset, wid, effectiveScale)
                     or (floor(rawOffset * effectiveScale + 0.5) / effectiveScale)
 
                 if isGold then
@@ -1030,23 +1031,23 @@ ShowChannelTicks = function(spellID)
                 else
                     tick:SetColorTexture(tmR, tmG, tmB, tmA)
                 end
-                tick:SetSize(w, snappedHeight)
+                tick:SetSize(wid, snappedHeight)
 
                 tick:ClearAllPoints()
-                tick:SetPoint("CENTER", bar, "LEFT", snappedOffset, 0)
+                tick:SetPoint("CENTER", barFrame, "LEFT", snappedOffset, 0)
                 tick:Show()
             end
         end
 
         -- Hide extras from a previous channel that had more marks
-        for i = count + 1, #castBarFrame._ticks do
-            castBarFrame._ticks[i]:Hide()
+        for idx = count + 1, #castBarFrame._ticks do
+            castBarFrame._ticks[idx]:Hide()
         end
 
         castBarFrame._numTicks = count + 1
     else
-        for i = 1, #castBarFrame._ticks do
-            castBarFrame._ticks[i]:Hide()
+        for idx = 1, #castBarFrame._ticks do
+            castBarFrame._ticks[idx]:Hide()
         end
         castBarFrame._numTicks = 0
     end
@@ -1061,8 +1062,8 @@ HideChannelTicks = function()
     if not castBarFrame or not castBarFrame._ticks then
         return
     end
-    for i = 1, #castBarFrame._ticks do
-        castBarFrame._ticks[i]:Hide()
+    for idx = 1, #castBarFrame._ticks do
+        castBarFrame._ticks[idx]:Hide()
     end
     castBarFrame._numTicks = 0
     if castBarFrame._gcdMark then
@@ -1074,23 +1075,23 @@ end
 -- every frame: unconditional formatting would rebuild an identical string five of every
 -- six frames (format+concat allocations plus SetText). Only touch the FontString when
 -- the displayed tenth actually changes. On ns, not a file local.
-function ns.SetCastTimerText(f, now, totalDurMode, totalSuffix, latSuffix)
-    local remaining = f._endTime - now
+function mod.SetCastTimerText(f, nowTime, totalDurMode, totalSuffix, latSuffix)
+    local remaining = f._endTime - nowTime
     if f._craftExtra then
         CludesUI.SetCraftTimerText(f, f._timerText, remaining, totalDurMode)
         return
     end
     if remaining > 0 then
-        local shown = totalDurMode and (now - f._startTime) or remaining
-        local tenths = floor(shown * 10)
+        local isShown = totalDurMode and (nowTime - f._startTime) or remaining
+        local tenths = floor(isShown * 10)
         if tenths ~= f._timerTenths then
             f._timerTenths = tenths
             if totalDurMode then
-                f._timerText:SetText(format("%.1f", shown) .. (totalSuffix or "") .. (latSuffix or ""))
+                f._timerText:SetText(format("%.1f", isShown) .. (totalSuffix or "") .. (latSuffix or ""))
             elseif latSuffix then
-                f._timerText:SetText(format("%.1f", shown) .. latSuffix)
+                f._timerText:SetText(format("%.1f", isShown) .. latSuffix)
             else
-                f._timerText:SetText(format("%.1f", shown))
+                f._timerText:SetText(format("%.1f", isShown))
             end
         end
     elseif f._timerTenths ~= -1 then
@@ -1110,25 +1111,25 @@ end
 -- own duration covers one craft, so the bar takes a duration object of ours
 -- over the whole batch (_startTime to _endTime), set again at every craft
 -- start and pushback and never read back.
-ns.ApplyCastTimer = function(kind)
+mod.ApplyCastTimer = function(kindOf)
     if not castBarFrame then
         return
     end
     castBarFrame._nativeFill = nil
-    local bar = castBarFrame._bar
-    local sb = bar and bar._sb
-    if not (sb and sb.SetTimerDuration and Enum and Enum.StatusBarTimerDirection) then
+    local barFrame = castBarFrame._bar
+    local scrollBar = barFrame and barFrame._sb
+    if not (scrollBar and scrollBar.SetTimerDuration and Enum and Enum.StatusBarTimerDirection) then
         return
     end
     local durObj, dir
-    if kind == "channel" then
+    if kindOf == "channel" then
         durObj = UnitChannelDuration and UnitChannelDuration("player")
         dir = Enum.StatusBarTimerDirection.RemainingTime
-    elseif kind == "empower" then
+    elseif kindOf == "empower" then
         -- true = include the hold-at-max window, matching the event mirrors
         durObj = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration("player", true)
         dir = Enum.StatusBarTimerDirection.ElapsedTime
-    elseif kind == "craft" then
+    elseif kindOf == "craft" then
         local s, e = castBarFrame._startTime, castBarFrame._endTime
         if e > s and C_DurationUtil and C_DurationUtil.CreateDuration then
             durObj = castBarFrame._craftDur
@@ -1146,11 +1147,11 @@ ns.ApplyCastTimer = function(kind)
     if not durObj then
         return
     end
-    sb:SetTimerDuration(durObj, nil, dir)
+    scrollBar:SetTimerDuration(durObj, nil, dir)
     -- Snap to the timer's current position or the fill sweeps in from whatever
     -- value the previous cast left behind.
-    if sb.SetToTargetValue then
-        sb:SetToTargetValue()
+    if scrollBar.SetToTargetValue then
+        scrollBar:SetToTargetValue()
     end
     castBarFrame._nativeFill = true
     return true
@@ -1168,8 +1169,8 @@ SetUpdateCastBar(function(dt)
         return
     end
 
-    local now = GetTime()
-    local bar = castBarFrame._bar
+    local nowTime = GetTime()
+    local barFrame = castBarFrame._bar
 
     -- Per-cast constants: none can change while a cast is in flight, so resolving
     -- them per frame is a three-deep config walk plus field reads 60x/sec.
@@ -1184,12 +1185,12 @@ SetUpdateCastBar(function(dt)
         castBarFrame._cstFillAlpha = (cb.fillOpacity or 100) / 100
         -- The fill texture only changes on rebuild, so caching it here removes a
         -- GetStatusBarTexture call from the spark path below.
-        castBarFrame._cstFillTex = bar:GetStatusBarTexture()
+        castBarFrame._cstFillTex = barFrame:GetStatusBarTexture()
         -- bar:SetValue is NOT the widget method: BuildBar replaces it with a Lua
         -- vararg wrapper forwarding to the inner clipped StatusBar, for the
         -- optional "Smooth Bars" interpolation the cast bar never uses. Hold the
         -- inner bar and drive it directly instead of paying that call per frame.
-        castBarFrame._cstSB = bar._sb
+        castBarFrame._cstSB = barFrame._sb
         -- Native easing between redraws (same mechanism as the GCD bar): the
         -- engine renders intermediate positions every frame, so the redraw rate
         -- can drop without visible stepping.
@@ -1206,22 +1207,23 @@ SetUpdateCastBar(function(dt)
         -- tick): plain 20Hz SetValues visibly step, and the engine has no
         -- linear interpolation mode to carry them between redraws.
         castBarFrame._rawFill = not smooth
-        if castBarFrame._rawFill and not castBarFrame._nativeFill and ns._rawFillDriver then
-            ns._rawFillDriver:Show()
+        if castBarFrame._rawFill and not castBarFrame._nativeFill and mod._rawFillDriver then
+            mod._rawFillDriver:Show()
         end
         -- Out of Range Gray: armed for this cast only while the option is on and
         -- the spell has a range (self casts, crafting and mounts never read it).
-        local sid = castBarFrame._spellID
-        castBarFrame._cstRangeSpell = (cb.outOfRangeGray and sid and C_Spell.SpellHasRange(sid)) and sid
+        local spellRef = castBarFrame._spellID
+        castBarFrame._cstRangeSpell = (cb.outOfRangeGray and spellRef and C_Spell.SpellHasRange(spellRef))
+                and spellRef
             or nil
         castBarFrame._cstRangeAt = 0
     end
     -- Out of Range Gray: at most five target range reads a second, on this tick,
     -- during an armed cast; the fill repaints only when the answer flips.
     local rangeSpell = castBarFrame._cstRangeSpell
-    if rangeSpell and now >= castBarFrame._cstRangeAt then
-        castBarFrame._cstRangeAt = now + 0.2
-        ns.ERB_CastRangeTint(C_Spell.IsSpellInRange(rangeSpell, "target") == false)
+    if rangeSpell and nowTime >= castBarFrame._cstRangeAt then
+        castBarFrame._cstRangeAt = nowTime + 0.2
+        mod.ERB_CastRangeTint(C_Spell.IsSpellInRange(rangeSpell, "target") == false)
     end
     local showTimer = castBarFrame._cstShowTimer
 
@@ -1236,13 +1238,13 @@ SetUpdateCastBar(function(dt)
         -- A merged craft batch checks the current craft's end, so a batch
         -- stopped between crafts goes idle too.
         local overrunAt = castBarFrame._craftCastEnd or castBarFrame._endTime
-        if overrunAt and now > overrunAt + 1 then
+        if overrunAt and nowTime > overrunAt + 1 then
             OnCastStop()
             return
         end
         local castDur = castBarFrame._endTime - castBarFrame._startTime
-        local progress = (castDur > 0) and ((now - castBarFrame._startTime) / castDur) or 0
-        progress = min(max(progress, 0), 1)
+        local progress = (castDur > 0) and ((nowTime - castBarFrame._startTime) / castDur) or 0
+        progress = min(upper(progress, 0), 1)
         -- The eased SetValue chases a target computed at the LAST 20Hz tick,
         -- so the drawn fill trails true time by roughly one tick plus the
         -- ease-out's convergence residue and dies ~4% short when the stop
@@ -1251,9 +1253,9 @@ SetUpdateCastBar(function(dt)
         -- ease converges ON the true timeline; stages and text below keep
         -- using true progress.
         local fillProgress = (castDur > 0)
-                and ((now + castBarFrame._cstLead - castBarFrame._startTime) / castDur)
+                and ((nowTime + castBarFrame._cstLead - castBarFrame._startTime) / castDur)
             or 0
-        fillProgress = min(max(fillProgress, 0), 1)
+        fillProgress = min(upper(fillProgress, 0), 1)
         -- Fill: only the fallback path draws from Lua. Progress is still computed
         -- above when the engine timer owns the fill (ns.ApplyCastTimer), because
         -- the empower stage coloring below derives its stage from it.
@@ -1262,11 +1264,11 @@ SetUpdateCastBar(function(dt)
             if castBarFrame._cstSB then
                 castBarFrame._cstSB:SetValue(fillProgress, castBarFrame._cstInterp)
             else
-                bar:SetValue(fillProgress, castBarFrame._cstInterp)
+                barFrame:SetValue(fillProgress, castBarFrame._cstInterp)
             end
             -- Size the gradient clip frame to match the fill width
             if castBarFrame._gradientFullBar and castBarFrame._gradClip then
-                castBarFrame._gradClip:SetWidth(max(0.01, bar:GetWidth() * fillProgress))
+                castBarFrame._gradClip:SetWidth(upper(0.01, barFrame:GetWidth() * fillProgress))
             end
         end
 
@@ -1293,14 +1295,14 @@ SetUpdateCastBar(function(dt)
         end
 
         if showTimer then
-            ns.SetCastTimerText(castBarFrame, now, totalDurMode, totalSuffix, latSuffix)
+            mod.SetCastTimerText(castBarFrame, nowTime, totalDurMode, totalSuffix, latSuffix)
         end
     elseif castBarFrame._channeling then
         -- Same 1s overrun safety the cast branch has. CHANNEL_UPDATE keeps
         -- _endTime current for every legitimate extension, so a channel still
         -- running a second past its end has lost its stop event -- and without
         -- this the bar has no way back to idle.
-        if castBarFrame._endTime and now > castBarFrame._endTime + 1 then
+        if castBarFrame._endTime and nowTime > castBarFrame._endTime + 1 then
             OnCastStop()
             return
         end
@@ -1309,21 +1311,21 @@ SetUpdateCastBar(function(dt)
             -- Same lead as the cast branch, mirrored for the drain
             -- (measured: channels ended rendered at 0.018 instead of 0).
             local progress = (chanDur > 0)
-                    and ((castBarFrame._endTime - now - castBarFrame._cstLead) / chanDur)
+                    and ((castBarFrame._endTime - nowTime - castBarFrame._cstLead) / chanDur)
                 or 0
-            progress = min(max(progress, 0), 1)
+            progress = min(upper(progress, 0), 1)
             if castBarFrame._cstSB then
                 castBarFrame._cstSB:SetValue(progress, castBarFrame._cstInterp)
             else
-                bar:SetValue(progress, castBarFrame._cstInterp)
+                barFrame:SetValue(progress, castBarFrame._cstInterp)
             end
             -- Size the gradient clip frame to match the fill width
             if castBarFrame._gradientFullBar and castBarFrame._gradClip then
-                castBarFrame._gradClip:SetWidth(max(0.01, bar:GetWidth() * progress))
+                castBarFrame._gradClip:SetWidth(upper(0.01, barFrame:GetWidth() * progress))
             end
         end
         if showTimer then
-            ns.SetCastTimerText(castBarFrame, now, totalDurMode, totalSuffix, latSuffix)
+            mod.SetCastTimerText(castBarFrame, nowTime, totalDurMode, totalSuffix, latSuffix)
         end
     end
 
@@ -1331,16 +1333,16 @@ SetUpdateCastBar(function(dt)
     -- engine already moves it as the fill grows, so re-anchoring to the same target
     -- costs two API calls for nothing. The target changes only on a gradient toggle.
     if castBarFrame._spark:IsShown() then
-        local target
+        local targetUnit
         if castBarFrame._gradientFullBar and castBarFrame._gradClip and castBarFrame._gradClip:IsShown() then
-            target = castBarFrame._gradClip
+            targetUnit = castBarFrame._gradClip
         else
-            target = castBarFrame._cstFillTex
+            targetUnit = castBarFrame._cstFillTex
         end
-        if castBarFrame._sparkAnchor ~= target then
-            castBarFrame._sparkAnchor = target
+        if castBarFrame._sparkAnchor ~= targetUnit then
+            castBarFrame._sparkAnchor = targetUnit
             castBarFrame._spark:ClearAllPoints()
-            castBarFrame._spark:SetPoint("CENTER", target, "RIGHT", 0, 0)
+            castBarFrame._spark:SetPoint("CENTER", targetUnit, "RIGHT", 0, 0)
         end
     end
 end)
@@ -1364,15 +1366,15 @@ local function LatencyRequestQueued()
     if issecretvalue and (issecretvalue(s) or issecretvalue(d)) then
         return true
     end
-    local now = GetTime()
-    return s > 0 and s < now - 0.05 and s + d > now
+    local nowTime = GetTime()
+    return s > 0 and s < nowTime - 0.05 and s + d > nowTime
 end
-function ns.ERB_LatencySendWatch(on)
-    local w = latSend.frame
-    if on and not w then
-        w = CreateFrame("Frame")
-        w:SetScript("OnEvent", function(_, event, arg1, _, _, spellID)
-            if event == "CURRENT_SPELL_CAST_CHANGED" then
+function mod.ERB_LatencySendWatch(on)
+    local wid = latSend.frame
+    if on and not wid then
+        wid = CreateFrame("Frame")
+        wid:SetScript("OnEvent", function(_, evt, arg1, _, _, spellId)
+            if evt == "CURRENT_SPELL_CAST_CHANGED" then
                 if not arg1 then
                     latSend.reqAt, latSend.reqQueued = GetTimePreciseSec(), LatencyRequestQueued()
                 end
@@ -1381,18 +1383,18 @@ function ns.ERB_LatencySendWatch(on)
             -- The send claims the latest request (one request per send)
             latSend.at, latSend.queued = latSend.reqAt, latSend.reqQueued
             latSend.reqAt = nil
-            latSend.spellID = not (issecretvalue and issecretvalue(spellID)) and spellID or nil
+            latSend.spellID = not (issecretvalue and issecretvalue(spellId)) and spellId or nil
         end)
-        latSend.frame = w
+        latSend.frame = wid
     end
-    if not w then
+    if not wid then
         return
     end
     if on then
-        w:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
-        w:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
+        wid:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
+        wid:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
     else
-        w:UnregisterAllEvents()
+        wid:UnregisterAllEvents()
         latSend.at, latSend.reqAt, latSend.off = nil, nil, nil
     end
 end
@@ -1408,18 +1410,18 @@ local function ShowLatencyOverlay(castType)
     -- behind texture -- the fill sweeps over the zone as it completes.
     local behind = castBarFrame._latencyOverlay
     local front = castBarFrame._latencyOverlayFront
-    local overlay = (castType == "channel") and (front or behind) or behind
-    local other = (overlay == front) and behind or front
+    local overlayFrame = (castType == "channel") and (front or behind) or behind
+    local other = (overlayFrame == front) and behind or front
     if other then
         other:Hide()
     end
-    if not overlay then
+    if not overlayFrame then
         return
     end
 
     local cb = ERB.db.profile.castBar
     if not cb.latencyEnabled then
-        overlay:Hide()
+        overlayFrame:Hide()
         castBarFrame._latencySuffix = nil
         return
     end
@@ -1439,26 +1441,28 @@ local function ShowLatencyOverlay(castType)
     local latencySec
     local sentAt = latSend.at
     latSend.at = nil
-    local sid = castBarFrame._spellID
-    local match = not latSend.spellID or (issecretvalue and issecretvalue(sid)) or latSend.spellID == sid
+    local spellRef = castBarFrame._spellID
+    local match = not latSend.spellID
+        or (issecretvalue and issecretvalue(spellRef))
+        or latSend.spellID == spellRef
     if sentAt and not latSend.queued and match then
         local d = GetTimePreciseSec() - sentAt
         if d > 0.01 and d < netSec + 0.25 then
             latencySec = d
             if netSec > 0 then
-                local off, prev = d - netSec, latSend.off
-                latSend.off = prev and (prev + (off - prev) * 0.3) or off
+                local offset, prev = d - netSec, latSend.off
+                latSend.off = prev and (prev + (offset - prev) * 0.3) or offset
             end
         end
     end
     if not latencySec then
-        latencySec = netSec > 0 and max(netSec + (latSend.off or 0), 0.01) or 0
+        latencySec = netSec > 0 and upper(netSec + (latSend.off or 0), 0.01) or 0
     end
     local castDur = castBarFrame._endTime - castBarFrame._startTime
     local barWidth = castBarFrame._bar:GetWidth()
 
     if latencySec <= 0 or castDur <= 0 or barWidth <= 0 then
-        overlay:Hide()
+        overlayFrame:Hide()
         castBarFrame._latencySuffix = nil
         return
     end
@@ -1480,16 +1484,16 @@ local function ShowLatencyOverlay(castType)
     end
 
     local clip = castBarFrame._barClip
-    overlay:ClearAllPoints()
+    overlayFrame:ClearAllPoints()
     if castType == "channel" then
-        overlay:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, 0)
-        overlay:SetPoint("BOTTOMLEFT", clip, "BOTTOMLEFT", 0, 0)
+        overlayFrame:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, 0)
+        overlayFrame:SetPoint("BOTTOMLEFT", clip, "BOTTOMLEFT", 0, 0)
     else
-        overlay:SetPoint("TOPRIGHT", clip, "TOPRIGHT", 0, 0)
-        overlay:SetPoint("BOTTOMRIGHT", clip, "BOTTOMRIGHT", 0, 0)
+        overlayFrame:SetPoint("TOPRIGHT", clip, "TOPRIGHT", 0, 0)
+        overlayFrame:SetPoint("BOTTOMRIGHT", clip, "BOTTOMRIGHT", 0, 0)
     end
-    overlay:SetWidth(width)
-    overlay:Show()
+    overlayFrame:SetWidth(width)
+    overlayFrame:Show()
 end
 
 local function HideLatencyOverlay()
@@ -1511,7 +1515,7 @@ end
 -- relational, so it tracks cast progress on its own. An idle bar has no fill to
 -- trail and that anchoring would leave the spell icon's slot uncovered, so the
 -- idle state always spans the frame.
-function ns.ApplyCastBgAnchor()
+function mod.ApplyCastBgAnchor()
     if not castBarFrame then
         return
     end
@@ -1522,12 +1526,12 @@ function ns.ApplyCastBgAnchor()
     if cb.texture == "blizzard" or castBarFrame._blizzFill then
         return
     end
-    local bar = castBarFrame._bar
+    local barFrame = castBarFrame._bar
     local casting = castBarFrame._casting or castBarFrame._channeling or castBarFrame._empowering
     castBarFrame._bg:ClearAllPoints()
     if casting and (cb.fillOpacity or 100) < 100 then
-        castBarFrame._bg:SetPoint("TOPLEFT", bar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-        castBarFrame._bg:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+        castBarFrame._bg:SetPoint("TOPLEFT", barFrame:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+        castBarFrame._bg:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     else
         castBarFrame._bg:SetAllPoints(castBarFrame)
     end
@@ -1538,7 +1542,7 @@ end
 -- With "Always Show" off it fades to alpha 0; with it on the frame stays on
 -- screen showing just background and border. ns.ActivateCastBar is the mirror
 -- image: undoes whatever the idle state suppressed for a live cast.
-function ns.ShowIdleCastBar()
+function mod.ShowIdleCastBar()
     if not castBarFrame then
         return
     end
@@ -1551,16 +1555,16 @@ function ns.ShowIdleCastBar()
     castBarFrame._nativeFill = nil
     castBarFrame._cstKey = nil
     castBarFrame._craftMerge, castBarFrame._craftCastEnd = nil, nil
-    ns.ERB_CraftStopWatch(false)
-    if ns._rawFillDriver then
-        ns._rawFillDriver:Hide()
+    mod.ERB_CraftStopWatch(false)
+    if mod._rawFillDriver then
+        mod._rawFillDriver:Hide()
     end
     if castBarFrame._castUninterruptible or castBarFrame._channelPaint then
         castBarFrame._castUninterruptible = nil
-        ns.ERB_CastOverrideApply(true)
+        mod.ERB_CastOverrideApply(true)
     end
     if castBarFrame._rangeOut then
-        ns.ERB_CastRangeTint(false)
+        mod.ERB_CastRangeTint(false)
     end
 
     -- Cast decoration has nothing to show without a cast. The spark in
@@ -1576,16 +1580,16 @@ function ns.ShowIdleCastBar()
         castBarFrame._spark:Hide()
     end
     if castBarFrame._pips then
-        for i = 1, #castBarFrame._pips do
-            castBarFrame._pips[i]:Hide()
+        for idx = 1, #castBarFrame._pips do
+            castBarFrame._pips[idx]:Hide()
         end
     end
     castBarFrame._numStages = 0
     HideChannelTicks()
     HideLatencyOverlay()
-    ns.ApplyCastBgAnchor()
+    mod.ApplyCastBgAnchor()
 
-    if cb.alwaysShow and cb.enabled and not ns._erbCastPadHidden then
+    if cb.alwaysShow and cb.enabled and not mod._erbCastPadHidden then
         castBarFrame:Show()
         CludesUI.SetElementVisibility(castBarFrame, true)
     else
@@ -1593,7 +1597,7 @@ function ns.ShowIdleCastBar()
     end
 end
 
-function ns.ActivateCastBar()
+function mod.ActivateCastBar()
     if not castBarFrame then
         return
     end
@@ -1604,7 +1608,7 @@ function ns.ActivateCastBar()
     if castBarFrame._spark then
         castBarFrame._spark:SetShown(cb.showSpark and true or false)
     end
-    ns.ApplyCastBgAnchor()
+    mod.ApplyCastBgAnchor()
     castBarFrame:Show()
     CludesUI.SetElementVisibility(castBarFrame, true)
 end
@@ -1612,10 +1616,10 @@ end
 -- Spell name plus its rank subtext ("Name (Rank 2)") when Show Spell Rank is on.
 -- Spell ranks exist only on WoW Forever (retail's subtext is "Racial" and the
 -- like), so the option and this read are Forever-only.
-function ns.CastDisplayName(cb, name, spellID)
+function mod.CastDisplayName(cb, name, spellId)
     name = CludesUI.CleanCastName(name)
-    if cb.showSpellRank and spellID and CludesUI.IS_FOREVER then
-        local rank = C_Spell.GetSpellSubtext(spellID)
+    if cb.showSpellRank and spellId and CludesUI.IS_FOREVER then
+        local rank = C_Spell.GetSpellSubtext(spellId)
         if rank and rank ~= "" then
             return name .. " (" .. rank .. ")"
         end
@@ -1625,42 +1629,42 @@ end
 
 -- Show Full Spell Name: shrink the spell text to fit its width instead of
 -- cutting it off (player cast names are always clean strings).
-function ns.ERB_FitCastName(cb)
+function mod.ERB_FitCastName(cb)
     local f = castBarFrame
     if not (f and cb.showSpellText) then
         return
     end
-    local fs = f._nameText
+    local fontStr = f._nameText
     -- The layout's timer slot fits a plain countdown; Show Total Duration,
     -- latency text and Full Craft Time write wider strings. Size the name's
     -- room (and its push, when it shares the timer's side) off the widest one
     -- this cast will show. Blizzard Style moves the name off the bar.
-    if cb.showTimer and f._endTime and f._startTime and not ns.ERB_CastBlizz() then
-        local total = cb.showTotalDuration
+    if cb.showTimer and f._endTime and f._startTime and not mod.ERB_CastBlizz() then
+        local sum = cb.showTotalDuration
         local sample
         if f._craftExtra and f._craftTotal then
             local t = f._craftTotal
-            sample = format("%d:%02d", floor(t / 60), t % 60) .. (total and f._craftTotalSuffix or "")
+            sample = format("%d:%02d", floor(t / 60), t % 60) .. (sum and f._craftTotalSuffix or "")
         else
             sample = format("%.1f", f._endTime - f._startTime)
-                .. (total and (f._totalDurSuffix or "") or "")
+                .. (sum and (f._totalDurSuffix or "") or "")
                 .. (f._latencySuffix or "")
         end
-        local timerW = max((cb.timerSize or 11) * 2.2, CludesUI.MeasureCastText(f._timerText, sample) + 6)
-        local bar = f._bar
-        local barW = bar:GetWidth()
+        local timerW = upper((cb.timerSize or 11) * 2.2, CludesUI.MeasureCastText(f._timerText, sample) + 6)
+        local barFrame = f._bar
+        local barW = barFrame:GetWidth()
         if not barW or barW < 10 then
             barW = cb.width
         end
         local spellSide = cb.spellTextSide or "left"
         if (cb.timerSide or "right") == spellSide then
-            local pt, xb = ns.GetCastTextAnchor(spellSide, true, timerW)
-            fs:ClearAllPoints()
-            fs:SetPoint(pt, bar, pt, xb + (cb.spellTextX or 0), cb.spellTextY or 0)
+            local pt, xb = mod.GetCastTextAnchor(spellSide, true, timerW)
+            fontStr:ClearAllPoints()
+            fontStr:SetPoint(pt, barFrame, pt, xb + (cb.spellTextX or 0), cb.spellTextY or 0)
         end
-        fs:SetWidth(max(20, barW - 8 - (spellSide == "center" and 2 or 1) * timerW))
+        fontStr:SetWidth(upper(20, barW - 8 - (spellSide == "center" and 2 or 1) * timerW))
     end
-    CludesUI.FitCastName(fs, fs:GetText(), cb.spellTextSize or 11)
+    CludesUI.FitCastName(fontStr, fontStr:GetText(), cb.spellTextSize or 11)
 end
 
 OnCastStart = function()
@@ -1668,11 +1672,11 @@ OnCastStart = function()
         return
     end
     local cb = ERB.db.profile.castBar
-    if not cb.enabled or ns._erbCastPadHidden then
+    if not cb.enabled or mod._erbCastPadHidden then
         return
     end
 
-    local name, _, _, startTimeMS, endTimeMS, isTradeSkill, _, notInterruptible, spellID, barID =
+    local name, _, _, startTimeMS, endTimeMS, isTradeSkill, _, notInterruptible, spellId, barID =
         UnitCastingInfo("player")
     if not name then
         return
@@ -1681,7 +1685,7 @@ OnCastStart = function()
     CludesUI.SetCraftBatch(
         castBarFrame,
         (cb.fullCraftTime or cb.mergeCrafts) and isTradeSkill,
-        spellID,
+        spellId,
         barID,
         castDurSec
     )
@@ -1701,7 +1705,7 @@ OnCastStart = function()
     castBarFrame._castID = barID
     if merge then
         castBarFrame._craftMerge = true
-        ns.ERB_CraftStopWatch(true)
+        mod.ERB_CraftStopWatch(true)
         castBarFrame._craftCastEnd = endTimeMS / 1000
         castBarFrame._startTime = batchStart
         castBarFrame._endTime = endTimeMS / 1000 + castBarFrame._craftExtra
@@ -1713,33 +1717,33 @@ OnCastStart = function()
         castBarFrame._endTime = endTimeMS / 1000
     end
     castBarFrame._spellName = name
-    castBarFrame._spellID = spellID
+    castBarFrame._spellID = spellId
     castBarFrame._totalDurSuffix = " / " .. format("%.1f", (endTimeMS - startTimeMS) / 1000)
     castBarFrame._nameText:SetText(
-        ns.CastDisplayName(cb, name, spellID)
+        mod.CastDisplayName(cb, name, spellId)
             .. (castBarFrame._craftExtra and castBarFrame._craftCountSuffix or "")
     )
-    ns.ERB_SetBlizzCastFill("cast")
-    ns.ERB_CastOverrideStart(cb, notInterruptible)
+    mod.ERB_SetBlizzCastFill("cast")
+    mod.ERB_CastOverrideStart(cb, notInterruptible)
     -- The engine timer animates the fill (a merged batch over the whole
     -- batch); the Lua fill is the fallback.
-    if not ns.ApplyCastTimer(merge and "craft" or "cast") then
+    if not mod.ApplyCastTimer(merge and "craft" or "cast") then
         local s, e = castBarFrame._startTime, castBarFrame._endTime
         local initProgress = (e > s) and ((GetTime() - s) / (e - s)) or 0
-        castBarFrame._bar:SetValue(min(max(initProgress, 0), 1))
+        castBarFrame._bar:SetValue(min(upper(initProgress, 0), 1))
     end
 
     -- Hide empower pips
     if castBarFrame._pips then
-        for i = 1, #castBarFrame._pips do
-            castBarFrame._pips[i]:Hide()
+        for idx = 1, #castBarFrame._pips do
+            castBarFrame._pips[idx]:Hide()
         end
     end
     castBarFrame._numStages = 0
     HideChannelTicks()
 
     do
-        local spellInfo = C_Spell.GetSpellInfo(spellID)
+        local spellInfo = C_Spell.GetSpellInfo(spellId)
         local iconTex = spellInfo and spellInfo.iconID
         if iconTex and ERB.db.profile.castBar.showIcon ~= false then
             castBarFrame._icon:SetTexture(iconTex)
@@ -1752,10 +1756,10 @@ OnCastStart = function()
     ShowLatencyOverlay("cast")
     -- After the latency overlay: its " (NNms)" suffix widens the timer.
     if cb.fitSpellName then
-        ns.ERB_FitCastName(cb)
+        mod.ERB_FitCastName(cb)
     end
 
-    ns.ActivateCastBar()
+    mod.ActivateCastBar()
 end
 
 OnChannelStart = function()
@@ -1763,11 +1767,11 @@ OnChannelStart = function()
         return
     end
     local cb = ERB.db.profile.castBar
-    if not cb.enabled or ns._erbCastPadHidden then
+    if not cb.enabled or mod._erbCastPadHidden then
         return
     end
 
-    local name, _, _, startTimeMS, endTimeMS, _, notInterruptible, spellID, _, _, channelCastID =
+    local name, _, _, startTimeMS, endTimeMS, _, notInterruptible, spellId, _, _, channelCastID =
         UnitChannelInfo("player")
     if not name then
         -- UnitChannelInfo can be empty on rapid channel restarts (e.g. SCK spam).
@@ -1791,27 +1795,27 @@ OnChannelStart = function()
     castBarFrame._startTime = startTimeMS / 1000
     castBarFrame._endTime = endTimeMS / 1000
     castBarFrame._spellName = name
-    castBarFrame._spellID = spellID
+    castBarFrame._spellID = spellId
     castBarFrame._totalDurSuffix = " / " .. format("%.1f", (endTimeMS - startTimeMS) / 1000)
-    castBarFrame._nameText:SetText(ns.CastDisplayName(cb, name, spellID))
-    ns.ERB_SetBlizzCastFill("channel")
-    ns.ERB_CastOverrideStart(cb, notInterruptible)
-    if not ns.ApplyCastTimer("channel") then
+    castBarFrame._nameText:SetText(mod.CastDisplayName(cb, name, spellId))
+    mod.ERB_SetBlizzCastFill("channel")
+    mod.ERB_CastOverrideStart(cb, notInterruptible)
+    if not mod.ApplyCastTimer("channel") then
         local chanDur = endTimeMS - startTimeMS
         local initProgress = (chanDur > 0) and ((endTimeMS / 1000 - GetTime()) / (chanDur / 1000)) or 1
-        castBarFrame._bar:SetValue(min(max(initProgress, 0), 1))
+        castBarFrame._bar:SetValue(min(upper(initProgress, 0), 1))
     end
 
     -- Hide empower pips
     if castBarFrame._pips then
-        for i = 1, #castBarFrame._pips do
-            castBarFrame._pips[i]:Hide()
+        for idx = 1, #castBarFrame._pips do
+            castBarFrame._pips[idx]:Hide()
         end
     end
     castBarFrame._numStages = 0
 
     do
-        local spellInfo = C_Spell.GetSpellInfo(spellID)
+        local spellInfo = C_Spell.GetSpellInfo(spellId)
         local iconTex = spellInfo and spellInfo.iconID
         if iconTex and ERB.db.profile.castBar.showIcon ~= false then
             castBarFrame._icon:SetTexture(iconTex)
@@ -1822,14 +1826,14 @@ OnChannelStart = function()
     end
 
     -- Channel tick marks
-    ShowChannelTicks(spellID)
+    ShowChannelTicks(spellId)
 
     ShowLatencyOverlay("channel")
     if cb.fitSpellName then
-        ns.ERB_FitCastName(cb)
+        mod.ERB_FitCastName(cb)
     end
 
-    ns.ActivateCastBar()
+    mod.ActivateCastBar()
 end
 
 OnChannelUpdate = function()
@@ -1840,18 +1844,18 @@ OnChannelUpdate = function()
         return
     end
 
-    local name, _, _, startTimeMS, endTimeMS, _, _, spellID = UnitChannelInfo("player")
+    local name, _, _, startTimeMS, endTimeMS, _, _, spellId = UnitChannelInfo("player")
     if not name then
         return
     end
 
     castBarFrame._startTime = startTimeMS / 1000
     castBarFrame._endTime = endTimeMS / 1000
-    ns.ApplyCastTimer("channel")
+    mod.ApplyCastTimer("channel")
 
     -- Recompute tick mark and GCD boundary positions for new duration
-    if spellID then
-        ShowChannelTicks(spellID)
+    if spellId then
+        ShowChannelTicks(spellId)
     end
 end
 
@@ -1874,7 +1878,7 @@ local function OnCastComplete(eventCastID)
     end
     castBarFrame._casting = false
     castBarFrame._castID = nil
-    ns.ShowIdleCastBar()
+    mod.ShowIdleCastBar()
 end
 
 -- Called for UNIT_SPELLCAST_FAILED / INTERRUPTED. These fire for the spell that FAILED,
@@ -1896,7 +1900,7 @@ local function OnCastFailed(eventCastID)
     end
     castBarFrame._casting = false
     castBarFrame._castID = nil
-    ns.ShowIdleCastBar()
+    mod.ShowIdleCastBar()
 end
 
 -- Called for UNIT_SPELLCAST_CHANNEL_STOP. Deliberately matches no ID: castBarID
@@ -1942,14 +1946,14 @@ local function OnChannelStop()
         end
         castBarFrame._channeling = false
         castBarFrame._castID = nil
-        ns.ShowIdleCastBar()
+        mod.ShowIdleCastBar()
     end)
 end
 
 -- Put the configured fill back after a tint (empower stages, Out of Range
 -- Gray): Blizzard Style white, the gradient re-issued, or the solid colour.
 -- On ns.
-ns.ERB_RestoreCastFill = function()
+mod.ERB_RestoreCastFill = function()
     local cb = ERB.db.profile.castBar
     -- Blizzard Style (build stamp): the fill atlas is its own colour; restore plain white.
     if castBarFrame._blizzFill then
@@ -2021,26 +2025,26 @@ end
 -- clears _empowering, and OnEmpowerStop then early-returns on that very flag --
 -- so without this call there the stage tint stayed painted for the rest of the
 -- session, the same stuck-fill symptom by a second route.
-ns.ResetEmpowerFillColor = function()
+mod.ResetEmpowerFillColor = function()
     if not (castBarFrame and castBarFrame._empowerColorApplied) then
         return
     end
     castBarFrame._empowerColorApplied = false
-    ns.ERB_RestoreCastFill()
+    mod.ERB_RestoreCastFill()
 end
 
 -- Out of Range Gray (castBar.outOfRangeGray): the fill turns gray while the
 -- target is out of the cast's range and takes its configured paint back when it
 -- returns or the cast ends. Writes only on a flip.
-ns.ERB_CastRangeTint = function(out)
-    if (castBarFrame._rangeOut or false) == out then
+mod.ERB_CastRangeTint = function(result)
+    if (castBarFrame._rangeOut or false) == result then
         return
     end
-    castBarFrame._rangeOut = out or nil
-    if out then
+    castBarFrame._rangeOut = result or nil
+    if result then
         castBarFrame._bar:GetStatusBarTexture():SetVertexColor(0.4, 0.4, 0.4, castBarFrame._cstFillAlpha or 1)
     else
-        ns.ERB_RestoreCastFill()
+        mod.ERB_RestoreCastFill()
     end
 end
 
@@ -2055,7 +2059,7 @@ end
 -- Repaints only on a change. Out of Range Gray stays on top; the empower stage
 -- colours wait. Not under Blizzard Style, whose fill art is stock. idle = the
 -- bar just went idle: both overrides clear.
-ns.ERB_CastOverrideApply = function(idle)
+mod.ERB_CastOverrideApply = function(idle)
     local cb = ERB.db.profile.castBar
     local live = not idle and not castBarFrame._blizzFill
     local un = (live and cb.uninterruptibleOverride and castBarFrame._castUninterruptible) and true or false
@@ -2068,12 +2072,12 @@ ns.ERB_CastOverrideApply = function(idle)
     castBarFrame._uninterrupt = un or nil
     castBarFrame._channelPaint = ch or nil
     if not castBarFrame._rangeOut then
-        ns.ERB_RestoreCastFill()
+        mod.ERB_RestoreCastFill()
     end
 end
 -- From the cast, channel and empower starts: one field test while both options
 -- are off and no override is painted.
-ns.ERB_CastOverrideStart = function(cb, notInterruptible)
+mod.ERB_CastOverrideStart = function(cb, notInterruptible)
     if
         not (
             cb.uninterruptibleOverride
@@ -2086,17 +2090,17 @@ ns.ERB_CastOverrideStart = function(cb, notInterruptible)
     end
     castBarFrame._castUninterruptible = (not issecretvalue(notInterruptible) and notInterruptible) and true
         or false
-    ns.ERB_CastOverrideApply()
+    mod.ERB_CastOverrideApply()
 end
 -- The flips are watched only while the option applies (the cast bar on, not
 -- Blizzard Style); BuildCastBar syncs it.
 do
     local watch
-    function ns.ERB_SyncUninterruptWatch(on)
+    function mod.ERB_SyncUninterruptWatch(on)
         if on then
             if not watch then
                 watch = CreateFrame("Frame")
-                watch:SetScript("OnEvent", function(_, event)
+                watch:SetScript("OnEvent", function(_, evt)
                     if
                         not (
                             castBarFrame
@@ -2109,8 +2113,8 @@ do
                     then
                         return
                     end
-                    castBarFrame._castUninterruptible = event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE"
-                    ns.ERB_CastOverrideApply()
+                    castBarFrame._castUninterruptible = evt == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE"
+                    mod.ERB_CastOverrideApply()
                 end)
             end
             watch:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTIBLE", "player")
@@ -2125,7 +2129,7 @@ end
 -- Watched only while a merged batch is on the bar.
 do
     local watch
-    function ns.ERB_CraftStopWatch(on)
+    function mod.ERB_CraftStopWatch(on)
         if on then
             if not watch then
                 watch = CreateFrame("Frame")
@@ -2155,18 +2159,18 @@ local function OnEmpowerStop(eventCastID)
     castBarFrame._empowering = false
     castBarFrame._castID = nil
     if castBarFrame._pips then
-        for i = 1, #castBarFrame._pips do
-            castBarFrame._pips[i]:Hide()
+        for idx = 1, #castBarFrame._pips do
+            castBarFrame._pips[idx]:Hide()
         end
     end
     castBarFrame._numStages = 0
 
     -- Reset empower stage coloring if it was applied
-    ns.ResetEmpowerFillColor()
+    mod.ResetEmpowerFillColor()
 
     SetStageThresholds(nil)
 
-    ns.ShowIdleCastBar()
+    mod.ShowIdleCastBar()
 end
 
 OnCastStop = function()
@@ -2181,19 +2185,19 @@ OnCastStop = function()
     -- The overrun safety path forces a stop here on a missed EMPOWER_STOP, and
     -- clearing _empowering above is exactly what makes OnEmpowerStop early-return
     -- later, so this is the only chance to undo the stage tint.
-    ns.ResetEmpowerFillColor()
+    mod.ResetEmpowerFillColor()
     -- Pip textures, channel ticks and the latency overlay are all cleared by
     -- the idle pass below.
-    ns.ShowIdleCastBar()
+    mod.ShowIdleCastBar()
 end
 
 -- Blizzard's player cast bar is ours to hide while our cast bar is on, except
 -- while ours stands down for the controller under WoW Forever's Gamepad
 -- interface style: from build 70425 that style draws the cast on Blizzard's
 -- player bar itself.
-function ns.RB_SyncBlizzCastSuppress()
+function mod.RB_SyncBlizzCastSuppress()
     local cb = ERB.db and ERB.db.profile and ERB.db.profile.castBar
-    local on = cb and cb.enabled and not (ns._erbCastPadHidden and CludesUI.PadGamepadUI())
+    local on = cb and cb.enabled and not (mod._erbCastPadHidden and CludesUI.PadGamepadUI())
     CludesUI.SetPlayerCastBarSuppressed("ResourceBars", on and true or false)
 end
 
@@ -2207,29 +2211,29 @@ end
 -- layout. The pad edges are watched only while the option and the bar are
 -- both on. padOn is the watcher's verdict; ApplyAll and the options page pass
 -- nothing and it is read live. On ns.
-function ns.RB_ApplyGamepadCastbar(padOn)
+function mod.RB_ApplyGamepadCastbar(padOn)
     local cb = ERB.db and ERB.db.profile and ERB.db.profile.castBar
-    local want = (cb and cb.enabled and cb.gamepadHide == true) and true or false
-    if want ~= (ns._erbCastPadWatched == true) then
-        ns._erbCastPadWatched = want
-        if want then
-            CludesUI.WatchPad("ERB_CastBar", ns.RB_ApplyGamepadCastbar)
+    local wanted = (cb and cb.enabled and cb.gamepadHide == true) and true or false
+    if wanted ~= (mod._erbCastPadWatched == true) then
+        mod._erbCastPadWatched = wanted
+        if wanted then
+            CludesUI.WatchPad("ERB_CastBar", mod.RB_ApplyGamepadCastbar)
         else
             CludesUI.UnwatchPad("ERB_CastBar")
         end
     end
     local hide = false
-    if want then
+    if wanted then
         if padOn == nil then
             padOn = CludesUI.PadModeOn()
         end
         hide = padOn and true or false
     end
-    if hide == (ns._erbCastPadHidden == true) then
+    if hide == (mod._erbCastPadHidden == true) then
         return
     end
-    ns._erbCastPadHidden = hide
-    ns.RB_SyncBlizzCastSuppress()
+    mod._erbCastPadHidden = hide
+    mod.RB_SyncBlizzCastSuppress()
     if not castBarFrame then
         return
     end
@@ -2254,9 +2258,9 @@ function ns.RB_ApplyGamepadCastbar(padOn)
         end
     end
     if castBarFrame._casting or castBarFrame._channeling or castBarFrame._empowering then
-        ns.StartCastTick()
+        mod.StartCastTick()
     else
-        ns.ShowIdleCastBar()
+        mod.ShowIdleCastBar()
     end
 end
 
@@ -2265,11 +2269,11 @@ OnEmpowerStart = function()
         return
     end
     local cb = ERB.db.profile.castBar
-    if not cb.enabled or ns._erbCastPadHidden then
+    if not cb.enabled or mod._erbCastPadHidden then
         return
     end
 
-    local name, _, _, startTimeMS, endTimeMS, _, notInterruptible, spellID, empowering, _, empowerCastID =
+    local name, _, _, startTimeMS, endTimeMS, _, notInterruptible, spellId, empowering, _, empowerCastID =
         UnitChannelInfo("player")
     if not name or not empowering then
         return
@@ -2288,24 +2292,24 @@ OnEmpowerStart = function()
     castBarFrame._startTime = startTimeMS / 1000
     castBarFrame._endTime = endTimeMS / 1000
     castBarFrame._spellName = name
-    castBarFrame._spellID = spellID
+    castBarFrame._spellID = spellId
     castBarFrame._totalDurSuffix = " / " .. format("%.1f", (endTimeMS - startTimeMS) / 1000)
     HideLatencyOverlay()
-    castBarFrame._nameText:SetText(ns.CastDisplayName(cb, name, spellID))
+    castBarFrame._nameText:SetText(mod.CastDisplayName(cb, name, spellId))
     if cb.fitSpellName then
-        ns.ERB_FitCastName(cb)
+        mod.ERB_FitCastName(cb)
     end
-    ns.ERB_SetBlizzCastFill("cast")
-    ns.ERB_CastOverrideStart(cb, notInterruptible)
-    if not ns.ApplyCastTimer("empower") then
+    mod.ERB_SetBlizzCastFill("cast")
+    mod.ERB_CastOverrideStart(cb, notInterruptible)
+    if not mod.ApplyCastTimer("empower") then
         local empDur = endTimeMS - startTimeMS
         local empProgress = (empDur > 0) and ((GetTime() - startTimeMS / 1000) / (empDur / 1000)) or 0
-        castBarFrame._bar:SetValue(min(max(empProgress, 0), 1))
+        castBarFrame._bar:SetValue(min(upper(empProgress, 0), 1))
     end
     HideChannelTicks()
 
     do
-        local spellInfo = C_Spell.GetSpellInfo(spellID)
+        local spellInfo = C_Spell.GetSpellInfo(spellId)
         local iconTex = spellInfo and spellInfo.iconID
         if iconTex and ERB.db.profile.castBar.showIcon ~= false then
             castBarFrame._icon:SetTexture(iconTex)
@@ -2321,9 +2325,9 @@ OnEmpowerStart = function()
     if stages then
         SetStageThresholds({})
         local cum = 0
-        for i = 1, #stages do
-            cum = cum + stages[i]
-            cachedStageThresholds[i] = cum
+        for idx = 1, #stages do
+            cum = cum + stages[idx]
+            cachedStageThresholds[idx] = cum
         end
     else
         SetStageThresholds(nil)
@@ -2334,10 +2338,10 @@ OnEmpowerStart = function()
         -- Stale values are inert: the re-lay gates on _empowering, and every
         -- empower start restores the stash.
         castBarFrame._empStages = stages
-        ns.ERB_LayoutEmpowerPips(stages)
+        mod.ERB_LayoutEmpowerPips(stages)
     end
 
-    ns.ActivateCastBar()
+    mod.ActivateCastBar()
 end
 
 -- Stage pip layout for an empowered cast, shared by OnEmpowerStart and the
@@ -2345,13 +2349,13 @@ end
 -- the rebuilt bar, exactly like the channel-tick re-show -- without it the
 -- build reset's pip wipe sticks for the rest of that cast; field: Evokers
 -- randomly losing all stage ticks for one cast). On ns.
-function ns.ERB_LayoutEmpowerPips(stages)
+function mod.ERB_LayoutEmpowerPips(stages)
     if not (castBarFrame and stages) then
         return
     end
-    local bar = castBarFrame._bar
-    local barWidth = bar:GetWidth()
-    local barHeight = bar:GetHeight()
+    local barFrame = castBarFrame._bar
+    local barWidth = barFrame:GetWidth()
+    local barHeight = barFrame:GetHeight()
     local numStages = #stages
     castBarFrame._numStages = numStages
 
@@ -2359,7 +2363,7 @@ function ns.ERB_LayoutEmpowerPips(stages)
     -- pixel in the bar's local units, so the pip is exactly 2 physical
     -- pixels wide at every UI scale (the old effectiveScale rounding
     -- treated 2 as UI units and drifted between 1 and 3 physical pixels).
-    local effectiveScale = bar:GetEffectiveScale()
+    local effectiveScale = barFrame:GetEffectiveScale()
     local PPc = CludesUI and CludesUI.PP
     local onePx = ((PPc and PPc.perfect) or 1) / effectiveScale
     local pipWidth = 2 * onePx
@@ -2367,33 +2371,33 @@ function ns.ERB_LayoutEmpowerPips(stages)
 
     -- Position a pip at each stage boundary (skip the last -- it's the bar end)
     local lastOffset = 0
-    for i = 1, numStages - 1 do
-        local pip = castBarFrame._pips[i]
-        if not pip then
-            pip = bar:CreateTexture(nil, "OVERLAY", nil, 2)
-            pip:SetColorTexture(1, 1, 1, 0.85)
-            if pip.SetSnapToPixelGrid then
-                pip:SetSnapToPixelGrid(false)
-                pip:SetTexelSnappingBias(0)
+    for idx = 1, numStages - 1 do
+        local pipTex = castBarFrame._pips[idx]
+        if not pipTex then
+            pipTex = barFrame:CreateTexture(nil, "OVERLAY", nil, 2)
+            pipTex:SetColorTexture(1, 1, 1, 0.85)
+            if pipTex.SetSnapToPixelGrid then
+                pipTex:SetSnapToPixelGrid(false)
+                pipTex:SetTexelSnappingBias(0)
             end
-            castBarFrame._pips[i] = pip
+            castBarFrame._pips[idx] = pipTex
         end
-        local rawOffset = lastOffset + (barWidth * stages[i])
+        local rawOffset = lastOffset + (barWidth * stages[idx])
         lastOffset = rawOffset
         -- Width-aware center snap: both pip edges land on the physical
         -- grid (a centered even-width mark on a grid point is exact).
         local snappedOffset = (PPc and PPc.SnapCenterForDim)
                 and PPc.SnapCenterForDim(rawOffset, pipWidth, effectiveScale)
             or (floor(rawOffset * effectiveScale + 0.5) / effectiveScale)
-        pip:SetSize(pipWidth, snappedHeight)
-        pip:ClearAllPoints()
-        pip:SetPoint("CENTER", bar, "LEFT", snappedOffset, 0)
-        pip:Show()
+        pipTex:SetSize(pipWidth, snappedHeight)
+        pipTex:ClearAllPoints()
+        pipTex:SetPoint("CENTER", barFrame, "LEFT", snappedOffset, 0)
+        pipTex:Show()
     end
 
     -- Hide any extra pips from a previous cast with more stages
-    for i = numStages, #castBarFrame._pips do
-        castBarFrame._pips[i]:Hide()
+    for idx = numStages, #castBarFrame._pips do
+        castBarFrame._pips[idx]:Hide()
     end
 end
 
@@ -2405,7 +2409,7 @@ OnEmpowerUpdate = function()
         return
     end
 
-    local name, _, _, startTimeMS, endTimeMS, _, notInterruptible, spellID, empowering =
+    local name, _, _, startTimeMS, endTimeMS, _, notInterruptible, spellId, empowering =
         UnitChannelInfo("player")
     if not name or not empowering then
         return
@@ -2416,11 +2420,11 @@ OnEmpowerUpdate = function()
 
     castBarFrame._startTime = startTimeMS / 1000
     castBarFrame._endTime = endTimeMS / 1000
-    ns.ApplyCastTimer("empower")
+    mod.ApplyCastTimer("empower")
 end
 
-I.BuildCastBar, I.OnCastComplete, I.OnCastFailed = BuildCastBar, OnCastComplete, OnCastFailed
-I.OnCastStart, I.OnChannelStart, I.OnChannelStop = OnCastStart, OnChannelStart, OnChannelStop
-I.OnChannelUpdate, I.OnEmpowerStart = OnChannelUpdate, OnEmpowerStart
-I.OnEmpowerStop, I.OnEmpowerUpdate = OnEmpowerStop, OnEmpowerUpdate
-I.broken = false
+Inner.BuildCastBar, Inner.OnCastComplete, Inner.OnCastFailed = BuildCastBar, OnCastComplete, OnCastFailed
+Inner.OnCastStart, Inner.OnChannelStart, Inner.OnChannelStop = OnCastStart, OnChannelStart, OnChannelStop
+Inner.OnChannelUpdate, Inner.OnEmpowerStart = OnChannelUpdate, OnEmpowerStart
+Inner.OnEmpowerStop, Inner.OnEmpowerUpdate = OnEmpowerStop, OnEmpowerUpdate
+Inner.broken = false

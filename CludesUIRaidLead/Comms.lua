@@ -18,15 +18,15 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  refuses addon messages at times (AddOnMessageLockdown); a send that fails
 --  is reported once, never retried in a loop.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local PREFIX = "CUIRL"
 local PART = 200 -- characters of note per message, leaving room for the header
 local PACE = 1.1 -- seconds between messages after the first burst
 local BURST = 8
 
-local function Say(text)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text)
+local function Say(textValue)
+    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
 end
 
 local function Channel()
@@ -46,15 +46,15 @@ local queue, sending, sentInBurst = {}, false, 0
 local failedWarned = false
 
 local function Pump()
-    local item = table.remove(queue, 1)
-    if not item then
+    local itemInfo = table.remove(queue, 1)
+    if not itemInfo then
         sending, sentInBurst = false, 0
         return
     end
-    local msg, channel = item[1], item[2] or Channel()
+    local msg, channel = itemInfo[1], itemInfo[2] or Channel()
     if channel then
-        local ok, result = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel)
-        local code = ok and (type(result) == "number" and result or 0) or 9
+        local success, result = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel)
+        local code = success and (type(result) == "number" and result or 0) or 9
         if code ~= 0 and not failedWarned then
             failedWarned = true
             Say("the game would not send a message just now (code " .. code .. "). Try again out of combat.")
@@ -97,10 +97,10 @@ end
 --  Version check
 -------------------------------------------------------------------------------
 local versions = {} -- name -> version, from the last check
-ns.versions = versions
+mod.versions = versions
 
 --- Asks the group for CludesUI versions and prints the result after a few seconds.
-function ns.VersionCheck()
+function mod.VersionCheck()
     if not Channel() then
         return Say("you are not in a group.")
     end
@@ -109,13 +109,14 @@ function ns.VersionCheck()
     Send("V?")
     C_Timer.After(4, function()
         local have, missing = {}, {}
-        for i = 1, GetNumGroupMembers() do
-            local unit = IsInRaid() and ("raid" .. i) or (i == 1 and "player" or ("party" .. (i - 1)))
-            local name = UnitName(unit)
+        for idx = 1, GetNumGroupMembers() do
+            local unitToken = IsInRaid() and ("raid" .. idx)
+                or (idx == 1 and "player" or ("party" .. (idx - 1)))
+            local name = UnitName(unitToken)
             if type(name) == "string" and not (issecretvalue and issecretvalue(name)) then
-                local v = versions[name]
-                if v then
-                    have[#have + 1] = name .. " " .. v
+                local val = versions[name]
+                if val then
+                    have[#have + 1] = name .. " " .. val
                 else
                     missing[#missing + 1] = name
                 end
@@ -127,8 +128,8 @@ function ns.VersionCheck()
         if #missing > 0 then
             Say(#missing .. " without it (or did not answer): " .. table.concat(missing, ", "))
         end
-        if ns.OnVersionsChanged then
-            ns.OnVersionsChanged()
+        if mod.OnVersionsChanged then
+            mod.OnVersionsChanged()
         end
     end)
 end
@@ -139,7 +140,7 @@ end
 local incoming = {} -- id -> { boss, n, parts = {} }
 
 --- Sends a reminder note to every CludesUI user in the group.
-function ns.ShareNote(boss, text)
+function mod.ShareNote(boss, textValue)
     if not Channel() then
         return Say("you are not in a group.")
     end
@@ -147,34 +148,42 @@ function ns.ShareNote(boss, text)
         return Say("only the leader or an assistant can send reminders.")
     end
     boss = (boss or "any"):gsub("|", "")
-    text = (text or ""):gsub("|", "||") -- keep colour codes literal in transit
-    local id = tostring(math.random(10000, 99999))
-    local n = math.max(1, math.ceil(#text / PART))
-    for i = 1, n do
-        Send(("N|%s|%d|%d|%s|%s"):format(id, i, n, boss, text:sub((i - 1) * PART + 1, i * PART)))
+    textValue = (textValue or ""):gsub("|", "||") -- keep colour codes literal in transit
+    local ident = tostring(math.random(10000, 99999))
+    local num = math.max(1, math.ceil(#textValue / PART))
+    for idx = 1, num do
+        Send(
+            ("N|%s|%d|%d|%s|%s"):format(
+                ident,
+                idx,
+                num,
+                boss,
+                textValue:sub((idx - 1) * PART + 1, idx * PART)
+            )
+        )
     end
-    Say(("sending the %s reminders to the group (%d message%s)."):format(boss, n, n == 1 and "" or "s"))
+    Say(("sending the %s reminders to the group (%d message%s)."):format(boss, num, num == 1 and "" or "s"))
 end
 
-local function OnNotePart(sender, id, i, n, boss, part)
+local function OnNotePart(sender, ident, idx, num, boss, part)
     if not IsLeaderOrAssist(sender) then
         return
     end
     if UnitIsUnit(Ambiguate(sender, "none"), "player") then
         return
     end
-    local key = sender .. id
-    local entry = incoming[key] or { boss = boss, n = n, parts = {}, got = 0 }
-    incoming[key] = entry
-    if not entry.parts[i] then
-        entry.parts[i] = part
-        entry.got = entry.got + 1
+    local key = sender .. ident
+    local record = incoming[key] or { boss = boss, n = num, parts = {}, got = 0 }
+    incoming[key] = record
+    if not record.parts[idx] then
+        record.parts[idx] = part
+        record.got = record.got + 1
     end
-    if entry.got >= entry.n then
+    if record.got >= record.n then
         incoming[key] = nil
-        local text = table.concat(entry.parts):gsub("||", "|")
-        if ns.ReceiveSharedNote then
-            ns.ReceiveSharedNote(Ambiguate(sender, "none"), entry.boss, text)
+        local textValue = table.concat(record.parts):gsub("||", "|")
+        if mod.ReceiveSharedNote then
+            mod.ReceiveSharedNote(Ambiguate(sender, "none"), record.boss, textValue)
         end
     end
 end
@@ -182,30 +191,30 @@ end
 -------------------------------------------------------------------------------
 --  Ready check reports and nicknames
 -------------------------------------------------------------------------------
-function ns.SendReadyReport(report)
+function mod.SendReadyReport(report)
     Send("R|" .. report)
 end
 
 --- channel nil = the group; "GUILD" = the guild.
-function ns.SendNickname(nick, channel)
+function mod.SendNickname(nick, channel)
     Send("K|" .. nick, channel)
 end
 
-function ns.SendBreak(seconds)
+function mod.SendBreak(seconds)
     return Send("B|" .. seconds)
 end
 
-function ns.SendDrop(kind)
-    return Send("D|" .. kind)
+function mod.SendDrop(kindOf)
+    return Send("D|" .. kindOf)
 end
 
 -------------------------------------------------------------------------------
 --  Receiving
 -------------------------------------------------------------------------------
-local frame = CreateFrame("Frame")
-frame:RegisterEvent("CHAT_MSG_ADDON")
-frame:SetScript("OnEvent", function(_, _, prefix, msg, channel, sender)
-    if prefix ~= PREFIX or type(msg) ~= "string" then
+local widget = CreateFrame("Frame")
+widget:RegisterEvent("CHAT_MSG_ADDON")
+widget:SetScript("OnEvent", function(_, _, prefixText, msg, channel, sender)
+    if prefixText ~= PREFIX or type(msg) ~= "string" then
         return
     end
     if issecretvalue and (issecretvalue(msg) or issecretvalue(sender)) then
@@ -214,30 +223,30 @@ frame:SetScript("OnEvent", function(_, _, prefix, msg, channel, sender)
     if msg == "V?" then
         Send("V|" .. MyVersion())
     elseif msg:sub(1, 2) == "R|" then
-        if ns.ReceiveReadyReport then
-            ns.ReceiveReadyReport(Ambiguate(sender, "none"), msg:sub(3))
+        if mod.ReceiveReadyReport then
+            mod.ReceiveReadyReport(Ambiguate(sender, "none"), msg:sub(3))
         end
     elseif msg:sub(1, 2) == "K|" then
-        if ns.ReceiveNickname then
-            ns.ReceiveNickname(sender, msg:sub(3, 40))
+        if mod.ReceiveNickname then
+            mod.ReceiveNickname(sender, msg:sub(3, 40))
         end
     elseif msg:sub(1, 2) == "D|" then
-        if ns.ReceiveDrop then
-            ns.ReceiveDrop(Ambiguate(sender, "none"), msg:sub(3, 20))
+        if mod.ReceiveDrop then
+            mod.ReceiveDrop(Ambiguate(sender, "none"), msg:sub(3, 20))
         end
     elseif msg:sub(1, 2) == "B|" then
         local seconds = tonumber(msg:match("^B|(%d+)$"))
-        if seconds and IsLeaderOrAssist(sender) and ns.ReceiveBreak then
+        if seconds and IsLeaderOrAssist(sender) and mod.ReceiveBreak then
             local who = Ambiguate(sender, "none")
-            ns.ReceiveBreak(seconds, not UnitIsUnit(who, "player") and who or nil)
+            mod.ReceiveBreak(seconds, not UnitIsUnit(who, "player") and who or nil)
         end
     elseif msg:sub(1, 2) == "V|" then
         versions[Ambiguate(sender, "none")] = msg:sub(3, 40)
     elseif msg:sub(1, 2) == "N|" then
-        local id, i, n, boss, part = msg:match("^N|(%d+)|(%d+)|(%d+)|([^|]*)|(.*)$")
-        i, n = tonumber(i), tonumber(n)
-        if id and i and n and n <= 60 and i >= 1 and i <= n then
-            OnNotePart(sender, id, i, n, boss, part)
+        local ident, idx, num, boss, part = msg:match("^N|(%d+)|(%d+)|(%d+)|([^|]*)|(.*)$")
+        idx, num = tonumber(idx), tonumber(num)
+        if ident and idx and num and num <= 60 and idx >= 1 and idx <= num then
+            OnNotePart(sender, ident, idx, num, boss, part)
         end
     end
 end)

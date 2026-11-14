@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  (BuildPartyPage) and the Sort By control both use. Definitions only; the
 --  shared helpers come from ns._RFO_OptEnv (filled by CUI_RaidFrames_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIRaidFrames"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIRaidFrames"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -29,17 +29,17 @@ local PoolGen = CludesUI._Pool.Gen
 --      opts.readRoles()   -> { role, role, role }  (read-only)
 --      opts.writeRoles(t) -- persist role order + trigger reload/preview
 ---------------------------------------------------------------------------
-local function BuildSortByControl(rgn, opts)
-    local env = ns._RFO_OptEnv
-    local PP = env.PP
-    if rgn._control then
-        rgn._control:Hide()
+local function BuildSortByControl(region, options)
+    local environ = mod._RFO_OptEnv
+    local Pix = environ.PP
+    if region._control then
+        region._control:Hide()
     end
 
-    local sortBtn = CreateFrame("Button", nil, rgn)
+    local sortBtn = CreateFrame("Button", nil, region)
     sortBtn:SetSize(170, 30)
-    PP.Point(sortBtn, "RIGHT", rgn, "RIGHT", -20, 0)
-    sortBtn:SetFrameLevel(rgn:GetFrameLevel() + 2)
+    Pix.Point(sortBtn, "RIGHT", region, "RIGHT", -20, 0)
+    sortBtn:SetFrameLevel(region:GetFrameLevel() + 2)
 
     local sBg = sortBtn:CreateTexture(nil, "BACKGROUND")
     sBg:SetAllPoints()
@@ -52,15 +52,15 @@ local function BuildSortByControl(rgn, opts)
     sLabel:SetWordWrap(false)
     sLabel:SetMaxLines(1)
     sLabel:SetPoint("LEFT", sortBtn, "LEFT", 8, 0)
-    local sArrow = CludesUI.MakeDropdownArrow(sortBtn, 12, PP)
+    local sArrow = CludesUI.MakeDropdownArrow(sortBtn, 12, Pix)
     sLabel:SetPoint("RIGHT", sArrow, "LEFT", -5, 0)
 
     local function UpdateSortLabel()
-        local mode = opts.readMode()
-        if mode == "FRAMESORT" then
+        local modeName = options.readMode()
+        if modeName == "FRAMESORT" then
             sLabel:SetText("FrameSort")
         else
-            sLabel:SetText(mode == "ROLE" and CludesUI.L("Role") or CludesUI.L("Group"))
+            sLabel:SetText(modeName == "ROLE" and CludesUI.L("Role") or CludesUI.L("Group"))
         end
     end
     UpdateSortLabel()
@@ -78,7 +78,7 @@ local function BuildSortByControl(rgn, opts)
 
     local MH = 26 -- row height
     local DH = 16 -- divider height
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
     -- Kept per Sort By button (the options page pool): a page build that
     -- dresses the same button again dresses the same menu again.
@@ -127,7 +127,7 @@ local function BuildSortByControl(rgn, opts)
     -- orders the frames; the same test the frames use). A saved choice
     -- with the addon gone falls back to Group order in the frames and
     -- keeps its label here.
-    if ns._FrameSortApi and ns._FrameSortApi() then
+    if mod._FrameSortApi and mod._FrameSortApi() then
         radioItems[#radioItems + 1] = { key = "FRAMESORT", label = "FrameSort", noLoc = true }
     end
     local SEL_A = CludesUI.DD_ITEM_SEL_A
@@ -152,7 +152,7 @@ local function BuildSortByControl(rgn, opts)
         rHL:SetAlpha(0)
 
         local function UpdateRadio()
-            local isSel = opts.readMode() == ri.key
+            local isSel = options.readMode() == ri.key
             rl:SetTextColor(1, 1, 1, itemDimA)
             rHL:SetAlpha(isSel and SEL_A or 0)
         end
@@ -166,7 +166,7 @@ local function BuildSortByControl(rgn, opts)
             UpdateRadio()
         end)
         rr:SetScript("OnClick", function()
-            opts.writeMode(ri.key)
+            options.writeMode(ri.key)
             UpdateSortLabel()
             for _, r2 in ipairs(radioRows) do
                 r2._updateRadio()
@@ -204,58 +204,58 @@ local function BuildSortByControl(rgn, opts)
     -- Draggable role rows
     local roleLabels = { TANK = "Tank", HEALER = "Healer", DAMAGER = "DPS" }
     local roleItems = {}
-    local roleOrder = opts.readRoles()
+    local roleOrder = options.readRoles()
     if type(roleOrder) ~= "table" or #roleOrder < 3 then
         roleOrder = { "TANK", "HEALER", "DAMAGER" }
     end
-    for i, rk in ipairs(roleOrder) do
-        roleItems[i] = { key = rk, label = roleLabels[rk] or rk }
+    for idx, rk in ipairs(roleOrder) do
+        roleItems[idx] = { key = rk, label = roleLabels[rk] or rk }
     end
 
     local cbBaseY = mY
     local rowFrames = {}
     local insLine = menuFrame:CreateTexture(nil, "OVERLAY", nil, 7)
     insLine:SetHeight(2)
-    insLine:SetColorTexture(EG.r, EG.g, EG.b, 0.9)
+    insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
     insLine:Hide()
 
     for ci, cb in ipairs(roleItems) do
-        local row = CreateFrame("Button", nil, menuFrame)
-        row:SetHeight(MH)
-        row._baseY = mY
-        row._cbIndex = ci
-        row._cb = cb
-        row:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
-        row:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
-        row:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
+        local rowFrame = CreateFrame("Button", nil, menuFrame)
+        rowFrame:SetHeight(MH)
+        rowFrame._baseY = mY
+        rowFrame._cbIndex = ci
+        rowFrame._cb = cb
+        rowFrame:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
+        rowFrame:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
+        rowFrame:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
 
-        local rl = row:CreateFontString(nil, "OVERLAY")
+        local rl = rowFrame:CreateFontString(nil, "OVERLAY")
         rl:SetFont(FONT, 13, "")
-        rl:SetPoint("LEFT", row, "LEFT", 20, 0)
+        rl:SetPoint("LEFT", rowFrame, "LEFT", 20, 0)
         rl:SetJustifyH("LEFT")
         rl:SetText(CludesUI.L(cb.label))
         rl:SetTextColor(0.75, 0.75, 0.75, 1)
-        row._lbl = rl
+        rowFrame._lbl = rl
 
         -- Drag handle dots
-        local grip = row:CreateFontString(nil, "OVERLAY")
+        local grip = rowFrame:CreateFontString(nil, "OVERLAY")
         grip:SetFont(FONT, 10, "")
-        grip:SetPoint("LEFT", row, "LEFT", 8, 0)
+        grip:SetPoint("LEFT", rowFrame, "LEFT", 8, 0)
         grip:SetText("=")
         grip:SetTextColor(1, 1, 1, 0.2)
 
-        local rHL = row:CreateTexture(nil, "ARTWORK")
+        local rHL = rowFrame:CreateTexture(nil, "ARTWORK")
         rHL:SetAllPoints()
         rHL:SetColorTexture(1, 1, 1, 0)
 
-        row:SetScript("OnEnter", function()
+        rowFrame:SetScript("OnEnter", function()
             if isDragging then
                 return
             end
             rl:SetTextColor(1, 1, 1, 1)
             rHL:SetColorTexture(1, 1, 1, 0.04)
         end)
-        row:SetScript("OnLeave", function()
+        rowFrame:SetScript("OnLeave", function()
             if isDragging then
                 return
             end
@@ -263,7 +263,7 @@ local function BuildSortByControl(rgn, opts)
             rHL:SetColorTexture(1, 1, 1, 0)
         end)
 
-        row:SetScript("OnMouseDown", function(self, b)
+        rowFrame:SetScript("OnMouseDown", function(self, b)
             if b ~= "LeftButton" then
                 return
             end
@@ -272,7 +272,7 @@ local function BuildSortByControl(rgn, opts)
             dragRow = self
         end)
 
-        row:SetScript("OnUpdate", function(self)
+        rowFrame:SetScript("OnUpdate", function(self)
             if dragRow ~= self then
                 return
             end
@@ -320,7 +320,7 @@ local function BuildSortByControl(rgn, opts)
             self:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, cY - mT)
         end)
 
-        row:SetScript("OnMouseUp", function(self, b)
+        rowFrame:SetScript("OnMouseUp", function(self, b)
             if b ~= "LeftButton" then
                 return
             end
@@ -369,7 +369,7 @@ local function BuildSortByControl(rgn, opts)
                 for _, it in ipairs(roleItems) do
                     ro[#ro + 1] = it.key
                 end
-                opts.writeRoles(ro)
+                options.writeRoles(ro)
             end
 
             for ri = 1, #rowFrames do
@@ -385,7 +385,7 @@ local function BuildSortByControl(rgn, opts)
             end
         end)
 
-        rowFrames[#rowFrames + 1] = row
+        rowFrames[#rowFrames + 1] = rowFrame
         mY = mY - MH
     end
 
@@ -399,26 +399,26 @@ local function BuildSortByControl(rgn, opts)
         end
     end)
 
-    rgn._control = sortBtn
-    rgn._lastInline = nil
+    region._control = sortBtn
+    region._lastInline = nil
 end
 
 ---------------------------------------------------------------------------
 --  Page Builder
 ---------------------------------------------------------------------------
-local function BuildMainPage(pageName, parent, yOffset)
-    local env = ns._RFO_OptEnv
+local function BuildMainPage(page, hostFrame, yOffset)
+    local environ = mod._RFO_OptEnv
     local allGrowthOrder, BuildPreviewModeRow, BuildVisualSections, db =
-        env.allGrowthOrder, env.BuildPreviewModeRow, env.BuildVisualSections, env.db
-    local growthValues, KeepGrowthPerpendicular, PP, ReloadAndUpdate =
-        env.growthValues, env.KeepGrowthPerpendicular, env.PP, env.ReloadAndUpdate
+        environ.allGrowthOrder, environ.BuildPreviewModeRow, environ.BuildVisualSections, environ.db
+    local growthValues, KeepGrowthPerpendicular, Pix, ReloadAndUpdate =
+        environ.growthValues, environ.KeepGrowthPerpendicular, environ.PP, environ.ReloadAndUpdate
     local groupGrowthValues, groupGrowthOrder, ReadGroupGrowth =
-        env.groupGrowthValues, env.groupGrowthOrder, env.ReadGroupGrowth
-    local SGet, SGetPx, SSet, SVal = env.SGet, env.SGetPx, env.SSet, env.SVal
-    local SWrite, optState = env.SWrite, env.optState
+        environ.groupGrowthValues, environ.groupGrowthOrder, environ.ReadGroupGrowth
+    local SGet, SGetPx, SSet, SVal = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
+    local SWrite, optionState = environ.SWrite, environ.optState
     local W = CludesUI.Widgets
-    local _, h, hdr
-    local row
+    local _, hgt, heading
+    local rowFrame
 
     -- Both Group Growth menus grey out the grid flow while groups are merged,
     -- where it would render as Right (ReadGroupGrowth).
@@ -439,26 +439,26 @@ local function BuildMainPage(pageName, parent, yOffset)
         if InCombatLockdown() then
             return true
         end
-        local _, eg = ns._RFEffectiveGrowth("DOWN", gg, SVal("mergeGroups", false))
+        local _, eg = mod._RFEffectiveGrowth("DOWN", gg, SVal("mergeGroups", false))
         return eg == "DOWNRIGHT"
     end
     local function CenterBlockedTip()
         return InCombatLockdown() and "Unavailable in combat" or CENTER_OFF_TIP
     end
 
-    parent._showRowDivider = true
-    local y = yOffset
+    hostFrame._showRowDivider = true
+    local posY = yOffset
 
-    y = BuildPreviewModeRow(parent, y)
+    posY = BuildPreviewModeRow(hostFrame, posY)
 
     -------------------------------------------------------------------
     --  FRAME SIZES
     -------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "FRAME SIZES", y)
-    y = y - h
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "RF_RaidFrames" })
+    heading, hgt = W:SectionHeader(hostFrame, "FRAME SIZES", posY)
+    posY = posY - hgt
+    CludesUI.BuildSectionUnlockJump(heading, { key = "RF_RaidFrames" })
 
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "20 Man Frame Width",
         min = 40,
@@ -483,7 +483,7 @@ local function BuildMainPage(pageName, parent, yOffset)
             SSet("frameHeight", v)
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- One row per defined custom raid size.
     do
@@ -499,30 +499,30 @@ local function BuildMainPage(pageName, parent, yOffset)
             if overrides and overrides[tier] then
                 local tierLabel = TIER_LABELS[tier]
                 local sizeRow
-                sizeRow, h = W:DualRow(parent, y, {
+                sizeRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "slider",
                     text = tierLabel .. " Frame Width",
                     min = 40,
                     max = 300,
                     step = 1,
                     getValue = function()
-                        local ov = db.profile.raidSizeOverrides
-                        return ov and ov[tier] and ov[tier].width or SVal("frameWidth", 72)
+                        local shade = db.profile.raidSizeOverrides
+                        return shade and shade[tier] and shade[tier].width or SVal("frameWidth", 72)
                     end,
                     setValue = function(v)
-                        local ovs = ns._EnsureRaidSizeOverrides()
+                        local ovs = mod._EnsureRaidSizeOverrides()
                         if not ovs[tier] then
                             ovs[tier] = { width = v, height = db.profile.frameHeight or 60 }
                         else
                             ovs[tier].width = v
                         end
-                        if ns._sizePreviewTier == tier and ns._ShowSizePreview then
-                            ns._ShowSizePreview(tier)
-                        elseif ns._ResizeButtons then
+                        if mod._sizePreviewTier == tier and mod._ShowSizePreview then
+                            mod._ShowSizePreview(tier)
+                        elseif mod._ResizeButtons then
                             local num = GetNumGroupMembers()
                             if num > 0 then
-                                local w, h = ns._GetRaidSizeFrameDimensions(num)
-                                ns._ResizeButtons(w, h)
+                                local wid, hgt = mod._GetRaidSizeFrameDimensions(num)
+                                mod._ResizeButtons(wid, hgt)
                             end
                         end
                         -- Full reload on drag end applies indicator scaling.
@@ -537,23 +537,23 @@ local function BuildMainPage(pageName, parent, yOffset)
                     max = 150,
                     step = 1,
                     getValue = function()
-                        local ov = db.profile.raidSizeOverrides
-                        return ov and ov[tier] and ov[tier].height or SVal("frameHeight", 46)
+                        local shade = db.profile.raidSizeOverrides
+                        return shade and shade[tier] and shade[tier].height or SVal("frameHeight", 46)
                     end,
                     setValue = function(v)
-                        local ovs = ns._EnsureRaidSizeOverrides()
+                        local ovs = mod._EnsureRaidSizeOverrides()
                         if not ovs[tier] then
                             ovs[tier] = { width = db.profile.frameWidth or 125, height = v }
                         else
                             ovs[tier].height = v
                         end
-                        if ns._sizePreviewTier == tier and ns._ShowSizePreview then
-                            ns._ShowSizePreview(tier)
-                        elseif ns._ResizeButtons then
+                        if mod._sizePreviewTier == tier and mod._ShowSizePreview then
+                            mod._ShowSizePreview(tier)
+                        elseif mod._ResizeButtons then
                             local num = GetNumGroupMembers()
                             if num > 0 then
-                                local w, h = ns._GetRaidSizeFrameDimensions(num)
-                                ns._ResizeButtons(w, h)
+                                local wid, hgt = mod._GetRaidSizeFrameDimensions(num)
+                                mod._ResizeButtons(wid, hgt)
                             end
                         end
                         -- Full reload on drag end applies indicator scaling.
@@ -562,7 +562,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Eyeball (preview toggle), left of the row.
                 if not CludesUI._prebuilding then
@@ -581,19 +581,19 @@ local function BuildMainPage(pageName, parent, yOffset)
                         if PoolGen(eyeBtn) ~= eyeGen then
                             return
                         end
-                        local active = ns._sizePreviewTier == tier
-                        eyeTex:SetTexture(active and EYE_INVISIBLE or EYE_VISIBLE)
-                        CludesUI.SetGlyphAlpha(eyeBtn, active and 0.6 or 0.4)
+                        local isActive = mod._sizePreviewTier == tier
+                        eyeTex:SetTexture(isActive and EYE_INVISIBLE or EYE_VISIBLE)
+                        CludesUI.SetGlyphAlpha(eyeBtn, isActive and 0.6 or 0.4)
                     end
                     RefreshSizeEye()
-                    ns["_refreshSizeEye" .. tier] = RefreshSizeEye
+                    mod["_refreshSizeEye" .. tier] = RefreshSizeEye
 
                     eyeBtn:SetScript("OnEnter", function(self)
                         CludesUI.SetGlyphAlpha(self, 0.7)
-                        local active = ns._sizePreviewTier == tier
+                        local isActive = mod._sizePreviewTier == tier
                         CludesUI.ShowWidgetTooltip(
                             self,
-                            active and "Hide " .. tierLabel .. " preview"
+                            isActive and "Hide " .. tierLabel .. " preview"
                                 or "Preview " .. tierLabel .. " frame size"
                         )
                     end)
@@ -602,37 +602,37 @@ local function BuildMainPage(pageName, parent, yOffset)
                         CludesUI.HideWidgetTooltip()
                     end)
                     eyeBtn:SetScript("OnClick", function()
-                        if ns._sizePreviewTier == tier then
+                        if mod._sizePreviewTier == tier then
                             -- Restore the regular preview if the mode allows.
-                            ns._sizePreviewTier = nil
-                            if ns._HideSizePreview then
-                                ns._HideSizePreview()
+                            mod._sizePreviewTier = nil
+                            if mod._HideSizePreview then
+                                mod._HideSizePreview()
                             end
-                            local mode = db.profile.previewMode or "overlay"
-                            if mode ~= "none" and ns.ShowPreview then
-                                ns.ShowPreview()
+                            local modeName = db.profile.previewMode or "overlay"
+                            if modeName ~= "none" and mod.ShowPreview then
+                                mod.ShowPreview()
                             end
                         else
-                            if ns._sizePreviewTier then
-                                local oldRefresh = ns["_refreshSizeEye" .. ns._sizePreviewTier]
-                                ns._sizePreviewTier = nil
-                                if ns._HideSizePreview then
-                                    ns._HideSizePreview()
+                            if mod._sizePreviewTier then
+                                local oldRefresh = mod["_refreshSizeEye" .. mod._sizePreviewTier]
+                                mod._sizePreviewTier = nil
+                                if mod._HideSizePreview then
+                                    mod._HideSizePreview()
                                 end
                                 if oldRefresh then
                                     oldRefresh()
                                 end
                             end
                             -- _ShowSizePreview hides the other previews.
-                            ns._sizePreviewTier = tier
-                            if ns._ShowSizePreview then
-                                ns._ShowSizePreview(tier)
+                            mod._sizePreviewTier = tier
+                            if mod._ShowSizePreview then
+                                mod._ShowSizePreview(tier)
                             end
                         end
                         RefreshSizeEye()
                         for _, t in ipairs(CUSTOM_TIERS) do
                             if t ~= tier then
-                                local otherRefresh = ns["_refreshSizeEye" .. t]
+                                local otherRefresh = mod["_refreshSizeEye" .. t]
                                 if otherRefresh then
                                     otherRefresh()
                                 end
@@ -659,10 +659,10 @@ local function BuildMainPage(pageName, parent, yOffset)
                         CludesUI.HideWidgetTooltip()
                     end)
                     closeBtn:SetScript("OnClick", function()
-                        if ns._sizePreviewTier == tier then
-                            ns._sizePreviewTier = nil
-                            if ns._HideSizePreview then
-                                ns._HideSizePreview()
+                        if mod._sizePreviewTier == tier then
+                            mod._sizePreviewTier = nil
+                            if mod._HideSizePreview then
+                                mod._HideSizePreview()
                             end
                         end
                         local ovs = db.profile.raidSizeOverrides
@@ -687,9 +687,9 @@ local function BuildMainPage(pageName, parent, yOffset)
 
                 -- X/Y offset cog on the width slider.
                 if not CludesUI._prebuilding then
-                    local rgn = sizeRow._leftRegion
+                    local region = sizeRow._leftRegion
                     local function EnsureTierOv()
-                        local ovs = ns._EnsureRaidSizeOverrides()
+                        local ovs = mod._EnsureRaidSizeOverrides()
                         if not ovs[tier] then
                             ovs[tier] = {
                                 width = db.profile.frameWidth or 125,
@@ -748,7 +748,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                         },
                     }
                     local tb = TIER_BOUNDS[tier]
-                    CludesUI.BuildInlineCog(rgn, {
+                    CludesUI.BuildInlineCog(region, {
                         title = CludesUI.Lf("%1$s Options", CludesUI.L(tierLabel)),
                         rows = {
                             {
@@ -759,8 +759,8 @@ local function BuildMainPage(pageName, parent, yOffset)
                                 step = 1,
                                 tooltip = tb.tip,
                                 get = function()
-                                    local ov = db.profile.raidSizeOverrides
-                                    return ov and ov[tier] and ov[tier][tb.key] or tb.def
+                                    local shade = db.profile.raidSizeOverrides
+                                    return shade and shade[tier] and shade[tier][tb.key] or tb.def
                                 end,
                                 set = function(v)
                                     EnsureTierOv()[tb.key] = v
@@ -775,9 +775,9 @@ local function BuildMainPage(pageName, parent, yOffset)
                                 order = groupGrowthOrder,
                                 itemDisabled = GridFlowOff,
                                 get = function()
-                                    local ov = db.profile.raidSizeOverrides
+                                    local shade = db.profile.raidSizeOverrides
                                     return ReadGroupGrowth(
-                                        ov and ov[tier] and ov[tier].groupGrowth
+                                        shade and shade[tier] and shade[tier].groupGrowth
                                             or db.profile.groupGrowth
                                             or "RIGHT"
                                     )
@@ -786,8 +786,8 @@ local function BuildMainPage(pageName, parent, yOffset)
                                     -- Separated groups allow every combination (see
                                     -- the main LAYOUT dropdowns); merged needs this
                                     -- tier's effective Unit Growth kept perpendicular.
-                                    local ov = EnsureTierOv()
-                                    ov.groupGrowth = v
+                                    local shade = EnsureTierOv()
+                                    shade.groupGrowth = v
                                     if SVal("mergeGroups", false) then
                                         local ovs = db.profile.raidSizeOverrides
                                         KeepGrowthPerpendicular(v, function()
@@ -795,7 +795,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                                                 or db.profile.unitGrowth
                                                 or "DOWN"
                                         end, function(nv)
-                                            ov.unitGrowth = nv
+                                            shade.unitGrowth = nv
                                         end)
                                     end
                                     TierGrowthChanged()
@@ -837,14 +837,14 @@ local function BuildMainPage(pageName, parent, yOffset)
                                 values = growthValues,
                                 order = allGrowthOrder,
                                 get = function()
-                                    local ov = db.profile.raidSizeOverrides
-                                    return ov and ov[tier] and ov[tier].unitGrowth
+                                    local shade = db.profile.raidSizeOverrides
+                                    return shade and shade[tier] and shade[tier].unitGrowth
                                         or db.profile.unitGrowth
                                         or "DOWN"
                                 end,
                                 set = function(v)
-                                    local ov = EnsureTierOv()
-                                    ov.unitGrowth = v
+                                    local shade = EnsureTierOv()
+                                    shade.unitGrowth = v
                                     if SVal("mergeGroups", false) then
                                         local ovs = db.profile.raidSizeOverrides
                                         KeepGrowthPerpendicular(v, function()
@@ -852,7 +852,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                                                 or db.profile.groupGrowth
                                                 or "RIGHT"
                                         end, function(nv)
-                                            ov.groupGrowth = nv
+                                            shade.groupGrowth = nv
                                         end)
                                     end
                                     TierGrowthChanged()
@@ -865,17 +865,17 @@ local function BuildMainPage(pageName, parent, yOffset)
                                 max = 1000,
                                 step = 1,
                                 get = function()
-                                    local ov = db.profile.raidSizeOverrides
-                                    return ov and ov[tier] and ov[tier].offsetX or 0
+                                    local shade = db.profile.raidSizeOverrides
+                                    return shade and shade[tier] and shade[tier].offsetX or 0
                                 end,
                                 set = function(v)
                                     EnsureTierOv().offsetX = v
                                     -- Update BOTH: live frames (cheap per-tick corner re-anchor) and the size preview when it is showing this tier.
-                                    if ns._ApplyTierOffset then
-                                        ns._ApplyTierOffset()
+                                    if mod._ApplyTierOffset then
+                                        mod._ApplyTierOffset()
                                     end
-                                    if ns._sizePreviewTier == tier and ns._ShowSizePreview then
-                                        ns._ShowSizePreview(tier)
+                                    if mod._sizePreviewTier == tier and mod._ShowSizePreview then
+                                        mod._ShowSizePreview(tier)
                                     end
                                 end,
                             },
@@ -886,17 +886,17 @@ local function BuildMainPage(pageName, parent, yOffset)
                                 max = 1000,
                                 step = 1,
                                 get = function()
-                                    local ov = db.profile.raidSizeOverrides
-                                    return ov and ov[tier] and ov[tier].offsetY or 0
+                                    local shade = db.profile.raidSizeOverrides
+                                    return shade and shade[tier] and shade[tier].offsetY or 0
                                 end,
                                 set = function(v)
                                     EnsureTierOv().offsetY = v
                                     -- Update BOTH: live frames (cheap per-tick corner re-anchor) and the size preview when it is showing this tier.
-                                    if ns._ApplyTierOffset then
-                                        ns._ApplyTierOffset()
+                                    if mod._ApplyTierOffset then
+                                        mod._ApplyTierOffset()
                                     end
-                                    if ns._sizePreviewTier == tier and ns._ShowSizePreview then
-                                        ns._ShowSizePreview(tier)
+                                    if mod._sizePreviewTier == tier and mod._ShowSizePreview then
+                                        mod._ShowSizePreview(tier)
                                     end
                                 end,
                             },
@@ -931,7 +931,7 @@ local function BuildMainPage(pageName, parent, yOffset)
             setValue = function() end,
         }
         if #availableTiers > 0 then
-            autoResizeRow, h = W:DualRow(parent, y, {
+            autoResizeRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Add Custom Raid Size",
                 tooltip = "This option allows you to set custom frame sizing and positioning to different raid sizes. Note: This does NOT resize/reposition frames while in combat, if players join/leave mid combat it will resize after combat completes.",
@@ -945,7 +945,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                     if not tier then
                         return
                     end
-                    local ovs = ns._EnsureRaidSizeOverrides()
+                    local ovs = mod._EnsureRaidSizeOverrides()
                     -- Seed from the current 20 man size.
                     ovs[tier] = {
                         width = db.profile.frameWidth or 125,
@@ -955,16 +955,16 @@ local function BuildMainPage(pageName, parent, yOffset)
                     CludesUI:RefreshPage(true)
                 end,
             }, autoResizeSlot)
-            y = y - h
+            posY = posY - hgt
         else
             -- All tiers added: only Auto Resize Icons remains.
-            autoResizeRow, h = W:DualRow(
-                parent,
-                y, -- cui-style: allow dualrow-left-gap (the checkbox dropdown below overlays the right region)
+            autoResizeRow, hgt = W:DualRow(
+                hostFrame,
+                posY, -- cui-style: allow dualrow-left-gap (the checkbox dropdown below overlays the right region)
                 { type = "label", text = "" },
                 autoResizeSlot
             )
-            y = y - h
+            posY = posY - hgt
         end
         -- Overlay the checkbox dropdown onto the right region, mirroring the "Hover Borders" conversion pattern.
         if not CludesUI._prebuilding then
@@ -993,7 +993,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                     SSet(arKeyMap[k], v)
                 end
             )
-            PP.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
+            Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
             rightRgn._control = cbDD
         end
     end
@@ -1001,25 +1001,25 @@ local function BuildMainPage(pageName, parent, yOffset)
     -------------------------------------------------------------------
     --  FRAME DISPLAY
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "FRAME DISPLAY", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "FRAME DISPLAY", posY)
+    posY = posY - hgt
     -- Stock styles: the stock frame edge stands in for the CludesUI
     -- border (its style/size row hides; the hover border stays).
     if CludesUI.BlizzStyle then
-        y = CludesUI.BlizzStyle.Note(parent, y, "raidframes")
+        posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "raidframes")
     end
-    local function StockGate(cfg)
+    local function StockGate(conf)
         if CludesUI.BlizzStyle then
-            return CludesUI.BlizzStyle.Gate("raidframes", cfg)
+            return CludesUI.BlizzStyle.Gate("raidframes", conf)
         end
-        return cfg
+        return conf
     end
 
     -- Compact Mode (Frame Spacing cog) and Grid Mode (Group Spacing cog) use one
     -- pixel, so the slider each replaces greys out while it is in effect; the saved
     -- value comes back when it is off.
     local spacingRow
-    spacingRow, h = W:DualRow(parent, y, {
+    spacingRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         pixel = true,
         text = "Frame Spacing",
@@ -1027,7 +1027,7 @@ local function BuildMainPage(pageName, parent, yOffset)
         max = 15,
         step = 1,
         disabled = function()
-            return ns.RF_CompactOn(db.profile, false)
+            return mod.RF_CompactOn(db.profile, false)
         end,
         disabledTooltip = "Compact Mode",
         requireState = "disabled",
@@ -1045,7 +1045,7 @@ local function BuildMainPage(pageName, parent, yOffset)
         max = 15,
         step = 1,
         disabled = function()
-            return ns.RF_GridOn(db.profile)
+            return mod.RF_GridOn(db.profile)
         end,
         disabledTooltip = "Grid Mode",
         requireState = "disabled",
@@ -1056,81 +1056,75 @@ local function BuildMainPage(pageName, parent, yOffset)
             SSet("groupSpacing", v)
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         -- A mode that is on stays reachable, so it can always be turned off.
         local COMPACT_TIP =
             "This option requires a Pixels or Pixels Textured border above size 0 on the CludesUI look."
         local function CompactBlocked()
-            return not db.profile.raidCompactMode and not ns.RF_CompactEligible(db.profile)
+            return not db.profile.raidCompactMode and not mod.RF_CompactEligible(db.profile)
         end
         local function GridBlocked()
-            return not db.profile.raidGridMode and not ns.RF_CompactOn(db.profile, false)
+            return not db.profile.raidGridMode and not mod.RF_CompactOn(db.profile, false)
         end
-        CludesUI.BuildInlineCog(
-            spacingRow._leftRegion,
-            {
-                title = "Frame Spacing",
-                disabled = CompactBlocked,
-                disabledTooltip = COMPACT_TIP,
-                rows = {
-                    {
-                        type = "toggle",
-                        label = "Compact Mode",
-                        tooltip = "Joins each group's frames into one bordered block.",
-                        get = function()
-                            return db.profile.raidCompactMode == true
-                        end,
-                        set = function(v)
-                            if v and not ns.RF_CompactEligible(db.profile) then
-                                return
-                            end
-                            db.profile.raidCompactMode = v
-                            ReloadAndUpdate()
-                            CludesUI:RefreshPage()
-                        end,
-                        disabled = CompactBlocked,
-                        disabledTooltip = COMPACT_TIP,
-                    },
+        CludesUI.BuildInlineCog(spacingRow._leftRegion, {
+            title = "Frame Spacing",
+            disabled = CompactBlocked,
+            disabledTooltip = COMPACT_TIP,
+            rows = {
+                {
+                    type = "toggle",
+                    label = "Compact Mode",
+                    tooltip = "Joins each group's frames into one bordered block.",
+                    get = function()
+                        return db.profile.raidCompactMode == true
+                    end,
+                    set = function(v)
+                        if v and not mod.RF_CompactEligible(db.profile) then
+                            return
+                        end
+                        db.profile.raidCompactMode = v
+                        ReloadAndUpdate()
+                        CludesUI:RefreshPage()
+                    end,
+                    disabled = CompactBlocked,
+                    disabledTooltip = COMPACT_TIP,
                 },
-            }
-        )
-        CludesUI.BuildInlineCog(
-            spacingRow._rightRegion,
-            {
-                title = "Group Spacing",
-                disabled = GridBlocked,
-                disabledTooltip = "Compact Mode",
-                rows = {
-                    {
-                        type = "toggle",
-                        label = "Grid Mode",
-                        tooltip = "Joins the raid groups into one grid.",
-                        get = function()
-                            return db.profile.raidGridMode == true
-                        end,
-                        set = function(v)
-                            if v and not ns.RF_CompactOn(db.profile, false) then
-                                return
-                            end
-                            db.profile.raidGridMode = v
-                            ReloadAndUpdate()
-                            CludesUI:RefreshPage()
-                        end,
-                        disabled = GridBlocked,
-                        disabledTooltip = "Compact Mode",
-                    },
+            },
+        })
+        CludesUI.BuildInlineCog(spacingRow._rightRegion, {
+            title = "Group Spacing",
+            disabled = GridBlocked,
+            disabledTooltip = "Compact Mode",
+            rows = {
+                {
+                    type = "toggle",
+                    label = "Grid Mode",
+                    tooltip = "Joins the raid groups into one grid.",
+                    get = function()
+                        return db.profile.raidGridMode == true
+                    end,
+                    set = function(v)
+                        if v and not mod.RF_CompactOn(db.profile, false) then
+                            return
+                        end
+                        db.profile.raidGridMode = v
+                        ReloadAndUpdate()
+                        CludesUI:RefreshPage()
+                    end,
+                    disabled = GridBlocked,
+                    disabledTooltip = "Compact Mode",
                 },
-            }
-        )
+            },
+        })
     end
 
     -- Border Style (+ options cog) | Border Size (+ Border swatch). Mirrors Unit Frames: ONE border recolored by state (hover/target), full SharedMedia support. Hover/Target swatches live on the row below.
     local bdrTexValues, bdrTexOrder = CludesUI.GetBorderTextureDropdown()
     local borderStyleRow
-    borderStyleRow, h = W:DualRow(
-        parent,
-        y,
+    borderStyleRow, hgt = W:DualRow(
+        hostFrame,
+        posY,
         StockGate({
             type = "dropdown",
             text = "Border Style",
@@ -1181,10 +1175,10 @@ local function BuildMainPage(pageName, parent, yOffset)
             apply = ReloadAndUpdate,
         }))
     )
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        local rgn = borderStyleRow._leftRegion
-        local cogBtn = CludesUI.BuildInlineCog(rgn, {
+        local region = borderStyleRow._leftRegion
+        local cogBtn = CludesUI.BuildInlineCog(region, {
             title = "Border Options",
             rows = {
                 {
@@ -1244,8 +1238,8 @@ local function BuildMainPage(pageName, parent, yOffset)
             },
         })
         local function UpdateCogVis()
-            local tex = SGet("borderTexture") or "solid"
-            if tex == "solid" then
+            local texture = SGet("borderTexture") or "solid"
+            if texture == "solid" then
                 cogBtn:Hide()
             else
                 cogBtn:Show()
@@ -1255,11 +1249,11 @@ local function BuildMainPage(pageName, parent, yOffset)
         UpdateCogVis()
     end
     if not CludesUI._prebuilding then
-        local rgn = borderStyleRow._rightRegion
+        local region = borderStyleRow._rightRegion
         local lvl = borderStyleRow:GetFrameLevel() + 3
         -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog beside
         -- the control, the Border swatch left of it.
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             title = "Corner Radius",
             tip = "Corner Radius",
             disabled = function()
@@ -1286,7 +1280,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                 SSet("cornerMask", v)
             end),
         })
-        local borderSwatch, updBorder = CludesUI.BuildColorSwatch(rgn, lvl, function()
+        local borderSwatch, updBorder = CludesUI.BuildColorSwatch(region, lvl, function()
             local c = SGet("borderColor") or { r = 0, g = 0, b = 0 }
             return c.r, c.g, c.b, SVal("borderAlpha", 1)
         end, function(r, g, b, a)
@@ -1294,8 +1288,8 @@ local function BuildMainPage(pageName, parent, yOffset)
             SWrite("borderAlpha", a)
             ReloadAndUpdate()
         end, true, 20)
-        borderSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = borderSwatch
+        borderSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = borderSwatch
         borderSwatch:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(borderSwatch, "Border")
         end)
@@ -1323,9 +1317,9 @@ local function BuildMainPage(pageName, parent, yOffset)
         local function SetOffset(key, v, isY)
             SWrite(key, v)
             if v == nil and SGet(key) ~= nil then
-                local tex, step = SGet("borderTexture") or "solid", SVal("borderSize", 1)
-                local dx, dy = CludesUI.GetBorderDefaults("unitframes", tex, step)
-                local px = CludesUI.BorderPx(SGetPx("borderSizePx", "borderSize"), step, tex)
+                local texture, step = SGet("borderTexture") or "solid", SVal("borderSize", 1)
+                local dx, dy = CludesUI.GetBorderDefaults("unitframes", texture, step)
+                local px = CludesUI.BorderPx(SGetPx("borderSizePx", "borderSize"), step, texture)
                 if px then
                     local PPg, EM = CludesUI.PP, CludesUI.BORDER_EDGE_MAP
                     local f = (px * PPg.mult) / (EM[step] or EM[1])
@@ -1366,13 +1360,13 @@ local function BuildMainPage(pageName, parent, yOffset)
             end,
             apply = ReloadAndUpdate,
         })
-        _, h = W:DualRow(parent, y, StockGate(ocfgL), StockGate(ocfgR))
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, StockGate(ocfgL), StockGate(ocfgR))
+        posY = posY - hgt
     end
 
     -- Show When Solo | Hover Borders: which highlight states are active. Disabling one skips that recolor entirely and the frame keeps its normal border. Hover + Target swatches are inline here.
     local hoverBordersRow
-    hoverBordersRow, h = W:DualRow(parent, y, {
+    hoverBordersRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show When Solo",
         -- Disabled only while Party's is the ONE that is on: a profile holding both
@@ -1388,11 +1382,11 @@ local function BuildMainPage(pageName, parent, yOffset)
         end,
         setValue = function(v)
             SSet("showWhenSolo", v)
-            if ns.UpdateVisibility then
-                ns.UpdateVisibility()
+            if mod.UpdateVisibility then
+                mod.UpdateVisibility()
             end
-            if ns._UpdatePartyVisibility then
-                ns._UpdatePartyVisibility()
+            if mod._UpdatePartyVisibility then
+                mod._UpdatePartyVisibility()
             end
             CludesUI:RefreshPage()
         end,
@@ -1406,7 +1400,7 @@ local function BuildMainPage(pageName, parent, yOffset)
         end,
         setValue = function() end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         local rightRgn = hoverBordersRow._rightRegion
         if rightRgn._control then
@@ -1433,7 +1427,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                 end
             end
         )
-        PP.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
+        Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
         rightRgn._control = cbDD
         rightRgn._lastInline = nil
 
@@ -1442,7 +1436,7 @@ local function BuildMainPage(pageName, parent, yOffset)
         -- border style; under a stock style the hover border draws solid, so the
         -- slider reads and writes against Solid there. The floor stays at 1.
         local function HlTex()
-            if (ns.RF_Stock and ns.RF_Stock()) or ns.RF_CompactOnTab(optState._partyCtx) then
+            if (mod.RF_Stock and mod.RF_Stock()) or mod.RF_CompactOnTab(optionState._partyCtx) then
                 return "solid"
             end
             return SGet("borderTexture") or "solid"
@@ -1501,7 +1495,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                     tooltip = targetPx.tooltip,
                     -- Stock styles draw the stock selection ring instead.
                     disabled = function()
-                        return ns.RF_Stock and ns.RF_Stock()
+                        return mod.RF_Stock and mod.RF_Stock()
                     end,
                     disabledTooltip = CludesUI.BlizzStyle and CludesUI.BlizzStyle.Label("raidframes") or nil,
                     get = targetPx.getValue,
@@ -1555,18 +1549,18 @@ local function BuildMainPage(pageName, parent, yOffset)
         local function UpdateHLCogVis()
             -- Under a stock style the CludesUI border is stood down, so
             -- the hover border draws on its own at this size.
-            local bs = (ns.RF_Stock and ns.RF_Stock()) and 0 or SVal("borderSize", 1)
-            if bs > 0 and not ns.RF_CompactOnTab(optState._partyCtx) then
+            local bs = (mod.RF_Stock and mod.RF_Stock()) and 0 or SVal("borderSize", 1)
+            if bs > 0 and not mod.RF_CompactOnTab(optionState._partyCtx) then
                 hlCog:Hide()
             else
                 hlCog:Show()
             end
             -- The swatches close up on the dropdown while the cog is hidden.
-            local anchor = hlCog:IsShown() and hlCog or cbDD
-            if anchor ~= hoverAnchor then
-                hoverAnchor = anchor
+            local anchorFrame = hlCog:IsShown() and hlCog or cbDD
+            if anchorFrame ~= hoverAnchor then
+                hoverAnchor = anchorFrame
                 hoverSwatch:ClearAllPoints()
-                hoverSwatch:SetPoint("RIGHT", anchor, "LEFT", -8, 0)
+                hoverSwatch:SetPoint("RIGHT", anchorFrame, "LEFT", -8, 0)
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateHLCogVis)
@@ -1588,8 +1582,8 @@ local function BuildMainPage(pageName, parent, yOffset)
     -------------------------------------------------------------------
     --  LAYOUT
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "LAYOUT", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+    posY = posY - hgt
 
     -- Group Growth | Unit Growth: separated groups (Merge Groups off) support every
     -- combination of the two axes (5 Group Growth values x 4 Unit Growth ones), but
@@ -1606,19 +1600,19 @@ local function BuildMainPage(pageName, parent, yOffset)
         if type(overrides) ~= "table" then
             return
         end
-        for _, ov in pairs(overrides) do
-            if type(ov) == "table" then
-                KeepGrowthPerpendicular(ov.groupGrowth or SVal("groupGrowth", "RIGHT"), function()
-                    return ov.unitGrowth or SVal("unitGrowth", "DOWN")
+        for _, shade in pairs(overrides) do
+            if type(shade) == "table" then
+                KeepGrowthPerpendicular(shade.groupGrowth or SVal("groupGrowth", "RIGHT"), function()
+                    return shade.unitGrowth or SVal("unitGrowth", "DOWN")
                 end, function(nv)
-                    ov.unitGrowth = nv
+                    shade.unitGrowth = nv
                 end)
             end
         end
     end
 
     local growthRow
-    growthRow, h = W:DualRow(parent, y, {
+    growthRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Group Growth",
         values = groupGrowthValues,
@@ -1638,8 +1632,8 @@ local function BuildMainPage(pageName, parent, yOffset)
                 FixTierOverridesPerpendicular()
                 CludesUI:RefreshPage() -- the sibling dropdown may have just changed
             end
-            if ns._BumpAbsorbGen then
-                ns._BumpAbsorbGen()
+            if mod._BumpAbsorbGen then
+                mod._BumpAbsorbGen()
             end
             ReloadAndUpdate()
         end,
@@ -1662,47 +1656,44 @@ local function BuildMainPage(pageName, parent, yOffset)
                 FixTierOverridesPerpendicular()
                 CludesUI:RefreshPage() -- the sibling dropdown may have just changed
             end
-            if ns._BumpAbsorbGen then
-                ns._BumpAbsorbGen()
+            if mod._BumpAbsorbGen then
+                mod._BumpAbsorbGen()
             end
             ReloadAndUpdate()
         end,
     })
-    y = y - h
-    CludesUI.BuildInlineCog(
-        growthRow._leftRegion,
-        {
-            title = "Group Growth",
-            captureRegion = growthRow._leftRegion,
-            rows = {
-                {
-                    type = "toggle",
-                    label = "Center Groups",
-                    tooltip = CENTER_TIP,
-                    get = function()
-                        return db.profile.groupGrowthCentered == true
-                    end,
-                    set = function(v)
-                        if InCombatLockdown() then
-                            return
-                        end
-                        db.profile.groupGrowthCentered = v
-                        ReloadAndUpdate()
-                    end,
-                    disabled = function()
-                        return CenterBlocked(SVal("groupGrowth", "RIGHT"))
-                    end,
-                    disabledTooltip = CenterBlockedTip,
-                    rawTooltip = true,
-                },
+    posY = posY - hgt
+    CludesUI.BuildInlineCog(growthRow._leftRegion, {
+        title = "Group Growth",
+        captureRegion = growthRow._leftRegion,
+        rows = {
+            {
+                type = "toggle",
+                label = "Center Groups",
+                tooltip = CENTER_TIP,
+                get = function()
+                    return db.profile.groupGrowthCentered == true
+                end,
+                set = function(v)
+                    if InCombatLockdown() then
+                        return
+                    end
+                    db.profile.groupGrowthCentered = v
+                    ReloadAndUpdate()
+                end,
+                disabled = function()
+                    return CenterBlocked(SVal("groupGrowth", "RIGHT"))
+                end,
+                disabledTooltip = CenterBlockedTip,
+                rawTooltip = true,
             },
-        }
-    )
+        },
+    })
 
     -- Row 4: Sort By (custom dropdown with drag-to-reorder roles) | Self Position
     local sortRow
     do
-        sortRow, h = W:DualRow(parent, y, {
+        sortRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Sort By",
             values = { __placeholder = "Group" },
@@ -1731,7 +1722,7 @@ local function BuildMainPage(pageName, parent, yOffset)
                 CludesUI:RefreshPage()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Swap the placeholder dropdown for the shared Sort By control, wired to the raid keys.
         if not CludesUI._prebuilding then
@@ -1754,40 +1745,40 @@ local function BuildMainPage(pageName, parent, yOffset)
 
         -- Cog next to Sort By: Prioritize Class toggle plus a drag-to-reorder
         -- Class Order list the toggle disables (the party cog, on the raid keys).
-        local rgn = sortRow._leftRegion
+        local region = sortRow._leftRegion
         -- Class list in saved order, always covering every class: any missing/new
         -- class is appended from the default alphabetical order.
         local function GetClassItems()
-            local def = ns._GetDefaultClassOrder() -- also populates ns._classNameByToken
-            local names = ns._classNameByToken or {}
+            local spec_def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
+            local nameList = mod._classNameByToken or {}
             local saved = db.profile.classOrder
-            local order, seen = {}, {}
+            local sequence, seen = {}, {}
             if saved then
                 for _, t in ipairs(saved) do
-                    if names[t] and not seen[t] then
-                        order[#order + 1] = t
+                    if nameList[t] and not seen[t] then
+                        sequence[#sequence + 1] = t
                         seen[t] = true
                     end
                 end
             end
-            for _, t in ipairs(def) do
+            for _, t in ipairs(spec_def) do
                 if not seen[t] then
-                    order[#order + 1] = t
+                    sequence[#sequence + 1] = t
                     seen[t] = true
                 end
             end
-            local out = {}
-            for _, t in ipairs(order) do
-                out[#out + 1] = { key = t, label = names[t] or t }
+            local result = {}
+            for _, t in ipairs(sequence) do
+                result[#result + 1] = { key = t, label = nameList[t] or t }
             end
-            return out
+            return result
         end
         -- FrameSort's list owns the order while it is the loaded Sort By choice.
         local function FsOwns()
-            return db.profile.sortMode == "FRAMESORT" and ns._FrameSortApi and ns._FrameSortApi() ~= nil
+            return db.profile.sortMode == "FRAMESORT" and mod._FrameSortApi and mod._FrameSortApi() ~= nil
                 or false
         end
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             title = "Class Sorting",
             rows = {
                 {
@@ -1810,8 +1801,8 @@ local function BuildMainPage(pageName, parent, yOffset)
                     label = "Class Order",
                     hint = "Drag to Reorder Classes",
                     items = GetClassItems,
-                    set = function(keys)
-                        db.profile.classOrder = keys
+                    set = function(keyList)
+                        db.profile.classOrder = keyList
                         ReloadAndUpdate()
                     end,
                     disabled = function()
@@ -1825,7 +1816,7 @@ local function BuildMainPage(pageName, parent, yOffset)
     -- Row 3: Show Groups (checkbox dropdown) | Merge Groups
     local showGroupsRow
     do
-        showGroupsRow, h = W:DualRow(parent, y, {
+        showGroupsRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Show Groups",
             values = { __placeholder = "..." },
@@ -1863,27 +1854,27 @@ local function BuildMainPage(pageName, parent, yOffset)
                 CludesUI:RefreshPage()
             end),
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Left dropdown becomes a checkbox dropdown for groups 1-8.
         if not CludesUI._prebuilding then
-            local rgn = showGroupsRow._leftRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = showGroupsRow._leftRegion
+            if region._control then
+                region._control:Hide()
             end
 
             -- The order is ignored while groups are merged, so only offer dragging when it applies.
             local useCustomOrder = db.profile.customGroupOrder and not db.profile.mergeGroups
             local groupItems = {}
             if useCustomOrder then
-                local savedGroupOrder = ns._RFValidatedGroupOrder(db.profile.groupOrder)
-                for i = 1, 8 do
-                    local group = savedGroupOrder and savedGroupOrder[i] or i
-                    groupItems[i] = { key = group, label = "Group " .. group }
+                local savedGroupOrder = mod._RFValidatedGroupOrder(db.profile.groupOrder)
+                for idx = 1, 8 do
+                    local group = savedGroupOrder and savedGroupOrder[idx] or idx
+                    groupItems[idx] = { key = group, label = "Group " .. group }
                 end
             else
-                for i = 1, 8 do
-                    groupItems[i] = { key = i, label = "Group " .. i }
+                for idx = 1, 8 do
+                    groupItems[idx] = { key = idx, label = "Group " .. idx }
                 end
             end
 
@@ -1902,9 +1893,9 @@ local function BuildMainPage(pageName, parent, yOffset)
             local cbDD, cbDDRefresh
             if useCustomOrder then
                 cbDD, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
-                    rgn,
+                    region,
                     170,
-                    rgn:GetFrameLevel() + 2,
+                    region:GetFrameLevel() + 2,
                     groupItems,
                     GroupVisible,
                     SetGroupVisible,
@@ -1913,18 +1904,18 @@ local function BuildMainPage(pageName, parent, yOffset)
                         canReorder = function()
                             return not InCombatLockdown() and not db.profile.mergeGroups
                         end,
-                        setOrder = function(order)
+                        setOrder = function(sequence)
                             if InCombatLockdown() or db.profile.mergeGroups then
                                 return
                             end
-                            db.profile.groupOrder = order
+                            db.profile.groupOrder = sequence
                             ReloadAndUpdate()
                         end,
                         summaryLabel = function(movable, _, getFn)
                             local visible = {}
-                            for _, item in ipairs(movable) do
-                                if getFn(item.key) then
-                                    visible[#visible + 1] = CludesUI.L("Group") .. " " .. item.key
+                            for _, itemInfo in ipairs(movable) do
+                                if getFn(itemInfo.key) then
+                                    visible[#visible + 1] = CludesUI.L("Group") .. " " .. itemInfo.key
                                 end
                             end
                             return #visible > 0 and table.concat(visible, ", ") or CludesUI.L("None")
@@ -1933,17 +1924,17 @@ local function BuildMainPage(pageName, parent, yOffset)
                 )
             else
                 cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    rgn,
+                    region,
                     170,
-                    rgn:GetFrameLevel() + 2,
+                    region:GetFrameLevel() + 2,
                     groupItems,
                     GroupVisible,
                     SetGroupVisible
                 )
             end
-            PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
-            rgn._lastInline = nil
+            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = cbDD
+            region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             local cogShow
             local cogRows = {
@@ -2005,13 +1996,13 @@ local function BuildMainPage(pageName, parent, yOffset)
                     rawTooltip = true,
                 },
             }
-            cogShow = select(2, CludesUI.BuildInlineCog(rgn, { title = "Show Groups", rows = cogRows }))
+            cogShow = select(2, CludesUI.BuildInlineCog(region, { title = "Show Groups", rows = cogRows }))
         end
     end
 
-    y = BuildVisualSections(parent, y, W)
+    posY = BuildVisualSections(hostFrame, posY, W)
 
-    return math.abs(y)
+    return math.abs(posY)
 end
 
 ---------------------------------------------------------------------------
@@ -2021,33 +2012,33 @@ end
 
 local function PartyReloadAndUpdate()
     -- ReloadPartyFrames handles container sizing internally.
-    if ns.ReloadPartyFrames then
-        ns.ReloadPartyFrames()
+    if mod.ReloadPartyFrames then
+        mod.ReloadPartyFrames()
     end
-    if ns.partyPvActive and ns.partyPvActive() and ns.ShowPartyPreview then
-        ns.ShowPartyPreview()
+    if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
+        mod.ShowPartyPreview()
     end
 end
 
 local function PSSet(key, val)
-    local env = ns._RFO_OptEnv
-    local db = env.db
+    local environ = mod._RFO_OptEnv
+    local db = environ.db
     db.profile[key] = val
     -- Set showSolo directly: _UpdatePartyVisibility bails while preview is up.
-    if key == "partyShowWhenSolo" and ns._partyHeader and not InCombatLockdown() then
-        ns._partyHeader:SetAttribute("showSolo", val or false)
+    if key == "partyShowWhenSolo" and mod._partyHeader and not InCombatLockdown() then
+        mod._partyHeader:SetAttribute("showSolo", val or false)
     end
     -- Dimension keys (the Party Frames kit's Frame Scale included) take the
     -- lightweight resize path.
     if
         (key == "partyFrameWidth" or key == "partyFrameHeight" or key == "partyKitScale")
-        and ns._ResizePartyButtons
+        and mod._ResizePartyButtons
     then
-        local w, h = ns.RF_PartyDims(db.profile)
-        ns._ResizePartyButtons(w, h)
+        local wid, hgt = mod.RF_PartyDims(db.profile)
+        mod._ResizePartyButtons(wid, hgt)
         -- Preview refresh needs no full reload.
-        if ns.partyPvActive and ns.partyPvActive() and ns.ShowPartyPreview then
-            ns.ShowPartyPreview()
+        if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
+            mod.ShowPartyPreview()
         end
         -- Container SetSize re-processes the secure header (= blink), so the container resize is deferred off the hot path and run the moment the drag releases via the slider system's end-of-drag callback set, snapping frames to final position instead of on options close.
         if CludesUI._sliderDragging then
@@ -2065,23 +2056,23 @@ local function PSSet(key, val)
     PartyReloadAndUpdate()
 end
 
-local function BuildPartyPage(pageName, parent, yOffset)
-    local env = ns._RFO_OptEnv
-    local BuildPreviewModeRow, BuildVisualSections, db, optState =
-        env.BuildPreviewModeRow, env.BuildVisualSections, env.db, env.optState
-    local PP, SVal = env.PP, env.SVal
+local function BuildPartyPage(page, hostFrame, yOffset)
+    local environ = mod._RFO_OptEnv
+    local BuildPreviewModeRow, BuildVisualSections, db, optionState =
+        environ.BuildPreviewModeRow, environ.BuildVisualSections, environ.db, environ.optState
+    local Pix, SVal = environ.PP, environ.SVal
     local W = CludesUI.Widgets
-    local _, h, hdr
-    local row
+    local _, hgt, heading
+    local rowFrame
     -- The Party Frames' Move in Unlock Mode button goes on the page's first
     -- section: FRAME STYLE where the stock-style block builds, else RAID
     -- SYNC AND SOLO.
     local jumped
 
-    parent._showRowDivider = true
-    local y = yOffset
+    hostFrame._showRowDivider = true
+    local posY = yOffset
 
-    y = BuildPreviewModeRow(parent, y)
+    posY = BuildPreviewModeRow(hostFrame, posY)
 
     -------------------------------------------------------------------
     --  FRAME STYLE (stock styles only): the party in the Raid Frames
@@ -2089,16 +2080,16 @@ local function BuildPartyPage(pageName, parent, yOffset)
     --  style itself, so a pick is written on the reload confirm only.
     -------------------------------------------------------------------
     local p0 = db.profile
-    if ns.RF_Stock and ns.RF_Stock() and (p0.useBlizzardStyle or p0.useClassicStyle) then
-        hdr, h = W:SectionHeader(parent, "FRAME STYLE", y)
-        y = y - h
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "RF_PartyFrames" })
+    if mod.RF_Stock and mod.RF_Stock() and (p0.useBlizzardStyle or p0.useClassicStyle) then
+        heading, hgt = W:SectionHeader(hostFrame, "FRAME STYLE", posY)
+        posY = posY - hgt
+        CludesUI.BuildSectionUnlockJump(heading, { key = "RF_PartyFrames" })
         jumped = true
-        local kitOn = ns.RF_PartyKit and ns.RF_PartyKit()
+        local kitOn = mod.RF_PartyKit and mod.RF_PartyKit()
         -- Frame Scale default (nil = this, 120%).
-        local scaleDef = math.floor((ns.RF_KIT_SCALE or 1.2) * 100 + 0.5)
+        local scaleDef = math.floor((mod.RF_KIT_SCALE or 1.2) * 100 + 0.5)
         local styleRow
-        styleRow, h = W:DualRow(parent, y, {
+        styleRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Frame Style",
             tooltip = "Party Frames switches the party to the stock portrait party frames.",
@@ -2109,8 +2100,8 @@ local function BuildPartyPage(pageName, parent, yOffset)
                 return (db.profile.partyFrameStyle == "party") and "party" or "raid"
             end,
             setValue = function(v)
-                local cur = (db.profile.partyFrameStyle == "party") and "party" or "raid"
-                if v == cur then
+                local current = (db.profile.partyFrameStyle == "party") and "party" or "raid"
+                if v == current then
                     return
                 end
                 CludesUI:ShowConfirmPopup({
@@ -2139,34 +2130,31 @@ local function BuildPartyPage(pageName, parent, yOffset)
                 PSSet("partyKitScale", (v ~= scaleDef) and (v / 100) or nil)
             end,
         } or { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
         if kitOn then
             -- Frame Scale cog: the gap between the party frames.
-            CludesUI.BuildInlineCog(
-                styleRow._rightRegion,
-                {
-                    title = "Frame Scale",
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "Spacing",
-                            min = 0,
-                            max = 30,
-                            step = 1,
-                            get = function()
-                                return db.profile.partyKitSpacing or ns.RF_KIT_SPACING or 6
-                            end,
-                            set = function(v)
-                                PSSet("partyKitSpacing", v)
-                            end,
-                        },
+            CludesUI.BuildInlineCog(styleRow._rightRegion, {
+                title = "Frame Scale",
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Spacing",
+                        min = 0,
+                        max = 30,
+                        step = 1,
+                        get = function()
+                            return db.profile.partyKitSpacing or mod.RF_KIT_SPACING or 6
+                        end,
+                        set = function(v)
+                            PSSet("partyKitSpacing", v)
+                        end,
                     },
-                }
-            )
+                },
+            })
             -- Party Frames: the aura row under the frame and the buff run
             -- beside it (sizes, X/Y, and where the buffs sit).
             local kitAuraRow
-            kitAuraRow, h = W:DualRow(parent, y, {
+            kitAuraRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Debuff Size",
                 min = 8,
@@ -2191,41 +2179,38 @@ local function BuildPartyPage(pageName, parent, yOffset)
                     PSSet("partyKitBuffSize", v)
                 end,
             })
-            y = y - h
-            CludesUI.BuildInlineCog(
-                kitAuraRow._leftRegion,
-                {
-                    title = "Debuff Position",
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "Offset X",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.partyKitDebuffX or 0
-                            end,
-                            set = function(v)
-                                PSSet("partyKitDebuffX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Offset Y",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.partyKitDebuffY or 0
-                            end,
-                            set = function(v)
-                                PSSet("partyKitDebuffY", v)
-                            end,
-                        },
+            posY = posY - hgt
+            CludesUI.BuildInlineCog(kitAuraRow._leftRegion, {
+                title = "Debuff Position",
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Offset X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return db.profile.partyKitDebuffX or 0
+                        end,
+                        set = function(v)
+                            PSSet("partyKitDebuffX", v)
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "slider",
+                        label = "Offset Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return db.profile.partyKitDebuffY or 0
+                        end,
+                        set = function(v)
+                            PSSet("partyKitDebuffY", v)
+                        end,
+                    },
+                },
+            })
             -- Horizontal Frames always puts the buffs above each frame
             -- (the next frame sits beside it): the side picks disable.
             CludesUI.BuildInlineCog(kitAuraRow._rightRegion, {
@@ -2296,19 +2281,19 @@ local function BuildPartyPage(pageName, parent, yOffset)
     -------------------------------------------------------------------
     --  RAID SYNC AND SOLO
     -------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "RAID SYNC AND SOLO", y)
-    y = y - h
+    heading, hgt = W:SectionHeader(hostFrame, "RAID SYNC AND SOLO", posY)
+    posY = posY - hgt
     if not jumped then
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "RF_PartyFrames" })
+        CludesUI.BuildSectionUnlockJump(heading, { key = "RF_PartyFrames" })
     end
 
     -- Row 1: Use Raid Settings For (checkbox dropdown) | Show When Solo
-    local SECTION_ORDER = ns._PARTY_SECTION_ORDER or {}
-    local SECTION_LABELS = ns._PARTY_SECTION_LABELS or {}
+    local SECTION_ORDER = mod._PARTY_SECTION_ORDER or {}
+    local SECTION_LABELS = mod._PARTY_SECTION_LABELS or {}
 
     local syncItems = {}
     -- (The Party Frames kit has no Top Name Bar section to sync.)
-    local kitPage = ns.RF_OptPartyKit()
+    local kitPage = mod.RF_OptPartyKit()
     for _, secKey in ipairs(SECTION_ORDER) do
         if not (kitPage and secKey == "topNameBar") then
             syncItems[#syncItems + 1] = { key = secKey, label = SECTION_LABELS[secKey] or secKey }
@@ -2316,7 +2301,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
     end
 
     local syncRow
-    syncRow, h = W:DualRow(parent, y, {
+    syncRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Use Raid Settings For",
         values = { _placeholder = "..." },
@@ -2342,11 +2327,11 @@ local function BuildPartyPage(pageName, parent, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     if not CludesUI._prebuilding then
-        local rgn = syncRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = syncRow._rightRegion
+        CludesUI.BuildInlineCog(region, {
             -- Off while only the Raid toggle is on: party never shows solo then (both on = party does show).
             disabled = function()
                 return db.profile.showWhenSolo and not db.profile.partyShowWhenSolo
@@ -2364,8 +2349,8 @@ local function BuildPartyPage(pageName, parent, yOffset)
                     end,
                     set = function(v)
                         db.profile.partyCenterWhenSolo = v
-                        if ns._LayoutPartyFrames then
-                            ns._LayoutPartyFrames()
+                        if mod._LayoutPartyFrames then
+                            mod._LayoutPartyFrames()
                         end
                     end,
                 },
@@ -2375,16 +2360,16 @@ local function BuildPartyPage(pageName, parent, yOffset)
 
     -- Left dropdown becomes a per-section sync checkbox dropdown.
     if not CludesUI._prebuilding then
-        local rgn = syncRow._leftRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = syncRow._leftRegion
+        if region._control then
+            region._control:Hide()
         end
 
         local syncDD -- forward declared for the setter closure
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+            region,
             170,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             syncItems,
             function(k)
                 -- Checked = synced (using raid settings).
@@ -2400,34 +2385,34 @@ local function BuildPartyPage(pageName, parent, yOffset)
                         db.profile.partySyncSections = {}
                     end
                     db.profile.partySyncSections[k] = v and true or false
-                    if ns._RefreshProxyModes then
-                        ns._RefreshProxyModes()
+                    if mod._RefreshProxyModes then
+                        mod._RefreshProxyModes()
                     end
                     -- Toggle the overlay directly; no page rebuild needed.
-                    local ov = ns._syncOverlays and ns._syncOverlays[k]
-                    if ov then
+                    local shade = mod._syncOverlays and mod._syncOverlays[k]
+                    if shade then
                         if v then
-                            ov:Show()
+                            shade:Show()
                         else
-                            ov:Hide()
+                            shade:Hide()
                         end
                     end
                     -- The proxy now reads different values.
-                    if ns.ReloadPartyFrames then
-                        ns.ReloadPartyFrames()
+                    if mod.ReloadPartyFrames then
+                        mod.ReloadPartyFrames()
                     end
-                    if ns.partyPvActive and ns.partyPvActive() and ns.ShowPartyPreview then
-                        ns.ShowPartyPreview()
+                    if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
+                        mod.ShowPartyPreview()
                     end
-                    if ns._syncDDRefresh then
-                        ns._syncDDRefresh()
+                    if mod._syncDDRefresh then
+                        mod._syncDDRefresh()
                     end
                 end
 
                 -- Re-syncing discards custom party values; warn if any exist.
                 if v then
                     local hasCustom = false
-                    for key, section in pairs(ns._PARTY_KEY_SECTION) do
+                    for key, section in pairs(mod._PARTY_KEY_SECTION) do
                         if section == k and rawget(db.profile, "party_" .. key) ~= nil then
                             hasCustom = true
                             break
@@ -2444,7 +2429,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
                             confirmText = "Sync",
                             cancelText = "Cancel",
                             onConfirm = function()
-                                for key, section in pairs(ns._PARTY_KEY_SECTION) do
+                                for key, section in pairs(mod._PARTY_KEY_SECTION) do
                                     if section == k then
                                         db.profile["party_" .. key] = nil
                                     end
@@ -2459,24 +2444,24 @@ local function BuildPartyPage(pageName, parent, yOffset)
                 ApplySync()
             end
         )
-        PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = cbDD
-        rgn._lastInline = nil
+        Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = cbDD
+        region._lastInline = nil
         syncDD = cbDD
-        ns._syncDDRefresh = cbDDRefresh
+        mod._syncDDRefresh = cbDDRefresh
     end
 
     -------------------------------------------------------------------
     --  FRAMES
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "FRAMES", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "FRAMES", posY)
+    posY = posY - hgt
 
     -- (Party Frames kit: its Frame Scale, under FRAME STYLE, sizes it.)
-    _, h = W:DualRow(
-        parent,
-        y,
-        ns.RF_PartyKitGate({
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
+        mod.RF_PartyKitGate({
             type = "slider",
             text = "Frame Width",
             min = 40,
@@ -2489,7 +2474,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
                 PSSet("partyFrameWidth", v)
             end,
         }),
-        ns.RF_PartyKitGate({
+        mod.RF_PartyKitGate({
             type = "slider",
             text = "Frame Height",
             min = 20,
@@ -2503,20 +2488,20 @@ local function BuildPartyPage(pageName, parent, yOffset)
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Horizontal Frames | Sort By: same control as the raid LAYOUT tab, wired to the party keys.
     -- (Party Frames kit: horizontal frames carry their buffs above each frame;
     -- RefreshPage re-reads the Buff Anchor that follows it.)
     local pSortRow
-    pSortRow, h = W:DualRow(parent, y, {
+    pSortRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Horizontal Frames",
         disabled = function()
             local p = db.profile
             return p.partyCompactMode
                 and p.partyShowTargets
-                and ns.PT_PositionAlongStack(p.partyTargetPosition, not p.partyHorizontal)
+                and mod.PT_PositionAlongStack(p.partyTargetPosition, not p.partyHorizontal)
         end,
         disabledTooltip = "Move Party Targets beside the frame stack or turn off Compact Mode.",
         rawTooltip = true,
@@ -2528,7 +2513,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
             if
                 p.partyCompactMode
                 and p.partyShowTargets
-                and ns.PT_PositionAlongStack(p.partyTargetPosition, v)
+                and mod.PT_PositionAlongStack(p.partyTargetPosition, v)
             then
                 return
             end
@@ -2546,7 +2531,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
         end,
         setValue = function() end,
     })
-    y = y - h
+    posY = posY - hgt
 
     if not CludesUI._prebuilding then
         BuildSortByControl(pSortRow._rightRegion, {
@@ -2568,41 +2553,41 @@ local function BuildPartyPage(pageName, parent, yOffset)
 
     -- Cog next to Sort By (party only): Prioritize Class toggle plus a drag-to-reorder Class Order list the toggle disables.
     do
-        local rgn = pSortRow._rightRegion
+        local region = pSortRow._rightRegion
         -- Class list in saved order, always covering all 13 classes: any missing/new class is appended from the default alphabetical order.
         local function GetClassItems()
-            local def = ns._GetDefaultClassOrder() -- also populates ns._classNameByToken
-            local names = ns._classNameByToken or {}
+            local spec_def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
+            local nameList = mod._classNameByToken or {}
             local saved = db.profile.partyClassOrder
-            local order, seen = {}, {}
+            local sequence, seen = {}, {}
             if saved then
                 for _, t in ipairs(saved) do
-                    if names[t] and not seen[t] then
-                        order[#order + 1] = t
+                    if nameList[t] and not seen[t] then
+                        sequence[#sequence + 1] = t
                         seen[t] = true
                     end
                 end
             end
-            for _, t in ipairs(def) do
+            for _, t in ipairs(spec_def) do
                 if not seen[t] then
-                    order[#order + 1] = t
+                    sequence[#sequence + 1] = t
                     seen[t] = true
                 end
             end
-            local out = {}
-            for _, t in ipairs(order) do
-                out[#out + 1] = { key = t, label = names[t] or t }
+            local result = {}
+            for _, t in ipairs(sequence) do
+                result[#result + 1] = { key = t, label = nameList[t] or t }
             end
-            return out
+            return result
         end
         -- FrameSort's list owns the order while it is the loaded Sort By choice.
         local function FsOwns()
             return (db.profile.partySortMode or db.profile.sortMode) == "FRAMESORT"
-                    and ns._FrameSortApi
-                    and ns._FrameSortApi() ~= nil
+                    and mod._FrameSortApi
+                    and mod._FrameSortApi() ~= nil
                 or false
         end
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             title = "Class Sorting",
             rows = {
                 {
@@ -2625,8 +2610,8 @@ local function BuildPartyPage(pageName, parent, yOffset)
                     label = "Class Order",
                     hint = "Drag to Reorder Classes",
                     items = GetClassItems,
-                    set = function(keys)
-                        db.profile.partyClassOrder = keys
+                    set = function(keyList)
+                        db.profile.partyClassOrder = keyList
                         PartyReloadAndUpdate()
                     end,
                     disabled = function()
@@ -2637,7 +2622,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "segmented",
         text = "Self Position",
         values = { none = "Default", first = "First", last = "Last" },
@@ -2668,13 +2653,13 @@ local function BuildPartyPage(pageName, parent, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Auto Resize Icons | Frame Spacing. The checkbox dropdown is a pure VIEW (no migration) over partyAutoResizeIndicators ("Indicators & Auras") and partyAutoResizeTrackedBuffs ("Tracked Buffs", defaults on).
     local partyAutoResizeRow
-    partyAutoResizeRow, h = W:DualRow(
-        parent,
-        y,
+    partyAutoResizeRow, hgt = W:DualRow(
+        hostFrame,
+        posY,
         {
             type = "dropdown",
             text = "Auto Resize Icons",
@@ -2688,7 +2673,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
         -- (The Party Frames kit keeps its own spacing, set in its Frame
         -- Scale cog, so the Raid Frames layout's value survives a switch
         -- between the two.)
-        ns.RF_PartyKitGate({
+        mod.RF_PartyKitGate({
             type = "slider",
             pixel = true,
             text = "Frame Spacing",
@@ -2697,22 +2682,22 @@ local function BuildPartyPage(pageName, parent, yOffset)
             step = 1,
             -- Compact Mode (this slot's cog) uses one pixel instead.
             disabled = function()
-                return ns.RF_CompactOn(db.profile, true)
+                return mod.RF_CompactOn(db.profile, true)
             end,
             disabledTooltip = "Compact Mode",
             requireState = "disabled",
             getValue = function()
-                if ns.RF_PartyKit() then
-                    return db.profile.partyKitSpacing or ns.RF_KIT_SPACING or 6
+                if mod.RF_PartyKit() then
+                    return db.profile.partyKitSpacing or mod.RF_KIT_SPACING or 6
                 end
                 return SVal("partyCellSpacing", db.profile.cellSpacing or 2)
             end,
             setValue = function(v)
-                PSSet(ns.RF_PartyKit() and "partyKitSpacing" or "partyCellSpacing", v)
+                PSSet(mod.RF_PartyKit() and "partyKitSpacing" or "partyCellSpacing", v)
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
     -- Auto Resize Icons sits in the LEFT slot here; same conversion pattern as the Frames tab.
     if not CludesUI._prebuilding then
         -- Off while the party border is not a Pixels style or Party Targets sit along the
@@ -2720,39 +2705,36 @@ local function BuildPartyPage(pageName, parent, yOffset)
         local function PartyCompactBlocked()
             return not db.profile.partyCompactMode
                 and (
-                    not ns.RF_CompactEligible(ns._partyProxy)
-                    or ns.PT_AlongStack(db.profile, db.profile.partyShowTargets == true)
+                    not mod.RF_CompactEligible(mod._partyProxy)
+                    or mod.PT_AlongStack(db.profile, db.profile.partyShowTargets == true)
                 )
         end
         local PARTY_COMPACT_TIP =
             "This option requires a Pixels or Pixels Textured border above size 0 on the CludesUI look, with Party Targets off or beside the frame stack."
-        CludesUI.BuildInlineCog(
-            partyAutoResizeRow._rightRegion,
-            {
-                title = "Frame Spacing",
-                disabled = PartyCompactBlocked,
-                disabledTooltip = PARTY_COMPACT_TIP,
-                rows = {
-                    {
-                        type = "toggle",
-                        label = "Compact Mode",
-                        tooltip = "Joins the party frames into one bordered block.",
-                        get = function()
-                            return db.profile.partyCompactMode == true
-                        end,
-                        set = function(v)
-                            if v and PartyCompactBlocked() then
-                                return
-                            end
-                            PSSet("partyCompactMode", v)
-                            CludesUI:RefreshPage()
-                        end,
-                        disabled = PartyCompactBlocked,
-                        disabledTooltip = PARTY_COMPACT_TIP,
-                    },
+        CludesUI.BuildInlineCog(partyAutoResizeRow._rightRegion, {
+            title = "Frame Spacing",
+            disabled = PartyCompactBlocked,
+            disabledTooltip = PARTY_COMPACT_TIP,
+            rows = {
+                {
+                    type = "toggle",
+                    label = "Compact Mode",
+                    tooltip = "Joins the party frames into one bordered block.",
+                    get = function()
+                        return db.profile.partyCompactMode == true
+                    end,
+                    set = function(v)
+                        if v and PartyCompactBlocked() then
+                            return
+                        end
+                        PSSet("partyCompactMode", v)
+                        CludesUI:RefreshPage()
+                    end,
+                    disabled = PartyCompactBlocked,
+                    disabledTooltip = PARTY_COMPACT_TIP,
                 },
-            }
-        )
+            },
+        })
         local leftRgn = partyAutoResizeRow._leftRegion
         if leftRgn._control then
             leftRgn._control:Hide()
@@ -2779,12 +2761,12 @@ local function BuildPartyPage(pageName, parent, yOffset)
                 PSSet(arKeyMap[k], v)
             end
         )
-        PP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
+        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
         leftRgn._control = cbDD
     end
 
     -- Frame Growth is a VIEW over the tri-state partyFlipGrowth key (false=Default, true=Reversed, "centered"=Centered), the same key the Flip Frame Growth toggle wrote, so profiles, exports and spec-override entries carry over with no migration.
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Frame Growth",
         tooltip = "Default grows down or right, Reversed grows up or left, and Centered keeps the frames centered as the party size changes.",
@@ -2819,26 +2801,26 @@ local function BuildPartyPage(pageName, parent, yOffset)
             -- Both visibility passes re-read the mode; the raid one runs
             -- first so its hidden branch never races the party show.
             if not InCombatLockdown() then
-                if ns.UpdateVisibility then
-                    ns.UpdateVisibility()
+                if mod.UpdateVisibility then
+                    mod.UpdateVisibility()
                 end
-                if ns._UpdatePartyVisibility then
-                    ns._UpdatePartyVisibility()
+                if mod._UpdatePartyVisibility then
+                    mod._UpdatePartyVisibility()
                 end
             end
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -------------------------------------------------------------------
     --  PARTY TARGETS (party only, every style; file-scope builder)
     -------------------------------------------------------------------
-    y = ns.RF_BuildPartyTargets(parent, y, W)
+    posY = mod.RF_BuildPartyTargets(hostFrame, posY, W)
 
     -------------------------------------------------------------------
     --  PORTRAIT (party only, every style; file-scope builder)
     -------------------------------------------------------------------
-    y = ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
+    posY = mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
 
     -------------------------------------------------------------------
     --  ALL VISUAL SECTIONS
@@ -2848,7 +2830,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
     local FONT = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
 
     local syncOverlays = {}
-    ns._syncOverlays = syncOverlays
+    mod._syncOverlays = syncOverlays
 
     local function SyncOverlay(sectionKey, startY, endY)
         -- None in the search pre-build: the overlays index nothing, and that page is never shown.
@@ -2857,67 +2839,67 @@ local function BuildPartyPage(pageName, parent, yOffset)
         end
         local hdrH = 40 -- SectionHeader height
         local contentStart = startY - hdrH
-        local ov = CreateFrame("Frame", nil, parent)
-        ov._searchIgnore = true -- inline search must not re-anchor/collapse it
-        ov:SetPoint("TOPLEFT", parent, "TOPLEFT", CPAD, contentStart)
-        ov:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -CPAD, contentStart)
-        ov:SetHeight(math.abs(endY - contentStart))
-        ov:SetFrameLevel(parent:GetFrameLevel() + 50)
-        ov:EnableMouse(true)
-        local bg = ov:CreateTexture(nil, "OVERLAY")
-        bg:SetAllPoints()
-        bg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 0.98)
-        local label = ov:CreateFontString(nil, "OVERLAY")
-        label:SetFont(FONT, 13, "")
-        label:SetPoint("CENTER", ov, "CENTER", 0, 0)
-        label:SetTextColor(1, 1, 1, 0.56)
-        label:SetText(CludesUI.L("Synced with Raid Settings"))
+        local shade = CreateFrame("Frame", nil, hostFrame)
+        shade._searchIgnore = true -- inline search must not re-anchor/collapse it
+        shade:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CPAD, contentStart)
+        shade:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -CPAD, contentStart)
+        shade:SetHeight(math.abs(endY - contentStart))
+        shade:SetFrameLevel(hostFrame:GetFrameLevel() + 50)
+        shade:EnableMouse(true)
+        local backdrop = shade:CreateTexture(nil, "OVERLAY")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 0.98)
+        local labelText = shade:CreateFontString(nil, "OVERLAY")
+        labelText:SetFont(FONT, 13, "")
+        labelText:SetPoint("CENTER", shade, "CENTER", 0, 0)
+        labelText:SetTextColor(1, 1, 1, 0.56)
+        labelText:SetText(CludesUI.L("Synced with Raid Settings"))
         -- Accent on hover so the overlay reads as clickable.
-        ov:SetScript("OnEnter", function()
+        shade:SetScript("OnEnter", function()
             local eg = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.83, b = 0.62 }
-            label:SetTextColor(eg.r, eg.g, eg.b, 1)
+            labelText:SetTextColor(eg.r, eg.g, eg.b, 1)
         end)
-        ov:SetScript("OnLeave", function()
-            label:SetTextColor(1, 1, 1, 0.56)
+        shade:SetScript("OnLeave", function()
+            labelText:SetTextColor(1, 1, 1, 0.56)
         end)
         -- Click unsyncs the section (custom party settings), mirroring an uncheck in the "Use Raid Settings For" dropdown.
-        ov:SetScript("OnMouseUp", function(self, button)
-            if button ~= "LeftButton" then
+        shade:SetScript("OnMouseUp", function(self, btnFrame)
+            if btnFrame ~= "LeftButton" then
                 return
             end
             if not db.profile.partySyncSections then
                 db.profile.partySyncSections = {}
             end
             db.profile.partySyncSections[sectionKey] = false
-            if ns._RefreshProxyModes then
-                ns._RefreshProxyModes()
+            if mod._RefreshProxyModes then
+                mod._RefreshProxyModes()
             end
             self:Hide()
-            if ns.ReloadPartyFrames then
-                ns.ReloadPartyFrames()
+            if mod.ReloadPartyFrames then
+                mod.ReloadPartyFrames()
             end
-            if ns.partyPvActive and ns.partyPvActive() and ns.ShowPartyPreview then
-                ns.ShowPartyPreview()
+            if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
+                mod.ShowPartyPreview()
             end
-            if ns._syncDDRefresh then
-                ns._syncDDRefresh()
+            if mod._syncDDRefresh then
+                mod._syncDDRefresh()
             end
         end)
-        syncOverlays[sectionKey] = ov
+        syncOverlays[sectionKey] = shade
         -- Shown only while the section is synced.
         local ss = db.profile.partySyncSections
         if ss and ss[sectionKey] == false then
-            ov:Hide()
+            shade:Hide()
         end
     end
 
-    optState._partyCtx = true
-    y = BuildVisualSections(parent, y, W, SyncOverlay)
+    optionState._partyCtx = true
+    posY = BuildVisualSections(hostFrame, posY, W, SyncOverlay)
     -- Do NOT reset _partyCtx here (the SelectPage hook owns it): resetting would break SSet after any RefreshPage on the party tab.
 
-    return math.abs(y)
+    return math.abs(posY)
 end
 
 -- Used by CUI_RaidFrames_Options.lua
-ns.RFO_BuildMainPage = BuildMainPage
-ns.RFO_BuildPartyPage = BuildPartyPage
+mod.RFO_BuildMainPage = BuildMainPage
+mod.RFO_BuildPartyPage = BuildPartyPage

@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  blockers, ShowPreview, HidePreview and the preview mode.
 --  Reads the earlier preview files through ns and ns._previewInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._previewInternals
+local _, mod = ...
+local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local max = math.max
 local abs = math.abs
@@ -23,38 +23,38 @@ local tostring = tostring
 local InCombatLockdown = InCombatLockdown
 local CreateFrame = CreateFrame
 
-local RF = ns._internals -- the table of the Raid Frames chain
+local RF = mod._internals -- the table of the Raid Frames chain
 local ApplyFont, LayoutGroups, MOVER_GROUPS = RF.ApplyFont, RF.LayoutGroups, RF.MOVER_GROUPS
 local PixelSnap = RF.PixelSnap
-local UpdateVisibility = ns.UpdateVisibility
+local UpdateVisibility = mod.UpdateVisibility
 
-local PvFrames, PvSettings, StartPvAuraTicker = I.PvFrames, I.PvSettings, I.StartPvAuraTicker
-local StopPvAuraTicker, GetOrCreatePreviewFrame = I.StopPvAuraTicker, I.GetOrCreatePreviewFrame
-local previewFrames, previewGroupLabels = I.previewFrames, I.previewGroupLabels
-local BuildPreviewRoles, ApplyPreviewData = I.BuildPreviewRoles, I.ApplyPreviewData
-local InitPreviewHealthValues = I.InitPreviewHealthValues
-local previewHealthValues, previewPowerValues = I.previewHealthValues, I.previewPowerValues
-local previewRoles, SetPreviewActive = I.previewRoles, I.SetPreviewActive
-local SetPreviewContainer = I.SetPreviewContainer
+local PvFrames, PvSettings, StartPvAuraTicker = Inner.PvFrames, Inner.PvSettings, Inner.StartPvAuraTicker
+local StopPvAuraTicker, GetOrCreatePreviewFrame = Inner.StopPvAuraTicker, Inner.GetOrCreatePreviewFrame
+local previewFrames, previewGroupLabels = Inner.previewFrames, Inner.previewGroupLabels
+local BuildPreviewRoles, ApplyPreviewData = Inner.BuildPreviewRoles, Inner.ApplyPreviewData
+local InitPreviewHealthValues = Inner.InitPreviewHealthValues
+local previewHealthValues, previewPowerValues = Inner.previewHealthValues, Inner.previewPowerValues
+local previewRoles, SetPreviewActive = Inner.previewRoles, Inner.SetPreviewActive
+local SetPreviewContainer = Inner.SetPreviewContainer
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
-local db
-RF.dbSetters[#RF.dbSetters + 1] = function(v)
-    db = v
+local saved
+RF.dbSetters[#RF.dbSetters + 1] = function(val)
+    saved = val
 end
 local containerFrame
-RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(v)
-    containerFrame = v
+RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val)
+    containerFrame = val
 end
 local previewActive = false
-I.previewActiveSetters[#I.previewActiveSetters + 1] = function(v)
-    previewActive = v
+Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val)
+    previewActive = val
 end
 local previewContainer
-I.previewContainerSetters[#I.previewContainerSetters + 1] = function(v)
-    previewContainer = v
+Inner.previewContainerSetters[#Inner.previewContainerSetters + 1] = function(val)
+    previewContainer = val
 end
 
 -------------------------------------------------------------------------------
@@ -69,20 +69,20 @@ local overlayContainer = nil
 -- dark panel with a 1px edge, a title band and an accent cap along the top.
 -- Returns the title font string (font and text are set at each refresh, after
 -- ApplyFont: a fontstring with no font set errors on SetText).
-function ns.RF_StylePreviewWindow(oc)
-    local bg = oc:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.055, 0.065, 0.075, 0.97)
-    oc._bg = bg
-    local function Edge(p1, p2, w, h)
+function mod.RF_StylePreviewWindow(oc)
+    local backdrop = oc:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.055, 0.065, 0.075, 0.97)
+    oc._bg = backdrop
+    local function Edge(p1, p2, wid, hgt)
         local e = oc:CreateTexture(nil, "BORDER")
         e:SetColorTexture(1, 1, 1, 0.14)
         e:SetPoint(p1, oc, p1, 0, 0)
         e:SetPoint(p2, oc, p2, 0, 0)
-        if w then
-            e:SetWidth(w)
+        if wid then
+            e:SetWidth(wid)
         else
-            e:SetHeight(h)
+            e:SetHeight(hgt)
         end
     end
     Edge("TOPLEFT", "BOTTOMLEFT", 1)
@@ -93,44 +93,47 @@ function ns.RF_StylePreviewWindow(oc)
     band:SetPoint("TOPLEFT", oc, "TOPLEFT", 0, 0)
     band:SetPoint("TOPRIGHT", oc, "TOPRIGHT", 0, 0)
     band:SetHeight(26)
-    local EG = CludesUI.CLUDES_GREEN
+    local ACC = CludesUI.CLUDES_GREEN
     local cap = oc:CreateTexture(nil, "BORDER", nil, 1)
-    cap:SetColorTexture(EG.r, EG.g, EG.b, 1)
+    cap:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
     cap:SetPoint("TOPLEFT", oc, "TOPLEFT", 0, 0)
     cap:SetPoint("TOPRIGHT", oc, "TOPRIGHT", 0, 0)
     cap:SetHeight(2)
     if CludesUI.RegAccent then
         CludesUI.RegAccent({ type = "solid", obj = cap, a = 1 })
     end
-    local title = oc:CreateFontString(nil, "OVERLAY")
-    title:SetPoint("TOPLEFT", oc, "TOPLEFT", 10, -8)
-    oc._title = title
-    return title
+    local titleText = oc:CreateFontString(nil, "OVERLAY")
+    titleText:SetPoint("TOPLEFT", oc, "TOPLEFT", 10, -8)
+    oc._title = titleText
+    return titleText
 end
 
 -- Where a preview window sits (not draggable, nothing saved): beside the
 -- options panel, level with the top of its settings, on the right when it
 -- fits on screen, else on the left, else over the sidebar's foot as a last
 -- resort. Screen centre without the panel.
-function ns.RF_DockPreviewWindow(oc)
+function mod.RF_DockPreviewWindow(oc)
     oc:ClearAllPoints()
-    local sf = CludesUI._scrollFrame
-    local l, r, t = sf and sf:GetLeft(), sf and sf:GetRight(), sf and sf:GetTop()
+    local scrollFrame = CludesUI._scrollFrame
+    local l, r, t =
+        scrollFrame and scrollFrame:GetLeft(),
+        scrollFrame and scrollFrame:GetRight(),
+        scrollFrame and scrollFrame:GetTop()
     if not (l and r and t) then
         oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         return
     end
     -- The panel has its own scale (Window Scale): its edges in UIParent units.
-    local k = sf:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    local w = oc:GetWidth() or 0
-    local rightX = (r + 34) * k -- clear of the panel's right border
-    local leftX = (l - 310) * k -- clear of the sidebar's left border
-    if rightX + w <= UIParent:GetWidth() then
-        oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * k)
-    elseif leftX - w >= 0 then
-        oc:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", leftX, t * k)
+    local key = scrollFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    local wid = oc:GetWidth() or 0
+    local rightX = (r + 34) * key -- clear of the panel's right border
+    local leftX = (l - 310) * key -- clear of the sidebar's left border
+    if rightX + wid <= UIParent:GetWidth() then
+        oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * key)
+    elseif leftX - wid >= 0 then
+        oc:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", leftX, t * key)
     else
-        oc:SetPoint("BOTTOMRIGHT", sf, "BOTTOMLEFT", 0, 0)
+        oc:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMLEFT", 0, 0)
     end
 end
 
@@ -145,10 +148,10 @@ local function GetOrCreateOverlayContainer()
     oc:SetClampedToScreen(true)
     oc:Hide()
 
-    ns.RF_StylePreviewWindow(oc)
+    mod.RF_StylePreviewWindow(oc)
 
     overlayContainer = oc
-    ns._overlayContainer = oc
+    mod._overlayContainer = oc
     return oc
 end
 
@@ -159,22 +162,22 @@ local function RefreshPreview()
     if not containerFrame then
         return
     end
-    if ns._RebuildPvOverlay then
-        ns._RebuildPvOverlay()
+    if mod._RebuildPvOverlay then
+        mod._RebuildPvOverlay()
     end
     BuildPreviewRoles()
 
-    local s = ns._pvOverlayProxy or db.profile
+    local s = mod._pvOverlayProxy or saved.profile
     local groupGrowth = s.groupGrowth or "RIGHT"
     local unitGrowth = s.unitGrowth or "DOWN"
     -- The same self-heal the live layout runs, so the preview cannot render a
     -- grid where merged mode lays out a row (Blizzard's flat header has one
     -- column axis and cannot wrap into one).
-    unitGrowth, groupGrowth = ns._RFEffectiveGrowth(unitGrowth, groupGrowth, s.mergeGroups)
+    unitGrowth, groupGrowth = mod._RFEffectiveGrowth(unitGrowth, groupGrowth, s.mergeGroups)
     local bw = PixelSnap(s.frameWidth or 72)
     local bh = PixelSnap(s.frameHeight or 46)
-    local cs = ns.RF_CellSpacing(s)
-    local gs = ns.RF_GroupSpacing(s)
+    local cs = mod.RF_CellSpacing(s)
+    local gs = mod.RF_GroupSpacing(s)
 
     -- Group bounding box
     local groupW, groupH
@@ -189,7 +192,7 @@ local function RefreshPreview()
     -- Group slot origins along the growth flow (plain direction = one run,
     -- grid flow = ns._RF_GRID_ROWS per column), same helper the live layout
     -- places real groups through.
-    local gSlots, minGX, maxGY = ns._RFGroupFlow(groupGrowth, groupW, groupH, gs, 4)
+    local gSlots, minGX, maxGY = mod._RFGroupFlow(groupGrowth, groupW, groupH, gs, 4)
 
     -- Unit step within a group
     local uStepX, uStepY = 0, 0
@@ -206,26 +209,26 @@ local function RefreshPreview()
     -- Normalize unit positions within a group (0-indexed)
     local rawUX, rawUY = {}, {}
     local minUX, maxUY = 0, 0
-    for i = 0, 4 do
-        rawUX[i] = i * uStepX
-        rawUY[i] = i * uStepY
-        if rawUX[i] < minUX then
-            minUX = rawUX[i]
+    for idx = 0, 4 do
+        rawUX[idx] = idx * uStepX
+        rawUY[idx] = idx * uStepY
+        if rawUX[idx] < minUX then
+            minUX = rawUX[idx]
         end
-        if rawUY[i] > maxUY then
-            maxUY = rawUY[i]
+        if rawUY[idx] > maxUY then
+            maxUY = rawUY[idx]
         end
     end
 
     -- Overlay mode: anchor to overlay container with padding
-    local isOverlay = (db.profile.previewMode == "overlay") or ns._testMode
-    local anchor = previewContainer or containerFrame
+    local isOverlay = (saved.profile.previewMode == "overlay") or mod._testMode
+    local anchorFrame = previewContainer or containerFrame
     local anchorPad = 0
     local topExtra = 0 -- extra top space (overlay only): 25px gap above the
     -- group numbers, leaving room for the centered title
     if isOverlay then
         local oc = GetOrCreateOverlayContainer()
-        anchor = oc
+        anchorFrame = oc
         anchorPad = 20
         topExtra = 25
     end
@@ -233,16 +236,16 @@ local function RefreshPreview()
     -- Container size, through the SAME ns._RFFootprint the live container is
     -- sized with. The old one-row formula drew a 4x1 box around the grid flow's
     -- 2x2 block.
-    local totalW, totalH = ns._RFFootprint(bw, bh, unitGrowth, groupGrowth, cs, gs)
+    local totalW, totalH = mod._RFFootprint(bw, bh, unitGrowth, groupGrowth, cs, gs)
 
     -- Pets (Show Pets on the Raid tab) go before the first or after the last group. The overlay
     -- grows to hold them; at the real position the groups stay put and the pets hang off them.
-    local petSpec = ns.PF_PreviewSpec(false, s, bw, bh, cs, groupW, groupH)
+    local petSpec = mod.PF_PreviewSpec(false, s, bw, bh, cs, groupW, groupH)
     local petX, petY, padL, padT, padR, padB = 0, 0, 0, 0, 0, 0
     if petSpec then
-        local slot = petSpec.before and 0 or (MOVER_GROUPS - 1)
-        petX = gSlots[slot][1] - minGX + petSpec.ox
-        petY = gSlots[slot][2] - maxGY + petSpec.oy
+        local slotIndex = petSpec.before and 0 or (MOVER_GROUPS - 1)
+        petX = gSlots[slotIndex][1] - minGX + petSpec.ox
+        petY = gSlots[slotIndex][2] - maxGY + petSpec.oy
         if isOverlay then
             padL = max(0, -petX)
             padT = max(0, petY)
@@ -258,7 +261,7 @@ local function RefreshPreview()
 
     -- The 20-player preview keeps subgroup identities while moving each
     -- group's five frames to its visual slot.
-    local groupOrder = s.customGroupOrder and not s.mergeGroups and ns._RFValidatedGroupOrder(s.groupOrder)
+    local groupOrder = s.customGroupOrder and not s.mergeGroups and mod._RFValidatedGroupOrder(s.groupOrder)
     local previewSlotByGroup
     if groupOrder then
         previewSlotByGroup = {}
@@ -284,11 +287,17 @@ local function RefreshPreview()
             f:ClearAllPoints()
             local fx = gx + (rawUX[u] - minUX)
             local fy = gy + (rawUY[u] - maxUY)
-            f:SetPoint("TOPLEFT", anchor, "TOPLEFT", fx + anchorPad + padL, fy - anchorPad - topExtra - padT)
+            f:SetPoint(
+                "TOPLEFT",
+                anchorFrame,
+                "TOPLEFT",
+                fx + anchorPad + padL,
+                fy - anchorPad - topExtra - padT
+            )
             ApplyPreviewData(f, frameIdx)
 
             if f._health and previewHealthValues[frameIdx] then
-                local barPct = ns.RF_IsInvertedFill(s) and (100 - previewHealthValues[frameIdx])
+                local barPct = mod.RF_IsInvertedFill(s) and (100 - previewHealthValues[frameIdx])
                     or previewHealthValues[frameIdx]
                 f._health:SetValue(barPct)
                 f._healthPct = previewHealthValues[frameIdx]
@@ -303,34 +312,34 @@ local function RefreshPreview()
         end
 
         -- Group number label anchored to the first unit of each group
-        local lbl = previewGroupLabels[g + 1]
-        if not lbl then
-            lbl = anchor:CreateFontString(nil, "OVERLAY")
-            previewGroupLabels[g + 1] = lbl
+        local labelFS = previewGroupLabels[g + 1]
+        if not labelFS then
+            labelFS = anchorFrame:CreateFontString(nil, "OVERLAY")
+            previewGroupLabels[g + 1] = labelFS
         end
-        ApplyFont(lbl, s.groupNumberSize or 10)
+        ApplyFont(labelFS, s.groupNumberSize or 10)
         do
             -- Shared size/color with the real frames (group-number settings).
             -- Not gated by showGroupNumbers: the preview always shows numbers.
             local gc = s.groupNumberColor or {}
-            lbl:SetTextColor(gc.r or 1, gc.g or 1, gc.b or 1, gc.a or 0.75)
+            labelFS:SetTextColor(gc.r or 1, gc.g or 1, gc.b or 1, gc.a or 0.75)
         end
-        lbl:SetText(tostring(g + 1))
-        lbl:ClearAllPoints()
+        labelFS:SetText(tostring(g + 1))
+        labelFS:ClearAllPoints()
         -- Anchor based on unit growth: label goes "before" the first unit.
         -- The X/Y offset (shared group-number setting) shifts it from there.
         local gnox = s.groupNumberOffsetX or 0
         local gnoy = s.groupNumberOffsetY or 0
         if unitGrowth == "DOWN" then
-            lbl:SetPoint("BOTTOM", firstFrame, "TOP", gnox, 4 + gnoy)
+            labelFS:SetPoint("BOTTOM", firstFrame, "TOP", gnox, 4 + gnoy)
         elseif unitGrowth == "UP" then
-            lbl:SetPoint("TOP", firstFrame, "BOTTOM", gnox, -4 + gnoy)
+            labelFS:SetPoint("TOP", firstFrame, "BOTTOM", gnox, -4 + gnoy)
         elseif unitGrowth == "RIGHT" then
-            lbl:SetPoint("RIGHT", firstFrame, "LEFT", -3 + gnox, gnoy)
+            labelFS:SetPoint("RIGHT", firstFrame, "LEFT", -3 + gnox, gnoy)
         else -- LEFT
-            lbl:SetPoint("LEFT", firstFrame, "RIGHT", 3 + gnox, gnoy)
+            labelFS:SetPoint("LEFT", firstFrame, "RIGHT", 3 + gnox, gnoy)
         end
-        lbl:Show()
+        labelFS:Show()
     end
 
     -- Reparent after all frames are created (first load creates them in the loop above)
@@ -341,27 +350,27 @@ local function RefreshPreview()
     -- Group-number labels go on a high-level overlay child of the same container
     -- so they draw ABOVE the preview bars (which are descendants of reparentTo);
     -- parenting them straight to reparentTo leaves them beneath the bars.
-    if not ns._previewGroupNumberOverlay then
-        ns._previewGroupNumberOverlay = CreateFrame("Frame", nil, reparentTo)
+    if not mod._previewGroupNumberOverlay then
+        mod._previewGroupNumberOverlay = CreateFrame("Frame", nil, reparentTo)
     end
-    ns._previewGroupNumberOverlay:SetParent(reparentTo)
-    ns._previewGroupNumberOverlay:SetAllPoints(reparentTo)
-    ns._previewGroupNumberOverlay:SetFrameLevel(9000)
-    ns._previewGroupNumberOverlay:Show()
-    for _, lbl in ipairs(previewGroupLabels) do
-        lbl:SetParent(ns._previewGroupNumberOverlay)
+    mod._previewGroupNumberOverlay:SetParent(reparentTo)
+    mod._previewGroupNumberOverlay:SetAllPoints(reparentTo)
+    mod._previewGroupNumberOverlay:SetFrameLevel(9000)
+    mod._previewGroupNumberOverlay:Show()
+    for _, labelFS in ipairs(previewGroupLabels) do
+        labelFS:SetParent(mod._previewGroupNumberOverlay)
     end
     if petSpec then
-        ns.PF_ShowPreview(
+        mod.PF_ShowPreview(
             petSpec,
             s,
             reparentTo,
-            anchor,
+            anchorFrame,
             petX + anchorPad + padL,
             petY - anchorPad - topExtra - padT
         )
     else
-        ns.PF_HidePreview()
+        mod.PF_HidePreview()
     end
 
     local snapW = PixelSnap(max(totalW, 1))
@@ -373,8 +382,8 @@ local function RefreshPreview()
         -- real-mode preview stranded after a growth change until the panel reopened).
         -- Anchored at the base footprint's top-left so size changes grow down/right
         -- exactly like the real container's _ApplyTierOffset scheme.
-        local se = ns._PvSessionElem and ns._PvSessionElem("RF_RaidFrames")
-        local bl, bt = ns._RFBaseTopLeft()
+        local se = mod._PvSessionElem and mod._PvSessionElem("RF_RaidFrames")
+        local bl, bt = mod._RFBaseTopLeft()
         previewContainer:ClearAllPoints()
         if se and se.point then
             -- Editing an override with a custom unlock mode: place the
@@ -416,7 +425,7 @@ local function RefreshPreview()
             overlayContainer._title:SetTextColor(1, 1, 1, 0.9)
             overlayContainer._title:Show()
         end
-        if ns._testMode then
+        if mod._testMode then
             -- Test mode: center on screen, above dimmer
             overlayContainer:SetFrameStrata("FULLSCREEN_DIALOG")
             overlayContainer:SetFrameLevel(55)
@@ -425,11 +434,11 @@ local function RefreshPreview()
         else
             overlayContainer:SetFrameStrata("FULLSCREEN_DIALOG")
             overlayContainer:SetFrameLevel(10)
-            ns.RF_DockPreviewWindow(overlayContainer)
+            mod.RF_DockPreviewWindow(overlayContainer)
         end
         overlayContainer:Show()
     end
-    ns.RF_PreviewCompact(previewFrames, s, false, unitGrowth)
+    mod.RF_PreviewCompact(previewFrames, s, false, unitGrowth)
 end
 
 -- Mouse-blocking overlays + alpha-based real-frame hide for the options preview.
@@ -450,8 +459,8 @@ end
 -- UIParent before display, so container alpha 0 never hides the preview itself.
 do
     local rfMouseBlock, partyMouseBlock
-    local function setBlock(on)
-        if on then
+    local function setBlock(enabled)
+        if enabled then
             if containerFrame then
                 if not rfMouseBlock then
                     rfMouseBlock = CreateFrame("Frame", nil, UIParent)
@@ -462,14 +471,14 @@ do
                 rfMouseBlock:SetFrameLevel(containerFrame:GetFrameLevel() + 50)
                 rfMouseBlock:Show()
             end
-            if ns._partyContainerFrame then
+            if mod._partyContainerFrame then
                 if not partyMouseBlock then
                     partyMouseBlock = CreateFrame("Frame", nil, UIParent)
                     partyMouseBlock:EnableMouse(true)
                 end
-                partyMouseBlock:SetAllPoints(ns._partyContainerFrame)
-                partyMouseBlock:SetFrameStrata(ns._partyContainerFrame:GetFrameStrata())
-                partyMouseBlock:SetFrameLevel(ns._partyContainerFrame:GetFrameLevel() + 50)
+                partyMouseBlock:SetAllPoints(mod._partyContainerFrame)
+                partyMouseBlock:SetFrameStrata(mod._partyContainerFrame:GetFrameStrata())
+                partyMouseBlock:SetFrameLevel(mod._partyContainerFrame:GetFrameLevel() + 50)
                 partyMouseBlock:Show()
             end
         else
@@ -482,61 +491,61 @@ do
         end
         -- The pet frames' own (their header, and the pets beside the party frames), and the
         -- party target frames' (outside the party container too).
-        ns._PF_SetPreviewBlock(on)
-        ns._PT_SetPreviewBlock(on)
+        mod._PF_SetPreviewBlock(enabled)
+        mod._PT_SetPreviewBlock(enabled)
     end
-    ns._SetPreviewMouseBlock = setBlock
-    ns._RefreshPreviewMouseBlockStrata = function()
+    mod._SetPreviewMouseBlock = setBlock
+    mod._RefreshPreviewMouseBlockStrata = function()
         if rfMouseBlock and rfMouseBlock:IsShown() and containerFrame then
             rfMouseBlock:SetFrameStrata(containerFrame:GetFrameStrata())
             rfMouseBlock:SetFrameLevel(containerFrame:GetFrameLevel() + 50)
         end
-        if partyMouseBlock and partyMouseBlock:IsShown() and ns._partyContainerFrame then
-            partyMouseBlock:SetFrameStrata(ns._partyContainerFrame:GetFrameStrata())
-            partyMouseBlock:SetFrameLevel(ns._partyContainerFrame:GetFrameLevel() + 50)
+        if partyMouseBlock and partyMouseBlock:IsShown() and mod._partyContainerFrame then
+            partyMouseBlock:SetFrameStrata(mod._partyContainerFrame:GetFrameStrata())
+            partyMouseBlock:SetFrameLevel(mod._partyContainerFrame:GetFrameLevel() + 50)
         end
-        ns._PF_RefreshPreviewBlock()
-        ns._PT_RefreshPreviewBlock()
+        mod._PF_RefreshPreviewBlock()
+        mod._PT_RefreshPreviewBlock()
     end
-    function ns._SetRealFramesPreviewHidden(on)
+    function mod._SetRealFramesPreviewHidden(enabled)
         -- Overlay preview is a separate docked panel, so the real frames are NOT
         -- under it: leave them faintly visible (alpha 0.2) and DON'T mouse-block
         -- them. Real preview replaces the frames in place, so keep the original
         -- behavior there: hide fully (alpha 0) + block clicks.
-        local isOverlay = (db.profile.previewMode == "overlay") or ns._testMode
+        local isOverlay = (saved.profile.previewMode == "overlay") or mod._testMode
         if isOverlay then
-            local a = on and 0.2 or 1
+            local a = enabled and 0.2 or 1
             if containerFrame then
                 containerFrame:SetAlpha(a)
             end
-            if ns._partyContainerFrame then
-                ns._partyContainerFrame:SetAlpha(a)
+            if mod._partyContainerFrame then
+                mod._partyContainerFrame:SetAlpha(a)
             end
-            if ns._ptModelOn then
-                ns.RF_PtContainerAlpha(a)
+            if mod._ptModelOn then
+                mod.RF_PtContainerAlpha(a)
             end
-            if ns._PF.container then
-                ns._PF.container:SetAlpha(a)
+            if mod._PF.container then
+                mod._PF.container:SetAlpha(a)
             end
             setBlock(false)
         else
-            local a = on and 0 or 1
+            local a = enabled and 0 or 1
             if containerFrame then
                 containerFrame:SetAlpha(a)
             end
-            if ns._partyContainerFrame then
-                ns._partyContainerFrame:SetAlpha(a)
+            if mod._partyContainerFrame then
+                mod._partyContainerFrame:SetAlpha(a)
             end
-            if ns._ptModelOn then
-                ns.RF_PtContainerAlpha(a)
+            if mod._ptModelOn then
+                mod.RF_PtContainerAlpha(a)
             end
-            if ns._PF.container then
-                ns._PF.container:SetAlpha(a)
+            if mod._PF.container then
+                mod._PF.container:SetAlpha(a)
             end
-            setBlock(on)
+            setBlock(enabled)
         end
         -- The pets beside the party frames take the container's alpha through their own.
-        ns._PF_AlphaSync()
+        mod._PF_AlphaSync()
     end
 end
 
@@ -547,17 +556,17 @@ local function ShowPreview()
     -- preview parent with nothing left to restore them -- the root cause of "frames
     -- vanish after closing options". Reparenting secure-header containers is also
     -- blocked/taint-prone in combat, so bail there too.
-    if not ns._testMode and not (CludesUI:IsShown()) then
+    if not mod._testMode and not (CludesUI:IsShown()) then
         return
     end
     if InCombatLockdown() then
         return
     end
     -- Kill any active size preview
-    if ns._sizePreviewTier then
-        ns._sizePreviewTier = nil
-        if ns._HideSizePreview then
-            ns._HideSizePreview()
+    if mod._sizePreviewTier then
+        mod._sizePreviewTier = nil
+        if mod._HideSizePreview then
+            mod._HideSizePreview()
         end
     end
     if previewActive then
@@ -574,10 +583,10 @@ local function ShowPreview()
         SetPreviewContainer(CreateFrame("Frame", nil, UIParent))
         previewContainer:SetFrameStrata("HIGH")
     end
-    local pos = db.profile.unlockPos
+    local place = saved.profile.unlockPos
     previewContainer:ClearAllPoints()
-    if pos then
-        previewContainer:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+    if place then
+        previewContainer:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
     else
         previewContainer:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     end
@@ -589,7 +598,7 @@ local function ShowPreview()
     -- blocked or deferred by combat. The containers stay parented to UIParent at
     -- their saved position; preview frames are reparented out of the containers
     -- by RefreshPreview below, so container alpha 0 does not hide the preview.
-    ns._SetRealFramesPreviewHidden(true)
+    mod._SetRealFramesPreviewHidden(true)
 
     -- Initialize health values and role assignments
     InitPreviewHealthValues()
@@ -607,13 +616,13 @@ local function HidePreview(skipRestore)
     if not previewActive then
         return
     end
-    ns.RF_PreviewCompact(nil, nil, false)
+    mod.RF_PreviewCompact(nil, nil, false)
     SetPreviewActive(false)
-    ns._previewInitialized = false
+    mod._previewInitialized = false
     previewRoles._randomized = nil -- re-randomize on next preview open
     previewRoles._hpalPick = nil -- re-roll the hpal Legends next open
     StopPvAuraTicker()
-    ns.StopPvBuffTicker()
+    mod.StopPvBuffTicker()
     -- Hide overlay container
     if overlayContainer then
         overlayContainer:Hide()
@@ -627,18 +636,18 @@ local function HidePreview(skipRestore)
         f:SetParent(containerFrame)
         f:Hide()
     end
-    for _, lbl in ipairs(previewGroupLabels) do
-        lbl:SetParent(containerFrame)
-        lbl:Hide()
+    for _, labelFS in ipairs(previewGroupLabels) do
+        labelFS:SetParent(containerFrame)
+        labelFS:Hide()
     end
-    ns.PF_HidePreview()
+    mod.PF_HidePreview()
     if skipRestore then
         return
     end
     -- The containers were only alpha-hidden (never reparented or moved), so the
     -- restore is a combat-legal SetAlpha(1) plus dropping the mouse blockers. No
     -- combat gate, no SetParent/SetPoint, no ns._restorePending deferral.
-    ns._SetRealFramesPreviewHidden(false)
+    mod._SetRealFramesPreviewHidden(false)
     -- Re-run layout out of combat in case frame sizes changed while previewing
     -- (LayoutGroups SetPoints secure headers, so out of combat only).
     if not InCombatLockdown() then
@@ -647,19 +656,19 @@ local function HidePreview(skipRestore)
     -- Re-derive the growth-corner anchor after the relayout (self-gates on
     -- combat) so a size change made while previewing can never strand the
     -- container at a stale position.
-    if ns._ApplyTierOffset then
-        ns._ApplyTierOffset()
+    if mod._ApplyTierOffset then
+        mod._ApplyTierOffset()
     end
     UpdateVisibility()
-    if ns._UpdatePartyVisibility then
-        ns._UpdatePartyVisibility()
+    if mod._UpdatePartyVisibility then
+        mod._UpdatePartyVisibility()
     end
 end
 
 local function ApplyPreviewMode()
-    local mode = db.profile.previewMode or "overlay"
+    local modeName = saved.profile.previewMode or "overlay"
 
-    if mode == "none" then
+    if modeName == "none" then
         if previewActive then
             HidePreview()
         end
@@ -669,59 +678,59 @@ local function ApplyPreviewMode()
         ShowPreview()
         return
     end
-    local isOverlay = (mode == "overlay")
+    local isOverlay = (modeName == "overlay")
     if not isOverlay and overlayContainer then
         overlayContainer:Hide()
     end
     -- Re-apply the real-frame hide state for the (possibly just-changed) mode so a
     -- live Real<->Overlay switch updates alpha + mouse-block: overlay shows the
     -- real frames faintly with NO block; real hides them fully + blocks.
-    ns._SetRealFramesPreviewHidden(true)
+    mod._SetRealFramesPreviewHidden(true)
     -- RefreshPreview handles reparenting, anchoring, and overlay sizing
     RefreshPreview()
 end
 
-ns.ApplyPreviewMode = ApplyPreviewMode
+mod.ApplyPreviewMode = ApplyPreviewMode
 
 -- Expose for options panel
-ns.ShowPreview = ShowPreview
-ns.HidePreview = HidePreview
-ns.previewActive = function()
+mod.ShowPreview = ShowPreview
+mod.HidePreview = HidePreview
+mod.previewActive = function()
     return previewActive
 end
-ns.ResetPreviewRandomization = function()
+mod.ResetPreviewRandomization = function()
     previewRoles._randomized = nil
     previewRoles._hpalPick = nil
 end
-ns.previewFrames = previewFrames
-ns.previewHealthValues = previewHealthValues
-ns.previewPowerValues = previewPowerValues
+mod.previewFrames = previewFrames
+mod.previewHealthValues = previewHealthValues
+mod.previewPowerValues = previewPowerValues
 
 -- Party-aware sibling of PvEffectiveProfile, for the shared options tickers:
 -- party preview reads party-prefixed settings, raid preview reads the live
 -- profile through the real-preview effective overlay.
-ns.PvSettings = PvSettings
+mod.PvSettings = PvSettings
 
 -- Active-preview accessors for the options eyeballs (resolve raid vs party at
 -- call time so the health/power animations drive whichever preview is on screen).
-ns.PvActiveFrames = PvFrames
-ns.PvHealthValues = function()
-    return (ns._partyPvActive and ns._partyPvHV) or previewHealthValues
+mod.PvActiveFrames = PvFrames
+mod.PvHealthValues = function()
+    return (mod._partyPvActive and mod._partyPvHV) or previewHealthValues
 end
-ns.PvPowerValues = function()
-    return (ns._partyPvActive and ns._partyPvPV) or previewPowerValues
+mod.PvPowerValues = function()
+    return (mod._partyPvActive and mod._partyPvPV) or previewPowerValues
 end
 -- Re-render whichever preview is active (mirrors ShowPreview's refresh-if-active).
 -- Uses the ns.* exports because ShowPartyPreview lives in CUI_RaidFrames_PreviewParty.lua.
-ns.PvRefresh = function()
-    if ns._partyPvActive then
-        if ns.ShowPartyPreview then
-            ns.ShowPartyPreview()
+mod.PvRefresh = function()
+    if mod._partyPvActive then
+        if mod.ShowPartyPreview then
+            mod.ShowPartyPreview()
         end
-    elseif ns.ShowPreview then
-        ns.ShowPreview()
+    elseif mod.ShowPreview then
+        mod.ShowPreview()
     end
 end
 
-I.HidePreview = HidePreview
-I.broken = false
+Inner.HidePreview = HidePreview
+Inner.broken = false

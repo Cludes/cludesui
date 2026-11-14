@@ -95,9 +95,9 @@ CludesUI.CLASS_PAGING_STATES = {
 if CludesUI.IS_FOREVER == true then
     local states = CludesUI.CLASS_PAGING_STATES
     table.insert(states.WARRIOR, { id = "berserker", macro = "[bonusbar:3]", label = "Berserker Stance" })
-    for i = #states.DRUID, 1, -1 do
-        if states.DRUID[i].id == "moonkin" then
-            table.remove(states.DRUID, i)
+    for idx = #states.DRUID, 1, -1 do
+        if states.DRUID[idx].id == "moonkin" then
+            table.remove(states.DRUID, idx)
         end
     end
 end
@@ -237,8 +237,8 @@ function CludesUI.IsPlayerMountedLike()
     -- Aura fallback: the Travel Form buff is present on the player
     -- whenever the druid is shifted, regardless of ground/swim/fly subform.
     if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
-        for i = 1, #DRUID_MOUNT_FORM_SPELLS do
-            if C_UnitAuras.GetPlayerAuraBySpellID(DRUID_MOUNT_FORM_SPELLS[i]) then
+        for idx = 1, #DRUID_MOUNT_FORM_SPELLS do
+            if C_UnitAuras.GetPlayerAuraBySpellID(DRUID_MOUNT_FORM_SPELLS[idx]) then
                 return true
             end
         end
@@ -268,11 +268,11 @@ end
 -- Lua clobber the driver with a literal "hide" that cannot re-evaluate until combat ends
 -- (see BuildVisibilityString in CUI_ActionBars_VisibilityDrivers.lua). Such callers pass true and
 -- keep their own narrower mount check for the shapeshift forms [mounted] cannot see.
-function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
-    if not opts then
+function CludesUI.CheckVisibilityOptionsNonMacro(options, skipMountAxis)
+    if not options then
         return false
     end
-    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(opts) then
+    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(options) then
         return false
     end
 
@@ -286,8 +286,8 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
     -- this one every combatFlip lane. combatFlip is the honest test, a bare "hide" from
     -- any of them being a constant no driver can re-evaluate in combat, so widen the All
     -- chain to match if this ever gains a caller; do not narrow this one.
-    if opts.visibilityMatch == "any" then
-        local fired, combatFlip = CludesUI.VisOptionHideVeto(opts, "nonMacro", nil, skipMountAxis)
+    if options.visibilityMatch == "any" then
+        local fired, combatFlip = CludesUI.VisOptionHideVeto(options, "nonMacro", nil, skipMountAxis)
         if not fired then
             return false
         end
@@ -295,36 +295,36 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
     end
 
     -- Instances axis: Only Show in Instances / Hide in Instances share one probe.
-    if opts.visOnlyInstances or opts.visHideInstances then
+    if options.visOnlyInstances or options.visHideInstances then
         local inInstance = CludesUI.IsInInstancedContent()
-        if opts.visOnlyInstances and not inInstance then
+        if options.visOnlyInstances and not inInstance then
             return true
         end
-        if opts.visHideInstances and inInstance then
+        if options.visHideInstances and inInstance then
             return true
         end
     end
 
     -- Dungeons axis: Only Show in Dungeons / Hide in Dungeons share one probe.
-    if opts.visOnlyDungeons or opts.visHideDungeons then
+    if options.visOnlyDungeons or options.visHideDungeons then
         local inDungeon = CludesUI.IsInDungeon()
-        if opts.visOnlyDungeons and not inDungeon then
+        if options.visOnlyDungeons and not inDungeon then
             return true
         end
-        if opts.visHideDungeons and inDungeon then
+        if options.visHideDungeons and inDungeon then
             return true
         end
     end
 
     -- Hide in Housing
-    if opts.visHideHousing then
+    if options.visHideHousing then
         if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
             return true
         end
     end
 
     -- Only Show in Housing (inverse of the above; same probe, same edges)
-    if opts.visOnlyHousing then
+    if options.visOnlyHousing then
         if not (C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot()) then
             return true
         end
@@ -332,7 +332,7 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
 
     if not skipMountAxis then
         -- Hide when Mounted (includes druid travel/flight/aquatic forms)
-        if opts.visHideMounted then
+        if options.visHideMounted then
             if CludesUI.IsPlayerMountedLike() then
                 return true
             end
@@ -341,7 +341,7 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
         -- Only Show when Mounted (inverse; druid mount-like forms count as mounted
         -- here too -- secure action bars carry a [nomounted] clause instead, which
         -- cannot see forms, see BuildVisibilityString)
-        if opts.visOnlyMounted then
+        if options.visOnlyMounted then
             if not (CludesUI.IsPlayerMountedLike()) then
                 return true
             end
@@ -354,36 +354,36 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
     -- expresses "ground included", so this stays Lua-only for every caller; it returns
     -- the truthy marker "mountaxis" so a secure-driver caller can bake a combat escape
     -- hatch into what it writes (a bare "hide" cannot re-evaluate once combat starts).
-    if opts.visHideDragonriding then
+    if options.visHideDragonriding then
         if CludesUI.IsPlayerSkyriding() then
             return "mountaxis"
         end
     end
 
-    if opts.visOnlySkyriding then
+    if options.visOnlySkyriding then
         if not (CludesUI.IsPlayerSkyriding()) then
             return "mountaxis"
         end
     end
 
     -- Resting axis: Only Show while Resting / Hide while Resting share one probe.
-    if opts.visOnlyResting or opts.visHideResting then
+    if options.visOnlyResting or options.visHideResting then
         local resting = IsResting() and true or false
-        if opts.visOnlyResting and not resting then
+        if options.visOnlyResting and not resting then
             return true
         end
-        if opts.visHideResting and resting then
+        if options.visHideResting and resting then
             return true
         end
     end
 
     -- Vehicle axis: Only Show in Vehicle / Hide in Vehicle share one probe.
-    if opts.visOnlyVehicle or opts.visHideVehicle then
+    if options.visOnlyVehicle or options.visHideVehicle then
         local inVehicle = UnitInVehicle("player") and true or false
-        if opts.visOnlyVehicle and not inVehicle then
+        if options.visOnlyVehicle and not inVehicle then
             return true
         end
-        if opts.visHideVehicle and inVehicle then
+        if options.visHideVehicle and inVehicle then
             return true
         end
     end
@@ -395,12 +395,12 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
     -- the fight and catches up on combat end (CludesUI.FireVisEdge re-fires
     -- then); the "[nocombat] hide" escape hatch would instead pop a "Hide during
     -- Party Mode" bar back on screen the moment combat starts.
-    if opts.visOnlyPartyMode or opts.visHidePartyMode then
+    if options.visOnlyPartyMode or options.visHidePartyMode then
         local party = CludesUI.IsPartyModeActive()
-        if opts.visOnlyPartyMode and not party then
+        if options.visOnlyPartyMode and not party then
             return true
         end
-        if opts.visHidePartyMode and party then
+        if options.visHidePartyMode and party then
             return true
         end
     end
@@ -408,47 +408,47 @@ function CludesUI.CheckVisibilityOptionsNonMacro(opts, skipMountAxis)
     return false
 end
 
-function CludesUI.CheckVisibilityOptions(opts)
-    if not opts then
+function CludesUI.CheckVisibilityOptions(options)
+    if not options then
         return false
     end
     -- An override replaces the whole Visibility configuration, option lanes included:
     -- "Always" set on an override means always, whatever the shared value hides.
-    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(opts) then
+    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(options) then
         return false
     end
 
     -- Any match: only the SHOW lanes are disjuncts; the HIDE lanes veto here as they do
     -- under All (CludesUI.VisOptionHideVeto), which is what makes "Hide when X" mean
     -- hide for every Lua consumer regardless of the match mode.
-    if opts.visibilityMatch == "any" then
-        return CludesUI.VisOptionHideVeto(opts) and true or false
+    if options.visibilityMatch == "any" then
+        return CludesUI.VisOptionHideVeto(options) and true or false
     end
 
     -- Instances / housing / mounted (shared with secure-frame fast path).
-    if CludesUI.CheckVisibilityOptionsNonMacro(opts) then
+    if CludesUI.CheckVisibilityOptionsNonMacro(options) then
         return true
     end
 
     -- Target axis
-    if opts.visHideNoTarget then
+    if options.visHideNoTarget then
         if not UnitExists("target") then
             return true
         end
     end
-    if opts.visHideWithTarget then
+    if options.visHideWithTarget then
         if UnitExists("target") then
             return true
         end
     end
 
     -- Enemy-target axis
-    if opts.visHideNoEnemy then
+    if options.visHideNoEnemy then
         if not (UnitExists("target") and UnitCanAttack("player", "target")) then
             return true
         end
     end
-    if opts.visHideWithEnemy then
+    if options.visHideWithEnemy then
         if UnitExists("target") and UnitCanAttack("player", "target") then
             return true
         end
@@ -471,9 +471,9 @@ end
 do
     local callbacks = {}
     local pending = false
-    function CludesUI.RegisterVisEdge(fn)
-        if type(fn) == "function" then
-            callbacks[#callbacks + 1] = fn
+    function CludesUI.RegisterVisEdge(func)
+        if type(func) == "function" then
+            callbacks[#callbacks + 1] = func
         end
     end
     local function Run()
@@ -481,8 +481,8 @@ do
         if CludesUI.RequestVisibilityUpdate then
             CludesUI.RequestVisibilityUpdate()
         end
-        for i = 1, #callbacks do
-            callbacks[i]()
+        for idx = 1, #callbacks do
+            callbacks[idx]()
         end
     end
     function CludesUI.FireVisEdge()
@@ -526,8 +526,7 @@ CludesUI.VIS_OPT_AXES = {
         hide = "visHideHousing",
         luaOnly = true,
         probe = function()
-            return (C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot())
-                    and true
+            return (C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot()) and true
                 or false
         end,
     },
@@ -614,16 +613,16 @@ end
 -- Both lanes checked at once counts as unconstrained here, same as in that tally.
 -- Second return: the firing axis is combatFlip, so a secure-driver caller must bake a
 -- combat escape hatch instead of writing a bare "hide".
-function CludesUI.VisOptionHideVeto(opts, filter, edges, skipMount)
-    if not opts then
+function CludesUI.VisOptionHideVeto(options, filter, edges, skipMount)
+    if not options then
         return false
     end
-    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(opts) then
+    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(options) then
         return false
     end
     local axes = CludesUI.VIS_OPT_AXES
-    for i = 1, #axes do
-        local ax = axes[i]
+    for idx = 1, #axes do
+        local ax = axes[idx]
         local skip
         if filter == "nonMacro" then
             skip = ax.needsEdge == "softTarget"
@@ -634,7 +633,7 @@ function CludesUI.VisOptionHideVeto(opts, filter, edges, skipMount)
         if skipMount and ax.hide == "visHideMounted" then
             skip = true
         end
-        if not skip and opts[ax.hide] and not opts[ax.show] and ax.probe() then
+        if not skip and options[ax.hide] and not options[ax.show] and ax.probe() then
             return true, ax.combatFlip or false
         end
     end
@@ -645,24 +644,24 @@ end
 -- the ones this consumer must resolve in Lua, "driver" only the ones it can compile.
 -- Returns how many axes are constrained and how many of those currently match.
 -- SHOW lanes only: a Hide lane is a veto (VisOptionHideVeto), never a disjunct.
-function CludesUI.TallyVisibilityOptionAxes(opts, filter, edges)
+function CludesUI.TallyVisibilityOptionAxes(options, filter, edges)
     local constrained, passed = 0, 0
-    if not opts then
+    if not options then
         return constrained, passed
     end
-    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(opts) then
+    if CludesUI.VisOverrideValue and CludesUI.VisOverrideValue(options) then
         return constrained, passed
     end
     local axes = CludesUI.VIS_OPT_AXES
-    for i = 1, #axes do
-        local ax = axes[i]
+    for idx = 1, #axes do
+        local ax = axes[idx]
         local luaOnly = CludesUI.VisAxisIsLuaOnly(ax, edges)
         local skip = (filter == "luaOnly" and not luaOnly) or (filter == "driver" and luaOnly)
         if not skip then
             -- Both lanes at once is the contradiction the row already prevents on
             -- click; count it as unconstrained rather than as an axis that can never
             -- match, so a hand-edited store cannot lock an Any selection to hidden.
-            if opts[ax.show] and not opts[ax.hide] then
+            if options[ax.show] and not options[ax.hide] then
                 constrained = constrained + 1
                 if ax.probe() then
                     passed = passed + 1
@@ -675,35 +674,35 @@ end
 
 -- Runtime check: returns true if the element should be SHOWN based on the visibility mode
 -- dropdown value. `mode` is the dropdown string; `state` is a table: { inCombat, inRaid, inParty }.
-function CludesUI.CheckVisibilityMode(mode, state)
-    if mode == "disabled" then
+function CludesUI.CheckVisibilityMode(modeName, status)
+    if modeName == "disabled" then
         return false
     end
-    if mode == "never" then
+    if modeName == "never" then
         return false
     end
-    if mode == "in_combat" then
-        return state.inCombat
+    if modeName == "in_combat" then
+        return status.inCombat
     end
-    if mode == "out_of_combat" then
-        return not state.inCombat
+    if modeName == "out_of_combat" then
+        return not status.inCombat
     end
-    if mode == "in_raid" then
-        return state.inRaid
+    if modeName == "in_raid" then
+        return status.inRaid
     end
-    if mode == "in_party" then
-        return state.inParty
+    if modeName == "in_party" then
+        return status.inParty
     end
-    if mode == "solo" then
-        return not state.inRaid and not state.inParty
+    if modeName == "solo" then
+        return not status.inRaid and not status.inParty
     end
-    if mode == "show_dragonriding" then
+    if modeName == "show_dragonriding" then
         -- Mirrors the secure-macro [advflyable,flying] driver: show only while airborne and
         -- glide-capable (skyriding mounts and flight forms alike). The shared predicate lives in
         -- CludesUI_Visibility.lua and is also used by the multi-select visibility engine.
         return (CludesUI.IsAirborneSkyriding and CludesUI.IsAirborneSkyriding()) or false
     end
-    if mode == "show_not_dragonriding" then
+    if modeName == "show_not_dragonriding" then
         -- Exact inverse of show_dragonriding: show whenever NOT airborne and
         -- glide-capable (skyriding mounts and flight forms alike).
         return not (CludesUI.IsAirborneSkyriding and CludesUI.IsAirborneSkyriding())

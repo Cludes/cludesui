@@ -7,70 +7,70 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Tick marks, hash lines, the Ironfur overlay and BuildBars.
 --  Reads the earlier Resource Bars files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local UnitHealthMax, UnitPowerMax = UnitHealthMax, UnitPowerMax
 
-local CLASS_COLORS, DARK_BG_A, DARK_FILL_A = I.CLASS_COLORS, I.DARK_BG_A, I.DARK_FILL_A
-local ERB, GetPrimaryPowerType, GetRBFont = I.ERB, I.GetPrimaryPowerType, I.GetRBFont
-local GetSecondaryResource, IP, POWER_COLORS = I.GetSecondaryResource, I.IP, I.POWER_COLORS
-local SetRBFont, SnapXY = I.SetRBFont, I.SnapXY
-local ResolveThresholdSpecEntry, DEFAULTS = I.ResolveThresholdSpecEntry, I.DEFAULTS
-local ApplyBarFlat, ApplyBarGradient = I.ApplyBarFlat, I.ApplyBarGradient
-local ApplyBarOrientation, ApplyBarTexture = I.ApplyBarOrientation, I.ApplyBarTexture
-local BuildMainFrame, CalcPipGeometry = I.BuildMainFrame, I.CalcPipGeometry
-local CreatePip, CreateStatusBar = I.CreatePip, I.CreateStatusBar
-local IsPowerBarHidden, IsSpecDisabled = I.IsPowerBarHidden, I.IsSpecDisabled
-local MakePixelBorder, OrientedSize, pips = I.MakePixelBorder, I.OrientedSize, I.pips
-local runeFrames, secondaryBarTicks = I.runeFrames, I.secondaryBarTicks
-local secondaryPipTicks, SmoothBarAnimate = I.secondaryPipTicks, I.SmoothBarAnimate
-local ApplyBarAnchor, ApplyFreeBarPosition = I.ApplyBarAnchor, I.ApplyFreeBarPosition
-local GetAnchorOffsets, NormalizeAnchorKey = I.GetAnchorOffsets, I.NormalizeAnchorKey
-local ReapplyInternalBarAnchors = I.ReapplyInternalBarAnchors
-local ResolveExpandDirSign = I.ResolveExpandDirSign
+local CLASS_COLORS, DARK_BG_A, DARK_FILL_A = Inner.CLASS_COLORS, Inner.DARK_BG_A, Inner.DARK_FILL_A
+local ERB, GetPrimaryPowerType, GetRBFont = Inner.ERB, Inner.GetPrimaryPowerType, Inner.GetRBFont
+local GetSecondaryResource, IP, POWER_COLORS = Inner.GetSecondaryResource, Inner.IP, Inner.POWER_COLORS
+local SetRBFont, SnapXY = Inner.SetRBFont, Inner.SnapXY
+local ResolveThresholdSpecEntry, DEFAULTS = Inner.ResolveThresholdSpecEntry, Inner.DEFAULTS
+local ApplyBarFlat, ApplyBarGradient = Inner.ApplyBarFlat, Inner.ApplyBarGradient
+local ApplyBarOrientation, ApplyBarTexture = Inner.ApplyBarOrientation, Inner.ApplyBarTexture
+local BuildMainFrame, CalcPipGeometry = Inner.BuildMainFrame, Inner.CalcPipGeometry
+local CreatePip, CreateStatusBar = Inner.CreatePip, Inner.CreateStatusBar
+local IsPowerBarHidden, IsSpecDisabled = Inner.IsPowerBarHidden, Inner.IsSpecDisabled
+local MakePixelBorder, OrientedSize, pips = Inner.MakePixelBorder, Inner.OrientedSize, Inner.pips
+local runeFrames, secondaryBarTicks = Inner.runeFrames, Inner.secondaryBarTicks
+local secondaryPipTicks, SmoothBarAnimate = Inner.secondaryPipTicks, Inner.SmoothBarAnimate
+local ApplyBarAnchor, ApplyFreeBarPosition = Inner.ApplyBarAnchor, Inner.ApplyFreeBarPosition
+local GetAnchorOffsets, NormalizeAnchorKey = Inner.GetAnchorOffsets, Inner.NormalizeAnchorKey
+local ReapplyInternalBarAnchors = Inner.ReapplyInternalBarAnchors
+local ResolveExpandDirSign = Inner.ResolveExpandDirSign
 
 local mainFrame
-I.mainFrameSetters[#I.mainFrameSetters + 1] = function(v)
-    mainFrame = v
+Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val)
+    mainFrame = val
 end
 local healthBar
-I.healthBarSetters[#I.healthBarSetters + 1] = function(v)
-    healthBar = v
+Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
+    healthBar = val
 end
 local primaryBar
-I.primaryBarSetters[#I.primaryBarSetters + 1] = function(v)
-    primaryBar = v
+Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
+    primaryBar = val
 end
 local secondaryFrame
-I.secondaryFrameSetters[#I.secondaryFrameSetters + 1] = function(v)
-    secondaryFrame = v
+Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val)
+    secondaryFrame = val
 end
 local secondaryBar -- bar-style secondary (e.g. Devourer soul fragments, Elemental maelstrom)
-I.secondaryBarSetters[#I.secondaryBarSetters + 1] = function(v)
-    secondaryBar = v
+Inner.secondaryBarSetters[#Inner.secondaryBarSetters + 1] = function(val)
+    secondaryBar = val
 end
 local castBarFrame
-I.castBarFrameSetters[#I.castBarFrameSetters + 1] = function(v)
-    castBarFrame = v
+Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val)
+    castBarFrame = val
 end
 local cachedClass
-I.cachedClassSetters[#I.cachedClassSetters + 1] = function(v)
-    cachedClass = v
+Inner.cachedClassSetters[#Inner.cachedClassSetters + 1] = function(val)
+    cachedClass = val
 end
 local cachedPrimary
-I.cachedPrimarySetters[#I.cachedPrimarySetters + 1] = function(v)
-    cachedPrimary = v
+Inner.cachedPrimarySetters[#Inner.cachedPrimarySetters + 1] = function(val)
+    cachedPrimary = val
 end
 local cachedSecondary
-I.cachedSecondarySetters[#I.cachedSecondarySetters + 1] = function(v)
-    cachedSecondary = v
+Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val)
+    cachedSecondary = val
 end
 
 -- Resource bar tick marks (bar-type secondary only)
@@ -82,9 +82,9 @@ local function ParseTickValues(str)
     end
     local vals = {}
     for s in str:gmatch("[^,]+") do
-        local n = tonumber(s:match("^%s*(.-)%s*$"))
-        if n and n > 0 then
-            vals[#vals + 1] = n
+        local num = tonumber(s:match("^%s*(.-)%s*$"))
+        if num and num > 0 then
+            vals[#vals + 1] = num
         end
     end
     if #vals == 0 then
@@ -104,18 +104,18 @@ end
 -- UpdateSecondaryResource both memo/gate on those, so without the clear the next
 -- IDENTICAL call is a no-op and ticks never return (e.g. Balance Druid cat/bear back to
 -- Moonkin hits the same memo). Branch-switch edge only.
-local function HideResourceBarTicks(tickCache, owner)
-    for i = 1, #tickCache do
-        tickCache[i]:Hide()
+local function HideResourceBarTicks(tickCache, ownerFrame)
+    for idx = 1, #tickCache do
+        tickCache[idx]:Hide()
     end
-    if owner then
-        owner._tickState = nil -- ApplyResourceBarTicks' layout memo
-        owner._hashApplied = nil -- UpdateSecondaryResource's re-apply gate
+    if ownerFrame then
+        ownerFrame._tickState = nil -- ApplyResourceBarTicks' layout memo
+        ownerFrame._hashApplied = nil -- UpdateSecondaryResource's re-apply gate
     end
 end
 
 local function ApplyResourceBarTicks(
-    sb,
+    scrollBar,
     maxVal,
     tickStr,
     tickCache,
@@ -139,20 +139,20 @@ local function ApplyResourceBarTicks(
     -- ALONG Y as horizontal strips; reverse fill / VERTICAL_DOWN measures
     -- from the top, matching the pip slot mapping and ApplyBarOrientation.
     local vert, revFill
-    local oriTok = sb and sb._ticksOri
+    local oriTok = scrollBar and scrollBar._ticksOri
     if oriTok then
         vert = oriTok ~= "HORIZONTAL"
         revFill = oriTok == "VERTICAL_DOWN" or oriTok == "VERTICAL"
     else
-        local oriSb = sb and (sb._sb or (sb.GetOrientation and sb))
+        local oriSb = scrollBar and (scrollBar._sb or (scrollBar.GetOrientation and scrollBar))
         vert = (oriSb and oriSb.GetOrientation and oriSb:GetOrientation() == "VERTICAL") or false
         revFill = (vert and oriSb.GetReverseFill and oriSb:GetReverseFill()) or false
     end
-    if sb then
+    if scrollBar then
         local _pp = CludesUI and CludesUI.PP
-        local w, h = sb:GetWidth(), sb:GetHeight()
+        local wid, hgt = scrollBar:GetWidth(), scrollBar:GetHeight()
         local mult = (_pp and _pp.mult) or 1
-        local st = sb._tickState
+        local st = scrollBar._tickState
         if
             st
             and st.maxVal == maxVal
@@ -165,8 +165,8 @@ local function ApplyResourceBarTicks(
             and st.pct == hashIsPercent
             and st.cap == maxRenderVal
             and st.vi == vInset
-            and st.w == w
-            and st.h == h
+            and st.w == wid
+            and st.h == hgt
             and st.mult == mult
             and st.vert == vert
             and st.rev == revFill
@@ -175,41 +175,41 @@ local function ApplyResourceBarTicks(
         end
         if not st then
             st = {}
-            sb._tickState = st
+            scrollBar._tickState = st
         end
         st.maxVal, st.tickStr, st.hw = maxVal, tickStr, hashWidth
         st.r, st.g, st.b, st.a = hashR, hashG, hashB, hashA
         st.pct, st.cap, st.vi = hashIsPercent, maxRenderVal, vInset
-        st.w, st.h, st.mult = w, h, mult
+        st.w, st.h, st.mult = wid, hgt, mult
         st.vert, st.rev = vert, revFill
     end
 
     local vals = ParseTickValues(tickStr)
 
-    for i = 1, #tickCache do
-        tickCache[i]:Hide()
+    for idx = 1, #tickCache do
+        tickCache[idx]:Hide()
     end
 
-    if not vals or not sb or maxVal <= 0 then
+    if not vals or not scrollBar or maxVal <= 0 then
         return
     end
 
-    local PP = CludesUI and CludesUI.PP
+    local Pix = CludesUI and CludesUI.PP
     local tickW = hashWidth or 1
     local tR, tG, tB, tA = hashR or 1, hashG or 1, hashB or 1, hashA or 0.7
 
     -- Tick textures must live ABOVE the inner StatusBar (_sb) or the fill covers
     -- them: overlay frame on the outer container, one level above the inner bar.
-    if not sb._tickOverlay then
-        local ov = CreateFrame("Frame", nil, sb)
+    if not scrollBar._tickOverlay then
+        local ov = CreateFrame("Frame", nil, scrollBar)
         ov:SetAllPoints()
-        local innerSb = sb._sb
+        local innerSb = scrollBar._sb
         if innerSb then
             ov:SetFrameLevel(innerSb:GetFrameLevel() + 1)
         end
-        sb._tickOverlay = ov
+        scrollBar._tickOverlay = ov
     end
-    local tickParent = sb._tickOverlay
+    local tickParent = scrollBar._tickOverlay
 
     -- Create tick textures as needed
     while #tickCache < #vals do
@@ -219,9 +219,9 @@ local function ApplyResourceBarTicks(
         tickCache[#tickCache + 1] = t
     end
 
-    local pxW = PP and (tickW * PP.mult) or tickW
-    local barW = sb:GetWidth()
-    local barH = sb:GetHeight()
+    local pxW = Pix and (tickW * Pix.mult) or tickW
+    local barW = scrollBar:GetWidth()
+    local barH = scrollBar:GetHeight()
     local vI = vInset or 0
     -- Clamp so a fat border on a short bar can never invert the cross-axis
     -- span (the inset shrinks the tick along whichever axis it spans).
@@ -235,40 +235,40 @@ local function ApplyResourceBarTicks(
         end
     end
     local tickH = barH - vI * 2
-    for i, v in ipairs(vals) do
+    for idx, val in ipairs(vals) do
         local frac, inRange
         if hashIsPercent then
-            inRange = (v <= 100)
-            frac = v / 100
+            inRange = (val <= 100)
+            frac = val / 100
         else
-            inRange = (v <= maxVal)
-            frac = v / maxVal
+            inRange = (val <= maxVal)
+            frac = val / maxVal
         end
         -- Optional value-position cap (e.g. Devourer in Void Meta: nothing > 39).
         if maxRenderVal and inRange then
-            local valPos = hashIsPercent and (frac * maxVal) or v
+            local valPos = hashIsPercent and (frac * maxVal) or val
             if valPos > maxRenderVal then
                 inRange = false
             end
         end
         if inRange then
-            local t = tickCache[i]
+            local t = tickCache[idx]
             t:SetColorTexture(tR, tG, tB, tA)
             t:ClearAllPoints()
             if vert then
-                local off = PP and PP.Scale(barH * frac) or (barH * frac)
-                off = math.max(0, math.min(off, PP and PP.Scale(barH - pxW) or (barH - pxW)))
+                local offset = Pix and Pix.Scale(barH * frac) or (barH * frac)
+                offset = math.max(0, math.min(offset, Pix and Pix.Scale(barH - pxW) or (barH - pxW)))
                 t:SetSize(barW - vI * 2, pxW)
                 if revFill then
-                    t:SetPoint("TOPLEFT", sb, "TOPLEFT", vI, -off)
+                    t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", vI, -offset)
                 else
-                    t:SetPoint("BOTTOMLEFT", sb, "BOTTOMLEFT", vI, off)
+                    t:SetPoint("BOTTOMLEFT", scrollBar, "BOTTOMLEFT", vI, offset)
                 end
             else
-                local off = PP and PP.Scale(barW * frac) or (barW * frac)
-                off = math.max(0, math.min(off, PP and PP.Scale(barW - pxW) or (barW - pxW)))
+                local offset = Pix and Pix.Scale(barW * frac) or (barW * frac)
+                offset = math.max(0, math.min(offset, Pix and Pix.Scale(barW - pxW) or (barW - pxW)))
                 t:SetSize(pxW, tickH)
-                t:SetPoint("TOPLEFT", sb, "TOPLEFT", off, -vI)
+                t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", offset, -vI)
             end
             t:Show()
         end
@@ -279,25 +279,25 @@ end
 -- secret, fall back to the last-known-good value cached on the bar frame.
 -- Source: the active threshold entry when it has its own hash lines, else the
 -- bar-wide hashEnabled/hashValues (which conditional overrides can set).
-function ns.ApplyHashLines(sb, cfg, getMaxFn)
-    if not sb then
+function mod.ApplyHashLines(scrollBar, conf, getMaxFn)
+    if not scrollBar then
         return
     end
-    local tickCache = sb._userHashTicks
-    local ent = cfg and ResolveThresholdSpecEntry(cfg)
+    local tickCache = scrollBar._userHashTicks
+    local ent = conf and ResolveThresholdSpecEntry(conf)
     if not (ent and ent.hashValues and ent.hashValues ~= "") then
-        ent = cfg and cfg.hashEnabled and cfg or nil
+        ent = conf and conf.hashEnabled and conf or nil
     end
     local hashStr = ent and ent.hashValues
     if not hashStr or hashStr == "" then
         if tickCache then
-            HideResourceBarTicks(tickCache, sb)
+            HideResourceBarTicks(tickCache, scrollBar)
         end
         return
     end
     if not tickCache then
         tickCache = {}
-        sb._userHashTicks = tickCache
+        scrollBar._userHashTicks = tickCache
     end
     local isPercent = (ent.hashMode or "percent") == "percent"
     local maxVal
@@ -309,23 +309,23 @@ function ns.ApplyHashLines(sb, cfg, getMaxFn)
             mx = nil
         end
         if mx and mx > 0 then
-            sb._hashMaxCache = mx
+            scrollBar._hashMaxCache = mx
         else
-            mx = sb._hashMaxCache -- last-known-good, or nil on first secret read
+            mx = scrollBar._hashMaxCache -- last-known-good, or nil on first secret read
         end
         maxVal = mx or 0
     end
     -- Shrink the hash vertically by the border so it sits inside the bar. An
     -- exact SOLID border size is the inset; a textured one keeps its step.
-    local PP = CludesUI and CludesUI.PP
-    local hbs = cfg.borderSize or 0
-    local htex = cfg.borderTexture
+    local Pix = CludesUI and CludesUI.PP
+    local hbs = conf.borderSize or 0
+    local htex = conf.borderTexture
     if not htex or htex == "" or htex == "solid" then
-        hbs = CludesUI.BorderPx(cfg.borderSizePx, hbs, htex) or hbs
+        hbs = CludesUI.BorderPx(conf.borderSizePx, hbs, htex) or hbs
     end
-    local vInset = hbs * ((PP and PP.mult) or 1)
+    local vInset = hbs * ((Pix and Pix.mult) or 1)
     ApplyResourceBarTicks(
-        sb,
+        scrollBar,
         maxVal,
         hashStr,
         tickCache,
@@ -343,17 +343,17 @@ end
 -- Moving-hash overlay for the Guardian Ironfur bar, above the inner StatusBar fill so
 -- ticks are never covered. Ticks pool in ironfurTickTex (secondaryBar is a singleton).
 local ironfurTickTex = {}
-local function EnsureIronfurOverlay(sb)
-    if sb._ifOverlay then
-        return sb._ifOverlay
+local function EnsureIronfurOverlay(scrollBar)
+    if scrollBar._ifOverlay then
+        return scrollBar._ifOverlay
     end
-    local ov = CreateFrame("Frame", nil, sb)
+    local ov = CreateFrame("Frame", nil, scrollBar)
     ov:SetAllPoints()
-    local innerSb = sb._sb
+    local innerSb = scrollBar._sb
     if innerSb then
         ov:SetFrameLevel(innerSb:GetFrameLevel() + 2)
     end
-    sb._ifOverlay = ov
+    scrollBar._ifOverlay = ov
     return ov
 end
 
@@ -361,21 +361,21 @@ end
 -- Rounded corners (CludesUI_RoundedCorners.lua; nothing at radius 0 or
 -- under the stock styles, which shape the bars with their own masks).
 -- Health / power: the outer frame is the shape, the clipping inner bar the body.
-function ns.ERB_RoundBar(bar, cfg)
-    if not bar then
+function mod.ERB_RoundBar(barFrame, conf)
+    if not barFrame then
         return
     end
-    local radius = (not ns.ERB_BarsBlizz() and cfg.cornerRadius) or 0
+    local radius = (not mod.ERB_BarsBlizz() and conf.cornerRadius) or 0
     if radius <= 0 then
-        CludesUI.RoundCorners(bar, 0)
+        CludesUI.RoundCorners(barFrame, 0)
         return
     end
-    CludesUI.RoundCorners(bar, radius, {
-        roots = { bar._sb },
-        clip = bar._sb,
-        border = bar._border and bar._border._frame,
-        style = cfg.borderTexture or "solid",
-        corners = cfg.cornerMask,
+    CludesUI.RoundCorners(barFrame, radius, {
+        roots = { barFrame._sb },
+        clip = barFrame._sb,
+        border = barFrame._border and barFrame._border._frame,
+        style = conf.borderTexture or "solid",
+        corners = conf.cornerMask,
     })
 end
 -- Class resource: the whole row rounds its outline; with Border on Pips each
@@ -384,28 +384,28 @@ end
 -- or were rounded before.
 do
     local pipsRounded = false
-    local function RoundPipList(list, radius, style, corners)
-        for i = 1, #list do
-            local pip = list[i]
+    local function RoundPipList(entries, radius, look, corners)
+        for idx = 1, #entries do
+            local pipTex = entries[idx]
             if radius <= 0 then
-                CludesUI.RoundCorners(pip, 0)
-            elseif pip:IsShown() then
-                CludesUI.RoundCorners(pip, radius, {
-                    style = style,
-                    border = pip._border and pip._border._frame,
+                CludesUI.RoundCorners(pipTex, 0)
+            elseif pipTex:IsShown() then
+                CludesUI.RoundCorners(pipTex, radius, {
+                    style = look,
+                    border = pipTex._border and pipTex._border._frame,
                     corners = corners,
                 })
             end
         end
     end
-    function ns.ERB_RoundSecondary(sp, isBarType)
-        local radius = (not ns.ERB_BarsBlizz() and sp.cornerRadius) or 0
-        local style = sp.borderTexture or "solid"
+    function mod.ERB_RoundSecondary(sp, isBarType)
+        local radius = (not mod.ERB_BarsBlizz() and sp.cornerRadius) or 0
+        local look = sp.borderTexture or "solid"
         local onPips = sp.borderOnPips and not isBarType
         local rowBorder = secondaryFrame._barBorder
         if radius > 0 then
             CludesUI.RoundCorners(secondaryFrame, radius, {
-                style = style,
+                style = look,
                 border = not onPips and rowBorder and rowBorder._frame or nil,
                 clip = isBarType and secondaryBar and secondaryBar._sb or nil,
                 corners = sp.cornerMask,
@@ -415,8 +415,8 @@ do
         end
         local pipRadius = onPips and radius or 0
         if pipRadius > 0 or pipsRounded then
-            RoundPipList(pips, pipRadius, style, sp.cornerMask)
-            RoundPipList(runeFrames, pipRadius, style, sp.cornerMask)
+            RoundPipList(pips, pipRadius, look, sp.cornerMask)
+            RoundPipList(runeFrames, pipRadius, look, sp.cornerMask)
             pipsRounded = pipRadius > 0
         end
     end
@@ -427,7 +427,7 @@ local function BuildBars()
     -- ones is stale. Bumping the generation invalidates them all at once; without
     -- it, a rebuild that leaves the resource value unchanged lets
     -- UpdateSecondaryResource early-out and the new pips stay unpopulated.
-    ns.CfgGen = (ns.CfgGen or 0) + 1
+    mod.CfgGen = (mod.CfgGen or 0) + 1
     local p = ERB.db.profile
 
     -- If the profile is missing critical sub-tables, reset to defaults
@@ -444,8 +444,8 @@ local function BuildBars()
 
     -- Classic "Border Around All": read once per build; the visibility pass
     -- that follows every build re-judges the group from the new layout.
-    ns._erbGroupOn = ns.ERB_GroupSettingOn(p)
-    ns._erbGrpGeomDirty = true
+    mod._erbGroupOn = mod.ERB_GroupSettingOn(p)
+    mod._erbGrpGeomDirty = true
 
     -- Clear animation state so DB values are always authoritative on a fresh build
     local _animClearKeys = { "scale", "ox", "oy", "w", "h" }
@@ -469,14 +469,14 @@ local function BuildBars()
     local _hpEs = (healthBar and healthBar:GetEffectiveScale())
         or (UIParent and UIParent:GetEffectiveScale())
         or 1
-    if PP and PP.SnapForES then
-        hpWidth = PP.SnapForES(hpWidth, _hpEs)
-        hpHeight = PP.SnapForES(hpHeight, _hpEs)
+    if Pix and Pix.SnapForES then
+        hpWidth = Pix.SnapForES(hpWidth, _hpEs)
+        hpHeight = Pix.SnapForES(hpHeight, _hpEs)
     end
     do
         local hpOri = hp.orientation or g.orientation or "HORIZONTAL"
         if not healthBar then
-            I.SetHealthBar(
+            Inner.SetHealthBar(
                 CreateStatusBar(
                     mainFrame,
                     "ERB_HealthBar",
@@ -506,7 +506,7 @@ local function BuildBars()
                 healthBar:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
             end
             CludesUI.SetElementVisibility(healthBar, false)
-            ns.HealthIndicatorsApply(healthBar, nil)
+            mod.HealthIndicatorsApply(healthBar, nil)
         else
             local healthAnchorKey = NormalizeAnchorKey(hp.anchorTo)
             if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", healthBar) then
@@ -553,9 +553,9 @@ local function BuildBars()
                     local function ApplyHealthBarTransform()
                         local ox = healthBar["_barAnim_ox"] or hp.offsetX or 0
                         local oy = healthBar["_barAnim_oy"] or hp.offsetY or -64
-                        local w = healthBar["_barAnim_w"] or hpWidth
+                        local wid = healthBar["_barAnim_w"] or hpWidth
                         local h2 = healthBar["_barAnim_h"] or hpHeight
-                        local ow, oh = OrientedSize(w, h2, hpOri)
+                        local ow, oh = OrientedSize(wid, h2, hpOri)
                         healthBar:ClearAllPoints()
                         healthBar:SetPoint("CENTER", mainFrame, "CENTER", ox, oy)
                         healthBar:SetSize(ow, oh)
@@ -574,17 +574,17 @@ local function BuildBars()
                     end)
                 end
             end
-            if ns.ERB_BarsBlizz() then
+            if mod.ERB_BarsBlizz() then
                 -- Blizzard Style / Classic WoW UI: the stock bar frame replaces the CUI border.
                 healthBar:ApplyBorder(0, 0, 0, 0, 0)
                 local bw, bh = OrientedSize(hpWidth, hpHeight, hpOri)
-                ns.ERB_ApplyBlizzBarChrome(
+                mod.ERB_ApplyBlizzBarChrome(
                     healthBar,
                     healthBar._sb,
                     bw,
                     bh,
-                    ns.IsVerticalOrientation(hpOri),
-                    ns.ERB_BarFrameK(hp)
+                    mod.IsVerticalOrientation(hpOri),
+                    mod.ERB_BarFrameK(hp)
                 )
             else
                 healthBar:ApplyBorder(
@@ -644,7 +644,7 @@ local function BuildBars()
                 healthBar._bg:SetColorTexture(hp.bgR, hp.bgG, hp.bgB, hp.bgA)
                 -- Textured Background: flat while Fill Color is below 100.
                 if g.barTextureBg or healthBar._bg._erbBgTex then
-                    ns.ERB_BgTexture(
+                    mod.ERB_BgTexture(
                         healthBar._bg,
                         g.barTextureBg
                             and (hp.fillOpacity or 100) >= 100
@@ -682,24 +682,24 @@ local function BuildBars()
                 )
             end
             healthBar:Show()
-            healthBar:SetAlpha(ns.ERB_MissingBarAlpha(healthBar, hp))
+            healthBar:SetAlpha(mod.ERB_MissingBarAlpha(healthBar, hp))
             ApplyBarOrientation(healthBar, hpOri)
-            ns.ApplyFillOpacity(healthBar, hpOri, hp.fillOpacity)
+            mod.ApplyFillOpacity(healthBar, hpOri, hp.fillOpacity)
             if IsSpecDisabled(hp) then
                 CludesUI.SetElementVisibility(healthBar, false)
             end
             -- Absorb / heal absorb / max health reduction overlays
             -- (CUI_ResourceBars_HealthIndicators.lua): settings pass only.
-            ns.HealthIndicatorsApply(healthBar, (not IsSpecDisabled(hp)) and hp or nil, hpOri)
+            mod.HealthIndicatorsApply(healthBar, (not IsSpecDisabled(hp)) and hp or nil, hpOri)
             -- Rounded corners (CludesUI_RoundedCorners.lua), after the retexture
             -- and the overlays, so overlays built by this pass join the body:
             -- nothing at radius 0 or under the stock styles.
-            ns.ERB_RoundBar(healthBar, hp)
+            mod.ERB_RoundBar(healthBar, hp)
         end
     end
 
     -- Power bar (primary resource)
-    I.SetCachedPrimary(GetPrimaryPowerType())
+    Inner.SetCachedPrimary(GetPrimaryPowerType())
     local pp = _G._CURB_ResolvePowerCfg(p) or FALLBACK.primary
     -- Expand height when the spec has no class resource and the option is on.
     -- Suppressed in unlock mode or with the options panel open, so the
@@ -728,7 +728,7 @@ local function BuildBars()
         end
     end
     -- The stored-CENTER shift that keeps the far edge fixed (the unlock applyPos adds it too).
-    ns.ERB_PowerExpandShiftY = ppDirSign * ppExpandDelta * 0.5
+    mod.ERB_PowerExpandShiftY = ppDirSign * ppExpandDelta * 0.5
     -- Clean stale key from the retired suppress/restore system
     if pp._expandWasOn ~= nil then
         pp._expandWasOn = nil
@@ -741,16 +741,16 @@ local function BuildBars()
     local _ppEs = (primaryBar and primaryBar:GetEffectiveScale())
         or (UIParent and UIParent:GetEffectiveScale())
         or 1
-    if PP and PP.SnapForES then
-        ppWidthRaw = PP.SnapForES(ppWidthRaw, _ppEs)
-        ppHeight = PP.SnapForES(ppHeight, _ppEs)
+    if Pix and Pix.SnapForES then
+        ppWidthRaw = Pix.SnapForES(ppWidthRaw, _ppEs)
+        ppHeight = Pix.SnapForES(ppHeight, _ppEs)
     end
     local ppWidth = ppWidthRaw
     -- Always create the frame when enabled so anchored elements (CDM bars, cast
     -- bar) have a valid target; with no primary power for the spec it stays at
     -- zero alpha but keeps its position.
     if not primaryBar then
-        I.SetPrimaryBar(
+        Inner.SetPrimaryBar(
             CreateStatusBar(
                 mainFrame,
                 "ERB_PrimaryBar",
@@ -823,16 +823,16 @@ local function BuildBars()
                 local function ApplyPowerBarTransform()
                     local ox = primaryBar["_barAnim_ox"] or pp.offsetX or 0
                     local oy = primaryBar["_barAnim_oy"] or pp.offsetY or -54
-                    local w = primaryBar["_barAnim_w"] or ppWidth
+                    local wid = primaryBar["_barAnim_w"] or ppWidth
                     local h2 = primaryBar["_barAnim_h"] or ppHeight
-                    local ow, oh = OrientedSize(w, h2, ppOri)
+                    local ow, oh = OrientedSize(wid, h2, ppOri)
                     primaryBar:ClearAllPoints()
                     -- Expand toward the class resource: the edge facing AWAY stays
                     -- fixed (ppDirSign +1 = grow up, -1 = grow down). Derive the
                     -- shift from the ANIMATED height (h2), not the final delta, so
                     -- the fixed edge holds for the whole tween.
-                    local base = ppHeight - ppExpandDelta
-                    local extra = (ppExpandDelta > 0) and (ppDirSign * (h2 - base) * 0.5) or 0
+                    local baseValue = ppHeight - ppExpandDelta
+                    local extra = (ppExpandDelta > 0) and (ppDirSign * (h2 - baseValue) * 0.5) or 0
                     primaryBar:SetPoint("CENTER", mainFrame, "CENTER", ox, oy + extra)
                     primaryBar:SetSize(ow, oh)
                 end
@@ -854,17 +854,17 @@ local function BuildBars()
         -- ->up, below->down) via ppDirSign/ResolveExpandDirSign for the free and
         -- dragged branches above; anchorTo/unlock-anchored branches grow per their
         -- own anchor edge.
-        if ns.ERB_BarsBlizz() then
+        if mod.ERB_BarsBlizz() then
             -- Blizzard Style / Classic WoW UI: the stock bar frame replaces the CUI border.
             primaryBar:ApplyBorder(0, 0, 0, 0, 0)
             local bw, bh = OrientedSize(ppWidth, ppHeight, ppOri)
-            ns.ERB_ApplyBlizzBarChrome(
+            mod.ERB_ApplyBlizzBarChrome(
                 primaryBar,
                 primaryBar._sb,
                 bw,
                 bh,
-                ns.IsVerticalOrientation(ppOri),
-                ns.ERB_BarFrameK(pp)
+                mod.IsVerticalOrientation(ppOri),
+                mod.ERB_BarFrameK(pp)
             )
         else
             -- Extend Top / Extend Bottom re-seat the border host (the stock branch
@@ -884,17 +884,17 @@ local function BuildBars()
                 pp.borderSize,
                 pp.borderBehind,
                 CludesUI.BorderPx(pp.borderSizePx, pp.borderSize, pp.borderTexture),
-                ns.ERB_BorderExtents(pp)
+                mod.ERB_BorderExtents(pp)
             )
         end
         -- Draw Above GCD Bar: re-lifts the border ApplyBorder just re-levelled
         -- (inert unless it was ever on).
-        ns.ERB_PowerLift(pp)
+        mod.ERB_PowerLift(pp)
 
         -- Bar texture (must be applied before colors since SetStatusBarTexture resets vertex color).
         -- Same per-bar rule as health: power's own key only while splitTex is on.
         ApplyBarTexture(primaryBar, (p.splitTex == true and pp.barTexture) or g.barTexture or "none")
-        ns.ERB_RoundBar(primaryBar, pp)
+        mod.ERB_RoundBar(primaryBar, pp)
 
         -- Colors: custom colored > power type color. Gradient is additive: when on
         -- it fills from the resolved custom/power base to the gradient end color.
@@ -930,7 +930,7 @@ local function BuildBars()
             primaryBar._bg:SetColorTexture(pp.bgR, pp.bgG, pp.bgB, pp.bgA)
             -- Textured Background: flat while Fill Color is below 100.
             if g.barTextureBg or primaryBar._bg._erbBgTex then
-                ns.ERB_BgTexture(
+                mod.ERB_BgTexture(
                     primaryBar._bg,
                     g.barTextureBg
                         and (pp.fillOpacity or 100) >= 100
@@ -975,10 +975,10 @@ local function BuildBars()
         if hidePower then
             CludesUI.SetElementVisibility(primaryBar, false)
         else
-            primaryBar:SetAlpha(ns.ERB_MissingBarAlpha(primaryBar, pp))
+            primaryBar:SetAlpha(mod.ERB_MissingBarAlpha(primaryBar, pp))
         end
         ApplyBarOrientation(primaryBar, ppOri)
-        ns.ApplyFillOpacity(primaryBar, ppOri, pp.fillOpacity)
+        mod.ApplyFillOpacity(primaryBar, ppOri, pp.fillOpacity)
         if IsSpecDisabled(pp) then
             CludesUI.SetElementVisibility(primaryBar, false)
         end
@@ -1007,14 +1007,14 @@ local function BuildBars()
     end
 
     -- Class resource (secondary: pips / runes)
-    I.SetCachedSecondary(GetSecondaryResource())
+    Inner.SetCachedSecondary(GetSecondaryResource())
     local sp = _G._CURB_ResolveSecondaryCfg(p) or FALLBACK.secondary
     -- Create the frame UNCONDITIONALLY (mirrors the power bar) so anchored elements
     -- always have a target and "Shift Elements if No Resource" works whether the bar
     -- is spec-hidden OR toggled off. When off, the branch below keeps it sized and
     -- zero-alpha.
     if not secondaryFrame then
-        I.SetSecondaryFrame(CreateFrame("Frame", "ERB_SecondaryFrame", mainFrame))
+        Inner.SetSecondaryFrame(CreateFrame("Frame", "ERB_SecondaryFrame", mainFrame))
         secondaryFrame:SetFrameStrata(g.frameStrata or "MEDIUM")
         secondaryFrame:SetFrameLevel(10)
     end
@@ -1022,14 +1022,14 @@ local function BuildBars()
     -- once to put it back at 10; before the art sync and the border, which level
     -- off it.
     if sp.raiseLevel or secondaryFrame._erbRaised then
-        ns.ERB_ClassRaise(sp)
+        mod.ERB_ClassRaise(sp)
     end
     -- Blizzard Class Resource Art (CUI_ResourceBars_BlizzClassArt.lua): claims or
     -- hands back Blizzard's class resource frame and sets ns._erbArtOn, which
     -- stands the pips down at the end of this block while the slot keeps its
     -- size and position for anchors, the unlock mover, shift and expand.
-    if ns.ERB_BlizzArtSync then
-        ns.ERB_BlizzArtSync(sp, cachedSecondary, secondaryFrame)
+    if mod.ERB_BlizzArtSync then
+        mod.ERB_BlizzArtSync(sp, cachedSecondary, secondaryFrame)
     end
     if sp.enabled ~= false and not IsSpecDisabled(sp) and cachedSecondary then
         local maxPts = cachedSecondary.max or 5
@@ -1073,7 +1073,7 @@ local function BuildBars()
         local _crEs = (secondaryFrame and secondaryFrame:GetEffectiveScale())
             or (UIParent and UIParent:GetEffectiveScale())
             or 1
-        local pipH = PP.SnapForES(sp.pipHeight or 20, _crEs)
+        local pipH = Pix.SnapForES(sp.pipHeight or 20, _crEs)
         local pipSp = sp.pipSpacing or 1
         local pipOri = sp.pipOrientation or "HORIZONTAL"
         local isVertical = (pipOri ~= "HORIZONTAL")
@@ -1087,15 +1087,15 @@ local function BuildBars()
 
         local isBarType = cachedSecondary.type == "bar"
         -- Background on individual pips (pip and rune resources only).
-        local pipBg = ns.ERB_PipBgOn(sp, isBarType)
+        local pipBg = mod.ERB_PipBgOn(sp, isBarType)
         totalW = sp.pipWidth or 214
 
         -- Frame dimensions snapped ONCE with the captured _crEs; pip layout below
         -- uses the SAME _crEs and totalW, so slot positions align with the frame
         -- edges exactly. NEVER resize the frame after layout -- that re-introduces
         -- the 1px shift this design eliminates.
-        local widthSnapped = PP.SnapForES(totalW, _crEs)
-        local heightSnapped = PP.SnapForES(pipH, _crEs)
+        local widthSnapped = Pix.SnapForES(totalW, _crEs)
+        local heightSnapped = Pix.SnapForES(pipH, _crEs)
         local frameW = isVertical and heightSnapped or widthSnapped
         local frameH = isVertical and widthSnapped or heightSnapped
         local secondaryAnchorKey = NormalizeAnchorKey(sp.anchorTo)
@@ -1149,11 +1149,11 @@ local function BuildBars()
                 local function ApplySecondaryBarTransform()
                     local ox = secondaryFrame["_barAnim_ox"] or sp.offsetX or 0
                     local oy = secondaryFrame["_barAnim_oy"] or sp.offsetY or -38
-                    local w = secondaryFrame["_barAnim_w"] or frameW
+                    local wid = secondaryFrame["_barAnim_w"] or frameW
                     local h2 = secondaryFrame["_barAnim_h"] or frameH
                     secondaryFrame:ClearAllPoints()
                     secondaryFrame:SetPoint("CENTER", mainFrame, "CENTER", ox, oy)
-                    secondaryFrame:SetSize(w, h2)
+                    secondaryFrame:SetSize(wid, h2)
                 end
                 SmoothBarAnimate(secondaryFrame, "ox", sp.offsetX or 0, function()
                     ApplySecondaryBarTransform()
@@ -1174,22 +1174,22 @@ local function BuildBars()
         if isBarType then
             -- Bar-style secondary (e.g. Devourer soul fragments, Elemental maelstrom)
             -- Hide all pips, runes, and pip tick marks
-            for i = 1, #pips do
-                if pips[i] then
-                    pips[i]:Hide()
+            for idx = 1, #pips do
+                if pips[idx] then
+                    pips[idx]:Hide()
                 end
             end
-            for i = 1, #runeFrames do
-                if runeFrames[i] then
-                    runeFrames[i]:Hide()
+            for idx = 1, #runeFrames do
+                if runeFrames[idx] then
+                    runeFrames[idx]:Hide()
                 end
             end
             HideResourceBarTicks(secondaryPipTicks, secondaryFrame)
             ERB.ApplyGapFills(secondaryFrame, nil, 0, isVertical, isReversed, sp) -- no pips -> hide any gap fills
-            ns.ERB_ClassSeps(sp) -- Separators: the bottom-edge line only (no gaps)
+            mod.ERB_ClassSeps(sp) -- Separators: the bottom-edge line only (no gaps)
 
             if not secondaryBar then
-                I.SetSecondaryBar(
+                Inner.SetSecondaryBar(
                     CreateStatusBar(secondaryFrame, "ERB_SecondaryBar", totalW, pipH, 0, 0, 0, 0, 0)
                 )
                 secondaryBar:SetMinMaxValues(0, maxPts)
@@ -1278,7 +1278,7 @@ local function BuildBars()
                     br, bgg, bb = CludesUI.GetDarkModeBg()
                     ba = DARK_BG_A
                 end
-                ns.ERB_BgTexture(
+                mod.ERB_BgTexture(
                     secondaryBar._bg,
                     g.barTextureBg
                         and (sp.fillOpacity or 100) >= 100
@@ -1295,7 +1295,7 @@ local function BuildBars()
             -- this power = the ApplyBarTexture fill and its tints stand.
             secondaryBar._atlasFill = nil
             if sp.useBlizzardAtlas then
-                local atlas = ns.GetBlizzardPowerAtlas(cachedSecondary.power)
+                local atlas = mod.GetBlizzardPowerAtlas(cachedSecondary.power)
                 if atlas then
                     secondaryBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
                     secondaryBar:GetStatusBarTexture():SetAtlas(atlas, true)
@@ -1306,7 +1306,7 @@ local function BuildBars()
                     secondaryBar._atlasFill = true
                 end
             end
-            ns.ApplyFillOpacity(secondaryBar, pipOri, sp.fillOpacity)
+            mod.ApplyFillOpacity(secondaryBar, pipOri, sp.fillOpacity)
             secondaryBar:ApplyBorder(0, 0, 0, 0, 0)
             if cachedSecondary.power == "IRONFUR_BAR" then
                 -- Guardian Ironfur: no static threshold hash lines; the moving
@@ -1359,39 +1359,39 @@ local function BuildBars()
             -- Frame size already set with the SAME _crEs; slots are computed
             -- inside that fixed frame, so no resize.
             local slots = CalcPipGeometry(totalW, numPips, pipSp, secondaryFrame, _crEs)
-            for i = 1, 6 do
-                if not runeFrames[i] then
-                    runeFrames[i] = CreatePip(secondaryFrame, 20, pipH, i, 0, 0, 0, 0, 0)
+            for idx = 1, 6 do
+                if not runeFrames[idx] then
+                    runeFrames[idx] = CreatePip(secondaryFrame, 20, pipH, idx, 0, 0, 0, 0, 0)
                     -- Countdown number on its own overlay ABOVE the bar border (whichever
                     -- one is visible: per-pip when Border on Individual Pips is on, else
                     -- the outer secondaryFrame._barBorder at level +5) -- the number must
                     -- clear that (not just the pip) while staying below the
                     -- count/value text overlay (level 25). Recharge fill stays
                     -- framed by the border, matching the ready-rune fill.
-                    local cdOverlay = CreateFrame("Frame", nil, runeFrames[i])
-                    cdOverlay:SetAllPoints(runeFrames[i])
+                    local cdOverlay = CreateFrame("Frame", nil, runeFrames[idx])
+                    cdOverlay:SetAllPoints(runeFrames[idx])
                     cdOverlay:SetFrameLevel(secondaryFrame:GetFrameLevel() + 10)
                     local cdText = cdOverlay:CreateFontString(nil, "OVERLAY")
-                    runeFrames[i]._cdText = cdText
+                    runeFrames[idx]._cdText = cdText
                 end
                 -- Re-apply font size, color and offsets every rebuild so textSize /
                 -- textXOffset / textYOffset changes take effect live.
-                local cdText = runeFrames[i]._cdText
+                local cdText = runeFrames[idx]._cdText
                 if cdText then
                     cdText:SetTextColor(sp.textR or 1, sp.textG or 1, sp.textB or 1, 0.8)
                     SetRBFont(cdText, GetRBFont(), sp.textSize or 9)
                     cdText:ClearAllPoints()
                     cdText:SetPoint(
                         "CENTER",
-                        runeFrames[i],
+                        runeFrames[idx],
                         "CENTER",
                         sp.textXOffset or 0,
                         sp.textYOffset or 0
                     )
                 end
-                local x0 = slots[i].x0
-                local x1 = slots[i].x1
-                local rf = runeFrames[i]
+                local x0 = slots[idx].x0
+                local x1 = slots[idx].x1
+                local rf = runeFrames[idx]
                 local function ApplyRunePos()
                     local ap0 = rf["_barAnim_x0"] or x0
                     local aw = rf["_barAnim_x1"] or (x1 - x0)
@@ -1416,7 +1416,7 @@ local function BuildBars()
                 rf["_barAnim_ph"] = pipH
                 ApplyRunePos()
                 if sp.borderOnPips then
-                    runeFrames[i]:ApplyBorder(
+                    runeFrames[idx]:ApplyBorder(
                         sp.borderSize,
                         sp.borderR,
                         sp.borderG,
@@ -1432,19 +1432,19 @@ local function BuildBars()
                         CludesUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture)
                     )
                 else
-                    runeFrames[i]:ApplyBorder(0, 0, 0, 0, 0)
+                    runeFrames[idx]:ApplyBorder(0, 0, 0, 0, 0)
                 end
-                runeFrames[i]:ApplyTexture(g.barTexture or "none")
+                runeFrames[idx]:ApplyTexture(g.barTexture or "none")
                 if sp.useContinuousTexture then
-                    I.PipTextureHelpers.Configure(runeFrames[i], x0, x1, widthSnapped, pipOri)
-                elseif runeFrames[i]._continuousStart then
-                    I.PipTextureHelpers.Reset(runeFrames[i])
+                    Inner.PipTextureHelpers.Configure(runeFrames[idx], x0, x1, widthSnapped, pipOri)
+                elseif runeFrames[idx]._continuousStart then
+                    Inner.PipTextureHelpers.Reset(runeFrames[idx])
                 end
-                runeFrames[i]._bg:SetColorTexture(ERB.PipBgColor(sp, pipBg))
+                runeFrames[idx]._bg:SetColorTexture(ERB.PipBgColor(sp, pipBg))
                 -- Textured Background, as the bar-type branch.
-                if g.barTextureBg or runeFrames[i]._bg._erbBgTex then
-                    ns.ERB_BgTexture(
-                        runeFrames[i]._bg,
+                if g.barTextureBg or runeFrames[idx]._bg._erbBgTex then
+                    mod.ERB_BgTexture(
+                        runeFrames[idx]._bg,
                         g.barTextureBg
                             and not pipBg
                             and (sp.fillOpacity or 100) >= 100
@@ -1459,16 +1459,16 @@ local function BuildBars()
                 local _runeOp = sp.fillOpacity or 100
                 if _runeOp < 100 or pipBg then
                     local _rOp = (_runeOp < 100) and (_runeOp / 100) or 1
-                    runeFrames[i]._fillOp = _rOp
-                    runeFrames[i]._fill:SetAlpha(_rOp)
-                elseif runeFrames[i]._fillOp then
-                    ns.ClearPipFillOpacity(runeFrames[i])
+                    runeFrames[idx]._fillOp = _rOp
+                    runeFrames[idx]._fill:SetAlpha(_rOp)
+                elseif runeFrames[idx]._fillOp then
+                    mod.ClearPipFillOpacity(runeFrames[idx])
                 end
-                runeFrames[i]:Show()
+                runeFrames[idx]:Show()
             end
-            for i = 7, #pips do
-                if pips[i] then
-                    pips[i]:Hide()
+            for idx = 7, #pips do
+                if pips[idx] then
+                    pips[idx]:Hide()
                 end
             end
             if secondaryBar then
@@ -1496,43 +1496,43 @@ local function BuildBars()
                 _runeHA
             )
             ERB.ApplyGapFills(secondaryFrame, slots, numPips, isVertical, isReversed, sp, pipBg)
-            ns.ERB_ClassSeps(sp, slots, numPips, isVertical, isReversed)
+            mod.ERB_ClassSeps(sp, slots, numPips, isVertical, isReversed)
         else
             -- Frame size already set with the SAME _crEs; slots are computed
             -- inside that fixed frame, so no resize.
             local slots = CalcPipGeometry(totalW, maxPts, pipSp, secondaryFrame, _crEs)
-            for i = 1, maxPts do
-                if not pips[i] then
-                    pips[i] = CreatePip(secondaryFrame, 20, pipH, i, 0, 0, 0, 0, 0)
+            for idx = 1, maxPts do
+                if not pips[idx] then
+                    pips[idx] = CreatePip(secondaryFrame, 20, pipH, idx, 0, 0, 0, 0, 0)
                 end
-                local x0 = slots[i].x0
-                local x1 = slots[i].x1
-                local pip = pips[i]
+                local x0 = slots[idx].x0
+                local x1 = slots[idx].x1
+                local pipTex = pips[idx]
                 local function ApplyPipPos()
-                    local ap0 = pip["_barAnim_x0"] or x0
-                    local aw = pip["_barAnim_x1"] or (x1 - x0)
-                    local ah = pip["_barAnim_ph"] or pipH
-                    pip:ClearAllPoints()
+                    local ap0 = pipTex["_barAnim_x0"] or x0
+                    local aw = pipTex["_barAnim_x1"] or (x1 - x0)
+                    local ah = pipTex["_barAnim_ph"] or pipH
+                    pipTex:ClearAllPoints()
                     if isVertical then
                         if isReversed then
-                            pip:SetPoint("BOTTOM", secondaryFrame, "BOTTOM", 0, ap0)
+                            pipTex:SetPoint("BOTTOM", secondaryFrame, "BOTTOM", 0, ap0)
                         else
-                            pip:SetPoint("TOP", secondaryFrame, "TOP", 0, -ap0)
+                            pipTex:SetPoint("TOP", secondaryFrame, "TOP", 0, -ap0)
                         end
-                        pip:SetHeight(aw)
-                        pip:SetWidth(ah)
+                        pipTex:SetHeight(aw)
+                        pipTex:SetWidth(ah)
                     else
-                        pip:SetPoint("LEFT", secondaryFrame, "LEFT", ap0, 0)
-                        pip:SetWidth(aw)
-                        pip:SetHeight(ah)
+                        pipTex:SetPoint("LEFT", secondaryFrame, "LEFT", ap0, 0)
+                        pipTex:SetWidth(aw)
+                        pipTex:SetHeight(ah)
                     end
                 end
-                pip["_barAnim_x0"] = x0
-                pip["_barAnim_x1"] = x1 - x0
-                pip["_barAnim_ph"] = pipH
+                pipTex["_barAnim_x0"] = x0
+                pipTex["_barAnim_x1"] = x1 - x0
+                pipTex["_barAnim_ph"] = pipH
                 ApplyPipPos()
                 if sp.borderOnPips then
-                    pips[i]:ApplyBorder(
+                    pips[idx]:ApplyBorder(
                         sp.borderSize,
                         sp.borderR,
                         sp.borderG,
@@ -1548,19 +1548,19 @@ local function BuildBars()
                         CludesUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture)
                     )
                 else
-                    pips[i]:ApplyBorder(0, 0, 0, 0, 0)
+                    pips[idx]:ApplyBorder(0, 0, 0, 0, 0)
                 end
-                pips[i]:ApplyTexture(g.barTexture or "none")
+                pips[idx]:ApplyTexture(g.barTexture or "none")
                 if sp.useContinuousTexture then
-                    I.PipTextureHelpers.Configure(pips[i], x0, x1, widthSnapped, pipOri)
-                elseif pips[i]._continuousStart then
-                    I.PipTextureHelpers.Reset(pips[i])
+                    Inner.PipTextureHelpers.Configure(pips[idx], x0, x1, widthSnapped, pipOri)
+                elseif pips[idx]._continuousStart then
+                    Inner.PipTextureHelpers.Reset(pips[idx])
                 end
-                pips[i]._bg:SetColorTexture(ERB.PipBgColor(sp, pipBg))
+                pips[idx]._bg:SetColorTexture(ERB.PipBgColor(sp, pipBg))
                 -- Textured Background, as the bar-type branch.
-                if g.barTextureBg or pips[i]._bg._erbBgTex then
-                    ns.ERB_BgTexture(
-                        pips[i]._bg,
+                if g.barTextureBg or pips[idx]._bg._erbBgTex then
+                    mod.ERB_BgTexture(
+                        pips[idx]._bg,
                         g.barTextureBg
                             and not pipBg
                             and (sp.fillOpacity or 100) >= 100
@@ -1575,23 +1575,23 @@ local function BuildBars()
                 local _pipOp = sp.fillOpacity or 100
                 if _pipOp < 100 or pipBg then
                     local _pOp = (_pipOp < 100) and (_pipOp / 100) or 1
-                    pips[i]._fillOp = _pOp
-                    pips[i]._fill:SetAlpha(_pOp)
-                elseif pips[i]._fillOp then
-                    ns.ClearPipFillOpacity(pips[i])
+                    pips[idx]._fillOp = _pOp
+                    pips[idx]._fill:SetAlpha(_pOp)
+                elseif pips[idx]._fillOp then
+                    mod.ClearPipFillOpacity(pips[idx])
                 end
-                pips[i]:Show()
+                pips[idx]:Show()
             end
-            for i = maxPts + 1, #pips do
-                if pips[i] then
-                    pips[i]:Hide()
+            for idx = maxPts + 1, #pips do
+                if pips[idx] then
+                    pips[idx]:Hide()
                 end
             end
             ERB.ApplyGapFills(secondaryFrame, slots, maxPts, isVertical, isReversed, sp, pipBg)
-            ns.ERB_ClassSeps(sp, slots, maxPts, isVertical, isReversed)
-            for i = 1, #runeFrames do
-                if runeFrames[i] then
-                    runeFrames[i]:Hide()
+            mod.ERB_ClassSeps(sp, slots, maxPts, isVertical, isReversed)
+            for idx = 1, #runeFrames do
+                if runeFrames[idx] then
+                    runeFrames[idx]:Hide()
                 end
             end
             if secondaryBar then
@@ -1642,7 +1642,7 @@ local function BuildBars()
                 sp.borderBehind and math.max(0, pl - 1) or (pl + 5)
             )
         end
-        if ns.ERB_BarsBlizz() then
+        if mod.ERB_BarsBlizz() then
             -- Blizzard Style / Classic WoW UI: the stock bar frame replaces the
             -- full-bar border; pips keep their own borders and spacing. Under
             -- Blizzard Style the fill and backing (bar-type) or every pip/rune
@@ -1654,43 +1654,50 @@ local function BuildBars()
             secondaryFrame._barBorder:ApplyStyle(0, 0, 0, 0, 0)
             secondaryFrame._blizzVertical = isVertical or nil
             -- Sized from the row's target size: the frame may still be animating to it.
-            ns.ERB_ApplyBlizzBarChrome(secondaryFrame, nil, frameW, frameH, isVertical, ns.ERB_BarFrameK(sp))
+            mod.ERB_ApplyBlizzBarChrome(
+                secondaryFrame,
+                nil,
+                frameW,
+                frameH,
+                isVertical,
+                mod.ERB_BarFrameK(sp)
+            )
             local rowMask = secondaryFrame._blizzBarMask
             if secondaryBar then
-                ns.ERB_SeatBlizzMask(secondaryFrame, secondaryBar)
+                mod.ERB_SeatBlizzMask(secondaryFrame, secondaryBar)
             end
             local shade = secondaryFrame._blizzShadeFrame
-            if ns.ERB_BarsClassic() then
+            if mod.ERB_BarsClassic() then
                 if shade then
                     shade:Hide()
                 end
             elseif isBarType then
                 -- The bevel rides the overlay frame here too, over the layer
                 -- bars (Ironfur / Ignore Pain) the bar-type stacks on its fill.
-                local sb = secondaryBar and secondaryBar._sb
-                if sb then
+                local scrollBar = secondaryBar and secondaryBar._sb
+                if scrollBar then
                     if not shade then
                         shade = CreateFrame("Frame", nil, secondaryFrame)
                         secondaryFrame._blizzShadeFrame = shade
                     end
                     shade:ClearAllPoints()
-                    shade:SetAllPoints(sb)
+                    shade:SetAllPoints(scrollBar)
                     shade:SetFrameLevel(secondaryFrame:GetFrameLevel() + 9)
                     shade._blizzVertical = isVertical
                     shade:Show()
-                    ns.ERB_BlizzBarShadow(shade, rowMask)
+                    mod.ERB_BlizzBarShadow(shade, rowMask)
                 elseif shade then
                     shade:Hide()
                 end
             else
-                for i = 1, #pips do
-                    if pips[i] then
-                        ns.ERB_MaskPip(pips[i], rowMask)
+                for idx = 1, #pips do
+                    if pips[idx] then
+                        mod.ERB_MaskPip(pips[idx], rowMask)
                     end
                 end
-                for i = 1, #runeFrames do
-                    if runeFrames[i] then
-                        ns.ERB_MaskPip(runeFrames[i], rowMask)
+                for idx = 1, #runeFrames do
+                    if runeFrames[idx] then
+                        mod.ERB_MaskPip(runeFrames[idx], rowMask)
                     end
                 end
                 if not shade then
@@ -1705,7 +1712,7 @@ local function BuildBars()
                 shade:SetFrameLevel(secondaryFrame:GetFrameLevel() + 9)
                 shade._blizzVertical = isVertical
                 shade:Show()
-                ns.ERB_BlizzBarShadow(shade, rowMask)
+                mod.ERB_BlizzBarShadow(shade, rowMask)
             end
         elseif sp.borderOnPips and not isBarType then
             secondaryFrame._barBorder:ApplyStyle(0, 0, 0, 0, 0)
@@ -1726,7 +1733,7 @@ local function BuildBars()
                 "resourcebars",
                 sp.borderSize,
                 CludesUI.BorderPx(sp.borderSizePx, sp.borderSize, sp.borderTexture),
-                ns.ERB_BorderExtents(sp)
+                mod.ERB_BorderExtents(sp)
             )
         end
 
@@ -1749,7 +1756,7 @@ local function BuildBars()
             -- and defeats the world-show-through. Anchor to secondaryBar's own
             -- inset inner StatusBar (_sb), not the uninset outer secondaryFrame,
             -- or a sub-pixel sliver of _barBg peeks out past the fill's clipped edge.
-            ns.AnchorBgToFillEdge(
+            mod.AnchorBgToFillEdge(
                 secondaryFrame._barBg,
                 secondaryBar:GetStatusBarTexture(),
                 secondaryBar._sb,
@@ -1784,7 +1791,7 @@ local function BuildBars()
                 sp.barBgA or 0.5
             )
         end
-        ns.ERB_RoundSecondary(sp, isBarType)
+        mod.ERB_RoundSecondary(sp, isBarType)
 
         if sp.showText then
             if not secondaryFrame._countText then
@@ -1816,25 +1823,25 @@ local function BuildBars()
                 secondaryFrame._countText._cuiOrigSetText = secondaryFrame._countText.SetText
                 secondaryFrame._countText._cuiOrigSetFormattedText =
                     secondaryFrame._countText.SetFormattedText
-                secondaryFrame._countText.SetText = function(self, text, ...)
-                    if issecretvalue and issecretvalue(text) then
-                        local ok, shown = ns.ERB_TruncateSecretZero(text)
-                        if ok then
-                            self._cuiHidden, self._cuiHiddenText = true, text
-                            return self._cuiOrigSetText(self, shown)
+                secondaryFrame._countText.SetText = function(self, textValue, ...)
+                    if issecretvalue and issecretvalue(textValue) then
+                        local success, isShown = mod.ERB_TruncateSecretZero(textValue)
+                        if success then
+                            self._cuiHidden, self._cuiHiddenText = true, textValue
+                            return self._cuiOrigSetText(self, isShown)
                         end
-                    elseif ns.ERB_TextIsZero(text) then
-                        self._cuiHidden, self._cuiHiddenText = true, text
+                    elseif mod.ERB_TextIsZero(textValue) then
+                        self._cuiHidden, self._cuiHiddenText = true, textValue
                         return self._cuiOrigSetText(self, "")
                     end
                     self._cuiHidden, self._cuiHiddenText = false, nil
-                    return self._cuiOrigSetText(self, text, ...)
+                    return self._cuiOrigSetText(self, textValue, ...)
                 end
                 secondaryFrame._countText.SetFormattedText = function(self, fmt, first, ...)
                     if fmt == "%s" and select("#", ...) == 0 and issecretvalue and issecretvalue(first) then
                         return self:SetText(first)
                     end
-                    if ns.ERB_TextIsZero(first) then
+                    if mod.ERB_TextIsZero(first) then
                         self._cuiHidden, self._cuiHiddenText = true, format(fmt, first, ...)
                         return self._cuiOrigSetText(self, "")
                     end
@@ -1874,16 +1881,16 @@ local function BuildBars()
         -- CUI_ResourceBars_WarriorCharges.lua). Must run after _countText is
         -- created and styled above -- the engine bakes its count-text font from
         -- this fontstring at slot-creation time and never re-reads it.
-        if ns.WC_Sync then
-            ns.WC_Sync(secondaryFrame, sp, cachedSecondary and cachedSecondary.power, g)
+        if mod.WC_Sync then
+            mod.WC_Sync(secondaryFrame, sp, cachedSecondary and cachedSecondary.power, g)
         end
 
         secondaryFrame:Show()
-        if ns._erbArtOn then
+        if mod._erbArtOn then
             -- Blizzard's frame stands in: the slot stays shown and sized at zero alpha.
             CludesUI.SetElementVisibility(secondaryFrame, false)
         else
-            secondaryFrame:SetAlpha(ns.ResolveBarAlpha(sp))
+            secondaryFrame:SetAlpha(mod.ResolveBarAlpha(sp))
         end
     elseif secondaryFrame then
         -- Enabled but no resource for this spec: keep the frame positioned
@@ -1913,16 +1920,16 @@ local function BuildBars()
 
     -- Bottom Separator on the power bar, placed after the class resource block
     -- so it levels above both border stacks (inert unless it was ever on).
-    ns.ERB_PowerSep(pp)
+    mod.ERB_PowerSep(pp)
 
     -- Hash lines on the health and power bars
     do
         local _prof = ERB.db and ERB.db.profile
         if _prof then
-            ns.ApplyHashLines(healthBar, _prof.health, function()
+            mod.ApplyHashLines(healthBar, _prof.health, function()
                 return UnitHealthMax("player")
             end)
-            ns.ApplyHashLines(primaryBar, _prof.primary, function()
+            mod.ApplyHashLines(primaryBar, _prof.primary, function()
                 return UnitPowerMax("player", GetPrimaryPowerType())
             end)
         end
@@ -1938,7 +1945,7 @@ local function BuildBars()
     -- unlock mode (unlock entry/exit manage the shift).
     do
         local sp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-        local active = sp ~= nil
+        local isActive = sp ~= nil
             and (sp.shiftElementsIfNoResource == "Up" or sp.shiftElementsIfNoResource == "Down")
         -- Re-cascade only on an actual shift-state CHANGE (present<->absent, or
         -- feature toggled off) -- firing every BuildBars while merely enabled
@@ -1948,7 +1955,7 @@ local function BuildBars()
         -- dir: 0 = present, +/-1 = absent.
         if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
             local dir = 0
-            if active and CludesUI._GetAnchorTargetShiftDir then
+            if isActive and CludesUI._GetAnchorTargetShiftDir then
                 dir = CludesUI._GetAnchorTargetShiftDir("ERB_ClassResource") or 0
             end
             if dir ~= (ERB._lastShiftDir or 0) then
@@ -1964,13 +1971,13 @@ local function BuildBars()
     -- profile schedules ZERO anchor work, and never fires during unlock mode.
     do
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        local active = pp ~= nil
+        local isActive = pp ~= nil
             and (pp.shiftElementsIfNoPower == "Up" or pp.shiftElementsIfNoPower == "Down")
         -- Same transition-only guard as the class-resource block above: cascade
         -- only when the shift state actually changes, not every BuildBars call.
         if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
             local dir = 0
-            if active and CludesUI._GetAnchorTargetShiftDir then
+            if isActive and CludesUI._GetAnchorTargetShiftDir then
                 dir = CludesUI._GetAnchorTargetShiftDir("ERB_Power") or 0
             end
             if dir ~= (ERB._lastShiftDirPower or 0) then
@@ -1982,8 +1989,8 @@ local function BuildBars()
 
     -- WoW Forever druid mana bar (CUI_ResourceBars_ForeverDruidMana.lua):
     -- restyled after every Power Bar build; nil on every other client/class.
-    if ns.FDM_Apply then
-        ns.FDM_Apply(primaryBar, pp, g)
+    if mod.FDM_Apply then
+        mod.FDM_Apply(primaryBar, pp, g)
     end
 
     -- The stack layout just settled (build, spec, form, expand, shift and options all
@@ -1995,6 +2002,6 @@ local function BuildBars()
     end
 end
 
-I.ApplyResourceBarTicks, I.BuildBars = ApplyResourceBarTicks, BuildBars
-I.EnsureIronfurOverlay, I.ironfurTickTex = EnsureIronfurOverlay, ironfurTickTex
-I.broken = false
+Inner.ApplyResourceBarTicks, Inner.BuildBars = ApplyResourceBarTicks, BuildBars
+Inner.EnsureIronfurOverlay, Inner.ironfurTickTex = EnsureIronfurOverlay, ironfurTickTex
+Inner.broken = false

@@ -117,31 +117,31 @@ end
 -- lists expanded. nav: where Open Settings goes (a list item's own, else the
 -- entry); sub: the in-card group a row is listed under.
 local function CollectSites()
-    local out = {}
-    for _, entry in ipairs(GO.sites) do
-        if entry.list then
-            for _, item in ipairs(entry.list() or {}) do
-                out[#out + 1] = {
-                    module = entry.module,
-                    label = item.label,
-                    sub = item.sub or entry.sub,
-                    desc = item.desc,
-                    entry = entry,
-                    nav = item.nav or entry,
+    local result = {}
+    for _, record in ipairs(GO.sites) do
+        if record.list then
+            for _, itemInfo in ipairs(record.list() or {}) do
+                result[#result + 1] = {
+                    module = record.module,
+                    label = itemInfo.label,
+                    sub = itemInfo.sub or record.sub,
+                    desc = itemInfo.desc,
+                    entry = record,
+                    nav = itemInfo.nav or record,
                 }
             end
-        elseif entry.desc then
-            out[#out + 1] = {
-                module = entry.module,
-                label = entry.label,
-                sub = entry.sub,
-                desc = entry.desc,
-                entry = entry,
-                nav = entry,
+        elseif record.desc then
+            result[#result + 1] = {
+                module = record.module,
+                label = record.label,
+                sub = record.sub,
+                desc = record.desc,
+                entry = record,
+                nav = record,
             }
         end
     end
-    return out
+    return result
 end
 
 -- Glows kept per entry in modules that register no hint of their own: added
@@ -210,19 +210,19 @@ end
 -- with a count and Go to Settings for glows kept per entry elsewhere.
 local function CollectInfos()
     EnsureEntryGlowInfos()
-    local out = {}
-    for _, entry in ipairs(GO.sites) do
-        if entry.info then
-            out[#out + 1] = {
-                module = entry.module,
-                label = entry.label,
-                sub = entry.sub,
-                info = entry.info,
-                nav = entry,
+    local result = {}
+    for _, record in ipairs(GO.sites) do
+        if record.info then
+            result[#result + 1] = {
+                module = record.module,
+                label = record.label,
+                sub = record.sub,
+                info = record.info,
+                nav = record,
             }
         end
     end
-    return out
+    return result
 end
 
 local function Blocked(site)
@@ -272,11 +272,11 @@ local function SiteStatus(site, t)
     if GO.MatchesTemplate(desc, t) then
         return ST_GREEN, CludesUI.L("Matches"), CludesUI.L("Matches template"), true
     end
-    local idx, converted = GO.Resolve(desc, t.style or 1)
+    local position, converted = GO.Resolve(desc, t.style or 1)
     if converted then
         return ST_AMBER,
             CludesUI.L("Differs"),
-            CludesUI.Lf("Differs (template shows as %s)", CludesUI.L(CludesUI.Glows.STYLES[idx].name)),
+            CludesUI.Lf("Differs (template shows as %s)", CludesUI.L(CludesUI.Glows.STYLES[position].name)),
             false
     end
     return ST_AMBER, CludesUI.L("Differs"), CludesUI.L("Differs from template"), false
@@ -298,8 +298,8 @@ end
 -- One pass's refreshes: each distinct module refresh once (CDM bars share one
 -- rebuild), the touched modules' cached pages dropped, this page rebuilt.
 local function Settle(touched, refresh)
-    for fn in pairs(refresh) do
-        fn()
+    for func in pairs(refresh) do
+        func()
     end
     for module in pairs(touched) do
         CludesUI:InvalidateModulePageCache(module)
@@ -319,10 +319,10 @@ local function ApplyRun(sites, t, anyState, first, confirmed)
         local site = sites[i]
         local desc = site.desc
         if Eligible(site, t, anyState) then
-            local v = GO.TemplateValue(desc, t)
-            if v ~= nil and desc.confirm and i ~= confirmed then
+            local val = GO.TemplateValue(desc, t)
+            if val ~= nil and desc.confirm and i ~= confirmed then
                 local inCall, passed = true, false
-                desc.confirm(v, function()
+                desc.confirm(val, function()
                     if inCall then
                         passed = true
                     else
@@ -365,10 +365,10 @@ end
 
 -- Counts what ApplyTo would change, for the confirm popup.
 local function PreviewCounts(sites, t, anyState)
-    local n, conv, turnOn = 0, 0, 0
+    local num, conv, turnOn = 0, 0, 0
     for _, site in ipairs(sites) do
         if Eligible(site, t, anyState) then
-            n = n + 1
+            num = num + 1
             local _, c = GO.TemplateValue(site.desc, t)
             if c then
                 conv = conv + 1
@@ -378,14 +378,14 @@ local function PreviewCounts(sites, t, anyState)
             end
         end
     end
-    return n, conv, turnOn
+    return num, conv, turnOn
 end
 
 -- anyState: a row's or a module's Apply (see Eligible).
 local function ConfirmApply(sites, anyState)
     local t = Template()
-    local n, conv, turnOn = PreviewCounts(sites, t, anyState)
-    if n == 0 then
+    local num, conv, turnOn = PreviewCounts(sites, t, anyState)
+    if num == 0 then
         CludesUI:ShowInfoPopup({
             title = CludesUI.L("Apply Glow Template"),
             content = anyState and CludesUI.L(
@@ -394,8 +394,8 @@ local function ConfirmApply(sites, anyState)
         })
         return
     end
-    local msg = anyState and CludesUI.Lf("Apply the template to %d glow(s)?", n)
-        or CludesUI.Lf("Apply the template to the %d active custom glow(s) listed here?", n)
+    local msg = anyState and CludesUI.Lf("Apply the template to %d glow(s)?", num)
+        or CludesUI.Lf("Apply the template to the %d active custom glow(s) listed here?", num)
     if turnOn > 0 then
         msg = msg
             .. "\n\n"
@@ -427,40 +427,40 @@ end
 -- A DualRow kept out of the search index: view controls and live counts are
 -- no search results (a count would also go stale there). The flag is restored
 -- even when the row errors.
-local function UnindexedDualRow(W, parent, y, left, right)
+local function UnindexedDualRow(W, hostFrame, posY, leftX, right)
     local prev = CludesUI._searchIndexSuppress
     CludesUI._searchIndexSuppress = true
-    local ok, row, h = pcall(W.DualRow, W, parent, y, left, right)
+    local success, rowFrame, hgt = pcall(W.DualRow, W, hostFrame, posY, leftX, right)
     CludesUI._searchIndexSuppress = prev
-    if not ok then
-        error(row, 0)
+    if not success then
+        error(rowFrame, 0)
     end
-    return row, h
+    return rowFrame, hgt
 end
 
 -- Round status dot left of a label half's text (the core's circle-mask dot).
 local DOT_MASK = "Interface\\AddOns\\CludesUI\\media\\portraits\\circle_mask.tga"
-local function StatusDot(rgn, color)
-    local lbl = rgn._label
-    if not lbl then
+local function StatusDot(region, color)
+    local labelFS = region._label
+    if not labelFS then
         return
     end
-    local PP = CludesUI.PanelPP
-    local p, rel, rp, x, y = lbl:GetPoint(1)
-    local dot = CreateFrame("Frame", nil, rgn)
-    PP.Size(dot, 8, 8)
-    dot:SetPoint(p, rel, rp, x, y)
-    local tex = dot:CreateTexture(nil, "OVERLAY")
-    tex:SetAllPoints()
-    tex:SetColorTexture(color[1], color[2], color[3], 1)
-    local mask = dot:CreateMaskTexture()
-    mask:SetTexture(DOT_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    mask:SetAllPoints(tex)
-    tex:AddMaskTexture(mask)
-    lbl:ClearAllPoints()
-    PP.Point(lbl, "LEFT", dot, "RIGHT", 8, 0)
-    lbl:SetTextColor(color[1], color[2], color[3], 1)
-    return tex
+    local Pix = CludesUI.PanelPP
+    local p, rel, rp, posX, posY = labelFS:GetPoint(1)
+    local dot = CreateFrame("Frame", nil, region)
+    Pix.Size(dot, 8, 8)
+    dot:SetPoint(p, rel, rp, posX, posY)
+    local texture = dot:CreateTexture(nil, "OVERLAY")
+    texture:SetAllPoints()
+    texture:SetColorTexture(color[1], color[2], color[3], 1)
+    local maskTex = dot:CreateMaskTexture()
+    maskTex:SetTexture(DOT_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    maskTex:SetAllPoints(texture)
+    texture:AddMaskTexture(maskTex)
+    labelFS:ClearAllPoints()
+    Pix.Point(labelFS, "LEFT", dot, "RIGHT", 8, 0)
+    labelFS:SetTextColor(color[1], color[2], color[3], 1)
+    return texture
 end
 
 -- Why a site's Apply Template is greyed out, or nil when it would change it
@@ -496,103 +496,103 @@ end
 -- Light in-card group heading (a SectionHeader would split the card's search
 -- section); inline search matches it by its text.
 local SUB_H = 30
-local function SubHeader(parent, y, text)
-    local PP = CludesUI.PanelPP
-    local f = CreateFrame("Frame", nil, parent)
-    PP.Size(f, parent:GetWidth() - CludesUI.CONTENT_PAD * 2, SUB_H)
-    PP.Point(f, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
-    local fs = CludesUI.MakeFont(f, 11, nil, 1, 1, 1, 0.55)
-    PP.Point(fs, "BOTTOMLEFT", f, "BOTTOMLEFT", 20, 7)
-    fs:SetText(text)
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetColorTexture(1, 1, 1, 0.06)
-    line:SetHeight(1)
-    PP.Point(line, "LEFT", fs, "RIGHT", 10, 0)
-    PP.Point(line, "RIGHT", f, "RIGHT", -20, 0)
-    f._labelText = text
-    CludesUI._rowCounters[parent] = 0
-    return y - SUB_H
+local function SubHeader(hostFrame, posY, textValue)
+    local Pix = CludesUI.PanelPP
+    local f = CreateFrame("Frame", nil, hostFrame)
+    Pix.Size(f, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, SUB_H)
+    Pix.Point(f, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    local fontStr = CludesUI.MakeFont(f, 11, nil, 1, 1, 1, 0.55)
+    Pix.Point(fontStr, "BOTTOMLEFT", f, "BOTTOMLEFT", 20, 7)
+    fontStr:SetText(textValue)
+    local lineTex = f:CreateTexture(nil, "ARTWORK")
+    lineTex:SetColorTexture(1, 1, 1, 0.06)
+    lineTex:SetHeight(1)
+    Pix.Point(lineTex, "LEFT", fontStr, "RIGHT", 10, 0)
+    Pix.Point(lineTex, "RIGHT", f, "RIGHT", -20, 0)
+    f._labelText = textValue
+    CludesUI._rowCounters[hostFrame] = 0
+    return posY - SUB_H
 end
 
 -- Full-width rule between a card's control row and its glow rows.
 local DIV_H = 11
-local function CardDivider(parent, y)
-    local PP = CludesUI.PanelPP
-    local f = CreateFrame("Frame", nil, parent)
-    PP.Size(f, parent:GetWidth() - CludesUI.CONTENT_PAD * 2, DIV_H)
-    PP.Point(f, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetColorTexture(1, 1, 1, 0.1)
-    line:SetHeight(1)
-    PP.Point(line, "LEFT", f, "LEFT", 20, 0)
-    PP.Point(line, "RIGHT", f, "RIGHT", -20, 0)
-    CludesUI._rowCounters[parent] = 0
-    return y - DIV_H
+local function CardDivider(hostFrame, posY)
+    local Pix = CludesUI.PanelPP
+    local f = CreateFrame("Frame", nil, hostFrame)
+    Pix.Size(f, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, DIV_H)
+    Pix.Point(f, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    local lineTex = f:CreateTexture(nil, "ARTWORK")
+    lineTex:SetColorTexture(1, 1, 1, 0.1)
+    lineTex:SetHeight(1)
+    Pix.Point(lineTex, "LEFT", f, "LEFT", 20, 0)
+    Pix.Point(lineTex, "RIGHT", f, "RIGHT", -20, 0)
+    CludesUI._rowCounters[hostFrame] = 0
+    return posY - DIV_H
 end
 
 -- Small drawn symbol left of an info row's label, styled like the card
 -- glyphs (dark fill, accent edge): "icon" = one glowing button, "bar" =
 -- three buttons with the middle one glowing.
-local function InfoGlyph(rgn, kind)
-    local lbl = rgn._label
-    if not (lbl and kind) then
+local function InfoGlyph(region, kindOf)
+    local labelFS = region._label
+    if not (labelFS and kindOf) then
         return
     end
-    local PP = CludesUI.PanelPP
-    local EG = CludesUI.CLUDES_GREEN
-    local p, rel, rp, x, y = lbl:GetPoint(1)
-    local holder = CreateFrame("Frame", nil, rgn)
-    holder:SetPoint(p, rel, rp, x, y)
-    local function Button(size, glow)
-        local b = CreateFrame("Frame", nil, holder)
-        PP.Size(b, size, size)
-        local tex = b:CreateTexture(nil, "ARTWORK")
-        tex:SetAllPoints()
-        tex:SetColorTexture(0.1, 0.1, 0.1, 1)
+    local Pix = CludesUI.PanelPP
+    local ACC = CludesUI.CLUDES_GREEN
+    local p, rel, rp, posX, posY = labelFS:GetPoint(1)
+    local holderFrame = CreateFrame("Frame", nil, region)
+    holderFrame:SetPoint(p, rel, rp, posX, posY)
+    local function Button(dim, glow)
+        local b = CreateFrame("Frame", nil, holderFrame)
+        Pix.Size(b, dim, dim)
+        local texture = b:CreateTexture(nil, "ARTWORK")
+        texture:SetAllPoints()
+        texture:SetColorTexture(0.1, 0.1, 0.1, 1)
         if glow then
-            CludesUI.MakeBorder(b, EG.r, EG.g, EG.b, 0.8, PP)
+            CludesUI.MakeBorder(b, ACC.r, ACC.g, ACC.b, 0.8, Pix)
         else
-            CludesUI.MakeBorder(b, 1, 1, 1, 0.15, PP)
+            CludesUI.MakeBorder(b, 1, 1, 1, 0.15, Pix)
         end
         return b
     end
-    if kind == "bar" then
-        PP.Size(holder, 32, 10)
+    if kindOf == "bar" then
+        Pix.Size(holderFrame, 32, 10)
         local prev
         for i = 1, 3 do
             local b = Button(10, i == 2)
             if prev then
-                PP.Point(b, "LEFT", prev, "RIGHT", 1, 0)
+                Pix.Point(b, "LEFT", prev, "RIGHT", 1, 0)
             else
-                PP.Point(b, "LEFT", holder, "LEFT", 0, 0)
+                Pix.Point(b, "LEFT", holderFrame, "LEFT", 0, 0)
             end
             prev = b
         end
     else
-        PP.Size(holder, 16, 16)
-        PP.Point(Button(16, true), "LEFT", holder, "LEFT", 0, 0)
+        Pix.Size(holderFrame, 16, 16)
+        Pix.Point(Button(16, true), "LEFT", holderFrame, "LEFT", 0, 0)
     end
-    lbl:ClearAllPoints()
-    PP.Point(lbl, "LEFT", holder, "RIGHT", 8, 0)
+    labelFS:ClearAllPoints()
+    Pix.Point(labelFS, "LEFT", holderFrame, "RIGHT", 8, 0)
 end
 
 -- One info entry: label (hint as tooltip), its count, Go to Settings. The
 -- count is written after the build: a count is no search result.
-local function InfoRow(parent, y, W, item)
-    local info = item.info
-    local row, h = W:DualRow(
-        parent,
-        y,
-        { type = "label", text = item.label, tooltip = info.tooltip },
+local function InfoRow(hostFrame, posY, W, itemInfo)
+    local details = itemInfo.info
+    local rowFrame, hgt = W:DualRow(
+        hostFrame,
+        posY,
+        { type = "label", text = itemInfo.label, tooltip = details.tooltip },
         CludesUI.BlankRowCfg()
     )
     if not CludesUI._prebuilding then
-        local rrgn = row._rightRegion
-        if info.text and rrgn._label then
-            rrgn._label:SetText(info.text())
+        local rrgn = rowFrame._rightRegion
+        if details.text and rrgn._label then
+            rrgn._label:SetText(details.text())
         end
-        InfoGlyph(row._leftRegion, info.glyph)
-        local nav, module = item.nav, item.module
+        InfoGlyph(rowFrame._leftRegion, details.glyph)
+        local nav, module = itemInfo.nav, itemInfo.module
         if nav and nav.page then
             CludesUI.BuildInlineButton(rrgn, CludesUI.L("Go to Settings"), function()
                 CludesUI:NavigateToElementSettings(
@@ -605,38 +605,38 @@ local function InfoRow(parent, y, W, item)
             end)
         end
     end
-    return y - h
+    return posY - hgt
 end
 
 -- One site: its own glow controls on the left, status + Apply + Open Settings
 -- right. The status word is written after the build (no search result); its
 -- tooltip rides the empty label from the start.
-local function SiteRow(parent, y, W, site)
+local function SiteRow(hostFrame, posY, W, site)
     local desc = site.desc
-    local left
+    local leftX
     if desc.paramsOnly then
-        left = { type = "label", text = site.label }
+        leftX = { type = "label", text = site.label }
     else
-        left = GO.DropdownSpec(desc, site.label)
+        leftX = GO.DropdownSpec(desc, site.label)
     end
     local color, short, long = SiteStatus(site, Template())
     local statusCfg = CludesUI.BlankRowCfg()
     statusCfg.tooltip = long
-    local row, h = W:DualRow(parent, y, left, statusCfg)
+    local rowFrame, hgt = W:DualRow(hostFrame, posY, leftX, statusCfg)
     if not CludesUI._prebuilding then
-        local rrgn = row._rightRegion
+        local rrgn = rowFrame._rightRegion
         if rrgn._label then
             rrgn._label:SetText(short)
         end
         local dotTex = StatusDot(rrgn, color)
-        local lrgn = row._leftRegion
+        local lrgn = rowFrame._leftRegion
         if desc.paramsOnly then
             -- A label half has no control to chain from: anchor the cog at the right edge.
-            local PP = CludesUI.PanelPP
-            local anchor = CreateFrame("Frame", nil, lrgn)
-            PP.Size(anchor, 1, 1)
-            PP.Point(anchor, "RIGHT", lrgn, "RIGHT", -20, 0)
-            lrgn._lastInline = anchor
+            local Pix = CludesUI.PanelPP
+            local anchorFrame = CreateFrame("Frame", nil, lrgn)
+            Pix.Size(anchorFrame, 1, 1)
+            Pix.Point(anchorFrame, "RIGHT", lrgn, "RIGHT", -20, 0)
+            lrgn._lastInline = anchorFrame
             CludesUI.BuildInlineCog(
                 lrgn,
                 { title = "Pixel Glow Settings", rows = GO.CogRows(desc), captureRegion = lrgn }
@@ -671,10 +671,10 @@ local function SiteRow(parent, y, W, site)
         -- Row edits only refresh widgets (no rebuild): keep the status current.
         CludesUI.RegisterWidgetRefresh(function()
             local c, s, l = SiteStatus(site, Template())
-            local lbl = rrgn._label
-            if lbl then
-                lbl:SetText(s)
-                lbl:SetTextColor(c[1], c[2], c[3], 1)
+            local labelFS = rrgn._label
+            if labelFS then
+                labelFS:SetText(s)
+                labelFS:SetTextColor(c[1], c[2], c[3], 1)
             end
             if dotTex then
                 dotTex:SetColorTexture(c[1], c[2], c[3], 1)
@@ -684,7 +684,7 @@ local function SiteRow(parent, y, W, site)
             end
         end)
     end
-    return y - h
+    return posY - hgt
 end
 
 -------------------------------------------------------------------------------
@@ -693,18 +693,18 @@ end
 local GL_GLYPH = "Interface\\AddOns\\CludesUI\\media\\textures\\melli.tga"
 
 -- Card header summary: active glows and how many differ from the template.
-local function CardSummary(list, t)
-    local active, differ = 0, 0
-    for _, site in ipairs(list) do
+local function CardSummary(entries, t)
+    local isActive, differ = 0, 0
+    for _, site in ipairs(entries) do
         if IsActive(site) then
-            active = active + 1
+            isActive = isActive + 1
             if not GO.MatchesTemplate(site.desc, t) then
                 differ = differ + 1
             end
         end
     end
-    if active == 0 then
-        return CludesUI.L("No active glows"), active
+    if isActive == 0 then
+        return CludesUI.L("No active glows"), isActive
     end
     local tail
     if differ > 0 then
@@ -712,7 +712,7 @@ local function CardSummary(list, t)
     else
         tail = GREEN_CODE .. CludesUI.L("all match the template") .. "|r"
     end
-    return CludesUI.Lf("%d active", active) .. ", " .. tail, active
+    return CludesUI.Lf("%d active", isActive) .. ", " .. tail, isActive
 end
 
 -- Is every site of the card already matching or locked (nothing for its Apply)?
@@ -729,21 +729,21 @@ end
 -- Card body: a Hide Inactive toggle (off by default; greyed out when the card
 -- has nothing inactive) and the module's Apply, then the rows grouped under
 -- their sub headings. A card of hint rows only has neither.
-local function BuildCardContent(parent, y, W, tile)
+local function BuildCardContent(hostFrame, posY, W, tile)
     local key = tile.key
     local showAll = _glHideInactive[key] ~= true
     local hasSites = #tile.sites > 0
-    local row, h
+    local rowFrame, hgt
     if hasSites then
         local inactive = #tile.sites - tile.active
-        local left = {
+        local leftX = {
             type = "toggle",
             text = CludesUI.Lf("Hide Inactive Glows (%d)", inactive),
             getValue = function()
                 return _glHideInactive[key] == true
             end,
-            setValue = function(v)
-                _glHideInactive[key] = v or nil
+            setValue = function(val)
+                _glHideInactive[key] = val or nil
                 CludesUI:RefreshPage(true)
             end,
             disabled = function()
@@ -752,11 +752,11 @@ local function BuildCardContent(parent, y, W, tile)
             disabledTooltip = CludesUI.L("Every glow in this module is active."),
             rawTooltip = true,
         }
-        row, h = UnindexedDualRow(W, parent, y, left, CludesUI.BlankRowCfg())
-        y = y - h
+        rowFrame, hgt = UnindexedDualRow(W, hostFrame, posY, leftX, CludesUI.BlankRowCfg())
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineButton(
-                row._rightRegion,
+                rowFrame._rightRegion,
                 CludesUI.L("Apply Template to This Module"),
                 function()
                     ConfirmApply(tile.sites, true)
@@ -773,81 +773,75 @@ local function BuildCardContent(parent, y, W, tile)
                 }
             )
         end
-        y = CardDivider(parent, y)
+        posY = CardDivider(hostFrame, posY)
     end
     local lastSub
     -- Info entries lead the card (above any group) and never hide.
-    for _, item in ipairs(tile.infos) do
-        if item.sub and item.sub ~= lastSub then
-            y = SubHeader(parent, y, item.sub)
+    for _, itemInfo in ipairs(tile.infos) do
+        if itemInfo.sub and itemInfo.sub ~= lastSub then
+            posY = SubHeader(hostFrame, posY, itemInfo.sub)
         end
-        lastSub = item.sub
-        y = InfoRow(parent, y, W, item)
+        lastSub = itemInfo.sub
+        posY = InfoRow(hostFrame, posY, W, itemInfo)
     end
-    local shown = 0
+    local isShown = 0
     for _, site in ipairs(tile.sites) do
         if showAll or IsActive(site) then
             if site.sub and site.sub ~= lastSub then
-                y = SubHeader(parent, y, site.sub)
+                posY = SubHeader(hostFrame, posY, site.sub)
             end
             lastSub = site.sub
-            y = SiteRow(parent, y, W, site)
-            shown = shown + 1
+            posY = SiteRow(hostFrame, posY, W, site)
+            isShown = isShown + 1
         end
     end
-    if hasSites and shown == 0 then
-        row, h = UnindexedDualRow(
-            W,
-            parent,
-            y,
-            {
-                type = "label",
-                text = CludesUI.L("No active glows. Turn off Hide Inactive Glows to edit the others."),
-            },
-            CludesUI.BlankRowCfg()
-        )
-        y = y - h
+    if hasSites and isShown == 0 then
+        rowFrame, hgt = UnindexedDualRow(W, hostFrame, posY, {
+            type = "label",
+            text = CludesUI.L("No active glows. Turn off Hide Inactive Glows to edit the others."),
+        }, CludesUI.BlankRowCfg())
+        posY = posY - hgt
     end
-    return y
+    return posY
 end
 
 local function BuildTileList(sites, infos)
     local byModule, infosByModule, tiles = {}, {}, {}
     local t = Template()
     for _, site in ipairs(sites) do
-        local list = byModule[site.module]
-        if not list then
-            list = {}
-            byModule[site.module] = list
+        local entries = byModule[site.module]
+        if not entries then
+            entries = {}
+            byModule[site.module] = entries
         end
-        list[#list + 1] = site
+        entries[#entries + 1] = site
     end
-    for _, item in ipairs(infos) do
-        local list = infosByModule[item.module]
-        if not list then
-            list = {}
-            infosByModule[item.module] = list
+    for _, itemInfo in ipairs(infos) do
+        local entries = infosByModule[itemInfo.module]
+        if not entries then
+            entries = {}
+            infosByModule[itemInfo.module] = entries
         end
-        list[#list + 1] = item
+        entries[#entries + 1] = itemInfo
     end
-    for _, entry in ipairs(CludesUI.ADDON_ROSTER) do
-        local list = byModule[entry.folder]
-        local infoList = infosByModule[entry.folder]
-        if (list or infoList) and not entry.comingSoon then
-            list = list or {}
-            local summary, active
-            if #list > 0 then
-                summary, active = CardSummary(list, t)
+    for _, record in ipairs(CludesUI.ADDON_ROSTER) do
+        local entries = byModule[record.folder]
+        local infoList = infosByModule[record.folder]
+        if (entries or infoList) and not record.comingSoon then
+            entries = entries or {}
+            local summary, isActive
+            if #entries > 0 then
+                summary, isActive = CardSummary(entries, t)
             else
-                summary, active = CludesUI.L("Glows set per entry, which the template never changes"), 0
+                summary, isActive = CludesUI.L("Glows set per entry, which the template never changes"), 0
             end
             tiles[#tiles + 1] = {
-                key = entry.folder,
-                folder = entry.folder,
-                display = entry.display,
+                key = record.folder,
+                folder = record.folder,
+                display = record.display,
                 desc = summary,
-                active = active,
-                sites = list,
+                active = isActive,
+                sites = entries,
                 infos = infoList or {},
                 buildContent = BuildCardContent,
             }
@@ -856,26 +850,26 @@ local function BuildTileList(sites, infos)
     return tiles
 end
 
-local function BuildGlowCard(parent, y, W, tile)
-    y = CludesUI.BuildModuleCard(parent, y, W, tile, {
+local function BuildGlowCard(hostFrame, posY, W, tile)
+    posY = CludesUI.BuildModuleCard(hostFrame, posY, W, tile, {
         -- Sites register only from loaded modules' option files.
         enabled = true,
         expanded = _glExpanded,
         descW = 560,
         -- The summary is live (counts): search indexes a fixed word instead.
         searchDesc = "Glows",
-        glyph = function(hdr, enabled)
-            local PP = CludesUI.PanelPP
-            local EG = CludesUI.CLUDES_GREEN
-            local glyph = CreateFrame("Frame", nil, hdr)
-            PP.Size(glyph, 18, 18)
-            PP.Point(glyph, "LEFT", hdr, "LEFT", 18, 0)
-            CludesUI.MakeBorder(glyph, EG.r, EG.g, EG.b, enabled and 0.8 or 0.15, PP)
-            local tex = glyph:CreateTexture(nil, "ARTWORK")
-            PP.Point(tex, "TOPLEFT", glyph, "TOPLEFT", 3, -3)
-            PP.Point(tex, "BOTTOMRIGHT", glyph, "BOTTOMRIGHT", -3, 3)
-            tex:SetTexture(GL_GLYPH)
-            tex:SetVertexColor(1, 1, 1, enabled and 0.35 or 0.1)
+        glyph = function(heading, enabled)
+            local Pix = CludesUI.PanelPP
+            local ACC = CludesUI.CLUDES_GREEN
+            local glyph = CreateFrame("Frame", nil, heading)
+            Pix.Size(glyph, 18, 18)
+            Pix.Point(glyph, "LEFT", heading, "LEFT", 18, 0)
+            CludesUI.MakeBorder(glyph, ACC.r, ACC.g, ACC.b, enabled and 0.8 or 0.15, Pix)
+            local texture = glyph:CreateTexture(nil, "ARTWORK")
+            Pix.Point(texture, "TOPLEFT", glyph, "TOPLEFT", 3, -3)
+            Pix.Point(texture, "BOTTOMRIGHT", glyph, "BOTTOMRIGHT", -3, 3)
+            texture:SetTexture(GL_GLYPH)
+            texture:SetVertexColor(1, 1, 1, enabled and 0.35 or 0.1)
         end,
     })
     -- A template or row edit can change the header summary, the inactive count
@@ -884,14 +878,14 @@ local function BuildGlowCard(parent, y, W, tile)
     -- moves rows, so rebuild once.
     if #tile.sites > 0 and not CludesUI._prebuilding then
         CludesUI.RegisterWidgetRefresh(function()
-            local summary, active = CardSummary(tile.sites, Template())
-            if summary ~= tile.desc and active == tile.active then
+            local summary, isActive = CardSummary(tile.sites, Template())
+            if summary ~= tile.desc and isActive == tile.active then
                 if tile._descFS then
                     tile._descFS:SetText(summary)
                 end
                 tile.desc = summary
             end
-            if (summary ~= tile.desc or active ~= tile.active) and not _glRebuildQueued then
+            if (summary ~= tile.desc or isActive ~= tile.active) and not _glRebuildQueued then
                 _glRebuildQueued = true
                 C_Timer.After(0, function()
                     _glRebuildQueued = false
@@ -902,26 +896,26 @@ local function BuildGlowCard(parent, y, W, tile)
             end
         end)
     end
-    return y
+    return posY
 end
 
 -------------------------------------------------------------------------------
 --  Page builder (dispatched from the Global Settings module registration)
 -------------------------------------------------------------------------------
-function _G._CUI_BuildGlowsPage(pageName, parent, yOffset)
+function _G._CUI_BuildGlowsPage(pageName, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local PP = CludesUI.PanelPP
-    local y = yOffset
-    local _, h
+    local Pix = CludesUI.PanelPP
+    local posY = yOffset
+    local _, hgt
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
-    local introHost = CreateFrame("Frame", nil, parent)
-    PP.Size(introHost, parent:GetWidth() - CludesUI.CONTENT_PAD * 2, 62)
-    PP.Point(introHost, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y - 20)
+    local introHost = CreateFrame("Frame", nil, hostFrame)
+    Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 62)
+    Pix.Point(introHost, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 20)
     local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
-    PP.Point(intro, "TOPLEFT", introHost, "TOPLEFT", 0, -2)
-    PP.Point(intro, "TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
+    Pix.Point(intro, "TOPLEFT", introHost, "TOPLEFT", 0, -2)
+    Pix.Point(intro, "TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
     intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
     intro:SetText(
@@ -933,16 +927,16 @@ function _G._CUI_BuildGlowsPage(pageName, parent, yOffset)
             .. "\n"
             .. CludesUI.L("Glows set per icon, indicator or filter keep their own settings.")
     )
-    y = y - 66
+    posY = posY - 66
 
     -- Template
-    _, h = W:SectionHeader(parent, "GLOW TEMPLATE", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "GLOW TEMPLATE", posY)
+    posY = posY - hgt
     local tpl = TemplateDesc()
     local sites = CollectSites()
     local tplRow
-    tplRow, h = W:DualRow(parent, y, GO.DropdownSpec(tpl, "Glow Style"), CludesUI.BlankRowCfg())
-    y = y - h
+    tplRow, hgt = W:DualRow(hostFrame, posY, GO.DropdownSpec(tpl, "Glow Style"), CludesUI.BlankRowCfg())
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         local lrgn = tplRow._leftRegion
         GO.AttachInline(lrgn, tpl)
@@ -956,17 +950,17 @@ function _G._CUI_BuildGlowsPage(pageName, parent, yOffset)
         end, { width = 190 })
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     -- Module cards
-    _, h = W:SectionHeader(parent, "MODULE GLOWS", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "MODULE GLOWS", posY)
+    posY = posY - hgt
     for _, tile in ipairs(BuildTileList(sites, CollectInfos())) do
-        y = BuildGlowCard(parent, y, W, tile)
+        posY = BuildGlowCard(hostFrame, posY, W, tile)
     end
 
-    return math.abs(y)
+    return math.abs(posY)
 end
 
 -------------------------------------------------------------------------------
@@ -983,8 +977,8 @@ do
         end
         if moduleName == GLOBAL_KEY and pageName == PAGE_GLOWS and (sectionName or highlightText) then
             local changed = false
-            for _, entry in ipairs(GO.sites) do
-                local k = entry.module
+            for _, record in ipairs(GO.sites) do
+                local k = record.module
                 if k and not _glExpanded[k] then
                     _glExpanded[k] = true
                     changed = true

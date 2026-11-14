@@ -9,39 +9,47 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and the frame border pad that mirrors its unified border apply. Reads the
 --  main file through ns and ns._internals; db is set through I.dbSetters.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local issecretvalue = issecretvalue
-local PP = CludesUI.PP
-local GetMiniDonorSettings = ns.GetMiniDonorSettings
+local Pix = CludesUI.PP
+local GetMiniDonorSettings = mod.GetMiniDonorSettings
 
-local I = ns._internals
-local frames, GetSettingsForUnit, UnitToSettingsKey = I.frames, I.GetSettingsForUnit, I.UnitToSettingsKey
-local UnsnapTex, SetFSFont, ResolveFontPath = I.UnsnapTex, I.SetFSFont, I.ResolveFontPath
+local Inner = mod._internals
+local frameList, GetSettingsForUnit, UnitToSettingsKey =
+    Inner.frames, Inner.GetSettingsForUnit, Inner.UnitToSettingsKey
+local UnsnapTex, SetFSFont, ResolveFontPath = Inner.UnsnapTex, Inner.SetFSFont, Inner.ResolveFontPath
 local ApplyDarkTheme, ApplyEnemyColors, ApplyBarGradient =
-    I.ApplyDarkTheme, I.ApplyEnemyColors, I.ApplyBarGradient
+    Inner.ApplyDarkTheme, Inner.ApplyEnemyColors, Inner.ApplyBarGradient
 local ApplyHealthBarTexture, ApplyHealthBarAlpha, ApplyPowerBarAlpha =
-    I.ApplyHealthBarTexture, I.ApplyHealthBarAlpha, I.ApplyPowerBarAlpha
+    Inner.ApplyHealthBarTexture, Inner.ApplyHealthBarAlpha, Inner.ApplyPowerBarAlpha
 local ApplyFramePosition, CreateBottomTextBar, ReparentBarsToClip, UpdateBordersForScale =
-    I.ApplyFramePosition, I.CreateBottomTextBar, I.ReparentBarsToClip, I.UpdateBordersForScale
+    Inner.ApplyFramePosition, Inner.CreateBottomTextBar, Inner.ReparentBarsToClip, Inner.UpdateBordersForScale
 local ApplyAbsorbStyle, UpdateAbsorbBarReverseFill, ApplyDetachedPortraitShape =
-    I.ApplyAbsorbStyle, I.UpdateAbsorbBarReverseFill, I.ApplyDetachedPortraitShape
-local SwapPortraitMode, SpecHasClassPower = I.SwapPortraitMode, I.SpecHasClassPower
+    Inner.ApplyAbsorbStyle, Inner.UpdateAbsorbBarReverseFill, Inner.ApplyDetachedPortraitShape
+local SwapPortraitMode, SpecHasClassPower = Inner.SwapPortraitMode, Inner.SpecHasClassPower
 local CastIconInWidth, CastIconOffsets, CastIconOnRight, CastIconShown, LayoutCastbarIcon =
-    I.CastIconInWidth, I.CastIconOffsets, I.CastIconOnRight, I.CastIconShown, I.LayoutCastbarIcon
+    Inner.CastIconInWidth,
+    Inner.CastIconOffsets,
+    Inner.CastIconOnRight,
+    Inner.CastIconShown,
+    Inner.LayoutCastbarIcon
 local GetCastbarColor, ApplyUnitFrameCastColor, IsKickCastbarUnit, UpdateUnitFrameKickTick =
-    I.GetCastbarColor, I.ApplyUnitFrameCastColor, I.IsKickCastbarUnit, I.UpdateUnitFrameKickTick
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+    Inner.GetCastbarColor,
+    Inner.ApplyUnitFrameCastColor,
+    Inner.IsKickCastbarUnit,
+    Inner.UpdateUnitFrameKickTick
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -- Detached portrait click overlays on the settled geometry; true while any
 -- frame wants one.
 local function SyncPortraitClicks()
     local any = false
-    for _, frame in pairs(frames) do
-        if type(frame) == "table" and frame.Portrait and ns.UF_SyncPortraitClick(frame) then
+    for _, widget in pairs(frameList) do
+        if type(widget) == "table" and widget.Portrait and mod.UF_SyncPortraitClick(widget) then
             any = true
         end
     end
@@ -55,10 +63,10 @@ end
 -- path). The flag is cleared on every exit, error included.
 local ReloadFramesBody
 local function ReloadFrames()
-    ns._ufReloadSweep = true
-    local ok, err = pcall(ReloadFramesBody)
-    ns._ufReloadSweep = nil
-    if not ok then
+    mod._ufReloadSweep = true
+    local success, err = pcall(ReloadFramesBody)
+    mod._ufReloadSweep = nil
+    if not success then
         geterrorhandler()(err)
     end
 end
@@ -66,14 +74,14 @@ ReloadFramesBody = function()
     ResolveFontPath()
     -- Refresh the tag-readable decimal globals before the combat early-return so
     -- tags pick up the saved state at login and on any settings change.
-    ns.ApplyTextDecimalGlobals()
+    mod.ApplyTextDecimalGlobals()
     if InCombatLockdown() then
         return
     end
 
     -- Normalize opacity values: old profiles stored 0-1 floats, new format is 0-100 integers
     do
-        local prof = db.profile
+        local prof = saved.profile
         local UNITS = { "player", "target", "focus", "boss", "pet", "targettarget", "focustarget" }
         if prof.healthBarOpacity and prof.healthBarOpacity <= 1.0 then
             prof.healthBarOpacity = math.floor(prof.healthBarOpacity * 100 + 0.5)
@@ -94,129 +102,129 @@ ReloadFramesBody = function()
         end
     end
 
-    local profile = db.profile
+    local profile = saved.profile
     local castbarColor = GetCastbarColor()
     local castbarOpacity = profile.castbarOpacity
     local enabled = profile.enabledFrames
 
     -- A frame's castbar pass (focus, and the pet when it has one): size, icon,
     -- border, colors and text from the unit's settings.
-    local function ApplyUnitCastbar(frame, unit, settings)
-        if frame.Castbar then
-            local castbarBg = frame.Castbar:GetParent()
+    local function ApplyUnitCastbar(widget, unitToken, prefs)
+        if widget.Castbar then
+            local castbarBg = widget.Castbar:GetParent()
             if castbarBg then
-                if settings.showCastbar ~= false then
-                    if not frame:IsElementEnabled("Castbar") then
-                        frame:EnableElement("Castbar")
+                if prefs.showCastbar ~= false then
+                    if not widget:IsElementEnabled("Castbar") then
+                        widget:EnableElement("Castbar")
                     end
-                    local cbW3 = settings.castbarWidth or 181
-                    local cbH3 = settings.castbarHeight or 14
-                    PP.Size(castbarBg, cbW3, cbH3)
+                    local cbW3 = prefs.castbarWidth or 181
+                    local cbH3 = prefs.castbarHeight or 14
+                    Pix.Size(castbarBg, cbW3, cbH3)
                     if castbarBg._bgTex then
-                        local cbg = settings.castBgColor
+                        local cbg = prefs.castBgColor
                         castbarBg._bgTex:SetColorTexture(
                             cbg and cbg.r or 0,
                             cbg and cbg.g or 0,
                             cbg and cbg.b or 0,
-                            settings.castBgAlpha or 0.5
+                            prefs.castBgAlpha or 0.5
                         )
                     end
-                    local fIconOffX, fIconOffY = CastIconOffsets(unit, settings)
+                    local fIconOffX, fIconOffY = CastIconOffsets(unitToken, prefs)
                     LayoutCastbarIcon(
-                        frame.Castbar,
-                        CastIconInWidth(unit, settings),
-                        settings.castbarHeight or 14,
-                        CastIconOnRight(unit, settings),
+                        widget.Castbar,
+                        CastIconInWidth(unitToken, prefs),
+                        prefs.castbarHeight or 14,
+                        CastIconOnRight(unitToken, prefs),
                         fIconOffX,
                         fIconOffY,
-                        CastIconShown(unit, settings),
-                        settings.castbarStockBorderScale,
-                        ns.UF_CastIconPortrait(frame.Castbar, frame, settings, unit)
+                        CastIconShown(unitToken, prefs),
+                        prefs.castbarStockBorderScale,
+                        mod.UF_CastIconPortrait(widget.Castbar, widget, prefs, unitToken)
                     )
-                    ns.UF_ApplyCastBorder(frame.Castbar, settings, nil, unit)
-                    if frame.Castbar._iconFrame then
-                        PP.Size(frame.Castbar._iconFrame, cbH3, cbH3)
-                        if not frame.Castbar:IsShown() then
-                            frame.Castbar._iconFrame:Hide()
-                        elseif settings.showCastIcon == false then
-                            frame.Castbar._iconFrame:Hide()
+                    mod.UF_ApplyCastBorder(widget.Castbar, prefs, nil, unitToken)
+                    if widget.Castbar._iconFrame then
+                        Pix.Size(widget.Castbar._iconFrame, cbH3, cbH3)
+                        if not widget.Castbar:IsShown() then
+                            widget.Castbar._iconFrame:Hide()
+                        elseif prefs.showCastIcon == false then
+                            widget.Castbar._iconFrame:Hide()
                         else
-                            frame.Castbar._iconFrame:Show()
+                            widget.Castbar._iconFrame:Show()
                         end
                     end
                     -- Position owned by centralized unlock system
                     -- Respect hide-while-not-casting: only show bg if inactive hiding is off or cast is active
-                    if settings.castbarHideWhenInactive and not frame.Castbar:IsShown() then
+                    if prefs.castbarHideWhenInactive and not widget.Castbar:IsShown() then
                         castbarBg:Hide()
                     else
                         castbarBg:Show()
                     end
                 else
-                    if frame:IsElementEnabled("Castbar") then
-                        frame:DisableElement("Castbar")
+                    if widget:IsElementEnabled("Castbar") then
+                        widget:DisableElement("Castbar")
                     end
-                    frame.Castbar:Hide()
+                    widget.Castbar:Hide()
                     castbarBg:Hide()
                 end
             end
             -- Store per-unit settings for PostCastStart
-            frame.Castbar._eufSettings = settings
+            widget.Castbar._eufSettings = prefs
             -- A glow already showing takes new Important Cast Glow settings now.
-            if frame.Castbar._impGlowActive then
-                ns.UpdateUnitFrameImportantGlow(frame.Castbar)
+            if widget.Castbar._impGlowActive then
+                mod.UpdateUnitFrameImportantGlow(widget.Castbar)
             end
             -- Resolve per-unit fill color
             local fCbColor = castbarColor
-            if settings.castbarFillColor then
-                fCbColor = settings.castbarFillColor
+            if prefs.castbarFillColor then
+                fCbColor = prefs.castbarFillColor
             end
             -- Fill Opacity below 100: tint layer carries the visible
             -- fill; zero the base so it cannot bleed through.
-            frame.Castbar:SetStatusBarColor(
+            widget.Castbar:SetStatusBarColor(
                 fCbColor.r,
                 fCbColor.g,
                 fCbColor.b,
-                ((settings.castFillOpacity or 100) < 100) and 0 or castbarOpacity
+                ((prefs.castFillOpacity or 100) < 100) and 0 or castbarOpacity
             )
-            ns.ApplyCastFillOpacity(frame.Castbar, settings)
-            if frame.Castbar:IsShown() then
-                ApplyUnitFrameCastColor(frame.Castbar)
-                UpdateUnitFrameKickTick(frame.Castbar)
+            mod.ApplyCastFillOpacity(widget.Castbar, prefs)
+            if widget.Castbar:IsShown() then
+                ApplyUnitFrameCastColor(widget.Castbar)
+                UpdateUnitFrameKickTick(widget.Castbar)
             end
             -- Apply cast bar text settings
-            if frame.Castbar.Text then
-                local snSz = settings.castSpellNameSize or 11
-                SetFSFont(frame.Castbar.Text, snSz)
-                local snC = settings.castSpellNameColor or { r = 1, g = 1, b = 1 }
-                frame.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
+            if widget.Castbar.Text then
+                local snSz = prefs.castSpellNameSize or 11
+                SetFSFont(widget.Castbar.Text, snSz)
+                local snC = prefs.castSpellNameColor or { r = 1, g = 1, b = 1 }
+                widget.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
             end
-            if frame.Castbar.Time then
-                local dtSz = settings.castDurationSize or 10
-                SetFSFont(frame.Castbar.Time, dtSz)
-                local dtC = settings.castDurationColor or { r = 1, g = 1, b = 1 }
-                frame.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
-                frame.Castbar._showDuration = settings.showCastDuration ~= false
-                frame.Castbar._durationSize = dtSz
-                if frame.Castbar._showDuration and frame.Castbar:IsShown() then
-                    frame.Castbar.Time:Show()
-                elseif not frame.Castbar._showDuration then
-                    frame.Castbar.Time:Hide()
+            if widget.Castbar.Time then
+                local dtSz = prefs.castDurationSize or 10
+                SetFSFont(widget.Castbar.Time, dtSz)
+                local dtC = prefs.castDurationColor or { r = 1, g = 1, b = 1 }
+                widget.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
+                widget.Castbar._showDuration = prefs.showCastDuration ~= false
+                widget.Castbar._durationSize = dtSz
+                if widget.Castbar._showDuration and widget.Castbar:IsShown() then
+                    widget.Castbar.Time:Show()
+                elseif not widget.Castbar._showDuration then
+                    widget.Castbar.Time:Hide()
                 end
             end
-            if frame.Castbar.Target then
-                local tsSz = settings.castSpellTargetSize or 11
-                SetFSFont(frame.Castbar.Target, tsSz)
-                local tsC = settings.castSpellTargetColor or { r = 1, g = 1, b = 1 }
-                frame.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
-                frame.Castbar._showTarget = settings.showCastTarget ~= false
-                frame.Castbar._nameSide = settings.castSpellNameSide or "left"
-                frame.Castbar._tgtSide = settings.castSpellTargetSide or "right"
-                frame.Castbar._durSide = settings.castDurationSide or "right"
-                if not frame.Castbar._showTarget then
-                    frame.Castbar.Target:Hide()
+            if widget.Castbar.Target then
+                local tsSz = prefs.castSpellTargetSize or 11
+                SetFSFont(widget.Castbar.Target, tsSz)
+                local tsC = prefs.castSpellTargetColor or { r = 1, g = 1, b = 1 }
+                widget.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
+                widget.Castbar._showTarget = prefs.showCastTarget ~= false
+                widget.Castbar._nameSide = prefs.castSpellNameSide or "left"
+                widget.Castbar._tgtSide = prefs.castSpellTargetSide or "right"
+                widget.Castbar._durSide = prefs.castDurationSide or "right"
+                if not widget.Castbar._showTarget then
+                    widget.Castbar.Target:Hide()
                 end
-                if frame.Castbar._layoutTextZones then
-                    frame.Castbar:_layoutTextZones()
+                if widget.Castbar._layoutTextZones then
+                    widget.Castbar:_layoutTextZones()
                 end
             end
         end
@@ -224,8 +232,8 @@ ReloadFramesBody = function()
 
     -- Apply frame strata to all spawned unit frames
     local ufStrata = profile.frameStrata or "MEDIUM"
-    for unitKey, frame in pairs(frames) do
-        if type(frame) == "table" and frame.SetFrameStrata then
+    for unitKey, widget in pairs(frameList) do
+        if type(widget) == "table" and widget.SetFrameStrata then
             -- Any unit with its own settings table can override the global
             -- strata; nil (the default) means "follow the global value".
             -- GetSettingsForUnit maps boss1..boss5 onto the shared boss table
@@ -237,27 +245,27 @@ ReloadFramesBody = function()
             if us and us.frameStrata then
                 strata = us.frameStrata
             end
-            frame:SetFrameStrata(strata)
+            widget:SetFrameStrata(strata)
             -- Re-apply or reset custom strata for detached bars
-            if frame.BottomTextBar and frame.BottomTextBar._isDetached then
+            if widget.BottomTextBar and widget.BottomTextBar._isDetached then
                 if profile.enableCustomBarStratas then
-                    frame.BottomTextBar:SetFrameStrata(profile.detachedTextBarStrata or "DIALOG")
+                    widget.BottomTextBar:SetFrameStrata(profile.detachedTextBarStrata or "DIALOG")
                 else
-                    frame.BottomTextBar:SetFrameStrata(strata)
+                    widget.BottomTextBar:SetFrameStrata(strata)
                 end
             end
             -- Same re-lift for a detached power bar: frame:SetFrameStrata above just
             -- reset it to the frame's strata (same reason the cast bar needs re-lifting
             -- below), so without this it silently falls back to the frame's strata and
             -- can end up behind the frame's own border, however "Detached Power Bar" strata is configured.
-            if frame.Power then
+            if widget.Power then
                 local us2 = GetSettingsForUnit(unitKey)
-                local ppPos = ns.UF_PowerPos(us2)
+                local ppPos = mod.UF_PowerPos(us2)
                 if ppPos == "detached_top" or ppPos == "detached_bottom" then
                     if profile.enableCustomBarStratas then
-                        frame.Power:SetFrameStrata(profile.detachedPowerStrata or "HIGH")
+                        widget.Power:SetFrameStrata(profile.detachedPowerStrata or "HIGH")
                     else
-                        frame.Power:SetFrameStrata("MEDIUM")
+                        widget.Power:SetFrameStrata("MEDIUM")
                     end
                 end
             end
@@ -265,8 +273,8 @@ ReloadFramesBody = function()
             -- the frame's strata. Lift to HIGH so it never hides behind other MEDIUM-
             -- strata frames, unless "Raise Cast Bar Strata (All)" is off, in which case
             -- it's explicitly left at the frame's strata.
-            if frame.Castbar and (unitKey == "player" or IsKickCastbarUnit(unitKey)) then
-                local cbg = frame.Castbar:GetParent()
+            if widget.Castbar and (unitKey == "player" or IsKickCastbarUnit(unitKey)) then
+                local cbg = widget.Castbar:GetParent()
                 if cbg then
                     if profile.raiseCastbarStrata ~= false then
                         cbg:SetFrameStrata("HIGH")
@@ -277,8 +285,8 @@ ReloadFramesBody = function()
             end
             -- SetFrameStrata re-stacks children; lift the raid marker holder back
             -- above the text overlay so the marker is never hidden behind name/health text.
-            if frame._raidMarkerHolder and frame._textOverlay then
-                frame._raidMarkerHolder:SetFrameLevel(frame._textOverlay:GetFrameLevel() + 5)
+            if widget._raidMarkerHolder and widget._textOverlay then
+                widget._raidMarkerHolder:SetFrameLevel(widget._textOverlay:GetFrameLevel() + 5)
             end
         end
     end
@@ -288,17 +296,17 @@ ReloadFramesBody = function()
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     -- Live enable/disable frames without reload
-    local function ToggleFrame(unit, frame)
-        if not frame then
+    local function ToggleFrame(unitToken, widget)
+        if not widget then
             return
         end
-        if frame._cuiVisDriver then
+        if widget._cuiVisDriver then
             -- A secure condition driver owns this frame's Show/Hide (group gating
             -- included); manual toggling here would de-sync it until the next driver
             -- re-evaluation. The visibility pass converts the driver when disabled.
             return
         end
-        local unitKey = unit:match("^boss%d$") and "boss" or unit
+        local unitKey = unitToken:match("^boss%d$") and "boss" or unitToken
         local isEnabled = enabled[unitKey] ~= false
         -- Check group visibility for player/target/focus
         if isEnabled and (unitKey == "player" or unitKey == "target" or unitKey == "focus") then
@@ -316,57 +324,57 @@ ReloadFramesBody = function()
             end
         end
         if isEnabled then
-            if not frame:IsShown() and UnitExists(unit) then
-                frame:SetAttribute("unit", unit)
-                frame:Show()
+            if not widget:IsShown() and UnitExists(unitToken) then
+                widget:SetAttribute("unit", unitToken)
+                widget:Show()
                 -- The engine repaints in full on show (OnShow hook) and drops
                 -- events for hidden frames at dispatch, so nothing needs
                 -- re-enabling; one explicit pass covers the pre-show window.
-                ns.Engine.RepaintAll(frame, "ToggleFrame")
+                mod.Engine.RepaintAll(widget, "ToggleFrame")
             end
         else
-            if frame:IsShown() then
+            if widget:IsShown() then
                 -- Hidden frames already cost nothing: the engine drops their
                 -- events at dispatch and the poller skips them.
-                frame:SetAttribute("unit", nil)
-                frame:Hide()
+                widget:SetAttribute("unit", nil)
+                widget:Hide()
             end
         end
     end
 
-    for unit, frame in pairs(frames) do
-        if type(unit) == "string" and unit:sub(1, 1) ~= "_" and not unit:match("^boss%d$") then
-            ToggleFrame(unit, frame)
+    for unitToken, widget in pairs(frameList) do
+        if type(unitToken) == "string" and unitToken:sub(1, 1) ~= "_" and not unitToken:match("^boss%d$") then
+            ToggleFrame(unitToken, widget)
         end
     end
     -- Boss frames: the unit watch registered at spawn is their show/hide authority.
     -- ToggleFrame's Hide() left that watch armed, so a profile switch that disables
     -- them had the next boss re-show all five. The watch owner unregisters (or
     -- re-registers) the watch and parks a regen one-shot when this runs in combat.
-    if ns.UF_SetBossFramesActive and frames.boss1 then
-        ns.UF_SetBossFramesActive(enabled.boss ~= false)
+    if mod.UF_SetBossFramesActive and frameList.boss1 then
+        mod.UF_SetBossFramesActive(enabled.boss ~= false)
     end
 
-    for unit, frame in pairs(frames) do
-        if type(unit) == "string" and unit:sub(1, 1) ~= "_" and frame then
-            local unitKey = unit:match("^boss%d$") and "boss" or unit
+    for unitToken, widget in pairs(frameList) do
+        if type(unitToken) == "string" and unitToken:sub(1, 1) ~= "_" and widget then
+            local unitKey = unitToken:match("^boss%d$") and "boss" or unitToken
             if enabled[unitKey] == false then
                 -- skip disabled frames
             else
                 -- Restore position and scale from profile
                 if unitKey == "boss" then
-                    local bossPos = db.profile.positions.boss
-                    local bossSpacing = ns.UF_BossSpacing()
-                    local bossIdx = tonumber(unit:match("(%d+)$"))
+                    local bossPos = saved.profile.positions.boss
+                    local bossSpacing = mod.UF_BossSpacing()
+                    local bossIdx = tonumber(unitToken:match("(%d+)$"))
                     local bossAnchored = CludesUI
                         and CludesUI.IsUnlockAnchored
                         and CludesUI.IsUnlockAnchored("boss")
                     local canRepoBoss1 = bossPos
                         and not (CludesUI and CludesUI._unlockActive)
-                        and (not bossAnchored or not frame:GetLeft())
+                        and (not bossAnchored or not widget:GetLeft())
                     if bossIdx == 1 and canRepoBoss1 then
-                        frame:ClearAllPoints()
-                        frame:SetPoint(
+                        widget:ClearAllPoints()
+                        widget:SetPoint(
                             bossPos.point,
                             UIParent,
                             bossPos.relPoint or bossPos.point,
@@ -376,15 +384,15 @@ ReloadFramesBody = function()
                     elseif bossIdx and bossIdx > 1 and not (CludesUI and CludesUI._unlockActive) then
                         -- boss2..5 always re-chain off the previous boss with the
                         -- current Vertical Spacing value, regardless of saved pos.
-                        local prev = frames["boss" .. (bossIdx - 1)]
+                        local prev = frameList["boss" .. (bossIdx - 1)]
                         if prev then
-                            frame:ClearAllPoints()
-                            local bossStackDir = db.profile.boss and db.profile.boss.bossStackDirection
+                            widget:ClearAllPoints()
+                            local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection
                                 or "down"
                             if bossStackDir == "up" then
-                                frame:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, bossSpacing)
+                                widget:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, bossSpacing)
                             else
-                                frame:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -bossSpacing)
+                                widget:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -bossSpacing)
                             end
                         end
                     end
@@ -393,48 +401,48 @@ ReloadFramesBody = function()
                         -- Skip for unlock-anchored elements (anchor system is authority)
                         local anchored = CludesUI
                             and CludesUI.IsUnlockAnchored
-                            and CludesUI.IsUnlockAnchored(unit)
-                        if not anchored or not frame:GetLeft() then
-                            ApplyFramePosition(frame, unit)
+                            and CludesUI.IsUnlockAnchored(unitToken)
+                        if not anchored or not widget:GetLeft() then
+                            ApplyFramePosition(widget, unitToken)
                         end
                     end
                 end
-                local settings = GetSettingsForUnit(unit)
-                local pStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
+                local prefs = GetSettingsForUnit(unitToken)
+                local pStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
                 -- Mini frames never use detached portraits
-                local unitIsMini = unit == "pet"
-                    or unit == "targettarget"
-                    or unit == "focustarget"
-                    or unit:match("^boss%d$")
+                local unitIsMini = unitToken == "pet"
+                    or unitToken == "targettarget"
+                    or unitToken == "focustarget"
+                    or unitToken:match("^boss%d$")
                 if unitIsMini and pStyle == "detached" then
                     pStyle = "attached"
                 end
-                local showPortrait = pStyle ~= "none" and settings.showPortrait ~= false
+                local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
 
                 -- Keep the cached portrait side in sync with user-edited settings. Downstream
                 -- re-snap code (SnapLayout, health anchor math) reads this lookup, so without
                 -- it the side toggle wouldn't flip until a full UI reload.
-                if settings.portraitSide then
-                    CludesUI._ufPortraitSide[frame] = settings.portraitSide
+                if prefs.portraitSide then
+                    CludesUI._ufPortraitSide[widget] = prefs.portraitSide
                 end
 
                 -- Re-anchor portrait backdrop based on style + side.
-                if frame.Portrait and frame.Portrait.backdrop and settings.portraitSide then
-                    local bd = frame.Portrait.backdrop
-                    local pSide = settings.portraitSide
+                if widget.Portrait and widget.Portrait.backdrop and prefs.portraitSide then
+                    local edge = widget.Portrait.backdrop
+                    local pSide = prefs.portraitSide
                     local isInsideNow = pSide == "insideleft"
                         or pSide == "insideright"
                         or pSide == "insidecenter"
-                    bd._isInside = isInsideNow
+                    edge._isInside = isInsideNow
                     if isInsideNow then
-                        if bd._bg then
-                            bd._bg:Hide()
+                        if edge._bg then
+                            edge._bg:Hide()
                         end
-                        local healthAnchor = frame.Health or frame
-                        local pXO = settings.portraitX or 0
-                        local pYO = settings.portraitY or 0
-                        local pSizeAdj = settings.portraitSize or 0
-                        local frameH = frame:GetHeight()
+                        local healthAnchor = widget.Health or widget
+                        local pXO = prefs.portraitX or 0
+                        local pYO = prefs.portraitY or 0
+                        local pSizeAdj = prefs.portraitSize or 0
+                        local frameH = widget:GetHeight()
                         if frameH < 1 then
                             frameH = 46
                         end
@@ -442,125 +450,126 @@ ReloadFramesBody = function()
                         if pDim < 8 then
                             pDim = 8
                         end
-                        bd:SetClipsChildren(true)
-                        bd:SetFrameLevel(frame:GetFrameLevel() + 3)
+                        edge:SetClipsChildren(true)
+                        edge:SetFrameLevel(widget:GetFrameLevel() + 3)
                         -- Raise border above 3D model (PlayerModel ignores frame level):
                         -- a 3D portrait, or Class art whose non-player fallback is 3D.
-                        local pMode = settings.portraitMode or "2d"
+                        local pMode = prefs.portraitMode or "2d"
                         local is3d = pMode == "3d"
-                            or (pMode == "class" and ns.UF_ClassFallback(settings) == "3d")
-                        if is3d and frame.unifiedBorder and not settings.borderBehind then
-                            frame.unifiedBorder:SetFrameLevel(frame:GetFrameLevel() + 20)
+                            or (pMode == "class" and mod.UF_ClassFallback(prefs) == "3d")
+                        if is3d and widget.unifiedBorder and not prefs.borderBehind then
+                            widget.unifiedBorder:SetFrameLevel(widget:GetFrameLevel() + 20)
                         end
-                        bd:ClearAllPoints()
-                        bd:SetWidth(pDim)
+                        edge:ClearAllPoints()
+                        edge:SetWidth(pDim)
                         if pSide == "insideleft" then
-                            bd:SetPoint("TOPLEFT", healthAnchor, "TOPLEFT", pXO, pYO)
-                            bd:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", pXO, 0)
+                            edge:SetPoint("TOPLEFT", healthAnchor, "TOPLEFT", pXO, pYO)
+                            edge:SetPoint("BOTTOMLEFT", widget, "BOTTOMLEFT", pXO, 0)
                         elseif pSide == "insideright" then
-                            bd:SetPoint("TOPRIGHT", healthAnchor, "TOPRIGHT", pXO, pYO)
-                            bd:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", pXO, 0)
+                            edge:SetPoint("TOPRIGHT", healthAnchor, "TOPRIGHT", pXO, pYO)
+                            edge:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", pXO, 0)
                         else
-                            bd:SetPoint("TOP", healthAnchor, "TOP", pXO, pYO)
-                            bd:SetPoint("BOTTOM", frame, "BOTTOM", pXO, 0)
+                            edge:SetPoint("TOP", healthAnchor, "TOP", pXO, pYO)
+                            edge:SetPoint("BOTTOM", widget, "BOTTOM", pXO, 0)
                         end
                     elseif pStyle == "attached" then
-                        if bd._bg then
-                            bd._bg:Show()
+                        if edge._bg then
+                            edge._bg:Show()
                         end
-                        bd:SetClipsChildren(false)
-                        bd:ClearAllPoints()
+                        edge:SetClipsChildren(false)
+                        edge:ClearAllPoints()
                         if pSide == "left" then
-                            PP.Point(bd, "TOPLEFT", frame, "TOPLEFT", 0, 0)
+                            Pix.Point(edge, "TOPLEFT", widget, "TOPLEFT", 0, 0)
                         else
-                            PP.Point(bd, "TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+                            Pix.Point(edge, "TOPRIGHT", widget, "TOPRIGHT", 0, 0)
                         end
                     end
                     -- Restore border level when not inside+3D
-                    if not isInsideNow and frame.unifiedBorder then
-                        local bBehind = settings.borderBehind
-                        frame.unifiedBorder:SetFrameLevel(
-                            bBehind and math.max(0, frame:GetFrameLevel() - 1) or (frame:GetFrameLevel() + 10)
+                    if not isInsideNow and widget.unifiedBorder then
+                        local bBehind = prefs.borderBehind
+                        widget.unifiedBorder:SetFrameLevel(
+                            bBehind and math.max(0, widget:GetFrameLevel() - 1)
+                                or (widget:GetFrameLevel() + 10)
                         )
                     end
                 end
 
                 -- Swap 2D/3D portrait mode if changed (no reload needed)
-                if frame.Portrait then
-                    SwapPortraitMode(frame)
+                if widget.Portrait then
+                    SwapPortraitMode(widget)
                     -- Always ForceUpdate so zoom/camDistanceScale applies even without mode change
-                    if frame:IsElementEnabled("Portrait") and frame.Portrait.ForceUpdate then
-                        frame.Portrait:ForceUpdate()
+                    if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
+                        widget.Portrait:ForceUpdate()
                     end
                 end
 
                 -- Show/hide portrait live (no reload needed)
-                if frame.Portrait and frame.Portrait.backdrop then
-                    local uKey = UnitToSettingsKey(unit) or unit
-                    local uSettings = uKey and db.profile[uKey]
+                if widget.Portrait and widget.Portrait.backdrop then
+                    local uKey = UnitToSettingsKey(unitToken) or unitToken
+                    local uSettings = uKey and saved.profile[uKey]
                     local isClassMode = ((uSettings and uSettings.portraitMode) or "2d") == "class"
                     if showPortrait then
-                        frame.Portrait.backdrop:Show()
-                        if not frame:IsElementEnabled("Portrait") then
-                            frame:EnableElement("Portrait")
-                            frame.Portrait:ForceUpdate()
+                        widget.Portrait.backdrop:Show()
+                        if not widget:IsElementEnabled("Portrait") then
+                            widget:EnableElement("Portrait")
+                            widget.Portrait:ForceUpdate()
                         end
                     else
-                        frame.Portrait.backdrop:Hide()
-                        if frame:IsElementEnabled("Portrait") then
-                            frame:DisableElement("Portrait")
+                        widget.Portrait.backdrop:Hide()
+                        if widget:IsElementEnabled("Portrait") then
+                            widget:DisableElement("Portrait")
                         end
                     end
                     -- Live-update detached portrait shape/mask/border
-                    ApplyDetachedPortraitShape(frame.Portrait.backdrop, uSettings, unit)
+                    ApplyDetachedPortraitShape(widget.Portrait.backdrop, uSettings, unitToken)
                     -- Raise detached portrait above border/text/power
                     local isDetachedNow = pStyle == "detached"
                     if isDetachedNow then
-                        frame.Portrait.backdrop:SetFrameLevel(frame:GetFrameLevel() + 15)
+                        widget.Portrait.backdrop:SetFrameLevel(widget:GetFrameLevel() + 15)
                     else
-                        frame.Portrait.backdrop:SetFrameLevel(frame:GetFrameLevel() + 1)
+                        widget.Portrait.backdrop:SetFrameLevel(widget:GetFrameLevel() + 1)
                     end
                 end
 
-                if unit == "player" or unit == "target" then
-                    local ppPos = ns.UF_PowerPos(settings)
+                if unitToken == "player" or unitToken == "target" then
+                    local ppPos = mod.UF_PowerPos(prefs)
                     local ppIsAtt = (ppPos == "below" or ppPos == "above")
-                    local ppExtra = ppIsAtt and settings.powerHeight or 0
-                    local playerTargetHeight = settings.healthHeight + ppExtra
+                    local ppExtra = ppIsAtt and prefs.powerHeight or 0
+                    local playerTargetHeight = prefs.healthHeight + ppExtra
                     -- Class power "above" adds height above health bar (player only, "top" floats outside)
                     local cpAboveH = 0
-                    if unit == "player" and SpecHasClassPower() then
-                        local cpSt = settings.classPowerStyle or "none"
-                        if ns.UF_ForeverCPStyle then
-                            cpSt = ns.UF_ForeverCPStyle(cpSt)
+                    if unitToken == "player" and SpecHasClassPower() then
+                        local cpSt = prefs.classPowerStyle or "none"
+                        if mod.UF_ForeverCPStyle then
+                            cpSt = mod.UF_ForeverCPStyle(cpSt)
                         end
-                        local cpPo = (cpSt == "modern") and (settings.classPowerPosition or "top") or "none"
+                        local cpPo = (cpSt == "modern") and (prefs.classPowerPosition or "top") or "none"
                         if cpSt == "modern" and cpPo == "above" then
-                            local cpSizeAdj = settings.classPowerSize or 8
+                            local cpSizeAdj = prefs.classPowerSize or 8
                             local cpPipH = math.max(3, math.floor(cpSizeAdj * 0.375))
                             cpAboveH = cpPipH
                         end
                     end
                     local playerTargetHeightWithCp = playerTargetHeight + cpAboveH
-                    local btbPos = settings.btbPosition or "bottom"
+                    local btbPos = prefs.btbPosition or "bottom"
                     local btbIsAttached = (btbPos == "top" or btbPos == "bottom")
-                    local btbExtra = (settings.bottomTextBar and btbIsAttached)
-                            and (settings.bottomTextBarHeight or 16)
+                    local btbExtra = (prefs.bottomTextBar and btbIsAttached)
+                            and (prefs.bottomTextBarHeight or 16)
                         or 0
                     local targetFrameHeight = playerTargetHeight + btbExtra
                     local portraitHeight = 0
                     local totalWidth = 0
                     local isAttached = pStyle == "attached"
-                    local pSizeAdj = settings.portraitSize or 0
-                    local pXOff = settings.portraitX or 0
-                    local pYOff = settings.portraitY or 0
+                    local pSizeAdj = prefs.portraitSize or 0
+                    local pXOff = prefs.portraitX or 0
+                    local pYOff = prefs.portraitY or 0
                     if not isAttached then
                         pSizeAdj = pSizeAdj + 10
                         pYOff = pYOff + 5
                     end
 
-                    if unit == "player" then
-                        local pSide = settings.portraitSide or "left"
+                    if unitToken == "player" then
+                        local pSide = prefs.portraitSide or "left"
                         local effectiveSide = pSide
                         if isAttached and pSide == "top" then
                             effectiveSide = "left"
@@ -570,13 +579,13 @@ ReloadFramesBody = function()
                             adjPortraitH = 8
                         end
                         if not showPortrait then
-                            totalWidth = settings.frameWidth
+                            totalWidth = prefs.frameWidth
                             portraitHeight = 0
                         elseif isAttached then
-                            totalWidth = adjPortraitH + settings.frameWidth
+                            totalWidth = adjPortraitH + prefs.frameWidth
                             portraitHeight = adjPortraitH
                         else
-                            totalWidth = settings.frameWidth
+                            totalWidth = prefs.frameWidth
                             portraitHeight = 0
                         end
                         -- Health bar xOffset: only offset when portrait is attached on the left
@@ -588,34 +597,34 @@ ReloadFramesBody = function()
                             healthRightInset = portraitHeight
                         end
 
-                        PP.Size(frame, totalWidth, playerTargetHeightWithCp + btbExtra)
+                        Pix.Size(widget, totalWidth, playerTargetHeightWithCp + btbExtra)
 
                         if
-                            frame.Portrait
-                            and frame.Portrait.backdrop
-                            and not frame.Portrait.backdrop._isInside
+                            widget.Portrait
+                            and widget.Portrait.backdrop
+                            and not widget.Portrait.backdrop._isInside
                         then
-                            PP.Size(frame.Portrait.backdrop, adjPortraitH, adjPortraitH)
+                            Pix.Size(widget.Portrait.backdrop, adjPortraitH, adjPortraitH)
                             -- Reposition portrait for attached/detached
-                            frame.Portrait.backdrop:ClearAllPoints()
-                            local pBtbTopOff = (btbPos == "top" and settings.bottomTextBar)
-                                    and (settings.bottomTextBarHeight or 16)
+                            widget.Portrait.backdrop:ClearAllPoints()
+                            local pBtbTopOff = (btbPos == "top" and prefs.bottomTextBar)
+                                    and (prefs.bottomTextBarHeight or 16)
                                 or 0
                             if isAttached then
                                 if effectiveSide == "left" then
-                                    PP.Point(
-                                        frame.Portrait.backdrop,
+                                    Pix.Point(
+                                        widget.Portrait.backdrop,
                                         "TOPLEFT",
-                                        frame,
+                                        widget,
                                         "TOPLEFT",
                                         0,
                                         -pBtbTopOff
                                     )
                                 else
-                                    PP.Point(
-                                        frame.Portrait.backdrop,
+                                    Pix.Point(
+                                        widget.Portrait.backdrop,
                                         "TOPRIGHT",
-                                        frame,
+                                        widget,
                                         "TOPRIGHT",
                                         0,
                                         -pBtbTopOff
@@ -623,138 +632,143 @@ ReloadFramesBody = function()
                                 end
                             else
                                 if effectiveSide == "top" then
-                                    frame.Portrait.backdrop:SetPoint(
+                                    widget.Portrait.backdrop:SetPoint(
                                         "BOTTOM",
-                                        frame.Health or frame,
+                                        widget.Health or widget,
                                         "TOP",
                                         pXOff,
                                         15 + pYOff
                                     )
                                 elseif effectiveSide == "left" then
-                                    frame.Portrait.backdrop:SetPoint(
+                                    widget.Portrait.backdrop:SetPoint(
                                         "TOPRIGHT",
-                                        frame.Health or frame,
+                                        widget.Health or widget,
                                         "TOPLEFT",
                                         -15 + pXOff,
                                         pYOff
                                     )
                                 else
-                                    frame.Portrait.backdrop:SetPoint(
+                                    widget.Portrait.backdrop:SetPoint(
                                         "TOPLEFT",
-                                        frame.Health or frame,
+                                        widget.Health or widget,
                                         "TOPRIGHT",
                                         15 + pXOff,
                                         pYOff
                                     )
                                 end
                             end
-                            if frame.Portrait.backdrop._2d then
-                                UnsnapTex(frame.Portrait.backdrop._2d)
+                            if widget.Portrait.backdrop._2d then
+                                UnsnapTex(widget.Portrait.backdrop._2d)
                             end
-                            if frame:IsElementEnabled("Portrait") and frame.Portrait.ForceUpdate then
-                                frame.Portrait:ForceUpdate()
+                            if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
+                                widget.Portrait:ForceUpdate()
                             end
                         end
-                        if frame.Health then
-                            frame.Health:ClearAllPoints()
+                        if widget.Health then
+                            widget.Health:ClearAllPoints()
                             -- Use portrait's actual snapped width for flush alignment
-                            if showPortrait and isAttached and frame.Portrait and frame.Portrait.backdrop then
-                                local snappedPortW = frame.Portrait.backdrop:GetWidth()
+                            if
+                                showPortrait
+                                and isAttached
+                                and widget.Portrait
+                                and widget.Portrait.backdrop
+                            then
+                                local snappedPortW = widget.Portrait.backdrop:GetWidth()
                                 healthXOffset = (effectiveSide == "left") and snappedPortW or 0
                                 healthRightInset = (effectiveSide == "right") and snappedPortW or 0
                             end
-                            frame.Health._xOffset = healthXOffset
-                            frame.Health._rightInset = healthRightInset
-                            local powerAboveOff = (ppPos == "above") and settings.powerHeight or 0
+                            widget.Health._xOffset = healthXOffset
+                            widget.Health._rightInset = healthRightInset
+                            local powerAboveOff = (ppPos == "above") and prefs.powerHeight or 0
                             local hTopOff = cpAboveH
                                 + powerAboveOff
                                 + (
                                     btbPos == "top"
-                                        and settings.bottomTextBar
-                                        and (settings.bottomTextBarHeight or 16)
+                                        and prefs.bottomTextBar
+                                        and (prefs.bottomTextBarHeight or 16)
                                     or 0
                                 )
-                            frame.Health._topOffset = hTopOff
-                            frame.Health:SetPoint(
+                            widget.Health._topOffset = hTopOff
+                            widget.Health:SetPoint(
                                 "TOPLEFT",
-                                frame,
+                                widget,
                                 "TOPLEFT",
                                 healthXOffset,
-                                PP.Scale(-hTopOff)
+                                Pix.Scale(-hTopOff)
                             )
-                            frame.Health:SetPoint("RIGHT", frame, "RIGHT", -healthRightInset, 0)
-                            PP.Height(frame.Health, settings.healthHeight)
+                            widget.Health:SetPoint("RIGHT", widget, "RIGHT", -healthRightInset, 0)
+                            Pix.Height(widget.Health, prefs.healthHeight)
                         end
-                        if frame.Power then
-                            local pw = settings.frameWidth
+                        if widget.Power then
+                            local pw = prefs.frameWidth
                             local ppIsDetached = (ppPos == "detached_top" or ppPos == "detached_bottom")
-                            if ppIsDetached and (settings.powerWidth or 0) > 0 then
-                                pw = settings.powerWidth
+                            if ppIsDetached and (prefs.powerWidth or 0) > 0 then
+                                pw = prefs.powerWidth
                             end
-                            PP.Size(frame.Power, pw, settings.powerHeight)
+                            Pix.Size(widget.Power, pw, prefs.powerHeight)
                             -- Apply custom strata for detached power bar
-                            if ppIsDetached and db.profile.enableCustomBarStratas then
-                                frame.Power:SetFrameStrata(db.profile.detachedPowerStrata or "HIGH")
+                            if ppIsDetached and saved.profile.enableCustomBarStratas then
+                                widget.Power:SetFrameStrata(saved.profile.detachedPowerStrata or "HIGH")
                             elseif ppIsDetached then
-                                frame.Power:SetFrameStrata("MEDIUM")
+                                widget.Power:SetFrameStrata("MEDIUM")
                             end
-                            frame.Power:ClearAllPoints()
+                            widget.Power:ClearAllPoints()
                             if ppPos == "none" then
-                                frame.Power:Hide()
+                                widget.Power:Hide()
                             elseif ppPos == "above" then
-                                PP.Point(frame.Power, "BOTTOMLEFT", frame.Health, "TOPLEFT", 0, 0)
-                                PP.Point(frame.Power, "BOTTOMRIGHT", frame.Health, "TOPRIGHT", 0, 0)
-                                frame.Power:Show()
+                                Pix.Point(widget.Power, "BOTTOMLEFT", widget.Health, "TOPLEFT", 0, 0)
+                                Pix.Point(widget.Power, "BOTTOMRIGHT", widget.Health, "TOPRIGHT", 0, 0)
+                                widget.Power:Show()
                             elseif ppPos == "detached_top" then
-                                frame.Power:SetPoint(
+                                widget.Power:SetPoint(
                                     "BOTTOM",
-                                    frame.Health,
+                                    widget.Health,
                                     "TOP",
-                                    settings.powerX or 0,
-                                    15 + (settings.powerY or 0)
+                                    prefs.powerX or 0,
+                                    15 + (prefs.powerY or 0)
                                 )
-                                frame.Power:Show()
+                                widget.Power:Show()
                             elseif ppPos == "detached_bottom" then
-                                frame.Power:SetPoint(
+                                widget.Power:SetPoint(
                                     "TOP",
-                                    frame.Health,
+                                    widget.Health,
                                     "BOTTOM",
-                                    settings.powerX or 0,
-                                    -15 + (settings.powerY or 0)
+                                    prefs.powerX or 0,
+                                    -15 + (prefs.powerY or 0)
                                 )
-                                frame.Power:Show()
+                                widget.Power:Show()
                             else
-                                PP.Point(frame.Power, "TOPLEFT", frame.Health, "BOTTOMLEFT", 0, 0)
-                                PP.Point(frame.Power, "TOPRIGHT", frame.Health, "BOTTOMRIGHT", 0, 0)
-                                frame.Power:Show()
+                                Pix.Point(widget.Power, "TOPLEFT", widget.Health, "BOTTOMLEFT", 0, 0)
+                                Pix.Point(widget.Power, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
+                                widget.Power:Show()
                             end
-                            if frame.Power._applyPowerPercentText then
-                                frame.Power._applyPowerPercentText(settings)
+                            if widget.Power._applyPowerPercentText then
+                                widget.Power._applyPowerPercentText(prefs)
                             end
 
                             -- Update power bar border (detached only; lazily created)
-                            ns.UpdatePowerBorder(frame.Power, settings)
+                            mod.UpdatePowerBorder(widget.Power, prefs)
 
                             -- Gray out power bar background for generic melee NPCs
                             if ppPos ~= "none" and (ppPos == "below" or ppPos == "above") then
                                 local shouldGray = false
                                 if
-                                    unit ~= "player"
-                                    and UnitExists(unit)
-                                    and UnitCanAttack("player", unit)
-                                    and not UnitIsPlayer(unit)
+                                    unitToken ~= "player"
+                                    and UnitExists(unitToken)
+                                    and UnitCanAttack("player", unitToken)
+                                    and not UnitIsPlayer(unitToken)
                                 then
-                                    local cls = UnitClassification(unit)
+                                    local cls = UnitClassification(unitToken)
                                     local isBoss = (cls == "worldboss")
                                     local isElite = (cls == "elite" or cls == "rareelite")
-                                    local lvl = UnitLevel(unit)
+                                    local lvl = UnitLevel(unitToken)
                                     local pLvl = UnitLevel("player")
                                     local lvlOk = lvl and not (issecretvalue and issecretvalue(lvl))
                                     local pLvlOk = pLvl and not (issecretvalue and issecretvalue(pLvl))
                                     local isMB = isElite
                                         and lvlOk
                                         and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1))
-                                    local isCst = UnitClassBase and UnitClassBase(unit)
+                                    local isCst = UnitClassBase and UnitClassBase(unitToken)
                                     if issecretvalue(isCst) then
                                         isCst = nil
                                     end
@@ -764,64 +778,64 @@ ReloadFramesBody = function()
                                     end
                                 end
                                 if shouldGray then
-                                    frame.Power._grayedOut = true
-                                    if frame.Power.bg then
-                                        frame.Power.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-                                        frame.Power.bg:SetAlpha(1)
+                                    widget.Power._grayedOut = true
+                                    if widget.Power.bg then
+                                        widget.Power.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
+                                        widget.Power.bg:SetAlpha(1)
                                     end
                                 else
-                                    frame.Power._grayedOut = false
+                                    widget.Power._grayedOut = false
                                 end
                             end
                         end
-                        if frame.Castbar then
-                            local castbarBg = frame.Castbar:GetParent()
-                            if settings.showPlayerCastbar then
+                        if widget.Castbar then
+                            local castbarBg = widget.Castbar:GetParent()
+                            if prefs.showPlayerCastbar then
                                 -- Hide While Using Gamepad keeps the element off and the
                                 -- holder hidden (ns.UF_ApplyGamepadCastbar); the style
                                 -- below still lands, so the bar comes back current.
-                                ns.SetCastbarElement(frame, not ns._ufCastPadHidden)
+                                mod.SetCastbarElement(widget, not mod._ufCastPadHidden)
                                 if castbarBg then
-                                    local cbW = db.profile.player.playerCastbarWidth or 181
-                                    local cbH = db.profile.player.playerCastbarHeight or 14
-                                    PP.Size(castbarBg, cbW, cbH)
+                                    local cbW = saved.profile.player.playerCastbarWidth or 181
+                                    local cbH = saved.profile.player.playerCastbarHeight or 14
+                                    Pix.Size(castbarBg, cbW, cbH)
                                     if castbarBg._bgTex then
-                                        local cbg = settings.castBgColor
+                                        local cbg = prefs.castBgColor
                                         castbarBg._bgTex:SetColorTexture(
                                             cbg and cbg.r or 0,
                                             cbg and cbg.g or 0,
                                             cbg and cbg.b or 0,
-                                            settings.castBgAlpha or 0.5
+                                            prefs.castBgAlpha or 0.5
                                         )
                                     end
-                                    local pIconOffX, pIconOffY = CastIconOffsets("player", settings)
+                                    local pIconOffX, pIconOffY = CastIconOffsets("player", prefs)
                                     LayoutCastbarIcon(
-                                        frame.Castbar,
-                                        CastIconInWidth("player", settings),
-                                        settings.playerCastbarHeight or 14,
-                                        CastIconOnRight("player", settings),
+                                        widget.Castbar,
+                                        CastIconInWidth("player", prefs),
+                                        prefs.playerCastbarHeight or 14,
+                                        CastIconOnRight("player", prefs),
                                         pIconOffX,
                                         pIconOffY,
-                                        CastIconShown("player", settings),
-                                        settings.playerCastbarStockBorderScale,
-                                        ns.UF_CastIconPortrait(frame.Castbar, frame, settings, "player")
+                                        CastIconShown("player", prefs),
+                                        prefs.playerCastbarStockBorderScale,
+                                        mod.UF_CastIconPortrait(widget.Castbar, widget, prefs, "player")
                                     )
-                                    ns.UF_ApplyCastBorder(frame.Castbar, settings, nil, "player")
+                                    mod.UF_ApplyCastBorder(widget.Castbar, prefs, nil, "player")
                                     -- Resize cast icon to match castbar height
-                                    if frame.Castbar._iconFrame then
-                                        PP.Size(frame.Castbar._iconFrame, cbH, cbH)
+                                    if widget.Castbar._iconFrame then
+                                        Pix.Size(widget.Castbar._iconFrame, cbH, cbH)
                                         if
-                                            not frame.Castbar:IsShown()
-                                            or settings.showPlayerCastIcon == false
+                                            not widget.Castbar:IsShown()
+                                            or prefs.showPlayerCastIcon == false
                                         then
-                                            frame.Castbar._iconFrame:Hide()
+                                            widget.Castbar._iconFrame:Hide()
                                         end
                                     end
                                     -- Position owned by centralized unlock system (no manual anchor)
                                     -- Respect hide-while-not-casting (and Hide While Using Gamepad)
                                     if
-                                        ns._ufCastPadHidden
-                                        or (settings.castbarHideWhenInactive and not frame.Castbar:IsShown())
+                                        mod._ufCastPadHidden
+                                        or (prefs.castbarHideWhenInactive and not widget.Castbar:IsShown())
                                     then
                                         castbarBg:Hide()
                                     else
@@ -829,64 +843,64 @@ ReloadFramesBody = function()
                                     end
                                 end
                                 -- Store per-unit settings for PostCastStart
-                                frame.Castbar._eufSettings = settings
+                                widget.Castbar._eufSettings = prefs
                                 -- Resolve per-unit fill color
                                 local pCbColor = castbarColor
-                                if settings.castbarClassColored then
+                                if prefs.castbarClassColored then
                                     local _, classToken = UnitClass("player")
                                     if classToken and CludesUI.GetClassColor then
                                         pCbColor = CludesUI.GetClassColor(classToken) or castbarColor
                                     end
-                                elseif settings.castbarFillColor then
-                                    pCbColor = settings.castbarFillColor
+                                elseif prefs.castbarFillColor then
+                                    pCbColor = prefs.castbarFillColor
                                 end
                                 -- Fill Opacity below 100: the tint layer is the visible
                                 -- fill at that opacity; zero the base fill so it cannot
                                 -- bleed through the translucent tint.
-                                frame.Castbar:SetStatusBarColor(
+                                widget.Castbar:SetStatusBarColor(
                                     pCbColor.r,
                                     pCbColor.g,
                                     pCbColor.b,
-                                    ((settings.castFillOpacity or 100) < 100) and 0 or castbarOpacity
+                                    ((prefs.castFillOpacity or 100) < 100) and 0 or castbarOpacity
                                 )
-                                ns.ApplyCastFillOpacity(frame.Castbar, settings)
+                                mod.ApplyCastFillOpacity(widget.Castbar, prefs)
                                 -- Apply cast bar text settings
-                                if frame.Castbar.Text then
-                                    local snSz = settings.castSpellNameSize or 11
-                                    SetFSFont(frame.Castbar.Text, snSz)
-                                    local snC = settings.castSpellNameColor or { r = 1, g = 1, b = 1 }
-                                    frame.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
+                                if widget.Castbar.Text then
+                                    local snSz = prefs.castSpellNameSize or 11
+                                    SetFSFont(widget.Castbar.Text, snSz)
+                                    local snC = prefs.castSpellNameColor or { r = 1, g = 1, b = 1 }
+                                    widget.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
                                 end
-                                if frame.Castbar.Time then
-                                    local dtSz = settings.castDurationSize or 10
-                                    SetFSFont(frame.Castbar.Time, dtSz)
-                                    local dtC = settings.castDurationColor or { r = 1, g = 1, b = 1 }
-                                    frame.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
-                                    frame.Castbar._showDuration = settings.showCastDuration ~= false
-                                    frame.Castbar._durationSize = dtSz
+                                if widget.Castbar.Time then
+                                    local dtSz = prefs.castDurationSize or 10
+                                    SetFSFont(widget.Castbar.Time, dtSz)
+                                    local dtC = prefs.castDurationColor or { r = 1, g = 1, b = 1 }
+                                    widget.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
+                                    widget.Castbar._showDuration = prefs.showCastDuration ~= false
+                                    widget.Castbar._durationSize = dtSz
                                     -- Show/hide immediately (covers both toggle directions)
-                                    if frame.Castbar._showDuration and frame.Castbar:IsShown() then
-                                        frame.Castbar.Time:Show()
-                                    elseif not frame.Castbar._showDuration then
-                                        frame.Castbar.Time:Hide()
+                                    if widget.Castbar._showDuration and widget.Castbar:IsShown() then
+                                        widget.Castbar.Time:Show()
+                                    elseif not widget.Castbar._showDuration then
+                                        widget.Castbar.Time:Hide()
                                     end
                                 end
-                                if frame.Castbar.Target then
-                                    local tsSz = settings.castSpellTargetSize or 11
-                                    SetFSFont(frame.Castbar.Target, tsSz)
-                                    local tsC = settings.castSpellTargetColor or { r = 1, g = 1, b = 1 }
-                                    frame.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
-                                    frame.Castbar._showTarget = settings.showCastTarget ~= false
-                                    if not frame.Castbar._showTarget then
-                                        frame.Castbar.Target:Hide()
+                                if widget.Castbar.Target then
+                                    local tsSz = prefs.castSpellTargetSize or 11
+                                    SetFSFont(widget.Castbar.Target, tsSz)
+                                    local tsC = prefs.castSpellTargetColor or { r = 1, g = 1, b = 1 }
+                                    widget.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
+                                    widget.Castbar._showTarget = prefs.showCastTarget ~= false
+                                    if not widget.Castbar._showTarget then
+                                        widget.Castbar.Target:Hide()
                                     end
-                                    if frame.Castbar._syncOffsetsAndLayout then
-                                        frame.Castbar:_syncOffsetsAndLayout(settings)
+                                    if widget.Castbar._syncOffsetsAndLayout then
+                                        widget.Castbar:_syncOffsetsAndLayout(prefs)
                                     end
                                 end
                             else
-                                ns.SetCastbarElement(frame, false)
-                                frame.Castbar:Hide()
+                                mod.SetCastbarElement(widget, false)
+                                widget.Castbar:Hide()
                                 if castbarBg then
                                     castbarBg:Hide()
                                 end
@@ -899,130 +913,145 @@ ReloadFramesBody = function()
                         -- specifically (target/focus don't do this toggle and stay accurate).
                         -- Just Show/Hide the bar -- the element keeps running in the
                         -- background and the value stays live either way.
-                        if frame.HealthPrediction and frame.HealthPrediction.damageAbsorb then
+                        if widget.HealthPrediction and widget.HealthPrediction.damageAbsorb then
                             -- Boss frames style from the TARGET donor block,
                             -- behind the "Show on Boss Frames" toggle (nil = on).
-                            local absSettings = settings
-                            local absStyle = settings.showPlayerAbsorb
-                            if unit and unit:match("^boss") then
-                                if db.profile.boss and db.profile.boss.showAbsorbs == false then
+                            local absSettings = prefs
+                            local absStyle = prefs.showPlayerAbsorb
+                            if unitToken and unitToken:match("^boss") then
+                                if saved.profile.boss and saved.profile.boss.showAbsorbs == false then
                                     absStyle = nil
                                 else
-                                    absSettings = db.profile.target or settings
+                                    absSettings = saved.profile.target or prefs
                                     absStyle = absSettings.showPlayerAbsorb
                                 end
                             end
                             if absStyle and absStyle ~= "none" then
-                                ApplyAbsorbStyle(frame.HealthPrediction.damageAbsorb, absStyle, absSettings)
-                                frame.HealthPrediction.damageAbsorb:Show()
+                                ApplyAbsorbStyle(widget.HealthPrediction.damageAbsorb, absStyle, absSettings)
+                                widget.HealthPrediction.damageAbsorb:Show()
                                 -- Force an immediate value update so the bar doesn't
                                 -- show stale/uninitialized fill covering the full frame.
-                                if frame.HealthPrediction.Override then
-                                    frame.HealthPrediction.Override(frame, "UNIT_ABSORB_AMOUNT_CHANGED", unit)
+                                if widget.HealthPrediction.Override then
+                                    widget.HealthPrediction.Override(
+                                        widget,
+                                        "UNIT_ABSORB_AMOUNT_CHANGED",
+                                        unitToken
+                                    )
                                 end
                             else
-                                frame.HealthPrediction.damageAbsorb:Hide()
+                                widget.HealthPrediction.damageAbsorb:Hide()
                                 -- Decoupled heal absorb: hiding the shield bar above
                                 -- cascades (via the backfill OnHide hook) into hiding
                                 -- the heal-absorb bar too. Re-run the prediction so the
                                 -- heal absorb re-shows immediately after a reload even
                                 -- with the shield absorb off, instead of staying hidden
                                 -- until the next UNIT_ABSORB_AMOUNT_CHANGED event.
-                                if frame.HealthPrediction.Override then
-                                    frame.HealthPrediction.Override(frame, "UNIT_ABSORB_AMOUNT_CHANGED", unit)
+                                if widget.HealthPrediction.Override then
+                                    widget.HealthPrediction.Override(
+                                        widget,
+                                        "UNIT_ABSORB_AMOUNT_CHANGED",
+                                        unitToken
+                                    )
                                 end
                             end
                         end
 
                         -- Reposition name and health text (player)
-                        if frame._applyTextTags then
-                            frame._applyTextTags(
-                                settings.leftTextContent or "name",
-                                settings.rightTextContent or "both",
-                                settings.centerTextContent or "none"
+                        if widget._applyTextTags then
+                            widget._applyTextTags(
+                                prefs.leftTextContent or "name",
+                                prefs.rightTextContent or "both",
+                                prefs.centerTextContent or "none"
                             )
                         end
-                        if frame._applyTextPositions then
-                            frame._applyTextPositions(settings)
+                        if widget._applyTextPositions then
+                            widget._applyTextPositions(prefs)
                         end
 
                         -- Bottom Text Bar update (player)
-                        if settings.bottomTextBar then
-                            local btbPos2 = settings.btbPosition or "bottom"
+                        if prefs.bottomTextBar then
+                            local btbPos2 = prefs.btbPosition or "bottom"
                             local btbIsAtt = (btbPos2 == "top" or btbPos2 == "bottom")
                             local btbIsDetached = not btbIsAtt
-                            local btbW2 = btbIsDetached and (settings.btbWidth or 0) or 0
+                            local btbW2 = btbIsDetached and (prefs.btbWidth or 0) or 0
                             local btbTW = (btbW2 > 0 and btbIsDetached) and btbW2 or totalWidth
                             -- Compute BTB xOffset for left-side portrait (attached only)
                             local btbXOff = 0
                             if btbIsAtt and showPortrait and isAttached and effectiveSide == "left" then
                                 btbXOff = -adjPortraitH
                             end
-                            local ppBtbAnchor = (ppIsAtt and frame.Power) or frame.Health
-                            if not frame.BottomTextBar then
-                                frame.BottomTextBar = CreateBottomTextBar(
-                                    frame,
-                                    unit,
-                                    settings,
+                            local ppBtbAnchor = (ppIsAtt and widget.Power) or widget.Health
+                            if not widget.BottomTextBar then
+                                widget.BottomTextBar = CreateBottomTextBar(
+                                    widget,
+                                    unitToken,
+                                    prefs,
                                     ppBtbAnchor,
                                     btbXOff,
                                     totalWidth
                                 )
-                                frame._btb = frame.BottomTextBar
+                                widget._btb = widget.BottomTextBar
                             else
-                                local btb = frame.BottomTextBar
-                                PP.Size(btb, btbTW, settings.bottomTextBarHeight or 16)
+                                local btb = widget.BottomTextBar
+                                Pix.Size(btb, btbTW, prefs.bottomTextBarHeight or 16)
                                 btb:ClearAllPoints()
                                 if btbPos2 == "top" then
-                                    PP.Point(btb, "BOTTOMLEFT", frame.Health or frame, "TOPLEFT", btbXOff, 0)
+                                    Pix.Point(
+                                        btb,
+                                        "BOTTOMLEFT",
+                                        widget.Health or widget,
+                                        "TOPLEFT",
+                                        btbXOff,
+                                        0
+                                    )
                                 elseif btbPos2 == "detached_top" then
                                     btb:SetPoint(
                                         "BOTTOM",
-                                        frame,
+                                        widget,
                                         "TOP",
-                                        settings.btbX or 0,
-                                        15 + (settings.btbY or 0)
+                                        prefs.btbX or 0,
+                                        15 + (prefs.btbY or 0)
                                     )
                                 elseif btbPos2 == "detached_bottom" then
                                     btb:SetPoint(
                                         "TOP",
-                                        frame,
+                                        widget,
                                         "BOTTOM",
-                                        settings.btbX or 0,
-                                        -15 + (settings.btbY or 0)
+                                        prefs.btbX or 0,
+                                        -15 + (prefs.btbY or 0)
                                     )
                                 else
-                                    PP.Point(btb, "TOPLEFT", ppBtbAnchor, "BOTTOMLEFT", btbXOff, 0)
+                                    Pix.Point(btb, "TOPLEFT", ppBtbAnchor, "BOTTOMLEFT", btbXOff, 0)
                                 end
                                 -- Update BTB bg color
                                 if btb.bg then
-                                    local bgc = settings.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
-                                    local bga = settings.btbBgOpacity or 1.0
+                                    local bgc = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
+                                    local bga = prefs.btbBgOpacity or 1.0
                                     btb.bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
                                 end
                                 if btb._applyBTBTextTags then
                                     btb._applyBTBTextTags(
-                                        settings.btbLeftContent or "none",
-                                        settings.btbRightContent or "none",
-                                        settings.btbCenterContent or "none"
+                                        prefs.btbLeftContent or "none",
+                                        prefs.btbRightContent or "none",
+                                        prefs.btbCenterContent or "none"
                                     )
                                 end
                                 if btb._applyBTBTextPositions then
-                                    btb._applyBTBTextPositions(settings)
+                                    btb._applyBTBTextPositions(prefs)
                                     if btb._applyBTBClassIcon then
-                                        btb._applyBTBClassIcon(settings)
+                                        btb._applyBTBClassIcon(prefs)
                                     end
                                 end
                                 btb:Show()
                             end
-                        elseif frame.BottomTextBar then
-                            frame.BottomTextBar:Hide()
+                        elseif widget.BottomTextBar then
+                            widget.BottomTextBar:Hide()
                         end
 
-                        UpdateBordersForScale(frame, unit)
-                        ReparentBarsToClip(frame, ns.UF_PowerPos(settings), settings)
-                    elseif unit == "target" then
-                        local pSide = settings.portraitSide or "right"
+                        UpdateBordersForScale(widget, unitToken)
+                        ReparentBarsToClip(widget, mod.UF_PowerPos(prefs), prefs)
+                    elseif unitToken == "target" then
+                        local pSide = prefs.portraitSide or "right"
                         local effectiveSide = pSide
                         if isAttached and pSide == "top" then
                             effectiveSide = "right"
@@ -1032,13 +1061,13 @@ ReloadFramesBody = function()
                             adjPortraitH = 8
                         end
                         if not showPortrait then
-                            totalWidth = settings.frameWidth
+                            totalWidth = prefs.frameWidth
                             portraitHeight = 0
                         elseif isAttached then
-                            totalWidth = adjPortraitH + settings.frameWidth
+                            totalWidth = adjPortraitH + prefs.frameWidth
                             portraitHeight = adjPortraitH
                         else
-                            totalWidth = settings.frameWidth
+                            totalWidth = prefs.frameWidth
                             portraitHeight = 0
                         end
                         -- Health bar xOffset: only offset when portrait is attached on the left
@@ -1050,33 +1079,33 @@ ReloadFramesBody = function()
                             healthRightInset = portraitHeight
                         end
 
-                        PP.Size(frame, totalWidth, targetFrameHeight)
+                        Pix.Size(widget, totalWidth, targetFrameHeight)
 
                         if
-                            frame.Portrait
-                            and frame.Portrait.backdrop
-                            and not frame.Portrait.backdrop._isInside
+                            widget.Portrait
+                            and widget.Portrait.backdrop
+                            and not widget.Portrait.backdrop._isInside
                         then
-                            PP.Size(frame.Portrait.backdrop, adjPortraitH, adjPortraitH)
-                            frame.Portrait.backdrop:ClearAllPoints()
-                            local btbTopOff = (btbPos == "top" and settings.bottomTextBar)
-                                    and (settings.bottomTextBarHeight or 16)
+                            Pix.Size(widget.Portrait.backdrop, adjPortraitH, adjPortraitH)
+                            widget.Portrait.backdrop:ClearAllPoints()
+                            local btbTopOff = (btbPos == "top" and prefs.bottomTextBar)
+                                    and (prefs.bottomTextBarHeight or 16)
                                 or 0
                             if isAttached then
                                 if effectiveSide == "left" then
-                                    PP.Point(
-                                        frame.Portrait.backdrop,
+                                    Pix.Point(
+                                        widget.Portrait.backdrop,
                                         "TOPLEFT",
-                                        frame,
+                                        widget,
                                         "TOPLEFT",
                                         0,
                                         -btbTopOff
                                     )
                                 else
-                                    PP.Point(
-                                        frame.Portrait.backdrop,
+                                    Pix.Point(
+                                        widget.Portrait.backdrop,
                                         "TOPRIGHT",
-                                        frame,
+                                        widget,
                                         "TOPRIGHT",
                                         0,
                                         -btbTopOff
@@ -1084,131 +1113,136 @@ ReloadFramesBody = function()
                                 end
                             else
                                 if effectiveSide == "top" then
-                                    frame.Portrait.backdrop:SetPoint(
+                                    widget.Portrait.backdrop:SetPoint(
                                         "BOTTOM",
-                                        frame.Health or frame,
+                                        widget.Health or widget,
                                         "TOP",
                                         pXOff,
                                         15 + pYOff
                                     )
                                 elseif effectiveSide == "left" then
-                                    frame.Portrait.backdrop:SetPoint(
+                                    widget.Portrait.backdrop:SetPoint(
                                         "TOPRIGHT",
-                                        frame.Health or frame,
+                                        widget.Health or widget,
                                         "TOPLEFT",
                                         -15 + pXOff,
                                         pYOff
                                     )
                                 else
-                                    frame.Portrait.backdrop:SetPoint(
+                                    widget.Portrait.backdrop:SetPoint(
                                         "TOPLEFT",
-                                        frame.Health or frame,
+                                        widget.Health or widget,
                                         "TOPRIGHT",
                                         15 + pXOff,
                                         pYOff
                                     )
                                 end
                             end
-                            if frame.Portrait.backdrop._2d then
-                                UnsnapTex(frame.Portrait.backdrop._2d)
+                            if widget.Portrait.backdrop._2d then
+                                UnsnapTex(widget.Portrait.backdrop._2d)
                             end
-                            if frame:IsElementEnabled("Portrait") and frame.Portrait.ForceUpdate then
-                                frame.Portrait:ForceUpdate()
+                            if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
+                                widget.Portrait:ForceUpdate()
                             end
                         end
-                        if frame.Health then
-                            frame.Health:ClearAllPoints()
+                        if widget.Health then
+                            widget.Health:ClearAllPoints()
                             -- Use portrait's actual snapped width for flush alignment
-                            if showPortrait and isAttached and frame.Portrait and frame.Portrait.backdrop then
-                                local snappedPortW = frame.Portrait.backdrop:GetWidth()
+                            if
+                                showPortrait
+                                and isAttached
+                                and widget.Portrait
+                                and widget.Portrait.backdrop
+                            then
+                                local snappedPortW = widget.Portrait.backdrop:GetWidth()
                                 healthXOffset = (effectiveSide == "left") and snappedPortW or 0
                                 healthRightInset = (effectiveSide == "right") and snappedPortW or 0
                             end
                             local tBtbTopOff = (
                                 btbPos == "top"
-                                    and settings.bottomTextBar
-                                    and (settings.bottomTextBarHeight or 16)
+                                    and prefs.bottomTextBar
+                                    and (prefs.bottomTextBarHeight or 16)
                                 or 0
                             )
-                            local tPowerAboveOff = (ppPos == "above") and settings.powerHeight or 0
+                            local tPowerAboveOff = (ppPos == "above") and prefs.powerHeight or 0
                             local tTopOff = tBtbTopOff + tPowerAboveOff
-                            frame.Health._xOffset = healthXOffset
-                            frame.Health._rightInset = healthRightInset
-                            frame.Health._topOffset = tTopOff
-                            frame.Health:SetPoint(
+                            widget.Health._xOffset = healthXOffset
+                            widget.Health._rightInset = healthRightInset
+                            widget.Health._topOffset = tTopOff
+                            widget.Health:SetPoint(
                                 "TOPLEFT",
-                                frame,
+                                widget,
                                 "TOPLEFT",
                                 healthXOffset,
-                                PP.Scale(-tTopOff)
+                                Pix.Scale(-tTopOff)
                             )
-                            frame.Health:SetPoint("RIGHT", frame, "RIGHT", -healthRightInset, 0)
-                            PP.Height(frame.Health, settings.healthHeight)
+                            widget.Health:SetPoint("RIGHT", widget, "RIGHT", -healthRightInset, 0)
+                            Pix.Height(widget.Health, prefs.healthHeight)
                         end
-                        if frame.Power then
-                            local pw2 = settings.frameWidth
+                        if widget.Power then
+                            local pw2 = prefs.frameWidth
                             local ppIsDetached2 = (ppPos == "detached_top" or ppPos == "detached_bottom")
-                            if ppIsDetached2 and (settings.powerWidth or 0) > 0 then
-                                pw2 = settings.powerWidth
+                            if ppIsDetached2 and (prefs.powerWidth or 0) > 0 then
+                                pw2 = prefs.powerWidth
                             end
-                            PP.Size(frame.Power, pw2, settings.powerHeight)
-                            frame.Power:ClearAllPoints()
+                            Pix.Size(widget.Power, pw2, prefs.powerHeight)
+                            widget.Power:ClearAllPoints()
                             if ppPos == "none" then
-                                frame.Power:Hide()
+                                widget.Power:Hide()
                             elseif ppPos == "above" then
-                                PP.Point(frame.Power, "BOTTOMLEFT", frame.Health, "TOPLEFT", 0, 0)
-                                PP.Point(frame.Power, "BOTTOMRIGHT", frame.Health, "TOPRIGHT", 0, 0)
-                                frame.Power:Show()
+                                Pix.Point(widget.Power, "BOTTOMLEFT", widget.Health, "TOPLEFT", 0, 0)
+                                Pix.Point(widget.Power, "BOTTOMRIGHT", widget.Health, "TOPRIGHT", 0, 0)
+                                widget.Power:Show()
                             elseif ppPos == "detached_top" then
-                                frame.Power:SetPoint(
+                                widget.Power:SetPoint(
                                     "BOTTOM",
-                                    frame.Health,
+                                    widget.Health,
                                     "TOP",
-                                    settings.powerX or 0,
-                                    15 + (settings.powerY or 0)
+                                    prefs.powerX or 0,
+                                    15 + (prefs.powerY or 0)
                                 )
-                                frame.Power:Show()
+                                widget.Power:Show()
                             elseif ppPos == "detached_bottom" then
-                                frame.Power:SetPoint(
+                                widget.Power:SetPoint(
                                     "TOP",
-                                    frame.Health,
+                                    widget.Health,
                                     "BOTTOM",
-                                    settings.powerX or 0,
-                                    -15 + (settings.powerY or 0)
+                                    prefs.powerX or 0,
+                                    -15 + (prefs.powerY or 0)
                                 )
-                                frame.Power:Show()
+                                widget.Power:Show()
                             else
-                                PP.Point(frame.Power, "TOPLEFT", frame.Health, "BOTTOMLEFT", 0, 0)
-                                PP.Point(frame.Power, "TOPRIGHT", frame.Health, "BOTTOMRIGHT", 0, 0)
-                                frame.Power:Show()
+                                Pix.Point(widget.Power, "TOPLEFT", widget.Health, "BOTTOMLEFT", 0, 0)
+                                Pix.Point(widget.Power, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
+                                widget.Power:Show()
                             end
-                            if frame.Power._applyPowerPercentText then
-                                frame.Power._applyPowerPercentText(settings)
+                            if widget.Power._applyPowerPercentText then
+                                widget.Power._applyPowerPercentText(prefs)
                             end
 
                             -- Update power bar border (detached only; lazily created)
-                            ns.UpdatePowerBorder(frame.Power, settings)
+                            mod.UpdatePowerBorder(widget.Power, prefs)
 
                             -- Gray out power bar background for generic melee NPCs
                             if ppPos ~= "none" and (ppPos == "below" or ppPos == "above") then
                                 local shouldGray = false
                                 if
-                                    unit ~= "player"
-                                    and UnitExists(unit)
-                                    and UnitCanAttack("player", unit)
-                                    and not UnitIsPlayer(unit)
+                                    unitToken ~= "player"
+                                    and UnitExists(unitToken)
+                                    and UnitCanAttack("player", unitToken)
+                                    and not UnitIsPlayer(unitToken)
                                 then
-                                    local cls = UnitClassification(unit)
+                                    local cls = UnitClassification(unitToken)
                                     local isBoss = (cls == "worldboss")
                                     local isElite = (cls == "elite" or cls == "rareelite")
-                                    local lvl = UnitLevel(unit)
+                                    local lvl = UnitLevel(unitToken)
                                     local pLvl = UnitLevel("player")
                                     local lvlOk = lvl and not (issecretvalue and issecretvalue(lvl))
                                     local pLvlOk = pLvl and not (issecretvalue and issecretvalue(pLvl))
                                     local isMB = isElite
                                         and lvlOk
                                         and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1))
-                                    local isCst = UnitClassBase and UnitClassBase(unit)
+                                    local isCst = UnitClassBase and UnitClassBase(unitToken)
                                     if issecretvalue(isCst) then
                                         isCst = nil
                                     end
@@ -1218,253 +1252,260 @@ ReloadFramesBody = function()
                                     end
                                 end
                                 if shouldGray then
-                                    frame.Power._grayedOut = true
-                                    if frame.Power.bg then
-                                        frame.Power.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-                                        frame.Power.bg:SetAlpha(1)
+                                    widget.Power._grayedOut = true
+                                    if widget.Power.bg then
+                                        widget.Power.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
+                                        widget.Power.bg:SetAlpha(1)
                                     end
                                 else
-                                    frame.Power._grayedOut = false
+                                    widget.Power._grayedOut = false
                                 end
                             end
                         end
 
                         -- Reposition name and health text
-                        if frame._applyTextTags then
-                            frame._applyTextTags(
-                                settings.leftTextContent or "name",
-                                settings.rightTextContent or "both",
-                                settings.centerTextContent or "none"
+                        if widget._applyTextTags then
+                            widget._applyTextTags(
+                                prefs.leftTextContent or "name",
+                                prefs.rightTextContent or "both",
+                                prefs.centerTextContent or "none"
                             )
                         end
-                        if frame._applyTextPositions then
-                            frame._applyTextPositions(settings)
+                        if widget._applyTextPositions then
+                            widget._applyTextPositions(prefs)
                         end
 
                         -- Bottom Text Bar update (target) -- must come before castbar so castbar can anchor to it
                         local tPpBtbAnchor = (
                             ppIsAtt
-                            and (settings.powerHeight or 0) > 0
-                            and frame.Power
-                            and frame.Power:IsShown()
+                            and (prefs.powerHeight or 0) > 0
+                            and widget.Power
+                            and widget.Power:IsShown()
                         )
-                                and frame.Power
-                            or frame.Health
-                        if settings.bottomTextBar then
-                            local btbPos2 = settings.btbPosition or "bottom"
+                                and widget.Power
+                            or widget.Health
+                        if prefs.bottomTextBar then
+                            local btbPos2 = prefs.btbPosition or "bottom"
                             local btbIsAtt = (btbPos2 == "top" or btbPos2 == "bottom")
                             local btbIsDetached = not btbIsAtt
-                            local btbW2 = btbIsDetached and (settings.btbWidth or 0) or 0
+                            local btbW2 = btbIsDetached and (prefs.btbWidth or 0) or 0
                             local btbTW = (btbW2 > 0 and btbIsDetached) and btbW2 or totalWidth
                             local btbXOff = 0
                             if btbIsAtt and showPortrait and isAttached and effectiveSide == "left" then
                                 btbXOff = -adjPortraitH
                             end
-                            if not frame.BottomTextBar then
-                                frame.BottomTextBar = CreateBottomTextBar(
-                                    frame,
-                                    unit,
-                                    settings,
+                            if not widget.BottomTextBar then
+                                widget.BottomTextBar = CreateBottomTextBar(
+                                    widget,
+                                    unitToken,
+                                    prefs,
                                     tPpBtbAnchor,
                                     btbXOff,
                                     totalWidth
                                 )
-                                frame._btb = frame.BottomTextBar
+                                widget._btb = widget.BottomTextBar
                             else
-                                local btb = frame.BottomTextBar
-                                PP.Size(btb, btbTW, settings.bottomTextBarHeight or 16)
+                                local btb = widget.BottomTextBar
+                                Pix.Size(btb, btbTW, prefs.bottomTextBarHeight or 16)
                                 btb:ClearAllPoints()
                                 if btbPos2 == "top" then
-                                    PP.Point(btb, "BOTTOMLEFT", frame.Health or frame, "TOPLEFT", btbXOff, 0)
+                                    Pix.Point(
+                                        btb,
+                                        "BOTTOMLEFT",
+                                        widget.Health or widget,
+                                        "TOPLEFT",
+                                        btbXOff,
+                                        0
+                                    )
                                 elseif btbPos2 == "detached_top" then
                                     btb:SetPoint(
                                         "BOTTOM",
-                                        frame,
+                                        widget,
                                         "TOP",
-                                        settings.btbX or 0,
-                                        15 + (settings.btbY or 0)
+                                        prefs.btbX or 0,
+                                        15 + (prefs.btbY or 0)
                                     )
                                 elseif btbPos2 == "detached_bottom" then
                                     btb:SetPoint(
                                         "TOP",
-                                        frame,
+                                        widget,
                                         "BOTTOM",
-                                        settings.btbX or 0,
-                                        -15 + (settings.btbY or 0)
+                                        prefs.btbX or 0,
+                                        -15 + (prefs.btbY or 0)
                                     )
                                 else
-                                    PP.Point(btb, "TOPLEFT", tPpBtbAnchor, "BOTTOMLEFT", btbXOff, 0)
+                                    Pix.Point(btb, "TOPLEFT", tPpBtbAnchor, "BOTTOMLEFT", btbXOff, 0)
                                 end
                                 if btb.bg then
-                                    local bgc = settings.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
-                                    local bga = settings.btbBgOpacity or 1.0
+                                    local bgc = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
+                                    local bga = prefs.btbBgOpacity or 1.0
                                     btb.bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
                                 end
                                 if btb._applyBTBTextTags then
                                     btb._applyBTBTextTags(
-                                        settings.btbLeftContent or "none",
-                                        settings.btbRightContent or "none",
-                                        settings.btbCenterContent or "none"
+                                        prefs.btbLeftContent or "none",
+                                        prefs.btbRightContent or "none",
+                                        prefs.btbCenterContent or "none"
                                     )
                                 end
                                 if btb._applyBTBTextPositions then
-                                    btb._applyBTBTextPositions(settings)
+                                    btb._applyBTBTextPositions(prefs)
                                     if btb._applyBTBClassIcon then
-                                        btb._applyBTBClassIcon(settings)
+                                        btb._applyBTBClassIcon(prefs)
                                     end
                                 end
                                 btb:Show()
                             end
-                        elseif frame.BottomTextBar then
-                            frame.BottomTextBar:Hide()
+                        elseif widget.BottomTextBar then
+                            widget.BottomTextBar:Hide()
                         end
 
                         -- Castbar (target)
-                        if frame.Castbar then
-                            local castbarBg = frame.Castbar:GetParent()
+                        if widget.Castbar then
+                            local castbarBg = widget.Castbar:GetParent()
                             if castbarBg then
-                                if settings.showCastbar ~= false then
-                                    if not frame:IsElementEnabled("Castbar") then
-                                        frame:EnableElement("Castbar")
+                                if prefs.showCastbar ~= false then
+                                    if not widget:IsElementEnabled("Castbar") then
+                                        widget:EnableElement("Castbar")
                                     end
-                                    local cbW2 = settings.castbarWidth or 181
-                                    local cbH2 = settings.castbarHeight or 14
-                                    PP.Size(castbarBg, cbW2, cbH2)
+                                    local cbW2 = prefs.castbarWidth or 181
+                                    local cbH2 = prefs.castbarHeight or 14
+                                    Pix.Size(castbarBg, cbW2, cbH2)
                                     if castbarBg._bgTex then
-                                        local cbg = settings.castBgColor
+                                        local cbg = prefs.castBgColor
                                         castbarBg._bgTex:SetColorTexture(
                                             cbg and cbg.r or 0,
                                             cbg and cbg.g or 0,
                                             cbg and cbg.b or 0,
-                                            settings.castBgAlpha or 0.5
+                                            prefs.castBgAlpha or 0.5
                                         )
                                     end
-                                    local tIconOffX, tIconOffY = CastIconOffsets("target", settings)
+                                    local tIconOffX, tIconOffY = CastIconOffsets("target", prefs)
                                     LayoutCastbarIcon(
-                                        frame.Castbar,
-                                        CastIconInWidth("target", settings),
-                                        settings.castbarHeight or 14,
-                                        CastIconOnRight("target", settings),
+                                        widget.Castbar,
+                                        CastIconInWidth("target", prefs),
+                                        prefs.castbarHeight or 14,
+                                        CastIconOnRight("target", prefs),
                                         tIconOffX,
                                         tIconOffY,
-                                        CastIconShown("target", settings),
-                                        settings.castbarStockBorderScale,
-                                        ns.UF_CastIconPortrait(frame.Castbar, frame, settings, "target")
+                                        CastIconShown("target", prefs),
+                                        prefs.castbarStockBorderScale,
+                                        mod.UF_CastIconPortrait(widget.Castbar, widget, prefs, "target")
                                     )
-                                    ns.UF_ApplyCastBorder(frame.Castbar, settings, nil, "target")
-                                    if frame.Castbar._iconFrame then
-                                        PP.Size(frame.Castbar._iconFrame, cbH2, cbH2)
-                                        if not frame.Castbar:IsShown() then
-                                            frame.Castbar._iconFrame:Hide()
-                                        elseif settings.showCastIcon == false then
-                                            frame.Castbar._iconFrame:Hide()
+                                    mod.UF_ApplyCastBorder(widget.Castbar, prefs, nil, "target")
+                                    if widget.Castbar._iconFrame then
+                                        Pix.Size(widget.Castbar._iconFrame, cbH2, cbH2)
+                                        if not widget.Castbar:IsShown() then
+                                            widget.Castbar._iconFrame:Hide()
+                                        elseif prefs.showCastIcon == false then
+                                            widget.Castbar._iconFrame:Hide()
                                         else
-                                            frame.Castbar._iconFrame:Show()
+                                            widget.Castbar._iconFrame:Show()
                                         end
                                     end
                                     -- Position owned by centralized unlock system
                                     -- Respect hide-while-not-casting: only show bg if inactive hiding is off or cast is active
-                                    if settings.castbarHideWhenInactive and not frame.Castbar:IsShown() then
+                                    if prefs.castbarHideWhenInactive and not widget.Castbar:IsShown() then
                                         castbarBg:Hide()
                                     else
                                         castbarBg:Show()
                                     end
                                 else
-                                    if frame:IsElementEnabled("Castbar") then
-                                        frame:DisableElement("Castbar")
+                                    if widget:IsElementEnabled("Castbar") then
+                                        widget:DisableElement("Castbar")
                                     end
-                                    frame.Castbar:Hide()
+                                    widget.Castbar:Hide()
                                     castbarBg:Hide()
                                 end
                             end
                             -- Store per-unit settings for PostCastStart
-                            frame.Castbar._eufSettings = settings
+                            widget.Castbar._eufSettings = prefs
                             -- A glow already showing takes new Important Cast Glow settings now.
-                            if frame.Castbar._impGlowActive then
-                                ns.UpdateUnitFrameImportantGlow(frame.Castbar)
+                            if widget.Castbar._impGlowActive then
+                                mod.UpdateUnitFrameImportantGlow(widget.Castbar)
                             end
                             -- Resolve per-unit fill color
                             local tCbColor = castbarColor
-                            if settings.castbarFillColor then
-                                tCbColor = settings.castbarFillColor
+                            if prefs.castbarFillColor then
+                                tCbColor = prefs.castbarFillColor
                             end
                             -- Fill Opacity below 100: tint layer carries the visible
                             -- fill; zero the base so it cannot bleed through.
-                            frame.Castbar:SetStatusBarColor(
+                            widget.Castbar:SetStatusBarColor(
                                 tCbColor.r,
                                 tCbColor.g,
                                 tCbColor.b,
-                                ((settings.castFillOpacity or 100) < 100) and 0 or castbarOpacity
+                                ((prefs.castFillOpacity or 100) < 100) and 0 or castbarOpacity
                             )
-                            ns.ApplyCastFillOpacity(frame.Castbar, settings)
-                            if frame.Castbar:IsShown() then
-                                ApplyUnitFrameCastColor(frame.Castbar)
-                                UpdateUnitFrameKickTick(frame.Castbar)
+                            mod.ApplyCastFillOpacity(widget.Castbar, prefs)
+                            if widget.Castbar:IsShown() then
+                                ApplyUnitFrameCastColor(widget.Castbar)
+                                UpdateUnitFrameKickTick(widget.Castbar)
                             end
                             -- Apply cast bar text settings
-                            if frame.Castbar.Text then
-                                local snSz = settings.castSpellNameSize or 11
-                                SetFSFont(frame.Castbar.Text, snSz)
-                                local snC = settings.castSpellNameColor or { r = 1, g = 1, b = 1 }
-                                frame.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
+                            if widget.Castbar.Text then
+                                local snSz = prefs.castSpellNameSize or 11
+                                SetFSFont(widget.Castbar.Text, snSz)
+                                local snC = prefs.castSpellNameColor or { r = 1, g = 1, b = 1 }
+                                widget.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
                             end
-                            if frame.Castbar.Time then
-                                local dtSz = settings.castDurationSize or 10
-                                SetFSFont(frame.Castbar.Time, dtSz)
-                                local dtC = settings.castDurationColor or { r = 1, g = 1, b = 1 }
-                                frame.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
-                                frame.Castbar._showDuration = settings.showCastDuration ~= false
-                                frame.Castbar._durationSize = dtSz
-                                if frame.Castbar._showDuration and frame.Castbar:IsShown() then
-                                    frame.Castbar.Time:Show()
-                                elseif not frame.Castbar._showDuration then
-                                    frame.Castbar.Time:Hide()
+                            if widget.Castbar.Time then
+                                local dtSz = prefs.castDurationSize or 10
+                                SetFSFont(widget.Castbar.Time, dtSz)
+                                local dtC = prefs.castDurationColor or { r = 1, g = 1, b = 1 }
+                                widget.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
+                                widget.Castbar._showDuration = prefs.showCastDuration ~= false
+                                widget.Castbar._durationSize = dtSz
+                                if widget.Castbar._showDuration and widget.Castbar:IsShown() then
+                                    widget.Castbar.Time:Show()
+                                elseif not widget.Castbar._showDuration then
+                                    widget.Castbar.Time:Hide()
                                 end
                             end
-                            if frame.Castbar.Target then
-                                local tsSz = settings.castSpellTargetSize or 11
-                                SetFSFont(frame.Castbar.Target, tsSz)
-                                local tsC = settings.castSpellTargetColor or { r = 1, g = 1, b = 1 }
-                                frame.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
-                                frame.Castbar._showTarget = settings.showCastTarget ~= false
-                                if not frame.Castbar._showTarget then
-                                    frame.Castbar.Target:Hide()
+                            if widget.Castbar.Target then
+                                local tsSz = prefs.castSpellTargetSize or 11
+                                SetFSFont(widget.Castbar.Target, tsSz)
+                                local tsC = prefs.castSpellTargetColor or { r = 1, g = 1, b = 1 }
+                                widget.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
+                                widget.Castbar._showTarget = prefs.showCastTarget ~= false
+                                if not widget.Castbar._showTarget then
+                                    widget.Castbar.Target:Hide()
                                 end
-                                if frame.Castbar._syncOffsetsAndLayout then
-                                    frame.Castbar:_syncOffsetsAndLayout(settings)
+                                if widget.Castbar._syncOffsetsAndLayout then
+                                    widget.Castbar:_syncOffsetsAndLayout(prefs)
                                 end
                             end
                         end
 
-                        UpdateBordersForScale(frame, unit)
-                        ReparentBarsToClip(frame, ns.UF_PowerPos(settings), settings)
+                        UpdateBordersForScale(widget, unitToken)
+                        ReparentBarsToClip(widget, mod.UF_PowerPos(prefs), prefs)
                     end
 
                 -- (health tag re-tagging now handled by _applyTextTags above)
-                elseif unit == "focus" then
-                    local fPpPos = ns.UF_PowerPos(settings)
+                elseif unitToken == "focus" then
+                    local fPpPos = mod.UF_PowerPos(prefs)
                     local fPpIsAtt = (fPpPos == "below" or fPpPos == "above")
-                    local powerHeight = fPpIsAtt and (settings.powerHeight or 6) or 0
-                    local focusBarHeight = settings.healthHeight + powerHeight
-                    local fBtbPos = settings.btbPosition or "bottom"
+                    local powerHeight = fPpIsAtt and (prefs.powerHeight or 6) or 0
+                    local focusBarHeight = prefs.healthHeight + powerHeight
+                    local fBtbPos = prefs.btbPosition or "bottom"
                     local fBtbIsAtt = (fBtbPos == "top" or fBtbPos == "bottom")
-                    local fBtbExtra = (settings.bottomTextBar and fBtbIsAtt)
-                            and (settings.bottomTextBarHeight or 16)
+                    local fBtbExtra = (prefs.bottomTextBar and fBtbIsAtt)
+                            and (prefs.bottomTextBarHeight or 16)
                         or 0
                     local totalWidth = 0
-                    local focusPStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
+                    local focusPStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
                     local isAttached = focusPStyle == "attached"
-                    local pSide = settings.portraitSide or "right"
+                    local pSide = prefs.portraitSide or "right"
                     local effectiveSide = pSide
                     if isAttached and pSide == "top" then
                         effectiveSide = "right"
                     end
-                    local pSizeAdj = settings.portraitSize or 0
+                    local pSizeAdj = prefs.portraitSize or 0
                     if not isAttached then
                         pSizeAdj = pSizeAdj + 10
                     end
-                    local pXOff = settings.portraitX or 0
-                    local pYOff = settings.portraitY or 0
+                    local pXOff = prefs.portraitX or 0
+                    local pYOff = prefs.portraitY or 0
                     if not isAttached then
                         pYOff = pYOff + 5
                     end
@@ -1474,47 +1515,54 @@ ReloadFramesBody = function()
                     end
 
                     if not showPortrait then
-                        totalWidth = settings.frameWidth
+                        totalWidth = prefs.frameWidth
                     elseif isAttached then
-                        totalWidth = adjPortraitH + settings.frameWidth
+                        totalWidth = adjPortraitH + prefs.frameWidth
                     else
-                        totalWidth = settings.frameWidth
+                        totalWidth = prefs.frameWidth
                     end
 
-                    PP.Size(frame, totalWidth, focusBarHeight + fBtbExtra)
+                    Pix.Size(widget, totalWidth, focusBarHeight + fBtbExtra)
 
                     if
-                        frame.Portrait
-                        and frame.Portrait.backdrop
-                        and not frame.Portrait.backdrop._isInside
+                        widget.Portrait
+                        and widget.Portrait.backdrop
+                        and not widget.Portrait.backdrop._isInside
                     then
-                        PP.Size(frame.Portrait.backdrop, adjPortraitH, adjPortraitH)
+                        Pix.Size(widget.Portrait.backdrop, adjPortraitH, adjPortraitH)
                         -- Trim portrait to stay within frame bounds
                         if showPortrait and isAttached then
-                            local frameW = frame:GetWidth()
-                            local frameH = frame:GetHeight()
-                            local portW = frame.Portrait.backdrop:GetWidth()
-                            local portH = frame.Portrait.backdrop:GetHeight()
-                            if portW + settings.frameWidth > frameW + 0.01 then
-                                PP.Width(frame.Portrait.backdrop, frameW - settings.frameWidth)
+                            local frameW = widget:GetWidth()
+                            local frameH = widget:GetHeight()
+                            local portW = widget.Portrait.backdrop:GetWidth()
+                            local portH = widget.Portrait.backdrop:GetHeight()
+                            if portW + prefs.frameWidth > frameW + 0.01 then
+                                Pix.Width(widget.Portrait.backdrop, frameW - prefs.frameWidth)
                             end
                             if portH > frameH + 0.01 then
-                                PP.Height(frame.Portrait.backdrop, frameH)
+                                Pix.Height(widget.Portrait.backdrop, frameH)
                             end
                         end
                         -- Reposition portrait for attached/detached
-                        frame.Portrait.backdrop:ClearAllPoints()
-                        local fBtbTopOff = (fBtbPos == "top" and settings.bottomTextBar)
-                                and (settings.bottomTextBarHeight or 16)
+                        widget.Portrait.backdrop:ClearAllPoints()
+                        local fBtbTopOff = (fBtbPos == "top" and prefs.bottomTextBar)
+                                and (prefs.bottomTextBarHeight or 16)
                             or 0
                         if isAttached then
                             if effectiveSide == "left" then
-                                PP.Point(frame.Portrait.backdrop, "TOPLEFT", frame, "TOPLEFT", 0, -fBtbTopOff)
+                                Pix.Point(
+                                    widget.Portrait.backdrop,
+                                    "TOPLEFT",
+                                    widget,
+                                    "TOPLEFT",
+                                    0,
+                                    -fBtbTopOff
+                                )
                             else
-                                PP.Point(
-                                    frame.Portrait.backdrop,
+                                Pix.Point(
+                                    widget.Portrait.backdrop,
                                     "TOPRIGHT",
-                                    frame,
+                                    widget,
                                     "TOPRIGHT",
                                     0,
                                     -fBtbTopOff
@@ -1522,25 +1570,25 @@ ReloadFramesBody = function()
                             end
                         else
                             if effectiveSide == "top" then
-                                frame.Portrait.backdrop:SetPoint(
+                                widget.Portrait.backdrop:SetPoint(
                                     "BOTTOM",
-                                    frame.Health or frame,
+                                    widget.Health or widget,
                                     "TOP",
                                     pXOff,
                                     15 + pYOff
                                 )
                             elseif effectiveSide == "left" then
-                                frame.Portrait.backdrop:SetPoint(
+                                widget.Portrait.backdrop:SetPoint(
                                     "TOPRIGHT",
-                                    frame.Health or frame,
+                                    widget.Health or widget,
                                     "TOPLEFT",
                                     -15 + pXOff,
                                     pYOff
                                 )
                             else
-                                frame.Portrait.backdrop:SetPoint(
+                                widget.Portrait.backdrop:SetPoint(
                                     "TOPLEFT",
-                                    frame.Health or frame,
+                                    widget.Health or widget,
                                     "TOPRIGHT",
                                     15 + pXOff,
                                     pYOff
@@ -1548,15 +1596,15 @@ ReloadFramesBody = function()
                             end
                         end
                         -- Re-apply pixel snap disable after resize
-                        if frame.Portrait.backdrop._2d then
-                            UnsnapTex(frame.Portrait.backdrop._2d)
+                        if widget.Portrait.backdrop._2d then
+                            UnsnapTex(widget.Portrait.backdrop._2d)
                         end
-                        if frame:IsElementEnabled("Portrait") and frame.Portrait.ForceUpdate then
-                            frame.Portrait:ForceUpdate()
+                        if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
+                            widget.Portrait:ForceUpdate()
                         end
                     end
-                    if frame.Health then
-                        frame.Health:ClearAllPoints()
+                    if widget.Health then
+                        widget.Health:ClearAllPoints()
                         local focusHealthXOff = (showPortrait and isAttached and effectiveSide == "left")
                                 and adjPortraitH
                             or 0
@@ -1568,354 +1616,352 @@ ReloadFramesBody = function()
                                 and adjPortraitH
                             or 0
                         -- Use portrait's actual snapped width for flush alignment
-                        if showPortrait and isAttached and frame.Portrait and frame.Portrait.backdrop then
-                            local snappedPortW = frame.Portrait.backdrop:GetWidth()
+                        if showPortrait and isAttached and widget.Portrait and widget.Portrait.backdrop then
+                            local snappedPortW = widget.Portrait.backdrop:GetWidth()
                             focusHealthXOff = (effectiveSide == "left") and snappedPortW or 0
                             focusHealthRightInset = (effectiveSide == "right") and snappedPortW or 0
                         end
                         local fHTopOff = (
-                            fBtbPos == "top"
-                                and settings.bottomTextBar
-                                and (settings.bottomTextBarHeight or 16)
+                            fBtbPos == "top" and prefs.bottomTextBar and (prefs.bottomTextBarHeight or 16)
                             or 0
                         )
-                        local fPowerAboveOff = (fPpPos == "above") and (settings.powerHeight or 6) or 0
+                        local fPowerAboveOff = (fPpPos == "above") and (prefs.powerHeight or 6) or 0
                         fHTopOff = fHTopOff + fPowerAboveOff
-                        frame.Health._xOffset = focusHealthXOff
-                        frame.Health._rightInset = focusHealthRightInset
-                        frame.Health._topOffset = fHTopOff
-                        PP.Point(frame.Health, "TOPLEFT", frame, "TOPLEFT", focusHealthXOff, -fHTopOff)
-                        PP.Point(frame.Health, "RIGHT", frame, "RIGHT", -focusHealthRightInset, 0)
-                        PP.Height(frame.Health, settings.healthHeight)
+                        widget.Health._xOffset = focusHealthXOff
+                        widget.Health._rightInset = focusHealthRightInset
+                        widget.Health._topOffset = fHTopOff
+                        Pix.Point(widget.Health, "TOPLEFT", widget, "TOPLEFT", focusHealthXOff, -fHTopOff)
+                        Pix.Point(widget.Health, "RIGHT", widget, "RIGHT", -focusHealthRightInset, 0)
+                        Pix.Height(widget.Health, prefs.healthHeight)
                     end
-                    if frame.Power then
-                        local fpw = settings.frameWidth
+                    if widget.Power then
+                        local fpw = prefs.frameWidth
                         local fPpIsDet = (fPpPos == "detached_top" or fPpPos == "detached_bottom")
-                        if fPpIsDet and (settings.powerWidth or 0) > 0 then
-                            fpw = settings.powerWidth
+                        if fPpIsDet and (prefs.powerWidth or 0) > 0 then
+                            fpw = prefs.powerWidth
                         end
-                        PP.Size(frame.Power, fpw, settings.powerHeight or 6)
-                        frame.Power:ClearAllPoints()
+                        Pix.Size(widget.Power, fpw, prefs.powerHeight or 6)
+                        widget.Power:ClearAllPoints()
                         if fPpPos == "none" then
-                            frame.Power:Hide()
+                            widget.Power:Hide()
                         elseif fPpPos == "above" then
-                            PP.Point(frame.Power, "BOTTOMLEFT", frame.Health, "TOPLEFT", 0, 0)
-                            PP.Point(frame.Power, "BOTTOMRIGHT", frame.Health, "TOPRIGHT", 0, 0)
-                            frame.Power:Show()
+                            Pix.Point(widget.Power, "BOTTOMLEFT", widget.Health, "TOPLEFT", 0, 0)
+                            Pix.Point(widget.Power, "BOTTOMRIGHT", widget.Health, "TOPRIGHT", 0, 0)
+                            widget.Power:Show()
                         elseif fPpPos == "detached_top" then
-                            frame.Power:SetPoint(
+                            widget.Power:SetPoint(
                                 "BOTTOM",
-                                frame.Health,
+                                widget.Health,
                                 "TOP",
-                                settings.powerX or 0,
-                                15 + (settings.powerY or 0)
+                                prefs.powerX or 0,
+                                15 + (prefs.powerY or 0)
                             )
-                            frame.Power:Show()
+                            widget.Power:Show()
                         elseif fPpPos == "detached_bottom" then
-                            frame.Power:SetPoint(
+                            widget.Power:SetPoint(
                                 "TOP",
-                                frame.Health,
+                                widget.Health,
                                 "BOTTOM",
-                                settings.powerX or 0,
-                                -15 + (settings.powerY or 0)
+                                prefs.powerX or 0,
+                                -15 + (prefs.powerY or 0)
                             )
-                            frame.Power:Show()
+                            widget.Power:Show()
                         else
-                            PP.Point(frame.Power, "TOPLEFT", frame.Health, "BOTTOMLEFT", 0, 0)
-                            PP.Point(frame.Power, "TOPRIGHT", frame.Health, "BOTTOMRIGHT", 0, 0)
-                            frame.Power:Show()
+                            Pix.Point(widget.Power, "TOPLEFT", widget.Health, "BOTTOMLEFT", 0, 0)
+                            Pix.Point(widget.Power, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
+                            widget.Power:Show()
                         end
-                        if frame.Power._applyPowerPercentText then
-                            frame.Power._applyPowerPercentText(settings)
+                        if widget.Power._applyPowerPercentText then
+                            widget.Power._applyPowerPercentText(prefs)
                         end
                         -- Update power bar border (detached only; lazily created)
-                        ns.UpdatePowerBorder(frame.Power, settings)
+                        mod.UpdatePowerBorder(widget.Power, prefs)
                     end
-                    if frame._applyTextTags then
-                        frame._applyTextTags(
-                            settings.leftTextContent or "name",
-                            settings.rightTextContent or "perhp",
-                            settings.centerTextContent or "none"
+                    if widget._applyTextTags then
+                        widget._applyTextTags(
+                            prefs.leftTextContent or "name",
+                            prefs.rightTextContent or "perhp",
+                            prefs.centerTextContent or "none"
                         )
                     end
-                    if frame._applyTextPositions then
-                        frame._applyTextPositions(settings)
+                    if widget._applyTextPositions then
+                        widget._applyTextPositions(prefs)
                     end
 
                     -- Bottom Text Bar update (focus) -- must come before castbar so castbar can anchor to it
-                    local fPpBtbAnchor = (fPpIsAtt and frame.Power) or frame.Health
-                    if settings.bottomTextBar then
-                        local btbPos2 = settings.btbPosition or "bottom"
+                    local fPpBtbAnchor = (fPpIsAtt and widget.Power) or widget.Health
+                    if prefs.bottomTextBar then
+                        local btbPos2 = prefs.btbPosition or "bottom"
                         local btbIsAtt2 = (btbPos2 == "top" or btbPos2 == "bottom")
                         local btbIsDet2 = not btbIsAtt2
-                        local btbW2 = btbIsDet2 and (settings.btbWidth or 0) or 0
+                        local btbW2 = btbIsDet2 and (prefs.btbWidth or 0) or 0
                         local btbTW = (btbW2 > 0 and btbIsDet2) and btbW2 or totalWidth
                         local btbXOff = 0
                         if btbIsAtt2 and showPortrait and isAttached and effectiveSide == "left" then
                             btbXOff = -adjPortraitH
                         end
-                        if not frame.BottomTextBar then
-                            frame.BottomTextBar =
-                                CreateBottomTextBar(frame, unit, settings, fPpBtbAnchor, btbXOff, totalWidth)
-                            frame._btb = frame.BottomTextBar
+                        if not widget.BottomTextBar then
+                            widget.BottomTextBar = CreateBottomTextBar(
+                                widget,
+                                unitToken,
+                                prefs,
+                                fPpBtbAnchor,
+                                btbXOff,
+                                totalWidth
+                            )
+                            widget._btb = widget.BottomTextBar
                         else
-                            local btb = frame.BottomTextBar
-                            PP.Size(btb, btbTW, settings.bottomTextBarHeight or 16)
+                            local btb = widget.BottomTextBar
+                            Pix.Size(btb, btbTW, prefs.bottomTextBarHeight or 16)
                             btb:ClearAllPoints()
                             if btbPos2 == "top" then
-                                PP.Point(btb, "BOTTOMLEFT", frame.Health or frame, "TOPLEFT", btbXOff, 0)
+                                Pix.Point(btb, "BOTTOMLEFT", widget.Health or widget, "TOPLEFT", btbXOff, 0)
                             elseif btbPos2 == "detached_top" then
-                                btb:SetPoint(
-                                    "BOTTOM",
-                                    frame,
-                                    "TOP",
-                                    settings.btbX or 0,
-                                    15 + (settings.btbY or 0)
-                                )
+                                btb:SetPoint("BOTTOM", widget, "TOP", prefs.btbX or 0, 15 + (prefs.btbY or 0))
                             elseif btbPos2 == "detached_bottom" then
                                 btb:SetPoint(
                                     "TOP",
-                                    frame,
+                                    widget,
                                     "BOTTOM",
-                                    settings.btbX or 0,
-                                    -15 + (settings.btbY or 0)
+                                    prefs.btbX or 0,
+                                    -15 + (prefs.btbY or 0)
                                 )
                             else
-                                PP.Point(btb, "TOPLEFT", fPpBtbAnchor, "BOTTOMLEFT", btbXOff, 0)
+                                Pix.Point(btb, "TOPLEFT", fPpBtbAnchor, "BOTTOMLEFT", btbXOff, 0)
                             end
                             if btb.bg then
-                                local bgc = settings.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
-                                local bga = settings.btbBgOpacity or 1.0
+                                local bgc = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
+                                local bga = prefs.btbBgOpacity or 1.0
                                 btb.bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
                             end
                             if btb._applyBTBTextTags then
                                 btb._applyBTBTextTags(
-                                    settings.btbLeftContent or "none",
-                                    settings.btbRightContent or "none",
-                                    settings.btbCenterContent or "none"
+                                    prefs.btbLeftContent or "none",
+                                    prefs.btbRightContent or "none",
+                                    prefs.btbCenterContent or "none"
                                 )
                             end
                             if btb._applyBTBTextPositions then
-                                btb._applyBTBTextPositions(settings)
+                                btb._applyBTBTextPositions(prefs)
                                 if btb._applyBTBClassIcon then
-                                    btb._applyBTBClassIcon(settings)
+                                    btb._applyBTBClassIcon(prefs)
                                 end
                             end
                             btb:Show()
                         end
-                    elseif frame.BottomTextBar then
-                        frame.BottomTextBar:Hide()
+                    elseif widget.BottomTextBar then
+                        widget.BottomTextBar:Hide()
                     end
 
                     -- Castbar (focus)
-                    ApplyUnitCastbar(frame, "focus", settings)
+                    ApplyUnitCastbar(widget, "focus", prefs)
 
-                    UpdateBordersForScale(frame, unit)
-                    ReparentBarsToClip(frame, ns.UF_PowerPos(settings), settings)
-                elseif unit == "pet" or unit == "targettarget" or unit == "focustarget" then
+                    UpdateBordersForScale(widget, unitToken)
+                    ReparentBarsToClip(widget, mod.UF_PowerPos(prefs), prefs)
+                elseif unitToken == "pet" or unitToken == "targettarget" or unitToken == "focustarget" then
                     -- Pet, ToT and FoT all share the same simple-frame layout:
                     -- optional portrait on either side, health bar filling the rest.
                     -- A WoW Forever pet adds its own power bar (built at spawn): an
                     -- attached bar grows the stack and the portrait squares off it.
-                    local miniPower = (unit == "pet" and ns.UF_PetHasPower and not ns.UF_Blizz())
-                            and frame.Power
+                    local miniPower = (unitToken == "pet" and mod.UF_PetHasPower and not mod.UF_Blizz())
+                            and widget.Power
                         or nil
-                    local miniPpPos = miniPower and (settings.powerPosition or "below") or "none"
+                    local miniPpPos = miniPower and (prefs.powerPosition or "below") or "none"
                     local miniPowerH = (miniPpPos == "below" or miniPpPos == "above")
-                            and (settings.powerHeight or 6)
+                            and (prefs.powerHeight or 6)
                         or 0
                     local miniAboveOff = (miniPpPos == "above") and miniPowerH or 0
-                    local miniBarH = settings.healthHeight + miniPowerH
-                    local miniPStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
-                    local showMiniPortrait = miniPStyle ~= "none" and settings.showPortrait ~= false
-                    local miniSide = settings.portraitSide or "left"
-                    local miniW = settings.frameWidth
+                    local miniBarH = prefs.healthHeight + miniPowerH
+                    local miniPStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
+                    local showMiniPortrait = miniPStyle ~= "none" and prefs.showPortrait ~= false
+                    local miniSide = prefs.portraitSide or "left"
+                    local miniW = prefs.frameWidth
                     local miniLeftOff = 0
                     local miniRightInset = 0
                     if showMiniPortrait then
-                        miniW = miniBarH + settings.frameWidth
+                        miniW = miniBarH + prefs.frameWidth
                         if miniSide == "right" then
                             miniRightInset = miniBarH
                         else
                             miniLeftOff = miniBarH
                         end
                     end
-                    PP.Size(frame, miniW, miniBarH)
-                    if frame.Portrait and frame.Portrait.backdrop then
-                        PP.Size(frame.Portrait.backdrop, miniBarH, miniBarH)
+                    Pix.Size(widget, miniW, miniBarH)
+                    if widget.Portrait and widget.Portrait.backdrop then
+                        Pix.Size(widget.Portrait.backdrop, miniBarH, miniBarH)
                     end
-                    if frame.Health then
-                        frame.Health:ClearAllPoints()
-                        PP.Point(frame.Health, "TOPLEFT", frame, "TOPLEFT", miniLeftOff, -miniAboveOff)
-                        PP.Point(frame.Health, "RIGHT", frame, "RIGHT", -miniRightInset, 0)
-                        PP.Height(frame.Health, settings.healthHeight)
-                        frame.Health._xOffset = miniLeftOff
-                        frame.Health._rightInset = miniRightInset
-                        frame.Health._topOffset = miniAboveOff
+                    if widget.Health then
+                        widget.Health:ClearAllPoints()
+                        Pix.Point(widget.Health, "TOPLEFT", widget, "TOPLEFT", miniLeftOff, -miniAboveOff)
+                        Pix.Point(widget.Health, "RIGHT", widget, "RIGHT", -miniRightInset, 0)
+                        Pix.Height(widget.Health, prefs.healthHeight)
+                        widget.Health._xOffset = miniLeftOff
+                        widget.Health._rightInset = miniRightInset
+                        widget.Health._topOffset = miniAboveOff
                     end
                     if miniPower then
-                        local mpw = settings.frameWidth
+                        local mpw = prefs.frameWidth
                         if
                             (miniPpPos == "detached_top" or miniPpPos == "detached_bottom")
-                            and (settings.powerWidth or 0) > 0
+                            and (prefs.powerWidth or 0) > 0
                         then
-                            mpw = settings.powerWidth
+                            mpw = prefs.powerWidth
                         end
-                        PP.Size(miniPower, mpw, settings.powerHeight or 6)
+                        Pix.Size(miniPower, mpw, prefs.powerHeight or 6)
                         miniPower:ClearAllPoints()
                         if miniPpPos == "none" then
                             miniPower:Hide()
                         elseif miniPpPos == "above" then
-                            PP.Point(miniPower, "BOTTOMLEFT", frame.Health, "TOPLEFT", 0, 0)
-                            PP.Point(miniPower, "BOTTOMRIGHT", frame.Health, "TOPRIGHT", 0, 0)
+                            Pix.Point(miniPower, "BOTTOMLEFT", widget.Health, "TOPLEFT", 0, 0)
+                            Pix.Point(miniPower, "BOTTOMRIGHT", widget.Health, "TOPRIGHT", 0, 0)
                             miniPower:Show()
                         elseif miniPpPos == "detached_top" then
                             miniPower:SetPoint(
                                 "BOTTOM",
-                                frame.Health,
+                                widget.Health,
                                 "TOP",
-                                settings.powerX or 0,
-                                15 + (settings.powerY or 0)
+                                prefs.powerX or 0,
+                                15 + (prefs.powerY or 0)
                             )
                             miniPower:Show()
                         elseif miniPpPos == "detached_bottom" then
                             miniPower:SetPoint(
                                 "TOP",
-                                frame.Health,
+                                widget.Health,
                                 "BOTTOM",
-                                settings.powerX or 0,
-                                -15 + (settings.powerY or 0)
+                                prefs.powerX or 0,
+                                -15 + (prefs.powerY or 0)
                             )
                             miniPower:Show()
                         else
-                            PP.Point(miniPower, "TOPLEFT", frame.Health, "BOTTOMLEFT", 0, 0)
-                            PP.Point(miniPower, "TOPRIGHT", frame.Health, "BOTTOMRIGHT", 0, 0)
+                            Pix.Point(miniPower, "TOPLEFT", widget.Health, "BOTTOMLEFT", 0, 0)
+                            Pix.Point(miniPower, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
                             miniPower:Show()
                         end
                         if miniPower._applyPowerPercentText then
-                            miniPower._applyPowerPercentText(settings)
+                            miniPower._applyPowerPercentText(prefs)
                         end
                         -- "none" parks the power painter (zero cost while hidden);
                         -- turning the bar back on repaints it at once.
                         local wantPower = miniPpPos ~= "none"
-                        if frame:IsElementEnabled("Power") ~= wantPower then
+                        if widget:IsElementEnabled("Power") ~= wantPower then
                             if wantPower then
-                                frame:EnableElement("Power")
+                                widget:EnableElement("Power")
                             else
-                                frame:DisableElement("Power")
+                                widget:DisableElement("Power")
                             end
                         end
                     end
 
-                    if unit == "pet" and frame.Castbar then
-                        ApplyUnitCastbar(frame, unit, settings)
+                    if unitToken == "pet" and widget.Castbar then
+                        ApplyUnitCastbar(widget, unitToken, prefs)
                     end
-                    UpdateBordersForScale(frame, unit)
-                    ReparentBarsToClip(frame, ns.UF_PowerPos(settings), settings)
-                elseif unit:match("^boss%d$") then
-                    local bPpPos = settings.powerPosition or "below"
+                    UpdateBordersForScale(widget, unitToken)
+                    ReparentBarsToClip(widget, mod.UF_PowerPos(prefs), prefs)
+                elseif unitToken:match("^boss%d$") then
+                    local bPpPos = prefs.powerPosition or "below"
                     local bPpIsAtt = (bPpPos == "below" or bPpPos == "above")
-                    local powerHeight = bPpIsAtt and (settings.powerHeight or 6) or 0
-                    local bossBarHeight = settings.healthHeight + powerHeight
+                    local powerHeight = bPpIsAtt and (prefs.powerHeight or 6) or 0
+                    local bossBarHeight = prefs.healthHeight + powerHeight
                     local totalWidth = 0
 
                     if not showPortrait then
-                        totalWidth = settings.frameWidth
+                        totalWidth = prefs.frameWidth
                     else
-                        totalWidth = bossBarHeight + settings.frameWidth
+                        totalWidth = bossBarHeight + prefs.frameWidth
                     end
 
-                    PP.Size(frame, totalWidth, bossBarHeight)
+                    Pix.Size(widget, totalWidth, bossBarHeight)
 
-                    if frame.Portrait and frame.Portrait.backdrop then
-                        PP.Size(frame.Portrait.backdrop, bossBarHeight, bossBarHeight)
-                        local bossPSide = settings.portraitSide or "right"
-                        frame.Portrait.backdrop:ClearAllPoints()
+                    if widget.Portrait and widget.Portrait.backdrop then
+                        Pix.Size(widget.Portrait.backdrop, bossBarHeight, bossBarHeight)
+                        local bossPSide = prefs.portraitSide or "right"
+                        widget.Portrait.backdrop:ClearAllPoints()
                         if bossPSide == "left" then
-                            PP.Point(frame.Portrait.backdrop, "TOPLEFT", frame, "TOPLEFT", 0, 0)
+                            Pix.Point(widget.Portrait.backdrop, "TOPLEFT", widget, "TOPLEFT", 0, 0)
                         else
-                            PP.Point(frame.Portrait.backdrop, "TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+                            Pix.Point(widget.Portrait.backdrop, "TOPRIGHT", widget, "TOPRIGHT", 0, 0)
                         end
-                        CludesUI._ufPortraitSide[frame] = bossPSide
+                        CludesUI._ufPortraitSide[widget] = bossPSide
                     end
-                    if frame.Health then
-                        frame.Health:ClearAllPoints()
+                    if widget.Health then
+                        widget.Health:ClearAllPoints()
                         -- Use portrait's actual snapped width for flush alignment
                         local bossPortW = 0
                         if showPortrait then
-                            if frame.Portrait and frame.Portrait.backdrop then
-                                bossPortW = frame.Portrait.backdrop:GetWidth()
+                            if widget.Portrait and widget.Portrait.backdrop then
+                                bossPortW = widget.Portrait.backdrop:GetWidth()
                             else
                                 bossPortW = bossBarHeight
                             end
                         end
-                        local bossPSide = settings.portraitSide or "right"
+                        local bossPSide = prefs.portraitSide or "right"
                         local bossLeftOff = (showPortrait and bossPSide == "left") and bossPortW or 0
                         local bossRightInset = (showPortrait and bossPSide == "right") and bossPortW or 0
-                        local bPowerAboveOff = (bPpPos == "above") and (settings.powerHeight or 6) or 0
-                        PP.Point(frame.Health, "TOPLEFT", frame, "TOPLEFT", bossLeftOff, -bPowerAboveOff)
-                        PP.Point(frame.Health, "RIGHT", frame, "RIGHT", -bossRightInset, 0)
-                        PP.Height(frame.Health, settings.healthHeight)
-                        frame.Health._xOffset = bossLeftOff
-                        frame.Health._rightInset = bossRightInset
-                        frame.Health._topOffset = bPowerAboveOff
+                        local bPowerAboveOff = (bPpPos == "above") and (prefs.powerHeight or 6) or 0
+                        Pix.Point(widget.Health, "TOPLEFT", widget, "TOPLEFT", bossLeftOff, -bPowerAboveOff)
+                        Pix.Point(widget.Health, "RIGHT", widget, "RIGHT", -bossRightInset, 0)
+                        Pix.Height(widget.Health, prefs.healthHeight)
+                        widget.Health._xOffset = bossLeftOff
+                        widget.Health._rightInset = bossRightInset
+                        widget.Health._topOffset = bPowerAboveOff
                     end
-                    if frame.Power then
-                        local bpw = settings.frameWidth
+                    if widget.Power then
+                        local bpw = prefs.frameWidth
                         local bPpIsDet = (bPpPos == "detached_top" or bPpPos == "detached_bottom")
-                        if bPpIsDet and (settings.powerWidth or 0) > 0 then
-                            bpw = settings.powerWidth
+                        if bPpIsDet and (prefs.powerWidth or 0) > 0 then
+                            bpw = prefs.powerWidth
                         end
-                        frame.Power:SetSize(bpw, settings.powerHeight or 6)
-                        frame.Power:ClearAllPoints()
+                        widget.Power:SetSize(bpw, prefs.powerHeight or 6)
+                        widget.Power:ClearAllPoints()
                         if bPpPos == "none" then
-                            frame.Power:Hide()
+                            widget.Power:Hide()
                         elseif bPpPos == "above" then
-                            PP.Point(frame.Power, "BOTTOMLEFT", frame.Health, "TOPLEFT", 0, 0)
-                            PP.Point(frame.Power, "BOTTOMRIGHT", frame.Health, "TOPRIGHT", 0, 0)
-                            frame.Power:Show()
+                            Pix.Point(widget.Power, "BOTTOMLEFT", widget.Health, "TOPLEFT", 0, 0)
+                            Pix.Point(widget.Power, "BOTTOMRIGHT", widget.Health, "TOPRIGHT", 0, 0)
+                            widget.Power:Show()
                         elseif bPpPos == "detached_top" then
-                            frame.Power:SetPoint(
+                            widget.Power:SetPoint(
                                 "BOTTOM",
-                                frame.Health,
+                                widget.Health,
                                 "TOP",
-                                settings.powerX or 0,
-                                15 + (settings.powerY or 0)
+                                prefs.powerX or 0,
+                                15 + (prefs.powerY or 0)
                             )
-                            frame.Power:Show()
+                            widget.Power:Show()
                         elseif bPpPos == "detached_bottom" then
-                            frame.Power:SetPoint(
+                            widget.Power:SetPoint(
                                 "TOP",
-                                frame.Health,
+                                widget.Health,
                                 "BOTTOM",
-                                settings.powerX or 0,
-                                -15 + (settings.powerY or 0)
+                                prefs.powerX or 0,
+                                -15 + (prefs.powerY or 0)
                             )
-                            frame.Power:Show()
+                            widget.Power:Show()
                         else
-                            PP.Point(frame.Power, "TOPLEFT", frame.Health, "BOTTOMLEFT", 0, 0)
-                            PP.Point(frame.Power, "TOPRIGHT", frame.Health, "BOTTOMRIGHT", 0, 0)
-                            frame.Power:Show()
+                            Pix.Point(widget.Power, "TOPLEFT", widget.Health, "BOTTOMLEFT", 0, 0)
+                            Pix.Point(widget.Power, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
+                            widget.Power:Show()
                         end
-                        if frame.Power._applyPowerPercentText then
-                            frame.Power._applyPowerPercentText(settings)
+                        if widget.Power._applyPowerPercentText then
+                            widget.Power._applyPowerPercentText(prefs)
                         end
 
                         -- Gray out power bar background for generic melee NPCs
                         if bPpPos ~= "none" and (bPpPos == "below" or bPpPos == "above") then
                             local shouldGray = false
                             if
-                                UnitExists(unit)
-                                and UnitCanAttack("player", unit)
-                                and not UnitIsPlayer(unit)
+                                UnitExists(unitToken)
+                                and UnitCanAttack("player", unitToken)
+                                and not UnitIsPlayer(unitToken)
                             then
-                                local cls = UnitClassification(unit)
+                                local cls = UnitClassification(unitToken)
                                 local isBoss = (cls == "worldboss")
                                 local isElite = (cls == "elite" or cls == "rareelite")
-                                local lvl = UnitLevel(unit)
+                                local lvl = UnitLevel(unitToken)
                                 local pLvl = UnitLevel("player")
                                 local isMB = isElite and (lvl == -1 or (pLvl and lvl >= pLvl + 1))
-                                local isCst = UnitClassBase and UnitClassBase(unit)
+                                local isCst = UnitClassBase and UnitClassBase(unitToken)
                                 if issecretvalue(isCst) then
                                     isCst = nil
                                 end
@@ -1925,67 +1971,67 @@ ReloadFramesBody = function()
                                 end
                             end
                             if shouldGray then
-                                frame.Power._grayedOut = true
-                                if frame.Power.bg then
-                                    frame.Power.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
-                                    frame.Power.bg:SetAlpha(1)
+                                widget.Power._grayedOut = true
+                                if widget.Power.bg then
+                                    widget.Power.bg:SetColorTexture(0.25, 0.25, 0.25, 1)
+                                    widget.Power.bg:SetAlpha(1)
                                 end
                             else
-                                frame.Power._grayedOut = false
+                                widget.Power._grayedOut = false
                             end
                         end
                     end
 
                     -- Castbar (boss)
-                    if frame.Castbar then
-                        local castbarBg = frame.Castbar:GetParent()
+                    if widget.Castbar then
+                        local castbarBg = widget.Castbar:GetParent()
                         if castbarBg then
                             if castbarBg._bgTex then
-                                local cbg = settings.castBgColor
+                                local cbg = prefs.castBgColor
                                 castbarBg._bgTex:SetColorTexture(
                                     cbg and cbg.r or 0,
                                     cbg and cbg.g or 0,
                                     cbg and cbg.b or 0,
-                                    settings.castBgAlpha or 0.5
+                                    prefs.castBgAlpha or 0.5
                                 )
                             end
-                            if settings.showCastbar ~= false then
-                                if not frame:IsElementEnabled("Castbar") then
-                                    frame:EnableElement("Castbar")
+                            if prefs.showCastbar ~= false then
+                                if not widget:IsElementEnabled("Castbar") then
+                                    widget:EnableElement("Castbar")
                                 end
                                 -- castbarWidth > 0 = user-set custom width; 0 = match frame width.
                                 -- Custom widths floor at 30: below the cast icon size the
                                 -- icon-in-width inset inverts the bar's anchor rect.
-                                local bCbW = settings.castbarWidth or 0
+                                local bCbW = prefs.castbarWidth or 0
                                 if bCbW > 0 and bCbW < 30 then
                                     bCbW = 30
                                 end
-                                PP.Size(
+                                Pix.Size(
                                     castbarBg,
                                     bCbW > 0 and bCbW or totalWidth,
-                                    settings.castbarHeight or 14
+                                    prefs.castbarHeight or 14
                                 )
-                                local bIconOffX, bIconOffY = CastIconOffsets("boss1", settings)
+                                local bIconOffX, bIconOffY = CastIconOffsets("boss1", prefs)
                                 LayoutCastbarIcon(
-                                    frame.Castbar,
-                                    CastIconInWidth("boss1", settings),
-                                    settings.castbarHeight or 14,
-                                    CastIconOnRight("boss1", settings),
+                                    widget.Castbar,
+                                    CastIconInWidth("boss1", prefs),
+                                    prefs.castbarHeight or 14,
+                                    CastIconOnRight("boss1", prefs),
                                     bIconOffX,
                                     bIconOffY,
-                                    CastIconShown("boss1", settings),
-                                    settings.castbarStockBorderScale
+                                    CastIconShown("boss1", prefs),
+                                    prefs.castbarStockBorderScale
                                 )
-                                ns.UF_ApplyCastBorder(frame.Castbar, settings, nil, "boss1")
-                                if frame.Castbar._iconFrame then
-                                    local cbH = settings.castbarHeight or 14
-                                    PP.Size(frame.Castbar._iconFrame, cbH, cbH)
-                                    if not frame.Castbar:IsShown() then
-                                        frame.Castbar._iconFrame:Hide()
-                                    elseif settings.showCastIcon == false then
-                                        frame.Castbar._iconFrame:Hide()
+                                mod.UF_ApplyCastBorder(widget.Castbar, prefs, nil, "boss1")
+                                if widget.Castbar._iconFrame then
+                                    local cbH = prefs.castbarHeight or 14
+                                    Pix.Size(widget.Castbar._iconFrame, cbH, cbH)
+                                    if not widget.Castbar:IsShown() then
+                                        widget.Castbar._iconFrame:Hide()
+                                    elseif prefs.showCastIcon == false then
+                                        widget.Castbar._iconFrame:Hide()
                                     else
-                                        frame.Castbar._iconFrame:Show()
+                                        widget.Castbar._iconFrame:Show()
                                     end
                                 end
                                 castbarBg:ClearAllPoints()
@@ -1995,157 +2041,157 @@ ReloadFramesBody = function()
                                 -- frame width, so frame bottom-center keeps it centered + flush.
                                 -- castbarOffsetX/Y nudge the whole cast bar (positive = right/up).
                                 -- Blizzard Style: hug the visible art's bottom, not the stock box.
-                                local _, _, _, bossVisB = ns.UF_BlizzVis(frame)
+                                local _, _, _, bossVisB = mod.UF_BlizzVis(widget)
                                 castbarBg:SetPoint(
                                     "TOP",
-                                    frame,
+                                    widget,
                                     "BOTTOM",
-                                    settings.castbarOffsetX or 0,
-                                    (settings.castbarOffsetY or 0) + (bossVisB or 0)
+                                    prefs.castbarOffsetX or 0,
+                                    (prefs.castbarOffsetY or 0) + (bossVisB or 0)
                                 )
-                                if settings.castbarHideWhenInactive and not frame.Castbar:IsShown() then
+                                if prefs.castbarHideWhenInactive and not widget.Castbar:IsShown() then
                                     castbarBg:Hide()
                                 else
                                     castbarBg:Show()
                                 end
                             else
-                                if frame:IsElementEnabled("Castbar") then
-                                    frame:DisableElement("Castbar")
+                                if widget:IsElementEnabled("Castbar") then
+                                    widget:DisableElement("Castbar")
                                 end
-                                frame.Castbar:Hide()
+                                widget.Castbar:Hide()
                                 castbarBg:Hide()
                             end
                         end
-                        frame.Castbar._eufSettings = settings
+                        widget.Castbar._eufSettings = prefs
                         local bCbColor = castbarColor
-                        if settings.castbarFillColor then
-                            bCbColor = settings.castbarFillColor
+                        if prefs.castbarFillColor then
+                            bCbColor = prefs.castbarFillColor
                         end
-                        frame.Castbar:SetStatusBarColor(
+                        widget.Castbar:SetStatusBarColor(
                             bCbColor.r,
                             bCbColor.g,
                             bCbColor.b,
-                            ((settings.castFillOpacity or 100) < 100) and 0 or castbarOpacity
+                            ((prefs.castFillOpacity or 100) < 100) and 0 or castbarOpacity
                         )
-                        ns.ApplyCastFillOpacity(frame.Castbar, settings)
-                        if frame.Castbar:IsShown() then
-                            ApplyUnitFrameCastColor(frame.Castbar)
-                            UpdateUnitFrameKickTick(frame.Castbar)
+                        mod.ApplyCastFillOpacity(widget.Castbar, prefs)
+                        if widget.Castbar:IsShown() then
+                            ApplyUnitFrameCastColor(widget.Castbar)
+                            UpdateUnitFrameKickTick(widget.Castbar)
                         end
-                        if frame.Castbar.Text then
-                            local snSz = settings.castSpellNameSize or 11
-                            SetFSFont(frame.Castbar.Text, snSz)
-                            local snC = settings.castSpellNameColor or { r = 1, g = 1, b = 1 }
-                            frame.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
+                        if widget.Castbar.Text then
+                            local snSz = prefs.castSpellNameSize or 11
+                            SetFSFont(widget.Castbar.Text, snSz)
+                            local snC = prefs.castSpellNameColor or { r = 1, g = 1, b = 1 }
+                            widget.Castbar.Text:SetTextColor(snC.r, snC.g, snC.b)
                         end
-                        if frame.Castbar.Time then
-                            local dtSz = settings.castDurationSize or 10
-                            SetFSFont(frame.Castbar.Time, dtSz)
-                            local dtC = settings.castDurationColor or { r = 1, g = 1, b = 1 }
-                            frame.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
-                            frame.Castbar._showDuration = settings.showCastDuration ~= false
-                            frame.Castbar._durationSize = dtSz
-                            if frame.Castbar._showDuration and frame.Castbar:IsShown() then
-                                frame.Castbar.Time:Show()
-                            elseif not frame.Castbar._showDuration then
-                                frame.Castbar.Time:Hide()
+                        if widget.Castbar.Time then
+                            local dtSz = prefs.castDurationSize or 10
+                            SetFSFont(widget.Castbar.Time, dtSz)
+                            local dtC = prefs.castDurationColor or { r = 1, g = 1, b = 1 }
+                            widget.Castbar.Time:SetTextColor(dtC.r, dtC.g, dtC.b)
+                            widget.Castbar._showDuration = prefs.showCastDuration ~= false
+                            widget.Castbar._durationSize = dtSz
+                            if widget.Castbar._showDuration and widget.Castbar:IsShown() then
+                                widget.Castbar.Time:Show()
+                            elseif not widget.Castbar._showDuration then
+                                widget.Castbar.Time:Hide()
                             end
                         end
-                        if frame.Castbar.Target then
-                            local tsSz = settings.castSpellTargetSize or 11
-                            SetFSFont(frame.Castbar.Target, tsSz)
-                            local tsC = settings.castSpellTargetColor or { r = 1, g = 1, b = 1 }
-                            frame.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
-                            frame.Castbar._showTarget = settings.showCastTarget ~= false
-                            frame.Castbar._nameSide = settings.castSpellNameSide or "left"
-                            frame.Castbar._tgtSide = settings.castSpellTargetSide or "right"
-                            frame.Castbar._durSide = settings.castDurationSide or "right"
-                            if not frame.Castbar._showTarget then
-                                frame.Castbar.Target:Hide()
+                        if widget.Castbar.Target then
+                            local tsSz = prefs.castSpellTargetSize or 11
+                            SetFSFont(widget.Castbar.Target, tsSz)
+                            local tsC = prefs.castSpellTargetColor or { r = 1, g = 1, b = 1 }
+                            widget.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
+                            widget.Castbar._showTarget = prefs.showCastTarget ~= false
+                            widget.Castbar._nameSide = prefs.castSpellNameSide or "left"
+                            widget.Castbar._tgtSide = prefs.castSpellTargetSide or "right"
+                            widget.Castbar._durSide = prefs.castDurationSide or "right"
+                            if not widget.Castbar._showTarget then
+                                widget.Castbar.Target:Hide()
                             end
-                            if frame.Castbar._layoutTextZones then
-                                frame.Castbar:_layoutTextZones()
+                            if widget.Castbar._layoutTextZones then
+                                widget.Castbar:_layoutTextZones()
                             end
                         end
                     end
 
-                    UpdateBordersForScale(frame, unit)
-                    ReparentBarsToClip(frame, ns.UF_PowerPos(settings), settings)
+                    UpdateBordersForScale(widget, unitToken)
+                    ReparentBarsToClip(widget, mod.UF_PowerPos(prefs), prefs)
                 end
 
                 -- Determine if this is a mini frame that inherits border/texture/font
                 local isMiniFrame = (
-                    unit == "pet"
-                    or unit == "targettarget"
-                    or unit == "focustarget"
-                    or unit:match("^boss%d$")
+                    unitToken == "pet"
+                    or unitToken == "targettarget"
+                    or unitToken == "focustarget"
+                    or unitToken:match("^boss%d$")
                 )
-                local donorSettings = isMiniFrame and GetMiniDonorSettings(UnitToSettingsKey(unit))
-                    or settings
+                local donorSettings = isMiniFrame and GetMiniDonorSettings(UnitToSettingsKey(unitToken))
+                    or prefs
 
                 -- Apply health bar texture overlay (mini frames inherit the donor
                 -- texture unless they set their own override).
                 if isMiniFrame then
-                    local uKey = UnitToSettingsKey(unit)
+                    local uKey = UnitToSettingsKey(unitToken)
                     ApplyHealthBarTexture(
-                        frame.Health,
+                        widget.Health,
                         uKey,
-                        ns.ResolveHealthBarTextureKey(settings, donorSettings)
+                        mod.ResolveHealthBarTextureKey(prefs, donorSettings)
                     )
-                    ApplyHealthBarAlpha(frame.Health, uKey)
+                    ApplyHealthBarAlpha(widget.Health, uKey)
                 else
-                    ApplyHealthBarTexture(frame.Health, UnitToSettingsKey(unit))
-                    ApplyHealthBarAlpha(frame.Health, UnitToSettingsKey(unit))
+                    ApplyHealthBarTexture(widget.Health, UnitToSettingsKey(unitToken))
+                    ApplyHealthBarAlpha(widget.Health, UnitToSettingsKey(unitToken))
                 end
                 -- Cast bar reuses the same bar texture as the health bar.
-                if frame.Castbar then
+                if widget.Castbar then
                     local cbTexKey
                     if isMiniFrame then
-                        cbTexKey = ns.ResolveHealthBarTextureKey(settings, donorSettings)
+                        cbTexKey = mod.ResolveHealthBarTextureKey(prefs, donorSettings)
                     else
-                        cbTexKey = settings.healthBarTexture or db.profile.healthBarTexture or "none"
+                        cbTexKey = prefs.healthBarTexture or saved.profile.healthBarTexture or "none"
                     end
-                    ns.ApplyCastBarTexture(frame.Castbar, cbTexKey)
+                    mod.ApplyCastBarTexture(widget.Castbar, cbTexKey)
                 end
-                frame.Health:SetReverseFill(settings.healthReverseFill and true or false)
-                ns.ApplyHealthOrientation(frame.Health, settings)
-                ApplyDarkTheme(frame.Health, unit) -- re-anchors health.bg for the new axis
-                UpdateAbsorbBarReverseFill(frame, settings.healthReverseFill and true or false, settings)
-                ns.UF_HealPredApply(frame, unit, settings)
-                ns.UF_MaxHpApply(frame, unit)
-                ns.UF_AbsorbGlowApply(frame, unit)
+                widget.Health:SetReverseFill(prefs.healthReverseFill and true or false)
+                mod.ApplyHealthOrientation(widget.Health, prefs)
+                ApplyDarkTheme(widget.Health, unitToken) -- re-anchors health.bg for the new axis
+                UpdateAbsorbBarReverseFill(widget, prefs.healthReverseFill and true or false, prefs)
+                mod.UF_HealPredApply(widget, unitToken, prefs)
+                mod.UF_MaxHpApply(widget, unitToken)
+                mod.UF_AbsorbGlowApply(widget, unitToken)
                 -- Smooth bar interpolation (live toggle without /reload)
-                if settings.smoothBars then
-                    frame.Health.smoothing = Enum
+                if prefs.smoothBars then
+                    widget.Health.smoothing = Enum
                         and Enum.StatusBarInterpolation
                         and Enum.StatusBarInterpolation.ExponentialEaseOut
                 else
-                    frame.Health.smoothing = Enum
+                    widget.Health.smoothing = Enum
                         and Enum.StatusBarInterpolation
                         and Enum.StatusBarInterpolation.Immediate
                 end
-                if frame.Health.ForceUpdate then
-                    frame.Health:ForceUpdate()
+                if widget.Health.ForceUpdate then
+                    widget.Health:ForceUpdate()
                 end
 
                 -- Apply power bar opacity
-                if frame.Power then
-                    ApplyPowerBarAlpha(frame.Power, UnitToSettingsKey(unit))
+                if widget.Power then
+                    ApplyPowerBarAlpha(widget.Power, UnitToSettingsKey(unitToken))
 
                     -- Re-apply power bar fill color based on powerPercentPowerColor toggle.
                     -- Gradient (additive) layers on top of the resolved custom/power-type color.
-                    local usePowerColor = settings.powerPercentPowerColor ~= false
-                    frame.Power.colorPower = usePowerColor
+                    local usePowerColor = prefs.powerPercentPowerColor ~= false
+                    widget.Power.colorPower = usePowerColor
                     if not usePowerColor then
-                        local customFill = settings.customPowerFillColor
+                        local customFill = prefs.customPowerFillColor
                         if customFill then
-                            frame.Power:SetStatusBarColor(customFill.r, customFill.g, customFill.b)
+                            widget.Power:SetStatusBarColor(customFill.r, customFill.g, customFill.b)
                         else
-                            frame.Power:SetStatusBarColor(0, 0, 1)
+                            widget.Power:SetStatusBarColor(0, 0, 1)
                         end
                     end
-                    frame.Power.PostUpdateColor = function(self)
-                        local s2 = GetSettingsForUnit(unit)
+                    widget.Power.PostUpdateColor = function(self)
+                        local s2 = GetSettingsForUnit(unitToken)
                         if not s2 then
                             return
                         end
@@ -2154,23 +2200,23 @@ ReloadFramesBody = function()
                         -- PLAIN stand-ins for bR
                         local haveBase, baseSecret = false, false
                         if not useP then
-                            local cf = s2.customPowerFillColor
-                            if cf then
-                                bR, bG, bB = cf.r, cf.g, cf.b
+                            local castFrame = s2.customPowerFillColor
+                            if castFrame then
+                                bR, bG, bB = castFrame.r, castFrame.g, castFrame.b
                             else
                                 bR, bG, bB = 0, 0, 1
                             end
                             haveBase = true
                         else
                             if s2.powerClassColored then
-                                haveBase, bR, bG, bB = ns.UF_PowerClassColor(unit)
+                                haveBase, bR, bG, bB = mod.UF_PowerClassColor(unitToken)
                                 baseSecret = haveBase and issecretvalue(bR)
                             end
                             if not haveBase then
                                 -- Secret-safe per-unit power color (player via token,
                                 -- non-player via the clean integer type), so custom power
                                 -- colors apply on EVERY unit independent of oUF's sync.
-                                bR, bG, bB = CludesUI.ResolveUnitPowerColor(unit)
+                                bR, bG, bB = CludesUI.ResolveUnitPowerColor(unitToken)
                                 haveBase = bR ~= nil
                             end
                         end
@@ -2193,9 +2239,9 @@ ReloadFramesBody = function()
                                 ga
                             )
                         elseif not useP then
-                            local cf = s2.customPowerFillColor
-                            if cf then
-                                self:SetStatusBarColor(cf.r, cf.g, cf.b)
+                            local castFrame = s2.customPowerFillColor
+                            if castFrame then
+                                self:SetStatusBarColor(castFrame.r, castFrame.g, castFrame.b)
                             else
                                 self:SetStatusBarColor(0, 0, 1)
                             end
@@ -2207,7 +2253,7 @@ ReloadFramesBody = function()
                         -- Bar Background: power-colored bg tracks this unit's power
                         -- color each update (mirrors the fill); see CreatePowerBar.
                         if s2.powerBgPowerColored and self.bg then
-                            local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unit)
+                            local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unitToken)
                             if pr then
                                 local f = CludesUI.GetPowerBgDarkenFactor()
                                 self.bg:SetColorTexture(pr * f, pg * f, pb * f, 1)
@@ -2226,39 +2272,39 @@ ReloadFramesBody = function()
                         end
                         -- Same continuous re-application for the Bottom Text Bar's
                         -- power-colored text (per-slot early-out keeps it ~free).
-                        local btb = frame.BottomTextBar
+                        local btb = widget.BottomTextBar
                         if btb and btb._applyBTBPowerColors then
                             btb._applyBTBPowerColors(s2)
                         end
                     end
-                    local customBg = settings.customPowerBgColor
-                    if customBg and frame.Power.bg then
-                        frame.Power.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
-                    elseif frame.Power.bg then
-                        frame.Power.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
+                    local customBg = prefs.customPowerBgColor
+                    if customBg and widget.Power.bg then
+                        widget.Power.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
+                    elseif widget.Power.bg then
+                        widget.Power.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
                     end
-                    frame.Power:SetReverseFill(settings.powerReverseFill and true or false)
+                    widget.Power:SetReverseFill(prefs.powerReverseFill and true or false)
                     -- Reverse-fill direction is only final here; re-derive Fill Opacity state
                     -- (ApplyPowerBarAlpha above ran before this SetReverseFill, so a direction
                     -- change would otherwise leave the bg anchored to the wrong side).
-                    ApplyPowerBarAlpha(frame.Power, UnitToSettingsKey(unit))
-                    if frame.Power.ForceUpdate then
-                        frame.Power:ForceUpdate()
+                    ApplyPowerBarAlpha(widget.Power, UnitToSettingsKey(unitToken))
+                    if widget.Power.ForceUpdate then
+                        widget.Power:ForceUpdate()
                     end
-                    if unit == "player" then
-                        ns.UF_SetupPowerCost(frame.Power, settings)
-                        ns.UF_PowerValSync(frame)
+                    if unitToken == "player" then
+                        mod.UF_SetupPowerCost(widget.Power, prefs)
+                        mod.UF_PowerValSync(widget)
                     end
-                    if unit == "player" and ns.UF_ForeverFormBar then
-                        ns.UF_ForeverFormBar(frame, frame.Power, settings)
+                    if unitToken == "player" and mod.UF_ForeverFormBar then
+                        mod.UF_ForeverFormBar(widget, widget.Power, prefs)
                     end
                     -- WoW Forever mana regen spark (CludesUI_ManaRegenSpark.lua):
                     -- attached while the bar draws. Below SetReverseFill, which the
                     -- attach lays the spark out from. Power paints report mana only
                     -- while attached, so the bar's power type (PaintPower's) is
                     -- reported first and the attach never arms from a stale one.
-                    if unit == "player" and CludesUI.ManaRegenSpark then
-                        if settings.manaRegenSpark and ns.UF_PowerBarDraws(settings) then
+                    if unitToken == "player" and CludesUI.ManaRegenSpark then
+                        if prefs.manaRegenSpark and mod.UF_PowerBarDraws(prefs) then
                             local pt = CludesUI.GetPlayerPowerOverride() or UnitPowerType("player")
                             CludesUI.ManaRegenSpark.SetMana(
                                 "uf",
@@ -2266,24 +2312,24 @@ ReloadFramesBody = function()
                             )
                             CludesUI.ManaRegenSpark.Attach(
                                 "uf",
-                                frame.Power,
-                                settings.manaRegenSparkMode == "ticks"
+                                widget.Power,
+                                prefs.manaRegenSparkMode == "ticks"
                             )
-                            frame.Power._manaRegenSpark = true
+                            widget.Power._manaRegenSpark = true
                         else
                             CludesUI.ManaRegenSpark.Detach("uf")
-                            frame.Power._manaRegenSpark = nil
+                            widget.Power._manaRegenSpark = nil
                         end
                     end
                 end
 
                 -- Apply castbar reverse fill
-                if frame.Castbar then
-                    frame.Castbar:SetReverseFill(settings.castReverseFill and true or false)
+                if widget.Castbar then
+                    widget.Castbar:SetReverseFill(prefs.castReverseFill and true or false)
                 end
 
-                if frame.unifiedBorder then
-                    frame.unifiedBorder:ClearAllPoints()
+                if widget.unifiedBorder then
+                    widget.unifiedBorder:ClearAllPoints()
                     -- Mini frames (ToT/Focus Target/Pet) may override ONLY the border
                     -- size per frame (settings.borderSizeOverride); color and texture
                     -- still inherit from the donor. nil = inherit the donor size.
@@ -2291,22 +2337,22 @@ ReloadFramesBody = function()
                     -- border until the boss Border Style leaves Inherit.
                     -- ns.UF_FrameBorderPad mirrors this apply for size matching: change the two together.
                     local bsrc = donorSettings
-                    if unit:match("^boss%d$") then
-                        bsrc = ns.UF_BossBorderSettings()
+                    if unitToken:match("^boss%d$") then
+                        bsrc = mod.UF_BossBorderSettings()
                     end
-                    local bs = settings.borderSizeOverride or bsrc.borderSize or 1
+                    local bs = prefs.borderSizeOverride or bsrc.borderSize or 1
                     local bc = bsrc.borderColor or { r = 0, g = 0, b = 0 }
                     local btex = bsrc.borderTexture or "solid"
                     -- The donor's exact size rides along only while the size IS the
                     -- donor's own; a per-frame override is a substitute step (legacy path).
                     local bpx = nil
-                    if not settings.borderSizeOverride then
+                    if not prefs.borderSizeOverride then
                         bpx = CludesUI.BorderPx(bsrc.borderSizePx, bs, btex)
                     end
-                    PP.Point(frame.unifiedBorder, "TOPLEFT", frame, "TOPLEFT", 0, 0)
-                    PP.Point(frame.unifiedBorder, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+                    Pix.Point(widget.unifiedBorder, "TOPLEFT", widget, "TOPLEFT", 0, 0)
+                    Pix.Point(widget.unifiedBorder, "BOTTOMRIGHT", widget, "BOTTOMRIGHT", 0, 0)
                     CludesUI.ApplyBorderStyle(
-                        frame.unifiedBorder,
+                        widget.unifiedBorder,
                         bs,
                         bc.r,
                         bc.g,
@@ -2326,65 +2372,65 @@ ReloadFramesBody = function()
                 -- Boss Hover/Target border: the border was just restyled to its normal
                 -- color above, so re-apply the hover/target recolor (both default off,
                 -- so this repaints the same normal color unless the user enabled one).
-                if unit:match("^boss%d$") then
-                    local isT = UnitIsUnit(unit, "target")
-                    frame._isTarget = (not issecretvalue(isT) and isT) and true or false
-                    ns.ApplyBossBorderState(frame)
+                if unitToken:match("^boss%d$") then
+                    local isT = UnitIsUnit(unitToken, "target")
+                    widget._isTarget = (not issecretvalue(isT) and isT) and true or false
+                    mod.ApplyBossBorderState(widget)
                 end
 
                 -- Helper: set font on a FontString, using donor font for mini frames.
                 -- A font family, as SetFSFont gives.
-                local function SetMiniFont(fs, sz)
-                    if not fs or not fs.SetFont then
+                local function SetMiniFont(fontStr, sz)
+                    if not fontStr or not fontStr.SetFont then
                         return
                     end
                     if isMiniFrame then
-                        CludesUI.ApplyModuleFontFamily(fs, donorFontPath, sz or 12, "unitFrames")
+                        CludesUI.ApplyModuleFontFamily(fontStr, donorFontPath, sz or 12, "unitFrames")
                     else
-                        SetFSFont(fs, sz)
+                        SetFSFont(fontStr, sz)
                     end
                 end
 
-                if frame.NameText then
-                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unit)
+                if widget.NameText then
+                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
                     local rts = s.leftTextSize or s.textSize or 12
-                    SetMiniFont(frame.NameText, rts)
-                    frame.NameText:SetWordWrap(false)
+                    SetMiniFont(widget.NameText, rts)
+                    widget.NameText:SetWordWrap(false)
                 end
-                if frame.HealthValue then
-                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unit)
+                if widget.HealthValue then
+                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
                     local rts = s.rightTextSize or s.textSize or 12
-                    SetMiniFont(frame.HealthValue, rts)
-                    frame.HealthValue:SetWordWrap(false)
+                    SetMiniFont(widget.HealthValue, rts)
+                    widget.HealthValue:SetWordWrap(false)
                 end
-                if frame.CenterText then
-                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unit)
+                if widget.CenterText then
+                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
                     local cts = s.centerTextSize or s.textSize or 12
-                    SetMiniFont(frame.CenterText, cts)
-                    frame.CenterText:SetWordWrap(false)
+                    SetMiniFont(widget.CenterText, cts)
+                    widget.CenterText:SetWordWrap(false)
                 end
 
                 -- Apply text tags and positions for mini frames
-                if isMiniFrame and frame._applyTextTags then
-                    frame._applyTextTags(
-                        settings.leftTextContent or "name",
-                        settings.rightTextContent or "none",
-                        settings.centerTextContent or "none"
+                if isMiniFrame and widget._applyTextTags then
+                    widget._applyTextTags(
+                        prefs.leftTextContent or "name",
+                        prefs.rightTextContent or "none",
+                        prefs.centerTextContent or "none"
                     )
                 end
-                if isMiniFrame and frame._applyTextPositions then
-                    frame._applyTextPositions(settings)
+                if isMiniFrame and widget._applyTextPositions then
+                    widget._applyTextPositions(prefs)
                 end
 
-                if frame.Castbar then
-                    local s = isMiniFrame and donorSettings or settings
-                    if frame.Castbar.Text then
+                if widget.Castbar then
+                    local s = isMiniFrame and donorSettings or prefs
+                    if widget.Castbar.Text then
                         local snSz = s.castSpellNameSize or 11
-                        SetMiniFont(frame.Castbar.Text, snSz)
+                        SetMiniFont(widget.Castbar.Text, snSz)
                     end
-                    if frame.Castbar.Time then
+                    if widget.Castbar.Time then
                         local dtSz = s.castDurationSize or 10
-                        SetMiniFont(frame.Castbar.Time, dtSz)
+                        SetMiniFont(widget.Castbar.Time, dtSz)
                     end
                     -- Boss frames get their full cast text refresh in the boss branch above
                     -- (colors/show/sides/bg). Two gaps remain: the donor-font line just above
@@ -2392,19 +2438,19 @@ ReloadFramesBody = function()
                     -- CACHED offsets. Re-apply the size from boss settings (keeping the donor
                     -- typeface) and sync X/Y offsets + side layout so live boss frames update
                     -- on every cast-text option change.
-                    if unit:match("^boss") then
-                        local cb = frame.Castbar
+                    if unitToken:match("^boss") then
+                        local cb = widget.Castbar
                         if cb.Text then
-                            SetMiniFont(cb.Text, settings.castSpellNameSize or 11)
+                            SetMiniFont(cb.Text, prefs.castSpellNameSize or 11)
                         end
                         if cb.Time then
-                            SetMiniFont(cb.Time, settings.castDurationSize or 10)
+                            SetMiniFont(cb.Time, prefs.castDurationSize or 10)
                         end
                         if cb.Target then
-                            SetMiniFont(cb.Target, settings.castSpellTargetSize or 11)
+                            SetMiniFont(cb.Target, prefs.castSpellTargetSize or 11)
                         end
                         if cb._syncOffsetsAndLayout then
-                            cb:_syncOffsetsAndLayout(settings)
+                            cb:_syncOffsetsAndLayout(prefs)
                         end
                     end
                 end
@@ -2414,12 +2460,13 @@ ReloadFramesBody = function()
 
     -- Refresh combat indicator on player + target frames after settings change
     for _, ciu in ipairs({ "player", "target" }) do
-        local cif = frames[ciu]
+        local cif = frameList[ciu]
         if cif and cif._applyCombatTexture then
             cif._applyCombatTexture()
             local ciDefStyle = (ciu == "player") and "standard" or "none"
             if
-                (db.profile[ciu].combatIndicatorStyle or ciDefStyle) ~= "none" and UnitAffectingCombat(ciu)
+                (saved.profile[ciu].combatIndicatorStyle or ciDefStyle) ~= "none"
+                and UnitAffectingCombat(ciu)
             then
                 cif._combatIndicator:Show()
             else
@@ -2429,30 +2476,30 @@ ReloadFramesBody = function()
     end
 
     -- Refresh leader indicator on player frame after settings change
-    if frames.player and frames.player._applyLeaderIndicator then
-        frames.player._applyLeaderIndicator()
+    if frameList.player and frameList.player._applyLeaderIndicator then
+        frameList.player._applyLeaderIndicator()
     end
-    if frames.target and frames.target._applyLeaderIndicator then
-        frames.target._applyLeaderIndicator()
+    if frameList.target and frameList.target._applyLeaderIndicator then
+        frameList.target._applyLeaderIndicator()
     end
 
     -- Refresh elite/rare indicator on the target frame after settings change
-    if frames.target and frames.target._applyEliteIndicator then
-        frames.target._applyEliteIndicator()
+    if frameList.target and frameList.target._applyEliteIndicator then
+        frameList.target._applyEliteIndicator()
     end
     -- Portrait Dragon on the player, target and focus frames, after every
     -- portrait above has its final size, shape and clip.
-    ns.UF_ApplyPortraitDragons()
+    mod.UF_ApplyPortraitDragons()
 
     -- Refresh faction indicator on the player and target frames after settings change
-    if frames.player and frames.player._applyFactionIndicator then
-        frames.player._applyFactionIndicator()
+    if frameList.player and frameList.player._applyFactionIndicator then
+        frameList.player._applyFactionIndicator()
     end
-    if frames.target and frames.target._applyFactionIndicator then
-        frames.target._applyFactionIndicator()
+    if frameList.target and frameList.target._applyFactionIndicator then
+        frameList.target._applyFactionIndicator()
     end
     -- Pet happiness icon (WoW Forever): enable, size, side and offsets.
-    ns.UF_ApplyPetHappiness()
+    mod.UF_ApplyPetHappiness()
 
     ---------------------------------------------------------------------------
     --  Live-update raid target marker icon (size / alignment / X / Y / enabled)
@@ -2461,9 +2508,9 @@ ReloadFramesBody = function()
     ---------------------------------------------------------------------------
     local RAID_MARKER_UNITS = { "player", "target", "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
     for _, rmUnit in ipairs(RAID_MARKER_UNITS) do
-        local rmFrame = frames[rmUnit]
-        local icon = rmFrame and rmFrame._raidMarkerIcon
-        if rmFrame and icon then
+        local rmFrame = frameList[rmUnit]
+        local glyph = rmFrame and rmFrame._raidMarkerIcon
+        if rmFrame and glyph then
             local rmS = GetSettingsForUnit(rmUnit)
             local rmSize = (rmS and rmS.raidMarkerSize) or 28
             local rmAlign = (rmS and rmS.raidMarkerAlign) or "right"
@@ -2471,32 +2518,32 @@ ReloadFramesBody = function()
             local rmY = (rmS and rmS.raidMarkerY) or 0
             local rmEnabled = rmS and rmS.raidMarkerEnabled
             local isBoss = rmUnit:match("^boss%d$")
-            icon:SetSize(rmSize, rmSize)
-            icon:ClearAllPoints()
+            glyph:SetSize(rmSize, rmSize)
+            glyph:ClearAllPoints()
             if isBoss then
                 if rmAlign == "left" then
-                    icon:SetPoint("RIGHT", rmFrame, "LEFT", rmX, rmY)
+                    glyph:SetPoint("RIGHT", rmFrame, "LEFT", rmX, rmY)
                 elseif rmAlign == "center" then
-                    icon:SetPoint("CENTER", rmFrame, "CENTER", rmX, rmY)
+                    glyph:SetPoint("CENTER", rmFrame, "CENTER", rmX, rmY)
                 else
-                    icon:SetPoint("LEFT", rmFrame, "RIGHT", rmX, rmY)
+                    glyph:SetPoint("LEFT", rmFrame, "RIGHT", rmX, rmY)
                 end
             else
                 local rmAnchor = (rmAlign == "left") and "TOPLEFT"
                     or (rmAlign == "center") and "TOP"
                     or "TOPRIGHT"
-                icon:SetPoint("CENTER", rmFrame, rmAnchor, rmX, rmY)
+                glyph:SetPoint("CENTER", rmFrame, rmAnchor, rmX, rmY)
             end
             if rmEnabled then
-                rmFrame.RaidTargetIndicator = icon
+                rmFrame.RaidTargetIndicator = glyph
                 rmFrame:EnableElement("RaidTargetIndicator")
-                if icon.ForceUpdate then
-                    icon:ForceUpdate()
+                if glyph.ForceUpdate then
+                    glyph:ForceUpdate()
                 end
             else
                 rmFrame:DisableElement("RaidTargetIndicator")
                 rmFrame.RaidTargetIndicator = nil
-                icon:Hide()
+                glyph:Hide()
             end
         end
     end
@@ -2504,24 +2551,24 @@ ReloadFramesBody = function()
     -- Portrait settings (3D zoom, class style) used to live-apply through the ungated
     -- ambient repaints; the gated Override skips same-unit repaints, so settings
     -- changes now force one explicit portrait update per frame instead.
-    for _, frame in pairs(frames) do
-        if type(frame) == "table" and frame.Portrait and frame.Portrait.ForceUpdate then
-            frame.Portrait:ForceUpdate()
+    for _, widget in pairs(frameList) do
+        if type(widget) == "table" and widget.Portrait and widget.Portrait.ForceUpdate then
+            widget.Portrait:ForceUpdate()
         end
     end
 
     -- Blizzard Style: one final geometry/art pass over every frame, after all
     -- the per-unit re-anchors above (idempotent; nothing while the style is off).
-    if ns.UF_Blizz() then
-        for _, frame in pairs(frames) do
-            if type(frame) == "table" and frame.Health and frame._cuiBaseUnit then
-                ns.UF_ApplyBlizzardLayout(frame, frame._cuiBaseUnit)
+    if mod.UF_Blizz() then
+        for _, widget in pairs(frameList) do
+            if type(widget) == "table" and widget.Health and widget._cuiBaseUnit then
+                mod.UF_ApplyBlizzardLayout(widget, widget._cuiBaseUnit)
             end
         end
     end
     -- WoW Forever: the combo point arc round its host frame's portrait, placed
     -- on the geometry the sweep just settled (returns at once everywhere else).
-    ns.UF_ApplyForeverComboArc()
+    mod.UF_ApplyForeverComboArc()
 
     -- Detached portrait click overlays, and once more next frame (anchors still
     -- resolving) only while a frame uses one.
@@ -2534,18 +2581,18 @@ ReloadFramesBody = function()
     -- detached power bar rounds on its own with the same radius. An attached
     -- portrait joins with its own art only: the dragons on it reach past the
     -- frame and stay whole.
-    for unit, frame in pairs(frames) do
-        if type(unit) == "string" and type(frame) == "table" and frame.unifiedBorder then
-            local isMini = (unit == "pet" or unit == "targettarget" or unit == "focustarget")
-            local isBoss = unit:match("^boss%d$") and true or false
-            local src = isBoss and ns.UF_BossBorderSettings()
-                or (isMini and GetMiniDonorSettings(unit))
-                or GetSettingsForUnit(unit)
-            local us = GetSettingsForUnit(unit)
-            local radius = (not frame._blizzArtFrame and src and src.cornerRadius) or 0
-            local corners = src and src.cornerMask
-            local power = frame.Power
-            local pp = ns.UF_PowerPos(us)
+    for unitToken, widget in pairs(frameList) do
+        if type(unitToken) == "string" and type(widget) == "table" and widget.unifiedBorder then
+            local isMini = (unitToken == "pet" or unitToken == "targettarget" or unitToken == "focustarget")
+            local isBoss = unitToken:match("^boss%d$") and true or false
+            local source = isBoss and mod.UF_BossBorderSettings()
+                or (isMini and GetMiniDonorSettings(unitToken))
+                or GetSettingsForUnit(unitToken)
+            local us = GetSettingsForUnit(unitToken)
+            local radius = (not widget._blizzArtFrame and source and source.cornerRadius) or 0
+            local corners = source and source.cornerMask
+            local power = widget.Power
+            local pp = mod.UF_PowerPos(us)
             local det = pp == "detached_top" or pp == "detached_bottom"
             -- Join Power Bar: a detached bar right above or below the frame
             -- shares its outline (the frame keeps the far corners).
@@ -2561,21 +2608,21 @@ ReloadFramesBody = function()
             if radius > 0 then
                 local ps = us and us.portraitStyle or profile.portraitStyle or "attached"
                 local attached = ps == "attached" or ((isMini or isBoss) and ps == "detached")
-                local bd = frame.Portrait and frame.Portrait.backdrop
-                if not (attached and bd and bd:IsShown()) then
-                    bd = nil
+                local edge = widget.Portrait and widget.Portrait.backdrop
+                if not (attached and edge and edge:IsShown()) then
+                    edge = nil
                 end
-                local btb = frame.BottomTextBar
-                CludesUI.RoundCorners(frame, radius, {
-                    roots = { frame._barClip, btb and not btb._isDetached and btb or nil },
-                    textures = { bd and bd._bg, bd and bd._2d, bd and bd._class },
-                    border = frame.unifiedBorder,
-                    clip = frame._barClip,
-                    style = src.borderTexture or "solid",
+                local btb = widget.BottomTextBar
+                CludesUI.RoundCorners(widget, radius, {
+                    roots = { widget._barClip, btb and not btb._isDetached and btb or nil },
+                    textures = { edge and edge._bg, edge and edge._2d, edge and edge._class },
+                    border = widget.unifiedBorder,
+                    clip = widget._barClip,
+                    style = source.borderTexture or "solid",
                     corners = corners,
                 })
             else
-                CludesUI.RoundCorners(frame, 0)
+                CludesUI.RoundCorners(widget, 0)
             end
             if power then
                 if det and radius > 0 then
@@ -2594,27 +2641,27 @@ ReloadFramesBody = function()
     -- Player Aura Bars resolve font path and outline flag at style-build time; every
     -- settings path landing here (fonts, profiles, options) forces one explicit
     -- re-skin of the default and custom bars, both change-guarded no-ops when nothing changed.
-    if ns.PAB_Restyle then
-        ns.PAB_Restyle()
+    if mod.PAB_Restyle then
+        mod.PAB_Restyle()
     end
     -- Profile-grade resync: enable/useBlizzard modes, native frames, default
     -- movers, and a late build when a swap lands on an enabled profile from
     -- a disabled-at-login session. Cheap no-op when nothing changed.
-    if ns.PAB_ProfileResync then
-        ns.PAB_ProfileResync()
+    if mod.PAB_ProfileResync then
+        mod.PAB_ProfileResync()
     end
     -- Reload-all also SWEEPS stale bar ids (a previous profile's bars must
     -- park on swap -- field report).
-    if ns.PAB_ReloadAllCustomBars then
-        ns.PAB_ReloadAllCustomBars()
+    if mod.PAB_ReloadAllCustomBars then
+        mod.PAB_ReloadAllCustomBars()
     end
-    ns.UF_PlayerPortraitChanged()
+    mod.UF_PlayerPortraitChanged()
     -- Size matching: the unified borders were just applied, so report each
     -- frame's border pad; only a pad that really changed re-pushes its matches.
     if CludesUI.MatchPadChanged then
-        local padKeys = ns.UF_PAD_KEYS
-        for i = 1, #padKeys do
-            CludesUI.MatchPadChanged(padKeys[i])
+        local padKeys = mod.UF_PAD_KEYS
+        for idx = 1, #padKeys do
+            CludesUI.MatchPadChanged(padKeys[idx])
         end
     end
     -- Last: its ForceAll repaint must follow the per-frame ApplyDarkTheme, or turning
@@ -2626,7 +2673,7 @@ end
 -- class resource bar has none, the boss stack is never size matched), and
 -- the three cast bars (a Custom Border Style border, the Classic frame; the
 -- cast bar pass runs inside the same reload sweep).
-ns.UF_PAD_KEYS = {
+mod.UF_PAD_KEYS = {
     "player",
     "target",
     "focus",
@@ -2646,23 +2693,23 @@ ns.UF_PAD_KEYS = {
 -- wraps the frame getSize measures. nil for a solid border, under the stock
 -- looks (no CludesUI border), for the class resource bar and the boss
 -- stack. Reads settings only. Change together with the sweep.
-function ns.UF_FrameBorderPad(k)
-    if k == "classPower" or k == "boss" or ns.UF_Blizz() then
+function mod.UF_FrameBorderPad(key)
+    if key == "classPower" or key == "boss" or mod.UF_Blizz() then
         return nil
     end
-    local settings = GetSettingsForUnit(k)
-    if not settings then
+    local prefs = GetSettingsForUnit(key)
+    if not prefs then
         return nil
     end
-    local isMini = (k == "pet" or k == "targettarget" or k == "focustarget")
-    local d = isMini and GetMiniDonorSettings(k) or settings
+    local isMini = (key == "pet" or key == "targettarget" or key == "focustarget")
+    local d = isMini and GetMiniDonorSettings(key) or prefs
     local btex = d.borderTexture or "solid"
     if btex == "solid" then
         return nil
     end
-    local bs = settings.borderSizeOverride or d.borderSize or 1
+    local bs = prefs.borderSizeOverride or d.borderSize or 1
     local bpx = nil
-    if not settings.borderSizeOverride then
+    if not prefs.borderSizeOverride then
         bpx = CludesUI.BorderPx(d.borderSizePx, bs, btex)
     end
     return CludesUI.BorderMatchPad(
@@ -2680,4 +2727,4 @@ function ns.UF_FrameBorderPad(k)
     )
 end
 
-I.ReloadFrames = ReloadFrames
+Inner.ReloadFrames = ReloadFrames

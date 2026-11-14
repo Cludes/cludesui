@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and the aura CVars.
 --  Reads the earlier nameplate files through ns and ns._npInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._npInternals
+local _, mod = ...
+local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs, type = pairs, type
 local UnitIsUnit, UnitCanAttack = UnitIsUnit, UnitCanAttack
@@ -22,13 +22,13 @@ local UnitAffectingCombat = UnitAffectingCombat
 local C_NamePlate = C_NamePlate
 local NamePlateConstants, Enum = NamePlateConstants, Enum
 
-local defaults, GetHealthBarWidth = I.defaults, I.GetHealthBarWidth
-local ApplyOverlayGeometry, OverlayBgAlpha = I.ApplyOverlayGeometry, I.OverlayBgAlpha
-local GetActiveKickSpell = I.GetActiveKickSpell
+local defaultSet, GetHealthBarWidth = Inner.defaults, Inner.GetHealthBarWidth
+local ApplyOverlayGeometry, OverlayBgAlpha = Inner.ApplyOverlayGeometry, Inner.OverlayBgAlpha
+local GetActiveKickSpell = Inner.GetActiveKickSpell
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v)
-    p = v
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
+    p = val
 end
 
 -------------------------------------------------------------------------------
@@ -38,225 +38,225 @@ end
 --  Alpha rides the plate ROOT (our own frame, parented to the Blizzard nameplate), so
 --  Blizzard's own occlusion fade still multiplies in.
 -------------------------------------------------------------------------------
-ns._ntAlpha = 1 -- cached 0..1 from the profile; 1 = inert
-ns._ntKeepFocus = true -- cached "Keep Focus Full Opacity" (default on)
-ns._oorAlpha = 1 -- cached out-of-range alpha; 1 = inert
+mod._ntAlpha = 1 -- cached 0..1 from the profile; 1 = inert
+mod._ntKeepFocus = true -- cached "Keep Focus Full Opacity" (default on)
+mod._oorAlpha = 1 -- cached out-of-range alpha; 1 = inert
 -- Out of Combat Opacity: plates of mobs not in combat fade to outOfCombatAlpha (0-100).
 -- 100 = OFF. Target and kept focus are exempt.
-ns._oocAlpha = 1
+mod._oocAlpha = 1
 -- Full Opacity While Casting: a casting plate skips the Non-Target fade (Out of Combat and
 -- out-of-range still apply). Important-only gates it on the cast's possibly SECRET important flag.
-ns._ntCastFull = false
-ns._ntCastImportantOnly = false
+mod._ntCastFull = false
+mod._ntCastImportantOnly = false
 
 -- Applies the correct root alpha to ONE plate. Value-guarded via _ntCurAlpha so redundant
 -- SetAlpha calls are skipped and pooled frames reset cheaply (nil = never faded).
-function ns.NT_Apply(plate)
-    local unit = plate.unit
-    if not unit then
+function mod.NT_Apply(backing)
+    local unitToken = backing.unit
+    if not unitToken then
         return
     end
     local a = 1
-    local nt = ns._ntAlpha
+    local nt = mod._ntAlpha
     if
         nt < 1
         and UnitExists("target")
-        and not UnitIsUnit(unit, "target")
-        and not (ns._ntKeepFocus and UnitIsUnit(unit, "focus"))
-        and not UnitIsUnit(unit, "player")
+        and not UnitIsUnit(unitToken, "target")
+        and not (mod._ntKeepFocus and UnitIsUnit(unitToken, "focus"))
+        and not UnitIsUnit(unitToken, "player")
     then
         a = nt
     end
     -- Out of Combat and out-of-range fades, which casting never lifts.
-    local rest = plate._oorCurAlpha or 1
-    local ooc = ns._oocAlpha
+    local rest = backing._oorCurAlpha or 1
+    local ooc = mod._oocAlpha
     if
         ooc < 1
-        and not UnitAffectingCombat(unit)
-        and not UnitIsUnit(unit, "target")
-        and not (ns._ntKeepFocus and UnitIsUnit(unit, "focus"))
+        and not UnitAffectingCombat(unitToken)
+        and not UnitIsUnit(unitToken, "target")
+        and not (mod._ntKeepFocus and UnitIsUnit(unitToken, "focus"))
     then
         rest = rest * ooc
     end
-    if a < 1 and ns._ntCastFull and ns._castingPlates[plate] then
-        if ns._ntCastImportantOnly then
+    if a < 1 and mod._ntCastFull and mod._castingPlates[backing] then
+        if mod._ntCastImportantOnly then
             -- The flag may be SECRET, so the write is change-checked on its numeric
             -- inputs; NotifyCastStarted drops them when a new cast brings a new flag.
             local lo = a * rest
-            if plate._ntCurAlpha ~= -1 or plate._ntBoolHi ~= rest or plate._ntBoolLo ~= lo then
-                local imp = plate._castImportant
+            if backing._ntCurAlpha ~= -1 or backing._ntBoolHi ~= rest or backing._ntBoolLo ~= lo then
+                local imp = backing._castImportant
                 if type(imp) == "nil" then
                     imp = false
                 end
                 -- Never a plain number: the next numeric apply always writes.
-                plate._ntCurAlpha = -1
-                plate._ntBoolHi, plate._ntBoolLo = rest, lo
+                backing._ntCurAlpha = -1
+                backing._ntBoolHi, backing._ntBoolLo = rest, lo
                 -- A SECRET flag makes the plate root's alpha secret for the session: never
                 -- compare its GetAlpha() or a child's GetEffectiveAlpha().
-                plate:SetAlphaFromBoolean(imp, rest, lo)
+                backing:SetAlphaFromBoolean(imp, rest, lo)
             end
             return
         end
         a = 1
     end
     a = a * rest
-    if (plate._ntCurAlpha or 1) ~= a then
-        plate._ntCurAlpha = a
-        plate:SetAlpha(a)
+    if (backing._ntCurAlpha or 1) ~= a then
+        backing._ntCurAlpha = a
+        backing:SetAlpha(a)
     end
 end
 
-function ns.NT_ApplyAll()
-    for _, plate in pairs(ns.plates) do
-        ns.NT_Apply(plate)
+function mod.NT_ApplyAll()
+    for _, backing in pairs(mod.plates) do
+        mod.NT_Apply(backing)
     end
 end
 
 -- Re-derives the cached opacity from the profile and reapplies every plate (un-fades at
 -- slider=100). Called from the options slider, OnInitialize, and RefreshAllSettings.
-function ns.NT_RefreshSetting()
-    local v = tonumber(p and p.nonTargetAlpha) or 100
-    if v < 0 then
-        v = 0
-    elseif v > 100 then
-        v = 100
+function mod.NT_RefreshSetting()
+    local val = tonumber(p and p.nonTargetAlpha) or 100
+    if val < 0 then
+        val = 0
+    elseif val > 100 then
+        val = 100
     end
-    ns._ntAlpha = v / 100
-    ns._ntKeepFocus = not (p and p.nonTargetKeepFocus == false)
-    ns._ntCastFull = (p and p.nonTargetCastFull) == true
-    ns._ntCastImportantOnly = (p and p.nonTargetCastImportantOnly) == true
-    local wasOn = ns._oocAlpha < 1
-    v = tonumber(p and p.outOfCombatAlpha) or 100
-    if v < 0 then
-        v = 0
-    elseif v > 100 then
-        v = 100
+    mod._ntAlpha = val / 100
+    mod._ntKeepFocus = not (p and p.nonTargetKeepFocus == false)
+    mod._ntCastFull = (p and p.nonTargetCastFull) == true
+    mod._ntCastImportantOnly = (p and p.nonTargetCastImportantOnly) == true
+    local wasOn = mod._oocAlpha < 1
+    val = tonumber(p and p.outOfCombatAlpha) or 100
+    if val < 0 then
+        val = 0
+    elseif val > 100 then
+        val = 100
     end
-    ns._oocAlpha = v / 100
-    local on = ns._oocAlpha < 1
-    if on ~= wasOn then
-        for _, plate in pairs(ns.plates) do
-            if not on then
-                plate:UnregisterEvent("UNIT_FLAGS")
-            elseif plate.unit then
-                plate:RegisterUnitEvent("UNIT_FLAGS", plate.unit)
+    mod._oocAlpha = val / 100
+    local enabled = mod._oocAlpha < 1
+    if enabled ~= wasOn then
+        for _, backing in pairs(mod.plates) do
+            if not enabled then
+                backing:UnregisterEvent("UNIT_FLAGS")
+            elseif backing.unit then
+                backing:RegisterUnitEvent("UNIT_FLAGS", backing.unit)
             end
         end
     end
-    ns.NT_ApplyAll()
+    mod.NT_ApplyAll()
 end
 
-function ns.HideHoverEffect(plate)
-    if not plate then
+function mod.HideHoverEffect(backing)
+    if not backing then
         return
     end
-    if plate.highlight then
-        plate.highlight:Hide()
+    if backing.highlight then
+        backing.highlight:Hide()
     end
-    if plate.hoverClipFill then
-        plate.hoverClipFill:Hide()
+    if backing.hoverClipFill then
+        backing.hoverClipFill:Hide()
     end
-    if plate.hoverClipBg then
-        plate.hoverClipBg:Hide()
+    if backing.hoverClipBg then
+        backing.hoverClipBg:Hide()
     end
-    plate._ovHoverShown = nil
+    backing._ovHoverShown = nil
 end
 
-function ns.ShowHoverEffect(plate)
-    if not plate or not plate.health then
+function mod.ShowHoverEffect(backing)
+    if not backing or not backing.health then
         return
     end
     -- Highlight channel gate (the Hover Effect dropdown's Highlight box): off
     -- = both the flat wash and the Hover Texture overlay stay hidden; the
     -- extra channels render independently via ns.ApplyHoverExtras.
-    if not ns.GetHoverGlowHighlight() then
-        ns.HideHoverEffect(plate)
+    if not mod.GetHoverGlowHighlight() then
+        mod.HideHoverEffect(backing)
         return
     end
-    local db2 = p or defaults
-    local hoverTex = db2.hoverOverlayTexture or defaults.hoverOverlayTexture
-    local hc = db2.hoverColor or defaults.hoverColor
-    local ha = db2.hoverAlpha or defaults.hoverAlpha
+    local db2 = p or defaultSet
+    local hoverTex = db2.hoverOverlayTexture or defaultSet.hoverOverlayTexture
+    local hc = db2.hoverColor or defaultSet.hoverColor
+    local ha = db2.hoverAlpha or defaultSet.hoverAlpha
     if hoverTex ~= "none" then
-        if ns._hoverOverlayTexName ~= hoverTex then
-            ns._hoverOverlayTexName = hoverTex
-            ns._hoverOverlayTexPath = ns.ResolveOverlayTexPath(hoverTex)
+        if mod._hoverOverlayTexName ~= hoverTex then
+            mod._hoverOverlayTexName = hoverTex
+            mod._hoverOverlayTexPath = mod.ResolveOverlayTexPath(hoverTex)
         end
-        local texPath = ns._hoverOverlayTexPath
+        local texPath = mod._hoverOverlayTexPath
         local bgAlpha = OverlayBgAlpha(db2.hoverOverlayFullBgAlpha, ha)
-        ns.EnsureHoverOverlay(plate)
+        mod.EnsureHoverOverlay(backing)
         if
-            not plate._ovHoverShown
-            or plate._ovHoverTex ~= texPath
-            or plate._ovHoverAlpha ~= ha
-            or plate._ovHoverBgAlpha ~= bgAlpha
-            or plate._ovHoverR ~= hc.r
-            or plate._ovHoverG ~= hc.g
-            or plate._ovHoverB ~= hc.b
+            not backing._ovHoverShown
+            or backing._ovHoverTex ~= texPath
+            or backing._ovHoverAlpha ~= ha
+            or backing._ovHoverBgAlpha ~= bgAlpha
+            or backing._ovHoverR ~= hc.r
+            or backing._ovHoverG ~= hc.g
+            or backing._ovHoverB ~= hc.b
         then
-            plate._ovHoverShown = true
-            plate._ovHoverTex, plate._ovHoverAlpha = texPath, ha
-            plate._ovHoverBgAlpha = bgAlpha
-            plate._ovHoverR, plate._ovHoverG, plate._ovHoverB = hc.r, hc.g, hc.b
+            backing._ovHoverShown = true
+            backing._ovHoverTex, backing._ovHoverAlpha = texPath, ha
+            backing._ovHoverBgAlpha = bgAlpha
+            backing._ovHoverR, backing._ovHoverG, backing._ovHoverB = hc.r, hc.g, hc.b
             ApplyOverlayGeometry(
-                plate.hoverOverlayFill,
-                plate.hoverOverlayBg,
-                plate.health,
-                ns.OVERLAY_STRIPE_KEYS[hoverTex] == true
+                backing.hoverOverlayFill,
+                backing.hoverOverlayBg,
+                backing.health,
+                mod.OVERLAY_STRIPE_KEYS[hoverTex] == true
             )
-            plate.hoverOverlayFill:SetTexture(texPath)
-            plate.hoverOverlayFill:SetAlpha(ha)
-            plate.hoverOverlayFill:SetVertexColor(hc.r, hc.g, hc.b)
-            plate.hoverOverlayBg:SetTexture(texPath)
-            plate.hoverOverlayBg:SetAlpha(bgAlpha)
-            plate.hoverOverlayBg:SetVertexColor(hc.r, hc.g, hc.b)
+            backing.hoverOverlayFill:SetTexture(texPath)
+            backing.hoverOverlayFill:SetAlpha(ha)
+            backing.hoverOverlayFill:SetVertexColor(hc.r, hc.g, hc.b)
+            backing.hoverOverlayBg:SetTexture(texPath)
+            backing.hoverOverlayBg:SetAlpha(bgAlpha)
+            backing.hoverOverlayBg:SetVertexColor(hc.r, hc.g, hc.b)
         end
-        if plate.highlight then
-            plate.highlight:Hide()
+        if backing.highlight then
+            backing.highlight:Hide()
         end
-        plate.hoverClipFill:Show()
-        plate.hoverClipBg:Show()
+        backing.hoverClipFill:Show()
+        backing.hoverClipBg:Show()
         return
     end
-    if plate.hoverClipFill then
-        plate.hoverClipFill:Hide()
+    if backing.hoverClipFill then
+        backing.hoverClipFill:Hide()
     end
-    if plate.hoverClipBg then
-        plate.hoverClipBg:Hide()
+    if backing.hoverClipBg then
+        backing.hoverClipBg:Hide()
     end
-    plate._ovHoverShown = nil
-    if plate.highlight then
-        plate.highlight:SetColorTexture(hc.r, hc.g, hc.b, ha)
-        plate.highlight:Show()
+    backing._ovHoverShown = nil
+    if backing.highlight then
+        backing.highlight:SetColorTexture(hc.r, hc.g, hc.b, ha)
+        backing.highlight:Show()
     end
 end
 
 -- Recolor the mouseover highlight on every live plate (enemy + friendly).
-function ns.RefreshHoverEffect()
-    local c = (p and p.hoverColor) or defaults.hoverColor
-    local a = (p and p.hoverAlpha) or defaults.hoverAlpha
-    for _, plate in pairs(ns.plates) do
-        if plate.highlight then
-            plate.highlight:SetColorTexture(c.r, c.g, c.b, a)
+function mod.RefreshHoverEffect()
+    local c = (p and p.hoverColor) or defaultSet.hoverColor
+    local a = (p and p.hoverAlpha) or defaultSet.hoverAlpha
+    for _, backing in pairs(mod.plates) do
+        if backing.highlight then
+            backing.highlight:SetColorTexture(c.r, c.g, c.b, a)
         end
-        if plate == ns._currentMouseoverPlate then
-            ns.ShowHoverEffect(plate)
-            ns.ApplyHoverExtras(plate)
+        if backing == mod._currentMouseoverPlate then
+            mod.ShowHoverEffect(backing)
+            mod.ApplyHoverExtras(backing)
         else
-            ns.HideHoverEffect(plate)
-            ns.ClearHoverExtras(plate)
+            mod.HideHoverEffect(backing)
+            mod.ClearHoverExtras(backing)
         end
     end
-    for _, plate in pairs(ns.friendlyPlates or {}) do
-        if plate.highlight then
-            plate.highlight:SetColorTexture(c.r, c.g, c.b, a)
+    for _, backing in pairs(mod.friendlyPlates or {}) do
+        if backing.highlight then
+            backing.highlight:SetColorTexture(c.r, c.g, c.b, a)
         end
-        if plate == ns._currentMouseoverPlate then
-            ns.ShowHoverEffect(plate)
-            ns.ApplyHoverExtras(plate)
+        if backing == mod._currentMouseoverPlate then
+            mod.ShowHoverEffect(backing)
+            mod.ApplyHoverExtras(backing)
         else
-            ns.HideHoverEffect(plate)
-            ns.ClearHoverExtras(plate)
+            mod.HideHoverEffect(backing)
+            mod.ClearHoverExtras(backing)
         end
     end
 end
@@ -266,7 +266,7 @@ kickWatcher:Hide()
 local activeCastCount = 0
 -- PERF: set of plates currently casting, so kick/color updates iterate only the
 -- 1-3 casting plates instead of all 20+ in the scene. On ns (200-local pressure).
-ns._castingPlates = {}
+mod._castingPlates = {}
 -- SPELL_UPDATE_COOLDOWN and SPELL_UPDATE_USABLE (the only events this frame
 -- holds) usually arrive together, and again for every spell the GCD touches:
 -- each only shows the frame, and its next OnUpdate makes ONE pass for them all.
@@ -279,32 +279,36 @@ kickWatcher:SetScript("OnUpdate", function(self)
     -- flags) is cached by UpdateKickTick at setup and by INTERRUPTIBLE handlers on
     -- mid-cast flips, so cooldown events only refresh marker value + alpha. A hidden tick
     -- means re-setup from cache (kick learned mid-cast, late CD info, toggle on).
-    for plate in pairs(ns._castingPlates) do
-        if plate.isCasting and plate.unit and type(plate._kickProtected) ~= "nil" then
-            plate:ApplyCastColor(plate._kickProtected)
-            if not plate.kickPositioner:IsShown() then
-                plate:UpdateKickTick(plate._kickProtected, plate._kickIsChannel, plate._kickIsEmpowered)
+    for backing in pairs(mod._castingPlates) do
+        if backing.isCasting and backing.unit and type(backing._kickProtected) ~= "nil" then
+            backing:ApplyCastColor(backing._kickProtected)
+            if not backing.kickPositioner:IsShown() then
+                backing:UpdateKickTick(
+                    backing._kickProtected,
+                    backing._kickIsChannel,
+                    backing._kickIsEmpowered
+                )
             else
-                plate:RefreshKickTick()
+                backing:RefreshKickTick()
             end
         end
     end
 end)
 local _castColorTicker
-local function NotifyCastStarted(plate)
-    if plate then
-        ns._castingPlates[plate] = true
-        if ns._ntCastFull and ns._ntAlpha < 1 then
-            plate._ntBoolHi = nil
-            ns.NT_Apply(plate)
+local function NotifyCastStarted(backing)
+    if backing then
+        mod._castingPlates[backing] = true
+        if mod._ntCastFull and mod._ntAlpha < 1 then
+            backing._ntBoolHi = nil
+            mod.NT_Apply(backing)
         end
         -- Arm the 10Hz cast-timer ticker (engine-slept between fires; self-stops at cast end)
         -- and paint ONCE synchronously, or the ticker's first fire alone leaves text blank 0.1s.
-        if plate.cast and plate.cast._timerTicker then
-            if plate.cast._timerTick then
-                plate.cast._timerTick(true)
+        if backing.cast and backing.cast._timerTicker then
+            if backing.cast._timerTick then
+                backing.cast._timerTick(true)
             end
-            plate.cast._timerTicker.Start()
+            backing.cast._timerTicker.Start()
         end
     end
     activeCastCount = activeCastCount + 1
@@ -313,7 +317,7 @@ local function NotifyCastStarted(plate)
         kickWatcher:RegisterEvent("SPELL_UPDATE_USABLE")
         if GetActiveKickSpell() and not _castColorTicker then
             _castColorTicker = C_Timer.NewTicker(0.2, function()
-                for pl in pairs(ns._castingPlates) do
+                for pl in pairs(mod._castingPlates) do
                     -- type() is the safe existence check: _kickProtected holds a possibly-SECRET
                     -- boolean, and == nil would evaluate it
                     if pl.isCasting and pl.unit and type(pl._kickProtected) ~= "nil" then
@@ -324,17 +328,17 @@ local function NotifyCastStarted(plate)
         end
     end
 end
-local function NotifyCastEnded(plate)
-    if plate then
-        ns._castingPlates[plate] = nil
-        if ns._ntCastFull and ns._ntAlpha < 1 then
-            ns.NT_Apply(plate)
+local function NotifyCastEnded(backing)
+    if backing then
+        mod._castingPlates[backing] = nil
+        if mod._ntCastFull and mod._ntAlpha < 1 then
+            mod.NT_Apply(backing)
         end
     end
     activeCastCount = activeCastCount - 1
     if activeCastCount <= 0 then
         activeCastCount = 0
-        wipe(ns._castingPlates)
+        wipe(mod._castingPlates)
         kickWatcher:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
         kickWatcher:UnregisterEvent("SPELL_UPDATE_USABLE")
         kickWatcher:Hide()
@@ -347,17 +351,17 @@ end
 
 -- PERF: cached target/focus plate refs, so a target/focus change updates only
 -- the old + new plate instead of iterating all. On ns (200-local pressure).
-ns._cachedTargetPlate = nil
-ns._cachedFocusPlate = nil
+mod._cachedTargetPlate = nil
+mod._cachedFocusPlate = nil
 
 -- Value (1/0) of the class-colour CVar for the friendly player names Blizzard draws.
 -- Name-only mode follows Class Colored Health Bar (its White / Class swatches). In
 -- full-plate mode Blizzard draws only the protected instance plates, and Class
 -- Colored Names turns it on as well so those names match ours.
-function ns.FriendlyNameClassCVar(db)
-    local on = db.classColorFriendly ~= false
-        or (db.friendlyNameOnly == false and db.friendlyNameClassColor == true)
-    return on and 1 or 0
+function mod.FriendlyNameClassCVar(saved)
+    local enabled = saved.classColorFriendly ~= false
+        or (saved.friendlyNameOnly == false and saved.friendlyNameClassColor == true)
+    return enabled and 1 or 0
 end
 
 local function SetupAuraCVars()
@@ -384,10 +388,10 @@ local function SetupAuraCVars()
         end
     end
     do
-        local db = p or defaults
-        local nameOnly = (db.friendlyNameOnly ~= false)
-        local showPlayers = (db.showFriendlyPlayers ~= false)
-        local showNPCs = (db.showFriendlyNPCs == true)
+        local saved = p or defaultSet
+        local nameOnly = (saved.friendlyNameOnly ~= false)
+        local showPlayers = (saved.showFriendlyPlayers ~= false)
+        local showNPCs = (saved.showFriendlyNPCs == true)
         -- Friendly player CVars are written ONLY while CUI manages friendly player nameplates;
         -- with "Show CUI Friendly Player Nameplates" off we relinquish them entirely to
         -- Blizzard's own settings. Friendly NPC and enemy pet CVars are always managed.
@@ -405,8 +409,8 @@ local function SetupAuraCVars()
                 CludesUIDB.friendlyPlateVisSeeded = true
                 -- Fresh install only: an existing install is stamped WITHOUT forcing, so a
                 -- user who already hid friendly plates keeps that.
-                if CludesUI._firstInstallPending and ns.ForceFriendlyPlayerCVarsOn then
-                    ns.ForceFriendlyPlayerCVarsOn()
+                if CludesUI._firstInstallPending and mod.ForceFriendlyPlayerCVarsOn then
+                    mod.ForceFriendlyPlayerCVarsOn()
                 end
             end
         end
@@ -414,13 +418,13 @@ local function SetupAuraCVars()
         CludesUI.SetCVar("nameplateShowFriendlyNpcs", showNPCs and 1 or 0, "CludesUINameplates")
         CludesUI.SetCVar(
             "nameplateShowEnemyPets",
-            (db.showEnemyPets == true) and 1 or 0,
+            (saved.showEnemyPets == true) and 1 or 0,
             "CludesUINameplates"
         )
         if showPlayers then
             CludesUI.SetCVar(
                 "ShowClassColorInFriendlyNameplate",
-                (db.classColorFriendly ~= false) and 1 or 0,
+                (saved.classColorFriendly ~= false) and 1 or 0,
                 "CludesUINameplates"
             )
         end
@@ -447,7 +451,7 @@ local function SetupAuraCVars()
         if showPlayers then
             CludesUI.SetCVar(
                 "nameplateUseClassColorForFriendlyPlayerUnitNames",
-                ns.FriendlyNameClassCVar(db),
+                mod.FriendlyNameClassCVar(saved),
                 "CludesUINameplates"
             )
         end
@@ -461,15 +465,15 @@ local function SetupAuraCVars()
         end
     end
     -- Apply stacking state via the Midnight bitfield CVar.
-    ns.RefreshStackingMotion()
+    mod.RefreshStackingMotion()
     local function ApplyNamePlateClickArea()
         if InCombatLockdown() then
             return
         end
-        local db = p or defaults
-        local sx = (db.hitboxScaleX or 100) / 100
+        local saved = p or defaultSet
+        local sx = (saved.hitboxScaleX or 100) / 100
         if C_NamePlate and C_NamePlate.SetNamePlateSize then
-            C_NamePlate.SetNamePlateSize(GetHealthBarWidth() * sx, ns.NP_HitboxHeight(db))
+            C_NamePlate.SetNamePlateSize(GetHealthBarWidth() * sx, mod.NP_HitboxHeight(saved))
         end
         if
             C_NamePlateManager
@@ -527,17 +531,17 @@ local function SetupAuraCVars()
             if not np then
                 return
             end
-            ns.NP_HideBehindCameraIcon(np.UnitFrame)
+            mod.NP_HideBehindCameraIcon(np.UnitFrame)
             if UnitCanAttack("player", addedUnit) then
-                ns.HideBlizzardFrame(np, addedUnit)
+                mod.HideBlizzardFrame(np, addedUnit)
             else
-                ns.NP_ReclaimBlizzardFrame(np.UnitFrame)
+                mod.NP_ReclaimBlizzardFrame(np.UnitFrame)
             end
         end)
     end
-    ns.ApplyNamePlateClickArea = ApplyNamePlateClickArea
+    mod.ApplyNamePlateClickArea = ApplyNamePlateClickArea
 end
 
-I.NotifyCastEnded, I.NotifyCastStarted = NotifyCastEnded, NotifyCastStarted
-I.SetupAuraCVars = SetupAuraCVars
-I.broken = false
+Inner.NotifyCastEnded, Inner.NotifyCastStarted = NotifyCastEnded, NotifyCastStarted
+Inner.SetupAuraCVars = SetupAuraCVars
+Inner.broken = false

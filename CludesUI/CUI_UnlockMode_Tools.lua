@@ -11,18 +11,18 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 CUI_NS.unlockParts = CUI_NS.unlockParts or {}
-CUI_NS.unlockParts.Tools = function(UM)
-    local ns, EAB, floor, abs = CUI_NS, UM.EAB, UM.floor, UM.abs
-    local min, max, sqrt, sin = UM.min, UM.max, UM.sqrt, UM.sin
-    local PP, FONT_PATH, GRID_SPACING, SNAP_THRESH = UM.PP, UM.FONT_PATH, UM.GRID_SPACING, UM.SNAP_THRESH
+CUI_NS.unlockParts.Tools = function(LM)
+    local mod, ABAR, floor, abs = CUI_NS, LM.EAB, LM.floor, LM.abs
+    local min, upper, sqrt, sin = LM.min, LM.max, LM.sqrt, LM.sin
+    local Pix, FONT_PATH, GRID_SPACING, SNAP_THRESH = LM.PP, LM.FONT_PATH, LM.GRID_SPACING, LM.SNAP_THRESH
     local MOVER_ALPHA, MOVER_HOVER, BAR_LOOKUP, registeredElements =
-        UM.MOVER_ALPHA, UM.MOVER_HOVER, UM.BAR_LOOKUP, UM.registeredElements
+        LM.MOVER_ALPHA, LM.MOVER_HOVER, LM.BAR_LOOKUP, LM.registeredElements
     local guidePool, movers, pendingPositions, GridBaseAlpha =
-        UM.guidePool, UM.movers, UM.pendingPositions, UM.GridBaseAlpha
+        LM.guidePool, LM.movers, LM.pendingPositions, LM.GridBaseAlpha
     local GridCenterAlpha, _blizzOwnedOverlays, GetAnchorDB, GetAnchorInfo =
-        UM.GridCenterAlpha, UM._blizzOwnedOverlays, UM.GetAnchorDB, UM.GetAnchorInfo
+        LM.GridCenterAlpha, LM._blizzOwnedOverlays, LM.GetAnchorDB, LM.GetAnchorInfo
     local FadeOverlayForSelectElement, CancelPickMode, LoadBarPosition =
-        UM.FadeOverlayForSelectElement, UM.CancelPickMode, UM.LoadBarPosition
+        LM.FadeOverlayForSelectElement, LM.CancelPickMode, LM.LoadBarPosition
 
     -------------------------------------------------------------------------------
     --  Accent color helper (reads live from CludesUI)
@@ -38,31 +38,31 @@ CUI_NS.unlockParts.Tools = function(UM)
     -------------------------------------------------------------------------------
     --  Grid overlay
     -------------------------------------------------------------------------------
-    local function CreateGrid(parent)
-        if UM.gridFrame then
-            return UM.gridFrame
+    local function CreateGrid(hostFrame)
+        if LM.gridFrame then
+            return LM.gridFrame
         end
         -- Grid lives on its own BACKGROUND-strata frame so it renders BEHIND the
         -- real game UI elements (action bars, unit frames).
-        UM.gridFrame = CreateFrame("Frame", nil, UIParent)
-        UM.gridFrame:SetFrameStrata("BACKGROUND")
-        UM.gridFrame:SetAllPoints(UIParent)
-        UM.gridFrame:SetFrameLevel(1)
-        UM.gridFrame._lines = {}
+        LM.gridFrame = CreateFrame("Frame", nil, UIParent)
+        LM.gridFrame:SetFrameStrata("BACKGROUND")
+        LM.gridFrame:SetAllPoints(UIParent)
+        LM.gridFrame:SetFrameLevel(1)
+        LM.gridFrame._lines = {}
 
-        function UM.gridFrame:Rebuild()
-            for _, tex in ipairs(self._lines) do
-                tex:Hide()
+        function LM.gridFrame:Rebuild()
+            for _, texture in ipairs(self._lines) do
+                texture:Hide()
             end
-            local idx = 0
-            local w, h = UIParent:GetWidth(), UIParent:GetHeight()
+            local position = 0
+            local wid, hgt = UIParent:GetWidth(), UIParent:GetHeight()
             local ar, ag, ab = GetAccent()
             local baseA = GridBaseAlpha()
             local centerA = GridCenterAlpha()
 
             -- Pixel-perfect: use PP.mult so lines are exactly 1 physical pixel
             -- and spacing aligns to the physical pixel grid.
-            local mult = PP and PP.mult or 1
+            local mult = Pix and Pix.mult or 1
             local lineW = mult
             local spacing = GRID_SPACING * mult
 
@@ -71,86 +71,86 @@ CUI_NS.unlockParts.Tools = function(UM)
                 return floor(v / mult + 0.5) * mult
             end
 
-            local centerX = snap(w / 2)
-            local centerY = snap(h / 2)
+            local centerX = snap(wid / 2)
+            local centerY = snap(hgt / 2)
 
-            local function MakeLine(isVert, pos)
-                idx = idx + 1
-                local tex = self._lines[idx]
-                if not tex then
-                    tex = self:CreateTexture(nil, "BACKGROUND", nil, -7)
-                    if tex.SetSnapToPixelGrid then
-                        tex:SetSnapToPixelGrid(false)
-                        tex:SetTexelSnappingBias(0)
+            local function MakeLine(isVert, place)
+                position = position + 1
+                local texture = self._lines[position]
+                if not texture then
+                    texture = self:CreateTexture(nil, "BACKGROUND", nil, -7)
+                    if texture.SetSnapToPixelGrid then
+                        texture:SetSnapToPixelGrid(false)
+                        texture:SetTexelSnappingBias(0)
                     end
-                    self._lines[idx] = tex
+                    self._lines[position] = texture
                 end
-                tex:SetColorTexture(ar, ag, ab, baseA)
-                tex._baseAlpha = baseA
-                tex._isWhite = false
-                tex._isVert = isVert
-                tex._pos = pos
-                tex:ClearAllPoints()
+                texture:SetColorTexture(ar, ag, ab, baseA)
+                texture._baseAlpha = baseA
+                texture._isWhite = false
+                texture._isVert = isVert
+                texture._pos = place
+                texture:ClearAllPoints()
                 if isVert then
-                    tex:SetSize(lineW, h)
-                    tex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", pos, 0)
+                    texture:SetSize(lineW, hgt)
+                    texture:SetPoint("TOPLEFT", UIParent, "TOPLEFT", place, 0)
                 else
-                    tex:SetSize(w, lineW)
-                    tex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -pos)
+                    texture:SetSize(wid, lineW)
+                    texture:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -place)
                 end
-                tex:Show()
+                texture:Show()
             end
 
             -- Vertical lines extending outward from center
-            local x = centerX - spacing
-            while x > 0 do
-                MakeLine(true, snap(x))
-                x = x - spacing
+            local posX = centerX - spacing
+            while posX > 0 do
+                MakeLine(true, snap(posX))
+                posX = posX - spacing
             end
-            x = centerX + spacing
-            while x < w do
-                MakeLine(true, snap(x))
-                x = x + spacing
+            posX = centerX + spacing
+            while posX < wid do
+                MakeLine(true, snap(posX))
+                posX = posX + spacing
             end
 
             -- Horizontal lines extending outward from center
-            local y = centerY - spacing
-            while y > 0 do
-                MakeLine(false, snap(y))
-                y = y - spacing
+            local posY = centerY - spacing
+            while posY > 0 do
+                MakeLine(false, snap(posY))
+                posY = posY - spacing
             end
-            y = centerY + spacing
-            while y < h do
-                MakeLine(false, snap(y))
-                y = y + spacing
+            posY = centerY + spacing
+            while posY < hgt do
+                MakeLine(false, snap(posY))
+                posY = posY + spacing
             end
 
             -- Center crosshair: full-length accent lines at screen center
             for _, axis in ipairs({ "V", "H" }) do
-                idx = idx + 1
-                local tex = self._lines[idx]
-                if not tex then
-                    tex = self:CreateTexture(nil, "BACKGROUND", nil, -6)
-                    if tex.SetSnapToPixelGrid then
-                        tex:SetSnapToPixelGrid(false)
-                        tex:SetTexelSnappingBias(0)
+                position = position + 1
+                local texture = self._lines[position]
+                if not texture then
+                    texture = self:CreateTexture(nil, "BACKGROUND", nil, -6)
+                    if texture.SetSnapToPixelGrid then
+                        texture:SetSnapToPixelGrid(false)
+                        texture:SetTexelSnappingBias(0)
                     end
-                    self._lines[idx] = tex
+                    self._lines[position] = texture
                 end
-                tex:SetColorTexture(ar, ag, ab, centerA)
-                tex._baseAlpha = centerA
-                tex._isWhite = false
-                tex._isVert = (axis == "V")
-                tex._pos = 0
-                tex:ClearAllPoints()
+                texture:SetColorTexture(ar, ag, ab, centerA)
+                texture._baseAlpha = centerA
+                texture._isWhite = false
+                texture._isVert = (axis == "V")
+                texture._pos = 0
+                texture:ClearAllPoints()
                 if axis == "V" then
-                    tex:SetSize(lineW, h)
-                    tex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", centerX, 0)
+                    texture:SetSize(lineW, hgt)
+                    texture:SetPoint("TOPLEFT", UIParent, "TOPLEFT", centerX, 0)
                 else
-                    tex:SetSize(w, lineW)
-                    tex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -centerY)
+                    texture:SetSize(wid, lineW)
+                    texture:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -centerY)
                 end
-                tex:Show()
+                texture:Show()
             end
 
             -- White crosshair pip at dead center (short lines forming a +), always
@@ -158,40 +158,40 @@ CUI_NS.unlockParts.Tools = function(UM)
             local CROSS_ARM = 20
             local CROSS_ALPHA = 0.5
             for _, axis in ipairs({ "V", "H" }) do
-                idx = idx + 1
-                local tex = self._lines[idx]
-                if not tex then
-                    tex = self:CreateTexture(nil, "BACKGROUND", nil, -5)
-                    if tex.SetSnapToPixelGrid then
-                        tex:SetSnapToPixelGrid(false)
-                        tex:SetTexelSnappingBias(0)
+                position = position + 1
+                local texture = self._lines[position]
+                if not texture then
+                    texture = self:CreateTexture(nil, "BACKGROUND", nil, -5)
+                    if texture.SetSnapToPixelGrid then
+                        texture:SetSnapToPixelGrid(false)
+                        texture:SetTexelSnappingBias(0)
                     end
-                    self._lines[idx] = tex
+                    self._lines[position] = texture
                 end
-                tex:SetColorTexture(1, 1, 1, CROSS_ALPHA)
-                tex._baseAlpha = CROSS_ALPHA
-                tex._isWhite = true
-                tex._isVert = (axis == "V")
-                tex._pos = 0
-                tex:ClearAllPoints()
+                texture:SetColorTexture(1, 1, 1, CROSS_ALPHA)
+                texture._baseAlpha = CROSS_ALPHA
+                texture._isWhite = true
+                texture._isVert = (axis == "V")
+                texture._pos = 0
+                texture:ClearAllPoints()
                 if axis == "V" then
-                    tex:SetSize(lineW, CROSS_ARM * 2)
-                    tex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", centerX, -(centerY - CROSS_ARM))
+                    texture:SetSize(lineW, CROSS_ARM * 2)
+                    texture:SetPoint("TOPLEFT", UIParent, "TOPLEFT", centerX, -(centerY - CROSS_ARM))
                 else
-                    tex:SetSize(CROSS_ARM * 2, lineW)
-                    tex:SetPoint("TOPLEFT", UIParent, "TOPLEFT", centerX - CROSS_ARM, -centerY)
+                    texture:SetSize(CROSS_ARM * 2, lineW)
+                    texture:SetPoint("TOPLEFT", UIParent, "TOPLEFT", centerX - CROSS_ARM, -centerY)
                 end
-                tex:Show()
+                texture:Show()
             end
 
-            self._lineCount = idx
+            self._lineCount = position
         end
 
         -- Cache accent color; refreshed when grid is rebuilt
         local cachedAR, cachedAG, cachedAB = GetAccent()
 
-        local origRebuild = UM.gridFrame.Rebuild
-        function UM.gridFrame:Rebuild()
+        local origRebuild = LM.gridFrame.Rebuild
+        function LM.gridFrame:Rebuild()
             origRebuild(self)
             cachedAR, cachedAG, cachedAB = GetAccent()
         end
@@ -206,7 +206,7 @@ CUI_NS.unlockParts.Tools = function(UM)
         local FLASH_PATH = "Interface\\AddOns\\CludesUI\\media\\unlock-flash.png"
 
         -- Ambient glow texture (soft circle behind lines)
-        local flashTex = UM.gridFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
+        local flashTex = LM.gridFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
         flashTex:SetTexture(FLASH_PATH)
         flashTex:SetSize(LIGHT_DIAMETER, LIGHT_DIAMETER)
         flashTex:SetBlendMode("ADD")
@@ -214,29 +214,29 @@ CUI_NS.unlockParts.Tools = function(UM)
         flashTex:Hide()
 
         -- Line highlight segments
-        UM.gridFrame._glows = {}
+        LM.gridFrame._glows = {}
         local glowIdx = 0
 
-        local function GetGlow(idx)
-            local g = UM.gridFrame._glows[idx]
+        local function GetGlow(position)
+            local g = LM.gridFrame._glows[position]
             if not g then
-                g = UM.gridFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
-                UM.gridFrame._glows[idx] = g
+                g = LM.gridFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
+                LM.gridFrame._glows[position] = g
             end
             return g
         end
 
-        UM.gridFrame:SetScript("OnUpdate", function(self, dt)
+        LM.gridFrame:SetScript("OnUpdate", function(self, dt)
             if not self:IsShown() then
                 flashTex:Hide()
                 return
             end
 
-            if not UM.flashlightEnabled then
+            if not LM.flashlightEnabled then
                 flashTex:Hide()
-                for j = 1, #self._glows do
-                    if self._glows[j] then
-                        self._glows[j]:Hide()
+                for jdx = 1, #self._glows do
+                    if self._glows[jdx] then
+                        self._glows[jdx]:Hide()
                     end
                 end
                 return
@@ -261,29 +261,29 @@ CUI_NS.unlockParts.Tools = function(UM)
             local lineCount = self._lineCount or #self._lines
 
             for i = 1, lineCount do
-                local tex = self._lines[i]
-                if tex and tex:IsShown() and tex._baseAlpha then
+                local texture = self._lines[i]
+                if texture and texture:IsShown() and texture._baseAlpha then
                     local perpDist
-                    if tex._isVert then
-                        perpDist = abs(tex._pos - cx)
+                    if texture._isVert then
+                        perpDist = abs(texture._pos - cx)
                     else
-                        perpDist = abs(tex._pos - cyFromTop)
+                        perpDist = abs(texture._pos - cyFromTop)
                     end
 
                     if perpDist < LIGHT_RADIUS then
                         local halfSpan = sqrt(R2 - perpDist * perpDist)
                         local segSize = (halfSpan * 2) / NUM_SEGS
-                        local isW = tex._isWhite
+                        local isW = texture._isWhite
 
-                        if tex._isVert then
-                            local spanStart = max(0, cy - halfSpan)
+                        if texture._isVert then
+                            local spanStart = upper(0, cy - halfSpan)
                             local spanEnd = min(screenH, cy + halfSpan)
                             local segY = spanStart
                             while segY < spanEnd do
                                 local segEnd = min(segY + segSize, spanEnd)
                                 local midY = (segY + segEnd) * 0.5
                                 local dy = midY - cy
-                                local dx = tex._pos - cx
+                                local dx = texture._pos - cx
                                 local d2 = dx * dx + dy * dy
                                 if d2 < R2 then
                                     local t = 1 - sqrt(d2) / LIGHT_RADIUS
@@ -298,21 +298,21 @@ CUI_NS.unlockParts.Tools = function(UM)
                                         end
                                         g:ClearAllPoints()
                                         g:SetSize(1, segEnd - segY)
-                                        g:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", tex._pos, segY)
+                                        g:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", texture._pos, segY)
                                         g:Show()
                                     end
                                 end
                                 segY = segEnd
                             end
                         else
-                            local spanStart = max(0, cx - halfSpan)
+                            local spanStart = upper(0, cx - halfSpan)
                             local spanEnd = min(screenW, cx + halfSpan)
                             local segX = spanStart
                             while segX < spanEnd do
                                 local segEnd = min(segX + segSize, spanEnd)
                                 local midX = (segX + segEnd) * 0.5
                                 local dx = midX - cx
-                                local dy = tex._pos - cyFromTop
+                                local dy = texture._pos - cyFromTop
                                 local d2 = dx * dx + dy * dy
                                 if d2 < R2 then
                                     local t = 1 - sqrt(d2) / LIGHT_RADIUS
@@ -327,7 +327,7 @@ CUI_NS.unlockParts.Tools = function(UM)
                                         end
                                         g:ClearAllPoints()
                                         g:SetSize(segEnd - segX, 1)
-                                        g:SetPoint("TOPLEFT", UIParent, "TOPLEFT", segX, -tex._pos)
+                                        g:SetPoint("TOPLEFT", UIParent, "TOPLEFT", segX, -texture._pos)
                                         g:Show()
                                     end
                                 end
@@ -338,14 +338,14 @@ CUI_NS.unlockParts.Tools = function(UM)
                 end
             end
 
-            for j = glowIdx + 1, #self._glows do
-                if self._glows[j] then
-                    self._glows[j]:Hide()
+            for jdx = glowIdx + 1, #self._glows do
+                if self._glows[jdx] then
+                    self._glows[jdx]:Hide()
                 end
             end
         end)
 
-        return UM.gridFrame
+        return LM.gridFrame
     end
 
     -------------------------------------------------------------------------------
@@ -353,14 +353,14 @@ CUI_NS.unlockParts.Tools = function(UM)
     -------------------------------------------------------------------------------
     local activeGuides = {}
 
-    local function GetGuide(idx)
-        if guidePool[idx] then
-            return guidePool[idx]
+    local function GetGuide(position)
+        if guidePool[position] then
+            return guidePool[position]
         end
-        local tex = UM.unlockFrame:CreateTexture(nil, "OVERLAY", nil, 6)
-        tex:SetColorTexture(1, 1, 1, 1)
-        guidePool[idx] = tex
-        return tex
+        local texture = LM.unlockFrame:CreateTexture(nil, "OVERLAY", nil, 6)
+        texture:SetColorTexture(1, 1, 1, 1)
+        guidePool[position] = texture
+        return texture
     end
 
     -- Snap highlight: a pulsing white border layered ON TOP of the green one. Each
@@ -388,7 +388,7 @@ CUI_NS.unlockParts.Tools = function(UM)
                 m._snapBrd:SetColor(1, 1, 1, 0)
             end
             -- Restore normal overlay brightness
-            if UM.darkOverlaysEnabled and m._bg then
+            if LM.darkOverlaysEnabled and m._bg then
                 m._bg:SetColorTexture(m._bgR or 0.075, m._bgG or 0.113, m._bgB or 0.141, 0.95)
             end
         end
@@ -410,7 +410,7 @@ CUI_NS.unlockParts.Tools = function(UM)
             if old._snapBrd then
                 old._snapBrd:SetColor(1, 1, 1, 0)
             end
-            if UM.darkOverlaysEnabled and old._bg then
+            if LM.darkOverlaysEnabled and old._bg then
                 old._bg:SetColorTexture(old._bgR or 0.075, old._bgG or 0.113, old._bgB or 0.141, 0.95)
             end
         end
@@ -423,7 +423,7 @@ CUI_NS.unlockParts.Tools = function(UM)
         snapHighlightElapsed = 0
         GetOrCreateSnapBorder(m)
         -- Brighten the mover's base color
-        if UM.darkOverlaysEnabled and m._bg then
+        if LM.darkOverlaysEnabled and m._bg then
             m._bg:SetColorTexture(
                 (m._bgR or 0.075) * 1.4,
                 (m._bgG or 0.113) * 1.4,
@@ -436,20 +436,20 @@ CUI_NS.unlockParts.Tools = function(UM)
         end
         snapHighlightAnim:SetScript("OnUpdate", function(self, dt)
             snapHighlightElapsed = snapHighlightElapsed + dt
-            local target = movers[snapHighlightKey]
-            if not target or not target._snapBrd then
+            local targetUnit = movers[snapHighlightKey]
+            if not targetUnit or not targetUnit._snapBrd then
                 ClearSnapHighlight()
                 return
             end
             local alpha = 0.45 + 0.45 * sin(snapHighlightElapsed * 9.42)
-            target._snapBrd:SetColor(1, 1, 1, alpha * 0.9)
+            targetUnit._snapBrd:SetColor(1, 1, 1, alpha * 0.9)
         end)
         snapHighlightAnim:Show()
     end
 
     local function HideAllGuides()
-        for _, tex in ipairs(guidePool) do
-            tex:Hide()
+        for _, texture in ipairs(guidePool) do
+            texture:Hide()
         end
         wipe(activeGuides)
     end
@@ -529,7 +529,7 @@ CUI_NS.unlockParts.Tools = function(UM)
 
     local function SnapPosition(dragKey, cx, cy, halfW, halfH)
         wipe(lastSnapInfo)
-        if not UM.snapEnabled then
+        if not LM.snapEnabled then
             return cx, cy
         end
 
@@ -564,8 +564,8 @@ CUI_NS.unlockParts.Tools = function(UM)
             if anchorDB then
                 -- Recursively exclude all descendants
                 local function ExcludeDescendants(parentKey)
-                    for childKey, info in pairs(anchorDB) do
-                        if info.target == parentKey and not dragExcluded[childKey] then
+                    for childKey, details in pairs(anchorDB) do
+                        if details.target == parentKey and not dragExcluded[childKey] then
                             dragExcluded[childKey] = true
                             ExcludeDescendants(childKey)
                         end
@@ -686,16 +686,16 @@ CUI_NS.unlockParts.Tools = function(UM)
     -- Selection highlight: a low-opacity white fill over the selected element's
     -- overlay background, so the currently-selected element (the one arrow keys
     -- move) is clearly marked, like the snap-target highlight shown during drag.
-    local function SetSelectionHighlight(m, on)
+    local function SetSelectionHighlight(m, enabled)
         if not m then
             return
         end
-        if on then
+        if enabled then
             if not m._selHl then
-                local hl = m:CreateTexture(nil, "ARTWORK")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 1)
-                m._selHl = hl
+                local highlight = m:CreateTexture(nil, "ARTWORK")
+                highlight:SetAllPoints()
+                highlight:SetColorTexture(1, 1, 1, 1)
+                m._selHl = highlight
             end
             m._selHl:SetAlpha(0.10)
             m._selHl:Show()
@@ -715,35 +715,35 @@ CUI_NS.unlockParts.Tools = function(UM)
             CludesUI._DeselectOverrideGhosts()
         end
         -- Deselect previous
-        if UM.selectedMover and UM.selectedMover ~= m then
-            UM.selectedMover._selected = false
-            SetSelectionHighlight(UM.selectedMover, false)
-            if not UM.selectedMover._dragging and not UM.selectedMover:IsMouseOver() then
-                UM.selectedMover:SetFrameLevel(UM.selectedMover._baseLevel)
-                if not UM.darkOverlaysEnabled then
-                    UM.selectedMover:SetAlpha(MOVER_ALPHA)
+        if LM.selectedMover and LM.selectedMover ~= m then
+            LM.selectedMover._selected = false
+            SetSelectionHighlight(LM.selectedMover, false)
+            if not LM.selectedMover._dragging and not LM.selectedMover:IsMouseOver() then
+                LM.selectedMover:SetFrameLevel(LM.selectedMover._baseLevel)
+                if not LM.darkOverlaysEnabled then
+                    LM.selectedMover:SetAlpha(MOVER_ALPHA)
                 end
-                UM.selectedMover._brd:SetColor(ar, ag, ab, 0.6)
+                LM.selectedMover._brd:SetColor(ar, ag, ab, 0.6)
                 -- Collapse overlay on old selection
-                if UM.selectedMover._hideOverlayText then
-                    UM.selectedMover._hideOverlayText()
+                if LM.selectedMover._hideOverlayText then
+                    LM.selectedMover._hideOverlayText()
                 end
             end
             -- Hide action buttons on old selection
-            if UM.selectedMover._hideCogAfterDelay then
-                UM.selectedMover._hideCogAfterDelay()
+            if LM.selectedMover._hideCogAfterDelay then
+                LM.selectedMover._hideCogAfterDelay()
             end
             -- Hide coordinates on old selection (keep if coords-always-on)
-            if UM.selectedMover._coordFS and not UM.coordsEnabled then
-                UM.selectedMover._coordFS:Hide()
+            if LM.selectedMover._coordFS and not LM.coordsEnabled then
+                LM.selectedMover._coordFS:Hide()
             end
         end
-        UM.selectedMover = m
+        LM.selectedMover = m
         if m then
             m._selected = true
             SetSelectionHighlight(m, true)
             m:SetFrameLevel(m._raisedLevel)
-            if not UM.darkOverlaysEnabled then
+            if not LM.darkOverlaysEnabled then
                 m:SetAlpha(MOVER_HOVER)
             end
             m._brd:SetColor(1, 1, 1, 0.9)
@@ -764,45 +764,45 @@ CUI_NS.unlockParts.Tools = function(UM)
     end
 
     local function DeselectMover()
-        if UM.selectedMover then
+        if LM.selectedMover then
             local ar, ag, ab = GetAccent()
-            UM.selectedMover._selected = false
-            SetSelectionHighlight(UM.selectedMover, false)
-            if not UM.selectedMover._dragging then
-                if not UM.selectedMover:IsMouseOver() then
-                    UM.selectedMover:SetFrameLevel(UM.selectedMover._baseLevel)
-                    if not UM.darkOverlaysEnabled then
-                        UM.selectedMover:SetAlpha(MOVER_ALPHA)
+            LM.selectedMover._selected = false
+            SetSelectionHighlight(LM.selectedMover, false)
+            if not LM.selectedMover._dragging then
+                if not LM.selectedMover:IsMouseOver() then
+                    LM.selectedMover:SetFrameLevel(LM.selectedMover._baseLevel)
+                    if not LM.darkOverlaysEnabled then
+                        LM.selectedMover:SetAlpha(MOVER_ALPHA)
                     end
-                    UM.selectedMover._brd:SetColor(ar, ag, ab, 0.6)
-                    if UM.selectedMover._hideOverlayText then
-                        UM.selectedMover._hideOverlayText()
+                    LM.selectedMover._brd:SetColor(ar, ag, ab, 0.6)
+                    if LM.selectedMover._hideOverlayText then
+                        LM.selectedMover._hideOverlayText()
                     end
                 end
             end
             -- Restore settings widgets to base level
             -- Hide coordinates (keep visible if coords-always-on mode is active)
-            if UM.selectedMover._coordFS and not UM.coordsEnabled then
-                UM.selectedMover._coordFS:Hide()
+            if LM.selectedMover._coordFS and not LM.coordsEnabled then
+                LM.selectedMover._coordFS:Hide()
             end
             -- Clear snap highlight
             ClearSnapHighlight()
             -- Cancel select-element pick mode if this mover was the picker -- restore previous target
-            if UM.selectElementPicker == UM.selectedMover then
-                UM.selectedMover._snapTarget = UM.selectedMover._preSelectTarget
-                UM.selectedMover._preSelectTarget = nil
-                if UM.selectedMover._updateSnapLabel then
-                    UM.selectedMover._updateSnapLabel()
+            if LM.selectElementPicker == LM.selectedMover then
+                LM.selectedMover._snapTarget = LM.selectedMover._preSelectTarget
+                LM.selectedMover._preSelectTarget = nil
+                if LM.selectedMover._updateSnapLabel then
+                    LM.selectedMover._updateSnapLabel()
                 end
-                UM.selectElementPicker = nil
+                LM.selectElementPicker = nil
                 FadeOverlayForSelectElement(false)
             end
             -- Cancel width/height/anchor pick mode if this mover was the picker
-            if UM.pickModeMover == UM.selectedMover then
+            if LM.pickModeMover == LM.selectedMover then
                 CancelPickMode()
             end
         end
-        UM.selectedMover = nil
+        LM.selectedMover = nil
         if CludesUI._DeselectFallbackGhosts then
             CludesUI._DeselectFallbackGhosts()
         end
@@ -844,7 +844,7 @@ CUI_NS.unlockParts.Tools = function(UM)
 
     local function FlashTick(self, dt)
         local m = flashM
-        if not m or not UM.isUnlocked or not m._selected or not m:IsShown() then
+        if not m or not LM.isUnlocked or not m._selected or not m:IsShown() then
             return EndFlash()
         end
         flashT = flashT + dt
@@ -868,7 +868,7 @@ CUI_NS.unlockParts.Tools = function(UM)
         end
         if not m._selFlashBrd then
             m._selFlashBrd = CludesUI.MakeBorder(m, 1, 1, 1, 0)
-            PP.SetBorderSize(m._selFlashBrd._frame, 2)
+            Pix.SetBorderSize(m._selFlashBrd._frame, 2)
         end
         -- The mover is raised on select, so the border takes its level each flash.
         m._selFlashBrd._frame:SetFrameLevel(m:GetFrameLevel() + 4)
@@ -884,7 +884,7 @@ CUI_NS.unlockParts.Tools = function(UM)
     -- Apply dark overlay state to all movers
     local function ApplyDarkOverlays()
         for _, m in pairs(movers) do
-            if UM.darkOverlaysEnabled then
+            if LM.darkOverlaysEnabled then
                 m._bg:SetColorTexture(m._bgR or 0.075, m._bgG or 0.113, m._bgB or 0.141, 0.95)
                 if m._label then
                     m._label:SetAlpha(1)
@@ -911,7 +911,7 @@ CUI_NS.unlockParts.Tools = function(UM)
                 end
                 -- When coords-always-on is active, show coords for all movers; otherwise hide
                 if m._coordFS then
-                    if UM.coordsEnabled then
+                    if LM.coordsEnabled then
                         if m.UpdateCoordText then
                             m:UpdateCoordText()
                         end
@@ -965,16 +965,16 @@ CUI_NS.unlockParts.Tools = function(UM)
     CludesUI._unlockAttachMover = AttachMoverToBar
 
     local function NudgeMover(dx, dy, targetMover, skipCollapse)
-        local m = targetMover or UM.selectedMover
+        local m = targetMover or LM.selectedMover
         if not m or InCombatLockdown() then
             return
         end
-        if ns.IsMoverPosLocked(m._barKey) then
+        if mod.IsMoverPosLocked(m._barKey) then
             return
         end
 
         -- Read bar's current position, add dx/dy, reposition.
-        local bar = UM.GetBarFrame(m._barKey)
+        local bar = LM.GetBarFrame(m._barKey)
         if not bar then
             return
         end
@@ -1005,7 +1005,7 @@ CUI_NS.unlockParts.Tools = function(UM)
                     ai.edge.offset = (ai.edge.offset or 0) + dy
                 end
             end
-            UM.ApplyAnchorPosition(m._barKey, ai.target, ai.side)
+            LM.ApplyAnchorPosition(m._barKey, ai.target, ai.side)
             -- Capture the bar's resulting position so CommitPositions saves the real
             -- (nudged) location. ApplyAnchorPosition always anchors the bar to UIParent,
             -- so GetPoint(1) is UIParent-relative and safe to store. A coordless
@@ -1067,7 +1067,7 @@ CUI_NS.unlockParts.Tools = function(UM)
         if elem and elem.onLiveMove then
             pcall(elem.onLiveMove, m._barKey)
         end
-        UM.hasChanges = true
+        LM.hasChanges = true
 
         -- Reanchor mover to bar, inside the element's visual insets (see Sync).
         local nIL, nIR, nIT, nIB = 0, 0, 0, 0
@@ -1095,7 +1095,7 @@ CUI_NS.unlockParts.Tools = function(UM)
         end
 
         -- Propagate to anchored children
-        UM.PropagateAnchorChain(m._barKey)
+        LM.PropagateAnchorChain(m._barKey)
 
         -- Update coordinate readout
         if m.UpdateCoordText then
@@ -1125,19 +1125,19 @@ CUI_NS.unlockParts.Tools = function(UM)
     -- Shared with the anchor picker's corner rows, which set the direction AFTER
     -- placing the bar flush so the growth-edge hold captures from where it sits.
     -- On the namespace table like the nudge: CreateMover is at the upvalue cap.
-    CludesUI._unlockSetGrowDirection = function(barKey, val)
-        UM.hasChanges = true
+    CludesUI._unlockSetGrowDirection = function(barId, val)
+        LM.hasChanges = true
 
         -- Capture the bar's visual center before changing grow
-        local barFrame = UM.GetBarFrame(barKey)
+        local barFrame = LM.GetBarFrame(barId)
         local preCX, preCY
         if barFrame then
             preCX, preCY = barFrame:GetCenter()
         end
 
         -- Write to the bar's actual settings DB and rebuild layout
-        if barKey:sub(1, 4) == "CDM_" then
-            local rawKey = barKey:sub(5)
+        if barId:sub(1, 4) == "CDM_" then
+            local rawKey = barId:sub(5)
             local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
@@ -1151,8 +1151,8 @@ CUI_NS.unlockParts.Tools = function(UM)
             if CludesUI.LayoutCDMBar then
                 CludesUI.LayoutCDMBar(rawKey)
             end
-            CludesUI.RecenterBarAnchor(barKey)
-        elseif barKey == "ERB_TotemBar" then
+            CludesUI.RecenterBarAnchor(barId)
+        elseif barId == "ERB_TotemBar" then
             local erb = CludesUI.Lite.GetAddon("CludesUIResourceBars", true)
             local tb = erb and erb.db and erb.db.profile and erb.db.profile.totemBar
             if tb then
@@ -1161,21 +1161,21 @@ CUI_NS.unlockParts.Tools = function(UM)
             if CludesUI.LayoutTotemBar then
                 CludesUI.LayoutTotemBar()
             end
-            CludesUI.RecenterBarAnchor(barKey)
-        elseif barKey == "EABR_Reminders" then
+            CludesUI.RecenterBarAnchor(barId)
+        elseif barId == "EABR_Reminders" then
             if CludesUI.SetAuraBuffGrowDir then
                 CludesUI.SetAuraBuffGrowDir(val)
             end
-            CludesUI.RecenterBarAnchor(barKey)
-        elseif barKey:sub(1, 4) == "PAB_" then
+            CludesUI.RecenterBarAnchor(barId)
+        elseif barId:sub(1, 4) == "PAB_" then
             local euf = CludesUI.Lite.GetAddon("CludesUIUnitFrames", true)
             if euf and euf.SetGrowDirectionForBar then
-                euf:SetGrowDirectionForBar(barKey, val)
+                euf:SetGrowDirectionForBar(barId, val)
             end
         else
             local eab = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
             if eab and eab.SetGrowDirectionForBar then
-                eab:SetGrowDirectionForBar(barKey, val)
+                eab:SetGrowDirectionForBar(barId, val)
             end
         end
 
@@ -1195,62 +1195,62 @@ CUI_NS.unlockParts.Tools = function(UM)
                 end
             end
         end
-        CludesUI.RecenterBarAnchor(barKey)
+        CludesUI.RecenterBarAnchor(barId)
         -- Anchored bars: hold the new growth edge from where the bar sits NOW, the
         -- way the drag-stop path does after a drop. Left to the lazy capture, the
         -- next apply would read the rect BEFORE the move it was asked to make (a
         -- first nudge, a first drag of the target) and stamp that stale hold; and a
         -- hold left over from an earlier direction would be trusted again the day
         -- that direction comes back. Centered growth keeps no hold.
-        local ai = GetAnchorInfo(barKey)
+        local ai = GetAnchorInfo(barId)
         if ai and ai.target then
             ai.refFor, ai.refX, ai.refY, ai.edgeOffX, ai.edgeOffY = nil, nil, nil, nil, nil
             if CludesUI._unlockCaptureGrowPin then
-                CludesUI._unlockCaptureGrowPin(barKey, ai, ai.side)
+                CludesUI._unlockCaptureGrowPin(barId, ai, ai.side)
             end
         end
         -- Store in pending (committed on Save & Exit)
         if barFrame then
             local pt2, relTo2, relPt2, offX2, offY2 = barFrame:GetPoint(1)
             if pt2 then
-                pendingPositions[barKey] = {
+                pendingPositions[barId] = {
                     point = pt2,
                     relPoint = relPt2,
                     x = offX2,
                     y = offY2,
                 }
-                UM.hasChanges = true
+                LM.hasChanges = true
             end
         end
 
         -- Sync the mover to the bar's new position
-        if movers[barKey] and movers[barKey].Sync then
-            movers[barKey]:Sync()
+        if movers[barId] and movers[barId].Sync then
+            movers[barId]:Sync()
         end
     end
 
     -- Arrow key nudge: single press only, no hold-to-repeat
     local function SetupArrowKeyFrame()
-        if UM.arrowKeyFrame then
+        if LM.arrowKeyFrame then
             return
         end
-        UM.arrowKeyFrame = CreateFrame("Frame", nil, UIParent)
-        UM.arrowKeyFrame:SetFrameStrata("FULLSCREEN_DIALOG")
-        UM.arrowKeyFrame:SetFrameLevel(500)
-        UM.arrowKeyFrame:EnableKeyboard(true)
-        UM.arrowKeyFrame:SetPropagateKeyboardInput(true)
-        UM.arrowKeyFrame:Hide()
+        LM.arrowKeyFrame = CreateFrame("Frame", nil, UIParent)
+        LM.arrowKeyFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+        LM.arrowKeyFrame:SetFrameLevel(500)
+        LM.arrowKeyFrame:EnableKeyboard(true)
+        LM.arrowKeyFrame:SetPropagateKeyboardInput(true)
+        LM.arrowKeyFrame:Hide()
 
         -- Keep scrolling passing through until the cycling modifier matches.
-        UM.arrowKeyFrame:SetScript("OnShow", function(self)
-            UM.UpdateMoverMouseWheel()
+        LM.arrowKeyFrame:SetScript("OnShow", function(self)
+            LM.UpdateMoverMouseWheel()
         end)
-        UM.arrowKeyFrame:SetScript("OnHide", function(self)
+        LM.arrowKeyFrame:SetScript("OnHide", function(self)
             self:UnregisterEvent("MODIFIER_STATE_CHANGED")
-            UM.UpdateMoverMouseWheel()
+            LM.UpdateMoverMouseWheel()
         end)
-        UM.arrowKeyFrame:SetScript("OnEvent", function()
-            UM.UpdateMoverMouseWheel()
+        LM.arrowKeyFrame:SetScript("OnEvent", function()
+            LM.UpdateMoverMouseWheel()
         end)
 
         local ARROW_DIRS = {
@@ -1260,8 +1260,8 @@ CUI_NS.unlockParts.Tools = function(UM)
             RIGHT = { 1, 0 },
         }
 
-        UM.arrowKeyFrame:SetScript("OnKeyDown", function(self, key)
-            if not UM.isUnlocked or InCombatLockdown() then
+        LM.arrowKeyFrame:SetScript("OnKeyDown", function(self, key)
+            if not LM.isUnlocked or InCombatLockdown() then
                 return
             end
             local dir = ARROW_DIRS[key]
@@ -1270,7 +1270,7 @@ CUI_NS.unlockParts.Tools = function(UM)
             end
             -- A selected fallback ghost answers the arrow keys with the exact
             -- same step math as movers (1 physical pixel; shift = 100).
-            if not UM.selectedMover and CludesUI._NudgeSelectedFallbackGhost then
+            if not LM.selectedMover and CludesUI._NudgeSelectedFallbackGhost then
                 local PPg = CludesUI and CludesUI.PP
                 local gStep = PPg and PPg.mult or 1
                 local gs = IsShiftKeyDown() and (100 * gStep) or gStep
@@ -1280,7 +1280,7 @@ CUI_NS.unlockParts.Tools = function(UM)
                 end
             end
             -- A selected override-anchor ghost answers the same way.
-            if not UM.selectedMover and CludesUI._NudgeSelectedOverrideGhost then
+            if not LM.selectedMover and CludesUI._NudgeSelectedOverrideGhost then
                 local PPo = CludesUI and CludesUI.PP
                 local oStep = PPo and PPo.mult or 1
                 local os = IsShiftKeyDown() and (100 * oStep) or oStep
@@ -1289,7 +1289,7 @@ CUI_NS.unlockParts.Tools = function(UM)
                     return
                 end
             end
-            if not UM.selectedMover then
+            if not LM.selectedMover then
                 return
             end
             self:SetPropagateKeyboardInput(false)
@@ -1300,7 +1300,7 @@ CUI_NS.unlockParts.Tools = function(UM)
             -- When this element's cog/snap menu is open, keep the mover expanded
             -- (skipCollapse) so the open menu does not jump, then reanchor to the bar
             -- and refresh the cog X/Y boxes so they track the nudge.
-            local m = UM.selectedMover
+            local m = LM.selectedMover
             local menuOpen = m._menuOpen
             NudgeMover(dir[1] * step, dir[2] * step, nil, menuOpen)
             if menuOpen then
@@ -1313,7 +1313,7 @@ CUI_NS.unlockParts.Tools = function(UM)
             end
         end)
 
-        UM.arrowKeyFrame:SetScript("OnKeyUp", function(self, key)
+        LM.arrowKeyFrame:SetScript("OnKeyUp", function(self, key)
             self:SetPropagateKeyboardInput(true)
         end)
     end
@@ -1323,15 +1323,15 @@ CUI_NS.unlockParts.Tools = function(UM)
     --  accounting for overrideNumIcons, overrideNumRows, padding, and per-button scale.
     --  Returns w, h in UIParent-relative pixels, or nil if not applicable.
     -------------------------------------------------------------------------------
-    local function GetActionBarVisualSize(barKey)
-        if not EAB or not EAB.db then
+    local function GetActionBarVisualSize(barId)
+        if not ABAR or not ABAR.db then
             return nil
         end
-        local info = BAR_LOOKUP[barKey]
-        if not info then
+        local details = BAR_LOOKUP[barId]
+        if not details then
             return nil
         end
-        local s = EAB.db.profile.bars[lookupKey]
+        local s = ABAR.db.profile.bars[lookupKey]
         if not s then
             return nil
         end
@@ -1339,7 +1339,7 @@ CUI_NS.unlockParts.Tools = function(UM)
         -- Use standard button size (45x45) -- our LayoutBar uses this for MainBar
         -- and reads from the button for others.
         local btnW, btnH = 45, 45
-        local btn1 = _G[info.buttonPrefix .. "1"]
+        local btn1 = _G[details.buttonPrefix .. "1"]
         if btn1 and lookupKey ~= "MainBar" then
             local bw = btn1:GetWidth()
             if bw and bw > 1 then
@@ -1347,9 +1347,9 @@ CUI_NS.unlockParts.Tools = function(UM)
             end
         end
 
-        local numVisible = s.overrideNumIcons or s.numIcons or info.count
+        local numVisible = s.overrideNumIcons or s.numIcons or details.count
         if numVisible < 1 then
-            numVisible = info.count
+            numVisible = details.count
         end
         local numRows = s.overrideNumRows or s.numRows or 1
         if numRows < 1 then
@@ -1370,8 +1370,8 @@ CUI_NS.unlockParts.Tools = function(UM)
 
         local shape = s.buttonShape or "none"
         if shape ~= "none" and shape ~= "cropped" then
-            btnW = btnW + (ns.SHAPE_BTN_EXPAND or 10)
-            btnH = btnH + (ns.SHAPE_BTN_EXPAND or 10)
+            btnW = btnW + (mod.SHAPE_BTN_EXPAND or 10)
+            btnH = btnH + (mod.SHAPE_BTN_EXPAND or 10)
         end
         if shape == "cropped" then
             btnH = btnH * 0.80
@@ -1399,10 +1399,10 @@ CUI_NS.unlockParts.Tools = function(UM)
     -- Sort movers by area so smaller elements render on top of larger ones.
     -- Called after all movers are created and synced.
     local function SortMoverFrameLevels()
-        if not UM.unlockFrame then
+        if not LM.unlockFrame then
             return
         end
-        local BASE = UM.unlockFrame:GetFrameLevel() + 20
+        local BASE = LM.unlockFrame:GetFrameLevel() + 20
         -- A mover's border, labels, links and cog occupy levels through +12.
         local STEP = 16
         local sorted = {}
@@ -1414,39 +1414,39 @@ CUI_NS.unlockParts.Tools = function(UM)
         table.sort(sorted, function(a, b)
             return a.area > b.area
         end)
-        for i, entry in ipairs(sorted) do
+        for i, record in ipairs(sorted) do
             local lvl = BASE + i * STEP
-            entry.mover._baseLevel = lvl
-            entry.mover._raisedLevel = lvl + (#sorted + 1) * STEP
-            entry.mover._cycleLowered = nil
-            entry.mover:SetFrameLevel(lvl)
-            if entry.mover._cogBtn then
-                entry.mover._cogBtn:SetFrameLevel(lvl + 10)
+            record.mover._baseLevel = lvl
+            record.mover._raisedLevel = lvl + (#sorted + 1) * STEP
+            record.mover._cycleLowered = nil
+            record.mover:SetFrameLevel(lvl)
+            if record.mover._cogBtn then
+                record.mover._cogBtn:SetFrameLevel(lvl + 10)
             end
         end
         -- Leave room above hovered movers (+100) and their point handles (+40).
-        UM.moverOverlayLevel = math.max(250, BASE + (2 * #sorted + 1) * STEP + 160)
-        if UM.moverOverlays then
+        LM.moverOverlayLevel = math.max(250, BASE + (2 * #sorted + 1) * STEP + 160)
+        if LM.moverOverlays then
             -- Parents are registered first; update them before their child menus.
-            for _, frame in ipairs(UM.moverOverlays) do
-                frame:SetFrameLevel(UM.moverOverlayLevel + frame._moverOverlayOffset)
+            for _, widget in ipairs(LM.moverOverlays) do
+                widget:SetFrameLevel(LM.moverOverlayLevel + widget._moverOverlayOffset)
             end
         end
         local confirm = _G.CUIConfirmDimmer
         if confirm and confirm:IsShown() then
-            confirm:SetFrameLevel(UM.moverOverlayLevel + 100)
+            confirm:SetFrameLevel(LM.moverOverlayLevel + 100)
         end
     end
 
     -- Menus and anchor ghosts follow the stack when late registrations re-sort it.
-    function UM.SetMoverOverlayLevel(frame, offset)
+    function LM.SetMoverOverlayLevel(widget, offset)
         offset = offset or 0
-        UM.moverOverlays = UM.moverOverlays or {}
-        if frame._moverOverlayOffset == nil then
-            UM.moverOverlays[#UM.moverOverlays + 1] = frame
+        LM.moverOverlays = LM.moverOverlays or {}
+        if widget._moverOverlayOffset == nil then
+            LM.moverOverlays[#LM.moverOverlays + 1] = widget
         end
-        frame._moverOverlayOffset = offset
-        frame:SetFrameLevel((UM.moverOverlayLevel or 250) + offset)
+        widget._moverOverlayOffset = offset
+        widget:SetFrameLevel((LM.moverOverlayLevel or 250) + offset)
     end
 
     -------------------------------------------------------------------------------
@@ -1514,38 +1514,38 @@ CUI_NS.unlockParts.Tools = function(UM)
         },
     }
 
-    local function CreateBlizzOwnedOverlay(def, parent)
+    local function CreateBlizzOwnedOverlay(spec_def, hostFrame)
         local ar, ag, ab = GetAccent()
-        local ov = CreateFrame("Frame", nil, parent)
-        ov:EnableMouse(true)
+        local shade = CreateFrame("Frame", nil, hostFrame)
+        shade:EnableMouse(true)
         -- Background: same as regular movers
-        local bg = ov:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.088, 0.098, 0.111, 0.95)
+        local backdrop = shade:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.088, 0.098, 0.111, 0.95)
         -- Border: accent at idle, white on hover
-        local brd = CludesUI.MakeBorder(ov, ar, ag, ab, 0.6)
-        ov._brd = brd
+        local brd = CludesUI.MakeBorder(shade, ar, ag, ab, 0.6)
+        shade._brd = brd
         -- Label (always visible, same style as mover labels)
-        local nameFs = ov:CreateFontString(nil, "OVERLAY")
+        local nameFs = shade:CreateFontString(nil, "OVERLAY")
         CludesUI.PrimeFontShadow(nameFs, true)
         nameFs:SetFont(FONT_PATH, 10 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
-        nameFs:SetPoint("CENTER", ov, "CENTER", 0, 0)
+        nameFs:SetPoint("CENTER", shade, "CENTER", 0, 0)
         nameFs:SetTextColor(1, 1, 1, 0.75)
-        nameFs:SetText(CludesUI.L(def.label))
+        nameFs:SetText(CludesUI.L(spec_def.label))
         nameFs:SetWordWrap(false)
-        ov._nameFs = nameFs
+        shade._nameFs = nameFs
         -- Action text (hidden at idle, fades in on hover)
-        local actionFs = ov:CreateFontString(nil, "OVERLAY")
+        local actionFs = shade:CreateFontString(nil, "OVERLAY")
         CludesUI.PrimeFontShadow(actionFs, true)
         actionFs:SetFont(FONT_PATH, 9 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
         actionFs:SetPoint("TOP", nameFs, "BOTTOM", 0, -2)
         actionFs:SetTextColor(ar, ag, ab, 0.9)
         actionFs:SetText(CludesUI.L("Move via Blizz Edit Mode"))
         actionFs:SetAlpha(0)
-        ov._actionFs = actionFs
+        shade._actionFs = actionFs
         -- Clickable button sized to the action text only
-        local actionBtn = CreateFrame("Button", nil, ov)
-        actionBtn:SetFrameLevel(ov:GetFrameLevel() + 2)
+        local actionBtn = CreateFrame("Button", nil, shade)
+        actionBtn:SetFrameLevel(shade:GetFrameLevel() + 2)
         actionBtn:SetPoint("TOPLEFT", actionFs, "TOPLEFT", -4, 2)
         actionBtn:SetPoint("BOTTOMRIGHT", actionFs, "BOTTOMRIGHT", 4, -2)
         actionBtn:Hide()
@@ -1562,7 +1562,7 @@ CUI_NS.unlockParts.Tools = function(UM)
             end
             -- Shift label up to make room for action text
             local yOff = t * 5
-            nameFs:SetPoint("CENTER", ov, "CENTER", 0, yOff)
+            nameFs:SetPoint("CENTER", shade, "CENTER", 0, yOff)
         end
         animFrame:SetScript("OnUpdate", function(self, dt)
             local dir = hoverTarget > hoverT and 1 or -1
@@ -1579,22 +1579,22 @@ CUI_NS.unlockParts.Tools = function(UM)
         -- Hover handlers on the overlay frame
         local function OnEnter()
             hoverTarget = 1
-            ov._brd:SetColor(1, 1, 1, 0.9)
+            shade._brd:SetColor(1, 1, 1, 0.9)
             animFrame:Show()
         end
         local function OnLeave()
             if actionBtn:IsShown() and actionBtn:IsMouseOver() then
                 return
             end
-            if ov:IsMouseOver() then
+            if shade:IsMouseOver() then
                 return
             end
             hoverTarget = 0
-            ov._brd:SetColor(ar, ag, ab, 0.6)
+            shade._brd:SetColor(ar, ag, ab, 0.6)
             animFrame:Show()
         end
-        ov:SetScript("OnEnter", OnEnter)
-        ov:SetScript("OnLeave", OnLeave)
+        shade:SetScript("OnEnter", OnEnter)
+        shade:SetScript("OnLeave", OnLeave)
         -- Action button hover: brighten text, keep overlay hovered
         actionBtn:SetScript("OnEnter", function()
             actionFs:SetTextColor(1, 1, 1, 1)
@@ -1610,104 +1610,104 @@ CUI_NS.unlockParts.Tools = function(UM)
                 return
             end
             if EditModeManagerFrame then
-                ns.RequestClose(false, function()
+                mod.RequestClose(false, function()
                     ShowUIPanel(EditModeManagerFrame)
                 end)
             end
         end)
-        ov._forceCollapse = function()
+        shade._forceCollapse = function()
             hoverT = 0
             hoverTarget = 0
             animFrame:Hide()
             ApplyHover(0)
-            ov._brd:SetColor(ar, ag, ab, 0.6)
+            shade._brd:SetColor(ar, ag, ab, 0.6)
         end
         -- Shift+Right Click temporarily hides this overlay for the current unlock
         -- session (matches the regular mover behavior). The _tempHidden flag is
         -- cleared on the next unlock entry so the overlay reappears then. Purely a
         -- visual toggle on the info overlay -- it never touches the Blizzard frame.
-        local function TempHide(_, button)
-            if button == "RightButton" and IsShiftKeyDown() then
-                ov._tempHidden = true
-                ov._forceCollapse()
-                ov:Hide()
+        local function TempHide(_, btnFrame)
+            if btnFrame == "RightButton" and IsShiftKeyDown() then
+                shade._tempHidden = true
+                shade._forceCollapse()
+                shade:Hide()
             end
         end
-        ov:SetScript("OnMouseUp", TempHide)
+        shade:SetScript("OnMouseUp", TempHide)
         -- The hover action strip (a child button) swallows mouse events over itself,
         -- so wire the same handler there to catch a Shift+Right Click landing on it.
         actionBtn:SetScript("OnMouseUp", TempHide)
-        return ov
+        return shade
     end
 
-    local function ShowBlizzOwnedOverlays(parent)
-        for _, def in ipairs(BLIZZ_OWNED_OVERLAY_DEFS) do
-            local anchorFrame = def.frame()
+    local function ShowBlizzOwnedOverlays(hostFrame)
+        for _, spec_def in ipairs(BLIZZ_OWNED_OVERLAY_DEFS) do
+            local anchorFrame = spec_def.frame()
             if not anchorFrame then
             -- frame doesn't exist at all, skip
             elseif anchorFrame:IsShown() and anchorFrame:GetWidth() > 1 then
                 -- Visible frame: anchor directly
-                local ov = _blizzOwnedOverlays[def.label]
-                if not ov then
-                    ov = CreateBlizzOwnedOverlay(def, parent)
-                    _blizzOwnedOverlays[def.label] = ov
+                local shade = _blizzOwnedOverlays[spec_def.label]
+                if not shade then
+                    shade = CreateBlizzOwnedOverlay(spec_def, hostFrame)
+                    _blizzOwnedOverlays[spec_def.label] = shade
                 end
                 -- Same strata as the regular movers (FULLSCREEN_DIALOG) but a lower level
                 -- (movers sit at unlockFrame+20), so non-Blizzard overlays always render
                 -- above these Blizzard Edit Mode overlays. Still above the dimmer (+1).
-                ov:SetFrameStrata("FULLSCREEN_DIALOG")
-                ov:SetFrameLevel(parent:GetFrameLevel() + 15)
-                ov:ClearAllPoints()
-                if def.anchor then
-                    def.anchor(ov, anchorFrame)
+                shade:SetFrameStrata("FULLSCREEN_DIALOG")
+                shade:SetFrameLevel(hostFrame:GetFrameLevel() + 15)
+                shade:ClearAllPoints()
+                if spec_def.anchor then
+                    spec_def.anchor(shade, anchorFrame)
                 else
-                    ov:SetAllPoints(anchorFrame)
+                    shade:SetAllPoints(anchorFrame)
                 end
-                ov._forceCollapse()
-                ov:Show()
-            elseif def.showAlways then
+                shade._forceCollapse()
+                shade:Show()
+            elseif spec_def.showAlways then
                 -- Hidden frame but showAlways: position at frame's location with fallback size
-                local ov = _blizzOwnedOverlays[def.label]
-                if not ov then
-                    ov = CreateBlizzOwnedOverlay(def, parent)
-                    _blizzOwnedOverlays[def.label] = ov
+                local shade = _blizzOwnedOverlays[spec_def.label]
+                if not shade then
+                    shade = CreateBlizzOwnedOverlay(spec_def, hostFrame)
+                    _blizzOwnedOverlays[spec_def.label] = shade
                 end
                 -- FULLSCREEN_DIALOG (below movers at +20, above the dimmer at +1) so
                 -- non-Blizzard overlays always render above Blizzard Edit Mode overlays.
-                ov:SetFrameStrata("FULLSCREEN_DIALOG")
-                ov:SetFrameLevel(parent:GetFrameLevel() + 15)
-                ov:ClearAllPoints()
-                ov:SetSize(def.fallbackW or 200, def.fallbackH or 40)
+                shade:SetFrameStrata("FULLSCREEN_DIALOG")
+                shade:SetFrameLevel(hostFrame:GetFrameLevel() + 15)
+                shade:ClearAllPoints()
+                shade:SetSize(spec_def.fallbackW or 200, spec_def.fallbackH or 40)
                 -- Read the frame's current anchor or fall back to bottom center
                 local pt, rel, rpt, ox, oy = anchorFrame:GetPoint(1)
-                local yAdj = def.yOffset or 0
+                local yAdj = spec_def.yOffset or 0
                 if pt and rel then
-                    ov:SetPoint(pt, rel, rpt or pt, ox or 0, (oy or 0) + yAdj)
+                    shade:SetPoint(pt, rel, rpt or pt, ox or 0, (oy or 0) + yAdj)
                 else
-                    ov:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 200 + yAdj)
+                    shade:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 200 + yAdj)
                 end
-                ov._forceCollapse()
-                ov:Show()
+                shade._forceCollapse()
+                shade:Show()
             end
         end
     end
 
     local function HideBlizzOwnedOverlays()
-        for _, ov in pairs(_blizzOwnedOverlays) do
-            if ov._forceCollapse then
-                ov._forceCollapse()
+        for _, shade in pairs(_blizzOwnedOverlays) do
+            if shade._forceCollapse then
+                shade._forceCollapse()
             end
-            ov:Hide()
+            shade:Hide()
         end
     end
 
-    UM.GetAccent, UM.CreateGrid, UM.ClearSnapHighlight, UM.ShowSnapHighlight =
+    LM.GetAccent, LM.CreateGrid, LM.ClearSnapHighlight, LM.ShowSnapHighlight =
         GetAccent, CreateGrid, ClearSnapHighlight, ShowSnapHighlight
-    UM.HideAllGuidesAndHighlight, UM.ShowAlignmentGuides, UM.SnapPosition, UM.SelectMover =
+    LM.HideAllGuidesAndHighlight, LM.ShowAlignmentGuides, LM.SnapPosition, LM.SelectMover =
         HideAllGuidesAndHighlight, ShowAlignmentGuides, SnapPosition, SelectMover
-    UM.DeselectMover, UM.ApplyDarkOverlays, UM.SetupArrowKeyFrame, UM.GetActionBarVisualSize =
+    LM.DeselectMover, LM.ApplyDarkOverlays, LM.SetupArrowKeyFrame, LM.GetActionBarVisualSize =
         DeselectMover, ApplyDarkOverlays, SetupArrowKeyFrame, GetActionBarVisualSize
-    UM.SortMoverFrameLevels, UM.ShowBlizzOwnedOverlays, UM.HideBlizzOwnedOverlays =
+    LM.SortMoverFrameLevels, LM.ShowBlizzOwnedOverlays, LM.HideBlizzOwnedOverlays =
         SortMoverFrameLevels, ShowBlizzOwnedOverlays, HideBlizzOwnedOverlays
-    UM.FlashSelectHighlight = FlashSelectHighlight
+    LM.FlashSelectHighlight = FlashSelectHighlight
 end

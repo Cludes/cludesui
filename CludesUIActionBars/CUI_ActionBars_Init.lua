@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  OnInitialize, OnEnable and OnFirstLogin, and the slash commands.
 --  Loads after CUI_ActionBars_Unlock.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, pairs, type, pcall = ipairs, pairs, type, pcall
@@ -15,26 +15,26 @@ local wipe = wipe
 local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
-local EFD = ns.EFD
+local EFD = mod.EFD
 
-local defaults, EAB, barButtons = ns.defaults, ns.EAB, ns.barButtons
-local I = ns._internals
-local BAR_CONFIG, BAR_LOOKUP = I.BAR_CONFIG, I.BAR_LOOKUP
-local CaptureBlizzardDefaults = I.CaptureBlizzardDefaults
-local ApplyKeyDownCVar = I.ApplyKeyDownCVar
-local ApplyAll = I.ApplyAll
-local RestoreBarPositions = I.RestoreBarPositions
+local defaultSet, ABAR, barButtons = mod.defaults, mod.EAB, mod.barButtons
+local Inner = mod._internals
+local BAR_CONFIG, BAR_LOOKUP = Inner.BAR_CONFIG, Inner.BAR_LOOKUP
+local CaptureBlizzardDefaults = Inner.CaptureBlizzardDefaults
+local ApplyKeyDownCVar = Inner.ApplyKeyDownCVar
+local ApplyAll = Inner.ApplyAll
+local RestoreBarPositions = Inner.RestoreBarPositions
 
 -------------------------------------------------------------------------------
 --  Initialization
 -------------------------------------------------------------------------------
-function EAB:OnInitialize()
+function ABAR:OnInitialize()
     -- Detect first install BEFORE AceDB creates the saved variable.
     -- We use a dedicated flag so "Reset to Defaults" also re-captures.
     local rawDB = CludesUIActionBarsDB
     local isFirstInstall = not rawDB or not rawDB.profiles or (rawDB.profiles and not next(rawDB.profiles))
 
-    self.db = CludesUI.Lite.NewDB("CludesUIActionBarsDB", defaults, true)
+    self.db = CludesUI.Lite.NewDB("CludesUIActionBarsDB", defaultSet, true)
     self:RefreshCustomFadeGate()
     -- Expose for ApplyAnchorPosition's growth-direction edge read.
     CludesUI._abBarPositions = self.db.profile.barPositions
@@ -53,8 +53,8 @@ function EAB:OnInitialize()
 
     -- Expose apply hook for PP scale change re-apply
     _G._CUAB_RecalcFlyouts = function()
-        for _, info in ipairs(BAR_CONFIG) do
-            EAB:RecalcFlyoutDirection(info.key)
+        for _, details in ipairs(BAR_CONFIG) do
+            ABAR:RecalcFlyoutDirection(details.key)
         end
     end
 
@@ -67,26 +67,26 @@ function EAB:OnInitialize()
         ApplyKeyDownCVar()
     end
     _G._CUAB_Apply = function()
-        EAB:RefreshCustomFadeGate()
+        ABAR:RefreshCustomFadeGate()
         -- Re-point the exposed barPositions view at the active profile's table.
         -- Profile swaps replace db.profile wholesale and the unlock system reads
         -- saved growth edges / follow baselines through this reference; a stale
         -- pointer would read and write another profile's saved positions.
-        if EAB.db and EAB.db.profile and EAB.db.profile.barPositions then
-            CludesUI._abBarPositions = EAB.db.profile.barPositions
+        if ABAR.db and ABAR.db.profile and ABAR.db.profile.barPositions then
+            CludesUI._abBarPositions = ABAR.db.profile.barPositions
         end
         -- Toggle keys participate by the effective mode, which an override or a
         -- profile swap can change. Before ApplyAll so a dropped toggle state is
         -- already gone for its visibility pass (defers itself in combat).
-        EAB:RebuildVisToggleBindings()
+        ABAR:RebuildVisToggleBindings()
         ApplyAll()
         -- Data bars: ApplyAll never lays them out, so a profile swap, an import
         -- or a spec override repaints their size, texture, text and Custom
         -- Border here (our own plain frames: safe in combat). Not in ApplyAll,
         -- which also runs at login, where creation already laid them out.
-        for _, info in ipairs(ns.EXTRA_BARS) do
-            if info.isDataBar then
-                ns.ApplyDataBarLayout(info.key)
+        for _, details in ipairs(mod.EXTRA_BARS) do
+            if details.isDataBar then
+                mod.ApplyDataBarLayout(details.key)
             end
         end
         if not InCombatLockdown() then
@@ -95,15 +95,15 @@ function EAB:OnInitialize()
             -- positions: LayoutBar (inside ApplyAll) runs before
             -- RestoreBarPositions, so it used the default position.
             C_Timer_After(0, function()
-                for _, info in ipairs(BAR_CONFIG) do
-                    EAB:RecalcFlyoutDirection(info.key)
+                for _, details in ipairs(BAR_CONFIG) do
+                    ABAR:RecalcFlyoutDirection(details.key)
                 end
             end)
         end
         -- Count alpha: a profile swap or an override can change a bar's Charge
         -- Numbers or Hide Count at 0, which no count event repaints until the
         -- button's next one (alpha on our own buttons only: safe in combat).
-        EAB:RefreshCountVisibility()
+        ABAR:RefreshCountVisibility()
     end
 
     -- Rank (crafted quality) icons: EAB paints its own overlay per button. Blizzard's
@@ -117,7 +117,7 @@ function EAB:OnInitialize()
     -- OnShow hook) so the two renderers never double-draw. Coalesced:
     -- SLOT_CHANGED storms collapse into one deferred scan per frame.
     do
-        local qf = ns.TakeShell()
+        local qf = mod.TakeShell()
         local _qPending = false
         local _rankAtlas = {} -- quality -> atlas name (false = none found)
         local QueueQualityScan
@@ -128,71 +128,71 @@ function EAB:OnInitialize()
                 return hit or nil
             end
             local probe = C_Texture and C_Texture.GetAtlasInfo
-            local names = {
+            local nameList = {
                 "Professions-Icon-Quality-Tier" .. q .. "-Inv-Small",
                 "Professions-Icon-Quality-Tier" .. q .. "-Small",
                 "Professions-Icon-Quality-Tier" .. q,
             }
-            for i = 1, #names do
-                if probe and probe(names[i]) then
-                    _rankAtlas[q] = names[i]
-                    return names[i]
+            for idx = 1, #nameList do
+                if probe and probe(nameList[idx]) then
+                    _rankAtlas[q] = nameList[idx]
+                    return nameList[idx]
                 end
             end
             _rankAtlas[q] = false
             return nil
         end
 
-        local function SetRankShown(btn, atlas)
-            local fd = EFD(btn)
+        local function SetRankShown(button, atlas)
+            local fd = EFD(button)
             if not atlas then
                 if fd.rankIconTex then
                     fd.rankIconTex:Hide()
                 end
                 return
             end
-            local tex = fd.rankIconTex
-            if not tex then
+            local texture = fd.rankIconTex
+            if not texture then
                 -- First paint creates the holder. A new cosmetic child frame
                 -- writes nothing onto the secure button's table; skip only
                 -- in combat lockdown (next out-of-combat scan paints it).
                 if InCombatLockdown() then
                     return
                 end
-                local holder = CreateFrame("Frame", nil, btn)
-                holder:SetAllPoints(btn)
-                holder:SetFrameLevel((btn:GetFrameLevel() or 1) + 18)
-                holder:EnableMouse(false)
-                tex = holder:CreateTexture(nil, "OVERLAY", nil, 7)
-                fd.rankIconHolder = holder
-                fd.rankIconTex = tex
+                local holderFrame = CreateFrame("Frame", nil, button)
+                holderFrame:SetAllPoints(button)
+                holderFrame:SetFrameLevel((button:GetFrameLevel() or 1) + 18)
+                holderFrame:EnableMouse(false)
+                texture = holderFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+                fd.rankIconHolder = holderFrame
+                fd.rankIconTex = texture
             end
             if fd.rankIconAtlas ~= atlas then
                 fd.rankIconAtlas = atlas
                 -- The atlas name comes straight from Blizzard's quality info
                 -- (or the probe-verified fallback), but guard anyway: an
                 -- unknown atlas must read as no-rank, not an error.
-                if not pcall(tex.SetAtlas, tex, atlas, true) then
+                if not pcall(texture.SetAtlas, texture, atlas, true) then
                     fd.rankIconAtlas = nil
-                    tex:Hide()
+                    texture:Hide()
                     return
                 end
             end
             -- Mirror Blizzard's overlay anchor: its template centers an
             -- atlas-sized texture 14,-14 from the button's TOPLEFT (designed for
             -- the default 45px button, so scale with the button).
-            local sc = (btn:GetWidth() or 45) / 45
-            tex:ClearAllPoints()
-            tex:SetPoint("CENTER", btn, "TOPLEFT", 14 * sc, -14 * sc)
-            tex:SetScale(sc)
-            tex:Show()
+            local sc = (button:GetWidth() or 45) / 45
+            texture:ClearAllPoints()
+            texture:SetPoint("CENTER", button, "TOPLEFT", 14 * sc, -14 * sc)
+            texture:SetScale(sc)
+            texture:Show()
             fd.rankIconHolder:Show()
         end
 
-        local function ScanButton(btn, featureOn)
+        local function ScanButton(button, featureOn)
             local rankAtlas
             if featureOn then
-                local action = btn:GetAttribute("action") or 0
+                local action = button:GetAttribute("action") or 0
                 if action > 0 then
                     -- Blizzard's own source, from live ActionButton.lua
                     -- UpdateProfessionQuality: a dedicated action API that
@@ -228,21 +228,21 @@ function EAB:OnInitialize()
                     end
                 end
             end
-            SetRankShown(btn, rankAtlas)
+            SetRankShown(button, rankAtlas)
             -- Blizzard's overlay must never draw over ours: it can
             -- pre-exist this fix or get shown by a hover-driven
             -- lazy creation. Hide + install the permanent OnShow
             -- hide for overlays born after the apply pass ran.
-            local ov = btn.ProfessionQualityOverlayFrame
-            if ov then
-                if ov:IsShown() then
-                    ov:SetShown(false)
+            local shade = button.ProfessionQualityOverlayFrame
+            if shade then
+                if shade:IsShown() then
+                    shade:SetShown(false)
                 end
-                if not EFD(btn).qualityHooked then
-                    ov:HookScript("OnShow", function(self2)
+                if not EFD(button).qualityHooked then
+                    shade:HookScript("OnShow", function(self2)
                         self2:SetShown(false)
                     end)
-                    EFD(btn).qualityHooked = true
+                    EFD(button).qualityHooked = true
                 end
             end
         end
@@ -255,16 +255,16 @@ function EAB:OnInitialize()
             _qPending = false
             local full = _qFull
             _qFull = false
-            local bars = EAB.db and EAB.db.profile and EAB.db.profile.bars
-            if bars then
-                for _, info in ipairs(BAR_CONFIG) do
-                    local btns = barButtons[info.key]
-                    local s = bars[info.key]
+            local barList = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
+            if barList then
+                for _, details in ipairs(BAR_CONFIG) do
+                    local btns = barButtons[details.key]
+                    local s = barList[details.key]
                     if btns and s then
                         local featureOn = s.showRankIcon and true or false
-                        for _, btn in ipairs(btns) do
-                            if full or _qSlots[btn:GetAttribute("action") or 0] then
-                                ScanButton(btn, featureOn)
+                        for _, button in ipairs(btns) do
+                            if full or _qSlots[button:GetAttribute("action") or 0] then
+                                ScanButton(button, featureOn)
                             end
                         end
                     end
@@ -286,15 +286,15 @@ function EAB:OnInitialize()
         end
         -- One slot. Slot 0, no slot or a secret one (Blizzard's own buttons
         -- pass a secret action to the tooltip) means every slot.
-        local function QueueSlotQualityScan(slot)
-            if type(slot) == "number" and not issecretvalue(slot) and slot > 0 then
-                _qSlots[slot] = true
+        local function QueueSlotQualityScan(slotIndex)
+            if type(slotIndex) == "number" and not issecretvalue(slotIndex) and slotIndex > 0 then
+                _qSlots[slotIndex] = true
             else
                 _qFull = true
             end
             ArmQualityScan()
         end
-        EAB._QueueRankScan = QueueQualityScan
+        ABAR._QueueRankScan = QueueQualityScan
 
         qf:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
         -- Loadout/spec swap changes slot CONTENTS but does not reliably fire
@@ -304,9 +304,9 @@ function EAB:OnInitialize()
         -- SPELLS_CHANGED covers that swap; the macro name is handled by the
         -- ForceButtonRefresh sweep on the same event.
         qf:RegisterEvent("SPELLS_CHANGED")
-        qf:SetScript("OnEvent", function(_, event, slot)
-            if event == "ACTIONBAR_SLOT_CHANGED" then
-                QueueSlotQualityScan(slot)
+        qf:SetScript("OnEvent", function(_, evt, slotIndex)
+            if evt == "ACTIONBAR_SLOT_CHANGED" then
+                QueueSlotQualityScan(slotIndex)
             else
                 QueueQualityScan()
             end
@@ -318,8 +318,8 @@ function EAB:OnInitialize()
         -- pattern as tooltip suppression). Also converges anything the hover's
         -- item-data load just made resolvable.
         if GameTooltip then
-            hooksecurefunc(GameTooltip, "SetAction", function(_, slot)
-                QueueSlotQualityScan(slot)
+            hooksecurefunc(GameTooltip, "SetAction", function(_, slotIndex)
+                QueueSlotQualityScan(slotIndex)
             end)
         end
         -- Initial paint (login / reload): bars applied before this block ran.
@@ -345,7 +345,7 @@ function EAB:OnInitialize()
     end
 end
 
-function EAB:OnEnable()
+function ABAR:OnEnable()
     -- If this is a first install (or reset), we need to capture Blizzard's
     -- Edit Mode layout BEFORE hiding bars. The capture must run once Edit
     -- Mode has applied bar positions/sizes, i.e. at/after PLAYER_ENTERING_WORLD.
@@ -377,7 +377,7 @@ end
 
 -- Called on PLAYER_ENTERING_WORLD for first-install only.
 -- At this point Edit Mode has applied bar positions/sizes/rows.
-function EAB:OnFirstLogin()
+function ABAR:OnFirstLogin()
     self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
     -- A profile import can stamp the capture flag mid-session (imported data
@@ -391,57 +391,57 @@ function EAB:OnFirstLogin()
 
     -- Capture Blizzard layout while bars are still visible
     local captured = CaptureBlizzardDefaults()
-    for barKey, data in pairs(captured) do
-        local s = self.db.profile.bars[barKey]
-        if s and data then
-            if data.numIcons then
-                s.overrideNumIcons = data.numIcons
+    for barId, payload in pairs(captured) do
+        local s = self.db.profile.bars[barId]
+        if s and payload then
+            if payload.numIcons then
+                s.overrideNumIcons = payload.numIcons
             end
-            if data.numRows then
-                s.overrideNumRows = data.numRows
+            if payload.numRows then
+                s.overrideNumRows = payload.numRows
             end
-            if data.orientation then
-                s.orientation = data.orientation
+            if payload.orientation then
+                s.orientation = payload.orientation
             end
-            if data.blizzIconScale then
+            if payload.blizzIconScale then
                 -- Convert Blizzard's icon scale to explicit button dimensions.
                 -- barBaseSize isn't populated yet (SetupBar runs later), so
                 -- read the base size directly from the first Blizzard button.
-                local info = BAR_LOOKUP[barKey]
+                local details = BAR_LOOKUP[barId]
                 local baseW, baseH = 45, 45
-                if info and info.blizzBtnPrefix then
-                    local btn1 = _G[info.blizzBtnPrefix .. "1"]
+                if details and details.blizzBtnPrefix then
+                    local btn1 = _G[details.blizzBtnPrefix .. "1"]
                     if btn1 then
                         baseW = math.floor((btn1:GetWidth() or 45) + 0.5)
                         baseH = math.floor((btn1:GetHeight() or 45) + 0.5)
                     end
                 end
-                s.buttonWidth = math.floor(baseW * data.blizzIconScale + 0.5)
-                s.buttonHeight = math.floor(baseH * data.blizzIconScale + 0.5)
+                s.buttonWidth = math.floor(baseW * payload.blizzIconScale + 0.5)
+                s.buttonHeight = math.floor(baseH * payload.blizzIconScale + 0.5)
             end
-            if data.alwaysShowButtons ~= nil then
-                s.alwaysShowButtons = data.alwaysShowButtons
+            if payload.alwaysShowButtons ~= nil then
+                s.alwaysShowButtons = payload.alwaysShowButtons
             end
             -- Visibility: 3=Hidden, 1=InCombat, 2=OutOfCombat, 0=Always
             -- Keep barVisibility and boolean flags in sync so the
             -- options dropdown reflects the actual state.
-            if data.visibility then
-                if data.visibility == 3 then
-                    EAB.VisibilityCompat.ApplyMode(s, "never")
-                elseif data.visibility == 1 then
-                    EAB.VisibilityCompat.ApplyMode(s, "in_combat")
-                elseif data.visibility == 2 then
-                    EAB.VisibilityCompat.ApplyMode(s, "out_of_combat")
+            if payload.visibility then
+                if payload.visibility == 3 then
+                    ABAR.VisibilityCompat.ApplyMode(s, "never")
+                elseif payload.visibility == 1 then
+                    ABAR.VisibilityCompat.ApplyMode(s, "in_combat")
+                elseif payload.visibility == 2 then
+                    ABAR.VisibilityCompat.ApplyMode(s, "out_of_combat")
                 else
-                    EAB.VisibilityCompat.ApplyMode(s, "always")
+                    ABAR.VisibilityCompat.ApplyMode(s, "always")
                 end
             end
-            if data.point then
-                self.db.profile.barPositions[barKey] = {
-                    point = data.point,
-                    relPoint = data.relPoint,
-                    x = data.x,
-                    y = data.y,
+            if payload.point then
+                self.db.profile.barPositions[barId] = {
+                    point = payload.point,
+                    relPoint = payload.relPoint,
+                    x = payload.x,
+                    y = payload.y,
                 }
             end
         end
@@ -451,7 +451,7 @@ function EAB:OnFirstLogin()
     -- placed directly beside it (WoW Forever: the micro menu and bags).
     do
         local p = self.db.profile
-        p.endCapSpanLeft, p.endCapSpanRight = ns.AB_CaptureCapSpan(captured)
+        p.endCapSpanLeft, p.endCapSpanRight = mod.AB_CaptureCapSpan(captured)
     end
 
     -- WoW Forever keeps Blizzard's XP / reputation bars (useBlizzardDataBars),
@@ -469,8 +469,8 @@ function EAB:OnFirstLogin()
             if not f.IsInDefaultPosition then
                 return true
             end
-            local ok, v = pcall(f.IsInDefaultPosition, f)
-            return not ok or v ~= false
+            local success, val = pcall(f.IsInDefaultPosition, f)
+            return not success or val ~= false
         end
         if mainC and secC and AtDefault(mainC) and AtDefault(secC) then
             local lift = 0
@@ -488,18 +488,18 @@ function EAB:OnFirstLogin()
                     PetActionBar = true,
                 }
                 local uiS = UIParent:GetEffectiveScale()
-                for _, info in ipairs(BAR_CONFIG) do
-                    local pos = self.db.profile.barPositions[info.key]
-                    local bf = STACKED[info.blizzFrame] and _G[info.blizzFrame]
-                    local cap = captured[info.key]
+                for _, details in ipairs(BAR_CONFIG) do
+                    local place = self.db.profile.barPositions[details.key]
+                    local bf = STACKED[details.blizzFrame] and _G[details.blizzFrame]
+                    local cap = captured[details.key]
                     if
-                        pos
-                        and pos.y
+                        place
+                        and place.y
                         and bf
                         and AtDefault(bf)
                         and (bf:IsShown() or (cap and cap.stackSlot))
                     then
-                        pos.y = pos.y + lift * bf:GetEffectiveScale() / uiS
+                        place.y = place.y + lift * bf:GetEffectiveScale() / uiS
                     end
                 end
             end
@@ -517,7 +517,7 @@ function EAB:OnFirstLogin()
     for _, key in ipairs({ "StanceBar", "PetBar" }) do
         local s = self.db.profile.bars[key]
         if s then
-            EAB.VisibilityCompat.ApplyMode(s, "always")
+            ABAR.VisibilityCompat.ApplyMode(s, "always")
         end
     end
 

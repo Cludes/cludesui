@@ -8,23 +8,23 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  eating checks, the bag item counts and the resolved consumable items.
 --  Reads the earlier AuraBuff Reminders files through ns._abrInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._abrInternals
+local _, mod = ...
+local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local AURA_SCAN_LIMIT, EABR, InCombat = I.AURA_SCAN_LIMIT, I.EABR, I.InCombat
-local InMythicPlusKey, InPvPInstance, isSecret = I.InMythicPlusKey, I.InPvPInstance, I.isSecret
-local SpellName, Tex, _AC, GetWeaponCategory = I.SpellName, I.Tex, I._AC, I.GetWeaponCategory
-local IsUnderDuration = I.IsUnderDuration
+local AURA_SCAN_LIMIT, REMIND, InCombat = Inner.AURA_SCAN_LIMIT, Inner.EABR, Inner.InCombat
+local InMythicPlusKey, InPvPInstance, isSecret = Inner.InMythicPlusKey, Inner.InPvPInstance, Inner.isSecret
+local SpellName, Tex, _AC, GetWeaponCategory = Inner.SpellName, Inner.Tex, Inner._AC, Inner.GetWeaponCategory
+local IsUnderDuration = Inner.IsUnderDuration
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -32,13 +32,13 @@ end
 -------------------------------------------------------------------------------
 -- Resolves a spell's display name from ID in client locale (English fallback), so labels follow client language. Exposed as _G._CUABR_SpellName for options.
 _G._CUABR_SpellName = function(spellID, fallback)
-    local n = spellID and SpellName(spellID)
-    return n or fallback
+    local num = spellID and SpellName(spellID)
+    return num or fallback
 end
 
 -- Returns the legacy GetWeaponEnchantInfo tuple shape (hasMH, mhExpireMs, mhCharges, mhEnchantID, hasOH,
 -- ohExpireMs, ohCharges, ohEnchantID). Prefers C_PaperDollInfo.GetTemporaryEnchantmentInfo (12.1: GetWeaponEnchantInfo is a deprecation-CVar shim there); remainingTimeMs maps 1:1 to legacy ms values. On EABR.
-EABR.WeaponEnchants = function()
+REMIND.WeaponEnchants = function()
     if C_PaperDollInfo and C_PaperDollInfo.GetTemporaryEnchantmentInfo then
         local mh = C_PaperDollInfo.GetTemporaryEnchantmentInfo(INVSLOT_MAINHAND)
         local oh = C_PaperDollInfo.GetTemporaryEnchantmentInfo(INVSLOT_OFFHAND)
@@ -122,7 +122,7 @@ local RAID_BUFFS = {
 -- talent = a talent spell, so a groupmate of the class may not have it (no
 -- "I am missing others' buffs" reminder). A class's buffs are listed in the
 -- order its provider reminders show.
-if EABR.FOREVER then
+if REMIND.FOREVER then
     RAID_BUFFS = {
         {
             key = "motw",
@@ -385,22 +385,46 @@ local DTB_SPELL_ID = 381801
 
 -- Paladin Rites (non-secret in 12.0)
 local PALADIN_RITES = {
-    { key = "rite_adj", name = "Rite of Adjuration", castSpell = 433583, buffIDs = { 433583 }, wepEnchID = {
-        7144,
-    } },
-    { key = "rite_sanc", name = "Rite of Sanctification", castSpell = 433568, buffIDs = { 433568 }, wepEnchID = {
-        7143,
-    } },
+    {
+        key = "rite_adj",
+        name = "Rite of Adjuration",
+        castSpell = 433583,
+        buffIDs = { 433583 },
+        wepEnchID = {
+            7144,
+        },
+    },
+    {
+        key = "rite_sanc",
+        name = "Rite of Sanctification",
+        castSpell = 433568,
+        buffIDs = { 433568 },
+        wepEnchID = {
+            7143,
+        },
+    },
 }
 
 -- Shaman Imbues (non-secret in 12.0)
 local SHAMAN_IMBUES = {
-    { key = "flametongue", name = "Flametongue Weapon", castSpell = 318038, buffIDs = { 319778 }, wepEnchID = {
-        5400,
-    } },
-    { key = "windfury", name = "Windfury Weapon", castSpell = 33757, buffIDs = { 319773 }, wepEnchID = {
-        5401,
-    } },
+    {
+        key = "flametongue",
+        name = "Flametongue Weapon",
+        castSpell = 318038,
+        buffIDs = { 319778 },
+        wepEnchID = {
+            5400,
+        },
+    },
+    {
+        key = "windfury",
+        name = "Windfury Weapon",
+        castSpell = 33757,
+        buffIDs = { 319773 },
+        wepEnchID = {
+            5401,
+        },
+    },
     {
         key = "earthliving",
         name = "Earthliving Weapon",
@@ -445,7 +469,13 @@ local SHAMAN_SHIELDS = {
         requireTalent = 383010,
         check = "player",
     },
-    { key = "es_ally", name = "Earth Shield (Ally)", castSpell = 974, buffIDs = { 974 }, requireTalent = 383010 },
+    {
+        key = "es_ally",
+        name = "Earth Shield (Ally)",
+        castSpell = 974,
+        buffIDs = { 974 },
+        requireTalent = 383010,
+    },
     {
         key = "ls_ws_orbit",
         name = "Lightning/Water Shield",
@@ -470,7 +500,12 @@ local WARLOCK_PETS = {
     { key = "felguard", name = "Felguard", castSpell = 30146, families = { [29] = true, [104] = true } },
     { key = "imp", name = "Imp", castSpell = 688, families = { [23] = true, [100] = true } },
     { key = "voidwalker", name = "Voidwalker", castSpell = 697, families = { [16] = true, [101] = true } },
-    { key = "sayaad", name = "Sayaad", castSpell = 366222, families = { [17] = true, [102] = true, [302] = true } },
+    {
+        key = "sayaad",
+        name = "Sayaad",
+        castSpell = 366222,
+        families = { [17] = true, [102] = true, [302] = true },
+    },
     { key = "felhunter", name = "Felhunter", castSpell = 691, families = { [15] = true, [103] = true } },
 }
 
@@ -478,18 +513,18 @@ local WARLOCK_PETS = {
 -- from `pets` (Missing Pet and Wrong Demon share one index, so cycling on
 -- either reminder advances the same pointer). On EABR, not a top-level
 -- local.
-EABR.SetWarlockPetSpell = function(e, pets, fallbackTexture, labelOverride)
-    local n = #pets
-    local idx = EABR._petCycleIndex or 1
-    if idx > n then
-        idx = 1
+REMIND.SetWarlockPetSpell = function(e, pets, fallbackTexture, labelOverride)
+    local num = #pets
+    local position = REMIND._petCycleIndex or 1
+    if position > num then
+        position = 1
     end
-    local pet = pets[idx]
+    local pet = pets[position]
     e.mode = "spell"
     e.spellID = pet.castSpell
     e.texture = Tex(pet.castSpell) or fallbackTexture
     e.label = labelOverride or CludesUI.L(pet.name)
-    e.petCycleTotal = n > 1 and n or nil
+    e.petCycleTotal = num > 1 and num or nil
 end
 
 -- Weapon Enchant Items (temporary weapon enchants applied from items). weaponType: BLADED, BLUNT, RANGED, NEUTRAL (NEUTRAL fits any weapon).
@@ -566,8 +601,8 @@ local FLASK_NAME_SET = {}
 for _, f in ipairs(FLASK_ITEMS) do
     FLASK_BUFF_ID_SET[f.buffID] = true
     -- Build name set from localized spell names (works in all languages)
-    local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(f.buffID)
-    local locName = info and info.name
+    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(f.buffID)
+    local locName = details and details.name
     if locName then
         FLASK_NAME_SET[locName] = true
     end
@@ -575,8 +610,8 @@ for _, f in ipairs(FLASK_ITEMS) do
 end
 -- Every flask buff of the shared list, the PvP variants and the TWW flasks
 -- included (a player still on a TWW flask is not missing one).
-for _, id in ipairs(PREP.flask) do
-    FLASK_BUFF_ID_SET[id] = true
+for _, ident in ipairs(PREP.flask) do
+    FLASK_BUFF_ID_SET[ident] = true
 end
 
 -- Food Items (Midnight)
@@ -643,7 +678,11 @@ local FOOD_ITEMS = {
     { key = "hearty_fried_bloomtail", itemID = 242763, name = "Hearty Fried Bloomtail" },
     { key = "hearty_felberry_figs", itemID = 242766, name = "Hearty Felberry Figs" },
     { key = "hearty_eversong_pudding", itemID = 242764, name = "Hearty Eversong Pudding" },
-    { key = "hearty_bloodthistle_wrapped_cutlets", itemID = 242768, name = "Hearty Bloodthistle-Wrapped Cutlets" },
+    {
+        key = "hearty_bloodthistle_wrapped_cutlets",
+        itemID = 242768,
+        name = "Hearty Bloodthistle-Wrapped Cutlets",
+    },
     { key = "hearty_wise_tails", itemID = 242762, name = "Hearty Wise Tails" },
     { key = "hearty_twilight_anglers_medley", itemID = 242760, name = "Hearty Twilight Angler's Medley" },
     { key = "hearty_spellfire_filet", itemID = 242761, name = "Hearty Spellfire Filet" },
@@ -671,11 +710,11 @@ local WEAPON_ENCHANT_CHOICES = {
 
 -- Augment Runes (item IDs inlined at usage site in CollectConsumables)
 local RUNE_BUFF_IDS = {} -- every augment rune of the shared list, older ones included
-for _, id in ipairs(PREP.rune) do
-    RUNE_BUFF_IDS[#RUNE_BUFF_IDS + 1] = id
+for _, ident in ipairs(PREP.rune) do
+    RUNE_BUFF_IDS[#RUNE_BUFF_IDS + 1] = ident
 end
-for _, id in ipairs(PREP.oldRune) do
-    RUNE_BUFF_IDS[#RUNE_BUFF_IDS + 1] = id
+for _, ident in ipairs(PREP.oldRune) do
+    RUNE_BUFF_IDS[#RUNE_BUFF_IDS + 1] = ident
 end
 
 -- Inky Black Potion
@@ -690,7 +729,7 @@ local INKY_BLACK_BUFF = 185394 -- "Inky Blackness" buff (icon 136122); detected 
 -- AurasRestricted() is the authoritative probe (asymmetric per-frame cache;
 -- index scans HARD-ERROR under restriction, even out of combat in raids).
 -- Weapon enchants and raid buffs use other APIs and are not gated here.
-function EABR.ConsumablePresenceUnverifiable()
+function REMIND.ConsumablePresenceUnverifiable()
     if InCombat() or InMythicPlusKey() then
         return true
     end
@@ -704,35 +743,35 @@ end
 --  the payload and index scans are secret/blocked -- the tracker simply
 --  reports "not eating" there (the food reminder is suppressed anyway).
 -------------------------------------------------------------------------------
-function EABR.IsPlayerEating()
-    return EABR._eatingIID ~= nil
+function REMIND.IsPlayerEating()
+    return REMIND._eatingIID ~= nil
 end
 
-function EABR.ScanEatingState()
-    EABR._eatingIID = nil
-    if EABR.FOREVER then
+function REMIND.ScanEatingState()
+    REMIND._eatingIID = nil
+    if REMIND.FOREVER then
         return
     end -- no food reminder on WoW Forever, so no eating channel to track
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
         return
     end
     for i = 1, AURA_SCAN_LIMIT do
-        local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not ok or not aura then
+        local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not success or not aura then
             break
         end
         local ic = aura.icon
         if ic and not isSecret(ic) and ic == 133950 then
             local iid = aura.auraInstanceID
             if iid ~= nil and not isSecret(iid) then
-                EABR._eatingIID = iid
+                REMIND._eatingIID = iid
             end
             return
         end
     end
 end
 
-function EABR.UpdateEatingState(updateInfo)
+function REMIND.UpdateEatingState(updateInfo)
     -- 12.1: the whole payload and each list can be secret in restricted
     -- content; indexing a secret errors, so every layer is gated.
     if updateInfo == nil or isSecret(updateInfo) then
@@ -746,7 +785,7 @@ function EABR.UpdateEatingState(updateInfo)
                 if ic and not isSecret(ic) and ic == 133950 then
                     local iid = aura.auraInstanceID
                     if iid ~= nil and not isSecret(iid) then
-                        EABR._eatingIID = iid
+                        REMIND._eatingIID = iid
                         break
                     end
                 end
@@ -754,22 +793,22 @@ function EABR.UpdateEatingState(updateInfo)
         end
     end
     local removed = updateInfo.removedAuraInstanceIDs
-    if removed ~= nil and not isSecret(removed) and EABR._eatingIID then
-        for _, id in ipairs(removed) do
-            if id ~= nil and not isSecret(id) and id == EABR._eatingIID then
-                EABR._eatingIID = nil
+    if removed ~= nil and not isSecret(removed) and REMIND._eatingIID then
+        for _, ident in ipairs(removed) do
+            if ident ~= nil and not isSecret(ident) and ident == REMIND._eatingIID then
+                REMIND._eatingIID = nil
                 break
             end
         end
     end
 end
 
-function EABR.GetEatingExpirationTime()
-    if not EABR._eatingIID then
+function REMIND.GetEatingExpirationTime()
+    if not REMIND._eatingIID then
         return nil
     end
-    local ok, auraData = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", EABR._eatingIID)
-    if not ok or not auraData then
+    local success, auraData = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", REMIND._eatingIID)
+    if not success or not auraData then
         return nil
     end
     local exp = auraData.expirationTime
@@ -781,7 +820,7 @@ end
 
 local function PlayerHasBuffByName(buffName)
     -- Cannot verify -> treat as present so the reminder never false-fires.
-    if EABR.ConsumablePresenceUnverifiable() then
+    if REMIND.ConsumablePresenceUnverifiable() then
         return true
     end
     if _AC.valid then
@@ -790,8 +829,8 @@ local function PlayerHasBuffByName(buffName)
     end
     local sawReadableName = false
     for i = 1, AURA_SCAN_LIMIT do
-        local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not ok then
+        local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not success then
             return true
         end -- can't verify absence
         if not aura then
@@ -815,7 +854,7 @@ local function PlayerHasWellFed()
     if InPvPInstance() then
         return true
     end -- food not trackable in PvP, suppress
-    if EABR.ConsumablePresenceUnverifiable() then
+    if REMIND.ConsumablePresenceUnverifiable() then
         return true
     end
     -- Well Fed has no whitelisted spell ID (icon scan). If icons aren't
@@ -844,8 +883,8 @@ local function PlayerHasWellFed()
     end
     local sawReadableIcon = false
     for i = 1, AURA_SCAN_LIMIT do
-        local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not ok then
+        local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not success then
             return true
         end -- can't verify absence
         if not aura then
@@ -879,13 +918,13 @@ local function PlayerHasFlaskBuff()
     if InPvPInstance() then
         return true
     end
-    if EABR.ConsumablePresenceUnverifiable() then
+    if REMIND.ConsumablePresenceUnverifiable() then
         return true
     end
     -- Direct ID lookup for known flask buff IDs (zero allocation)
-    for id in pairs(FLASK_BUFF_ID_SET) do
-        local ok, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-        if ok and result ~= nil then
+    for ident in pairs(FLASK_BUFF_ID_SET) do
+        local success, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+        if success and result ~= nil then
             local dur, exp = result.duration, result.expirationTime
             if
                 dur ~= nil
@@ -915,25 +954,25 @@ local function PlayerHasInkyBlackness()
     if InPvPInstance() then
         return true
     end
-    if EABR.ConsumablePresenceUnverifiable() then
+    if REMIND.ConsumablePresenceUnverifiable() then
         return true
     end
     local sawReadable = false
     for i = 1, AURA_SCAN_LIMIT do
-        local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not ok then
+        local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not success then
             return true
         end -- can't verify absence
         if not aura then
             break
         end
-        local sid = aura.spellId
+        local spellRef = aura.spellId
         local ic = aura.icon
-        if (sid and not isSecret(sid)) or (ic and not isSecret(ic)) then
+        if (spellRef and not isSecret(spellRef)) or (ic and not isSecret(ic)) then
             sawReadable = true
         end
         if
-            (sid and not isSecret(sid) and sid == INKY_BLACK_BUFF)
+            (spellRef and not isSecret(spellRef) and spellRef == INKY_BLACK_BUFF)
             or (ic and not isSecret(ic) and ic == 136122)
         then
             local dur, exp = aura.duration, aura.expirationTime
@@ -965,7 +1004,7 @@ local _itemCountDirty = true
 -- Resolved consumable cache: WHICH item to show per bag/equip-derived category, rebuilt only when bags/weapon/
 -- preferred-item settings change (EABR.ResolveConsumables). Hung on EABR, not a local. Caches only
 -- SELECTION state (itemID/cat/hasBags/availability); icon is derived at each emit site to stay byte-identical to per-refresh GetItemIcon calls. Defaults nil/false; dirty starts true so the first OOC CollectConsumables fully populates it.
-EABR._resolved = {
+REMIND._resolved = {
     dirty = true, -- rebuild pending
     sig = {}, -- last preferred-setting signature
     rune = {}, -- {itemID, hasBags}
@@ -978,7 +1017,7 @@ EABR._resolved = {
 
 local function InvalidateItemCountCache()
     _itemCountDirty = true
-    EABR._resolved.dirty = true
+    REMIND._resolved.dirty = true
 end
 
 local function RebuildBagCounts()
@@ -986,20 +1025,20 @@ local function RebuildBagCounts()
     _itemCountDirty = false
     for bag = 0, 4 do
         local numSlots = C_Container and C_Container.GetContainerNumSlots(bag) or 0
-        for slot = 1, numSlots do
-            local info = C_Container and C_Container.GetContainerItemInfo(bag, slot)
-            if info and info.itemID then
-                _bagCounts[info.itemID] = (_bagCounts[info.itemID] or 0) + (info.stackCount or 1)
+        for slotIndex = 1, numSlots do
+            local details = C_Container and C_Container.GetContainerItemInfo(bag, slotIndex)
+            if details and details.itemID then
+                _bagCounts[details.itemID] = (_bagCounts[details.itemID] or 0) + (details.stackCount or 1)
             end
         end
     end
 end
 
-local function CachedGetItemCount(itemID)
+local function CachedGetItemCount(itemId)
     if _itemCountDirty then
         RebuildBagCounts()
     end
-    return _bagCounts[itemID] or 0
+    return _bagCounts[itemId] or 0
 end
 
 -------------------------------------------------------------------------------
@@ -1012,9 +1051,9 @@ local function FindFlaskItem(preferredKey, lastUsedItemID)
         end
         -- Fallback: first flask found in bags
         for _, f in ipairs(FLASK_ITEMS) do
-            for _, id in ipairs(f.items) do
-                if CachedGetItemCount(id) > 0 then
-                    return id
+            for _, ident in ipairs(f.items) do
+                if CachedGetItemCount(ident) > 0 then
+                    return ident
                 end
             end
         end
@@ -1022,9 +1061,9 @@ local function FindFlaskItem(preferredKey, lastUsedItemID)
     end
     for _, f in ipairs(FLASK_ITEMS) do
         if f.key == preferredKey then
-            for _, id in ipairs(f.items) do
-                if CachedGetItemCount(id) > 0 then
-                    return id
+            for _, ident in ipairs(f.items) do
+                if CachedGetItemCount(ident) > 0 then
+                    return ident
                 end
             end
         end
@@ -1060,8 +1099,8 @@ local function FindFoodItem(preferredKey, lastUsedItemID)
         if CachedGetItemCount(f.itemID) > 0 then
             local q = 0
             if C_TradeSkillUI and C_TradeSkillUI.GetItemCraftedQualityByItemInfo then
-                local ok, tier = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, f.itemID)
-                if ok and tier then
+                local success, tier = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, f.itemID)
+                if success and tier then
                     q = tier
                 end
             end
@@ -1107,30 +1146,30 @@ end
 --  + GetWeaponCategory). Depends only on bags, equipped weapon, and preferred-item settings (+ lastUsed*); rebuilt
 --  lazily on change, CollectConsumables reads resolved records each refresh and derives the icon at emit. NOTE: any FUTURE resolution input must also set _resolved.dirty (or join the signature below), or a stale item could show.
 -------------------------------------------------------------------------------
-function EABR.ResolveConsumables()
-    if not db then
+function REMIND.ResolveConsumables()
+    if not saved then
         return
     end
-    local co = db.profile and db.profile.consumables
+    local co = saved.profile and saved.profile.consumables
     if not co then
         return
     end
 
-    local R = EABR._resolved
-    local pf = co.preferredFlask or "last_used"
+    local R = REMIND._resolved
+    local popFrame = co.preferredFlask or "last_used"
     local pfd = co.preferredFood or "last_used"
     local pwe = co.preferredWeaponEnchant or "last_used"
     -- Lazy gate: rebuild only when dirty (bag/equip event) or a preferred-item setting changed -- options setters only RequestRefresh with no bag event, so a signature compare catches it here.
     local sig = R.sig
-    if not R.dirty and sig.pf == pf and sig.pfd == pfd and sig.pwe == pwe then
+    if not R.dirty and sig.pf == popFrame and sig.pfd == pfd and sig.pwe == pwe then
         return
     end
     R.dirty = false
-    sig.pf, sig.pfd, sig.pwe = pf, pfd, pwe
+    sig.pf, sig.pfd, sig.pwe = popFrame, pfd, pwe
 
-    local luf = db.profile and db.profile.lastUsedFlask or nil
-    local lufd = db.profile and db.profile.lastUsedFood or nil
-    local luwe = db.profile and db.profile.lastUsedWeaponEnchant or nil
+    local luf = saved.profile and saved.profile.lastUsedFlask or nil
+    local lufd = saved.profile and saved.profile.lastUsedFood or nil
+    local luwe = saved.profile and saved.profile.lastUsedWeaponEnchant or nil
 
     -- SEASON UPDATE: the season's augment rune items.
     -- Augment Rune: void, then ethereal, then Tidesworn (12.1); fall back to the
@@ -1147,14 +1186,14 @@ function EABR.ResolveConsumables()
     R.rune.itemID = runeItem or 259085
 
     -- Flask: resolve a display item even when out of stock (shown desaturated).
-    local flaskItemID = FindFlaskItem(pf, luf)
+    local flaskItemID = FindFlaskItem(popFrame, luf)
     R.flask.hasBags = (flaskItemID ~= nil)
     if not flaskItemID then
-        if pf == "last_used" then
+        if popFrame == "last_used" then
             flaskItemID = luf
         else
             for _, f in ipairs(FLASK_ITEMS) do
-                if f.key == pf then
+                if f.key == popFrame then
                     flaskItemID = f.items[1]
                     break
                 end
@@ -1204,11 +1243,11 @@ function EABR.ResolveConsumables()
     end
 
     -- Weapon enchant per slot: cat (equipped weapon type) gates the reminder in CollectConsumables and selects the item; resolves even out of stock (desaturated), same fallback order as inline code.
-    for _, slot in ipairs({ 16, 17 }) do
-        local r = R.we[slot]
-        local cat = GetWeaponCategory(slot)
-        r.cat = cat
-        local bestItemID = FindWeaponEnchantItem(pwe, luwe, cat)
+    for _, slotIndex in ipairs({ 16, 17 }) do
+        local r = R.we[slotIndex]
+        local category = GetWeaponCategory(slotIndex)
+        r.cat = category
+        local bestItemID = FindWeaponEnchantItem(pwe, luwe, category)
         r.hasBags = (bestItemID ~= nil)
         if not bestItemID then
             if pwe == "last_used" then
@@ -1228,7 +1267,7 @@ function EABR.ResolveConsumables()
             end
             if not bestItemID then
                 for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
-                    if we.weaponType == "NEUTRAL" or we.weaponType == cat then
+                    if we.weaponType == "NEUTRAL" or we.weaponType == category then
                         bestItemID = we.itemID
                         break
                     end
@@ -1243,8 +1282,8 @@ function EABR.ResolveConsumables()
 
     -- Healthstone: constant texture; only availability is bag-derived.
     local hasStone = false
-    for _, itemID in ipairs(HEALTHSTONE_ITEM_IDS) do
-        if CachedGetItemCount(itemID) > 0 then
+    for _, itemId in ipairs(HEALTHSTONE_ITEM_IDS) do
+        if CachedGetItemCount(itemId) > 0 then
             hasStone = true
             break
         end
@@ -1252,15 +1291,15 @@ function EABR.ResolveConsumables()
     R.healthstone.hasStone = hasStone
 end
 
-I._bagCounts, I._IMBUE_EXCLUDE_SPELLS, I.AURAS = _bagCounts, _IMBUE_EXCLUDE_SPELLS, AURAS
-I.CachedGetItemCount, I.DTB_SPELL_ID = CachedGetItemCount, DTB_SPELL_ID
-I.FLASK_ITEMS, I.FOOD_ITEMS, I.INKY_BLACK_ITEM = FLASK_ITEMS, FOOD_ITEMS, INKY_BLACK_ITEM
-I.InvalidateItemCountCache, I.PALADIN_RITES = InvalidateItemCountCache, PALADIN_RITES
-I.PARTNERED_TRINKET, I.PET_CLASSES = PARTNERED_TRINKET, PET_CLASSES
-I.PlayerHasBuffByName, I.PlayerHasFlaskBuff = PlayerHasBuffByName, PlayerHasFlaskBuff
-I.PlayerHasInkyBlackness, I.PlayerHasWellFed = PlayerHasInkyBlackness, PlayerHasWellFed
-I.RAID_BUFFS, I.RebuildBagCounts, I.ROGUE_POISONS = RAID_BUFFS, RebuildBagCounts, ROGUE_POISONS
-I.RUNE_BUFF_IDS, I.SHAMAN_IMBUES = RUNE_BUFF_IDS, SHAMAN_IMBUES
-I.SHAMAN_SHIELDS, I.WARLOCK_PETS = SHAMAN_SHIELDS, WARLOCK_PETS
-I.WEAPON_ENCHANT_CHOICES, I.WEAPON_ENCHANT_ITEMS = WEAPON_ENCHANT_CHOICES, WEAPON_ENCHANT_ITEMS
-I.broken = false
+Inner._bagCounts, Inner._IMBUE_EXCLUDE_SPELLS, Inner.AURAS = _bagCounts, _IMBUE_EXCLUDE_SPELLS, AURAS
+Inner.CachedGetItemCount, Inner.DTB_SPELL_ID = CachedGetItemCount, DTB_SPELL_ID
+Inner.FLASK_ITEMS, Inner.FOOD_ITEMS, Inner.INKY_BLACK_ITEM = FLASK_ITEMS, FOOD_ITEMS, INKY_BLACK_ITEM
+Inner.InvalidateItemCountCache, Inner.PALADIN_RITES = InvalidateItemCountCache, PALADIN_RITES
+Inner.PARTNERED_TRINKET, Inner.PET_CLASSES = PARTNERED_TRINKET, PET_CLASSES
+Inner.PlayerHasBuffByName, Inner.PlayerHasFlaskBuff = PlayerHasBuffByName, PlayerHasFlaskBuff
+Inner.PlayerHasInkyBlackness, Inner.PlayerHasWellFed = PlayerHasInkyBlackness, PlayerHasWellFed
+Inner.RAID_BUFFS, Inner.RebuildBagCounts, Inner.ROGUE_POISONS = RAID_BUFFS, RebuildBagCounts, ROGUE_POISONS
+Inner.RUNE_BUFF_IDS, Inner.SHAMAN_IMBUES = RUNE_BUFF_IDS, SHAMAN_IMBUES
+Inner.SHAMAN_SHIELDS, Inner.WARLOCK_PETS = SHAMAN_SHIELDS, WARLOCK_PETS
+Inner.WEAPON_ENCHANT_CHOICES, Inner.WEAPON_ENCHANT_ITEMS = WEAPON_ENCHANT_CHOICES, WEAPON_ENCHANT_ITEMS
+Inner.broken = false

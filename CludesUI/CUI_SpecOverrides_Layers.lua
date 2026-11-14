@@ -10,44 +10,44 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
-local I = CUI_NS._soInternals
+local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local CurrentSpecID, DeepCopy, GetGroups = I.CurrentSpecID, I.DeepCopy, I.GetGroups
-local GetProfileRoot, GroupById, L = I.GetProfileRoot, I.GroupById, I.L
-local RunRefreshers, ApplyValuesFor = I.RunRefreshers, I.ApplyValuesFor
-local GetUnlockStore, OwnerGid = I.GetUnlockStore, I.OwnerGid
+local CurrentSpecID, DeepCopy, GetGroups = Inner.CurrentSpecID, Inner.DeepCopy, Inner.GetGroups
+local GetProfileRoot, GroupById, L = Inner.GetProfileRoot, Inner.GroupById, Inner.L
+local RunRefreshers, ApplyValuesFor = Inner.RunRefreshers, Inner.ApplyValuesFor
+local GetUnlockStore, OwnerGid = Inner.GetUnlockStore, Inner.OwnerGid
 
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-I.editGroupSetters[#I.editGroupSetters + 1] = function(v)
-    _editGroup = v
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val)
+    _editGroup = val
 end
 local _defaultView = false
-I.defaultViewSetters[#I.defaultViewSetters + 1] = function(v)
-    _defaultView = v
+Inner.defaultViewSetters[#Inner.defaultViewSetters + 1] = function(val)
+    _defaultView = val
 end
 local _inTransition = false
-I.inTransitionSetters[#I.inTransitionSetters + 1] = function(v)
-    _inTransition = v
+Inner.inTransitionSetters[#Inner.inTransitionSetters + 1] = function(val)
+    _inTransition = val
 end
 local _activeSpec = nil
-I.activeSpecSetters[#I.activeSpecSetters + 1] = function(v)
-    _activeSpec = v
+Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(val)
+    _activeSpec = val
 end
 local ExitGroupEdit
-I.exitGroupEditSetters[#I.exitGroupEditSetters + 1] = function(v)
-    ExitGroupEdit = v
+Inner.exitGroupEditSetters[#Inner.exitGroupEditSetters + 1] = function(val)
+    ExitGroupEdit = val
 end
 local RefreshCardsPopup
-I.refreshCardsSetters[#I.refreshCardsSetters + 1] = function(v)
-    RefreshCardsPopup = v
+Inner.refreshCardsSetters[#Inner.refreshCardsSetters + 1] = function(val)
+    RefreshCardsPopup = val
 end
 
 -------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ end
 -- frames) reports that look's size, not its own setting, so its size is taken
 -- from carry, else base, else its own setting (getSettingSize): every entry
 -- keeps a size, since the layer apply treats an entry as owning the key.
-local function HarvestLayer(carry, base)
+local function HarvestLayer(carry, baseValue)
     local layer = {
         anchors = DeepCopy(CludesUIDB and CludesUIDB.unlockAnchors or {}),
         widthMatch = DeepCopy(CludesUIDB and CludesUIDB.unlockWidthMatch or {}),
@@ -116,8 +116,8 @@ local function HarvestLayer(carry, base)
     }
     -- Strip TBB child-role entries: per-spec data, not layer data.
     local stripSets = { layer.anchors, layer.widthMatch, layer.heightMatch }
-    for i = 1, 3 do
-        local t, kill = stripSets[i], nil
+    for idx = 1, 3 do
+        local t, kill = stripSets[idx], nil
         for k in pairs(t) do
             if IsTBBChildKey(k) then
                 kill = kill or {}
@@ -135,17 +135,17 @@ local function HarvestLayer(carry, base)
     layer.widthMatchExtra, layer.heightMatchExtra = {}, {}
     local wx = CludesUIDB and CludesUIDB.unlockWidthMatchExtra
     if wx then
-        for k, v in pairs(wx) do
+        for k, val in pairs(wx) do
             if layer.widthMatch[k] ~= nil then
-                layer.widthMatchExtra[k] = v
+                layer.widthMatchExtra[k] = val
             end
         end
     end
     local hx = CludesUIDB and CludesUIDB.unlockHeightMatchExtra
     if hx then
-        for k, v in pairs(hx) do
+        for k, val in pairs(hx) do
             if layer.heightMatch[k] ~= nil then
-                layer.heightMatchExtra[k] = v
+                layer.heightMatchExtra[k] = val
             end
         end
     end
@@ -153,9 +153,9 @@ local function HarvestLayer(carry, base)
     if cdm then
         layer.cdmPos = DeepCopy(cdm.cdmBarPositions or {})
         if cdm.cdmBars and cdm.cdmBars.bars then
-            for _, bar in ipairs(cdm.cdmBars.bars) do
-                if bar.key and bar.growDirection then
-                    layer.cdmGrow[bar.key] = bar.growDirection
+            for _, barFrame in ipairs(cdm.cdmBars.bars) do
+                if barFrame.key and barFrame.growDirection then
+                    layer.cdmGrow[barFrame.key] = barFrame.growDirection
                 end
             end
         end
@@ -164,9 +164,9 @@ local function HarvestLayer(carry, base)
     if ab then
         layer.abPos = DeepCopy(ab.barPositions or {})
         if ab.bars then
-            for k, cfg in pairs(ab.bars) do
-                if type(cfg) == "table" and cfg.growDirection then
-                    layer.abGrow[k] = cfg.growDirection
+            for k, conf in pairs(ab.bars) do
+                if type(conf) == "table" and conf.growDirection then
+                    layer.abGrow[k] = conf.growDirection
                 end
             end
         end
@@ -182,61 +182,61 @@ local function HarvestLayer(carry, base)
                 -- a layer harvested at one resolution stays valid at another and
                 -- keeps the element's own position flags.
                 if elem.loadRawPosition and elem.saveRawPosition then
-                    local ok, p = pcall(elem.loadRawPosition, key)
-                    if ok and type(p) == "table" and p.point then
+                    local success, p = pcall(elem.loadRawPosition, key)
+                    if success and type(p) == "table" and p.point then
                         e = {}
-                        for k, v in pairs(p) do
-                            if type(v) ~= "table" then
-                                e[k] = v
+                        for k, val in pairs(p) do
+                            if type(val) ~= "table" then
+                                e[k] = val
                             end
                         end
                         e.relPoint = e.relPoint or e.point
                         e.rawPos = true
                     end
                 elseif elem.loadPosition then
-                    local ok, p = pcall(elem.loadPosition, key)
-                    if ok and p and p.point then
+                    local success, p = pcall(elem.loadPosition, key)
+                    if success and p and p.point then
                         e = { point = p.point, relPoint = p.relPoint or p.point, x = p.x, y = p.y }
                     end
                 end
                 if elem.sizeFixedByLook then
-                    local w, h
-                    for i = 1, 2 do
-                        local src = base
-                        if i == 1 then
-                            src = carry
+                    local wid, hgt
+                    for idx = 1, 2 do
+                        local source = baseValue
+                        if idx == 1 then
+                            source = carry
                         end
-                        local ce = src and src.elems and src.elems[key]
+                        local ce = source and source.elems and source.elems[key]
                         if ce and (ce.w or ce.h) then
-                            w, h = ce.w, ce.h
+                            wid, hgt = ce.w, ce.h
                             break
                         end
                     end
-                    if w == nil and h == nil and elem.getSettingSize then
-                        local ok, sw, sh = pcall(elem.getSettingSize, key)
-                        if ok then
+                    if wid == nil and hgt == nil and elem.getSettingSize then
+                        local success, sw, sh = pcall(elem.getSettingSize, key)
+                        if success then
                             if type(sw) == "number" and sw > 0 then
-                                w = sw
+                                wid = sw
                             end
                             if type(sh) == "number" and sh > 0 then
-                                h = sh
+                                hgt = sh
                             end
                         end
                     end
-                    if w or h then
+                    if wid or hgt then
                         e = e or {}
-                        e.w, e.h = w, h
+                        e.w, e.h = wid, hgt
                     end
                 elseif elem.getSize then
-                    local ok, w, h = pcall(elem.getSize, key)
-                    if ok then
-                        if type(w) == "number" and w > 0 then
+                    local success, wid, hgt = pcall(elem.getSize, key)
+                    if success then
+                        if type(wid) == "number" and wid > 0 then
                             e = e or {}
-                            e.w = w
+                            e.w = wid
                         end
-                        if type(h) == "number" and h > 0 then
+                        if type(hgt) == "number" and hgt > 0 then
                             e = e or {}
-                            e.h = h
+                            e.h = hgt
                         end
                     end
                 end
@@ -270,8 +270,8 @@ local _unlockDeferredElemFallback = nil
 -- anchored-skip, applied at the flush's write sites.
 local function UnlockElemAnchorOwned(key)
     local a = CludesUIDB and CludesUIDB.unlockAnchors
-    local info = a and a[key]
-    return type(info) == "table" and info.target ~= nil
+    local details = a and a[key]
+    return type(details) == "table" and details.target ~= nil
 end
 local _unlockSettleWanted = false
 local _unlockFlushScheduled = false
@@ -289,14 +289,14 @@ local function ElemNear(a, b)
     if (a.relPoint or a.point or false) ~= (b.relPoint or b.point or false) then
         return false
     end
-    local function near(x, y)
-        if x == nil and y == nil then
+    local function near(posX, posY)
+        if posX == nil and posY == nil then
             return true
         end
-        if type(x) ~= "number" or type(y) ~= "number" then
+        if type(posX) ~= "number" or type(posY) ~= "number" then
             return false
         end
-        return math.abs(x - y) < 0.5
+        return math.abs(posX - posY) < 0.5
     end
     return near(a.x, b.x) and near(a.y, b.y) and near(a.w, b.w) and near(a.h, b.h)
 end
@@ -305,20 +305,20 @@ end
 -- stored fields, so a position flag it carries counts as a difference too. The
 -- layer's own bookkeeping keys are not part of the position.
 local RAW_POS_LAYER_KEYS = { w = true, h = true, rawPos = true, relPoint = true }
-local function RawPosEqual(cur, e)
-    if not cur then
+local function RawPosEqual(current, e)
+    if not current then
         return false
     end
-    if (cur.relPoint or cur.point) ~= (e.relPoint or e.point) then
+    if (current.relPoint or current.point) ~= (e.relPoint or e.point) then
         return false
     end
-    for k, v in pairs(e) do
-        if not RAW_POS_LAYER_KEYS[k] and cur[k] ~= v then
+    for k, val in pairs(e) do
+        if not RAW_POS_LAYER_KEYS[k] and current[k] ~= val then
             return false
         end
     end
-    for k, v in pairs(cur) do
-        if not RAW_POS_LAYER_KEYS[k] and e[k] ~= v then
+    for k, val in pairs(current) do
+        if not RAW_POS_LAYER_KEYS[k] and e[k] ~= val then
             return false
         end
     end
@@ -347,28 +347,28 @@ local function ApplyLayer(layer, baseline)
         -- entries (per-spec, bucket-owned) ride the wipe whole, fallback
         -- included, and layer-borne ones are skipped on refill.
         local fallbacks, tbbKept
-        for k, info in pairs(anchors) do
+        for k, details in pairs(anchors) do
             if IsTBBChildKey(k) then
                 tbbKept = tbbKept or {}
-                tbbKept[k] = info
-            elseif info.fallback then
+                tbbKept[k] = details
+            elseif details.fallback then
                 fallbacks = fallbacks or {}
-                fallbacks[k] = { tgt = info.target, fb = info.fallback }
+                fallbacks[k] = { tgt = details.target, fb = details.fallback }
             end
         end
         wipe(anchors)
-        for k, info in pairs(layer.anchors or {}) do
+        for k, details in pairs(layer.anchors or {}) do
             if not IsTBBChildKey(k) then
-                anchors[k] = DeepCopy(info)
+                anchors[k] = DeepCopy(details)
                 local f = fallbacks and fallbacks[k]
-                if f and f.tgt == info.target then
+                if f and f.tgt == details.target then
                     anchors[k].fallback = f.fb
                 end
             end
         end
         if tbbKept then
-            for k, info in pairs(tbbKept) do
-                anchors[k] = info
+            for k, details in pairs(tbbKept) do
+                anchors[k] = details
             end
         end
         CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
@@ -378,21 +378,21 @@ local function ApplyLayer(layer, baseline)
             CludesUIDB.unlockWidthMatch = wm
         end
         local wmKept
-        for k, v in pairs(wm) do
+        for k, val in pairs(wm) do
             if IsTBBChildKey(k) then
                 wmKept = wmKept or {}
-                wmKept[k] = v
+                wmKept[k] = val
             end
         end
         wipe(wm)
-        for k, v in pairs(layer.widthMatch or {}) do
+        for k, val in pairs(layer.widthMatch or {}) do
             if not IsTBBChildKey(k) then
-                wm[k] = v
+                wm[k] = val
             end
         end
         if wmKept then
-            for k, v in pairs(wmKept) do
-                wm[k] = v
+            for k, val in pairs(wmKept) do
+                wm[k] = val
             end
         end
         local hm = CludesUIDB.unlockHeightMatch
@@ -401,55 +401,55 @@ local function ApplyLayer(layer, baseline)
             CludesUIDB.unlockHeightMatch = hm
         end
         local hmKept
-        for k, v in pairs(hm) do
+        for k, val in pairs(hm) do
             if IsTBBChildKey(k) then
                 hmKept = hmKept or {}
-                hmKept[k] = v
+                hmKept[k] = val
             end
         end
         wipe(hm)
-        for k, v in pairs(layer.heightMatch or {}) do
+        for k, val in pairs(layer.heightMatch or {}) do
             if not IsTBBChildKey(k) then
-                hm[k] = v
+                hm[k] = val
             end
         end
         if hmKept then
-            for k, v in pairs(hmKept) do
-                hm[k] = v
+            for k, val in pairs(hmKept) do
+                hm[k] = val
             end
         end
         -- Match extras follow the links above, the same way for both axes: TBB
         -- child entries stay, the rest become the layer's (none when it has none).
         for pass = 1, 2 do
-            local field, src = "unlockWidthMatchExtra", layer.widthMatchExtra
+            local field, source = "unlockWidthMatchExtra", layer.widthMatchExtra
             if pass == 2 then
-                field, src = "unlockHeightMatchExtra", layer.heightMatchExtra
+                field, source = "unlockHeightMatchExtra", layer.heightMatchExtra
             end
             local t = CludesUIDB[field]
             local kept
             if t then
-                for k, v in pairs(t) do
+                for k, val in pairs(t) do
                     if IsTBBChildKey(k) then
                         kept = kept or {}
-                        kept[k] = v
+                        kept[k] = val
                     end
                 end
                 wipe(t)
             end
-            if type(src) == "table" then
-                for k, v in pairs(src) do
+            if type(source) == "table" then
+                for k, val in pairs(source) do
                     if not IsTBBChildKey(k) then
                         if not t then
                             t = {}
                             CludesUIDB[field] = t
                         end
-                        t[k] = v
+                        t[k] = val
                     end
                 end
             end
             if kept then
-                for k, v in pairs(kept) do
-                    t[k] = v
+                for k, val in pairs(kept) do
+                    t[k] = val
                 end
             end
         end
@@ -459,16 +459,16 @@ local function ApplyLayer(layer, baseline)
         -- A layer harvested while CDM was disabled has no cdmPos; restore the
         -- baseline's instead of leaving the outgoing layer's positions live
         -- (they would be harvested INTO this layer next).
-        local pos = layer.cdmPos or (baseline and baseline.cdmPos)
-        if pos then
+        local place = layer.cdmPos or (baseline and baseline.cdmPos)
+        if place then
             local t = cdm.cdmBarPositions
             if not t then
                 t = {}
                 cdm.cdmBarPositions = t
             end
             wipe(t)
-            for k, v in pairs(pos) do
-                t[k] = DeepCopy(v)
+            for k, val in pairs(place) do
+                t[k] = DeepCopy(val)
             end
             -- Per-bar missing-means-baseline: a layer's cdmPos is a snapshot from its
             -- last harvest, so bars created AFTER it have no entry in older layers and
@@ -476,10 +476,10 @@ local function ApplyLayer(layer, baseline)
             -- on this one spec"). Fill the gaps from the baseline (mirrors the grow-key
             -- rule below); the layer self-heals to full coverage at its next harvest.
             local bpos = baseline and baseline.cdmPos
-            if bpos and bpos ~= pos then
-                for k, v in pairs(bpos) do
+            if bpos and bpos ~= place then
+                for k, val in pairs(bpos) do
                     if t[k] == nil then
-                        t[k] = DeepCopy(v)
+                        t[k] = DeepCopy(val)
                     end
                 end
             end
@@ -491,18 +491,18 @@ local function ApplyLayer(layer, baseline)
             -- about grows. Per bar: layer value, else baseline, else CLEAR (module
             -- default), so one fork's grow can't stick to every other layer.
             local lg = (layer.cdmPos ~= nil) and layer.cdmGrow or nil
-            local bg = (baseline and baseline.cdmPos ~= nil) and baseline.cdmGrow or nil
-            if lg or bg then
-                for _, bar in ipairs(cdm.cdmBars.bars) do
-                    if bar.key then
+            local backdrop = (baseline and baseline.cdmPos ~= nil) and baseline.cdmGrow or nil
+            if lg or backdrop then
+                for _, barFrame in ipairs(cdm.cdmBars.bars) do
+                    if barFrame.key then
                         local gd
                         if lg then
-                            gd = lg[bar.key]
+                            gd = lg[barFrame.key]
                         end
-                        if gd == nil and bg then
-                            gd = bg[bar.key]
+                        if gd == nil and backdrop then
+                            gd = backdrop[barFrame.key]
                         end
-                        bar.growDirection = gd
+                        barFrame.growDirection = gd
                     end
                 end
             end
@@ -510,23 +510,23 @@ local function ApplyLayer(layer, baseline)
     end
     local ab = LiteProfile("CludesUIActionBars")
     if ab then
-        local pos = layer.abPos or (baseline and baseline.abPos)
-        if pos then
+        local place = layer.abPos or (baseline and baseline.abPos)
+        if place then
             local t = ab.barPositions
             if not t then
                 t = {}
                 ab.barPositions = t
             end
             wipe(t)
-            for k, v in pairs(pos) do
-                t[k] = DeepCopy(v)
+            for k, val in pairs(place) do
+                t[k] = DeepCopy(val)
             end
             -- Per-bar missing-means-baseline, same as cdmPos above.
             local bpos = baseline and baseline.abPos
-            if bpos and bpos ~= pos then
-                for k, v in pairs(bpos) do
+            if bpos and bpos ~= place then
+                for k, val in pairs(bpos) do
                     if t[k] == nil then
-                        t[k] = DeepCopy(v)
+                        t[k] = DeepCopy(val)
                     end
                 end
             end
@@ -534,18 +534,18 @@ local function ApplyLayer(layer, baseline)
         if ab.bars then
             -- Same authority rule and per-bar fallback as cdmGrow.
             local lg = (layer.abPos ~= nil) and layer.abGrow or nil
-            local bg = (baseline and baseline.abPos ~= nil) and baseline.abGrow or nil
-            if lg or bg then
-                for k, cfg in pairs(ab.bars) do
-                    if type(cfg) == "table" then
+            local backdrop = (baseline and baseline.abPos ~= nil) and baseline.abGrow or nil
+            if lg or backdrop then
+                for k, conf in pairs(ab.bars) do
+                    if type(conf) == "table" then
                         local gd
                         if lg then
                             gd = lg[k]
                         end
-                        if gd == nil and bg then
-                            gd = bg[k]
+                        if gd == nil and backdrop then
+                            gd = backdrop[k]
                         end
-                        cfg.growDirection = gd
+                        conf.growDirection = gd
                     end
                 end
             end
@@ -597,10 +597,10 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
     end
     -- TIER 1: the spec's own group layer. When it exists, conditional layouts
     -- are ignored ENTIRELY for this spec.
-    local want = OwnerGid(specID)
-    local target
-    if want then
-        target = s.layouts[want]
+    local wanted = OwnerGid(specID)
+    local targetUnit
+    if wanted then
+        targetUnit = s.layouts[wanted]
     else
         -- TIER 2: the applied conditional group's layout (namespaced pointer
         -- "cond:<gid>" -- one pointer, one harvest target, one heal path).
@@ -608,12 +608,12 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         if cond then
             local cs = CludesUI._CondOv.GetUnlockStore()
             if cs and cs.layouts[cond] then
-                want = "cond:" .. cond
-                target = cs.layouts[cond]
+                wanted = "cond:" .. cond
+                targetUnit = cs.layouts[cond]
             end
         end
     end
-    if want == s.active and not force then
+    if wanted == s.active and not force then
         -- Same-layer arrival: live drift stays live (never re-apply). BUT module
         -- POSITION stores can carry persisted gaps: a layer snapshot missing bars
         -- created after its last harvest leaves them entryless (default centered
@@ -621,7 +621,7 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         -- the gap never heals without a layer transition. ADD-ONLY heal: fill missing
         -- bar keys from the live layer then the baseline; existing entries (live
         -- drift) are never touched, and the settle only runs if something was missing.
-        local base = s.baselineLayout
+        local baseValue = s.baselineLayout
         local function GapFill(prof, storeKey, layerPos, basePos)
             if not prof then
                 return false
@@ -633,17 +633,17 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
             end
             local added = false
             if layerPos then
-                for k, v in pairs(layerPos) do
+                for k, val in pairs(layerPos) do
                     if t[k] == nil then
-                        t[k] = DeepCopy(v)
+                        t[k] = DeepCopy(val)
                         added = true
                     end
                 end
             end
             if basePos and basePos ~= layerPos then
-                for k, v in pairs(basePos) do
+                for k, val in pairs(basePos) do
                     if t[k] == nil then
-                        t[k] = DeepCopy(v)
+                        t[k] = DeepCopy(val)
                         added = true
                     end
                 end
@@ -652,8 +652,9 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         end
         local cdm = LiteProfile("CludesUICooldownManager")
         local ab = LiteProfile("CludesUIActionBars")
-        local added = GapFill(cdm, "cdmBarPositions", target and target.cdmPos, base and base.cdmPos)
-        if GapFill(ab, "barPositions", target and target.abPos, base and base.abPos) then
+        local added =
+            GapFill(cdm, "cdmBarPositions", targetUnit and targetUnit.cdmPos, baseValue and baseValue.cdmPos)
+        if GapFill(ab, "barPositions", targetUnit and targetUnit.abPos, baseValue and baseValue.abPos) then
             added = true
         end
         if added then
@@ -665,14 +666,14 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         return
     end
     -- TIER 3: baseline.
-    if not target then
-        target = s.baselineLayout
+    if not targetUnit then
+        targetUnit = s.baselineLayout
     end
-    s.active = want
-    if target then
+    s.active = wanted
+    if targetUnit then
         -- Forks fall back to the baseline for every sub-store they are
         -- missing (nil when the target IS the baseline).
-        ApplyLayer(target, target ~= s.baselineLayout and s.baselineLayout or nil)
+        ApplyLayer(targetUnit, targetUnit ~= s.baselineLayout and s.baselineLayout or nil)
         _unlockSettleWanted = true
         ScheduleUnlockFlush()
     end
@@ -905,14 +906,14 @@ function CludesUI.SpecOverrides_FlushUnlock()
                         _unlockSettleWanted = true
                     end
                 elseif e.point and elem.savePosition and not UnlockElemAnchorOwned(key) then
-                    local cur = elem.loadPosition and elem.loadPosition(key)
+                    local current = elem.loadPosition and elem.loadPosition(key)
                     if
                         not (
-                            cur
-                            and cur.point == e.point
-                            and (cur.relPoint or cur.point) == (e.relPoint or e.point)
-                            and cur.x == e.x
-                            and cur.y == e.y
+                            current
+                            and current.point == e.point
+                            and (current.relPoint or current.point) == (e.relPoint or e.point)
+                            and current.x == e.x
+                            and current.y == e.y
                         )
                     then
                         pcall(elem.savePosition, key, e.point, e.relPoint or e.point, e.x, e.y)
@@ -987,14 +988,14 @@ function CludesUI.SpecOverrides_FlushUnlock()
                         _unlockSettleWanted = true
                     end
                 elseif e.point and elem.savePosition and not UnlockElemAnchorOwned(key) then
-                    local cur = elem.loadPosition and elem.loadPosition(key)
+                    local current = elem.loadPosition and elem.loadPosition(key)
                     if
                         not (
-                            cur
-                            and cur.point == e.point
-                            and (cur.relPoint or cur.point) == (e.relPoint or e.point)
-                            and cur.x == e.x
-                            and cur.y == e.y
+                            current
+                            and current.point == e.point
+                            and (current.relPoint or current.point) == (e.relPoint or e.point)
+                            and current.x == e.x
+                            and current.y == e.y
                         )
                     then
                         pcall(elem.savePosition, key, e.point, e.relPoint or e.point, e.x, e.y)
@@ -1232,8 +1233,8 @@ local function BmOwnerGid(specID)
     end
     for _, g in ipairs(GetGroups() or {}) do
         if s.layouts[g.id] then
-            for _, sid in ipairs(g.specs or {}) do
-                if sid == specID then
+            for _, spellRef in ipairs(g.specs or {}) do
+                if spellRef == specID then
                     return g.id
                 end
             end
@@ -1285,8 +1286,8 @@ local function BmApplyLayer(layer, noPageRefresh)
         rf.bmIndicators = ind
     end
     wipe(ind)
-    for k, v in pairs(layer.indicators or {}) do
-        ind[k] = DeepCopy(v)
+    for k, val in pairs(layer.indicators or {}) do
+        ind[k] = DeepCopy(val)
     end
     local simple = rf.bmSimple
     if type(simple) ~= "table" then
@@ -1294,8 +1295,8 @@ local function BmApplyLayer(layer, noPageRefresh)
         rf.bmSimple = simple
     end
     wipe(simple)
-    for k, v in pairs(layer.simple or {}) do
-        simple[k] = type(v) == "table" and DeepCopy(v) or v
+    for k, val in pairs(layer.simple or {}) do
+        simple[k] = type(val) == "table" and DeepCopy(val) or val
     end
     rf.bmDisplayMode = layer.displayMode or "custom"
     rf.bmIconZoom = layer.iconZoom or 0.08
@@ -1374,24 +1375,24 @@ end
 --- and edits: specID when want is a spec group's id and specID a retail spec
 --- of the player's class, else nil. Returns the previous value. Runtime
 --- only; callers gate on Forever.
-function CludesUI._SO_SetForkSpec(dm, want, specID)
-    local v = nil
+function CludesUI._SO_SetForkSpec(dm, wanted, specID)
+    local val = nil
     if
-        type(want) == "number"
+        type(wanted) == "number"
         and specID
         and CludesUI.IsPlayerSpec(specID)
         and CludesUI.RetailSpecName(specID)
     then
-        v = specID
+        val = specID
     end
     local prev
     if dm then
         prev = CludesUI.SpecOverrides_DmForkSpecID
-        CludesUI.SpecOverrides_DmForkSpecID = v
+        CludesUI.SpecOverrides_DmForkSpecID = val
         CludesUI._SO_DmForkSeeded = true
     else
         prev = CludesUI.SpecOverrides_BmForkSpecID
-        CludesUI.SpecOverrides_BmForkSpecID = v
+        CludesUI.SpecOverrides_BmForkSpecID = val
         CludesUI._SO_BmForkSeeded = true
     end
     return prev
@@ -1443,17 +1444,17 @@ function CludesUI.SpecOverrides_ApplyBm(specID, force, noPageRefresh)
     if not specID then
         return
     end
-    local want = BmOwnerGid(specID)
-    local target
-    if want then
-        target = s.layouts[want]
+    local wanted = BmOwnerGid(specID)
+    local targetUnit
+    if wanted then
+        targetUnit = s.layouts[wanted]
     else
         local cond = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid() or nil
         if cond then
             local cs = GetCondBmStore()
             if cs and cs.layouts[cond] then
-                want = "cond:" .. cond
-                target = cs.layouts[cond]
+                wanted = "cond:" .. cond
+                targetUnit = cs.layouts[cond]
             end
         end
     end
@@ -1464,30 +1465,30 @@ function CludesUI.SpecOverrides_ApplyBm(specID, force, noPageRefresh)
     local fvPrev
     if CludesUI.IS_FOREVER then
         CludesUI._SO_SeedForkSpec(false)
-        fvPrev = CludesUI._SO_SetForkSpec(false, want, specID)
+        fvPrev = CludesUI._SO_SetForkSpec(false, wanted, specID)
     end
-    if want == s.active and not force then
+    if wanted == s.active and not force then
         if CludesUI.IS_FOREVER and fvPrev ~= CludesUI.SpecOverrides_BmForkSpecID then
             CludesUI._SO_ForkReDrive(false, noPageRefresh)
         end
         return
     end
-    if not target then
-        target = s.baselineLayout
+    if not targetUnit then
+        targetUnit = s.baselineLayout
     end
-    if target then
+    if targetUnit then
         -- The pointer advances ONLY when the paint lands. A silent no-op apply (RF
         -- store not ready, malformed layer) must never strand live content under the
         -- wrong pointer, or the next harvest banks it into the wrong layer (baseline
         -- overwritten by fork content). Failed applies retry naturally: want ~= active
         -- still holds at the next boundary.
-        if BmApplyLayer(target, noPageRefresh) then
-            s.active = want
+        if BmApplyLayer(targetUnit, noPageRefresh) then
+            s.active = wanted
         end
     elseif s.active == nil then
         -- Virgin store (no baseline banked yet): live IS the baseline, so the
         -- pointer may move without a paint.
-        s.active = want
+        s.active = wanted
     else
         -- A layer is live but there is nothing to paint back (no
         -- baselineLayout): KEEP the old pointer so harvests keep banking live
@@ -1495,7 +1496,7 @@ function CludesUI.SpecOverrides_ApplyBm(specID, force, noPageRefresh)
     end
     -- WoW Forever: the pointer did not move, so the spec goes back to the
     -- one the live layer serves.
-    if CludesUI.IS_FOREVER and s.active ~= want then
+    if CludesUI.IS_FOREVER and s.active ~= wanted then
         CludesUI.SpecOverrides_BmForkSpecID = type(s.active) == "number" and fvPrev or nil
     end
 end
@@ -1742,8 +1743,8 @@ local function DmOwnerGid(specID)
     end
     for _, g in ipairs(GetGroups() or {}) do
         if s.layouts[g.id] then
-            for _, sid in ipairs(g.specs or {}) do
-                if sid == specID then
+            for _, spellRef in ipairs(g.specs or {}) do
+                if spellRef == specID then
                     return g.id
                 end
             end
@@ -1838,7 +1839,7 @@ function CludesUI._SO_SeedForkSpec(dm)
     elseif CludesUI._SO_BmForkSeeded then
         return
     end
-    local want, cur, owner
+    local wanted, current, ownerFrame
     local prof = GetProfileRoot()
     if prof and not prof._importEstablishPending then
         local s
@@ -1847,19 +1848,19 @@ function CludesUI._SO_SeedForkSpec(dm)
         else
             s = GetBmStore()
         end
-        want = s and s.active
+        wanted = s and s.active
     end
-    if type(want) == "number" then
-        cur = CurrentSpecID()
-        if cur then
+    if type(wanted) == "number" then
+        current = CurrentSpecID()
+        if current then
             if dm then
-                owner = DmOwnerGid(cur)
+                ownerFrame = DmOwnerGid(current)
             else
-                owner = BmOwnerGid(cur)
+                ownerFrame = BmOwnerGid(current)
             end
         end
     end
-    CludesUI._SO_SetForkSpec(dm, owner == want and owner or nil, cur)
+    CludesUI._SO_SetForkSpec(dm, ownerFrame == wanted and ownerFrame or nil, current)
 end
 
 --- Swaps the live Debuff Manager to the given spec's layer (mirror of
@@ -1885,17 +1886,17 @@ function CludesUI.SpecOverrides_ApplyDm(specID, force, noPageRefresh)
     if not specID then
         return
     end
-    local want = DmOwnerGid(specID)
-    local target
-    if want then
-        target = s.layouts[want]
+    local wanted = DmOwnerGid(specID)
+    local targetUnit
+    if wanted then
+        targetUnit = s.layouts[wanted]
     else
         local cond = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid() or nil
         if cond then
             local cs = GetCondDmStore()
             if cs and cs.layouts[cond] then
-                want = "cond:" .. cond
-                target = cs.layouts[cond]
+                wanted = "cond:" .. cond
+                targetUnit = cs.layouts[cond]
             end
         end
     end
@@ -1905,29 +1906,29 @@ function CludesUI.SpecOverrides_ApplyDm(specID, force, noPageRefresh)
     local fvPrev
     if CludesUI.IS_FOREVER then
         CludesUI._SO_SeedForkSpec(true)
-        fvPrev = CludesUI._SO_SetForkSpec(true, want, specID)
+        fvPrev = CludesUI._SO_SetForkSpec(true, wanted, specID)
     end
-    if want == s.active and not force then
+    if wanted == s.active and not force then
         if CludesUI.IS_FOREVER and fvPrev ~= CludesUI.SpecOverrides_DmForkSpecID then
             CludesUI._SO_ForkReDrive(true, noPageRefresh)
         end
         return
     end
-    if not target then
-        target = s.baselineLayout
+    if not targetUnit then
+        targetUnit = s.baselineLayout
     end
-    if target then
+    if targetUnit then
         -- Pointer advances ONLY when the paint lands (see the BM twin: a
         -- silent no-op apply must never strand live content under the wrong
         -- pointer, or the next harvest banks it into the wrong layer).
-        if DmApplyLayer(target, noPageRefresh) then
-            s.active = want
+        if DmApplyLayer(targetUnit, noPageRefresh) then
+            s.active = wanted
         end
     elseif s.active == nil then
-        s.active = want
+        s.active = wanted
     end
     -- WoW Forever: the pointer did not move (see the BM twin).
-    if CludesUI.IS_FOREVER and s.active ~= want then
+    if CludesUI.IS_FOREVER and s.active ~= wanted then
         CludesUI.SpecOverrides_DmForkSpecID = type(s.active) == "number" and fvPrev or nil
     end
 end
@@ -2115,8 +2116,8 @@ function CludesUI.Conditions_EnterUnlockForGroup(g)
     if CludesUI._unlockModeActive then
         return
     end
-    local cur = CurrentSpecID()
-    if OwnerGid(cur) then
+    local current = CurrentSpecID()
+    if OwnerGid(current) then
         CludesUI:ShowConfirmPopup({
             title = L("Customize Layout Mode"),
             message = L(
@@ -2186,9 +2187,9 @@ function CludesUI.Conditions_EnterUnlockForGroup(g)
     if _editGroup then
         ExitGroupEdit(true)
     end
-    local panel = CludesUI._mainFrame
-    if panel and panel:IsShown() then
-        panel:Hide()
+    local panelFrame = CludesUI._mainFrame
+    if panelFrame and panelFrame:IsShown() then
+        panelFrame:Hide()
     end
     C_Timer.After(0, function()
         if CludesUI._openUnlockMode then
@@ -2210,10 +2211,10 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
     if not g then
         return
     end
-    local cur = CurrentSpecID()
+    local current = CurrentSpecID()
     local member = false
-    for _, sid in ipairs(g.specs or {}) do
-        if sid == cur then
+    for _, spellRef in ipairs(g.specs or {}) do
+        if spellRef == current then
             member = true
             break
         end
@@ -2229,7 +2230,7 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
     -- non-owner group can never apply to this spec; it sits dead until a group or
     -- layout deletion promotes it, replacing the spec's unlock mode with a stale layout.
     do
-        local own = OwnerGid(cur)
+        local own = OwnerGid(current)
         if own and own ~= g.id then
             local og = GroupById(own)
             CludesUI:ShowConfirmPopup({
@@ -2286,7 +2287,7 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
                 else
                     s2.layouts[g.id] = HarvestLayer(s2.baselineLayout)
                 end
-                if OwnerGid(cur) == g.id then
+                if OwnerGid(current) == g.id then
                     s2.active = g.id
                     -- Baseline-seeded fork while another layer was showing:
                     -- that layer ceased to apply for this spec, so switch the
@@ -2310,9 +2311,9 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
     if _editGroup then
         ExitGroupEdit(true)
     end
-    local panel = CludesUI._mainFrame
-    if panel and panel:IsShown() then
-        panel:Hide()
+    local panelFrame = CludesUI._mainFrame
+    if panelFrame and panelFrame:IsShown() then
+        panelFrame:Hide()
     end
     C_Timer.After(0, function()
         if CludesUI._openUnlockMode then
@@ -2321,10 +2322,10 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
     end)
 end
 
-I.BmApplyLayer, I.BmHarvestLayer, I.BmOwnerGid = BmApplyLayer, BmHarvestLayer, BmOwnerGid
-I.BmSessionEngage, I.DmApplyLayer = BmSessionEngage, DmApplyLayer
-I.DmHarvestLayer, I.DmOwnerGid, I.DmSessionEngage = DmHarvestLayer, DmOwnerGid, DmSessionEngage
-I.GetBmStore, I.GetCondBmStore, I.GetCondDmStore = GetBmStore, GetCondBmStore, GetCondDmStore
-I.GetDmStore, I.IsTBBChildKey, I.LayerSkipsKey = GetDmStore, IsTBBChildKey, LayerSkipsKey
-I.LiteProfile = LiteProfile
-I.broken = false
+Inner.BmApplyLayer, Inner.BmHarvestLayer, Inner.BmOwnerGid = BmApplyLayer, BmHarvestLayer, BmOwnerGid
+Inner.BmSessionEngage, Inner.DmApplyLayer = BmSessionEngage, DmApplyLayer
+Inner.DmHarvestLayer, Inner.DmOwnerGid, Inner.DmSessionEngage = DmHarvestLayer, DmOwnerGid, DmSessionEngage
+Inner.GetBmStore, Inner.GetCondBmStore, Inner.GetCondDmStore = GetBmStore, GetCondBmStore, GetCondDmStore
+Inner.GetDmStore, Inner.IsTBBChildKey, Inner.LayerSkipsKey = GetDmStore, IsTBBChildKey, LayerSkipsKey
+Inner.LiteProfile = LiteProfile
+Inner.broken = false

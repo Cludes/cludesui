@@ -54,8 +54,8 @@ do
     scaleFrame:RegisterEvent("ADDON_LOADED")
     scaleFrame:RegisterEvent("PLAYER_LOGIN")
     scaleFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    scaleFrame:SetScript("OnEvent", function(self, event, addonName)
-        if event == "ADDON_LOADED" then
+    scaleFrame:SetScript("OnEvent", function(self, evt, addonName)
+        if evt == "ADDON_LOADED" then
             if addonName ~= ADDON_NAME then
                 return
             end
@@ -102,7 +102,7 @@ do
                 -- before Blizzard's CVar apply. The chat fix is below.
                 ApplyScaleSafe(CludesUIDB.ppUIScale)
             end
-        elseif event == "PLAYER_LOGIN" then
+        elseif evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
 
             if scaleKnown and CludesUIDB.ppUIScale then
@@ -120,14 +120,14 @@ do
             if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then
                 CludesUI.PP.UpdateMult()
             end
-        elseif event == "UI_SCALE_CHANGED" then
+        elseif evt == "UI_SCALE_CHANGED" then
             local saved = CludesUIDB and CludesUIDB.ppUIScale
             if saved then
                 ApplyScaleSafe(saved)
                 SyncMultOnly()
             end
             return
-        elseif event == "PLAYER_ENTERING_WORLD" then
+        elseif evt == "PLAYER_ENTERING_WORLD" then
             self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
             if not dbReady then
@@ -243,12 +243,12 @@ end
 -- that was there. So: raised = the client could not find the file, anything
 -- else = it could, and we say nothing about the rest.
 local probeFS
-local function ProbeFont(path)
-    if type(path) ~= "string" or path == "" then
+local function ProbeFont(filePath)
+    if type(filePath) ~= "string" or filePath == "" then
         return false
     end
     probeFS = probeFS or UIParent:CreateFontString()
-    return (pcall(probeFS.SetFont, probeFS, path, 12, ""))
+    return (pcall(probeFS.SetFont, probeFS, filePath, 12, ""))
 end
 
 local function ApplyUnitNameFont()
@@ -257,19 +257,19 @@ local function ApplyUnitNameFont()
     if not name or name == "" then
         return
     end
-    local path = fonts.unitNameFontPath
-    if not ProbeFont(path) and CludesUI and CludesUI.ResolveFontName then
+    local filePath = fonts.unitNameFontPath
+    if not ProbeFont(filePath) and CludesUI and CludesUI.ResolveFontName then
         -- Advisory probe (see ApplyCombatTextFont): a live resolve of the saved
         -- name is better evidence than a probe that false-negatives on macOS
         -- and Linux, so prefer it over dropping the setting back to Blizzard's
         -- default.
         local resolved = CludesUI.ResolveFontName(name)
         if resolved and resolved ~= "" then
-            path = resolved
+            filePath = resolved
         end
     end
-    if path and path ~= "" then
-        _G.UNIT_NAME_FONT = path
+    if filePath and filePath ~= "" then
+        _G.UNIT_NAME_FONT = filePath
     end
 end
 
@@ -315,19 +315,19 @@ do
         if not GetChatWindowSavedPosition then
             return
         end
-        local W, H = GetScreenWidth(), GetScreenHeight()
-        if not (W and H) then
+        local Widgets, H = GetScreenWidth(), GetScreenHeight()
+        if not (Widgets and H) then
             return
         end
-        for i = 2, NUM_CHAT_WINDOWS or 10 do
-            local cf = _G["ChatFrame" .. i]
-            if cf and cf:IsShown() and not cf.isDocked and not cf.isTemporary then
-                local point, xOff, yOff = GetChatWindowSavedPosition(i)
-                if point and xOff and yOff then
+        for idx = 2, NUM_CHAT_WINDOWS or 10 do
+            local castFrame = _G["ChatFrame" .. idx]
+            if castFrame and castFrame:IsShown() and not castFrame.isDocked and not castFrame.isTemporary then
+                local anchorPoint, xOff, yOff = GetChatWindowSavedPosition(idx)
+                if anchorPoint and xOff and yOff then
                     -- Blizzard's own restore formula, re-run now that the
                     -- scale (and therefore GetScreenWidth/Height) has settled.
-                    cf:ClearAllPoints()
-                    cf:SetPoint(point, UIParent, point, xOff * W, yOff * H)
+                    castFrame:ClearAllPoints()
+                    castFrame:SetPoint(anchorPoint, UIParent, anchorPoint, xOff * Widgets, yOff * H)
                 end
             end
         end
@@ -379,12 +379,12 @@ do
     -- boolean. Both witnesses run the same call and return the same false for
     -- a font that is present. This runs at file scope, where an unhandled
     -- error would abort the rest of the file, hence the pcall.
-    local function TryRealFont(path)
+    local function TryRealFont(filePath)
         local f = _G.CombatTextFont
         if not f then
             return nil
         end
-        return (pcall(f.SetFont, f, path, 120, ""))
+        return (pcall(f.SetFont, f, filePath, 120, ""))
     end
 
     local function ApplyCombatTextFont()
@@ -396,7 +396,7 @@ do
         if not CludesUI.CombatTextFontCoversLocale(saved) then
             return
         end
-        local fontPath = saved
+        local fontFile = saved
         local smName = saved:match("^smf:(.+)")
         if smName then
             local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
@@ -416,8 +416,8 @@ do
             -- consulted when nothing resolves, which is the uninstalled-pack
             -- case the probe was added for, and there the probe still guards
             -- against pointing the engine at a missing file.
-            fontPath = (ProbeFont(fetched) and fetched) or (ProbeFont(cached) and cached) or fetched
-            if not fontPath then
+            fontFile = (ProbeFont(fetched) and fetched) or (ProbeFont(cached) and cached) or fetched
+            if not fontFile then
                 return
             end
         end
@@ -427,18 +427,18 @@ do
         -- global out to Blizzard's value: an engine global left pointing at a
         -- missing path kills floating text for the session, which is worse
         -- than falling back to the default.
-        if TryRealFont(fontPath) == false then
+        if TryRealFont(fontFile) == false then
             _G.DAMAGE_TEXT_FONT = defaultDamageFont
             return
         end
-        _G.DAMAGE_TEXT_FONT = fontPath
+        _G.DAMAGE_TEXT_FONT = fontFile
 
         -- Cache only a path that was applied (or that we had no way to test).
         -- Never nil the cache: an early pass runs before external font packs
         -- load, and the later ADDON_LOADED / PLAYER_LOGIN /
         -- PLAYER_ENTERING_WORLD passes need it to still be there to succeed.
         if smName then
-            db.fctFontPath = fontPath
+            db.fctFontPath = fontFile
             db.fctFontPathFor = saved
         end
     end
@@ -453,8 +453,8 @@ do
     f:RegisterEvent("ADDON_LOADED")
     f:RegisterEvent("PLAYER_LOGIN")
     f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:SetScript("OnEvent", function(self, event, addonName)
-        if event == "ADDON_LOADED" then
+    f:SetScript("OnEvent", function(self, evt, addonName)
+        if evt == "ADDON_LOADED" then
             if addonName ~= ADDON_NAME and addonName ~= "Blizzard_CombatText" then
                 return
             end
@@ -463,9 +463,9 @@ do
         ApplyCombatTextFont()
         ApplyUnitNameFont()
 
-        if event == "PLAYER_LOGIN" then
+        if evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
-        elseif event == "PLAYER_ENTERING_WORLD" then
+        elseif evt == "PLAYER_ENTERING_WORLD" then
             self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         elseif
             addonName == "Blizzard_CombatText"
@@ -514,7 +514,7 @@ do
     }
     local f = CreateFrame("Frame")
     f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, event, addonName)
+    f:SetScript("OnEvent", function(self, evt, addonName)
         if addonName ~= ADDON_NAME then
             return
         end

@@ -9,9 +9,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  C_DamageMeter for every per player combat number (no combat log in
 --  Midnight), rating summaries sampled before and after for party score gain.
 --------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 
-local db -- Lite DB handle, handed over by ns.RS_OnEnable
+local saved -- Lite DB handle, handed over by ns.RS_OnEnable
 
 local SV_NAME = "CludesUIMythicRunsDB"
 local SCHEMA = 1
@@ -46,7 +46,7 @@ local ApplyPosition -- same
 --  Small helpers
 --------------------------------------------------------------------------------
 local function Cfg()
-    local p = db and db.profile
+    local p = saved and saved.profile
     return p and p.runSummary
 end
 
@@ -89,13 +89,13 @@ end
 
 local function HistorySize()
     local c = Cfg()
-    local n = c and tonumber(c.historySize) or 20
-    if n < 5 then
-        n = 5
-    elseif n > 50 then
-        n = 50
+    local num = c and tonumber(c.historySize) or 20
+    if num < 5 then
+        num = 5
+    elseif num > 50 then
+        num = 50
     end
-    return n
+    return num
 end
 
 -- The run history other modules read (the data bar's M+ Summary block): Get,
@@ -106,9 +106,9 @@ CludesUI._MythicRuns = {}
 -- A reader's error is reported, never passed on: StoreRun's caller still sets
 -- up the meter retries after it.
 local function NotifyRunsChanged()
-    local fn = CludesUI._MythicRuns.OnChanged
-    if fn then
-        xpcall(fn, geterrorhandler())
+    local func = CludesUI._MythicRuns.OnChanged
+    if func then
+        xpcall(func, geterrorhandler())
     end
 end
 
@@ -125,7 +125,7 @@ local function StoreRun(record)
     NotifyRunsChanged()
 end
 
-function ns.RS_GetRuns()
+function mod.RS_GetRuns()
     return GetSV().runs
 end
 
@@ -136,7 +136,7 @@ function CludesUI._MythicRuns.Get()
     return type(runs) == "table" and runs or nil
 end
 
-function ns.RS_ClearHistory()
+function mod.RS_ClearHistory()
     local sv = GetSV()
     wipe(sv.runs)
     if RefreshWindowIfOpen then
@@ -144,7 +144,7 @@ function ns.RS_ClearHistory()
     end
     NotifyRunsChanged()
 end
-CludesUI._MythicRuns.Clear = ns.RS_ClearHistory
+CludesUI._MythicRuns.Clear = mod.RS_ClearHistory
 
 -- Season purge: drop records for dungeons that are no longer in the pool, the
 -- same shape EMT:OnInitialize already uses for bestObjectiveSplits.
@@ -162,8 +162,8 @@ local function PurgeOldSeasons()
         valid[mapID] = true
     end
     for i = #sv.runs, 1, -1 do
-        local rec = sv.runs[i]
-        local mapID = rec and tonumber(rec.mapID)
+        local recd = sv.runs[i]
+        local mapID = recd and tonumber(recd.mapID)
         if not mapID or not valid[mapID] then
             table.remove(sv.runs, i)
         end
@@ -193,8 +193,8 @@ local function MeterReady()
     end
     -- The truthiness test runs inside the pcall so a raise cannot take the
     -- whole harvest with it.
-    local ok, ready = pcall(MeterAvailableIsTrue)
-    return ok and ready == true
+    local success, ready = pcall(MeterAvailableIsTrue)
+    return success and ready == true
 end
 
 -- The pet units and the units that own them.
@@ -220,31 +220,31 @@ end
 -- names owns it; failing that (a demon summoned again keeps its old row), the
 -- one member of a class whose interrupt a demon casts. With two such members
 -- and no pet to match, nobody.
-local function PetOwner(src, owners)
-    local raw = src.sourceGUID
+local function PetOwner(source, owners)
+    local raw = source.sourceGUID
     if IsSecret(raw) then
         return nil
     end
-    local guid = PlainString(raw)
-    if guid then
+    local unitGuid = PlainString(raw)
+    if unitGuid then
         for petUnit, ownerUnit in pairs(PET_OWNER_UNIT) do
-            if PlainString(UnitGUID(petUnit)) == guid then
+            if PlainString(UnitGUID(petUnit)) == unitGuid then
                 local og = PlainString(UnitGUID(ownerUnit))
                 return og and owners[og] and og or nil
             end
         end
     end
-    local icon = src.specIconID
-    if IsSecret(icon) or (icon ~= nil and icon ~= 0) then
+    local glyph = source.specIconID
+    if IsSecret(glyph) or (glyph ~= nil and glyph ~= 0) then
         return nil
     end
-    local cls = PlainString(src.classFilename)
+    local cls = PlainString(source.classFilename)
     if not (cls and PET_KICK_CLASS[cls]) then
         return nil
     end
     local found
-    for g, rec in pairs(owners) do
-        if rec.class == cls then
+    for g, recd in pairs(owners) do
+        if recd.class == cls then
             if found then
                 return nil
             end
@@ -255,35 +255,35 @@ local function PetOwner(src, owners)
 end
 
 local function WalkSources(session, totals, perSec, identityRoster, countRows, owners)
-    local n = 0
-    for _, src in ipairs(session.combatSources) do
-        n = n + 1
-        local guid = PlainString(src.sourceGUID)
-        local total = PlainNumber(src.totalAmount)
+    local num = 0
+    for _, source in ipairs(session.combatSources) do
+        num = num + 1
+        local unitGuid = PlainString(source.sourceGUID)
+        local sum = PlainNumber(source.totalAmount)
         if countRows then
-            local rid = PlainNumber(src.deathRecapID)
-            if guid and rid and rid > 0 then
-                totals[guid] = (totals[guid] or 0) + 1
+            local rid = PlainNumber(source.deathRecapID)
+            if unitGuid and rid and rid > 0 then
+                totals[unitGuid] = (totals[unitGuid] or 0) + 1
             end
-        elseif total then
-            local into = guid
+        elseif sum then
+            local into = unitGuid
             if owners and not (into and owners[into]) then
-                into = PetOwner(src, owners)
+                into = PetOwner(source, owners)
             end
             if into then
-                totals[into] = (totals[into] or 0) + total
+                totals[into] = (totals[into] or 0) + sum
                 if perSec then
-                    perSec[into] = PlainNumber(src.amountPerSecond)
+                    perSec[into] = PlainNumber(source.amountPerSecond)
                 end
             end
         end
-        if identityRoster and guid and identityRoster[guid] then
-            local rec = identityRoster[guid]
-            rec.specIcon = rec.specIcon or PlainNumber(src.specIconID)
-            rec.class = rec.class or PlainString(src.classFilename)
+        if identityRoster and unitGuid and identityRoster[unitGuid] then
+            local recd = identityRoster[unitGuid]
+            recd.specIcon = recd.specIcon or PlainNumber(source.specIconID)
+            recd.class = recd.class or PlainString(source.classFilename)
         end
     end
-    return n
+    return num
 end
 
 -- Fills totals[guid] and, when perSec is given, perSec[guid]. Returns false if
@@ -298,15 +298,15 @@ local function HarvestTotals(dmType, totals, perSec, identityRoster, countRows, 
     if dmType == nil then
         return false
     end
-    local ok, session = pcall(C_DamageMeter.GetCombatSessionFromType, SESSION_OVERALL, dmType)
-    if not ok or type(session) ~= "table" or type(session.combatSources) ~= "table" then
+    local success, session = pcall(C_DamageMeter.GetCombatSessionFromType, SESSION_OVERALL, dmType)
+    if not success or type(session) ~= "table" or type(session.combatSources) ~= "table" then
         return false
     end
     -- The whole walk sits inside the pcall, not just the call that produced
     -- the session: type() answers "table" for a secret table too, so indexing
     -- one raises rather than reading nil.
-    local walked, rows = pcall(WalkSources, session, totals, perSec, identityRoster, countRows, owners)
-    return true, walked and rows or nil
+    local walked, rowList = pcall(WalkSources, session, totals, perSec, identityRoster, countRows, owners)
+    return true, walked and rowList or nil
 end
 
 local function SessionDuration()
@@ -317,8 +317,8 @@ local function SessionDuration()
         return nil
     end
     -- One argument only: the session type. There is no meter type parameter.
-    local ok, dur = pcall(C_DamageMeter.GetSessionDurationSeconds, SESSION_OVERALL)
-    if not ok then
+    local success, dur = pcall(C_DamageMeter.GetSessionDurationSeconds, SESSION_OVERALL)
+    if not success then
         return nil
     end
     return PlainNumber(dur)
@@ -327,7 +327,7 @@ end
 --------------------------------------------------------------------------------
 --  Collector state
 --------------------------------------------------------------------------------
-local frame -- built on first enable
+local widget -- built on first enable
 local collecting -- true between CHALLENGE_MODE_START and the panel showing
 local rosterOrder -- ordered guids
 local baseTotals -- [metricKey][guid] = total at key start
@@ -365,33 +365,33 @@ local function ResetCollector()
 end
 ResetCollector()
 
-local function EnsureMember(guid)
-    local rec = roster[guid]
-    if not rec then
-        rec = { guid = guid }
-        roster[guid] = rec
-        rosterOrder[#rosterOrder + 1] = guid
+local function EnsureMember(unitGuid)
+    local recd = roster[unitGuid]
+    if not recd then
+        recd = { guid = unitGuid }
+        roster[unitGuid] = recd
+        rosterOrder[#rosterOrder + 1] = unitGuid
     end
-    return rec
+    return recd
 end
 
-local function StillIs(rec)
-    if not (rec and rec.unit and rec.guid) then
+local function StillIs(recd)
+    if not (recd and recd.unit and recd.guid) then
         return false
     end
-    if not UnitExists(rec.unit) then
+    if not UnitExists(recd.unit) then
         return false
     end
-    return PlainString(UnitGUID(rec.unit)) == rec.guid
+    return PlainString(UnitGUID(recd.unit)) == recd.guid
 end
 
 -- Item link straight out of a chat line. Matching the hyperlink rather than the
 -- sentence keeps this independent of client language.
-local function LinkFromText(text)
-    if type(text) ~= "string" or IsSecret(text) then
+local function LinkFromText(textValue)
+    if type(textValue) ~= "string" or IsSecret(textValue) then
         return nil
     end
-    return text:match("(|c%x+|Hitem:.-|h.-|h|r)") or text:match("(|Hitem:.-|h.-|h)")
+    return textValue:match("(|c%x+|Hitem:.-|h.-|h|r)") or textValue:match("(|Hitem:.-|h.-|h)")
 end
 
 -- Bonus roll loot is announced through CHAT_MSG_LOOT like the chest's, and only
@@ -413,8 +413,8 @@ do
         return "^" .. p:gsub("\1", ".+"):gsub("\2", "%%d+")
     end
 
-    function IsBonusRollLine(text)
-        if type(text) ~= "string" or IsSecret(text) then
+    function IsBonusRollLine(textValue)
+        if type(textValue) ~= "string" or IsSecret(textValue) then
             return false
         end
         if not patterns then
@@ -427,7 +427,7 @@ do
             end
         end
         for i = 1, #patterns do
-            if text:find(patterns[i]) then
+            if textValue:find(patterns[i]) then
                 return true
             end
         end
@@ -435,11 +435,11 @@ do
     end
 end
 
-local function IDFromLink(link)
-    if type(link) ~= "string" then
+local function IDFromLink(itemLink)
+    if type(itemLink) ~= "string" then
         return nil
     end
-    return tonumber(link:match("|Hitem:(%d+)"))
+    return tonumber(itemLink:match("|Hitem:(%d+)"))
 end
 
 -- Records a looted item against a roster member, found by GUID when we have one
@@ -453,19 +453,19 @@ local GetFullInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 
 -- A Warbound until Equipped item reports bindType OnEquip, so the predicate
 -- has to run first: the bind type alone only catches the fully bound ones.
-local function IsWarboundLoot(info)
-    if not info then
+local function IsWarboundLoot(details)
+    if not details then
         return false
     end
     if
         C_Item
         and C_Item.IsItemBindToAccountUntilEquip
-        and C_Item.IsItemBindToAccountUntilEquip(info) == true
+        and C_Item.IsItemBindToAccountUntilEquip(details) == true
     then
         return true
     end
     if ITEM_BIND and GetFullInfo then
-        local bind = PlainNumber(select(14, GetFullInfo(info)))
+        local bind = PlainNumber(select(14, GetFullInfo(details)))
         if
             bind
             and (
@@ -485,21 +485,21 @@ end
 -- are skipped. Quality is read from the link where there is one, since bonus
 -- IDs can raise it; an item not yet cached reports no quality and is let
 -- through on its equip slot alone.
-local function IsExcludedLootID(id, link)
-    if not id then
+local function IsExcludedLootID(ident, itemLink)
+    if not ident then
         return true
     end
-    if id == 180653 then
+    if ident == 180653 then
         return true
     end
-    if C_Item and C_Item.IsItemKeystoneByID and C_Item.IsItemKeystoneByID(id) == true then
+    if C_Item and C_Item.IsItemKeystoneByID and C_Item.IsItemKeystoneByID(ident) == true then
         return true
     end
-    if IsWarboundLoot(link or id) then
+    if IsWarboundLoot(itemLink or ident) then
         return true
     end
     if GetInstant then
-        local _, _, _, equipLoc, _, classID = GetInstant(id)
+        local _, _, _, equipLoc, _, classID = GetInstant(ident)
         classID = PlainNumber(classID)
         if ITEM_CLASS and (classID == ITEM_CLASS.Questitem or classID == ITEM_CLASS.Housing) then
             return true
@@ -510,7 +510,7 @@ local function IsExcludedLootID(id, link)
         end
     end
     if ITEM_QUALITY and C_Item and C_Item.GetItemQualityByID then
-        local q = PlainNumber(C_Item.GetItemQualityByID(link or id))
+        local q = PlainNumber(C_Item.GetItemQualityByID(itemLink or ident))
         if q and q < ITEM_QUALITY.Epic then
             return true
         end
@@ -518,57 +518,57 @@ local function IsExcludedLootID(id, link)
     return false
 end
 
-local function IsExcludedLoot(link)
-    if link:find("|Hkeystone:", 1, true) then
+local function IsExcludedLoot(itemLink)
+    if itemLink:find("|Hkeystone:", 1, true) then
         return true
     end
-    return IsExcludedLootID(IDFromLink(link), link)
+    return IsExcludedLootID(IDFromLink(itemLink), itemLink)
 end
 
-local function RecordLoot(rst, ord, guid, name, link)
-    if not (rst and ord and link) then
+local function RecordLoot(rst, ord, unitGuid, name, itemLink)
+    if not (rst and ord and itemLink) then
         return false
     end
-    if IsExcludedLoot(link) then
+    if IsExcludedLoot(itemLink) then
         return false
     end
-    local rec = guid and rst[guid]
-    if not rec and name then
+    local recd = unitGuid and rst[unitGuid]
+    if not recd and name then
         local short = name:match("^([^%-]+)") or name
         for _, g in ipairs(ord) do
             local r = rst[g]
             if r and r.name and (r.name:match("^([^%-]+)") or r.name) == short then
-                rec = r
+                recd = r
                 break
             end
         end
     end
-    if not rec then
+    if not recd then
         return false
     end
     -- The chest reward is the item the column is for: a link gets in only when
     -- it is that same item, carrying the level and bonuses the ID has not got.
-    if rec.lootChest then
-        if rec.lootLink or IDFromLink(link) ~= rec.lootID then
+    if recd.lootChest then
+        if recd.lootLink or IDFromLink(itemLink) ~= recd.lootID then
             return false
         end
-        rec.lootLink = link
+        recd.lootLink = itemLink
         return true
     end
-    if rec.lootLink then
+    if recd.lootLink then
         return false
     end
-    rec.lootLink = link
-    rec.lootID = IDFromLink(link) or rec.lootID
+    recd.lootLink = itemLink
+    recd.lootID = IDFromLink(itemLink) or recd.lootID
     return true
 end
 
-local function ScoreFor(unit)
+local function ScoreFor(unitToken)
     if not (C_PlayerInfo and C_PlayerInfo.GetPlayerMythicPlusRatingSummary) then
         return nil
     end
-    local ok, summary = pcall(C_PlayerInfo.GetPlayerMythicPlusRatingSummary, unit)
-    if not ok or type(summary) ~= "table" then
+    local success, summary = pcall(C_PlayerInfo.GetPlayerMythicPlusRatingSummary, unitToken)
+    if not success or type(summary) ~= "table" then
         return nil
     end
     return PlainNumber(summary.currentSeasonScore)
@@ -578,22 +578,22 @@ end
 -- overwrites a value already captured, so a member who leaves after completion
 -- keeps the data collected while they were present.
 local function ScanRoster(withStartScore)
-    for _, unit in ipairs(UNIT_TOKENS) do
-        if UnitExists(unit) then
-            local guid = PlainString(UnitGUID(unit))
-            if guid then
-                local rec = EnsureMember(guid)
-                rec.unit = unit
-                rec.name = rec.name or PlainString(UnitName(unit))
-                if not rec.class then
-                    local _, classFile = UnitClass(unit)
-                    rec.class = PlainString(classFile)
+    for _, unitToken in ipairs(UNIT_TOKENS) do
+        if UnitExists(unitToken) then
+            local unitGuid = PlainString(UnitGUID(unitToken))
+            if unitGuid then
+                local recd = EnsureMember(unitGuid)
+                recd.unit = unitToken
+                recd.name = recd.name or PlainString(UnitName(unitToken))
+                if not recd.class then
+                    local _, classFile = UnitClass(unitToken)
+                    recd.class = PlainString(classFile)
                 end
                 if UnitGroupRolesAssignedEnum then
-                    rec.role = PlainNumber(UnitGroupRolesAssignedEnum(unit)) or rec.role
+                    recd.role = PlainNumber(UnitGroupRolesAssignedEnum(unitToken)) or recd.role
                 end
-                if withStartScore and rec.scoreStart == nil then
-                    rec.scoreStart = ScoreFor(unit)
+                if withStartScore and recd.scoreStart == nil then
+                    recd.scoreStart = ScoreFor(unitToken)
                 end
             end
         end
@@ -616,8 +616,8 @@ local function OwnSpecIcon()
     if not idx then
         return nil
     end
-    local _, _, _, icon = CSI.GetSpecializationInfo(idx)
-    return PlainNumber(icon)
+    local _, _, _, glyph = CSI.GetSpecializationInfo(idx)
+    return PlainNumber(glyph)
 end
 
 -- GetSpecializationInfoForSpecID is the documented name; the ByID global is
@@ -627,19 +627,19 @@ local function SpecIconForSpecID(specID)
     if not specID or specID == 0 then
         return nil
     end
-    local fn = GetSpecializationInfoForSpecID or GetSpecializationInfoByID
-    if not fn then
+    local func = GetSpecializationInfoForSpecID or GetSpecializationInfoByID
+    if not func then
         return nil
     end
-    return PlainNumber(select(4, fn(specID)))
+    return PlainNumber(select(4, func(specID)))
 end
 
-local function InspectSpecIcon(unit)
+local function InspectSpecIcon(unitToken)
     local CSI = C_SpecializationInfo
     if not (CSI and CSI.GetInspectSpecialization) then
         return nil
     end
-    return SpecIconForSpecID(PlainNumber(CSI.GetInspectSpecialization(unit)))
+    return SpecIconForSpecID(PlainNumber(CSI.GetInspectSpecialization(unitToken)))
 end
 
 local function OwnItemLevel()
@@ -661,8 +661,8 @@ end
 
 local INSPECT_MAX_TRIES = 8
 
-local function NeedsInspect(rec)
-    return not rec.ilvl or not rec.specIcon
+local function NeedsInspect(recd)
+    return not recd.ilvl or not recd.specIcon
 end
 
 -- The roster being worked on: the live one during the key, then the finished
@@ -688,14 +688,14 @@ local function InspectSweep()
     end
 
     local missing = false
-    for _, guid in ipairs(ord) do
-        local rec = rst[guid]
-        if rec then
-            if rec.unit == "player" then
-                rec.ilvl = rec.ilvl or OwnItemLevel()
-                rec.specIcon = rec.specIcon or OwnSpecIcon()
+    for _, unitGuid in ipairs(ord) do
+        local recd = rst[unitGuid]
+        if recd then
+            if recd.unit == "player" then
+                recd.ilvl = recd.ilvl or OwnItemLevel()
+                recd.specIcon = recd.specIcon or OwnSpecIcon()
             end
-            if NeedsInspect(rec) then
+            if NeedsInspect(recd) then
                 missing = true
             end
         end
@@ -705,20 +705,20 @@ local function InspectSweep()
     end
 
     local pick, fewest
-    for _, guid in ipairs(ord) do
-        local rec = rst[guid]
-        local tries = rec and (rec.inspectTries or 0)
+    for _, unitGuid in ipairs(ord) do
+        local recd = rst[unitGuid]
+        local tries = recd and (recd.inspectTries or 0)
         if
-            rec
-            and rec.unit ~= "player"
-            and NeedsInspect(rec)
+            recd
+            and recd.unit ~= "player"
+            and NeedsInspect(recd)
             and tries < INSPECT_MAX_TRIES
-            and StillIs(rec)
-            and UnitIsVisible(rec.unit)
-            and CanInspect(rec.unit)
+            and StillIs(recd)
+            and UnitIsVisible(recd.unit)
+            and CanInspect(recd.unit)
             and (fewest == nil or tries < fewest)
         then
-            pick, fewest = rec, tries
+            pick, fewest = recd, tries
         end
     end
     if not pick then
@@ -733,34 +733,34 @@ local function InspectSweep()
 end
 
 -- Returns true when it filled something in.
-local function OnInspectReady(guid)
-    guid = PlainString(guid)
-    if not guid then
+local function OnInspectReady(unitGuid)
+    unitGuid = PlainString(unitGuid)
+    if not unitGuid then
         return false
     end
-    if inspectPending == guid then
+    if inspectPending == unitGuid then
         inspectPending = nil
     end
     local rst = InspectRoster()
-    local rec = rst and rst[guid]
-    if not rec or not UnitTokenFromGUID then
+    local recd = rst and rst[unitGuid]
+    if not recd or not UnitTokenFromGUID then
         return false
     end
-    local unit = PlainString(UnitTokenFromGUID(guid))
-    if not unit or not UnitExists(unit) then
+    local unitToken = PlainString(UnitTokenFromGUID(unitGuid))
+    if not unitToken or not UnitExists(unitToken) then
         return false
     end
     local changed = false
-    if not rec.ilvl and C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
-        local val = PlainNumber(C_PaperDollInfo.GetInspectItemLevel(unit))
+    if not recd.ilvl and C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
+        local val = PlainNumber(C_PaperDollInfo.GetInspectItemLevel(unitToken))
         if val and val > 0 then
-            rec.ilvl = math.floor(val)
+            recd.ilvl = math.floor(val)
             changed = true
         end
     end
-    if not rec.specIcon then
-        rec.specIcon = InspectSpecIcon(unit)
-        changed = changed or rec.specIcon ~= nil
+    if not recd.specIcon then
+        recd.specIcon = InspectSpecIcon(unitToken)
+        changed = changed or recd.specIcon ~= nil
     end
     return changed
 end
@@ -778,8 +778,8 @@ local function RestrictionActive()
     if not (CRA and CRA.IsAddOnRestrictionActive and Enum.AddOnRestrictionType) then
         return false
     end
-    for _, kind in ipairs(RESTRICTION_KINDS) do
-        local t = Enum.AddOnRestrictionType[kind]
+    for _, kindOf in ipairs(RESTRICTION_KINDS) do
+        local t = Enum.AddOnRestrictionType[kindOf]
         if t ~= nil and CRA.IsAddOnRestrictionActive(t) == true then
             return true
         end
@@ -794,11 +794,11 @@ local function Settling()
     return lastRun ~= nil and not lastRun.settled
 end
 
-local function SetEvent(event, on)
+local function SetEvent(evt, on)
     if on then
-        frame:RegisterEvent(event)
+        widget:RegisterEvent(evt)
     else
-        frame:UnregisterEvent(event)
+        widget:UnregisterEvent(evt)
     end
 end
 
@@ -809,7 +809,7 @@ end
 -- CHAT_MSG_LOOT (looter GUID in arg 12). Bonus roll loot is dropped: from the
 -- chat line for everyone, and from BONUS_ROLL_RESULT for our own roll.
 local function SyncEvents()
-    if not frame then
+    if not widget then
         return
     end
     local on = Enabled() == true
@@ -865,8 +865,8 @@ local function StartCollecting(skipBaseline)
         -- first pull (a meter clearing itself at key start) banks nothing.
         for _, m in ipairs(METRICS) do
             local s = {}
-            for guid, v in pairs(baseTotals[m.key]) do
-                s[guid] = v
+            for unitGuid, v in pairs(baseTotals[m.key]) do
+                s[unitGuid] = v
             end
             seg.snap[m.key] = s
         end
@@ -891,9 +891,9 @@ end
 -- live upvalues: retries land after the key has reset, which wipes them.
 local scratchTotals, scratchPerSec = {}, {}
 
-local function HarvestInto(record, rst, base, baseDur, based, sg)
+local function HarvestInto(record, rst, baseValue, baseDur, based, sg)
     rst = rst or roster
-    base = base or baseTotals
+    baseValue = baseValue or baseTotals
     if baseDur == nil then
         baseDur = baseDuration
     end
@@ -933,7 +933,7 @@ local function HarvestInto(record, rst, base, baseDur, based, sg)
         wipe(totals)
         wipe(perSec)
         local isDamage = (m.key == "damage")
-        local read, rows = HarvestTotals(
+        local read, rowList = HarvestTotals(
             m.dmType,
             totals,
             isDamage and perSec or nil,
@@ -943,19 +943,19 @@ local function HarvestInto(record, rst, base, baseDur, based, sg)
         )
         if read then
             okAny = true
-            local b = base[m.key]
+            local b = baseValue[m.key]
             local bk = sg.bank[m.key]
             -- Members with banked gains but no row since the reset still count.
             -- When the meter sits empty since a reset that landed after the last
             -- checkpoint, the bank IS the whole run, so it matches on its own.
             if bk then
-                local complete = isDamage and rows == 0 and not sg.unbanked
-                for guid, v in pairs(bk) do
-                    local rec = rst[guid]
-                    if rec and totals[guid] == nil then
-                        rec[m.key] = v
+                local complete = isDamage and rowList == 0 and not sg.unbanked
+                for unitGuid, v in pairs(bk) do
+                    local recd = rst[unitGuid]
+                    if recd and totals[unitGuid] == nil then
+                        recd[m.key] = v
                         if isDamage and deltaDuration and deltaDuration > 1 then
-                            rec.dps = v / deltaDuration
+                            recd.dps = v / deltaDuration
                         end
                         if complete then
                             matched = matched + 1
@@ -963,21 +963,21 @@ local function HarvestInto(record, rst, base, baseDur, based, sg)
                     end
                 end
             end
-            for guid, total in pairs(totals) do
-                local rec = rst[guid]
-                if rec then
-                    local delta = total - ((b and b[guid]) or 0)
+            for unitGuid, sum in pairs(totals) do
+                local recd = rst[unitGuid]
+                if recd then
+                    local delta = sum - ((b and b[unitGuid]) or 0)
                     if delta < 0 then
-                        delta = total
+                        delta = sum
                     end
-                    delta = delta + ((bk and bk[guid]) or 0)
-                    rec[m.key] = delta
+                    delta = delta + ((bk and bk[unitGuid]) or 0)
+                    recd[m.key] = delta
                     if isDamage then
                         matched = matched + 1
                         if deltaDuration and deltaDuration > 1 then
-                            rec.dps = delta / deltaDuration
+                            recd.dps = delta / deltaDuration
                         else
-                            rec.dps = perSec[guid]
+                            recd.dps = perSec[unitGuid]
                         end
                     end
                 end
@@ -1020,17 +1020,17 @@ local function Checkpoint(sg, rst)
     local readable = false
     for _, m in ipairs(METRICS) do
         wipe(scratchTotals)
-        local read, rows = HarvestTotals(m.dmType, scratchTotals, nil, nil, m.countRows, m.pets and rst)
+        local read, rowList = HarvestTotals(m.dmType, scratchTotals, nil, nil, m.countRows, m.pets and rst)
         if read then
             local s = sg.snap[m.key]
             if not s then
                 s = {}
                 sg.snap[m.key] = s
             end
-            for guid, v in pairs(scratchTotals) do
-                s[guid] = v
+            for unitGuid, v in pairs(scratchTotals) do
+                s[unitGuid] = v
             end
-            if m.key == "damage" and (rows == 0 or next(scratchTotals) ~= nil) then
+            if m.key == "damage" and (rowList == 0 or next(scratchTotals) ~= nil) then
                 readable = true
             end
         end
@@ -1048,7 +1048,7 @@ end
 -- on from zero. A reset landing on a pull no checkpoint banked loses that
 -- pull, which the panel then says instead of passing short numbers off as the
 -- whole run. Returns the new baseline duration.
-local function BankReset(base, sg, baseDur)
+local function BankReset(baseValue, sg, baseDur)
     if sg.unbanked then
         sg.gaps = true
     end
@@ -1058,12 +1058,12 @@ local function BankReset(base, sg, baseDur)
             bank = {}
             sg.bank[m.key] = bank
         end
-        local snap, b = sg.snap[m.key], base[m.key]
+        local snap, b = sg.snap[m.key], baseValue[m.key]
         if snap then
-            for guid, v in pairs(snap) do
-                local gain = v - ((b and b[guid]) or 0)
+            for unitGuid, v in pairs(snap) do
+                local gain = v - ((b and b[unitGuid]) or 0)
                 if gain > 0 then
-                    bank[guid] = (bank[guid] or 0) + gain
+                    bank[unitGuid] = (bank[unitGuid] or 0) + gain
                 end
             end
             wipe(snap)
@@ -1071,7 +1071,7 @@ local function BankReset(base, sg, baseDur)
         if b then
             wipe(b)
         else
-            base[m.key] = {}
+            baseValue[m.key] = {}
         end
     end
     if sg.snapDur and baseDur and sg.snapDur > baseDur then
@@ -1083,18 +1083,18 @@ end
 
 local function ApplyScores(record, rst, ord)
     rst, ord = rst or roster, ord or rosterOrder
-    for _, guid in ipairs(ord) do
-        local rec = rst[guid]
-        if StillIs(rec) then
-            local now = ScoreFor(rec.unit)
-            if now then
-                rec.score = now
+    for _, unitGuid in ipairs(ord) do
+        local recd = rst[unitGuid]
+        if StillIs(recd) then
+            local nowTime = ScoreFor(recd.unit)
+            if nowTime then
+                recd.score = nowTime
                 -- No API reports another player's delta for the run, so it is
                 -- the score after the key minus the score sampled at its start.
                 -- Without a baseline the cell stays empty rather than showing a
                 -- wrong number.
-                if rec.scoreStart then
-                    rec.scoreGain = now - rec.scoreStart
+                if recd.scoreStart then
+                    recd.scoreGain = nowTime - recd.scoreStart
                 end
             end
         end
@@ -1148,9 +1148,9 @@ local function MemberOrder(a, b)
     return (a.name or "") < (b.name or "")
 end
 
-local function SortMembers(list)
+local function SortMembers(entries)
     sortKey, sortAsc = SortState()
-    table.sort(list, MemberOrder)
+    table.sort(entries, MemberOrder)
 end
 
 local MEMBER_FIELDS = {
@@ -1175,30 +1175,30 @@ local MEMBER_FIELDS = {
 -- record are overwritten in place rather than allocated again.
 local function BuildMembers(record, rst, ord)
     rst, ord = rst or roster, ord or rosterOrder
-    local out = record.members
-    if type(out) ~= "table" then
-        out = {}
-        record.members = out
+    local result = record.members
+    if type(result) ~= "table" then
+        result = {}
+        record.members = result
     end
-    local n = 0
-    for _, guid in ipairs(ord) do
-        local rec = rst[guid]
-        if rec and rec.name then
-            n = n + 1
-            local m = out[n]
+    local num = 0
+    for _, unitGuid in ipairs(ord) do
+        local recd = rst[unitGuid]
+        if recd and recd.name then
+            num = num + 1
+            local m = result[num]
             if type(m) ~= "table" then
                 m = {}
-                out[n] = m
+                result[num] = m
             end
             for _, f in ipairs(MEMBER_FIELDS) do
-                m[f] = rec[f]
+                m[f] = recd[f]
             end
         end
     end
-    for i = #out, n + 1, -1 do
-        out[i] = nil
+    for i = #result, num + 1, -1 do
+        result[i] = nil
     end
-    SortMembers(out)
+    SortMembers(result)
 end
 
 local function TryFinishHarvest()
@@ -1235,10 +1235,10 @@ local function RefreshScores()
 end
 
 local function FinishRun()
-    local info = C_ChallengeMode
+    local details = C_ChallengeMode
         and C_ChallengeMode.GetChallengeCompletionInfo
         and C_ChallengeMode.GetChallengeCompletionInfo()
-    if type(info) ~= "table" then
+    if type(details) ~= "table" then
         return
     end
 
@@ -1247,23 +1247,23 @@ local function FinishRun()
     ScanRoster(false)
 
     -- info.members is the server side roster and survives people leaving.
-    if type(info.members) == "table" then
-        for _, m in ipairs(info.members) do
-            local guid = PlainString(m.memberGUID)
-            if guid then
-                local rec = EnsureMember(guid)
-                rec.name = rec.name or PlainString(m.name)
-                if not rec.class then
+    if type(details.members) == "table" then
+        for _, m in ipairs(details.members) do
+            local unitGuid = PlainString(m.memberGUID)
+            if unitGuid then
+                local recd = EnsureMember(unitGuid)
+                recd.name = recd.name or PlainString(m.name)
+                if not recd.class then
                     -- UnitClass takes a unit token, so it cannot answer for
                     -- someone who already left. GetPlayerInfoByGUID is the
                     -- GUID keyed equivalent.
                     if GetPlayerInfoByGUID then
-                        rec.class = PlainString(select(2, GetPlayerInfoByGUID(guid)))
+                        recd.class = PlainString(select(2, GetPlayerInfoByGUID(unitGuid)))
                     end
-                    if not rec.class and UnitTokenFromGUID then
-                        local u = PlainString(UnitTokenFromGUID(guid))
+                    if not recd.class and UnitTokenFromGUID then
+                        local u = PlainString(UnitTokenFromGUID(unitGuid))
                         if u and UnitExists(u) then
-                            rec.class = PlainString(select(2, UnitClass(u)))
+                            recd.class = PlainString(select(2, UnitClass(u)))
                         end
                     end
                 end
@@ -1271,7 +1271,7 @@ local function FinishRun()
         end
     end
 
-    local mapID = PlainNumber(info.mapChallengeModeID)
+    local mapID = PlainNumber(details.mapChallengeModeID)
     local mapName, _, timeLimit
     if mapID and C_ChallengeMode.GetMapUIInfo then
         mapName, _, timeLimit = C_ChallengeMode.GetMapUIInfo(mapID)
@@ -1285,16 +1285,16 @@ local function FinishRun()
         mapID = mapID,
         mapName = PlainString(mapName),
         timeLimit = PlainNumber(timeLimit),
-        level = PlainNumber(info.level),
-        timeMS = PlainNumber(info.time), -- milliseconds
-        onTime = info.onTime == true,
-        upgrades = PlainNumber(info.keystoneUpgradeLevels) or 0,
-        practice = info.practiceRun == true,
-        mapRecord = info.isMapRecord == true,
+        level = PlainNumber(details.level),
+        timeMS = PlainNumber(details.time), -- milliseconds
+        onTime = details.onTime == true,
+        upgrades = PlainNumber(details.keystoneUpgradeLevels) or 0,
+        practice = details.practiceRun == true,
+        mapRecord = details.isMapRecord == true,
         deaths = PlainNumber(deaths) or 0,
         timeLost = PlainNumber(timeLost) or 0,
-        scoreOld = PlainNumber(info.oldOverallDungeonScore),
-        scoreNew = PlainNumber(info.newOverallDungeonScore),
+        scoreOld = PlainNumber(details.oldOverallDungeonScore),
+        scoreNew = PlainNumber(details.newOverallDungeonScore),
         finishedAt = time(),
     }
 
@@ -1376,27 +1376,27 @@ end
 -- The item string alone: a chat link loses a |cn quality color in LinkFromText,
 -- so the same item arrives as different link strings. Bonus IDs are kept, so
 -- a chest drop and a bonus copy of the same item still differ.
-local function LinkKey(link)
-    return type(link) == "string" and link:match("|H(item:[^|]+)|h") or nil
+local function LinkKey(itemLink)
+    return type(itemLink) == "string" and itemLink:match("|H(item:[^|]+)|h") or nil
 end
 
 -- Marks a link as bonus roll loot for the rest of the run and takes it back
 -- from whoever it was already recorded against, since ENCOUNTER_LOOT_RECEIVED
 -- may have delivered it before the chat line. True when a row changed.
-local function ForgetBonusLoot(lr, link)
-    local key = LinkKey(link)
+local function ForgetBonusLoot(lr, itemLink)
+    local key = LinkKey(itemLink)
     if not key then
         return false
     end
     lr.bonus[key] = true
     local changed = false
-    for _, guid in ipairs(lr.ord) do
-        local rec = lr.rst[guid]
-        if rec and LinkKey(rec.lootLink) == key then
-            rec.lootLink = nil
+    for _, unitGuid in ipairs(lr.ord) do
+        local recd = lr.rst[unitGuid]
+        if recd and LinkKey(recd.lootLink) == key then
+            recd.lootLink = nil
             -- The chest reward's ID stays when the bonus copy is the same item.
-            if not rec.lootChest and rec.lootID == IDFromLink(link) then
-                rec.lootID = nil
+            if not recd.lootChest and recd.lootID == IDFromLink(itemLink) then
+                recd.lootID = nil
             end
             changed = true
         end
@@ -1407,12 +1407,12 @@ end
 --------------------------------------------------------------------------------
 --  Events
 --------------------------------------------------------------------------------
-local function OnEvent(_, event, ...)
-    if event == "CHALLENGE_MODE_START" then
+local function OnEvent(_, evt, ...)
+    if evt == "CHALLENGE_MODE_START" then
         StartCollecting()
-    elseif event == "CHALLENGE_MODE_RESET" then
+    elseif evt == "CHALLENGE_MODE_RESET" then
         StopCollecting()
-    elseif event == "CHALLENGE_MODE_COMPLETED" then
+    elseif evt == "CHALLENGE_MODE_COMPLETED" then
         -- lastRun is only set by FinishRun and only cleared when a new key
         -- starts, so its presence means this key was already recorded. Without
         -- this, a repeated delivery would store the run twice, the second time
@@ -1427,7 +1427,7 @@ local function OnEvent(_, event, ...)
         end
         FinishRun()
         ArmLootWait()
-    elseif event == "CHALLENGE_MODE_COMPLETED_REWARDS" then
+    elseif evt == "CHALLENGE_MODE_COMPLETED_REWARDS" then
         -- rewards carry the LOCAL player's chest loot only; personal loot is
         -- never reported for anyone else.
         local lr = lastRun
@@ -1437,16 +1437,16 @@ local function OnEvent(_, event, ...)
             local own = ownGUID and lr.rst[ownGUID]
             if own and type(rewards) == "table" then
                 for _, reward in ipairs(rewards) do
-                    local id = PlainNumber(reward.rewardID)
-                    if id and reward.isCurrency ~= true and not IsExcludedLootID(id) then
+                    local ident = PlainNumber(reward.rewardID)
+                    if ident and reward.isCurrency ~= true and not IsExcludedLootID(ident) then
                         -- Kept as an ID: the item is often not in the client's
                         -- cache yet here, so icon and tooltip resolve from the
                         -- ID at render time. A link from one of the two loot
                         -- events below is preferred when it arrives.
-                        if (own.lootID or IDFromLink(own.lootLink)) ~= id then
+                        if (own.lootID or IDFromLink(own.lootLink)) ~= ident then
                             own.lootLink = nil
                         end
-                        own.lootID = id
+                        own.lootID = ident
                         own.lootChest = true
                         break
                     end
@@ -1460,14 +1460,14 @@ local function OnEvent(_, event, ...)
         if lr and lr.lootArmed then
             ShowPending()
         end
-    elseif event == "ENCOUNTER_LOOT_RECEIVED" then
+    elseif evt == "ENCOUNTER_LOOT_RECEIVED" then
         local lr = lastRun
         if lr then
-            local link, who = PlainString((select(3, ...))), select(5, ...)
+            local itemLink, who = PlainString((select(3, ...))), select(5, ...)
             if
-                link
-                and not lr.bonus[LinkKey(link)]
-                and RecordLoot(lr.rst, lr.ord, nil, PlainString(who), link)
+                itemLink
+                and not lr.bonus[LinkKey(itemLink)]
+                and RecordLoot(lr.rst, lr.ord, nil, PlainString(who), itemLink)
             then
                 BuildMembers(lr.record, lr.rst, lr.ord)
                 if RefreshWindowIfOpen then
@@ -1475,33 +1475,33 @@ local function OnEvent(_, event, ...)
                 end
             end
         end
-    elseif event == "BONUS_ROLL_RESULT" then
+    elseif evt == "BONUS_ROLL_RESULT" then
         -- Our own roll only; nobody else's is reported this way.
         local lr = lastRun
-        local rewardType, link = ...
-        link = PlainString(link)
-        if lr and link and PlainString(rewardType) == "item" and ForgetBonusLoot(lr, link) then
+        local rewardType, itemLink = ...
+        itemLink = PlainString(itemLink)
+        if lr and itemLink and PlainString(rewardType) == "item" and ForgetBonusLoot(lr, itemLink) then
             BuildMembers(lr.record, lr.rst, lr.ord)
             if RefreshWindowIfOpen then
                 RefreshWindowIfOpen()
             end
         end
-    elseif event == "CHAT_MSG_LOOT" then
+    elseif evt == "CHAT_MSG_LOOT" then
         local lr = lastRun
         if lr then
-            local text, who, guid = select(1, ...), select(2, ...), select(12, ...)
-            local link = LinkFromText(text)
-            if link and IsBonusRollLine(text) then
-                if ForgetBonusLoot(lr, link) then
+            local textValue, who, unitGuid = select(1, ...), select(2, ...), select(12, ...)
+            local itemLink = LinkFromText(textValue)
+            if itemLink and IsBonusRollLine(textValue) then
+                if ForgetBonusLoot(lr, itemLink) then
                     BuildMembers(lr.record, lr.rst, lr.ord)
                     if RefreshWindowIfOpen then
                         RefreshWindowIfOpen()
                     end
                 end
             elseif
-                link
-                and not lr.bonus[LinkKey(link)]
-                and RecordLoot(lr.rst, lr.ord, PlainString(guid), PlainString(who), link)
+                itemLink
+                and not lr.bonus[LinkKey(itemLink)]
+                and RecordLoot(lr.rst, lr.ord, PlainString(unitGuid), PlainString(who), itemLink)
             then
                 BuildMembers(lr.record, lr.rst, lr.ord)
                 if RefreshWindowIfOpen then
@@ -1509,44 +1509,44 @@ local function OnEvent(_, event, ...)
                 end
             end
         end
-    elseif event == "LOOT_CLOSED" then
+    elseif evt == "LOOT_CLOSED" then
         if lastRun and lastRun.lootArmed then
             ShowPending()
         end
         TryFinishHarvest()
         RefreshScores()
         InspectSweep()
-    elseif event == "ADDON_RESTRICTION_STATE_CHANGED" then
+    elseif evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         -- The combat restriction's edges (see ResetScope): switching on means
         -- a pull began (its gains are unbanked until the next checkpoint);
         -- switching off is the checkpoint itself.
         local rtype, rstate = PlainNumber((select(1, ...))), PlainNumber((select(2, ...)))
-        local R, S = Enum.AddOnRestrictionType, Enum.AddOnRestrictionState
+        local R, Stl = Enum.AddOnRestrictionType, Enum.AddOnRestrictionState
         local sg, lr = ResetScope()
-        if sg and rtype and R and S and rtype == R.Combat then
-            if rstate == S.Inactive then
+        if sg and rtype and R and Stl and rtype == R.Combat then
+            if rstate == Stl.Inactive then
                 Checkpoint(sg, lr and lr.rst or roster)
             else
                 sg.unbanked = true
             end
         end
         TryFinishHarvest()
-    elseif event == "DAMAGE_METER_RESET" then
+    elseif evt == "DAMAGE_METER_RESET" then
         local sg, lr = ResetScope()
         if lr then
             lr.baseDur = BankReset(lr.base, sg, lr.baseDur)
         elseif sg then
             baseDuration = BankReset(baseTotals, sg, baseDuration)
         end
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "PLAYER_REGEN_ENABLED" then
         -- A pull ended: an inspect still pending from before it was dropped,
         -- so free the slot and carry on.
         inspectPending = nil
         InspectSweep()
         TryFinishHarvest()
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         EndSettling()
-    elseif event == "INSPECT_READY" then
+    elseif evt == "INSPECT_READY" then
         if OnInspectReady((select(1, ...))) and lastRun and not lastRun.settled then
             BuildMembers(lastRun.record, lastRun.rst, lastRun.ord)
             if RefreshWindowIfOpen then
@@ -1554,7 +1554,7 @@ local function OnEvent(_, event, ...)
             end
         end
         InspectSweep()
-    elseif event == "CHALLENGE_MODE_MEMBER_INFO_UPDATED" or event == "GROUP_ROSTER_UPDATE" then
+    elseif evt == "CHALLENGE_MODE_MEMBER_INFO_UPDATED" or evt == "GROUP_ROSTER_UPDATE" then
         if collecting then
             ScanRoster(true)
         end
@@ -1568,17 +1568,17 @@ end
 --------------------------------------------------------------------------------
 -- Lets the options page repaint an open panel when a column or the scale
 -- changes, without exposing the panel internals.
-function ns.RS_Refresh()
+function mod.RS_Refresh()
     if RefreshWindowIfOpen then
         RefreshWindowIfOpen()
     end
 end
 
-function ns.RS_Apply()
+function mod.RS_Apply()
     if Enabled() then
-        if not frame then
-            frame = CreateFrame("Frame")
-            frame:SetScript("OnEvent", OnEvent)
+        if not widget then
+            widget = CreateFrame("Frame")
+            widget:SetScript("OnEvent", OnEvent)
         end
         SyncEvents()
         -- Enabling mid key still picks the run up from here on. Guarded on
@@ -1597,19 +1597,19 @@ function ns.RS_Apply()
         end
         -- Unlock Mode entry intentionally not registered for now; the panel is
         -- moved by dragging its header. RegisterUnlock is kept for later.
-    elseif frame then
-        frame:UnregisterAllEvents()
+    elseif widget then
+        widget:UnregisterAllEvents()
         lastRun = nil
         StopCollecting()
     end
 end
 
-function ns.RS_OnEnable(database)
-    db = database
-    if not db then
+function mod.RS_OnEnable(database)
+    saved = database
+    if not saved then
         return
     end
-    ns.RS_Apply()
+    mod.RS_Apply()
 end
 
 --------------------------------------------------------------------------------
@@ -1719,7 +1719,7 @@ local SUB_STYLE = {
     score = { r = 0.35, g = 0.95, b = 0.35 },
 }
 
-local win, rows, colHdr, titleFS, subFS, pickerBtn, pickerLbl
+local window, rowList, colHdr, titleFS, subFS, pickerBtn, pickerLbl
 local visibleCols = {}
 local currentRecord
 local rowsTextSize -- the size the member rows were last stamped with
@@ -1735,34 +1735,34 @@ local function TextSize()
     return v
 end
 
-local function RowHeight(size)
-    return size + 9
+local function RowHeight(dim)
+    return dim + 9
 end
 
 --------------------------------------------------------------------------------
 --  Formatting
 --------------------------------------------------------------------------------
 -- flags = nil follows the module's font setting; pass "" for an unbolded run.
-local function SetFS(fs, size, flags)
-    local path = (CUI.GetFontPath("mythicTimer")) or FONT_FALLBACK
+local function SetFS(fontStr, dim, flags)
+    local filePath = (CUI.GetFontPath("mythicTimer")) or FONT_FALLBACK
     local outline = flags
     if outline == nil then
         outline = (CUI.GetFontOutlineFlag("mythicTimer")) or ""
     end
-    fs:SetFont(path, size or FONT_SZ, outline)
+    fontStr:SetFont(filePath, dim or FONT_SZ, outline)
 end
 
 -- SetFS for a table row's primary texts: the Player column names group members,
 -- so they take a font family (Cyrillic, Korean and Chinese names draw), with no
 -- shadow, as SetFS draws them. These texts are made with no font of their own
 -- (a plain SetFont would pin their face), and every font write to them comes here.
-local function SetRowFS(fs, size, flags)
-    local path = (CUI.GetFontPath("mythicTimer")) or FONT_FALLBACK
+local function SetRowFS(fontStr, dim, flags)
+    local filePath = (CUI.GetFontPath("mythicTimer")) or FONT_FALLBACK
     local outline = flags
     if outline == nil then
         outline = (CUI.GetFontOutlineFlag("mythicTimer")) or ""
     end
-    CUI.SetFontFamily(fs, path, size or FONT_SZ, outline, false)
+    CUI.SetFontFamily(fontStr, filePath, dim or FONT_SZ, outline, false)
 end
 
 local function Hex(r, g, b)
@@ -1809,11 +1809,11 @@ local function ScoreText(m)
         return "-"
     end
     local hex = "ffffff"
-    local col = C_ChallengeMode
+    local column = C_ChallengeMode
         and C_ChallengeMode.GetDungeonScoreRarityColor
         and C_ChallengeMode.GetDungeonScoreRarityColor(m.score)
-    if type(col) == "table" and col.r then
-        hex = Hex(col.r, col.g, col.b)
+    if type(column) == "table" and column.r then
+        hex = Hex(column.r, column.g, column.b)
     end
     return format("|cff%s%d|r", hex, floor(m.score))
 end
@@ -1826,8 +1826,8 @@ local function NonZero(v)
     return nil
 end
 
-local function CellText(col, m, c)
-    local k = col.key
+local function CellText(column, m, c)
+    local k = column.key
     if k == "name" then
         return format("|cff%s%s|r", ClassHex(m.class), ShortName(m.name))
     end
@@ -1849,14 +1849,14 @@ local function CellText(col, m, c)
     return ""
 end
 
-local function SubText(col, m, c)
-    if col.key == "name" then
+local function SubText(column, m, c)
+    if column.key == "name" then
         if c and c.colItemLevel ~= false and m.ilvl then
             return format("(%d)", m.ilvl)
         end
         return ""
     end
-    if col.key == "score" then
+    if column.key == "score" then
         if m.scoreGain and m.scoreGain > 0 then
             return format("(+%d)", floor(m.scoreGain))
         end
@@ -1871,17 +1871,17 @@ local function RunWhen(ts)
     if not ts then
         return ""
     end
-    local h = tonumber(date("%H", ts)) or 0
-    local ampm = (h >= 12) and "pm" or "am"
-    h = h % 12
-    if h == 0 then
-        h = 12
+    local hgt = tonumber(date("%H", ts)) or 0
+    local ampm = (hgt >= 12) and "pm" or "am"
+    hgt = hgt % 12
+    if hgt == 0 then
+        hgt = 12
     end
-    return format("%s %d, %d:%s%s", date("%b", ts), tonumber(date("%d", ts)) or 0, h, date("%M", ts), ampm)
+    return format("%s %d, %d:%s%s", date("%b", ts), tonumber(date("%d", ts)) or 0, hgt, date("%M", ts), ampm)
 end
 
-local function RunLabel(rec)
-    return format("+%d %s   %s", rec.level or 0, rec.mapName or "?", RunWhen(rec.finishedAt))
+local function RunLabel(recd)
+    return format("+%d %s   %s", recd.level or 0, recd.mapName or "?", RunWhen(recd.finishedAt))
 end
 
 --------------------------------------------------------------------------------
@@ -1889,164 +1889,164 @@ end
 --------------------------------------------------------------------------------
 local function SavePositionFromFrame()
     local c = Cfg()
-    if not (c and win) then
+    if not (c and window) then
         return
     end
-    local point, _, relPoint, x, y = win:GetPoint(1)
-    if not point then
+    local anchorPoint, _, relPoint, posX, posY = window:GetPoint(1)
+    if not anchorPoint then
         return
     end
-    c.position = { point = point, relPoint = relPoint or point, x = x, y = y }
+    c.position = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
 end
 
 ApplyPosition = function()
-    if not win then
+    if not window then
         return
     end
     local c = Cfg()
-    local pos = c and c.position
-    win:ClearAllPoints()
-    if pos and pos.point then
-        local PP = CUI.PP
-        local es = win:GetEffectiveScale() or 1
-        local x, y = pos.x or 0, pos.y or 0
-        if PP and PP.SnapForES then
-            x, y = PP.SnapForES(x, es), PP.SnapForES(y, es)
+    local place = c and c.position
+    window:ClearAllPoints()
+    if place and place.point then
+        local Pix = CUI.PP
+        local es = window:GetEffectiveScale() or 1
+        local posX, posY = place.x or 0, place.y or 0
+        if Pix and Pix.SnapForES then
+            posX, posY = Pix.SnapForES(posX, es), Pix.SnapForES(posY, es)
         end
-        win:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, x, y)
+        window:SetPoint(place.point, UIParent, place.relPoint or place.point, posX, posY)
     else
-        win:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
+        window:SetPoint("CENTER", UIParent, "CENTER", 0, 120)
     end
 end
 
 -- Stamps the member-row font sizes: primary text at `size`, sub text two
 -- below. Called at creation and again whenever the setting changes.
-local function StampRowFonts(row, size)
-    for key, fs in pairs(row.text) do
-        SetRowFS(fs, size)
+local function StampRowFonts(rowFrame, dim)
+    for key, fontStr in pairs(rowFrame.text) do
+        SetRowFS(fontStr, dim)
     end
-    for _, sfs in pairs(row.sub) do
-        SetFS(sfs, size - 2, "")
+    for _, sfs in pairs(rowFrame.sub) do
+        SetFS(sfs, dim - 2, "")
     end
-    row:SetHeight(RowHeight(size))
+    rowFrame:SetHeight(RowHeight(dim))
 end
 
-local function MakeRow(parent, size)
-    size = size or DEFAULT_TEXT_SZ
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(RowHeight(size))
-    row.text, row.sub, row.icons = {}, {}, {}
+local function MakeRow(hostFrame, dim)
+    dim = dim or DEFAULT_TEXT_SZ
+    local rowFrame = CreateFrame("Frame", nil, hostFrame)
+    rowFrame:SetHeight(RowHeight(dim))
+    rowFrame.text, rowFrame.sub, rowFrame.icons = {}, {}, {}
     local px = (CUI.PP and CUI.PP.mult) or 1
-    for _, col in ipairs(COLUMNS) do
-        local fs = row:CreateFontString(nil, "OVERLAY")
-        SetRowFS(fs, size)
-        fs:SetTextColor(1, 1, 1, 1)
-        fs:SetJustifyH(col.justify or (col.kind == "icon" and "CENTER" or "LEFT"))
-        fs:SetWordWrap(false)
-        row.text[col.key] = fs
-        if col.kind == "icon" then
-            local cell = CreateFrame("Frame", nil, row)
-            cell:SetSize(ICON_SZ, ICON_SZ)
-            cell.tex = cell:CreateTexture(nil, "ARTWORK")
-            if col.key == "spec" or col.key == "loot" then
+    for _, column in ipairs(COLUMNS) do
+        local fontStr = rowFrame:CreateFontString(nil, "OVERLAY")
+        SetRowFS(fontStr, dim)
+        fontStr:SetTextColor(1, 1, 1, 1)
+        fontStr:SetJustifyH(column.justify or (column.kind == "icon" and "CENTER" or "LEFT"))
+        fontStr:SetWordWrap(false)
+        rowFrame.text[column.key] = fontStr
+        if column.kind == "icon" then
+            local cellFrame = CreateFrame("Frame", nil, rowFrame)
+            cellFrame:SetSize(ICON_SZ, ICON_SZ)
+            cellFrame.tex = cellFrame:CreateTexture(nil, "ARTWORK")
+            if column.key == "spec" or column.key == "loot" then
                 -- Square icon on a black plate, inset by one physical pixel so
                 -- the plate reads as a 1px border.
-                cell.bg = cell:CreateTexture(nil, "BACKGROUND")
-                cell.bg:SetAllPoints()
-                cell.bg:SetColorTexture(0, 0, 0, 1)
-                cell.tex:SetPoint("TOPLEFT", cell, "TOPLEFT", px, -px)
-                cell.tex:SetPoint("BOTTOMRIGHT", cell, "BOTTOMRIGHT", -px, px)
+                cellFrame.bg = cellFrame:CreateTexture(nil, "BACKGROUND")
+                cellFrame.bg:SetAllPoints()
+                cellFrame.bg:SetColorTexture(0, 0, 0, 1)
+                cellFrame.tex:SetPoint("TOPLEFT", cellFrame, "TOPLEFT", px, -px)
+                cellFrame.tex:SetPoint("BOTTOMRIGHT", cellFrame, "BOTTOMRIGHT", -px, px)
             else
-                cell.tex:SetAllPoints()
+                cellFrame.tex:SetAllPoints()
             end
-            row.icons[col.key] = cell
+            rowFrame.icons[column.key] = cellFrame
         else
-            local style = col.sub and SUB_STYLE[col.key]
-            if style then
-                local sfs = CUI.MakeFont(row, size - 2, nil, style.r, style.g, style.b, 1)
-                SetFS(sfs, size - 2, "")
+            local look = column.sub and SUB_STYLE[column.key]
+            if look then
+                local sfs = CUI.MakeFont(rowFrame, dim - 2, nil, look.r, look.g, look.b, 1)
+                SetFS(sfs, dim - 2, "")
                 sfs:SetJustifyH("LEFT")
                 sfs:SetWordWrap(false)
-                row.sub[col.key] = sfs
+                rowFrame.sub[column.key] = sfs
             end
         end
     end
-    return row
+    return rowFrame
 end
 
 local ShowPicker -- assigned below, once the record list is reachable
 
 local function BuildWindow()
-    if win then
-        return win
+    if window then
+        return window
     end
-    local PP = CUI.PP
+    local Pix = CUI.PP
 
-    win = CreateFrame("Frame", "CUIMythicRunSummaryFrame", UIParent)
+    window = CreateFrame("Frame", "CUIMythicRunSummaryFrame", UIParent)
     -- FULLSCREEN: above the options window (DIALOG), so Show Preview is not
     -- hidden behind it, and below FULLSCREEN_DIALOG, where the run picker menu,
     -- confirmation popups and Unlock Mode movers live.
-    win:SetFrameStrata("FULLSCREEN")
-    win:SetClampedToScreen(true)
-    win:SetMovable(true)
-    win:EnableMouse(true)
-    win:Hide()
+    window:SetFrameStrata("FULLSCREEN")
+    window:SetClampedToScreen(true)
+    window:SetMovable(true)
+    window:EnableMouse(true)
+    window:Hide()
     -- Escape closes it like every other CUI window (the shared proxy, never
     -- a direct UISpecialFrames insert).
     if CUI.RegisterEscapeClose then
-        CUI.RegisterEscapeClose(win)
+        CUI.RegisterEscapeClose(window)
     end
 
     -- House window chrome (the /keys popup, Bags, the skinned Blizzard
     -- windows): the modern_blizz cover art under a black wash, a darker strip
     -- for the title bar, and the dark 1px PP border.
-    win._bg = win:CreateTexture(nil, "BACKGROUND", nil, 0)
-    win._bg:SetAllPoints()
-    win._bg:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
-    win._bg:SetTexCoord(0.25, 1, 0, 0.75)
-    win._bgOverlay = win:CreateTexture(nil, "BACKGROUND", nil, 1)
-    win._bgOverlay:SetAllPoints()
-    win._bgOverlay:SetColorTexture(0, 0, 0, 0.55)
+    window._bg = window:CreateTexture(nil, "BACKGROUND", nil, 0)
+    window._bg:SetAllPoints()
+    window._bg:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
+    window._bg:SetTexCoord(0.25, 1, 0, 0.75)
+    window._bgOverlay = window:CreateTexture(nil, "BACKGROUND", nil, 1)
+    window._bgOverlay:SetAllPoints()
+    window._bgOverlay:SetColorTexture(0, 0, 0, 0.55)
 
-    local header = CreateFrame("Frame", nil, win)
-    header:SetFrameLevel(win:GetFrameLevel() + 5)
-    header:SetPoint("TOPLEFT", win, "TOPLEFT", 0, 0)
-    header:SetPoint("TOPRIGHT", win, "TOPRIGHT", 0, 0)
-    header:SetHeight(HEAD_H)
-    header:EnableMouse(true)
-    header:RegisterForDrag("LeftButton")
-    header:SetScript("OnDragStart", function()
-        win:StartMoving()
+    local headerFrame = CreateFrame("Frame", nil, window)
+    headerFrame:SetFrameLevel(window:GetFrameLevel() + 5)
+    headerFrame:SetPoint("TOPLEFT", window, "TOPLEFT", 0, 0)
+    headerFrame:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, 0)
+    headerFrame:SetHeight(HEAD_H)
+    headerFrame:EnableMouse(true)
+    headerFrame:RegisterForDrag("LeftButton")
+    headerFrame:SetScript("OnDragStart", function()
+        window:StartMoving()
     end)
-    header:SetScript("OnDragStop", function()
-        win:StopMovingOrSizing()
+    headerFrame:SetScript("OnDragStop", function()
+        window:StopMovingOrSizing()
         SavePositionFromFrame()
     end)
-    win._header = header
+    window._header = headerFrame
 
-    local hbg = CUI.SolidTex(header, "BACKGROUND", 0, 0, 0, 0.25)
+    local hbg = CUI.SolidTex(headerFrame, "BACKGROUND", 0, 0, 0, 0.25)
     hbg:SetAllPoints()
 
-    local px = (PP and PP.mult) or 1
-    local sep = header:CreateTexture(nil, "ARTWORK")
+    local px = (Pix and Pix.mult) or 1
+    local sep = headerFrame:CreateTexture(nil, "ARTWORK")
     sep:SetHeight(px)
-    sep:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
-    sep:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
+    sep:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
+    sep:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
     sep:SetColorTexture(1, 1, 1, 0.10)
 
-    titleFS = CUI.MakeFont(header, TITLE_SZ, nil, 1, 1, 1, 1)
+    titleFS = CUI.MakeFont(headerFrame, TITLE_SZ, nil, 1, 1, 1, 1)
     SetFS(titleFS, TITLE_SZ)
-    titleFS:SetPoint("TOPLEFT", header, "TOPLEFT", PAD, -HEADER_GAP)
+    titleFS:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", PAD, -HEADER_GAP)
     titleFS:SetJustifyH("LEFT")
 
-    subFS = CUI.MakeFont(header, SUBLINE_SZ, nil, 1, 1, 1, 0.8)
+    subFS = CUI.MakeFont(headerFrame, SUBLINE_SZ, nil, 1, 1, 1, 0.8)
     SetFS(subFS, SUBLINE_SZ)
     subFS:SetPoint("TOPLEFT", titleFS, "BOTTOMLEFT", 0, -SUB_GAP)
     subFS:SetJustifyH("LEFT")
 
-    local close = CreateFrame("Button", nil, header)
+    local close = CreateFrame("Button", nil, headerFrame)
     close:SetSize(CLOSE_W, CLOSE_W)
-    close:SetPoint("TOPRIGHT", header, "TOPRIGHT", -PAD, -(HEADER_GAP + 2))
+    close:SetPoint("TOPRIGHT", headerFrame, "TOPRIGHT", -PAD, -(HEADER_GAP + 2))
     close.icon = close:CreateTexture(nil, "OVERLAY")
     close.icon:SetAllPoints()
     close.icon:SetTexture(CLOSE_ICON)
@@ -2058,22 +2058,22 @@ local function BuildWindow()
         close.icon:SetAlpha(0.7)
     end)
     close:SetScript("OnClick", function()
-        win:Hide()
+        window:Hide()
     end)
 
     -- Run picker: the window-skin dropdown look every skinned Blizzard
     -- window's dropdowns carry (flat block, 1px grey border, hover wash, the
     -- small pointing arrow, white left-aligned label), with its menu hung
     -- below the button like the options dropdowns (ShowPicker).
-    pickerBtn = CreateFrame("Button", nil, header)
+    pickerBtn = CreateFrame("Button", nil, headerFrame)
     pickerBtn:SetSize(PICKER_W, PICKER_H)
     pickerBtn:SetPoint("TOPRIGHT", close, "TOPLEFT", -HEADER_GAP, (PICKER_H - CLOSE_W) / 2)
     local pfill = CUI.SolidTex(pickerBtn, "BACKGROUND", 0.08, 0.08, 0.08, 0.92)
     pfill:SetAllPoints()
-    if PP and PP.CreateBorder then
+    if Pix and Pix.CreateBorder then
         -- Border container demoted to the button's own level so the label,
         -- a higher draw layer, renders over the strips (the skin's rule).
-        local pbrd = PP.CreateBorder(pickerBtn, 0.25, 0.25, 0.25, 1, 1, "BORDER", -7)
+        local pbrd = Pix.CreateBorder(pickerBtn, 0.25, 0.25, 0.25, 1, 1, "BORDER", -7)
         if pbrd and pbrd.SetFrameLevel then
             pbrd:SetFrameLevel(pickerBtn:GetFrameLevel())
         end
@@ -2098,21 +2098,21 @@ local function BuildWindow()
         end
     end)
 
-    colHdr = MakeRow(win)
-    colHdr:SetPoint("TOPLEFT", win, "TOPLEFT", 0, -HEAD_H)
-    colHdr:SetPoint("TOPRIGHT", win, "TOPRIGHT", 0, -HEAD_H)
+    colHdr = MakeRow(window)
+    colHdr:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -HEAD_H)
+    colHdr:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, -HEAD_H)
     colHdr:SetHeight(COLHDR_H)
-    for _, col in ipairs(COLUMNS) do
-        local fs = colHdr.text[col.key]
-        if fs then
-            SetRowFS(fs, COLHDR_SZ)
-            fs:SetTextColor(1, 1, 1, 0.45)
+    for _, column in ipairs(COLUMNS) do
+        local fontStr = colHdr.text[column.key]
+        if fontStr then
+            SetRowFS(fontStr, COLHDR_SZ)
+            fontStr:SetTextColor(1, 1, 1, 0.45)
         end
     end
     -- The header carries no icons, and the spec cell's black plate would show
     -- as an empty square if its frame were left visible.
-    for _, cell in pairs(colHdr.icons) do
-        cell:Hide()
+    for _, cellFrame in pairs(colHdr.icons) do
+        cellFrame:Hide()
     end
 
     -- Sortable column headers: a button over each cell (hit rect seated by
@@ -2120,57 +2120,57 @@ local function BuildWindow()
     -- direction; stored on the profile. The active column is the bright
     -- header, nothing else marks it.
     colHdr.sortBtns = {}
-    for _, col in ipairs(COLUMNS) do
-        if SORT_KEYS[col.key] then
-            local fs = colHdr.text[col.key]
-            local btn = CreateFrame("Button", nil, colHdr)
-            btn:SetFrameLevel(colHdr:GetFrameLevel() + 2)
-            btn:SetScript("OnEnter", function()
-                if fs and not btn.active then
-                    fs:SetTextColor(1, 1, 1, 0.8)
+    for _, column in ipairs(COLUMNS) do
+        if SORT_KEYS[column.key] then
+            local fontStr = colHdr.text[column.key]
+            local button = CreateFrame("Button", nil, colHdr)
+            button:SetFrameLevel(colHdr:GetFrameLevel() + 2)
+            button:SetScript("OnEnter", function()
+                if fontStr and not button.active then
+                    fontStr:SetTextColor(1, 1, 1, 0.8)
                 end
             end)
-            btn:SetScript("OnLeave", function()
-                if fs and not btn.active then
-                    fs:SetTextColor(1, 1, 1, 0.45)
+            button:SetScript("OnLeave", function()
+                if fontStr and not button.active then
+                    fontStr:SetTextColor(1, 1, 1, 0.45)
                 end
             end)
-            btn:SetScript("OnClick", function()
+            button:SetScript("OnClick", function()
                 local c = Cfg()
                 if not c then
                     return
                 end
                 local key, asc = SortState()
-                if key == col.key then
+                if key == column.key then
                     c.sortAsc = not asc
                 else
-                    c.sortKey = col.key
+                    c.sortKey = column.key
                     c.sortAsc = false
                 end
                 RefreshWindowIfOpen()
             end)
-            colHdr.sortBtns[col.key] = btn
+            colHdr.sortBtns[column.key] = button
         end
     end
 
-    local hsep = win:CreateTexture(nil, "ARTWORK")
+    local hsep = window:CreateTexture(nil, "ARTWORK")
     hsep:SetHeight(px)
     hsep:SetPoint("TOPLEFT", colHdr, "BOTTOMLEFT", PAD, 0)
     hsep:SetPoint("TOPRIGHT", colHdr, "BOTTOMRIGHT", -PAD, 0)
     hsep:SetColorTexture(1, 1, 1, 0.10)
 
-    rows = {}
+    rowList = {}
     -- The border spans the whole frame, header included: it lives on its own
     -- host above the header (frame level + 5), or the header would draw over
     -- the top edge and only the body would look framed.
-    if PP and PP.CreateBorder then
-        local bh = CreateFrame("Frame", nil, win)
+    if Pix and Pix.CreateBorder then
+        local bh = CreateFrame("Frame", nil, window)
         bh:SetAllPoints()
-        bh:SetFrameLevel(win:GetFrameLevel() + 10)
-        PP.CreateBorder(bh, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
-        win._borderHost = bh
+        bh:SetFrameLevel(window:GetFrameLevel() + 10)
+        Pix.CreateBorder(bh, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
+        window._borderHost = bh
     end
-    return win
+    return window
 end
 
 --------------------------------------------------------------------------------
@@ -2179,52 +2179,52 @@ end
 local function VisibleColumns()
     local c = Cfg() or {}
     wipe(visibleCols)
-    for _, col in ipairs(COLUMNS) do
-        if not col.cfg or c[col.cfg] ~= false then
-            visibleCols[#visibleCols + 1] = col
+    for _, column in ipairs(COLUMNS) do
+        if not column.cfg or c[column.cfg] ~= false then
+            visibleCols[#visibleCols + 1] = column
         end
     end
     return visibleCols
 end
 
-local function MeasuredWidth(fs, fallback)
-    if not fs then
+local function MeasuredWidth(fontStr, fallback)
+    if not fontStr then
         return fallback
     end
-    local w = fs:GetStringWidth()
-    if type(w) ~= "number" or IsSecret(w) then
+    local wid = fontStr:GetStringWidth()
+    if type(wid) ~= "number" or IsSecret(wid) then
         return fallback
     end
     -- Rounded up with a pixel spare: a font string sized to its exact
     -- fractional width truncates its own text to an ellipsis.
-    if w > 0 then
-        w = math.ceil(w) + 1
+    if wid > 0 then
+        wid = math.ceil(wid) + 1
     end
-    return w
+    return wid
 end
 
 -- Spec icon where the meter reported one, class icon otherwise. Both are
 -- cropped so the round frame baked into the art does not show inside the
 -- square plate.
-local function FillSpecCell(cell, m)
+local function FillSpecCell(cellFrame, m)
     local zoom = 0.08
-    local id = m.specIcon
-    if type(id) == "number" and id ~= 0 then
-        cell.tex:SetTexture(id)
-        cell.tex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-        cell:Show()
+    local ident = m.specIcon
+    if type(ident) == "number" and ident ~= 0 then
+        cellFrame.tex:SetTexture(ident)
+        cellFrame.tex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+        cellFrame:Show()
         return
     end
     local coords = m.class and not IsSecret(m.class) and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[m.class]
     if coords then
-        cell.tex:SetTexture(CLASS_ICON_TEX)
+        cellFrame.tex:SetTexture(CLASS_ICON_TEX)
         local l, r, t, b = coords[1], coords[2], coords[3], coords[4]
         local dx, dy = (r - l) * zoom, (b - t) * zoom
-        cell.tex:SetTexCoord(l + dx, r - dx, t + dy, b - dy)
-        cell:Show()
+        cellFrame.tex:SetTexCoord(l + dx, r - dx, t + dy, b - dy)
+        cellFrame:Show()
         return
     end
-    cell:Hide()
+    cellFrame:Hide()
 end
 
 -- Hoisted so a render does not build four closures per row; the cell carries
@@ -2253,99 +2253,99 @@ local function LootLeave(self)
     end
 end
 
-local function FillLootCell(cell, m)
-    cell:EnableMouse(true)
-    cell:Show()
-    cell._itemID = m.lootID
-    cell._link = m.lootLink
+local function FillLootCell(cellFrame, m)
+    cellFrame:EnableMouse(true)
+    cellFrame:Show()
+    cellFrame._itemID = m.lootID
+    cellFrame._link = m.lootLink
     if m.lootID or m.lootLink then
-        local id = m.lootID or IDFromLink(m.lootLink)
-        local icon = id and C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(id)
-        cell.tex:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-        cell.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        local ident = m.lootID or IDFromLink(m.lootLink)
+        local glyph = ident and C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)
+        cellFrame.tex:SetTexture(glyph or "Interface\\Icons\\INV_Misc_QuestionMark")
+        cellFrame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
-        cell.tex:SetTexture(nil)
+        cellFrame.tex:SetTexture(nil)
     end
     -- No plate without an item, or an empty cell would show a black square.
-    if cell.bg then
-        cell.bg:SetShown(m.lootID ~= nil or m.lootLink ~= nil)
+    if cellFrame.bg then
+        cellFrame.bg:SetShown(m.lootID ~= nil or m.lootLink ~= nil)
     end
-    cell:SetScript("OnEnter", LootEnter)
-    cell:SetScript("OnLeave", LootLeave)
+    cellFrame:SetScript("OnEnter", LootEnter)
+    cellFrame:SetScript("OnLeave", LootLeave)
 end
 
 -- Places every visible column of one container (the column header row or a
 -- member row) at the widths measured in the second pass, and hides the cells
 -- of columns the user switched off.
-local function PlaceInto(container, cols, widths, primW, subW)
-    local x = PAD
-    for idx, col in ipairs(cols) do
+local function PlaceInto(boxHolder, cols, widths, primW, subW)
+    local posX = PAD
+    for idx, column in ipairs(cols) do
         local wt = widths[idx]
-        local fs = container.text[col.key]
-        local sfs = container.sub and container.sub[col.key]
-        local icon = container.icons[col.key]
-        if icon then
-            icon:ClearAllPoints()
-            icon:SetPoint("LEFT", container, "LEFT", x + (wt - ICON_SZ) / 2, 0)
+        local fontStr = boxHolder.text[column.key]
+        local sfs = boxHolder.sub and boxHolder.sub[column.key]
+        local glyph = boxHolder.icons[column.key]
+        if glyph then
+            glyph:ClearAllPoints()
+            glyph:SetPoint("LEFT", boxHolder, "LEFT", posX + (wt - ICON_SZ) / 2, 0)
         end
-        local sb = container.sortBtns and container.sortBtns[col.key]
-        if sb then
-            sb:ClearAllPoints()
-            sb:SetPoint("TOPLEFT", container, "TOPLEFT", x, 0)
-            sb:SetPoint("BOTTOMRIGHT", container, "TOPLEFT", x + wt, -COLHDR_H)
-            sb:Show()
+        local scrollBar = boxHolder.sortBtns and boxHolder.sortBtns[column.key]
+        if scrollBar then
+            scrollBar:ClearAllPoints()
+            scrollBar:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", posX, 0)
+            scrollBar:SetPoint("BOTTOMRIGHT", boxHolder, "TOPLEFT", posX + wt, -COLHDR_H)
+            scrollBar:Show()
         end
-        if fs then
-            fs:ClearAllPoints()
-            fs:SetPoint("LEFT", container, "LEFT", x, 0)
-            if col.sub == "inline" then
-                fs:SetWidth(wt)
+        if fontStr then
+            fontStr:ClearAllPoints()
+            fontStr:SetPoint("LEFT", boxHolder, "LEFT", posX, 0)
+            if column.sub == "inline" then
+                fontStr:SetWidth(wt)
                 if sfs then
                     -- Anchored off this row's own text, so the item level sits
                     -- against the name instead of in a column of its own.
-                    local own = MeasuredWidth(fs, 0)
+                    local own = MeasuredWidth(fontStr, 0)
                     sfs:ClearAllPoints()
-                    sfs:SetPoint("LEFT", container, "LEFT", x + own + SUB_GAP, 0)
+                    sfs:SetPoint("LEFT", boxHolder, "LEFT", posX + own + SUB_GAP, 0)
                     sfs:SetWidth(math.max(1, wt - own - SUB_GAP))
                     sfs:Show()
                 end
             else
-                fs:SetWidth(primW[idx])
+                fontStr:SetWidth(primW[idx])
                 if sfs then
                     sfs:ClearAllPoints()
-                    sfs:SetPoint("LEFT", container, "LEFT", x + primW[idx] + SUB_GAP, 0)
+                    sfs:SetPoint("LEFT", boxHolder, "LEFT", posX + primW[idx] + SUB_GAP, 0)
                     sfs:SetWidth(math.max(1, subW[idx]))
                     sfs:Show()
                 end
             end
-            fs:Show()
+            fontStr:Show()
         end
-        x = x + wt + (col.gapAfter or COL_GAP)
+        posX = posX + wt + (column.gapAfter or COL_GAP)
     end
-    for _, col in ipairs(COLUMNS) do
-        local shown = false
+    for _, column in ipairs(COLUMNS) do
+        local isShown = false
         for _, vc in ipairs(cols) do
-            if vc.key == col.key then
-                shown = true
+            if vc.key == column.key then
+                isShown = true
                 break
             end
         end
-        if not shown then
-            local fs = container.text[col.key]
-            if fs then
-                fs:Hide()
+        if not isShown then
+            local fontStr = boxHolder.text[column.key]
+            if fontStr then
+                fontStr:Hide()
             end
-            local sfs = container.sub and container.sub[col.key]
+            local sfs = boxHolder.sub and boxHolder.sub[column.key]
             if sfs then
                 sfs:Hide()
             end
-            local icon = container.icons[col.key]
-            if icon then
-                icon:Hide()
+            local glyph = boxHolder.icons[column.key]
+            if glyph then
+                glyph:Hide()
             end
-            local sb = container.sortBtns and container.sortBtns[col.key]
-            if sb then
-                sb:Hide()
+            local scrollBar = boxHolder.sortBtns and boxHolder.sortBtns[column.key]
+            if scrollBar then
+                scrollBar:Hide()
             end
         end
     end
@@ -2363,20 +2363,20 @@ local function RenderHeader(record)
     titleFS:SetText(format("|cff%s+%d|r %s", lvlHex, record.level or 0, record.mapName or "?"))
 
     local timeHex = record.onTime and "40ff40" or "ff6060"
-    local sub =
+    local subFrame =
         format("|cff%s%s|r / %s", timeHex, Clock((record.timeMS or 0) / 1000), Clock(record.timeLimit or 0))
     -- Key upgrade levels read as the chest count: "(2 Chest)".
     if (record.upgrades or 0) > 0 then
-        sub = sub .. "   " .. CludesUI.Lf("(%1$d Chest)", record.upgrades)
+        subFrame = subFrame .. "   " .. CludesUI.Lf("(%1$d Chest)", record.upgrades)
     elseif not record.onTime then
-        sub = sub .. "   " .. CludesUI.L("Depleted")
+        subFrame = subFrame .. "   " .. CludesUI.L("Depleted")
     end
     -- Deaths and the time they cost share one muted run.
     local deaths = CludesUI.Lf("%1$d Deaths", record.deaths or 0)
     if (record.timeLost or 0) > 0 then
         deaths = deaths .. format(" (-%s)", Clock(record.timeLost))
     end
-    sub = sub .. "   |cff808080" .. deaths .. "|r"
+    subFrame = subFrame .. "   |cff808080" .. deaths .. "|r"
     -- One warning slot, most fundamental first.
     local warn
     if record.meterAvailable == false then
@@ -2387,9 +2387,9 @@ local function RenderHeader(record)
         warn = CludesUI.L("Damage meter was reset mid-run, some numbers are low")
     end
     if warn then
-        sub = sub .. "   |cffff8040" .. warn .. "|r"
+        subFrame = subFrame .. "   |cffff8040" .. warn .. "|r"
     end
-    subFS:SetText(sub)
+    subFS:SetText(subFrame)
 
     if pickerLbl then
         pickerLbl:SetText(RunLabel(record))
@@ -2399,7 +2399,7 @@ end
 local scratchWidths, scratchPrim, scratchSub = {}, {}, {}
 
 local function Render(record)
-    if not record or not win then
+    if not record or not window then
         return
     end
     local c = Cfg() or {}
@@ -2421,103 +2421,103 @@ local function Render(record)
     -- First pass: grow the row pool and give every cell its final text, so the
     -- widths measured below are the ones actually rendered.
     for i = 1, #members do
-        if not rows[i] then
-            rows[i] = MakeRow(win, textSize)
+        if not rowList[i] then
+            rowList[i] = MakeRow(window, textSize)
         elseif restamp then
-            StampRowFonts(rows[i], textSize)
+            StampRowFonts(rowList[i], textSize)
         end
-        local y = -(HEAD_H + COLHDR_H + (i - 1) * rowH)
-        rows[i]:ClearAllPoints()
-        rows[i]:SetPoint("TOPLEFT", win, "TOPLEFT", 0, y)
-        rows[i]:SetPoint("TOPRIGHT", win, "TOPRIGHT", 0, y)
-        local row, m = rows[i], members[i]
-        row:Show()
-        for _, col in ipairs(COLUMNS) do
-            local fs = row.text[col.key]
-            if fs then
-                fs:SetText(CellText(col, m, c))
-                fs:SetTextColor(1, 1, 1, 1)
+        local posY = -(HEAD_H + COLHDR_H + (i - 1) * rowH)
+        rowList[i]:ClearAllPoints()
+        rowList[i]:SetPoint("TOPLEFT", window, "TOPLEFT", 0, posY)
+        rowList[i]:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, posY)
+        local rowFrame, m = rowList[i], members[i]
+        rowFrame:Show()
+        for _, column in ipairs(COLUMNS) do
+            local fontStr = rowFrame.text[column.key]
+            if fontStr then
+                fontStr:SetText(CellText(column, m, c))
+                fontStr:SetTextColor(1, 1, 1, 1)
             end
-            local sfs = row.sub[col.key]
+            local sfs = rowFrame.sub[column.key]
             if sfs then
-                sfs:SetText(SubText(col, m, c))
+                sfs:SetText(SubText(column, m, c))
             end
         end
-        if row.icons.spec then
-            FillSpecCell(row.icons.spec, m)
+        if rowFrame.icons.spec then
+            FillSpecCell(rowFrame.icons.spec, m)
         end
-        if row.icons.loot then
-            FillLootCell(row.icons.loot, m)
+        if rowFrame.icons.loot then
+            FillLootCell(rowFrame.icons.loot, m)
         end
     end
-    for i = #members + 1, #rows do
-        rows[i]:Hide()
+    for i = #members + 1, #rowList do
+        rowList[i]:Hide()
     end
 
-    for _, col in ipairs(COLUMNS) do
-        local fs = colHdr.text[col.key]
-        if fs then
-            fs:SetText(col.header ~= "" and CUI.L(col.header) or "")
+    for _, column in ipairs(COLUMNS) do
+        local fontStr = colHdr.text[column.key]
+        if fontStr then
+            fontStr:SetText(column.header ~= "" and CUI.L(column.header) or "")
         end
-        local sfs = colHdr.sub[col.key]
+        local sfs = colHdr.sub[column.key]
         if sfs then
             sfs:SetText("")
         end
         -- Active sort column: bright header; the rest muted.
-        local sb = colHdr.sortBtns and colHdr.sortBtns[col.key]
-        if sb then
-            local active = (col.key == sortKey)
-            sb.active = active
-            if fs then
-                fs:SetTextColor(1, 1, 1, active and 1 or 0.45)
+        local scrollBar = colHdr.sortBtns and colHdr.sortBtns[column.key]
+        if scrollBar then
+            local isActive = (column.key == sortKey)
+            scrollBar.active = isActive
+            if fontStr then
+                fontStr:SetTextColor(1, 1, 1, isActive and 1 or 0.45)
             end
         end
     end
 
     -- Second pass: measure, then place. A column holding only dashes collapses
     -- to its minimum width instead of reserving room it does not need.
-    local widths, primW, subW, total = scratchWidths, scratchPrim, scratchSub, 0
+    local widths, primW, subW, sum = scratchWidths, scratchPrim, scratchSub, 0
     wipe(widths)
     wipe(primW)
     wipe(subW)
-    for idx, col in ipairs(cols) do
-        local wp, ws, wt = col.minW, 0, col.minW
-        if col.kind == "icon" then
-            wt = math.max(col.minW, MeasuredWidth(colHdr.text[col.key], 0))
+    for idx, column in ipairs(cols) do
+        local wp, ws, wt = column.minW, 0, column.minW
+        if column.kind == "icon" then
+            wt = math.max(column.minW, MeasuredWidth(colHdr.text[column.key], 0))
             wp = wt
-        elseif col.kind == "text" then
-            wp = MeasuredWidth(colHdr.text[col.key], 0)
+        elseif column.kind == "text" then
+            wp = MeasuredWidth(colHdr.text[column.key], 0)
             for i = 1, #members do
-                wp = math.max(wp, MeasuredWidth(rows[i].text[col.key], 0))
-                if col.sub then
-                    ws = math.max(ws, MeasuredWidth(rows[i].sub[col.key], 0))
+                wp = math.max(wp, MeasuredWidth(rowList[i].text[column.key], 0))
+                if column.sub then
+                    ws = math.max(ws, MeasuredWidth(rowList[i].sub[column.key], 0))
                 end
             end
-            if col.sub == "inline" then
+            if column.sub == "inline" then
                 -- The primary is sized per row here, so the column only has to
                 -- fit the widest name plus its own extra.
-                wt = math.max(col.minW, MeasuredWidth(colHdr.text[col.key], 0))
+                wt = math.max(column.minW, MeasuredWidth(colHdr.text[column.key], 0))
                 for i = 1, #members do
-                    local a = MeasuredWidth(rows[i].text[col.key], 0)
-                    local b = MeasuredWidth(rows[i].sub[col.key], 0)
+                    local a = MeasuredWidth(rowList[i].text[column.key], 0)
+                    local b = MeasuredWidth(rowList[i].sub[column.key], 0)
                     wt = math.max(wt, a + (b > 0 and (SUB_GAP + b) or 0))
                 end
             else
-                wp = math.max(wp, col.minW)
+                wp = math.max(wp, column.minW)
                 wt = wp + (ws > 0 and (SUB_GAP + ws) or 0)
             end
         end
         primW[idx], subW[idx], widths[idx] = wp, ws, wt
-        total = total + wt
+        sum = sum + wt
     end
     for idx = 1, #cols - 1 do
-        total = total + (cols[idx].gapAfter or COL_GAP)
+        sum = sum + (cols[idx].gapAfter or COL_GAP)
     end
-    total = total + PAD * 2
+    sum = sum + PAD * 2
 
     PlaceInto(colHdr, cols, widths, primW, subW)
     for i = 1, #members do
-        PlaceInto(rows[i], cols, widths, primW, subW)
+        PlaceInto(rowList[i], cols, widths, primW, subW)
     end
 
     -- The header is laid out independently of the table, so with enough columns
@@ -2526,9 +2526,9 @@ local function Render(record)
         PAD + MeasuredWidth(titleFS, 0) + COL_GAP + PICKER_W + HEADER_GAP + CLOSE_W + PAD,
         PAD + MeasuredWidth(subFS, 0) + PAD
     )
-    total = math.max(total, headerMin)
+    sum = math.max(sum, headerMin)
 
-    local PP = CUI.PP
+    local Pix = CUI.PP
     local height = HEAD_H + COLHDR_H + #members * rowH + PAD
     -- Scale first: PP.Size snaps against the frame's current effective scale,
     -- so changing the scale afterwards would throw that snap away.
@@ -2538,11 +2538,11 @@ local function Render(record)
     elseif scale > 2 then
         scale = 2
     end
-    win:SetScale(scale)
-    if PP and PP.Size then
-        PP.Size(win, total, height)
+    window:SetScale(scale)
+    if Pix and Pix.Size then
+        Pix.Size(window, sum, height)
     else
-        win:SetSize(total, height)
+        window:SetSize(sum, height)
     end
 end
 
@@ -2557,11 +2557,11 @@ ShowWindow = function(record)
     currentRecord = record
     Render(record)
     ApplyPosition()
-    win:Show()
+    window:Show()
 end
 
 RefreshWindowIfOpen = function()
-    if win and win:IsShown() and currentRecord then
+    if window and window:IsShown() and currentRecord then
         Render(currentRecord)
     end
 end
@@ -2570,20 +2570,20 @@ CludesUI.RegisterNumberFormatCallback(function()
     RefreshWindowIfOpen()
 end)
 
-ShowPicker = function(anchor)
-    local runs = ns.RS_GetRuns()
-    local items = {}
+ShowPicker = function(anchorFrame)
+    local runs = mod.RS_GetRuns()
+    local itemList = {}
     for i = 1, #runs do
-        local rec = runs[i]
-        items[#items + 1] = {
-            text = RunLabel(rec),
+        local recd = runs[i]
+        itemList[#itemList + 1] = {
+            text = RunLabel(recd),
             onClick = function()
-                ShowWindow(rec)
+                ShowWindow(recd)
             end,
         }
     end
-    if #items == 0 then
-        items[1] = {
+    if #itemList == 0 then
+        itemList[1] = {
             text = CludesUI.L("No runs recorded yet"),
             isDisabled = function()
                 return true
@@ -2591,21 +2591,21 @@ ShowPicker = function(anchor)
         }
     end
     -- Hung below the picker, at least its width: a dropdown, not a cursor menu.
-    CUI.ShowContextMenu(anchor, items, { below = true, minWidth = PICKER_W })
+    CUI.ShowContextMenu(anchorFrame, itemList, { below = true, minWidth = PICKER_W })
 end
 
 -- Opens the n-th most recent run (1 = newest).
-function ns.RS_Show(index)
-    local i = math.floor(tonumber(index) or 1)
+function mod.RS_Show(slotPos)
+    local i = math.floor(tonumber(slotPos) or 1)
     if i < 1 then
         i = 1
     end
-    local rec = ns.RS_GetRuns()[i]
-    if not rec then
+    local recd = mod.RS_GetRuns()[i]
+    if not recd then
         CUI.PrintError(CludesUI.L("No runs recorded yet"))
         return
     end
-    ShowWindow(rec)
+    ShowWindow(recd)
 end
 
 -- Preview: a synthetic run so the panel can be checked without going into a
@@ -2619,7 +2619,7 @@ local PREVIEW_SPEC_IDS = { 66, 257, 259, 102, 64 }
 local function PREVIEW_SPEC_ICON(i)
     return SpecIconForSpecID(PREVIEW_SPEC_IDS[i])
 end
-function ns.RS_ShowPreview()
+function mod.RS_ShowPreview()
     local R = Enum and Enum.LFGRole
     local members = {}
     for i = 1, 5 do
@@ -2675,8 +2675,8 @@ SlashCmdList.CUIMPLUS = function(msg)
     end
     local lower = msg and msg:lower() or ""
     if lower:find("preview", 1, true) then
-        ns.RS_ShowPreview()
+        mod.RS_ShowPreview()
         return
     end
-    ns.RS_Show(msg and tonumber(msg:match("%d+")))
+    mod.RS_Show(msg and tonumber(msg:match("%d+")))
 end

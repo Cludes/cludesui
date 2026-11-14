@@ -52,8 +52,8 @@ end
 local function Print(msg)
     CludesUI.Print("|cff4cc9f0Discovery:|r " .. msg)
 end
-local function Muted(text)
-    return "|cff9aa6b2" .. text .. "|r"
+local function Muted(textValue)
+    return "|cff9aa6b2" .. textValue .. "|r"
 end
 
 local D
@@ -66,25 +66,25 @@ local function Data()
 end
 
 -- A map pin link in chat (as /way prints it); a click on it places the pin.
-local function Link(title, map, x, y, note)
+local function Link(titleText, map, posX, posY, note)
     if not (map and C_Map.CanSetUserWaypointOnMap(map)) then
         return Print("this place cannot take a map pin.")
     end
-    local link = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
+    local itemLink = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
         map,
-        math.floor(x * 100 + 0.5),
-        math.floor(y * 100 + 0.5),
+        math.floor(posX * 100 + 0.5),
+        math.floor(posY * 100 + 0.5),
         MAP_PIN_HYPERLINK or "Map Pin"
     )
     local function Say()
         CludesUI.Print(
             "|cff4cc9f0Discovery:|r "
-                .. link
+                .. itemLink
                 .. " "
-                .. title
+                .. titleText
                 .. (note and (" " .. Muted(note)) or "")
                 .. " "
-                .. Muted(("%.1f, %.1f"):format(x, y))
+                .. Muted(("%.1f, %.1f"):format(posX, posY))
         )
     end
     if InCombatLockdown() and CludesUI.CombatQueue then
@@ -95,24 +95,24 @@ local function Link(title, map, x, y, note)
 end
 
 local function ZoneName(mapID)
-    local info = mapID and C_Map.GetMapInfo(mapID)
-    return info and info.name or ("map " .. tostring(mapID))
+    local details = mapID and C_Map.GetMapInfo(mapID)
+    return details and details.name or ("map " .. tostring(mapID))
 end
 
 local function PlayerZone()
-    local id = C_Map.GetBestMapForUnit("player")
-    local info = id and C_Map.GetMapInfo(id)
+    local ident = C_Map.GetBestMapForUnit("player")
+    local details = ident and C_Map.GetMapInfo(ident)
     while
-        info
-        and info.mapType
-        and info.mapType > Enum.UIMapType.Zone
-        and info.parentMapID
-        and info.parentMapID ~= 0
+        details
+        and details.mapType
+        and details.mapType > Enum.UIMapType.Zone
+        and details.parentMapID
+        and details.parentMapID ~= 0
     do
-        id = info.parentMapID
-        info = C_Map.GetMapInfo(id)
+        ident = details.parentMapID
+        details = C_Map.GetMapInfo(ident)
     end
-    return id
+    return ident
 end
 
 local function Side()
@@ -163,34 +163,34 @@ function Library.Librarian()
     return Data().LibraryTurnIns[TURN_IN][Side()]
 end
 
-function Library.Spots(mapID, state)
-    local out = {}
+function Library.Spots(mapID, status)
+    local result = {}
     if not mapID then
-        return out
+        return result
     end
     for _, book in ipairs(Data().LibraryBooks) do
-        if Library.ForMe(book) and BookState(book) == state then
+        if Library.ForMe(book) and BookState(book) == status then
             for _, spot in ipairs(book.spots) do
                 if spot[SPOT_MAP] == mapID then
-                    out[#out + 1] = { book, spot }
+                    result[#result + 1] = { book, spot }
                 end
             end
         end
     end
-    return out
+    return result
 end
 
 function Library.Progress()
-    local done, total = 0, 0
+    local done, sum = 0, 0
     for _, book in ipairs(Data().LibraryBooks) do
         if book.turnIn == TURN_IN and Library.ForMe(book) then
-            total = total + 1
+            sum = sum + 1
             if Library.Done(book) then
                 done = done + 1
             end
         end
     end
-    return done, total
+    return done, sum
 end
 
 function Library.NextGoal()
@@ -252,9 +252,9 @@ function Bag.StepDone(step)
     return Done(step.done)
 end
 function Bag.Current()
-    for i, step in ipairs(Bag.Steps()) do
+    for idx, step in ipairs(Bag.Steps()) do
         if not Bag.StepDone(step) then
-            return step, i
+            return step, idx
         end
     end
 end
@@ -292,8 +292,8 @@ local lookup, fieldEvents
 local lootPage, lootItem, lootQty = {}, {}, {}
 local OnFieldChange
 
-local function Plain(v)
-    return not (issecretvalue and issecretvalue(v))
+local function Plain(val)
+    return not (issecretvalue and issecretvalue(val))
 end
 
 local function Lookup()
@@ -302,39 +302,39 @@ local function Lookup()
     end
     local FJ = Data().FieldJournal
     lookup = { fish = {}, herbs = {}, dishes = {}, nodes = {} }
-    for _, entry in ipairs(FJ.fish) do
-        lookup.fish[entry.item] = entry
+    for _, record in ipairs(FJ.fish) do
+        lookup.fish[record.item] = record
     end
-    for _, entry in ipairs(FJ.herbs) do
-        lookup.herbs[entry.item] = entry
-        for _, node in ipairs(entry.nodes) do
+    for _, record in ipairs(FJ.herbs) do
+        lookup.herbs[record.item] = record
+        for _, node in ipairs(record.nodes) do
             lookup.nodes[node] = true
         end
     end
-    for _, entry in ipairs(FJ.dishes) do
-        lookup.dishes[entry.spell] = entry
+    for _, record in ipairs(FJ.dishes) do
+        lookup.dishes[record.spell] = record
     end
     return lookup
 end
 
 local function FieldStore(create)
-    local guid = UnitGUID("player")
-    if not guid then
+    local unitGuid = UnitGUID("player")
+    if not unitGuid then
         return
     end
-    local cfg = create and F.Cfg() or F.Read()
-    local all = cfg.field
+    local conf = create and F.Cfg() or F.Read()
+    local all = conf.field
     if not all then
         if not create then
             return
         end
         all = {}
-        cfg.field = all
+        conf.field = all
     end
-    local mine = all[guid]
+    local mine = all[unitGuid]
     if not mine and create then
         mine = {}
-        all[guid] = mine
+        all[unitGuid] = mine
     end
     if mine and create then
         for _, page in ipairs(PAGES) do
@@ -344,12 +344,12 @@ local function FieldStore(create)
     return mine
 end
 
-local function FieldAdd(page, id, n)
+local function FieldAdd(page, ident, num)
     local mine = FieldStore(true)
     if not mine then
         return
     end
-    mine[page][id] = (mine[page][id] or 0) + n
+    mine[page][ident] = (mine[page][ident] or 0) + num
     if OnFieldChange then
         OnFieldChange(page)
     end
@@ -361,20 +361,20 @@ end
 function Field.Entries(page)
     return Data().FieldJournal[page]
 end
-function Field.Key(entry)
-    return entry.spell or entry.item
+function Field.Key(record)
+    return record.spell or record.item
 end
-function Field.Count(page, entry)
+function Field.Count(page, record)
     local mine = FieldStore(false)
     local done = mine and mine[page]
-    return done and done[Field.Key(entry)]
+    return done and done[Field.Key(record)]
 end
-function Field.SetHad(page, entry, had)
+function Field.SetHad(page, record, had)
     local mine = FieldStore(true)
     if not mine then
         return
     end
-    local key = Field.Key(entry)
+    local key = Field.Key(record)
     if had then
         mine[page][key] = mine[page][key] or 0
     elseif mine[page][key] == 0 then
@@ -387,50 +387,50 @@ end
 function Field.Progress(page)
     local mine = FieldStore(false)
     local had = mine and mine[page]
-    local list = Field.Entries(page)
+    local entries = Field.Entries(page)
     local done = 0
     if had then
-        for _, entry in ipairs(list) do
-            if had[Field.Key(entry)] ~= nil then
+        for _, record in ipairs(entries) do
+            if had[Field.Key(record)] ~= nil then
                 done = done + 1
             end
         end
     end
-    return done, #list
+    return done, #entries
 end
 function Field.Rank(skill)
     if not skill then
         return nil
     end
-    for i, cap in ipairs(RANK_CAPS) do
+    for idx, cap in ipairs(RANK_CAPS) do
         if skill <= cap then
-            return i
+            return idx
         end
     end
     return #RANK_CAPS + 1
 end
 
-local function FieldZones(entry, withChance)
-    local names = {}
-    local zones = entry.zones or {}
+local function FieldZones(record, withChance)
+    local nameList = {}
+    local zones = record.zones or {}
     local stride = withChance and 2 or 1
-    for i = 1, #zones, stride do
-        local name = ZoneName(zones[i])
+    for idx = 1, #zones, stride do
+        local name = ZoneName(zones[idx])
         if withChance then
-            name = ("%s %d%%"):format(name, math.max(1, math.floor(zones[i + 1] + 0.5)))
+            name = ("%s %d%%"):format(name, math.max(1, math.floor(zones[idx + 1] + 0.5)))
         end
-        names[#names + 1] = name
+        nameList[#nameList + 1] = name
     end
-    return table.concat(names, ", ")
+    return table.concat(nameList, ", ")
 end
 
-function Field.Source(entry)
-    return entry[Side()] or entry.B
+function Field.Source(record)
+    return record[Side()] or record.B
 end
 
-function Field.Where(page, entry)
+function Field.Where(page, record)
     if page == "dishes" then
-        local how, from = entry.how, Field.Source(entry)
+        local how, from = record.how, Field.Source(record)
         if how == "trainer" then
             return "Taught by cooking trainers"
         end
@@ -441,7 +441,7 @@ function Field.Where(page, entry)
             return "Where to learn it is not known yet"
         end
         if not from then
-            if how == "vendor" and not (entry.A or entry.H) then
+            if how == "vendor" and not (record.A or record.H) then
                 return "Sold by a vendor"
             end
             return "Only for the other faction"
@@ -455,27 +455,27 @@ function Field.Where(page, entry)
         return ("Drops from %s"):format(from[1])
     end
     if page == "herbs" then
-        return FieldZones(entry, false)
+        return FieldZones(record, false)
     end
-    if not entry.zones then
+    if not record.zones then
         return "Caught from schools of fish"
     end
-    local zones = FieldZones(entry, true)
-    return entry.schools and (zones .. ", and from schools of fish") or zones
+    local zones = FieldZones(record, true)
+    return record.schools and (zones .. ", and from schools of fish") or zones
 end
 
-function Field.Link(entry)
-    local from = Field.Source(entry)
+function Field.Link(record)
+    local from = Field.Source(record)
     if from and from[2] then
         Link(from[5] or from[1], from[2], from[3], from[4])
     end
 end
 
-local function FromNode(guid)
-    if type(guid) ~= "string" or not Plain(guid) then
+local function FromNode(unitGuid)
+    if type(unitGuid) ~= "string" or not Plain(unitGuid) then
         return false
     end
-    return Lookup().nodes[tonumber(guid:match(GUID_OBJECT) or "")] == true
+    return Lookup().nodes[tonumber(unitGuid:match(GUID_OBJECT) or "")] == true
 end
 
 local function LootForget()
@@ -488,18 +488,23 @@ local function LootOpened()
     LootForget()
     local fishing = IsFishingLoot()
     local known = Lookup()
-    for slot = 1, GetNumLootItems() do
-        local link = GetLootSlotLink(slot)
-        local item = link and Plain(link) and C_Item.GetItemInfoInstant(link) or nil
+    for slotIndex = 1, GetNumLootItems() do
+        local itemLink = GetLootSlotLink(slotIndex)
+        local itemInfo = itemLink and Plain(itemLink) and C_Item.GetItemInfoInstant(itemLink) or nil
         local page
-        if item and fishing and known.fish[item] then
+        if itemInfo and fishing and known.fish[itemInfo] then
             page = "fish"
-        elseif item and not fishing and known.herbs[item] and FromNode(GetLootSourceInfo(slot)) then
+        elseif
+            itemInfo
+            and not fishing
+            and known.herbs[itemInfo]
+            and FromNode(GetLootSourceInfo(slotIndex))
+        then
             page = "herbs"
         end
-        local _, _, quantity = GetLootSlotInfo(slot)
+        local _, _, quantity = GetLootSlotInfo(slotIndex)
         if page and Plain(quantity) and quantity and quantity > 0 then
-            lootPage[slot], lootItem[slot], lootQty[slot] = page, item, quantity
+            lootPage[slotIndex], lootItem[slotIndex], lootQty[slotIndex] = page, itemInfo, quantity
         end
     end
 end
@@ -514,23 +519,23 @@ local function FieldApply()
     end
     if not fieldEvents then
         fieldEvents = CreateFrame("Frame")
-        fieldEvents:SetScript("OnEvent", function(self, event, a, _, spellID)
-            if event == "LOOT_OPENED" then
+        fieldEvents:SetScript("OnEvent", function(self, evt, a, _, spellId)
+            if evt == "LOOT_OPENED" then
                 LootOpened()
-            elseif event == "LOOT_SLOT_CLEARED" then
+            elseif evt == "LOOT_SLOT_CLEARED" then
                 local page = lootPage[a]
                 if page then
                     lootPage[a] = nil
                     FieldAdd(page, lootItem[a], lootQty[a])
                 end
-            elseif event == "LOOT_CLOSED" then
+            elseif evt == "LOOT_CLOSED" then
                 LootForget()
-            elseif event == "TRADE_SKILL_SHOW" then
+            elseif evt == "TRADE_SKILL_SHOW" then
                 self:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-            elseif event == "TRADE_SKILL_CLOSE" then
+            elseif evt == "TRADE_SKILL_CLOSE" then
                 self:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-            elseif event == "UNIT_SPELLCAST_SUCCEEDED" and Plain(spellID) and Lookup().dishes[spellID] then
-                FieldAdd("dishes", spellID, 1)
+            elseif evt == "UNIT_SPELLCAST_SUCCEEDED" and Plain(spellId) and Lookup().dishes[spellId] then
+                FieldAdd("dishes", spellId, 1)
             end
         end)
     end
@@ -552,8 +557,8 @@ local nearTicker, nearZone, nearTargets
 local nearEvents = CreateFrame("Frame")
 local alerted = {}
 
-local function WorldPos(mapID, x, y)
-    local _, pos = C_Map.GetWorldPosFromMapPos(mapID, CreateVector2D(x, y))
+local function WorldPos(mapID, posX, posY)
+    local _, pos = C_Map.GetWorldPosFromMapPos(mapID, CreateVector2D(posX, posY))
     return pos
 end
 
@@ -571,20 +576,20 @@ local function NearCheck()
     end
     local range = Get("nearbyRange")
     local mx, my = me:GetXY()
-    for _, target in ipairs(nearTargets) do
-        local tx, ty = target[3]:GetXY()
+    for _, targetUnit in ipairs(nearTargets) do
+        local tx, ty = targetUnit[3]:GetXY()
         local dist = math.sqrt((tx - mx) ^ 2 + (ty - my) ^ 2)
-        local quest = target[1].quest
+        local quest = targetUnit[1].quest
         if dist <= range and not alerted[quest] then
             alerted[quest] = true
             if Get("nearbyPing") then
                 PlaySound(SOUNDKIT.MAP_PING, "Master")
             end
             if Get("nearbyChat") then
-                local place = target[2][SPOT_PLACE]
+                local place = targetUnit[2][SPOT_PLACE]
                 Print(
                     ("library book nearby: %s, %d yards%s"):format(
-                        target[1].name,
+                        targetUnit[1].name,
                         math.floor(dist),
                         place and (" - " .. place) or ""
                     )
@@ -610,19 +615,19 @@ local function NearRefresh()
     if not (On() and Get("nearby")) or IsInInstance() then
         return NearStop()
     end
-    local id = PlayerZone()
-    local list = {}
-    for _, item in ipairs(Library.Spots(id, "find")) do
-        local spot = item[2]
-        local pos = WorldPos(id, spot[SPOT_X] / 100, spot[SPOT_Y] / 100)
+    local ident = PlayerZone()
+    local entries = {}
+    for _, itemInfo in ipairs(Library.Spots(ident, "find")) do
+        local spot = itemInfo[2]
+        local pos = WorldPos(ident, spot[SPOT_X] / 100, spot[SPOT_Y] / 100)
         if pos then
-            list[#list + 1] = { item[1], spot, pos }
+            entries[#entries + 1] = { itemInfo[1], spot, pos }
         end
     end
-    if #list == 0 then
+    if #entries == 0 then
         return NearStop()
     end
-    nearZone, nearTargets = id, list
+    nearZone, nearTargets = ident, entries
     nearEvents:RegisterEvent("PLAYER_STARTED_MOVING")
     nearEvents:RegisterEvent("PLAYER_STOPPED_MOVING")
     NearCheck()
@@ -634,10 +639,10 @@ local function NearRefresh()
     end
 end
 
-nearEvents:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_STARTED_MOVING" then
+nearEvents:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_STARTED_MOVING" then
         nearTicker = nearTicker or C_Timer.NewTicker(1, NearCheck)
-    elseif event == "PLAYER_STOPPED_MOVING" then
+    elseif evt == "PLAYER_STOPPED_MOVING" then
         if nearTicker then
             nearTicker:Cancel()
             nearTicker = nil
@@ -651,14 +656,14 @@ end)
 -------------------------------------------------------------------------------
 --  Rows: the window and the tracker draw with the same pooled lines
 -------------------------------------------------------------------------------
-local function NewRows(content)
-    local R = { content = content, pool = {}, used = 0, y = 0 }
+local function NewRows(contentFrame)
+    local R = { content = contentFrame, pool = {}, used = 0, y = 0 }
 
     local function Acquire()
         R.used = R.used + 1
         local r = R.pool[R.used]
         if not r then
-            r = CreateFrame("Button", nil, content)
+            r = CreateFrame("Button", nil, contentFrame)
             r:RegisterForClicks("AnyUp")
             r.icon = r:CreateTexture(nil, "ARTWORK")
             r.icon:SetSize(18, 18)
@@ -686,9 +691,9 @@ local function NewRows(content)
             r:SetScript("OnLeave", function()
                 GameTooltip:Hide()
             end)
-            r:SetScript("OnClick", function(self, button)
+            r:SetScript("OnClick", function(self, btnFrame)
                 if self.onClick then
-                    self.onClick(button)
+                    self.onClick(btnFrame)
                 end
             end)
             R.pool[R.used] = r
@@ -703,52 +708,52 @@ local function NewRows(content)
     end
 
     function R:Reset()
-        for i = 1, self.used do
-            self.pool[i]:Hide()
+        for idx = 1, self.used do
+            self.pool[idx]:Hide()
         end
         self.used, self.y = 0, 0
     end
 
     -- A line of text; opts: size, colour, indent, icon, right, onClick, tip.
-    function R:Line(text, opts)
-        opts = opts or {}
+    function R:Line(textValue, options)
+        options = options or {}
         local r = Acquire()
-        local width = content:GetWidth()
-        local indent = opts.indent or 0
-        local size = opts.size or 12
-        CludesUI.Kit.Font(r.text, size, "essentials")
-        r.text:SetTextColor(unpack(opts.colour or { 1, 1, 1 }))
-        local left = indent
-        if opts.icon then
-            r.icon:SetTexture(opts.icon)
+        local width = contentFrame:GetWidth()
+        local indent = options.indent or 0
+        local dim = options.size or 12
+        CludesUI.Kit.Font(r.text, dim, "essentials")
+        r.text:SetTextColor(unpack(options.colour or { 1, 1, 1 }))
+        local leftX = indent
+        if options.icon then
+            r.icon:SetTexture(options.icon)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", indent, -1)
             r.icon:Show()
-            left = indent + 24
+            leftX = indent + 24
         end
-        r.text:SetPoint("TOPLEFT", r, "TOPLEFT", left, -2)
+        r.text:SetPoint("TOPLEFT", r, "TOPLEFT", leftX, -2)
         local rightW = 0
-        if opts.right then
+        if options.right then
             CludesUI.Kit.Font(r.right, 11, "essentials")
-            r.right:SetTextColor(unpack(opts.rightColour or MUTED))
-            r.right:SetText(opts.right)
+            r.right:SetTextColor(unpack(options.rightColour or MUTED))
+            r.right:SetText(options.right)
             r.right:ClearAllPoints()
             r.right:SetPoint("TOPRIGHT", r, "TOPRIGHT", -4, -3)
             rightW = r.right:GetStringWidth() + 10
         end
-        r.text:SetWidth(math.max(40, width - left - rightW - 6))
-        r.text:SetText(text)
-        local h = math.max(opts.icon and 22 or 16, r.text:GetStringHeight() + 5)
-        r:SetSize(width, h)
-        r:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -self.y)
-        r.tip, r.onClick = opts.tip, opts.onClick
-        r:EnableMouse(opts.tip ~= nil or opts.onClick ~= nil)
-        self.y = self.y + h
+        r.text:SetWidth(math.max(40, width - leftX - rightW - 6))
+        r.text:SetText(textValue)
+        local hgt = math.max(options.icon and 22 or 16, r.text:GetStringHeight() + 5)
+        r:SetSize(width, hgt)
+        r:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, -self.y)
+        r.tip, r.onClick = options.tip, options.onClick
+        r:EnableMouse(options.tip ~= nil or options.onClick ~= nil)
+        self.y = self.y + hgt
         return r
     end
 
-    function R:Gap(n)
-        self.y = self.y + (n or 6)
+    function R:Gap(num)
+        self.y = self.y + (num or 6)
     end
     function R:Height()
         return self.y
@@ -760,107 +765,107 @@ end
 --  Window
 -------------------------------------------------------------------------------
 local WIN_W, WIN_H = 620, 540
-local win, scroll, content, rows
+local window, scroll, contentFrame, rowList
 local tabs, tabButtons = {}, {}
 local currentTab
 local fieldPage = "fish"
 local Redraw
 
 local function TabOrder()
-    local list = {}
-    for key, tab in pairs(tabs) do
-        list[#list + 1] = tab
+    local entries = {}
+    for key, tabButton in pairs(tabs) do
+        entries[#entries + 1] = tabButton
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         return a.order < b.order
     end)
-    return list
+    return entries
 end
 
 local function BuildWindow()
-    win = CreateFrame("Frame", "CludesUIDiscovery", UIParent)
-    win:SetSize(WIN_W, WIN_H)
-    win:SetPoint("CENTER", 0, 30)
-    CludesUI.Kit.Panel(win, 0.96)
-    win:SetMovable(true)
-    win:EnableMouse(true)
-    win:RegisterForDrag("LeftButton")
-    win:SetScript("OnDragStart", win.StartMoving)
-    win:SetScript("OnDragStop", win.StopMovingOrSizing)
-    win:SetFrameStrata("HIGH")
-    win:SetClampedToScreen(true)
-    local title = win:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, "essentials")
-    title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("Discovery")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(win, "x", function()
-        win:Hide()
+    window = CreateFrame("Frame", "CludesUIDiscovery", UIParent)
+    window:SetSize(WIN_W, WIN_H)
+    window:SetPoint("CENTER", 0, 30)
+    CludesUI.Kit.Panel(window, 0.96)
+    window:SetMovable(true)
+    window:EnableMouse(true)
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnDragStart", window.StartMoving)
+    window:SetScript("OnDragStop", window.StopMovingOrSizing)
+    window:SetFrameStrata("HIGH")
+    window:SetClampedToScreen(true)
+    local titleText = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(titleText, 15, "essentials")
+    titleText:SetPoint("TOPLEFT", 10, -8)
+    titleText:SetText("Discovery")
+    CludesUI.Kit.AccentText(titleText)
+    local close = CludesUI.Kit.Glyph(window, "x", function()
+        window:Hide()
     end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
-    win.tabBar = CreateFrame("Frame", nil, win)
-    win.tabBar:SetPoint("TOPLEFT", 10, -32)
-    win.tabBar:SetSize(WIN_W - 20, 22)
-    win.tools = CreateFrame("Frame", nil, win)
-    win.tools:SetPoint("TOPLEFT", 10, -58)
-    win.tools:SetSize(WIN_W - 20, 24)
-    scroll = (CludesUI.Kit.Scroll(win))
+    window.tabBar = CreateFrame("Frame", nil, window)
+    window.tabBar:SetPoint("TOPLEFT", 10, -32)
+    window.tabBar:SetSize(WIN_W - 20, 22)
+    window.tools = CreateFrame("Frame", nil, window)
+    window.tools:SetPoint("TOPLEFT", 10, -58)
+    window.tools:SetSize(WIN_W - 20, 24)
+    scroll = (CludesUI.Kit.Scroll(window))
     scroll:SetPoint("TOPLEFT", 10, -86)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
-    content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(WIN_W - 44, 10)
-    scroll:SetScrollChild(content)
-    rows = NewRows(content)
-    win:Hide()
+    contentFrame = CreateFrame("Frame", nil, scroll)
+    contentFrame:SetSize(WIN_W - 44, 10)
+    scroll:SetScrollChild(contentFrame)
+    rowList = NewRows(contentFrame)
+    window:Hide()
     tinsert(UISpecialFrames, "CludesUIDiscovery")
 end
 
 local function PaintTabs()
-    local x = 0
-    for i, tab in ipairs(TabOrder()) do
-        local b = tabButtons[i]
+    local posX = 0
+    for idx, tabButton in ipairs(TabOrder()) do
+        local b = tabButtons[idx]
         if not b then
-            b = CludesUI.Kit.Button(win.tabBar, "", 90, 22, nil, { key = "essentials" })
+            b = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
             b:SetHeight(22)
-            tabButtons[i] = b
+            tabButtons[idx] = b
         end
-        b:SetText(tab.label)
+        b:SetText(tabButton.label)
         b:SetWidth(math.max(80, b:GetTextWidth() + 24))
         b:ClearAllPoints()
-        b:SetPoint("LEFT", win.tabBar, "LEFT", x, 0)
+        b:SetPoint("LEFT", window.tabBar, "LEFT", posX, 0)
         b:SetScript("OnClick", function()
-            currentTab = tab.key
+            currentTab = tabButton.key
             Redraw()
         end)
-        if tab.key == currentTab then
+        if tabButton.key == currentTab then
             b:SetActive(true)
         else
             b:SetActive(false)
         end
         b:Show()
-        x = x + b:GetWidth() + 4
+        posX = posX + b:GetWidth() + 4
     end
 end
 
 function Redraw()
-    if not (win and win:IsShown()) then
+    if not (window and window:IsShown()) then
         return
     end
     CludesUI.Kit.SyncAccent(ACCENT)
     PaintTabs()
-    rows:Reset()
-    for _, child in ipairs({ win.tools:GetChildren() }) do
-        child:Hide()
+    rowList:Reset()
+    for _, childFrame in ipairs({ window.tools:GetChildren() }) do
+        childFrame:Hide()
     end
-    local tab = tabs[currentTab] or TabOrder()[1]
-    currentTab = tab.key
-    tab.draw(rows, win.tools)
-    content:SetHeight(rows:Height() + 10)
+    local tabButton = tabs[currentTab] or TabOrder()[1]
+    currentTab = tabButton.key
+    tabButton.draw(rowList, window.tools)
+    contentFrame:SetHeight(rowList:Height() + 10)
 end
 
 local redrawQueued
 local function RedrawSoon()
-    if redrawQueued or not (win and win:IsShown()) then
+    if redrawQueued or not (window and window:IsShown()) then
         return
     end
     redrawQueued = true
@@ -871,20 +876,20 @@ local function RedrawSoon()
 end
 OnFieldChange = RedrawSoon
 
-local function OpenWindow(tab)
-    if not win then
+local function OpenWindow(tabButton)
+    if not window then
         BuildWindow()
     end
-    if tab then
-        currentTab = tab
+    if tabButton then
+        currentTab = tabButton
     end
-    win:Show()
+    window:Show()
     Redraw()
 end
 
 --- Other files add a tab: { key, label, order, draw = function(rows, tools) }.
-function module.DiscoveryAddTab(tab)
-    tabs[tab.key] = tab
+function module.DiscoveryAddTab(tabButton)
+    tabs[tabButton.key] = tabButton
 end
 module.DiscoveryRows = NewRows
 module.DiscoveryRedraw = RedrawSoon
@@ -896,47 +901,53 @@ module.DiscoveryPlayerZone = PlayerZone
 --  Library Books tab
 -------------------------------------------------------------------------------
 local function GoalLine(goal, done)
-    local state = Library.GoalState(goal, done)
+    local status = Library.GoalState(goal, done)
     local words, colour
-    if state == "claimed" then
+    if status == "claimed" then
         words, colour = "Claimed", MUTED
-    elseif state == "ready" then
+    elseif status == "ready" then
         words, colour = "Ready to hand in", READY
-    elseif state == "level" then
+    elseif status == "level" then
         words, colour = ("At level %d"):format(goal.level), GOLD
     else
         words, colour = ("%d to go"):format(goal.books - done), { 1, 1, 1 }
     end
-    local names = {}
+    local nameList = {}
     for _, reward in ipairs(goal.rewards) do
-        names[#names + 1] = C_Item.GetItemNameByID(reward[1]) or reward[2]
+        nameList[#nameList + 1] = C_Item.GetItemNameByID(reward[1]) or reward[2]
     end
-    return ("%s (%d)"):format(goal.name, goal.books), words, colour, table.concat(names, " or ")
+    return ("%s (%d)"):format(goal.name, goal.books), words, colour, table.concat(nameList, " or ")
 end
 
 local function BookTip(book, spot)
-    return function(tip)
-        tip:SetText(book.name, 1, 1, 1)
+    return function(tipText)
+        tipText:SetText(book.name, 1, 1, 1)
         local c = GetQuestDifficultyColor(book.tier)
-        tip:AddLine(("Level %d"):format(book.tier), c.r, c.g, c.b)
+        tipText:AddLine(("Level %d"):format(book.tier), c.r, c.g, c.b)
         if spot then
-            tip:AddLine(ZoneName(spot[SPOT_MAP]) .. ", " .. Library.Where(spot), unpack(MUTED))
+            tipText:AddLine(ZoneName(spot[SPOT_MAP]) .. ", " .. Library.Where(spot), unpack(MUTED))
             if spot[SPOT_NOTE] then
-                tip:AddLine(spot[SPOT_NOTE], 1, 1, 1, true)
+                tipText:AddLine(spot[SPOT_NOTE], 1, 1, 1, true)
             end
         end
         local npc = Library.TurnIn(book)
-        tip:AddLine(("Hand in to %s, %s"):format(npc.name, npc.place), ACCENT[1], ACCENT[2], ACCENT[3], true)
+        tipText:AddLine(
+            ("Hand in to %s, %s"):format(npc.name, npc.place),
+            ACCENT[1],
+            ACCENT[2],
+            ACCENT[3],
+            true
+        )
         if spot then
-            tip:AddLine("Click to link its map pin in chat.", unpack(MUTED))
+            tipText:AddLine("Click to link its map pin in chat.", unpack(MUTED))
         end
     end
 end
 
 local function DrawBooks(R)
-    local done, total = Library.Progress()
+    local done, sum = Library.Progress()
     R:Line(
-        ("Library Books  %s"):format(Muted(("%d of %d handed in"):format(done, total))),
+        ("Library Books  %s"):format(Muted(("%d of %d handed in"):format(done, sum))),
         { size = 16, colour = ACCENT }
     )
     local librarian = Library.Librarian()
@@ -952,18 +963,18 @@ local function DrawBooks(R)
         R:Line(name, { size = 13, colour = GOLD, right = words, rightColour = colour })
         R:Line(rewards, { indent = 14, colour = MUTED })
     end
-    local tiers, order = {}, {}
+    local tiers, sequence = {}, {}
     for _, book in ipairs(Data().LibraryBooks) do
         if Library.ForMe(book) then
             if not tiers[book.tier] then
                 tiers[book.tier] = {}
-                order[#order + 1] = book.tier
+                sequence[#sequence + 1] = book.tier
             end
             table.insert(tiers[book.tier], book)
         end
     end
-    table.sort(order)
-    for _, tier in ipairs(order) do
+    table.sort(sequence)
+    for _, tier in ipairs(sequence) do
         R:Gap(6)
         R:Line(("Level %d books"):format(tier), { size = 14, colour = GOLD })
         for _, book in ipairs(tiers[tier]) do
@@ -973,24 +984,21 @@ local function DrawBooks(R)
                 or stored == "bank" and "in your bank"
                 or nil
             local spot = book.spots[1]
-            local icon = C_Item.GetItemIconByID(book.item) or 134400
+            local glyph = C_Item.GetItemIconByID(book.item) or 134400
             local where = book.unplaced and "Not found on Forever yet"
                 or spot and (ZoneName(spot[SPOT_MAP]) .. ", " .. Library.Where(spot))
                 or ""
-            R:Line(
-                Library.Title(book) .. "\n" .. Muted(where),
-                {
-                    icon = icon,
-                    right = right,
-                    rightColour = right == "handed in" and MUTED or GOLD,
-                    tip = BookTip(book, spot),
-                    onClick = spot and function()
-                        Library.LinkBook(book, spot)
-                    end,
-                }
-            )
-            for i = 2, #book.spots do
-                local other = book.spots[i]
+            R:Line(Library.Title(book) .. "\n" .. Muted(where), {
+                icon = glyph,
+                right = right,
+                rightColour = right == "handed in" and MUTED or GOLD,
+                tip = BookTip(book, spot),
+                onClick = spot and function()
+                    Library.LinkBook(book, spot)
+                end,
+            })
+            for idx = 2, #book.spots do
+                local other = book.spots[idx]
                 R:Line(Muted("or " .. ZoneName(other[SPOT_MAP]) .. ", " .. Library.Where(other)), {
                     indent = 24,
                     tip = BookTip(book, other),
@@ -1018,26 +1026,26 @@ local function DrawBag(R)
         { colour = MUTED }
     )
     R:Gap(4)
-    for i, step in ipairs(Bag.Steps()) do
+    for idx, step in ipairs(Bag.Steps()) do
         local done = Bag.StepDone(step)
-        local now = step == current
-        local name = (done and (CHECK .. " ") or (i .. ". ")) .. Bag.Name(step)
+        local nowTime = step == current
+        local name = (done and (CHECK .. " ") or (idx .. ". ")) .. Bag.Name(step)
         R:Line(done and Muted(name) or name, {
             size = 13,
-            colour = now and GOLD or { 1, 1, 1 },
+            colour = nowTime and GOLD or { 1, 1, 1 },
             onClick = function()
                 Bag.Link(step)
             end,
-            tip = function(tip)
-                tip:SetText(Bag.Name(step), 1, 1, 1)
-                tip:AddLine(Bag.Where(step), unpack(MUTED))
+            tip = function(tipText)
+                tipText:SetText(Bag.Name(step), 1, 1, 1)
+                tipText:AddLine(Bag.Where(step), unpack(MUTED))
                 if step.tip then
-                    tip:AddLine(step.tip, 1, 1, 1, true)
+                    tipText:AddLine(step.tip, 1, 1, 1, true)
                 end
             end,
         })
         R:Line(Bag.Where(step), { indent = 18, colour = MUTED })
-        if now and step.tip then
+        if nowTime and step.tip then
             R:Line(step.tip, { indent = 18, colour = ACCENT })
         end
     end
@@ -1062,18 +1070,18 @@ local fieldSwitch
 local function DrawField(R, tools)
     if not fieldSwitch then
         fieldSwitch = {}
-        local x = 0
+        local posX = 0
         for _, page in ipairs(PAGES) do
             local b = CludesUI.Kit.Button(tools, "", 90, 22, nil, { key = "essentials" })
             b:SetSize(90, 22)
-            b:SetPoint("LEFT", tools, "LEFT", x, 0)
+            b:SetPoint("LEFT", tools, "LEFT", posX, 0)
             b:SetText(PAGE_NAMES[page])
             b:SetScript("OnClick", function()
                 fieldPage = page
                 Redraw()
             end)
             fieldSwitch[page] = b
-            x = x + 94
+            posX = posX + 94
         end
     end
     for page, b in pairs(fieldSwitch) do
@@ -1085,9 +1093,9 @@ local function DrawField(R, tools)
         end
     end
     local page = fieldPage
-    local done, total = Field.Progress(page)
+    local done, sum = Field.Progress(page)
     R:Line(
-        ("%s  %s"):format(PAGE_NAMES[page], Muted(("%d of %d"):format(done, total))),
+        ("%s  %s"):format(PAGE_NAMES[page], Muted(("%d of %d"):format(done, sum))),
         { size = 16, colour = ACCENT }
     )
     R:Line(
@@ -1096,38 +1104,38 @@ local function DrawField(R, tools)
         { colour = MUTED }
     )
     local byRank = {}
-    for _, entry in ipairs(Field.Entries(page)) do
-        local rank = Field.Rank(entry.skill) or 0
+    for _, record in ipairs(Field.Entries(page)) do
+        local rank = Field.Rank(record.skill) or 0
         byRank[rank] = byRank[rank] or {}
-        table.insert(byRank[rank], entry)
+        table.insert(byRank[rank], record)
     end
     for rank = 1, #RANK_NAMES do
         if byRank[rank] then
             R:Gap(6)
             R:Line(RANK_NAMES[rank], { size = 14, colour = GOLD })
-            for _, entry in ipairs(byRank[rank]) do
-                local count = Field.Count(page, entry)
-                local name = C_Item.GetItemNameByID(entry.item) or ("item " .. entry.item)
-                if not C_Item.GetItemNameByID(entry.item) and C_Item.RequestLoadItemDataByID then
-                    C_Item.RequestLoadItemDataByID(entry.item)
+            for _, record in ipairs(byRank[rank]) do
+                local count = Field.Count(page, record)
+                local name = C_Item.GetItemNameByID(record.item) or ("item " .. record.item)
+                if not C_Item.GetItemNameByID(record.item) and C_Item.RequestLoadItemDataByID then
+                    C_Item.RequestLoadItemDataByID(record.item)
                 end
-                R:Line((count and (CHECK .. " ") or "") .. name .. "\n" .. Muted(Field.Where(page, entry)), {
-                    icon = C_Item.GetItemIconByID(entry.item) or 134400,
-                    right = (entry.skill and (entry.skill .. "  ") or "")
+                R:Line((count and (CHECK .. " ") or "") .. name .. "\n" .. Muted(Field.Where(page, record)), {
+                    icon = C_Item.GetItemIconByID(record.item) or 134400,
+                    right = (record.skill and (record.skill .. "  ") or "")
                         .. (count and count > 0 and ("x" .. count) or ""),
-                    tip = function(tip)
-                        tip:SetItemByID(entry.item)
-                        if Field.Source(entry) and Field.Source(entry)[2] then
-                            tip:AddLine("Click to link where to get it.", unpack(MUTED))
+                    tip = function(tipText)
+                        tipText:SetItemByID(record.item)
+                        if Field.Source(record) and Field.Source(record)[2] then
+                            tipText:AddLine("Click to link where to get it.", unpack(MUTED))
                         end
                     end,
                     onClick = function()
                         if IsShiftKeyDown() then
-                            local had = Field.Count(page, entry)
-                            Field.SetHad(page, entry, had == nil)
+                            local had = Field.Count(page, record)
+                            Field.SetHad(page, record, had == nil)
                             Redraw()
                         else
-                            Field.Link(entry)
+                            Field.Link(record)
                         end
                     end,
                 })
@@ -1137,22 +1145,22 @@ local function DrawField(R, tools)
     if byRank[0] then
         R:Gap(6)
         R:Line("Schools of fish", { size = 14, colour = GOLD })
-        for _, entry in ipairs(byRank[0]) do
-            local count = Field.Count(page, entry)
+        for _, record in ipairs(byRank[0]) do
+            local count = Field.Count(page, record)
             R:Line(
                 (count and (CHECK .. " ") or "")
-                    .. (C_Item.GetItemNameByID(entry.item) or ("item " .. entry.item))
+                    .. (C_Item.GetItemNameByID(record.item) or ("item " .. record.item))
                     .. "\n"
-                    .. Muted(Field.Where(page, entry)),
+                    .. Muted(Field.Where(page, record)),
                 {
-                    icon = C_Item.GetItemIconByID(entry.item) or 134400,
+                    icon = C_Item.GetItemIconByID(record.item) or 134400,
                     right = count and count > 0 and ("x" .. count) or nil,
-                    tip = function(tip)
-                        tip:SetItemByID(entry.item)
+                    tip = function(tipText)
+                        tipText:SetItemByID(record.item)
                     end,
                     onClick = function()
                         if IsShiftKeyDown() then
-                            Field.SetHad(page, entry, Field.Count(page, entry) == nil)
+                            Field.SetHad(page, record, Field.Count(page, record) == nil)
                             Redraw()
                         end
                     end,
@@ -1223,23 +1231,23 @@ local function FillTracker(zone)
         end
         if #find > 0 or carried > 0 or CludesUI._unlockActive then
             any = true
-            local done, total = Library.Progress()
-            R:Line(("Library Books  %s"):format(Muted(("%d / %d"):format(done, total))), { colour = GOLD })
+            local done, sum = Library.Progress()
+            R:Line(("Library Books  %s"):format(Muted(("%d / %d"):format(done, sum))), { colour = GOLD })
             if carried > 0 then
                 local npc = Library.Librarian()
                 R:Line(("%d in your bags or bank"):format(carried), {
                     indent = 6,
                     colour = GOLD,
-                    tip = function(tip)
-                        tip:SetText(("Hand in to %s, %s"):format(npc.name, npc.place), 1, 1, 1, 1, true)
+                    tip = function(tipText)
+                        tipText:SetText(("Hand in to %s, %s"):format(npc.name, npc.place), 1, 1, 1, 1, true)
                     end,
                     onClick = function()
                         Link(npc.name, npc.map, npc.x, npc.y)
                     end,
                 })
             end
-            for _, item in ipairs(find) do
-                local book, spot = item[1], item[2]
+            for _, itemInfo in ipairs(find) do
+                local book, spot = itemInfo[1], itemInfo[2]
                 R:Line(
                     book.name
                         .. "\n"
@@ -1256,12 +1264,12 @@ local function FillTracker(zone)
         end
     end
     if Get("bagTracker") and Bag.Level() and not Bag.Owned() then
-        local step, i = Bag.Current()
+        local step, idx = Bag.Current()
         if step then
             any = true
             R:Gap(4)
             R:Line(
-                ("Sleeping Bag  %s"):format(Muted(("step %d of %d"):format(i, #Bag.Steps()))),
+                ("Sleeping Bag  %s"):format(Muted(("step %d of %d"):format(idx, #Bag.Steps()))),
                 { colour = GOLD }
             )
             R:Line(Bag.Name(step) .. "\n" .. Muted(Bag.Where(step)), {
@@ -1269,10 +1277,10 @@ local function FillTracker(zone)
                 onClick = function()
                     Bag.Link(step)
                 end,
-                tip = function(tip)
-                    tip:SetText(Bag.Name(step), 1, 1, 1)
+                tip = function(tipText)
+                    tipText:SetText(Bag.Name(step), 1, 1, 1)
                     if step.tip then
-                        tip:AddLine(step.tip, 1, 1, 1, true)
+                        tipText:AddLine(step.tip, 1, 1, 1, true)
                     end
                 end,
             })
@@ -1336,21 +1344,21 @@ end
 
 local function Anchor(p)
     local canvas = layer:GetParent()
-    local w, h = canvas:GetSize()
+    local wid, hgt = canvas:GetSize()
     local cs = canvas:GetScale()
     p:SetScale(1 / cs)
     p:ClearAllPoints()
-    p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * w * cs, -p.y * h * cs)
+    p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * wid * cs, -p.y * hgt * cs)
 end
 
 local function ClearPins()
-    for i = 1, pinsUsed do
-        pins[i]:Hide()
+    for idx = 1, pinsUsed do
+        pins[idx]:Hide()
     end
     pinsUsed = 0
 end
 
-local function Pin(x, y, icon, tip, onClick)
+local function Pin(posX, posY, glyph, tipText, onClick)
     pinsUsed = pinsUsed + 1
     local p = pins[pinsUsed]
     if not p then
@@ -1382,11 +1390,11 @@ local function Pin(x, y, icon, tip, onClick)
         end
         pins[pinsUsed] = p
     end
-    local size = Get("pinSize")
-    p:SetSize(size, size)
-    p.x, p.y = x / 100, y / 100
-    p.icon:SetTexture(icon)
-    p.tip, p.onClick = tip, onClick
+    local dim = Get("pinSize")
+    p:SetSize(dim, dim)
+    p.x, p.y = posX / 100, posY / 100
+    p.icon:SetTexture(glyph)
+    p.tip, p.onClick = tipText, onClick
     Anchor(p)
     p:Show()
 end
@@ -1401,8 +1409,8 @@ local function DrawPins()
         return
     end
     if Get("mapPins") then
-        for _, item in ipairs(Library.Spots(mapID, "find")) do
-            local book, spot = item[1], item[2]
+        for _, itemInfo in ipairs(Library.Spots(mapID, "find")) do
+            local book, spot = itemInfo[1], itemInfo[2]
             Pin(
                 spot[SPOT_X],
                 spot[SPOT_Y],
@@ -1417,18 +1425,18 @@ local function DrawPins()
             local counts = {}
             for _, book in ipairs(Data().LibraryBooks) do
                 if Library.ForMe(book) and Library.Stored(book) then
-                    local kind = book.turnIn or TURN_IN
-                    counts[kind] = (counts[kind] or 0) + 1
+                    local kindOf = book.turnIn or TURN_IN
+                    counts[kindOf] = (counts[kindOf] or 0) + 1
                 end
             end
-            for kind, n in pairs(counts) do
-                local npc = Data().LibraryTurnIns[kind][Side()]
+            for kindOf, num in pairs(counts) do
+                local npc = Data().LibraryTurnIns[kindOf][Side()]
                 if npc.map == mapID then
-                    Pin(npc.x, npc.y, "Interface\\Icons\\INV_Misc_Book_07", function(tip)
-                        tip:SetText(npc.name, 1, 1, 1)
-                        tip:AddLine(
-                            n == 1 and "Takes the book you carry."
-                                or ("Takes the %d books you carry."):format(n),
+                    Pin(npc.x, npc.y, "Interface\\Icons\\INV_Misc_Book_07", function(tipText)
+                        tipText:SetText(npc.name, 1, 1, 1)
+                        tipText:AddLine(
+                            num == 1 and "Takes the book you carry."
+                                or ("Takes the %d books you carry."):format(num),
                             unpack(GOLD)
                         )
                     end, function()
@@ -1441,12 +1449,12 @@ local function DrawPins()
     if Get("bagMapPins") and Bag.Level() and not Bag.Owned() then
         local step = Bag.Current()
         if step and step.map == mapID then
-            Pin(step.x, step.y, "Interface\\Icons\\INV_Misc_Bag_08", function(tip)
-                tip:SetText(Bag.Name(step), 1, 1, 1)
-                tip:AddLine("Cozy Sleeping Bag, next step", unpack(GOLD))
-                tip:AddLine(Bag.Where(step), unpack(MUTED))
+            Pin(step.x, step.y, "Interface\\Icons\\INV_Misc_Bag_08", function(tipText)
+                tipText:SetText(Bag.Name(step), 1, 1, 1)
+                tipText:AddLine("Cozy Sleeping Bag, next step", unpack(GOLD))
+                tipText:AddLine(Bag.Where(step), unpack(MUTED))
                 if step.tip then
-                    tip:AddLine(step.tip, 1, 1, 1, true)
+                    tipText:AddLine(step.tip, 1, 1, 1, true)
                 end
             end, function()
                 Bag.Link(step)
@@ -1456,8 +1464,8 @@ local function DrawPins()
 end
 
 local function RescalePins()
-    for i = 1, pinsUsed do
-        Anchor(pins[i])
+    for idx = 1, pinsUsed do
+        Anchor(pins[idx])
     end
 end
 
@@ -1511,11 +1519,11 @@ end
 --  Events and apply
 -------------------------------------------------------------------------------
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_ENTERING_WORLD" or evt == "ZONE_CHANGED_NEW_AREA" then
         NearRefresh()
-    elseif event == "BAG_UPDATE_DELAYED" or event == "QUEST_TURNED_IN" or event == "QUEST_LOG_UPDATE" then
-        if event ~= "QUEST_LOG_UPDATE" then
+    elseif evt == "BAG_UPDATE_DELAYED" or evt == "QUEST_TURNED_IN" or evt == "QUEST_LOG_UPDATE" then
+        if evt ~= "QUEST_LOG_UPDATE" then
             NearRefresh()
         end
         if added and WorldMapFrame:IsShown() then
@@ -1556,8 +1564,8 @@ SlashCmdList.CUIDISCOVERY = function(msg)
         return
     end
     msg = (msg or ""):lower()
-    if win and win:IsShown() and msg == "" then
-        win:Hide()
+    if window and window:IsShown() and msg == "" then
+        window:Hide()
         return
     end
     OpenWindow(tabs[msg] and msg or nil)

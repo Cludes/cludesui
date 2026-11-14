@@ -8,38 +8,38 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the hub text and ns.CreatePaletteView.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local floor, min, max, abs = math.floor, math.min, math.max, math.abs
+local floor, min, upper, abs = math.floor, math.min, math.max, math.abs
 local tonumber = tonumber
 local GetCursorPosition = GetCursorPosition
 
-local MAX_SLOTS, AdoptFontString = I.MAX_SLOTS, I.AdoptFontString
-local ApplyModuleFont, CreateSlotWidget = I.ApplyModuleFont, I.CreateSlotWidget
-local PaletteView, PaletteViewMeta = I.PaletteView, I.PaletteViewMeta
-local SelectedZoom, views, FalloffK = I.SelectedZoom, I.views, I.FalloffK
-local FalloffRatios, FAN_EDIT_MIN_ALPHA = I.FalloffRatios, I.FAN_EDIT_MIN_ALPHA
-local FAN_EDIT_MIN_SCALE, FanOffset = I.FAN_EDIT_MIN_SCALE, I.FanOffset
-local FAN_CANCEL_REACH, GRID_REACH = I.FAN_CANCEL_REACH, I.GRID_REACH
-local NEST_DIM_ALPHA, NEST_DIM_SCALE = I.NEST_DIM_ALPHA, I.NEST_DIM_SCALE
+local MAX_SLOTS, AdoptFontString = Inner.MAX_SLOTS, Inner.AdoptFontString
+local ApplyModuleFont, CreateSlotWidget = Inner.ApplyModuleFont, Inner.CreateSlotWidget
+local PaletteView, PaletteViewMeta = Inner.PaletteView, Inner.PaletteViewMeta
+local SelectedZoom, views, FalloffK = Inner.SelectedZoom, Inner.views, Inner.FalloffK
+local FalloffRatios, FAN_EDIT_MIN_ALPHA = Inner.FalloffRatios, Inner.FAN_EDIT_MIN_ALPHA
+local FAN_EDIT_MIN_SCALE, FanOffset = Inner.FAN_EDIT_MIN_SCALE, Inner.FanOffset
+local FAN_CANCEL_REACH, GRID_REACH = Inner.FAN_CANCEL_REACH, Inner.GRID_REACH
+local NEST_DIM_ALPHA, NEST_DIM_SCALE = Inner.NEST_DIM_ALPHA, Inner.NEST_DIM_SCALE
 
 local scrollCatcher
-I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v)
-    scrollCatcher = v
+Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val)
+    scrollCatcher = val
 end
 
 -- Lay the grid out and select the entry nearest the pointer. noPointer draws it
 -- evenly with nothing selected, which is what Layout and the editor want.
 function PaletteView:AdvanceGrid(noPointer)
     local p = self:P()
-    local shown = self.shownCount
-    if not p or shown < 1 then
+    local isShown = self.shownCount
+    if not p or isShown < 1 then
         self:SetSelection(nil)
         return
     end
@@ -50,20 +50,20 @@ function PaletteView:AdvanceGrid(noPointer)
     local minS = p.fanMinScale or 0.30
     local minA = p.fanMinAlpha or 0.12
     if self.opts.interactive then
-        minS = max(minS, FAN_EDIT_MIN_SCALE)
-        minA = max(minA, FAN_EDIT_MIN_ALPHA)
+        minS = upper(minS, FAN_EDIT_MIN_SCALE)
+        minA = upper(minA, FAN_EDIT_MIN_ALPHA)
     end
 
-    local cols, rows = self:GridDims()
-    local frame = self.frame
+    local cols, rowList = self:GridDims()
+    local widget = self.frame
 
     -- Pointer offset from the grid's centre, or nil while the movement gate is
     -- still armed -- without it an entry is selected the instant the grid opens
     -- and "open and release" would fire instead of cancelling.
     local dx, dy
-    local fx, fy = frame:GetCenter()
+    local fx, fy = widget:GetCenter()
     if fx and not noPointer then
-        local es = frame:GetEffectiveScale()
+        local es = widget:GetEffectiveScale()
         local mx, my = GetCursorPosition()
         mx, my = mx / es, my / es
         if not self._steered and (abs(mx - self._gateX) >= 1 or abs(my - self._gateY) >= 1) then
@@ -97,16 +97,16 @@ function PaletteView:AdvanceGrid(noPointer)
     -- layout's cancel, and it has no dead zone, a grid's centre being an
     -- ordinary cell.
     if dx and not best then
-        for i = 1, shown do
-            local bx, by = self:GridBase(i, cols, rows, pitch)
+        for idx = 1, isShown do
+            local bx, by = self:GridBase(idx, cols, rowList, pitch)
             local ox, oy = (dx - bx) / pitch, (dy - by) / pitch
             -- ^0.5, not sqrt: the snippet has no sqrt and must use the power
             -- form, and the two are not bit-identical in Lua 5.1. Matching them
             -- keeps a cursor exactly on the reach boundary from selecting one
             -- entry on screen and firing another.
-            local k = (ox * ox + oy * oy) ^ 0.5
-            if not bestK or k < bestK then
-                best, bestK = i, k
+            local key = (ox * ox + oy * oy) ^ 0.5
+            if not bestK or key < bestK then
+                best, bestK = idx, key
             end
         end
         if bestK and bestK > GRID_REACH then
@@ -122,9 +122,9 @@ function PaletteView:AdvanceGrid(noPointer)
     local dim = (open and open.dim) and NEST_DIM_ALPHA or 1
     local shrink = (open and open.dim) and NEST_DIM_SCALE or 1
 
-    for i = 1, shown do
-        local w = self.widgets[i]
-        local bx, by = self:GridBase(i, cols, rows, pitch)
+    for idx = 1, isShown do
+        local wid = self.widgets[idx]
+        local bx, by = self:GridBase(idx, cols, rowList, pitch)
 
         -- Falloff is the 2D distance, in cells. A grid has no privileged axis,
         -- so projecting onto one -- as the strip does -- would make the zoom
@@ -133,32 +133,32 @@ function PaletteView:AdvanceGrid(noPointer)
         -- Each axis is flattened over the cell before they are combined, so the
         -- whole of a cell -- corners included -- reads as zero cells away. See
         -- FalloffK.
-        local s, a = max(minS, decay), 1
+        local s, a = upper(minS, decay), 1
         if dx then
             local ox = FalloffK(abs(dx - bx) / pitch)
             local oy = FalloffK(abs(dy - by) / pitch)
-            local k = (ox * ox + oy * oy) ^ 0.5
-            s = max(minS, decay ^ k)
-            a = max(minA, aDecay ^ k)
+            local key = (ox * ox + oy * oy) ^ 0.5
+            s = upper(minS, decay ^ key)
+            a = upper(minA, aDecay ^ key)
         end
         -- The entry a nest hangs off keeps its colour: it is what the nest is
         -- about, and dimming it would leave nothing on screen saying which entry
         -- was opened. It may still draw back to make room -- the halo needs the
         -- ground its parent would otherwise be standing on.
         if open then
-            if i ~= open.parent then
+            if idx ~= open.parent then
                 s, a = s * shrink, a * dim
             elseif open.parentScale then
                 s = s * open.parentScale
             end
         end
 
-        w:SetAlpha(a)
-        w.baseSize = iconSize * s
-        w:SetSize(iconSize * s, iconSize * s)
-        w:ClearAllPoints()
-        w:SetPoint("CENTER", frame, "CENTER", bx, by)
-        w:Show()
+        wid:SetAlpha(a)
+        wid.baseSize = iconSize * s
+        wid:SetSize(iconSize * s, iconSize * s)
+        wid:ClearAllPoints()
+        wid:SetPoint("CENTER", widget, "CENTER", bx, by)
+        wid:Show()
     end
 
     -- Nested cells are drawn at a flat size. They live inside boxes rather than
@@ -167,15 +167,15 @@ function PaletteView:AdvanceGrid(noPointer)
     local claims = self.claims
     for ck = 1, (claims and #claims or 0) do
         local c = claims[ck]
-        for j = 1, c.n do
-            local cell = c.cells and c.cells[j]
-            local w = c.base and self.widgets[c.base + j]
-            if cell and w then
-                w:SetAlpha(1)
-                w.baseSize = c.icon
-                w:SetSize(c.icon, c.icon)
-                w:ClearAllPoints()
-                w:SetPoint("CENTER", frame, "CENTER", cell.x, cell.y)
+        for jdx = 1, c.n do
+            local cellFrame = c.cells and c.cells[jdx]
+            local wid = c.base and self.widgets[c.base + jdx]
+            if cellFrame and wid then
+                wid:SetAlpha(1)
+                wid.baseSize = c.icon
+                wid:SetSize(c.icon, c.icon)
+                wid:ClearAllPoints()
+                wid:SetPoint("CENTER", widget, "CENTER", cellFrame.x, cellFrame.y)
             end
         end
     end
@@ -184,23 +184,23 @@ function PaletteView:AdvanceGrid(noPointer)
     -- the selection paint because the sizes above are rewritten every frame,
     -- which would erase a zoom applied only when the selection changed.
     if best then
-        local w = self.widgets[best]
+        local wid = self.widgets[best]
         local z = SelectedZoom()
-        w:SetSize(w.baseSize * z, w.baseSize * z)
+        wid:SetSize(wid.baseSize * z, wid.baseSize * z)
     end
     self:SetSelection(best)
 end
 
 -- Centre the strip on a slot with no animation. The options preview uses this
 -- to follow the entry the user has clicked.
-function PaletteView:SetFanCenter(index)
-    if not index or self.shownCount < 1 then
+function PaletteView:SetFanCenter(slotPos)
+    if not slotPos or self.shownCount < 1 then
         return
     end
-    self.fanTarget = index
-    self.fanVisual = index
+    self.fanTarget = slotPos
+    self.fanVisual = slotPos
     self:ApplyFanGeometry()
-    self:SetSelection(index)
+    self:SetSelection(slotPos)
 end
 
 -- Half the drawn strip, along its own axis, out to the far edge of the last
@@ -234,22 +234,22 @@ function PaletteView:StripOffset()
 end
 
 -- The nest the entry at `index` opens, if it opens one.
-function PaletteView:ClaimFor(index)
+function PaletteView:ClaimFor(slotPos)
     local claims = self.claims
-    for k = 1, (index and claims and #claims or 0) do
-        if claims[k].parent == index then
-            return claims[k]
+    for key = 1, (slotPos and claims and #claims or 0) do
+        if claims[key].parent == slotPos then
+            return claims[key]
         end
     end
 end
 
 -- Which entry the wheel has landed on, folded into range.
 function PaletteView:StripTarget()
-    local shown = self.shownCount
-    if not self.fanTarget or shown < 1 then
+    local isShown = self.shownCount
+    if not self.fanTarget or isShown < 1 then
         return nil
     end
-    return ((self.fanTarget - 1) % shown) + 1
+    return ((self.fanTarget - 1) % isShown) + 1
 end
 
 -- The fold offset `slot` is drawn at on the strip, or nil when the window
@@ -257,15 +257,15 @@ end
 -- draws by, for every reader that has to know where an entry stands: the
 -- hover channel's nest tests and the sticky retention both anchor to it,
 -- and the snippet's nest walk runs the identical sums.
-function PaletteView:FanSlotOffset(slot)
-    local shown = self.shownCount
-    local target = self:StripTarget()
-    if not slot or not target or shown < 1 then
+function PaletteView:FanSlotOffset(slotIndex)
+    local isShown = self.shownCount
+    local targetUnit = self:StripTarget()
+    if not slotIndex or not targetUnit or isShown < 1 then
         return nil
     end
-    local d = (slot - target) % shown
-    if d * 2 > shown then
-        d = d - shown
+    local d = (slotIndex - targetUnit) % isShown
+    if d * 2 > isShown then
+        d = d - isShown
     end
     local p = self:P()
     if abs(d) > ((p and p.fanVisible) or 2) + 0.5 then
@@ -297,10 +297,10 @@ function PaletteView:FanCancelProgress()
     local acrossMargin = margin
     local claim = self:ClaimFor(self:StripTarget())
     if claim and claim.across and (across > 0) == (claim.sign > 0) then
-        acrossMargin = max(margin, claim.across)
+        acrossMargin = upper(margin, claim.across)
     end
 
-    return max(abs(across) / acrossMargin, abs(along) / (self:FanHalfLength() + margin))
+    return upper(abs(across) / acrossMargin, abs(along) / (self:FanHalfLength() + margin))
 end
 
 -- Has the pointer been thrown clear of the strip?
@@ -313,8 +313,8 @@ end
 -- interpolated. A release mid-animation therefore always fires what the user
 -- last scrolled to, never whatever the strip happens to be sliding past.
 function PaletteView:AdvanceFan(elapsed)
-    local shown = self.shownCount
-    if shown < 1 then
+    local isShown = self.shownCount
+    if isShown < 1 then
         self:SetSelection(nil)
         return
     end
@@ -332,8 +332,8 @@ function PaletteView:AdvanceFan(elapsed)
     -- selected as it places it. The strip keeps sliding to wherever the wheel
     -- has left it while the pointer is clear of it, so bringing the pointer back
     -- shows the entry that would fire, already settled.
-    local target = self:StripTarget()
-    local claim = self:ClaimFor(target)
+    local targetUnit = self:StripTarget()
+    local claim = self:ClaimFor(targetUnit)
     local p2 = self:P()
     local mouseSel = (p2 and p2.fanMouseSelect) ~= false
     local sel
@@ -364,20 +364,20 @@ function PaletteView:AdvanceFan(elapsed)
                 else
                     sy = -(dp * pitch)
                 end
-                for j = 1, c.n do
-                    local b = c.cells[j]
+                for jdx = 1, c.n do
+                    local b = c.cells[jdx]
                     if abs(ndx - (b.x + sx)) <= b.hw and abs(ndy - (b.y + sy)) <= b.hh then
-                        sel = c.base + j
+                        sel = c.base + jdx
                         break
                     end
                 end
             end
         end
     elseif claim and dx and claim.base then
-        for j = 1, claim.n do
-            local b = claim.cells[j]
+        for jdx = 1, claim.n do
+            local b = claim.cells[jdx]
             if abs(dx - b.x) <= b.hw and abs(dy - b.y) <= b.hh then
-                sel = claim.base + j
+                sel = claim.base + jdx
                 break
             end
         end
@@ -392,7 +392,7 @@ function PaletteView:AdvanceFan(elapsed)
     -- full pitch -- from the frame's own centre: the gate point in cursor
     -- mode, the pinned point in Fixed Position, so the test is against what
     -- is actually drawn in both.
-    if not sel and target and self.fanTarget and mouseSel then
+    if not sel and targetUnit and self.fanTarget and mouseSel then
         local fx2, fy2 = self.frame:GetCenter()
         if fx2 then
             local es2 = self.frame:GetEffectiveScale()
@@ -425,10 +425,10 @@ function PaletteView:AdvanceFan(elapsed)
                 abs(across) <= iconSize * 0.5
                 and abs(along - d * pitch) <= iconSize * 0.5
                 and abs(d) <= window + 0.5
-                and d * 2 <= shown
-                and -d * 2 < shown
+                and d * 2 <= isShown
+                and -d * 2 < isShown
             then
-                sel = ((self.fanTarget - 1 + d) % shown) + 1
+                sel = ((self.fanTarget - 1 + d) % isShown) + 1
             end
         end
     end
@@ -450,8 +450,8 @@ function PaletteView:AdvanceFan(elapsed)
     end
     -- The wheel's entry stands on its own only while the hover channel is
     -- OFF: exclusive hover means an empty pointer selects nothing at all.
-    if not sel and target and not mouseSel and not self:FanCancelled() then
-        sel = target
+    if not sel and targetUnit and not mouseSel and not self:FanCancelled() then
+        sel = targetUnit
     end
     self:SetSelection(sel)
 
@@ -469,8 +469,8 @@ function PaletteView:AdvanceFan(elapsed)
         end
         local pitch = self:Pitch()
         local horiz = self:FanHoriz()
-        for k = 1, #claims do
-            local c = claims[k]
+        for key = 1, #claims do
+            local c = claims[key]
             local sx, sy = 0, 0
             if mouseSel then
                 local dp = self:FanSlotOffset(c.parent)
@@ -482,27 +482,33 @@ function PaletteView:AdvanceFan(elapsed)
                     end
                 end
             end
-            for j = 1, c.n do
-                local w = c.base and self.widgets[c.base + j]
-                if w then
-                    w:ClearAllPoints()
-                    w:SetPoint("CENTER", self.frame, "CENTER", ox + sx + c.cells[j].x, oy + sy + c.cells[j].y)
+            for jdx = 1, c.n do
+                local wid = c.base and self.widgets[c.base + jdx]
+                if wid then
+                    wid:ClearAllPoints()
+                    wid:SetPoint(
+                        "CENTER",
+                        self.frame,
+                        "CENTER",
+                        ox + sx + c.cells[jdx].x,
+                        oy + sy + c.cells[jdx].y
+                    )
                 end
             end
         end
     end
 
-    local target = self.fanTarget or 1
-    local cur = self.fanVisual or target
-    if cur ~= target then
+    local targetUnit = self.fanTarget or 1
+    local current = self.fanVisual or targetUnit
+    if current ~= targetUnit then
         -- The settle is FIXED at 0.1s (the Settle Time setting was removed;
         -- a fanAnimTime key left in stored profiles is never read).
-        cur = cur + (target - cur) * min(1, (elapsed or 0) / 0.1)
+        current = current + (targetUnit - current) * min(1, (elapsed or 0) / 0.1)
         -- Snap the tail: an asymptote would keep this view dirty forever.
-        if abs(target - cur) < 0.001 then
-            cur = target
+        if abs(targetUnit - current) < 0.001 then
+            current = targetUnit
         end
-        self.fanVisual = cur
+        self.fanVisual = current
         self:ApplyFanGeometry()
     end
 end
@@ -511,8 +517,8 @@ end
 -- units. Both sides are converted through their effective scales because the
 -- strip carries the user's own Scale setting while UIParent carries the game's.
 function PaletteView:ScreenOffset()
-    local frame = self.frame
-    local cx, cy = frame:GetCenter()
+    local widget = self.frame
+    local cx, cy = widget:GetCenter()
     if not cx then
         return 0, 0
     end
@@ -521,8 +527,8 @@ function PaletteView:ScreenOffset()
         return 0, 0
     end
 
-    local k = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    return cx * k - ux, cy * k - uy
+    local key = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    return cx * key - ux, cy * key - uy
 end
 
 -- Hang the caption on the side that faces the middle of the screen, so a strip
@@ -535,7 +541,7 @@ end
 -- once PositionPalette has run.
 function PaletteView:PlaceHubText()
     local hub = self.hub
-    local mode = self:LayoutMode()
+    local modeName = self:LayoutMode()
     local _, iconSize = self:Geom()
     -- A vertical nudge the view was created with (the options preview drops
     -- its caption 15px so it clears the fitted palette); the hint is anchored
@@ -545,7 +551,7 @@ function PaletteView:PlaceHubText()
     hub.text:ClearAllPoints()
     hub.hint:ClearAllPoints()
 
-    if mode == "ARC" then
+    if modeName == "ARC" then
         hub.text:SetJustifyH("CENTER")
         hub.text:SetPoint("CENTER", hub, "CENTER", 0, dyOff)
         hub.hint:SetPoint("TOP", hub.text, "BOTTOM", 0, -2)
@@ -555,10 +561,10 @@ function PaletteView:PlaceHubText()
     -- Half the extent the caption has to clear on its own axis. A strip is one
     -- entry deep, but a grid is as deep as it has rows.
     local pad = iconSize * 0.5 + 14
-    if mode == "GRID" then
+    if modeName == "GRID" then
         local p = self:P()
-        local _, rows = self:GridDims()
-        pad = rows * (iconSize + ((p and p.fanGap) or 10)) * 0.5 + 14
+        local _, rowList = self:GridDims()
+        pad = rowList * (iconSize + ((p and p.fanGap) or 10)) * 0.5 + 14
     end
     -- The editor is pinned rather than quadrant-tested: its block sits wherever
     -- the options page happens to be scrolled to, and a caption that jumped
@@ -584,7 +590,7 @@ function PaletteView:PlaceHubText()
     -- A grid captions like a horizontal strip: it is as wide as it is tall, so
     -- there is no side with obviously more room, and above/below keeps the text
     -- clear of every cell rather than only of the middle column.
-    if mode == "GRID" or (mode == "FAN" and self:FanHoriz()) then
+    if modeName == "GRID" or (modeName == "FAN" and self:FanHoriz()) then
         -- Below the middle of the screen -> caption above the strip.
         hub.text:SetJustifyH("CENTER")
         if dy < 0 then
@@ -609,9 +615,9 @@ function PaletteView:PlaceHubText()
     end
 end
 
-function ns.CreatePaletteView(parent, opts)
+function mod.CreatePaletteView(hostFrame, options)
     local view = setmetatable({
-        opts = opts or {},
+        opts = options or {},
         widgets = {},
         paletteIndex = 1,
         slotCount = 0,
@@ -624,27 +630,27 @@ function ns.CreatePaletteView(parent, opts)
     -- A caller can hand in the frame instead of naming one. The live view does,
     -- because where a frame is created decides which addon its handlers are
     -- billed to -- see the top of CludesUIQuickdraw.lua.
-    local frame = view.opts.frame
-    if frame then
-        frame:SetParent(parent)
+    local widget = view.opts.frame
+    if widget then
+        widget:SetParent(hostFrame)
     else
-        frame = CreateFrame("Frame", view.opts.frameName, parent)
+        widget = CreateFrame("Frame", view.opts.frameName, hostFrame)
     end
-    frame:SetSize(1, 1)
-    frame:EnableMouse(false)
-    view.frame = frame
+    widget:SetSize(1, 1)
+    widget:EnableMouse(false)
+    view.frame = widget
 
     -- Hub: the center disc. Shows the selected action's name, or the palette
     -- name when nothing is selected, which is also the "release now cancels"
     -- signal.
-    local hub = CreateFrame("Frame", nil, frame)
+    local hub = CreateFrame("Frame", nil, widget)
     hub:SetSize(2, 2)
     hub:SetPoint("CENTER")
     -- Above the entry widgets (created after it, so otherwise over it): the
     -- fan's caption anchors beside the SELECTED icon now, and where a long
     -- name reaches across neighbouring icons it has to stay readable.
     -- Everything else the hub draws sits on ground of its own anyway.
-    hub:SetFrameLevel(frame:GetFrameLevel() + 40)
+    hub:SetFrameLevel(widget:GetFrameLevel() + 40)
     view.hub = hub
 
     -- The hub logo (hardcoded art -- its settings were removed). Default
@@ -686,8 +692,8 @@ function ns.CreatePaletteView(parent, opts)
     -- The palette's own entries exist from the outset; nested ones are made on
     -- demand, because most palettes hold none and a full set would be another
     -- MAX_SLOTS x MAX_CHILDREN frames per view.
-    for i = 1, MAX_SLOTS do
-        view.widgets[i] = CreateSlotWidget(view, i)
+    for idx = 1, MAX_SLOTS do
+        view.widgets[idx] = CreateSlotWidget(view, idx)
     end
 
     views[#views + 1] = view
@@ -695,13 +701,13 @@ function ns.CreatePaletteView(parent, opts)
 end
 
 -- A cell's widget, created if this view has never drawn a cell that far out.
-function PaletteView:Widget(index)
-    local w = self.widgets[index]
-    if not w then
-        w = CreateSlotWidget(self, index)
-        self.widgets[index] = w
+function PaletteView:Widget(slotPos)
+    local wid = self.widgets[slotPos]
+    if not wid then
+        wid = CreateSlotWidget(self, slotPos)
+        self.widgets[slotPos] = wid
     end
-    return w
+    return wid
 end
 
-I.broken = false
+Inner.broken = false

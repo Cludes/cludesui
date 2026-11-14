@@ -8,19 +8,19 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  icon art and the charge cooldown style.
 --  Reads the earlier hook files through ns and ns._hookInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._hookInternals
+local _, mod = ...
+local Inner = mod._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local barDataByKey = ns.barDataByKey
-local _ecmeFC = ns._ecmeFC
-local FC = ns.FC
+local barDataByKey = mod.barDataByKey
+local _ecmeFC = mod._ecmeFC
+local FC = mod.FC
 
-local hookFrameData, ResolveSpellSettings = I.hookFrameData, I.ResolveSpellSettings
+local hookFrameData, ResolveSpellSettings = Inner.hookFrameData, Inner.ResolveSpellSettings
 
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
@@ -35,7 +35,7 @@ local POOL = CludesUI._Pool
 --  ns._tickBlizzActiveCache.
 -------------------------------------------------------------------------------
 local _activeCache = {}
-ns._tickBlizzActiveCache = _activeCache
+mod._tickBlizzActiveCache = _activeCache
 
 -- Per-spellID application count, same population pass as _activeCache above,
 -- same sid/baseSID/linked resolution (so it matches whatever spellID a Bar
@@ -43,67 +43,67 @@ ns._tickBlizzActiveCache = _activeCache
 -- or nil (no stack data). Consumed by Bar Glows' stack-threshold gate --
 -- forwarded straight into a StatusBar:SetValue, never compared in Lua.
 local _activeStacksCache = {}
-ns._tickBlizzAuraStacks = _activeStacksCache
+mod._tickBlizzAuraStacks = _activeStacksCache
 
 -------------------------------------------------------------------------------
 --  IsFrameIncluded
 --  Include if shown OR has cooldownInfo (catches transitional frames).
 -------------------------------------------------------------------------------
-local function IsFrameIncluded(frame)
-    if not frame then
+local function IsFrameIncluded(widget)
+    if not widget then
         return false
     end
-    return frame:IsShown() or (frame.cooldownInfo ~= nil)
+    return widget:IsShown() or (widget.cooldownInfo ~= nil)
 end
 
 -------------------------------------------------------------------------------
 --  HideBlizzardDecorations
 --  Strip Blizzard visual chrome from a CDM frame (one-time per frame).
 -------------------------------------------------------------------------------
-local function HideBlizzardDecorations(frame)
-    local fc = FC(frame)
+local function HideBlizzardDecorations(widget)
+    local fc = FC(widget)
     if fc.blizzHidden then
         return
     end
     fc.blizzHidden = true
 
-    local function alphaZero(child)
-        if child then
-            child:SetAlpha(0)
+    local function alphaZero(childFrame)
+        if childFrame then
+            childFrame:SetAlpha(0)
         end
     end
-    alphaZero(frame.Border)
-    if frame.SpellActivationAlert then
-        frame.SpellActivationAlert:SetAlpha(0)
-        frame.SpellActivationAlert:Hide()
+    alphaZero(widget.Border)
+    if widget.SpellActivationAlert then
+        widget.SpellActivationAlert:SetAlpha(0)
+        widget.SpellActivationAlert:Hide()
     end
-    alphaZero(frame.Shadow)
-    alphaZero(frame.IconShadow)
-    alphaZero(frame.DebuffBorder)
-    alphaZero(frame.CooldownFlash)
+    alphaZero(widget.Shadow)
+    alphaZero(widget.IconShadow)
+    alphaZero(widget.DebuffBorder)
+    alphaZero(widget.CooldownFlash)
 
-    local iconWidget = frame.Icon
-    local regions = { frame:GetRegions() }
+    local iconWidget = widget.Icon
+    local regions = { widget:GetRegions() }
     -- Blizzard Style keeps the viewer's rounded icon mask; only the ring
     -- overlay is replaced (ns.CdmApplyBlizzIconArt redraws it at the icon's
     -- live size, since the viewer's fixed inset only fits its stock sizes).
     -- Classic WoW UI icons are square, so they take the swap like the CUI look.
-    local keepMask = ns.CdmIconStyle() == "blizzard"
+    local keepMask = mod.CdmIconStyle() == "blizzard"
     for ri = 1, #regions do
-        local rgn = regions[ri]
-        if not keepMask and rgn and rgn.IsObjectType and rgn:IsObjectType("MaskTexture") then
+        local region = regions[ri]
+        if not keepMask and region and region.IsObjectType and region:IsObjectType("MaskTexture") then
             pcall(function()
-                rgn:SetTexture("Interface\\Buttons\\WHITE8X8")
+                region:SetTexture("Interface\\Buttons\\WHITE8X8")
             end)
         end
     end
-    if frame.Cooldown and not keepMask then
-        local cdRegions = { frame.Cooldown:GetRegions() }
+    if widget.Cooldown and not keepMask then
+        local cdRegions = { widget.Cooldown:GetRegions() }
         for ri = 1, #cdRegions do
-            local rgn = cdRegions[ri]
-            if rgn and rgn.IsObjectType and rgn:IsObjectType("MaskTexture") then
+            local region = cdRegions[ri]
+            if region and region.IsObjectType and region:IsObjectType("MaskTexture") then
                 pcall(function()
-                    rgn:SetTexture("Interface\\Buttons\\WHITE8X8")
+                    region:SetTexture("Interface\\Buttons\\WHITE8X8")
                 end)
             end
         end
@@ -116,13 +116,18 @@ local function HideBlizzardDecorations(frame)
     local OVERLAY_ATLAS = "UI-HUD-CoolDownManager-IconOverlay"
     local OVERLAY_FILE = 6707800
     for ri = 1, #regions do
-        local rgn = regions[ri]
-        if rgn and rgn ~= iconWidget and rgn.GetObjectType and rgn:GetObjectType() == "Texture" then
-            local atlas = rgn.GetAtlas and rgn:GetAtlas()
-            local tex = rgn.GetTexture and rgn:GetTexture()
-            if atlas == OVERLAY_ATLAS or tex == OVERLAY_FILE then
-                rgn:SetAlpha(0)
-                rgn:Hide()
+        local region = regions[ri]
+        if
+            region
+            and region ~= iconWidget
+            and region.GetObjectType
+            and region:GetObjectType() == "Texture"
+        then
+            local atlas = region.GetAtlas and region:GetAtlas()
+            local texture = region.GetTexture and region:GetTexture()
+            if atlas == OVERLAY_ATLAS or texture == OVERLAY_FILE then
+                region:SetAlpha(0)
+                region:Hide()
             end
         end
     end
@@ -143,81 +148,93 @@ end
 --  Idempotent and cheap: structural work once per frame, then a size memo
 --  gates the re-anchor. Never runs unless a stock style is on.
 -------------------------------------------------------------------------------
-function ns.CdmApplyBlizzIconArt(frame)
-    if not frame then
+function mod.CdmApplyBlizzIconArt(widget)
+    if not widget then
         return
     end
-    local fc = FC(frame)
-    local classic = ns.CdmClassicIcons()
-    local host = fc.blizzHost
-    if not host then
+    local fc = FC(widget)
+    local classic = mod.CdmClassicIcons()
+    local hostRegion = fc.blizzHost
+    if not hostRegion then
         -- Pooled with an options preview slot (an options page pool host);
         -- the plain CreateFrame on a live icon.
-        host = POOL.CreateFrame("Frame", nil, frame)
-        host:SetAllPoints(frame)
-        host:EnableMouse(false)
-        fc.blizzHost = host
-        local ov = host:CreateTexture(nil, "OVERLAY", nil, 5)
+        hostRegion = POOL.CreateFrame("Frame", nil, widget)
+        hostRegion:SetAllPoints(widget)
+        hostRegion:EnableMouse(false)
+        fc.blizzHost = hostRegion
+        local shade = hostRegion:CreateTexture(nil, "OVERLAY", nil, 5)
         if classic then
-            ov:SetTexture(ns.CDM_CLASSIC_RING)
+            shade:SetTexture(mod.CDM_CLASSIC_RING)
         else
-            ns.CdmStockAtlas(ov, ns.CDM_BLIZZ_OVERLAY)
+            mod.CdmStockAtlas(shade, mod.CDM_BLIZZ_OVERLAY)
         end
-        if ov.SetSnapToPixelGrid then
-            ov:SetSnapToPixelGrid(false)
-            ov:SetTexelSnappingBias(0)
+        if shade.SetSnapToPixelGrid then
+            shade:SetSnapToPixelGrid(false)
+            shade:SetTexelSnappingBias(0)
         end
-        fc.blizzOverlay = ov
+        fc.blizzOverlay = shade
         -- Own frames carry no viewer mask or swipe art: the rounded kit adds
         -- both (classic icons stay square on the default swipe).
-        if not frame.viewerFrame and not classic then
-            local fd = hookFrameData[frame]
-            local tex = (fd and fd.tex) or frame._tex or frame.Icon
-            if tex and tex.AddMaskTexture then
-                local mask = frame:CreateMaskTexture()
-                mask:SetAtlas(ns.CDM_BLIZZ_MASK)
-                mask:SetAllPoints(frame)
-                tex:AddMaskTexture(mask)
-                fc.blizzMask = mask
+        if not widget.viewerFrame and not classic then
+            local fd = hookFrameData[widget]
+            local texture = (fd and fd.tex) or widget._tex or widget.Icon
+            if texture and texture.AddMaskTexture then
+                local maskTex = widget:CreateMaskTexture()
+                maskTex:SetAtlas(mod.CDM_BLIZZ_MASK)
+                maskTex:SetAllPoints(widget)
+                texture:AddMaskTexture(maskTex)
+                fc.blizzMask = maskTex
             end
-            local cd = (fd and fd.cooldown) or frame._cooldown or frame.Cooldown
+            local cd = (fd and fd.cooldown) or widget._cooldown or widget.Cooldown
             if cd and cd.SetSwipeTexture then
-                pcall(cd.SetSwipeTexture, cd, ns.CDM_BLIZZ_SWIPE)
+                pcall(cd.SetSwipeTexture, cd, mod.CDM_BLIZZ_SWIPE)
             end
         end
     end
     -- Viewer frames: the viewer's own rounded mask, re-asserted once (shown,
     -- on the atlas) so no earlier pass can have left it hidden or squared.
     -- Classic keeps the square mask HideBlizzardDecorations gave it.
-    if frame.viewerFrame and not classic and not fc.blizzMaskOK then
+    if widget.viewerFrame and not classic and not fc.blizzMaskOK then
         fc.blizzMaskOK = true
-        local fd = hookFrameData[frame]
-        local tex = (fd and fd.tex) or frame.Icon
-        local n = tex and tex.GetNumMaskTextures and tex:GetNumMaskTextures() or 0
-        for i = 1, n do
-            local m = tex:GetMaskTexture(i)
+        local fd = hookFrameData[widget]
+        local texture = (fd and fd.tex) or widget.Icon
+        local num = texture and texture.GetNumMaskTextures and texture:GetNumMaskTextures() or 0
+        for idx = 1, num do
+            local m = texture:GetMaskTexture(idx)
             if m then
-                pcall(m.SetAtlas, m, ns.CDM_BLIZZ_MASK)
+                pcall(m.SetAtlas, m, mod.CDM_BLIZZ_MASK)
                 pcall(m.SetAlpha, m, 1)
                 pcall(m.Show, m)
             end
         end
     end
     -- Ring above the art and swipe (+14), below glows (+16) and text (+23).
-    local lvl = frame:GetFrameLevel() + 15
-    if host:GetFrameLevel() ~= lvl then
-        host:SetFrameLevel(lvl)
+    local lvl = widget:GetFrameLevel() + 15
+    if hostRegion:GetFrameLevel() ~= lvl then
+        hostRegion:SetFrameLevel(lvl)
     end
-    local w, h = frame:GetSize()
-    if fc.blizzArtW ~= w or fc.blizzArtH ~= h then
-        fc.blizzArtW, fc.blizzArtH = w, h
-        local ov = fc.blizzOverlay
+    local wid, hgt = widget:GetSize()
+    if fc.blizzArtW ~= wid or fc.blizzArtH ~= hgt then
+        fc.blizzArtW, fc.blizzArtH = wid, hgt
+        local shade = fc.blizzOverlay
         if classic then
-            ns.CdmPlaceClassicRing(ov, host, w, h)
+            mod.CdmPlaceClassicRing(shade, hostRegion, wid, hgt)
         else
-            ov:ClearAllPoints()
-            ov:SetPoint("TOPLEFT", host, "TOPLEFT", -w * ns.CDM_BLIZZ_RING_X, h * ns.CDM_BLIZZ_RING_Y)
-            ov:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", w * ns.CDM_BLIZZ_RING_X, -h * ns.CDM_BLIZZ_RING_Y)
+            shade:ClearAllPoints()
+            shade:SetPoint(
+                "TOPLEFT",
+                hostRegion,
+                "TOPLEFT",
+                -wid * mod.CDM_BLIZZ_RING_X,
+                hgt * mod.CDM_BLIZZ_RING_Y
+            )
+            shade:SetPoint(
+                "BOTTOMRIGHT",
+                hostRegion,
+                "BOTTOMRIGHT",
+                wid * mod.CDM_BLIZZ_RING_X,
+                -hgt * mod.CDM_BLIZZ_RING_Y
+            )
         end
     end
 end
@@ -225,18 +242,18 @@ end
 -- own on pooled frames, ours on own frames), for overlays that copy the art
 -- (fake-active, press flash) so they round off with it. Nil under Classic
 -- WoW UI, whose icons are square.
-function ns.CdmBlizzIconMask(frame)
-    if ns.CdmClassicIcons() then
+function mod.CdmBlizzIconMask(widget)
+    if mod.CdmClassicIcons() then
         return nil
     end
-    local fc = frame and _ecmeFC[frame]
+    local fc = widget and _ecmeFC[widget]
     if fc and fc.blizzMask then
         return fc.blizzMask
     end
-    local fd = frame and hookFrameData[frame]
-    local tex = (fd and fd.tex) or (frame and (frame.Icon or frame._tex))
-    if tex and tex.GetNumMaskTextures and tex:GetNumMaskTextures() > 0 then
-        return tex:GetMaskTexture(1)
+    local fd = widget and hookFrameData[widget]
+    local texture = (fd and fd.tex) or (widget and (widget.Icon or widget._tex))
+    if texture and texture.GetNumMaskTextures and texture:GetNumMaskTextures() > 0 then
+        return texture:GetMaskTexture(1)
     end
     return nil
 end
@@ -262,14 +279,14 @@ local CDM_EDGE_TEXTURE = "Interface\\Cooldown\\UI-HUD-ActionBar-SecondaryCooldow
 -- Thin wrapper: frame spell/bar identity -> ResolveSpellSettings, the same
 -- Hero-talent-aware resolver the SetSwipeColor / cdState / desat hooks use, so
 -- the charge "Hide Swipe" path resolves override spells identically.
-function ns._ResolveCdmSS(frame)
-    local fc2 = _ecmeFC[frame]
+function mod._ResolveCdmSS(widget)
+    local fc2 = _ecmeFC[widget]
     local sid2 = fc2 and fc2.spellID
     local bk2 = fc2 and fc2.barKey
     if not sid2 or not bk2 then
         return nil
     end
-    return ResolveSpellSettings(frame, sid2, false)
+    return ResolveSpellSettings(widget, sid2, false)
 end
 
 -- Draw the styled cooldown edge -- one texture for every edge lane: the
@@ -280,15 +297,15 @@ local function ApplyCdmEdge(cd, bk2)
     if not cd then
         return
     end
-    local bd = barDataByKey and barDataByKey[bk2]
-    local shape = (bd and bd.iconShape) or "none"
+    local edge = barDataByKey and barDataByKey[bk2]
+    local shape = (edge and edge.iconShape) or "none"
     -- SetEdgeScale is frame-relative so the edge tracks icon size: plain icons
     -- use the action bars' baseline size, custom shapes the per-shape scale.
     local scale
     if shape == "none" or shape == "cropped" then
         scale = 1.8
     else
-        scale = (ns.CDM_SHAPE_EDGE_SCALES and ns.CDM_SHAPE_EDGE_SCALES[shape]) or 0.75
+        scale = (mod.CDM_SHAPE_EDGE_SCALES and mod.CDM_SHAPE_EDGE_SCALES[shape]) or 0.75
     end
     -- Color rides SetEdgeTexture: the documented signature is
     -- (texture, r, g, b, a) with the color args required.
@@ -306,8 +323,8 @@ end
 -- Live active-state read from Blizzard's swipe color (fd._wasActive is stale on
 -- falloffs). Secret-safe: a secret red channel reads as not active. Lets charge
 -- "Hide Swipe" keep the active-state colored swipe visible.
-local function CdmFrameIsActive(frame)
-    local swipeColor = frame and frame.cooldownSwipeColor
+local function CdmFrameIsActive(widget)
+    local swipeColor = widget and widget.cooldownSwipeColor
     if swipeColor and type(swipeColor) ~= "number" and swipeColor.GetRGBA then
         local r = swipeColor:GetRGBA()
         if r and type(r) == "number" and not issecretvalue(r) then
@@ -347,15 +364,15 @@ end
 -- Ordered cheapest-first: linkedSpellID is nil for nearly every icon, so the
 -- common case costs two table lookups and no API call. Returns the STRUCTURAL
 -- verdict only; callers add their own "is on a real cooldown" test.
-local function CdmStaleLinkedSpell(frame)
-    local info = frame and frame.cooldownInfo
-    if info == nil or info.linkedSpellID == nil then
+local function CdmStaleLinkedSpell(widget)
+    local details = widget and widget.cooldownInfo
+    if details == nil or details.linkedSpellID == nil then
         return false
     end
     -- An aura that is actually being displayed owns the widget; never fight it.
     -- Covers the transient where UpdateLinkedSpell has set the link a moment
     -- before RefreshAuraInstance attaches the matching instance.
-    if frame.auraInstanceID ~= nil or frame.wasSetFromAura then
+    if widget.auraInstanceID ~= nil or widget.wasSetFromAura then
         return false
     end
     return true
@@ -384,39 +401,39 @@ end
 -- Falls back to the old resolution for frames without the accessor (preset,
 -- custom-spell and item frames are ours, not CooldownViewer items), so those
 -- keep exactly today's behaviour.
-local function CdmChargeInfoFor(frame, sid)
-    if frame and type(frame.GetSpellChargeInfo) == "function" then
-        local ci = frame:GetSpellChargeInfo()
+local function CdmChargeInfoFor(widget, spellRef)
+    if widget and type(widget.GetSpellChargeInfo) == "function" then
+        local ci = widget:GetSpellChargeInfo()
         if ci then
             return ci
         end
     end
-    if not (sid and C_Spell and C_Spell.GetSpellCharges) then
+    if not (spellRef and C_Spell and C_Spell.GetSpellCharges) then
         return nil
     end
-    local effID = sid
+    local effID = spellRef
     if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
-        local ovr = C_SpellBook.FindSpellOverrideByID(sid)
-        if ovr and ovr > 0 and ovr ~= sid then
+        local ovr = C_SpellBook.FindSpellOverrideByID(spellRef)
+        if ovr and ovr > 0 and ovr ~= spellRef then
             effID = ovr
         end
     end
-    return C_Spell.GetSpellCharges(effID) or C_Spell.GetSpellCharges(sid)
+    return C_Spell.GetSpellCharges(effID) or C_Spell.GetSpellCharges(spellRef)
 end
-ns.CdmChargeInfoFor = CdmChargeInfoFor
+mod.CdmChargeInfoFor = CdmChargeInfoFor
 
 -- Apply charge cooldown style. Returns true for charge spells (caller skips its
 -- own swipe forcing). Edge always drawn; the swipe hides only with per-spell
 -- Hide Swipe (resolved only while ns._cdmAnyChargeStyle). Caller MUST guard with
 -- fd._isProcessingOverride so the SetDrawSwipe sibling hook cannot recurse.
 -- Secret-safe: HasVisualDataSource_Charges is a clean bool, the ss flag is ours.
-local function ApplyCdmChargeStyle(frame, cd)
+local function ApplyCdmChargeStyle(widget, cd)
     -- Icon art suppressed (Only Show Numbers / Charges/Stacks Only): nothing for
     -- a swipe/edge to decorate. Report "handled" so callers skip their own
     -- swipe/edge defaults. The reentry guard is SAVED and restored, never forced
     -- false: ReapplyChargeStyle
     -- sets it before calling us and clearing it would drop its guard.
-    local fdOsn = hookFrameData[frame]
+    local fdOsn = hookFrameData[widget]
     if fdOsn and fdOsn._osnOn then
         local prevGuard = fdOsn._isProcessingOverride
         fdOsn._isProcessingOverride = true
@@ -429,14 +446,14 @@ local function ApplyCdmChargeStyle(frame, cd)
         fdOsn._isProcessingOverride = prevGuard
         return true
     end
-    if type(frame.HasVisualDataSource_Charges) ~= "function" or not frame:HasVisualDataSource_Charges() then
+    if type(widget.HasVisualDataSource_Charges) ~= "function" or not widget:HasVisualDataSource_Charges() then
         return false
     end
-    local fc2 = _ecmeFC[frame]
+    local fc2 = _ecmeFC[widget]
     ApplyCdmEdge(cd, fc2 and fc2.barKey)
     local hide = false
-    if ns._cdmAnyChargeStyle then
-        local ss2 = ns._ResolveCdmSS(frame)
+    if mod._cdmAnyChargeStyle then
+        local ss2 = mod._ResolveCdmSS(widget)
         if ss2 then
             -- Hide Recharge Edge (per-spell): drop the edge ApplyCdmEdge just
             -- drew. Secret-safe: ss flag is ours, SetDrawEdge takes no secret.
@@ -446,7 +463,7 @@ local function ApplyCdmChargeStyle(frame, cd)
             if ss2.chargeHideSwipe then
                 -- Hide only the recharge swipe: the active-state overlay IS the
                 -- colored swipe, so keep it while active.
-                local showActive = ss2.activeSwipeMode ~= "none" and CdmFrameIsActive(frame)
+                local showActive = ss2.activeSwipeMode ~= "none" and CdmFrameIsActive(widget)
                 hide = not showActive
             end
         end
@@ -462,14 +479,14 @@ end
 -- RefreshCDMIconAppearance so toggling either setting (per-icon OR Apply to Bar)
 -- updates a CURRENTLY recharging spell now. No-op on non-charge frames
 -- (ApplyCdmChargeStyle self-skips); reentry-guarded so siblings cannot recurse.
-function ns.ReapplyChargeStyle(frame)
-    local fd = frame and hookFrameData[frame]
+function mod.ReapplyChargeStyle(widget)
+    local fd = widget and hookFrameData[widget]
     local cd = fd and fd.cooldown
     if not cd or fd._isProcessingOverride then
         return
     end
     fd._isProcessingOverride = true
-    ApplyCdmChargeStyle(frame, cd)
+    ApplyCdmChargeStyle(widget, cd)
     fd._isProcessingOverride = false
 end
 
@@ -478,7 +495,7 @@ end
 -- charge state. ss2.maxStacksGlow is the STYLE, color is unified ss.glowColor.
 -- atMax is a CLEAN bool from GetSpellCharges().isActive (recharge-active flag,
 -- false only at max) -- never the secret currentCharges.
-local function ApplyMaxStacksGlow(frame, fd, ss2, atMax)
+local function ApplyMaxStacksGlow(widget, fd, ss2, atMax)
     if not fd then
         return
     end
@@ -488,25 +505,25 @@ local function ApplyMaxStacksGlow(frame, fd, ss2, atMax)
             -- Lazy-create (unused feature adds no frame). Own overlay never
             -- fights the active glow (StartNativeGlow is per-overlay).
             local mo = fd.maxStacksGlowOverlay
-            if not mo and frame then
-                mo = CreateFrame("Frame", nil, frame)
-                mo:SetAllPoints(frame)
+            if not mo and widget then
+                mo = CreateFrame("Frame", nil, widget)
+                mo:SetAllPoints(widget)
                 mo:SetAlpha(0)
                 mo:EnableMouse(false)
                 fd.maxStacksGlowOverlay = mo
             end
             if mo then
-                if frame then
-                    mo:SetFrameLevel(frame:GetFrameLevel() + 16)
+                if widget then
+                    mo:SetFrameLevel(widget:GetFrameLevel() + 16)
                 end
-                local gr, gg, gb = ns.ResolveGlowColor(ss2)
-                ns.StartNativeGlow(mo, ss2.maxStacksGlow, gr, gg, gb)
+                local gr, gg, gb = mod.ResolveGlowColor(ss2)
+                mod.StartNativeGlow(mo, ss2.maxStacksGlow, gr, gg, gb)
                 fd._maxStacksGlowOn = true
             end
         end
     elseif fd._maxStacksGlowOn then
         if fd.maxStacksGlowOverlay then
-            ns.StopNativeGlow(fd.maxStacksGlowOverlay)
+            mod.StopNativeGlow(fd.maxStacksGlowOverlay)
         end
         fd._maxStacksGlowOn = false
     end
@@ -518,26 +535,26 @@ end
 -- SPELL_UPDATE_COOLDOWN, every GCD) and isActive only flips with a charge-count
 -- change, so one event catches both edges. The watch set holds only glow-enabled
 -- icons; the event frame is created only once the feature is on (0 cost).
-ns._maxStacksWatch = ns._maxStacksWatch or setmetatable({}, { __mode = "k" })
+mod._maxStacksWatch = mod._maxStacksWatch or setmetatable({}, { __mode = "k" })
 
 -- Re-derive at-max from CLEAN charge state and (un)glow. Self-unwatches when the
 -- per-icon setting is off or the frame lost its spell, so the set drains itself.
-local function EvalMaxStacksFrame(frame, fd)
+local function EvalMaxStacksFrame(widget, fd)
     if not fd then
         return
     end
-    local fcw = _ecmeFC[frame]
+    local fcw = _ecmeFC[widget]
     local sidw = fcw and fcw.spellID
     local bkw = fcw and fcw.barKey
     if not sidw or not bkw then
-        ApplyMaxStacksGlow(frame, fd, nil, false)
-        ns._maxStacksWatch[frame] = nil
+        ApplyMaxStacksGlow(widget, fd, nil, false)
+        mod._maxStacksWatch[widget] = nil
         return
     end
-    local ssw = ResolveSpellSettings(frame, sidw, ns.GetBarSpellData(bkw))
+    local ssw = ResolveSpellSettings(widget, sidw, mod.GetBarSpellData(bkw))
     if not (ssw and ssw.maxStacksGlow and ssw.maxStacksGlow > 0) then
-        ApplyMaxStacksGlow(frame, fd, ssw, false)
-        ns._maxStacksWatch[frame] = nil
+        ApplyMaxStacksGlow(widget, fd, ssw, false)
+        mod._maxStacksWatch[widget] = nil
         return
     end
     local liveSid = sidw
@@ -550,20 +567,20 @@ local function EvalMaxStacksFrame(frame, fd)
     -- is itself the charge-spell test (nil/1 for non-charge -> atMax false).
     local ci = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(liveSid)
     local atMax = ci ~= nil and (ci.maxCharges or 0) > 1 and not ci.isActive
-    ApplyMaxStacksGlow(frame, fd, ssw, atMax)
+    ApplyMaxStacksGlow(widget, fd, ssw, atMax)
 end
 
-local function WatchMaxStacksFrame(frame, fd)
-    ns._maxStacksWatch[frame] = fd
-    if not ns._maxStacksEventFrame then
-        local ef = ns.TakeShell()
+local function WatchMaxStacksFrame(widget, fd)
+    mod._maxStacksWatch[widget] = fd
+    if not mod._maxStacksEventFrame then
+        local ef = mod.TakeShell()
         ef:RegisterEvent("SPELL_UPDATE_CHARGES")
         ef:SetScript("OnEvent", function()
-            for f, d in pairs(ns._maxStacksWatch) do
+            for f, d in pairs(mod._maxStacksWatch) do
                 EvalMaxStacksFrame(f, d)
             end
         end)
-        ns._maxStacksEventFrame = ef
+        mod._maxStacksEventFrame = ef
     end
 end
 
@@ -571,15 +588,15 @@ end
 -- charge spell (no swipe, so it never fires the swipe hook) still gets watched.
 -- Early-outs on non-charge icons (cheap capability check, no settings lookup);
 -- once watched SPELL_UPDATE_CHARGES keeps it current. Self-cleans when disabled.
-function ns.WatchMaxStacksIfEnabled(frame)
-    if not frame then
+function mod.WatchMaxStacksIfEnabled(widget)
+    if not widget then
         return
     end
-    local fd = hookFrameData[frame]
+    local fd = hookFrameData[widget]
     if not fd then
         return
     end
-    local fcw = _ecmeFC[frame]
+    local fcw = _ecmeFC[widget]
     local sidw = fcw and fcw.spellID
     local bkw = fcw and fcw.barKey
     if not (sidw and bkw) then
@@ -593,21 +610,21 @@ function ns.WatchMaxStacksIfEnabled(frame)
     end
     local ci = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(liveSid)
     local isCharge = ci ~= nil and (ci.maxCharges or 0) > 1
-    local ssw = isCharge and ResolveSpellSettings(frame, sidw, ns.GetBarSpellData(bkw)) or nil
+    local ssw = isCharge and ResolveSpellSettings(widget, sidw, mod.GetBarSpellData(bkw)) or nil
     if ssw and ssw.maxStacksGlow and ssw.maxStacksGlow > 0 then
-        ns._cdmAnyMaxStacksGlow = true
-        WatchMaxStacksFrame(frame, fd)
-        EvalMaxStacksFrame(frame, fd)
-    elseif ns._maxStacksWatch[frame] then
-        ns._maxStacksWatch[frame] = nil
-        ApplyMaxStacksGlow(frame, fd, nil, false)
+        mod._cdmAnyMaxStacksGlow = true
+        WatchMaxStacksFrame(widget, fd)
+        EvalMaxStacksFrame(widget, fd)
+    elseif mod._maxStacksWatch[widget] then
+        mod._maxStacksWatch[widget] = nil
+        ApplyMaxStacksGlow(widget, fd, nil, false)
     end
 end
 
-I._activeCache, I._activeStacksCache = _activeCache, _activeStacksCache
-I.ApplyCdmChargeStyle, I.ApplyCdmEdge = ApplyCdmChargeStyle, ApplyCdmEdge
-I.ApplyMaxStacksGlow, I.CdmChargeInfoFor = ApplyMaxStacksGlow, CdmChargeInfoFor
-I.CdmFrameIsActive, I.CdmStaleLinkedSpell = CdmFrameIsActive, CdmStaleLinkedSpell
-I.EvalMaxStacksFrame, I.HideBlizzardDecorations = EvalMaxStacksFrame, HideBlizzardDecorations
-I.IsFrameIncluded, I.WatchMaxStacksFrame = IsFrameIncluded, WatchMaxStacksFrame
-I.broken = false
+Inner._activeCache, Inner._activeStacksCache = _activeCache, _activeStacksCache
+Inner.ApplyCdmChargeStyle, Inner.ApplyCdmEdge = ApplyCdmChargeStyle, ApplyCdmEdge
+Inner.ApplyMaxStacksGlow, Inner.CdmChargeInfoFor = ApplyMaxStacksGlow, CdmChargeInfoFor
+Inner.CdmFrameIsActive, Inner.CdmStaleLinkedSpell = CdmFrameIsActive, CdmStaleLinkedSpell
+Inner.EvalMaxStacksFrame, Inner.HideBlizzardDecorations = EvalMaxStacksFrame, HideBlizzardDecorations
+Inner.IsFrameIncluded, Inner.WatchMaxStacksFrame = IsFrameIncluded, WatchMaxStacksFrame
+Inner.broken = false

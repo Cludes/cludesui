@@ -1,12 +1,12 @@
 if CUI_CLIENT_BLOCKED then
     return
 end
-local _, ns = ...
-local EQT = ns.EQT
+local _, mod = ...
+local EQT = mod.EQT
 
-ns.QT_DEFAULTS.profile.questTracker.wowheadQuestLinks = false
-ns.QT_DEFAULTS.profile.questTracker.wowheadQuestComments = false
-ns.QT_DEFAULTS.profile.questTracker.wowheadQuestClientLanguage = false
+mod.QT_DEFAULTS.profile.questTracker.wowheadQuestLinks = false
+mod.QT_DEFAULTS.profile.questTracker.wowheadQuestComments = false
+mod.QT_DEFAULTS.profile.questTracker.wowheadQuestClientLanguage = false
 
 local site = CludesUI.IS_FOREVER and "forever/" or ""
 -- Wowhead's path for each client language it has (English takes none).
@@ -70,19 +70,19 @@ end
 
 -- Quest rows and the quest-details popup both own their questID. Waypoints
 -- share the log menu tag but have no questID.
-local function AddQuestLink(owner, root)
-    AddLinkButton(owner and owner.questID, root)
+local function AddQuestLink(ownerFrame, root)
+    AddLinkButton(ownerFrame and ownerFrame.questID, root)
 end
 
 -- The tracker's quest menu is owned by the tracker, not the quest. It opens
 -- from a click on a quest's header, which Blizzard reports as the cursor
 -- enters it, so the quest is that header's while the cursor is still on it.
-local function OnQuestHeaderEnter(_, block)
-    hoverBlock = block
+local function OnQuestHeaderEnter(_, blockData)
+    hoverBlock = blockData
 end
 local function AddTrackerLink(_, root)
-    local header = hoverBlock and hoverBlock.HeaderButton
-    if header and header:IsMouseOver() then
+    local headerFrame = hoverBlock and hoverBlock.HeaderButton
+    if headerFrame and headerFrame:IsMouseOver() then
         AddLinkButton(hoverBlock.id, root)
     end
 end

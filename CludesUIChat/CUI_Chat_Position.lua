@@ -9,18 +9,18 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  grip and the size lock.
 --  Reads the earlier Chat files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local ECHAT = ns.ECHAT
-local min, max, floor, abs = min, max, floor, math.abs
+local CHAT = mod.ECHAT
+local min, upper, floor, abs = min, max, floor, math.abs
 
-local CFD, EnsureChatClampInsets = I.CFD, I.EnsureChatClampInsets
+local CFD, EnsureChatClampInsets = Inner.CFD, Inner.EnsureChatClampInsets
 
 -------------------------------------------------------------------------------
 --  Chat position: owned by CUI unlock mode once a position is saved (genesis-
@@ -80,8 +80,8 @@ local function EMChatFindSystem(layout, sysChat)
     if type(systems) ~= "table" then
         return nil
     end
-    for i = 1, #systems do
-        local s = systems[i]
+    for idx = 1, #systems do
+        local s = systems[idx]
         if type(s) == "table" and s.system == sysChat then
             return s
         end
@@ -93,10 +93,10 @@ local function EMChatSettingRow(sys, settingID)
     if type(st) ~= "table" then
         return nil
     end
-    for i = 1, #st do
-        local row = st[i]
-        if type(row) == "table" and row.setting == settingID then
-            return row
+    for idx = 1, #st do
+        local rowFrame = st[idx]
+        if type(rowFrame) == "table" and rowFrame.setting == settingID then
+            return rowFrame
         end
     end
 end
@@ -120,16 +120,16 @@ local function EMChatResolve()
     if not blob then
         return nil
     end
-    local active = blob.activeLayout
-    if type(active) ~= "number" then
+    local isActive = blob.activeLayout
+    if type(isActive) ~= "number" then
         return nil
     end
-    local entry = blob.layouts[active]
-    if type(entry) ~= "table" then
+    local record = blob.layouts[isActive]
+    if type(record) ~= "table" then
         return nil
     end
-    local isPreset = active <= numPresets or entry.layoutType == layEnum.Preset
-    return blob, entry, sysChat, setEnum, isPreset
+    local isPreset = isActive <= numPresets or record.layoutType == layEnum.Preset
+    return blob, record, sysChat, setEnum, isPreset
 end
 
 -- Stored chat size of a chat system entry (Edit Mode encodes each dimension
@@ -161,9 +161,9 @@ end
 -- read). Once it does, Edit Mode's own apply sizes chat and the anchor
 -- enforcement stands down.
 local function EMChatSizeDelta()
-    local cfg = ECHAT.DB()
-    local size = cfg and cfg.chatSize
-    if not (size and size.w and size.h) then
+    local conf = CHAT.DB()
+    local dim = conf and conf.chatSize
+    if not (dim and dim.w and dim.h) then
         return false
     end
     -- Belt: after a store write this session, keep the anchor enforcement
@@ -171,19 +171,19 @@ local function EMChatSizeDelta()
     -- tables immediately, so this should never matter -- it guards the
     -- untested edges (event timing on other clients) at the cost of one
     -- boolean.
-    if ns._emChatWrote then
+    if mod._emChatWrote then
         return true
     end
-    local blob, entry, sysChat, setEnum = EMChatResolve()
-    local sys = blob and EMChatFindSystem(entry, sysChat)
-    local w, h
+    local blob, record, sysChat, setEnum = EMChatResolve()
+    local sys = blob and EMChatFindSystem(record, sysChat)
+    local wid, hgt
     if sys then
-        w, h = EMChatReadSize(sys, setEnum)
+        wid, hgt = EMChatReadSize(sys, setEnum)
     end
-    if not w then
+    if not wid then
         return true
     end
-    return abs(w - size.w) > 1 or abs(h - size.h) > 1
+    return abs(wid - dim.w) > 1 or abs(hgt - dim.h) > 1
 end
 
 -- Where each of UIParent's nine points sits in a rect: its share of the
@@ -203,27 +203,27 @@ local POINT_FRAC = {
 -- The screen's size in ChatFrame1's units, the units of its anchor offsets
 -- and rect reads.
 local function ChatScreenSize(cf1)
-    local k = UIParent:GetEffectiveScale() / cf1:GetEffectiveScale()
-    return UIParent:GetWidth() * k, UIParent:GetHeight() * k
+    local key = UIParent:GetEffectiveScale() / cf1:GetEffectiveScale()
+    return UIParent:GetWidth() * key, UIParent:GetHeight() * key
 end
 
 -- The screen point the player picked for chat's saved spot (Unlock Mode's
 -- Relative to Screen), nil while unset: the spot then keeps the form its
 -- last save gave it.
-local function ChatScreenChoice(cfg)
-    local p = cfg and cfg.chatScreenPoint
+local function ChatScreenChoice(conf)
+    local p = conf and conf.chatScreenPoint
     return (p and POINT_FRAC[p]) and p or nil
 end
 
 -- The single anchor that places chat from the saved position, pixel-snapped
 -- as every apply places it: point, relPoint, x, y (nil while unsaved).
-local function ChatAnchorTarget(cfg, cf1)
-    local pos = cfg.chatPosition
-    local px, py = pos and pos.x, pos and pos.y
-    if not (pos and pos.point and px and py) then
+local function ChatAnchorTarget(conf, cf1)
+    local place = conf.chatPosition
+    local px, py = place and place.x, place and place.y
+    if not (place and place.point and px and py) then
         return nil
     end
-    local relPoint = pos.relPoint or pos.point
+    local relPoint = place.relPoint or place.point
     local PPa = CludesUI and CludesUI.PP
     if PPa then
         local es = cf1:GetEffectiveScale()
@@ -231,20 +231,20 @@ local function ChatAnchorTarget(cfg, cf1)
         -- and BOTTOM across, LEFT and RIGHT up) snaps against the dimension
         -- the rect carries, the saved size once there is one, so both edges
         -- land on pixels; an edge offset snaps to whole pixels.
-        local f = POINT_FRAC[pos.point]
-        local size = cfg.chatSize
+        local f = POINT_FRAC[place.point]
+        local dim = conf.chatSize
         if f and f[1] == 0.5 then
-            px = PPa.SnapCenterForDim(px, size and size.w or cf1:GetWidth() or 0, es)
+            px = PPa.SnapCenterForDim(px, dim and dim.w or cf1:GetWidth() or 0, es)
         else
             px = PPa.SnapForES(px, es)
         end
         if f and f[2] == 0.5 then
-            py = PPa.SnapCenterForDim(py, size and size.h or cf1:GetHeight() or 0, es)
+            py = PPa.SnapCenterForDim(py, dim and dim.h or cf1:GetHeight() or 0, es)
         else
             py = PPa.SnapForES(py, es)
         end
     end
-    return pos.point, relPoint, px, py
+    return place.point, relPoint, px, py
 end
 
 -------------------------------------------------------------------------------
@@ -257,13 +257,13 @@ end
 local emAnchor = { relativeTo = "UIParent" }
 
 -- Fills emAnchor from the saved position; false while unsaved.
-local function EMChatFillAnchor(cfg, cf1)
-    local point, relPoint, px, py = ChatAnchorTarget(cfg, cf1)
-    if not point then
+local function EMChatFillAnchor(conf, cf1)
+    local anchorPoint, relPoint, px, py = ChatAnchorTarget(conf, cf1)
+    if not anchorPoint then
         return false
     end
     local scale = cf1:GetScale() or 1
-    emAnchor.point, emAnchor.relativePoint = point, relPoint
+    emAnchor.point, emAnchor.relativePoint = anchorPoint, relPoint
     emAnchor.offsetX, emAnchor.offsetY = px * scale, py * scale
     return true
 end
@@ -284,32 +284,32 @@ local function EMChatAnchorAgrees(sys)
 end
 
 -- The entry already sizes chat w x h (no w: the size is not ours to keep).
-local function EMChatSizeAgrees(sys, setEnum, w, h)
-    if not w then
+local function EMChatSizeAgrees(sys, setEnum, wid, hgt)
+    if not wid then
         return true
     end
     local sw, sh = EMChatReadSize(sys, setEnum)
-    return sw ~= nil and abs(sw - w) <= 1 and abs(sh - h) <= 1
+    return sw ~= nil and abs(sw - wid) <= 1 and abs(sh - hgt) <= 1
 end
 
 -- One size row (added when the entry lacks it), noted for Uninstall CUI
 -- first. pairID: the dimension's other row, which goes back with it.
-local function EMChatSetRow(layout, sys, id, value, pairID)
-    local row = EMChatSettingRow(sys, id)
-    if not row then
+local function EMChatSetRow(layout, sys, ident, value, pairID)
+    local rowFrame = EMChatSettingRow(sys, ident)
+    if not rowFrame then
         if type(sys.settings) ~= "table" then
             sys.settings = {}
         end
-        sys.settings[#sys.settings + 1] = { setting = id, value = value }
+        sys.settings[#sys.settings + 1] = { setting = ident, value = value }
         return
     end
-    CludesUI.NoteEditModeSetting(layout, sys, id, row.value, value, nil, pairID)
-    row.value = value
+    CludesUI.NoteEditModeSetting(layout, sys, ident, rowFrame.value, value, nil, pairID)
+    rowFrame.value = value
 end
 
 -- Writes emAnchor and, with w, the size into sys (chat's entry of layout),
 -- each change noted for Uninstall CUI first.
-local function EMChatWrite(layout, sys, setEnum, w, h)
+local function EMChatWrite(layout, sys, setEnum, wid, hgt)
     if not EMChatAnchorAgrees(sys) then
         CludesUI.NoteEditModeAnchor(layout, sys, emAnchor)
         local ai = sys.anchorInfo
@@ -323,13 +323,13 @@ local function EMChatWrite(layout, sys, setEnum, w, h)
         sys.anchorInfo2 = nil
         sys.isInDefaultPosition = false
     end
-    if not EMChatSizeAgrees(sys, setEnum, w, h) then
+    if not EMChatSizeAgrees(sys, setEnum, wid, hgt) then
         -- All four rows: Uninstall puts each dimension's pair back whole.
-        w, h = max(0, floor(w + 0.5)), max(0, floor(h + 0.5))
-        EMChatSetRow(layout, sys, setEnum.WidthHundreds, floor(w / 100), setEnum.WidthTensAndOnes)
-        EMChatSetRow(layout, sys, setEnum.WidthTensAndOnes, w % 100, setEnum.WidthHundreds)
-        EMChatSetRow(layout, sys, setEnum.HeightHundreds, floor(h / 100), setEnum.HeightTensAndOnes)
-        EMChatSetRow(layout, sys, setEnum.HeightTensAndOnes, h % 100, setEnum.HeightHundreds)
+        wid, hgt = upper(0, floor(wid + 0.5)), upper(0, floor(hgt + 0.5))
+        EMChatSetRow(layout, sys, setEnum.WidthHundreds, floor(wid / 100), setEnum.WidthTensAndOnes)
+        EMChatSetRow(layout, sys, setEnum.WidthTensAndOnes, wid % 100, setEnum.WidthHundreds)
+        EMChatSetRow(layout, sys, setEnum.HeightHundreds, floor(hgt / 100), setEnum.HeightTensAndOnes)
+        EMChatSetRow(layout, sys, setEnum.HeightTensAndOnes, hgt % 100, setEnum.HeightHundreds)
     end
 end
 
@@ -341,74 +341,74 @@ local emLast = {}
 -- One store pass: when the active saved layout would place chat elsewhere,
 -- write chat's anchor (and its size, once saved) into it. A preset is never
 -- written.
-function ns.EMChatSync()
+function mod.EMChatSync()
     if InCombatLockdown() then
         return
     end
-    local cfg = ECHAT.DB()
+    local conf = CHAT.DB()
     local cf1 = _G.ChatFrame1
-    if not (cfg and cf1 and EMChatFillAnchor(cfg, cf1)) then
+    if not (conf and cf1 and EMChatFillAnchor(conf, cf1)) then
         return
     end
-    local blob, entry, sysChat, setEnum, isPreset = EMChatResolve()
+    local blob, record, sysChat, setEnum, isPreset = EMChatResolve()
     if not blob or isPreset then
         return
     end
-    local sys = EMChatFindSystem(entry, sysChat)
+    local sys = EMChatFindSystem(record, sysChat)
     if not sys then
         return
     end
-    local size = cfg.chatSize
-    local w, h
-    if size and size.w and size.h then
-        w, h = size.w, size.h
+    local dim = conf.chatSize
+    local wid, hgt
+    if dim and dim.w and dim.h then
+        wid, hgt = dim.w, dim.h
     end
-    if EMChatAnchorAgrees(sys) and EMChatSizeAgrees(sys, setEnum, w, h) then
+    if EMChatAnchorAgrees(sys) and EMChatSizeAgrees(sys, setEnum, wid, hgt) then
         return
     end
     if
-        emLast.name == entry.layoutName
-        and emLast.layoutType == entry.layoutType
+        emLast.name == record.layoutName
+        and emLast.layoutType == record.layoutType
         and emLast.point == emAnchor.point
         and emLast.relPoint == emAnchor.relativePoint
         and emLast.x == emAnchor.offsetX
         and emLast.y == emAnchor.offsetY
-        and emLast.w == w
-        and emLast.h == h
+        and emLast.w == wid
+        and emLast.h == hgt
     then
         return
     end
-    emLast.name, emLast.layoutType = entry.layoutName, entry.layoutType
+    emLast.name, emLast.layoutType = record.layoutName, record.layoutType
     emLast.point, emLast.relPoint = emAnchor.point, emAnchor.relativePoint
-    emLast.x, emLast.y, emLast.w, emLast.h = emAnchor.offsetX, emAnchor.offsetY, w, h
-    EMChatWrite(entry, sys, setEnum, w, h)
+    emLast.x, emLast.y, emLast.w, emLast.h = emAnchor.offsetX, emAnchor.offsetY, wid, hgt
+    EMChatWrite(record, sys, setEnum, wid, hgt)
     if pcall(C_EditMode.SaveLayouts, blob) then
-        ns._emChatWrote = true
+        mod._emChatWrote = true
     end
 end
 
 -- Unlock mode's Reset: chat's entry in the active saved layout goes back to
 -- Edit Mode's default position and size (its own Reset To Default Position,
 -- plus the size); the next settled sight captures that spot as ours.
-function ns.EMChatResetStore()
+function mod.EMChatResetStore()
     if InCombatLockdown() then
         return
     end
-    local blob, entry, sysChat, setEnum, isPreset = EMChatResolve()
+    local blob, record, sysChat, setEnum, isPreset = EMChatResolve()
     if not blob or isPreset then
         return
     end
-    local sys = EMChatFindSystem(entry, sysChat)
+    local sys = EMChatFindSystem(record, sysChat)
     local mgr = EditModePresetLayoutManager
     if not (sys and mgr and mgr.GetDefaultSystemAnchorInfo and mgr.GetDefaultSettingForSystem) then
         return
     end
-    local okA, def = pcall(mgr.GetDefaultSystemAnchorInfo, mgr, sysChat)
-    if not (okA and type(def) == "table") then
+    local okA, spec_def = pcall(mgr.GetDefaultSystemAnchorInfo, mgr, sysChat)
+    if not (okA and type(spec_def) == "table") then
         return
     end
-    CludesUI.NoteEditModeAnchor(entry, sys, def)
-    sys.anchorInfo = def
+    CludesUI.NoteEditModeAnchor(record, sys, spec_def)
+    sys.anchorInfo = spec_def
     sys.anchorInfo2 = nil
     sys.isInDefaultPosition = true
     local wH, wT = setEnum.WidthHundreds, setEnum.WidthTensAndOnes
@@ -418,16 +418,16 @@ function ns.EMChatResetStore()
     local okH1, vH1 = pcall(mgr.GetDefaultSettingForSystem, mgr, sysChat, nil, hH)
     local okH2, vH2 = pcall(mgr.GetDefaultSettingForSystem, mgr, sysChat, nil, hT)
     if okW1 and okW2 and type(vW1) == "number" and type(vW2) == "number" then
-        EMChatSetRow(entry, sys, wH, vW1, wT)
-        EMChatSetRow(entry, sys, wT, vW2, wH)
+        EMChatSetRow(record, sys, wH, vW1, wT)
+        EMChatSetRow(record, sys, wT, vW2, wH)
     end
     if okH1 and okH2 and type(vH1) == "number" and type(vH2) == "number" then
-        EMChatSetRow(entry, sys, hH, vH1, hT)
-        EMChatSetRow(entry, sys, hT, vH2, hH)
+        EMChatSetRow(record, sys, hH, vH1, hT)
+        EMChatSetRow(record, sys, hT, vH2, hH)
     end
     emLast.name = nil
     if pcall(C_EditMode.SaveLayouts, blob) then
-        ns._emChatWrote = true
+        mod._emChatWrote = true
     end
 end
 
@@ -436,21 +436,21 @@ end
 -- drag, an unlock session or the first-install picker is open.
 local RunChatStoreSync
 RunChatStoreSync = function()
-    ns._emSyncQueued = nil
-    if ns._chatSizingActive or CludesUI._unlockActive or CludesUI._firstInstallPending then
+    mod._emSyncQueued = nil
+    if mod._chatSizingActive or CludesUI._unlockActive or CludesUI._firstInstallPending then
         return
     end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("ChatEMStoreSync", RunChatStoreSync)
         return
     end
-    ns.EMChatSync()
+    mod.EMChatSync()
 end
 local function ScheduleChatStoreSync()
-    if ns._emSyncQueued then
+    if mod._emSyncQueued then
         return
     end
-    ns._emSyncQueued = true
+    mod._emSyncQueued = true
     C_Timer.After(0, RunChatStoreSync)
 end
 
@@ -461,9 +461,9 @@ end
 -- The anchors ApplyChatPosition places: one, or two while the saved size
 -- rides a second corner. Reused across passes.
 local chatTarget = { {}, {} }
-local function SetChatTarget(i, point, relPoint, x, y)
-    local t = chatTarget[i]
-    t.point, t.relPoint, t.x, t.y = point, relPoint, x, y
+local function SetChatTarget(idx, anchorPoint, relPoint, posX, posY)
+    local t = chatTarget[idx]
+    t.point, t.relPoint, t.x, t.y = anchorPoint, relPoint, posX, posY
 end
 
 -- The corner opposite each corner anchor, and the signs of the saved size
@@ -485,21 +485,32 @@ local function ChatAtTarget(cf1, n)
     if (issecret and issecret(num)) or num ~= n then
         return false
     end
-    for i = 1, n do
-        local point, rel, relPoint, x, y = cf1:GetPoint(i)
+    for idx = 1, n do
+        local anchorPoint, rel, relPoint, posX, posY = cf1:GetPoint(idx)
         if
             issecret
-            and (issecret(point) or issecret(rel) or issecret(relPoint) or issecret(x) or issecret(y))
+            and (
+                issecret(anchorPoint)
+                or issecret(rel)
+                or issecret(relPoint)
+                or issecret(posX)
+                or issecret(posY)
+            )
         then
             return false
         end
-        if rel ~= UIParent or type(x) ~= "number" or type(y) ~= "number" then
+        if rel ~= UIParent or type(posX) ~= "number" or type(posY) ~= "number" then
             return false
         end
         local hit = false
-        for j = 1, n do
-            local t = chatTarget[j]
-            if t.point == point and t.relPoint == relPoint and abs(t.x - x) < 0.1 and abs(t.y - y) < 0.1 then
+        for jdx = 1, n do
+            local t = chatTarget[jdx]
+            if
+                t.point == anchorPoint
+                and t.relPoint == relPoint
+                and abs(t.x - posX) < 0.1
+                and abs(t.y - posY) < 0.1
+            then
                 hit = true
             end
         end
@@ -519,14 +530,14 @@ local function ApplyChatPosition()
     -- the frame, Edit Mode's machinery reacts with ApplySystemAnchor, and
     -- the guard below would then re-apply the SAVED anchors every tick --
     -- a revert war that freezes the resize. Held off until release.
-    if ns._chatSizingActive then
+    if mod._chatSizingActive then
         return
     end
-    local cfg = ECHAT.DB()
-    if not cfg or not cfg.chatPosition then
+    local conf = CHAT.DB()
+    if not conf or not conf.chatPosition then
         return
     end
-    local pos = cfg.chatPosition
+    local place = conf.chatPosition
     local cf1 = _G.ChatFrame1
     if not cf1 then
         return
@@ -543,34 +554,34 @@ local function ApplyChatPosition()
     -- disagrees with the saved size (pre-migration, fresh imports, presets);
     -- once the store carries it, Blizzard's own apply owns the size and this
     -- stands down.
-    local size = cfg.chatSize
-    local sizeLane = size and size.w and size.h and EMChatSizeDelta()
-    local point, relPoint, px, py = ChatAnchorTarget(cfg, cf1)
-    if not point then
+    local dim = conf.chatSize
+    local sizeLane = dim and dim.w and dim.h and EMChatSizeDelta()
+    local anchorPoint, relPoint, px, py = ChatAnchorTarget(conf, cf1)
+    if not anchorPoint then
         return
     end
     local n = 1
-    local frac = POINT_FRAC[point]
-    if sizeLane and frac and not SIZE_CORNER[point] then
+    local frac = POINT_FRAC[anchorPoint]
+    if sizeLane and frac and not SIZE_CORNER[anchorPoint] then
         -- Centre and edge-middle forms compose the rect around their point
         -- outright. A lone anchor there would resolve on the frame's explicit
         -- size for a tick, and the canonicalize below would read the corner
         -- of THAT rect -- landing the chat half the size delta away from
         -- where it was dropped.
-        SetChatTarget(1, "TOPLEFT", relPoint, px - frac[1] * size.w, py + (1 - frac[2]) * size.h)
-        SetChatTarget(2, "BOTTOMRIGHT", relPoint, px + (1 - frac[1]) * size.w, py - frac[2] * size.h)
+        SetChatTarget(1, "TOPLEFT", relPoint, px - frac[1] * dim.w, py + (1 - frac[2]) * dim.h)
+        SetChatTarget(2, "BOTTOMRIGHT", relPoint, px + (1 - frac[1]) * dim.w, py - frac[2] * dim.h)
         n = 2
     else
-        SetChatTarget(1, point, relPoint, px, py)
+        SetChatTarget(1, anchorPoint, relPoint, px, py)
         -- Corner positions compose the size anchor at the opposite corner. A
         -- single-anchor apply would leave the rect on the frame's explicit
         -- (Edit Mode, stale) size until the deferred normalize below lands --
         -- a window where a late Edit Mode pass baked the old size in, and the
         -- normalize would save the corner of THAT rect. Any corner can arrive:
         -- an unlock mode nudge saves whichever anchor GetPoint lists first.
-        local opp = sizeLane and SIZE_CORNER[point]
+        local opp = sizeLane and SIZE_CORNER[anchorPoint]
         if opp then
-            SetChatTarget(2, opp[1], relPoint, px + opp[2] * size.w, py + opp[3] * size.h)
+            SetChatTarget(2, opp[1], relPoint, px + opp[2] * dim.w, py + opp[3] * dim.h)
             n = 2
         end
     end
@@ -578,43 +589,43 @@ local function ApplyChatPosition()
     -- store carries them), there is nothing to write -- unless the clamp
     -- insets were just put back (EnsureChatClampInsets above): a rect pinned
     -- under the other insets only lets go once the anchors are written again.
-    if ns._chatReanchor or not ChatAtTarget(cf1, n) then
-        ns._chatReanchor = nil
+    if mod._chatReanchor or not ChatAtTarget(cf1, n) then
+        mod._chatReanchor = nil
         ClearFramePoints(cf1)
-        for i = 1, n do
-            local t = chatTarget[i]
+        for idx = 1, n do
+            local t = chatTarget[idx]
             SetFramePoint(cf1, t.point, UIParent, t.relPoint, t.x, t.y)
         end
     end
-    local canonTo = ChatScreenChoice(cfg) or (sizeLane and "BOTTOMLEFT")
-    if canonTo and (point ~= canonTo or relPoint ~= canonTo) and not ns._chatCanonPending then
+    local canonTo = ChatScreenChoice(conf) or (sizeLane and "BOTTOMLEFT")
+    if canonTo and (anchorPoint ~= canonTo or relPoint ~= canonTo) and not mod._chatCanonPending then
         -- Canonicalize once the rect resolves to the form chat keeps: the
         -- player's Relative to Screen point, else BOTTOMLEFT while the size
         -- rides a second corner, so every later apply composes on the fast
         -- path. One pass pending at a time: every apply in between lands in
         -- the same pass.
-        ns._chatCanonPending = true
+        mod._chatCanonPending = true
         C_Timer.After(0, CanonicalizeChatPosition)
     end
     -- The visible stack follows numerically; sync it now rather than at the
     -- next event so drags and guard re-applies land in one motion.
-    if ECHAT.PositionChatPanelsNow then
-        ECHAT.PositionChatPanelsNow()
+    if CHAT.PositionChatPanelsNow then
+        CHAT.PositionChatPanelsNow()
     end
     -- The sync above reads the rect the SetPoints just changed, and same-tick
     -- reads can lag the engine layout pass (the grip-save rule) -- the panel,
     -- the tab band anchored to it, and the strip's clip then disagree for a
     -- tick (ghost tabs clipped to slivers). One coalesced deferred re-sync
     -- lands panels-then-strip on the resolved rect for EVERY apply path.
-    if not ns._chatPosResync then
-        ns._chatPosResync = true
+    if not mod._chatPosResync then
+        mod._chatPosResync = true
         C_Timer.After(0, function()
-            ns._chatPosResync = nil
-            if ECHAT.PositionChatPanelsNow then
-                ECHAT.PositionChatPanelsNow()
+            mod._chatPosResync = nil
+            if CHAT.PositionChatPanelsNow then
+                CHAT.PositionChatPanelsNow()
             end
-            if ECHAT.TabsRefreshNow then
-                ECHAT.TabsRefreshNow()
+            if CHAT.TabsRefreshNow then
+                CHAT.TabsRefreshNow()
             end
         end)
     end
@@ -625,11 +636,11 @@ local function ApplyChatPosition()
     end
 end
 CanonicalizeChatPosition = function()
-    ns._chatCanonPending = nil
+    mod._chatCanonPending = nil
     local cf1 = _G.ChatFrame1
-    local cfg2 = ECHAT.DB()
-    if not cf1 or not cfg2 or not cfg2.chatPosition or ns._chatSizingActive then
-        ns._chatCanonLaps = nil
+    local cfg2 = CHAT.DB()
+    if not cf1 or not cfg2 or not cfg2.chatPosition or mod._chatSizingActive then
+        mod._chatCanonLaps = nil
         return
     end
     -- A rect pinned under other clamp insets is not where the anchors put it:
@@ -639,17 +650,17 @@ CanonicalizeChatPosition = function()
     -- frame forever. Stopping keeps the saved form, which every apply still
     -- places; the next apply from elsewhere tries again.
     EnsureChatClampInsets()
-    if ns._chatReanchor then
-        local laps = (ns._chatCanonLaps or 0) + 1
+    if mod._chatReanchor then
+        local laps = (mod._chatCanonLaps or 0) + 1
         if laps > 2 then
-            ns._chatCanonLaps = nil
+            mod._chatCanonLaps = nil
             return
         end
-        ns._chatCanonLaps = laps
+        mod._chatCanonLaps = laps
         ApplyChatPosition()
         return
     end
-    ns._chatCanonLaps = nil
+    mod._chatCanonLaps = nil
     local l, b, r, t = cf1:GetLeft(), cf1:GetBottom(), cf1:GetRight(), cf1:GetTop()
     local issecret = _G.issecretvalue
     if
@@ -660,42 +671,42 @@ CanonicalizeChatPosition = function()
     end
     -- The frame's point at its spot, measured from the same point of the
     -- screen (BOTTOMLEFT: the rect's own left and bottom).
-    local target = ChatScreenChoice(cfg2) or "BOTTOMLEFT"
-    local f = POINT_FRAC[target]
+    local targetUnit = ChatScreenChoice(cfg2) or "BOTTOMLEFT"
+    local f = POINT_FRAC[targetUnit]
     local sw, sh = ChatScreenSize(cf1)
     cfg2.chatPosition = {
-        point = target,
-        relPoint = target,
+        point = targetUnit,
+        relPoint = targetUnit,
         x = l + f[1] * (r - l - sw),
         y = b + f[2] * (t - b - sh),
     }
     ApplyChatPosition()
 end
 
-ECHAT.ApplyChatPosition = ApplyChatPosition
-ns._EMChatSizeDelta = EMChatSizeDelta
+CHAT.ApplyChatPosition = ApplyChatPosition
+mod._EMChatSizeDelta = EMChatSizeDelta
 
 -- Unlock Mode's Relative to Screen for chat (the cog): the point of the
 -- screen chat's saved spot is measured from. Unset, it is the point the saved
 -- spot uses. A pick only names it: the next apply (in a session, its close)
 -- re-expresses the spot from it, where chat already stands.
-function ns.GetChatScreenPoint()
-    local cfg = ECHAT.DB()
-    local p = ChatScreenChoice(cfg)
+function mod.GetChatScreenPoint()
+    local conf = CHAT.DB()
+    local p = ChatScreenChoice(conf)
     if p then
         return p
     end
-    local pos = cfg and cfg.chatPosition
-    local rel = pos and (pos.relPoint or pos.point)
+    local place = conf and conf.chatPosition
+    local rel = place and (place.relPoint or place.point)
     return (rel and POINT_FRAC[rel]) and rel or "BOTTOMLEFT"
 end
 
-function ns.SetChatScreenPoint(point)
-    local cfg = ECHAT.DB()
-    if not (cfg and POINT_FRAC[point]) then
+function mod.SetChatScreenPoint(anchorPoint)
+    local conf = CHAT.DB()
+    if not (conf and POINT_FRAC[anchorPoint]) then
         return
     end
-    cfg.chatScreenPoint = point
+    conf.chatScreenPoint = anchorPoint
     if not CludesUI._unlockActive then
         ApplyChatPosition()
     end
@@ -703,13 +714,13 @@ end
 
 -- The left and bottom edges a saved spot puts a w x h chat at, in
 -- ChatFrame1's units (nil for a point it does not know).
-function ns.ChatSavedLeftBottom(pos, w, h, cf1)
-    local fp, fr = POINT_FRAC[pos.point], POINT_FRAC[pos.relPoint or pos.point]
-    if not (fp and fr and pos.x and pos.y) then
+function mod.ChatSavedLeftBottom(place, wid, hgt, cf1)
+    local fp, fr = POINT_FRAC[place.point], POINT_FRAC[place.relPoint or place.point]
+    if not (fp and fr and place.x and place.y) then
         return nil
     end
     local sw, sh = ChatScreenSize(cf1)
-    return fr[1] * sw + pos.x - fp[1] * w, fr[2] * sh + pos.y - fp[2] * h
+    return fr[1] * sw + place.x - fp[1] * wid, fr[2] * sh + place.y - fp[2] * hgt
 end
 
 -- Re-assert after an Edit Mode layout apply in the SAME frame: a one-shot
@@ -722,11 +733,11 @@ local chatReassert = CreateFrame("Frame")
 chatReassert:Hide()
 chatReassert:SetScript("OnUpdate", function(self)
     self:Hide()
-    if ns._chatSizingActive or CludesUI._unlockActive then
+    if mod._chatSizingActive or CludesUI._unlockActive then
         return
     end
-    local cfg = ECHAT.DB()
-    if cfg and cfg.chatPosition then
+    local conf = CHAT.DB()
+    if conf and conf.chatPosition then
         ApplyChatPosition()
     end
 end)
@@ -742,8 +753,8 @@ do
     local emWatch = CreateFrame("Frame")
     emWatch:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
     emWatch:SetScript("OnEvent", function()
-        local cfg = ECHAT.DB()
-        if not (cfg and cfg.chatPosition) then
+        local conf = CHAT.DB()
+        if not (conf and conf.chatPosition) then
             return
         end
         local cf1 = _G.ChatFrame1
@@ -762,19 +773,19 @@ end
 -- The sidebar's footprint left of the chat panel under the current look: its
 -- width, a Separate Sidebar's gap, less the stock column's seat overlap; 0
 -- while it sits on the right or never shows.
-local function GenesisFP(cfg)
-    if cfg.sidebarRight or cfg.sidebarVisibility == "never" then
+local function GenesisFP(conf)
+    if conf.sidebarRight or conf.sidebarVisibility == "never" then
         return 0
     end
     return min(
         100,
-        max(30, cfg.sidebarWidth or (ECHAT.SidebarWidthDefault and ECHAT.SidebarWidthDefault() or 40))
-    ) + ((cfg.sidebarSeparate == true) and (cfg.sidebarSeparateSpacing or 8) or 0) - (ECHAT.SB_KIT and ECHAT.SB_KIT.col.dx or 0)
+        upper(30, conf.sidebarWidth or (CHAT.SidebarWidthDefault and CHAT.SidebarWidthDefault() or 40))
+    ) + ((conf.sidebarSeparate == true) and (conf.sidebarSeparateSpacing or 8) or 0) - (CHAT.SB_KIT and CHAT.SB_KIT.col.dx or 0)
 end
 
 local function CaptureChatPositionGenesis()
-    local cfg = ECHAT.DB()
-    if not cfg then
+    local conf = CHAT.DB()
+    if not conf then
         return
     end
     -- One-time ownership migration: positions saved before the Edit Mode
@@ -782,20 +793,20 @@ local function CaptureChatPositionGenesis()
     -- an ancient spot would visibly move their chat on update). Discard
     -- once so genesis captures the CURRENT placement.
     local stale = false
-    if cfg._chatPosOwnership ~= 1 then
-        cfg._chatPosOwnership = 1
-        stale = cfg.chatPosition ~= nil
-        cfg.chatPosition = nil
+    if conf._chatPosOwnership ~= 1 then
+        conf._chatPosOwnership = 1
+        stale = conf.chatPosition ~= nil
+        conf.chatPosition = nil
     end
-    if cfg.chatPosition then
+    if conf.chatPosition then
         return
     end
     local cf1 = _G.ChatFrame1
     if not cf1 then
         return
     end
-    local left, bottom = cf1:GetLeft(), cf1:GetBottom()
-    if not (left and bottom) then
+    local leftX, bottom = cf1:GetLeft(), cf1:GetBottom()
+    if not (leftX and bottom) then
         return
     end
     -- Blizzard's chat spot leaves no room for our sidebar on its left, so the
@@ -803,12 +814,12 @@ local function CaptureChatPositionGenesis()
     -- position the migration above just dropped: that layout already had the
     -- sidebar. The footprint is kept (plain data) for GenesisSettle below.
     if not stale then
-        local fp = GenesisFP(cfg)
-        left = left + fp / (cf1:GetScale() or 1)
-        cfg._chatGenesisFP, cfg._chatGenesisX = fp, left
-        ns._chatGenesisNow = true
+        local fp = GenesisFP(conf)
+        leftX = leftX + fp / (cf1:GetScale() or 1)
+        conf._chatGenesisFP, conf._chatGenesisX = fp, leftX
+        mod._chatGenesisNow = true
     end
-    cfg.chatPosition = { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = left, y = bottom }
+    conf.chatPosition = { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = leftX, y = bottom }
 end
 
 -- A fresh install settles its look after that capture (the style picker, a
@@ -817,32 +828,32 @@ end
 -- difference while chat still sits where the capture put it (a drag ends
 -- this), until no style choice is pending.
 local function GenesisSettle()
-    local cfg = ECHAT.DB()
-    local old = cfg and cfg._chatGenesisFP
-    if not old or ns._chatGenesisNow then
+    local conf = CHAT.DB()
+    local old = conf and conf._chatGenesisFP
+    if not old or mod._chatGenesisNow then
         return
     end
-    local pos, cf1 = cfg.chatPosition, _G.ChatFrame1
+    local place, cf1 = conf.chatPosition, _G.ChatFrame1
     if
         not (
-            pos
+            place
             and cf1
-            and pos.point == "BOTTOMLEFT"
-            and cfg._chatGenesisX
-            and pos.x
-            and abs(pos.x - cfg._chatGenesisX) < 0.5
+            and place.point == "BOTTOMLEFT"
+            and conf._chatGenesisX
+            and place.x
+            and abs(place.x - conf._chatGenesisX) < 0.5
         )
     then
-        cfg._chatGenesisFP, cfg._chatGenesisX = nil, nil
+        conf._chatGenesisFP, conf._chatGenesisX = nil, nil
         return
     end
-    local now = GenesisFP(cfg)
-    if now ~= old then
-        pos.x = pos.x + (now - old) / (cf1:GetScale() or 1)
-        cfg._chatGenesisFP, cfg._chatGenesisX = now, pos.x
+    local nowTime = GenesisFP(conf)
+    if nowTime ~= old then
+        place.x = place.x + (nowTime - old) / (cf1:GetScale() or 1)
+        conf._chatGenesisFP, conf._chatGenesisX = nowTime, place.x
     end
     if not (CludesUIDB and CludesUIDB.styleChoicePending) then
-        cfg._chatGenesisFP, cfg._chatGenesisX = nil, nil
+        conf._chatGenesisFP, conf._chatGenesisX = nil, nil
     end
 end
 
@@ -864,8 +875,8 @@ local function InstallChatAnchorGuard()
     end
     d.anchorGuarded = true
     hooksecurefunc(cf1, "ApplySystemAnchor", function()
-        local cfg = ECHAT.DB()
-        if cfg and cfg.chatPosition then
+        local conf = CHAT.DB()
+        if conf and conf.chatPosition then
             chatReassert:Show()
         end
     end)
@@ -875,8 +886,8 @@ local function InstallChatAnchorGuard()
     -- inward. The same re-assert puts our insets back and re-anchors.
     if cf1.UpdateClampOffsets then
         hooksecurefunc(cf1, "UpdateClampOffsets", function()
-            local cfg = ECHAT.DB()
-            if cfg and cfg.chatPosition then
+            local conf = CHAT.DB()
+            if conf and conf.chatPosition then
                 chatReassert:Show()
             end
         end)
@@ -894,7 +905,7 @@ end
 -- Button child Edit Mode shows on enter and hides on exit) gets the same
 -- in-place treatment: sizing belongs to our grip, and a live handle here
 -- would write Edit Mode's size store behind the size lane's back.
-function ECHAT.SuppressChatEditModeSelection()
+function CHAT.SuppressChatEditModeSelection()
     local cf1 = _G.ChatFrame1
     if not cf1 then
         return
@@ -902,15 +913,15 @@ function ECHAT.SuppressChatEditModeSelection()
     CludesUI.SetEditModeChildInert(cf1.Selection, true)
     CludesUI.SetEditModeChildInert(cf1.EditModeResizeButton, true)
 end
-ns._CaptureChatPositionGenesis = CaptureChatPositionGenesis
-ns._GenesisSettle = GenesisSettle
-ns._InstallChatAnchorGuard = InstallChatAnchorGuard
+mod._CaptureChatPositionGenesis = CaptureChatPositionGenesis
+mod._GenesisSettle = GenesisSettle
+mod._InstallChatAnchorGuard = InstallChatAnchorGuard
 
 -- Main chat size is applied as a second corner anchor inside
 -- ApplyChatPosition (cfg.chatSize; anchor-determined rect, never SetSize).
 -- Undocked windows stay Blizzard-sized. This stub remains for callers.
 local function ApplyChatSize() end
-ECHAT.ApplyChatSize = ApplyChatSize
+CHAT.ApplyChatSize = ApplyChatSize
 
 -- Main chat resize grip: our button, ANCHOR-driven sizing. Blizzard never
 -- shows ChatFrame1's own resize button (Edit Mode owned main chat sizing,
@@ -931,8 +942,8 @@ ECHAT.ApplyChatSize = ApplyChatSize
 -- frame for exactly this timing). Persistence: cfg.chatSize, applied as
 -- the second corner anchor by ApplyChatPosition -- Blizzard's saved-
 -- dimensions restore explicitly skips the main window.
-local function BuildMainChatResizeGrip(cf)
-    local d = CFD(cf)
+local function BuildMainChatResizeGrip(castFrame)
+    local d = CFD(castFrame)
     if d.resizeGrip or not d.bg then
         return
     end
@@ -942,13 +953,13 @@ local function BuildMainChatResizeGrip(cf)
     -- Anchored to the chat frame like the undocked buttons, so the icon
     -- hugs the true resize corner regardless of panel insets; nudged out
     -- past the frame edge so it sits in the panel's corner, not the text's.
-    grip:SetPoint("BOTTOMRIGHT", cf, "BOTTOMRIGHT", 4, -3)
+    grip:SetPoint("BOTTOMRIGHT", castFrame, "BOTTOMRIGHT", 4, -3)
     grip:SetFrameStrata("HIGH")
-    local tex = grip:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints()
-    tex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\resize_element.png")
-    tex:SetDesaturated(true)
-    tex:SetVertexColor(1, 1, 1)
+    local texture = grip:CreateTexture(nil, "ARTWORK")
+    texture:SetAllPoints()
+    texture:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\resize_element.png")
+    texture:SetDesaturated(true)
+    texture:SetVertexColor(1, 1, 1)
     grip:SetAlpha(0.4)
 
     -- Damage-meters drag mechanics, anchor-driven: per tick the TOPLEFT stays
@@ -971,7 +982,7 @@ local function BuildMainChatResizeGrip(cf)
             return
         end
         local cx, cy = GetCursorPosition()
-        local es = cf:GetEffectiveScale()
+        local es = castFrame:GetEffectiveScale()
         local dx = cx / es - startX
         local dy = startY - cy / es
         local shiftDown = IsShiftKeyDown()
@@ -1002,19 +1013,19 @@ local function BuildMainChatResizeGrip(cf)
         curW, curH = newW, newH
         -- Full re-anchor per tick: a mid-drag Edit Mode anchor write would
         -- otherwise leave a third point and overconstrain the rect.
-        ClearFramePoints(cf)
-        SetFramePoint(cf, "TOPLEFT", UIParent, "BOTTOMLEFT", anchorLeft, anchorTop)
-        SetFramePoint(cf, "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", anchorLeft + newW, anchorTop - newH)
+        ClearFramePoints(castFrame)
+        SetFramePoint(castFrame, "TOPLEFT", UIParent, "BOTTOMLEFT", anchorLeft, anchorTop)
+        SetFramePoint(castFrame, "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", anchorLeft + newW, anchorTop - newH)
         shiftWas = shiftDown
         -- The visible stack is positioned numerically; sync per tick so the
         -- panels ride the drag with zero lag.
-        if ECHAT.PositionChatPanelsNow then
-            ECHAT.PositionChatPanelsNow()
+        if CHAT.PositionChatPanelsNow then
+            CHAT.PositionChatPanelsNow()
         end
     end)
 
-    grip:SetScript("OnMouseDown", function(_, button)
-        if button ~= "LeftButton" then
+    grip:SetScript("OnMouseDown", function(_, btnFrame)
+        if btnFrame ~= "LeftButton" then
             return
         end
         -- Belt behind the combat hide: no drag may start in lockdown even
@@ -1023,69 +1034,69 @@ local function BuildMainChatResizeGrip(cf)
             return
         end
         local issecret = _G.issecretvalue
-        local left, top = cf:GetLeft(), cf:GetTop()
-        local w, h = cf:GetWidth(), cf:GetHeight()
-        if not (left and top and w and h) then
+        local leftX, topY = castFrame:GetLeft(), castFrame:GetTop()
+        local wid, hgt = castFrame:GetWidth(), castFrame:GetHeight()
+        if not (leftX and topY and wid and hgt) then
             return
         end
-        if issecret and (issecret(left) or issecret(top) or issecret(w) or issecret(h)) then
+        if issecret and (issecret(leftX) or issecret(topY) or issecret(wid) or issecret(hgt)) then
             return
         end
         -- Hold the position enforcement for the whole drag: our per-tick
         -- corner anchors rule until release.
-        ns._chatSizingActive = true
-        ClearFramePoints(cf)
-        SetFramePoint(cf, "TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
-        SetFramePoint(cf, "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", left + w, top - h)
-        anchorLeft, anchorTop = left, top
+        mod._chatSizingActive = true
+        ClearFramePoints(castFrame)
+        SetFramePoint(castFrame, "TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
+        SetFramePoint(castFrame, "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", leftX + wid, topY - hgt)
+        anchorLeft, anchorTop = leftX, topY
         local cx, cy = GetCursorPosition()
-        local es = cf:GetEffectiveScale()
+        local es = castFrame:GetEffectiveScale()
         startX, startY = cx / es, cy / es
-        startW, startH = w, h
-        curW, curH = w, h
+        startW, startH = wid, hgt
+        curW, curH = wid, hgt
         shiftWas = false
         sizing = true
         ticker:Show()
         -- Held for the whole drag: the cursor can slide off the grip mid-
         -- drag, and its OnLeave alone would disarm the geometry follower
         -- while the frame is still resizing.
-        if ECHAT.FollowArm then
-            ECHAT.FollowArm()
+        if CHAT.FollowArm then
+            CHAT.FollowArm()
         end
     end)
-    grip:SetScript("OnMouseUp", function(_, button)
-        if button ~= "LeftButton" or not sizing then
+    grip:SetScript("OnMouseUp", function(_, btnFrame)
+        if btnFrame ~= "LeftButton" or not sizing then
             return
         end
         sizing = false
         ticker:Hide()
-        ns._chatSizingActive = nil
-        if ECHAT.FollowRelease then
-            ECHAT.FollowRelease()
+        mod._chatSizingActive = nil
+        if CHAT.FollowRelease then
+            CHAT.FollowRelease()
         end
         -- Save from the drag's own numbers (never frame reads: the rect
         -- resolves in the engine layout pass and can lag the final tick).
         -- Persistence is OUR DB key -- Blizzard's saved-dimensions restore
         -- explicitly skips the main window ("controlled via edit mode").
-        local cfg = ECHAT.DB()
-        if cfg and curW and curH then
-            local w = math.floor(curW + 0.5)
-            local h = math.floor(curH + 0.5)
-            cfg.chatSize = { w = w, h = h }
-            cfg.chatPosition = {
+        local conf = CHAT.DB()
+        if conf and curW and curH then
+            local wid = math.floor(curW + 0.5)
+            local hgt = math.floor(curH + 0.5)
+            conf.chatSize = { w = wid, h = hgt }
+            conf.chatPosition = {
                 point = "BOTTOMLEFT",
                 relPoint = "BOTTOMLEFT",
                 x = anchorLeft,
-                y = anchorTop - h,
+                y = anchorTop - hgt,
             }
         end
         -- The apply also hands the rect to the Edit Mode store (its next-frame
         -- store pass; a quiet no-op when the store already agrees).
-        if ECHAT.ApplyChatPosition then
-            ECHAT.ApplyChatPosition()
+        if CHAT.ApplyChatPosition then
+            CHAT.ApplyChatPosition()
         end
-        if ECHAT.TabsRefreshNow then
-            ECHAT.TabsRefreshNow()
+        if CHAT.TabsRefreshNow then
+            CHAT.TabsRefreshNow()
         end
     end)
     -- Lock toggled or panel hidden mid-drag: end the drag and release the
@@ -1094,9 +1105,9 @@ local function BuildMainChatResizeGrip(cf)
         if sizing then
             sizing = false
             ticker:Hide()
-            ns._chatSizingActive = nil
-            if ECHAT.FollowRelease then
-                ECHAT.FollowRelease()
+            mod._chatSizingActive = nil
+            if CHAT.FollowRelease then
+                CHAT.FollowRelease()
             end
         end
     end)
@@ -1105,14 +1116,14 @@ local function BuildMainChatResizeGrip(cf)
     -- panels ride the drag live.
     grip:SetScript("OnEnter", function(self)
         self:SetAlpha(0.75)
-        if ECHAT.FollowArm then
-            ECHAT.FollowArm()
+        if CHAT.FollowArm then
+            CHAT.FollowArm()
         end
     end)
     grip:SetScript("OnLeave", function(self)
         self:SetAlpha(0.4)
-        if ECHAT.FollowRelease then
-            ECHAT.FollowRelease()
+        if CHAT.FollowRelease then
+            CHAT.FollowRelease()
         end
     end)
     -- Combat gate: resizing is disabled in combat, matching Edit Mode's own
@@ -1123,12 +1134,12 @@ local function BuildMainChatResizeGrip(cf)
     combatGate:RegisterEvent("PLAYER_REGEN_DISABLED")
     combatGate:RegisterEvent("PLAYER_REGEN_ENABLED")
     combatGate:SetScript("OnEvent", function()
-        if ECHAT.ApplyLockChatSize then
-            ECHAT.ApplyLockChatSize()
+        if CHAT.ApplyLockChatSize then
+            CHAT.ApplyLockChatSize()
         end
     end)
 end
-ns._BuildMainChatResizeGrip = BuildMainChatResizeGrip
+mod._BuildMainChatResizeGrip = BuildMainChatResizeGrip
 
 -- Unlock-mode placements of ChatFrame1 (the Chat mover's drag start, every
 -- drag tick, arrow/cog nudges) collapse it to ONE anchor point: the mover
@@ -1143,46 +1154,53 @@ ns._BuildMainChatResizeGrip = BuildMainChatResizeGrip
 -- re-places whichever anchor GetPoint lists first, the size corner included.
 -- Idempotent -- a frame already carrying two points is left alone.
 local function KeepMainChatSizeCorner()
-    local cfg = ECHAT.DB()
-    local size = cfg and cfg.chatSize
-    if not (size and size.w and size.h) then
+    local conf = CHAT.DB()
+    local dim = conf and conf.chatSize
+    if not (dim and dim.w and dim.h) then
         return
     end
     local cf1 = _G.ChatFrame1
     if not cf1 or cf1:GetNumPoints() ~= 1 then
         return
     end
-    local point, rel, relPoint, x, y = cf1:GetPoint(1)
+    local anchorPoint, rel, relPoint, posX, posY = cf1:GetPoint(1)
     if rel ~= UIParent then
         return
     end
     local issecret = _G.issecretvalue
-    if issecret and (issecret(x) or issecret(y)) then
+    if issecret and (issecret(posX) or issecret(posY)) then
         return
     end
-    if type(x) ~= "number" or type(y) ~= "number" then
+    if type(posX) ~= "number" or type(posY) ~= "number" then
         return
     end
-    relPoint = relPoint or point
-    local w, h = size.w, size.h
-    local opp = SIZE_CORNER[point]
-    local frac = POINT_FRAC[point]
+    relPoint = relPoint or anchorPoint
+    local wid, hgt = dim.w, dim.h
+    local opp = SIZE_CORNER[anchorPoint]
+    local frac = POINT_FRAC[anchorPoint]
     if opp then
-        SetFramePoint(cf1, opp[1], UIParent, relPoint, x + opp[2] * w, y + opp[3] * h)
+        SetFramePoint(cf1, opp[1], UIParent, relPoint, posX + opp[2] * wid, posY + opp[3] * hgt)
     elseif frac then
         ClearFramePoints(cf1)
-        SetFramePoint(cf1, "TOPLEFT", UIParent, relPoint, x - frac[1] * w, y + (1 - frac[2]) * h)
-        SetFramePoint(cf1, "BOTTOMRIGHT", UIParent, relPoint, x + (1 - frac[1]) * w, y - frac[2] * h)
+        SetFramePoint(cf1, "TOPLEFT", UIParent, relPoint, posX - frac[1] * wid, posY + (1 - frac[2]) * hgt)
+        SetFramePoint(
+            cf1,
+            "BOTTOMRIGHT",
+            UIParent,
+            relPoint,
+            posX + (1 - frac[1]) * wid,
+            posY - frac[2] * hgt
+        )
     end
 end
-ns._KeepMainChatSizeCorner = KeepMainChatSizeCorner
+mod._KeepMainChatSizeCorner = KeepMainChatSizeCorner
 
 -- Lock Main Chat Size: hides OUR grip (main chat's sole resize surface).
 -- Blizzard's ChatFrame1ResizeButton stays permanently dead -- alpha + mouse
 -- only, never isLocked/FCF_SetLocked (the dock-list/isLocked poison class).
-function ECHAT.ApplyLockChatSize()
-    local cfg = ECHAT.DB()
-    local locked = cfg and cfg.lockChatSize == true
+function CHAT.ApplyLockChatSize()
+    local conf = CHAT.DB()
+    local locked = conf and conf.lockChatSize == true
     local btn = _G.ChatFrame1ResizeButton
     if btn then
         btn:SetAlpha(0)
@@ -1200,4 +1218,4 @@ function ECHAT.ApplyLockChatSize()
     end
 end
 
-I.broken = false
+Inner.broken = false

@@ -17,27 +17,24 @@ end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local F = module.Feature(
-    "townMap",
-    {
-        enabled = false,
-        capitalsOnly = true,
-        size = 16,
-        spirit = true,
-        class = true,
-        profession = true,
-        flight = true,
-        inn = true,
-        bank = true,
-        stable = false,
-        repair = true,
-        supplies = true,
-        vendors = false,
-        mail = true,
-        minimapMail = true,
-        minimapSpirit = true,
-    }
-)
+local F = module.Feature("townMap", {
+    enabled = false,
+    capitalsOnly = true,
+    size = 16,
+    spirit = true,
+    class = true,
+    profession = true,
+    flight = true,
+    inn = true,
+    bank = true,
+    stable = false,
+    repair = true,
+    supplies = true,
+    vendors = false,
+    mail = true,
+    minimapMail = true,
+    minimapSpirit = true,
+})
 local Get, Enabled = F.Get, F.Enabled
 
 local CLASS_ICON = "Interface\\Icons\\ClassIcon_"
@@ -88,13 +85,13 @@ local MAP_ART = {
 }
 local ROUND_ART = { spirit = true }
 
-local data
+local payload
 local function Data()
-    if not data then
-        data = module.TownMapData()
+    if not payload then
+        payload = module.TownMapData()
         module.TownMapData = nil
     end
-    return data
+    return payload
 end
 
 --- The service NPCs by map, for other features (Professions' gathering trainers).
@@ -116,14 +113,14 @@ local function IsFile(art)
     return art:find("\\", 1, true) ~= nil
 end
 
-local function TryArt(icon, art)
+local function TryArt(glyph, art)
     if IsFile(art) then
-        return icon:SetTexture(art)
+        return glyph:SetTexture(art)
     end
     if not C_Texture.GetAtlasInfo(art) then
         return false
     end
-    icon:SetAtlas(art)
+    glyph:SetAtlas(art)
     return true
 end
 
@@ -149,26 +146,26 @@ local function ClassIcon(token)
 end
 
 local function Paint(pin, npc)
-    local icon, kind = pin.icon, npc[3]
+    local glyph, kindOf = pin.icon, npc[3]
     SetRound(pin, false)
-    for _, art in ipairs(MAP_ART[kind] or EMPTY) do
-        if TryArt(icon, art) then
-            icon:SetTexCoord(0, 1, 0, 1)
+    for _, art in ipairs(MAP_ART[kindOf] or EMPTY) do
+        if TryArt(glyph, art) then
+            glyph:SetTexCoord(0, 1, 0, 1)
             pin.border:Hide()
             return
         end
     end
-    if ROUND_ART[kind] then
+    if ROUND_ART[kindOf] then
         SetRound(pin, true)
-        icon:SetTexture(CATEGORIES[kind][2])
-        icon:SetTexCoord(0, 1, 0, 1)
+        glyph:SetTexture(CATEGORIES[kindOf][2])
+        glyph:SetTexCoord(0, 1, 0, 1)
         pin.border:Hide()
         return
     end
-    icon:SetTexture(
-        CATEGORIES[kind][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
+    glyph:SetTexture(
+        CATEGORIES[kindOf][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
     )
-    icon:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
+    glyph:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
     pin.border:Show()
 end
 
@@ -179,15 +176,15 @@ local function ShowTip(pin)
     end
     GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
-    local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if title ~= npc[4] then
-        GameTooltip:AddLine(title, CludesUI.Kit.Accent())
+    local titleText = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
+    if titleText ~= npc[4] then
+        GameTooltip:AddLine(titleText, CludesUI.Kit.Accent())
     end
     GameTooltip:Show()
 end
 
-local function NewPin(parent)
-    local pin = CreateFrame("Frame", nil, parent)
+local function NewPin(hostFrame)
+    local pin = CreateFrame("Frame", nil, hostFrame)
     pin:SetMouseMotionEnabled(true)
     pin:SetMouseClickEnabled(false)
     pin.border = pin:CreateTexture(nil, "BACKGROUND")
@@ -216,28 +213,28 @@ local function FlightsElsewhere()
     return mt and mt.On and mt.On("flights")
 end
 
-local function Wanted(npc, faction, class, shops)
-    local kind = npc[3]
-    local cat = CATEGORIES[kind]
-    if not cat or not Get(cat[1]) then
+local function Wanted(npc, faction, classFile, shops)
+    local kindOf = npc[3]
+    local category = CATEGORIES[kindOf]
+    if not category or not Get(category[1]) then
         return false
     end
     if not (npc[7] or ""):find(faction, 1, true) then
         return false
     end
-    if kind == "mail" or kind == "spirit" then
+    if kindOf == "mail" or kindOf == "spirit" then
         return true
     end
-    if not (shops or EVERYWHERE[kind]) then
+    if not (shops or EVERYWHERE[kindOf]) then
         return false
     end
-    if kind == "class" and npc[6] ~= class then
+    if kindOf == "class" and npc[6] ~= classFile then
         return false
     end
-    if kind == "stable" and class ~= "HUNTER" then
+    if kindOf == "stable" and classFile ~= "HUNTER" then
         return false
     end
-    if kind == "flight" and FlightsElsewhere() then
+    if kindOf == "flight" and FlightsElsewhere() then
         return false
     end
     return true
@@ -245,24 +242,24 @@ end
 
 local function Anchor(p)
     local canvas = layer:GetParent()
-    local w, h = canvas:GetSize()
+    local wid, hgt = canvas:GetSize()
     local cs = canvas:GetScale()
     p:SetScale(1 / cs)
     p:ClearAllPoints()
-    p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * w * cs, -p.y * h * cs)
+    p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * wid * cs, -p.y * hgt * cs)
 end
 
 local function Clear()
-    for i = 1, used do
-        pins[i]:Hide()
-        pins[i].npc = nil
+    for idx = 1, used do
+        pins[idx]:Hide()
+        pins[idx].npc = nil
     end
     used = 0
 end
 
 local function Rescale()
-    for i = 1, used do
-        Anchor(pins[i])
+    for idx = 1, used do
+        Anchor(pins[idx])
     end
 end
 
@@ -274,8 +271,8 @@ local function Place(npc)
         pins[used] = p
     end
     p.npc, p.x, p.y = npc, npc[1] / 100, npc[2] / 100
-    local size = Get("size")
-    p:SetSize(size, size)
+    local dim = Get("size")
+    p:SetSize(dim, dim)
     Paint(p, npc)
     Anchor(p)
     p:Show()
@@ -292,11 +289,11 @@ local function Draw()
     end
     local d = Data()
     local faction = Faction()
-    local _, class = UnitClass("player")
+    local _, classFile = UnitClass("player")
     local shops = not Get("capitalsOnly") or d.capitals[mapID]
-    for _, list in ipairs({ d.npcs[mapID], d.mail[mapID], d.spirit[mapID] }) do
-        for _, npc in ipairs(list or EMPTY) do
-            if Wanted(npc, faction, class, shops) then
+    for _, entries in ipairs({ d.npcs[mapID], d.mail[mapID], d.spirit[mapID] }) do
+        for _, npc in ipairs(entries or EMPTY) do
+            if Wanted(npc, faction, classFile, shops) then
                 Place(npc)
             end
         end
@@ -364,16 +361,16 @@ local spots = {}
 
 local function MiniNew()
     local pin = NewPin(Minimap)
-    local size = Get("size") * 0.9
-    pin:SetSize(size, size)
+    local dim = Get("size") * 0.9
+    pin:SetSize(dim, dim)
     return pin
 end
 
-local function MiniPaint(pin, list, i)
-    pin.npc = list[i]
-    local size = Get("size") * 0.9
-    pin:SetSize(size, size)
-    Paint(pin, list[i])
+local function MiniPaint(pin, entries, idx)
+    pin.npc = entries[idx]
+    local dim = Get("size") * 0.9
+    pin:SetSize(dim, dim)
+    Paint(pin, entries[idx])
 end
 
 local function MiniRefresh()
@@ -407,8 +404,8 @@ local function MiniRefresh()
             max = MINI_MAX,
             new = MiniNew,
             paint = MiniPaint,
-            xy = function(list, i)
-                return list[i][1] / 100, list[i][2] / 100
+            xy = function(entries, idx)
+                return entries[idx][1] / 100, entries[idx][2] / 100
             end,
         })
     mini:Set(map, spots, #spots)

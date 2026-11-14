@@ -20,18 +20,18 @@ then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the friends tooltip's names and notes take font families through SetFontFamily, and the tracking button reads WoW Forever's Gamepad interface style through PadGamepadUI)
-local ns = select(2, ...)
-CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
-ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+local mod = select(2, ...)
+CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
-local EBS = CludesUI.Lite.NewAddon("CludesUIMinimap")
+local SKIN = CludesUI.Lite.NewAddon("CludesUIMinimap")
 
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 
 -- Per-size offset/shift defaults for the textured border styles (same as unit frames).
 CludesUI.RegisterBorderDefaults("minimap", CludesUI.BORDER_DEFAULTS_FRAMES)
 
-local EG = CludesUI.CLUDES_GREEN
+local ACC = CludesUI.CLUDES_GREEN
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
 local FFD, GetFFD = CludesUI.NewFrameData()
@@ -39,7 +39,7 @@ local FFD, GetFFD = CludesUI.NewFrameData()
 -- Call-site compat only; the minimap module is never force-disabled here.
 local TEMP_DISABLED = {}
 
-local defaults = {
+local defaultSet = {
     profile = {
         minimap = {
             enabled = true,
@@ -191,41 +191,41 @@ local defaults = {
 -------------------------------------------------------------------------------
 --  Utility
 -------------------------------------------------------------------------------
-local function GetBorderColor(cfg)
-    if cfg.useClassColor then
+local function GetBorderColor(conf)
+    if conf.useClassColor then
         -- Legacy flag name kept for SV compat; it means "use the live accent color".
-        return EG.r, EG.g, EG.b, 1
+        return ACC.r, ACC.g, ACC.b, 1
     end
-    return cfg.borderR, cfg.borderG, cfg.borderB, cfg.borderA or 1
+    return conf.borderR, conf.borderG, conf.borderB, conf.borderA or 1
 end
 
 -- Border colour precedence (3 swatches): borderUseClassColor > useClassColor (legacy) >
 -- borderColor > legacy borderR/G/B, so pre-style users keep their colour until they touch the new controls. Clock/zone edge boxes share this precedence.
-local function GetBorderStyleColor(cfg)
-    if cfg.borderUseClassColor and CludesUI.GetClassColor then
+local function GetBorderStyleColor(conf)
+    if conf.borderUseClassColor and CludesUI.GetClassColor then
         local cc = CludesUI.GetClassColor(select(2, UnitClass("player")))
         if cc then
-            return cc.r, cc.g, cc.b, cfg.borderA or 1
+            return cc.r, cc.g, cc.b, conf.borderA or 1
         end
     end
-    if cfg.useClassColor then
-        return EG.r, EG.g, EG.b, cfg.borderA or 1
+    if conf.useClassColor then
+        return ACC.r, ACC.g, ACC.b, conf.borderA or 1
     end
-    local c = cfg.borderColor
+    local c = conf.borderColor
     if c then
-        return c.r, c.g, c.b, cfg.borderA or 1
+        return c.r, c.g, c.b, conf.borderA or 1
     end
-    return GetBorderColor(cfg)
+    return GetBorderColor(conf)
 end
 
 -- The clock and zone Edge Box fill: the border colour above, or black under
 -- a square frame on the Forever client (its bronze frame takes no colour, and
 -- the border colour rows are hidden there). An EBS field.
-function EBS._EdgeBoxColor(cfg)
-    if EBS._fvSquare then
+function SKIN._EdgeBoxColor(conf)
+    if SKIN._fvSquare then
         return 0, 0, 0
     end
-    return GetBorderStyleColor(cfg)
+    return GetBorderStyleColor(conf)
 end
 
 -------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ local ApplyAll -- forward declaration
 
 -- Keyed queue entry: repeat requests before regen collapse into one apply.
 local function QueueApplyAll()
-    ns.CombatQueue.Defer("ApplyAll", ApplyAll)
+    mod.CombatQueue.Defer("ApplyAll", ApplyAll)
 end
 
 -------------------------------------------------------------------------------
@@ -261,7 +261,7 @@ local minimapDecorations = {
 
 local cachedAddonButtons = {}
 local _addonVisible = {} -- persistent: tracks whether each addon WANTS its button visible
-EBS._suppressVisTrack = false -- flag to suppress tracking during our own Show/Hide calls
+SKIN._suppressVisTrack = false -- flag to suppress tracking during our own Show/Hide calls
 local flyoutOwnedFrames = {}
 
 -- EBS._HVRevealMapHover (defined in CUI_Minimap_Layout.lua; namespace-scoped, not a
@@ -274,23 +274,23 @@ local flyoutOwnedFrames = {}
 -- goes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_Minimap_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(ns, "_internals", {
+CludesUI.NewInternals(mod, "_internals", {
     _addonVisible = _addonVisible,
     ADDON_NAME = ADDON_NAME,
     cachedAddonButtons = cachedAddonButtons,
-    defaults = defaults,
-    EBS = EBS,
-    EG = EG,
+    defaults = defaultSet,
+    EBS = SKIN,
+    EG = ACC,
     flyoutOwnedFrames = flyoutOwnedFrames,
     GetBorderStyleColor = GetBorderStyleColor,
     GetFFD = GetFFD,
     minimapDecorations = minimapDecorations,
-    PP = PP,
+    PP = Pix,
     QueueApplyAll = QueueApplyAll,
     TEMP_DISABLED = TEMP_DISABLED,
     applyAllSetters = {
-        function(v)
-            ApplyAll = v
+        function(val)
+            ApplyAll = val
         end,
     },
     applyMinimapSetters = {},

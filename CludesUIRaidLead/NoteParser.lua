@@ -28,11 +28,11 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-local _, ns = ...
-ns = ns or {}
+local _, mod = ...
+mod = mod or {}
 
 local Parser = {}
-ns.NoteParser = Parser
+mod.NoteParser = Parser
 
 local MARKERS = {
     star = 1,
@@ -47,46 +47,46 @@ local MARKERS = {
 }
 
 --- Seconds from "{time:...}" contents, or nil. "1:30" -> 90, "95" -> 95.
-function Parser.Seconds(spec)
-    local m, s = spec:match("^%s*(%d+):(%d+%.?%d*)%s*$")
+function Parser.Seconds(specInfo)
+    local m, s = specInfo:match("^%s*(%d+):(%d+%.?%d*)%s*$")
     if m then
         return tonumber(m) * 60 + tonumber(s)
     end
-    local only = spec:match("^%s*(%d+%.?%d*)%s*$")
+    local only = specInfo:match("^%s*(%d+%.?%d*)%s*$")
     return only and tonumber(only) or nil
 end
 
 -- Splits a note into reminder chunks: each starts at a {time:...} tag and runs
 -- to the next one or the end of the line. Works whether or not the pasted
 -- text kept its line breaks.
-local function Chunks(text)
-    local out = {}
-    text = text:gsub("\r", "\n")
-    for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+local function Chunks(textValue)
+    local result = {}
+    textValue = textValue:gsub("\r", "\n")
+    for lineTex in (textValue .. "\n"):gmatch("([^\n]*)\n") do
         local starts = {}
-        local pos = 1
+        local place = 1
         while true do
-            local a = line:find("{time:", pos, true)
+            local a = lineTex:find("{time:", place, true)
             if not a then
                 break
             end
             starts[#starts + 1] = a
-            pos = a + 6
+            place = a + 6
         end
-        for i, a in ipairs(starts) do
-            local b = (starts[i + 1] or (#line + 1)) - 1
-            out[#out + 1] = line:sub(a, b)
+        for idx, a in ipairs(starts) do
+            local b = (starts[idx + 1] or (#lineTex + 1)) - 1
+            result[#result + 1] = lineTex:sub(a, b)
         end
     end
-    return out
+    return result
 end
 
 --- The words of a line that could be player names: letters only (accented
 --- letters included), 2 to 12 characters, an optional -Realm dropped.
-function Parser.Words(text)
+function Parser.Words(textValue)
     local words = {}
-    for w in text:gmatch("[^%s%p%d]+[%-]?[^%s%p%d]*") do
-        local name = w:match("^([^%-]+)") or w
+    for wid in textValue:gmatch("[^%s%p%d]+[%-]?[^%s%p%d]*") do
+        local name = wid:match("^([^%-]+)") or wid
         if #name >= 2 then
             words[#words + 1] = name
         end
@@ -98,39 +98,39 @@ end
 --- Returns a list of { at = seconds, text = shown text, raw = line, names =
 --- {lowercase names} or nil, roles = { TANK = true, ... } or nil,
 --- everyone = bool }, sorted by time, and the number of phase lines skipped.
-function Parser.Parse(text, spellName)
-    local list, skipped = {}, 0
-    for _, chunk in ipairs(Chunks(text or "")) do
-        local spec, rest = chunk:match("^{time:([^}]*)}(.*)$")
-        if spec then
-            local timePart, extra = spec:match("^([^,]*),(.*)$")
+function Parser.Parse(textValue, spellName)
+    local entries, skipped = {}, 0
+    for _, chunk in ipairs(Chunks(textValue or "")) do
+        local specInfo, rest = chunk:match("^{time:([^}]*)}(.*)$")
+        if specInfo then
+            local timePart, extra = specInfo:match("^([^,]*),(.*)$")
             if extra then
                 skipped = skipped + 1
             else
-                local at = Parser.Seconds(spec)
+                local at = Parser.Seconds(specInfo)
                 if at then
-                    local entry = { at = at, raw = chunk }
+                    local record = { at = at, raw = chunk }
                     local body = rest
                     -- Tags that pick who the line is for.
                     body = body:gsub("{(%a+)}", function(tag)
                         local t = tag:lower()
                         if t == "everyone" then
-                            entry.everyone = true
+                            record.everyone = true
                             return ""
                         end
                         if t == "tank" or t == "tanks" then
-                            entry.roles = entry.roles or {}
-                            entry.roles.TANK = true
+                            record.roles = record.roles or {}
+                            record.roles.TANK = true
                             return ""
                         end
                         if t == "healer" or t == "healers" or t == "heal" then
-                            entry.roles = entry.roles or {}
-                            entry.roles.HEALER = true
+                            record.roles = record.roles or {}
+                            record.roles.HEALER = true
                             return ""
                         end
                         if t == "dps" or t == "damager" then
-                            entry.roles = entry.roles or {}
-                            entry.roles.DAMAGER = true
+                            record.roles = record.roles or {}
+                            record.roles.DAMAGER = true
                             return ""
                         end
                         local mark = MARKERS[t]
@@ -140,30 +140,30 @@ function Parser.Parse(text, spellName)
                         return "{" .. tag .. "}"
                     end)
                     -- Spells become their names.
-                    body = body:gsub("{spell:(%d+)}", function(id)
-                        local n = spellName and spellName(tonumber(id))
-                        return n or ""
+                    body = body:gsub("{spell:(%d+)}", function(ident)
+                        local num = spellName and spellName(tonumber(ident))
+                        return num or ""
                     end)
                     -- Names are read from the coloured text before colours go.
                     body = body:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T.-|t", "")
-                    local names
-                    for _, w in ipairs(Parser.Words((body:gsub("{rt%d}", " ")))) do
-                        names = names or {}
-                        names[#names + 1] = w:lower()
+                    local nameList
+                    for _, wid in ipairs(Parser.Words((body:gsub("{rt%d}", " ")))) do
+                        nameList = nameList or {}
+                        nameList[#nameList + 1] = wid:lower()
                     end
-                    entry.names = names
-                    entry.text = body:gsub("^[%s%-:]+", ""):gsub("%s+$", ""):gsub("%s%s+", " ")
-                    if entry.text ~= "" then
-                        list[#list + 1] = entry
+                    record.names = nameList
+                    record.text = body:gsub("^[%s%-:]+", ""):gsub("%s+$", ""):gsub("%s%s+", " ")
+                    if record.text ~= "" then
+                        entries[#entries + 1] = record
                     end
                 end
             end
         end
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         return a.at < b.at
     end)
-    return list, skipped
+    return entries, skipped
 end
 
 --- Whether a parsed reminder is for this player. `me` is the player's name
@@ -173,24 +173,24 @@ end
 --- A line naming nobody in the group is for everyone; a line naming group
 --- members is for them only (other words on the line, like "soak", are not
 --- group members and so do not count).
-function Parser.IsFor(entry, me, role, roster)
-    if entry.everyone then
+function Parser.IsFor(record, me, role, roster)
+    if record.everyone then
         return true
     end
-    if entry.roles and role and entry.roles[role] then
+    if record.roles and role and record.roles[role] then
         return true
     end
     local mine = me and me:lower()
     local namedSomeone = false
-    for _, n in ipairs(entry.names or {}) do
-        if roster and roster[n] then
+    for _, num in ipairs(record.names or {}) do
+        if roster and roster[num] then
             namedSomeone = true
-            if n == mine then
+            if num == mine then
                 return true
             end
         end
     end
-    if entry.roles then
+    if record.roles then
         return false
     end
     return not namedSomeone

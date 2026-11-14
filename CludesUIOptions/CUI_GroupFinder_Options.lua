@@ -5,8 +5,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_GroupFinder_Options.lua: Group Finder settings page
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIGroupFinder"
-local ns = CludesUI._ModuleNS[ADDON_NAME]
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME]
+if not mod then
     return
 end -- module off: no page
 local CUI = CludesUI
@@ -25,7 +25,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- applications settings (greyed while the module's off)
     -----------------------------------------------------------------------
     local function APCfg()
-        return ns.AppsCfg()
+        return mod.AppsCfg()
     end
     local function APGet(key, default)
         local c = APCfg()
@@ -40,10 +40,10 @@ initFrame:SetScript("OnEvent", function(self)
         if c then
             c[key] = val
         end
-        ns.ApplyApplications()
+        mod.ApplyApplications()
     end
     local function ModOff()
-        return not ns.Enabled()
+        return not mod.Enabled()
     end
     local function APOff()
         return ModOff() or APGet("enabled", false) ~= true
@@ -52,45 +52,45 @@ initFrame:SetScript("OnEvent", function(self)
         return ModOff() and "Group Finder" or "Show Applications in Group Finder"
     end
 
-    local function BuildSearchPage(pageName, parent, yOffset)
+    local function BuildSearchPage(page, hostFrame, yOffset)
         local W = CUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         -- sample groups up top, drawn as the list draws them
-        if ns.OwnListPreviewBuild then
-            CUI:SetContentHeader(ns.OwnListPreviewBuild)
+        if mod.OwnListPreviewBuild then
+            CUI:SetContentHeader(mod.OwnListPreviewBuild)
         elseif CUI.ClearContentHeader then
             CUI:ClearContentHeader()
         end
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         -- the enable toggle reloads; the pgf warning takes the section's last row while it's loaded
-        local PGFLoaded = ns.Blocked
+        local PGFLoaded = mod.Blocked
         local function BgOpacity()
-            return ns.OwnListGet("windowBgOpacity") or 100
+            return mod.OwnListGet("windowBgOpacity") or 100
         end
         local function QuickOn()
             return CludesUIDB and CludesUIDB.quickSignup and true or false
         end
-        _, h = W:SectionHeader(parent, "GENERAL", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
+        posY = posY - hgt
         local bgRow
-        bgRow, h = W:DualRow(parent, y, {
+        bgRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Group Finder",
             disabled = function()
-                return PGFLoaded() and not ns.Enabled()
+                return PGFLoaded() and not mod.Enabled()
             end,
             disabledTooltip = "Premade Groups Filter",
             requireState = "disabled",
             tooltip = "Premade Groups search filters, group list and the M+ applications bar in the Dungeons & Raids window. Requires a reload.",
             getValue = function()
-                return ns.Enabled()
+                return mod.Enabled()
             end,
             setValue = function(v)
                 v = v and true or false
-                if v == ns.Enabled() then
+                if v == mod.Enabled() then
                     return
                 end
                 -- only saved once the reload's confirmed
@@ -102,7 +102,7 @@ initFrame:SetScript("OnEvent", function(self)
                     cancelText = "Cancel",
                     reload = true,
                     onConfirm = function()
-                        ns.SetEnabled(v)
+                        mod.SetEnabled(v)
                     end,
                     onCancel = function()
                         CUI:RefreshPage()
@@ -119,14 +119,14 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = BgOpacity,
             setValue = function(v)
                 local was = BgOpacity() == 0
-                ns.SetWindowLook("windowBgOpacity", v)
+                mod.SetWindowLook("windowBgOpacity", v)
                 -- the swatch greys out at 0
                 if was ~= (v == 0) then
                     CUI:RefreshPage()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CUI._prebuilding then
             CUI.BuildInlineSwatches(bgRow._rightRegion, {
                 {
@@ -137,23 +137,23 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                     disabledTooltip = "Background above 0",
                     getValue = function()
-                        local c = ns.OwnListGet("windowBgColor")
+                        local c = mod.OwnListGet("windowBgColor")
                         if c then
                             return c.r, c.g, c.b, c.a or 0.62
                         end
                         return 0, 0, 0, 0.62
                     end,
                     setValue = function(r, g, b, a)
-                        ns.SetWindowLook("windowBgColor", { r = r, g = g, b = b, a = a })
+                        mod.SetWindowLook("windowBgColor", { r = r, g = g, b = b, a = a })
                     end,
                 },
             })
         end
         -- both account-wide
         local noteRow
-        noteRow, h = W:DualRow(
-            parent,
-            y,
+        noteRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             -- one dropdown over the account-wide quickSignup switch and this
             -- profile's click count
             {
@@ -171,14 +171,14 @@ initFrame:SetScript("OnEvent", function(self)
                     if not QuickOn() then
                         return "disabled"
                     end
-                    return ns.OwnListGet("signupClicks")
+                    return mod.OwnListGet("signupClicks")
                 end,
                 setValue = function(v)
                     if v == "disabled" then
                         CludesUIDB.quickSignup = false
                     else
                         CludesUIDB.quickSignup = true
-                        ns.SetOwnListValue("signupClicks", v)
+                        mod.SetOwnListValue("signupClicks", v)
                     end
                     if CUI._applyQuickSignup then
                         CUI._applyQuickSignup()
@@ -201,7 +201,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
         if not CUI._prebuilding then
             CUI.BuildInlineCog(noteRow._rightRegion, {
                 gap = 9,
@@ -229,64 +229,59 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             })
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Cancel Oldest Application",
             tooltip = "At the application limit, clicking a group cancels your oldest pending application so you can sign up.",
             getValue = function()
-                return ns.Cfg().cancelOldest == true
+                return mod.Cfg().cancelOldest == true
             end,
             setValue = function(v)
-                ns.Cfg().cancelOldest = v and true or false
+                mod.Cfg().cancelOldest = v and true or false
             end,
         }, CUI.BlankRowCfg())
-        y = y - h
+        posY = posY - hgt
         if PGFLoaded() then
-            _, h = W:DualRow(
-                parent,
-                y,
-                {
-                    type = "label",
-                    text = CUI.COLOR_CODES.ERROR
-                        .. CludesUI.L("Premade Groups Filter is loaded. Disable it to use the Group Finder.")
-                        .. "|r",
-                },
-                CUI.BlankRowCfg()
-            )
-            y = y - h
+            _, hgt = W:DualRow(hostFrame, posY, {
+                type = "label",
+                text = CUI.COLOR_CODES.ERROR
+                    .. CludesUI.L("Premade Groups Filter is loaded. Disable it to use the Group Finder.")
+                    .. "|r",
+            }, CUI.BlankRowCfg())
+            posY = posY - hgt
         end
 
-        y = AddListSections(parent, y)
+        posY = AddListSections(hostFrame, posY)
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
-        parent:SetHeight(math.abs(y - yOffset))
-        return math.abs(y - yOffset)
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
+        hostFrame:SetHeight(math.abs(posY - yOffset))
+        return math.abs(posY - yOffset)
     end
 
     -- applications page, reset buttons with it
-    local function BuildAppsPage(parent, yOffset)
+    local function BuildAppsPage(hostFrame, yOffset)
         local W = CUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
         if CUI.ClearContentHeader then
             CUI:ClearContentHeader()
         end
-        parent._showRowDivider = true
-        y = AddAppsSections(parent, y)
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
-        parent:SetHeight(math.abs(y - yOffset))
-        return math.abs(y - yOffset)
+        hostFrame._showRowDivider = true
+        posY = AddAppsSections(hostFrame, posY)
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
+        hostFrame:SetHeight(math.abs(posY - yOffset))
+        return math.abs(posY - yOffset)
     end
 
     -- results list, display, the applicant list
-    function AddListSections(parent, y)
+    function AddListSections(hostFrame, posY)
         local W = CUI.Widgets
-        local _, h
-        _, h = W:SectionHeader(parent, "RESULTS LIST", y)
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        local _, hgt
+        _, hgt = W:SectionHeader(hostFrame, "RESULTS LIST", posY)
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Title Text Size",
             min = 8,
@@ -294,10 +289,10 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "The group's title, the first line.",
             getValue = function()
-                return ns.OwnListSize("titleSize")
+                return mod.OwnListSize("titleSize")
             end,
             setValue = function(v)
-                ns.SetOwnListSize("titleSize", v)
+                mod.SetOwnListSize("titleSize", v)
             end,
         }, {
             type = "slider",
@@ -307,14 +302,14 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "The playstyle and region tag text size.",
             getValue = function()
-                return ns.OwnListSize("lineSize")
+                return mod.OwnListSize("lineSize")
             end,
             setValue = function(v)
-                ns.SetOwnListSize("lineSize", v)
+                mod.SetOwnListSize("lineSize", v)
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Dungeon / Raid Text Size",
             min = 8,
@@ -322,27 +317,27 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "The dungeon or raid name text size.",
             getValue = function()
-                return ns.OwnListSize("nameSize")
+                return mod.OwnListSize("nameSize")
             end,
             setValue = function(v)
-                ns.SetOwnListSize("nameSize", v)
+                mod.SetOwnListSize("nameSize", v)
             end,
         }, {
             type = "toggle",
             text = "Colored Group Names",
             tooltip = "Green name when a group is new, Red name when you were declined or instance locked.",
             getValue = function()
-                return ns.Cfg().nameColors == true
+                return mod.Cfg().nameColors == true
             end,
             setValue = function(v)
-                ns.Cfg().nameColors = v and true or false
-                if ns.Redecorate then
-                    ns.Redecorate()
+                mod.Cfg().nameColors = v and true or false
+                if mod.Redecorate then
+                    mod.Redecorate()
                 end
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Row Height",
             min = 20,
@@ -350,23 +345,23 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "How tall each row is. Lines that no longer fit drop off from the bottom: the playstyle line first, then the dungeon / raid name (its short name then sits ahead of the title) and the leader crown.",
             getValue = function()
-                return ns.OwnListRowHeight()
+                return mod.OwnListRowHeight()
             end,
             setValue = function(v)
-                ns.SetOwnListRowHeight(v)
+                mod.SetOwnListRowHeight(v)
             end,
         }, {
             type = "toggle",
             text = "Applied Groups on Top",
             tooltip = "Groups you apply to move to the top of the list.",
             getValue = function()
-                return ns.OwnListGet("appsFirst") ~= false
+                return mod.OwnListGet("appsFirst") ~= false
             end,
             setValue = function(v)
-                ns.SetOwnListValue("appsFirst", v and true or false)
+                mod.SetOwnListValue("appsFirst", v and true or false)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- status color: a checklist, one color each
         local LINE_ITEMS = {
             { key = "lineDelisted", label = "Delisted", tooltip = "The group was delisted." },
@@ -379,9 +374,9 @@ initFrame:SetScript("OnEvent", function(self)
             },
         }
         local lineRow
-        lineRow, h = W:DualRow(
-            parent,
-            y,
+        lineRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             -- placeholder, the checklist replaces it
             {
                 type = "dropdown",
@@ -401,61 +396,61 @@ initFrame:SetScript("OnEvent", function(self)
                 values = { dimmed = "Dimmed", hidden = "Hidden" },
                 order = { "dimmed", "hidden" },
                 getValue = function()
-                    return ns.OwnListGet("visibility")
+                    return mod.OwnListGet("visibility")
                 end,
                 setValue = function(v)
-                    if v == ns.OwnListGet("visibility") then
+                    if v == mod.OwnListGet("visibility") then
                         return
                     end
-                    ns.SetOwnListValue("visibility", v)
-                    if ns.DimFiltersChanged then
-                        ns.DimFiltersChanged()
+                    mod.SetOwnListValue("visibility", v)
+                    if mod.DimFiltersChanged then
+                        mod.DimFiltersChanged()
                     end
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
         if not CUI._prebuilding then
-            local rgn = lineRow._leftRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = lineRow._leftRegion
+            if region._control then
+                region._control:Hide()
             end
-            local dd, ddRefresh = CUI.BuildVisOptsCBDropdown(
-                rgn,
+            local dropdown, ddRefresh = CUI.BuildVisOptsCBDropdown(
+                region,
                 210,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 LINE_ITEMS,
                 function(key)
-                    return ns.OwnListGet(key) ~= false
+                    return mod.OwnListGet(key) ~= false
                 end,
                 function(key, v)
-                    ns.SetOwnListValue(key, v and true or false)
+                    mod.SetOwnListValue(key, v and true or false)
                 end
             )
-            CUI.PanelPP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = dd
-            rgn._lastInline = nil
+            CUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = dropdown
+            region._lastInline = nil
             CUI.RegisterWidgetRefresh(ddRefresh)
             -- the effect's style and each status's color (the list's own
             -- colors and keys: ns.STATUS_LINES, CUI_GroupFinder_ResultsList.lua)
-            local function Picker(key, label)
-                local line = ns.STATUS_LINES[key]
+            local function Picker(key, labelText)
+                local lineTex = mod.STATUS_LINES[key]
                 return {
                     type = "colorpicker",
-                    label = label,
+                    label = labelText,
                     get = function()
-                        local c = ns.OwnListGet(line[5])
+                        local c = mod.OwnListGet(lineTex[5])
                         if type(c) == "table" then
                             return c.r, c.g, c.b
                         end
-                        return line[2], line[3], line[4]
+                        return lineTex[2], lineTex[3], lineTex[4]
                     end,
                     set = function(r, g, b)
-                        ns.SetOwnListValue(line[5], { r = r, g = g, b = b })
+                        mod.SetOwnListValue(lineTex[5], { r = r, g = g, b = b })
                     end,
                 }
             end
-            CUI.BuildInlineCog(rgn, {
+            CUI.BuildInlineCog(region, {
                 title = "Status Effect",
                 rows = {
                     {
@@ -464,10 +459,10 @@ initFrame:SetScript("OnEvent", function(self)
                         values = { underline = "Underline", row = "Row Highlight" },
                         order = { "underline", "row" },
                         get = function()
-                            return ns.OwnListGet("statusStyle") == "row" and "row" or "underline"
+                            return mod.OwnListGet("statusStyle") == "row" and "row" or "underline"
                         end,
                         set = function(v)
-                            ns.SetOwnListValue("statusStyle", v)
+                            mod.SetOwnListValue("statusStyle", v)
                         end,
                     },
                     Picker("lineDelisted", "Delisted Color"),
@@ -478,7 +473,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
         local rioRow
-        rioRow, h = W:DualRow(parent, y, {
+        rioRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Raider.IO Rating Colors",
             tooltip = "Color the leader's rating with Raider.IO's score colors. Otherwise, use the game's rating colors.",
@@ -487,12 +482,12 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             disabledTooltip = "Raider.IO",
             getValue = function()
-                return ns.Cfg().rioRatingColors ~= false
+                return mod.Cfg().rioRatingColors ~= false
             end,
             setValue = function(v)
-                ns.Cfg().rioRatingColors = v and true or false
-                if ns.Redecorate then
-                    ns.Redecorate()
+                mod.Cfg().rioRatingColors = v and true or false
+                if mod.Redecorate then
+                    mod.Redecorate()
                 end
             end,
         }, {
@@ -500,13 +495,13 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Members in Tooltip",
             tooltip = "Group tooltips add each member's name (dungeons and arenas, where Blizzard already lists the roles and classes), or a line per member with role, specialization, class and name (other groups).",
             getValue = function()
-                return ns.Cfg().classTooltip ~= false
+                return mod.Cfg().classTooltip ~= false
             end,
             setValue = function(v)
-                ns.Cfg().classTooltip = v and true or false
+                mod.Cfg().classTooltip = v and true or false
             end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CUI._prebuilding then
             -- the rating text shows with the game's colors too, so the cog stays
             -- open without Raider.IO
@@ -521,32 +516,32 @@ initFrame:SetScript("OnEvent", function(self)
                         step = 1,
                         tooltip = "The leader's Mythic+ rating beside the role icons.",
                         get = function()
-                            return ns.OwnListSize("scoreSize")
+                            return mod.OwnListSize("scoreSize")
                         end,
                         set = function(v)
-                            ns.SetOwnListSize("scoreSize", v)
+                            mod.SetOwnListSize("scoreSize", v)
                         end,
                     },
                 },
             })
         end
 
-        _, h = W:SectionHeader(parent, "DISPLAY", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+        posY = posY - hgt
         local function Circle()
-            return ns.OwnListGet("iconShape") ~= "square"
+            return mod.OwnListGet("iconShape") ~= "square"
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "segmented",
             text = "Icon Shape",
             tooltip = "The member and specialization icon shape.",
             values = { circle = "Circle", square = "Square" },
             order = { "circle", "square" },
             getValue = function()
-                return ns.OwnListGet("iconShape")
+                return mod.OwnListGet("iconShape")
             end,
             setValue = function(v)
-                ns.SetOwnListValue("iconShape", v)
+                mod.SetOwnListValue("iconShape", v)
                 CUI:RefreshPage(true)
             end,
         }, {
@@ -557,19 +552,19 @@ initFrame:SetScript("OnEvent", function(self)
             step = 5,
             tooltip = "Size of the role and specialization icons in the group list.",
             getValue = function()
-                return tonumber(ns.Cfg().iconSize) or ns.DEFAULTS.iconSize
+                return tonumber(mod.Cfg().iconSize) or mod.DEFAULTS.iconSize
             end,
             setValue = function(v)
-                ns.Cfg().iconSize = v
-                if ns.Redecorate then
-                    ns.Redecorate()
+                mod.Cfg().iconSize = v
+                if mod.Redecorate then
+                    mod.Redecorate()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
         local texValues, texOrder = CUI.GetBorderTextureDropdown()
         local borderRow
-        borderRow, h = W:DualRow(parent, y, {
+        borderRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Border Style",
             tooltip = "The border around square icons.",
@@ -578,12 +573,12 @@ initFrame:SetScript("OnEvent", function(self)
             disabled = Circle,
             disabledTooltip = "Icon Shape: Square",
             getValue = function()
-                return ns.OwnListGet("borderTexture")
+                return mod.OwnListGet("borderTexture")
             end,
             setValue = function(v)
                 -- a new style starts on its own color
-                ns.SetOwnListValue("borderColor", nil)
-                ns.SetOwnListValue("borderTexture", v)
+                mod.SetOwnListValue("borderColor", nil)
+                mod.SetOwnListValue("borderTexture", v)
                 CUI:RefreshPage(true)
             end,
         }, {
@@ -594,41 +589,48 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "In pixels. 0 for no border. Round icons get a ring.",
             getValue = function()
-                return tonumber(ns.OwnListGet("borderSize")) or 0
+                return tonumber(mod.OwnListGet("borderSize")) or 0
             end,
             setValue = function(v)
-                ns.SetOwnListValue("borderSize", v)
+                mod.SetOwnListValue("borderSize", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         do
             -- border color swatch
-            local rgn = borderRow and borderRow._rightRegion
-            if rgn then
-                local swatch, update = CUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                    local r, g, b = ns.OwnListBorderColor()
-                    return r, g, b, 1
-                end, function(r, g, b)
-                    ns.SetOwnListValue("borderColor", { r = r, g = g, b = b })
-                end, false, 20)
-                swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -12, 0)
-                rgn._lastInline = swatch
+            local region = borderRow and borderRow._rightRegion
+            if region then
+                local colorSwatch, update = CUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    function()
+                        local r, g, b = mod.OwnListBorderColor()
+                        return r, g, b, 1
+                    end,
+                    function(r, g, b)
+                        mod.SetOwnListValue("borderColor", { r = r, g = g, b = b })
+                    end,
+                    false,
+                    20
+                )
+                colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -12, 0)
+                region._lastInline = colorSwatch
                 CUI.RegisterWidgetRefresh(update)
             end
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Missing Role Icons",
             tooltip = "When there is a missing role, add an icon to show you which one.",
             values = { none = "None", blizzard = "Blizzard", cludes = "CludesUI" },
             order = { "none", "blizzard", "cludes" },
             getValue = function()
-                return ns.OwnListGet("missingIcons")
+                return mod.OwnListGet("missingIcons")
             end,
             setValue = function(v)
-                ns.SetOwnListValue("missingIcons", v)
-                if ns.Redecorate then
-                    ns.Redecorate()
+                mod.SetOwnListValue("missingIcons", v)
+                if mod.Redecorate then
+                    mod.Redecorate()
                 end -- blizzard's list too
             end,
         }, {
@@ -636,20 +638,20 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Row Art",
             tooltip = "The instance's art across the left half of each group, fading out to the right.",
             getValue = function()
-                return ns.Cfg().extraRowArt == true
+                return mod.Cfg().extraRowArt == true
             end,
             setValue = function(v)
-                ns.Cfg().extraRowArt = v and true or false
-                if ns.GFRetagRows then
-                    ns.GFRetagRows()
+                mod.Cfg().extraRowArt = v and true or false
+                if mod.GFRetagRows then
+                    mod.GFRetagRows()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
         local function Shown(key, default)
-            local v = ns.Cfg()[key]
+            local v = mod.Cfg()[key]
             if v == nil then
-                v = ns.DEFAULTS[key]
+                v = mod.DEFAULTS[key]
             end
             if v == nil then
                 v = default
@@ -657,12 +659,12 @@ initFrame:SetScript("OnEvent", function(self)
             return v and true or false
         end
         local function SetShown(key, v)
-            ns.Cfg()[key] = v and true or false
-            if ns.Redecorate then
-                ns.Redecorate()
+            mod.Cfg()[key] = v and true or false
+            if mod.Redecorate then
+                mod.Redecorate()
             end
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Specialization",
             tooltip = "Shows each member's specialization icon in place of the game's class and role icons. Off, the game's own icons stay.",
@@ -683,23 +685,23 @@ initFrame:SetScript("OnEvent", function(self)
                 SetShown("leaderCrown", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- the third line: playstyle and region tag (rows already drawn take them now)
         local function SetLine(key, v)
-            ns.Cfg()[key] = v and true or false
-            if ns.Redecorate then
-                ns.Redecorate()
+            mod.Cfg()[key] = v and true or false
+            if mod.Redecorate then
+                mod.Redecorate()
             end
-            if ns.GFRetagRows then
-                ns.GFRetagRows()
+            if mod.GFRetagRows then
+                mod.GFRetagRows()
             end
         end
         local tagsCfg
-        if ns.RegionList() then
+        if mod.RegionList() then
             tagsCfg = {
                 type = "toggle",
                 text = "Region Tags",
-                tooltip = ns.RegionIsLanguage()
+                tooltip = mod.RegionIsLanguage()
                         and "Shows the leader's realm language (EN, DE, FR, ES, IT, PT, RU) after each group's playstyle."
                     or "Shows OCE, NA, MEX or BRA after each group's playstyle, from the leader's realm.",
                 getValue = function()
@@ -710,7 +712,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Leader Rating",
             tooltip = "Shows the group leader's Mythic+ rating next to the role icons.",
@@ -731,40 +733,40 @@ initFrame:SetScript("OnEvent", function(self)
                 SetLine("extraShowPlaystyle", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         local notesCfg = {
             type = "toggle",
             text = "Show Group Notes",
             tooltip = "Shows each group's note on a line under it; hover the group for the whole note.",
             getValue = function()
-                return ns.OwnListGet("groupNotes") == true
+                return mod.OwnListGet("groupNotes") == true
             end,
             setValue = function(v)
-                ns.SetOwnListValue("groupNotes", v and true or false)
+                mod.SetOwnListValue("groupNotes", v and true or false)
             end,
         }
         if tagsCfg then
-            _, h = W:DualRow(parent, y, tagsCfg, notesCfg)
+            _, hgt = W:DualRow(hostFrame, posY, tagsCfg, notesCfg)
         else
-            _, h = W:DualRow(parent, y, notesCfg, CUI.BlankRowCfg())
+            _, hgt = W:DualRow(hostFrame, posY, notesCfg, CUI.BlankRowCfg())
         end
-        y = y - h
+        posY = posY - hgt
 
         -- the filter's dungeon / raid squares
         local function SetSquares(key, v)
-            ns.Cfg()[key] = v and true or false
-            if ns.Search_Layout then
-                ns.Search_Layout()
+            mod.Cfg()[key] = v and true or false
+            if mod.Search_Layout then
+                mod.Search_Layout()
             end
         end
-        _, h = W:SectionHeader(parent, "DUNGEON / RAID ROW", y)
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:SectionHeader(hostFrame, "DUNGEON / RAID ROW", posY)
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Dungeon Names",
             tooltip = "Each dungeon square shows the dungeon's short name (e.g. KR for Kings' Rest).",
             getValue = function()
-                return ns.Cfg().dungeonAbbr == true
+                return mod.Cfg().dungeonAbbr == true
             end,
             setValue = function(v)
                 SetSquares("dungeonAbbr", v)
@@ -774,13 +776,13 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Dungeon Keystone Level",
             tooltip = "Each dungeon square shows your best keystone level this season, colored by its score rarity.",
             getValue = function()
-                return ns.Cfg().dungeonScore == true
+                return mod.Cfg().dungeonScore == true
             end,
             setValue = function(v)
                 SetSquares("dungeonScore", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- what Hide Applicant Info hides (the profile's streamer* keys)
         local HIDE_INFO_ITEMS = {
@@ -803,12 +805,12 @@ initFrame:SetScript("OnEvent", function(self)
             { key = "streamerSpec", label = "Specialization", tooltip = "Removes the spec column." },
             { key = "streamerNote", label = "Note", tooltip = "Hides each applicant's note." },
         }
-        _, h = W:SectionHeader(parent, "APPLICANT LIST", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "APPLICANT LIST", posY)
+        posY = posY - hgt
         local applicantRow
-        applicantRow, h = W:DualRow(
-            parent,
-            y,
+        applicantRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "slider",
                 text = "Applicant Row Height",
@@ -817,10 +819,10 @@ initFrame:SetScript("OnEvent", function(self)
                 step = 1,
                 tooltip = "How tall each applicant row is.",
                 getValue = function()
-                    return ns.OwnListGet("applicantRowHeight") or 36
+                    return mod.OwnListGet("applicantRowHeight") or 36
                 end,
                 setValue = function(v)
-                    ns.SetOwnListValue("applicantRowHeight", v)
+                    mod.SetOwnListValue("applicantRowHeight", v)
                 end,
             },
             -- placeholder, the checklist replaces it
@@ -836,42 +838,42 @@ initFrame:SetScript("OnEvent", function(self)
                 setValue = function() end,
             }
         )
-        y = y - h
+        posY = posY - hgt
         if not CUI._prebuilding then
-            local rgn = applicantRow._rightRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = applicantRow._rightRegion
+            if region._control then
+                region._control:Hide()
             end
-            local dd, ddRefresh = CUI.BuildVisOptsCBDropdown(
-                rgn,
+            local dropdown, ddRefresh = CUI.BuildVisOptsCBDropdown(
+                region,
                 210,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 HIDE_INFO_ITEMS,
                 function(key)
-                    return ns.OwnListGet(key) == true
+                    return mod.OwnListGet(key) == true
                 end,
                 function(key, v)
-                    ns.SetOwnListValue(key, v and true or false)
+                    mod.SetOwnListValue(key, v and true or false)
                 end
             )
-            CUI.PanelPP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = dd
-            rgn._lastInline = nil
+            CUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = dropdown
+            region._lastInline = nil
             CUI.RegisterWidgetRefresh(ddRefresh)
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Class Colored Role Icons",
             tooltip = "Each applicant's role icons take their class color, in place of the role's blue, green or red.",
             getValue = function()
-                return ns.OwnListGet("roleClassColors") == true
+                return mod.OwnListGet("roleClassColors") == true
             end,
             setValue = function(v)
-                ns.SetOwnListValue("roleClassColors", v and true or false)
+                mod.SetOwnListValue("roleClassColors", v and true or false)
             end,
         }, CUI.BlankRowCfg())
-        y = y - h
-        return y
+        posY = posY - hgt
+        return posY
     end
 
     local function ResetMessage(scope)
@@ -884,15 +886,15 @@ initFrame:SetScript("OnEvent", function(self)
         return CludesUI.L("Reset the character application counts to zero?")
     end
 
-    AddAppsSections = function(parent, y)
+    AddAppsSections = function(hostFrame, posY)
         local W = CUI.Widgets
-        local _, h
+        local _, hgt
 
-        _, h = W:SectionHeader(parent, "M+ APPLICATIONS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "M+ APPLICATIONS", posY)
+        posY = posY - hgt
 
         local scopeValues = { session = "Session", character = "Character", account = "Account" }
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Applications in Group Finder",
             tooltip = "A bar at the top of the Dungeons & Raids sidebar that counts your Mythic+ application results.",
@@ -920,7 +922,7 @@ initFrame:SetScript("OnEvent", function(self)
                 APSet("scope", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- application visibility: which results show on the bar (all on when unset)
         local VIS_LABEL = "Application Visibility"
@@ -942,11 +944,11 @@ initFrame:SetScript("OnEvent", function(self)
         -- checklist's names
         if CludesUI._RegisterSearchEntry then
             local words = {}
-            for i = 1, #VIS_ITEMS do
-                local label = VIS_ITEMS[i].label
-                words[#words + 1] = label
-                local loc = CludesUI.L(label)
-                if loc ~= label then
+            for idx = 1, #VIS_ITEMS do
+                local labelText = VIS_ITEMS[idx].label
+                words[#words + 1] = labelText
+                local loc = CludesUI.L(labelText)
+                if loc ~= labelText then
                     words[#words + 1] = loc
                 end
             end
@@ -957,29 +959,29 @@ initFrame:SetScript("OnEvent", function(self)
                 table.concat(words, " "),
                 CludesUI._buildingModule,
                 CludesUI._buildingPage,
-                parent._currentSection and parent._currentSection._sectionName
+                hostFrame._currentSection and hostFrame._currentSection._sectionName
             )
         end
 
         -- built-in textures, then sharedmedia's
-        local tex, names, order = ns.BarTextureTables()
+        local texture, nameList, sequence = mod.BarTextureTables()
         local texValues, texOrder = {}, {}
-        for _, key in ipairs(order) do
+        for _, key in ipairs(sequence) do
             if key ~= "---" then
-                texValues[key] = names[key] or key
+                texValues[key] = nameList[key] or key
             end
             texOrder[#texOrder + 1] = key
         end
         texValues._menuOpts = {
             itemHeight = 28,
             background = function(key)
-                return tex[key]
+                return texture[key]
             end,
         }
         local visRow
-        visRow, h = W:DualRow(
-            parent,
-            y,
+        visRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             -- placeholder, the checklist replaces it
             {
                 type = "dropdown",
@@ -1009,17 +1011,17 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
 
         if not CUI._prebuilding then
-            local rgn = visRow._leftRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = visRow._leftRegion
+            if region._control then
+                region._control:Hide()
             end
             local visDD, visDDRefresh = CUI.BuildVisOptsCBDropdown(
-                rgn,
+                region,
                 210,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 VIS_ITEMS,
                 function(key)
                     return APGet(key, true) == true
@@ -1034,13 +1036,13 @@ initFrame:SetScript("OnEvent", function(self)
                 nil,
                 { disabled = APOff, disabledTooltip = APOffTip }
             )
-            CUI.PanelPP.Point(visDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = visDD
-            rgn._lastInline = nil
+            CUI.PanelPP.Point(visDD, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = visDD
+            region._lastInline = nil
             CUI.RegisterWidgetRefresh(visDDRefresh)
         end
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Title",
             tooltip = 'The "M+ Applications" title above the bar.',
@@ -1053,19 +1055,19 @@ initFrame:SetScript("OnEvent", function(self)
                 APSet("showTitle", v and true or false)
             end,
         }, CUI.BlankRowCfg())
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "RESET APPLICATION COUNTS", y)
-        y = y - h
-        local function Reset(label, scope)
+        _, hgt = W:SectionHeader(hostFrame, "RESET APPLICATION COUNTS", posY)
+        posY = posY - hgt
+        local function Reset(labelText, scope)
             return function()
                 CUI:ShowConfirmPopup({
-                    title = label,
+                    title = labelText,
                     message = ResetMessage(scope),
                     confirmText = "Reset",
                     cancelText = "Cancel",
                     onConfirm = function()
-                        ns.ResetApplications(scope)
+                        mod.ResetApplications(scope)
                     end,
                 })
             end
@@ -1073,47 +1075,47 @@ initFrame:SetScript("OnEvent", function(self)
         -- on / off only changes with a reload, so build time is enough
         local offOpts
         if ModOff() then
-            local tip = CUI.DisabledTooltip("Group Finder")
+            local tipText = CUI.DisabledTooltip("Group Finder")
             offOpts = {
-                { disabled = true, tooltip = tip },
-                { disabled = true, tooltip = tip },
-                { disabled = true, tooltip = tip },
+                { disabled = true, tooltip = tipText },
+                { disabled = true, tooltip = tipText },
+                { disabled = true, tooltip = tipText },
             }
         end
-        _, h = W:WideTripleButton(
-            parent,
+        _, hgt = W:WideTripleButton(
+            hostFrame,
             "Reset Session",
             "Reset Character",
             "Reset Account",
-            y,
+            posY,
             Reset("Reset Session", "session"),
             Reset("Reset Character", "character"),
             Reset("Reset Account", "account"),
             nil,
             offOpts
         )
-        y = y - h
-        return y
+        posY = posY - hgt
+        return posY
     end
 
     CUI:RegisterModule(ADDON_NAME, {
         title = "Group Finder",
         description = "Premade Groups search filters, group list, applicant list and application tools in the Dungeons & Raids window.",
         pages = { PAGE_SEARCH, PAGE_APPS },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == PAGE_APPS then
-                return BuildAppsPage(parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            if page == PAGE_APPS then
+                return BuildAppsPage(hostFrame, yOffset)
             end
-            return BuildSearchPage(pageName, parent, yOffset)
+            return BuildSearchPage(page, hostFrame, yOffset)
         end,
         -- a cached page whose header was dropped builds it again
-        getHeaderBuilder = function(pageName)
-            if pageName == PAGE_SEARCH then
-                return ns.OwnListPreviewBuild
+        getHeaderBuilder = function(page)
+            if page == PAGE_SEARCH then
+                return mod.OwnListPreviewBuild
             end
         end,
         onReset = function()
-            ns.ResetSettings()
+            mod.ResetSettings()
             -- the account-wide sign up switches live on this page
             if CludesUIDB then
                 CludesUIDB.quickSignup = false
@@ -1126,12 +1128,12 @@ initFrame:SetScript("OnEvent", function(self)
             if CUI._applyPersistSignupNote then
                 CUI._applyPersistSignupNote()
             end
-            if ns.ResetOwnList then
-                ns.ResetOwnList()
+            if mod.ResetOwnList then
+                mod.ResetOwnList()
             end
-            if ns.Enabled() then
-                ns.Search_Layout()
-                ns.ApplyApplications()
+            if mod.Enabled() then
+                mod.Search_Layout()
+                mod.ApplyApplications()
             end
         end,
     })

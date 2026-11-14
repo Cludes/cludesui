@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  overlay, and the ticker that places fake debuffs and defensives.
 --  Reads the earlier preview files through ns and ns._previewInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._previewInternals
+local _, mod = ...
+local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs = pairs
 local ipairs = ipairs
@@ -22,19 +22,19 @@ local wipe = wipe
 local type = type
 local C_Timer = C_Timer
 
-local RF = ns._internals -- the table of the Raid Frames chain
+local RF = mod._internals -- the table of the Raid Frames chain
 local PixelSnap = RF.PixelSnap
 
-local previewClassTokens, previewFrames = I.previewClassTokens, I.previewFrames
+local previewClassTokens, previewFrames = Inner.previewClassTokens, Inner.previewFrames
 
 -- Shared state from the raid-frame and preview chains.
-local db
-RF.dbSetters[#RF.dbSetters + 1] = function(v)
-    db = v
+local saved
+RF.dbSetters[#RF.dbSetters + 1] = function(val)
+    saved = val
 end
 local previewActive = false
-I.previewActiveSetters[#I.previewActiveSetters + 1] = function(v)
-    previewActive = v
+Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val)
+    previewActive = val
 end
 
 -------------------------------------------------------------------------------
@@ -49,22 +49,22 @@ local pvAuraTicker = nil
 -- (ns._partyPvFrames / ns._partyPvActive). Keying off ns._partyPvActive at call
 -- time lets one code path drive whichever preview is currently on screen.
 local function PvFrames()
-    return (ns._partyPvActive and ns._partyPvFrames) or previewFrames
+    return (mod._partyPvActive and mod._partyPvFrames) or previewFrames
 end
 local function PvActive()
-    return previewActive or ns._partyPvActive
+    return previewActive or mod._partyPvActive
 end
 -- Party preview reads party-scaled / party-prefixed settings so aura icons match
 -- the party frames (size, position, colors); raid preview reads the live profile
 -- through the real-preview effective overlay (below) so an open panel's view
 -- swap never leaks into the preview.
 local function PvSettings()
-    return (ns._partyPvActive and ns._scaledPartyProxy) or ns._pvOverlayProxy or db.profile
+    return (mod._partyPvActive and mod._scaledPartyProxy) or mod._pvOverlayProxy or saved.profile
 end
 -- Class tokens for icon selection: ApplyPartyPreviewData hands the party tokens
 -- to ApplyPreviewData only, so the ticker must resolve them itself.
 local function PvClassTokens()
-    return (ns._partyPvActive and ns._partyPvCT) or previewClassTokens
+    return (mod._partyPvActive and mod._partyPvCT) or previewClassTokens
 end
 
 -------------------------------------------------------------------------------
@@ -84,17 +84,17 @@ do
     local proxy
     local proxyMT = {
         __index = function(_, key)
-            local ov = ns._pvOverlay
-            if ov ~= nil then
-                local v = ov[key]
-                if v ~= nil then
-                    if v == CludesUI.SPECOV_NIL then
+            local shade = mod._pvOverlay
+            if shade ~= nil then
+                local val = shade[key]
+                if val ~= nil then
+                    if val == CludesUI.SPECOV_NIL then
                         return nil
                     end
-                    return v
+                    return val
                 end
             end
-            return db.profile[key]
+            return saved.profile[key]
         end,
     }
     -- Segment-key resolution mirrors the value system's live walk: prefer
@@ -103,54 +103,54 @@ do
         if t[seg] ~= nil then
             return seg
         end
-        local n = tonumber(seg)
-        if n ~= nil and t[n] ~= nil then
-            return n
+        local num = tonumber(seg)
+        if num ~= nil and t[num] ~= nil then
+            return num
         end
         return seg
     end
 
-    function ns._RebuildPvOverlay()
-        local active = (db.profile.previewMode == "real")
+    function mod._RebuildPvOverlay()
+        local isActive = (saved.profile.previewMode == "real")
             and CludesUI.SpecOverrides_ViewActive()
             and CludesUI.SpecOverrides_PeekEffectiveValues
         local flat, specSrc, condSrc
-        if active then
+        if isActive then
             flat, specSrc, condSrc = CludesUI.SpecOverrides_PeekEffectiveValues("CludesUIRaidFrames")
         end
         if not flat then
-            ns._pvOverlay = nil
-            ns._pvOverlayProxy = nil
-            if ns._RefreshProxyModes then
-                ns._RefreshProxyModes()
+            mod._pvOverlay = nil
+            mod._pvOverlayProxy = nil
+            if mod._RefreshProxyModes then
+                mod._RefreshProxyModes()
             end
-            ns._pvOverlaySrc = nil
-            if ns._UpdatePvModeChrome then
-                ns._UpdatePvModeChrome()
+            mod._pvOverlaySrc = nil
+            if mod._UpdatePvModeChrome then
+                mod._UpdatePvModeChrome()
             end
             return
         end
         local NIL_SENT = CludesUI.SPECOV_NIL
-        local overlay = {}
-        for fkey, v in pairs(flat) do
-            local path = fkey:match("^[^\31]+\31(.*)$")
-            if path and path ~= "" then
-                local segs = { strsplit("\30", path) }
+        local overlayFrame = {}
+        for fkey, val in pairs(flat) do
+            local filePath = fkey:match("^[^\31]+\31(.*)$")
+            if filePath and filePath ~= "" then
+                local segs = { strsplit("\30", filePath) }
                 if #segs == 1 then
                     -- Depth-1: NIL_SENT stays encoded; the proxy decodes it.
-                    overlay[SegKey(db.profile, segs[1])] = v
+                    overlayFrame[SegKey(saved.profile, segs[1])] = val
                 else
                     -- Deeper path: shallow-clone the LIVE parent chain along
                     -- the path once, then set (or remove) the leaf -- sibling
                     -- keys inside the cloned subtable keep their live values.
-                    local liveT = db.profile
-                    local dstParent = overlay
-                    local ok = true
-                    for i = 1, #segs - 1 do
-                        local k = SegKey(liveT, segs[i])
+                    local liveT = saved.profile
+                    local dstParent = overlayFrame
+                    local success = true
+                    for idx = 1, #segs - 1 do
+                        local k = SegKey(liveT, segs[idx])
                         local liveChild = liveT[k]
                         if type(liveChild) ~= "table" then
-                            ok = false
+                            success = false
                             break
                         end
                         local dstChild = dstParent[k]
@@ -166,35 +166,35 @@ do
                         dstParent = dstChild
                         liveT = liveChild
                     end
-                    if ok then
+                    if success then
                         local lk = SegKey(liveT, segs[#segs])
-                        if v == NIL_SENT then
+                        if val == NIL_SENT then
                             dstParent[lk] = nil
                         else
-                            dstParent[lk] = v
+                            dstParent[lk] = val
                         end
                     end
                 end
             end
         end
-        ns._pvOverlay = overlay
+        mod._pvOverlay = overlayFrame
         if not proxy then
             proxy = setmetatable({}, proxyMT)
         end
-        ns._pvOverlayProxy = proxy
-        if ns._RefreshProxyModes then
-            ns._RefreshProxyModes()
+        mod._pvOverlayProxy = proxy
+        if mod._RefreshProxyModes then
+            mod._RefreshProxyModes()
         end
-        ns._pvOverlaySrc = { spec = specSrc, cond = condSrc }
-        if ns._UpdatePvModeChrome then
-            ns._UpdatePvModeChrome()
+        mod._pvOverlaySrc = { spec = specSrc, cond = condSrc }
+        if mod._UpdatePvModeChrome then
+            mod._UpdatePvModeChrome()
         end
     end
 
     -- The preview-path settings accessor: overlay proxy while a view swap
     -- is active in real preview mode, else the live profile itself.
-    function ns.PvEffectiveProfile()
-        return ns._pvOverlayProxy or db.profile
+    function mod.PvEffectiveProfile()
+        return mod._pvOverlayProxy or saved.profile
     end
 
     -- Session unlock-layer element lookup: while an override session with a
@@ -203,14 +203,14 @@ do
     -- for the key, baseline fallback per element. nil in every other state
     -- (live positioning, today's behavior). Anchored containers resolve to
     -- their recorded bookkeeping coordinates, not a live anchor chain.
-    function ns._PvSessionElem(key)
-        if db.profile.previewMode ~= "real" then
+    function mod._PvSessionElem(key)
+        if saved.profile.previewMode ~= "real" then
             return nil
         end
-        local layer, base
+        local layer, baseValue
         local sfn = CludesUI.SpecOverrides_EditSessionUnlockLayer
         if sfn then
-            layer, base = sfn()
+            layer, baseValue = sfn()
         end
         if not layer then
             -- Default view: mirror the REAL spec's RESOLVED effective fork. Never the
@@ -220,22 +220,22 @@ do
             -- positioning, byte-identical to before the feature.
             local vfn = CludesUI.SpecOverrides_ViewActive
             if vfn and vfn() and CludesUI.SpecOverrides_EffectiveUnlockLayer then
-                layer, base = CludesUI.SpecOverrides_EffectiveUnlockLayer()
+                layer, baseValue = CludesUI.SpecOverrides_EffectiveUnlockLayer()
             end
         end
         if not layer then
             return nil
         end
         local e = layer.elems and layer.elems[key]
-        if not e and base and base ~= layer then
-            e = base.elems and base.elems[key]
+        if not e and baseValue and baseValue ~= layer then
+            e = baseValue.elems and baseValue.elems[key]
         end
         return e
     end
 end
 
-local function PvAuraGetGroup(index)
-    return math.ceil(index / 5)
+local function PvAuraGetGroup(slotPos)
+    return math.ceil(slotPos / 5)
 end
 
 -- Pick a random icon for the given type and frame index
@@ -247,7 +247,7 @@ local function PvAuraPickIcon(auraType, frameIndex)
         local pool = {}
         local ct = PvClassTokens()[frameIndex] or "WARRIOR"
         if showDef then
-            local ci = ns._PV_DEF_ICONS[ct]
+            local ci = mod._PV_DEF_ICONS[ct]
             if ci then
                 for _, ic in ipairs(ci) do
                     pool[#pool + 1] = ic
@@ -255,7 +255,7 @@ local function PvAuraPickIcon(auraType, frameIndex)
             end
         end
         if showExt then
-            for _, ic in ipairs(ns._PV_EXT_ICONS) do
+            for _, ic in ipairs(mod._PV_EXT_ICONS) do
                 pool[#pool + 1] = ic
             end
         end
@@ -264,29 +264,29 @@ local function PvAuraPickIcon(auraType, frameIndex)
         end
         return pool[math.random(#pool)]
     else
-        return ns._PV_DEBUFF_ICONS[math.random(#ns._PV_DEBUFF_ICONS)]
+        return mod._PV_DEBUFF_ICONS[math.random(#mod._PV_DEBUFF_ICONS)]
     end
 end
 
 -- Position a preview aura icon on a frame (reuses anchor logic)
-local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
+local function PvAuraAnchor(glyph, f, auraType, slot, totalShown)
     local s2 = PvSettings()
 
     -- Debuffs use the shared grid layout (same DebuffGridPoint helper as the live
     -- frames) so the preview matches exactly -- including row wrapping and CENTER
     -- per-row centering. `slot` is the 0-based index among visible icons.
     if auraType ~= "def" then
-        local sz = ns.RFC_DebuffSize(s2)
-        icon:SetSize(sz, sz)
-        icon:ClearAllPoints()
-        local corner, fx, fy = ns.DebuffGridPoint(s2, slot, totalShown)
-        icon:SetPoint(corner, ns.RF_AnchorHost(f._health, s2), corner, fx, fy)
+        local sz = mod.RFC_DebuffSize(s2)
+        glyph:SetSize(sz, sz)
+        glyph:ClearAllPoints()
+        local corner, fx, fy = mod.DebuffGridPoint(s2, slot, totalShown)
+        glyph:SetPoint(corner, mod.RF_AnchorHost(f._health, s2), corner, fx, fy)
         return
     end
 
     -- Defensives: single-line relative chaining (no wrapping).
-    local pos, ox, oy, grow, sz, spc
-    pos = s2.defPosition or "center"
+    local place, ox, oy, grow, sz, spc
+    place = s2.defPosition or "center"
     ox = s2.defOffsetX or 0
     oy = s2.defOffsetY or 0
     grow = s2.defGrowDirection or "CENTER"
@@ -297,31 +297,31 @@ local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
     if grow == "CENTER" and totalShown > 0 then
         centerOff = -((totalShown - 1) * spacing) / 2
     end
-    icon:SetSize(sz, sz)
-    icon:ClearAllPoints()
+    glyph:SetSize(sz, sz)
+    glyph:ClearAllPoints()
     if slot == 0 then
         local fx = ox + (grow == "CENTER" and centerOff or 0)
         -- All aura icon previews (debuffs, defensives) anchor flush
         -- to the health bar edge -- no 1px inset -- matching the real frames.
-        local pvHost = ns.RF_AnchorHost(f._health, s2)
-        if pos == "topleft" then
-            icon:SetPoint("TOPLEFT", pvHost, "TOPLEFT", fx, oy)
-        elseif pos == "top" then
-            icon:SetPoint("TOP", pvHost, "TOP", fx, oy)
-        elseif pos == "topright" then
-            icon:SetPoint("TOPRIGHT", pvHost, "TOPRIGHT", fx, oy)
-        elseif pos == "left" then
-            icon:SetPoint("LEFT", pvHost, "LEFT", fx, oy)
-        elseif pos == "center" then
-            icon:SetPoint("CENTER", pvHost, "CENTER", fx, oy)
-        elseif pos == "right" then
-            icon:SetPoint("RIGHT", pvHost, "RIGHT", fx, oy)
-        elseif pos == "bottomright" then
-            icon:SetPoint("BOTTOMRIGHT", pvHost, "BOTTOMRIGHT", fx, oy)
-        elseif pos == "bottom" then
-            icon:SetPoint("BOTTOM", pvHost, "BOTTOM", fx, oy)
+        local pvHost = mod.RF_AnchorHost(f._health, s2)
+        if place == "topleft" then
+            glyph:SetPoint("TOPLEFT", pvHost, "TOPLEFT", fx, oy)
+        elseif place == "top" then
+            glyph:SetPoint("TOP", pvHost, "TOP", fx, oy)
+        elseif place == "topright" then
+            glyph:SetPoint("TOPRIGHT", pvHost, "TOPRIGHT", fx, oy)
+        elseif place == "left" then
+            glyph:SetPoint("LEFT", pvHost, "LEFT", fx, oy)
+        elseif place == "center" then
+            glyph:SetPoint("CENTER", pvHost, "CENTER", fx, oy)
+        elseif place == "right" then
+            glyph:SetPoint("RIGHT", pvHost, "RIGHT", fx, oy)
+        elseif place == "bottomright" then
+            glyph:SetPoint("BOTTOMRIGHT", pvHost, "BOTTOMRIGHT", fx, oy)
+        elseif place == "bottom" then
+            glyph:SetPoint("BOTTOM", pvHost, "BOTTOM", fx, oy)
         else
-            icon:SetPoint("BOTTOMLEFT", pvHost, "BOTTOMLEFT", fx, oy)
+            glyph:SetPoint("BOTTOMLEFT", pvHost, "BOTTOMLEFT", fx, oy)
         end
     else
         -- Chain from previous icon in same pool
@@ -329,13 +329,13 @@ local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
         local prev = pool[slot] -- slot is 0-based; current is slot+1, prev is pool[slot]
         if prev and prev:IsShown() then
             if grow == "RIGHT" or grow == "CENTER" then
-                icon:SetPoint("LEFT", prev, "RIGHT", spc, 0)
+                glyph:SetPoint("LEFT", prev, "RIGHT", spc, 0)
             elseif grow == "LEFT" then
-                icon:SetPoint("RIGHT", prev, "LEFT", -spc, 0)
+                glyph:SetPoint("RIGHT", prev, "LEFT", -spc, 0)
             elseif grow == "UP" then
-                icon:SetPoint("BOTTOM", prev, "TOP", 0, spc)
+                glyph:SetPoint("BOTTOM", prev, "TOP", 0, spc)
             elseif grow == "DOWN" then
-                icon:SetPoint("TOP", prev, "BOTTOM", 0, -spc)
+                glyph:SetPoint("TOP", prev, "BOTTOM", 0, -spc)
             end
         end
     end
@@ -348,14 +348,14 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
         return
     end
     local pool = auraType == "def" and f._pvDefs or f._pvDebuffs
-    local icon = pool and pool[slotIndex]
-    if not icon then
+    local glyph = pool and pool[slotIndex]
+    if not glyph then
         return
     end
 
-    local tex = PvAuraPickIcon(auraType, frameIndex)
-    if not tex then
-        icon:Hide()
+    local texture = PvAuraPickIcon(auraType, frameIndex)
+    if not texture then
+        glyph:Hide()
         return
     end
 
@@ -363,15 +363,15 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
     local dur = 8 + math.random() * 4 -- 8-12 seconds
     local startTime = GetTime()
 
-    icon._tex:SetTexture(tex)
+    glyph._tex:SetTexture(texture)
     if auraType == "db" then
         local _z = s2.debuffIconZoom or 0.08
-        icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+        glyph._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
     elseif auraType == "def" then
         local _z = s2.defIconZoom or 0.08
-        icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+        glyph._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
     end
-    if icon._cooldown then
+    if glyph._cooldown then
         local showSwipe, showDurText, dtColor, dtSize, dtOX, dtOY
         if auraType == "db" then
             showSwipe = s2.debuffShowSwipe ~= false
@@ -388,59 +388,59 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
             dtOX = s2.defDurTextOffsetX or 0
             dtOY = s2.defDurTextOffsetY or 0
         end
-        icon._cooldown:SetCooldown(startTime, dur)
-        icon._cooldown:SetDrawSwipe(showSwipe)
-        icon._cooldown:SetHideCountdownNumbers(not showDurText)
-        icon._cooldown:Show()
+        glyph._cooldown:SetCooldown(startTime, dur)
+        glyph._cooldown:SetDrawSwipe(showSwipe)
+        glyph._cooldown:SetHideCountdownNumbers(not showDurText)
+        glyph._cooldown:Show()
 
         -- Style the built-in countdown text via GetCountdownFontString
         if showDurText and dtColor then
-            local cdText = icon._cooldown.GetCountdownFontString and icon._cooldown:GetCountdownFontString()
+            local cdText = glyph._cooldown.GetCountdownFontString and glyph._cooldown:GetCountdownFontString()
             if cdText then
-                local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-                CludesUI.ApplyIconTextFont(cdText, fontPath, dtSize, "raidFrames")
+                local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+                CludesUI.ApplyIconTextFont(cdText, fontFile, dtSize, "raidFrames")
                 cdText:SetTextColor(dtColor.r, dtColor.g, dtColor.b)
                 cdText:ClearAllPoints()
-                cdText:SetPoint("CENTER", icon, "CENTER", dtOX, dtOY)
+                cdText:SetPoint("CENTER", glyph, "CENTER", dtOX, dtOY)
             end
         end
     end
 
     -- Border
     if auraType == "def" then
-        ns.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "defBorder")
+        mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, s2, "defBorder")
     else
-        ns.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "debuffBorder")
+        mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, s2, "debuffBorder")
     end
 
     -- Stacks text (debuffs only: show "2" on exactly one random debuff)
-    if icon._count then
-        icon._count:SetText("")
+    if glyph._count then
+        glyph._count:SetText("")
     end
 
-    icon:Show()
+    glyph:Show()
 
     -- Track expiration
     local key = frameIndex .. ":" .. auraType .. ":" .. slotIndex
-    ns._pvActiveAuras[key] =
+    mod._pvActiveAuras[key] =
         { frameIndex = frameIndex, auraType = auraType, slot = slotIndex, expTime = startTime + dur }
 end
 
 -- Count active auras of a type in a group (optionally skip slots below minSlot)
 local function PvAuraCountInGroup(group, auraType, minSlot)
     minSlot = minSlot or 1
-    local count = 0
-    for _, info in pairs(ns._pvActiveAuras) do
+    local total = 0
+    for _, details in pairs(mod._pvActiveAuras) do
         if
-            info.auraType == auraType
-            and info.slot >= minSlot
-            and PvAuraGetGroup(info.frameIndex) == group
-            and info.expTime > GetTime()
+            details.auraType == auraType
+            and details.slot >= minSlot
+            and PvAuraGetGroup(details.frameIndex) == group
+            and details.expTime > GetTime()
         then
-            count = count + 1
+            total = total + 1
         end
     end
-    return count
+    return total
 end
 
 -- Pick a random frame in a group that doesn't have a random aura of this type
@@ -448,25 +448,25 @@ end
 local function PvAuraPickFrame(group, auraType, minSlot)
     minSlot = minSlot or 1
     local candidates = {}
-    local pf = PvFrames()
+    local popFrame = PvFrames()
     local startIdx = (group - 1) * 5 + 1
     local endIdx = group * 5
-    for i = startIdx, endIdx do
-        if i <= #pf and pf[i] then
+    for idx = startIdx, endIdx do
+        if idx <= #popFrame and popFrame[idx] then
             local hasType = false
-            for _, info in pairs(ns._pvActiveAuras) do
+            for _, details in pairs(mod._pvActiveAuras) do
                 if
-                    info.frameIndex == i
-                    and info.auraType == auraType
-                    and info.slot >= minSlot
-                    and info.expTime > GetTime()
+                    details.frameIndex == idx
+                    and details.auraType == auraType
+                    and details.slot >= minSlot
+                    and details.expTime > GetTime()
                 then
                     hasType = true
                     break
                 end
             end
             if not hasType then
-                candidates[#candidates + 1] = i
+                candidates[#candidates + 1] = idx
             end
         end
     end
@@ -486,16 +486,16 @@ local function PvAuraReanchorFrame(frameIndex, auraType)
     if not pool then
         return
     end
-    local shown = 0
+    local isShown = 0
     for _, ic in ipairs(pool) do
         if ic:IsShown() then
-            shown = shown + 1
+            isShown = isShown + 1
         end
     end
     local slotIdx = 0
     for _, ic in ipairs(pool) do
         if ic:IsShown() then
-            PvAuraAnchor(ic, f, auraType, slotIdx, shown)
+            PvAuraAnchor(ic, f, auraType, slotIdx, isShown)
             slotIdx = slotIdx + 1
         end
     end
@@ -505,10 +505,10 @@ local function PvAuraTick()
     if not PvActive() then
         return
     end
-    local now = GetTime()
+    local nowTime = GetTime()
     local s2 = PvSettings()
-    local wantDef = ns._defensivesPreviewVisible and (s2.showDefensives or s2.showExternals)
-    local wantDb = ns._debuffsPreviewVisible and s2.debuffFilter ~= "none"
+    local wantDef = mod._defensivesPreviewVisible and (s2.showDefensives or s2.showExternals)
+    local wantDb = mod._debuffsPreviewVisible and s2.debuffFilter ~= "none"
 
     -- Expire finished auras. In Real/Overlay preview the random per-player auras
     -- (defensives and random debuffs in slot 2+) loop on the SAME frame with a fresh
@@ -516,24 +516,24 @@ local function PvAuraTick()
     -- re-picks a new random player every cycle, so icons appear to "jump" between
     -- players. Full Preview (test mode) keeps rotating. The raid-wide pulse debuff (db
     -- slot 1) is never looped here; it hits every frame at once on its own pulse cycle.
-    local loopSame = not ns._testMode
-    for key, info in pairs(ns._pvActiveAuras) do
-        if key ~= "_stackKey" and key ~= "raidwide:db" and info.expTime and info.expTime <= now then
-            local isRandom = info.auraType == "def" or (info.auraType == "db" and info.slot >= 2)
+    local loopSame = not mod._testMode
+    for key, details in pairs(mod._pvActiveAuras) do
+        if key ~= "_stackKey" and key ~= "raidwide:db" and details.expTime and details.expTime <= nowTime then
+            local isRandom = details.auraType == "def" or (details.auraType == "db" and details.slot >= 2)
             if loopSame and isRandom then
                 -- Re-spawn on the same frame/slot (overwrites this same key, so the
                 -- group count stays put and no new player is chosen). If it held the
                 -- stacks marker, drop it so the stacks pass re-applies the count text.
-                if ns._pvActiveAuras._stackKey == key then
-                    ns._pvActiveAuras._stackKey = nil
+                if mod._pvActiveAuras._stackKey == key then
+                    mod._pvActiveAuras._stackKey = nil
                 end
-                PvAuraApply(info.frameIndex, info.auraType, info.slot)
-                PvAuraReanchorFrame(info.frameIndex, info.auraType)
+                PvAuraApply(details.frameIndex, details.auraType, details.slot)
+                PvAuraReanchorFrame(details.frameIndex, details.auraType)
             else
-                local f = PvFrames()[info.frameIndex]
+                local f = PvFrames()[details.frameIndex]
                 if f then
-                    local pool = info.auraType == "def" and f._pvDefs or f._pvDebuffs
-                    local ic = pool and pool[info.slot]
+                    local pool = details.auraType == "def" and f._pvDefs or f._pvDebuffs
+                    local ic = pool and pool[details.slot]
                     if ic then
                         ic:Hide()
                         if ic._cooldown then
@@ -544,10 +544,10 @@ local function PvAuraTick()
                         end
                     end
                 end
-                if ns._pvActiveAuras._stackKey == key then
-                    ns._pvActiveAuras._stackKey = nil
+                if mod._pvActiveAuras._stackKey == key then
+                    mod._pvActiveAuras._stackKey = nil
                 end
-                ns._pvActiveAuras[key] = nil
+                mod._pvActiveAuras[key] = nil
             end
         end
     end
@@ -556,19 +556,19 @@ local function PvAuraTick()
     if wantDb then
         -- Check if the raid-wide pulse is active or needs to start/restart
         local pulseKey = "raidwide:db"
-        local pulseInfo = ns._pvActiveAuras[pulseKey]
+        local pulseInfo = mod._pvActiveAuras[pulseKey]
         if not pulseInfo then
             -- First tick or after expiry gap: schedule next pulse
-            ns._pvActiveAuras[pulseKey] = { nextPulse = now, active = false }
-            pulseInfo = ns._pvActiveAuras[pulseKey]
+            mod._pvActiveAuras[pulseKey] = { nextPulse = nowTime, active = false }
+            pulseInfo = mod._pvActiveAuras[pulseKey]
         end
-        if pulseInfo.active and pulseInfo.expTime and pulseInfo.expTime <= now then
+        if pulseInfo.active and pulseInfo.expTime and pulseInfo.expTime <= nowTime then
             -- Pulse expired: hide slot 1 on all frames. While wrapping is on,
             -- skip the player frame (index 1) -- it's a dedicated full showcase
             -- (filled below) so its slots stay put instead of pulsing.
-            local pf = PvFrames()
-            for fi = (((s2.debuffPerRow or 1) > 1) and 2 or 1), #pf do
-                local f = pf[fi]
+            local popFrame = PvFrames()
+            for fi = (((s2.debuffPerRow or 1) > 1) and 2 or 1), #popFrame do
+                local f = popFrame[fi]
                 if f and f._pvDebuffs and f._pvDebuffs[1] then
                     f._pvDebuffs[1]:Hide()
                     if f._pvDebuffs[1]._cooldown then
@@ -579,33 +579,33 @@ local function PvAuraTick()
                     -- when that icon itself refreshes.
                     PvAuraReanchorFrame(fi, "db")
                 end
-                ns._pvActiveAuras[fi .. ":db:1"] = nil
+                mod._pvActiveAuras[fi .. ":db:1"] = nil
             end
             pulseInfo.active = false
-            pulseInfo.nextPulse = now + 15 -- 15s gap before next pulse
+            pulseInfo.nextPulse = nowTime + 15 -- 15s gap before next pulse
         end
-        if not pulseInfo.active and now >= (pulseInfo.nextPulse or 0) then
+        if not pulseInfo.active and nowTime >= (pulseInfo.nextPulse or 0) then
             -- Apply 10s debuff to all frames (skip the player showcase frame 1
             -- while wrapping is on; it owns its own debuff slots, filled below).
             local dur = 10
-            local pf = PvFrames()
-            for fi = (((s2.debuffPerRow or 1) > 1) and 2 or 1), #pf do
+            local popFrame = PvFrames()
+            for fi = (((s2.debuffPerRow or 1) > 1) and 2 or 1), #popFrame do
                 local key = fi .. ":db:1"
-                local f = pf[fi]
+                local f = popFrame[fi]
                 if f and f._pvDebuffs and f._pvDebuffs[1] and f._health then
-                    local icon = f._pvDebuffs[1]
-                    icon._tex:SetTexture(5927657)
+                    local glyph = f._pvDebuffs[1]
+                    glyph._tex:SetTexture(5927657)
                     local _z = s2.debuffIconZoom or 0.08
-                    icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
-                    icon:SetSize(ns.RFC_DebuffSize(s2), ns.RFC_DebuffSize(s2))
-                    if icon._cooldown then
-                        icon._cooldown:SetCooldown(now, dur)
-                        icon._cooldown:SetDrawSwipe(s2.debuffShowSwipe ~= false)
-                        icon._cooldown:SetHideCountdownNumbers(not s2.debuffShowDurText)
-                        icon._cooldown:Show()
+                    glyph._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+                    glyph:SetSize(mod.RFC_DebuffSize(s2), mod.RFC_DebuffSize(s2))
+                    if glyph._cooldown then
+                        glyph._cooldown:SetCooldown(nowTime, dur)
+                        glyph._cooldown:SetDrawSwipe(s2.debuffShowSwipe ~= false)
+                        glyph._cooldown:SetHideCountdownNumbers(not s2.debuffShowDurText)
+                        glyph._cooldown:Show()
                         if s2.debuffShowDurText then
-                            local cdText = icon._cooldown.GetCountdownFontString
-                                and icon._cooldown:GetCountdownFontString()
+                            local cdText = glyph._cooldown.GetCountdownFontString
+                                and glyph._cooldown:GetCountdownFontString()
                             if cdText then
                                 local dtc = s2.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                                 local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -619,7 +619,7 @@ local function PvAuraTick()
                                 cdText:ClearAllPoints()
                                 cdText:SetPoint(
                                     "CENTER",
-                                    icon,
+                                    glyph,
                                     "CENTER",
                                     s2.debuffDurTextOffsetX or 0,
                                     s2.debuffDurTextOffsetY or 0
@@ -627,22 +627,22 @@ local function PvAuraTick()
                             end
                         end
                     end
-                    ns.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "debuffBorder")
-                    icon:Show()
+                    mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, s2, "debuffBorder")
+                    glyph:Show()
                     -- Re-pack all shown debuffs so slot 1 takes the first position
                     -- and any random slot-2+ debuff shifts right, rather than the
                     -- two overlapping when the pulse returns.
                     PvAuraReanchorFrame(fi, "db")
-                    ns._pvActiveAuras[key] = {
+                    mod._pvActiveAuras[key] = {
                         frameIndex = fi,
                         auraType = "db",
                         slot = 1,
-                        expTime = now + dur,
+                        expTime = nowTime + dur,
                     }
                 end
             end
             pulseInfo.active = true
-            pulseInfo.expTime = now + dur
+            pulseInfo.expTime = nowTime + dur
         end
 
         -- Row-wrap showcase: when wrapping is enabled, fill the player frame
@@ -658,8 +658,8 @@ local function PvAuraTick()
                 for slot = 1, cap do
                     if f1._pvDebuffs[slot] then
                         local key = "1:db:" .. slot
-                        local info = ns._pvActiveAuras[key]
-                        if not (info and info.expTime > now) then
+                        local details = mod._pvActiveAuras[key]
+                        if not (details and details.expTime > nowTime) then
                             PvAuraApply(1, "db", slot)
                             changed = true
                         end
@@ -675,7 +675,7 @@ local function PvAuraTick()
     -- Ensure minimum random auras per group for each enabled category.
     -- Party is a single group of 5, so it gets a higher per-group defensive
     -- count (3) to read as a populated showcase; raid keeps 1 per group.
-    local defTarget = ns._partyPvActive and 3 or 1
+    local defTarget = mod._partyPvActive and 3 or 1
     for group = 1, 4 do
         while wantDef and PvAuraCountInGroup(group, "def") < defTarget do
             local fi = PvAuraPickFrame(group, "def")
@@ -699,27 +699,32 @@ local function PvAuraTick()
     -- Stays on the same icon until it expires, then the next new one gets it.
     if wantDb and s2.debuffShowStacks then
         -- Check if current stacks target is still alive
-        local stackKey = ns._pvActiveAuras._stackKey
+        local stackKey = mod._pvActiveAuras._stackKey
         local stackAlive = stackKey
-            and ns._pvActiveAuras[stackKey]
-            and ns._pvActiveAuras[stackKey].expTime > now
+            and mod._pvActiveAuras[stackKey]
+            and mod._pvActiveAuras[stackKey].expTime > nowTime
         if not stackAlive then
             -- Clear old stacks text
             if stackKey then
-                local oldInfo = ns._pvActiveAuras[stackKey]
+                local oldInfo = mod._pvActiveAuras[stackKey]
                 -- oldInfo may have been wiped already
             end
-            ns._pvActiveAuras._stackKey = nil
+            mod._pvActiveAuras._stackKey = nil
         end
         -- If no current target, assign to the next new debuff that appears
         -- (handled in PvAuraApply via _pvNeedStacks flag)
-        if not ns._pvActiveAuras._stackKey then
+        if not mod._pvActiveAuras._stackKey then
             -- Find any active slot 2+ debuff to assign stacks to
-            for key, info in pairs(ns._pvActiveAuras) do
-                if key ~= "_stackKey" and info.auraType == "db" and info.slot >= 2 and info.expTime > now then
-                    ns._pvActiveAuras._stackKey = key
-                    local f = PvFrames()[info.frameIndex]
-                    local ic = f and f._pvDebuffs and f._pvDebuffs[info.slot]
+            for key, details in pairs(mod._pvActiveAuras) do
+                if
+                    key ~= "_stackKey"
+                    and details.auraType == "db"
+                    and details.slot >= 2
+                    and details.expTime > nowTime
+                then
+                    mod._pvActiveAuras._stackKey = key
+                    local f = PvFrames()[details.frameIndex]
+                    local ic = f and f._pvDebuffs and f._pvDebuffs[details.slot]
                     if ic and ic._count then
                         local stc = s2.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                         local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -755,7 +760,7 @@ local function StopPvAuraTicker()
         pvAuraTicker:Cancel()
         pvAuraTicker = nil
     end
-    wipe(ns._pvActiveAuras)
+    wipe(mod._pvActiveAuras)
     -- Hide all preview aura icons, reset cooldowns, unregister dur texts
     for _, f in ipairs(PvFrames()) do
         if f._pvDebuffs then
@@ -777,7 +782,7 @@ local function StopPvAuraTicker()
     end
 end
 
-I.PvActive, I.PvAuraReanchorFrame, I.PvFrames = PvActive, PvAuraReanchorFrame, PvFrames
-I.PvSettings, I.StartPvAuraTicker = PvSettings, StartPvAuraTicker
-I.StopPvAuraTicker = StopPvAuraTicker
-I.broken = false
+Inner.PvActive, Inner.PvAuraReanchorFrame, Inner.PvFrames = PvActive, PvAuraReanchorFrame, PvFrames
+Inner.PvSettings, Inner.StartPvAuraTicker = PvSettings, StartPvAuraTicker
+Inner.StopPvAuraTicker = StopPvAuraTicker
+Inner.broken = false

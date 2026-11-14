@@ -8,15 +8,15 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  nest visibility and SetSelection.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local floor, min, max, abs = math.floor, math.min, math.max, math.abs
+local floor, min, upper, abs = math.floor, math.min, math.max, math.abs
 local sin, cos = math.sin, math.cos
 local tonumber = tonumber
 local tremove = table.remove
@@ -25,13 +25,14 @@ local InCombatLockdown = InCombatLockdown
 -- -- see AdvanceLiveIcons.
 local IsShiftKeyDown, IsControlKeyDown, IsAltKeyDown = IsShiftKeyDown, IsControlKeyDown, IsAltKeyDown
 
-local EnsurePalette, MAX_PALETTES, MAX_SLOTS = I.EnsurePalette, I.MAX_PALETTES, I.MAX_SLOTS
-local PA, ReadPalette, SelectColor, CycleNext = I.PA, I.ReadPalette, I.SelectColor, I.CycleNext
-local WORLD_MARKER_ENGINE, Rez, SlotCooldown = I.WORLD_MARKER_ENGINE, I.Rez, I.SlotCooldown
-local SlotCount, SlotDisplay, SlotUsability = I.SlotCount, I.SlotDisplay, I.SlotUsability
-local UsableSlots, ApplyIconCrop = I.UsableSlots, I.ApplyIconCrop
-local ApplySlotVisual, PaletteView = I.ApplySlotVisual, I.PaletteView
-local RefreshFonts, secureButtons = I.RefreshFonts, I.secureButtons
+local EnsurePalette, MAX_PALETTES, MAX_SLOTS = Inner.EnsurePalette, Inner.MAX_PALETTES, Inner.MAX_SLOTS
+local PA, ReadPalette, SelectColor, CycleNext =
+    Inner.PA, Inner.ReadPalette, Inner.SelectColor, Inner.CycleNext
+local WORLD_MARKER_ENGINE, Rez, SlotCooldown = Inner.WORLD_MARKER_ENGINE, Inner.Rez, Inner.SlotCooldown
+local SlotCount, SlotDisplay, SlotUsability = Inner.SlotCount, Inner.SlotDisplay, Inner.SlotUsability
+local UsableSlots, ApplyIconCrop = Inner.UsableSlots, Inner.ApplyIconCrop
+local ApplySlotVisual, PaletteView = Inner.ApplySlotVisual, Inner.PaletteView
+local RefreshFonts, secureButtons = Inner.RefreshFonts, Inner.secureButtons
 
 -- Paint one cell from its slot. Shared by the palette's own entries and by the
 -- nested ones, which differ only in where they are placed and when they are
@@ -61,23 +62,32 @@ end
 -- resolves to one fixed thing, and the built-in macrotext kinds -- markers,
 -- world markers, the cycling pair -- carry an icon of their own that no
 -- conditional can move.
-local function HasLiveIcon(slot)
-    if slot == nil then
+local function HasLiveIcon(slotIndex)
+    if slotIndex == nil then
         return false
     end
-    return slot.kind == "macro" or slot.kind == "dynamicrez"
+    return slotIndex.kind == "macro" or slotIndex.kind == "dynamicrez"
 end
 
 -- Does this cell's tint follow the mount rules (see SlotUsability)? Those are
 -- re-read on the game's own events while a live menu is up -- see
 -- RefreshMountTints.
-local function HasMountTint(slot)
-    local k = slot and slot.kind
-    return k == "mount" or k == "lastmount" or k == "randommount"
+local function HasMountTint(slotIndex)
+    local key = slotIndex and slotIndex.kind
+    return key == "mount" or key == "lastmount" or key == "randommount"
 end
 
-local function PaintCell(w, slot, placeholder, showLabels, showCooldowns, wantLabel, iconSize, showUsability)
-    w.isPlaceholder = placeholder
+local function PaintCell(
+    wid,
+    slotIndex,
+    placeholder,
+    showLabels,
+    showCooldowns,
+    wantLabel,
+    iconSize,
+    showUsability
+)
+    wid.isPlaceholder = placeholder
 
     -- Read once per paint, which is once per open: range and resources do move
     -- while a palette is up, but a hold lasts a fraction of a second and a tint
@@ -85,64 +95,64 @@ local function PaintCell(w, slot, placeholder, showLabels, showCooldowns, wantLa
     -- information. Mounts are the exception (RefreshMountTints): where you can
     -- mount changes a handful of times a session, at a doorway, and a menu
     -- left open should follow it. ApplySlotVisual turns this into a colour.
-    w.usability = (showUsability and not placeholder) and SlotUsability(slot) or nil
+    wid.usability = (showUsability and not placeholder) and SlotUsability(slotIndex) or nil
 
-    local icon, name = SlotDisplay(slot)
-    ns.SetIconTexture(w.icon, icon)
+    local glyph, name = SlotDisplay(slotIndex)
+    mod.SetIconTexture(wid.icon, glyph)
     -- Per paint: the widget is pooled, and the marker textures take the full
     -- rect where everything else takes the crop.
-    ApplyIconCrop(w.icon, icon)
-    w.icon:SetShown(not placeholder)
-    w.plus:SetShown(placeholder)
+    ApplyIconCrop(wid.icon, glyph)
+    wid.icon:SetShown(not placeholder)
+    wid.plus:SetShown(placeholder)
 
     local labelled = showLabels and wantLabel and name ~= nil
-    w.label:SetText((labelled and CludesUI.L(name)) or "")
-    w.label:SetShown(labelled or false)
+    wid.label:SetText((labelled and CludesUI.L(name)) or "")
+    wid.label:SetShown(labelled or false)
 
     -- A palette has no cooldown of its own, and borrowing its first entry's
     -- would be a lie the moment the user pointed at any of the others.
-    if showCooldowns and slot and slot.kind ~= "palette" then
-        local durObj, start, duration, enable = SlotCooldown(slot)
+    if showCooldowns and slotIndex and slotIndex.kind ~= "palette" then
+        local durObj, start, duration, enable = SlotCooldown(slotIndex)
         if durObj then
             -- clearIfZero defaults true, so an idle spell clears itself.
-            w.cd:SetCooldownFromDurationObject(durObj)
+            wid.cd:SetCooldownFromDurationObject(durObj)
         elseif start then
-            CooldownFrame_Set(w.cd, start, duration, enable)
+            CooldownFrame_Set(wid.cd, start, duration, enable)
         else
-            w.cd:Clear()
+            wid.cd:Clear()
         end
-        w.cd:Show()
+        wid.cd:Show()
     else
-        w.cd:Clear()
-        w.cd:Hide()
+        wid.cd:Clear()
+        wid.cd:Hide()
     end
 
     -- The value is written and shown, never read back or tested -- not even
     -- for nil, which is why SlotCount answers WHETHER separately from WHAT. A
     -- placeholder has no slot to count, and a palette entry's count would be
     -- whichever of its children happened to be first.
-    local hasCount, count = false, nil
-    if not placeholder and slot and slot.kind ~= "palette" then
-        hasCount, count = SlotCount(slot)
+    local hasCount, total = false, nil
+    if not placeholder and slotIndex and slotIndex.kind ~= "palette" then
+        hasCount, total = SlotCount(slotIndex)
     end
     if hasCount then
-        w.count:SetTextHeight(max(8, floor((iconSize or 40) * 0.34)))
-        w.count:SetText(count)
+        wid.count:SetTextHeight(upper(8, floor((iconSize or 40) * 0.34)))
+        wid.count:SetText(total)
     end
-    w.count:SetShown(hasCount)
+    wid.count:SetShown(hasCount)
 
     -- Sized and placed per paint: an entry's icon size is a setting, and these
     -- have to stay legible at the small end without swallowing the icon at the
     -- large one. Physical pixels, like the borders.
-    local nests = (not placeholder) and slot and slot.kind == "palette"
-    if w.nestDots then
+    local nests = (not placeholder) and slotIndex and slotIndex.kind == "palette"
+    if wid.nestDots then
         local px = CludesUI.PP and CludesUI.PP.mult or 1
-        local dot = max(px, floor((iconSize or 40) * 0.055 / px + 0.5) * px)
+        local dot = upper(px, floor((iconSize or 40) * 0.055 / px + 0.5) * px)
         for d = 1, 3 do
-            local t = w.nestDots[d]
+            local t = wid.nestDots[d]
             t:SetSize(dot, dot)
             t:ClearAllPoints()
-            t:SetPoint("BOTTOMLEFT", w, "BOTTOMLEFT", dot + (d - 1) * dot * 2, dot)
+            t:SetPoint("BOTTOMLEFT", wid, "BOTTOMLEFT", dot + (d - 1) * dot * 2, dot)
             t:SetVertexColor(1, 1, 1, 0.85)
             t:SetShown(nests and true or false)
         end
@@ -151,18 +161,18 @@ local function PaintCell(w, slot, placeholder, showLabels, showCooldowns, wantLa
     -- Through the view because PaintCell is not a method and the pip needs one
     -- (see MarkerPip). Every open repaints every cell, so this is the reading
     -- that matters; the event below only keeps a menu left open honest.
-    if w.view then
-        w.view:MarkerPip(w, slot, iconSize)
+    if wid.view then
+        wid.view:MarkerPip(wid, slotIndex, iconSize)
     end
 
-    ApplySlotVisual(w, false)
+    ApplySlotVisual(wid, false)
 end
 
 -- Lay the palette out and paint every widget from the stored slot data.
 function PaletteView:Layout(paletteIndex)
     -- Clamped to what can be STORED rather than to what can be bound: a nested
     -- palette is opened through its parent and may well have no key of its own.
-    paletteIndex = min(MAX_PALETTES, max(1, paletteIndex or self.paletteIndex or 1))
+    paletteIndex = min(MAX_PALETTES, upper(1, paletteIndex or self.paletteIndex or 1))
     -- PA(paletteIndex), not self:P(): this call is what MOVES the view onto a
     -- palette, so the index it was pointed at last says nothing about the
     -- appearance being laid out here.
@@ -171,7 +181,7 @@ function PaletteView:Layout(paletteIndex)
         return
     end
 
-    local opts = self.opts
+    local options = self.opts
     -- Everything the steering passes read that is NOT the cursor is rewritten
     -- from here down -- the claim boxes, the entry count, every option a
     -- Refresh mid-hold can move -- so the snapshot SteerUnchanged took against
@@ -183,10 +193,10 @@ function PaletteView:Layout(paletteIndex)
     -- the usable view for everything else (Hide Unavailable Actions). Kept on
     -- the view so CellSlot maps a cell index through the SAME list this
     -- drawing was laid out from.
-    local slots = opts.interactive and palette.slots or UsableSlots(palette, p)
+    local slots = options.interactive and palette.slots or UsableSlots(palette, p)
     self._slots = slots
     -- Derived, never stored: the palette is exactly as big as what is on it.
-    local n = #slots
+    local num = #slots
     -- The editor's "+" add button. On the ARC it takes the CENTRE -- the
     -- ground the live menu spends on hub art, which the editor does not draw
     -- -- so the ring holds only real entries and the connector line runs out
@@ -194,12 +204,12 @@ function PaletteView:Layout(paletteIndex)
     -- free centre (their middle is an entry), so there the button still
     -- takes the trailing slot, and adding an action visibly re-fans them.
     local isArc = self:LayoutMode() == "ARC"
-    local arcCenter = opts.interactive and isArc
+    local arcCenter = options.interactive and isArc
     -- The FAN editor's add button leaves the strip entirely -- above a
     -- horizontal strip (which drops a little to make the room), left of a
     -- vertical one -- so the strip holds only real entries and the editor
     -- windows and scrolls exactly the way the live strip does.
-    local fanSide = opts.interactive and self:LayoutMode() == "FAN"
+    local fanSide = options.interactive and self:LayoutMode() == "FAN"
     self._fanCrossOff = (fanSide and self:FanHoriz()) and -14 or nil
     -- The caption ("Show Action Text Label"): the selected action's NAME and
     -- nothing else, on every layout -- no palette name at rest, no hint
@@ -208,44 +218,45 @@ function PaletteView:Layout(paletteIndex)
     -- took over the fan's own Show Action Text; a fanShowText key left in
     -- stored profiles is never read.)
     self._hubNameOnly = p.showActionText == true
-    local shown = (opts.interactive and not arcCenter and not fanSide and n < MAX_SLOTS) and (n + 1) or n
-    self.slotCount, self.shownCount = n, shown
+    local isShown = (options.interactive and not arcCenter and not fanSide and num < MAX_SLOTS) and (num + 1)
+        or num
+    self.slotCount, self.shownCount = num, isShown
 
-    local step, arcStart = self:ArcGeom(shown)
-    local radius, iconSize = self:Geom(shown)
+    local step, arcStart = self:ArcGeom(isShown)
+    local radius, iconSize = self:Geom(isShown)
     local fan = self:IsFan()
 
     -- Worked out before the frame is sized, not with the entries it places: a
     -- nested arc reaches further out than the palette's own ring, and a frame
     -- sized to the ring alone would clip every child drawn beyond it.
-    local claims = self:ChildGeom(shown, slots)
+    local claims = self:ChildGeom(isShown, slots)
     local outer = radius
     -- Half-extents a block layout's nests reach to, in the frame's own units.
     local nestX, nestY = 0, 0
-    for k = 1, (claims and #claims or 0) do
-        local c = claims[k]
+    for key = 1, (claims and #claims or 0) do
+        local c = claims[key]
         if c.cells then
-            for j = 1, c.n do
-                local b = c.cells[j]
+            for jdx = 1, c.n do
+                local b = c.cells[jdx]
                 -- The BOX, not the icon: it is the box a pointer has to be able
                 -- to reach, and a frame sized to the icons alone would put part
                 -- of a nest's own ground outside the palette.
-                nestX = max(nestX, abs(b.x) + max(b.hw, c.icon * 0.5))
-                nestY = max(nestY, abs(b.y) + max(b.hh, c.icon * 0.5))
+                nestX = upper(nestX, abs(b.x) + upper(b.hw, c.icon * 0.5))
+                nestY = upper(nestY, abs(b.y) + upper(b.hh, c.icon * 0.5))
             end
         else
             -- Plus the child's own half-width: a ring of icons reaches further
             -- than the circle their centres sit on, and that is what clips.
-            outer = max(outer, c.radius + c.icon * 0.5 - iconSize * 0.5)
+            outer = upper(outer, c.radius + c.icon * 0.5 - iconSize * 0.5)
         end
     end
 
-    local frame = self.frame
+    local widget = self.frame
     -- p.scale is the user's live sizing; a fitted preview supplies its own
     -- geometry instead and must not be scaled a second time.
-    if not opts.interactive then
+    if not options.interactive then
         local sc = p.scale or 1
-        frame:SetScale(sc)
+        widget:SetScale(sc)
         -- Every string on this palette is sized against its own effective
         -- scale (see ApplyModuleFont), so a scale change leaves all of them
         -- rasterised for the old one. Re-applied only when the scale actually
@@ -260,34 +271,34 @@ function PaletteView:Layout(paletteIndex)
         -- is just a grid one entry deep, so GridDims has already reduced it to
         -- the same cols/rows the extent is measured from.
         local pitch = iconSize + (p.fanGap or 10)
-        local cols, rows = self:GridDims()
+        local cols, rowList = self:GridDims()
         -- Whichever is wider: the block itself, or a nest hanging off it.
-        frame:SetSize(max(cols * pitch, nestX * 2) + 40, max(rows * pitch, nestY * 2) + 60)
+        widget:SetSize(upper(cols * pitch, nestX * 2) + 40, upper(rowList * pitch, nestY * 2) + 60)
     elseif fan then
         local along = self:FanHalfLength() * 2 + 40
         local across = iconSize + 60 -- room for the hub caption
         -- Whichever is bigger: the strip, or a nest broken out across it.
         if self:FanHoriz() then
-            frame:SetSize(max(along, nestX * 2 + 40), max(across, nestY * 2 + 40))
+            widget:SetSize(upper(along, nestX * 2 + 40), upper(across, nestY * 2 + 40))
         else
-            frame:SetSize(max(across, nestX * 2 + 40), max(along, nestY * 2 + 40))
+            widget:SetSize(upper(across, nestX * 2 + 40), upper(along, nestY * 2 + 40))
         end
     else
         -- Sized generously so labels and the selected-slot zoom never clip.
         local span = (outer + iconSize) * 2 + 40
-        frame:SetSize(span, span)
+        widget:SetSize(span, span)
     end
 
     -- Per-slot labels are FIXED off (the Show Slot Labels setting was
     -- removed; a showLabels key left in stored profiles is never read).
     local showLabels = false
-    local showCooldowns = opts.showCooldowns
+    local showCooldowns = options.showCooldowns
     if showCooldowns == nil then
         showCooldowns = p.showCooldowns
     end
     -- ~= false, not == true: on by default, so a profile that has never seen
     -- the key gets the tint.
-    local showUsability = opts.showUsability
+    local showUsability = options.showUsability
     if showUsability == nil then
         showUsability = p.showUsability ~= false
     end
@@ -300,8 +311,8 @@ function PaletteView:Layout(paletteIndex)
         liveCells = {}
         self._liveCells = liveCells
     end
-    for k = #liveCells, 1, -1 do
-        liveCells[k] = nil
+    for key = #liveCells, 1, -1 do
+        liveCells[key] = nil
     end
 
     -- The cells still waiting on their display data, collected the same way and
@@ -311,8 +322,8 @@ function PaletteView:Layout(paletteIndex)
         pending = {}
         self._pendingCells = pending
     end
-    for k = #pending, 1, -1 do
-        pending[k] = nil
+    for key = #pending, 1, -1 do
+        pending[key] = nil
     end
 
     -- The mount cells, collected the same way and kept the same way, for the
@@ -323,75 +334,84 @@ function PaletteView:Layout(paletteIndex)
         mountCells = {}
         self._mountCells = mountCells
     end
-    for k = #mountCells, 1, -1 do
-        mountCells[k] = nil
+    for key = #mountCells, 1, -1 do
+        mountCells[key] = nil
     end
 
-    for i = 1, shown do
-        local w = self.widgets[i]
+    for idx = 1, isShown do
+        local wid = self.widgets[idx]
         -- Switching modes leaves the other mode's depth cues behind.
-        w:SetAlpha(1)
-        w:SetScale(1)
+        wid:SetAlpha(1)
+        wid:SetScale(1)
         -- The size a selection zoom is measured from. Every steered layout
         -- publishes its own, entry by entry, in the geometry passes below.
-        w.baseSize = iconSize
+        wid.baseSize = iconSize
         if not fan then
-            local a = arcStart + (i - 1) * step
-            w:ClearAllPoints()
-            w:SetPoint("CENTER", frame, "CENTER", radius * sin(a), radius * cos(a))
-            w:SetSize(iconSize, iconSize)
+            local a = arcStart + (idx - 1) * step
+            wid:ClearAllPoints()
+            wid:SetPoint("CENTER", widget, "CENTER", radius * sin(a), radius * cos(a))
+            wid:SetSize(iconSize, iconSize)
         end
-        w:EnableMouse(opts.interactive == true)
+        wid:EnableMouse(options.interactive == true)
 
         -- A nil slot is only reachable on an interactive view, whose trailing
         -- "+" placeholder is drawn as a real entry: shown == n otherwise.
         -- The fan never labels its entries: at strip spacing the captions of
         -- neighbouring icons collide, and the centre entry -- the only one that
         -- can be fired -- is already named on the hub.
-        PaintCell(w, slots[i], slots[i] == nil, showLabels, showCooldowns, not fan, iconSize, showUsability)
+        PaintCell(
+            wid,
+            slots[idx],
+            slots[idx] == nil,
+            showLabels,
+            showCooldowns,
+            not fan,
+            iconSize,
+            showUsability
+        )
         -- slots, not palette.slots: the same list the cell was just painted
         -- from. Once Hide Unavailable Actions filters anything the two part
         -- company, and testing the stored array would collect the wrong cells.
-        if HasLiveIcon(slots[i]) then
-            liveCells[#liveCells + 1] = i
+        if HasLiveIcon(slots[idx]) then
+            liveCells[#liveCells + 1] = idx
         end
-        if ns.WarmSlot(slots[i]) then
-            pending[#pending + 1] = i
+        if mod.WarmSlot(slots[idx]) then
+            pending[#pending + 1] = idx
         end
-        if showUsability and HasMountTint(slots[i]) then
-            mountCells[#mountCells + 1] = i
+        if showUsability and HasMountTint(slots[idx]) then
+            mountCells[#mountCells + 1] = idx
         end
-        w:Show()
+        wid:Show()
     end
 
     -- Nested entries, laid out past the palette's own on the same index line, so
     -- a cell index is all the hit test and the secure push ever have to carry.
-    local cells = shown
+    local cells = isShown
     if claims then
-        for k = 1, #claims do
-            local c = claims[k]
+        for key = 1, #claims do
+            local c = claims[key]
             c.base = cells
-            for j = 1, c.n do
+            for jdx = 1, c.n do
                 cells = cells + 1
-                local w = self:Widget(cells)
-                w:SetAlpha(1)
-                w:SetScale(1)
-                w.baseSize = c.icon
-                w:ClearAllPoints()
+                local wid = self:Widget(cells)
+                wid:SetAlpha(1)
+                wid:SetScale(1)
+                wid.baseSize = c.icon
+                wid:ClearAllPoints()
                 if c.cells then
                     -- A block layout rewrites these every frame in AdvanceGrid,
                     -- along with the falloff; placing them here too is what a
                     -- view that never steers -- a static frame -- shows.
-                    w:SetPoint("CENTER", frame, "CENTER", c.cells[j].x, c.cells[j].y)
+                    wid:SetPoint("CENTER", widget, "CENTER", c.cells[jdx].x, c.cells[jdx].y)
                 else
-                    local r, a = self:ChildRingPos(c, j)
-                    w:SetPoint("CENTER", frame, "CENTER", r * sin(a), r * cos(a))
+                    local r, a = self:ChildRingPos(c, jdx)
+                    wid:SetPoint("CENTER", widget, "CENTER", r * sin(a), r * cos(a))
                 end
-                w:SetSize(c.icon, c.icon)
-                w:EnableMouse(false)
+                wid:SetSize(c.icon, c.icon)
+                wid:EnableMouse(false)
                 PaintCell(
-                    w,
-                    c.slots[j],
+                    wid,
+                    c.slots[jdx],
                     false,
                     showLabels,
                     showCooldowns,
@@ -399,17 +419,17 @@ function PaletteView:Layout(paletteIndex)
                     c.icon,
                     showUsability
                 )
-                if HasLiveIcon(c.slots[j]) then
+                if HasLiveIcon(c.slots[jdx]) then
                     liveCells[#liveCells + 1] = cells
                 end
-                if ns.WarmSlot(c.slots[j]) then
+                if mod.WarmSlot(c.slots[jdx]) then
                     pending[#pending + 1] = cells
                 end
-                if showUsability and HasMountTint(c.slots[j]) then
+                if showUsability and HasMountTint(c.slots[jdx]) then
                     mountCells[#mountCells + 1] = cells
                 end
                 -- Hidden until its own claim is opened -- see UpdateNestShown.
-                w:Hide()
+                wid:Hide()
             end
         end
     end
@@ -427,16 +447,16 @@ function PaletteView:Layout(paletteIndex)
     -- from the first claim that placed: with several nests on different sides
     -- there is no one answer, and the first is the one the palette leads with.
     self.nestAxis, self.nestSign = nil, nil
-    for k = 1, (claims and #claims or 0) do
-        if claims[k].axis then
-            self.nestAxis, self.nestSign = claims[k].axis, claims[k].sign
+    for key = 1, (claims and #claims or 0) do
+        if claims[key].axis then
+            self.nestAxis, self.nestSign = claims[key].axis, claims[key].sign
             break
         end
     end
 
-    for i = cells + 1, #self.widgets do
-        self.widgets[i]:Hide()
-        self.widgets[i]:EnableMouse(false)
+    for idx = cells + 1, #self.widgets do
+        self.widgets[idx]:Hide()
+        self.widgets[idx]:EnableMouse(false)
     end
 
     -- The ARC editor's centred add button, painted after the sweep above
@@ -444,22 +464,22 @@ function PaletteView:Layout(paletteIndex)
     -- (which that sweep just hid). Gone at the cap: a full menu has nothing
     -- to add. It stays outside shownCount, so the falloff and the hit test
     -- never see it -- only its own mouse scripts do.
-    if arcCenter and n < MAX_SLOTS then
-        local w = self:Widget(n + 1)
+    if arcCenter and num < MAX_SLOTS then
+        local wid = self:Widget(num + 1)
         -- Sized from the profile's icon size directly, NOT from this view's
         -- geom: the button is an editor affordance rather than a preview of
         -- an entry, so the preview's fit-to-block shrink does not apply --
         -- it paints at full scale whatever the ring around it is drawn at.
         local addSize = p.iconSize or 40
-        w:SetAlpha(1)
-        w:SetScale(1)
-        w.baseSize = addSize
-        w:ClearAllPoints()
-        w:SetPoint("CENTER", frame, "CENTER", 0, 0)
-        w:SetSize(addSize, addSize)
-        w:EnableMouse(true)
-        PaintCell(w, nil, true, showLabels, showCooldowns, not fan, addSize, showUsability)
-        w:Show()
+        wid:SetAlpha(1)
+        wid:SetScale(1)
+        wid.baseSize = addSize
+        wid:ClearAllPoints()
+        wid:SetPoint("CENTER", widget, "CENTER", 0, 0)
+        wid:SetSize(addSize, addSize)
+        wid:EnableMouse(true)
+        PaintCell(wid, nil, true, showLabels, showCooldowns, not fan, addSize, showUsability)
+        wid:Show()
     end
 
     -- The FAN editor's add button, off the strip's own line: above a
@@ -467,29 +487,29 @@ function PaletteView:Layout(paletteIndex)
     -- of a vertical one. Full scale for the same reason the arc's is --
     -- an editor affordance, never fitted -- and outside shownCount, so the
     -- window, the fold and the scroll never see it.
-    if fanSide and n < MAX_SLOTS then
-        local w = self:Widget(n + 1)
+    if fanSide and num < MAX_SLOTS then
+        local wid = self:Widget(num + 1)
         local addSize = p.iconSize or 40
         local _, viewIcon = self:Geom()
-        w:SetAlpha(1)
-        w:SetScale(1)
-        w.baseSize = addSize
-        w:ClearAllPoints()
+        wid:SetAlpha(1)
+        wid:SetScale(1)
+        wid.baseSize = addSize
+        wid:ClearAllPoints()
         if self:FanHoriz() then
-            w:SetPoint(
+            wid:SetPoint(
                 "CENTER",
-                frame,
+                widget,
                 "CENTER",
                 0,
                 (self._fanCrossOff or 0) + viewIcon * 0.5 + addSize * 0.5 + 20
             )
         else
-            w:SetPoint("CENTER", frame, "CENTER", -(viewIcon * 0.5 + addSize * 0.5 + 20), 0)
+            wid:SetPoint("CENTER", widget, "CENTER", -(viewIcon * 0.5 + addSize * 0.5 + 20), 0)
         end
-        w:SetSize(addSize, addSize)
-        w:EnableMouse(true)
-        PaintCell(w, nil, true, showLabels, showCooldowns, false, addSize, showUsability)
-        w:Show()
+        wid:SetSize(addSize, addSize)
+        wid:EnableMouse(true)
+        PaintCell(wid, nil, true, showLabels, showCooldowns, false, addSize, showUsability)
+        wid:Show()
     end
 
     -- Every widget was just repainted unselected, so the recorded selection is
@@ -522,9 +542,9 @@ function PaletteView:Layout(paletteIndex)
     hub.logo:SetShown(drawHub)
     if drawHub then
         local _, viewIcon = self:Geom()
-        local base = p.iconSize or 40
-        local k = (base > 0) and (viewIcon / base) or 1
-        local sz = max(8, 40 * k)
+        local baseValue = p.iconSize or 40
+        local key = (baseValue > 0) and (viewIcon / baseValue) or 1
+        local sz = upper(8, 40 * key)
         -- Snapped to a WHOLE number of physical pixels: an addon PNG has no
         -- mipmaps, so WoW pure-bilinear-resamples it, and a fractional
         -- physical size guarantees off-grid sampling that turns the thin
@@ -606,9 +626,9 @@ end
 -- A method rather than a local function, like MarkerPip's caller and
 -- RefreshMarkerPips below: as one file the module's main chunk was at Lua's
 -- ceiling of 200 locals and had no room for another name.
-function PaletteView:MarkerPip(w, slot, iconSize)
-    local pip = w.markerPip
-    if not pip then
+function PaletteView:MarkerPip(wid, slotIndex, iconSize)
+    local pipTex = wid.markerPip
+    if not pipTex then
         return
     end
     -- Live menus only: the pip reads REAL marker state, which is noise on the
@@ -616,21 +636,21 @@ function PaletteView:MarkerPip(w, slot, iconSize)
     -- battlefield. Hidden rather than skipped, so a reused widget never
     -- carries a stale pip across views.
     if not (self.opts and self.opts.live) then
-        pip:Hide()
+        pipTex:Hide()
         return
     end
     -- Per-palette opt-out (Show Placed-Marker Pips, in the Toggle World
     -- Markers cog).
     local pp = self:P()
     if pp and pp.worldMarkerPip == false then
-        pip:Hide()
+        pipTex:Hide()
         return
     end
-    local id
-    if slot then
-        if slot.kind == "worldmarker" then
-            id = tonumber(slot.id)
-        elseif slot.kind == "cycleworldmarker" then
+    local ident
+    if slotIndex then
+        if slotIndex.kind == "worldmarker" then
+            ident = tonumber(slotIndex.id)
+        elseif slotIndex.kind == "cycleworldmarker" then
             -- The one the NEXT press places, which is the marker this entry is
             -- already drawing (SlotDisplay). Through CycleNext rather than off
             -- the stored position, so the pip and the icon cannot disagree
@@ -640,36 +660,36 @@ function PaletteView:MarkerPip(w, slot, iconSize)
             -- and IsRaidMarkerActive answers for world markers alone -- which
             -- Blizzard says in as many words at
             -- Mainline/Blizzard_CompactRaidFrameManager.lua:1088.
-            id = CycleNext(slot)
+            ident = CycleNext(slotIndex)
         end
     end
-    if not id or id < 1 or id > 8 then
-        pip:Hide()
+    if not ident or ident < 1 or ident > 8 then
+        pipTex:Hide()
         return
     end
     -- The widget's own width when no size is passed: a nest scales its
     -- children as it opens, and the refresh below runs long after the paint
     -- that knew the unscaled figure.
-    local s = max(3, floor((iconSize or w:GetWidth() or 40) * 0.18))
-    pip:SetSize(s, s)
+    local s = upper(3, floor((iconSize or wid:GetWidth() or 40) * 0.18))
+    pipTex:SetSize(s, s)
     local ar, ag, ab = 0.298, 0.788, 0.941
     if CludesUI.ResolveActiveAccent then
         ar, ag, ab = CludesUI.ResolveActiveAccent()
     end
-    pip:SetVertexColor(ar, ag, ab, 1)
+    pipTex:SetVertexColor(ar, ag, ab, 1)
     -- Whether the marker is down reaches the screen through the host's alpha
     -- alone (see above); the pip itself is shown for every marker entry. The
     -- host is made the first time this widget holds a marker entry, at the
     -- default child level: under the border host, where the pip always drew.
-    local host = w.markerPipHost
-    if not host then
-        host = CreateFrame("Frame", nil, w)
-        host:SetAllPoints(w)
-        w.markerPipHost = host
-        pip:SetParent(host)
+    local hostRegion = wid.markerPipHost
+    if not hostRegion then
+        hostRegion = CreateFrame("Frame", nil, wid)
+        hostRegion:SetAllPoints(wid)
+        wid.markerPipHost = hostRegion
+        pipTex:SetParent(hostRegion)
     end
-    host:SetAlphaFromBoolean(IsRaidMarkerActive(WORLD_MARKER_ENGINE[id]), 1, 0)
-    pip:Show()
+    hostRegion:SetAlphaFromBoolean(IsRaidMarkerActive(WORLD_MARKER_ENGINE[ident]), 1, 0)
+    pipTex:Show()
 end
 
 -- Every drawn cell's pip, for a menu that is already up when the markers move.
@@ -677,20 +697,20 @@ end
 -- that list earns itself by being read every frame, and this runs a handful of
 -- times a pull.
 function PaletteView:RefreshMarkerPips()
-    local n = self.cellCount
-    if not n then
+    local num = self.cellCount
+    if not num then
         return
     end
-    for i = 1, n do
-        local w = self.widgets[i]
-        if w then
+    for idx = 1, num do
+        local wid = self.widgets[idx]
+        if wid then
             -- Through a local, NOT straight into the call: CellSlot answers a
             -- nested cell with slot, claim, subIndex, and in final argument
             -- position all three would expand -- landing the claim table in
             -- MarkerPip's iconSize, which the size arithmetic there then
             -- multiplies. Top-level cells return one value and hid this.
-            local slot = self:CellSlot(i)
-            self:MarkerPip(w, slot)
+            local slotIndex = self:CellSlot(idx)
+            self:MarkerPip(wid, slotIndex)
         end
     end
 end
@@ -700,20 +720,20 @@ function PaletteView:AdvanceLiveIcons()
     if not cells or #cells == 0 then
         return
     end
-    local state = IconState()
-    if state == self._liveState then
+    local status = IconState()
+    if status == self._liveState then
         return
     end
-    self._liveState = state
+    self._liveState = status
 
-    for k = 1, #cells do
-        local index = cells[k]
-        local w = self.widgets[index]
-        local slot = self:CellSlot(index)
-        if w and slot then
-            local icon = SlotDisplay(slot)
-            ns.SetIconTexture(w.icon, icon)
-            ApplyIconCrop(w.icon, icon)
+    for key = 1, #cells do
+        local slotPos = cells[key]
+        local wid = self.widgets[slotPos]
+        local slotIndex = self:CellSlot(slotPos)
+        if wid and slotIndex then
+            local glyph = SlotDisplay(slotIndex)
+            mod.SetIconTexture(wid.icon, glyph)
+            ApplyIconCrop(wid.icon, glyph)
         end
     end
 end
@@ -727,15 +747,15 @@ function PaletteView:RefreshMountTints()
     if not cells or #cells == 0 then
         return
     end
-    for k = 1, #cells do
-        local index = cells[k]
-        local w = self.widgets[index]
-        local slot = self:CellSlot(index)
-        if w and slot then
-            local u = SlotUsability(slot)
-            if u ~= w.usability then
-                w.usability = u
-                self:RepaintEntry(index)
+    for key = 1, #cells do
+        local slotPos = cells[key]
+        local wid = self.widgets[slotPos]
+        local slotIndex = self:CellSlot(slotPos)
+        if wid and slotIndex then
+            local u = SlotUsability(slotIndex)
+            if u ~= wid.usability then
+                wid.usability = u
+                self:RepaintEntry(slotPos)
             end
         end
     end
@@ -757,17 +777,17 @@ function PaletteView:AdvancePendingIcons()
     if not cells or #cells == 0 then
         return
     end
-    for k = #cells, 1, -1 do
-        local index = cells[k]
-        local slot = self:CellSlot(index)
-        if ns.SlotDataReady(slot) then
-            local w = self.widgets[index]
-            if w then
-                local icon = SlotDisplay(slot)
-                ns.SetIconTexture(w.icon, icon)
-                ApplyIconCrop(w.icon, icon)
+    for key = #cells, 1, -1 do
+        local slotPos = cells[key]
+        local slotIndex = self:CellSlot(slotPos)
+        if mod.SlotDataReady(slotIndex) then
+            local wid = self.widgets[slotPos]
+            if wid then
+                local glyph = SlotDisplay(slotIndex)
+                mod.SetIconTexture(wid.icon, glyph)
+                ApplyIconCrop(wid.icon, glyph)
             end
-            tremove(cells, k)
+            tremove(cells, key)
         end
     end
 end
@@ -775,8 +795,8 @@ end
 -- The slot a cell index draws, and the claim it belongs to for a nested one.
 -- Every cell past shownCount is somebody's child; the palette's own entries map
 -- straight through.
-function PaletteView:CellSlot(index)
-    if not index then
+function PaletteView:CellSlot(slotPos)
+    if not slotPos then
         return nil
     end
     -- ReadPalette, not EnsurePalette: this is reached from every selection
@@ -787,18 +807,18 @@ function PaletteView:CellSlot(index)
     if not palette then
         return nil
     end
-    if index <= self.shownCount then
+    if slotPos <= self.shownCount then
         -- The list this drawing was laid out from (Layout), which is the
         -- usable view on a live menu -- indexing the stored array here would
         -- hand back the wrong entry the moment anything was filtered.
         local slots = self._slots or palette.slots
-        return slots[index]
+        return slots[slotPos]
     end
     local claims = self.claims
-    for k = 1, (claims and #claims or 0) do
-        local c = claims[k]
-        if c.base and index > c.base and index <= c.base + c.n then
-            return c.slots[index - c.base], c, index - c.base
+    for key = 1, (claims and #claims or 0) do
+        local c = claims[key]
+        if c.base and slotPos > c.base and slotPos <= c.base + c.n then
+            return c.slots[slotPos - c.base], c, slotPos - c.base
         end
     end
     return nil
@@ -814,8 +834,8 @@ end
 -- (the options preview) draws no nests at all (ChildGeom answers nil for it),
 -- so the claims table this would index into does not exist regardless.
 function PaletteView:ArmedClaim()
-    local btn = not self.opts.interactive and secureButtons[self.paletteIndex]
-    return btn and tonumber(btn:GetAttribute("eqdArmed")) or nil
+    local button = not self.opts.interactive and secureButtons[self.paletteIndex]
+    return button and tonumber(button:GetAttribute("eqdArmed")) or nil
 end
 
 -- Views whose nests open on selection alone, with no arming in the way: an
@@ -839,10 +859,10 @@ end
 -- Repaint one of the palette's own entries in whatever state it is currently
 -- in. Used when the armed claim moves: that changes how an entry is drawn
 -- without the selection having moved at all.
-function PaletteView:RepaintEntry(index)
-    local w = index and self.widgets[index]
-    if w then
-        ApplySlotVisual(w, index == self.selection, index == self._armedParent)
+function PaletteView:RepaintEntry(slotPos)
+    local wid = slotPos and self.widgets[slotPos]
+    if wid then
+        ApplySlotVisual(wid, slotPos == self.selection, slotPos == self._armedParent)
     end
 end
 
@@ -865,7 +885,7 @@ end
 --
 -- On a view with no arming of its own the selection is still the whole of the
 -- answer -- see NestsFollowSelection.
-function PaletteView:UpdateNestShown(index)
+function PaletteView:UpdateNestShown(slotPos)
     local claims = self.claims
     if not claims then
         return
@@ -873,9 +893,9 @@ function PaletteView:UpdateNestShown(index)
 
     -- The claim the selection is standing on or inside.
     local touched
-    for k = 1, #claims do
-        local c = claims[k]
-        if index and c.base and (index == c.parent or (index > c.base and index <= c.base + c.n)) then
+    for key = 1, #claims do
+        local c = claims[key]
+        if slotPos and c.base and (slotPos == c.parent or (slotPos > c.base and slotPos <= c.base + c.n)) then
             touched = c
         end
     end
@@ -911,16 +931,16 @@ function PaletteView:UpdateNestShown(index)
     end
     self._openClaim = open
 
-    for k = 1, #claims do
-        local c = claims[k]
+    for key = 1, #claims do
+        local c = claims[key]
         local shownNest = (c == open)
-        for j = 1, c.n do
-            local w = c.base and self.widgets[c.base + j]
-            if w then
+        for jdx = 1, c.n do
+            local wid = c.base and self.widgets[c.base + jdx]
+            if wid then
                 if shownNest then
-                    w:SetAlpha(1)
+                    wid:SetAlpha(1)
                 end
-                w:SetShown(shownNest)
+                wid:SetShown(shownNest)
             end
         end
     end
@@ -928,13 +948,13 @@ end
 
 -- Paint selection state. Called from OnUpdate whenever the hovered slot
 -- changes, and once from Open so the initial state is drawn.
-function PaletteView:SetSelection(index)
+function PaletteView:SetSelection(slotPos)
     -- Ahead of the unchanged-selection return: a claim can arm and disarm under
     -- a cursor that is holding still on one entry, and the nest state has to
     -- follow that. UpdateNestShown makes its own decision about whether there
     -- is anything left to draw.
-    self:UpdateNestShown(index)
-    if self.selection == index then
+    self:UpdateNestShown(slotPos)
+    if self.selection == slotPos then
         return
     end
 
@@ -942,13 +962,13 @@ function PaletteView:SetSelection(index)
     if self.selection and widgets[self.selection] then
         ApplySlotVisual(widgets[self.selection], false, self.selection == self._armedParent)
     end
-    self.selection = index
+    self.selection = slotPos
 
     local hub = self.hub
 
-    if index then
-        local w = widgets[index]
-        ApplySlotVisual(w, true, index == self._armedParent)
+    if slotPos then
+        local wid = widgets[slotPos]
+        ApplySlotVisual(wid, true, slotPos == self._armedParent)
 
         -- The caption ("Show Action Text Label") rides the SELECTION on
         -- every layout: hover can select any drawn entry, so a name parked
@@ -963,8 +983,8 @@ function PaletteView:SetSelection(index)
         -- caption mirrors away from the entries. Off, the palette draws no
         -- text at all and none of this work is done.
         if self._hubNameOnly then
-            local slot, claim = self:CellSlot(index)
-            local _, name = SlotDisplay(slot)
+            local slotIndex, claim = self:CellSlot(slotPos)
+            local _, name = SlotDisplay(slotIndex)
             local r, g, b = SelectColor(self:P())
             if claim then
                 local _, parentName = SlotDisplay(self:CellSlot(claim.parent))
@@ -974,12 +994,12 @@ function PaletteView:SetSelection(index)
             end
             hub.text:SetText(
                 (name and CludesUI.L(name))
-                    or (w.isPlaceholder and CludesUI.L("Add Action"))
-                    or ("Slot " .. index)
+                    or (wid.isPlaceholder and CludesUI.L("Add Action"))
+                    or ("Slot " .. slotPos)
             )
             hub.text:SetTextColor(r, g, b)
 
-            local aw = widgets[claim and claim.parent or index]
+            local aw = widgets[claim and claim.parent or slotPos]
             if aw then
                 hub.text:ClearAllPoints()
                 if self:LayoutMode() ~= "FAN" or self:FanHoriz() then
@@ -1005,7 +1025,7 @@ function PaletteView:SetSelection(index)
         -- arc has one: everywhere else the selection has no fixed centre to
         -- connect a line to.
         if not self:IsFan() then
-            self:ShowNeedle(index)
+            self:ShowNeedle(slotPos)
         else
             self:HideNeedle()
         end
@@ -1019,4 +1039,4 @@ function PaletteView:SetSelection(index)
     end
 end
 
-I.broken = false
+Inner.broken = false

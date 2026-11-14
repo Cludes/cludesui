@@ -14,7 +14,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Account-wide (CludesUIDB.nicknames), not per profile: a guildmate's
 --  nickname does not change when you switch layouts.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local MAX_LEN = 20
 
@@ -27,7 +27,7 @@ local function Short(name)
     return (name or ""):match("^([^%-]+)") or name or ""
 end
 
-function ns.MyNickname()
+function mod.MyNickname()
     return CludesUIDB.cuiNickname or ""
 end
 
@@ -42,8 +42,8 @@ function CludesUI.GetNickname(name)
     if CludesUIDB.cuiNicknamesOff then
         return nil
     end
-    local store = Store()
-    return store[name:lower()] or store[Short(name):lower()]
+    local storage = Store()
+    return storage[name:lower()] or storage[Short(name):lower()]
 end
 
 local function Clean(nick)
@@ -53,20 +53,20 @@ end
 
 local function Remember(name, nick)
     nick = Clean(nick)
-    local store = Store()
+    local storage = Store()
     local key, short = name:lower(), Short(name):lower()
     if nick == "" then
-        store[key], store[short] = nil, nil
+        storage[key], storage[short] = nil, nil
     else
-        store[key], store[short] = nick, nick
+        storage[key], storage[short] = nick, nick
     end
-    if ns.OnNicknamesChanged then
-        ns.OnNicknamesChanged()
+    if mod.OnNicknamesChanged then
+        mod.OnNicknamesChanged()
     end
 end
 
 --- Called by Comms.lua when someone announces their nickname.
-function ns.ReceiveNickname(sender, nick)
+function mod.ReceiveNickname(sender, nick)
     if not sender or (issecretvalue and issecretvalue(sender)) then
         return
     end
@@ -76,21 +76,21 @@ end
 local lastGroupSend = 0
 
 local function Announce(toGroup)
-    local nick = ns.MyNickname()
-    if nick == "" or not ns.SendNickname then
+    local nick = mod.MyNickname()
+    if nick == "" or not mod.SendNickname then
         return
     end
     if IsInGuild() then
-        ns.SendNickname(nick, "GUILD")
+        mod.SendNickname(nick, "GUILD")
     end
     if toGroup and IsInGroup() and GetTime() - lastGroupSend > 60 then
         lastGroupSend = GetTime()
-        ns.SendNickname(nick, nil)
+        mod.SendNickname(nick, nil)
     end
 end
 
 --- Sets your nickname and tells the guild and group.
-function ns.SetMyNickname(nick)
+function mod.SetMyNickname(nick)
     CludesUIDB.cuiNickname = Clean(nick)
     Remember(UnitName("player"), CludesUIDB.cuiNickname)
     lastGroupSend = 0
@@ -98,33 +98,33 @@ function ns.SetMyNickname(nick)
 end
 
 --- Adds "Character=Nickname" lines. Returns how many were read.
-function ns.ImportNicknames(text)
-    local n = 0
-    for name, nick in (text or ""):gmatch("([^=\n\r,;]+)=([^\n\r,;]+)") do
+function mod.ImportNicknames(textValue)
+    local num = 0
+    for name, nick in (textValue or ""):gmatch("([^=\n\r,;]+)=([^\n\r,;]+)") do
         name = name:gsub("^%s+", ""):gsub("%s+$", "")
         if name ~= "" then
             Remember(name, nick)
-            n = n + 1
+            num = num + 1
         end
     end
-    return n
+    return num
 end
 
-function ns.NicknameCount()
-    local n = 0
+function mod.NicknameCount()
+    local num = 0
     for k in pairs(Store()) do
         if not k:find("-", 1, true) then
-            n = n + 1
+            num = num + 1
         end
     end
-    return n
+    return num
 end
 
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_LOGIN")
 ev:RegisterEvent("GROUP_JOINED")
-ev:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_LOGIN" then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_LOGIN" then
         C_Timer.After(15, function()
             Announce(false)
         end)

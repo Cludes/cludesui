@@ -131,7 +131,7 @@ local NO_GETAWAY = 95
 local FISHING_SPELL = 7620
 
 local byName -- zone name (as the map writes it) = its uiMapID; built on first use
-local text, fishText, areaName, waiter
+local textValue, fishText, areaName, waiter
 local hooked = false
 
 -- The map's own format: the range colored like a quest of the nearest level.
@@ -152,8 +152,8 @@ end
 -- "Fishing 330": the skill the zone needs, colored by the player's skill
 -- (lures and gear included): red below it, yellow while fish still get away,
 -- green once none do; white without Fishing.
-local function FishingText(base)
-    local low, high = math.max(base, 1), base + NO_GETAWAY
+local function FishingText(baseValue)
+    local low, high = math.max(baseValue, 1), baseValue + NO_GETAWAY
     local r, g, b = 1, 1, 1
     local _, _, _, fishing = GetProfessions()
     if fishing then
@@ -181,30 +181,30 @@ local function OnLabelName(_, name)
     local zone, onContinent
     if name and name ~= "" then
         local mapID = WorldMapFrame:GetMapID()
-        local info = mapID and C_Map.GetMapInfo(mapID)
-        if info and info.mapType == Enum.UIMapType.Continent then
+        local details = mapID and C_Map.GetMapInfo(mapID)
+        if details and details.mapType == Enum.UIMapType.Continent then
             zone, onContinent = byName[name], true
-        elseif info and info.mapType == Enum.UIMapType.Zone then
+        elseif details and details.mapType == Enum.UIMapType.Zone then
             zone = mapID
         end
     end
     local lv = levels and onContinent and zone and LEVELS[zone]
-    local base = fishing and zone and FISHING[zone]
-    if not (lv or base) then
-        text:Hide()
+    local baseValue = fishing and zone and FISHING[zone]
+    if not (lv or baseValue) then
+        textValue:Hide()
         fishText:Hide()
         return
     end
-    text:SetShown(lv and true or false)
+    textValue:SetShown(lv and true or false)
     if lv then
-        text:SetText(LevelsText(lv))
+        textValue:SetText(LevelsText(lv))
     end
-    fishText:SetShown(base and true or false)
-    if base then
-        fishText:SetText(FishingText(base))
+    fishText:SetShown(baseValue and true or false)
+    if baseValue then
+        fishText:SetText(FishingText(baseValue))
         fishText:ClearAllPoints()
         if lv then
-            fishText:SetPoint("TOP", text, "BOTTOM", 0, -2)
+            fishText:SetPoint("TOP", textValue, "BOTTOM", 0, -2)
         else
             fishText:SetPoint("TOP", areaName, "BOTTOM", 0, -6)
         end
@@ -214,44 +214,44 @@ end
 -- The map's area label, read from its data providers.
 local function AreaLabel()
     for provider in pairs(WorldMapFrame.dataProviders or {}) do
-        local label = provider.Label
-        if label and label.Name and label.labelInfoByType then
-            return label
+        local labelText = provider.Label
+        if labelText and labelText.Name and labelText.labelInfoByType then
+            return labelText
         end
     end
 end
 
 local function Build()
-    local label = AreaLabel()
-    if not label then
+    local labelText = AreaLabel()
+    if not labelText then
         return
     end
     hooked = true
     byName = {}
-    for _, list in ipairs({ LEVELS, FISHING }) do
-        for id in pairs(list) do
-            local info = C_Map.GetMapInfo(id)
-            if info and info.name then
-                byName[info.name] = id
+    for _, entries in ipairs({ LEVELS, FISHING }) do
+        for ident in pairs(entries) do
+            local details = C_Map.GetMapInfo(ident)
+            if details and details.name then
+                byName[details.name] = ident
             end
         end
     end
-    local holder = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer)
-    holder:SetAllPoints()
-    holder:SetFrameStrata("HIGH")
-    areaName = label.Name
-    text = holder:CreateFontString(nil, "OVERLAY", "SubZoneTextFont")
-    fishText = holder:CreateFontString(nil, "OVERLAY", "SubZoneTextFont")
+    local holderFrame = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer)
+    holderFrame:SetAllPoints()
+    holderFrame:SetFrameStrata("HIGH")
+    areaName = labelText.Name
+    textValue = holderFrame:CreateFontString(nil, "OVERLAY", "SubZoneTextFont")
+    fishText = holderFrame:CreateFontString(nil, "OVERLAY", "SubZoneTextFont")
     -- Smaller than the zone name they sit under, the fishing skill much smaller.
-    local font, size, flags = areaName:GetFont()
-    if font and size then
-        text:SetFont(font, math.floor(size * 0.7 + 0.5), flags)
-        fishText:SetFont(font, math.max(9, math.floor(size * 0.4 + 0.5)), flags)
+    local font, dim, flags = areaName:GetFont()
+    if font and dim then
+        textValue:SetFont(font, math.floor(dim * 0.7 + 0.5), flags)
+        fishText:SetFont(font, math.max(9, math.floor(dim * 0.4 + 0.5)), flags)
     end
-    text:SetPoint("TOP", areaName, "BOTTOM", 0, -6)
-    text:Hide()
+    textValue:SetPoint("TOP", areaName, "BOTTOM", 0, -6)
+    textValue:Hide()
     fishText:Hide()
-    hooksecurefunc(label.Name, "SetText", OnLabelName)
+    hooksecurefunc(labelText.Name, "SetText", OnLabelName)
 end
 
 -- Nothing exists until a setting is first on; both off, the text hides and
@@ -260,7 +260,7 @@ local function Apply()
     local any = F.Enabled() or F.Get("fishing")
     if hooked then
         if not any then
-            text:Hide()
+            textValue:Hide()
             fishText:Hide()
         end
         return

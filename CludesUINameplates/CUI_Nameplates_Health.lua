@@ -7,54 +7,54 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  NameplateFrame: health values and health color.
 --  Reads the earlier nameplate files through ns and ns._npInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._npInternals
+local _, mod = ...
+local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local UnitHealth, UnitHealthMax = UnitHealth, UnitHealthMax
 local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
 local UnitIsUnit = UnitIsUnit
 local UnitIsDeadOrGhost = UnitIsDeadOrGhost
 
-local defaults, NoTintFlag, GetTextSlotColor = I.defaults, I.NoTintFlag, I.GetTextSlotColor
-local IsComboHealthText, SetCombinedHealthText = I.IsComboHealthText, I.SetCombinedHealthText
-local ApplyOverlayGeometry, EnsureFocusOverlay = I.ApplyOverlayGeometry, I.EnsureFocusOverlay
-local OverlayBgAlpha, NotifyCastEnded, _C = I.OverlayBgAlpha, I.NotifyCastEnded, I._C
-local GetReactionColor, _fallbackPlates = I.GetReactionColor, I._fallbackPlates
-local castFallbackFrame, NameplateFrame = I.castFallbackFrame, I.NameplateFrame
+local defaultSet, NoTintFlag, GetTextSlotColor = Inner.defaults, Inner.NoTintFlag, Inner.GetTextSlotColor
+local IsComboHealthText, SetCombinedHealthText = Inner.IsComboHealthText, Inner.SetCombinedHealthText
+local ApplyOverlayGeometry, EnsureFocusOverlay = Inner.ApplyOverlayGeometry, Inner.EnsureFocusOverlay
+local OverlayBgAlpha, NotifyCastEnded, _C = Inner.OverlayBgAlpha, Inner.NotifyCastEnded, Inner._C
+local GetReactionColor, _fallbackPlates = Inner.GetReactionColor, Inner._fallbackPlates
+local castFallbackFrame, NameplateFrame = Inner.castFallbackFrame, Inner.NameplateFrame
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v)
-    p = v
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
+    p = val
 end
 
 -- WoW Forever: no health number under 10,000 abbreviates (CludesUI_NumberFormat.lua).
 -- On ns, not a local: this chunk is near its 200-local cap.
-ns.AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+mod.AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 -- Health, max health and absorb text: the global Number Format for valueType
 -- (the threat gap text keeps the default above).
-ns.AbbreviateValue = CludesUI.AbbreviateValue
+mod.AbbreviateValue = CludesUI.AbbreviateValue
 -- A format change repaints every plate's health texts, value memo dropped.
 CludesUI.RegisterNumberFormatCallback(function()
-    for _, plate in pairs(ns.plates) do
-        if plate.unit then
-            plate._hpTxtPct, plate._hpTxtCur, plate._hpTxtMax = nil, nil, nil
-            plate:UpdateHealthValues()
+    for _, backing in pairs(mod.plates) do
+        if backing.unit then
+            backing._hpTxtPct, backing._hpTxtCur, backing._hpTxtMax = nil, nil, nil
+            backing:UpdateHealthValues()
         end
     end
 end)
 function NameplateFrame:UpdateHealthValues()
-    local unit = self.unit
-    if not unit then
+    local unitToken = self.unit
+    if not unitToken then
         return
     end
     if self.nameplate then
         local actualUnit = self.nameplate.namePlateUnitToken
-        if actualUnit and actualUnit ~= unit then
+        if actualUnit and actualUnit ~= unitToken then
             -- Token swap: this plate now represents a DIFFERENT mob. Any in-flight cast display
             -- belongs to the old unit: tear it down and re-evaluate. The cooldown watcher does
             -- not re-read cast info per event, so this is the swap's only cast-state self-heal.
@@ -62,9 +62,9 @@ function NameplateFrame:UpdateHealthValues()
                 if self._castFallback then
                     self._castFallback = nil
                     _fallbackPlates[self] = nil
-                    I.fallbackCastCount = I.fallbackCastCount - 1
-                    if I.fallbackCastCount <= 0 then
-                        I.fallbackCastCount = 0
+                    Inner.fallbackCastCount = Inner.fallbackCastCount - 1
+                    if Inner.fallbackCastCount <= 0 then
+                        Inner.fallbackCastCount = 0
                         castFallbackFrame:Hide()
                     end
                 end
@@ -80,16 +80,16 @@ function NameplateFrame:UpdateHealthValues()
                 self._castTex = nil
             end
             self.unit = actualUnit
-            unit = actualUnit
+            unitToken = actualUnit
             -- Color Casting Enemies remembers the mob, not the plate.
             if self._castSeen ~= nil then
-                ns.NP_ResetCastKind(self)
+                mod.NP_ResetCastKind(self)
             end
             -- Opacity for the new occupant (the cast end above applied it to the old token).
-            if ns._ntAlpha < 1 or ns._oocAlpha < 1 then
-                ns.NT_Apply(self)
+            if mod._ntAlpha < 1 or mod._oocAlpha < 1 then
+                mod.NT_Apply(self)
             end
-            if ns._npTgtTexts or self._totEv then
+            if mod._npTgtTexts or self._totEv then
                 self:SyncToT(actualUnit)
             end
             -- New occupant: its absorb state is unknown. Nil the lean-gate flag
@@ -101,8 +101,8 @@ function NameplateFrame:UpdateHealthValues()
             -- (zero cost when the Cast Lockout feature is off / no lockout).
             if self._castLockout then
                 self._castLockout = nil
-                if ns.NPC_UpdateLockout then
-                    ns.NPC_UpdateLockout(self)
+                if mod.NPC_UpdateLockout then
+                    mod.NPC_UpdateLockout(self)
                 end
             end
             self:UpdateName()
@@ -117,10 +117,10 @@ function NameplateFrame:UpdateHealthValues()
             -- ApplyTarget; the direct call covers its no-hover-fx early-out
             -- and re-evaluates target state for the new unit.
             -- The new occupant's type scale (its unit events stay on the old token).
-            if ns._typeScaleOn then
+            if mod._typeScaleOn then
                 self:UpdateTypeScale()
             end
-            ns.ClearHoverExtras(self)
+            mod.ClearHoverExtras(self)
             self:ApplyTarget()
         end
     end
@@ -135,14 +135,14 @@ function NameplateFrame:UpdateHealthValues()
     -- Shieldless units, the vast majority of health events, pay two unit reads
     -- and two bar pushes here instead of the calculator fetch + absorb branch.
     if self._absorbHidden and not self._absorbEdge then
-        curHealth = UnitHealth(unit)
+        curHealth = UnitHealth(unitToken)
         -- Bar bounds ride UNIT_MAXHEALTH: the cached max (possibly secret --
         -- stored but never compared; _maxHPValid is OUR plain flag) pushes
         -- once on change/seed/absorb-teardown instead of every paint. The
         -- steady-state health paint is one read + one SetValue, matching
         -- Blizzard's own per-event bar cost.
         if not self._maxHPValid then
-            maxHealth = UnitHealthMax(unit)
+            maxHealth = UnitHealthMax(unitToken)
             self._maxHP = maxHealth
             self._maxHPValid = true
             self.health:SetMinMaxValues(0, maxHealth)
@@ -154,14 +154,14 @@ function NameplateFrame:UpdateHealthValues()
         self._absorbEdge = nil
 
         if self.hpCalculator and self.hpCalculator.GetMaximumHealth and UnitGetDetailedHealPrediction then
-            UnitGetDetailedHealPrediction(unit, nil, self.hpCalculator)
+            UnitGetDetailedHealPrediction(unitToken, nil, self.hpCalculator)
             curHealth = self.hpCalculator:GetCurrentHealth()
             maxHealth = self.hpCalculator:GetMaximumHealth()
             absorbAmt = self.hpCalculator:GetDamageAbsorbs()
         else
-            curHealth = UnitHealth(unit)
-            maxHealth = UnitHealthMax(unit)
-            absorbAmt = UnitGetTotalAbsorbs and UnitGetTotalAbsorbs(unit) or 0
+            curHealth = UnitHealth(unitToken)
+            maxHealth = UnitHealthMax(unitToken)
+            absorbAmt = UnitGetTotalAbsorbs and UnitGetTotalAbsorbs(unitToken) or 0
         end
 
         -- The health bar keeps plain max health whatever the shield: the shield
@@ -203,12 +203,12 @@ function NameplateFrame:UpdateHealthValues()
 
     -- Hash line positioning (target only). PERF: uses cached _isTarget, not UnitIsUnit per tick.
     local hlEnabled = (p and p.hashLineEnabled)
-    local hlPct = (p and p.hashLinePercent) or defaults.hashLinePercent
+    local hlPct = (p and p.hashLinePercent) or defaultSet.hashLinePercent
     if hlEnabled and hlPct and hlPct > 0 and self._isTarget then
         -- Input-gated: anchor/color pushes only depend on bar width and settings (bar width is
         -- our frame -- never secret), re-pushed only when an input moves.
         local barW = self.health:GetWidth()
-        local hlc = (p and p.hashLineColor) or defaults.hashLineColor
+        local hlc = (p and p.hashLineColor) or defaultSet.hashLineColor
         if
             self._hlW ~= barW
             or self._hlPct ~= hlPct
@@ -248,11 +248,11 @@ function NameplateFrame:UpdateHealthValues()
         -- through raw churn. Secret values cannot be compared or floored: any secret input
         -- fails open to writing and clears its key.
         local isSec = issecretvalue
-        local dead = UnitIsDeadOrGhost(unit)
+        local dead = UnitIsDeadOrGhost(unitToken)
         local anyDec = ca._anyDecimal
         local pctVal
         if not dead and UnitHealthPercent then
-            pctVal = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+            pctVal = UnitHealthPercent(unitToken, true, CurveConstants.ScaleTo100)
         end
         local pctKey
         if dead then
@@ -265,16 +265,16 @@ function NameplateFrame:UpdateHealthValues()
             anyNum = false
             local anyNoSign, anyMax, anyCombo = false, false, false
             for si = 1, ca._count do
-                local entry = ca[si]
-                local el = entry.element
+                local record = ca[si]
+                local el = record.element
                 -- Stamp the combo classification once per appearance build:
                 -- the write loop below runs per paint and must not pay a
                 -- classification call per slot per paint.
-                entry.combo = IsComboHealthText(el) or false
-                if el == "healthNumber" or entry.combo then
+                record.combo = IsComboHealthText(el) or false
+                if el == "healthNumber" or record.combo then
                     anyNum = true
                 end
-                if entry.combo then
+                if record.combo then
                     anyCombo = true
                 end
                 if el == "healthPercentNoSign" then
@@ -325,20 +325,20 @@ function NameplateFrame:UpdateHealthValues()
                     pctTextDec, pctNoSignTextDec = "", ""
                 end
                 for si = 1, ca._count do
-                    local entry = ca[si]
-                    local el = entry.element
-                    local fs = entry.fs
+                    local record = ca[si]
+                    local el = record.element
+                    local fontStr = record.fs
                     if el == "healthPercent" then
-                        fs:SetText(entry.pctDecimal and pctTextDec or pctText)
+                        fontStr:SetText(record.pctDecimal and pctTextDec or pctText)
                     elseif el == "healthPercentNoSign" then
-                        fs:SetText(entry.pctDecimal and pctNoSignTextDec or pctNoSignText)
+                        fontStr:SetText(record.pctDecimal and pctNoSignTextDec or pctNoSignText)
                     elseif el == "healthNumber" then
-                        fs:SetText(numText)
-                    elseif entry.combo then
+                        fontStr:SetText(numText)
+                    elseif record.combo then
                         SetCombinedHealthText(
-                            fs,
+                            fontStr,
                             el,
-                            entry.pctDecimal and pctTextDec or pctText,
+                            record.pctDecimal and pctTextDec or pctText,
                             numText,
                             numText
                         )
@@ -351,9 +351,9 @@ function NameplateFrame:UpdateHealthValues()
                 -- slot renders it.
                 local numText, maxText, pctText, pctTextDec
                 if anyNum then
-                    numText = ns.AbbreviateValue(curHealth, "health")
+                    numText = mod.AbbreviateValue(curHealth, "health")
                     if ca._anyMax then
-                        maxText = ns.AbbreviateValue(maxHealth, "maxHealth")
+                        maxText = mod.AbbreviateValue(maxHealth, "maxHealth")
                     end
                 end
                 if ca._anyCombo then
@@ -363,20 +363,20 @@ function NameplateFrame:UpdateHealthValues()
                     end
                 end
                 for si = 1, ca._count do
-                    local entry = ca[si]
-                    local el = entry.element
-                    local fs = entry.fs
+                    local record = ca[si]
+                    local el = record.element
+                    local fontStr = record.fs
                     if el == "healthPercent" then
-                        fs:SetFormattedText(entry.pctDecimal and "%.1f%%" or "%d%%", pctVal)
+                        fontStr:SetFormattedText(record.pctDecimal and "%.1f%%" or "%d%%", pctVal)
                     elseif el == "healthPercentNoSign" then
-                        fs:SetFormattedText(entry.pctDecimal and "%.1f" or "%d", pctVal)
+                        fontStr:SetFormattedText(record.pctDecimal and "%.1f" or "%d", pctVal)
                     elseif el == "healthNumber" then
-                        fs:SetText(numText)
-                    elseif entry.combo then
+                        fontStr:SetText(numText)
+                    elseif record.combo then
                         SetCombinedHealthText(
-                            fs,
+                            fontStr,
                             el,
-                            entry.pctDecimal and pctTextDec or pctText,
+                            record.pctDecimal and pctTextDec or pctText,
                             numText,
                             maxText
                         )
@@ -391,7 +391,7 @@ function NameplateFrame:UpdateHealthValues()
         self:PaintCustomTexts("tick")
     end
     -- Target texts ride the health tick too, throttled in RefreshTargetTexts.
-    if ns._npTgtTexts then
+    if mod._npTgtTexts then
         self:RefreshTargetTexts(false, "tgtOnly")
     end
 
@@ -400,18 +400,18 @@ function NameplateFrame:UpdateHealthValues()
     -- Lua). Parent frame's pulse multiplies on top. No-execute specs never build textures.
     local lg = self.lowHpGlowTextures
     if lg and self._lowHpGlowOn then
-        local curve = ns.GetLowHpGlowCurve()
+        local curve = mod.GetLowHpGlowCurve()
         if curve then
-            if UnitIsDeadOrGhost(unit) then
-                for i = 1, #lg do
-                    lg[i]:SetVertexColor(0, 0, 0, 1)
+            if UnitIsDeadOrGhost(unitToken) then
+                for idx = 1, #lg do
+                    lg[idx]:SetVertexColor(0, 0, 0, 1)
                 end
             else
-                local ok, col = pcall(UnitHealthPercent, unit, true, curve)
-                if ok and col and col.GetRGBA then
-                    local r, g, b, a = col:GetRGBA()
-                    for i = 1, #lg do
-                        lg[i]:SetVertexColor(r, g, b, a)
+                local success, column = pcall(UnitHealthPercent, unitToken, true, curve)
+                if success and column and column.GetRGBA then
+                    local r, g, b, a = column:GetRGBA()
+                    for idx = 1, #lg do
+                        lg[idx]:SetVertexColor(r, g, b, a)
                     end
                 end
             end
@@ -425,11 +425,11 @@ end
 -- The wrap re-sync mirrors what ApplyTarget does after its own border paint: with the
 -- border wrapped around the cast bar, the color just set landed on the hidden health
 -- border (Basic) or not yet on the lower piece and seam (Custom).
-function NameplateFrame:RepaintThreatBorder(unit)
-    if UnitIsUnit(unit, "target") and ns.GetTargetGlowBorderColor() then
+function NameplateFrame:RepaintThreatBorder(unitToken)
+    if UnitIsUnit(unitToken, "target") and mod.GetTargetGlowBorderColor() then
         return
     end
-    if self._hoverFxOn and ns.GetHoverGlowBorderColor() then
+    if self._hoverFxOn and mod.GetHoverGlowBorderColor() then
         return
     end
     self:ApplyBorderColor()
@@ -438,21 +438,21 @@ function NameplateFrame:RepaintThreatBorder(unit)
     end
 end
 function NameplateFrame:UpdateHealthColor()
-    local unit = self.unit
-    if not unit then
+    local unitToken = self.unit
+    if not unitToken then
         return
     end
     -- Skip-if-unchanged: GetReactionColor returns plain profile-sourced numbers (every return
     -- path verified non-secret). Threat events fire constantly with an unchanged result, so
     -- compare against the last applied values and skip the setter. Cache nil'd in ClearUnit.
-    local hr, hg, hb = GetReactionColor(unit, self._castSeen)
+    local hr, hg, hb = GetReactionColor(unitToken, self._castSeen)
     -- Enemy player whose class token was redacted (instanced PvP): the token still keys
     -- C_ClassColor, Blizzard's palette as step 6 paints a readable token. The colour may be
     -- secret, so it skips the skip-if-unchanged compare, goes straight to the setter and is
     -- re-applied every pass. hr/hg/hb stay the plain fallback for the tints below.
     local mirrored, mr, mg, mb = false
-    if ns._reactionMirrorClass then
-        local _, tok = UnitClass(unit)
+    if mod._reactionMirrorClass then
+        local _, tok = UnitClass(unitToken)
         local c = C_ClassColor.GetClassColor(tok)
         if c then
             mirrored, mr, mg, mb = true, c:GetRGB()
@@ -462,9 +462,9 @@ function NameplateFrame:UpdateHealthColor()
     -- SECRET, so they bypass the value compare, never enter the caches, and
     -- reach setters only. hr/hg/hb stay the plain tankNoAggro fallback.
     local folded, fr, fg, fb, fa = false
-    if not mirrored and ns._reactionOffTankFold and ns.ComputeOffTankFold then
+    if not mirrored and mod._reactionOffTankFold and mod.ComputeOffTankFold then
         local otc = _C("offTankAggro")
-        folded, fr, fg, fb, fa = ns.ComputeOffTankFold(unit, hr, hg, hb, otc.r, otc.g, otc.b)
+        folded, fr, fg, fb, fa = mod.ComputeOffTankFold(unitToken, hr, hg, hb, otc.r, otc.g, otc.b)
     end
     if mirrored then
         -- Cache invalidated, never written with a secret: the next plain colour must reapply.
@@ -479,7 +479,7 @@ function NameplateFrame:UpdateHealthColor()
     end
     -- Color Casting Enemies: tints over the bar for the tier GetReactionColor marked.
     if self._castSeen then
-        ns.NP_ApplyCastTints(self, ns._reactionCastTier, ns._reactionCastLit, folded)
+        mod.NP_ApplyCastTints(self, mod._reactionCastTier, mod._reactionCastLit, folded)
     end
     -- Threat Colors "Border" / "Text" channels -- the SECOND signal. Both off by default,
     -- so the shipped path costs two field reads. ns.ResolveThreatColor answers "what does
@@ -489,11 +489,11 @@ function NameplateFrame:UpdateHealthColor()
     -- GetReactionColor read above. Its fourth return marks SECRET components (an off-tank
     -- C-fold over a secret read): those bypass every compare, stay out of the caches and
     -- reach setters only, exactly like the bar's own fold path.
-    local tcBorder = ns.GetThreatColorBorder()
-    local tcName = ns.GetThreatColorName()
+    local tcBorder = mod.GetThreatColorBorder()
+    local tcName = mod.GetThreatColorName()
     local tcr, tcg, tcb, tcSecret
     if tcBorder or tcName then
-        tcr, tcg, tcb, tcSecret = ns.ResolveThreatColor(unit, ns._reactionThreatStatus)
+        tcr, tcg, tcb, tcSecret = mod.ResolveThreatColor(unitToken, mod._reactionThreatStatus)
     end
     -- Plain "there is a signal" boolean: tcr itself may be secret, so the short-circuit
     -- keeps it out of the comparison.
@@ -516,13 +516,13 @@ function NameplateFrame:UpdateHealthColor()
             repaint = true
         end
         if repaint then
-            self:RepaintThreatBorder(unit)
+            self:RepaintThreatBorder(unitToken)
         end
     elseif self._threatBdOn then
         self._threatBdOn = nil
         self._threatBdR, self._threatBdG, self._threatBdB = nil, nil, nil
         self._threatBdKr, self._threatBdKg, self._threatBdKb = nil, nil, nil
-        self:RepaintThreatBorder(unit)
+        self:RepaintThreatBorder(unitToken)
     end
     -- Enemy name text: two lanes can want it. Threat Colors "Text" wins while it has a
     -- signal; next the Core Text Positions Text Coloring slot mode, Hostility / Class or
@@ -537,8 +537,8 @@ function NameplateFrame:UpdateHealthColor()
     local wasNameThreat = self._threatNameOn
     self._threatNameOn = nameThreat or nil
     local slotClassName = false
-    if ns._npSlotClassOn then
-        slotClassName = ns.NP_PaintSlotClassColors(self, unit, nameThreat)
+    if mod._npSlotClassOn then
+        slotClassName = mod.NP_PaintSlotClassColors(self, unitToken, nameThreat)
     end
     if nameThreat then
         if tcSecret then
@@ -555,7 +555,7 @@ function NameplateFrame:UpdateHealthColor()
         end
     elseif wasNameThreat then
         self._nameThR, self._nameThG, self._nameThB = nil, nil, nil
-        local nameSlotKey = ns.FindNameSlot()
+        local nameSlotKey = mod.FindNameSlot()
         if nameSlotKey then
             local nr, ng, nb = GetTextSlotColor(nameSlotKey)
             self.name:SetTextColor(nr, ng, nb, 1)
@@ -564,9 +564,9 @@ function NameplateFrame:UpdateHealthColor()
     -- Debuff coloring gives way to bad threat (set while it shows on the plates): per
     -- channel 1 while nothing is wrong, 0 on bad threat, or, where only another tank's
     -- hold decides, the off-tank fold's secret answer (setters only, never tested).
-    if ns.DebuffColors_Threat then
+    if mod.DebuffColors_Threat then
         local healthA, borderA, nameA = 1, 1, 1
-        if ns._reactionBadThreat then
+        if mod._reactionBadThreat then
             if folded then
                 healthA = fa
             else
@@ -574,7 +574,7 @@ function NameplateFrame:UpdateHealthColor()
             end
         end
         if tcBorder or tcName then
-            local okA = ns._threatOkA
+            local okA = mod._threatOkA
             if tcBorder then
                 borderA = okA
             end
@@ -582,21 +582,21 @@ function NameplateFrame:UpdateHealthColor()
                 nameA = okA
             end
         end
-        ns.DebuffColors_Threat(self, healthA, borderA, nameA)
+        mod.DebuffColors_Threat(self, healthA, borderA, nameA)
     end
     -- Near-aggro glow (Non-Tank Threat cog): ns._reactionNearAggro was written
     -- by the GetReactionColor call ABOVE (same decision that picked the color).
     -- Own state cache, so constant same-result threat events are one compare;
     -- feature off = one boolean read on top of that.
     local naGlow = false
-    if ns._reactionNearAggro then
-        local dbg = p or defaults
+    if mod._reactionNearAggro then
+        local dbg = p or defaultSet
         naGlow = dbg.threatNearAggroGlow == true
     end
     if naGlow ~= (self._naGlowOn or false) then
         self._naGlowOn = naGlow
         if naGlow then
-            ns.EnsureNearAggroGlow(self)
+            mod.EnsureNearAggroGlow(self)
             self.naGlowFrame:Show()
         elseif self.naGlowFrame then
             self.naGlowFrame:Hide()
@@ -604,8 +604,8 @@ function NameplateFrame:UpdateHealthColor()
     end
     -- Threat % text (WoW Forever): one field read while off; a shown text is
     -- still hidden on the pass after the option turns off.
-    if ns._npTptOn or self._tptShown then
-        ns.NP_UpdateThreatPct(self, unit)
+    if mod._npTptOn or self._tptShown then
+        mod.NP_UpdateThreatPct(self, unitToken)
     end
     -- Focus overlay: stripe textures on the focus target's health bar (fill clip at full alpha,
     -- bg clip at half). Value-keyed: reapplied only when a component differs from the last
@@ -613,16 +613,16 @@ function NameplateFrame:UpdateHealthColor()
     -- bar's current health color (hr/hg/hb above). NEVER use these overlay textures as the
     -- bar's own fill texture: they are pattern-on-transparent art, so transparent ground
     -- renders as holes and darkens the whole bar.
-    local db2 = p or defaults
-    local focusTex = db2.focusOverlayTexture or defaults.focusOverlayTexture
-    if focusTex ~= "none" and UnitIsUnit(unit, "focus") then
+    local db2 = p or defaultSet
+    local focusTex = db2.focusOverlayTexture or defaultSet.focusOverlayTexture
+    if focusTex ~= "none" and UnitIsUnit(unitToken, "focus") then
         -- Texture path memoized by texture NAME (no per-call concat); live dropdown changes rebuild it.
-        if ns._focusOverlayTexName ~= focusTex then
-            ns._focusOverlayTexName = focusTex
-            ns._focusOverlayTexPath = ns.ResolveOverlayTexPath(focusTex)
+        if mod._focusOverlayTexName ~= focusTex then
+            mod._focusOverlayTexName = focusTex
+            mod._focusOverlayTexPath = mod.ResolveOverlayTexPath(focusTex)
         end
-        local texPath = ns._focusOverlayTexPath
-        local overlayAlpha = db2.focusOverlayAlpha or defaults.focusOverlayAlpha
+        local texPath = mod._focusOverlayTexPath
+        local overlayAlpha = db2.focusOverlayAlpha or defaultSet.focusOverlayAlpha
         local ocr, ocg, ocb
         -- No Tint means "wear the bar's colour", so on a mirrored plate it has to take the
         -- mirrored values, not the plain fallback -- tinting from hr/hg/hb there would show
@@ -639,7 +639,7 @@ function NameplateFrame:UpdateHealthColor()
                 ocr, ocg, ocb = hr, hg, hb
             end
         else
-            local oc = db2.focusOverlayColor or defaults.focusOverlayColor
+            local oc = db2.focusOverlayColor or defaultSet.focusOverlayColor
             ocr, ocg, ocb = oc.r, oc.g, oc.b
         end
         local bgAlpha = OverlayBgAlpha(db2.focusOverlayFullBgAlpha, overlayAlpha)
@@ -666,7 +666,7 @@ function NameplateFrame:UpdateHealthColor()
                 self.focusOverlayFill,
                 self.focusOverlayBg,
                 self.health,
-                ns.OVERLAY_STRIPE_KEYS[focusTex] == true
+                mod.OVERLAY_STRIPE_KEYS[focusTex] == true
             )
             self.focusOverlayFill:SetTexture(texPath)
             self.focusOverlayFill:SetAlpha(overlayAlpha)
@@ -685,18 +685,18 @@ function NameplateFrame:UpdateHealthColor()
     -- Focus letter: zero cost when off -- a disabled plate pays two field reads (no call, no
     -- UnitIsUnit, no allocation). _focusLetterShown lets a live letter hide itself when turned off.
     if db2.focusLetterEnabled or self._focusLetterShown then
-        ns.ApplyFocusLetter(self, unit, db2)
+        mod.ApplyFocusLetter(self, unitToken, db2)
     end
     -- Target overlay: identical to focus overlay but for current target,
     -- including the No Tint bar-color tint source.
-    local targetTex = db2.targetOverlayTexture or defaults.targetOverlayTexture
-    if targetTex ~= "none" and UnitIsUnit(unit, "target") then
-        if ns._targetOverlayTexName ~= targetTex then
-            ns._targetOverlayTexName = targetTex
-            ns._targetOverlayTexPath = ns.ResolveOverlayTexPath(targetTex)
+    local targetTex = db2.targetOverlayTexture or defaultSet.targetOverlayTexture
+    if targetTex ~= "none" and UnitIsUnit(unitToken, "target") then
+        if mod._targetOverlayTexName ~= targetTex then
+            mod._targetOverlayTexName = targetTex
+            mod._targetOverlayTexPath = mod.ResolveOverlayTexPath(targetTex)
         end
-        local texPath = ns._targetOverlayTexPath
-        local overlayAlpha = db2.targetOverlayAlpha or defaults.targetOverlayAlpha
+        local texPath = mod._targetOverlayTexPath
+        local overlayAlpha = db2.targetOverlayAlpha or defaultSet.targetOverlayAlpha
         local ocr, ocg, ocb
         -- Mirrored plate: same reasoning as the focus overlay above.
         local forced = false
@@ -709,7 +709,7 @@ function NameplateFrame:UpdateHealthColor()
                 ocr, ocg, ocb = hr, hg, hb
             end
         else
-            local oc = db2.targetOverlayColor or defaults.targetOverlayColor
+            local oc = db2.targetOverlayColor or defaultSet.targetOverlayColor
             ocr, ocg, ocb = oc.r, oc.g, oc.b
         end
         local bgAlpha = OverlayBgAlpha(db2.targetOverlayFullBgAlpha, overlayAlpha)
@@ -723,7 +723,7 @@ function NameplateFrame:UpdateHealthColor()
             or self._ovTgtG ~= ocg
             or self._ovTgtB ~= ocb
         then
-            ns.EnsureTargetOverlay(self)
+            mod.EnsureTargetOverlay(self)
             self._ovTgtShown = true
             self._ovTgtTex, self._ovTgtAlpha = texPath, overlayAlpha
             self._ovTgtBgAlpha = bgAlpha
@@ -736,7 +736,7 @@ function NameplateFrame:UpdateHealthColor()
                 self.targetOverlayFill,
                 self.targetOverlayBg,
                 self.health,
-                ns.OVERLAY_STRIPE_KEYS[targetTex] == true
+                mod.OVERLAY_STRIPE_KEYS[targetTex] == true
             )
             self.targetOverlayFill:SetTexture(texPath)
             self.targetOverlayFill:SetAlpha(overlayAlpha)
@@ -758,4 +758,4 @@ function NameplateFrame:UpdateHealth()
     self:UpdateHealthColor()
 end
 
-I.broken = false
+Inner.broken = false

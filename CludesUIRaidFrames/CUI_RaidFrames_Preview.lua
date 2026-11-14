@@ -10,11 +10,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  real-frame overlay, the size preview). Loads behind the CUI_RaidFrames_*.lua
 --  chain and reads it through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
-local I = ns._internals
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or one of the CUI_RaidFrames_*.lua files failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
 
@@ -23,11 +23,11 @@ end
 --  Shows 20 buttons with randomized class colors and names so the user
 --  can see their settings applied without needing a real group.
 -------------------------------------------------------------------------------
-ns._PV_CLASS_TOKENS = CludesUI.CLASS_TOKEN_ORDER
-ns._PV_TANK_CLASSES = { "WARRIOR", "PALADIN", "DEATHKNIGHT", "MONK", "DRUID", "DEMONHUNTER" }
-ns._PV_HEALER_CLASSES = { "PRIEST", "PALADIN", "SHAMAN", "MONK", "DRUID", "EVOKER" }
-ns._PV_DPS_CLASSES = ns._PV_CLASS_TOKENS
-ns._PV_EXT_ICONS = {
+mod._PV_CLASS_TOKENS = CludesUI.CLASS_TOKEN_ORDER
+mod._PV_TANK_CLASSES = { "WARRIOR", "PALADIN", "DEATHKNIGHT", "MONK", "DRUID", "DEMONHUNTER" }
+mod._PV_HEALER_CLASSES = { "PRIEST", "PALADIN", "SHAMAN", "MONK", "DRUID", "EVOKER" }
+mod._PV_DPS_CLASSES = mod._PV_CLASS_TOKENS
+mod._PV_EXT_ICONS = {
     572025,
     135936,
     237542,
@@ -36,7 +36,7 @@ ns._PV_EXT_ICONS = {
     135966,
     4622478,
 }
-ns._PV_DEF_ICONS = {
+mod._PV_DEF_ICONS = {
     DEATHKNIGHT = { 237525, 136120 },
     DEMONHUNTER = { 1305150, 463284 },
     DRUID = { 136097, 236169 },
@@ -51,7 +51,7 @@ ns._PV_DEF_ICONS = {
     WARLOCK = { 136146, 136150 },
     WARRIOR = { 132336, 132361 },
 }
-ns._PV_NAMES = {
+mod._PV_NAMES = {
     "Thaldrin",
     "Kaelara",
     "Morgath",
@@ -77,16 +77,16 @@ ns._PV_NAMES = {
 -- Group Finder's settings preview). Preview slot 1 is always the player; entries
 -- 1-19 fill slots 2-20. Name, class and role travel together through the role
 -- sort (ns._pvNames).
-ns._PV_ROSTER = CludesUI.PREVIEW_ROSTER
-ns._PV_DISPEL_DB_ICONS = {
+mod._PV_ROSTER = CludesUI.PREVIEW_ROSTER
+mod._PV_DISPEL_DB_ICONS = {
     Magic = 135735,
     Curse = 132291,
     Disease = 237535,
     Poison = 132106,
     [""] = 4547635,
 }
-ns._PV_DEBUFF_ICONS = { 135813, 136139, 132090, 136197, 135849, 136188 }
-ns._pvActiveAuras = {}
+mod._PV_DEBUFF_ICONS = { 135813, 136139, 132090, 136197, 135849, 136188 }
+mod._pvActiveAuras = {}
 
 -- What the CUI_RaidFrames_Preview*.lua files share: each file adds the names
 -- later files re-import. previewActiveSetters and the list beside it: every file
@@ -95,7 +95,7 @@ ns._pvActiveAuras = {}
 -- which runs them all.
 -- broken: true while an CUI_RaidFrames_Preview*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(ns, "_previewInternals", {
+CludesUI.NewInternals(mod, "_previewInternals", {
     -- Created here: files that load ahead of CreatePreviewFrame and
     -- BuildPreviewRoles read them too.
     previewFrames = {},
@@ -110,8 +110,8 @@ CludesUI.NewInternals(ns, "_previewInternals", {
 -- field (as the party preview's ns._partyPvActive), never a preview function: a
 -- preview file that fails to load must not leave them a nil call.
 do
-    local list = ns._previewInternals.previewActiveSetters
-    list[#list + 1] = function(v)
-        ns._raidPvActive = v
+    local entries = mod._previewInternals.previewActiveSetters
+    entries[#entries + 1] = function(val)
+        mod._raidPvActive = val
     end
 end

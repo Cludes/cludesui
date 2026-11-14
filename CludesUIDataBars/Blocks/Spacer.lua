@@ -4,25 +4,25 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Spacer.lua
 -- Spacer block factory.
 
-local ADDON_NAME, ns = ...
-local K = ns.BlockKit
+local ADDON_NAME, mod = ...
+local Keys = mod.BlockKit
 
-local InstKey = K.InstKey
+local InstKey = Keys.InstKey
 
 -------------------------------------------------------------------------------
 --  SPACER (transparent block; the slot's optional bg tint still applies)
 -------------------------------------------------------------------------------
-ns.BlockFactories.spacer = function(blockCfg, slot, content, barCtx)
-    local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
-    function inst:Refresh() end
-    function inst:Enable() end
-    function inst:Disable() end
-    function inst:Destroy()
+mod.BlockFactories.spacer = function(blockCfg, slotIndex, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+    instance.key = InstKey(barCtx, blockCfg)
+    function instance:Refresh() end
+    function instance:Enable() end
+    function instance:Disable() end
+    function instance:Destroy()
         self._dead = true
     end
-    function inst:GetAutoLength()
+    function instance:GetAutoLength()
         return 0
     end
-    return inst
+    return instance
 end

@@ -8,24 +8,24 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Blizzard's layout.
 --  Loads after CUI_ActionBars_Paging.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, pairs, type, pcall = ipairs, pairs, type, pcall
-local min, max = math.min, math.max
+local min, upper = math.min, math.max
 local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 
-local EAB, EAB_VTABLE, barButtons = ns.EAB, ns.EAB_VTABLE, ns.barButtons
-local EFD = ns.EFD
-local I = ns._internals
-local BAR_CONFIG = I.BAR_CONFIG
-local RegisterBarWithOverrideController = I.RegisterBarWithOverrideController
-local BAR_SLOT_OFFSETS, barBaseSize, barFrames = I.BAR_SLOT_OFFSETS, I.barBaseSize, I.barFrames
-local BINDING_MAP, buttonToBar, GetEABFlyout = I.BINDING_MAP, I.buttonToBar, I.GetEABFlyout
-local GetOrCreateButton, ReRegisterButtonEvents = I.GetOrCreateButton, I.ReRegisterButtonEvents
-local SecureSetupHandler_RegisterBarFrame = I.SecureSetupHandler_RegisterBarFrame
-local GetClassPagingConditions = I.GetClassPagingConditions
+local ABAR, EAB_VTABLE, barButtons = mod.EAB, mod.EAB_VTABLE, mod.barButtons
+local EFD = mod.EFD
+local Inner = mod._internals
+local BAR_CONFIG = Inner.BAR_CONFIG
+local RegisterBarWithOverrideController = Inner.RegisterBarWithOverrideController
+local BAR_SLOT_OFFSETS, barBaseSize, barFrames = Inner.BAR_SLOT_OFFSETS, Inner.barBaseSize, Inner.barFrames
+local BINDING_MAP, buttonToBar, GetEABFlyout = Inner.BINDING_MAP, Inner.buttonToBar, Inner.GetEABFlyout
+local GetOrCreateButton, ReRegisterButtonEvents = Inner.GetOrCreateButton, Inner.ReRegisterButtonEvents
+local SecureSetupHandler_RegisterBarFrame = Inner.SecureSetupHandler_RegisterBarFrame
+local GetClassPagingConditions = Inner.GetClassPagingConditions
 
 -------------------------------------------------------------------------------
 --  Secure Bar Frame Creation
@@ -36,27 +36,27 @@ local GetClassPagingConditions = I.GetClassPagingConditions
 --  button's _childupdate-eab-page snippet rewriting its "action" attribute. The
 --  frame "actionpage" attribute is kept only for insecure range-check reads.
 -------------------------------------------------------------------------------
-local function CreateBarFrame(info)
-    local key = info.key
-    local frame = CreateFrame("Frame", "EABBar_" .. key, UIParent, "SecureHandlerStateTemplate")
-    frame:SetSize(1, 1)
-    frame:SetPoint("CENTER")
+local function CreateBarFrame(details)
+    local key = details.key
+    local widget = CreateFrame("Frame", "EABBar_" .. key, UIParent, "SecureHandlerStateTemplate")
+    widget:SetSize(1, 1)
+    widget:SetPoint("CENTER")
     -- Render above any Blizzard bar art that might bleed through
-    frame:SetFrameLevel(math.max(frame:GetFrameLevel(), 10))
+    widget:SetFrameLevel(math.max(widget:GetFrameLevel(), 10))
     -- Bar frames never intercept clicks (only buttons do); motion is enabled
     -- later by the hover system for OnEnter/OnLeave.
-    if frame.SetMouseClickEnabled then
-        frame:SetMouseClickEnabled(false)
+    if widget.SetMouseClickEnabled then
+        widget:SetMouseClickEnabled(false)
     end
-    frame._barKey = key
-    frame._barInfo = info
+    widget._barKey = key
+    widget._barInfo = details
 
     if key == "MainBar" then
         -- MainBar paging: the state driver evaluates conditions (forms,
         -- vehicle, override, possess, bonus bars, modifiers); _onstate-page
         -- runs ChildUpdate("eab-page", page), and each button's
         -- _childupdate-eab-page rewrites action = baseIndex + (page-1)*12.
-        local barSettings = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars[key]
+        local barSettings = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[key]
         local customPaging = barSettings and barSettings.paging
         local pagingConditions
         if EAB_VTABLE.HasCustomPaging(barSettings) then
@@ -68,7 +68,7 @@ local function CreateBarFrame(info)
 
         -- Mark MainBar as the override bar target so the override controller
         -- propagates vehicle/override/petbattle state changes.
-        frame:SetAttribute("state-overridebar", true)
+        widget:SetAttribute("state-overridebar", true)
 
         -- Propagate page state to actionpage in the restricted environment so
         -- it stays untainted. The same write goes to MainActionBar: the native
@@ -85,8 +85,8 @@ local function CreateBarFrame(info)
         -- -- Blizzard's ActionBarController drivers in the same pass inherit
         -- it and OverrideActionBar:Show() hits ADDON_ACTION_BLOCKED. Page
         -- sync instead rides ACTIONBAR_PAGE_CHANGED (paging frame OnEvent).
-        frame:SetFrameRef("blizzmainbar", MainActionBar)
-        frame:SetAttributeNoHandler(
+        widget:SetFrameRef("blizzmainbar", MainActionBar)
+        widget:SetAttributeNoHandler(
             "_onstate-page",
             [[
             local page = tonumber(newstate) or 1
@@ -96,25 +96,25 @@ local function CreateBarFrame(info)
         ]]
         )
 
-        RegisterStateDriver(frame, "page", pagingConditions)
-        frame._eabPagingConds = pagingConditions
+        RegisterStateDriver(widget, "page", pagingConditions)
+        widget._eabPagingConds = pagingConditions
     end
 
     -- Bars 2-8 (nativeActionPage) and 9-10 (customPage): buttons have static action
     -- attrs set in SetupBar pointing at the bar's default page. Custom paging installs
     -- a state driver + ChildUpdate to recalculate the action attr on page change --
     -- identical machinery either way, differing only in the default page source.
-    local defaultPage = info.nativeActionPage or info.customPage
+    local defaultPage = details.nativeActionPage or details.customPage
     if defaultPage then
-        frame:Execute(("self:SetAttribute('actionpage', %d)"):format(defaultPage))
+        widget:Execute(("self:SetAttribute('actionpage', %d)"):format(defaultPage))
 
         -- Configurable paging: install a state driver on top of the default
         -- page; when no conditions match, fall back to the bar's default.
-        local barSettings = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars[key]
+        local barSettings = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[key]
         local customPaging = barSettings and barSettings.paging
-        frame._eabPagingConds = false
+        widget._eabPagingConds = false
         if EAB_VTABLE.HasCustomPaging(barSettings) then
-            frame:SetAttributeNoHandler(
+            widget:SetAttributeNoHandler(
                 "_onstate-page",
                 [[
                 local page = tonumber(newstate) or 1
@@ -122,16 +122,16 @@ local function CreateBarFrame(info)
                 self:ChildUpdate("eab-page", page)
             ]]
             )
-            frame._eabPagingInstalled = true
+            widget._eabPagingInstalled = true
             local conditions = EAB_VTABLE.BuildPagingConditions(key, customPaging, defaultPage)
             if conditions then
-                RegisterStateDriver(frame, "page", conditions)
-                frame._eabPagingConds = conditions
+                RegisterStateDriver(widget, "page", conditions)
+                widget._eabPagingConds = conditions
             end
         end
     end
 
-    barFrames[key] = frame
+    barFrames[key] = widget
 
     -- Empower re-check: setting "state-eabempower" dispatches ChildUpdate to
     -- re-evaluate pressAndHoldAction on all children. MUST be an _onstate-
@@ -139,7 +139,7 @@ local function CreateBarFrame(info)
     -- whose dispatcher only matches "^state%-(.+)" -> "_onstate-<id>". No
     -- _onattributechanged path exists here (that's SecureHandlerAttributeTemplate,
     -- i.e. OverrideController); a plain-attribute trigger fires NOTHING.
-    frame:SetAttributeNoHandler(
+    widget:SetAttributeNoHandler(
         "_onstate-eabempower",
         [[
         self:ChildUpdate("eab-empower", "")
@@ -150,7 +150,7 @@ local function CreateBarFrame(info)
     -- attribute directly. RegisterStateDriver installs the snippet at
     -- creation (out of combat); later SetAttribute("state-eabvis", "hide")
     -- triggers it from the secure environment.
-    frame:SetAttribute(
+    widget:SetAttribute(
         "_onstate-eabvis",
         [[
         if newstate == "hide" then
@@ -162,35 +162,35 @@ local function CreateBarFrame(info)
     )
     -- If always-hidden or disabled, start hidden so the secure snippet hides
     -- it immediately, before combat can return after a brief reload regen.
-    local s = EAB.db and EAB.db.profile.bars[key]
-    local startHidden = s and (EAB.VisibilityCompat.IsNever(s) or s.enabled == false)
-    RegisterStateDriver(frame, "eabvis", startHidden and "hide" or "show")
+    local s = ABAR.db and ABAR.db.profile.bars[key]
+    local startHidden = s and (ABAR.VisibilityCompat.IsNever(s) or s.enabled == false)
+    RegisterStateDriver(widget, "eabvis", startHidden and "hide" or "show")
 
     -- Register with the override controller so vehicle/override/petbattle
     -- state changes propagate to this bar frame.
-    RegisterBarWithOverrideController(frame)
+    RegisterBarWithOverrideController(widget)
 
     -- Register with secure handler so it can reparent buttons to this frame
-    SecureSetupHandler_RegisterBarFrame(key, frame)
+    SecureSetupHandler_RegisterBarFrame(key, widget)
     -- Custom modifier paging rewrites button action attrs from a SECURE state
     -- driver, no dispatcher event exists. The driver's "state-page" write
     -- fires this frame's insecure OnAttributeChanged -- the one clean owning
     -- edge to retire the filled lists and slot->button map so the next
     -- cooldown pass rebuilds against the new mapping.
-    frame:HookScript("OnAttributeChanged", function(f, name)
+    widget:HookScript("OnAttributeChanged", function(f, name)
         if name == "state-page" then
-            ns._cdFilledDirty = true
-            ns._slotBtnMapDirty = true
-            ns._cdDirtyUntil = GetTime() + 2
+            mod._cdFilledDirty = true
+            mod._slotBtnMapDirty = true
+            mod._cdDirtyUntil = GetTime() + 2
             -- Out-of-range coloring re-acquires the bar's new slots and the
             -- proc glows re-scan (CUI_ActionBars_Range.lua / _Glows.lua): the
             -- page is applied by now, which ACTIONBAR_PAGE_CHANGED's own
             -- passes cannot rely on (it fires before the state driver runs)
-            if ns._eabRangePageEdge then
-                ns._eabRangePageEdge(f._barKey)
+            if mod._eabRangePageEdge then
+                mod._eabRangePageEdge(f._barKey)
             end
-            if ns._eabQueueGlowRescan then
-                ns._eabQueueGlowRescan()
+            if mod._eabQueueGlowRescan then
+                mod._eabQueueGlowRescan()
             end
         end
     end)
@@ -200,17 +200,17 @@ local function CreateBarFrame(info)
     -- so both edges are combat-legal. Buttons don't exist yet at creation
     -- time (handler no-ops until they do); FinishSetup's initial sync covers
     -- bars that START hidden (their OnHide never fires).
-    frame:HookScript("OnShow", function(f)
-        if ns.ApplyBarDormancy then
-            ns.ApplyBarDormancy(f._barKey, false)
+    widget:HookScript("OnShow", function(f)
+        if mod.ApplyBarDormancy then
+            mod.ApplyBarDormancy(f._barKey, false)
         end
     end)
-    frame:HookScript("OnHide", function(f)
-        if ns.ApplyBarDormancy then
-            ns.ApplyBarDormancy(f._barKey, true)
+    widget:HookScript("OnHide", function(f)
+        if mod.ApplyBarDormancy then
+            mod.ApplyBarDormancy(f._barKey, true)
         end
     end)
-    return frame
+    return widget
 end
 
 -- Rebuild the paging state driver for a bar after settings change. Called from the
@@ -220,48 +220,48 @@ end
 -- (frame._eabPagingConds, false = fixed page) instead of re-registering its driver
 -- on every full apply, and returns true for a rebuilt bar instead of running the
 -- keybind pass, which ApplyAll runs once for all of them. Must be called out of combat.
-function ns.RebuildBarPaging(barKey, onlyIfChanged)
+function mod.RebuildBarPaging(barId, onlyIfChanged)
     if InCombatLockdown() then
         return
     end
-    local frame = barFrames[barKey]
-    if not frame then
+    local widget = barFrames[barId]
+    if not widget then
         return
     end
-    local info = frame._barInfo
-    if not info then
+    local details = widget._barInfo
+    if not details then
         return
     end
-    local barSettings = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars[barKey]
+    local barSettings = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[barId]
     local customPaging = barSettings and barSettings.paging
 
-    if barKey == "MainBar" then
+    if barId == "MainBar" then
         local pagingConditions
         if EAB_VTABLE.HasCustomPaging(barSettings) then
             pagingConditions = EAB_VTABLE.BuildPagingConditions("MainBar", customPaging, 1)
         else
             pagingConditions = GetClassPagingConditions()
         end
-        if onlyIfChanged and pagingConditions == frame._eabPagingConds then
+        if onlyIfChanged and pagingConditions == widget._eabPagingConds then
             return
         end
-        frame._eabPagingConds = pagingConditions
+        widget._eabPagingConds = pagingConditions
         -- Force re-evaluation by unregistering first
-        UnregisterStateDriver(frame, "page")
-        RegisterStateDriver(frame, "page", pagingConditions)
-    elseif info.nativeActionPage or info.customPage then
-        local defaultPage = info.nativeActionPage or info.customPage
+        UnregisterStateDriver(widget, "page")
+        RegisterStateDriver(widget, "page", pagingConditions)
+    elseif details.nativeActionPage or details.customPage then
+        local defaultPage = details.nativeActionPage or details.customPage
         local hasCustom = EAB_VTABLE.HasCustomPaging(barSettings)
-        local conditions = hasCustom and EAB_VTABLE.BuildPagingConditions(barKey, customPaging, defaultPage)
+        local conditions = hasCustom and EAB_VTABLE.BuildPagingConditions(barId, customPaging, defaultPage)
             or false
-        if onlyIfChanged and conditions == frame._eabPagingConds then
+        if onlyIfChanged and conditions == widget._eabPagingConds then
             return
         end
-        frame._eabPagingConds = conditions
+        widget._eabPagingConds = conditions
         if hasCustom then
             -- Install handler if not already present
-            if not frame._eabPagingInstalled then
-                frame:SetAttributeNoHandler(
+            if not widget._eabPagingInstalled then
+                widget:SetAttributeNoHandler(
                     "_onstate-page",
                     [[
                     local page = tonumber(newstate) or 1
@@ -269,30 +269,30 @@ function ns.RebuildBarPaging(barKey, onlyIfChanged)
                     self:ChildUpdate("eab-page", page)
                 ]]
                 )
-                frame._eabPagingInstalled = true
+                widget._eabPagingInstalled = true
                 -- Must set the secure "action" attr (buttons are ID=0, so
                 -- CalculateAction never consults "actionpage"). Same builder
                 -- as SetupBar so paging added live behaves identically -- no /reload needed.
-                local btns = barButtons[barKey]
+                local btns = barButtons[barId]
                 if btns then
-                    for idx, btn in ipairs(btns) do
-                        if not btn:GetAttribute("_childupdate-eab-page") then
-                            btn:SetAttributeNoHandler(
+                    for position, button in ipairs(btns) do
+                        if not button:GetAttribute("_childupdate-eab-page") then
+                            button:SetAttributeNoHandler(
                                 "_childupdate-eab-page",
-                                ns._eabBuildPageChildSnippet(idx)
+                                mod._eabBuildPageChildSnippet(position)
                             )
                         end
                     end
                 end
             end
             if conditions then
-                UnregisterStateDriver(frame, "page")
-                RegisterStateDriver(frame, "page", conditions)
+                UnregisterStateDriver(widget, "page")
+                RegisterStateDriver(widget, "page", conditions)
             end
         else
             -- No paging configured: remove state driver, restore fixed page
-            UnregisterStateDriver(frame, "page")
-            frame:Execute(("self:SetAttribute('actionpage', %d)"):format(defaultPage))
+            UnregisterStateDriver(widget, "page")
+            widget:Execute(("self:SetAttribute('actionpage', %d)"):format(defaultPage))
         end
     end
 
@@ -319,76 +319,76 @@ end
 -- so re-running SetupBar there would leave a second one behind.
 -- On ns rather than a file local: the lazy bar build in
 -- CUI_ActionBars_VisibilityDrivers.lua calls it too.
-ns.BuildBarButtons = function(info, frame, skipProtected)
+mod.BuildBarButtons = function(details, widget, skipProtected)
     -- Shrink the clickable area to match a custom visual shape so a square
     -- hit rect can't steal clicks from diamond/circle/etc neighbours. Insets
     -- are a fraction of button size; "none" resets to full square.
     -- Out-of-combat only (SetHitRectInsets on a protected button is unsafe
     -- in combat), behind the same not-skipProtected guard as SetParent.
-    local function ApplyShapeHitRects(btn, shape)
-        if not btn then
+    local function ApplyShapeHitRects(button, shape)
+        if not button then
             return
         end
-        local w, h = btn:GetSize()
-        if not w or w == 0 then
-            w = 45
+        local wid, hgt = button:GetSize()
+        if not wid or wid == 0 then
+            wid = 45
         end
-        if not h or h == 0 then
-            h = 45
+        if not hgt or hgt == 0 then
+            hgt = 45
         end
         local insetX, insetY = 0, 0
         if shape == "diamond" or shape == "circle" then
-            insetX = math.floor(w * 0.146)
-            insetY = math.floor(h * 0.146)
+            insetX = math.floor(wid * 0.146)
+            insetY = math.floor(hgt * 0.146)
         elseif shape == "hexagon" then
-            insetX = math.floor(w * 0.12)
-            insetY = math.floor(h * 0.12)
+            insetX = math.floor(wid * 0.12)
+            insetY = math.floor(hgt * 0.12)
         elseif shape == "shield" then
-            insetX = math.floor(w * 0.10)
-            insetY = math.floor(h * 0.15)
+            insetX = math.floor(wid * 0.10)
+            insetY = math.floor(hgt * 0.15)
         end
-        btn:SetHitRectInsets(insetX, insetX, insetY, insetY)
+        button:SetHitRectInsets(insetX, insetX, insetY, insetY)
     end
 
-    local key = info.key
+    local key = details.key
     local buttons = {}
     -- The layout shape: stock styles draw no custom shape, so their hit rects stay full.
-    local buttonShape = EAB
-            and EAB.db
-            and EAB.db.profile
-            and EAB.db.profile.bars[key]
-            and ns.AB_LayoutShape(EAB.db.profile.bars[key])
+    local buttonShape = ABAR
+            and ABAR.db
+            and ABAR.db.profile
+            and ABAR.db.profile.bars[key]
+            and mod.AB_LayoutShape(ABAR.db.profile.bars[key])
         or "none"
 
-    if info.isStance then
+    if details.isStance then
         -- Stance bar: reuse StanceButton1-N
-        for i = 1, info.count do
-            local btn = _G["StanceButton" .. i]
-            if btn then
+        for i = 1, details.count do
+            local button = _G["StanceButton" .. i]
+            if button then
                 if not skipProtected then
-                    ApplyShapeHitRects(btn, buttonShape)
-                    btn:SetAttributeNoHandler("statehidden", nil)
-                    ReRegisterButtonEvents(btn, "stance")
-                    btn:SetParent(frame)
+                    ApplyShapeHitRects(button, buttonShape)
+                    button:SetAttributeNoHandler("statehidden", nil)
+                    ReRegisterButtonEvents(button, "stance")
+                    button:SetParent(widget)
                 end
-                buttons[i] = btn
+                buttons[i] = button
             end
         end
-    elseif info.isPetBar then
+    elseif details.isPetBar then
         -- Pet bar: reuse PetActionButton1-N
-        for i = 1, info.count do
-            local btn = _G["PetActionButton" .. i]
-            if btn then
+        for i = 1, details.count do
+            local button = _G["PetActionButton" .. i]
+            if button then
                 if not skipProtected then
-                    ApplyShapeHitRects(btn, buttonShape)
-                    btn:SetAttributeNoHandler("statehidden", nil)
-                    ReRegisterButtonEvents(btn, "pet")
-                    btn:SetParent(frame)
+                    ApplyShapeHitRects(button, buttonShape)
+                    button:SetAttributeNoHandler("statehidden", nil)
+                    ReRegisterButtonEvents(button, "pet")
+                    button:SetParent(widget)
                 end
-                buttons[i] = btn
+                buttons[i] = button
                 -- Hook drag handlers so spellbook drops work even though
                 -- the original PetActionBar is hidden and unregistered.
-                btn:HookScript("OnReceiveDrag", function(self)
+                button:HookScript("OnReceiveDrag", function(self)
                     if InCombatLockdown() then
                         return
                     end
@@ -410,72 +410,72 @@ ns.BuildBarButtons = function(info, frame, skipProtected)
         -- stance or a held modifier at a login or /reload, or at a later
         -- build) reached no button: each starts on that page, at the slot
         -- its _childupdate-eab-page sets.
-        local curPage = frame._eabPagingConds and tonumber(frame:GetAttribute("state-page"))
-        for i = 1, info.count do
-            local slot = slotOffset + i
-            local btn = GetOrCreateButton(slot, frame, info, i, skipProtected)
-            if btn then
+        local curPage = widget._eabPagingConds and tonumber(widget:GetAttribute("state-page"))
+        for i = 1, details.count do
+            local slotIndex = slotOffset + i
+            local button = GetOrCreateButton(slotIndex, widget, details, i, skipProtected)
+            if button then
                 -- The bar's key before the first paint below, so the count
                 -- alpha reads this bar's Charge Numbers (LayoutBar stamps the
                 -- same key later).
-                EFD(btn).barKey = key
+                EFD(button).barKey = key
                 local bindPrefix = BINDING_MAP[key]
                 if not skipProtected then
-                    ApplyShapeHitRects(btn, buttonShape)
-                    local action = curPage and (i + (curPage - 1) * 12) or slot
+                    ApplyShapeHitRects(button, buttonShape)
+                    local action = curPage and (i + (curPage - 1) * 12) or slotIndex
                     -- Explicit action attr: CalculateAction sees it non-zero
                     -- and returns it directly (path 2).
-                    btn:SetAttribute("action", action)
+                    button:SetAttribute("action", action)
                     if bindPrefix then
-                        btn:SetAttributeNoHandler("binding", bindPrefix .. i)
+                        button:SetAttributeNoHandler("binding", bindPrefix .. i)
                     end
                     -- Force visual refresh; events are centrally dispatched
                     -- (per-button registration on 96 buttons caused mass
                     -- OnEvent->UpdateAction calls per tick -- screen blink).
                     -- Taint-safe refresh; avoids passing secret cooldown values through a tainted call.
-                    EAB_VTABLE.ForceButtonRefresh(btn, action)
+                    EAB_VTABLE.ForceButtonRefresh(button, action)
                     -- Reconcile attack visuals and the equipped border on rebuild.
-                    ns.AB_SyncAttackState(btn, action)
-                    ns.AB_SyncEquippedBorder(btn, action)
+                    mod.AB_SyncAttackState(button, action)
+                    mod.AB_SyncEquippedBorder(button, action)
                 end
                 if bindPrefix then
-                    btn.commandName = bindPrefix .. i
+                    button.commandName = bindPrefix .. i
                 end
                 -- Always register both so empower spells (hold-and-release)
                 -- receive the key-down event even when CVar is key-up mode.
                 -- useOnKeyDown controls which event fires normal spells.
-                btn:RegisterForClicks("AnyDown", "AnyUp")
-                btn:SetAttribute("useOnKeyDown", GetCVarBool("ActionButtonUseKeyDown"))
-                if btn.EnableMouseWheel then
-                    btn:EnableMouseWheel(true)
+                button:RegisterForClicks("AnyDown", "AnyUp")
+                button:SetAttribute("useOnKeyDown", GetCVarBool("ActionButtonUseKeyDown"))
+                if button.EnableMouseWheel then
+                    button:EnableMouseWheel(true)
                 end
                 if not skipProtected then
-                    btn:SetAttribute("showgrid", 1)
+                    button:SetAttribute("showgrid", 1)
                 end
-                GetEABFlyout():RegisterButton(btn)
+                GetEABFlyout():RegisterButton(button)
                 -- Page child-update: rewrites the secure "action" attr on a page
                 -- change, then re-checks hold-release. Shared builder so SetupBar
                 -- and RebuildBarPaging install byte-identical handlers.
                 if
-                    (key == "MainBar" or frame._eabPagingInstalled)
-                    and not btn:GetAttribute("_childupdate-eab-page")
+                    (key == "MainBar" or widget._eabPagingInstalled)
+                    and not button:GetAttribute("_childupdate-eab-page")
                 then
-                    btn:SetAttributeNoHandler("_childupdate-eab-page", ns._eabBuildPageChildSnippet(i))
+                    button:SetAttributeNoHandler("_childupdate-eab-page", mod._eabBuildPageChildSnippet(i))
                 end
                 -- Empower re-check on slot change (spec swap, drag, etc.)
                 -- The bar header's _onstate-eabempower dispatches ChildUpdate
                 -- when addon code sets "state-eabempower".
-                if not btn:GetAttribute("_childupdate-eab-empower") then
-                    btn:SetAttributeNoHandler("_childupdate-eab-empower", ns._eabEmpowerSnippet)
+                if not button:GetAttribute("_childupdate-eab-empower") then
+                    button:SetAttributeNoHandler("_childupdate-eab-empower", mod._eabEmpowerSnippet)
                 end
-                buttons[i] = btn
-                buttonToBar[btn] = { barKey = key, index = i }
+                buttons[i] = button
+                buttonToBar[button] = { barKey = key, index = i }
             end
         end
     end
 
     barButtons[key] = buttons
-    ns._eabBarNoButtons[key] = nil
+    mod._eabBarNoButtons[key] = nil
 
     -- Store original button size before any shape/scale modifications.
     -- StanceButtons and PetActionButtons are 30x30; action buttons are 45x45.
@@ -497,20 +497,20 @@ end
 -- so the bar goes back to it once the screen has room. Protected on our secure
 -- bar frames in combat, so the combat /reload build runs this at combat end.
 -- On ns, not a file local.
-ns._eabClampAllBars = function()
+mod._eabClampAllBars = function()
     for _, f in pairs(barFrames) do
         f:SetClampedToScreen(true)
     end
 end
 
-local function SetupBar(info, skipProtected)
-    local key = info.key
-    local frame = CreateBarFrame(info)
+local function SetupBar(details, skipProtected)
+    local key = details.key
+    local widget = CreateBarFrame(details)
     if skipProtected or InCombatLockdown() then
         -- One key: every bar of the combat build shares the single pass.
-        ns.CombatQueue.Defer("EABClampBars", ns._eabClampAllBars)
+        mod.CombatQueue.Defer("EABClampBars", mod._eabClampAllBars)
     else
-        frame:SetClampedToScreen(true)
+        widget:SetClampedToScreen(true)
     end
     -- A bar that can never become visible AND has no key bound gets no buttons
     -- at load: the button loop is 95 % of such a bar's setup cost, and most of
@@ -521,15 +521,15 @@ local function SetupBar(info, skipProtected)
     -- its 52 indexing sites and barButtons[key] is empty, not nil.
     -- ns._eabBuildSkippedBars builds them when the bar leaves the Never set or
     -- a key lands on it.
-    if ns.IsNeverBar(info) and not ns.BarHasBoundKeys(info) then
+    if mod.IsNeverBar(details) and not mod.BarHasBoundKeys(details) then
         barButtons[key] = {}
-        ns._eabBarNoButtons[key] = true
+        mod._eabBarNoButtons[key] = true
         -- Placeholder only, same fallback the button-derived value would take
         -- with no buttons. BuildBarButtons recomputes it from the real button.
         barBaseSize[key] = { w = 45, h = 45 }
-        return frame, barButtons[key]
+        return widget, barButtons[key]
     end
-    return frame, ns.BuildBarButtons(info, frame, skipProtected)
+    return widget, mod.BuildBarButtons(details, widget, skipProtected)
 end
 
 -------------------------------------------------------------------------------
@@ -548,19 +548,19 @@ local function CaptureBlizzardDefaults()
     -- Blizzard's stack order, at the stack's left edge plus the bar's own
     -- indent (WoW Forever's default anchors carry one). nil when the bar is
     -- not parked there (moved in Edit Mode, or a layout with no stack).
-    local function StackSlot(bar)
-        local pt, rel, rpt, px, py = bar:GetPoint(1)
+    local function StackSlot(barFrame)
+        local pt, rel, rpt, px, py = barFrame:GetPoint(1)
         if pt ~= "TOPLEFT" or rel ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then
             return nil
         end
         local EU, EM = _G.EditModeUtil, _G.EditModeManagerFrame
-        local ok, list
+        local success, entries
         if EU and EU.GetBottomActionBars then
-            ok, list = pcall(EU.GetBottomActionBars, EU)
+            success, entries = pcall(EU.GetBottomActionBars, EU)
         elseif EM and EM.GetBottomActionBars then
-            ok, list = pcall(EM.GetBottomActionBars, EM)
+            success, entries = pcall(EM.GetBottomActionBars, EM)
         end
-        if not ok or type(list) ~= "table" then
+        if not success or type(entries) ~= "table" then
             return nil
         end
         local function Anchor(f)
@@ -571,9 +571,9 @@ local function CaptureBlizzardDefaults()
             return okA and type(a) == "table" and a or nil
         end
         local below, listed
-        for i = 1, #list do
-            local f = list[i]
-            if f == bar then
+        for i = 1, #entries do
+            local f = entries[i]
+            if f == barFrame then
                 listed = true
                 break
             end
@@ -594,29 +594,29 @@ local function CaptureBlizzardDefaults()
         end
         below = below or _G.MainActionBar
         local l, t = below and below:GetLeft(), below and below:GetTop()
-        local w, h = bar:GetWidth(), bar:GetHeight()
-        if not (l and t and w and h) then
+        local wid, hgt = barFrame:GetWidth(), barFrame:GetHeight()
+        if not (l and t and wid and hgt) then
             return nil
         end
         local kB = below:GetEffectiveScale() / uiScale
-        local k = bar:GetEffectiveScale() / uiScale
-        local aB, a = Anchor(below), Anchor(bar)
-        local left = (l - (aB and aB.bottomBarOffsetX or 0)) * kB + (a and a.bottomBarOffsetX or 0) * k
+        local k = barFrame:GetEffectiveScale() / uiScale
+        local aB, a = Anchor(below), Anchor(barFrame)
+        local leftX = (l - (aB and aB.bottomBarOffsetX or 0)) * kB + (a and a.bottomBarOffsetX or 0) * k
         local bottom = t * kB + (tonumber(_G.BOTTOM_ACTION_BARS_SPACER_Y) or 4) * k
-        return left + w * k / 2 - uiW / 2, bottom + h * k / 2 - uiH / 2
+        return leftX + wid * k / 2 - uiW / 2, bottom + hgt * k / 2 - uiH / 2
     end
 
     -- MainActionBar is the Edit Mode frame for Action Bar 1 (there is no MainMenuBar).
     -- Chain: ActionButton1 > MainActionBarButtonContainer1 > MainActionBar > UIParent
     local mainActionBar = _G["MainActionBar"]
 
-    for _, info in ipairs(BAR_CONFIG) do
-        local bar = _G[info.blizzFrame]
-        if info.key == "MainBar" then
+    for _, details in ipairs(BAR_CONFIG) do
+        local barFrame = _G[details.blizzFrame]
+        if details.key == "MainBar" then
             -- MainBar reads Edit Mode settings + position from MainActionBar.
             -- Early disposal reparents it to the full-screen hiddenParent, so
             -- GetCenter still returns valid coordinates.
-            local data = {}
+            local payload = {}
             local mabPos = mainActionBar
             if mabPos then
                 local cx, cy = mabPos:GetCenter()
@@ -624,121 +624,126 @@ local function CaptureBlizzardDefaults()
                     local bScale = mabPos:GetEffectiveScale()
                     cx = cx * bScale / uiScale
                     cy = cy * bScale / uiScale
-                    data.point = "CENTER"
-                    data.relPoint = "CENTER"
-                    data.x = cx - (uiW / 2)
-                    data.y = cy - (uiH / 2)
+                    payload.point = "CENTER"
+                    payload.relPoint = "CENTER"
+                    payload.x = cx - (uiW / 2)
+                    payload.y = cy - (uiH / 2)
                 end
             end
 
             local mab = mainActionBar
             if mab then
                 if mab.numButtonsShowable and mab.numButtonsShowable > 0 then
-                    data.numIcons = mab.numButtonsShowable
+                    payload.numIcons = mab.numButtonsShowable
                 end
                 if mab.numRows and mab.numRows > 0 then
-                    data.numRows = mab.numRows
+                    payload.numRows = mab.numRows
                 end
                 if mab.GetSettingValue then
-                    local ok, val = pcall(mab.GetSettingValue, mab, 0)
-                    if ok and val ~= nil then
-                        data.orientation = (val == 0) and "horizontal" or "vertical"
+                    local success, val = pcall(mab.GetSettingValue, mab, 0)
+                    if success and val ~= nil then
+                        payload.orientation = (val == 0) and "horizontal" or "vertical"
                     end
-                    ok, val = pcall(mab.GetSettingValue, mab, 3)
-                    if ok and val ~= nil and val > 0 then
-                        data.blizzIconScale = val / 100
+                    success, val = pcall(mab.GetSettingValue, mab, 3)
+                    if success and val ~= nil and val > 0 then
+                        payload.blizzIconScale = val / 100
                     end
                 end
             end
 
-            captured["MainBar"] = data
-        elseif bar and bar:GetPoint(1) then
-            local data = {}
+            captured["MainBar"] = payload
+        elseif barFrame and barFrame:GetPoint(1) then
+            local payload = {}
 
             -- Position: convert to UIParent-relative CENTER coords.
-            local cx, cy = bar:GetCenter()
+            local cx, cy = barFrame:GetCenter()
             if cx and cy then
-                local bScale = bar:GetEffectiveScale()
+                local bScale = barFrame:GetEffectiveScale()
                 cx = cx * bScale / uiScale
                 cy = cy * bScale / uiScale
-                data.point = "CENTER"
-                data.relPoint = "CENTER"
-                data.x = cx - (uiW / 2)
-                data.y = cy - (uiH / 2)
+                payload.point = "CENTER"
+                payload.relPoint = "CENTER"
+                payload.x = cx - (uiW / 2)
+                payload.y = cy - (uiH / 2)
             end
 
             -- A stance or pet bar hidden right now (no forms yet, no pet out)
             -- was never stacked: it takes the slot it gets once it shows.
-            if (info.isStance or info.isPetBar) and not bar:IsShown() then
-                local sx, sy = StackSlot(bar)
+            if (details.isStance or details.isPetBar) and not barFrame:IsShown() then
+                local sx, sy = StackSlot(barFrame)
                 if sx then
-                    data.point, data.relPoint = "CENTER", "CENTER"
-                    data.x, data.y, data.stackSlot = sx, sy, true
+                    payload.point, payload.relPoint = "CENTER", "CENTER"
+                    payload.x, payload.y, payload.stackSlot = sx, sy, true
                 end
             end
 
             -- Number of visible buttons try Edit Mode setting 2 first
-            if bar.GetSettingValue then
-                local ok, val = pcall(bar.GetSettingValue, bar, 2)
-                if ok and val and val >= 6 and val <= 12 then
-                    data.numIcons = val
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 2)
+                if success and val and val >= 6 and val <= 12 then
+                    payload.numIcons = val
                 end
             end
-            if not data.numIcons and bar.numButtonsShowable and bar.numButtonsShowable > 0 then
-                data.numIcons = bar.numButtonsShowable
+            if not payload.numIcons and barFrame.numButtonsShowable and barFrame.numButtonsShowable > 0 then
+                payload.numIcons = barFrame.numButtonsShowable
             end
 
             -- Number of rows try Edit Mode setting 1 first
-            if bar.GetSettingValue then
-                local ok, val = pcall(bar.GetSettingValue, bar, 1)
-                if ok and val and val >= 1 and val <= 4 then
-                    data.numRows = val
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 1)
+                if success and val and val >= 1 and val <= 4 then
+                    payload.numRows = val
                 end
             end
-            if not data.numRows and bar.numRows and bar.numRows > 0 then
-                data.numRows = bar.numRows
+            if not payload.numRows and barFrame.numRows and barFrame.numRows > 0 then
+                payload.numRows = barFrame.numRows
             end
 
             -- Orientation
-            if bar.isHorizontal ~= nil then
-                data.orientation = bar.isHorizontal and "horizontal" or "vertical"
+            if barFrame.isHorizontal ~= nil then
+                payload.orientation = barFrame.isHorizontal and "horizontal" or "vertical"
             end
-            if bar.GetSettingValue then
-                local ok, val = pcall(bar.GetSettingValue, bar, 0)
-                if ok and val ~= nil then
-                    data.orientation = (val == 0) and "horizontal" or "vertical"
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 0)
+                if success and val ~= nil then
+                    payload.orientation = (val == 0) and "horizontal" or "vertical"
                 end
             end
 
             -- Icon size (Edit Mode setting 3).
-            if bar.GetSettingValue then
-                local ok, val = pcall(bar.GetSettingValue, bar, 3)
-                if ok and val ~= nil and val > 0 then
-                    data.blizzIconScale = val / 100
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 3)
+                if success and val ~= nil and val > 0 then
+                    payload.blizzIconScale = val / 100
                 end
             end
 
             -- Always Show Buttons (setting 9): 0=off, 1=on
-            if bar.GetSettingValue and info.key ~= "MainBar" and not info.isStance and not info.isPetBar then
-                local ok, val = pcall(bar.GetSettingValue, bar, 9)
-                if ok and val ~= nil then
-                    data.alwaysShowButtons = (val == 1)
+            if
+                barFrame.GetSettingValue
+                and details.key ~= "MainBar"
+                and not details.isStance
+                and not details.isPetBar
+            then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 9)
+                if success and val ~= nil then
+                    payload.alwaysShowButtons = (val == 1)
                 end
             end
 
             -- An empty bar with alwaysShowButtons off would vanish entirely once we take over, so force it on.
-            if data.alwaysShowButtons == false and info.blizzBtnPrefix then
-                local numToCheck = data.numIcons or info.count or 12
+            if payload.alwaysShowButtons == false and details.blizzBtnPrefix then
+                local numToCheck = payload.numIcons or details.count or 12
                 local hasAny = false
                 for i = 1, numToCheck do
-                    local btn = _G[info.blizzBtnPrefix .. i]
-                    if btn and btn.action and HasAction(btn.action) then
+                    local button = _G[details.blizzBtnPrefix .. i]
+                    if button and button.action and HasAction(button.action) then
                         hasAny = true
                         break
                     end
                 end
                 if not hasAny then
-                    data.alwaysShowButtons = true
+                    payload.alwaysShowButtons = true
                 end
             end
 
@@ -746,16 +751,16 @@ local function CaptureBlizzardDefaults()
             -- 2=OutOfCombat, 3=Hidden. A bar disabled via Gameplay > Action
             -- Bars (CVars) reports IsShown()=false while setting 5 still
             -- claims "Always Visible"; IsShown=false takes priority.
-            if not bar:IsShown() then
-                data.visibility = 3
-            elseif bar.GetSettingValue and not info.isStance and not info.isPetBar then
-                local ok, val = pcall(bar.GetSettingValue, bar, 5)
-                if ok and val ~= nil then
-                    data.visibility = val
+            if not barFrame:IsShown() then
+                payload.visibility = 3
+            elseif barFrame.GetSettingValue and not details.isStance and not details.isPetBar then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 5)
+                if success and val ~= nil then
+                    payload.visibility = val
                 end
             end
 
-            captured[info.key] = data
+            captured[details.key] = payload
         end
     end
     return captured
@@ -769,7 +774,7 @@ end
 -- overlap of at least half the shorter one; directly beside = facing edges
 -- -8..12 apart (Blizzard's WoW Forever row leaves 4.5 and 7), the nearest
 -- first. Returns the left and right bar keys, nil for none.
-function ns.AB_CaptureCapSpan(captured)
+function mod.AB_CaptureCapSpan(captured)
     local main = _G.MainActionBar
     local mc = captured and captured.MainBar
     if not main or not mc or mc.orientation == "vertical" then
@@ -792,20 +797,20 @@ function ns.AB_CaptureCapSpan(captured)
         return nil, nil
     end
     local cands = {}
-    for _, info in ipairs(BAR_CONFIG) do
-        local d = captured[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local d = captured[details.key]
         if
-            info.key ~= "MainBar"
+            details.key ~= "MainBar"
             and d
-            and info.blizzFrame
-            and not info.isStance
-            and not info.isPetBar
+            and details.blizzFrame
+            and not details.isStance
+            and not details.isPetBar
             and d.orientation == "horizontal"
             and (d.visibility == nil or d.visibility == 0)
         then
-            local r = Rect(_G[info.blizzFrame])
+            local r = Rect(_G[details.blizzFrame])
             if r then
-                cands[#cands + 1] = { key = info.key, r = r }
+                cands[#cands + 1] = { key = details.key, r = r }
             end
         end
     end
@@ -831,16 +836,16 @@ function ns.AB_CaptureCapSpan(captured)
         end
     end
     local function Walk(dir)
-        local cur, last, used = home, nil, {}
+        local current, last, used = home, nil, {}
         while true do
             local best, bestGap
             for i = 1, #cands do
                 local c = cands[i]
                 if not used[c] then
                     local r = c.r
-                    local ov = min(cur[3], r[3]) - max(cur[4], r[4])
-                    if ov >= 0.5 * min(cur[3] - cur[4], r[3] - r[4]) then
-                        local gap = (dir > 0) and (r[1] - cur[2]) or (cur[1] - r[2])
+                    local shade = min(current[3], r[3]) - upper(current[4], r[4])
+                    if shade >= 0.5 * min(current[3] - current[4], r[3] - r[4]) then
+                        local gap = (dir > 0) and (r[1] - current[2]) or (current[1] - r[2])
                         if gap >= -8 and gap <= 12 and (not bestGap or gap < bestGap) then
                             best, bestGap = c, gap
                         end
@@ -851,11 +856,11 @@ function ns.AB_CaptureCapSpan(captured)
                 return last
             end
             used[best] = true
-            last, cur = best.key, best.r
+            last, current = best.key, best.r
         end
     end
     return Walk(-1), Walk(1)
 end
 
 -- Entry points the files after this one re-import by name.
-I.CaptureBlizzardDefaults, I.SetupBar = CaptureBlizzardDefaults, SetupBar
+Inner.CaptureBlizzardDefaults, Inner.SetupBar = CaptureBlizzardDefaults, SetupBar

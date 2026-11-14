@@ -8,44 +8,44 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  their update functions.
 --  Reads the earlier Minimap files through ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local EBS, EG = I.EBS, I.EG
+local SKIN, ACC = Inner.EBS, Inner.EG
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local coordFrame
-I.coordFrameSetters[#I.coordFrameSetters + 1] = function(v)
-    coordFrame = v
+Inner.coordFrameSetters[#Inner.coordFrameSetters + 1] = function(val)
+    coordFrame = val
 end
 local clockFrame
-I.clockFrameSetters[#I.clockFrameSetters + 1] = function(v)
-    clockFrame = v
+Inner.clockFrameSetters[#Inner.clockFrameSetters + 1] = function(val)
+    clockFrame = val
 end
 local locationFrame
-I.locationFrameSetters[#I.locationFrameSetters + 1] = function(v)
-    locationFrame = v
+Inner.locationFrameSetters[#Inner.locationFrameSetters + 1] = function(val)
+    locationFrame = val
 end
 local locationBg
-I.locationBgSetters[#I.locationBgSetters + 1] = function(v)
-    locationBg = v
+Inner.locationBgSetters[#Inner.locationBgSetters + 1] = function(val)
+    locationBg = val
 end
 
-local function ApplyMinimapFont(fs, size)
-    CludesUI.ApplyModuleFont(fs, nil, size, "minimap")
+local function ApplyMinimapFont(fontStr, dim)
+    CludesUI.ApplyModuleFont(fontStr, nil, dim, "minimap")
 end
 
 -- Description-text colour (clock AM/PM, the "fps"/"ms" suffixes): custom fpsColor swatch or the live accent; the dynamic values stay white. Returns r, g, b, hex.
 local function GetDescColor(mp)
     local r, g, b
     if mp and mp.fpsUseAccent then
-        r, g, b = EG.r, EG.g, EG.b
+        r, g, b = ACC.r, ACC.g, ACC.b
     else
         local c = mp and mp.fpsColor
         if c then
@@ -79,28 +79,28 @@ local function UpdateClock()
     if cachedUse24h == nil then
         RefreshClockCVars()
     end
-    local h, m
+    local hgt, m
     if cachedUseLocal then
         local t = date("*t")
-        h, m = t.hour, t.min
+        hgt, m = t.hour, t.min
     else
-        h, m = GetGameTime()
+        hgt, m = GetGameTime()
     end
     if cachedUse24h then
-        clockFrame:SetText(format("%02d:%02d", h, m))
+        clockFrame:SetText(format("%02d:%02d", hgt, m))
     else
         -- Unpadded hour in 12h (1:03, not 01:03) matching Blizzard; 24h keeps the pad. AM/PM takes the description colour only when opted in; digits stay white.
-        local ampm = h >= 12 and "PM" or "AM"
-        h = h % 12
-        if h == 0 then
-            h = 12
+        local ampm = hgt >= 12 and "PM" or "AM"
+        hgt = hgt % 12
+        if hgt == 0 then
+            hgt = 12
         end
-        local mp = EBS.db and EBS.db.profile.minimap
+        local mp = SKIN.db and SKIN.db.profile.minimap
         if mp and mp.fpsColorClockAMPM then
             local _, _, _, hex = GetDescColor(mp)
-            clockFrame:SetFormattedText("%d:%02d |cff%s%s|r", h, m, hex, ampm)
+            clockFrame:SetFormattedText("%d:%02d |cff%s%s|r", hgt, m, hex, ampm)
         else
-            clockFrame:SetFormattedText("%d:%02d %s", h, m, ampm)
+            clockFrame:SetFormattedText("%d:%02d %s", hgt, m, ampm)
         end
     end
 end
@@ -110,9 +110,9 @@ local function GetCoordsModePos(mp)
     if not mp then
         return "always", "topLeft"
     end
-    local mode = mp.coordsMode or (mp.coordsBelow and "always") or "always"
-    local pos = mp.coordsPosition or (mp.coordsBelow and "belowMap") or "topLeft"
-    return mode, pos
+    local modeName = mp.coordsMode or (mp.coordsBelow and "always") or "always"
+    local place = mp.coordsPosition or (mp.coordsBelow and "belowMap") or "topLeft"
+    return modeName, place
 end
 
 -- Clock/location legacy fallback: pre-dropdown data carries clockInside/zoneInside
@@ -165,46 +165,46 @@ local MAP_POS_ANCHORS = {
 -- Below Map, and every other look, keep their offsets. Blizzard Style's slim
 -- square keeps the 4px inset (its line's inner shadow ends at the map's
 -- edge). An EBS field.
-function EBS._FvInsideXY(pos, x, y)
-    if not EBS._fvSquare or pos == "belowMap" then
-        return x, y
+function SKIN._FvInsideXY(place, posX, posY)
+    if not SKIN._fvSquare or place == "belowMap" then
+        return posX, posY
     end
-    if pos == "aboveMap" then
-        if EBS._fvTitleOn then
-            y = y + EBS._SqTitle() - EBS._SqOut()
+    if place == "aboveMap" then
+        if SKIN._fvTitleOn then
+            posY = posY + SKIN._SqTitle() - SKIN._SqOut()
         end
-        return x, y
+        return posX, posY
     end
-    if EBS._sqSlim then
-        return x, y
+    if SKIN._sqSlim then
+        return posX, posY
     end
-    if x ~= 0 then
-        x = x + (x > 0 and 2 or -2)
+    if posX ~= 0 then
+        posX = posX + (posX > 0 and 2 or -2)
     end
-    if y ~= 0 then
-        y = y + (y > 0 and 2 or -2)
+    if posY ~= 0 then
+        posY = posY + (posY > 0 and 2 or -2)
     end
-    return x, y
+    return posX, posY
 end
 
 -- Anchor for the clock/zone text bar. Inside keeps the 4px map inset (7px under
 -- Forever Square, past the heavy band); edge flips it so the box straddles the
 -- border (7px out on squares, 3px in on circles -- the round mask curves away
 -- from the frame edge). Above/Below Map float outside in both.
-local function ResolveElementAnchor(pos, style, isCircle)
-    local a = MAP_POS_ANCHORS[pos] or MAP_POS_ANCHORS.top
-    local x, y = a[3], a[4]
-    if style == "edge" and pos ~= "belowMap" and pos ~= "aboveMap" then
-        if x ~= 0 then
-            x = isCircle and (x > 0 and 3 or -3) or (x > 0 and -7 or 7)
+local function ResolveElementAnchor(place, look, isCircle)
+    local a = MAP_POS_ANCHORS[place] or MAP_POS_ANCHORS.top
+    local posX, posY = a[3], a[4]
+    if look == "edge" and place ~= "belowMap" and place ~= "aboveMap" then
+        if posX ~= 0 then
+            posX = isCircle and (posX > 0 and 3 or -3) or (posX > 0 and -7 or 7)
         end
-        if y ~= 0 then
-            y = isCircle and (y > 0 and 3 or -3) or (y > 0 and -7 or 7)
+        if posY ~= 0 then
+            posY = isCircle and (posY > 0 and 3 or -3) or (posY > 0 and -7 or 7)
         end
     else
-        x, y = EBS._FvInsideXY(pos, x, y)
+        posX, posY = SKIN._FvInsideXY(place, posX, posY)
     end
-    return a[1], a[2], x, y
+    return a[1], a[2], posX, posY
 end
 
 -- Cache coord format string so we don't rebuild it every 0.5s
@@ -218,19 +218,19 @@ local function UpdateCoords()
         coordFrame:SetText("")
         return
     end
-    local pos = C_Map.GetPlayerMapPosition(mapID, "player")
-    if not pos then
+    local place = C_Map.GetPlayerMapPosition(mapID, "player")
+    if not place then
         coordFrame:SetText("")
         return
     end
-    local x, y = pos:GetXY()
-    local p = EBS.db and EBS.db.profile.minimap
+    local posX, posY = place:GetXY()
+    local p = SKIN.db and SKIN.db.profile.minimap
     local prec = p and p.coordPrecision or 1
     if prec ~= cachedCoordPrec then
         cachedCoordPrec = prec
         cachedCoordFmt = format("%%.%df, %%.%df", prec, prec)
     end
-    coordFrame:SetText(format(cachedCoordFmt, x * 100, y * 100))
+    coordFrame:SetText(format(cachedCoordFmt, posX * 100, posY * 100))
 end
 
 -- Reactive zone coloring: tint by the current zone's PvP ruleset (friendly green, hostile/arena/combat red, sanctuary blue, contested/unknown yellow).
@@ -255,34 +255,34 @@ local function UpdateLocation()
         return
     end
     -- Colour before the text dedup so toggles/ruleset changes repaint the same zone.
-    local mp = EBS.db and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile.minimap
     if mp and mp.zoneReactiveColor then
         local r, g, b = GetZoneReactionColor()
         locationFrame:SetTextColor(r, g, b, 0.9)
     else
         locationFrame:SetTextColor(1, 1, 1, 0.9)
     end
-    local text
+    local textValue
     if mp and mp.zoneShowSubZone then
-        local sub = GetSubZoneText()
-        text = (sub and sub ~= "") and sub or (GetZoneText() or "")
+        local subFrame = GetSubZoneText()
+        textValue = (subFrame and subFrame ~= "") and subFrame or (GetZoneText() or "")
     else
-        text = GetZoneText() or ""
+        textValue = GetZoneText() or ""
     end
-    if text == lastLocationText then
+    if textValue == lastLocationText then
         return
     end
-    lastLocationText = text
-    locationFrame:SetText(text)
+    lastLocationText = textValue
+    locationFrame:SetText(textValue)
     if locationBg then
         local tw = locationFrame:GetStringWidth() or 0
         locationBg:SetSize(tw + 20, 18)
     end
 end
 
-I.ApplyMinimapFont, I.GetCoordsModePos = ApplyMinimapFont, GetCoordsModePos
-I.GetDescColor, I.GetElementModes = GetDescColor, GetElementModes
-I.MAP_POS_ANCHORS, I.RefreshClockCVars = MAP_POS_ANCHORS, RefreshClockCVars
-I.ResolveElementAnchor, I.UpdateClock = ResolveElementAnchor, UpdateClock
-I.UpdateCoords, I.UpdateLocation = UpdateCoords, UpdateLocation
-I.broken = false
+Inner.ApplyMinimapFont, Inner.GetCoordsModePos = ApplyMinimapFont, GetCoordsModePos
+Inner.GetDescColor, Inner.GetElementModes = GetDescColor, GetElementModes
+Inner.MAP_POS_ANCHORS, Inner.RefreshClockCVars = MAP_POS_ANCHORS, RefreshClockCVars
+Inner.ResolveElementAnchor, Inner.UpdateClock = ResolveElementAnchor, UpdateClock
+Inner.UpdateCoords, Inner.UpdateLocation = UpdateCoords, UpdateLocation
+Inner.broken = false

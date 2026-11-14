@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Pages: Class, Power and Health Bars | Cast Bar | Unlock Mode
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIResourceBars"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 local abs = math.abs
@@ -33,12 +33,12 @@ end
 -- the shared default) in place of the gated CUI border size. The border
 -- row's colour swatch, offset cog and style sync stand down under it; this
 -- sync copies the size. The cast bar row does the same on its own style key.
-function ns.ERB_ClassicBorderRow()
+function mod.ERB_ClassicBorderRow()
     return CludesUI.BlizzStyle.Active("resourcebars") == "classic"
 end
 -- "Border Around All" is offered under either stock style (the classic
 -- frame, or the Blizzard Style panel, round the group).
-function ns.ERB_BorderAllRow()
+function mod.ERB_BorderAllRow()
     return CludesUI.BlizzStyle.Active("resourcebars") ~= "cui"
 end
 local CLASSIC_SYNC_KEYS = { "health", "primary", "secondary" }
@@ -47,7 +47,7 @@ local CLASSIC_MATCH_KEYS = { "ERB_Health", "ERB_Power", "ERB_ClassResource" }
 -- reach (getMatchPad) and are re-applied when it changes. While "Border
 -- Around All" is on, the three bars share one frame and so one size: every
 -- bar's slider writes all three.
-function ns.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
+function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
     return CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
         local c = cfgFn()
         return c and c.stockBorderScale
@@ -59,7 +59,7 @@ function ns.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
         c.stockBorderScale = v
         local d = _G._CURB_AceDB
         local p = d and d.profile
-        local all = p and ns.ERB_GroupSettingOn and ns.ERB_GroupSettingOn(p)
+        local all = p and mod.ERB_GroupSettingOn and mod.ERB_GroupSettingOn(p)
         if all then
             for i = 1, #CLASSIC_SYNC_KEYS do
                 p[CLASSIC_SYNC_KEYS[i]].stockBorderScale = v
@@ -79,7 +79,7 @@ end
 -- Exact border size companion (borderSizePx, see CludesUI.BorderPx): the
 -- "apply to all" syncs copy it beside borderSize. A value the target held is
 -- cleared with false, never nil (nil does not travel through mirror sync).
-function ns.ERB_CopyBorderPx(t, s)
+function mod.ERB_CopyBorderPx(t, s)
     local v = s.borderSizePx
     if v == nil and t.borderSizePx ~= nil then
         v = false
@@ -87,7 +87,7 @@ function ns.ERB_CopyBorderPx(t, s)
     t.borderSizePx = v
 end
 -- Two bars agree when both are unset (nil or false) or hold the same value.
-function ns.ERB_SameBorderPx(a, b)
+function mod.ERB_SameBorderPx(a, b)
     return (a.borderSizePx or false) == (b.borderSizePx or false)
 end
 -- Separator Art dropdown values / order (fresh tables, page build only):
@@ -95,36 +95,36 @@ end
 -- built-in border style with a horizontal companion strip, named from the
 -- catalogue, so a later style with separator art joins with no change here.
 -- withNone puts a "none" entry first for a dropdown whose None turns it off.
-function ns.ERB_SeparatorArtValues(withNone)
-    local values, order = {}, {}
+function mod.ERB_SeparatorArtValues(withNone)
+    local values, sequence = {}, {}
     if withNone then
         values.none = "None"
-        order[1] = "none"
+        sequence[1] = "none"
     end
     values.match = "Match Border"
-    order[#order + 1] = "match"
-    for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-        if CludesUI.GetBorderCompanion(entry.key, "sepH") then
-            values[entry.key] = entry.name
-            order[#order + 1] = entry.key
+    sequence[#sequence + 1] = "match"
+    for _, record in ipairs(CludesUI._builtinBorderTextures) do
+        if CludesUI.GetBorderCompanion(record.key, "sepH") then
+            values[record.key] = record.name
+            sequence[#sequence + 1] = record.key
         end
     end
-    return values, order
+    return values, sequence
 end
 -- Which of the three bars carry a textured border, as one string. A cross-bar
 -- border sync that changes it rebuilds the page (each section's Width Offset |
 -- Height Offset row exists only while its style is textured); otherwise the
 -- fast refresh keeps the sync icon's flash.
-function ns.ERB_TexturedBars(p)
+function mod.ERB_TexturedBars(p)
     local function one(t)
-        local x = t and t.borderTexture or "solid"
-        return (x ~= "solid" and x ~= "") and "1" or "0"
+        local posX = t and t.borderTexture or "solid"
+        return (posX ~= "solid" and posX ~= "") and "1" or "0"
     end
     return one(p.health) .. one(p.primary) .. one(p.secondary)
 end
-function ns.ERB_ClassicBorderSync(region, dbFn, key, refresh, flashFn)
+function mod.ERB_ClassicBorderSync(regionFrame, dbFn, key, refresh, flashFn)
     CludesUI.BuildSyncIcon({
-        region = region,
+        region = regionFrame,
         tooltip = "Apply Border Size to all Bars",
         onClick = function()
             local p = dbFn()
@@ -172,19 +172,19 @@ initFrame:SetScript("OnEvent", function(self)
     -- public slot later.
     local CreateFrame = CludesUI._Pool.CreateFrame
     local PoolGen, PoolKeep = CludesUI._Pool.Gen, CludesUI._Pool.Keep
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local THR_BORDER_WHITE = { 1, 1, 1 } -- Threshold & Hash Lines buttons: default (unconfigured) border tint
 
-    local db
+    local saved
     C_Timer.After(0, function()
-        db = _G._CURB_AceDB
+        saved = _G._CURB_AceDB
     end)
 
-    local function DB()
-        if not db then
-            db = _G._CURB_AceDB
+    local function SavedDB()
+        if not saved then
+            saved = _G._CURB_AceDB
         end
-        return db and db.profile
+        return saved and saved.profile
     end
 
     local function Refresh()
@@ -200,19 +200,19 @@ initFrame:SetScript("OnEvent", function(self)
     local _animTimers = {} -- [frame][key] = ticker
     local ANIM_DURATION = 0.18
 
-    local function SmoothAnimate(frame, key, targetVal, applyFn)
-        if not frame then
+    local function SmoothAnimate(widget, key, targetVal, applyFn)
+        if not widget then
             return
         end
-        if not _animTimers[frame] then
-            _animTimers[frame] = {}
+        if not _animTimers[widget] then
+            _animTimers[widget] = {}
         end
-        if _animTimers[frame][key] then
-            _animTimers[frame][key]:Cancel()
-            _animTimers[frame][key] = nil
+        if _animTimers[widget][key] then
+            _animTimers[widget][key]:Cancel()
+            _animTimers[widget][key] = nil
         end
-        local startVal = frame["_anim_" .. key] or targetVal
-        frame["_anim_" .. key] = targetVal
+        local startVal = widget["_anim_" .. key] or targetVal
+        widget["_anim_" .. key] = targetVal
         if math.abs(startVal - targetVal) < 0.001 then
             applyFn(targetVal)
             return
@@ -221,11 +221,11 @@ initFrame:SetScript("OnEvent", function(self)
         local ticker
         -- A frame of the options page pool dressed again mid-animation belongs
         -- to its new build: the animation stops and leaves it alone.
-        local gen = PoolGen(frame)
+        local gen = PoolGen(widget)
         ticker = C_Timer.NewTicker(0.016, function()
-            if PoolGen(frame) ~= gen then
+            if PoolGen(widget) ~= gen then
                 ticker:Cancel()
-                local slots = _animTimers[frame]
+                local slots = _animTimers[widget]
                 if slots and slots[key] == ticker then
                     slots[key] = nil
                 end
@@ -238,12 +238,12 @@ initFrame:SetScript("OnEvent", function(self)
             applyFn(v)
             if t >= 1 then
                 ticker:Cancel()
-                if _animTimers[frame] then
-                    _animTimers[frame][key] = nil
+                if _animTimers[widget] then
+                    _animTimers[widget][key] = nil
                 end
             end
         end)
-        _animTimers[frame][key] = ticker
+        _animTimers[widget][key] = ticker
     end
 
     -- Preview Header
@@ -277,42 +277,42 @@ initFrame:SetScript("OnEvent", function(self)
     -- header frame its cache restore already did).
     local _hintHdr = {} -- [page] = the header frame that page's preview last built on
     local _classHdrEmpty -- the Class, Power and Health Bars header last built into its kept frame with nothing to show
-    local function HintBuildStart(page, hdr)
-        _hintHdr[page] = hdr
-        local host = PoolGen(hdr) and _previewHintFS and _previewHintFS:GetParent()
-        if host and host:GetParent() == hdr then
-            host:Hide()
+    local function HintBuildStart(page, heading)
+        _hintHdr[page] = heading
+        local hostRegion = PoolGen(heading) and _previewHintFS and _previewHintFS:GetParent()
+        if hostRegion and hostRegion:GetParent() == heading then
+            hostRegion:Hide()
         end
     end
     local function RehomeHint(page)
-        local host = _previewHintFS and _previewHintFS:GetParent()
-        local hdr = _hintHdr[page]
-        if not (host and hdr) then
+        local hostRegion = _previewHintFS and _previewHintFS:GetParent()
+        local heading = _hintHdr[page]
+        if not (hostRegion and heading) then
             return
         end
         -- The hint may sit on any other preview page's header.
-        local cur, away = host:GetParent(), nil
+        local current, away = hostRegion:GetParent(), nil
         for other, oh in pairs(_hintHdr) do
             if other ~= page then
-                if oh == hdr then
+                if oh == heading then
                     return
                 end
-                if oh == cur then
+                if oh == current then
                     away = oh
                 end
             end
         end
-        if not away and cur ~= hdr then
+        if not away and current ~= heading then
             return
         end
         if away then
-            host:SetParent(hdr)
-            host:SetFrameLevel(hdr:GetFrameLevel() + 1)
+            hostRegion:SetParent(heading)
+            hostRegion:SetFrameLevel(heading:GetFrameLevel() + 1)
             _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 20)
+            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
         end
-        if host:GetParent() == hdr then
-            host:Show()
+        if hostRegion:GetParent() == heading then
+            hostRegion:Show()
         end
     end
 
@@ -347,38 +347,38 @@ initFrame:SetScript("OnEvent", function(self)
 
     local _borderRefreshers = {} -- re-snap sizes when scale changes
     -- Pixel-perfect preview border via the unified PP border system (raw integer sizes, never scaled).
-    local function MakePreviewBorder(parent, r, g, b, a, size)
+    local function MakePreviewBorder(hostFrame, r, g, b, a, dim)
         local alpha = a or 1
-        local sz = size or 1
+        local sz = dim or 1
 
-        local bf = CreateFrame("Frame", nil, parent)
-        bf:SetAllPoints(parent)
-        bf:SetFrameLevel(parent:GetFrameLevel() + 2)
+        local bf = CreateFrame("Frame", nil, hostFrame)
+        bf:SetAllPoints(hostFrame)
+        bf:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
-        local PP = CludesUI and CludesUI.PP
-        if PP then
-            PP.CreateBorder(bf, r, g, b, alpha, sz, "BORDER", 7)
+        local Pix = CludesUI and CludesUI.PP
+        if Pix then
+            Pix.CreateBorder(bf, r, g, b, alpha, sz, "BORDER", 7)
         end
 
         return {
             _frame = bf,
-            edges = (PP and PP.GetBorders(bf)) or {},
+            edges = (Pix and Pix.GetBorders(bf)) or {},
             SetColor = function(self, cr, cg, cb, ca)
-                if PP then
-                    PP.SetBorderColor(bf, cr, cg, cb, ca or 1)
+                if Pix then
+                    Pix.SetBorderColor(bf, cr, cg, cb, ca or 1)
                 end
             end,
             SetSize = function(self, newSz)
-                if PP then
-                    PP.SetBorderSize(bf, newSz)
+                if Pix then
+                    Pix.SetBorderSize(bf, newSz)
                 end
             end,
-            SetShown = function(self, shown)
-                if PP then
-                    if shown then
-                        PP.ShowBorder(bf)
+            SetShown = function(self, isShown)
+                if Pix then
+                    if isShown then
+                        Pix.ShowBorder(bf)
                     else
-                        PP.HideBorder(bf)
+                        Pix.HideBorder(bf)
                     end
                 end
             end,
@@ -395,25 +395,25 @@ initFrame:SetScript("OnEvent", function(self)
     -- live build reads. Always horizontal: the stack shows size and look, not
     -- the on-screen placement or orientation.
     local PreviewBar = {}
-    function PreviewBar.Build(parent)
-        local bar = CreateFrame("Frame", nil, parent)
-        local sb = CreateFrame("StatusBar", nil, bar)
-        sb:SetAllPoints()
-        sb:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-        sb:SetMinMaxValues(0, 100)
-        bar._sb = sb
+    function PreviewBar.Build(hostFrame)
+        local bar = CreateFrame("Frame", nil, hostFrame)
+        local scrollBar = CreateFrame("StatusBar", nil, bar)
+        scrollBar:SetAllPoints()
+        scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+        scrollBar:SetMinMaxValues(0, 100)
+        bar._sb = scrollBar
         -- ns.ERB_SeatBlizzMask reads the fill through the host, as on a live bar.
         bar.GetStatusBarTexture = function()
-            return sb:GetStatusBarTexture()
+            return scrollBar:GetStatusBarTexture()
         end
-        local bg = sb:CreateTexture(nil, "BACKGROUND")
-        UnsnapTex(bg)
-        bar._bg = bg
+        local backdrop = scrollBar:CreateTexture(nil, "BACKGROUND")
+        UnsnapTex(backdrop)
+        bar._bg = backdrop
         bar._border = { _frame = CreateFrame("Frame", nil, bar) }
         -- Hash lines sit above the fill, as the live tick overlay does.
         local th = CreateFrame("Frame", nil, bar)
-        th:SetAllPoints(sb)
-        th:SetFrameLevel(sb:GetFrameLevel() + 1)
+        th:SetAllPoints(scrollBar)
+        th:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
         bar._tickHost, bar._ticks = th, {}
         local tf = CreateFrame("Frame", nil, bar)
         tf:SetAllPoints(bar)
@@ -424,8 +424,8 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- A preview whose bar is off: dimmed like the page's greyed controls, and
     -- its hit overlays hidden so no click leads to those rows. hits: optional.
-    function PreviewBar.Lock(frame, on, hits)
-        frame:SetAlpha(on and 1 or 0.3)
+    function PreviewBar.Lock(widget, on, hits)
+        widget:SetAlpha(on and 1 or 0.3)
         if hits then
             for _, hit in ipairs(hits) do
                 hit:SetShown(on)
@@ -435,28 +435,28 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- The click hint of the preview showing now: only while it has something to click.
     -- hdr: that preview's header; the hint shows only once it sits there.
-    function PreviewBar.HintFor(on, hdr)
+    function PreviewBar.HintFor(on, heading)
         -- A dismissed hint is left to its fade (DismissPreviewHint).
         if not _previewHintFS or IsPreviewHintDismissed() then
             return
         end
-        local host = _previewHintFS:GetParent()
-        _previewHintFS:SetShown(on and host and host:GetParent() == hdr or false)
+        local hostRegion = _previewHintFS:GetParent()
+        _previewHintFS:SetShown(on and hostRegion and hostRegion:GetParent() == heading or false)
     end
 
     -- Size the shown header for its preview (baseH) and the hint, only on a
     -- change of at least one physical pixel (the header snaps to them).
     -- Silent: a resize here must move the page down, not scroll it under the header.
-    function PreviewBar.SizeHeader(hdr, baseH)
+    function PreviewBar.SizeHeader(heading, baseH)
         -- The hint's dismiss fade sizes the header to this: never another page's.
         _headerBaseH = baseH
-        local want = baseH + ((_previewHintFS and _previewHintFS:IsShown()) and 35 or 0)
-        local es = hdr:GetEffectiveScale()
+        local wanted = baseH + ((_previewHintFS and _previewHintFS:IsShown()) and 35 or 0)
+        local es = heading:GetEffectiveScale()
         local px = (es > 0) and (CludesUI.PP.perfect / es) or 1
-        if math.abs(hdr:GetHeight() - want) < px * 0.5 then
+        if math.abs(heading:GetHeight() - wanted) < px * 0.5 then
             return
         end
-        CludesUI:SetContentHeaderHeightSilent(want)
+        CludesUI:SetContentHeaderHeightSilent(wanted)
     end
 
     -- nil while the bar can show in the preview, else the eye's tooltip
@@ -498,26 +498,26 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     -- kind: "power" or "health"; c: p.primary or p.health.
-    function PreviewBar.Style(bar, p, c, kind)
+    function PreviewBar.Style(bar, p, c, kindOf)
         local g = p.general
-        local isHealth = kind == "health"
-        local w = _previewSnap(c.width or 214)
-        local h = _previewSnap(c.height or (isHealth and 16 or 14))
-        bar:SetSize(w, h)
+        local isHealth = kindOf == "health"
+        local wid = _previewSnap(c.width or 214)
+        local hgt = _previewSnap(c.height or (isHealth and 16 or 14))
+        bar:SetSize(wid, hgt)
 
         local bf = bar._border._frame
-        if ns.ERB_BarsBlizz() then
+        if mod.ERB_BarsBlizz() then
             bf:Hide()
-            ns.ERB_ApplyBlizzBarChrome(bar, bar._sb, w, h, false, ns.ERB_BarFrameK(c))
+            mod.ERB_ApplyBlizzBarChrome(bar, bar._sb, wid, hgt, false, mod.ERB_BarFrameK(c))
         else
             bf:SetFrameLevel(
                 c.borderBehind and math.max(0, bar:GetFrameLevel() - 1) or (bar:GetFrameLevel() + 1)
             )
             -- Extend Top / Extend Bottom are power bar only, as live.
             if isHealth then
-                ns.ERB_AnchorBorderHost(bf, bar)
+                mod.ERB_AnchorBorderHost(bf, bar)
             else
-                ns.ERB_AnchorBorderHost(bf, bar, ns.ERB_BorderExtents(c))
+                mod.ERB_AnchorBorderHost(bf, bar, mod.ERB_BorderExtents(c))
             end
             CludesUI.ApplyBorderStyle(
                 bf,
@@ -541,22 +541,26 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- The bar's own texture counts only while splitTex is on, as live.
         local texKey = (p.splitTex == true and c.barTexture) or g.barTexture
-        local sb = bar._sb
-        sb:SetStatusBarTexture(
-            CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey or "none", "Interface\\Buttons\\WHITE8x8")
+        local scrollBar = bar._sb
+        scrollBar:SetStatusBarTexture(
+            CludesUI.ResolveTexturePath(
+                _G._CURB_BarTextures,
+                texKey or "none",
+                "Interface\\Buttons\\WHITE8x8"
+            )
         )
         if bar._blizzBarMask then
-            ns.ERB_SeatBlizzMask(bar)
+            mod.ERB_SeatBlizzMask(bar)
         end
-        local ft = sb:GetStatusBarTexture()
+        local ft = scrollBar:GetStatusBarTexture()
         UnsnapTex(ft)
 
         -- Fill colour: custom > class colour (health) or power type colour (power).
         local ptype = (not isHealth) and _G._CURB_GetPrimaryPowerType and _G._CURB_GetPrimaryPowerType()
         local typeCol
         if isHealth then
-            local _, cf = UnitClass("player")
-            typeCol = CLASS_COLORS[cf]
+            local _, castFrame = UnitClass("player")
+            typeCol = CLASS_COLORS[castFrame]
         else
             typeCol = ptype and _G._CURB_PowerColors and _G._CURB_PowerColors[ptype]
         end
@@ -631,12 +635,12 @@ initFrame:SetScript("OnEvent", function(self)
             ft:SetVertexColor(fR, fG, fB, 1)
         end
 
-        local bg = bar._bg
-        bg:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgA or 0.75)
-        UnsnapTex(bg)
-        if g.barTextureBg or bg._erbBgTex then
-            ns.ERB_BgTexture(
-                bg,
+        local backdrop = bar._bg
+        backdrop:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgA or 0.75)
+        UnsnapTex(backdrop)
+        if g.barTextureBg or backdrop._erbBgTex then
+            mod.ERB_BgTexture(
+                backdrop,
                 g.barTextureBg
                     and (c.fillOpacity or 100) >= 100
                     and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil),
@@ -647,16 +651,16 @@ initFrame:SetScript("OnEvent", function(self)
             )
         end
 
-        sb:SetValue(pct)
+        scrollBar:SetValue(pct)
         -- Fill Opacity: translucent fill, background over the empty part only (as the class resource preview).
         local op = (c.fillOpacity or 100) / 100
         ft:SetAlpha(op)
-        bg:ClearAllPoints()
+        backdrop:ClearAllPoints()
         if op < 1 then
-            bg:SetPoint("TOPLEFT", ft, "TOPRIGHT", 0, 0)
-            bg:SetPoint("BOTTOMRIGHT", sb, "BOTTOMRIGHT", 0, 0)
+            backdrop:SetPoint("TOPLEFT", ft, "TOPRIGHT", 0, 0)
+            backdrop:SetPoint("BOTTOMRIGHT", scrollBar, "BOTTOMRIGHT", 0, 0)
         else
-            bg:SetAllPoints(sb)
+            backdrop:SetAllPoints(scrollBar)
         end
 
         -- Hash lines: the entry's own, else the bar-wide ones (ns.ApplyHashLines' source rule).
@@ -670,26 +674,26 @@ initFrame:SetScript("OnEvent", function(self)
                 or nil
             local hashStr = hEnt and hEnt.hashValues or ""
             local isPercent = hEnt and (hEnt.hashMode or "percent") == "percent"
-            local P = CludesUI.PP
-            local pxW = (hEnt and hEnt.hashWidth or 1) * P.mult -- physical pixels, as live
+            local Prm = CludesUI.PP
+            local pxW = (hEnt and hEnt.hashWidth or 1) * Prm.mult -- physical pixels, as live
             -- Inside the border, as live: a solid border's exact size is the inset.
             local hbs = c.borderSize or 0
             local htex = c.borderTexture
             if not htex or htex == "" or htex == "solid" then
                 hbs = CludesUI.BorderPx(c.borderSizePx, hbs, htex) or hbs
             end
-            local vI = math.min(hbs * P.mult, math.max(0, (h - 1) / 2))
-            local n = 0
+            local vI = math.min(hbs * Prm.mult, math.max(0, (hgt - 1) / 2))
+            local num = 0
             for s in hashStr:gmatch("[^,]+") do
                 local v = tonumber(s:match("^%s*(.-)%s*$"))
                 local frac = v and v > 0 and v / (isPercent and 100 or mx)
                 if frac and frac <= 1 then
-                    n = n + 1
-                    local t = ticks[n]
+                    num = num + 1
+                    local t = ticks[num]
                     if not t then
                         t = bar._tickHost:CreateTexture(nil, "OVERLAY", nil, 7)
                         UnsnapTex(t)
-                        ticks[n] = t
+                        ticks[num] = t
                     end
                     t:SetColorTexture(
                         hEnt.hashColorR or 1,
@@ -698,31 +702,37 @@ initFrame:SetScript("OnEvent", function(self)
                         hEnt.hashColorA or 0.7
                     )
                     t:ClearAllPoints()
-                    t:SetSize(pxW, h - vI * 2)
-                    t:SetPoint("TOPLEFT", sb, "TOPLEFT", math.min(P.Scale(w * frac), w - pxW), -vI)
+                    t:SetSize(pxW, hgt - vI * 2)
+                    t:SetPoint(
+                        "TOPLEFT",
+                        scrollBar,
+                        "TOPLEFT",
+                        math.min(Prm.Scale(wid * frac), wid - pxW),
+                        -vI
+                    )
                     t:Show()
                 end
             end
         end
 
-        ns.ERB_RoundBar(bar, c)
+        mod.ERB_RoundBar(bar, c)
 
         -- Text in the live formats, from the made-up values.
-        local text = bar._text
+        local textValue = bar._text
         if fmt == "none" then
-            text:Hide()
+            textValue:Hide()
             return
         end
         local txt
         if isHealth then
-            local curStr = ns.AbbreviateValue(math.floor(mx * pct / 100), "health")
+            local curStr = mod.AbbreviateValue(math.floor(mx * pct / 100), "health")
             local pctStr = tostring(pct)
             if fmt == "both" then
                 txt = curStr .. " | " .. pctStr .. "%"
             elseif fmt == "curhpshort" then
                 txt = curStr
             elseif fmt == "curmaxhp" then
-                txt = curStr .. " / " .. ns.AbbreviateValue(mx, "maxHealth")
+                txt = curStr .. " / " .. mod.AbbreviateValue(mx, "maxHealth")
             elseif fmt == "perhpnosign" then
                 txt = pctStr
             elseif fmt == "perhpnum" then
@@ -732,7 +742,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
         else
             local percentText = tostring(pct) .. ((c.showPercent == false) and "" or "%")
-            local curStr = ns.AbbreviateNumbers(math.floor(mx * pct / 100))
+            local curStr = mod.AbbreviateNumbers(math.floor(mx * pct / 100))
             if fmt == "smart" then
                 local isPercent = CludesUI.IsSmartPowerPercent and CludesUI.IsSmartPowerPercent(ptype)
                 txt = isPercent and percentText or curStr
@@ -741,28 +751,28 @@ initFrame:SetScript("OnEvent", function(self)
             elseif fmt == "curpp" then
                 txt = curStr
             elseif fmt == "curmaxpp" then
-                txt = curStr .. " / " .. ns.AbbreviateNumbers(mx)
+                txt = curStr .. " / " .. mod.AbbreviateNumbers(mx)
             elseif fmt == "perpp" then
                 txt = percentText
             else
                 txt = curStr
             end
         end
-        SetPVFont(text, FONT_PATH, c.textSize or 11)
-        text:ClearAllPoints()
+        SetPVFont(textValue, FONT_PATH, c.textSize or 11)
+        textValue:ClearAllPoints()
         local ta = c.textAnchor or "CENTER"
-        text:SetPoint(ta, bar, ta, c.textXOffset or 0, c.textYOffset or 0)
+        textValue:SetPoint(ta, bar, ta, c.textXOffset or 0, c.textYOffset or 0)
         if aR and textInstead then
-            text:SetTextColor(aR, aG, aB, aA)
+            textValue:SetTextColor(aR, aG, aB, aA)
         elseif c.textCustomColored == false and typeCol then
-            text:SetTextColor(typeCol[1], typeCol[2], typeCol[3], 1)
+            textValue:SetTextColor(typeCol[1], typeCol[2], typeCol[3], 1)
         elseif c.textCustomColored == false then
-            text:SetTextColor(1, 1, 1, 1)
+            textValue:SetTextColor(1, 1, 1, 1)
         else
-            text:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
+            textValue:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
         end
-        text:SetText(txt)
-        text:Show()
+        textValue:SetText(txt)
+        textValue:Show()
     end
 
     -- Discrete pip count for the current spec: the real resource max (Fury
@@ -770,18 +780,18 @@ initFrame:SetScript("OnEvent", function(self)
     -- 5/10, ...) so the preview matches the live bar; 5 when none exists.
     local function PreviewPipCount()
         local gsr = _G._CURB_GetSecondaryResource
-        local info = gsr and gsr()
-        if not info or info.type == "bar" then
+        local details = gsr and gsr()
+        if not details or details.type == "bar" then
             return 5
         end
-        local m = info.max
+        local m = details.max
         -- Talent-dependent maxes come from the live sources
-        if info.power == "SWEEPING_STRIKES" or info.power == "WHIRLWIND_STACKS" then
-            local realMax = _G._EWC and _G._EWC.MaxApps(info.power)
+        if details.power == "SWEEPING_STRIKES" or details.power == "WHIRLWIND_STACKS" then
+            local realMax = _G._EWC and _G._EWC.MaxApps(details.power)
             if realMax and realMax > 0 then
                 m = realMax
             end
-        elseif info.power == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
+        elseif details.power == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
             local _, realMax = CludesUI.GetMaelstromWeapon()
             if realMax and realMax > 0 then
                 m = realMax
@@ -794,28 +804,28 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function UpdatePreviewHeader()
-        local p = DB()
+        local p = SavedDB()
         if not p then
             return
         end
 
         -- Session-only eye state of the section headers (BarDisplayPage_Options.lua), shown by default.
-        local pvHidden = ns._erbPvHidden or {}
+        local pvHidden = mod._erbPvHidden or {}
         local hasCR = HasClassResource()
         if not hasCR and _previewFrames.pipContainer then
             _previewFrames.pipContainer:Hide()
         end
 
-        local container = _previewFrames.container
+        local boxHolder = _previewFrames.container
         local sp = p.secondary
-        local isBar = ns.IsBarTypeSecondary()
+        local isBar = mod.IsBarTypeSecondary()
 
         local pc = hasCR and _previewFrames.pipContainer
         if pc then
             local pipH = sp.pipHeight
 
-            local _, cf = UnitClass("player")
-            local cc = CLASS_COLORS[cf]
+            local _, castFrame = UnitClass("player")
+            local cc = CLASS_COLORS[castFrame]
             local pr, pg, pb
             if sp.darkTheme then
                 pr, pg, pb = CludesUI.GetDarkModeFill()
@@ -825,9 +835,9 @@ initFrame:SetScript("OnEvent", function(self)
                 local rslv = _G._CURB_ResolveSecondaryResourceColor
                 local rr, rg, rb
                 if gsr and rslv then
-                    local info = gsr()
-                    if info and info.power ~= nil then
-                        rr, rg, rb = rslv(info.power)
+                    local details = gsr()
+                    if details and details.power ~= nil then
+                        rr, rg, rb = rslv(details.power)
                     end
                 end
                 if rr then
@@ -847,7 +857,7 @@ initFrame:SetScript("OnEvent", function(self)
                 local s = pc["_anim_scale"] or pScale
                 pc:SetScale(s)
                 pc:ClearAllPoints()
-                pc:SetPoint("CENTER", container, "CENTER", 0, pc._pvY or 0) -- _pvY: its slot in the stack below
+                pc:SetPoint("CENTER", boxHolder, "CENTER", 0, pc._pvY or 0) -- _pvY: its slot in the stack below
             end
             SmoothAnimate(pc, "scale", pScale, function()
                 ApplyPipTransform()
@@ -876,7 +886,7 @@ initFrame:SetScript("OnEvent", function(self)
                         elseif sp.classColored then
                             br, bgg, bb, ba = pr * 0.3, pg * 0.3, pb * 0.3, 0.5
                         end
-                        ns.ERB_BgTexture(
+                        mod.ERB_BgTexture(
                             pc._barBg,
                             p.general.barTextureBg
                                 and (sp.fillOpacity or 100) >= 100
@@ -939,9 +949,9 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     local vals = {}
                     for s in tickStr:gmatch("[^,]+") do
-                        local n = tonumber(s:match("^%s*(.-)%s*$"))
-                        if n and n > 0 then
-                            vals[#vals + 1] = n
+                        local num = tonumber(s:match("^%s*(.-)%s*$"))
+                        if num and num > 0 then
+                            vals[#vals + 1] = num
                         end
                     end
                     -- Tick positions use the actual resource max
@@ -949,8 +959,8 @@ initFrame:SetScript("OnEvent", function(self)
                     local secInfo = gsr and gsr()
                     local previewMax = (secInfo and secInfo.max) or 100
                     local _pvHashPct = _pvTsEntry and _pvTsEntry.hashMode == "percent"
-                    local PP = CludesUI and CludesUI.PP
-                    local onePx = PP and PP.Scale(1) or 1
+                    local Pix = CludesUI and CludesUI.PP
+                    local onePx = Pix and Pix.Scale(1) or 1
                     for i, v in ipairs(vals) do
                         local _pvFrac, _pvOk
                         if _pvHashPct then
@@ -971,22 +981,22 @@ initFrame:SetScript("OnEvent", function(self)
                             local t = ticks[i]
                             t:ClearAllPoints()
                             local frac = _pvFrac
-                            local off = PP and PP.Scale(totalW * frac) or (totalW * frac)
+                            local offset = Pix and Pix.Scale(totalW * frac) or (totalW * frac)
                             t:SetSize(onePx, pipH)
-                            t:SetPoint("TOPLEFT", pc, "TOPLEFT", off, 0)
+                            t:SetPoint("TOPLEFT", pc, "TOPLEFT", offset, 0)
                             t:Show()
                         end
                     end
                 end
 
                 -- Separators: the bottom-edge line (bar types have no gaps), as live.
-                ns.ERB_Separators(
+                mod.ERB_Separators(
                     pc,
                     sp,
                     (
                         sp.edgeSep
                         and sp.edgeSepH ~= false
-                        and ns.ERB_Textured(sp)
+                        and mod.ERB_Textured(sp)
                         and not CludesUI.BlizzStyle.Get("resourcebars")
                     )
                             and true
@@ -994,8 +1004,8 @@ initFrame:SetScript("OnEvent", function(self)
                     pc:GetFrameLevel() + 5
                 )
                 -- Bar-type has no pips: hide pips and gap fills from a prior build
-                for _, pip in ipairs(_previewFrames.pips) do
-                    pip:Hide()
+                for _, pipTex in ipairs(_previewFrames.pips) do
+                    pipTex:Hide()
                 end
                 if pc._gapFills then
                     for i = 1, #pc._gapFills do
@@ -1068,8 +1078,8 @@ initFrame:SetScript("OnEvent", function(self)
                 local _pvThreshCount = _pvTsEntry2 and _pvTsEntry2.thresholdCount or sp.thresholdCount or 3
                 -- Enhance Five Bar needs at least 7 (5 pips + overflow), as live clamps it.
                 if _pvTsEnabled and sp.enhanceFiveBar and _pvThreshCount < 7 then
-                    local info = _G._CURB_GetSecondaryResource and _G._CURB_GetSecondaryResource()
-                    if info and info.power == "MAELSTROM_WEAPON" then
+                    local details = _G._CURB_GetSecondaryResource and _G._CURB_GetSecondaryResource()
+                    if details and details.power == "MAELSTROM_WEAPON" then
                         _pvThreshCount = 7
                     end
                 end
@@ -1093,7 +1103,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 -- Read by the count-text block so the number matches the lit segments
                 pc._pvShownCount = filledCount
-                local pvPipBg = ns.ERB_PipBgOn(sp, false) -- Background on individual pips, as live
+                local pvPipBg = mod.ERB_PipBgOn(sp, false) -- Background on individual pips, as live
                 -- current spec threshold color if configured
                 local tr = _pvTsEntry2 and _pvTsEntry2.thresholdR or sp.thresholdR
                 local tg = _pvTsEntry2 and _pvTsEntry2.thresholdG or sp.thresholdG
@@ -1121,43 +1131,43 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Top up pip frames when this spec needs more than were built (counts run 3-18); the loop below styles them, so bare bg+fill suffice here.
                 for i = #_previewFrames.pips + 1, numPips do
-                    local pip = CreateFrame("Frame", nil, pc)
-                    local bg = pip:CreateTexture(nil, "BACKGROUND")
-                    bg:SetAllPoints()
-                    pip._bg = bg
-                    local fill = pip:CreateTexture(nil, "ARTWORK")
+                    local pipTex = CreateFrame("Frame", nil, pc)
+                    local backdrop = pipTex:CreateTexture(nil, "BACKGROUND")
+                    backdrop:SetAllPoints()
+                    pipTex._bg = backdrop
+                    local fill = pipTex:CreateTexture(nil, "ARTWORK")
                     fill:SetAllPoints()
-                    pip._fill = fill
-                    _previewFrames.pips[i] = pip
+                    pipTex._fill = fill
+                    _previewFrames.pips[i] = pipTex
                 end
                 for i = 1, math.min(numPips, #_previewFrames.pips) do
-                    local pip = _previewFrames.pips[i]
+                    local pipTex = _previewFrames.pips[i]
                     if isVertical then
-                        pip:SetSize(snappedPipH, pipW[i])
-                        pip:ClearAllPoints()
+                        pipTex:SetSize(snappedPipH, pipW[i])
+                        pipTex:ClearAllPoints()
                         if isReversed then
-                            pip:SetPoint("BOTTOM", pc, "BOTTOM", 0, pipX[i])
+                            pipTex:SetPoint("BOTTOM", pc, "BOTTOM", 0, pipX[i])
                         else
-                            pip:SetPoint("TOP", pc, "TOP", 0, -pipX[i])
+                            pipTex:SetPoint("TOP", pc, "TOP", 0, -pipX[i])
                         end
                     else
-                        pip:SetSize(pipW[i], snappedPipH)
-                        pip:ClearAllPoints()
-                        pip:SetPoint("LEFT", pc, "LEFT", pipX[i], 0)
+                        pipTex:SetSize(pipW[i], snappedPipH)
+                        pipTex:ClearAllPoints()
+                        pipTex:SetPoint("LEFT", pc, "LEFT", pipX[i], 0)
                     end
                     if pvPipBg then
-                        pip._bg:SetColorTexture(ns.ERB.PipBgColor(sp, true))
+                        pipTex._bg:SetColorTexture(mod.ERB.PipBgColor(sp, true))
                     elseif sp.darkTheme then
                         local _dbr, _dbg, _dbb = CludesUI.GetDarkModeBg()
-                        pip._bg:SetColorTexture(_dbr, _dbg, _dbb, 1)
+                        pipTex._bg:SetColorTexture(_dbr, _dbg, _dbb, 1)
                     elseif sp.classColored then
-                        pip._bg:SetColorTexture(pr * 0.5, pg * 0.5, pb * 0.5, 0.5)
+                        pipTex._bg:SetColorTexture(pr * 0.5, pg * 0.5, pb * 0.5, 0.5)
                     else
-                        pip._bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
+                        pipTex._bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
                     end
-                    UnsnapTex(pip._bg)
+                    UnsnapTex(pipTex._bg)
                     -- Textured Background, as live, in the colour above.
-                    if p.general.barTextureBg or pip._bg._erbBgTex then
+                    if p.general.barTextureBg or pipTex._bg._erbBgTex then
                         local br, bgg, bb, ba = sp.bgR, sp.bgG, sp.bgB, sp.bgA
                         if sp.darkTheme then
                             br, bgg, bb = CludesUI.GetDarkModeBg()
@@ -1165,8 +1175,8 @@ initFrame:SetScript("OnEvent", function(self)
                         elseif sp.classColored then
                             br, bgg, bb, ba = pr * 0.5, pg * 0.5, pb * 0.5, 0.5
                         end
-                        ns.ERB_BgTexture(
-                            pip._bg,
+                        mod.ERB_BgTexture(
+                            pipTex._bg,
                             p.general.barTextureBg
                                 and not pvPipBg
                                 and (sp.fillOpacity or 100) >= 100
@@ -1186,35 +1196,35 @@ initFrame:SetScript("OnEvent", function(self)
                     local texLookup = _G._CURB_BarTextures or {}
                     local texPath = texLookup[texKey]
                     if texPath then
-                        pip._fill:SetTexture(texPath)
+                        pipTex._fill:SetTexture(texPath)
                     else
-                        pip._fill:SetTexture("Interface\\Buttons\\WHITE8x8")
+                        pipTex._fill:SetTexture("Interface\\Buttons\\WHITE8x8")
                     end
                     if sp.useContinuousTexture and totalW > 0 then
-                        pip._fill:SetTexCoord(pipX[i] / totalW, (pipX[i] + pipW[i]) / totalW, 0, 1)
-                        pip._continuousPreview = true
-                    elseif pip._continuousPreview then
-                        pip._fill:SetTexCoord(0, 1, 0, 1)
-                        pip._continuousPreview = nil
+                        pipTex._fill:SetTexCoord(pipX[i] / totalW, (pipX[i] + pipW[i]) / totalW, 0, 1)
+                        pipTex._continuousPreview = true
+                    elseif pipTex._continuousPreview then
+                        pipTex._fill:SetTexCoord(0, 1, 0, 1)
+                        pipTex._continuousPreview = nil
                     end
-                    UnsnapTex(pip._fill)
+                    UnsnapTex(pipTex._fill)
 
-                    if pip._border then
-                        pip._border:SetShown(false)
+                    if pipTex._border then
+                        pipTex._border:SetShown(false)
                     end
 
                     if sp.borderOnPips then
-                        if not pip._borderFrame then
-                            local bf = CreateFrame("Frame", nil, pip)
-                            bf:SetAllPoints(pip)
-                            pip._borderFrame = bf
+                        if not pipTex._borderFrame then
+                            local bf = CreateFrame("Frame", nil, pipTex)
+                            bf:SetAllPoints(pipTex)
+                            pipTex._borderFrame = bf
                         end
-                        pip._borderFrame:SetFrameLevel(
-                            sp.borderBehind and math.max(0, pip:GetFrameLevel() - 1)
-                                or (pip:GetFrameLevel() + 2)
+                        pipTex._borderFrame:SetFrameLevel(
+                            sp.borderBehind and math.max(0, pipTex:GetFrameLevel() - 1)
+                                or (pipTex:GetFrameLevel() + 2)
                         )
                         CludesUI.ApplyBorderStyle(
-                            pip._borderFrame,
+                            pipTex._borderFrame,
                             sp.borderSize or 1,
                             sp.borderR or 0,
                             sp.borderG or 0,
@@ -1234,64 +1244,64 @@ initFrame:SetScript("OnEvent", function(self)
                                 sp.borderTexture or "solid"
                             )
                         )
-                        pip._borderFrame:Show()
+                        pipTex._borderFrame:Show()
                     else
-                        if pip._borderFrame then
-                            pip._borderFrame:Hide()
+                        if pipTex._borderFrame then
+                            pipTex._borderFrame:Hide()
                         end
                     end
-                    local active = i <= filledCount
-                    if active and useThresh then
+                    local isActive = i <= filledCount
+                    if isActive and useThresh then
                         if not _pvBandOn and _pvPartialOnly and i < _pvThreshCount then
-                            pip._fill:SetVertexColor(pr, pg, pb, 1)
+                            pipTex._fill:SetVertexColor(pr, pg, pb, 1)
                         else
-                            pip._fill:SetVertexColor(tr, tg, tb, 1)
+                            pipTex._fill:SetVertexColor(tr, tg, tb, 1)
                         end
-                        pip._fill:Show()
-                    elseif active then
-                        pip._fill:SetVertexColor(pr, pg, pb, 1)
-                        pip._fill:Show()
+                        pipTex._fill:Show()
+                    elseif isActive then
+                        pipTex._fill:SetVertexColor(pr, pg, pb, 1)
+                        pipTex._fill:Show()
                     else
-                        pip._fill:Hide()
+                        pipTex._fill:Hide()
                     end
                     -- Fill Opacity: translucent fill; active pips hide their bg so the fill reveals what's behind (mirrors live pips)
                     local _pvPipOp = (sp.fillOpacity or 100) / 100
-                    pip._fill:SetAlpha(_pvPipOp)
-                    pip._bg:SetAlpha((active and (_pvPipOp < 1 or pvPipBg)) and 0 or 1)
+                    pipTex._fill:SetAlpha(_pvPipOp)
+                    pipTex._bg:SetAlpha((isActive and (_pvPipOp < 1 or pvPipBg)) and 0 or 1)
 
                     -- DK rune durations: fake cooldown numbers on unfilled pips
-                    if cf == "DEATHKNIGHT" and sp.showText then
-                        if not pip._pvCdText then
-                            local overlay = CreateFrame("Frame", nil, pip)
-                            overlay:SetAllPoints(pip)
-                            overlay:SetFrameLevel(pip:GetFrameLevel() + 3)
-                            local fs = overlay:CreateFontString(nil, "OVERLAY")
-                            fs:SetTextColor(1, 1, 1, 0.9)
-                            pip._pvCdText = fs
+                    if castFrame == "DEATHKNIGHT" and sp.showText then
+                        if not pipTex._pvCdText then
+                            local overlayFrame = CreateFrame("Frame", nil, pipTex)
+                            overlayFrame:SetAllPoints(pipTex)
+                            overlayFrame:SetFrameLevel(pipTex:GetFrameLevel() + 3)
+                            local fontStr = overlayFrame:CreateFontString(nil, "OVERLAY")
+                            fontStr:SetTextColor(1, 1, 1, 0.9)
+                            pipTex._pvCdText = fontStr
                         end
-                        SetPVFont(pip._pvCdText, FONT_PATH, sp.textSize)
-                        pip._pvCdText:ClearAllPoints()
-                        pip._pvCdText:SetPoint(
+                        SetPVFont(pipTex._pvCdText, FONT_PATH, sp.textSize)
+                        pipTex._pvCdText:ClearAllPoints()
+                        pipTex._pvCdText:SetPoint(
                             "CENTER",
-                            pip,
+                            pipTex,
                             "CENTER",
                             sp.textXOffset or 0,
                             sp.textYOffset or 0
                         )
-                        if not active then
+                        if not isActive then
                             -- Higher fake durations for pips further right
                             local fakeDurations = { 2, 4, 6, 7, 9, 10 }
-                            pip._pvCdText:SetText(tostring(fakeDurations[i] or ""))
-                            pip._pvCdText:Show()
+                            pipTex._pvCdText:SetText(tostring(fakeDurations[i] or ""))
+                            pipTex._pvCdText:Show()
                         else
-                            pip._pvCdText:SetText("")
-                            pip._pvCdText:Hide()
+                            pipTex._pvCdText:SetText("")
+                            pipTex._pvCdText:Hide()
                         end
-                    elseif pip._pvCdText then
-                        pip._pvCdText:Hide()
+                    elseif pipTex._pvCdText then
+                        pipTex._pvCdText:Hide()
                     end
 
-                    pip:Show()
+                    pipTex:Show()
                 end
                 for i = numPips + 1, #_previewFrames.pips do
                     _previewFrames.pips[i]:Hide()
@@ -1338,9 +1348,9 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Separators: the bottom-edge line and one line per gap, as live.
                 do
                     local on = sp.edgeSep
-                        and ns.ERB_Textured(sp)
+                        and mod.ERB_Textured(sp)
                         and not CludesUI.BlizzStyle.Get("resourcebars")
-                    ns.ERB_Separators(
+                    mod.ERB_Separators(
                         pc,
                         sp,
                         (on and sp.edgeSepH ~= false) and true or false,
@@ -1378,10 +1388,10 @@ initFrame:SetScript("OnEvent", function(self)
                 -- same art and overhang the live bars use) instead of the
                 -- full-bar border.
                 pc._barBorderFrame:Hide()
-                if ns.ERB_BarsClassic() then
+                if mod.ERB_BarsClassic() then
                     -- Classic WoW UI: the vanilla frame round the row (the
                     -- live seat on this mock); no mask, no bevel.
-                    ns.ERB_ApplyClassicBarChrome(pc, nil, nil, nil, nil, ns.ERB_BarFrameK(sp))
+                    mod.ERB_ApplyClassicBarChrome(pc, nil, nil, nil, nil, mod.ERB_BarFrameK(sp))
                 else -- Blizzard Style kit (indentation kept)
                     local bbg = pc._blizzBarBg
                     if not bbg then
@@ -1419,7 +1429,7 @@ initFrame:SetScript("OnEvent", function(self)
                     -- end pips round off with the frame (the preview is horizontal).
                     local shade = pc._blizzShadeFrame
                     if isBar then
-                        ns.ERB_BlizzBarShadow(pc, bm)
+                        mod.ERB_BlizzBarShadow(pc, bm)
                         if shade then
                             shade:Hide()
                         end
@@ -1436,12 +1446,12 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                         shade:SetFrameLevel(pc:GetFrameLevel() + 8)
                         shade:Show()
-                        ns.ERB_BlizzBarShadow(shade, bm)
+                        mod.ERB_BlizzBarShadow(shade, bm)
                         local pvPips = _previewFrames.pips
                         if pvPips then
                             for i = 1, #pvPips do
-                                ns.ERB_MaskTex(pvPips[i]._bg, bm)
-                                ns.ERB_MaskTex(pvPips[i]._fill, bm)
+                                mod.ERB_MaskTex(pvPips[i]._bg, bm)
+                                mod.ERB_MaskTex(pvPips[i]._fill, bm)
                             end
                         end
                     end
@@ -1450,7 +1460,7 @@ initFrame:SetScript("OnEvent", function(self)
                 pc._barBorderFrame:Hide()
             else
                 -- Extend Top / Extend Bottom, as the live full-bar border draws them.
-                ns.ERB_AnchorBorderHost(pc._barBorderFrame, pc, ns.ERB_BorderExtents(sp))
+                mod.ERB_AnchorBorderHost(pc._barBorderFrame, pc, mod.ERB_BorderExtents(sp))
                 CludesUI.ApplyBorderStyle(
                     pc._barBorderFrame,
                     sp.borderSize or 1,
@@ -1473,12 +1483,12 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Rounded corners, as on the live class resource (ns.ERB_RoundSecondary).
             do
-                local radius = (not ns.ERB_BarsBlizz() and sp.cornerRadius) or 0
-                local style = sp.borderTexture or "solid"
+                local radius = (not mod.ERB_BarsBlizz() and sp.cornerRadius) or 0
+                local look = sp.borderTexture or "solid"
                 local onPips = sp.borderOnPips and not isBar
                 if radius > 0 then
                     CludesUI.RoundCorners(pc, radius, {
-                        style = style,
+                        style = look,
                         border = not onPips and pc._barBorderFrame or nil,
                         corners = sp.cornerMask,
                     })
@@ -1487,22 +1497,22 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local pipRadius = onPips and radius or 0
                 for i = 1, #_previewFrames.pips do
-                    local pip = _previewFrames.pips[i]
+                    local pipTex = _previewFrames.pips[i]
                     if pipRadius > 0 then
                         CludesUI.RoundCorners(
-                            pip,
+                            pipTex,
                             pipRadius,
-                            { style = style, border = pip._borderFrame, corners = sp.cornerMask }
+                            { style = look, border = pipTex._borderFrame, corners = sp.cornerMask }
                         )
                     else
-                        CludesUI.RoundCorners(pip, 0)
+                        CludesUI.RoundCorners(pipTex, 0)
                     end
                 end
             end
 
             -- Full-bar background for pips only; bar-type uses _barBg. Background on
             -- individual pips drops it, as on the live bar.
-            if not isBar and not ns.ERB_PipBgOn(sp, false) then
+            if not isBar and not mod.ERB_PipBgOn(sp, false) then
                 if not pc._pipBarBg then
                     pc._pipBarBg = pc:CreateTexture(nil, "BACKGROUND", nil, -1)
                     UnsnapTex(pc._pipBarBg)
@@ -1513,14 +1523,14 @@ initFrame:SetScript("OnEvent", function(self)
                 pc._pipBarBg:Show()
                 -- Blizzard Style: the backdrop takes the row's bar-shape mask.
                 if pc._blizzBarMask then
-                    ns.ERB_MaskTex(pc._pipBarBg, pc._blizzBarMask)
+                    mod.ERB_MaskTex(pc._pipBarBg, pc._blizzBarMask)
                 end
             elseif pc._pipBarBg then
                 pc._pipBarBg:Hide()
             end
 
             -- Count text (centered on bar); DK uses per-pip durations instead
-            local isDK = cf == "DEATHKNIGHT"
+            local isDK = castFrame == "DEATHKNIGHT"
             if sp.showText and pc._countText and not isDK then
                 SetPVFont(pc._countText, FONT_PATH, sp.textSize)
                 pc._countText:ClearAllPoints()
@@ -1531,8 +1541,8 @@ initFrame:SetScript("OnEvent", function(self)
                     pc._countText:SetText(tostring(_previewBarFillPct) .. percentSuffix)
                 else
                     -- Mirrors the pip loop's filled count so the number matches the lit segments. Pip resources show the bare count only; "cur / max" is exclusive to bar-type stack bars (Show Max Stacks), previewed by the isBar branch.
-                    local shown = pc._pvShownCount or _previewPipCount
-                    pc._countText:SetText(tostring(shown))
+                    local isShown = pc._pvShownCount or _previewPipCount
+                    pc._countText:SetText(tostring(isShown))
                 end
                 local tc = (not isBar) and pc._pvTextCol
                 if tc then
@@ -1581,14 +1591,14 @@ initFrame:SetScript("OnEvent", function(self)
                 -- loaded yet measures 0: the text size stands in, and deferred
                 -- updates measure again, 0.2s doubling up to about 6s in all),
                 -- then straight back to the replay.
-                local size, changed = styleAS(asf._fs)
+                local dim, changed = styleAS(asf._fs)
                 if changed then
                     asf._asTries = 0
                 end
                 if changed or asf._asEstimated then
-                    local w, h = asf._fs:GetStringWidth(), asf._fs:GetStringHeight()
-                    asf._asEstimated = not (w > 0 and h > 0) or nil
-                    asf:SetSize(math.ceil(w > 0 and w or size * 5), math.ceil(h > 0 and h or size))
+                    local wid, hgt = asf._fs:GetStringWidth(), asf._fs:GetStringHeight()
+                    asf._asEstimated = not (wid > 0 and hgt > 0) or nil
+                    asf:SetSize(math.ceil(wid > 0 and wid or dim * 5), math.ceil(hgt > 0 and hgt or dim))
                     local tries = asf._asTries or 0
                     if asf._asEstimated and tries < 5 then
                         asf._asTries = tries + 1
@@ -1627,8 +1637,8 @@ initFrame:SetScript("OnEvent", function(self)
                 stack[#stack + 1] = asf
                 stackLbl[#stack] = labels.arcaneSoul
             end
-            for _, fs in pairs(labels) do
-                fs:Hide()
+            for _, fontStr in pairs(labels) do
+                fontStr:Hide()
             end
 
             -- Each element: its title (a header-scale font string, so its
@@ -1639,18 +1649,18 @@ initFrame:SetScript("OnEvent", function(self)
             local scale = (_previewScale and _previewScale > 0) and _previewScale or 1
             local titleH = (12 + 3) / scale
             local gap = snap(8)
-            local total = 0
+            local sum = 0
             for i = 1, #stack do
-                total = total + titleH + stack[i]:GetHeight()
+                sum = sum + titleH + stack[i]:GetHeight()
             end
-            total = total + gap * math.max(0, #stack - 1)
+            sum = sum + gap * math.max(0, #stack - 1)
             -- A one-pixel divider between the bars and Arcane Soul, as wide as the widest bar.
             local div = _previewFrames.asDivider
-            local divAt = (div and container and showAS and #stack > 1) and #stack or nil
+            local divAt = (div and boxHolder and showAS and #stack > 1) and #stack or nil
             local divH, divW = 0, 0
             if divAt then
-                divH = 1 / container:GetEffectiveScale()
-                total = total + divH + gap
+                divH = 1 / boxHolder:GetEffectiveScale()
+                sum = sum + divH + gap
                 for i = 1, divAt - 1 do
                     divW = math.max(divW, stack[i]:GetWidth())
                 end
@@ -1659,37 +1669,37 @@ initFrame:SetScript("OnEvent", function(self)
                 div:SetShown(divAt and true or false)
             end
             -- Offsets from the container centre, bar edges on the preview's pixel grid.
-            local top = snap(total / 2)
+            local topY = snap(sum / 2)
             for i = 1, #stack do
                 if i == divAt then
                     div:ClearAllPoints()
                     div:SetSize(divW, divH)
-                    div:SetPoint("TOP", container, "CENTER", 0, top)
-                    top = snap(top - divH - gap)
+                    div:SetPoint("TOP", boxHolder, "CENTER", 0, topY)
+                    topY = snap(topY - divH - gap)
                 end
                 local f = stack[i]
                 local fh = f:GetHeight()
-                local barTop = snap(top - titleH)
+                local barTop = snap(topY - titleH)
                 f._pvY = barTop - fh / 2
                 f:ClearAllPoints()
-                f:SetPoint("CENTER", container, "CENTER", 0, f._pvY)
-                local fs = stackLbl[i]
-                if fs then
-                    fs:ClearAllPoints()
-                    fs:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 3)
-                    fs:Show()
+                f:SetPoint("CENTER", boxHolder, "CENTER", 0, f._pvY)
+                local fontStr = stackLbl[i]
+                if fontStr then
+                    fontStr:ClearAllPoints()
+                    fontStr:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 3)
+                    fontStr:Show()
                 end
-                top = barTop - fh - gap
+                topY = barTop - fh - gap
             end
 
             -- At least the former fixed 80px; 20px above and below a taller stack.
             local TOTAL_H = 0
             if #stack > 0 then
-                TOTAL_H = math.max(80, math.ceil((total + 40) * _previewScale))
+                TOTAL_H = math.max(80, math.ceil((sum + 40) * _previewScale))
             end
             _headerBaseH = TOTAL_H
-            if container then
-                container:SetHeight(math.max(1, TOTAL_H) / _previewScale)
+            if boxHolder then
+                boxHolder:SetHeight(math.max(1, TOTAL_H) / _previewScale)
             end
             if _previewHintFS then
                 if TOTAL_H == 0 then
@@ -1710,8 +1720,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
         -- The section eyes follow (BarDisplayPage_Options.lua).
-        if ns._erbPvEyes then
-            for _, refresh in pairs(ns._erbPvEyes) do
+        if mod._erbPvEyes then
+            for _, refresh in pairs(mod._erbPvEyes) do
                 refresh()
             end
         end
@@ -1722,36 +1732,36 @@ initFrame:SetScript("OnEvent", function(self)
     local _hitOverlays = {}
 
     -- Preview Header Builder
-    _previewHeaderBuilder = function(hdr, hdrW)
-        HintBuildStart(PAGE_DISPLAY, hdr)
-        _classHdrEmpty = PoolGen(hdr) ~= nil
-        local p = DB()
+    _previewHeaderBuilder = function(heading, hdrW)
+        HintBuildStart(PAGE_DISPLAY, heading)
+        _classHdrEmpty = PoolGen(heading) ~= nil
+        local p = SavedDB()
         if not p then
             return 0
         end
         _previewBuilding = true
         local _, classFile = UnitClass("player")
 
-        local container = CreateFrame("Frame", nil, hdr)
-        container:SetSize(hdrW, 100)
-        container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
-        _previewFrames.container = container
+        local boxHolder = CreateFrame("Frame", nil, heading)
+        boxHolder:SetSize(hdrW, 100)
+        boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
+        _previewFrames.container = boxHolder
 
         -- Scale the preview so pixel sizes match real bars on screen: compensate the panel's effective scale against UIParent's.
-        local previewScale = UIParent:GetEffectiveScale() / hdr:GetEffectiveScale()
+        local previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
         _previewScale = previewScale
-        container:SetScale(previewScale)
+        boxHolder:SetScale(previewScale)
 
         _previewSnap = function(val)
-            local s = container:GetEffectiveScale()
+            local s = boxHolder:GetEffectiveScale()
             return math.floor(val * s + 0.5) / s
         end
 
         local sp = p.secondary
         local pipH = sp.pipHeight
-        local isBar = ns.IsBarTypeSecondary()
+        local isBar = mod.IsBarTypeSecondary()
 
-        local pipC = CreateFrame("Frame", nil, container) -- hosts either pips or the bar preview
+        local pipC = CreateFrame("Frame", nil, boxHolder) -- hosts either pips or the bar preview
         _previewFrames.pipContainer = pipC
         _previewFrames.pips = {}
 
@@ -1759,12 +1769,12 @@ initFrame:SetScript("OnEvent", function(self)
             -- Bar-type preview (Devourer, Elemental Shaman)
             local totalW = p.primary.width or 214
             pipC:SetSize(totalW, pipH)
-            pipC:SetPoint("CENTER", container, "CENTER", 0, 0)
+            pipC:SetPoint("CENTER", boxHolder, "CENTER", 0, 0)
 
-            local bg = pipC:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            UnsnapTex(bg)
-            pipC._barBg = bg
+            local backdrop = pipC:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            UnsnapTex(backdrop)
+            pipC._barBg = backdrop
 
             -- Fill: status-bar style via texture + width clipping
             local fill = pipC:CreateTexture(nil, "ARTWORK")
@@ -1795,28 +1805,28 @@ initFrame:SetScript("OnEvent", function(self)
                 cursor = cursor + baseW + (i <= remainder and 1 or 0) + pipSp
             end
             pipC:SetSize(totalW, pipH)
-            pipC:SetPoint("CENTER", container, "CENTER", 0, 0)
+            pipC:SetPoint("CENTER", boxHolder, "CENTER", 0, 0)
 
             for i = 1, numPips do
-                local pip = CreateFrame("Frame", nil, pipC)
+                local pipTex = CreateFrame("Frame", nil, pipC)
                 local thisPipW = baseW + (i <= remainder and 1 or 0)
-                pip:SetSize(thisPipW, pipH)
-                pip:SetPoint("LEFT", pipC, "LEFT", pipX[i], 0)
-                local bg = pip:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
+                pipTex:SetSize(thisPipW, pipH)
+                pipTex:SetPoint("LEFT", pipC, "LEFT", pipX[i], 0)
+                local backdrop = pipTex:CreateTexture(nil, "BACKGROUND")
+                backdrop:SetAllPoints()
                 if sp.darkTheme then
                     local _dbr, _dbg, _dbb = CludesUI.GetDarkModeBg()
-                    bg:SetColorTexture(_dbr, _dbg, _dbb, 1)
+                    backdrop:SetColorTexture(_dbr, _dbg, _dbb, 1)
                 elseif sp.classColored then
                     local cc = CLASS_COLORS[classFile]
                     local cr, cg, cb = cc and cc[1] or 0.95, cc and cc[2] or 0.90, cc and cc[3] or 0.60
-                    bg:SetColorTexture(cr * 0.5, cg * 0.5, cb * 0.5, 0.5)
+                    backdrop:SetColorTexture(cr * 0.5, cg * 0.5, cb * 0.5, 0.5)
                 else
-                    bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
+                    backdrop:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
                 end
-                UnsnapTex(bg)
-                pip._bg = bg
-                local fill = pip:CreateTexture(nil, "ARTWORK")
+                UnsnapTex(backdrop)
+                pipTex._bg = backdrop
+                local fill = pipTex:CreateTexture(nil, "ARTWORK")
                 fill:SetAllPoints()
                 local texKey = p.general.barTexture or "none"
                 local texLookup = _G._CURB_BarTextures or {}
@@ -1828,10 +1838,10 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 fill:SetVertexColor(1, 1, 1, 1)
                 UnsnapTex(fill)
-                pip._fill = fill
-                pip._border = MakePreviewBorder(pip, 0, 0, 0, 0, 0)
-                pip._border:SetShown(false)
-                _previewFrames.pips[i] = pip
+                pipTex._fill = fill
+                pipTex._border = MakePreviewBorder(pipTex, 0, 0, 0, 0, 0)
+                pipTex._border:SetShown(false)
+                _previewFrames.pips[i] = pipTex
             end
         end
 
@@ -1848,15 +1858,15 @@ initFrame:SetScript("OnEvent", function(self)
         pipC._countText = countText
 
         -- Built for every spec (cheap, pooled); UpdatePreviewHeader shows what applies.
-        _previewFrames.powerBar = PreviewBar.Build(container)
-        _previewFrames.healthBar = PreviewBar.Build(container)
+        _previewFrames.powerBar = PreviewBar.Build(boxHolder)
+        _previewFrames.healthBar = PreviewBar.Build(boxHolder)
         -- Arcane Soul: its section exists for retail Mages only, so does its
         -- element. The element replays the live sequence (the eye hides only
         -- it); the watcher keeps the on-screen sample running while this
         -- header shows.
         _previewFrames.arcaneSoul, _previewFrames.asDivider = nil, nil
         if classFile == "MAGE" and not CludesUI.IS_FOREVER then
-            local asf = CreateFrame("Frame", nil, container)
+            local asf = CreateFrame("Frame", nil, boxHolder)
             asf._fs = asf:CreateFontString(nil, "OVERLAY")
             asf._fs:SetPoint("CENTER", asf, "CENTER", 0, 0)
             asf._fs._asStamp = nil -- a reused font string is reset: style it again
@@ -1866,7 +1876,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
             _previewFrames.arcaneSoul = asf
 
-            local div = container:CreateTexture(nil, "ARTWORK")
+            local div = boxHolder:CreateTexture(nil, "ARTWORK")
             div:SetColorTexture(1, 1, 1, 0.10)
             UnsnapTex(div)
             div:Hide()
@@ -1874,7 +1884,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             local screenDemo = _G._CURB_ArcaneSoulScreenDemo
             if screenDemo then
-                local watch = CreateFrame("Frame", nil, container)
+                local watch = CreateFrame("Frame", nil, boxHolder)
                 watch:SetSize(1, 1)
                 watch:SetPoint("CENTER")
                 watch:SetScript("OnShow", function(self)
@@ -1891,15 +1901,15 @@ initFrame:SetScript("OnEvent", function(self)
         -- Element titles at header scale (the hint's size), on a child frame so
         -- the header cache stashes them with the rest.
         do
-            local lblHost = CreateFrame("Frame", nil, hdr)
-            lblHost:SetAllPoints(hdr)
-            lblHost:SetFrameLevel(container:GetFrameLevel() + 1)
-            local function Title(text)
-                local fs = CludesUI.MakeFont(lblHost, 11, nil, 1, 1, 1)
-                fs:SetAlpha(0.6)
-                fs:SetText(text)
-                fs:Hide()
-                return fs
+            local lblHost = CreateFrame("Frame", nil, heading)
+            lblHost:SetAllPoints(heading)
+            lblHost:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
+            local function Title(textValue)
+                local fontStr = CludesUI.MakeFont(lblHost, 11, nil, 1, 1, 1)
+                fontStr:SetAlpha(0.6)
+                fontStr:SetText(textValue)
+                fontStr:Hide()
+                return fontStr
             end
             _previewFrames.labels = {
                 classResource = Title(CludesUI.L("Class Resource")),
@@ -1913,7 +1923,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Hit overlays for preview click-to-scroll
         wipe(_hitOverlays)
-        local overlayLevel = container:GetFrameLevel() + 20
+        local overlayLevel = boxHolder:GetFrameLevel() + 20
         if pipC then
             CreateHitOverlay(pipC, "classResource", overlayLevel)
         end
@@ -1939,24 +1949,24 @@ initFrame:SetScript("OnEvent", function(self)
         local hintShown = TOTAL_H > 0 and not IsPreviewHintDismissed()
         -- Built with nothing to show, or without a class resource (its row was
         -- built for none, so a later spec or form with one needs a new build).
-        _classHdrEmpty = ((TOTAL_H == 0 or not HasClassResource()) and PoolGen(hdr) ~= nil) or nil
+        _classHdrEmpty = ((TOTAL_H == 0 or not HasClassResource()) and PoolGen(heading) ~= nil) or nil
         if hintShown then
             if not _previewHintFS then
                 -- Thin non-clipping child frame so the cache system stashes/restores it properly on page switch.
                 -- Held across builds and pages (module state): out of its header's pool.
-                local hintHost = PoolKeep(CreateFrame("Frame", nil, hdr))
-                hintHost:SetAllPoints(hdr)
+                local hintHost = PoolKeep(CreateFrame("Frame", nil, heading))
+                hintHost:SetAllPoints(heading)
                 _previewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
                 _previewHintFS:SetAlpha(0.45)
                 _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
             end
             -- The host is kept across builds: one level above the header, as a new one sits.
-            local host = _previewHintFS:GetParent()
-            host:SetParent(hdr)
-            host:SetFrameLevel(hdr:GetFrameLevel() + 1)
-            host:Show()
+            local hostRegion = _previewHintFS:GetParent()
+            hostRegion:SetParent(heading)
+            hostRegion:SetFrameLevel(heading:GetFrameLevel() + 1)
+            hostRegion:Show()
             _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 20)
+            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
             _previewHintFS:Show()
             TOTAL_H = TOTAL_H + 35
         elseif _previewHintFS then
@@ -2002,16 +2012,16 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI.SmoothScrollTo(scrollPos)
         local glowTarget = m.target
         if m.slotSide and m.target then
-            local region = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-            if region then
-                glowTarget = region
+            local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
+            if regionFrame then
+                glowTarget = regionFrame
             end
         end
         PlaySettingGlow = PlaySettingGlow
             or CludesUI.MakeSettingGlow({
                 color = CludesUI.CLUDES_GREEN,
                 thickness = function()
-                    return PP.Scale(2)
+                    return Pix.Scale(2)
                 end,
                 noSnap = true,
             })
@@ -2026,15 +2036,15 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     CreateHitOverlay = function(element, mappingKey, frameLevelOverride)
-        local btn = CludesUI.CreatePreviewHitOverlay(
+        local button = CludesUI.CreatePreviewHitOverlay(
             element,
             NavigateToSetting,
             mappingKey,
             false,
             frameLevelOverride
         )
-        _hitOverlays[#_hitOverlays + 1] = btn
-        return btn
+        _hitOverlays[#_hitOverlays + 1] = button
+        return button
     end
 
     -- Non-debounced: smooth animation of scale/offset changes
@@ -2076,20 +2086,20 @@ initFrame:SetScript("OnEvent", function(self)
         if not str or str == "" then
             return ""
         end
-        local out = {}
+        local result = {}
         for token in tostring(str):gmatch("[^,]+") do
-            local n = tonumber(exact and token:match("^%s*(.-)%s*$") or (token:gsub("%s", "")))
-            if n and n >= 0 then
-                out[#out + 1] = tostring(n)
+            local num = tonumber(exact and token:match("^%s*(.-)%s*$") or (token:gsub("%s", "")))
+            if num and num >= 0 then
+                result[#result + 1] = tostring(num)
             end
         end
-        return table.concat(out, ", ")
+        return table.concat(result, ", ")
     end
 
     -- Cog + popup for simple per-bar hash lines (Health/Power). cfg = { parentRgn, getBarData, refreshFn, popupTitle, anchorTo }; returns cogBtn.
-    local function BuildHashCog(cfg)
-        local getBarData = cfg.getBarData
-        local refreshFn = cfg.refreshFn or function() end
+    local function BuildHashCog(conf)
+        local getBarData = conf.getBarData
+        local refreshFn = conf.refreshFn or function() end
 
         local function HashOff()
             local c = getBarData()
@@ -2097,7 +2107,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local DIS_TIP = CludesUI.L("Enable hash lines first")
-        local rows = {
+        local rowList = {
             {
                 type = "toggle",
                 label = CludesUI.L("Show Hash Lines"),
@@ -2200,14 +2210,14 @@ initFrame:SetScript("OnEvent", function(self)
             },
         }
 
-        return CludesUI.BuildInlineCog(cfg.parentRgn, {
-            anchorTo = cfg.anchorTo,
+        return CludesUI.BuildInlineCog(conf.parentRgn, {
+            anchorTo = conf.anchorTo,
             tip = CludesUI.L("Hash Lines"),
-            title = cfg.popupTitle or CludesUI.L("Hash Lines"),
+            title = conf.popupTitle or CludesUI.L("Hash Lines"),
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
             frameLevel = 500,
-            rows = rows,
+            rows = rowList,
         })
     end
 
@@ -2226,10 +2236,10 @@ initFrame:SetScript("OnEvent", function(self)
             { key = "energy", label = "Cat" },
             { key = "moonkin", label = "Moonkin" },
         }
-        local rows = {}
+        local rowList = {}
         for _, f in ipairs(FORMS) do
             local key = f.key
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "toggle",
                 label = f.label,
                 get = function()
@@ -2253,28 +2263,28 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         end
-        return rows
+        return rowList
     end
 
     -- Druid-only per-form popup button. `field` picks the map the toggles write: "textDisabledForms" (text rows) or "barDisabledForms" (whole-bar rows).
-    local function AddFormDisableBtn(rgn, leftOf, cfgFn, refreshFn, field, title, tooltip)
+    local function AddFormDisableBtn(rgn, leftOf, cfgFn, refreshFn, field, titleText, tooltip)
         field = field or "textDisabledForms"
-        local rows = FormToggleRows(cfgFn, refreshFn, field)
-        if not rows then
+        local rowList = FormToggleRows(cfgFn, refreshFn, field)
+        if not rowList then
             return
         end
-        title = title or "Enable/Disable per Form"
-        tooltip = tooltip or CludesUI.L(title)
-        local btn = CludesUI.BuildInlineCog(rgn, {
+        titleText = titleText or "Enable/Disable per Form"
+        tooltip = tooltip or CludesUI.L(titleText)
+        local button = CludesUI.BuildInlineCog(rgn, {
             anchorTo = leftOf,
             tip = tooltip,
-            title = title,
+            title = titleText,
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
             frameLevel = 500,
-            rows = rows,
+            rows = rowList,
         })
-        return btn
+        return button
     end
     -- The L() literals keep both popup titles in the static locale key list: .tools/extract-locale-keys.sh only sees literal string arguments.
     local function AddFormTextBtn(rgn, leftOf, cfgFn, refreshFn)
@@ -2334,11 +2344,11 @@ initFrame:SetScript("OnEvent", function(self)
         if not _bandEntryIdx or not _bandGetBarData then
             return nil
         end
-        local bd = _bandGetBarData()
-        if not bd or not bd.thresholdSpecs then
+        local edge = _bandGetBarData()
+        if not edge or not edge.thresholdSpecs then
             return nil
         end
-        return bd.thresholdSpecs[_bandEntryIdx]
+        return edge.thresholdSpecs[_bandEntryIdx]
     end
 
     local function SortBands(bands)
@@ -2355,12 +2365,12 @@ initFrame:SetScript("OnEvent", function(self)
         bandPopup:EnableMouse(true)
         bandPopup:SetScale(CludesUI.GetPopupScale())
         bandPopup:Hide()
-        PP.Size(bandPopup, BAND_POPUP_W, 200)
+        Pix.Size(bandPopup, BAND_POPUP_W, 200)
 
-        local bg = bandPopup:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-        bandPopup._brd = CludesUI.MakeRoundedBorder(bandPopup, 1, 1, 1, 0.18, bg)
+        local backdrop = bandPopup:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.97)
+        bandPopup._brd = CludesUI.MakeRoundedBorder(bandPopup, 1, 1, 1, 0.18, backdrop)
 
         local clickCatcher = CreateFrame("Button", nil, bandPopup)
         clickCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -2371,8 +2381,8 @@ initFrame:SetScript("OnEvent", function(self)
         end)
         clickCatcher:Hide()
         -- Close on entering combat
-        bandPopup:SetScript("OnEvent", function(self, event)
-            if event == "PLAYER_REGEN_DISABLED" then
+        bandPopup:SetScript("OnEvent", function(self, evt)
+            if evt == "PLAYER_REGEN_DISABLED" then
                 self:Hide()
             end
         end)
@@ -2420,12 +2430,12 @@ initFrame:SetScript("OnEvent", function(self)
         local function HeaderRow(labelText)
             local rf = CreateFrame("Frame", nil, bandPopup)
             rf:SetFrameLevel(bandPopup:GetFrameLevel() + 3)
-            PP.Height(rf, BAND_ROW_H)
-            local lbl = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
-            lbl:SetAlpha(0.6)
-            lbl:SetPoint("LEFT", rf, "LEFT", 0, 0)
-            lbl:SetText(CludesUI.L(labelText))
-            rf._lbl = lbl
+            Pix.Height(rf, BAND_ROW_H)
+            local labelFS = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
+            labelFS:SetAlpha(0.6)
+            labelFS:SetPoint("LEFT", rf, "LEFT", 0, 0)
+            labelFS:SetText(CludesUI.L(labelText))
+            rf._lbl = labelFS
             return rf
         end
 
@@ -2517,7 +2527,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Add Band button
         _bandAddBtn = CreateFrame("Button", nil, bandPopup)
-        PP.Size(_bandAddBtn, BAND_POPUP_W - BAND_PAD * 2, 26)
+        Pix.Size(_bandAddBtn, BAND_POPUP_W - BAND_PAD * 2, 26)
         _bandAddBtn:SetFrameLevel(bandPopup:GetFrameLevel() + 3)
         local abg = CludesUI.SolidTex(_bandAddBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
         abg:SetAllPoints()
@@ -2560,25 +2570,25 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Lazily create the widgets for band row k; returns the row table
     local function EnsureBandRow(k)
-        local row = _bandRows[k]
-        if row then
-            return row
+        local rowFrame = _bandRows[k]
+        if rowFrame then
+            return rowFrame
         end
-        row = {}
+        rowFrame = {}
         local rf = CreateFrame("Frame", nil, bandPopup)
         rf:SetSize(BAND_POPUP_W - BAND_PAD * 2, BAND_ROW_H)
         rf:SetFrameLevel(bandPopup:GetFrameLevel() + 2)
-        row.frame = rf
+        rowFrame.frame = rf
 
-        local lbl = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
-        lbl:SetAlpha(0.6)
-        lbl:SetPoint("LEFT", rf, "LEFT", 2, 0)
-        lbl:SetText(CludesUI.L("Up to")) -- band colors values up to `to`
-        row.lbl = lbl
+        local labelFS = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
+        labelFS:SetAlpha(0.6)
+        labelFS:SetPoint("LEFT", rf, "LEFT", 2, 0)
+        labelFS:SetText(CludesUI.L("Up to")) -- band colors values up to `to`
+        rowFrame.lbl = labelFS
 
         local input = CreateFrame("EditBox", nil, rf)
         input:SetSize(54, 22)
-        input:SetPoint("LEFT", lbl, "RIGHT", 6, 0)
+        input:SetPoint("LEFT", labelFS, "RIGHT", 6, 0)
         input:SetFrameLevel(rf:GetFrameLevel() + 2)
         input:SetAutoFocus(false)
         input:SetFontObject(GameFontHighlightSmall)
@@ -2591,7 +2601,7 @@ initFrame:SetScript("OnEvent", function(self)
         inBg:SetAllPoints()
         inBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
         CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inBg)
-        row.input = input
+        rowFrame.input = input
 
         -- Commit on focus loss. Enter clears focus -> triggers this; Escape sets _cancelCommit so leaving the field discards the typed text.
         local function CommitInput(self)
@@ -2600,7 +2610,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             local ent = CurrentBandEntry()
-            local band = ent and ent.bands and ent.bands[row._idx]
+            local band = ent and ent.bands and ent.bands[rowFrame._idx]
             if not band then
                 return
             end
@@ -2628,16 +2638,16 @@ initFrame:SetScript("OnEvent", function(self)
             RefreshBandEditor()
         end)
 
-        local swatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
+        local colorSwatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
             local ent = CurrentBandEntry()
-            local band = ent and ent.bands and ent.bands[row._idx]
+            local band = ent and ent.bands and ent.bands[rowFrame._idx]
             if not band then
                 return _bandDefR, _bandDefG, _bandDefB, _bandDefA
             end
             return band.r or _bandDefR, band.g or _bandDefG, band.b or _bandDefB, band.a or _bandDefA
         end, function(r, g, b, a)
             local ent = CurrentBandEntry()
-            local band = ent and ent.bands and ent.bands[row._idx]
+            local band = ent and ent.bands and ent.bands[rowFrame._idx]
             if band then
                 band.r, band.g, band.b, band.a = r, g, b, a
                 if _bandRefreshFn then
@@ -2645,9 +2655,9 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
         end, true, 19)
-        swatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
-        row.swatch = swatch
-        row.swatchSnap = swatchSnap
+        colorSwatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
+        rowFrame.swatch = colorSwatch
+        rowFrame.swatchSnap = swatchSnap
 
         local delBtn = CreateFrame("Button", nil, rf)
         delBtn:SetSize(14, 14)
@@ -2665,18 +2675,18 @@ initFrame:SetScript("OnEvent", function(self)
         end)
         delBtn:SetScript("OnClick", function()
             local ent = CurrentBandEntry()
-            if ent and ent.bands and ent.bands[row._idx] then
-                table.remove(ent.bands, row._idx)
+            if ent and ent.bands and ent.bands[rowFrame._idx] then
+                table.remove(ent.bands, rowFrame._idx)
                 if _bandRefreshFn then
                     _bandRefreshFn()
                 end
                 RefreshBandEditor()
             end
         end)
-        row.delBtn = delBtn
+        rowFrame.delBtn = delBtn
 
-        _bandRows[k] = row
-        return row
+        _bandRows[k] = rowFrame
+        return rowFrame
     end
 
     RefreshBandEditor = function()
@@ -2696,8 +2706,8 @@ initFrame:SetScript("OnEvent", function(self)
 
         local function placeRow(rf)
             rf:ClearAllPoints()
-            PP.Point(rf, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
-            PP.Point(rf, "TOPRIGHT", bandPopup, "TOPRIGHT", -BAND_PAD, curY)
+            Pix.Point(rf, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
+            Pix.Point(rf, "TOPRIGHT", bandPopup, "TOPRIGHT", -BAND_PAD, curY)
             rf:Show()
             curY = curY - BAND_ROW_H - BAND_GAP
         end
@@ -2733,21 +2743,21 @@ initFrame:SetScript("OnEvent", function(self)
         end
         placeRow(_bandReverseRow)
         local rowLabel = reverse and CludesUI.L("From") or CludesUI.L("Up to")
-        local n = #ent.bands
-        for k = 1, n do
-            local row = EnsureBandRow(k)
-            row._idx = k
-            row.lbl:SetText(rowLabel)
-            row.frame:ClearAllPoints()
-            PP.Point(row.frame, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
-            row.input:SetText(tostring(ent.bands[k].to or 1))
-            if row.swatchSnap then
-                row.swatchSnap()
+        local num = #ent.bands
+        for k = 1, num do
+            local rowFrame = EnsureBandRow(k)
+            rowFrame._idx = k
+            rowFrame.lbl:SetText(rowLabel)
+            rowFrame.frame:ClearAllPoints()
+            Pix.Point(rowFrame.frame, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
+            rowFrame.input:SetText(tostring(ent.bands[k].to or 1))
+            if rowFrame.swatchSnap then
+                rowFrame.swatchSnap()
             end
-            row.frame:Show()
+            rowFrame.frame:Show()
             curY = curY - BAND_ROW_H - 4
         end
-        for k = n + 1, #_bandRows do
+        for k = num + 1, #_bandRows do
             if _bandRows[k] then
                 _bandRows[k].frame:Hide()
             end
@@ -2755,11 +2765,11 @@ initFrame:SetScript("OnEvent", function(self)
 
         curY = curY - 4
         _bandAddBtn:ClearAllPoints()
-        PP.Point(_bandAddBtn, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
+        Pix.Point(_bandAddBtn, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
         curY = curY - 26
 
         local totalH = math.abs(curY) + BAND_PAD
-        PP.Size(bandPopup, BAND_POPUP_W, totalH)
+        Pix.Size(bandPopup, BAND_POPUP_W, totalH)
         bandPopup._brd:Fit()
     end
 
@@ -2814,8 +2824,8 @@ initFrame:SetScript("OnEvent", function(self)
         local field = o.field
         local POPUP_W, ROW_H = 320, 26
         local STEP = ROW_H + 4
-        local popup, addBtn, insLine
-        local rows = {}
+        local dialog, addBtn, insLine
+        local rowList = {}
         local entryIdx, getBarData, refreshFn
         local drag = { row = nil, startY = nil, active = false }
         local Refresh, DragTick -- forward decls
@@ -2824,18 +2834,18 @@ initFrame:SetScript("OnEvent", function(self)
             if not entryIdx or not getBarData then
                 return nil
             end
-            local bd = getBarData()
-            if not bd or not bd.thresholdSpecs then
+            local edge = getBarData()
+            if not edge or not edge.thresholdSpecs then
                 return nil
             end
-            return bd.thresholdSpecs[entryIdx]
+            return edge.thresholdSpecs[entryIdx]
         end
 
         -- The list item a row edits, or nil
-        local function RowItem(row)
+        local function RowItem(rowFrame)
             local ent = CurrentEntry()
             local list = ent and ent[field]
-            return list and list[row._idx]
+            return list and list[rowFrame._idx]
         end
 
         local function OnPopupUpdate(pp)
@@ -2852,47 +2862,47 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function Build()
-            popup = CreateFrame("Frame", nil, CludesUI.OverlayParent())
-            popup:SetFrameStrata("FULLSCREEN_DIALOG")
-            popup:SetFrameLevel(260)
-            popup:SetClampedToScreen(true)
-            popup:EnableMouse(true)
-            popup:SetScale(CludesUI.GetPopupScale())
-            popup:Hide()
-            PP.Size(popup, POPUP_W, 200)
-            local bg = popup:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-            popup._brd = CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.18, bg)
+            dialog = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+            dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+            dialog:SetFrameLevel(260)
+            dialog:SetClampedToScreen(true)
+            dialog:EnableMouse(true)
+            dialog:SetScale(CludesUI.GetPopupScale())
+            dialog:Hide()
+            Pix.Size(dialog, POPUP_W, 200)
+            local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.97)
+            dialog._brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.18, backdrop)
 
             -- Insertion line shown while dragging a row; theme accent, matches the raid "Sort By" reorder line
-            insLine = popup:CreateTexture(nil, "OVERLAY", nil, 7)
+            insLine = dialog:CreateTexture(nil, "OVERLAY", nil, 7)
             insLine:SetHeight(2)
             local eg = CludesUI.CLUDES_GREEN
             insLine:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
             insLine:Hide()
 
-            local clickCatcher = CreateFrame("Button", nil, popup)
+            local clickCatcher = CreateFrame("Button", nil, dialog)
             clickCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
-            clickCatcher:SetFrameLevel(popup:GetFrameLevel() - 1)
+            clickCatcher:SetFrameLevel(dialog:GetFrameLevel() - 1)
             clickCatcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
             clickCatcher:SetScript("OnClick", function()
                 if drag.active then
                     return
                 end
-                popup:Hide()
+                dialog:Hide()
             end)
             clickCatcher:Hide()
             -- Close on entering combat (the event is registered only while shown)
-            popup:SetScript("OnEvent", function(self)
+            dialog:SetScript("OnEvent", function(self)
                 self:Hide()
             end)
-            popup:SetScript("OnShow", function(self)
+            dialog:SetScript("OnShow", function(self)
                 clickCatcher:Show()
                 self:RegisterEvent("PLAYER_REGEN_DISABLED")
                 self:SetScript("OnUpdate", OnPopupUpdate)
             end)
-            popup:SetScript("OnHide", function(self)
+            dialog:SetScript("OnHide", function(self)
                 clickCatcher:Hide()
                 self:UnregisterEvent("PLAYER_REGEN_DISABLED")
                 self:SetScript("OnUpdate", nil)
@@ -2901,30 +2911,30 @@ initFrame:SetScript("OnEvent", function(self)
                 drag.active = false
                 insLine:Hide()
             end)
-            CludesUI.TrackOverlay(popup)
-            CludesUI.PadHint(popup, "nodepass")
+            CludesUI.TrackOverlay(dialog)
+            CludesUI.PadHint(dialog, "nodepass")
             CludesUI.PadHint(clickCatcher, "nodepass")
-            CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = popup }
+            CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog }
             CludesUI:RegisterOnHide(function()
-                popup:Hide()
+                dialog:Hide()
             end)
             CludesUI:RegisterOnCollapse(function(on)
                 if on then
-                    popup:Hide()
+                    dialog:Hide()
                 end
             end)
 
-            local titleFS = CludesUI.MakeFont(popup, 13, nil, 1, 1, 1)
+            local titleFS = CludesUI.MakeFont(dialog, 13, nil, 1, 1, 1)
             titleFS:SetAlpha(0.7)
-            titleFS:SetPoint("TOP", popup, "TOP", 0, -BAND_PAD)
+            titleFS:SetPoint("TOP", dialog, "TOP", 0, -BAND_PAD)
             titleFS:SetText(o.title)
-            local hintFS = CludesUI.MakeFont(popup, 10, nil, 1, 1, 1, 0.25)
-            hintFS:SetPoint("TOPLEFT", popup, "TOPLEFT", 16, -BAND_PAD - 4)
+            local hintFS = CludesUI.MakeFont(dialog, 10, nil, 1, 1, 1, 0.25)
+            hintFS:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -BAND_PAD - 4)
             hintFS:SetText(CludesUI.L("Drag to Reorder"))
 
-            addBtn = CreateFrame("Button", nil, popup)
-            PP.Size(addBtn, POPUP_W - BAND_PAD * 2, 26)
-            addBtn:SetFrameLevel(popup:GetFrameLevel() + 3)
+            addBtn = CreateFrame("Button", nil, dialog)
+            Pix.Size(addBtn, POPUP_W - BAND_PAD * 2, 26)
+            addBtn:SetFrameLevel(dialog:GetFrameLevel() + 3)
             local abg = CludesUI.SolidTex(addBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
             abg:SetAllPoints()
             addBtn._border = CludesUI.MakeRoundedBorder(addBtn, 1, 1, 1, 0.4, abg)
@@ -2957,15 +2967,15 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function EnsureRow(k)
-            local row = rows[k]
-            if row then
-                return row
+            local rowFrame = rowList[k]
+            if rowFrame then
+                return rowFrame
             end
-            row = {}
-            local rf = CreateFrame("Frame", nil, popup)
+            rowFrame = {}
+            local rf = CreateFrame("Frame", nil, dialog)
             rf:SetSize(POPUP_W - BAND_PAD * 2, ROW_H)
-            rf:SetFrameLevel(popup:GetFrameLevel() + 2)
-            row.frame = rf
+            rf:SetFrameLevel(dialog:GetFrameLevel() + 2)
+            rowFrame.frame = rf
 
             local input = CreateFrame("EditBox", nil, rf)
             input:SetSize(58, 22)
@@ -2981,7 +2991,7 @@ initFrame:SetScript("OnEvent", function(self)
             inBg:SetAllPoints()
             inBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
             CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inBg)
-            row.input = input
+            rowFrame.input = input
 
             -- Drag grip: list order = priority, so rows are draggable
             local grip = CreateFrame("Button", nil, rf)
@@ -3002,11 +3012,11 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 local _, cy = GetCursorPosition()
-                drag.row = row
+                drag.row = rowFrame
                 drag.startY = cy
                 drag.active = false
             end)
-            row.grip = grip
+            rowFrame.grip = grip
 
             local nameFS = CludesUI.MakeFont(rf, 11, nil, 1, 1, 1)
             nameFS:SetAlpha(0.6)
@@ -3014,28 +3024,28 @@ initFrame:SetScript("OnEvent", function(self)
             nameFS:SetJustifyH("LEFT")
             nameFS:SetWidth(150)
             nameFS:SetWordWrap(false)
-            row.nameFS = nameFS
+            rowFrame.nameFS = nameFS
 
             local function RefreshName()
-                local e = RowItem(row)
-                local id = e and e.spellID
-                if id then
+                local e = RowItem(rowFrame)
+                local ident = e and e.spellID
+                if ident then
                     nameFS:SetText(
-                        C_Spell.GetSpellName(id)
+                        C_Spell.GetSpellName(ident)
                             or (CludesUI.COLOR_CODES.BAD .. CludesUI.L("Unknown ID") .. "|r")
                     )
                 else
                     nameFS:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("(enter Spell ID)") .. "|r")
                 end
             end
-            row.RefreshName = RefreshName
+            rowFrame.RefreshName = RefreshName
 
             local function CommitInput(self)
                 if self._cancelCommit then
                     self._cancelCommit = nil
                     return
                 end
-                local e = RowItem(row)
+                local e = RowItem(rowFrame)
                 if not e then
                     return
                 end
@@ -3056,14 +3066,14 @@ initFrame:SetScript("OnEvent", function(self)
                 Refresh()
             end)
 
-            local swatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
-                local e = RowItem(row)
+            local colorSwatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
+                local e = RowItem(rowFrame)
                 if not e then
                     return 0.2, 0.6, 1.0, 1
                 end
                 return e.r or 0.2, e.g or 0.6, e.b or 1.0, e.a or 1
             end, function(r, g, b, a)
-                local e = RowItem(row)
+                local e = RowItem(rowFrame)
                 if e then
                     e.r, e.g, e.b, e.a = r, g, b, a
                     if refreshFn then
@@ -3071,9 +3081,9 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end
             end, true, 19)
-            swatch:SetPoint("RIGHT", rf, "RIGHT", -24, 0)
-            row.swatch = swatch
-            row.swatchSnap = swatchSnap
+            colorSwatch:SetPoint("RIGHT", rf, "RIGHT", -24, 0)
+            rowFrame.swatch = colorSwatch
+            rowFrame.swatchSnap = swatchSnap
 
             local delBtn = CreateFrame("Button", nil, rf)
             delBtn:SetSize(14, 14)
@@ -3091,27 +3101,27 @@ initFrame:SetScript("OnEvent", function(self)
             end)
             delBtn:SetScript("OnClick", function()
                 local ent = CurrentEntry()
-                if ent and ent[field] and ent[field][row._idx] then
-                    table.remove(ent[field], row._idx)
+                if ent and ent[field] and ent[field][rowFrame._idx] then
+                    table.remove(ent[field], rowFrame._idx)
                     if refreshFn then
                         refreshFn()
                     end
                     Refresh()
                 end
             end)
-            row.delBtn = delBtn
+            rowFrame.delBtn = delBtn
 
-            rows[k] = row
-            return row
+            rowList[k] = rowFrame
+            return rowFrame
         end
 
         Refresh = function()
-            if not popup then
+            if not dialog then
                 return
             end
             local ent = CurrentEntry()
             if not ent then
-                popup:Hide()
+                dialog:Hide()
                 return
             end
             if not ent[field] then
@@ -3119,32 +3129,32 @@ initFrame:SetScript("OnEvent", function(self)
             end
             local list = ent[field]
             local curY = -(BAND_PAD + 24)
-            local n = #list
-            for k = 1, n do
-                local row = EnsureRow(k)
-                row._idx = k
-                row.frame:ClearAllPoints()
-                PP.Point(row.frame, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, curY)
-                row._baseY = curY -- for the drag-reorder hit test
-                row.frame:SetFrameLevel(popup:GetFrameLevel() + 2) -- reset after a drag raised it
-                row.frame:SetAlpha(1)
-                row.input:SetText(list[k].spellID and tostring(list[k].spellID) or "")
-                row.RefreshName()
-                row.swatchSnap()
-                row.frame:Show()
+            local num = #list
+            for k = 1, num do
+                local rowFrame = EnsureRow(k)
+                rowFrame._idx = k
+                rowFrame.frame:ClearAllPoints()
+                Pix.Point(rowFrame.frame, "TOPLEFT", dialog, "TOPLEFT", BAND_PAD, curY)
+                rowFrame._baseY = curY -- for the drag-reorder hit test
+                rowFrame.frame:SetFrameLevel(dialog:GetFrameLevel() + 2) -- reset after a drag raised it
+                rowFrame.frame:SetAlpha(1)
+                rowFrame.input:SetText(list[k].spellID and tostring(list[k].spellID) or "")
+                rowFrame.RefreshName()
+                rowFrame.swatchSnap()
+                rowFrame.frame:Show()
                 curY = curY - ROW_H - 4
             end
-            for k = n + 1, #rows do
-                if rows[k] then
-                    rows[k].frame:Hide()
+            for k = num + 1, #rowList do
+                if rowList[k] then
+                    rowList[k].frame:Hide()
                 end
             end
             curY = curY - 4
             addBtn:ClearAllPoints()
-            PP.Point(addBtn, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, curY)
+            Pix.Point(addBtn, "TOPLEFT", dialog, "TOPLEFT", BAND_PAD, curY)
             curY = curY - 26
-            PP.Size(popup, POPUP_W, math.abs(curY) + BAND_PAD)
-            popup._brd:Fit()
+            Pix.Size(dialog, POPUP_W, math.abs(curY) + BAND_PAD)
+            dialog._brd:Fit()
         end
 
         -- Runs each frame from the popup's OnUpdate while a grip is held: separates click from
@@ -3152,8 +3162,8 @@ initFrame:SetScript("OnEvent", function(self)
         -- the list (order = priority) and re-renders.
         DragTick = function()
             local d = drag
-            local row = d.row
-            if not row then
+            local rowFrame = d.row
+            if not rowFrame then
                 return
             end
             local down = IsMouseButtonDown("LeftButton")
@@ -3167,20 +3177,20 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 d.active = true
-                row.frame:SetFrameLevel(popup:GetFrameLevel() + 20)
-                row.frame:SetAlpha(0.85)
+                rowFrame.frame:SetFrameLevel(dialog:GetFrameLevel() + 20)
+                rowFrame.frame:SetAlpha(0.85)
             end
             local ent = CurrentEntry()
             local list = ent and ent[field]
-            local n = list and #list or 0
-            local sc = popup:GetEffectiveScale()
+            local num = list and #list or 0
+            local sc = dialog:GetEffectiveScale()
             local cY = cy / sc
-            local mT = popup:GetTop() or 0
+            local mT = dialog:GetTop() or 0
             -- Insertion index among the STATIC (non-dragged) rows
-            local iI = n
-            for ri = 1, n do
-                local r2 = rows[ri]
-                if r2 ~= row and r2._baseY then
+            local iI = num
+            for ri = 1, num do
+                local r2 = rowList[ri]
+                if r2 ~= rowFrame and r2._baseY then
                     local rm = mT + r2._baseY - ROW_H / 2
                     if cY > rm then
                         iI = ri
@@ -3189,23 +3199,23 @@ initFrame:SetScript("OnEvent", function(self)
                     iI = ri + 1
                 end
             end
-            iI = math.max(1, math.min(iI, n + 1))
+            iI = math.max(1, math.min(iI, num + 1))
             if down then
                 local firstY = -(BAND_PAD + 24)
                 local lnY = (iI <= 1) and (firstY + 2) or (firstY - (iI - 1) * STEP + 2)
                 insLine:ClearAllPoints()
-                insLine:SetPoint("TOPLEFT", popup, "TOPLEFT", BAND_PAD, lnY)
-                insLine:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -BAND_PAD, lnY)
+                insLine:SetPoint("TOPLEFT", dialog, "TOPLEFT", BAND_PAD, lnY)
+                insLine:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -BAND_PAD, lnY)
                 insLine:Show()
-                row.frame:ClearAllPoints()
-                row.frame:SetPoint("TOPLEFT", popup, "TOPLEFT", BAND_PAD, cY - mT)
+                rowFrame.frame:ClearAllPoints()
+                rowFrame.frame:SetPoint("TOPLEFT", dialog, "TOPLEFT", BAND_PAD, cY - mT)
             else
                 -- Dropped: reorder the list + re-render
-                local from = row._idx
+                local from = rowFrame._idx
                 if from and from < iI then
                     iI = iI - 1
                 end
-                local to = math.max(1, math.min(iI, n))
+                local to = math.max(1, math.min(iI, num))
                 insLine:Hide()
                 d.row = nil
                 d.active = false
@@ -3221,7 +3231,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         return function(params)
-            if not popup then
+            if not dialog then
                 Build()
             end
             getBarData = params.getBarData
@@ -3232,9 +3242,9 @@ initFrame:SetScript("OnEvent", function(self)
                 ent[field] = {}
             end
             Refresh()
-            popup:ClearAllPoints()
-            popup:SetPoint("TOP", params.anchor, "BOTTOM", 0, -4)
-            popup:Show()
+            dialog:ClearAllPoints()
+            dialog:SetPoint("TOP", params.anchor, "BOTTOM", 0, -4)
+            dialog:Show()
         end
     end
 
@@ -3256,21 +3266,21 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Skins a small text button of the threshold settings (Bands, Buffs, Spenders):
     -- a dark fill that lightens on hover, tip on hover. label comes localized.
-    local function SkinCardButton(btn, label, tip)
-        local bg = btn:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-        btn._border = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.08, bg)
-        local lbl = CludesUI.MakeFont(btn, 12, nil, 1, 1, 1)
-        lbl:SetAlpha(0.8)
-        lbl:SetPoint("CENTER")
-        lbl:SetText(label)
-        btn:SetScript("OnEnter", function(self)
-            bg:SetColorTexture(0.16, 0.16, 0.16, 0.9)
-            CludesUI.ShowWidgetTooltip(self, tip)
+    local function SkinCardButton(button, label, tipText)
+        local backdrop = button:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+        button._border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, backdrop)
+        local labelFS = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        labelFS:SetAlpha(0.8)
+        labelFS:SetPoint("CENTER")
+        labelFS:SetText(label)
+        button:SetScript("OnEnter", function(self)
+            backdrop:SetColorTexture(0.16, 0.16, 0.16, 0.9)
+            CludesUI.ShowWidgetTooltip(self, tipText)
         end)
-        btn:SetScript("OnLeave", function()
-            bg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+        button:SetScript("OnLeave", function()
+            backdrop:SetColorTexture(0.12, 0.12, 0.12, 0.8)
             CludesUI.HideWidgetTooltip()
         end)
     end
@@ -3331,7 +3341,7 @@ initFrame:SetScript("OnEvent", function(self)
             local ar, ag, ab = CludesUI.GetAccentColor()
             THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = ar, ag, ab
             THR_NOTE_IDLE[4] = CludesUI.HexColor(ar, ag, ab):sub(5)
-            local list, active = ns.ThresholdNoticeInfo(getBarData())
+            local list, isActive = mod.ThresholdNoticeInfo(getBarData())
             if not list then
                 if CludesUI.HideWidgetTooltip and badge:IsMouseOver() then
                     CludesUI.HideWidgetTooltip()
@@ -3340,17 +3350,17 @@ initFrame:SetScript("OnEvent", function(self)
                 ApplyBorderTint(THR_BORDER_WHITE)
                 return
             end
-            local c = active and THR_NOTE_ACTIVE or THR_NOTE_IDLE
+            local c = isActive and THR_NOTE_ACTIVE or THR_NOTE_IDLE
             badge._color = c
             ico:SetVertexColor(c[1], c[2], c[3], badge:IsMouseOver() and 1 or 0.85)
-            local tip = "|cff"
+            local tipText = "|cff"
                 .. c[4]
                 .. CludesUI.L("Thresholds or hash lines configured for:")
                 .. "|r "
                 .. list
-            local lead = active and CludesUI.L("Current Spec is affected by Threshold & Hash Lines.")
+            local lead = isActive and CludesUI.L("Current Spec is affected by Threshold & Hash Lines.")
                 or CludesUI.L("Current Spec is not affected by Threshold & Hash Lines.")
-            badge._tip = "|cff" .. c[4] .. lead .. "|r\n\n" .. tip
+            badge._tip = "|cff" .. c[4] .. lead .. "|r\n\n" .. tipText
             badge:Show()
             ApplyBorderTint(c)
         end
@@ -3378,7 +3388,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- registered only while an editor is open.
     local ThrWatchBuild, ThrEditorShown, ThrEditorHidden
     do
-        local shown = {} -- [editor page] = { refresh, repaint }, while that page is shown
+        local isShown = {} -- [editor page] = { refresh, repaint }, while that page is shown
         local watch, stale, redraw, refreshQueued
         local function OnDisplayPage()
             return CludesUI:IsShown() and CludesUI:GetActivePage() == PAGE_DISPLAY
@@ -3405,7 +3415,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- leaves the watcher instead of painting widgets that now show something else.
         local function FlushRefresh()
             refreshQueued = nil
-            for page, ed in pairs(shown) do
+            for page, ed in pairs(isShown) do
                 if PoolGen(page) == ed.gen then
                     ed.refresh()
                 else
@@ -3413,10 +3423,9 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
         end
-        local function OnEvent(_, event)
-            local specSwap = event == "PLAYER_SPECIALIZATION_CHANGED"
-                or event == "ACTIVE_TALENT_GROUP_CHANGED"
-            if next(shown) then
+        local function OnEvent(_, evt)
+            local specSwap = evt == "PLAYER_SPECIALIZATION_CHANGED" or evt == "ACTIVE_TALENT_GROUP_CHANGED"
+            if next(isShown) then
                 if specSwap then
                     stale = true
                 end
@@ -3448,7 +3457,7 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.RegAccent({
                 type = "callback",
                 fn = function()
-                    for page, ed in pairs(shown) do
+                    for page, ed in pairs(isShown) do
                         if PoolGen(page) == ed.gen then
                             ed.repaint()
                         else
@@ -3459,18 +3468,18 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
         ThrEditorShown = function(page, ed)
-            if not next(shown) then
+            if not next(isShown) then
                 watch:RegisterEvent("TRAIT_CONFIG_UPDATED")
                 watch:RegisterEvent("PLAYER_TALENT_UPDATE")
             end
-            shown[page] = ed
+            isShown[page] = ed
         end
         ThrEditorHidden = function(page)
-            if not shown[page] then
+            if not isShown[page] then
                 return
             end
-            shown[page] = nil
-            if next(shown) then
+            isShown[page] = nil
+            if next(isShown) then
                 return
             end
             watch:UnregisterEvent("TRAIT_CONFIG_UPDATED")
@@ -3520,22 +3529,22 @@ initFrame:SetScript("OnEvent", function(self)
     --                       the entries whose rules set barInput
     --    entryRules      -- fn(ent, rules, barData) adjusts the selected entry's rules (see RefreshDetail)
     -- Returns settingsBtn (the button frame).
-    local function BuildThresholdSettingsButton(cfg)
-        local parentRgn = cfg.parentRgn
-        local THR_FIELD = cfg.thresholdField or "thresholdPct"
-        local HASH_NIL = cfg.hashModeDefault or "percent"
+    local function BuildThresholdSettingsButton(conf)
+        local parentRgn = conf.parentRgn
+        local THR_FIELD = conf.thresholdField or "thresholdPct"
+        local HASH_NIL = conf.hashModeDefault or "percent"
         local ROW_GAP = 6
 
-        local defR = cfg.defaultR or 1
-        local defG = cfg.defaultG or 0.2
-        local defB = cfg.defaultB or 0.2
-        local defA = cfg.defaultA or 1
+        local defR = conf.defaultR or 1
+        local defG = conf.defaultG or 0.2
+        local defB = conf.defaultB or 0.2
+        local defA = conf.defaultA or 1
         local _playerClassFile = select(2, UnitClass("player"))
 
         local BTN_W, BTN_H = 140, 30
         local settingsBtn = CreateFrame("Button", nil, parentRgn)
-        PP.Size(settingsBtn, BTN_W, BTN_H)
-        PP.Point(settingsBtn, "RIGHT", parentRgn, "RIGHT", -20, 0)
+        Pix.Size(settingsBtn, BTN_W, BTN_H)
+        Pix.Point(settingsBtn, "RIGHT", parentRgn, "RIGHT", -20, 0)
         settingsBtn:SetFrameLevel(parentRgn:GetFrameLevel() + 2)
         local btnBg = CludesUI.SolidTex(
             settingsBtn,
@@ -3571,14 +3580,14 @@ initFrame:SetScript("OnEvent", function(self)
         btnDis:SetFrameLevel(settingsBtn:GetFrameLevel() + 5)
         btnDis:EnableMouse(true)
         btnDis:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(settingsBtn, CludesUI.DisabledTooltip(cfg.disabledTip or "this bar"))
+            CludesUI.ShowWidgetTooltip(settingsBtn, CludesUI.DisabledTooltip(conf.disabledTip or "this bar"))
         end)
         btnDis:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateBtnDis()
-            local off = cfg.disabledFn and cfg.disabledFn()
-            if off then
+            local offset = conf.disabledFn and conf.disabledFn()
+            if offset then
                 btnDis:Show()
                 settingsBtn:SetAlpha(0.3)
                 if parentRgn._label then
@@ -3598,7 +3607,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Threshold notice badge; re-run by both refreshers below (every entry edit, add,
         -- delete and spec change) and after a hash commit
-        local UpdateNotice = AttachThresholdNotice(settingsBtn, cfg.getBarData)
+        local UpdateNotice = AttachThresholdNotice(settingsBtn, conf.getBarData)
 
         ThrWatchBuild()
 
@@ -3622,17 +3631,17 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- True when an existing entry already claims specID
         local function IsSpecClaimed(specID)
-            local bd = cfg.getBarData()
-            if not bd or not bd.thresholdSpecs then
+            local edge = conf.getBarData()
+            if not edge or not edge.thresholdSpecs then
                 return false
             end
-            for _, entry in ipairs(bd.thresholdSpecs) do
-                if entry.specIDs then
-                    for _, sid in ipairs(entry.specIDs) do
-                        if sid == 0 then
+            for _, record in ipairs(edge.thresholdSpecs) do
+                if record.specIDs then
+                    for _, spellRef in ipairs(record.specIDs) do
+                        if spellRef == 0 then
                             return true
                         end -- All Specs claims everything
-                        if sid == specID then
+                        if spellRef == specID then
                             return true
                         end
                     end
@@ -3641,14 +3650,14 @@ initFrame:SetScript("OnEvent", function(self)
             return false
         end
         local function HasAllSpecsEntry()
-            local bd = cfg.getBarData()
-            if not bd or not bd.thresholdSpecs then
+            local edge = conf.getBarData()
+            if not edge or not edge.thresholdSpecs then
                 return false
             end
-            for _, entry in ipairs(bd.thresholdSpecs) do
-                if entry.specIDs then
-                    for _, sid in ipairs(entry.specIDs) do
-                        if sid == 0 then
+            for _, record in ipairs(edge.thresholdSpecs) do
+                if record.specIDs then
+                    for _, spellRef in ipairs(record.specIDs) do
+                        if spellRef == 0 then
                             return true
                         end
                     end
@@ -3660,19 +3669,19 @@ initFrame:SetScript("OnEvent", function(self)
         -- The shared spec list (WoW Forever: one row per class, no role
         -- shortcuts), locked by what the existing entries claim.
         local function BuildSpecItems()
-            local items
-            items, _roleSpecs = CludesUI.SpecPickItems({
-                roles = cfg.roleShortcuts,
+            local itemList
+            itemList, _roleSpecs = CludesUI.SpecPickItems({
+                roles = conf.roleShortcuts,
                 lockedFn = IsSpecClaimed,
                 allLockedFn = HasAllSpecsEntry,
             })
-            return items
+            return itemList
         end
 
         -- A fresh entry: hash row empty, threshold on at its defaults
-        local function NewEntry(ids, bd)
-            if cfg.newEntry then
-                return cfg.newEntry(ids, bd)
+        local function NewEntry(ids, edge)
+            if conf.newEntry then
+                return conf.newEntry(ids, edge)
             end
             local newEntry = {
                 specIDs = ids,
@@ -3694,16 +3703,16 @@ initFrame:SetScript("OnEvent", function(self)
             -- Default for the power bar's "Threshold color below value": spenders (mana/energy/focus)
             -- start ON (warn when low), builders (rage/runic/fury) OFF (warn when high). Only when
             -- the entry covers the current spec, the one whose power type we can read.
-            if cfg.partialDefault then
+            if conf.partialDefault then
                 local curIdx = C_SpecializationInfo.GetSpecialization()
                 local curSpecID = curIdx and C_SpecializationInfo.GetSpecializationInfo(curIdx)
                 -- WoW Forever: the entry covers the player when it names a spec of the class.
                 if curSpecID or CludesUI.IS_FOREVER then
-                    for _, sid in ipairs(ids) do
+                    for _, spellRef in ipairs(ids) do
                         if
-                            sid == 0
-                            or sid == curSpecID
-                            or (CludesUI.IS_FOREVER and CludesUI.IsPlayerSpec(sid))
+                            spellRef == 0
+                            or spellRef == curSpecID
+                            or (CludesUI.IS_FOREVER and CludesUI.IsPlayerSpec(spellRef))
                         then
                             local _, token = UnitPowerType("player")
                             if token == "MANA" or token == "FOCUS" or token == "ENERGY" then
@@ -3741,15 +3750,15 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function BuildFrame()
-            local parent = cfg.pageParent
+            local hostFrame = conf.pageParent
             local INNERPAD = 10
             local ROW_H = 50
-            local botY = cfg.pageBotY() - (cfg.pageBotExtra or 0)
+            local botY = conf.pageBotY() - (conf.pageBotExtra or 0)
 
-            thrPage = CreateFrame("Frame", nil, parent)
-            PP.Point(thrPage, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, cfg.pageTopY)
-            PP.Point(thrPage, "TOPRIGHT", parent, "TOPRIGHT", -CONTENT_PAD, cfg.pageTopY)
-            PP.Point(thrPage, "BOTTOMLEFT", parent, "TOPLEFT", CONTENT_PAD, botY)
+            thrPage = CreateFrame("Frame", nil, hostFrame)
+            Pix.Point(thrPage, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, conf.pageTopY)
+            Pix.Point(thrPage, "TOPRIGHT", hostFrame, "TOPRIGHT", -CONTENT_PAD, conf.pageTopY)
+            Pix.Point(thrPage, "BOTTOMLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, botY)
             -- The unlock-mode cycle can leave this lazily-built frame with an undefined rect, so capture the resolved anchors: ToggleFrame re-asserts them before every Show to force a rect recompute.
             local _thrPts = {}
             for p = 1, thrPage:GetNumPoints() do
@@ -3761,7 +3770,7 @@ initFrame:SetScript("OnEvent", function(self)
                     thrPage:SetPoint(unpack(_thrPts[p]))
                 end
             end
-            thrPage:SetFrameLevel(parent:GetFrameLevel() + 50)
+            thrPage:SetFrameLevel(hostFrame:GetFrameLevel() + 50)
             thrPage:EnableMouse(true)
             -- Joins the spec / talent watcher while shown. A value being typed in the pane commits
             -- first, so the refresh never writes the saved value over it.
@@ -3800,8 +3809,8 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Back: the styled button (bg / border / label hover), the arrow leading its label
             local backBtn = CreateFrame("Button", nil, thrPage)
-            PP.Size(backBtn, BUTTON_W, BUTTON_H)
-            PP.Point(backBtn, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -INNERPAD)
+            Pix.Size(backBtn, BUTTON_W, BUTTON_H)
+            Pix.Point(backBtn, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -INNERPAD)
             backBtn:SetFrameLevel(thrPage:GetFrameLevel() + 2)
             local _, _, backLbl = CludesUI.MakeStyledButton(backBtn, "", 12, {
                 0.062,
@@ -3833,7 +3842,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
             local backIcon = backBtn:CreateTexture(nil, "ARTWORK")
             backIcon:SetSize(14, 14)
-            PP.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
+            Pix.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
             backIcon:SetTexture(MEDIA .. "icons\\cui-arrow-left.png")
             backIcon:SetVertexColor(eg.r, eg.g, eg.b)
             backIcon:SetAlpha(0.6)
@@ -3842,7 +3851,7 @@ initFrame:SetScript("OnEvent", function(self)
                 backIcon:SetTexelSnappingBias(0)
             end
             backLbl:ClearAllPoints()
-            PP.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
+            Pix.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
             backLbl:SetText(CludesUI.L("Back"))
             backBtn:HookScript("OnEnter", function()
                 backIcon:SetAlpha(0.85)
@@ -3895,8 +3904,8 @@ initFrame:SetScript("OnEvent", function(self)
                         local roleSpecs = _roleSpecs[key]
                         if roleSpecs then
                             wipe(_tempSpecSel)
-                            for _, sid in ipairs(roleSpecs) do
-                                _tempSpecSel[sid] = true
+                            for _, spellRef in ipairs(roleSpecs) do
+                                _tempSpecSel[spellRef] = true
                             end
                             cbDD:Click()
                             if cbDDRefresh then
@@ -3941,7 +3950,7 @@ initFrame:SetScript("OnEvent", function(self)
                     10,
                     true
                 )
-                PP.Point(cbDD, "LEFT", specDDHost, "LEFT", 0, 0)
+                Pix.Point(cbDD, "LEFT", specDDHost, "LEFT", 0, 0)
                 -- Dropdown label font 11px instead of the default 13
                 for _, rgn2 in ipairs({ cbDD:GetRegions() }) do
                     if rgn2.SetFont and rgn2.GetText then
@@ -3968,7 +3977,7 @@ initFrame:SetScript("OnEvent", function(self)
                 WrappedRefresh()
 
                 local addBtn = CreateFrame("Button", nil, ddRow)
-                PP.Size(addBtn, ADD_W, BUTTON_H)
+                Pix.Size(addBtn, ADD_W, BUTTON_H)
                 addBtn:SetPoint("LEFT", specDDHost, "RIGHT", GAP_L, 0)
                 addBtn:SetFrameLevel(ddRow:GetFrameLevel() + 2)
                 local _, _, addLbl = CludesUI.MakeStyledButton(addBtn, "", 11, {
@@ -3997,33 +4006,33 @@ initFrame:SetScript("OnEvent", function(self)
                     1,
                     0.7,
                 }, function()
-                    local bd = cfg.getBarData()
-                    if not bd then
+                    local edge = conf.getBarData()
+                    if not edge then
                         return
                     end
                     local ids = {}
                     if _tempSpecSel[0] then
                         ids[1] = 0
                     else
-                        for sid in pairs(_tempSpecSel) do
-                            if sid ~= 0 then
-                                ids[#ids + 1] = sid
+                        for spellRef in pairs(_tempSpecSel) do
+                            if spellRef ~= 0 then
+                                ids[#ids + 1] = spellRef
                             end
                         end
                     end
                     if #ids == 0 then
                         return
                     end
-                    if not bd.thresholdSpecs then
-                        bd.thresholdSpecs = {}
+                    if not edge.thresholdSpecs then
+                        edge.thresholdSpecs = {}
                     end
-                    bd.thresholdSpecs[#bd.thresholdSpecs + 1] = NewEntry(ids, bd)
-                    _selectedIdx = #bd.thresholdSpecs
+                    edge.thresholdSpecs[#edge.thresholdSpecs + 1] = NewEntry(ids, edge)
+                    _selectedIdx = #edge.thresholdSpecs
                     wipe(_tempSpecSel)
                     WrappedRefresh()
                     RefreshSpecEntries(true)
                     RedrawDetail()
-                    cfg.refreshFn()
+                    conf.refreshFn()
                 end)
                 addLbl:SetText(CludesUI.L("Add Specs"))
             end
@@ -4033,14 +4042,14 @@ initFrame:SetScript("OnEvent", function(self)
             specContainer = CreateFrame("Frame", nil, backBtn)
             specContainer:SetFrameStrata("DIALOG")
             specContainer:SetFrameLevel(200)
-            PP.Point(specContainer, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -ROW_H)
-            PP.Size(specContainer, contentHalfSize, specContainerH)
+            Pix.Point(specContainer, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -ROW_H)
+            Pix.Size(specContainer, contentHalfSize, specContainerH)
 
-            local bg = specContainer:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
+            local backdrop = specContainer:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.95)
             -- clip: list rows scrolled to an edge keep the round corners.
-            CludesUI.MakeRoundedBorder(specContainer, 1, 1, 1, 0.15, bg, nil, true)
+            CludesUI.MakeRoundedBorder(specContainer, 1, 1, 1, 0.15, backdrop, nil, true)
 
             local scrollFrame = CreateFrame("ScrollFrame", nil, specContainer)
             scrollFrame:SetPoint("TOPLEFT", specContainer, "TOPLEFT", 1, -2)
@@ -4079,8 +4088,8 @@ initFrame:SetScript("OnEvent", function(self)
             detailC:SetFrameStrata("DIALOG")
             detailC:SetFrameLevel(200)
             -- The right side has no header row, so it starts at the top
-            PP.Point(detailC, "TOPRIGHT", thrPage, "TOPRIGHT", -SIDE_PAD, -INNERPAD)
-            PP.Size(detailC, contentHalfSize, specContainerH + (ROW_H - INNERPAD))
+            Pix.Point(detailC, "TOPRIGHT", thrPage, "TOPRIGHT", -SIDE_PAD, -INNERPAD)
+            Pix.Size(detailC, contentHalfSize, specContainerH + (ROW_H - INNERPAD))
             local dBg = detailC:CreateTexture(nil, "BACKGROUND")
             dBg:SetAllPoints()
             dBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
@@ -4101,36 +4110,36 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- The live currently-selected entry, or nil
             local function CurEntry()
-                local bd = cfg.getBarData()
-                if not bd or not bd.thresholdSpecs then
+                local edge = conf.getBarData()
+                if not edge or not edge.thresholdSpecs then
                     return nil
                 end
-                return _selectedIdx and bd.thresholdSpecs[_selectedIdx] or nil
+                return _selectedIdx and edge.thresholdSpecs[_selectedIdx] or nil
             end
 
             local _allRows = {}
             -- Labeled row frame, registered for the layout pass
-            local function DRow(labelText, h)
+            local function DRow(labelText, hgt)
                 local rf = CreateFrame("Frame", nil, detailC)
                 rf:SetFrameLevel(DLVL)
-                rf._rawH = h or ROWH
-                PP.Height(rf, rf._rawH)
+                rf._rawH = hgt or ROWH
+                Pix.Height(rf, rf._rawH)
                 if labelText then
-                    local lbl = CludesUI.MakeFont(rf, 13, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetPoint("LEFT", rf, "LEFT", 0, 0)
-                    lbl:SetText(CludesUI.L(labelText))
-                    rf._lbl = lbl
+                    local labelFS = CludesUI.MakeFont(rf, 13, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetPoint("LEFT", rf, "LEFT", 0, 0)
+                    labelFS:SetText(CludesUI.L(labelText))
+                    rf._lbl = labelFS
                 end
                 _allRows[#_allRows + 1] = rf
                 return rf
             end
 
             -- Value edit boxes (hash / threshold)
-            local function MakeInput(rowParent, w, numeric)
+            local function MakeInput(rowParent, wid, numeric)
                 local ib = CreateFrame("EditBox", nil, rowParent)
                 paneBoxes[ib] = true
-                PP.Size(ib, w, 22)
+                Pix.Size(ib, wid, 22)
                 ib:SetFrameLevel(rowParent:GetFrameLevel() + 3)
                 ib:SetAutoFocus(false)
                 ib:SetFont(MEDIAF, 12, "")
@@ -4147,11 +4156,11 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             -- Greys a row's controls and explains why (tooltip in blocker._tip), shown by RefreshDetail
-            local function MakeBlocker(row, fromRgn, toRgn, inset, lvl)
-                local blocker = CreateFrame("Frame", nil, row)
+            local function MakeBlocker(rowFrame, fromRgn, toRgn, inset, lvl)
+                local blocker = CreateFrame("Frame", nil, rowFrame)
                 blocker:SetPoint("TOPLEFT", fromRgn, "TOPLEFT", -inset, 3)
                 blocker:SetPoint("BOTTOMRIGHT", toRgn, "BOTTOMRIGHT", 3, -3)
-                blocker:SetFrameLevel(row:GetFrameLevel() + lvl)
+                blocker:SetFrameLevel(rowFrame:GetFrameLevel() + lvl)
                 blocker:EnableMouse(true)
                 local tex = blocker:CreateTexture(nil, "OVERLAY")
                 tex:SetAllPoints()
@@ -4195,7 +4204,7 @@ initFrame:SetScript("OnEvent", function(self)
                         ent.talentSpellID = key
                         ent.talentName = talentRow._talentValues[key]
                     end
-                    cfg.rebuildFn()
+                    conf.rebuildFn()
                     if talentRow._talentDD and talentRow._talentDD._refreshLabel then
                         talentRow._talentDD._refreshLabel()
                     end
@@ -4207,17 +4216,17 @@ initFrame:SetScript("OnEvent", function(self)
                     if not ent then
                         return false
                     end
-                    local bd = cfg.getBarData()
-                    if not bd or not bd.thresholdSpecs then
+                    local edge = conf.getBarData()
+                    if not edge or not edge.thresholdSpecs then
                         return false
                     end
                     local wantGate = (key ~= 0) and key or nil
-                    for i, other in ipairs(bd.thresholdSpecs) do
+                    for i, other in ipairs(edge.thresholdSpecs) do
                         if i ~= _selectedIdx then
                             local og = other.talentSpellID
                             local sameGate = (wantGate == nil and og == nil)
                                 or (wantGate ~= nil and og == wantGate)
-                            if sameGate and ns.SpecsConflict(ent.specIDs, other.specIDs) then
+                            if sameGate and mod.SpecsConflict(ent.specIDs, other.specIDs) then
                                 return CludesUI.L("Already used by another card for this spec")
                             end
                         end
@@ -4278,11 +4287,11 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ent.hashMode = v and "percent" or "value"
-                    cfg.rebuildFn()
+                    conf.rebuildFn()
                     RedrawDetail()
                 end,
             }
-            if cfg.entryRules then
+            if conf.entryRules then
                 -- Pip resources place their lines by stack count
                 hashModeRow.disabled = function()
                     return rules.pips
@@ -4301,7 +4310,7 @@ initFrame:SetScript("OnEvent", function(self)
                         type = "slider",
                         label = "Hash Width",
                         min = 1,
-                        max = cfg.hashWidthMax or 5,
+                        max = conf.hashWidthMax or 5,
                         step = 1,
                         get = function()
                             local ent = CurEntry()
@@ -4311,7 +4320,7 @@ initFrame:SetScript("OnEvent", function(self)
                             local ent = CurEntry()
                             if ent then
                                 ent.hashWidth = v
-                                cfg.rebuildFn()
+                                conf.rebuildFn()
                             end
                         end,
                     },
@@ -4340,7 +4349,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ent.hashColorR, ent.hashColorG, ent.hashColorB, ent.hashColorA = r, g, b, a
-                    cfg.rebuildFn()
+                    conf.rebuildFn()
                 end,
                 true,
                 19
@@ -4364,7 +4373,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Only the numeric positions are kept, so text that draws no line never counts as configured
                 ent.hashValues = SanitizePositions(self:GetText(), true)
                 self:SetText(ent.hashValues)
-                cfg.rebuildFn()
+                conf.rebuildFn()
                 UpdateNotice()
             end)
             hashInput:SetScript("OnEnterPressed", function(self)
@@ -4378,9 +4387,9 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             -- Row: Threshold (enable toggle + input + swatch [+ cog])
-            local threshRow = DRow(cfg.thresholdLabel or "Threshold", ROWH)
+            local threshRow = DRow(conf.thresholdLabel or "Threshold", ROWH)
             local threshCogBtn
-            local tc = cfg.thresholdCog
+            local tc = conf.thresholdCog
             if tc then
                 threshCogBtn = CludesUI.BuildInlineCog(threshRow, {
                     title = tc.title,
@@ -4414,7 +4423,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ent.thresholdEnabled = v
-                    cfg.refreshFn()
+                    conf.refreshFn()
                     RedrawDetail()
                 end,
                 { sizeRatio = 0.95 }
@@ -4428,11 +4437,11 @@ initFrame:SetScript("OnEvent", function(self)
                     if not ent then
                         return defR, defG, defB, defA
                     end
-                    local bd = cfg.getBarData()
-                    return ent.thresholdR or bd.thresholdR or defR,
-                        ent.thresholdG or bd.thresholdG or defG,
-                        ent.thresholdB or bd.thresholdB or defB,
-                        ent.thresholdA or bd.thresholdA or defA
+                    local edge = conf.getBarData()
+                    return ent.thresholdR or edge.thresholdR or defR,
+                        ent.thresholdG or edge.thresholdG or defG,
+                        ent.thresholdB or edge.thresholdB or defB,
+                        ent.thresholdA or edge.thresholdA or defA
                 end,
                 function(r, g, b, a)
                     local ent = CurEntry()
@@ -4440,10 +4449,10 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ent.thresholdR, ent.thresholdG, ent.thresholdB, ent.thresholdA = r, g, b, a
-                    if cfg.swatchRefreshFn then
-                        cfg.swatchRefreshFn()
+                    if conf.swatchRefreshFn then
+                        conf.swatchRefreshFn()
                     else
-                        cfg.refreshFn()
+                        conf.refreshFn()
                     end
                 end,
                 true,
@@ -4475,7 +4484,7 @@ initFrame:SetScript("OnEvent", function(self)
                 val = math.max(rules.thrMin, math.min(rules.thrMax, math.floor(val + 0.5)))
                 self:SetText(tostring(val))
                 ent[THR_FIELD] = val
-                cfg.refreshFn()
+                conf.refreshFn()
             end)
             threshInput:SetScript("OnEnterPressed", function(self)
                 self:ClearFocus()
@@ -4507,9 +4516,9 @@ initFrame:SetScript("OnEvent", function(self)
             threshDisTex:SetAllPoints()
             threshDisTex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
             threshDis:SetScript("OnEnter", function()
-                local tip = (threshRow._disTip == "MULTI") and BAND_REPLACES_TIP
+                local tipText = (threshRow._disTip == "MULTI") and BAND_REPLACES_TIP
                     or CludesUI.DisabledTooltip("Threshold Color")
-                CludesUI.ShowWidgetTooltip(threshDis, tip)
+                CludesUI.ShowWidgetTooltip(threshDis, tipText)
             end)
             threshDis:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
@@ -4518,7 +4527,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Row: Multi-band (toggle + Bands editor button)
             local multiRow = DRow("Multi-band Coloring", ROWH)
             local bandsBtn = CreateFrame("Button", nil, multiRow)
-            PP.Size(bandsBtn, 60, 22)
+            Pix.Size(bandsBtn, 60, 22)
             bandsBtn:SetPoint("RIGHT", multiRow, "RIGHT", 0, 0)
             bandsBtn:SetFrameLevel(multiRow:GetFrameLevel() + 4)
             SkinCardButton(bandsBtn, CludesUI.L("Bands"), BAND_HELP_TIP)
@@ -4527,8 +4536,8 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 ShowBandEditor({
-                    getBarData = cfg.getBarData,
-                    refreshFn = cfg.refreshFn,
+                    getBarData = conf.getBarData,
+                    refreshFn = conf.refreshFn,
                     entryIdx = _selectedIdx,
                     anchor = self,
                     countBased = rules.pips,
@@ -4549,7 +4558,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 ent.multiBandEnabled = v
-                cfg.refreshFn()
+                conf.refreshFn()
                 RedrawDetail()
             end, { sizeRatio = 0.95 })
             multiToggle:SetPoint("RIGHT", bandsBtn, "LEFT", -10, 0)
@@ -4564,10 +4573,10 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Row: Buff colors (toggle + Buffs editor button). First active buff wins and overrides threshold coloring.
             local buffRow, buffSnap
-            if cfg.showBuffs then
+            if conf.showBuffs then
                 buffRow = DRow("Buff Colors", ROWH)
                 local buffsBtn = CreateFrame("Button", nil, buffRow)
-                PP.Size(buffsBtn, 60, 22)
+                Pix.Size(buffsBtn, 60, 22)
                 buffsBtn:SetPoint("RIGHT", buffRow, "RIGHT", 0, 0)
                 buffsBtn:SetFrameLevel(buffRow:GetFrameLevel() + 4)
                 SkinCardButton(buffsBtn, CludesUI.L("Buffs"), BUFF_HELP_TIP)
@@ -4576,8 +4585,8 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ShowBuffEditor({
-                        getBarData = cfg.getBarData,
-                        refreshFn = cfg.refreshFn,
+                        getBarData = conf.getBarData,
+                        refreshFn = conf.refreshFn,
                         entryIdx = _selectedIdx,
                         anchor = self,
                     })
@@ -4592,7 +4601,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ent.buffColorEnabled = v
-                    cfg.refreshFn()
+                    conf.refreshFn()
                 end, { sizeRatio = 0.95 })
                 buffToggle:SetPoint("RIGHT", buffsBtn, "LEFT", -10, 0)
                 buffToggle:HookScript("OnEnter", function(self)
@@ -4605,12 +4614,12 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Row: Spender colors (toggle + Spenders editor button). First castable spell wins.
             local spenderRow, spenderSnap
-            if cfg.showSpenders then
-                local spTip = cfg.spenderTip or SPENDER_HELP_TIP
-                local spToggleTip = cfg.spenderToggleTip or spTip
+            if conf.showSpenders then
+                local spTip = conf.spenderTip or SPENDER_HELP_TIP
+                local spToggleTip = conf.spenderToggleTip or spTip
                 spenderRow = DRow("Spender Colors", ROWH)
                 local spBtn = CreateFrame("Button", nil, spenderRow)
-                PP.Size(spBtn, 60, 22)
+                Pix.Size(spBtn, 60, 22)
                 spBtn:SetPoint("RIGHT", spenderRow, "RIGHT", 0, 0)
                 spBtn:SetFrameLevel(spenderRow:GetFrameLevel() + 4)
                 SkinCardButton(spBtn, CludesUI.L("Spenders"), spTip)
@@ -4619,8 +4628,8 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ShowSpenderEditor({
-                        getBarData = cfg.getBarData,
-                        refreshFn = cfg.refreshFn,
+                        getBarData = conf.getBarData,
+                        refreshFn = conf.refreshFn,
                         entryIdx = _selectedIdx,
                         anchor = self,
                     })
@@ -4635,7 +4644,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     ent.spenderColorEnabled = v
-                    cfg.refreshFn()
+                    conf.refreshFn()
                 end, { sizeRatio = 0.95 })
                 spToggle:SetPoint("RIGHT", spBtn, "LEFT", -10, 0)
                 spToggle:HookScript("OnEnter", function(self)
@@ -4659,15 +4668,15 @@ initFrame:SetScript("OnEvent", function(self)
                     local ent = CurEntry()
                     if ent then
                         ent.thresholdTextInstead = v
-                        cfg.refreshFn()
+                        conf.refreshFn()
                     end
                 end,
                 { sizeRatio = 0.95 }
             )
             textInsteadToggle:SetPoint("RIGHT", textInsteadRow, "RIGHT", 0, 0)
-            if cfg.textInsteadTip then
+            if conf.textInsteadTip then
                 textInsteadToggle:HookScript("OnEnter", function(self)
-                    CludesUI.ShowWidgetTooltip(self, cfg.textInsteadTip)
+                    CludesUI.ShowWidgetTooltip(self, conf.textInsteadTip)
                 end)
                 textInsteadToggle:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
@@ -4678,7 +4687,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Row: a bar-wide number (cfg.barInput), placed only for the entries whose rules ask for it
             local barRow, barSnap
-            local bi = cfg.barInput
+            local bi = conf.barInput
             if bi then
                 barRow = DRow(bi.label, ROWH)
                 local barInput = MakeInput(barRow, 50, true)
@@ -4687,22 +4696,22 @@ initFrame:SetScript("OnEvent", function(self)
                     barInput:SetMaxLetters(bi.letters)
                 end
                 barSnap = function()
-                    local bd = cfg.getBarData()
-                    barInput:SetText(tostring((bd and bd[bi.field]) or bi.default))
+                    local edge = conf.getBarData()
+                    barInput:SetText(tostring((edge and edge[bi.field]) or bi.default))
                 end
                 barInput:SetScript("OnEditFocusLost", function(self)
                     if self._cancelCommit then
                         self._cancelCommit = nil
                         return
                     end
-                    local bd = cfg.getBarData()
-                    if not bd then
+                    local edge = conf.getBarData()
+                    if not edge then
                         return
                     end
                     local v = tonumber(self:GetText())
                     if v then
-                        bd[bi.field] = math.max(bi.min, math.min(bi.max, math.floor(v + 0.5)))
-                        cfg.refreshFn()
+                        edge[bi.field] = math.max(bi.min, math.min(bi.max, math.floor(v + 0.5)))
+                        conf.refreshFn()
                     end
                     barSnap()
                 end)
@@ -4738,11 +4747,11 @@ initFrame:SetScript("OnEvent", function(self)
                 --   multiBlock / textBlock -- why multi-band / text recoloring cannot apply (nil = it can)
                 --   barInput   -- show the cfg.barInput row
                 local r = rules
-                r.thrMin, r.thrMax, r.thrDef = cfg.threshMin or 1, cfg.threshMax or 99, 30
+                r.thrMin, r.thrMax, r.thrDef = conf.threshMin or 1, conf.threshMax or 99, 30
                 r.thrLabel, r.thrTip, r.pips, r.hideHash = nil, nil, false, false
                 r.bandPctCap, r.multiBlock, r.textBlock, r.barInput = nil, nil, nil, false
-                if cfg.entryRules then
-                    cfg.entryRules(ent, r, cfg.getBarData())
+                if conf.entryRules then
+                    conf.entryRules(ent, r, conf.getBarData())
                 end
 
                 -- Talent gate is single-spec only
@@ -4751,7 +4760,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Refill talent options from the active loadout plus the entry's saved gate, even if off-spec/off-loadout
                 if allowTalent then
-                    local loadoutTalents = (ns.GetLoadoutTalents()) or {}
+                    local loadoutTalents = (mod.GetLoadoutTalents()) or {}
                     local vals, ord = talentRow._talentValues, talentRow._talentOrder
                     wipe(ord)
                     for k in pairs(vals) do
@@ -4799,7 +4808,7 @@ initFrame:SetScript("OnEvent", function(self)
                     local isPct = (ent.hashMode or HASH_NIL) == "percent"
                     hashWord = isPct and CludesUI.L("Percent") or CludesUI.L("Value")
                     hintText = isPct and CludesUI.L("(Ex: 25,50,75)")
-                        or cfg.hashValueHint
+                        or conf.hashValueHint
                         or CludesUI.L("(Ex: 50000)")
                 end
                 hashRow._lbl2:SetText(CludesUI.Lf("Hash at %1$s", hashWord))
@@ -4869,8 +4878,8 @@ initFrame:SetScript("OnEvent", function(self)
                 local yy = -DPAD
                 local function place(rf)
                     rf:ClearAllPoints()
-                    PP.Point(rf, "TOPLEFT", detailC, "TOPLEFT", DPAD, yy)
-                    PP.Point(rf, "TOPRIGHT", detailC, "TOPRIGHT", -DPAD, yy)
+                    Pix.Point(rf, "TOPLEFT", detailC, "TOPLEFT", DPAD, yy)
+                    Pix.Point(rf, "TOPRIGHT", detailC, "TOPRIGHT", -DPAD, yy)
                     rf:Show()
                     yy = yy - (rf._rawH or ROWH) - ROWGAP
                 end
@@ -4904,19 +4913,19 @@ initFrame:SetScript("OnEvent", function(self)
             if not specContainer then
                 return
             end
-            local bd = cfg.getBarData()
-            if not bd then
+            local edge = conf.getBarData()
+            if not edge then
                 return
             end
-            if not bd.thresholdSpecs then
-                bd.thresholdSpecs = {}
+            if not edge.thresholdSpecs then
+                edge.thresholdSpecs = {}
             end
-            local entries = bd.thresholdSpecs
+            local entries = edge.thresholdSpecs
 
             -- The entry the resolver actually picks in-game right now; seeds the default selection so it opens pre-selected
             local activeIdx
             do
-                local resolved = _G._CURB_ResolveThresholdSpecEntry(bd)
+                local resolved = _G._CURB_ResolveThresholdSpecEntry(edge)
                 if resolved then
                     for i = 1, #entries do
                         if entries[i] == resolved then
@@ -4950,13 +4959,13 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
 
-            for idx, entry in ipairs(entries) do
-                local ef = _entryFrames[idx]
+            for position, record in ipairs(entries) do
+                local ef = _entryFrames[position]
                 if not ef then
                     ef = CreateFrame("Button", nil, scrollChild)
                     ef:SetFrameLevel(thrPage:GetFrameLevel() + 2)
                     ef:RegisterForClicks("LeftButtonUp")
-                    _entryFrames[idx] = ef
+                    _entryFrames[position] = ef
 
                     local entBg = ef:CreateTexture(nil, "BACKGROUND")
                     entBg:SetAllPoints()
@@ -4986,27 +4995,27 @@ initFrame:SetScript("OnEvent", function(self)
                         delIcon:SetAlpha(0.4)
                     end)
                     delBtn:SetScript("OnClick", function()
-                        local bd2 = cfg.getBarData()
+                        local bd2 = conf.getBarData()
                         if not (bd2 and ef._entryIdx) then
                             return
                         end
                         table.remove(bd2.thresholdSpecs, ef._entryIdx)
-                        local n = #bd2.thresholdSpecs
-                        if n == 0 then
+                        local num = #bd2.thresholdSpecs
+                        if num == 0 then
                             _selectedIdx = nil
-                        elseif _selectedIdx and _selectedIdx > n then
-                            _selectedIdx = n
+                        elseif _selectedIdx and _selectedIdx > num then
+                            _selectedIdx = num
                         end
                         _specDDRefresh()
                         RefreshSpecEntries()
                         RedrawDetail()
-                        cfg.refreshFn()
+                        conf.refreshFn()
                     end)
                     ef._delBtn = delBtn
 
                     -- Add-variant duplicates this entry as a talent-gated sibling for the same spec; sits left of the delete X
                     local varBtn = CreateFrame("Button", nil, ef)
-                    PP.Size(varBtn, 84, 20)
+                    Pix.Size(varBtn, 84, 20)
                     varBtn:SetPoint("RIGHT", delBtn, "LEFT", -10, 0)
                     varBtn:SetFrameLevel(ef:GetFrameLevel() + 3)
                     local varBg = varBtn:CreateTexture(nil, "BACKGROUND")
@@ -5031,23 +5040,23 @@ initFrame:SetScript("OnEvent", function(self)
                         if not ef._entryIdx then
                             return
                         end
-                        local bd2 = cfg.getBarData()
+                        local bd2 = conf.getBarData()
                         if not bd2 then
                             return
                         end
                         local specs = bd2.thresholdSpecs
-                        local src = specs and specs[ef._entryIdx]
-                        if not src then
+                        local source = specs and specs[ef._entryIdx]
+                        if not source then
                             return
                         end
-                        local copy = CludesUI.Lite.DeepCopy(src)
+                        local copy = CludesUI.Lite.DeepCopy(source)
                         copy.talentSpellID = nil
                         copy.talentName = nil
                         table.insert(specs, ef._entryIdx + 1, copy)
                         _selectedIdx = ef._entryIdx + 1
                         RefreshSpecEntries()
                         RedrawDetail()
-                        cfg.rebuildFn()
+                        conf.rebuildFn()
                     end)
                     ef._varBtn = varBtn
 
@@ -5081,21 +5090,21 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                 end -- end entry frame creation
 
-                ef._entryIdx = idx
+                ef._entryIdx = position
                 ef:SetSize(ENTRY_W, ENTRY_H)
                 ef:ClearAllPoints()
                 ef:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, curY)
                 ef._yOffset = -curY
 
                 -- Class-color the label from the first specID (entries with no specIDs read "Unknown", in white)
-                ef._specLbl:SetText(ns.EntryLabel(entry))
+                ef._specLbl:SetText(mod.EntryLabel(record))
                 local classFile
-                local firstSID = entry.specIDs and entry.specIDs[1]
+                local firstSID = record.specIDs and record.specIDs[1]
                 if firstSID == 0 then
                     classFile = _playerClassFile
                 elseif firstSID and GetSpecializationInfoByID then
-                    local _, _, _, _, _, cf = GetSpecializationInfoByID(firstSID)
-                    classFile = cf
+                    local _, _, _, _, _, castFrame = GetSpecializationInfoByID(firstSID)
+                    classFile = castFrame
                 elseif firstSID and CludesUI.IS_FOREVER then
                     classFile = CludesUI.SpecClassOf(firstSID)
                 end
@@ -5107,18 +5116,18 @@ initFrame:SetScript("OnEvent", function(self)
                 end
 
                 -- Talent variants are single-spec only: "All Specs"/multi-spec entries span specs, so a talent gate is meaningless. Hide "Add Variant" there and strip any stale gate.
-                local ids = entry.specIDs
+                local ids = record.specIDs
                 local allowTalent = (ids and #ids == 1 and ids[1] ~= 0) and true or false
                 ef._varBtn:SetShown(allowTalent)
-                if not allowTalent and entry.talentSpellID then
-                    entry.talentSpellID = nil
-                    entry.talentName = nil
-                    cfg.rebuildFn()
+                if not allowTalent and record.talentSpellID then
+                    record.talentSpellID = nil
+                    record.talentName = nil
+                    conf.rebuildFn()
                 end
 
                 -- Selection highlight; duplicates the resolver can never reach are shadow-dimmed
                 PaintRow(ef)
-                ef:SetAlpha(ns._CURB_IsThresholdCardShadowed(entries, idx) and 0.45 or 1)
+                ef:SetAlpha(mod._CURB_IsThresholdCardShadowed(entries, position) and 0.45 or 1)
 
                 ef:Show()
                 curY = curY - ENTRY_H - ROW_GAP
@@ -5136,7 +5145,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function ToggleFrame()
-            if not cfg.getBarData() then
+            if not conf.getBarData() then
                 return
             end
             if not thrPage then
@@ -5180,35 +5189,35 @@ initFrame:SetScript("OnEvent", function(self)
     end -- BuildThresholdSettingsButton
 
     -- Unlock Mode page
-    local function BuildUnlockPage(pageName, parent, yOffset)
+    local function BuildUnlockPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "POSITIONING", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "POSITIONING", posY)
+        posY = posY - hgt
 
-        _, h = W:Toggle(parent, "Unlock Elements", y, function()
+        _, hgt = W:Toggle(hostFrame, "Unlock Elements", posY, function()
             return CludesUI._unlockModeActive or false
         end, function(v)
             if CludesUI and CludesUI.ToggleUnlockMode then
                 CludesUI:ToggleUnlockMode()
             end
         end, nil, "Opens the shared Layout Mode to reposition and scale elements")
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:Spacer(parent, y, 12)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 12)
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "RESET", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "RESET", posY)
+        posY = posY - hgt
 
-        _, h = W:Toggle(parent, "Reset Positions", y, function()
+        _, hgt = W:Toggle(hostFrame, "Reset Positions", posY, function()
             return false
         end, function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -5230,9 +5239,9 @@ initFrame:SetScript("OnEvent", function(self)
             p.gcdBar.anchorY = -78
             Refresh()
         end, nil, "Click to reset all element positions to defaults")
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     -- Cast Bar preview state
@@ -5246,8 +5255,8 @@ initFrame:SetScript("OnEvent", function(self)
     local function ShuffleCastBarIcons()
         _castBarIconIdx = 0
         for i = #_castBarIconPool, 2, -1 do
-            local j = math.random(i)
-            _castBarIconPool[i], _castBarIconPool[j] = _castBarIconPool[j], _castBarIconPool[i]
+            local jdx = math.random(i)
+            _castBarIconPool[i], _castBarIconPool[jdx] = _castBarIconPool[jdx], _castBarIconPool[i]
         end
     end
     local function NextCastBarIcon()
@@ -5261,11 +5270,11 @@ initFrame:SetScript("OnEvent", function(self)
     -- Rows the Blizzard kit replaces but the classic cast bar leaves to the
     -- user (its background colour and opacity): gated only while Blizzard
     -- Style renders, live under Classic WoW UI. Returns cfg for inline use.
-    function ns.ERB_CastBlizzOnlyGate(cfg)
+    function mod.ERB_CastBlizzOnlyGate(conf)
         if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
-            return CludesUI.BlizzStyle.Gate("castbar", cfg)
+            return CludesUI.BlizzStyle.Gate("castbar", conf)
         end
-        return cfg
+        return conf
     end
     -- Blizzard Style chrome on the preview mock, mirroring the live bar's
     -- ns.ERB_ApplyBlizzCastChrome: the stock frame art round the bar and,
@@ -5273,72 +5282,72 @@ initFrame:SetScript("OnEvent", function(self)
     -- inside; Classic WoW UI seats the vanilla frame instead (no text box).
     -- Regions are created once; off the style both hide. On ns (no new
     -- upvalue for the updater below).
-    function ns.ERB_CastPreviewBlizzChrome(pf, cb, barW, blizz)
+    function mod.ERB_CastPreviewBlizzChrome(popFrame, cb, barW, blizz)
         if not blizz then
-            if pf.blizzFrame then
-                pf.blizzFrame:Hide()
+            if popFrame.blizzFrame then
+                popFrame.blizzFrame:Hide()
             end
-            if pf.blizzTextBox then
-                pf.blizzTextBox:Hide()
+            if popFrame.blizzTextBox then
+                popFrame.blizzTextBox:Hide()
             end
             return
         end
-        if not pf.blizzFrame then
-            local af = CreateFrame("Frame", nil, pf.container)
-            af:SetAllPoints(pf.container)
-            af:SetFrameLevel(pf.container:GetFrameLevel() + 6)
-            pf.blizzArt = af
+        if not popFrame.blizzFrame then
+            local af = CreateFrame("Frame", nil, popFrame.container)
+            af:SetAllPoints(popFrame.container)
+            af:SetFrameLevel(popFrame.container:GetFrameLevel() + 6)
+            popFrame.blizzArt = af
             local fr = af:CreateTexture(nil, "OVERLAY", nil, 2)
             if fr.SetSnapToPixelGrid then
                 fr:SetSnapToPixelGrid(false)
                 fr:SetTexelSnappingBias(0)
             end
-            pf.blizzFrame = fr
-            local tb = pf.barFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
+            popFrame.blizzFrame = fr
+            local tb = popFrame.barFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
             if tb.SetSnapToPixelGrid then
                 tb:SetSnapToPixelGrid(false)
                 tb:SetTexelSnappingBias(0)
             end
-            pf.blizzTextBox = tb
+            popFrame.blizzTextBox = tb
         end
-        local fr, tb = pf.blizzFrame, pf.blizzTextBox
-        if ns.ERB_CastClassic() then
+        local fr, tb = popFrame.blizzFrame, popFrame.blizzTextBox
+        if mod.ERB_CastClassic() then
             -- Classic WoW UI: the vanilla frame round the whole container
             -- (bar plus icon, the live seat); the spell name stays on the bar.
-            ns.ERB_SeatClassicChrome(fr, pf.container, cb.height, false, ns.ERB_ClassicFrameK(cb))
+            mod.ERB_SeatClassicChrome(fr, popFrame.container, cb.height, false, mod.ERB_ClassicFrameK(cb))
             tb:Hide()
             return
         end
-        local frameAtlas = ns.ERB_BlizzAtlas("frame")
+        local frameAtlas = mod.ERB_BlizzAtlas("frame")
         if frameAtlas then
-            ns.ERB_StockAtlas(fr, frameAtlas)
+            mod.ERB_StockAtlas(fr, frameAtlas)
             fr:ClearAllPoints()
-            fr:SetPoint("TOPLEFT", pf.barFrame, "TOPLEFT", -2, 2)
-            fr:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 2, -2)
+            fr:SetPoint("TOPLEFT", popFrame.barFrame, "TOPLEFT", -2, 2)
+            fr:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 2, -2)
             fr:Show()
         else
             fr:Hide()
         end
-        local boxAtlas = cb.showSpellText and ns.ERB_BlizzAtlas("textbox")
+        local boxAtlas = cb.showSpellText and mod.ERB_BlizzAtlas("textbox")
         if boxAtlas then
-            ns.ERB_StockAtlas(tb, boxAtlas)
+            mod.ERB_StockAtlas(tb, boxAtlas)
             tb:ClearAllPoints()
-            tb:SetPoint("TOPLEFT", pf.barFrame, "BOTTOMLEFT", 0, 3)
-            tb:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 0, -13)
+            tb:SetPoint("TOPLEFT", popFrame.barFrame, "BOTTOMLEFT", 0, 3)
+            tb:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, -13)
             tb:Show()
-            local nameText = pf.spellText
-            local side = cb.spellTextSide or "left"
-            local x, y = cb.spellTextX or 0, cb.spellTextY or 0
+            local nameText = popFrame.spellText
+            local sideName = cb.spellTextSide or "left"
+            local posX, posY = cb.spellTextX or 0, cb.spellTextY or 0
             nameText:ClearAllPoints()
-            if side == "right" then
+            if sideName == "right" then
                 nameText:SetJustifyH("RIGHT")
-                nameText:SetPoint("RIGHT", tb, "RIGHT", -8 + x, y)
-            elseif side == "center" then
+                nameText:SetPoint("RIGHT", tb, "RIGHT", -8 + posX, posY)
+            elseif sideName == "center" then
                 nameText:SetJustifyH("CENTER")
-                nameText:SetPoint("CENTER", tb, "CENTER", x, y)
+                nameText:SetPoint("CENTER", tb, "CENTER", posX, posY)
             else
                 nameText:SetJustifyH("LEFT")
-                nameText:SetPoint("LEFT", tb, "LEFT", 8 + x, y)
+                nameText:SetPoint("LEFT", tb, "LEFT", 8 + posX, posY)
             end
             nameText:SetWidth(math.max(10, (barW or cb.width or 220) - 16))
         else
@@ -5347,29 +5356,29 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function UpdateCastBarPreview()
-        local p = DB()
+        local p = SavedDB()
         if not p then
             return
         end
         local cb = p.castBar
-        local pf = _castBarPreviewFrames
+        local popFrame = _castBarPreviewFrames
 
-        if not pf.bar then
+        if not popFrame.bar then
             return
         end
         -- Blizzard Style (latched per session, like the live bar): the stock
         -- art on the same mock -- the icon spanning the text box, no CUI
         -- border, stock background, fill and pip, frame art and the spell
         -- name inside the text box. Everything else stays the CUI mock.
-        local blizz = (ns.ERB_CastBlizz and ns.ERB_CastBlizz()) or false
+        local blizz = (mod.ERB_CastBlizz and mod.ERB_CastBlizz()) or false
         -- classic = Classic WoW UI (the vanilla frame and spark round the
         -- user's fill); blizzKit = the 12.1 kit (stock background, fill, pip
         -- and text box). Shared stock-mode geometry stays on blizz.
-        local classic = (ns.ERB_CastClassic and ns.ERB_CastClassic()) or false
+        local classic = (mod.ERB_CastClassic and mod.ERB_CastClassic()) or false
         local blizzKit = blizz and not classic
 
         -- Snap helper: round to the preview container's physical pixel grid
-        local cScale = pf.container:GetEffectiveScale()
+        local cScale = popFrame.container:GetEffectiveScale()
         if cScale <= 0 then
             cScale = 1
         end
@@ -5378,72 +5387,72 @@ initFrame:SetScript("OnEvent", function(self)
             return math.floor(val / onePx + 0.5) * onePx
         end
 
-        local w, h = Snap(cb.width), Snap(cb.height)
+        local wid, hgt = Snap(cb.width), Snap(cb.height)
         local bs = cb.borderSize
 
         -- Container size: icon (hxh) + bar (only when icon shown)
-        local hasIcon = cb.showIcon ~= false and not ns.ERB_CastIconPortrait(cb)
-        local iconFree = ns.ERB_CastIconFree(cb)
-        local iconW = (hasIcon and not iconFree) and Snap(blizz and ns.ERB_CastIconW(cb) or h) or 0
-        pf.container:SetSize(w + iconW, h)
+        local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
+        local iconFree = mod.ERB_CastIconFree(cb)
+        local iconW = (hasIcon and not iconFree) and Snap(blizz and mod.ERB_CastIconW(cb) or hgt) or 0
+        popFrame.container:SetSize(wid + iconW, hgt)
 
         -- Scale down to fit when the cast bar is wider than the panel
         local PAD = CludesUI.CONTENT_PAD
-        local hdr = pf.container:GetParent()
-        local availW = (hdr:GetWidth() - PAD * 2) / _castBarPreviewScale
+        local heading = popFrame.container:GetParent()
+        local availW = (heading:GetWidth() - PAD * 2) / _castBarPreviewScale
         local fitScale = 1
-        if (w + iconW) > availW and (w + iconW) > 0 and availW > 0 then
-            fitScale = availW / (w + iconW)
+        if (wid + iconW) > availW and (wid + iconW) > 0 and availW > 0 then
+            fitScale = availW / (wid + iconW)
         end
-        pf.container:SetScale(_castBarPreviewScale * fitScale)
+        popFrame.container:SetScale(_castBarPreviewScale * fitScale)
 
-        pf.container:ClearAllPoints()
-        pf.container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
+        popFrame.container:ClearAllPoints()
+        popFrame.container:SetPoint("CENTER", heading, "CENTER", 0, 0)
         -- Dimmed while the bar is off, like the page's greyed controls; no
         -- click then leads to those rows.
         local cbOn = cb.enabled and true or false
-        PreviewBar.Lock(pf.container, cbOn, pf.hits)
-        PreviewBar.HintFor(cbOn, hdr)
+        PreviewBar.Lock(popFrame.container, cbOn, popFrame.hits)
+        PreviewBar.HintFor(cbOn, heading)
         -- Bar frame (sits beside the icon; iconOnRight puts the icon on the right)
         local iconOnRight = hasIcon and cb.iconOnRight
-        pf.barFrame:SetSize(w, h)
-        pf.barFrame:ClearAllPoints()
-        pf.barFrame:SetPoint("LEFT", pf.container, "LEFT", iconOnRight and 0 or iconW, 0)
+        popFrame.barFrame:SetSize(wid, hgt)
+        popFrame.barFrame:ClearAllPoints()
+        popFrame.barFrame:SetPoint("LEFT", popFrame.container, "LEFT", iconOnRight and 0 or iconW, 0)
 
         -- Background
         local texKey = cb.texture
         -- Textured Background: back to the plain background before a branch repaints it.
-        if pf.bg._erbBgTex then
-            ns.ERB_BgTexture(pf.bg, nil)
+        if popFrame.bg._erbBgTex then
+            mod.ERB_BgTexture(popFrame.bg, nil)
         end
         if blizzKit then
             -- The retail background under WoW Forever too, as live.
-            local bgAtlas = ns.ERB_BlizzAtlas("bg")
+            local bgAtlas = mod.ERB_BlizzAtlas("bg")
             if bgAtlas then
-                CludesUI.StockAtlas(pf.bg, bgAtlas)
+                CludesUI.StockAtlas(popFrame.bg, bgAtlas)
             else
-                pf.bg:SetTexture(nil)
-                pf.bg:SetColorTexture(0, 0, 0, 0.7)
+                popFrame.bg:SetTexture(nil)
+                popFrame.bg:SetColorTexture(0, 0, 0, 0.7)
             end
-            pf.bg:ClearAllPoints()
-            pf.bg:SetPoint("TOPLEFT", pf.barFrame, "TOPLEFT", -1, 1)
-            pf.bg:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 1, -1)
+            popFrame.bg:ClearAllPoints()
+            popFrame.bg:SetPoint("TOPLEFT", popFrame.barFrame, "TOPLEFT", -1, 1)
+            popFrame.bg:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 1, -1)
         elseif texKey == "blizzard" then
             -- As live: Classic WoW UI takes the retail background on WoW Forever.
             if classic then
-                ns.ERB_StockAtlas(pf.bg, "UI-CastingBar-Background", true)
+                mod.ERB_StockAtlas(popFrame.bg, "UI-CastingBar-Background", true)
             else
-                pf.bg:SetAtlas("UI-CastingBar-Background", true)
+                popFrame.bg:SetAtlas("UI-CastingBar-Background", true)
             end
-            pf.bg:ClearAllPoints()
-            pf.bg:SetAllPoints(pf.barFrame)
+            popFrame.bg:ClearAllPoints()
+            popFrame.bg:SetAllPoints(popFrame.barFrame)
         else
-            pf.bg:SetTexture(nil)
-            pf.bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+            popFrame.bg:SetTexture(nil)
+            popFrame.bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
             -- Textured Background: flat while Fill Color is below 100, as live.
             if cb.textureBg and (cb.fillOpacity or 100) >= 100 then
-                ns.ERB_BgTexture(
-                    pf.bg,
+                mod.ERB_BgTexture(
+                    popFrame.bg,
                     CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil),
                     cb.bgR,
                     cb.bgG,
@@ -5451,27 +5460,27 @@ initFrame:SetScript("OnEvent", function(self)
                     cb.bgA
                 )
             end
-            pf.bg:ClearAllPoints()
-            pf.bg:SetAllPoints(pf.barFrame)
+            popFrame.bg:ClearAllPoints()
+            popFrame.bg:SetAllPoints(popFrame.barFrame)
         end
 
         -- Border wraps container (bar + icon) - PP or textured via ApplyBorderStyle
-        if pf.container._border then
-            pf.container._border:SetFrameLevel(
-                cb.borderBehind and math.max(0, pf.container:GetFrameLevel() - 1)
-                    or (pf.container:GetFrameLevel() + 5)
+        if popFrame.container._border then
+            popFrame.container._border:SetFrameLevel(
+                cb.borderBehind and math.max(0, popFrame.container:GetFrameLevel() - 1)
+                    or (popFrame.container:GetFrameLevel() + 5)
             )
             local pbs = blizz and 0 or (cb.borderSize or 0)
             local pbpx = (not blizz) and CludesUI.BorderPx(cb.borderSizePx, pbs, cb.borderTexture or "solid")
                 or nil
             -- Extend Top / Extend Bottom, as the live bar draws them (none under a stock style).
-            ns.ERB_AnchorBorderHost(
-                pf.container._border,
-                pf.container,
-                ns.ERB_BorderExtents((not blizz) and cb or nil)
+            mod.ERB_AnchorBorderHost(
+                popFrame.container._border,
+                popFrame.container,
+                mod.ERB_BorderExtents((not blizz) and cb or nil)
             )
             CludesUI.ApplyBorderStyle(
-                pf.container._border,
+                popFrame.container._border,
                 pbs,
                 cb.borderR or 0,
                 cb.borderG or 0,
@@ -5489,39 +5498,39 @@ initFrame:SetScript("OnEvent", function(self)
             )
         end
         -- Bottom Separator, as the live bar draws it (none under a stock style or a Solid border).
-        ns.ERB_Separators(
-            pf.container,
+        mod.ERB_Separators(
+            popFrame.container,
             cb,
-            (cb.edgeSep and not blizz and ns.ERB_Textured(cb)) and true or false,
-            pf.container:GetFrameLevel() + 7
+            (cb.edgeSep and not blizz and mod.ERB_Textured(cb)) and true or false,
+            popFrame.container:GetFrameLevel() + 7
         )
 
         -- Status bar: full bar frame, no inset
-        pf.bar:ClearAllPoints()
-        pf.bar:SetAllPoints(pf.barFrame)
-        pf.bar:SetValue(_castBarPreviewFill)
+        popFrame.bar:ClearAllPoints()
+        popFrame.bar:SetAllPoints(popFrame.barFrame)
+        popFrame.bar:SetValue(_castBarPreviewFill)
 
         -- Bar texture
         local texLookup = _G._CURB_CastBarTextures or {}
         local texPath = texLookup[texKey]
         if blizzKit then
-            pf.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-            pf.bar:GetStatusBarTexture():SetAtlas(ns.ERB_BlizzAtlas("cast") or "UI-CastingBar-Fill")
+            popFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+            popFrame.bar:GetStatusBarTexture():SetAtlas(mod.ERB_BlizzAtlas("cast") or "UI-CastingBar-Fill")
         elseif texKey == "blizzard" then
-            pf.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-            pf.bar:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
+            popFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+            popFrame.bar:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
         elseif texPath then
-            pf.bar:SetStatusBarTexture(texPath)
+            popFrame.bar:SetStatusBarTexture(texPath)
         else
-            pf.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+            popFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         end
 
         -- Bar color / gradient
-        local fillTex = pf.bar:GetStatusBarTexture()
+        local fillTex = popFrame.bar:GetStatusBarTexture()
         local fR, fG, fB, fA = cb.fillR, cb.fillG, cb.fillB, 1
         if cb.classColored == true then
-            local _, cf = UnitClass("player")
-            local cc = cf and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cf]
+            local _, castFrame = UnitClass("player")
+            local cc = castFrame and RAID_CLASS_COLORS and RAID_CLASS_COLORS[castFrame]
             if cc then
                 fR, fG, fB = cc.r, cc.g, cc.b
             end
@@ -5542,84 +5551,84 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- Mirror the live bar's Fill Opacity bg behavior: below 100 the bg covers only the empty portion so the translucent fill shows what's behind the bar; at 100 it spans the whole bar frame.
         if texKey ~= "blizzard" and not blizzKit then
-            pf.bg:ClearAllPoints()
+            popFrame.bg:ClearAllPoints()
             if (cb.fillOpacity or 100) < 100 then
-                pf.bg:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
-                pf.bg:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 0, 0)
+                popFrame.bg:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+                popFrame.bg:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, 0)
             else
-                pf.bg:SetAllPoints(pf.barFrame)
+                popFrame.bg:SetAllPoints(popFrame.barFrame)
             end
         end
 
         -- Spark: under the style the stock pip replaces the spark art (once,
         -- drawn plain; the CUI spark art is additive).
-        if blizzKit and not pf.blizzSpark then
-            local pip = ns.ERB_BlizzAtlas("spark")
-            if pip then
-                pf.blizzSpark = true
-                pf.spark:SetAtlas(pip)
-                pf.spark:SetBlendMode("BLEND")
+        if blizzKit and not popFrame.blizzSpark then
+            local pipTex = mod.ERB_BlizzAtlas("spark")
+            if pipTex then
+                popFrame.blizzSpark = true
+                popFrame.spark:SetAtlas(pipTex)
+                popFrame.spark:SetBlendMode("BLEND")
             end
         end
         -- Classic WoW UI: the vanilla spark file (additive, like the CUI art) once.
         -- It stands taller than the bar and draws over the frame art
         -- (container +6) as live does, so it moves to its own host above it.
-        if classic and not pf.classicSpark then
-            pf.classicSpark = true
-            pf.spark:SetTexture(ns.ERB_CLASSIC.spark)
-            local host = CreateFrame("Frame", nil, pf.barFrame)
-            host:SetAllPoints(pf.bar)
-            host:SetFrameLevel(pf.container:GetFrameLevel() + 8)
-            pf.spark:SetParent(host)
+        if classic and not popFrame.classicSpark then
+            popFrame.classicSpark = true
+            popFrame.spark:SetTexture(mod.ERB_CLASSIC.spark)
+            local hostRegion = CreateFrame("Frame", nil, popFrame.barFrame)
+            hostRegion:SetAllPoints(popFrame.bar)
+            hostRegion:SetFrameLevel(popFrame.container:GetFrameLevel() + 8)
+            popFrame.spark:SetParent(hostRegion)
         end
         if cb.showSpark then
             -- The vanilla spark is a square scaled with the bar, centred a
             -- little above the bar's centre line (the live bar's numbers).
             local sparkY = 0
             if classic then
-                local C = ns.ERB_CLASSIC
-                local ss = C.sparkSize * h / C.barH
-                pf.spark:SetSize(ss, ss)
-                sparkY = C.sparkY * h / C.barH
+                local C = mod.ERB_CLASSIC
+                local ss = C.sparkSize * hgt / C.barH
+                popFrame.spark:SetSize(ss, ss)
+                sparkY = C.sparkY * hgt / C.barH
             else
-                pf.spark:SetSize(8, h)
+                popFrame.spark:SetSize(8, hgt)
             end
-            pf.spark:ClearAllPoints()
-            pf.spark:SetPoint("CENTER", fillTex, "RIGHT", 0, sparkY)
-            pf.spark:Show()
+            popFrame.spark:ClearAllPoints()
+            popFrame.spark:SetPoint("CENTER", fillTex, "RIGHT", 0, sparkY)
+            popFrame.spark:Show()
         else
-            pf.spark:Hide()
+            popFrame.spark:Hide()
         end
 
         -- Icon: left or right side of container, full size
         do
             -- Under the style the icon also spans the text box (the live
             -- bar's ns.ERB_CastIconW) and shows the full spell art.
-            local iSize = Snap(blizz and ns.ERB_CastIconW(cb) or h)
-            pf.iconFrame:SetSize(iSize, iSize)
-            if pf.icon then
+            local iSize = Snap(blizz and mod.ERB_CastIconW(cb) or hgt)
+            popFrame.iconFrame:SetSize(iSize, iSize)
+            if popFrame.icon then
                 if blizz then
-                    pf.icon:SetTexCoord(0, 1, 0, 1)
+                    popFrame.icon:SetTexCoord(0, 1, 0, 1)
                 else
-                    pf.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    popFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
                 end
             end
             -- Classic WoW UI keeps the icon under the frame art (container
             -- +6), inside the frame's window beside the bar, as live does.
             if classic then
-                pf.iconFrame:SetFrameLevel(pf.container:GetFrameLevel() + 1)
+                popFrame.iconFrame:SetFrameLevel(popFrame.container:GetFrameLevel() + 1)
             end
-            pf.iconFrame:ClearAllPoints()
+            popFrame.iconFrame:ClearAllPoints()
             if iconOnRight then
-                pf.iconFrame:SetPoint("TOPRIGHT", pf.container, "TOPRIGHT", 0, 0)
+                popFrame.iconFrame:SetPoint("TOPRIGHT", popFrame.container, "TOPRIGHT", 0, 0)
             else
-                pf.iconFrame:SetPoint("TOPLEFT", pf.container, "TOPLEFT", 0, 0)
+                popFrame.iconFrame:SetPoint("TOPLEFT", popFrame.container, "TOPLEFT", 0, 0)
             end
-            ns.ERB_LayoutFreeCastIcon(pf.iconFrame, pf.container, cb, iconFree)
+            mod.ERB_LayoutFreeCastIcon(popFrame.iconFrame, popFrame.container, cb, iconFree)
             if hasIcon then
-                pf.iconFrame:Show()
+                popFrame.iconFrame:Show()
             else
-                pf.iconFrame:Hide()
+                popFrame.iconFrame:Hide()
             end
         end
 
@@ -5628,14 +5637,23 @@ initFrame:SetScript("OnEvent", function(self)
         -- helper above -- the border itself already renders through that same
         -- shared PP system (ApplyBorderStyle -> SnapBorderTextures), so the
         -- divider has to match it, not the panel's own pixel grid.
-        if pf.iconDivider then
+        if popFrame.iconDivider then
             -- Border Art Divider, as the live bar draws it.
             local showDivider = hasIcon and not iconFree and cb.showIconDivider
-            if ns.ERB_CastDividerArt(pf.iconDivider, showDivider, pf.iconFrame, iconOnRight, cb, blizz) then
-                pf.iconDivider:Show()
+            if
+                mod.ERB_CastDividerArt(
+                    popFrame.iconDivider,
+                    showDivider,
+                    popFrame.iconFrame,
+                    iconOnRight,
+                    cb,
+                    blizz
+                )
+            then
+                popFrame.iconDivider:Show()
             elseif showDivider then
                 local PPp = CludesUI.PP
-                local des = pf.container:GetEffectiveScale()
+                local des = popFrame.container:GetEffectiveScale()
                 local onePixel = (PPp and des > 0) and (PPp.perfect / des) or 1
                 local dbs = cb.borderSize or 1
                 -- Same rule as the live divider: an exact SOLID size drives it, textured keeps the step.
@@ -5643,24 +5661,24 @@ initFrame:SetScript("OnEvent", function(self)
                 if not blizz and (not dtex or dtex == "" or dtex == "solid") then
                     dbs = CludesUI.BorderPx(cb.borderSizePx, cb.borderSize or 0, dtex) or dbs
                 end
-                pf.iconDivider:ClearAllPoints()
-                pf.iconDivider:SetWidth(math.max(onePixel, math.floor(dbs + 0.5) * onePixel))
+                popFrame.iconDivider:ClearAllPoints()
+                popFrame.iconDivider:SetWidth(math.max(onePixel, math.floor(dbs + 0.5) * onePixel))
                 if iconOnRight then
-                    pf.iconDivider:SetPoint("TOPRIGHT", pf.iconFrame, "TOPLEFT", 0, 0)
-                    pf.iconDivider:SetPoint("BOTTOMRIGHT", pf.iconFrame, "BOTTOMLEFT", 0, 0)
+                    popFrame.iconDivider:SetPoint("TOPRIGHT", popFrame.iconFrame, "TOPLEFT", 0, 0)
+                    popFrame.iconDivider:SetPoint("BOTTOMRIGHT", popFrame.iconFrame, "BOTTOMLEFT", 0, 0)
                 else
-                    pf.iconDivider:SetPoint("TOPLEFT", pf.iconFrame, "TOPRIGHT", 0, 0)
-                    pf.iconDivider:SetPoint("BOTTOMLEFT", pf.iconFrame, "BOTTOMRIGHT", 0, 0)
+                    popFrame.iconDivider:SetPoint("TOPLEFT", popFrame.iconFrame, "TOPRIGHT", 0, 0)
+                    popFrame.iconDivider:SetPoint("BOTTOMLEFT", popFrame.iconFrame, "BOTTOMRIGHT", 0, 0)
                 end
-                pf.iconDivider:SetColorTexture(
+                popFrame.iconDivider:SetColorTexture(
                     cb.borderR or 0,
                     cb.borderG or 0,
                     cb.borderB or 0,
                     cb.borderA or 1
                 )
-                pf.iconDivider:Show()
+                popFrame.iconDivider:Show()
             else
-                pf.iconDivider:Hide()
+                popFrame.iconDivider:Hide()
             end
         end
 
@@ -5668,72 +5686,84 @@ initFrame:SetScript("OnEvent", function(self)
         local cbTimerW = (cb.timerSize or 11) * 2.2
         local cbDurSide = cb.timerSide or "right"
         local cbSpellSide = cb.spellTextSide or "left"
-        local cbBarW = pf.bar:GetWidth() or 0
+        local cbBarW = popFrame.bar:GetWidth() or 0
         -- Timer / duration text
         if cb.showTimer then
-            SetPVFont(pf.timerText, FONT_PATH, cb.timerSize or 11)
-            local pt, xb, jh = ns.GetCastTextAnchor(cbDurSide, false, cbTimerW)
-            pf.timerText:ClearAllPoints()
-            pf.timerText:SetJustifyH(jh)
-            pf.timerText:SetPoint(pt, pf.bar, pt, xb + (cb.timerX or 0), cb.timerY or 0)
+            SetPVFont(popFrame.timerText, FONT_PATH, cb.timerSize or 11)
+            local pt, xb, jh = mod.GetCastTextAnchor(cbDurSide, false, cbTimerW)
+            popFrame.timerText:ClearAllPoints()
+            popFrame.timerText:SetJustifyH(jh)
+            popFrame.timerText:SetPoint(pt, popFrame.bar, pt, xb + (cb.timerX or 0), cb.timerY or 0)
             -- Preview total cast time is 3.0s; mirror the live "elapsed / total" mode.
             if cb.showTotalDuration then
-                pf.timerText:SetText(string.format("%.1f / %.1f", 3.0 * _castBarPreviewFill, 3.0))
+                popFrame.timerText:SetText(string.format("%.1f / %.1f", 3.0 * _castBarPreviewFill, 3.0))
             else
-                pf.timerText:SetText(string.format("%.1f", 3.0 * (1 - _castBarPreviewFill)))
+                popFrame.timerText:SetText(string.format("%.1f", 3.0 * (1 - _castBarPreviewFill)))
             end
-            pf.timerText:Show()
-            ns.ERB_CastTextColor(pf.timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
+            popFrame.timerText:Show()
+            mod.ERB_CastTextColor(popFrame.timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
         else
-            pf.timerText:Hide()
+            popFrame.timerText:Hide()
         end
 
         -- Spell name text
         if cb.showSpellText then
-            SetPVFont(pf.spellText, FONT_PATH, cb.spellTextSize or 11)
-            if blizzKit and ns.ERB_BlizzAtlas("textbox") then
+            SetPVFont(popFrame.spellText, FONT_PATH, cb.spellTextSize or 11)
+            if blizzKit and mod.ERB_BlizzAtlas("textbox") then
                 -- Placed inside the stock text box by the chrome pass below.
             else
                 local pt, xb, jh =
-                    ns.GetCastTextAnchor(cbSpellSide, cb.showTimer and cbDurSide == cbSpellSide, cbTimerW)
-                pf.spellText:ClearAllPoints()
-                pf.spellText:SetJustifyH(jh)
-                pf.spellText:SetPoint(pt, pf.bar, pt, xb + (cb.spellTextX or 0), cb.spellTextY or 0)
+                    mod.GetCastTextAnchor(cbSpellSide, cb.showTimer and cbDurSide == cbSpellSide, cbTimerW)
+                popFrame.spellText:ClearAllPoints()
+                popFrame.spellText:SetJustifyH(jh)
+                popFrame.spellText:SetPoint(
+                    pt,
+                    popFrame.bar,
+                    pt,
+                    xb + (cb.spellTextX or 0),
+                    cb.spellTextY or 0
+                )
                 if cbSpellSide == "center" then
-                    pf.spellText:SetWidth(cbBarW - 8 - (cb.showTimer and 2 * cbTimerW or 0))
+                    popFrame.spellText:SetWidth(cbBarW - 8 - (cb.showTimer and 2 * cbTimerW or 0))
                 elseif cbBarW > 0 then
-                    pf.spellText:SetWidth(cbBarW - 8 - (cb.showTimer and cbTimerW or 0))
+                    popFrame.spellText:SetWidth(cbBarW - 8 - (cb.showTimer and cbTimerW or 0))
                 end
             end
-            pf.spellText:SetText(CludesUI.L("Spell Name"))
-            pf.spellText:Show()
-            ns.ERB_CastTextColor(pf.spellText, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
+            popFrame.spellText:SetText(CludesUI.L("Spell Name"))
+            popFrame.spellText:Show()
+            mod.ERB_CastTextColor(
+                popFrame.spellText,
+                cb.spellTextR,
+                cb.spellTextG,
+                cb.spellTextB,
+                cb.spellTextA
+            )
         else
-            pf.spellText:Hide()
+            popFrame.spellText:Hide()
         end
         -- Blizzard Style chrome: frame art, and the text box with the spell name in it.
-        ns.ERB_CastPreviewBlizzChrome(pf, cb, cbBarW, blizz)
+        mod.ERB_CastPreviewBlizzChrome(popFrame, cb, cbBarW, blizz)
         -- Re-flow so a live JustifyH change takes effect on already-rendered text.
-        ns.ReflowFontString(pf.timerText)
-        ns.ReflowFontString(pf.spellText)
+        mod.ReflowFontString(popFrame.timerText)
+        mod.ReflowFontString(popFrame.spellText)
 
         -- Update header height: 80px preview + optional hint text
-        PreviewBar.SizeHeader(hdr, 80)
+        PreviewBar.SizeHeader(heading, 80)
     end
 
-    local _castBarPreviewBuilder = function(hdr, hdrW)
-        HintBuildStart(PAGE_CASTBAR, hdr)
-        local p = DB()
+    local _castBarPreviewBuilder = function(heading, hdrW)
+        HintBuildStart(PAGE_CASTBAR, heading)
+        local p = SavedDB()
         if not p then
             return 0
         end
         local cb = p.castBar
 
-        local previewScale = UIParent:GetEffectiveScale() / hdr:GetEffectiveScale()
+        local previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
         _castBarPreviewScale = previewScale
 
-        local container = CreateFrame("Frame", nil, hdr)
-        container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
+        local boxHolder = CreateFrame("Frame", nil, heading)
+        boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
 
         -- Snap helper: round to the preview container's physical pixel grid (use previewScale for initial snap; adjusted below if we scale-to-fit)
         local cScale = UIParent:GetEffectiveScale()
@@ -5745,48 +5775,49 @@ initFrame:SetScript("OnEvent", function(self)
             return math.floor(val / onePx + 0.5) * onePx
         end
 
-        local w, h = Snap(cb.width), Snap(cb.height)
-        local hasIcon = cb.showIcon ~= false and not ns.ERB_CastIconPortrait(cb)
-        local iconW = hasIcon and Snap(h) or 0
+        local wid, hgt = Snap(cb.width), Snap(cb.height)
+        local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
+        local iconW = hasIcon and Snap(hgt) or 0
 
         -- Scale down to fit when the cast bar is wider than the panel
         local PAD = CludesUI.CONTENT_PAD
         local availW = (hdrW - PAD * 2) / previewScale
         local fitScale = 1
-        if (w + iconW) > availW and (w + iconW) > 0 and availW > 0 then
-            fitScale = availW / (w + iconW)
+        if (wid + iconW) > availW and (wid + iconW) > 0 and availW > 0 then
+            fitScale = availW / (wid + iconW)
         end
-        container:SetScale(previewScale * fitScale)
+        boxHolder:SetScale(previewScale * fitScale)
 
-        container:SetSize(w + iconW, h)
+        boxHolder:SetSize(wid + iconW, hgt)
 
         -- Bar frame (holds bg, status bar)
-        local barFrame = CreateFrame("Frame", nil, container)
-        barFrame:SetSize(w, h)
-        barFrame:SetPoint("LEFT", container, "LEFT", iconW, 0)
+        local barFrame = CreateFrame("Frame", nil, boxHolder)
+        barFrame:SetSize(wid, hgt)
+        barFrame:SetPoint("LEFT", boxHolder, "LEFT", iconW, 0)
         -- Fresh mocks: the style chrome memos (frame art, text box and the
         -- spark swaps) belong to the previous build's frames; drop them so
         -- the next update re-creates the chrome on these.
-        local pf = _castBarPreviewFrames
-        if pf.blizzArt then
-            pf.blizzArt:Hide()
+        local popFrame = _castBarPreviewFrames
+        if popFrame.blizzArt then
+            popFrame.blizzArt:Hide()
         end
-        if pf.blizzTextBox then
-            pf.blizzTextBox:Hide()
+        if popFrame.blizzTextBox then
+            popFrame.blizzTextBox:Hide()
         end
-        pf.blizzArt, pf.blizzFrame, pf.blizzTextBox, pf.blizzSpark, pf.classicSpark = nil, nil, nil, nil, nil
-        pf.barFrame = barFrame
-        pf.container = container
+        popFrame.blizzArt, popFrame.blizzFrame, popFrame.blizzTextBox, popFrame.blizzSpark, popFrame.classicSpark =
+            nil, nil, nil, nil, nil
+        popFrame.barFrame = barFrame
+        popFrame.container = boxHolder
 
         -- Border: dedicated child frame covering bar + icon (PP or textured)
-        local bdrFrame = CreateFrame("Frame", nil, container)
-        bdrFrame:SetAllPoints(container)
-        bdrFrame:SetFrameLevel(container:GetFrameLevel() + 5)
-        container._border = bdrFrame
-        ns.ERB_AnchorBorderHost(
+        local bdrFrame = CreateFrame("Frame", nil, boxHolder)
+        bdrFrame:SetAllPoints(boxHolder)
+        bdrFrame:SetFrameLevel(boxHolder:GetFrameLevel() + 5)
+        boxHolder._border = bdrFrame
+        mod.ERB_AnchorBorderHost(
             bdrFrame,
-            container,
-            ns.ERB_BorderExtents((not ns.ERB_CastBlizz()) and cb or nil)
+            boxHolder,
+            mod.ERB_BorderExtents((not mod.ERB_CastBlizz()) and cb or nil)
         )
         CludesUI.ApplyBorderStyle(
             bdrFrame,
@@ -5806,33 +5837,33 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.BorderPx(cb.borderSizePx, cb.borderSize or 0, cb.borderTexture or "solid")
         )
         -- Bottom Separator, as the live bar draws it.
-        ns.ERB_Separators(
-            container,
+        mod.ERB_Separators(
+            boxHolder,
             cb,
-            (cb.edgeSep and not ns.ERB_CastBlizz() and ns.ERB_Textured(cb)) and true or false,
-            container:GetFrameLevel() + 7
+            (cb.edgeSep and not mod.ERB_CastBlizz() and mod.ERB_Textured(cb)) and true or false,
+            boxHolder:GetFrameLevel() + 7
         )
 
         -- Background (full bar area, no inset)
-        local bg = barFrame:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
+        local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
         local texKey = cb.texture
         if texKey == "blizzard" then
-            if ns.ERB_CastClassic() then
-                ns.ERB_StockAtlas(bg, "UI-CastingBar-Background", true)
+            if mod.ERB_CastClassic() then
+                mod.ERB_StockAtlas(backdrop, "UI-CastingBar-Background", true)
             else
-                bg:SetAtlas("UI-CastingBar-Background", true)
+                backdrop:SetAtlas("UI-CastingBar-Background", true)
             end
         else
-            bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+            backdrop:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
             -- Textured Background, as live (never under the Blizzard Style kit).
             if
                 cb.textureBg
                 and (cb.fillOpacity or 100) >= 100
-                and not (ns.ERB_CastBlizz() and not ns.ERB_CastClassic())
+                and not (mod.ERB_CastBlizz() and not mod.ERB_CastClassic())
             then
-                ns.ERB_BgTexture(
-                    bg,
+                mod.ERB_BgTexture(
+                    backdrop,
                     CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil),
                     cb.bgR,
                     cb.bgG,
@@ -5841,7 +5872,7 @@ initFrame:SetScript("OnEvent", function(self)
                 )
             end
         end
-        _castBarPreviewFrames.bg = bg
+        _castBarPreviewFrames.bg = backdrop
 
         -- Status bar (full bar area, no inset)
         local bar = CreateFrame("StatusBar", nil, barFrame)
@@ -5877,7 +5908,7 @@ initFrame:SetScript("OnEvent", function(self)
         local spark = bar:CreateTexture(nil, "OVERLAY", nil, 1)
         spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
         spark:SetBlendMode("ADD")
-        spark:SetSize(8, h)
+        spark:SetSize(8, hgt)
         spark:SetPoint("CENTER", fillTex, "RIGHT", 0, 0)
         if not cb.showSpark then
             spark:Hide()
@@ -5885,19 +5916,19 @@ initFrame:SetScript("OnEvent", function(self)
         _castBarPreviewFrames.spark = spark
 
         -- Icon: left side of container, full size
-        local iconFrame = CreateFrame("Frame", nil, container)
-        local icon = iconFrame:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        icon:SetTexture(NextCastBarIcon())
-        local iSize = Snap(h)
+        local iconFrame = CreateFrame("Frame", nil, boxHolder)
+        local glyph = iconFrame:CreateTexture(nil, "ARTWORK")
+        glyph:SetAllPoints()
+        glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        glyph:SetTexture(NextCastBarIcon())
+        local iSize = Snap(hgt)
         iconFrame:SetSize(iSize, iSize)
-        iconFrame:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
+        iconFrame:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", 0, 0)
         if not hasIcon then
             iconFrame:Hide()
         end
         _castBarPreviewFrames.iconFrame = iconFrame
-        _castBarPreviewFrames.icon = icon
+        _castBarPreviewFrames.icon = glyph
 
         -- Icon/bar seam divider (mirrors the live cast bar's "Show Icon
         -- Divider"): parented to bdrFrame, same reasoning as the live one --
@@ -5912,7 +5943,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- its texts; their anchors stay on the bar.
         local textFrame = CreateFrame("Frame", nil, barFrame)
         textFrame:SetAllPoints(bar)
-        textFrame:SetFrameLevel(container:GetFrameLevel() + 9)
+        textFrame:SetFrameLevel(boxHolder:GetFrameLevel() + 9)
 
         -- Timer text
         local timerText = textFrame:CreateFontString(nil, "OVERLAY")
@@ -5928,7 +5959,7 @@ initFrame:SetScript("OnEvent", function(self)
         else
             timerText:Hide()
         end
-        ns.ERB_CastTextColor(timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
+        mod.ERB_CastTextColor(timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
         _castBarPreviewFrames.timerText = timerText
 
         -- Spell name text
@@ -5941,15 +5972,15 @@ initFrame:SetScript("OnEvent", function(self)
         else
             spellText:Hide()
         end
-        ns.ERB_CastTextColor(spellText, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
+        mod.ERB_CastTextColor(spellText, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
         _castBarPreviewFrames.spellText = spellText
 
         -- Create hit overlays for preview click-to-scroll (kept for the
         -- bar-off state: dimmed, no clicks)
         wipe(_hitOverlays)
         local hits = {}
-        pf.hits = hits
-        local overlayLevel = container:GetFrameLevel() + 20
+        popFrame.hits = hits
+        local overlayLevel = boxHolder:GetFrameLevel() + 20
         hits[#hits + 1] = CreateHitOverlay(barFrame, "castBar", overlayLevel)
         hits[#hits + 1] = CreateHitOverlay(iconFrame, "castIcon", overlayLevel + 5)
         if cb.showTimer then
@@ -5964,7 +5995,7 @@ initFrame:SetScript("OnEvent", function(self)
             stHit:SetPoint("BOTTOMRIGHT", spellText, "BOTTOMRIGHT", 2, -2)
             hits[#hits + 1] = CreateHitOverlay(stHit, "castSpellText", overlayLevel + 5)
         end
-        PreviewBar.Lock(container, cb.enabled and true or false, hits)
+        PreviewBar.Lock(boxHolder, cb.enabled and true or false, hits)
 
         -- Hint text: made even while the bar is off, shown only while it is on
         -- (nothing to click otherwise), so switching the bar on can show it.
@@ -5974,19 +6005,19 @@ initFrame:SetScript("OnEvent", function(self)
         if hintShown then
             if not _previewHintFS then
                 -- Held across builds and pages (module state): out of its header's pool.
-                local hintHost = PoolKeep(CreateFrame("Frame", nil, hdr))
-                hintHost:SetAllPoints(hdr)
+                local hintHost = PoolKeep(CreateFrame("Frame", nil, heading))
+                hintHost:SetAllPoints(heading)
                 _previewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
                 _previewHintFS:SetAlpha(0.45)
                 _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
             end
             -- The host is kept across builds: one level above the header, as a new one sits.
-            local host = _previewHintFS:GetParent()
-            host:SetParent(hdr)
-            host:SetFrameLevel(hdr:GetFrameLevel() + 1)
-            host:Show()
+            local hostRegion = _previewHintFS:GetParent()
+            hostRegion:SetParent(heading)
+            hostRegion:SetFrameLevel(heading:GetFrameLevel() + 1)
+            hostRegion:Show()
             _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 20)
+            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
             _previewHintFS:SetShown(cb.enabled and true or false)
             if cb.enabled then
                 TOTAL_H = TOTAL_H + 35
@@ -6022,20 +6053,20 @@ initFrame:SetScript("OnEvent", function(self)
             need = "This option requires a Bar Texture other than None.",
         },
     }
-    local function TexBgRowCfg(kind, apply)
-        local k = TEXBG_KINDS[kind]
+    local function TexBgRowCfg(kindOf, apply)
+        local k = TEXBG_KINDS[kindOf]
         return {
             type = "toggle",
             label = "Textured Background",
             tooltip = "Draws the bar texture on the background too.",
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 local t = p and p[k.tbl]
                 if not t then
                     return true
                 end
                 -- Split textures: the health and power bars may carry their own.
-                if kind == "bars" and p.splitTex == true then
+                if kindOf == "bars" and p.splitTex == true then
                     return false
                 end
                 local tx = t[k.tex] or "none"
@@ -6043,12 +6074,12 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             disabledTooltip = k.need,
             get = function()
-                local p = DB()
+                local p = SavedDB()
                 local t = p and p[k.tbl]
                 return (t and t[k.key]) or false
             end,
             set = function(v)
-                local p = DB()
+                local p = SavedDB()
                 local t = p and p[k.tbl]
                 if not t then
                     return
@@ -6062,10 +6093,10 @@ initFrame:SetScript("OnEvent", function(self)
     -- Shared helpers for the section and page builders under ResourceBars_Options\
     -- (loaded before this file, read when a page builds). Preview state stays
     -- here; the pages write it through the two setters.
-    ns._CURB_OptEnv = {
+    mod._CURB_OptEnv = {
         TexBgRowCfg = TexBgRowCfg,
-        DB = DB,
-        PP = PP,
+        DB = SavedDB,
+        PP = Pix,
         Refresh = Refresh,
         SmoothRefresh = SmoothRefresh,
         RefreshHealth = RefreshHealth,
@@ -6105,14 +6136,14 @@ initFrame:SetScript("OnEvent", function(self)
     -- horizontal like the bar stack preview (Horizontal (Left) keeps its
     -- fill direction); a vertical bar shows at its configured size laid flat.
     do
-        local env = ns._CURB_OptEnv
+        local environ = mod._CURB_OptEnv
         local GCD_PREVIEW_H = 80
 
         -- The shared preview hint on a GCD or Totem Bar header build, as the
         -- Cast Bar header places it. Returns the height it adds.
         -- Made even while the preview is off (shown only while on), so
         -- switching the bar on can show it.
-        local function PlaceHint(hdr, on)
+        local function PlaceHint(heading, on)
             if IsPreviewHintDismissed() then
                 if _previewHintFS then
                     _previewHintFS:Hide()
@@ -6121,47 +6152,47 @@ initFrame:SetScript("OnEvent", function(self)
             end
             if not _previewHintFS then
                 -- Held across builds and pages (module state): out of its header's pool.
-                local hintHost = PoolKeep(CreateFrame("Frame", nil, hdr))
-                hintHost:SetAllPoints(hdr)
+                local hintHost = PoolKeep(CreateFrame("Frame", nil, heading))
+                hintHost:SetAllPoints(heading)
                 _previewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
                 _previewHintFS:SetAlpha(0.45)
                 _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
             end
-            local host = _previewHintFS:GetParent()
-            host:SetParent(hdr)
-            host:SetFrameLevel(hdr:GetFrameLevel() + 1)
-            host:Show()
+            local hostRegion = _previewHintFS:GetParent()
+            hostRegion:SetParent(heading)
+            hostRegion:SetFrameLevel(heading:GetFrameLevel() + 1)
+            hostRegion:Show()
             _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 20)
+            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
             _previewHintFS:SetShown(on and true or false)
             return on and 35 or 0
         end
 
         local gcdFill = 0.6
-        local pf = {}
+        local popFrame = {}
 
         -- building: the header build itself (it returns the height); any
         -- other update resizes the shown header for the hint.
         local function UpdateGCDPreview(building)
-            local p = DB()
-            if not (p and pf.bar) then
+            local p = SavedDB()
+            if not (p and popFrame.bar) then
                 return
             end
             local g = p.gcdBar
-            local container = pf.container
-            local hdr = container:GetParent()
+            local boxHolder = popFrame.container
+            local heading = boxHolder:GetParent()
 
             -- Scale down to fit when the bar is wider than the panel; snap on
             -- the grid of that final scale.
             local rawW = g.width or 220
             local PAD = CludesUI.CONTENT_PAD
-            local availW = ((pf.hdrW or hdr:GetWidth()) - PAD * 2) / pf.scale
+            local availW = ((popFrame.hdrW or heading:GetWidth()) - PAD * 2) / popFrame.scale
             local fitScale = 1
             if rawW > availW and rawW > 0 and availW > 0 then
                 fitScale = availW / rawW
             end
-            container:SetScale(pf.scale * fitScale)
-            local cScale = container:GetEffectiveScale()
+            boxHolder:SetScale(popFrame.scale * fitScale)
+            local cScale = boxHolder:GetEffectiveScale()
             if cScale <= 0 then
                 cScale = 1
             end
@@ -6169,25 +6200,25 @@ initFrame:SetScript("OnEvent", function(self)
             local function Snap(val)
                 return math.floor(val / onePx + 0.5) * onePx
             end
-            local w, h = Snap(rawW), Snap(g.height or 12)
-            container:SetSize(w, h)
-            container:ClearAllPoints()
-            container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
+            local wid, hgt = Snap(rawW), Snap(g.height or 12)
+            boxHolder:SetSize(wid, hgt)
+            boxHolder:ClearAllPoints()
+            boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
             local on = g.enabled and true or false
-            PreviewBar.Lock(container, on, pf.hits)
+            PreviewBar.Lock(boxHolder, on, popFrame.hits)
             if not building then
-                PreviewBar.HintFor(on, hdr)
-                PreviewBar.SizeHeader(hdr, GCD_PREVIEW_H)
+                PreviewBar.HintFor(on, heading)
+                PreviewBar.SizeHeader(heading, GCD_PREVIEW_H)
             end
 
             -- Border + Bottom Separator, as BuildGCDBar
-            local bdr = pf.border
+            local bdr = popFrame.border
             local bs = g.borderSize or 0
             bdr:SetFrameLevel(
-                g.borderBehind and math.max(0, container:GetFrameLevel() - 1)
-                    or (container:GetFrameLevel() + 5)
+                g.borderBehind and math.max(0, boxHolder:GetFrameLevel() - 1)
+                    or (boxHolder:GetFrameLevel() + 5)
             )
-            ns.ERB_AnchorBorderHost(bdr, container, ns.ERB_BorderExtents(g))
+            mod.ERB_AnchorBorderHost(bdr, boxHolder, mod.ERB_BorderExtents(g))
             CludesUI.ApplyBorderStyle(
                 bdr,
                 bs,
@@ -6205,28 +6236,28 @@ initFrame:SetScript("OnEvent", function(self)
                 nil,
                 CludesUI.BorderPx(g.borderSizePx, bs, g.borderTexture or "solid")
             )
-            ns.ERB_Separators(
-                container,
+            mod.ERB_Separators(
+                boxHolder,
                 g,
-                (g.edgeSep and ns.ERB_Textured(g)) and true or false,
-                container:GetFrameLevel() + 7
+                (g.edgeSep and mod.ERB_Textured(g)) and true or false,
+                boxHolder:GetFrameLevel() + 7
             )
 
             -- Texture + background (Textured Background included)
-            local bar, bg = pf.bar, pf.bg
+            local bar, backdrop = popFrame.bar, popFrame.bg
             -- The live fill inset inside a border: one physical pixel, on this grid.
             local inset = bs > 0 and onePx or 0
             bar:ClearAllPoints()
-            bar:SetPoint("TOPLEFT", container, "TOPLEFT", inset, -inset)
-            bar:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -inset, inset)
+            bar:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", inset, -inset)
+            bar:SetPoint("BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", -inset, inset)
             bar:SetStatusBarTexture(
                 CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, "Interface\\Buttons\\WHITE8x8")
             )
-            bg:SetTexture(nil)
-            bg:SetColorTexture(g.bgR, g.bgG, g.bgB, g.bgA)
-            if g.textureBg or bg._erbBgTex then
-                ns.ERB_BgTexture(
-                    bg,
+            backdrop:SetTexture(nil)
+            backdrop:SetColorTexture(g.bgR, g.bgG, g.bgB, g.bgA)
+            if g.textureBg or backdrop._erbBgTex then
+                mod.ERB_BgTexture(
+                    backdrop,
                     g.textureBg and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, nil),
                     g.bgR,
                     g.bgG,
@@ -6243,8 +6274,8 @@ initFrame:SetScript("OnEvent", function(self)
             local fillTex = bar:GetStatusBarTexture()
             local fR, fG, fB, fA = g.fillR, g.fillG, g.fillB, g.fillA or 1
             if g.classColored then
-                local _, cf = UnitClass("player")
-                local cc = cf and CLASS_COLORS[cf]
+                local _, castFrame = UnitClass("player")
+                local cc = castFrame and CLASS_COLORS[castFrame]
                 if cc then
                     fR, fG, fB = cc[1], cc[2], cc[3]
                 end
@@ -6260,9 +6291,9 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             -- Spark on the fill's leading edge
-            local spark = pf.spark
+            local spark = popFrame.spark
             if g.showSpark then
-                spark:SetSize(8, h)
+                spark:SetSize(8, hgt)
                 spark:ClearAllPoints()
                 spark:SetPoint("CENTER", fillTex, leftward and "LEFT" or "RIGHT", 0, 0)
                 spark:Show()
@@ -6271,59 +6302,59 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
-        env.UpdateGCDPreview = UpdateGCDPreview
-        env.SetGCDPreviewFill = function(v)
+        environ.UpdateGCDPreview = UpdateGCDPreview
+        environ.SetGCDPreviewFill = function(v)
             gcdFill = v
         end
 
-        env._gcdPreviewBuilder = function(hdr, hdrW)
-            HintBuildStart(PAGE_GCD, hdr)
-            local p = DB()
+        environ._gcdPreviewBuilder = function(heading, hdrW)
+            HintBuildStart(PAGE_GCD, heading)
+            local p = SavedDB()
             if not p then
                 return 0
             end
 
             -- Pixel sizes match the live bar: the panel's scale against UIParent's.
-            pf.scale = UIParent:GetEffectiveScale() / hdr:GetEffectiveScale()
+            popFrame.scale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
 
-            local container = CreateFrame("Frame", nil, hdr)
-            container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
-            container:SetScale(pf.scale)
-            pf.container = container
+            local boxHolder = CreateFrame("Frame", nil, heading)
+            boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
+            boxHolder:SetScale(popFrame.scale)
+            popFrame.container = boxHolder
 
-            local bg = container:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            pf.bg = bg
+            local backdrop = boxHolder:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            popFrame.bg = backdrop
 
-            local bar = CreateFrame("StatusBar", nil, container)
+            local bar = CreateFrame("StatusBar", nil, boxHolder)
             bar:SetMinMaxValues(0, 1)
             bar:SetOrientation("HORIZONTAL")
             bar:SetRotatesTexture(false)
-            bar:SetFrameLevel(container:GetFrameLevel() + 1)
-            pf.bar = bar
+            bar:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
+            popFrame.bar = bar
 
             local spark = bar:CreateTexture(nil, "OVERLAY", nil, 1)
-            spark:SetTexture(ns.SPARK_TEX or "Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
+            spark:SetTexture(mod.SPARK_TEX or "Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
             spark:SetBlendMode("ADD")
-            pf.spark = spark
+            popFrame.spark = spark
 
-            local bdrFrame = CreateFrame("Frame", nil, container)
-            bdrFrame:SetAllPoints(container)
-            pf.border = bdrFrame
+            local bdrFrame = CreateFrame("Frame", nil, boxHolder)
+            bdrFrame:SetAllPoints(boxHolder)
+            popFrame.border = bdrFrame
 
             wipe(_hitOverlays)
-            pf.hits = { CreateHitOverlay(container, "gcdBar", container:GetFrameLevel() + 20) }
+            popFrame.hits = { CreateHitOverlay(boxHolder, "gcdBar", boxHolder:GetFrameLevel() + 20) }
 
             -- Width is known only once hdr is laid out: fit against hdrW for this pass.
-            pf.hdrW = hdrW
+            popFrame.hdrW = hdrW
             UpdateGCDPreview(true)
-            pf.hdrW = nil
+            popFrame.hdrW = nil
 
             _headerBaseH = GCD_PREVIEW_H
-            return GCD_PREVIEW_H + PlaceHint(hdr, p.gcdBar.enabled)
+            return GCD_PREVIEW_H + PlaceHint(heading, p.gcdBar.enabled)
         end
 
-        env.RestoreGCDPreview = function()
+        environ.RestoreGCDPreview = function()
             gcdFill = math.random(30, 85) / 100
             -- Header shown again from the cache: take the hint back before the update sizes it.
             if not IsPreviewHintDismissed() then
@@ -6375,7 +6406,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- The Call Totem Bar group shows where its section does, while it is on.
         local function CallTotemShown(p)
             local c = p and p.callTotemBar
-            return ns.ERB_HasCallTotemSection() and c and c.enabled == true
+            return mod.ERB_HasCallTotemSection() and c and c.enabled == true
         end
 
         -- building: the header build itself (it returns the height); any
@@ -6391,19 +6422,19 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function UpdateTotemPreview(building)
-            local p = DB()
-            local container = tp.container
-            if not (p and container) then
+            local p = SavedDB()
+            local boxHolder = tp.container
+            if not (p and boxHolder) then
                 return
             end
-            local hdr = container:GetParent()
+            local heading = boxHolder:GetParent()
 
             -- Group sizes in live units first: the fit scale (and with it the
             -- pixel grid) is known only once the whole stack is measured.
             -- The Call Totem Bar group, built wherever its section is, shows
             -- while that bar is on.
             local GAP = 10
-            local totalW, totalH, shown = 0, 0, 0
+            local totalW, totalH, isShown = 0, 0, 0
             for gi, grp in ipairs(tp.groups) do
                 local t = p[TOTEM_GROUPS[gi].key]
                 if gi == 2 and not CallTotemShown(p) then
@@ -6411,13 +6442,13 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 grp.t = nil
                 if t then
-                    local n = #grp.icons
-                    local len = n * (t.iconSize or 30) + (n - 1) * (t.spacing or 2)
+                    local num = #grp.icons
+                    local len = num * (t.iconSize or 30) + (num - 1) * (t.spacing or 2)
                     local across = t.iconSize or 30
                     local vertical = t.orientation == "VERTICAL"
                     totalW = math.max(totalW, vertical and across or len)
-                    totalH = totalH + (vertical and len or across) + (shown > 0 and GAP or 0)
-                    shown = shown + 1
+                    totalH = totalH + (vertical and len or across) + (isShown > 0 and GAP or 0)
+                    isShown = isShown + 1
                     grp.t = t
                 end
             end
@@ -6425,7 +6456,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- The header grows with the stack (a column, two groups) up to
             -- TOTEM_PREVIEW_MAXH; past that, or past the panel width, it scales down.
             local PAD = CludesUI.CONTENT_PAD
-            local availW = ((tp.hdrW or hdr:GetWidth()) - PAD * 2) / tp.scale
+            local availW = ((tp.hdrW or heading:GetWidth()) - PAD * 2) / tp.scale
             local availH = (TOTEM_PREVIEW_MAXH - TOTEM_PREVIEW_VPAD) / tp.scale
             local fit = 1
             if totalW > availW and availW > 0 then
@@ -6434,10 +6465,10 @@ initFrame:SetScript("OnEvent", function(self)
             if totalH * fit > availH and availH > 0 then
                 fit = availH / totalH
             end
-            container:SetScale(tp.scale * fit)
+            boxHolder:SetScale(tp.scale * fit)
             tp.baseH = math.max(TOTEM_PREVIEW_H, math.ceil(totalH * tp.scale * fit) + TOTEM_PREVIEW_VPAD)
 
-            local cScale = container:GetEffectiveScale()
+            local cScale = boxHolder:GetEffectiveScale()
             if cScale <= 0 then
                 cScale = 1
             end
@@ -6446,7 +6477,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return math.floor(val / onePx + 0.5) * onePx
             end
 
-            local snapW, top = 0, 0
+            local snapW, topY = 0, 0
             for gi, grp in ipairs(tp.groups) do
                 local t = grp.t
                 grp.frame:SetShown(t ~= nil)
@@ -6459,20 +6490,20 @@ initFrame:SetScript("OnEvent", function(self)
                         hit:Hide()
                     end
                 else
-                    local size = Snap(t.iconSize or 30)
+                    local dim = Snap(t.iconSize or 30)
                     -- A set gap keeps at least one physical pixel when the stack is fitted down.
                     local spacing = (t.spacing or 2) > 0 and math.max(onePx, Snap(t.spacing or 2)) or 0
                     local vertical = t.orientation == "VERTICAL"
-                    local n = #grp.icons
-                    local len = n * size + (n - 1) * spacing
-                    local gw, gh = len, size
+                    local num = #grp.icons
+                    local len = num * dim + (num - 1) * spacing
+                    local gw, gh = len, dim
                     if vertical then
-                        gw, gh = size, len
+                        gw, gh = dim, len
                     end
                     grp.frame:SetSize(gw, gh)
                     grp.frame:ClearAllPoints()
-                    grp.frame:SetPoint("TOP", container, "TOP", 0, -top)
-                    top = top + gh + GAP
+                    grp.frame:SetPoint("TOP", boxHolder, "TOP", 0, -topY)
+                    topY = topY + gh + GAP
                     snapW = math.max(snapW, gw)
                     local bs = t.borderSize or 0
                     local texKey = t.borderTexture or "solid"
@@ -6481,18 +6512,18 @@ initFrame:SetScript("OnEvent", function(self)
                     local on = true
                     if gi == 1 then
                         local ec = t.enabledClasses
-                        local _, cf = UnitClass("player")
-                        on = (ec and cf and ec[cf]) and true or false
+                        local _, castFrame = UnitClass("player")
+                        on = (ec and castFrame and ec[castFrame]) and true or false
                     end
                     grp.on = on
                     for i, ic in ipairs(grp.icons) do
-                        ic:SetSize(size, size)
+                        ic:SetSize(dim, dim)
                         ic:ClearAllPoints()
-                        local off = (i - 1) * (size + spacing)
+                        local offset = (i - 1) * (dim + spacing)
                         if vertical then
-                            ic:SetPoint("TOP", grp.frame, "TOP", 0, -off)
+                            ic:SetPoint("TOP", grp.frame, "TOP", 0, -offset)
                         else
-                            ic:SetPoint("LEFT", grp.frame, "LEFT", off, 0)
+                            ic:SetPoint("LEFT", grp.frame, "LEFT", offset, 0)
                         end
                         -- "Show Behind": +3 in front of the icon, level-1 behind it, as live.
                         local bdr = ic._border
@@ -6516,13 +6547,13 @@ initFrame:SetScript("OnEvent", function(self)
                             nil,
                             CludesUI.BorderPx(t.borderSizePx, bs, texKey)
                         )
-                        local fs = ic._timer
-                        if fs then
+                        local fontStr = ic._timer
+                        if fontStr then
                             if showTimer then
-                                SetPVFont(fs, FONT_PATH, t.timerSize or 11, "resourceBars")
-                                fs:Show()
+                                SetPVFont(fontStr, FONT_PATH, t.timerSize or 11, "resourceBars")
+                                fontStr:Show()
                             else
-                                fs:Hide()
+                                fontStr:Hide()
                             end
                         end
                     end
@@ -6532,53 +6563,53 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end
             end
-            container:SetSize(math.max(1, snapW), math.max(1, top - GAP))
-            container:ClearAllPoints()
-            container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
+            boxHolder:SetSize(math.max(1, snapW), math.max(1, topY - GAP))
+            boxHolder:ClearAllPoints()
+            boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
 
             _headerBaseH = tp.baseH
             if not building then
-                PreviewBar.HintFor(TotemPreviewClickable(), hdr)
-                PreviewBar.SizeHeader(hdr, tp.baseH)
+                PreviewBar.HintFor(TotemPreviewClickable(), heading)
+                PreviewBar.SizeHeader(heading, tp.baseH)
             end
         end
 
-        env.UpdateTotemPreview = UpdateTotemPreview
+        environ.UpdateTotemPreview = UpdateTotemPreview
 
-        env._totemPreviewBuilder = function(hdr, hdrW)
-            HintBuildStart(PAGE_TOTEM, hdr)
-            local p = DB()
+        environ._totemPreviewBuilder = function(heading, hdrW)
+            HintBuildStart(PAGE_TOTEM, heading)
+            local p = SavedDB()
             if not p then
                 return 0
             end
 
             -- Pixel sizes match the live bar: the panel's scale against UIParent's.
-            tp.scale = UIParent:GetEffectiveScale() / hdr:GetEffectiveScale()
+            tp.scale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
 
-            local container = CreateFrame("Frame", nil, hdr)
-            container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
-            container:SetScale(tp.scale)
-            tp.container = container
+            local boxHolder = CreateFrame("Frame", nil, heading)
+            boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
+            boxHolder:SetScale(tp.scale)
+            tp.container = boxHolder
 
             wipe(_hitOverlays)
             wipe(tp.groups)
-            local overlayLevel = container:GetFrameLevel() + 20
+            local overlayLevel = boxHolder:GetFrameLevel() + 20
             -- The Call Totem Bar group is built wherever its section is
             -- (UpdateTotemPreview shows it while that bar is on).
-            local nGroups = ns.ERB_HasCallTotemSection() and 2 or 1
+            local nGroups = mod.ERB_HasCallTotemSection() and 2 or 1
             for gi = 1, nGroups do
-                local def = TOTEM_GROUPS[gi]
-                local frame = CreateFrame("Frame", nil, container)
-                frame:Show()
-                local grp = { frame = frame, icons = {}, timerHits = {} }
+                local spec_def = TOTEM_GROUPS[gi]
+                local widget = CreateFrame("Frame", nil, boxHolder)
+                widget:Show()
+                local grp = { frame = widget, icons = {}, timerHits = {} }
                 tp.groups[gi] = grp
-                grp.iconHits = { CreateHitOverlay(frame, def.mapIcon, overlayLevel) }
-                for i, d in ipairs(def.icons) do
-                    local ic = CreateFrame("Frame", nil, frame)
+                grp.iconHits = { CreateHitOverlay(widget, spec_def.mapIcon, overlayLevel) }
+                for i, d in ipairs(spec_def.icons) do
+                    local ic = CreateFrame("Frame", nil, widget)
                     local tex = ic:CreateTexture(nil, "ARTWORK")
                     tex:SetAllPoints()
                     tex:SetTexture(d.tex)
-                    tex:SetTexCoord(def.zoom, 1 - def.zoom, def.zoom, 1 - def.zoom)
+                    tex:SetTexCoord(spec_def.zoom, 1 - spec_def.zoom, spec_def.zoom, 1 - spec_def.zoom)
                     ic._border = CreateFrame("Frame", nil, ic)
                     ic._border:SetAllPoints(ic)
                     if d.timer then
@@ -6586,17 +6617,17 @@ initFrame:SetScript("OnEvent", function(self)
                         local tf = CreateFrame("Frame", nil, ic)
                         tf:SetAllPoints(ic)
                         tf:SetFrameLevel(ic:GetFrameLevel() + 5)
-                        local fs = tf:CreateFontString(nil, "OVERLAY")
-                        SetPVFont(fs, FONT_PATH, 11, "resourceBars")
-                        fs:SetPoint("CENTER", ic, "CENTER", 0, 0)
-                        fs:SetTextColor(1, 1, 1, 1)
-                        fs:SetText(d.timer)
-                        ic._timer = fs
+                        local fontStr = tf:CreateFontString(nil, "OVERLAY")
+                        SetPVFont(fontStr, FONT_PATH, 11, "resourceBars")
+                        fontStr:SetPoint("CENTER", ic, "CENTER", 0, 0)
+                        fontStr:SetTextColor(1, 1, 1, 1)
+                        fontStr:SetText(d.timer)
+                        ic._timer = fontStr
                         -- Every timer leads to the timer settings, above the icon overlay.
-                        local hit = CreateFrame("Frame", nil, frame)
-                        hit:SetPoint("TOPLEFT", fs, "TOPLEFT", -2, 2)
-                        hit:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2, -2)
-                        CreateHitOverlay(hit, def.mapTimer, overlayLevel + 5)
+                        local hit = CreateFrame("Frame", nil, widget)
+                        hit:SetPoint("TOPLEFT", fontStr, "TOPLEFT", -2, 2)
+                        hit:SetPoint("BOTTOMRIGHT", fontStr, "BOTTOMRIGHT", 2, -2)
+                        CreateHitOverlay(hit, spec_def.mapTimer, overlayLevel + 5)
                         grp.timerHits[#grp.timerHits + 1] = hit
                     end
                     grp.icons[i] = ic
@@ -6608,10 +6639,10 @@ initFrame:SetScript("OnEvent", function(self)
             UpdateTotemPreview(true)
             tp.hdrW = nil
 
-            return tp.baseH + PlaceHint(hdr, TotemPreviewClickable())
+            return tp.baseH + PlaceHint(heading, TotemPreviewClickable())
         end
 
-        env.RestoreTotemPreview = function()
+        environ.RestoreTotemPreview = function()
             -- Header shown again from the cache: take the hint back before the update sizes it.
             if not IsPreviewHintDismissed() then
                 RehomeHint(PAGE_TOTEM)
@@ -6626,17 +6657,17 @@ initFrame:SetScript("OnEvent", function(self)
         description = "Custom class resource, health, and mana bar display.",
         pages = C_SwingTimer and { PAGE_DISPLAY, PAGE_CASTBAR, PAGE_GCD, PAGE_SWING, PAGE_TOTEM }
             or { PAGE_DISPLAY, PAGE_CASTBAR, PAGE_GCD, PAGE_TOTEM },
-        buildPage = function(pageName, parent, yOffset)
+        buildPage = function(pageName, hostFrame, yOffset)
             if pageName == PAGE_DISPLAY then
-                return ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
+                return mod.ERB_BuildBarDisplayPage(pageName, hostFrame, yOffset)
             elseif pageName == PAGE_CASTBAR then
-                return ns.ERB_BuildCastBarPage(pageName, parent, yOffset)
+                return mod.ERB_BuildCastBarPage(pageName, hostFrame, yOffset)
             elseif pageName == PAGE_GCD then
-                return ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
+                return mod.ERB_BuildGCDBarPage(pageName, hostFrame, yOffset)
             elseif pageName == PAGE_SWING then
-                return ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
+                return mod.ERB_BuildSwingTimerPage(pageName, hostFrame, yOffset)
             elseif pageName == PAGE_TOTEM then
-                return ns.ERB_BuildTotemBarPage(pageName, parent, yOffset)
+                return mod.ERB_BuildTotemBarPage(pageName, hostFrame, yOffset)
             end
         end,
         getHeaderBuilder = function(pageName)
@@ -6645,9 +6676,9 @@ initFrame:SetScript("OnEvent", function(self)
             elseif pageName == PAGE_CASTBAR then
                 return _castBarPreviewBuilder
             elseif pageName == PAGE_GCD then
-                return ns._CURB_OptEnv._gcdPreviewBuilder
+                return mod._CURB_OptEnv._gcdPreviewBuilder
             elseif pageName == PAGE_TOTEM then
-                return ns._CURB_OptEnv._totemPreviewBuilder
+                return mod._CURB_OptEnv._totemPreviewBuilder
             end
             return nil
         end,
@@ -6694,9 +6725,9 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 UpdateCastBarPreview()
             elseif pageName == PAGE_GCD then
-                ns._CURB_OptEnv.RestoreGCDPreview()
+                mod._CURB_OptEnv.RestoreGCDPreview()
             elseif pageName == PAGE_TOTEM then
-                ns._CURB_OptEnv.RestoreTotemPreview()
+                mod._CURB_OptEnv.RestoreTotemPreview()
             end
         end,
         onReset = function()

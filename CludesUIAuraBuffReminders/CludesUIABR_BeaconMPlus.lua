@@ -37,22 +37,22 @@ local ev = CreateFrame("Frame")
 local started = false -- the first PLAYER_ENTERING_WORLD ran the initial sync
 local level = -1 -- 0 off, 1 option on but not Holy, 2 armed (Holy)
 local tankUnit -- cached out of the encounter; roles can read secret in M+
-local host, container, containerUnit
+local hostRegion, boxHolder, containerUnit
 
 local function Enabled()
-    local db = _G._CUABR_AceDB
-    local d = db and db.profile and db.profile.display
+    local saved = _G._CUABR_AceDB
+    local d = saved and saved.profile and saved.profile.display
     return d and d.beaconMPlus == true
 end
 
 local function IsHoly()
-    local spec = C_SpecializationInfo.GetSpecialization()
-    return spec and C_SpecializationInfo.GetSpecializationInfo(spec) == HOLY_SPEC
+    local specInfo = C_SpecializationInfo.GetSpecialization()
+    return specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo) == HOLY_SPEC
 end
 
 local function RefreshTank()
-    for i = 1, 4 do
-        local u = PARTY[i]
+    for idx = 1, 4 do
+        local u = PARTY[idx]
         if UnitExists(u) then
             local role = UnitGroupRolesAssigned(u)
             if issecretvalue and issecretvalue(role) then
@@ -67,13 +67,13 @@ local function RefreshTank()
     tankUnit = nil
 end
 
-local function FindIn(list, unit)
-    if not list then
+local function FindIn(entries, unitToken)
+    if not entries then
         return
     end
-    for i = 1, #list do
-        local b = list[i]
-        if b and b:IsVisible() and b:GetAttribute("unit") == unit then
+    for idx = 1, #entries do
+        local b = entries[idx]
+        if b and b:IsVisible() and b:GetAttribute("unit") == unitToken then
             return b
         end
     end
@@ -81,27 +81,27 @@ end
 
 -- The tank's Raid Frames button: the party frames, or the raid frames when the
 -- party is shown on them.
-local function TankButton(unit)
+local function TankButton(unitToken)
     local rf = CludesUI._ModuleNS["CludesUIRaidFrames"]
     if not rf then
         return
     end
-    return FindIn(rf._partyAllButtons, unit) or FindIn(rf._allButtons, unit)
+    return FindIn(rf._partyAllButtons, unitToken) or FindIn(rf._allButtons, unitToken)
 end
 
 -- Built once per engine button, the only window where the button may be
 -- decorated: the aura icon, no mouse (the tank's frame keeps its clicks and
 -- mouseover casts), and the red glow on a child host, whose C-side animation
 -- runs the same in and out of restricted content.
-local function InitButton(button, d)
-    local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(button)
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    button:SetIcon(icon)
-    pcall(button.EnableMouse, button, false)
-    local glow = CreateFrame("Frame", nil, button)
-    glow:SetAllPoints(button)
-    glow:SetFrameLevel(button:GetFrameLevel() + 2)
+local function InitButton(btnFrame, d)
+    local glyph = btnFrame:CreateTexture(nil, "ARTWORK")
+    glyph:SetAllPoints(btnFrame)
+    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    btnFrame:SetIcon(glyph)
+    pcall(btnFrame.EnableMouse, btnFrame, false)
+    local glow = CreateFrame("Frame", nil, btnFrame)
+    glow:SetAllPoints(btnFrame)
+    glow:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
     glow:EnableMouse(false)
     local Glows = CludesUI.Glows
     -- The button runs the animation itself (12.1.5): Blizzard plays it while
@@ -110,7 +110,9 @@ local function InitButton(button, d)
     -- to re-run its visibility). Without that API the animation plays while
     -- hidden too, and the group's cap is a fixed 1: only the one button it
     -- can ever show carries the glow.
-    if not Glows.BindEngineHost(glow, button, d, icon) and not CludesUI.AuraKit.ButtonCanShow(button) then
+    if
+        not Glows.BindEngineHost(glow, btnFrame, d, glyph) and not CludesUI.AuraKit.ButtonCanShow(btnFrame)
+    then
         return
     end
     Glows.PrewarmEngineHost(glow, ICON_SIZE, ICON_SIZE, GLOW_NEED)
@@ -121,30 +123,30 @@ end
 -- The style's restyle runs only when AuraKit deferred it to the restriction
 -- lift, after the button refused the glow's registration: it starts the glow
 -- again (an unchanged one returns at once).
-local function RetryGlow(button, d)
+local function RetryGlow(btnFrame, d)
     local glow = d.abrBeaconGlow
     if glow then
         CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine")
     end
 end
 
-local function EnsureContainer(unit)
-    if container then
-        if containerUnit ~= unit then
-            container:SetUnit(unit)
-            containerUnit = unit
+local function EnsureContainer(unitToken)
+    if boxHolder then
+        if containerUnit ~= unitToken then
+            boxHolder:SetUnit(unitToken)
+            containerUnit = unitToken
         end
         return
     end
     local AK = CludesUI.AuraKit
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY]
         or { noRegions = true, width = ICON_SIZE, height = ICON_SIZE, applyExtra = RetryGlow }
-    host = CreateFrame("Frame", nil, UIParent)
-    host:SetSize(ICON_SIZE, ICON_SIZE)
-    host:SetFrameStrata("HIGH")
-    host:Hide()
-    container = AK.CreateContainer(host, unit, {
-        point = { "CENTER", host, "CENTER" },
+    hostRegion = CreateFrame("Frame", nil, UIParent)
+    hostRegion:SetSize(ICON_SIZE, ICON_SIZE)
+    hostRegion:SetFrameStrata("HIGH")
+    hostRegion:Hide()
+    boxHolder = AK.CreateContainer(hostRegion, unitToken, {
+        point = { "CENTER", hostRegion, "CENTER" },
         layout = { anchorPoint = "CENTER" },
         groups = {
             {
@@ -157,34 +159,34 @@ local function EnsureContainer(unit)
             },
         },
     })
-    containerUnit = unit
+    containerUnit = unitToken
 end
 
 -- Engine aura hosts stay UIParent-anchored (an engine subtree must never join
 -- another frame's anchor family), so the host takes the button's centre as a
 -- number.
-local function PlaceOver(button)
-    local x, y = button:GetCenter()
-    if not x or (issecretvalue and (issecretvalue(x) or issecretvalue(y))) then
+local function PlaceOver(btnFrame)
+    local posX, posY = btnFrame:GetCenter()
+    if not posX or (issecretvalue and (issecretvalue(posX) or issecretvalue(posY))) then
         return false
     end
-    local s = button:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    host:ClearAllPoints()
-    host:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x * s, y * s)
+    local s = btnFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    hostRegion:ClearAllPoints()
+    hostRegion:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX * s, posY * s)
     return true
 end
 
 local function Disarm()
-    if host then
-        host:Hide()
+    if hostRegion then
+        hostRegion:Hide()
     end
 end
 
 -- The tank is read only inside a key, so the roster events are registered from
 -- CHALLENGE_MODE_START (or arming, or a PLAYER_ENTERING_WORLD, inside a key) to
 -- the key's end; each of those starts looks the tank up again.
-local function WatchRoster(on)
-    if on then
+local function WatchRoster(enabled)
+    if enabled then
         ev:RegisterEvent("GROUP_ROSTER_UPDATE")
         ev:RegisterEvent("PLAYER_ROLES_ASSIGNED")
     else
@@ -205,33 +207,33 @@ local function Arm()
     if level ~= 2 or not C_ChallengeMode.IsChallengeModeActive() then
         return
     end
-    local unit = tankUnit
-    local button = unit and TankButton(unit)
-    if not button then
+    local unitToken = tankUnit
+    local btnFrame = unitToken and TankButton(unitToken)
+    if not btnFrame then
         return
     end
-    EnsureContainer(unit)
-    if PlaceOver(button) then
-        host:Show()
+    EnsureContainer(unitToken)
+    if PlaceOver(btnFrame) then
+        hostRegion:Show()
     end
 end
 
 local function Sync()
-    local want = 0
+    local wanted = 0
     if Enabled() then
-        want = IsHoly() and 2 or 1
+        wanted = IsHoly() and 2 or 1
     end
-    if want == level then
+    if wanted == level then
         return
     end
-    level = want
+    level = wanted
     ev:UnregisterAllEvents()
     Disarm()
-    if want == 0 then
+    if wanted == 0 then
         return
     end
     ev:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
-    if want == 2 then
+    if wanted == 2 then
         ev:RegisterEvent("ENCOUNTER_START")
         ev:RegisterEvent("ENCOUNTER_END")
         ev:RegisterEvent("CHALLENGE_MODE_START")
@@ -248,21 +250,21 @@ local function Sync()
     end
 end
 
-ev:SetScript("OnEvent", function(_, event)
-    if event == "ENCOUNTER_START" then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "ENCOUNTER_START" then
         Arm()
-    elseif event == "CHALLENGE_MODE_START" then
+    elseif evt == "CHALLENGE_MODE_START" then
         WatchRoster(true)
         RefreshTank()
         Prebuild()
-    elseif event == "ENCOUNTER_END" then
+    elseif evt == "ENCOUNTER_END" then
         Disarm()
-    elseif event == "CHALLENGE_MODE_COMPLETED" or event == "CHALLENGE_MODE_RESET" then
+    elseif evt == "CHALLENGE_MODE_COMPLETED" or evt == "CHALLENGE_MODE_RESET" then
         WatchRoster(false)
         Disarm()
-    elseif event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ROLES_ASSIGNED" then
+    elseif evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ROLES_ASSIGNED" then
         RefreshTank()
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         if not started then
             -- After every module's OnEnable, so ABR's DB and refresh exist. The
             -- options page and profile switches both go through that refresh.

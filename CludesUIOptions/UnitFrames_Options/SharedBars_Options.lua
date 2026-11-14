@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  come from ns._UFO_OptEnv, the page accessors from ctx (both filled by
 --  CUI_UnitFrames_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIUnitFrames"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -23,35 +23,35 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- another addon could replace.
 local PoolIsIdle = CludesUI._Pool.IsIdle
 
-function ns.UFO_BuildHealthBarSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
-    local AddDarkModeBlock, GROUP_UNIT_ORDER, PP, RegisterWidgetRefresh =
-        env.AddDarkModeBlock, env.GROUP_UNIT_ORDER, env.PP, env.RegisterWidgetRefresh
+function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
+    local AddDarkModeBlock, GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh =
+        environ.AddDarkModeBlock, environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh
     local ReloadAndUpdate, SHORT_LABELS, UNIT_DB_MAP, UpdatePreview =
-        env.ReloadAndUpdate, env.SHORT_LABELS, env.UNIT_DB_MAP, env.UpdatePreview
-    local db, healthTextOrder, healthTextOrderPlayer, healthTextOrderTargetFocus =
-        env.db, env.healthTextOrder, env.healthTextOrderPlayer, env.healthTextOrderTargetFocus
-    local healthTextValues, optState = env.healthTextValues, env.optState
-    local W, SDB, SGet, SSet = ctx.W, ctx.SDB, ctx.SGet, ctx.SSet
-    local SVal = ctx.SVal
-    local _, h
+        environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview
+    local saved, healthTextOrder, healthTextOrderPlayer, healthTextOrderTargetFocus =
+        environ.db, environ.healthTextOrder, environ.healthTextOrderPlayer, environ.healthTextOrderTargetFocus
+    local healthTextValues, optionState = environ.healthTextValues, environ.optState
+    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local SVal = context.SVal
+    local _, hgt
 
     -------------------------------------------------------------------
     --  HEALTH BAR
     -------------------------------------------------------------------
     local sharedBarsHeader
-    sharedBarsHeader, h = W:SectionHeader(parent, "HEALTH BAR", y)
-    y = y - h
+    sharedBarsHeader, hgt = Widgets:SectionHeader(hostFrame, "HEALTH BAR", posY)
+    posY = posY - hgt
 
     -- Row 1: Bar Height + Bar Width
     local sharedSizeRow
-    local ufhDis, ufhTip, ufhRaw = CludesUI.MatchGuard(optState.selectedUnit, "Height")
-    local ufwDis, ufwTip, ufwRaw = CludesUI.MatchGuard(optState.selectedUnit, "Width")
+    local ufhDis, ufhTip, ufhRaw = CludesUI.MatchGuard(optionState.selectedUnit, "Height")
+    local ufwDis, ufwTip, ufwRaw = CludesUI.MatchGuard(optionState.selectedUnit, "Width")
     -- Vertical Fill wants tall, narrow bars: the Vertical Fill toggle rebuilds the page.
     local vertFill = SVal("healthVerticalFill", false) == true
-    sharedSizeRow, h = W:DualRow(
-        parent,
-        y,
+    sharedSizeRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "slider",
             text = "Health Bar Height",
@@ -64,8 +64,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             getValue = function()
                 return SVal("healthHeight", 46)
             end,
-            setValue = function(v)
-                SSet("healthHeight", v)
+            setValue = function(val)
+                SSet("healthHeight", val)
             end,
         }),
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -80,19 +80,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             getValue = function()
                 return SVal("frameWidth", 181)
             end,
-            setValue = function(v)
-                SSet("frameWidth", v)
+            setValue = function(val)
+                SSet("frameWidth", val)
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
     -- Blizzard Style: the stock size is fixed, so the whole frame scales instead
     -- (this row is the preview's health-bar click target while the size row hides).
     local sharedScaleRow
     if CludesUI.BlizzStyle.Get("unitframes") then
-        sharedScaleRow, h = W:DualRow(
-            parent,
-            y,
+        sharedScaleRow, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "slider",
                 text = "Frame Scale",
@@ -103,8 +103,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 getValue = function()
                     return math.floor(SVal("blizzScale", 1) * 100 + 0.5)
                 end,
-                setValue = function(v)
-                    SSet("blizzScale", v / 100)
+                setValue = function(val)
+                    SSet("blizzScale", val / 100)
                 end,
             },
             -- Reverse Fill otherwise lives in the cog on the hidden size row.
@@ -114,14 +114,14 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 getValue = function()
                     return SVal("healthReverseFill", false)
                 end,
-                setValue = function(v)
-                    SSet("healthReverseFill", v)
+                setValue = function(val)
+                    SSet("healthReverseFill", val)
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
     end
     -- Sync icons: Bar Height (left) and Bar Width (right)
     if not CludesUI._prebuilding then
@@ -130,19 +130,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Health Bar Height to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().healthHeight or 46
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthHeight or 46
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
-                        UNIT_DB_MAP[key]().healthHeight = v
+                    if key ~= optionState.selectedUnit then
+                        UNIT_DB_MAP[key]().healthHeight = val
                     end
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().healthHeight or 46
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthHeight or 46
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().healthHeight or 46) ~= v then
+                    if (UNIT_DB_MAP[key]().healthHeight or 46) ~= val then
                         return false
                     end
                 end
@@ -155,12 +155,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().healthHeight or 46
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().healthHeight or 46
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().healthHeight = v
+                        UNIT_DB_MAP[key]().healthHeight = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -180,8 +180,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     get = function()
                         return SVal("healthReverseFill", false)
                     end,
-                    set = function(v)
-                        SSet("healthReverseFill", v)
+                    set = function(val)
+                        SSet("healthReverseFill", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                     end,
@@ -198,8 +198,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     -- A full rebuild: the size sliders' ranges follow Vertical Fill
                     -- (baked in at build), and the Absorbs Placement dropdowns
                     -- re-label for the new axis (cog popups bake labels in too).
-                    set = function(v)
-                        SSet("healthVerticalFill", v)
+                    set = function(val)
+                        SSet("healthVerticalFill", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                         CludesUI:RefreshPage(true)
@@ -214,19 +214,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Bar Width to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().frameWidth or 181
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().frameWidth or 181
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
-                        UNIT_DB_MAP[key]().frameWidth = v
+                    if key ~= optionState.selectedUnit then
+                        UNIT_DB_MAP[key]().frameWidth = val
                     end
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().frameWidth or 181
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().frameWidth or 181
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().frameWidth or 181) ~= v then
+                    if (UNIT_DB_MAP[key]().frameWidth or 181) ~= val then
                         return false
                     end
                 end
@@ -239,12 +239,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().frameWidth or 181
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().frameWidth or 181
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().frameWidth = v
+                        UNIT_DB_MAP[key]().frameWidth = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -255,7 +255,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
 
     -- Row 2: Bar Color (multiSwatch) + Bar Background (slider + inline swatch)
     local sharedHealthColorRow
-    sharedHealthColorRow, h = W:DualRow(parent, y, {
+    sharedHealthColorRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "multiSwatch",
         text = "Fill Color",
         swatches = {
@@ -276,7 +276,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     return 0.20, 0.20, 0.80
                 end,
                 setValue = function(r, g, b)
-                    UNIT_DB_MAP[optState.selectedUnit]().gradientColor = { r = r, g = g, b = b }
+                    UNIT_DB_MAP[optionState.selectedUnit]().gradientColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -302,7 +302,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     return 37 / 255, 193 / 255, 29 / 255
                 end,
                 setValue = function(r, g, b)
-                    UNIT_DB_MAP[optState.selectedUnit]().customFillColor = { r = r, g = g, b = b }
+                    UNIT_DB_MAP[optionState.selectedUnit]().customFillColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -312,7 +312,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         -- customFillColor the runtime falls back to oUF's class/reaction
                         -- color (bar looks unchanged until dragged); never overwrites an existing custom color.
                         if SGet("customFillColor") == nil then
-                            UNIT_DB_MAP[optState.selectedUnit]().customFillColor =
+                            UNIT_DB_MAP[optionState.selectedUnit]().customFillColor =
                                 { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
                         end
                         SSet("healthClassColored", false)
@@ -368,13 +368,13 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         getValue = function()
             return SVal("customBgAlpha", 100)
         end,
-        setValue = function(v)
-            SSet("customBgAlpha", v)
+        setValue = function(val)
+            SSet("customBgAlpha", val)
             ReloadAndUpdate()
             UpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline swatches on Bar Background (right): Custom + Class pair mirroring the
     -- Bar Color picker; either toggles bgClassColored, the inactive one dims to 0.3.
     if not CludesUI._prebuilding then
@@ -409,7 +409,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         bgClassSw:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        PP.Point(bgClassSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        Pix.Point(bgClassSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgClassSw
         RegisterWidgetRefresh(function()
             bgClassUpdate()
@@ -426,7 +426,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             return 17 / 255, 17 / 255, 17 / 255
         end
         local bgSwSet = function(r, g, b)
-            UNIT_DB_MAP[optState.selectedUnit]().customBgColor = { r = r, g = g, b = b }
+            UNIT_DB_MAP[optionState.selectedUnit]().customBgColor = { r = r, g = g, b = b }
             ReloadAndUpdate()
             UpdatePreview()
         end
@@ -451,7 +451,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         bgSw:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        PP.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        Pix.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgSw
         RegisterWidgetRefresh(function()
             bgSwUpdate()
@@ -462,13 +462,13 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
     -- Sync icon: Bar Background (right) -- background color + opacity
     if not CludesUI._prebuilding then
         local rgn = sharedHealthColorRow._rightRegion
-        local function ApplyBgTo(keys)
-            local src = UNIT_DB_MAP[optState.selectedUnit]()
-            local bc = src.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
-            local bgA = src.customBgAlpha or 100
-            local bgClass = src.bgClassColored or false
-            for _, key in ipairs(keys) do
-                if key ~= optState.selectedUnit then
+        local function ApplyBgTo(keyList)
+            local source = UNIT_DB_MAP[optionState.selectedUnit]()
+            local bc = source.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
+            local bgA = source.customBgAlpha or 100
+            local bgClass = source.bgClassColored or false
+            for _, key in ipairs(keyList) do
+                if key ~= optionState.selectedUnit then
                     local d = UNIT_DB_MAP[key]()
                     d.customBgColor = { r = bc.r, g = bc.g, b = bc.b }
                     d.customBgAlpha = bgA
@@ -485,7 +485,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 ApplyBgTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
                     if a == nil and b == nil then
                         return true
@@ -497,13 +497,13 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 end
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    if not colEq(d.customBgColor, src.customBgColor) then
+                    if not colEq(d.customBgColor, source.customBgColor) then
                         return false
                     end
-                    if (d.customBgAlpha or 100) ~= (src.customBgAlpha or 100) then
+                    if (d.customBgAlpha or 100) ~= (source.customBgAlpha or 100) then
                         return false
                     end
-                    if (d.bgClassColored or false) ~= (src.bgClassColored or false) then
+                    if (d.bgClassColored or false) ~= (source.bgClassColored or false) then
                         return false
                     end
                 end
@@ -516,7 +516,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyBgTo(checkedKeys)
@@ -530,16 +530,16 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         -- Dynamic Color lives in this slot's cog, and its three stops are inline
         -- swatches on this row, so they travel with the rest of Bar Color.
         local DYN_STOP_KEYS = { "dynamicColor100", "dynamicColor50", "dynamicColor0" }
-        local function ApplyColorTo(keys)
-            local src = UNIT_DB_MAP[optState.selectedUnit]()
-            local cc = src.healthClassColored or false
-            local fc = src.customFillColor
-            local gEn = src.gradientEnabled or false
-            local gDir = src.gradientDir or "HORIZONTAL"
-            local gc = src.gradientColor
-            local dynMode = src.healthColorMode or "none"
-            for _, key in ipairs(keys) do
-                if key ~= optState.selectedUnit then
+        local function ApplyColorTo(keyList)
+            local source = UNIT_DB_MAP[optionState.selectedUnit]()
+            local cc = source.healthClassColored or false
+            local fc = source.customFillColor
+            local gEn = source.gradientEnabled or false
+            local gDir = source.gradientDir or "HORIZONTAL"
+            local gc = source.gradientColor
+            local dynMode = source.healthColorMode or "none"
+            for _, key in ipairs(keyList) do
+                if key ~= optionState.selectedUnit then
                     local d = UNIT_DB_MAP[key]()
                     d.healthClassColored = cc
                     if fc then
@@ -556,7 +556,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     end
                     d.healthColorMode = dynMode
                     for _, ck in ipairs(DYN_STOP_KEYS) do
-                        local sc = src[ck]
+                        local sc = source[ck]
                         if sc then
                             d[ck] = { r = sc.r, g = sc.g, b = sc.b }
                         else
@@ -575,7 +575,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 ApplyColorTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
                     if a == nil and b == nil then
                         return true
@@ -587,26 +587,26 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 end
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    if (d.healthClassColored or false) ~= (src.healthClassColored or false) then
+                    if (d.healthClassColored or false) ~= (source.healthClassColored or false) then
                         return false
                     end
-                    if not colEq(d.customFillColor, src.customFillColor) then
+                    if not colEq(d.customFillColor, source.customFillColor) then
                         return false
                     end
-                    if (d.gradientEnabled or false) ~= (src.gradientEnabled or false) then
+                    if (d.gradientEnabled or false) ~= (source.gradientEnabled or false) then
                         return false
                     end
-                    if not colEq(d.gradientColor, src.gradientColor) then
+                    if not colEq(d.gradientColor, source.gradientColor) then
                         return false
                     end
-                    if (d.gradientDir or "HORIZONTAL") ~= (src.gradientDir or "HORIZONTAL") then
+                    if (d.gradientDir or "HORIZONTAL") ~= (source.gradientDir or "HORIZONTAL") then
                         return false
                     end
-                    if (d.healthColorMode or "none") ~= (src.healthColorMode or "none") then
+                    if (d.healthColorMode or "none") ~= (source.healthColorMode or "none") then
                         return false
                     end
                     for _, ck in ipairs(DYN_STOP_KEYS) do
-                        if not colEq(d[ck], src[ck]) then
+                        if not colEq(d[ck], source[ck]) then
                             return false
                         end
                     end
@@ -620,7 +620,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyColorTo(checkedKeys)
@@ -658,8 +658,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         return SVal("healthColorMode", "none")
                     end,
                     -- RefreshPage re-runs the stop swatches' show/hide pass.
-                    set = function(v)
-                        SSet("healthColorMode", v)
+                    set = function(val)
+                        SSet("healthColorMode", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -671,8 +671,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     get = function()
                         return SVal("gradientEnabled", false)
                     end,
-                    set = function(v)
-                        SSet("gradientEnabled", v)
+                    set = function(val)
+                        SSet("gradientEnabled", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -686,8 +686,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     get = function()
                         return SVal("gradientDir", "HORIZONTAL")
                     end,
-                    set = function(v)
-                        SSet("gradientDir", v)
+                    set = function(val)
+                        SSet("gradientDir", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -721,17 +721,17 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         }
         local dynSwatches, dynUpdaters = {}, {}
         local prevAnchor = rgn._lastInline or rgn._control
-        for i = #dynDefs, 1, -1 do
-            local dd = dynDefs[i]
+        for idx = #dynDefs, 1, -1 do
+            local dropdown = dynDefs[idx]
             local sw, swUpdate = CludesUI.BuildColorSwatch(
                 rgn,
                 sharedHealthColorRow:GetFrameLevel() + 3,
                 function()
-                    local c = SGet(dd.key) or dd.def
+                    local c = SGet(dropdown.key) or dropdown.def
                     return c.r, c.g, c.b, 1
                 end,
                 function(r, g, b)
-                    UNIT_DB_MAP[optState.selectedUnit]()[dd.key] = { r = r, g = g, b = b }
+                    UNIT_DB_MAP[optionState.selectedUnit]()[dropdown.key] = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -740,13 +740,13 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             )
             sw:SetPoint("RIGHT", prevAnchor, "LEFT", -8, 0)
             sw:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(sw, dd.tip)
+                CludesUI.ShowWidgetTooltip(sw, dropdown.tip)
             end)
             sw:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            dynSwatches[i] = sw
-            dynUpdaters[i] = swUpdate
+            dynSwatches[idx] = sw
+            dynUpdaters[idx] = swUpdate
             prevAnchor = sw
         end
         rgn._lastInline = prevAnchor
@@ -757,14 +757,14 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         -- than rebuilding the page, so without this the swatches keep showing
         -- the previous unit's colors.
         local function UpdateDynSwatchVis()
-            local mode = SVal("healthColorMode", "none")
-            local isDynamic = mode == "customDynamic"
-            local isReactive = mode == "classReactive"
-            for i, sw in ipairs(dynSwatches) do
-                if dynUpdaters[i] then
-                    dynUpdaters[i]()
+            local modeName = SVal("healthColorMode", "none")
+            local isDynamic = modeName == "customDynamic"
+            local isReactive = modeName == "classReactive"
+            for idx, sw in ipairs(dynSwatches) do
+                if dynUpdaters[idx] then
+                    dynUpdaters[idx]()
                 end
-                if isDynamic or (isReactive and i > 1) then
+                if isDynamic or (isReactive and idx > 1) then
                     sw:Show()
                 else
                     sw:Hide()
@@ -784,14 +784,14 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
 
     -- Row 3: Smooth Health Bars + Bar Opacity
     local sharedOpacityRow
-    sharedOpacityRow, h = W:DualRow(parent, y, {
+    sharedOpacityRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Smooth Health Bars",
         getValue = function()
             return SVal("smoothBars", false)
         end,
-        setValue = function(v)
-            SSet("smoothBars", v)
+        setValue = function(val)
+            SSet("smoothBars", val)
         end,
     }, {
         type = "slider",
@@ -800,19 +800,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         max = 100,
         step = 1,
         disabled = function()
-            return ns.UF_DarkThemeOn(SDB())
+            return mod.UF_DarkThemeOn(SDB())
         end,
         disabledTooltip = "Dark Mode",
         requireState = "disabled",
         getValue = function()
             return SVal("healthBarOpacity", 90)
         end,
-        setValue = function(v)
-            SSet("healthBarOpacity", v)
+        setValue = function(val)
+            SSet("healthBarOpacity", val)
             UpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Sync icon: Bar Opacity (right)
     if not CludesUI._prebuilding then
         local rgn = sharedOpacityRow._rightRegion
@@ -820,19 +820,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Bar Opacity to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().healthBarOpacity or 90
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthBarOpacity or 90
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
-                        UNIT_DB_MAP[key]().healthBarOpacity = v
+                    if key ~= optionState.selectedUnit then
+                        UNIT_DB_MAP[key]().healthBarOpacity = val
                     end
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().healthBarOpacity or 90
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthBarOpacity or 90
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().healthBarOpacity or 90) ~= v then
+                    if (UNIT_DB_MAP[key]().healthBarOpacity or 90) ~= val then
                         return false
                     end
                 end
@@ -845,12 +845,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().healthBarOpacity or 90
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().healthBarOpacity or 90
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().healthBarOpacity = v
+                        UNIT_DB_MAP[key]().healthBarOpacity = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -864,22 +864,22 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
     -- the preview level text's click target (stashed on the page: the
     -- targets table at the end reads it).
     if CludesUI.BlizzStyle.Get("unitframes") then
-        parent._ufLevelRow, h = W:DualRow(parent, y, {
+        hostFrame._ufLevelRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Level",
             tooltip = "Shows the unit's level in the frame's level circle, as the default UI does.",
             getValue = function()
                 return SVal("blizzShowLevel", true)
             end,
-            setValue = function(v)
-                SSet("blizzShowLevel", v)
+            setValue = function(val)
+                SSet("blizzShowLevel", val)
                 UpdatePreview()
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(parent._ufLevelRow._leftRegion, {
+            CludesUI.BuildInlineCog(hostFrame._ufLevelRow._leftRegion, {
                 disabled = function()
                     return not SVal("blizzShowLevel", true)
                 end,
@@ -896,8 +896,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         get = function()
                             return SVal("blizzLevelSize", SVal("leftTextSize", SDB().textSize or 12))
                         end,
-                        set = function(v)
-                            SSet("blizzLevelSize", v)
+                        set = function(val)
+                            SSet("blizzLevelSize", val)
                             UpdatePreview()
                         end,
                     },
@@ -910,8 +910,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         get = function()
                             return SVal("blizzLevelX", 0)
                         end,
-                        set = function(v)
-                            SSet("blizzLevelX", v)
+                        set = function(val)
+                            SSet("blizzLevelX", val)
                             UpdatePreview()
                         end,
                     },
@@ -924,8 +924,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         get = function()
                             return SVal("blizzLevelY", 0)
                         end,
-                        set = function(v)
-                            SSet("blizzLevelY", v)
+                        set = function(val)
+                            SSet("blizzLevelY", val)
                             UpdatePreview()
                         end,
                     },
@@ -935,14 +935,14 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         label = "Difficulty Color",
                         tooltip = "Colors an attackable unit's level by difficulty, as the default UI does.",
                         disabled = function()
-                            return optState.selectedUnit == "player"
+                            return optionState.selectedUnit == "player"
                         end,
                         disabledTooltip = "This option does not apply to the player frame.",
                         get = function()
                             return SVal("blizzLevelDifficultyColor", true)
                         end,
-                        set = function(v)
-                            SSet("blizzLevelDifficultyColor", v)
+                        set = function(val)
+                            SSet("blizzLevelDifficultyColor", val)
                             UpdatePreview()
                         end,
                     },
@@ -961,19 +961,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             type = "dropdown",
             text = "Left Text",
             values = healthTextValues,
-            order = (optState.selectedUnit == "player" and healthTextOrderPlayer)
-                or ((optState.selectedUnit == "target" or optState.selectedUnit == "focus") and healthTextOrderTargetFocus)
+            order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
+                or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
             getValue = function()
                 return SVal("leftTextContent", "name")
             end,
-            setValue = function(v)
-                SSet("leftTextContent", v)
-                if ns.UF_IsUniqueContent(v) then
-                    if SGet("rightTextContent") == v then
+            setValue = function(val)
+                SSet("leftTextContent", val)
+                if mod.UF_IsUniqueContent(val) then
+                    if SGet("rightTextContent") == val then
                         SSet("rightTextContent", "none")
                     end
-                    if SGet("centerTextContent") == v then
+                    if SGet("centerTextContent") == val then
                         SSet("centerTextContent", "none")
                     end
                 end
@@ -984,31 +984,31 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         decorate = function(rgn)
             -- Sync icon: Left Text (left)
             if not CludesUI._prebuilding then
-                local function ApplyLeftTextTo(keys)
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v = src.leftTextContent or "name"
-                    for _, key in ipairs(keys) do
-                        if key ~= optState.selectedUnit then
+                local function ApplyLeftTextTo(keyList)
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local val = source.leftTextContent or "name"
+                    for _, key in ipairs(keyList) do
+                        if key ~= optionState.selectedUnit then
                             local d = UNIT_DB_MAP[key]()
                             d.leftTextContent = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
-                            d.leftTextClassColor = src.leftTextClassColor
+                                or val
+                            d.leftTextClassColor = source.leftTextClassColor
                             d.leftTextColorR, d.leftTextColorG, d.leftTextColorB =
-                                src.leftTextColorR, src.leftTextColorG, src.leftTextColorB
-                            d.leftTextSize = src.leftTextSize
-                            d.leftTextX, d.leftTextY = src.leftTextX, src.leftTextY
-                            d.leftTextWidthPct = src.leftTextWidthPct
-                            if v == "custom" then
-                                d.leftTextCustomFormat = src.leftTextCustomFormat
+                                source.leftTextColorR, source.leftTextColorG, source.leftTextColorB
+                            d.leftTextSize = source.leftTextSize
+                            d.leftTextX, d.leftTextY = source.leftTextX, source.leftTextY
+                            d.leftTextWidthPct = source.leftTextWidthPct
+                            if val == "custom" then
+                                d.leftTextCustomFormat = source.leftTextCustomFormat
                             end
                         end
                     end
@@ -1022,51 +1022,51 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         ApplyLeftTextTo(GROUP_UNIT_ORDER)
                     end,
                     isSynced = function()
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v = src.leftTextContent or "name"
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local val = source.leftTextContent or "name"
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
                             local d = UNIT_DB_MAP[key]()
                             local expected = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
+                                or val
                             if (d.leftTextContent or "name") ~= expected then
                                 return false
                             end
-                            if (d.leftTextClassColor or false) ~= (src.leftTextClassColor or false) then
+                            if (d.leftTextClassColor or false) ~= (source.leftTextClassColor or false) then
                                 return false
                             end
-                            if (d.leftTextColorR or 1) ~= (src.leftTextColorR or 1) then
+                            if (d.leftTextColorR or 1) ~= (source.leftTextColorR or 1) then
                                 return false
                             end
-                            if (d.leftTextColorG or 1) ~= (src.leftTextColorG or 1) then
+                            if (d.leftTextColorG or 1) ~= (source.leftTextColorG or 1) then
                                 return false
                             end
-                            if (d.leftTextColorB or 1) ~= (src.leftTextColorB or 1) then
+                            if (d.leftTextColorB or 1) ~= (source.leftTextColorB or 1) then
                                 return false
                             end
-                            if (d.leftTextSize or 0) ~= (src.leftTextSize or 0) then
+                            if (d.leftTextSize or 0) ~= (source.leftTextSize or 0) then
                                 return false
                             end
-                            if (d.leftTextX or 0) ~= (src.leftTextX or 0) then
+                            if (d.leftTextX or 0) ~= (source.leftTextX or 0) then
                                 return false
                             end
-                            if (d.leftTextY or 0) ~= (src.leftTextY or 0) then
+                            if (d.leftTextY or 0) ~= (source.leftTextY or 0) then
                                 return false
                             end
-                            if (d.leftTextWidthPct or 100) ~= (src.leftTextWidthPct or 100) then
+                            if (d.leftTextWidthPct or 100) ~= (source.leftTextWidthPct or 100) then
                                 return false
                             end
                             if
-                                v == "custom"
-                                and (d.leftTextCustomFormat or "") ~= (src.leftTextCustomFormat or "")
+                                val == "custom"
+                                and (d.leftTextCustomFormat or "") ~= (source.leftTextCustomFormat or "")
                             then
                                 return false
                             end
@@ -1080,7 +1080,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
                             ApplyLeftTextTo(checkedKeys)
@@ -1097,7 +1097,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Left Text Settings",
-                    rows = ns.UF_CoreTextRows("leftText", "name", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("leftText", "name", SVal, SSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1107,8 +1107,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("leftTextSize", SDB().textSize or 12)
                             end,
-                            set = function(v)
-                                SSet("leftTextSize", v)
+                            set = function(val)
+                                SSet("leftTextSize", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1121,8 +1121,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("leftTextX", 0)
                             end,
-                            set = function(v)
-                                SSet("leftTextX", v)
+                            set = function(val)
+                                SSet("leftTextX", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1135,8 +1135,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("leftTextY", 0)
                             end,
-                            set = function(v)
-                                SSet("leftTextY", v)
+                            set = function(val)
+                                SSet("leftTextY", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1149,8 +1149,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("leftTextWidthPct", 100)
                             end,
-                            set = function(v)
-                                SSet("leftTextWidthPct", v)
+                            set = function(val)
+                                SSet("leftTextWidthPct", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1220,12 +1220,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("leftTextTargetSep", ">")
                             end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
+                            set = function(val)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if val == "" then
+                                    val = ">"
                                 end
-                                SSet("leftTextTargetSep", v)
+                                SSet("leftTextTargetSep", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -1241,10 +1241,10 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("leftTextTargetPrefix", "T:")
                             end,
-                            set = function(v)
+                            set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                SSet("leftTextTargetPrefix", v)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                SSet("leftTextTargetPrefix", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -1276,7 +1276,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     nil,
                     20
                 )
-                PP.Point(ltClassSwatch, "RIGHT", ltAnchor, "LEFT", -8, 0)
+                Pix.Point(ltClassSwatch, "RIGHT", ltAnchor, "LEFT", -8, 0)
                 ltClassSwatch:SetScript("OnClick", function()
                     if SVal("leftTextContent", "name") == "none" then
                         return
@@ -1309,7 +1309,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 end
                 local ltSwatch, ltUpdateSwatch =
                     CludesUI.BuildColorSwatch(leftRgn, leftRgn:GetFrameLevel() + 5, ltSwGet, ltSwSet, nil, 20)
-                PP.Point(ltSwatch, "RIGHT", ltClassSwatch, "LEFT", -8, 0)
+                Pix.Point(ltSwatch, "RIGHT", ltClassSwatch, "LEFT", -8, 0)
                 leftRgn._lastInline = ltSwatch
                 local ltOrigClick = ltSwatch:GetScript("OnClick")
                 ltSwatch:SetScript("OnClick", function(self, ...)
@@ -1356,8 +1356,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         getValue = function()
                             return SVal("leftTextClassColor", false)
                         end,
-                        setValue = function(v)
-                            SSet("leftTextClassColor", v)
+                        setValue = function(val)
+                            SSet("leftTextClassColor", val)
                         end,
                     })
                 end
@@ -1372,19 +1372,19 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             type = "dropdown",
             text = "Right Text",
             values = healthTextValues,
-            order = (optState.selectedUnit == "player" and healthTextOrderPlayer)
-                or ((optState.selectedUnit == "target" or optState.selectedUnit == "focus") and healthTextOrderTargetFocus)
+            order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
+                or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
             getValue = function()
                 return SVal("rightTextContent", "both")
             end,
-            setValue = function(v)
-                SSet("rightTextContent", v)
-                if ns.UF_IsUniqueContent(v) then
-                    if SGet("leftTextContent") == v then
+            setValue = function(val)
+                SSet("rightTextContent", val)
+                if mod.UF_IsUniqueContent(val) then
+                    if SGet("leftTextContent") == val then
                         SSet("leftTextContent", "none")
                     end
-                    if SGet("centerTextContent") == v then
+                    if SGet("centerTextContent") == val then
                         SSet("centerTextContent", "none")
                     end
                 end
@@ -1395,31 +1395,31 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         decorate = function(rgn)
             -- Sync icon: Right Text (right)
             if not CludesUI._prebuilding then
-                local function ApplyRightTextTo(keys)
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v = src.rightTextContent or "both"
-                    for _, key in ipairs(keys) do
-                        if key ~= optState.selectedUnit then
+                local function ApplyRightTextTo(keyList)
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local val = source.rightTextContent or "both"
+                    for _, key in ipairs(keyList) do
+                        if key ~= optionState.selectedUnit then
                             local d = UNIT_DB_MAP[key]()
                             d.rightTextContent = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
-                            d.rightTextClassColor = src.rightTextClassColor
+                                or val
+                            d.rightTextClassColor = source.rightTextClassColor
                             d.rightTextColorR, d.rightTextColorG, d.rightTextColorB =
-                                src.rightTextColorR, src.rightTextColorG, src.rightTextColorB
-                            d.rightTextSize = src.rightTextSize
-                            d.rightTextX, d.rightTextY = src.rightTextX, src.rightTextY
-                            d.rightTextWidthPct = src.rightTextWidthPct
-                            if v == "custom" then
-                                d.rightTextCustomFormat = src.rightTextCustomFormat
+                                source.rightTextColorR, source.rightTextColorG, source.rightTextColorB
+                            d.rightTextSize = source.rightTextSize
+                            d.rightTextX, d.rightTextY = source.rightTextX, source.rightTextY
+                            d.rightTextWidthPct = source.rightTextWidthPct
+                            if val == "custom" then
+                                d.rightTextCustomFormat = source.rightTextCustomFormat
                             end
                         end
                     end
@@ -1433,51 +1433,52 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         ApplyRightTextTo(GROUP_UNIT_ORDER)
                     end,
                     isSynced = function()
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v = src.rightTextContent or "both"
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local val = source.rightTextContent or "both"
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
                             local d = UNIT_DB_MAP[key]()
                             local expected = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
+                                or val
                             if (d.rightTextContent or "both") ~= expected then
                                 return false
                             end
-                            if (d.rightTextClassColor or false) ~= (src.rightTextClassColor or false) then
+                            if (d.rightTextClassColor or false) ~= (source.rightTextClassColor or false) then
                                 return false
                             end
-                            if (d.rightTextColorR or 1) ~= (src.rightTextColorR or 1) then
+                            if (d.rightTextColorR or 1) ~= (source.rightTextColorR or 1) then
                                 return false
                             end
-                            if (d.rightTextColorG or 1) ~= (src.rightTextColorG or 1) then
+                            if (d.rightTextColorG or 1) ~= (source.rightTextColorG or 1) then
                                 return false
                             end
-                            if (d.rightTextColorB or 1) ~= (src.rightTextColorB or 1) then
+                            if (d.rightTextColorB or 1) ~= (source.rightTextColorB or 1) then
                                 return false
                             end
-                            if (d.rightTextSize or 0) ~= (src.rightTextSize or 0) then
+                            if (d.rightTextSize or 0) ~= (source.rightTextSize or 0) then
                                 return false
                             end
-                            if (d.rightTextX or 0) ~= (src.rightTextX or 0) then
+                            if (d.rightTextX or 0) ~= (source.rightTextX or 0) then
                                 return false
                             end
-                            if (d.rightTextY or 0) ~= (src.rightTextY or 0) then
+                            if (d.rightTextY or 0) ~= (source.rightTextY or 0) then
                                 return false
                             end
-                            if (d.rightTextWidthPct or 100) ~= (src.rightTextWidthPct or 100) then
+                            if (d.rightTextWidthPct or 100) ~= (source.rightTextWidthPct or 100) then
                                 return false
                             end
                             if
-                                v == "custom"
-                                and (d.rightTextCustomFormat or "") ~= (src.rightTextCustomFormat or "")
+                                val == "custom"
+                                and (d.rightTextCustomFormat or "")
+                                    ~= (source.rightTextCustomFormat or "")
                             then
                                 return false
                             end
@@ -1491,7 +1492,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
                             ApplyRightTextTo(checkedKeys)
@@ -1508,7 +1509,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Right Text Settings",
-                    rows = ns.UF_CoreTextRows("rightText", "both", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("rightText", "both", SVal, SSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1518,8 +1519,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("rightTextSize", SDB().textSize or 12)
                             end,
-                            set = function(v)
-                                SSet("rightTextSize", v)
+                            set = function(val)
+                                SSet("rightTextSize", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1532,8 +1533,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("rightTextX", 0)
                             end,
-                            set = function(v)
-                                SSet("rightTextX", v)
+                            set = function(val)
+                                SSet("rightTextX", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1546,8 +1547,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("rightTextY", 0)
                             end,
-                            set = function(v)
-                                SSet("rightTextY", v)
+                            set = function(val)
+                                SSet("rightTextY", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1560,8 +1561,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("rightTextWidthPct", 100)
                             end,
-                            set = function(v)
-                                SSet("rightTextWidthPct", v)
+                            set = function(val)
+                                SSet("rightTextWidthPct", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1631,12 +1632,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("rightTextTargetSep", ">")
                             end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
+                            set = function(val)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if val == "" then
+                                    val = ">"
                                 end
-                                SSet("rightTextTargetSep", v)
+                                SSet("rightTextTargetSep", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -1652,10 +1653,10 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("rightTextTargetPrefix", "T:")
                             end,
-                            set = function(v)
+                            set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                SSet("rightTextTargetPrefix", v)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                SSet("rightTextTargetPrefix", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -1686,7 +1687,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     nil,
                     20
                 )
-                PP.Point(rtClassSwatch, "RIGHT", rtAnchor, "LEFT", -8, 0)
+                Pix.Point(rtClassSwatch, "RIGHT", rtAnchor, "LEFT", -8, 0)
                 rtClassSwatch:SetScript("OnClick", function()
                     if SVal("rightTextContent", "both") == "none" then
                         return
@@ -1723,7 +1724,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     nil,
                     20
                 )
-                PP.Point(rtSwatch, "RIGHT", rtClassSwatch, "LEFT", -8, 0)
+                Pix.Point(rtSwatch, "RIGHT", rtClassSwatch, "LEFT", -8, 0)
                 rightRgn._lastInline = rtSwatch
                 local rtOrigClick = rtSwatch:GetScript("OnClick")
                 rtSwatch:SetScript("OnClick", function(self, ...)
@@ -1768,8 +1769,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         getValue = function()
                             return SVal("rightTextClassColor", false)
                         end,
-                        setValue = function(v)
-                            SSet("rightTextClassColor", v)
+                        setValue = function(val)
+                            SSet("rightTextClassColor", val)
                         end,
                     })
                 end
@@ -1784,14 +1785,14 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             type = "dropdown",
             text = "Center Text",
             values = healthTextValues,
-            order = (optState.selectedUnit == "player" and healthTextOrderPlayer)
-                or ((optState.selectedUnit == "target" or optState.selectedUnit == "focus") and healthTextOrderTargetFocus)
+            order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
+                or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
             getValue = function()
                 return SVal("centerTextContent", "none")
             end,
-            setValue = function(v)
-                SSet("centerTextContent", v)
+            setValue = function(val)
+                SSet("centerTextContent", val)
                 ReloadAndUpdate()
                 UpdatePreview()
                 CludesUI:RefreshPage(true)
@@ -1800,31 +1801,31 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         decorate = function(rgn)
             -- Sync icon: Center Text (left)
             if not CludesUI._prebuilding then
-                local function ApplyCenterTextTo(keys)
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v = src.centerTextContent or "none"
-                    for _, key in ipairs(keys) do
-                        if key ~= optState.selectedUnit then
+                local function ApplyCenterTextTo(keyList)
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local val = source.centerTextContent or "none"
+                    for _, key in ipairs(keyList) do
+                        if key ~= optionState.selectedUnit then
                             local d = UNIT_DB_MAP[key]()
                             d.centerTextContent = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
-                            d.centerTextClassColor = src.centerTextClassColor
+                                or val
+                            d.centerTextClassColor = source.centerTextClassColor
                             d.centerTextColorR, d.centerTextColorG, d.centerTextColorB =
-                                src.centerTextColorR, src.centerTextColorG, src.centerTextColorB
-                            d.centerTextSize = src.centerTextSize
-                            d.centerTextX, d.centerTextY = src.centerTextX, src.centerTextY
-                            d.centerTextWidthPct = src.centerTextWidthPct
-                            if v == "custom" then
-                                d.centerTextCustomFormat = src.centerTextCustomFormat
+                                source.centerTextColorR, source.centerTextColorG, source.centerTextColorB
+                            d.centerTextSize = source.centerTextSize
+                            d.centerTextX, d.centerTextY = source.centerTextX, source.centerTextY
+                            d.centerTextWidthPct = source.centerTextWidthPct
+                            if val == "custom" then
+                                d.centerTextCustomFormat = source.centerTextCustomFormat
                             end
                         end
                     end
@@ -1838,51 +1839,54 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         ApplyCenterTextTo(GROUP_UNIT_ORDER)
                     end,
                     isSynced = function()
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v = src.centerTextContent or "none"
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local val = source.centerTextContent or "none"
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
                             local d = UNIT_DB_MAP[key]()
                             local expected = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
+                                or val
                             if (d.centerTextContent or "none") ~= expected then
                                 return false
                             end
-                            if (d.centerTextClassColor or false) ~= (src.centerTextClassColor or false) then
+                            if
+                                (d.centerTextClassColor or false) ~= (source.centerTextClassColor or false)
+                            then
                                 return false
                             end
-                            if (d.centerTextColorR or 1) ~= (src.centerTextColorR or 1) then
+                            if (d.centerTextColorR or 1) ~= (source.centerTextColorR or 1) then
                                 return false
                             end
-                            if (d.centerTextColorG or 1) ~= (src.centerTextColorG or 1) then
+                            if (d.centerTextColorG or 1) ~= (source.centerTextColorG or 1) then
                                 return false
                             end
-                            if (d.centerTextColorB or 1) ~= (src.centerTextColorB or 1) then
+                            if (d.centerTextColorB or 1) ~= (source.centerTextColorB or 1) then
                                 return false
                             end
-                            if (d.centerTextSize or 0) ~= (src.centerTextSize or 0) then
+                            if (d.centerTextSize or 0) ~= (source.centerTextSize or 0) then
                                 return false
                             end
-                            if (d.centerTextX or 0) ~= (src.centerTextX or 0) then
+                            if (d.centerTextX or 0) ~= (source.centerTextX or 0) then
                                 return false
                             end
-                            if (d.centerTextY or 0) ~= (src.centerTextY or 0) then
+                            if (d.centerTextY or 0) ~= (source.centerTextY or 0) then
                                 return false
                             end
-                            if (d.centerTextWidthPct or 100) ~= (src.centerTextWidthPct or 100) then
+                            if (d.centerTextWidthPct or 100) ~= (source.centerTextWidthPct or 100) then
                                 return false
                             end
                             if
-                                v == "custom"
-                                and (d.centerTextCustomFormat or "") ~= (src.centerTextCustomFormat or "")
+                                val == "custom"
+                                and (d.centerTextCustomFormat or "")
+                                    ~= (source.centerTextCustomFormat or "")
                             then
                                 return false
                             end
@@ -1896,7 +1900,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
                             ApplyCenterTextTo(checkedKeys)
@@ -1913,7 +1917,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Center Text Settings",
-                    rows = ns.UF_CoreTextRows("centerText", "none", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("centerText", "none", SVal, SSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1923,8 +1927,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("centerTextSize", SDB().textSize or 12)
                             end,
-                            set = function(v)
-                                SSet("centerTextSize", v)
+                            set = function(val)
+                                SSet("centerTextSize", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1937,8 +1941,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("centerTextX", 0)
                             end,
-                            set = function(v)
-                                SSet("centerTextX", v)
+                            set = function(val)
+                                SSet("centerTextX", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1951,8 +1955,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("centerTextY", 0)
                             end,
-                            set = function(v)
-                                SSet("centerTextY", v)
+                            set = function(val)
+                                SSet("centerTextY", val)
                                 UpdatePreview()
                             end,
                         },
@@ -1965,8 +1969,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("centerTextWidthPct", 100)
                             end,
-                            set = function(v)
-                                SSet("centerTextWidthPct", v)
+                            set = function(val)
+                                SSet("centerTextWidthPct", val)
                                 UpdatePreview()
                             end,
                         },
@@ -2036,12 +2040,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("centerTextTargetSep", ">")
                             end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
+                            set = function(val)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if val == "" then
+                                    val = ">"
                                 end
-                                SSet("centerTextTargetSep", v)
+                                SSet("centerTextTargetSep", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -2057,10 +2061,10 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("centerTextTargetPrefix", "T:")
                             end,
-                            set = function(v)
+                            set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                SSet("centerTextTargetPrefix", v)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                SSet("centerTextTargetPrefix", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -2091,7 +2095,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     nil,
                     20
                 )
-                PP.Point(ctClassSwatch, "RIGHT", ctAnchor, "LEFT", -8, 0)
+                Pix.Point(ctClassSwatch, "RIGHT", ctAnchor, "LEFT", -8, 0)
                 ctClassSwatch:SetScript("OnClick", function()
                     if SVal("centerTextContent", "none") == "none" then
                         return
@@ -2119,7 +2123,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 end
                 local ctSwatch, ctUpdateSwatch =
                     CludesUI.BuildColorSwatch(ctrRgn, ctrRgn:GetFrameLevel() + 5, ctSwGet, ctSwSet, nil, 20)
-                PP.Point(ctSwatch, "RIGHT", ctClassSwatch, "LEFT", -8, 0)
+                Pix.Point(ctSwatch, "RIGHT", ctClassSwatch, "LEFT", -8, 0)
                 ctrRgn._lastInline = ctSwatch
                 local ctOrigClick = ctSwatch:GetScript("OnClick")
                 ctSwatch:SetScript("OnClick", function(self, ...)
@@ -2165,14 +2169,14 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
             type = "dropdown",
             text = "Extra Text (full length)",
             values = healthTextValues,
-            order = (optState.selectedUnit == "player" and healthTextOrderPlayer)
-                or ((optState.selectedUnit == "target" or optState.selectedUnit == "focus") and healthTextOrderTargetFocus)
+            order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
+                or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
             getValue = function()
                 return SVal("extraTextContent", "none")
             end,
-            setValue = function(v)
-                SSet("extraTextContent", v)
+            setValue = function(val)
+                SSet("extraTextContent", val)
                 ReloadAndUpdate()
                 UpdatePreview()
                 CludesUI:RefreshPage(true)
@@ -2181,32 +2185,32 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         decorate = function(rgn)
             -- Sync icon: Extra Text.
             if not CludesUI._prebuilding then
-                local function ApplyExtraTextTo(keys)
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v = src.extraTextContent or "none"
-                    for _, key in ipairs(keys) do
-                        if key ~= optState.selectedUnit then
+                local function ApplyExtraTextTo(keyList)
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local val = source.extraTextContent or "none"
+                    for _, key in ipairs(keyList) do
+                        if key ~= optionState.selectedUnit then
                             local d = UNIT_DB_MAP[key]()
                             d.extraTextContent = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
-                            d.extraTextClassColor = src.extraTextClassColor
+                                or val
+                            d.extraTextClassColor = source.extraTextClassColor
                             d.extraTextColorR, d.extraTextColorG, d.extraTextColorB =
-                                src.extraTextColorR, src.extraTextColorG, src.extraTextColorB
-                            d.extraTextSize = src.extraTextSize
-                            d.extraTextX, d.extraTextY = src.extraTextX, src.extraTextY
-                            d.extraTextAlign = src.extraTextAlign
-                            d.extraTextWidthPct = src.extraTextWidthPct
-                            if v == "custom" then
-                                d.extraTextCustomFormat = src.extraTextCustomFormat
+                                source.extraTextColorR, source.extraTextColorG, source.extraTextColorB
+                            d.extraTextSize = source.extraTextSize
+                            d.extraTextX, d.extraTextY = source.extraTextX, source.extraTextY
+                            d.extraTextAlign = source.extraTextAlign
+                            d.extraTextWidthPct = source.extraTextWidthPct
+                            if val == "custom" then
+                                d.extraTextCustomFormat = source.extraTextCustomFormat
                             end
                         end
                     end
@@ -2220,54 +2224,55 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         ApplyExtraTextTo(GROUP_UNIT_ORDER)
                     end,
                     isSynced = function()
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v = src.extraTextContent or "none"
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local val = source.extraTextContent or "none"
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
                             local d = UNIT_DB_MAP[key]()
                             local expected = (
                                 (
-                                    v == "absorb"
-                                    or v == "absorbshort"
-                                    or v == "healabsorb"
-                                    or v == "healabsorbshort"
-                                    or v == "group"
+                                    val == "absorb"
+                                    or val == "absorbshort"
+                                    or val == "healabsorb"
+                                    or val == "healabsorbshort"
+                                    or val == "group"
                                 ) and key ~= "player"
                             )
                                     and "none"
-                                or v
+                                or val
                             if (d.extraTextContent or "none") ~= expected then
                                 return false
                             end
-                            if (d.extraTextClassColor or false) ~= (src.extraTextClassColor or false) then
+                            if (d.extraTextClassColor or false) ~= (source.extraTextClassColor or false) then
                                 return false
                             end
-                            if (d.extraTextColorR or 1) ~= (src.extraTextColorR or 1) then
+                            if (d.extraTextColorR or 1) ~= (source.extraTextColorR or 1) then
                                 return false
                             end
-                            if (d.extraTextColorG or 1) ~= (src.extraTextColorG or 1) then
+                            if (d.extraTextColorG or 1) ~= (source.extraTextColorG or 1) then
                                 return false
                             end
-                            if (d.extraTextColorB or 1) ~= (src.extraTextColorB or 1) then
+                            if (d.extraTextColorB or 1) ~= (source.extraTextColorB or 1) then
                                 return false
                             end
-                            if (d.extraTextSize or 0) ~= (src.extraTextSize or 0) then
+                            if (d.extraTextSize or 0) ~= (source.extraTextSize or 0) then
                                 return false
                             end
-                            if (d.extraTextX or 0) ~= (src.extraTextX or 0) then
+                            if (d.extraTextX or 0) ~= (source.extraTextX or 0) then
                                 return false
                             end
-                            if (d.extraTextY or 0) ~= (src.extraTextY or 0) then
+                            if (d.extraTextY or 0) ~= (source.extraTextY or 0) then
                                 return false
                             end
-                            if (d.extraTextAlign or "left") ~= (src.extraTextAlign or "left") then
+                            if (d.extraTextAlign or "left") ~= (source.extraTextAlign or "left") then
                                 return false
                             end
-                            if (d.extraTextWidthPct or 100) ~= (src.extraTextWidthPct or 100) then
+                            if (d.extraTextWidthPct or 100) ~= (source.extraTextWidthPct or 100) then
                                 return false
                             end
                             if
-                                v == "custom"
-                                and (d.extraTextCustomFormat or "") ~= (src.extraTextCustomFormat or "")
+                                val == "custom"
+                                and (d.extraTextCustomFormat or "")
+                                    ~= (source.extraTextCustomFormat or "")
                             then
                                 return false
                             end
@@ -2281,7 +2286,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
                             ApplyExtraTextTo(checkedKeys)
@@ -2298,7 +2303,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Extra Text Settings",
-                    rows = ns.UF_CoreTextRows("extraText", "none", SVal, SSet, {
+                    rows = mod.UF_CoreTextRows("extraText", "none", SVal, SSet, {
                         {
                             type = "dropdown",
                             label = "Alignment",
@@ -2307,8 +2312,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextAlign", "left")
                             end,
-                            set = function(v)
-                                SSet("extraTextAlign", v)
+                            set = function(val)
+                                SSet("extraTextAlign", val)
                                 ReloadAndUpdate()
                                 UpdatePreview()
                             end,
@@ -2322,8 +2327,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextSize", SDB().textSize or 12)
                             end,
-                            set = function(v)
-                                SSet("extraTextSize", v)
+                            set = function(val)
+                                SSet("extraTextSize", val)
                                 UpdatePreview()
                             end,
                         },
@@ -2336,8 +2341,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextX", 0)
                             end,
-                            set = function(v)
-                                SSet("extraTextX", v)
+                            set = function(val)
+                                SSet("extraTextX", val)
                                 UpdatePreview()
                             end,
                         },
@@ -2350,8 +2355,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextY", 0)
                             end,
-                            set = function(v)
-                                SSet("extraTextY", v)
+                            set = function(val)
+                                SSet("extraTextY", val)
                                 UpdatePreview()
                             end,
                         },
@@ -2364,8 +2369,8 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextWidthPct", 100)
                             end,
-                            set = function(v)
-                                SSet("extraTextWidthPct", v)
+                            set = function(val)
+                                SSet("extraTextWidthPct", val)
                                 UpdatePreview()
                             end,
                         },
@@ -2435,12 +2440,12 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextTargetSep", ">")
                             end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
+                            set = function(val)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if val == "" then
+                                    val = ">"
                                 end
-                                SSet("extraTextTargetSep", v)
+                                SSet("extraTextTargetSep", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -2456,10 +2461,10 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("extraTextTargetPrefix", "T:")
                             end,
-                            set = function(v)
+                            set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                SSet("extraTextTargetPrefix", v)
+                                val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                SSet("extraTextTargetPrefix", val)
                                 UpdatePreview()
                             end,
                             disabled = function()
@@ -2490,7 +2495,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                     nil,
                     20
                 )
-                PP.Point(etClassSwatch, "RIGHT", etAnchor, "LEFT", -8, 0)
+                Pix.Point(etClassSwatch, "RIGHT", etAnchor, "LEFT", -8, 0)
                 etClassSwatch:SetScript("OnClick", function()
                     if SVal("extraTextContent", "none") == "none" then
                         return
@@ -2516,7 +2521,7 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
                 end
                 local etSwatch, etUpdateSwatch =
                     CludesUI.BuildColorSwatch(etrRgn, etrRgn:GetFrameLevel() + 5, etSwGet, etSwSet, nil, 20)
-                PP.Point(etSwatch, "RIGHT", etClassSwatch, "LEFT", -8, 0)
+                Pix.Point(etSwatch, "RIGHT", etClassSwatch, "LEFT", -8, 0)
                 etrRgn._lastInline = etSwatch
                 local etOrigClick = etSwatch:GetScript("OnClick")
                 etSwatch:SetScript("OnClick", function(self, ...)
@@ -2555,11 +2560,11 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
         end,
     }
     local sharedTextRow, sharedCenterTextRow
-    y, sharedTextRow = ns.UFO_BuildTextSlots(W, parent, y, {
+    posY, sharedTextRow = mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, {
         slots = textSlots,
         values = healthTextValues,
         contentOrder = textSlots[1].cfg.order,
-        unit = optState.selectedUnit,
+        unit = optionState.selectedUnit,
         page = "Main Frames",
         db = SDB,
         liveDB = SDB,
@@ -2570,28 +2575,28 @@ function ns.UFO_BuildHealthBarSection(parent, y, ctx)
     })
     sharedCenterTextRow = sharedTextRow
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y, sharedBarsHeader, sharedScaleRow, sharedSizeRow, sharedTextRow, sharedCenterTextRow
+    return posY, sharedBarsHeader, sharedScaleRow, sharedSizeRow, sharedTextRow, sharedCenterTextRow
 end
 
-function ns.UFO_BuildPowerBarSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
-    local GROUP_UNIT_ORDER, PP, RegisterWidgetRefresh, ReloadAndUpdate =
-        env.GROUP_UNIT_ORDER, env.PP, env.RegisterWidgetRefresh, env.ReloadAndUpdate
-    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, optState =
-        env.SHORT_LABELS, env.UNIT_DB_MAP, env.UpdatePreview, env.optState
-    local W, SDB, SGet, SSet = ctx.W, ctx.SDB, ctx.SGet, ctx.SSet
-    local SSetSupported, SVal, SValSupported = ctx.SSetSupported, ctx.SVal, ctx.SValSupported
-    local _, h
+function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
+    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
+        environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
+    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, optionState =
+        environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.optState
+    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
+    local _, hgt
 
     -------------------------------------------------------------------
     --  POWER BAR
     -------------------------------------------------------------------
     local sharedPowerHeader
-    sharedPowerHeader, h = W:SectionHeader(parent, "POWER BAR", y)
-    y = y - h
+    sharedPowerHeader, hgt = Widgets:SectionHeader(hostFrame, "POWER BAR", posY)
+    posY = posY - hgt
 
     local ppPosValues = {
         ["below"] = "Below Health Bar",
@@ -2640,10 +2645,10 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             text = "Hide Power Bar",
             tooltip = "Hides the power bar and stretches the health bar over its space.",
             getValue = function()
-                return ns.UF_StockHidesPower(SDB())
+                return mod.UF_StockHidesPower(SDB())
             end,
-            setValue = function(v)
-                SSet("blizzHidePower", v and true or false)
+            setValue = function(val)
+                SSet("blizzHidePower", val and true or false)
                 UpdatePreview()
                 CludesUI:RefreshPage()
             end,
@@ -2658,17 +2663,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("powerHeight", 6)
             end,
-            setValue = function(v)
-                SSetSupported("powerHeight", v)
+            setValue = function(val)
+                SSetSupported("powerHeight", val)
                 ReloadAndUpdate()
                 UpdatePreview()
             end,
         }
     end
     local sharedPowerRow1
-    sharedPowerRow1, h = W:DualRow(
-        parent,
-        y,
+    sharedPowerRow1, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         powerLeftCfg,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "dropdown",
@@ -2678,8 +2683,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             getValue = function()
                 return stockPower and "below" or SVal("powerPosition", "below")
             end,
-            setValue = function(v)
-                SSet("powerPosition", v)
+            setValue = function(val)
+                SSet("powerPosition", val)
                 ReloadAndUpdate()
                 UpdatePreview()
                 -- Attached bars paint a Solid border: the power border's Width /
@@ -2688,7 +2693,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
     -- Cog on Position for X/Y offsets + Width (disabled unless detached, and
     -- under a stock style, which places the bar itself)
     if not CludesUI._prebuilding then
@@ -2698,8 +2703,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 if stockPower then
                     return true
                 end
-                local pos = SVal("powerPosition", "below")
-                return pos ~= "detached_top" and pos ~= "detached_bottom"
+                local place = SVal("powerPosition", "below")
+                return place ~= "detached_top" and place ~= "detached_bottom"
             end,
             disabledTooltip = stockPower and CludesUI.BlizzStyle.Label("unitframes")
                 or "This option requires a detached position to be active.",
@@ -2715,8 +2720,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerWidth", 0)
                     end,
-                    set = function(v)
-                        SSet("powerWidth", v)
+                    set = function(val)
+                        SSet("powerWidth", val)
                         UpdatePreview()
                     end,
                 },
@@ -2729,8 +2734,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerX", 0)
                     end,
-                    set = function(v)
-                        SSet("powerX", v)
+                    set = function(val)
+                        SSet("powerX", val)
                         UpdatePreview()
                     end,
                 },
@@ -2743,8 +2748,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerY", 0)
                     end,
-                    set = function(v)
-                        SSet("powerY", v)
+                    set = function(val)
+                        SSet("powerY", val)
                         UpdatePreview()
                     end,
                 },
@@ -2756,12 +2761,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
     if not CludesUI._prebuilding and stockPower then
         local rgn = sharedPowerRow1._leftRegion
         local function HiddenOf(key)
-            return ns.UF_StockHidesPower(UNIT_DB_MAP[key]())
+            return mod.UF_StockHidesPower(UNIT_DB_MAP[key]())
         end
-        local function ApplyHideTo(keys)
-            local v = HiddenOf(optState.selectedUnit)
-            for _, key in ipairs(keys) do
-                UNIT_DB_MAP[key]().blizzHidePower = v
+        local function ApplyHideTo(keyList)
+            local val = HiddenOf(optionState.selectedUnit)
+            for _, key in ipairs(keyList) do
+                UNIT_DB_MAP[key]().blizzHidePower = val
             end
             ReloadAndUpdate()
             CludesUI:RefreshPage()
@@ -2773,9 +2778,9 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 ApplyHideTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local v = HiddenOf(optState.selectedUnit)
+                local val = HiddenOf(optionState.selectedUnit)
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if HiddenOf(key) ~= v then
+                    if HiddenOf(key) ~= val then
                         return false
                     end
                 end
@@ -2788,7 +2793,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyHideTo(checkedKeys)
@@ -2801,17 +2806,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Power Bar Height to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerHeight or 6
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerHeight or 6
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().powerHeight = v
+                    UNIT_DB_MAP[key]().powerHeight = val
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerHeight or 6
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerHeight or 6
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerHeight or 6) ~= v then
+                    if (UNIT_DB_MAP[key]().powerHeight or 6) ~= val then
                         return false
                     end
                 end
@@ -2824,12 +2829,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().powerHeight or 6
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerHeight or 6
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerHeight = v
+                        UNIT_DB_MAP[key]().powerHeight = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -2843,7 +2848,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         CludesUI.BuildInlineCog(rgn, {
             title = "Power Bar Fill",
             disabled = stockPower and function()
-                return ns.UF_StockHidesPower(SDB())
+                return mod.UF_StockHidesPower(SDB())
             end or nil,
             disabledTooltip = stockPower and "Hide Power Bar" or nil,
             requireState = stockPower and "disabled" or nil,
@@ -2854,8 +2859,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerReverseFill", false)
                     end,
-                    set = function(v)
-                        SSet("powerReverseFill", v)
+                    set = function(val)
+                        SSet("powerReverseFill", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                     end,
@@ -2869,17 +2874,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Bar Position to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerPosition or "below"
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPosition or "below"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().powerPosition = v
+                    UNIT_DB_MAP[key]().powerPosition = val
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerPosition or "below"
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPosition or "below"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerPosition or "below") ~= v then
+                    if (UNIT_DB_MAP[key]().powerPosition or "below") ~= val then
                         return false
                     end
                 end
@@ -2892,12 +2897,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().powerPosition or "below"
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPosition or "below"
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerPosition = v
+                        UNIT_DB_MAP[key]().powerPosition = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -2908,30 +2913,30 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
 
     -- Row 2: Power Text (format) + Fill Opacity
     local sharedPowerRow2
-    local function SetPowerTextFormat(v)
-        SSet("powerTextFormat", v)
+    local function SetPowerTextFormat(val)
+        SSet("powerTextFormat", val)
         -- Auto-set position to center if user picks a format while position is "none"
-        if v ~= "none" and SVal("powerPercentText", "none") == "none" then
+        if val ~= "none" and SVal("powerPercentText", "none") == "none" then
             SSet("powerPercentText", "center")
         end
         -- If format is "none", clear position too
-        if v == "none" then
+        if val == "none" then
             SSet("powerPercentText", "none")
         end
         ReloadAndUpdate()
         UpdatePreview()
         CludesUI:RefreshPage()
         -- The page stays, so the menu is rebuilt for Custom's pencil.
-        ns.UFO_RefreshMenus(sharedPowerRow2 and sharedPowerRow2._leftRegion)
+        mod.UFO_RefreshMenus(sharedPowerRow2 and sharedPowerRow2._leftRegion)
     end
-    local ppTextFmtValues = ns.UFO_CustomTextValues(ppFmtValues, function()
+    local ppTextFmtValues = mod.UFO_CustomTextValues(ppFmtValues, function()
         return SVal("powerTextFormat", "perpp")
     end, function()
-        ns.UFO_EditCustomText("powerText", SDB(), optState.selectedUnit, function()
+        mod.UFO_EditCustomText("powerText", SDB(), optionState.selectedUnit, function()
             SetPowerTextFormat("custom")
         end)
     end)
-    sharedPowerRow2, h = W:DualRow(parent, y, {
+    sharedPowerRow2, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Power Text",
         values = ppTextFmtValues,
@@ -2949,14 +2954,14 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         getValue = function()
             return SVal("powerBarOpacity", 100)
         end,
-        setValue = function(v)
-            SSet("powerBarOpacity", v)
+        setValue = function(val)
+            SSet("powerBarOpacity", val)
             UpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        ns.UFO_AddCustomFormatAccessor(
+        mod.UFO_AddCustomFormatAccessor(
             sharedPowerRow2._leftRegion,
             "Power Text",
             "powerText",
@@ -2973,8 +2978,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         local fmtRgn = sharedPowerRow2._leftRegion
         CludesUI.BuildInlineCog(
             fmtRgn,
-            ns.UFO_PowerTextCog(SVal, SSet, { none = true, curpp = true, curmaxpp = true }, function(v)
-                SSet("powerShowPercent", v)
+            mod.UFO_PowerTextCog(SVal, SSet, { none = true, curpp = true, curmaxpp = true }, function(val)
+                SSet("powerShowPercent", val)
                 UpdatePreview()
             end)
         )
@@ -2986,12 +2991,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Power Text Format to all Frames",
             onClick = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
-                local v, fmt = src.powerTextFormat or "perpp", src.powerTextCustomFormat
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                local val, fmt = source.powerTextFormat or "perpp", source.powerTextCustomFormat
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    d.powerTextFormat = v
-                    if v == "custom" then
+                    d.powerTextFormat = val
+                    if val == "custom" then
                         d.powerTextCustomFormat = fmt
                     end
                 end
@@ -2999,14 +3004,14 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
-                local v, fmt = src.powerTextFormat or "perpp", src.powerTextCustomFormat or ""
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                local val, fmt = source.powerTextFormat or "perpp", source.powerTextCustomFormat or ""
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    if (d.powerTextFormat or "perpp") ~= v then
+                    if (d.powerTextFormat or "perpp") ~= val then
                         return false
                     end
-                    if v == "custom" and (d.powerTextCustomFormat or "") ~= fmt then
+                    if val == "custom" and (d.powerTextCustomFormat or "") ~= fmt then
                         return false
                     end
                 end
@@ -3019,15 +3024,15 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.powerTextFormat or "perpp", src.powerTextCustomFormat
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local val, fmt = source.powerTextFormat or "perpp", source.powerTextCustomFormat
                     for _, key in ipairs(checkedKeys) do
                         local d = UNIT_DB_MAP[key]()
-                        d.powerTextFormat = v
-                        if v == "custom" then
+                        d.powerTextFormat = val
+                        if val == "custom" then
                             d.powerTextCustomFormat = fmt
                         end
                     end
@@ -3044,19 +3049,19 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Bar Opacity to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerBarOpacity or 100
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerBarOpacity or 100
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
-                        UNIT_DB_MAP[key]().powerBarOpacity = v
+                    if key ~= optionState.selectedUnit then
+                        UNIT_DB_MAP[key]().powerBarOpacity = val
                     end
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerBarOpacity or 100
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerBarOpacity or 100
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerBarOpacity or 100) ~= v then
+                    if (UNIT_DB_MAP[key]().powerBarOpacity or 100) ~= val then
                         return false
                     end
                 end
@@ -3069,12 +3074,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().powerBarOpacity or 100
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerBarOpacity or 100
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerBarOpacity = v
+                        UNIT_DB_MAP[key]().powerBarOpacity = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -3085,127 +3090,121 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
 
     -- Row 3: Bar Color (multiSwatch) + Bar Background (slider + inline swatch)
     local sharedPowerRow3
-    sharedPowerRow3, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "multiSwatch",
-            text = "Fill Color",
-            swatches = {
-                {
-                    tooltip = "Gradient End Color",
-                    hasAlpha = false,
-                    disabled = function()
-                        return not SVal("powerGradientEnabled", false)
-                    end,
-                    disabledTooltip = function()
-                        return "Gradient"
-                    end,
-                    getValue = function()
-                        local c = SGet("powerGradientColor")
-                        if c then
-                            return c.r, c.g, c.b
-                        end
-                        return 0.20, 0.20, 0.80
-                    end,
-                    setValue = function(r, g, b)
-                        UNIT_DB_MAP[optState.selectedUnit]().powerGradientColor = { r = r, g = g, b = b }
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
-                },
-                {
-                    tooltip = "Custom Colored Fill",
-                    hasAlpha = false,
-                    getValue = function()
-                        local c = SGet("customPowerFillColor")
-                        if c then
-                            return c.r, c.g, c.b
-                        end
-                        return 0, 0, 1
-                    end,
-                    setValue = function(r, g, b)
-                        UNIT_DB_MAP[optState.selectedUnit]().customPowerFillColor = { r = r, g = g, b = b }
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
-                    onClick = function(self)
-                        local v = SVal("powerPercentPowerColor", true)
-                        if v then
-                            SSet("powerPercentPowerColor", false)
-                            UpdatePreview()
-                            CludesUI:RefreshPage()
-                            return
-                        end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
-                    end,
-                    refreshAlpha = function()
-                        return SVal("powerPercentPowerColor", true) and 0.3 or 1
-                    end,
-                },
-                {
-                    tooltip = "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors.",
-                    hasAlpha = false,
-                    getValue = function()
-                        local _, pToken = UnitPowerType("player")
-                        local info = CludesUI.GetPowerColor(pToken or "MANA")
-                        return info.r, info.g, info.b
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        UNIT_DB_MAP[optState.selectedUnit]().powerClassColored = false
-                        SSet("powerPercentPowerColor", true)
+    sharedPowerRow3, hgt = Widgets:DualRow(hostFrame, posY, {
+        type = "multiSwatch",
+        text = "Fill Color",
+        swatches = {
+            {
+                tooltip = "Gradient End Color",
+                hasAlpha = false,
+                disabled = function()
+                    return not SVal("powerGradientEnabled", false)
+                end,
+                disabledTooltip = function()
+                    return "Gradient"
+                end,
+                getValue = function()
+                    local c = SGet("powerGradientColor")
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 0.20, 0.20, 0.80
+                end,
+                setValue = function(r, g, b)
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerGradientColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                    UpdatePreview()
+                end,
+            },
+            {
+                tooltip = "Custom Colored Fill",
+                hasAlpha = false,
+                getValue = function()
+                    local c = SGet("customPowerFillColor")
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 0, 0, 1
+                end,
+                setValue = function(r, g, b)
+                    UNIT_DB_MAP[optionState.selectedUnit]().customPowerFillColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                    UpdatePreview()
+                end,
+                onClick = function(self)
+                    local val = SVal("powerPercentPowerColor", true)
+                    if val then
+                        SSet("powerPercentPowerColor", false)
                         UpdatePreview()
                         CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        return (SVal("powerPercentPowerColor", true) and not SVal("powerClassColored", false))
-                                and 1
-                            or 0.3
-                    end,
-                },
-                {
-                    tooltip = "Class Colored Fill. Units without a class keep their power color.",
-                    hasAlpha = false,
-                    getValue = function()
-                        local _, ct = UnitClass("player")
-                        local cc = CludesUI.GetClassColor(ct)
-                        return cc.r, cc.g, cc.b
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        UNIT_DB_MAP[optState.selectedUnit]().powerPercentPowerColor = true
-                        SSet("powerClassColored", true)
-                        UpdatePreview()
-                        CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        return (SVal("powerPercentPowerColor", true) and SVal("powerClassColored", false))
-                                and 1
-                            or 0.3
-                    end,
-                },
+                        return
+                    end
+                    if self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
+                end,
+                refreshAlpha = function()
+                    return SVal("powerPercentPowerColor", true) and 0.3 or 1
+                end,
+            },
+            {
+                tooltip = "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors.",
+                hasAlpha = false,
+                getValue = function()
+                    local _, pToken = UnitPowerType("player")
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    return details.r, details.g, details.b
+                end,
+                setValue = function() end,
+                onClick = function()
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerClassColored = false
+                    SSet("powerPercentPowerColor", true)
+                    UpdatePreview()
+                    CludesUI:RefreshPage()
+                end,
+                refreshAlpha = function()
+                    return (SVal("powerPercentPowerColor", true) and not SVal("powerClassColored", false))
+                            and 1
+                        or 0.3
+                end,
+            },
+            {
+                tooltip = "Class Colored Fill. Units without a class keep their power color.",
+                hasAlpha = false,
+                getValue = function()
+                    local _, ct = UnitClass("player")
+                    local cc = CludesUI.GetClassColor(ct)
+                    return cc.r, cc.g, cc.b
+                end,
+                setValue = function() end,
+                onClick = function()
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerPercentPowerColor = true
+                    SSet("powerClassColored", true)
+                    UpdatePreview()
+                    CludesUI:RefreshPage()
+                end,
+                refreshAlpha = function()
+                    return (SVal("powerPercentPowerColor", true) and SVal("powerClassColored", false)) and 1
+                        or 0.3
+                end,
             },
         },
-        {
-            type = "slider",
-            text = "Bar Background",
-            min = 0,
-            max = 100,
-            step = 1,
-            getValue = function()
-                return SVal("customPowerBgAlpha", 100)
-            end,
-            setValue = function(v)
-                SSet("customPowerBgAlpha", v)
-                ReloadAndUpdate()
-                UpdatePreview()
-            end,
-        }
-    )
-    y = y - h
+    }, {
+        type = "slider",
+        text = "Bar Background",
+        min = 0,
+        max = 100,
+        step = 1,
+        getValue = function()
+            return SVal("customPowerBgAlpha", 100)
+        end,
+        setValue = function(val)
+            SSet("customPowerBgAlpha", val)
+            ReloadAndUpdate()
+            UpdatePreview()
+        end,
+    })
+    posY = posY - hgt
     -- Inline swatches on Bar Background (right): Custom + Power Colored pair
     -- mirroring Bar Color; either toggles powerBgPowerColored, inactive dims to 0.3.
     if not CludesUI._prebuilding then
@@ -3213,9 +3212,9 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         -- Power-colored background swatch (shows the player's power color; not editable).
         local bgPwrGet = function()
             local _, pToken = UnitPowerType("player")
-            local info = CludesUI.GetPowerColor(pToken or "MANA")
+            local details = CludesUI.GetPowerColor(pToken or "MANA")
             local f = CludesUI.GetPowerBgDarkenFactor()
-            return info.r * f, info.g * f, info.b * f
+            return details.r * f, details.g * f, details.b * f
         end
         local bgPwrSw, bgPwrUpdate = CludesUI.BuildColorSwatch(
             rgn,
@@ -3241,7 +3240,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         bgPwrSw:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        PP.Point(bgPwrSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        Pix.Point(bgPwrSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgPwrSw
         RegisterWidgetRefresh(function()
             bgPwrUpdate()
@@ -3258,7 +3257,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             return 17 / 255, 17 / 255, 17 / 255
         end
         local bgSwSet = function(r, g, b)
-            UNIT_DB_MAP[optState.selectedUnit]().customPowerBgColor = { r = r, g = g, b = b }
+            UNIT_DB_MAP[optionState.selectedUnit]().customPowerBgColor = { r = r, g = g, b = b }
             ReloadAndUpdate()
             UpdatePreview()
         end
@@ -3283,7 +3282,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         bgSw:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        PP.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        Pix.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgSw
         RegisterWidgetRefresh(function()
             bgSwUpdate()
@@ -3294,13 +3293,13 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
     -- Sync icon: Bar Background (right) -- background color + opacity
     if not CludesUI._prebuilding then
         local rgn = sharedPowerRow3._rightRegion
-        local function ApplyBgTo(keys)
-            local src = UNIT_DB_MAP[optState.selectedUnit]()
-            local bc = src.customPowerBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
-            local bgA = src.customPowerBgAlpha or 100
-            local bgPwr = src.powerBgPowerColored or false
-            for _, key in ipairs(keys) do
-                if key ~= optState.selectedUnit then
+        local function ApplyBgTo(keyList)
+            local source = UNIT_DB_MAP[optionState.selectedUnit]()
+            local bc = source.customPowerBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
+            local bgA = source.customPowerBgAlpha or 100
+            local bgPwr = source.powerBgPowerColored or false
+            for _, key in ipairs(keyList) do
+                if key ~= optionState.selectedUnit then
                     local d = UNIT_DB_MAP[key]()
                     d.customPowerBgColor = { r = bc.r, g = bc.g, b = bc.b }
                     d.customPowerBgAlpha = bgA
@@ -3317,7 +3316,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 ApplyBgTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
                     if a == nil and b == nil then
                         return true
@@ -3329,13 +3328,13 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 end
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    if not colEq(d.customPowerBgColor, src.customPowerBgColor) then
+                    if not colEq(d.customPowerBgColor, source.customPowerBgColor) then
                         return false
                     end
-                    if (d.customPowerBgAlpha or 100) ~= (src.customPowerBgAlpha or 100) then
+                    if (d.customPowerBgAlpha or 100) ~= (source.customPowerBgAlpha or 100) then
                         return false
                     end
-                    if (d.powerBgPowerColored or false) ~= (src.powerBgPowerColored or false) then
+                    if (d.powerBgPowerColored or false) ~= (source.powerBgPowerColored or false) then
                         return false
                     end
                 end
@@ -3348,7 +3347,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyBgTo(checkedKeys)
@@ -3359,19 +3358,19 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
     -- Sync icon: Bar Color (left) -- fill/power color and gradient
     if not CludesUI._prebuilding then
         local rgn = sharedPowerRow3._leftRegion
-        local function ApplyColorTo(keys)
-            local src = UNIT_DB_MAP[optState.selectedUnit]()
-            local pc = src.powerPercentPowerColor
+        local function ApplyColorTo(keyList)
+            local source = UNIT_DB_MAP[optionState.selectedUnit]()
+            local pc = source.powerPercentPowerColor
             if pc == nil then
                 pc = true
             end
-            local pcc = src.powerClassColored or false
-            local fc = src.customPowerFillColor
-            local gEn = src.powerGradientEnabled or false
-            local gDir = src.powerGradientDir or "HORIZONTAL"
-            local gc = src.powerGradientColor
-            for _, key in ipairs(keys) do
-                if key ~= optState.selectedUnit then
+            local pcc = source.powerClassColored or false
+            local fc = source.customPowerFillColor
+            local gEn = source.powerGradientEnabled or false
+            local gDir = source.powerGradientDir or "HORIZONTAL"
+            local gc = source.powerGradientColor
+            for _, key in ipairs(keyList) do
+                if key ~= optionState.selectedUnit then
                     local d = UNIT_DB_MAP[key]()
                     d.powerPercentPowerColor = pc
                     d.powerClassColored = pcc
@@ -3399,7 +3398,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 ApplyColorTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
                     if a == nil and b == nil then
                         return true
@@ -3409,32 +3408,32 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     end
                     return a.r == b.r and a.g == b.g and a.b == b.b
                 end
-                local v = src.powerPercentPowerColor
-                if v == nil then
-                    v = true
+                local val = source.powerPercentPowerColor
+                if val == nil then
+                    val = true
                 end
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    local ov = d.powerPercentPowerColor
-                    if ov == nil then
-                        ov = true
+                    local shade = d.powerPercentPowerColor
+                    if shade == nil then
+                        shade = true
                     end
-                    if ov ~= v then
+                    if shade ~= val then
                         return false
                     end
-                    if (d.powerClassColored or false) ~= (src.powerClassColored or false) then
+                    if (d.powerClassColored or false) ~= (source.powerClassColored or false) then
                         return false
                     end
-                    if not colEq(d.customPowerFillColor, src.customPowerFillColor) then
+                    if not colEq(d.customPowerFillColor, source.customPowerFillColor) then
                         return false
                     end
-                    if (d.powerGradientEnabled or false) ~= (src.powerGradientEnabled or false) then
+                    if (d.powerGradientEnabled or false) ~= (source.powerGradientEnabled or false) then
                         return false
                     end
-                    if not colEq(d.powerGradientColor, src.powerGradientColor) then
+                    if not colEq(d.powerGradientColor, source.powerGradientColor) then
                         return false
                     end
-                    if (d.powerGradientDir or "HORIZONTAL") ~= (src.powerGradientDir or "HORIZONTAL") then
+                    if (d.powerGradientDir or "HORIZONTAL") ~= (source.powerGradientDir or "HORIZONTAL") then
                         return false
                     end
                 end
@@ -3447,7 +3446,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyColorTo(checkedKeys)
@@ -3467,8 +3466,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerGradientEnabled", false)
                     end,
-                    set = function(v)
-                        SSet("powerGradientEnabled", v)
+                    set = function(val)
+                        SSet("powerGradientEnabled", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -3482,8 +3481,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerGradientDir", "HORIZONTAL")
                     end,
-                    set = function(v)
-                        SSet("powerGradientDir", v)
+                    set = function(val)
+                        SSet("powerGradientDir", val)
                         ReloadAndUpdate()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -3495,81 +3494,76 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
 
     -- Row 4: Text Position + Text Color
     local sharedPowerRow4
-    sharedPowerRow4, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "dropdown",
-            text = "Text Position",
-            values = ppTextValues,
-            order = ppTextOrder,
-            getValue = function()
-                return SVal("powerPercentText", "none")
-            end,
-            setValue = function(v)
-                SSet("powerPercentText", v)
-                ReloadAndUpdate()
-                UpdatePreview()
-            end,
-        },
-        {
-            type = "multiSwatch",
-            text = "Text Color",
-            swatches = {
-                {
-                    tooltip = "Custom Text Color",
-                    hasAlpha = false,
-                    getValue = function()
-                        local c = SGet("powerTextColor")
-                        if c then
-                            return c.r, c.g, c.b
-                        end
-                        return 1, 1, 1
-                    end,
-                    setValue = function(r, g, b)
-                        UNIT_DB_MAP[optState.selectedUnit]().powerTextColor = { r = r, g = g, b = b }
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
-                    onClick = function(self)
-                        local v = SVal("powerPercentTextPowerColor", false)
-                        if v then
-                            SSet("powerPercentTextPowerColor", false)
-                            UpdatePreview()
-                            CludesUI:RefreshPage()
-                            return
-                        end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
-                    end,
-                    refreshAlpha = function()
-                        return SVal("powerPercentTextPowerColor", false) and 0.3 or 1
-                    end,
-                },
-                {
-                    tooltip = "Power Colored Text",
-                    hasAlpha = false,
-                    getValue = function()
-                        local _, pToken = UnitPowerType("player")
-                        local info = CludesUI.GetPowerColor(pToken or "MANA")
-                        return info.r, info.g, info.b
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        SSet("powerPercentTextPowerColor", true)
-                        UNIT_DB_MAP[optState.selectedUnit]().powerTextColor = nil
+    sharedPowerRow4, hgt = Widgets:DualRow(hostFrame, posY, {
+        type = "dropdown",
+        text = "Text Position",
+        values = ppTextValues,
+        order = ppTextOrder,
+        getValue = function()
+            return SVal("powerPercentText", "none")
+        end,
+        setValue = function(val)
+            SSet("powerPercentText", val)
+            ReloadAndUpdate()
+            UpdatePreview()
+        end,
+    }, {
+        type = "multiSwatch",
+        text = "Text Color",
+        swatches = {
+            {
+                tooltip = "Custom Text Color",
+                hasAlpha = false,
+                getValue = function()
+                    local c = SGet("powerTextColor")
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end,
+                setValue = function(r, g, b)
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerTextColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                    UpdatePreview()
+                end,
+                onClick = function(self)
+                    local val = SVal("powerPercentTextPowerColor", false)
+                    if val then
+                        SSet("powerPercentTextPowerColor", false)
                         UpdatePreview()
                         CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        return SVal("powerPercentTextPowerColor", false) and 1 or 0.3
-                    end,
-                },
+                        return
+                    end
+                    if self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
+                end,
+                refreshAlpha = function()
+                    return SVal("powerPercentTextPowerColor", false) and 0.3 or 1
+                end,
             },
-        }
-    )
-    y = y - h
+            {
+                tooltip = "Power Colored Text",
+                hasAlpha = false,
+                getValue = function()
+                    local _, pToken = UnitPowerType("player")
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    return details.r, details.g, details.b
+                end,
+                setValue = function() end,
+                onClick = function()
+                    SSet("powerPercentTextPowerColor", true)
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerTextColor = nil
+                    UpdatePreview()
+                    CludesUI:RefreshPage()
+                end,
+                refreshAlpha = function()
+                    return SVal("powerPercentTextPowerColor", false) and 1 or 0.3
+                end,
+            },
+        },
+    })
+    posY = posY - hgt
     -- Cogwheel on Text Position for size + x/y offsets (left of row 4)
     if not CludesUI._prebuilding then
         local ppRgn = sharedPowerRow4._leftRegion
@@ -3583,8 +3577,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 get = function()
                     return SVal("powerPercentSize", 9)
                 end,
-                set = function(v)
-                    SSet("powerPercentSize", v)
+                set = function(val)
+                    SSet("powerPercentSize", val)
                     UpdatePreview()
                 end,
             },
@@ -3597,8 +3591,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 get = function()
                     return SVal("powerPercentX", 0)
                 end,
-                set = function(v)
-                    SSet("powerPercentX", v)
+                set = function(val)
+                    SSet("powerPercentX", val)
                     UpdatePreview()
                 end,
             },
@@ -3611,8 +3605,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 get = function()
                     return SVal("powerPercentY", 0)
                 end,
-                set = function(v)
-                    SSet("powerPercentY", v)
+                set = function(val)
+                    SSet("powerPercentY", val)
                     UpdatePreview()
                 end,
             },
@@ -3633,17 +3627,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Power Text Position to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerPercentText or "none"
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentText or "none"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().powerPercentText = v
+                    UNIT_DB_MAP[key]().powerPercentText = val
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerPercentText or "none"
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentText or "none"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerPercentText or "none") ~= v then
+                    if (UNIT_DB_MAP[key]().powerPercentText or "none") ~= val then
                         return false
                     end
                 end
@@ -3656,12 +3650,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().powerPercentText or "none"
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentText or "none"
                     for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerPercentText = v
+                        UNIT_DB_MAP[key]().powerPercentText = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -3676,12 +3670,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Text Color to all Frames",
             onClick = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
-                local v = src.powerPercentTextPowerColor or false
-                local tc = src.powerTextColor
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                local val = source.powerPercentTextPowerColor or false
+                local tc = source.powerTextColor
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     local d = UNIT_DB_MAP[key]()
-                    d.powerPercentTextPowerColor = v
+                    d.powerPercentTextPowerColor = val
                     if tc then
                         d.powerTextColor = { r = tc.r, g = tc.g, b = tc.b }
                     else
@@ -3692,9 +3686,9 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().powerPercentTextPowerColor or false
+                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentTextPowerColor or false
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerPercentTextPowerColor or false) ~= v then
+                    if (UNIT_DB_MAP[key]().powerPercentTextPowerColor or false) ~= val then
                         return false
                     end
                 end
@@ -3707,15 +3701,15 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v = src.powerPercentTextPowerColor or false
-                    local tc = src.powerTextColor
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local val = source.powerPercentTextPowerColor or false
+                    local tc = source.powerTextColor
                     for _, key in ipairs(checkedKeys) do
                         local d = UNIT_DB_MAP[key]()
-                        d.powerPercentTextPowerColor = v
+                        d.powerPercentTextPowerColor = val
                         if tc then
                             d.powerTextColor = { r = tc.r, g = tc.g, b = tc.b }
                         else
@@ -3732,15 +3726,15 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
     -- Row 5: Power Border Style (+ cog) | Power Border Size (+ inline swatches)
     local pbTexValues, pbTexOrder = CludesUI.GetBorderTextureDropdown()
     local sharedPowerBorderRow
-    sharedPowerBorderRow, h = W:DualRow(
-        parent,
-        y,
+    sharedPowerBorderRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "dropdown",
             text = "Border Style",
             disabled = function()
-                local pos = SVal("powerPosition", "below")
-                return pos ~= "detached_top" and pos ~= "detached_bottom"
+                local place = SVal("powerPosition", "below")
+                return place ~= "detached_top" and place ~= "detached_bottom"
             end,
             disabledTooltip = function()
                 return CludesUI.L(
@@ -3753,21 +3747,21 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             getValue = function()
                 return SGet("powerBorderStyle") or "solid"
             end,
-            setValue = function(v)
-                SSet("powerBorderStyle", v)
+            setValue = function(val)
+                SSet("powerBorderStyle", val)
                 SSet("powerBorderOffsetX", nil)
                 SSet("powerBorderOffsetY", nil)
                 SSet("powerBorderShiftX", nil)
                 SSet("powerBorderShiftY", nil)
-                if v ~= "solid" then
+                if val ~= "solid" then
                     -- The style's select colour (Pixels grey), else white.
-                    SSet("powerBorderColor", CludesUI.GetBorderSelectColor(v) or { r = 1, g = 1, b = 1 })
+                    SSet("powerBorderColor", CludesUI.GetBorderSelectColor(val) or { r = 1, g = 1, b = 1 })
                     SSet("powerBorderAlpha", 1)
                 else
                     SSet("powerBorderColor", { r = 0, g = 0, b = 0 })
                     SSet("powerBorderAlpha", 1)
                 end
-                local defSz = CludesUI.GetBorderDefaultSize("unitframes", v)
+                local defSz = CludesUI.GetBorderDefaultSize("unitframes", val)
                 if defSz then
                     SSet("powerBorderSize", defSz)
                 end
@@ -3786,8 +3780,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             CludesUI.BorderPxSliderCfg({
                 text = "Border Size",
                 disabled = function()
-                    local pos = SVal("powerPosition", "below")
-                    return pos == "none"
+                    local place = SVal("powerPosition", "below")
+                    return place == "none"
                 end,
                 disabledTooltip = function()
                     return CludesUI.L("Border is only available when the Power Bar is shown.")
@@ -3803,8 +3797,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 getTex = function()
                     -- The style the bar is painted with (ns.UpdatePowerBorder): an
                     -- attached bar is forced Solid whatever the dropdown holds.
-                    local pos = SVal("powerPosition", "below")
-                    if pos == "above" or pos == "below" then
+                    local place = SVal("powerPosition", "below")
+                    if place == "above" or place == "below" then
                         return "solid"
                     end
                     return SGet("powerBorderStyle") or "solid"
@@ -3812,14 +3806,14 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 getPx = function()
                     return SGet("powerBorderSizePx")
                 end,
-                setPx = function(v)
-                    SDB().powerBorderSizePx = v
+                setPx = function(val)
+                    SDB().powerBorderSizePx = val
                 end,
                 apply = ReloadAndUpdate,
             })
         )
     )
-    y = y - h
+    posY = posY - hgt
     -- Width Offset | Height Offset: a textured power border's outward offsets.
     -- Only a detached bar can be textured (an attached bar is painted Solid),
     -- so the row exists only while the painted style is textured.
@@ -3830,8 +3824,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 getTex = function()
-                    local pos = SVal("powerPosition", "below")
-                    if pos == "above" or pos == "below" then
+                    local place = SVal("powerPosition", "below")
+                    if place == "above" or place == "below" then
                         return "solid"
                     end
                     return SGet("powerBorderStyle") or "solid"
@@ -3848,24 +3842,24 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 getX = function()
                     return SGet("powerBorderOffsetX")
                 end,
-                setX = function(v)
-                    SDB().powerBorderOffsetX = v
+                setX = function(val)
+                    SDB().powerBorderOffsetX = val
                 end,
                 getY = function()
                     return SGet("powerBorderOffsetY")
                 end,
-                setY = function(v)
-                    SDB().powerBorderOffsetY = v
+                setY = function(val)
+                    SDB().powerBorderOffsetY = val
                 end,
                 apply = ReloadAndUpdate,
             })
-            _, h = W:DualRow(
-                parent,
-                y,
+            _, hgt = Widgets:DualRow(
+                hostFrame,
+                posY,
                 CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
                 CludesUI.BlizzStyle.Gate("unitframes", ocfgR)
             )
-            y = y - h
+            posY = posY - hgt
         end
     end
     -- Cog for power border shift / layering (left region)
@@ -3881,17 +3875,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     max = 10,
                     step = 1,
                     get = function()
-                        local v = SGet("powerBorderShiftX")
-                        if v then
-                            return v
+                        local val = SGet("powerBorderShiftX")
+                        if val then
+                            return val
                         end
-                        local tex = SGet("powerBorderStyle") or "solid"
+                        local texture = SGet("powerBorderStyle") or "solid"
                         local sz = SVal("powerBorderSize", 0)
-                        local _, _, dsx = CludesUI.GetBorderDefaults("unitframes", tex, sz)
+                        local _, _, dsx = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsx
                     end,
-                    set = function(v)
-                        SSet("powerBorderShiftX", v == 0 and nil or v)
+                    set = function(val)
+                        SSet("powerBorderShiftX", val == 0 and nil or val)
                         ReloadAndUpdate()
                     end,
                 },
@@ -3902,17 +3896,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     max = 10,
                     step = 1,
                     get = function()
-                        local v = SGet("powerBorderShiftY")
-                        if v then
-                            return v
+                        local val = SGet("powerBorderShiftY")
+                        if val then
+                            return val
                         end
-                        local tex = SGet("powerBorderStyle") or "solid"
+                        local texture = SGet("powerBorderStyle") or "solid"
                         local sz = SVal("powerBorderSize", 0)
-                        local _, _, _, dsy = CludesUI.GetBorderDefaults("unitframes", tex, sz)
+                        local _, _, _, dsy = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsy
                     end,
-                    set = function(v)
-                        SSet("powerBorderShiftY", v == 0 and nil or v)
+                    set = function(val)
+                        SSet("powerBorderShiftY", val == 0 and nil or val)
                         ReloadAndUpdate()
                     end,
                 },
@@ -3922,18 +3916,18 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     get = function()
                         return SVal("powerBorderBehind", false)
                     end,
-                    set = function(v)
-                        SSet("powerBorderBehind", v)
+                    set = function(val)
+                        SSet("powerBorderBehind", val)
                         ReloadAndUpdate()
                     end,
                 },
             },
         })
         local function UpdatePBCogVis()
-            local pos = SVal("powerPosition", "below")
-            local isDet = (pos == "detached_top" or pos == "detached_bottom")
-            local tex = SGet("powerBorderStyle") or "solid"
-            if not isDet or tex == "solid" then
+            local place = SVal("powerPosition", "below")
+            local isDet = (place == "detached_top" or place == "detached_bottom")
+            local texture = SGet("powerBorderStyle") or "solid"
+            if not isDet or texture == "solid" then
                 cogBtn:Hide()
             else
                 cogBtn:Show()
@@ -3955,14 +3949,14 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 return c.r, c.g, c.b, SVal("powerBorderAlpha", 1)
             end,
             function(r, g, b, a)
-                UNIT_DB_MAP[optState.selectedUnit]().powerBorderColor = { r = r, g = g, b = b }
-                UNIT_DB_MAP[optState.selectedUnit]().powerBorderAlpha = a
+                UNIT_DB_MAP[optionState.selectedUnit]().powerBorderColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().powerBorderAlpha = a
                 ReloadAndUpdate()
             end,
             true,
             20
         )
-        PP.Point(pbSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        Pix.Point(pbSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
         pbSwatch:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(pbSwatch, "Border Color")
         end)
@@ -3980,17 +3974,17 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
     -- Type, which keeps its height when hidden. Built with the engine
     -- (CludesUI_SpellCostPrediction.lua, nil off Forever) loaded: the
     -- color and the preview read its color rule.
-    if optState.selectedUnit == "player" and CludesUI.SpellCostPrediction then
+    if optionState.selectedUnit == "player" and CludesUI.SpellCostPrediction then
         local costRow
-        costRow, h = W:DualRow(parent, y, {
+        costRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Spell Cost Prediction",
             tooltip = "While you cast, shows on the bar the mana the spell will cost.",
             getValue = function()
                 return SVal("powerCostPrediction", false) == true
             end,
-            setValue = function(v)
-                SSet("powerCostPrediction", v)
+            setValue = function(val)
+                SSet("powerCostPrediction", val)
                 UpdatePreview()
                 CludesUI:RefreshPage()
             end,
@@ -4002,7 +3996,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             end,
             disabledTooltip = "Spell Cost Prediction",
             getValue = function()
-                local r, g, b = ns.UF_PowerCostColor(SDB())
+                local r, g, b = mod.UF_PowerCostColor(SDB())
                 return r, g, b
             end,
             setValue = function(r, g, b)
@@ -4010,7 +4004,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 UpdatePreview()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Inline eyeball: preview the cost on the live preview. Session-only.
         if not CludesUI._prebuilding then
             local rgn = costRow._leftRegion
@@ -4024,12 +4018,12 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             eyeTex:SetAllPoints()
             local function RefreshCostEye()
                 eyeTex:SetTexture(
-                    ns._ufShowPowerCostPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
+                    mod._ufShowPowerCostPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
                 )
             end
             RefreshCostEye()
             eyeBtn:SetScript("OnClick", function()
-                ns._ufShowPowerCostPreview = not ns._ufShowPowerCostPreview
+                mod._ufShowPowerCostPreview = not mod._ufShowPowerCostPreview
                 RefreshCostEye()
                 UpdatePreview()
             end)
@@ -4037,7 +4031,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 CludesUI.SetGlyphAlpha(self, 0.7)
                 CludesUI.ShowWidgetTooltip(
                     self,
-                    ns._ufShowPowerCostPreview and "Hide spell cost preview" or "Show spell cost preview"
+                    mod._ufShowPowerCostPreview and "Hide spell cost preview" or "Show spell cost preview"
                 )
             end)
             eyeBtn:SetScript("OnLeave", function(self)
@@ -4046,7 +4040,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             end)
         end
     end
-    if optState.selectedUnit == "player" and CludesUI.IS_FOREVER == true then
+    if optionState.selectedUnit == "player" and CludesUI.IS_FOREVER == true then
         -- Mana Regen Spark (CludesUI_ManaRegenSpark.lua), the section's
         -- last row; warriors and rogues get no spark engine, so no row. A
         -- druid's Power Type shares it: one choice for every form, stored
@@ -4066,19 +4060,19 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 end
                 return SVal("manaRegenSparkMode", "fsr") == "ticks" and "ticks" or "fsr"
             end,
-            setValue = function(v)
-                if v ~= "off" then
-                    SSet("manaRegenSparkMode", v == "ticks" and "ticks" or nil)
+            setValue = function(val)
+                if val ~= "off" then
+                    SSet("manaRegenSparkMode", val == "ticks" and "ticks" or nil)
                 end
-                SSet("manaRegenSpark", v ~= "off")
+                SSet("manaRegenSpark", val ~= "off")
             end,
         }
         local _, playerClass = UnitClass("player")
         if playerClass == "DRUID" then
             local powerTypeRow
-            powerTypeRow, h = W:DualRow(
-                parent,
-                y,
+            powerTypeRow, hgt = Widgets:DualRow(
+                hostFrame,
+                posY,
                 -- Mana + Form Power: Mana plus foreverFormBar (a second bar
                 -- with the form's power, CUI_UnitFrames_ForeverFormBar.lua).
                 {
@@ -4089,8 +4083,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     order = { "default", "alt", "both" },
                     getValue = function()
                         local pdb = UNIT_DB_MAP["player"]()
-                        local ov = pdb.powerTypeOverride
-                        if not (ov and ov.foreverDruid) then
+                        local shade = pdb.powerTypeOverride
+                        if not (shade and shade.foreverDruid) then
                             return "default"
                         end
                         return pdb.foreverFormBar and "both" or "alt"
@@ -4099,9 +4093,9 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     -- rebuilds when that choice comes or goes.
                     setValue = CludesUI.DependentSetValue(function()
                         return SVal("foreverFormBar", false) == true
-                    end, function(v)
+                    end, function(val)
                         local pdb = UNIT_DB_MAP["player"]()
-                        if v ~= "default" then
+                        if val ~= "default" then
                             if not pdb.powerTypeOverride then
                                 pdb.powerTypeOverride = {}
                             end
@@ -4109,30 +4103,30 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                         elseif pdb.powerTypeOverride then
                             pdb.powerTypeOverride.foreverDruid = nil
                         end
-                        pdb.foreverFormBar = (v == "both") or nil
+                        pdb.foreverFormBar = (val == "both") or nil
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
                     end),
                 },
                 sparkCfg
             )
-            y = y - h
+            posY = posY - hgt
             -- The Form Power bar's own settings re-apply only that bar
             -- (CUI_UnitFrames_ForeverFormBar.lua), not the whole frame.
             local function NoFormBar()
                 return not SVal("foreverFormBar", false)
             end
-            local function SetForm(key, v)
-                SDB()[key] = v
-                ns.UF_ForeverFormBarRelayout()
+            local function SetForm(key, val)
+                SDB()[key] = val
+                mod.UF_ForeverFormBarRelayout()
             end
             -- A Form Power Text setting; unset follows the power bar's.
-            local function FormVal(key, base, def)
-                local v = SVal(key, nil)
-                if v == nil then
-                    v = SVal(base, def)
+            local function FormVal(key, baseValue, spec_def)
+                local val = SVal(key, nil)
+                if val == nil then
+                    val = SVal(baseValue, spec_def)
                 end
-                return v
+                return val
             end
             local FORM_TIP = "Requires Power Type: Mana + Form Power."
             -- Cog: the Form Power bar's offsets.
@@ -4152,8 +4146,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("foreverFormBarX", 0)
                             end,
-                            set = function(v)
-                                SetForm("foreverFormBarX", v)
+                            set = function(val)
+                                SetForm("foreverFormBarX", val)
                             end,
                         },
                         {
@@ -4165,8 +4159,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                             get = function()
                                 return SVal("foreverFormBarY", 0)
                             end,
-                            set = function(v)
-                                SetForm("foreverFormBarY", v)
+                            set = function(val)
+                                SetForm("foreverFormBarY", val)
                             end,
                         },
                     },
@@ -4177,27 +4171,27 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             -- only with Mana + Form Power (Power Type rebuilds the page).
             if not NoFormBar() then
                 local formTextRow
-                formTextRow, h = W:DualRow(parent, y, {
+                formTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Form Power Text",
                     values = ppFmtValues,
                     order = ppFmtOrder,
                     getValue = function()
                         -- An inherited Custom draws Power % on the form bar.
-                        local v = CludesUI.PowerTextFormat(
+                        local val = CludesUI.PowerTextFormat(
                             FormVal("foreverFormTextFormat", "powerTextFormat", "perpp")
                         )
-                        return v == "custom" and "perpp" or v
+                        return val == "custom" and "perpp" or val
                     end,
-                    setValue = function(v)
-                        local pos = FormVal("foreverFormTextPos", "powerPercentText", "none")
-                        if v ~= "none" and pos == "none" then
+                    setValue = function(val)
+                        local place = FormVal("foreverFormTextPos", "powerPercentText", "none")
+                        if val ~= "none" and place == "none" then
                             SDB().foreverFormTextPos = "center"
                         end
-                        if v == "none" then
+                        if val == "none" then
                             SDB().foreverFormTextPos = "none"
                         end
-                        SetForm("foreverFormTextFormat", v)
+                        SetForm("foreverFormTextFormat", val)
                         CludesUI:RefreshPage()
                     end,
                 }, {
@@ -4208,11 +4202,11 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     getValue = function()
                         return FormVal("foreverFormTextPos", "powerPercentText", "none")
                     end,
-                    setValue = function(v)
-                        SetForm("foreverFormTextPos", v)
+                    setValue = function(val)
+                        SetForm("foreverFormTextPos", val)
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
                 if not CludesUI._prebuilding then
                     CludesUI.BuildInlineCog(formTextRow._leftRegion, {
                         disabled = function()
@@ -4231,8 +4225,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                                     return FormVal("foreverFormShowPercent", "powerShowPercent", true)
                                         ~= false
                                 end,
-                                set = function(v)
-                                    SetForm("foreverFormShowPercent", v)
+                                set = function(val)
+                                    SetForm("foreverFormShowPercent", val)
                                 end,
                             },
                         },
@@ -4283,8 +4277,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                             tooltip = "Power Colored Text",
                             hasAlpha = false,
                             getValue = function()
-                                local info = CludesUI.GetPowerColor("ENERGY")
-                                return info.r, info.g, info.b
+                                local details = CludesUI.GetPowerColor("ENERGY")
+                                return details.r, details.g, details.b
                             end,
                             setValue = function() end,
                             onClick = function()
@@ -4313,8 +4307,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                                 get = function()
                                     return FormVal("foreverFormTextSize", "powerPercentSize", 9)
                                 end,
-                                set = function(v)
-                                    SetForm("foreverFormTextSize", v)
+                                set = function(val)
+                                    SetForm("foreverFormTextSize", val)
                                 end,
                             },
                             {
@@ -4326,8 +4320,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                                 get = function()
                                     return FormVal("foreverFormTextX", "powerPercentX", 0)
                                 end,
-                                set = function(v)
-                                    SetForm("foreverFormTextX", v)
+                                set = function(val)
+                                    SetForm("foreverFormTextX", val)
                                 end,
                             },
                             {
@@ -4339,8 +4333,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                                 get = function()
                                     return FormVal("foreverFormTextY", "powerPercentY", 0)
                                 end,
-                                set = function(v)
-                                    SetForm("foreverFormTextY", v)
+                                set = function(val)
+                                    SetForm("foreverFormTextY", val)
                                 end,
                             },
                         },
@@ -4348,8 +4342,8 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                 end
             end
         elseif CludesUI.ManaRegenSpark then
-            _, h = W:DualRow(parent, y, sparkCfg, CludesUI.BlankRowCfg())
-            y = y - h
+            _, hgt = Widgets:DualRow(hostFrame, posY, sparkCfg, CludesUI.BlankRowCfg())
+            posY = posY - hgt
         end
     end
 
@@ -4387,10 +4381,10 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             local ptValues = {}
             local ptOrder = { "default", "alt" }
             local function FillPowerTypeValues(s)
-                local data = s and classAlts[s]
-                ptValues["default"] = data and data[1] or nil
-                ptValues["alt"] = data and data[2] or nil
-                ptValues["astral"] = data and data.astral or nil
+                local payload = s and classAlts[s]
+                ptValues["default"] = payload and payload[1] or nil
+                ptValues["alt"] = payload and payload[2] or nil
+                ptValues["astral"] = payload and payload.astral or nil
                 if ptValues["astral"] then
                     ptOrder[2], ptOrder[3] = "astral", "alt"
                 else
@@ -4401,7 +4395,7 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
             FillPowerTypeValues(labelSpec)
 
             local sharedPowerRow5
-            sharedPowerRow5, h = W:DualRow(parent, y, {
+            sharedPowerRow5, hgt = Widgets:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Power Type",
                 tooltip = classAlts.tip,
@@ -4416,60 +4410,60 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
                     if not s or not classAlts[s] then
                         return "default"
                     end
-                    local sid = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(s)
-                    if not sid then
+                    local spellRef = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(s)
+                    if not spellRef then
                         return "default"
                     end
-                    local ov = UNIT_DB_MAP["player"]().powerTypeOverride
-                    if ov and ov[sid] == "astral" then
+                    local shade = UNIT_DB_MAP["player"]().powerTypeOverride
+                    if shade and shade[spellRef] == "astral" then
                         return "astral"
                     end
-                    if ov and ov[sid] then
+                    if shade and shade[spellRef] then
                         return "alt"
                     end
                     return "default"
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     local s = GetSpec()
                     if not s then
                         return
                     end
-                    local sid = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(s)
-                    if not sid then
+                    local spellRef = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(s)
+                    if not spellRef then
                         return
                     end
                     local pdb = UNIT_DB_MAP["player"]()
-                    if v == "alt" then
+                    if val == "alt" then
                         if not pdb.powerTypeOverride then
                             pdb.powerTypeOverride = {}
                         end
-                        pdb.powerTypeOverride[sid] = true
-                    elseif v == "astral" then
+                        pdb.powerTypeOverride[spellRef] = true
+                    elseif val == "astral" then
                         if not pdb.powerTypeOverride then
                             pdb.powerTypeOverride = {}
                         end
-                        pdb.powerTypeOverride[sid] = "astral"
+                        pdb.powerTypeOverride[spellRef] = "astral"
                     else
                         if pdb.powerTypeOverride then
-                            pdb.powerTypeOverride[sid] = nil
+                            pdb.powerTypeOverride[spellRef] = nil
                         end
                     end
                     ReloadAndUpdate()
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
 
             local function UpdatePowerTypeRow()
                 local s = GetSpec()
                 if s ~= labelSpec then
                     labelSpec = s
                     FillPowerTypeValues(s)
-                    local dd = sharedPowerRow5._leftRegion and sharedPowerRow5._leftRegion._control
-                    if dd and dd._invalidateMenu then
-                        dd._invalidateMenu()
+                    local dropdown = sharedPowerRow5._leftRegion and sharedPowerRow5._leftRegion._control
+                    if dropdown and dropdown._invalidateMenu then
+                        dropdown._invalidateMenu()
                     end
                 end
-                if optState.selectedUnit == "player" and s and classAlts[s] then
+                if optionState.selectedUnit == "player" and s and classAlts[s] then
                     sharedPowerRow5:Show()
                 else
                     sharedPowerRow5:Hide()
@@ -4480,54 +4474,54 @@ function ns.UFO_BuildPowerBarSection(parent, y, ctx)
         end
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y, sharedPowerHeader, sharedPowerRow1, sharedPowerRow2
+    return posY, sharedPowerHeader, sharedPowerRow1, sharedPowerRow2
 end
 
-function ns.UFO_BuildClassResourceSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
     local GROUP_UNIT_ORDER, RegisterWidgetRefresh, ReloadAndUpdate, SHORT_LABELS =
-        env.GROUP_UNIT_ORDER, env.RegisterWidgetRefresh, env.ReloadAndUpdate, env.SHORT_LABELS
+        environ.GROUP_UNIT_ORDER, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SHORT_LABELS
     local UNIT_DB_MAP, UpdatePreview, classPowerPosOrder, classPowerPosValues =
-        env.UNIT_DB_MAP, env.UpdatePreview, env.classPowerPosOrder, env.classPowerPosValues
-    local classPowerStyleOrder, classPowerStyleValues, optState =
-        env.classPowerStyleOrder, env.classPowerStyleValues, env.optState
-    local W, SApplySupport, SGetSupported, SSetSupported =
-        ctx.W, ctx.SApplySupport, ctx.SGetSupported, ctx.SSetSupported
-    local SValSupported = ctx.SValSupported
-    local _, h
-    local row
+        environ.UNIT_DB_MAP, environ.UpdatePreview, environ.classPowerPosOrder, environ.classPowerPosValues
+    local classPowerStyleOrder, classPowerStyleValues, optionState =
+        environ.classPowerStyleOrder, environ.classPowerStyleValues, environ.optState
+    local Widgets, SApplySupport, SGetSupported, SSetSupported =
+        context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
+    local SValSupported = context.SValSupported
+    local _, hgt
+    local rowFrame
 
     -- CLASS RESOURCE section: only shown in multi-edit or when player is selected
-    local _showClassRes = optState.selectedUnit == "player"
+    local _showClassRes = optionState.selectedUnit == "player"
     -- Declared outside the gate: returned for the click mapping.
     local sharedClassResHeader, sharedClassResRow
     if _showClassRes then
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
 
         -------------------------------------------------------------------
         --  CLASS RESOURCE
         -------------------------------------------------------------------
-        sharedClassResHeader, h = W:SectionHeader(parent, "CLASS RESOURCE", y)
-        y = y - h
+        sharedClassResHeader, hgt = Widgets:SectionHeader(hostFrame, "CLASS RESOURCE", posY)
+        posY = posY - hgt
 
         -- The class resource style that builds: WoW Forever outside its own
         -- style builds a saved "blizzard" as modern, and a rogue under the
         -- CludesUI look reads its own style (ns.UF_ForeverCPStyle, nil
         -- elsewhere). Display and gating only; writes and syncs keep the saved value.
         local function SCPStyle()
-            local v = SValSupported("classPowerStyle", "none")
-            if ns.UF_ForeverCPStyle then
-                v = ns.UF_ForeverCPStyle(v)
+            local val = SValSupported("classPowerStyle", "none")
+            if mod.UF_ForeverCPStyle then
+                val = mod.UF_ForeverCPStyle(val)
             end
-            return v
+            return val
         end
 
         -- Row 1: Enable Class Resource + Class Colors (with inline swatch)
-        sharedClassResRow, h = W:DualRow(parent, y, {
+        sharedClassResRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Enable Class Resource",
             values = classPowerStyleValues,
@@ -4561,36 +4555,36 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
             -- (style-to-style changes keep the cheap refresh path).
             setValue = CludesUI.DependentSetValue(function()
                 return SCPStyle() ~= "none"
-            end, function(v)
+            end, function(val)
                 -- WoW Forever rogues under the CludesUI look pick their
                 -- own style (ns.UF_RogueCPKey); the shared one stays as is.
-                local rogueKey = ns.UF_RogueCPKey and ns.UF_RogueCPKey()
+                local rogueKey = mod.UF_RogueCPKey and mod.UF_RogueCPKey()
                 if rogueKey then
-                    UNIT_DB_MAP[optState.selectedUnit]()[rogueKey] = v
-                    if ns.frames and ns.frames._toggleClassPower then
-                        ns.frames._toggleClassPower()
+                    UNIT_DB_MAP[optionState.selectedUnit]()[rogueKey] = val
+                    if mod.frames and mod.frames._toggleClassPower then
+                        mod.frames._toggleClassPower()
                     end
                     ReloadAndUpdate()
                 else
-                    SSetSupported("classPowerStyle", v)
-                    SSetSupported("showClassPowerBar", v ~= "none")
-                    if ns.frames and ns.frames._toggleClassPower then
-                        ns.frames._toggleClassPower(v)
+                    SSetSupported("classPowerStyle", val)
+                    SSetSupported("showClassPowerBar", val ~= "none")
+                    if mod.frames and mod.frames._toggleClassPower then
+                        mod.frames._toggleClassPower(val)
                     end
                 end
                 UpdatePreview()
                 C_Timer.After(0, function()
                     local rl = CludesUI._widgetRefreshList
                     if rl then
-                        for i = 1, #rl do
-                            rl[i]()
+                        for idx = 1, #rl do
+                            rl[idx]()
                         end
                     end
                 end)
                 -- WoW Forever: Blizzard's own combo points (beside Blizzard's
                 -- own target frame) went to the hidden parent for another
                 -- Combo Points spot: only a reload brings them back.
-                if v == "none" and ns._ufComboFrameByLoc then
+                if val == "none" and mod._ufComboFrameByLoc then
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Blizzard's combo points return to its target frame after a UI reload.",
@@ -4618,9 +4612,10 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         return c.r, c.g, c.b, 1
                     end,
                     setValue = function(r, g, b)
-                        UNIT_DB_MAP[optState.selectedUnit]().classPowerCustomColor = { r = r, g = g, b = b }
-                        if ns.frames and ns.frames._toggleClassPower then
-                            ns.frames._toggleClassPower()
+                        UNIT_DB_MAP[optionState.selectedUnit]().classPowerCustomColor =
+                            { r = r, g = g, b = b }
+                        if mod.frames and mod.frames._toggleClassPower then
+                            mod.frames._toggleClassPower()
                         end
                         ReloadAndUpdate()
                         UpdatePreview()
@@ -4664,7 +4659,7 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 },
             },
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(sharedClassResRow._leftRegion, "classPowerStyle")
         SApplySupport(sharedClassResRow._rightRegion, "classPowerClassColor")
 
@@ -4676,10 +4671,10 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 c = c or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
                 return c.r, c.g, c.b, c.a or 1
             end, function(r, g, b, a)
-                UNIT_DB_MAP[optState.selectedUnit]().classPowerEmptyColor =
+                UNIT_DB_MAP[optionState.selectedUnit]().classPowerEmptyColor =
                     { r = r, g = g, b = b, a = a or 1 }
-                if ns.frames and ns.frames._toggleClassPower then
-                    ns.frames._toggleClassPower()
+                if mod.frames and mod.frames._toggleClassPower then
+                    mod.frames._toggleClassPower()
                 end
                 ReloadAndUpdate()
                 UpdatePreview()
@@ -4719,18 +4714,18 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Class Resource Style to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerStyle or "none"
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerStyle or "none"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().classPowerStyle = v
-                        UNIT_DB_MAP[key]().showClassPowerBar = (v ~= "none")
+                        UNIT_DB_MAP[key]().classPowerStyle = val
+                        UNIT_DB_MAP[key]().showClassPowerBar = (val ~= "none")
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerStyle or "none"
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerStyle or "none"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().classPowerStyle or "none") ~= v then
+                        if (UNIT_DB_MAP[key]().classPowerStyle or "none") ~= val then
                             return false
                         end
                     end
@@ -4743,13 +4738,13 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerStyle or "none"
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerStyle or "none"
                         for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().classPowerStyle = v
-                            UNIT_DB_MAP[key]().showClassPowerBar = (v ~= "none")
+                            UNIT_DB_MAP[key]().classPowerStyle = val
+                            UNIT_DB_MAP[key]().showClassPowerBar = (val ~= "none")
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
@@ -4763,27 +4758,27 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Class Colors to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerClassColor
-                    if v == nil then
-                        v = true
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerClassColor
+                    if val == nil then
+                        val = true
                     end
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().classPowerClassColor = v
+                        UNIT_DB_MAP[key]().classPowerClassColor = val
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerClassColor
-                    if v == nil then
-                        v = true
+                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerClassColor
+                    if val == nil then
+                        val = true
                     end
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local ov = UNIT_DB_MAP[key]().classPowerClassColor
-                        if ov == nil then
-                            ov = true
+                        local shade = UNIT_DB_MAP[key]().classPowerClassColor
+                        if shade == nil then
+                            shade = true
                         end
-                        if ov ~= v then
+                        if shade ~= val then
                             return false
                         end
                     end
@@ -4796,15 +4791,15 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerClassColor
-                        if v == nil then
-                            v = true
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerClassColor
+                        if val == nil then
+                            val = true
                         end
                         for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().classPowerClassColor = v
+                            UNIT_DB_MAP[key]().classPowerClassColor = val
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
@@ -4817,7 +4812,7 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
         -- (the dropdown's DependentSetValue forces the rebuild on flips).
         if SCPStyle() ~= "none" then
             -- Row 2: Position (with cog for x/y) + Size
-            row, h = W:DualRow(parent, y, {
+            rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Position",
                 values = classPowerPosValues,
@@ -4830,10 +4825,10 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 getValue = function()
                     return SValSupported("classPowerPosition", "top")
                 end,
-                setValue = function(v)
-                    SSetSupported("classPowerPosition", v)
-                    if ns.frames and ns.frames._toggleClassPower then
-                        ns.frames._toggleClassPower()
+                setValue = function(val)
+                    SSetSupported("classPowerPosition", val)
+                    if mod.frames and mod.frames._toggleClassPower then
+                        mod.frames._toggleClassPower()
                     end
                     UpdatePreview()
                     UpdatePreview()
@@ -4852,21 +4847,21 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 getValue = function()
                     return SValSupported("classPowerSize", 8)
                 end,
-                setValue = function(v)
-                    SSetSupported("classPowerSize", v)
-                    if ns.frames and ns.frames._toggleClassPower then
-                        ns.frames._toggleClassPower()
+                setValue = function(val)
+                    SSetSupported("classPowerSize", val)
+                    if mod.frames and mod.frames._toggleClassPower then
+                        mod.frames._toggleClassPower()
                     end
                     UpdatePreview()
                     UpdatePreview()
                 end,
             })
-            y = y - h
-            SApplySupport(row._leftRegion, "classPowerPosition")
-            SApplySupport(row._rightRegion, "classPowerSize")
+            posY = posY - hgt
+            SApplySupport(rowFrame._leftRegion, "classPowerPosition")
+            SApplySupport(rowFrame._rightRegion, "classPowerSize")
             -- Cog on Position for X/Y
             if not CludesUI._prebuilding then
-                local posRgn = row._leftRegion
+                local posRgn = rowFrame._leftRegion
                 CludesUI.BuildInlineCog(posRgn, {
                     disabled = function()
                         return SCPStyle() ~= "modern" or SValSupported("classPowerPosition", "top") == "above"
@@ -4887,10 +4882,10 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                             get = function()
                                 return SValSupported("classPowerBarX", 0)
                             end,
-                            set = function(v)
-                                SSetSupported("classPowerBarX", v)
-                                if ns.frames and ns.frames._toggleClassPower then
-                                    ns.frames._toggleClassPower()
+                            set = function(val)
+                                SSetSupported("classPowerBarX", val)
+                                if mod.frames and mod.frames._toggleClassPower then
+                                    mod.frames._toggleClassPower()
                                 end
                                 UpdatePreview()
                                 UpdatePreview()
@@ -4905,10 +4900,10 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                             get = function()
                                 return SValSupported("classPowerBarY", 0)
                             end,
-                            set = function(v)
-                                SSetSupported("classPowerBarY", v)
-                                if ns.frames and ns.frames._toggleClassPower then
-                                    ns.frames._toggleClassPower()
+                            set = function(val)
+                                SSetSupported("classPowerBarY", val)
+                                if mod.frames and mod.frames._toggleClassPower then
+                                    mod.frames._toggleClassPower()
                                 end
                                 UpdatePreview()
                                 UpdatePreview()
@@ -4919,22 +4914,22 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
             end
             -- Sync icons: Class Resource Position (left) and Size (right)
             if not CludesUI._prebuilding then
-                local rgn = row._leftRegion
+                local rgn = rowFrame._leftRegion
                 CludesUI.BuildSyncIcon({
                     region = rgn,
                     tooltip = "Apply Class Resource Position to all Frames",
                     onClick = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerPosition or "top"
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerPosition or "top"
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            UNIT_DB_MAP[key]().classPowerPosition = v
+                            UNIT_DB_MAP[key]().classPowerPosition = val
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerPosition or "top"
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerPosition or "top"
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if (UNIT_DB_MAP[key]().classPowerPosition or "top") ~= v then
+                            if (UNIT_DB_MAP[key]().classPowerPosition or "top") ~= val then
                                 return false
                             end
                         end
@@ -4947,12 +4942,12 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
-                            local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerPosition or "top"
+                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerPosition or "top"
                             for _, key in ipairs(checkedKeys) do
-                                UNIT_DB_MAP[key]().classPowerPosition = v
+                                UNIT_DB_MAP[key]().classPowerPosition = val
                             end
                             ReloadAndUpdate()
                             CludesUI:RefreshPage()
@@ -4961,22 +4956,22 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 })
             end
             if not CludesUI._prebuilding then
-                local rgn = row._rightRegion
+                local rgn = rowFrame._rightRegion
                 CludesUI.BuildSyncIcon({
                     region = rgn,
                     tooltip = "Apply Class Resource Size to all Frames",
                     onClick = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerSize or 8
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSize or 8
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            UNIT_DB_MAP[key]().classPowerSize = v
+                            UNIT_DB_MAP[key]().classPowerSize = val
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerSize or 8
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSize or 8
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if (UNIT_DB_MAP[key]().classPowerSize or 8) ~= v then
+                            if (UNIT_DB_MAP[key]().classPowerSize or 8) ~= val then
                                 return false
                             end
                         end
@@ -4989,12 +4984,12 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
-                            local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerSize or 8
+                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSize or 8
                             for _, key in ipairs(checkedKeys) do
-                                UNIT_DB_MAP[key]().classPowerSize = v
+                                UNIT_DB_MAP[key]().classPowerSize = val
                             end
                             ReloadAndUpdate()
                             CludesUI:RefreshPage()
@@ -5005,7 +5000,7 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
 
             -- Row 3: Bar Spacing + Background Color (with alpha)
             local sharedClassResRow3
-            sharedClassResRow3, h = W:DualRow(parent, y, {
+            sharedClassResRow3, hgt = Widgets:DualRow(hostFrame, posY, {
                 type = "slider",
                 pixel = true,
                 text = "Bar Spacing",
@@ -5020,10 +5015,10 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                 getValue = function()
                     return SValSupported("classPowerSpacing", 2)
                 end,
-                setValue = function(v)
-                    SSetSupported("classPowerSpacing", v)
-                    if ns.frames and ns.frames._toggleClassPower then
-                        ns.frames._toggleClassPower()
+                setValue = function(val)
+                    SSetSupported("classPowerSpacing", val)
+                    if mod.frames and mod.frames._toggleClassPower then
+                        mod.frames._toggleClassPower()
                     end
                     UpdatePreview()
                     UpdatePreview()
@@ -5047,7 +5042,7 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                     UpdatePreview()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
             SApplySupport(sharedClassResRow3._leftRegion, "classPowerSpacing")
             SApplySupport(sharedClassResRow3._rightRegion, "classPowerBgColor")
             -- Sync icons: Bar Spacing (left) and Background Color (right)
@@ -5057,17 +5052,17 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                     region = rgn,
                     tooltip = "Apply Class Resource Bar Spacing to all Frames",
                     onClick = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerSpacing or 2
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSpacing or 2
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            UNIT_DB_MAP[key]().classPowerSpacing = v
+                            UNIT_DB_MAP[key]().classPowerSpacing = val
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerSpacing or 2
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSpacing or 2
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if (UNIT_DB_MAP[key]().classPowerSpacing or 2) ~= v then
+                            if (UNIT_DB_MAP[key]().classPowerSpacing or 2) ~= val then
                                 return false
                             end
                         end
@@ -5080,12 +5075,12 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
-                            local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerSpacing or 2
+                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSpacing or 2
                             for _, key in ipairs(checkedKeys) do
-                                UNIT_DB_MAP[key]().classPowerSpacing = v
+                                UNIT_DB_MAP[key]().classPowerSpacing = val
                             end
                             ReloadAndUpdate()
                             CludesUI:RefreshPage()
@@ -5099,10 +5094,11 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                     region = rgn,
                     tooltip = "Apply Class Resource Background Color to all Frames",
                     onClick = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerBgColor
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerBgColor
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if v then
-                                UNIT_DB_MAP[key]().classPowerBgColor = { r = v.r, g = v.g, b = v.b, a = v.a }
+                            if val then
+                                UNIT_DB_MAP[key]().classPowerBgColor =
+                                    { r = val.r, g = val.g, b = val.b, a = val.a }
                             else
                                 UNIT_DB_MAP[key]().classPowerBgColor = nil
                             end
@@ -5111,17 +5107,17 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerBgColor
-                        local vr = v and v.r or 0
-                        local vg = v and v.g or 0
-                        local vb = v and v.b or 0
-                        local va = v and v.a or 0.5
+                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerBgColor
+                        local vr = val and val.r or 0
+                        local vg = val and val.g or 0
+                        local vb = val and val.b or 0
+                        local va = val and val.a or 0.5
                         for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            local ov = UNIT_DB_MAP[key]().classPowerBgColor
-                            local or_ = ov and ov.r or 0
-                            local og = ov and ov.g or 0
-                            local ob = ov and ov.b or 0
-                            local oa = ov and ov.a or 0.5
+                            local shade = UNIT_DB_MAP[key]().classPowerBgColor
+                            local or_ = shade and shade.r or 0
+                            local og = shade and shade.g or 0
+                            local ob = shade and shade.b or 0
+                            local oa = shade and shade.a or 0.5
                             if or_ ~= vr or og ~= vg or ob ~= vb or oa ~= va then
                                 return false
                             end
@@ -5135,14 +5131,14 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         elementKeys = GROUP_UNIT_ORDER,
                         elementLabels = SHORT_LABELS,
                         getCurrentKey = function()
-                            return optState.selectedUnit
+                            return optionState.selectedUnit
                         end,
                         onApply = function(checkedKeys)
-                            local v = UNIT_DB_MAP[optState.selectedUnit]().classPowerBgColor
+                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerBgColor
                             for _, key in ipairs(checkedKeys) do
-                                if v then
+                                if val then
                                     UNIT_DB_MAP[key]().classPowerBgColor =
-                                        { r = v.r, g = v.g, b = v.b, a = v.a }
+                                        { r = val.r, g = val.g, b = val.b, a = val.a }
                                 else
                                     UNIT_DB_MAP[key]().classPowerBgColor = nil
                                 end
@@ -5161,9 +5157,9 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
             if
                 CludesUI.IS_FOREVER == true
                 and CludesUI.BlizzStyle.Forever("unitframes")
-                and ns.UF_ComboClass()
+                and mod.UF_ComboClass()
             then
-                _, h = W:DualRow(parent, y, {
+                _, hgt = Widgets:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Combo Points",
                     tooltip = "Choose where your combo points show.",
@@ -5175,15 +5171,15 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                     disabledTooltip = "Class Resource must be set to Blizzard",
                     rawTooltip = true,
                     getValue = function()
-                        return ns.UF_ComboLocation()
+                        return mod.UF_ComboLocation()
                     end,
-                    setValue = function(v)
-                        UNIT_DB_MAP["player"]().foreverComboLocation = v
-                        ns.UF_ApplyForeverComboArc()
+                    setValue = function(val)
+                        UNIT_DB_MAP["player"]().foreverComboLocation = val
+                        mod.UF_ApplyForeverComboArc()
                         -- Blizzard's own, beside Blizzard's own target frame, went
                         -- to the hidden parent for another spot: only a reload
                         -- brings it back.
-                        if v == "target" and ns._ufComboFrameByLoc then
+                        if val == "target" and mod._ufComboFrameByLoc then
                             CludesUI:ShowConfirmPopup({
                                 title = "Reload Required",
                                 message = "Blizzard's combo points return to its target frame after a UI reload.",
@@ -5194,26 +5190,27 @@ function ns.UFO_BuildClassResourceSection(parent, y, ctx)
                         end
                     end,
                 }, CludesUI.BlankRowCfg())
-                y = y - h
+                posY = posY - hgt
             end
         end -- close Class Resource hidden-while-None gate
     end -- _showClassRes
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y, sharedClassResHeader, sharedClassResRow
+    return posY, sharedClassResHeader, sharedClassResRow
 end
 
-function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
     local GROUP_UNIT_ORDER, RegisterWidgetRefresh, ReloadAndUpdate, SHORT_LABELS =
-        env.GROUP_UNIT_ORDER, env.RegisterWidgetRefresh, env.ReloadAndUpdate, env.SHORT_LABELS
-    local UNIT_DB_MAP, UpdatePreview, db, optState = env.UNIT_DB_MAP, env.UpdatePreview, env.db, env.optState
-    local W, SApplySupport, SGetSupported, SSetSupported =
-        ctx.W, ctx.SApplySupport, ctx.SGetSupported, ctx.SSetSupported
-    local SValSupported = ctx.SValSupported
-    local _, h
+        environ.GROUP_UNIT_ORDER, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SHORT_LABELS
+    local UNIT_DB_MAP, UpdatePreview, saved, optionState =
+        environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db, environ.optState
+    local Widgets, SApplySupport, SGetSupported, SSetSupported =
+        context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
+    local SValSupported = context.SValSupported
+    local _, hgt
 
     -------------------------------------------------------------------
     --  ABSORBS (player/target/focus -- mirrors the Raid Frames section)
@@ -5222,21 +5219,21 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
     -- this function references them (block-locals would be nil there).
     local sharedAbsorbsHeader, absorbRow, healAbsorbRow
     local _supportsAbsorbs = (
-        optState.selectedUnit == "player"
-        or optState.selectedUnit == "target"
-        or optState.selectedUnit == "focus"
+        optionState.selectedUnit == "player"
+        or optionState.selectedUnit == "target"
+        or optionState.selectedUnit == "focus"
     )
     if _supportsAbsorbs then
-        sharedAbsorbsHeader, h = W:SectionHeader(parent, "ABSORBS AND HEALS", y)
-        y = y - h
+        sharedAbsorbsHeader, hgt = Widgets:SectionHeader(hostFrame, "ABSORBS AND HEALS", posY)
+        posY = posY - hgt
 
         -- Names and orders live on ns (CUI_UnitFrames_Absorb.lua, shared with the
         -- Textures page tile); fresh copies here because the SharedMedia tail
         -- below is appended into them. Shield (regular) absorb order; heal absorb
         -- uses its own (it adds the two "Outlined" variants on top).
-        local absorbStyleValues = CopyTable(ns.ABSORB_STYLE_NAMES)
-        local absorbStyleOrder = CopyTable(ns.ABSORB_STYLE_ORDER)
-        local healAbsorbStyleOrder = CopyTable(ns.HEAL_ABSORB_STYLE_ORDER)
+        local absorbStyleValues = CopyTable(mod.ABSORB_STYLE_NAMES)
+        local absorbStyleOrder = CopyTable(mod.ABSORB_STYLE_ORDER)
+        local healAbsorbStyleOrder = CopyTable(mod.HEAL_ABSORB_STYLE_ORDER)
         -- Max Health Style: the Raid Frames list minus its raid-only art.
         absorbStyleValues.maxHealthStripes = "Max Health Stripes"
         local maxHealthStyleOrder = {
@@ -5260,14 +5257,14 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         -- -> the health-bar texture lookup. Shield and heal-absorb share absorbStyleValues, so both gain the SM entries and preview swatch.
         do
             CludesUI.AppendSharedMediaTextures(
-                ns.healthBarTextureNames or {},
-                ns.healthBarTextureOrder or {},
+                mod.healthBarTextureNames or {},
+                mod.healthBarTextureOrder or {},
                 nil,
-                ns.healthBarTextures
+                mod.healthBarTextures
             )
-            local smNames = ns.healthBarTextureNames or {}
+            local smNames = mod.healthBarTextureNames or {}
             local smKeys = {}
-            for _, k in ipairs(ns.healthBarTextureOrder or {}) do
+            for _, k in ipairs(mod.healthBarTextureOrder or {}) do
                 if type(k) == "string" and k:find("^sm:") then
                     smKeys[#smKeys + 1] = k
                     absorbStyleValues[k] = smNames[k] or k
@@ -5293,7 +5290,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                     if key == "maxHealthStripes" then
                         return CludesUI.MAX_HEALTH_STRIPES_TEX
                     end
-                    return ns.ResolveAbsorbStyleTex and ns.ResolveAbsorbStyleTex(key) or nil
+                    return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
                 end,
             }
         end
@@ -5302,9 +5299,9 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         -- pre-split behavior (clean -> absorbCleanAlpha, other styles 80).
         -- Must match GetAbsorbOpacity in CUI_UnitFrames_Absorb.lua.
         local function EffAbsorbOpacity()
-            local v = SValSupported("absorbOpacity", nil)
-            if v then
-                return v
+            local val = SValSupported("absorbOpacity", nil)
+            if val then
+                return val
             end
             if SValSupported("showPlayerAbsorb", "none") == "clean" then
                 return SValSupported("absorbCleanAlpha", 30)
@@ -5342,25 +5339,25 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             if srcUnit == dstUnit then
                 return
             end
-            local src, dst = UNIT_DB_MAP[srcUnit](), UNIT_DB_MAP[dstUnit]()
+            local source, dst = UNIT_DB_MAP[srcUnit](), UNIT_DB_MAP[dstUnit]()
             for _, e in ipairs(defs) do
-                local v = src[e.k]
-                if v == nil then
-                    v = e.d
+                local val = source[e.k]
+                if val == nil then
+                    val = e.d
                 end
-                if type(v) == "table" then
-                    dst[e.k] = { r = v.r, g = v.g, b = v.b, a = v.a }
+                if type(val) == "table" then
+                    dst[e.k] = { r = val.r, g = val.g, b = val.b, a = val.a }
                 else
-                    dst[e.k] = v
+                    dst[e.k] = val
                 end
             end
         end
         local function AbsorbSyncMatches(defs, srcUnit, units)
-            local src = UNIT_DB_MAP[srcUnit]()
-            for _, unit in ipairs(units) do
-                local dst = UNIT_DB_MAP[unit]()
+            local source = UNIT_DB_MAP[srcUnit]()
+            for _, unitToken in ipairs(units) do
+                local dst = UNIT_DB_MAP[unitToken]()
                 for _, e in ipairs(defs) do
-                    local a = src[e.k]
+                    local a = source[e.k]
                     if a == nil then
                         a = e.d
                     end
@@ -5377,7 +5374,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         end
 
         -- Row 1: Absorb Style (+ placement cog + color swatch) | Absorb Opacity
-        absorbRow, h = W:DualRow(parent, y, {
+        absorbRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Absorb Style",
             values = absorbStyleValues,
@@ -5385,13 +5382,13 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("showPlayerAbsorb", "none")
             end,
-            setValue = function(v)
-                if v == "clean" then
-                    UNIT_DB_MAP[optState.selectedUnit]().absorbOpacity = 30
+            setValue = function(val)
+                if val == "clean" then
+                    UNIT_DB_MAP[optionState.selectedUnit]().absorbOpacity = 30
                 else
-                    UNIT_DB_MAP[optState.selectedUnit]().absorbOpacity = 90
+                    UNIT_DB_MAP[optionState.selectedUnit]().absorbOpacity = 90
                 end
-                SSetSupported("showPlayerAbsorb", v)
+                SSetSupported("showPlayerAbsorb", val)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -5405,11 +5402,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             end,
             disabledTooltip = "Absorb Style",
             getValue = EffAbsorbOpacity,
-            setValue = function(v)
-                SSetSupported("absorbOpacity", v)
+            setValue = function(val)
+                SSetSupported("absorbOpacity", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(absorbRow._leftRegion, "showPlayerAbsorb")
         SApplySupport(absorbRow._rightRegion, "absorbOpacity")
         -- Inline cog: absorb placement (overlay / right edge / left edge)
@@ -5453,8 +5450,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                             SyncAbsorbEdgeLabels()
                             return SValSupported("absorbEdgeMode", "overlay")
                         end,
-                        set = function(v)
-                            SSetSupported("absorbEdgeMode", v)
+                        set = function(val)
+                            SSetSupported("absorbEdgeMode", val)
                         end,
                     },
                     {
@@ -5467,8 +5464,9 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                         -- edge modes have no overshield, Overlay Reverse
                         -- already clamps the whole absorb inside the fill and
                         -- its Full variant draws the excess from the origin edge.
-                        itemDisabled = function(v)
-                            return v == "fromleft" and SValSupported("absorbEdgeMode", "overlay") ~= "overlay"
+                        itemDisabled = function(val)
+                            return val == "fromleft"
+                                and SValSupported("absorbEdgeMode", "overlay") ~= "overlay"
                         end,
                         get = function()
                             -- Legacy boolean fallback: profiles saved before the
@@ -5479,11 +5477,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                             end
                             return m
                         end,
-                        set = function(v)
+                        set = function(val)
                             -- Mirror the legacy boolean so pre-dropdown readers
                             -- (incl. the live-client profile) track Never/Always.
-                            SSetSupported("showOvershield", v ~= "never")
-                            SSetSupported("overshieldMode", v)
+                            SSetSupported("showOvershield", val ~= "never")
+                            SSetSupported("overshieldMode", val)
                         end,
                     },
                     -- Opt-in glow line on the shield's edge (runtime twin:
@@ -5521,8 +5519,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                         get = function()
                             return SValSupported("absorbGlowLine", false) == true
                         end,
-                        set = function(v)
-                            SSetSupported("absorbGlowLine", v and true or false)
+                        set = function(val)
+                            SSetSupported("absorbGlowLine", val and true or false)
                         end,
                     },
                     {
@@ -5542,8 +5540,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                         get = function()
                             return SValSupported("absorbGlowLineTexture", "blizzard")
                         end,
-                        set = function(v)
-                            SSetSupported("absorbGlowLineTexture", v)
+                        set = function(val)
+                            SSetSupported("absorbGlowLineTexture", val)
                         end,
                     },
                     -- Single global toggle (boss block key, nil = enabled):
@@ -5554,12 +5552,12 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                         label = "Show on Boss Frames",
                         tooltip = "Render absorbs on Boss Frames using the Target frame's absorb styling.",
                         get = function()
-                            return not (db.profile.boss and db.profile.boss.showAbsorbs == false)
+                            return not (saved.profile.boss and saved.profile.boss.showAbsorbs == false)
                         end,
-                        set = function(v)
-                            local b = db.profile.boss
+                        set = function(val)
+                            local b = saved.profile.boss
                             if b then
-                                if v then
+                                if val then
                                     b.showAbsorbs = nil
                                 else
                                     b.showAbsorbs = false
@@ -5576,13 +5574,13 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 if not SyncAbsorbEdgeLabels() then
                     return
                 end
-                local pf = cogShow and cogShow._popupFrame
-                if pf and pf.GetChildren then
-                    for _, child in ipairs({ pf:GetChildren() }) do
+                local popFrame = cogShow and cogShow._popupFrame
+                if popFrame and popFrame.GetChildren then
+                    for _, childFrame in ipairs({ popFrame:GetChildren() }) do
                         -- an idle child is a parked control of an earlier dress
                         -- (page reuse): its menu belongs to no row any more
-                        if child._invalidateMenu and not PoolIsIdle(child) then
-                            child._invalidateMenu()
+                        if childFrame._invalidateMenu and not PoolIsIdle(childFrame) then
+                            childFrame._invalidateMenu()
                         end
                     end
                 end
@@ -5591,21 +5589,21 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         -- Inline color swatch for absorb color
         if not CludesUI._prebuilding then
             local rgn = absorbRow._leftRegion
-            local swatch = CludesUI.BuildColorSwatch(rgn, absorbRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CludesUI.BuildColorSwatch(rgn, absorbRow:GetFrameLevel() + 3, function()
                 local c = SGetSupported("absorbColor")
                 if c then
                     return c.r, c.g, c.b, 1
                 end
                 return 1, 1, 1, 1
             end, function(r, g, b)
-                UNIT_DB_MAP[optState.selectedUnit]().absorbColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().absorbColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
-            swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = swatch
+            colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+            rgn._lastInline = colorSwatch
             local function UpdateAbsorbSwatchVis()
-                swatch:SetAlpha(SValSupported("showPlayerAbsorb", "none") == "none" and 0.3 or 1)
+                colorSwatch:SetAlpha(SValSupported("showPlayerAbsorb", "none") == "none" and 0.3 or 1)
             end
             RegisterWidgetRefresh(UpdateAbsorbSwatchVis)
             UpdateAbsorbSwatchVis()
@@ -5618,13 +5616,13 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 tooltip = "Apply Absorb Style, color and rendering to all Frames",
                 onClick = function()
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        CopyAbsorbSync(ABSORB_SYNC_DEFS, optState.selectedUnit, key)
+                        CopyAbsorbSync(ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    return AbsorbSyncMatches(ABSORB_SYNC_DEFS, optState.selectedUnit, GROUP_UNIT_ORDER)
+                    return AbsorbSyncMatches(ABSORB_SYNC_DEFS, optionState.selectedUnit, GROUP_UNIT_ORDER)
                 end,
                 flashTargets = function()
                     return { rgn }
@@ -5633,11 +5631,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
                         for _, key in ipairs(checkedKeys) do
-                            CopyAbsorbSync(ABSORB_SYNC_DEFS, optState.selectedUnit, key)
+                            CopyAbsorbSync(ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
@@ -5647,7 +5645,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         end
 
         -- Row 2: Heal Absorb Style (+ placement cog + color swatch) | Heal Absorb Opacity
-        healAbsorbRow, h = W:DualRow(parent, y, {
+        healAbsorbRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Heal Absorb Style",
             values = absorbStyleValues,
@@ -5655,13 +5653,13 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healAbsorbStyle", "clean")
             end,
-            setValue = function(v)
-                if v == "clean" then
-                    UNIT_DB_MAP[optState.selectedUnit]().healAbsorbOpacity = 50
+            setValue = function(val)
+                if val == "clean" then
+                    UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbOpacity = 50
                 else
-                    UNIT_DB_MAP[optState.selectedUnit]().healAbsorbOpacity = 75
+                    UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbOpacity = 75
                 end
-                SSetSupported("healAbsorbStyle", v)
+                SSetSupported("healAbsorbStyle", val)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -5677,11 +5675,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healAbsorbOpacity", 65)
             end,
-            setValue = function(v)
-                SSetSupported("healAbsorbOpacity", v)
+            setValue = function(val)
+                SSetSupported("healAbsorbOpacity", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(healAbsorbRow._leftRegion, "healAbsorbStyle")
         SApplySupport(healAbsorbRow._rightRegion, "healAbsorbOpacity")
         -- Inline eyeball: preview heal absorb on the live preview (hides the shield
@@ -5699,11 +5697,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             local function RefreshHealEye()
-                eyeTex:SetTexture(optState.showHealAbsorbPreview and EYE_INVISIBLE or EYE_VISIBLE)
+                eyeTex:SetTexture(optionState.showHealAbsorbPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end
             RefreshHealEye()
             eyeBtn:SetScript("OnClick", function()
-                optState.showHealAbsorbPreview = not optState.showHealAbsorbPreview
+                optionState.showHealAbsorbPreview = not optionState.showHealAbsorbPreview
                 RefreshHealEye()
                 UpdatePreview()
             end)
@@ -5711,7 +5709,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 CludesUI.SetGlyphAlpha(self, 0.7)
                 CludesUI.ShowWidgetTooltip(
                     self,
-                    optState.showHealAbsorbPreview and "Hide heal absorb preview"
+                    optionState.showHealAbsorbPreview and "Hide heal absorb preview"
                         or "Show heal absorb preview"
                 )
             end)
@@ -5755,8 +5753,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                             SyncHealAbsorbEdgeLabels()
                             return SValSupported("healAbsorbEdgeMode", "overlay")
                         end,
-                        set = function(v)
-                            SSetSupported("healAbsorbEdgeMode", v)
+                        set = function(val)
+                            SSetSupported("healAbsorbEdgeMode", val)
                         end,
                     },
                     {
@@ -5768,8 +5766,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                         get = function()
                             return SValSupported("healAbsorbBgOpacity", 15)
                         end,
-                        set = function(v)
-                            SSetSupported("healAbsorbBgOpacity", v)
+                        set = function(val)
+                            SSetSupported("healAbsorbBgOpacity", val)
                         end,
                     },
                 },
@@ -5780,13 +5778,13 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 if not SyncHealAbsorbEdgeLabels() then
                     return
                 end
-                local pf = cogShow and cogShow._popupFrame
-                if pf and pf.GetChildren then
-                    for _, child in ipairs({ pf:GetChildren() }) do
+                local popFrame = cogShow and cogShow._popupFrame
+                if popFrame and popFrame.GetChildren then
+                    for _, childFrame in ipairs({ popFrame:GetChildren() }) do
                         -- an idle child is a parked control of an earlier dress
                         -- (page reuse): its menu belongs to no row any more
-                        if child._invalidateMenu and not PoolIsIdle(child) then
-                            child._invalidateMenu()
+                        if childFrame._invalidateMenu and not PoolIsIdle(childFrame) then
+                            childFrame._invalidateMenu()
                         end
                     end
                 end
@@ -5795,31 +5793,31 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         -- Inline color swatch for heal absorb color
         if not CludesUI._prebuilding then
             local rgn = healAbsorbRow._leftRegion
-            local swatch = CludesUI.BuildColorSwatch(rgn, healAbsorbRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CludesUI.BuildColorSwatch(rgn, healAbsorbRow:GetFrameLevel() + 3, function()
                 local c = SGetSupported("healAbsorbColor")
                 if c then
                     return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1
                 end
                 return 0.8, 0.15, 0.15, 1
             end, function(r, g, b)
-                UNIT_DB_MAP[optState.selectedUnit]().healAbsorbColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
-            swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = swatch
+            colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+            rgn._lastInline = colorSwatch
             -- Blocking overlay: disabled for "none" and the pre-colored
             -- "Large Outlined Stripes" heal styles (their texture is not tinted).
-            local swatchBlock = CreateFrame("Frame", nil, swatch)
+            local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
             swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+            swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
             swatchBlock:EnableMouse(true)
             swatchBlock:Hide()
             local function UpdateHealAbsorbSwatchVis()
                 local st = SValSupported("healAbsorbStyle", "clean")
-                local off = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
-                swatch:SetAlpha(off and 0.3 or 1)
-                if off then
+                local offset = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
+                colorSwatch:SetAlpha(offset and 0.3 or 1)
+                if offset then
                     swatchBlock:Show()
                 else
                     swatchBlock:Hide()
@@ -5836,13 +5834,17 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 tooltip = "Apply Heal Absorb Style, color and rendering to all Frames",
                 onClick = function()
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        CopyAbsorbSync(HEAL_ABSORB_SYNC_DEFS, optState.selectedUnit, key)
+                        CopyAbsorbSync(HEAL_ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    return AbsorbSyncMatches(HEAL_ABSORB_SYNC_DEFS, optState.selectedUnit, GROUP_UNIT_ORDER)
+                    return AbsorbSyncMatches(
+                        HEAL_ABSORB_SYNC_DEFS,
+                        optionState.selectedUnit,
+                        GROUP_UNIT_ORDER
+                    )
                 end,
                 flashTargets = function()
                     return { rgn }
@@ -5851,11 +5853,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
                         for _, key in ipairs(checkedKeys) do
-                            CopyAbsorbSync(HEAL_ABSORB_SYNC_DEFS, optState.selectedUnit, key)
+                            CopyAbsorbSync(HEAL_ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
@@ -5866,7 +5868,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
 
         -- Row 3: Absorb Bar (position dropdown) | Bar Height (+ alpha swatch)
         local absorbBarRow
-        absorbBarRow, h = W:DualRow(parent, y, {
+        absorbBarRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Absorb Bar",
             values = {
@@ -5882,8 +5884,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("absorbBarPosition", "none")
             end,
-            setValue = function(v)
-                SSetSupported("absorbBarPosition", v)
+            setValue = function(val)
+                SSetSupported("absorbBarPosition", val)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -5899,30 +5901,30 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("absorbBarHeight", 4)
             end,
-            setValue = function(v)
-                SSetSupported("absorbBarHeight", v)
+            setValue = function(val)
+                SSetSupported("absorbBarHeight", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(absorbBarRow._leftRegion, "absorbBarPosition")
         SApplySupport(absorbBarRow._rightRegion, "absorbBarHeight")
         if not CludesUI._prebuilding then
             local rgn = absorbBarRow._rightRegion
-            local swatch = CludesUI.BuildColorSwatch(rgn, absorbBarRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CludesUI.BuildColorSwatch(rgn, absorbBarRow:GetFrameLevel() + 3, function()
                 local c = SGetSupported("absorbBarColor")
                 if c then
                     return c.r, c.g, c.b, c.a or 1
                 end
                 return 1, 1, 1, 1
             end, function(r, g, b, a)
-                UNIT_DB_MAP[optState.selectedUnit]().absorbBarColor = { r = r, g = g, b = b, a = a }
+                UNIT_DB_MAP[optionState.selectedUnit]().absorbBarColor = { r = r, g = g, b = b, a = a }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, true, 20)
-            swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = swatch
+            colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+            rgn._lastInline = colorSwatch
             local function UpdateAbsorbBarSwatchVis()
-                swatch:SetAlpha(SValSupported("absorbBarPosition", "none") == "none" and 0.3 or 1)
+                colorSwatch:SetAlpha(SValSupported("absorbBarPosition", "none") == "none" and 0.3 or 1)
             end
             RegisterWidgetRefresh(UpdateAbsorbBarSwatchVis)
             UpdateAbsorbBarSwatchVis()
@@ -5930,7 +5932,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
 
         -- Row 4: Heal Absorb Bar (position dropdown) | Bar Height (+ alpha swatch)
         local healAbsorbBarRow
-        healAbsorbBarRow, h = W:DualRow(parent, y, {
+        healAbsorbBarRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Heal Absorb Bar",
             values = {
@@ -5958,8 +5960,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healAbsorbBarPosition", "none")
             end,
-            setValue = function(v)
-                SSetSupported("healAbsorbBarPosition", v)
+            setValue = function(val)
+                SSetSupported("healAbsorbBarPosition", val)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -5975,30 +5977,38 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healAbsorbBarHeight", 4)
             end,
-            setValue = function(v)
-                SSetSupported("healAbsorbBarHeight", v)
+            setValue = function(val)
+                SSetSupported("healAbsorbBarHeight", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(healAbsorbBarRow._leftRegion, "healAbsorbBarPosition")
         SApplySupport(healAbsorbBarRow._rightRegion, "healAbsorbBarHeight")
         if not CludesUI._prebuilding then
             local rgn = healAbsorbBarRow._rightRegion
-            local swatch = CludesUI.BuildColorSwatch(rgn, healAbsorbBarRow:GetFrameLevel() + 3, function()
-                local c = SGetSupported("healAbsorbBarColor")
-                if c then
-                    return c.r, c.g, c.b, c.a or 1
-                end
-                return 200 / 255, 29 / 255, 29 / 255, 1
-            end, function(r, g, b, a)
-                UNIT_DB_MAP[optState.selectedUnit]().healAbsorbBarColor = { r = r, g = g, b = b, a = a }
-                ReloadAndUpdate()
-                UpdatePreview()
-            end, true, 20)
-            swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = swatch
+            local colorSwatch = CludesUI.BuildColorSwatch(
+                rgn,
+                healAbsorbBarRow:GetFrameLevel() + 3,
+                function()
+                    local c = SGetSupported("healAbsorbBarColor")
+                    if c then
+                        return c.r, c.g, c.b, c.a or 1
+                    end
+                    return 200 / 255, 29 / 255, 29 / 255, 1
+                end,
+                function(r, g, b, a)
+                    UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbBarColor =
+                        { r = r, g = g, b = b, a = a }
+                    ReloadAndUpdate()
+                    UpdatePreview()
+                end,
+                true,
+                20
+            )
+            colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+            rgn._lastInline = colorSwatch
             local function UpdateHealAbsorbBarSwatchVis()
-                swatch:SetAlpha(SValSupported("healAbsorbBarPosition", "none") == "none" and 0.3 or 1)
+                colorSwatch:SetAlpha(SValSupported("healAbsorbBarPosition", "none") == "none" and 0.3 or 1)
             end
             RegisterWidgetRefresh(UpdateHealAbsorbBarSwatchVis)
             UpdateHealAbsorbBarSwatchVis()
@@ -6007,7 +6017,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         -- Max Health Style (+ eyeball, backing cog, swatch) | Max Health Opacity: Raid Frames
         -- parity; the overlay is always on the bar's far end. Boss frames use Target's.
         local maxHealthRow
-        maxHealthRow, h = W:DualRow(parent, y, {
+        maxHealthRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Max Health Style",
             values = absorbStyleValues,
@@ -6015,8 +6025,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("maxHealthStyle", "none")
             end,
-            setValue = function(v)
-                SSetSupported("maxHealthStyle", v)
+            setValue = function(val)
+                SSetSupported("maxHealthStyle", val)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -6032,11 +6042,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("maxHealthOpacity", 100)
             end,
-            setValue = function(v)
-                SSetSupported("maxHealthOpacity", v)
+            setValue = function(val)
+                SSetSupported("maxHealthOpacity", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(maxHealthRow._leftRegion, "maxHealthStyle")
         SApplySupport(maxHealthRow._rightRegion, "maxHealthOpacity")
         -- Inline order as on the Heal Absorb row: the eyeball, the cog, then the swatch.
@@ -6054,11 +6064,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             local function RefreshMaxHealthEye()
-                eyeTex:SetTexture(optState.showMaxHealthPreview and EYE_INVISIBLE or EYE_VISIBLE)
+                eyeTex:SetTexture(optionState.showMaxHealthPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end
             RefreshMaxHealthEye()
             eyeBtn:SetScript("OnClick", function()
-                optState.showMaxHealthPreview = not optState.showMaxHealthPreview
+                optionState.showMaxHealthPreview = not optionState.showMaxHealthPreview
                 RefreshMaxHealthEye()
                 UpdatePreview()
             end)
@@ -6066,7 +6076,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 CludesUI.SetGlyphAlpha(self, 0.7)
                 CludesUI.ShowWidgetTooltip(
                     self,
-                    optState.showMaxHealthPreview and "Hide max health preview" or "Show max health preview"
+                    optionState.showMaxHealthPreview and "Hide max health preview"
+                        or "Show max health preview"
                 )
             end)
             eyeBtn:SetScript("OnLeave", function(self)
@@ -6089,36 +6100,36 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                         get = function()
                             return SValSupported("maxHealthBgOpacity", 100)
                         end,
-                        set = function(v)
-                            SSetSupported("maxHealthBgOpacity", v)
+                        set = function(val)
+                            SSetSupported("maxHealthBgOpacity", val)
                         end,
                     },
                 },
             })
             -- Swatch tints the texture; blocked for None and the pre-colored styles.
-            local swatch = CludesUI.BuildColorSwatch(rgn, maxHealthRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CludesUI.BuildColorSwatch(rgn, maxHealthRow:GetFrameLevel() + 3, function()
                 local c = SGetSupported("maxHealthColor")
                 if c then
                     return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1
                 end
                 return 0.7, 0.1, 0.1, 1
             end, function(r, g, b)
-                UNIT_DB_MAP[optState.selectedUnit]().maxHealthColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().maxHealthColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
-            swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = swatch
-            local swatchBlock = CreateFrame("Frame", nil, swatch)
+            colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+            rgn._lastInline = colorSwatch
+            local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
             swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+            swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
             swatchBlock:EnableMouse(true)
             swatchBlock:Hide()
             local function UpdateMaxHealthSwatchVis()
                 local st = SValSupported("maxHealthStyle", "none")
-                local off = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
-                swatch:SetAlpha(off and 0.3 or 1)
-                swatchBlock:SetShown(off)
+                local offset = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
+                colorSwatch:SetAlpha(offset and 0.3 or 1)
+                swatchBlock:SetShown(offset)
             end
             RegisterWidgetRefresh(UpdateMaxHealthSwatchVis)
             UpdateMaxHealthSwatchVis()
@@ -6126,15 +6137,15 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
 
         -- Row 5: Heal Prediction (+ your / others' color swatches) | Prediction Opacity
         local healPredRow
-        healPredRow, h = W:DualRow(parent, y, {
+        healPredRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Heal Prediction",
             tooltip = "Shows incoming heals past the health bar: yours, then other players'.",
             getValue = function()
                 return SValSupported("healPrediction", false) == true
             end,
-            setValue = function(v)
-                SSetSupported("healPrediction", v)
+            setValue = function(val)
+                SSetSupported("healPrediction", val)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -6150,11 +6161,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healPredOpacity", 60)
             end,
-            setValue = function(v)
-                SSetSupported("healPredOpacity", v)
+            setValue = function(val)
+                SSetSupported("healPredOpacity", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(healPredRow._leftRegion, "healPrediction")
         SApplySupport(healPredRow._rightRegion, "healPredOpacity")
         -- Inline eyeball: preview heal prediction on the live preview. Session-only.
@@ -6170,12 +6181,12 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             eyeTex:SetAllPoints()
             local function RefreshPredEye()
                 eyeTex:SetTexture(
-                    ns._ufShowHealPredPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
+                    mod._ufShowHealPredPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
                 )
             end
             RefreshPredEye()
             eyeBtn:SetScript("OnClick", function()
-                ns._ufShowHealPredPreview = not ns._ufShowHealPredPreview
+                mod._ufShowHealPredPreview = not mod._ufShowHealPredPreview
                 RefreshPredEye()
                 UpdatePreview()
             end)
@@ -6183,7 +6194,7 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 CludesUI.SetGlyphAlpha(self, 0.7)
                 CludesUI.ShowWidgetTooltip(
                     self,
-                    ns._ufShowHealPredPreview and "Hide heal prediction preview"
+                    mod._ufShowHealPredPreview and "Hide heal prediction preview"
                         or "Show heal prediction preview"
                 )
             end)
@@ -6194,25 +6205,25 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         end
         if not CludesUI._prebuilding then
             local rgn = healPredRow._leftRegion
-            local function PredSwatch(key, default, tip)
-                local swatch = CludesUI.BuildColorSwatch(rgn, healPredRow:GetFrameLevel() + 3, function()
+            local function PredSwatch(key, default, tipText)
+                local colorSwatch = CludesUI.BuildColorSwatch(rgn, healPredRow:GetFrameLevel() + 3, function()
                     local c = SGetSupported(key) or default
                     return c.r, c.g, c.b, 1
                 end, function(r, g, b)
-                    UNIT_DB_MAP[optState.selectedUnit]()[key] = { r = r, g = g, b = b }
+                    UNIT_DB_MAP[optionState.selectedUnit]()[key] = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end, false, 20)
-                swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = swatch
-                swatch:HookScript("OnEnter", function(sw)
-                    CludesUI.ShowWidgetTooltip(sw, tip)
+                colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                rgn._lastInline = colorSwatch
+                colorSwatch:HookScript("OnEnter", function(sw)
+                    CludesUI.ShowWidgetTooltip(sw, tipText)
                 end)
-                swatch:HookScript("OnLeave", function()
+                colorSwatch:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateVis()
-                    swatch:SetAlpha(SValSupported("healPrediction", false) == true and 1 or 0.3)
+                    colorSwatch:SetAlpha(SValSupported("healPrediction", false) == true and 1 or 0.3)
                 end
                 RegisterWidgetRefresh(UpdateVis)
                 UpdateVis()
@@ -6220,12 +6231,12 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             -- Each swatch lands left of the last, so build others' first: reads yours, others'.
             PredSwatch(
                 "healPredOtherColor",
-                ns.UF_HEAL_PRED_OTHER or { r = 40 / 255, g = 170 / 255, b = 40 / 255 },
+                mod.UF_HEAL_PRED_OTHER or { r = 40 / 255, g = 170 / 255, b = 40 / 255 },
                 "Other players' heals"
             )
             PredSwatch(
                 "healPredColor",
-                ns.UF_HEAL_PRED_MY or { r = 102 / 255, g = 243 / 255, b = 102 / 255 },
+                mod.UF_HEAL_PRED_MY or { r = 102 / 255, g = 243 / 255, b = 102 / 255 },
                 "Your heals"
             )
         end
@@ -6234,9 +6245,9 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
         -- stripes read as absorbs on these frames).
         local healPredTexValues = { health = "Health Bar", flat = "Flat" }
         local healPredTexOrder = { "health", "flat", "---" }
-        for _, k in ipairs(ns.healthBarTextureOrder or {}) do
+        for _, k in ipairs(mod.healthBarTextureOrder or {}) do
             if k ~= "none" and k ~= "---" and not healPredTexValues[k] then
-                healPredTexValues[k] = (ns.healthBarTextureNames and ns.healthBarTextureNames[k]) or k
+                healPredTexValues[k] = (mod.healthBarTextureNames and mod.healthBarTextureNames[k]) or k
                 healPredTexOrder[#healPredTexOrder + 1] = k
             end
         end
@@ -6249,11 +6260,11 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
                 if key == "flat" then
                     return "Interface\\Buttons\\WHITE8X8"
                 end
-                return CludesUI.ResolveTexturePath(ns.healthBarTextures, key, nil)
+                return CludesUI.ResolveTexturePath(mod.healthBarTextures, key, nil)
             end,
         }
         local overhealRow
-        overhealRow, h = W:DualRow(parent, y, {
+        overhealRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Overheal",
             min = 0,
@@ -6267,8 +6278,8 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healPredOverheal", 0)
             end,
-            setValue = function(v)
-                SSetSupported("healPredOverheal", v)
+            setValue = function(val)
+                SSetSupported("healPredOverheal", val)
             end,
         }, {
             type = "dropdown",
@@ -6282,18 +6293,18 @@ function ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
             getValue = function()
                 return SValSupported("healPredTexture", "health")
             end,
-            setValue = function(v)
-                SSetSupported("healPredTexture", v)
+            setValue = function(val)
+                SSetSupported("healPredTexture", val)
                 UpdatePreview()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(overhealRow._leftRegion, "healPredOverheal")
         SApplySupport(overhealRow._rightRegion, "healPredTexture")
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
     end -- _supportsAbsorbs
 
-    return y, sharedAbsorbsHeader, absorbRow, healAbsorbRow
+    return posY, sharedAbsorbsHeader, absorbRow, healAbsorbRow
 end

@@ -51,8 +51,8 @@ local HOUSING_OK = C_Housing and C_Housing.GetOthersOwnedHouses and C_Housing.Vi
 -------------------------------------------------------------------------------
 local T = {}
 local function ResolveTheme()
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-    T.accR, T.accG, T.accB = EG.r, EG.g, EG.b
+    local ACC = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+    T.accR, T.accG, T.accB = ACC.r, ACC.g, ACC.b
     T.bgR, T.bgG, T.bgB, T.bgA = 0.08, 0.08, 0.08, 0.92
     T.insetR, T.insetG, T.insetB, T.insetA = 0.04, 0.04, 0.04, 0.85
     T.brdR, T.brdG, T.brdB, T.brdA = 0.2, 0.2, 0.2, 1
@@ -62,86 +62,86 @@ local function ResolveTheme()
         and (not CludesUI.GetFontUseShadow or CludesUI.GetFontUseShadow("blizzardSkin"))
 end
 
-local function SolidTex(parent, layer, r, g, b, a, sublevel)
-    local t = parent:CreateTexture(nil, layer, nil, sublevel)
+local function SolidTex(hostFrame, layer, r, g, b, a, sublevel)
+    local t = hostFrame:CreateTexture(nil, layer, nil, sublevel)
     t:SetColorTexture(r, g, b, a)
     return t
 end
 
 -- BORDER/-7 strips demoted to the frame's own level, exactly as the window
 -- engine draws its borders (content on the frame renders above them).
-local function AddBorder(frame)
-    local PP = CludesUI.PanelPP or CludesUI.PP
-    if not (PP and PP.CreateBorder) then
+local function AddBorder(widget)
+    local Pix = CludesUI.PanelPP or CludesUI.PP
+    if not (Pix and Pix.CreateBorder) then
         return
     end
-    local c = PP.CreateBorder(frame, T.brdR, T.brdG, T.brdB, T.brdA, 1, "BORDER", -7)
+    local c = Pix.CreateBorder(widget, T.brdR, T.brdG, T.brdB, T.brdA, 1, "BORDER", -7)
     if c and c.SetFrameLevel then
-        c:SetFrameLevel(frame:GetFrameLevel())
+        c:SetFrameLevel(widget:GetFrameLevel())
     end
 end
 
 -- family: a text that shows other players' writing (house and owner names)
 -- takes the font as a font family, which draws the scripts the font lacks.
-local function MakeText(parent, size, r, g, b, family)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
+local function MakeText(hostFrame, dim, r, g, b, family)
+    local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     if family then
-        CludesUI.SetFontFamily(fs, T.fontPath, size, T.fontFlag or "", T.fontShadow)
+        CludesUI.SetFontFamily(fontStr, T.fontPath, dim, T.fontFlag or "", T.fontShadow)
     else
-        CludesUI.PrimeFontShadow(fs, T.fontShadow)
-        fs:SetFont(T.fontPath, size, T.fontFlag or "")
+        CludesUI.PrimeFontShadow(fontStr, T.fontShadow)
+        fontStr:SetFont(T.fontPath, dim, T.fontFlag or "")
     end
-    fs:SetTextColor(r or 1, g or 1, b or 1, 1)
-    return fs
+    fontStr:SetTextColor(r or 1, g or 1, b or 1, 1)
+    return fontStr
 end
 
-local function Panel(frame, inset)
+local function Panel(widget, inset)
     local r, g, b, a = T.bgR, T.bgG, T.bgB, T.bgA
     if inset then
         r, g, b, a = T.insetR, T.insetG, T.insetB, T.insetA
     end
-    local bg = SolidTex(frame, "BACKGROUND", r, g, b, a, -6)
-    bg:SetAllPoints(frame)
-    AddBorder(frame)
-    return bg
+    local backdrop = SolidTex(widget, "BACKGROUND", r, g, b, a, -6)
+    backdrop:SetAllPoints(widget)
+    AddBorder(widget)
+    return backdrop
 end
 
 -- Flat dark block with a subtle white hover and a white label; secure = a
 -- SecureActionButton whose attributes the caller sets.
-local function MakeButton(parent, name, label, w, h, secure)
-    local b = CreateFrame("Button", name, parent, secure and "SecureActionButtonTemplate" or nil)
-    b:SetSize(w, h)
+local function MakeButton(hostFrame, name, labelText, wid, hgt, secure)
+    local b = CreateFrame("Button", name, hostFrame, secure and "SecureActionButtonTemplate" or nil)
+    b:SetSize(wid, hgt)
     b:RegisterForClicks("AnyUp")
     if secure then
         b:SetAttribute("useOnKeyDown", false)
     end
-    local fill = SolidTex(b, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
-    fill:SetAllPoints(b)
+    local fillTex = SolidTex(b, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
+    fillTex:SetAllPoints(b)
     AddBorder(b)
     local hover = SolidTex(b, "HIGHLIGHT", 1, 1, 1, 0.1)
     hover:SetAllPoints(b)
     local t = MakeText(b, 12)
     t:SetPoint("CENTER")
-    t:SetText(label)
+    t:SetText(labelText)
     b:SetFontString(t)
     return b
 end
 
-local function MakeCloseButton(parent)
-    local btn = CreateFrame("Button", nil, parent)
-    btn:SetSize(22, 22)
-    local x = btn:CreateTexture(nil, "OVERLAY")
-    x:SetAtlas("uitools-icon-close")
-    x:SetSize(14, 14)
-    x:SetPoint("CENTER")
-    x:SetVertexColor(1, 1, 1, 0.75)
-    btn:SetScript("OnEnter", function()
-        x:SetVertexColor(1, 1, 1, 1)
+local function MakeCloseButton(hostFrame)
+    local button = CreateFrame("Button", nil, hostFrame)
+    button:SetSize(22, 22)
+    local posX = button:CreateTexture(nil, "OVERLAY")
+    posX:SetAtlas("uitools-icon-close")
+    posX:SetSize(14, 14)
+    posX:SetPoint("CENTER")
+    posX:SetVertexColor(1, 1, 1, 0.75)
+    button:SetScript("OnEnter", function()
+        posX:SetVertexColor(1, 1, 1, 1)
     end)
-    btn:SetScript("OnLeave", function()
-        x:SetVertexColor(1, 1, 1, 0.75)
+    button:SetScript("OnLeave", function()
+        posX:SetVertexColor(1, 1, 1, 0.75)
     end)
-    return btn
+    return button
 end
 
 local OpenHousesFor -- defined with the house list below
@@ -172,12 +172,12 @@ local function BuildDock()
         return true
     end
     d.houses:SetScript("OnClick", function()
-        local menu = d.menu
+        local dropMenu = d.menu
         d:Hide()
-        if menu then
+        if dropMenu then
             local mgr = Menu.GetManager()
             if mgr and mgr.CloseMenu then
-                mgr:CloseMenu(menu)
+                mgr:CloseMenu(dropMenu)
             end
         end
         OpenHousesFor(reopenContext)
@@ -199,24 +199,24 @@ end
 
 -- Called by the backstop right after its (tainted) re-open, while that menu is
 -- the open one.
-function CludesUI._ShowReopenedMenuExtras(unit)
-    if not HOUSING_OK or not reopenContext or reopenContext.unit ~= unit then
+function CludesUI._ShowReopenedMenuExtras(unitToken)
+    if not HOUSING_OK or not reopenContext or reopenContext.unit ~= unitToken then
         return
     end
     local mgr = Menu.GetManager()
-    local menu = mgr and mgr.GetOpenMenu and mgr:GetOpenMenu()
-    if not menu or (menu.IsForbidden and menu:IsForbidden()) then
+    local dropMenu = mgr and mgr.GetOpenMenu and mgr:GetOpenMenu()
+    if not dropMenu or (dropMenu.IsForbidden and dropMenu:IsForbidden()) then
         return
     end
     local d = dock or BuildDock()
-    d.menu = menu
+    d.menu = dropMenu
     d:ClearAllPoints()
-    d:SetPoint("TOPLEFT", menu, "TOPRIGHT", 2, 0)
+    d:SetPoint("TOPLEFT", dropMenu, "TOPRIGHT", 2, 0)
     -- Close with the menu it is docked to (menu frames are pooled: hook once
     -- per frame, act only when the dock is anchored to that frame).
-    if not hookedMenus[menu] then
-        hookedMenus[menu] = true
-        menu:HookScript("OnHide", function(self)
+    if not hookedMenus[dropMenu] then
+        hookedMenus[dropMenu] = true
+        dropMenu:HookScript("OnHide", function(self)
             if dock and dock.menu == self then
                 dock:Hide()
             end
@@ -234,7 +234,7 @@ local ROW_GAP = 4
 local FRAME_W = 440
 local HEADER_H = 32
 
-local listFrame, rows, statusText, titleText
+local listFrame, rowList, statusText, titleText
 local pendingHouses -- last received house list, re-applied after combat
 local listEv = CreateFrame("Frame")
 
@@ -257,24 +257,24 @@ local function BuildList()
 
     -- Header band (inset fill) with the title and the close glyph, like a
     -- skinned window's title bar.
-    local header = CreateFrame("Frame", nil, f)
-    header:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    header:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
-    header:SetHeight(HEADER_H)
-    local hbg = SolidTex(header, "BACKGROUND", T.insetR, T.insetG, T.insetB, T.insetA, -5)
-    hbg:SetAllPoints(header)
-    local hline = SolidTex(header, "BORDER", T.brdR, T.brdG, T.brdB, T.brdA)
-    hline:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
-    hline:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
+    local headerFrame = CreateFrame("Frame", nil, f)
+    headerFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    headerFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    headerFrame:SetHeight(HEADER_H)
+    local hbg = SolidTex(headerFrame, "BACKGROUND", T.insetR, T.insetG, T.insetB, T.insetA, -5)
+    hbg:SetAllPoints(headerFrame)
+    local hline = SolidTex(headerFrame, "BORDER", T.brdR, T.brdG, T.brdB, T.brdA)
+    hline:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
+    hline:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
     hline:SetHeight(1)
 
-    titleText = MakeText(header, 14, nil, nil, nil, true)
-    titleText:SetPoint("LEFT", header, "LEFT", 12, 0)
-    titleText:SetPoint("RIGHT", header, "RIGHT", -34, 0)
+    titleText = MakeText(headerFrame, 14, nil, nil, nil, true)
+    titleText:SetPoint("LEFT", headerFrame, "LEFT", 12, 0)
+    titleText:SetPoint("RIGHT", headerFrame, "RIGHT", -34, 0)
     titleText:SetJustifyH("LEFT")
 
-    local close = MakeCloseButton(header)
-    close:SetPoint("RIGHT", header, "RIGHT", -6, 0)
+    local close = MakeCloseButton(headerFrame)
+    close:SetPoint("RIGHT", headerFrame, "RIGHT", -6, 0)
     close:SetScript("OnClick", function()
         f:Hide()
     end)
@@ -284,33 +284,33 @@ local function BuildList()
     statusText:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -(HEADER_H + 12))
     statusText:SetJustifyH("LEFT")
 
-    rows = {}
-    for i = 1, MAX_ROWS do
-        local row = CreateFrame("Frame", nil, f)
-        row:SetHeight(ROW_H)
-        local y = -(HEADER_H + 10 + (i - 1) * (ROW_H + ROW_GAP))
-        row:SetPoint("TOPLEFT", f, "TOPLEFT", 8, y)
-        row:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, y)
-        Panel(row, true)
+    rowList = {}
+    for idx = 1, MAX_ROWS do
+        local rowFrame = CreateFrame("Frame", nil, f)
+        rowFrame:SetHeight(ROW_H)
+        local posY = -(HEADER_H + 10 + (idx - 1) * (ROW_H + ROW_GAP))
+        rowFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 8, posY)
+        rowFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, posY)
+        Panel(rowFrame, true)
 
-        row.name = MakeText(row, 13, nil, nil, nil, true)
-        row.name:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -7)
-        row.name:SetPoint("RIGHT", row, "RIGHT", -100, 0)
-        row.name:SetJustifyH("LEFT")
+        rowFrame.name = MakeText(rowFrame, 13, nil, nil, nil, true)
+        rowFrame.name:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", 10, -7)
+        rowFrame.name:SetPoint("RIGHT", rowFrame, "RIGHT", -100, 0)
+        rowFrame.name:SetJustifyH("LEFT")
 
-        row.info = MakeText(row, 11, 0.65, 0.65, 0.65, true)
-        row.info:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 10, 7)
-        row.info:SetPoint("RIGHT", row, "RIGHT", -100, 0)
-        row.info:SetJustifyH("LEFT")
+        rowFrame.info = MakeText(rowFrame, 11, 0.65, 0.65, 0.65, true)
+        rowFrame.info:SetPoint("BOTTOMLEFT", rowFrame, "BOTTOMLEFT", 10, 7)
+        rowFrame.info:SetPoint("RIGHT", rowFrame, "RIGHT", -100, 0)
+        rowFrame.info:SetJustifyH("LEFT")
 
         -- The teleport: a stock secure action, attributes = plain strings.
-        local visit = MakeButton(row, "CludesUI_HouseVisit" .. i, CludesUI.L("Visit"), 80, 24, true)
-        visit:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        local visit = MakeButton(rowFrame, "CludesUI_HouseVisit" .. idx, CludesUI.L("Visit"), 80, 24, true)
+        visit:SetPoint("RIGHT", rowFrame, "RIGHT", -8, 0)
         visit:SetAttribute("type", "visithouse")
-        row.visit = visit
+        rowFrame.visit = visit
 
-        row:Hide()
-        rows[i] = row
+        rowFrame:Hide()
+        rowList[idx] = rowFrame
     end
 
     if CludesUI.RegisterEscapeClose then
@@ -321,8 +321,8 @@ local function BuildList()
 end
 
 local function ClearRows()
-    for i = 1, MAX_ROWS do
-        rows[i]:Hide()
+    for idx = 1, MAX_ROWS do
+        rowList[idx]:Hide()
     end
 end
 
@@ -341,40 +341,40 @@ local function ApplyHouses(houses)
         return
     end
     statusText:Hide()
-    for i = 1, math.min(#houses, MAX_ROWS) do
-        local h = houses[i]
-        local row = rows[i]
-        row.name:SetText(h.houseName or CludesUI.L("House"))
-        local where = h.neighborhoodName or ""
-        if h.plotID then
+    for idx = 1, math.min(#houses, MAX_ROWS) do
+        local hgt = houses[idx]
+        local rowFrame = rowList[idx]
+        rowFrame.name:SetText(hgt.houseName or CludesUI.L("House"))
+        local where = hgt.neighborhoodName or ""
+        if hgt.plotID then
             where = where
                 .. (where ~= "" and "  -  " or "")
-                .. string.format(HOUSING_PLOT_NUMBER or "Plot %d", h.plotID)
+                .. string.format(HOUSING_PLOT_NUMBER or "Plot %d", hgt.plotID)
         end
-        if h.ownerName and h.ownerName ~= "" then
-            where = where .. (where ~= "" and "  -  " or "") .. h.ownerName
+        if hgt.ownerName and hgt.ownerName ~= "" then
+            where = where .. (where ~= "" and "  -  " or "") .. hgt.ownerName
         end
-        row.info:SetText(where)
-        local v = row.visit
-        v:SetAttribute("house-neighborhood-guid", h.neighborhoodGUID)
-        v:SetAttribute("house-guid", h.houseGUID)
-        v:SetAttribute("house-plot-id", h.plotID and tostring(h.plotID) or nil)
-        local ok = h.neighborhoodGUID and h.houseGUID and h.plotID
-        v:SetAlpha(ok and 1 or 0.3)
-        v:EnableMouse(ok and true or false)
-        row:Show()
+        rowFrame.info:SetText(where)
+        local val = rowFrame.visit
+        val:SetAttribute("house-neighborhood-guid", hgt.neighborhoodGUID)
+        val:SetAttribute("house-guid", hgt.houseGUID)
+        val:SetAttribute("house-plot-id", hgt.plotID and tostring(hgt.plotID) or nil)
+        local success = hgt.neighborhoodGUID and hgt.houseGUID and hgt.plotID
+        val:SetAlpha(success and 1 or 0.3)
+        val:EnableMouse(success and true or false)
+        rowFrame:Show()
     end
 end
 
-listEv:SetScript("OnEvent", function(self, event, arg1)
-    if event == "VIEW_HOUSES_LIST_RECIEVED" then
+listEv:SetScript("OnEvent", function(self, evt, arg1)
+    if evt == "VIEW_HOUSES_LIST_RECIEVED" then
         pendingHouses = arg1
         ApplyHouses(arg1)
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "PLAYER_REGEN_ENABLED" then
         if pendingHouses then
             ApplyHouses(pendingHouses)
         end
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         -- A successful visit loads a new map; the list has done its job.
         if listFrame then
             listFrame:Hide()
@@ -404,21 +404,21 @@ function OpenHousesFor(contextData)
         f:SetScript("OnShow", ListOnShow)
         f:SetScript("OnHide", ListOnHide)
     end
-    local unit = contextData.unit
+    local unitToken = contextData.unit
     local name = (
         UnitPopupSharedUtil
         and UnitPopupSharedUtil.GetFullPlayerName
         and UnitPopupSharedUtil.GetFullPlayerName(contextData)
     )
-        or (unit and UnitName(unit))
+        or (unitToken and UnitName(unitToken))
         or contextData.name
         or UNKNOWN
-    local guid = (unit and UnitGUID(unit))
+    local unitGuid = (unitToken and UnitGUID(unitToken))
         or (UnitPopupSharedUtil and UnitPopupSharedUtil.GetGUID and UnitPopupSharedUtil.GetGUID(contextData))
-    if issecretvalue and (issecretvalue(guid) or issecretvalue(name)) then
+    if issecretvalue and (issecretvalue(unitGuid) or issecretvalue(name)) then
         return
     end
-    if not guid then
+    if not unitGuid then
         return
     end
 
@@ -428,13 +428,13 @@ function OpenHousesFor(contextData)
     statusText:SetText(CludesUI.L("Loading houses..."))
     statusText:Show()
     f:Show()
-    C_Housing.GetOthersOwnedHouses(guid, contextData.bnetIDAccount, not not contextData.isGuildMember)
+    C_Housing.GetOthersOwnedHouses(unitGuid, contextData.bnetIDAccount, not not contextData.isGuildMember)
 end
 
 -------------------------------------------------------------------------------
 --  Menu modification: only the backstop's re-opened menu
 -------------------------------------------------------------------------------
-local function ModifyReopenedMenu(owner, rootDescription, contextData)
+local function ModifyReopenedMenu(ownerFrame, rootDescription, contextData)
     if not CludesUI._menuReopenUnit then
         return
     end
@@ -451,18 +451,18 @@ local function ModifyReopenedMenu(owner, rootDescription, contextData)
     local petDuel = PET_BATTLE_PVP_DUEL or "Pet Battle Duel"
     local achievements = COMPARE_ACHIEVEMENTS or "Compare Achievements"
     for _, d in rootDescription:EnumerateElementDescriptions() do
-        local text = MenuUtil.GetElementText(d)
+        local textValue = MenuUtil.GetElementText(d)
         if
             d.SetEnabled
             and (
-                text == setFocus
-                or text == follow
-                or text == raidTarget
-                or text == trade
-                or text == duel
-                or text == petDuel
-                or text == achievements
-                or (HOUSING_OK and text == viewHouses)
+                textValue == setFocus
+                or textValue == follow
+                or textValue == raidTarget
+                or textValue == trade
+                or textValue == duel
+                or textValue == petDuel
+                or textValue == achievements
+                or (HOUSING_OK and textValue == viewHouses)
             )
         then
             -- Range-gated entries call CheckInteractDistance from Blizzard's

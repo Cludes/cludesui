@@ -5,8 +5,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CUI_Quickdraw_Options.lua  --  Settings page for the Quickdraw
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIQuickdraw"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -21,8 +21,8 @@ local BINDING_PREFIX = "CUI_RADIAL"
 -- Every palette has a <Binding> entry of its own, so the keybind row below
 -- applies to all of them. Read from the module rather than restated, so the two
 -- can never disagree about how far the binding actions run.
-local MAX_PALETTES = ns.MAX_PALETTES or 16
-local MAX_SLOTS = ns.MAX_SLOTS or 12
+local MAX_PALETTES = mod.MAX_PALETTES or 16
+local MAX_SLOTS = mod.MAX_SLOTS or 12
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
@@ -39,23 +39,23 @@ initFrame:SetScript("OnEvent", function(self)
     -- retired key names on first touch, and reading the table directly here
     -- would skip that whenever the panel is the first to see a profile the user
     -- has just switched to. The db local is still kept for the reset handler.
-    local function DB()
+    local function SavedDB()
         if not db then
             db = _G._CUQD_AceDB
         end
-        if ns.Profile then
-            return ns.Profile()
+        if mod.Profile then
+            return mod.Profile()
         end
         return db and db.profile
     end
 
     local function Cfg(key)
-        local p = DB()
+        local p = SavedDB()
         return p and p[key]
     end
 
     local function Set(key, val)
-        local p = DB()
+        local p = SavedDB()
         if p then
             p[key] = val
         end
@@ -95,16 +95,16 @@ initFrame:SetScript("OnEvent", function(self)
         return math.min(MAX_PALETTES, math.max(1, Cfg("paletteCount") or 1))
     end
 
-    local function Palette(index)
-        return ns.EnsurePalette and ns.EnsurePalette(index or editPalette)
+    local function Palette(slotPos)
+        return mod.EnsurePalette and mod.EnsurePalette(slotPos or editPalette)
     end
 
     -- A palette as stored, for getters: nothing created or compacted (getters
     -- must not write; the panel's read trace runs them).
-    local function PaletteRead(index)
-        local prof = DB()
+    local function PaletteRead(slotPos)
+        local prof = SavedDB()
         local pals = prof and prof.palettes
-        local pal = type(pals) == "table" and pals[index or editPalette]
+        local pal = type(pals) == "table" and pals[slotPos or editPalette]
         return type(pal) == "table" and pal or nil
     end
 
@@ -112,7 +112,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- tables (never through EnsurePalette, which compacts and allocates):
     -- this runs on every Refresh to notice presence flipping.
     HasAnyNest = function()
-        local prof = DB()
+        local prof = SavedDB()
         local palettes = prof and prof.palettes
         if type(palettes) ~= "table" then
             return false
@@ -120,8 +120,8 @@ initFrame:SetScript("OnEvent", function(self)
         for i = 1, PaletteCount() do
             local pal = palettes[i]
             local slots = type(pal) == "table" and pal.slots
-            for j = 1, (type(slots) == "table" and #slots or 0) do
-                local s = slots[j]
+            for jdx = 1, (type(slots) == "table" and #slots or 0) do
+                local s = slots[jdx]
                 if type(s) == "table" and s.kind == "palette" then
                     return true
                 end
@@ -155,7 +155,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function ASet(key, val)
-        local pal = ns.EnsurePalette and ns.EnsurePalette(editPalette)
+        local pal = mod.EnsurePalette and mod.EnsurePalette(editPalette)
         if not pal then
             return
         end
@@ -165,17 +165,17 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- From the module, so the name an emptied box reverts to is the same string
     -- the module hands a fresh palette.
-    local function AutoName(index)
-        if ns.AutoPaletteName then
-            return ns.AutoPaletteName(index)
+    local function AutoName(slotPos)
+        if mod.AutoPaletteName then
+            return mod.AutoPaletteName(slotPos)
         end
-        return "Action Menu " .. index
+        return "Action Menu " .. slotPos
     end
 
     -- A menu's name as the page shows it.
-    local function MenuName(index)
-        local pal = PaletteRead(index)
-        return (pal and pal.name) or AutoName(index)
+    local function MenuName(slotPos)
+        local pal = PaletteRead(slotPos)
+        return (pal and pal.name) or AutoName(slotPos)
     end
 
     -- The icon a menu is listed BY, everywhere one is listed: its first entry,
@@ -185,10 +185,10 @@ initFrame:SetScript("OnEvent", function(self)
     -- menu would send this round its own loop. An empty menu shows the bag.
     local function PaletteListIcon(palette)
         local first = palette and palette.slots and palette.slots[1]
-        if first and first.kind ~= "palette" and ns.SlotDisplay then
-            local icon = ns.SlotDisplay(first)
-            if icon then
-                return icon
+        if first and first.kind ~= "palette" and mod.SlotDisplay then
+            local glyph = mod.SlotDisplay(first)
+            if glyph then
+                return glyph
             end
         end
         return "Interface\\Icons\\INV_Misc_Bag_08"
@@ -241,40 +241,40 @@ initFrame:SetScript("OnEvent", function(self)
     --  sharer, so the sharers keep it.
     ---------------------------------------------------------------------------
     -- The menus sharing owner's key, in index order.
-    local function Sharers(owner)
-        local out = {}
+    local function Sharers(ownerFrame)
+        local result = {}
         for i = 1, PaletteCount() do
-            if i ~= owner and ns.ShareOwner(i) == owner then
-                out[#out + 1] = i
+            if i ~= ownerFrame and mod.ShareOwner(i) == ownerFrame then
+                result[#result + 1] = i
             end
         end
-        return out
+        return result
     end
 
     -- Their names joined for a message ("Action Menu 2, Action Menu 3") and
     -- their count, or nil when nothing shares owner's key.
-    local function SharerNames(owner)
-        local list = Sharers(owner)
-        if #list == 0 then
+    local function SharerNames(ownerFrame)
+        local entries = Sharers(ownerFrame)
+        if #entries == 0 then
             return nil
         end
-        for n = 1, #list do
-            list[n] = MenuName(list[n])
+        for num = 1, #entries do
+            entries[num] = MenuName(entries[num])
         end
-        return table.concat(list, ", "), #list
+        return table.concat(entries, ", "), #entries
     end
 
     -- Gives the keys owner lets go to its first sharer, which then holds them
     -- for the rest. Returns that heir, or nil when nothing shares them.
-    local function HandOffKeys(owner, k1, k2)
-        local list = Sharers(owner)
-        local heir = list[1]
+    local function HandOffKeys(ownerFrame, k1, k2)
+        local entries = Sharers(ownerFrame)
+        local heir = entries[1]
         if not heir then
             return nil
         end
         Palette(heir).keyShare = nil
-        for n = 2, #list do
-            Palette(list[n]).keyShare = heir
+        for num = 2, #entries do
+            Palette(entries[num]).keyShare = heir
         end
         if k1 then
             SetBinding(k1, BINDING_PREFIX .. heir)
@@ -287,12 +287,12 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- May menu idx share the key owner holds? Only when idx can never load
     -- together with owner or with any menu already sharing it.
-    local function CanShareWith(idx, owner)
-        if not ns.PalettesExclusive(idx, owner) then
+    local function CanShareWith(position, ownerFrame)
+        if not mod.PalettesExclusive(position, ownerFrame) then
             return false
         end
-        for _, s in ipairs(Sharers(owner)) do
-            if s ~= idx and not ns.PalettesExclusive(idx, s) then
+        for _, s in ipairs(Sharers(ownerFrame)) do
+            if s ~= position and not mod.PalettesExclusive(position, s) then
                 return false
             end
         end
@@ -301,9 +301,9 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- The menu of this profile a binding action opens, or nil.
     local function PaletteOfAction(action)
-        local n = type(action) == "string" and tonumber(action:match("^" .. BINDING_PREFIX .. "(%d+)$"))
-        if n and n >= 1 and n <= PaletteCount() then
-            return n
+        local num = type(action) == "string" and tonumber(action:match("^" .. BINDING_PREFIX .. "(%d+)$"))
+        if num and num >= 1 and num <= PaletteCount() then
+            return num
         end
         return nil
     end
@@ -312,9 +312,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- menus sharing them, or are let go. An owner that itself shared another
     -- menu's key (a key bound to it from Blizzard's Keybindings page) holds
     -- this one of its own now, so its old share ends.
-    local function ShareKey(idx, owner, chord)
-        local k1, k2 = GetBindingKey(BINDING_PREFIX .. idx)
-        if not HandOffKeys(idx, k1, k2) then
+    local function ShareKey(position, ownerFrame, chord)
+        local k1, k2 = GetBindingKey(BINDING_PREFIX .. position)
+        if not HandOffKeys(position, k1, k2) then
             if k1 then
                 SetBinding(k1, nil)
             end
@@ -322,8 +322,8 @@ initFrame:SetScript("OnEvent", function(self)
                 SetBinding(k2, nil)
             end
         end
-        Palette(owner).keyShare = nil
-        Palette(idx).keyShare = owner
+        Palette(ownerFrame).keyShare = nil
+        Palette(position).keyShare = ownerFrame
         if k1 or k2 then
             SaveBindings(GetCurrentBindingSet())
         end
@@ -332,9 +332,9 @@ initFrame:SetScript("OnEvent", function(self)
                 .. "Action Wheel:|r "
                 .. CludesUI.Lf(
                     "%1$s now shares %2$s with %3$s.",
-                    MenuName(idx),
+                    MenuName(position),
                     GetBindingText(chord) or chord,
-                    MenuName(owner)
+                    MenuName(ownerFrame)
                 )
         )
         RebuildPage()
@@ -345,16 +345,16 @@ initFrame:SetScript("OnEvent", function(self)
     -- Returns true when it broke one.
     local function CheckShares()
         local broke = false
-        for owner = 1, PaletteCount() do
+        for ownerFrame = 1, PaletteCount() do
             local kept = {}
-            for _, s in ipairs(Sharers(owner)) do
-                local ok = ns.PalettesExclusive(s, owner)
+            for _, s in ipairs(Sharers(ownerFrame)) do
+                local success = mod.PalettesExclusive(s, ownerFrame)
                 for _, k in ipairs(kept) do
-                    if ok and not ns.PalettesExclusive(s, k) then
-                        ok = false
+                    if success and not mod.PalettesExclusive(s, k) then
+                        success = false
                     end
                 end
-                if ok then
+                if success then
                     kept[#kept + 1] = s
                 else
                     Palette(s).keyShare = nil
@@ -365,7 +365,7 @@ initFrame:SetScript("OnEvent", function(self)
                             .. CludesUI.Lf(
                                 "%1$s no longer shares the key of %2$s: they can now load in the same spec.",
                                 MenuName(s),
-                                MenuName(owner)
+                                MenuName(ownerFrame)
                             )
                     )
                 end
@@ -402,8 +402,8 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 if stolenFrom then
                     -- The menus that shared the key lose it with its holder
-                    local holder = PaletteOfAction(stolenFrom)
-                    local names = holder and SharerNames(holder)
+                    local holderFrame = PaletteOfAction(stolenFrom)
+                    local nameList = holderFrame and SharerNames(holderFrame)
                     CludesUI.Print(
                         CludesUI.COLOR_CODES.BRAND
                             .. "Action Wheel:|r took "
@@ -411,7 +411,7 @@ initFrame:SetScript("OnEvent", function(self)
                             .. " from |cffffd100"
                             .. BindingLabel(stolenFrom)
                             .. "|r"
-                            .. (names and (" (" .. CludesUI.Lf("and %1$s, which shared it", names) .. ")") or "")
+                            .. (nameList and (" (" .. CludesUI.Lf("and %1$s, which shared it", nameList) .. ")") or "")
                             .. "."
                     )
                 end
@@ -458,9 +458,9 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- A key another menu holds is shared rather than taken when the two
         -- can never load in the same spec (Assign to Spec).
-        local holder = stolenFrom and PaletteOfAction(stolenFrom)
-        if holder and CanShareWith(palette, holder) then
-            ShareKey(palette, holder, chord)
+        local holderFrame = stolenFrom and PaletteOfAction(stolenFrom)
+        if holderFrame and CanShareWith(palette, holderFrame) then
+            ShareKey(palette, holderFrame, chord)
             return
         end
 
@@ -479,14 +479,14 @@ initFrame:SetScript("OnEvent", function(self)
             )
             -- Another menu: the menus sharing its key lose it too, and the way
             -- to keep the key on both.
-            if holder then
-                local names, count = SharerNames(holder)
-                if names then
+            if holderFrame then
+                local nameList, total = SharerNames(holderFrame)
+                if nameList then
                     message = message
                         .. "\n\n"
                         .. (
-                            count == 1 and CludesUI.Lf("%1$s shares it and will lose it too.", names)
-                            or CludesUI.Lf("%1$s share it and will lose it too.", names)
+                            total == 1 and CludesUI.Lf("%1$s shares it and will lose it too.", nameList)
+                            or CludesUI.Lf("%1$s share it and will lose it too.", nameList)
                         )
                 end
                 message = message
@@ -590,14 +590,14 @@ initFrame:SetScript("OnEvent", function(self)
         if vertical then
             return PREVIEW_H * 0.5 - 24
         end
-        local w = previewBlock and previewBlock:GetWidth() or 0
+        local wid = previewBlock and previewBlock:GetWidth() or 0
         -- The block is anchored on both sides, so its width is unresolved on
         -- the very first build. Layout re-runs on every Refresh, so a fallback
         -- here corrects itself rather than sticking.
-        if w < 100 then
-            w = 460
+        if wid < 100 then
+            wid = 460
         end
-        return w * 0.5 - 24
+        return wid * 0.5 - 24
     end
 
     -- How far the preview may magnify a layout that does not fill the block on
@@ -617,11 +617,11 @@ initFrame:SetScript("OnEvent", function(self)
     -- fitted a full palette for one entry more than it shows, which drew it
     -- smaller than the block allows.
     local function PreviewEntryCount(palette)
-        local n = palette and #palette.slots or 0
-        if n < MAX_SLOTS then
-            n = n + 1
+        local num = palette and #palette.slots or 0
+        if num < MAX_SLOTS then
+            num = num + 1
         end
-        return n
+        return num
     end
 
     -- Fit to the block, don't crop: the live radius reaches 220, which is wider
@@ -643,22 +643,22 @@ initFrame:SetScript("OnEvent", function(self)
             -- The grid is bounded on BOTH axes, so both budgets have to be met:
             -- the block's width across the columns, and its height down the rows.
             local palette = Palette(editPalette)
-            local n = PreviewEntryCount(palette)
-            local cols, rows
+            local num = PreviewEntryCount(palette)
+            local cols, rowList
             if previewView then
-                cols, rows = previewView:GridDims()
+                cols, rowList = previewView:GridDims()
             end
             -- The view answers from its last Layout, so it has nothing to say
             -- until the first one has run.
-            if not cols or rows < 1 then
-                cols = math.min(ACfg("gridColumns") or 4, n)
-                rows = math.ceil(n / cols)
+            if not cols or rowList < 1 then
+                cols = math.min(ACfg("gridColumns") or 4, num)
+                rowList = math.ceil(num / cols)
             end
             local pitch = iconSize + (ACfg("fanGap") or 10)
             k = math.min(
                 PREVIEW_MAX_ZOOM,
                 BlockSpan(false) / (cols * pitch * 0.5 + iconSize * (zoom - 1) * 0.5),
-                BlockSpan(true) / (rows * pitch * 0.5 + iconSize * (zoom - 1) * 0.5)
+                BlockSpan(true) / (rowList * pitch * 0.5 + iconSize * (zoom - 1) * 0.5)
             )
         elseif layout ~= "ARC" then
             -- A fan's extent is the length of the strip rather than a radius,
@@ -675,7 +675,8 @@ initFrame:SetScript("OnEvent", function(self)
             -- switched off the strip spreads out to full pitch, and a fit
             -- measured at the stored decay would run it out of the block.
             -- One branch only -- a fan is always wheel-steered now.
-            local reach = ns.FanReach(drawn, iconSize, ACfg("fanGap") or 10, (ns.FalloffRatios(editPalette)))
+            local reach =
+                mod.FanReach(drawn, iconSize, ACfg("fanGap") or 10, (mod.FalloffRatios(editPalette)))
             local vertical = ACfg("fanOrientation") == "VERTICAL"
             -- Both axes, not just the one the strip runs along: a short strip
             -- fits its own length several times over, and without the crossways
@@ -708,25 +709,25 @@ initFrame:SetScript("OnEvent", function(self)
     -- codes. Gray for what the entry IS, blue for what the mouse can do to it.
     local function PreviewTooltip(widget)
         local palette = Palette(editPalette)
-        local slot = palette and palette.slots[widget.index]
-        local text
-        if slot then
-            local _, name = ns.SlotDisplay(slot)
+        local slotIndex = palette and palette.slots[widget.index]
+        local textValue
+        if slotIndex then
+            local _, name = mod.SlotDisplay(slotIndex)
             local caption
-            if slot.kind == "palette" then
+            if slotIndex.kind == "palette" then
                 -- Capped at what the palette being edited can seat, which is
                 -- the whole nested menu everywhere but the halo -- eight fixed
                 -- positions round a cell, and no ninth to put a child in. See
                 -- NestChildCap.
-                local cap = ns.NestChildCap and ns.NestChildCap(editPalette)
-                local child = ns.ChildIndex(slot)
-                local kids = ns.ChildSlots and ns.ChildSlots(child, cap)
+                local cap = mod.NestChildCap and mod.NestChildCap(editPalette)
+                local childFrame = mod.ChildIndex(slotIndex)
+                local kids = mod.ChildSlots and mod.ChildSlots(childFrame, cap)
                 caption = (kids and #kids == 1) and CludesUI.Lf("nested action menu, %1$d entry", 1)
                     or CludesUI.Lf("nested action menu, %1$d entries", kids and #kids or 0)
                 -- Said where the user meets it, rather than left to be
                 -- discovered by counting the entries that turned up: a menu
                 -- holding more than the halo can show looks broken otherwise.
-                local all = ns.ChildSlots and ns.ChildSlots(child, MAX_SLOTS)
+                local all = mod.ChildSlots and mod.ChildSlots(childFrame, MAX_SLOTS)
                 if all and kids and #all > #kids then
                     -- The literal stays on the Lf line: the locale extractor
                     -- reads one line at a time, and a string wrapped onto the
@@ -736,34 +737,34 @@ initFrame:SetScript("OnEvent", function(self)
             else
                 -- The stored kind strings are one word each; only the marker
                 -- kinds read better with the space put back.
-                caption = (slot.kind == "raidtarget" and "target marker")
-                    or (slot.kind == "worldmarker" and "world marker")
-                    or (slot.kind == "clearmarkers" and "target markers")
-                    or (slot.kind == "cycleraidtarget" and "target marker, next on each press")
-                    or (slot.kind == "cycleworldmarker" and "world marker, next on each press")
-                    or (slot.kind == "randommount" and "mount")
-                    or (slot.kind == "randomhearth" and "random hearthstone, rolled again on each open")
-                    or (slot.kind == "panel" and "interface panel")
-                    or (slot.kind == "equipmentset" and "equipment set")
-                    or (slot.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
-                    or (slot.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
-                    or (slot.kind == "dynamicprofession" and slot.specialization and "profession specialization ability, by position on this character")
-                    or (slot.kind == "dynamicprofession" and slot.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
-                    or (slot.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
-                    or (slot.kind == "dynamicrez" and "resurrection, chosen for this character")
-                    or slot.kind
+                caption = (slotIndex.kind == "raidtarget" and "target marker")
+                    or (slotIndex.kind == "worldmarker" and "world marker")
+                    or (slotIndex.kind == "clearmarkers" and "target markers")
+                    or (slotIndex.kind == "cycleraidtarget" and "target marker, next on each press")
+                    or (slotIndex.kind == "cycleworldmarker" and "world marker, next on each press")
+                    or (slotIndex.kind == "randommount" and "mount")
+                    or (slotIndex.kind == "randomhearth" and "random hearthstone, rolled again on each open")
+                    or (slotIndex.kind == "panel" and "interface panel")
+                    or (slotIndex.kind == "equipmentset" and "equipment set")
+                    or (slotIndex.kind == "spec" and "specialization")
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
+                    or (slotIndex.kind == "dynamicspec" and "specialization, by position on this character")
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
+                    or (slotIndex.kind == "dynamicprofession" and slotIndex.specialization and "profession specialization ability, by position on this character")
+                    or (slotIndex.kind == "dynamicprofession" and slotIndex.extra and "profession's second ability, by position on this character")
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
+                    or (slotIndex.kind == "dynamicprofession" and "profession, by position on this character")
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
+                    or (slotIndex.kind == "dynamicrez" and "resurrection, chosen for this character")
+                    or slotIndex.kind
             end
-            text = CludesUI.L(name or slot.kind)
+            textValue = CludesUI.L(name or slotIndex.kind)
                 .. "\n|cff999999"
                 .. CludesUI.L(caption)
                 .. "|r"
@@ -774,13 +775,13 @@ initFrame:SetScript("OnEvent", function(self)
                         .. "\nDrop an action here to replace it.|r"
                 )
         else
-            text = CludesUI.L(
+            textValue = CludesUI.L(
                 "Add an action"
                     .. "\n|cff66ccffLeft-click to pick an action from a list."
                     .. "\nYou can also drop an action from the cursor here.|r"
             )
         end
-        CludesUI.ShowWidgetTooltip(widget, text)
+        CludesUI.ShowWidgetTooltip(widget, textValue)
     end
 
     local function HidePreviewTooltip()
@@ -791,16 +792,16 @@ initFrame:SetScript("OnEvent", function(self)
     -- left-click on a slot should do nothing at all, cursor untouched.
     local function PreviewPlace(widget)
         local palette = Palette(editPalette)
-        local slot = palette and ns.SlotFromCursor()
-        if not slot then
+        local slotIndex = palette and mod.SlotFromCursor()
+        if not slotIndex then
             return
         end
         if widget.isPlaceholder then
-            if not ns.AddSlot(palette, slot) then
+            if not mod.AddSlot(palette, slotIndex) then
                 return
             end
         else
-            palette.slots[widget.index] = slot
+            palette.slots[widget.index] = slotIndex
         end
         ClearCursor()
         Refresh()
@@ -851,26 +852,26 @@ initFrame:SetScript("OnEvent", function(self)
     --  depend on what the user last typed in the Collections search box.
     ---------------------------------------------------------------------------
     local function SpellEntries()
-        local out, seen = {}, {}
+        local result, seen = {}, {}
         local bank = Enum.SpellBookSpellBank.Player
         -- WoW Forever: names that have lower ranks, and each spell's top rank.
         local ranked, tops = {}, {}
 
-        local function Add(spellID, name, icon, rankText)
-            local key = rankText and ("#" .. tostring(spellID)) or spellID
-            if type(spellID) ~= "number" or seen[key] or not name then
+        local function Add(spellId, name, glyph, rankText)
+            local key = rankText and ("#" .. tostring(spellId)) or spellId
+            if type(spellId) ~= "number" or seen[key] or not name then
                 return
             end
             seen[key] = true
-            local entry = { icon = icon, name = name, slot = { kind = "spell", id = spellID } }
+            local record = { icon = glyph, name = name, slot = { kind = "spell", id = spellId } }
             -- A rank row casts exactly that rank, and sorts below its spell's
             -- own row (sortName, rankNum: see the picker's sort).
             if rankText then
-                entry.name = name .. " (" .. rankText .. ")"
-                entry.sortName, entry.rankNum = name, tonumber(rankText:match("%d+")) or 0
-                entry.slot.rankPinned = true
+                record.name = name .. " (" .. rankText .. ")"
+                record.sortName, record.rankNum = name, tonumber(rankText:match("%d+")) or 0
+                record.slot.rankPinned = true
             end
-            out[#out + 1] = entry
+            result[#result + 1] = record
         end
 
         -- Dynamic Rez ahead of the spellbook itself, the way the Mount Journal's
@@ -879,38 +880,38 @@ initFrame:SetScript("OnEvent", function(self)
         -- shared between characters carries the rez once instead of once per
         -- class with all but one of them dead. pin is what holds it at the top
         -- past the sort. Left out entirely for a class with no rez at all.
-        if ns.HasRezKit and ns.HasRezKit() then
-            local slot = { kind = "dynamicrez" }
-            local icon = ns.SlotDisplay(slot)
+        if mod.HasRezKit and mod.HasRezKit() then
+            local slotIndex = { kind = "dynamicrez" }
+            local glyph = mod.SlotDisplay(slotIndex)
             -- Named for what the ENTRY is, not for the spell it happens to
             -- resolve to today: this row is picked from a list, and "Rebirth"
             -- sitting above the real Rebirth would read as a duplicate.
-            out[1] = { icon = icon, name = "Dynamic Rez", slot = slot, pin = true }
+            result[1] = { icon = glyph, name = "Dynamic Rez", slot = slotIndex, pin = true }
         end
 
         -- There is no C_SpellBook.GetNumSpellBookItems in this client. The book
         -- is described by its skill lines instead, each carrying an offset into
         -- the item indices and a count -- which is how Blizzard's own spellbook
         -- walks it (Blizzard_SpellBookCategory.lua:180-218).
-        for line = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
-            local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
+        for lineTex = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
+            local li = C_SpellBook.GetSpellBookSkillLineInfo(lineTex)
             -- offSpecID is set on the other specialisation's tabs; those spells
             -- are listed in the book but cannot be cast.
             if li and not li.shouldHide and not li.offSpecID then
                 for i = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
-                    local info = C_SpellBook.GetSpellBookItemInfo(i, bank)
+                    local details = C_SpellBook.GetSpellBookItemInfo(i, bank)
                     -- FutureSpell (a rank not learned yet) falls out here too:
                     -- only Spell and Flyout are handled. On WoW Forever the book
                     -- holds every learned rank: the spell's own row follows the
                     -- highest known rank, and each rank also gets a row that
                     -- casts exactly that rank.
-                    if info and not info.isPassive and not info.isOffSpec then
-                        if info.itemType == Enum.SpellBookItemType.Spell then
+                    if details and not details.isPassive and not details.isOffSpec then
+                        if details.itemType == Enum.SpellBookItemType.Spell then
                             local rankText
                             if CludesUI.IS_FOREVER then
-                                rankText = info.subName
+                                rankText = details.subName
                                 if not rankText or rankText == "" then
-                                    rankText = C_Spell.GetSpellSubtext(info.actionID)
+                                    rankText = C_Spell.GetSpellSubtext(details.actionID)
                                 end
                                 if rankText == "" then
                                     rankText = nil
@@ -924,24 +925,25 @@ initFrame:SetScript("OnEvent", function(self)
                             -- spell's row.
                             if CludesUI.IS_FOREVER and C_SpellBook.IsSpellBookItemLowRank(i, bank) then
                                 if rankText then
-                                    Add(info.actionID, info.name, info.iconID, rankText)
-                                    ranked[info.name] = true
+                                    Add(details.actionID, details.name, details.iconID, rankText)
+                                    ranked[details.name] = true
                                 end
                             else
-                                Add(info.actionID, info.name, info.iconID)
+                                Add(details.actionID, details.name, details.iconID)
                                 if rankText then
-                                    tops[#tops + 1] = { info.actionID, info.name, info.iconID, rankText }
+                                    tops[#tops + 1] =
+                                        { details.actionID, details.name, details.iconID, rankText }
                                 end
                             end
-                        elseif info.itemType == Enum.SpellBookItemType.Flyout then
+                        elseif details.itemType == Enum.SpellBookItemType.Flyout then
                             -- A flyout is not castable itself, so its known
                             -- slots are offered as individual spells.
-                            local numSlots = select(3, GetFlyoutInfo(info.actionID))
+                            local numSlots = select(3, GetFlyoutInfo(details.actionID))
                             for s = 1, (numSlots or 0) do
-                                local spellID, _, isKnown, spellName = GetFlyoutSlotInfo(info.actionID, s)
+                                local spellId, _, isKnown, spellName = GetFlyoutSlotInfo(details.actionID, s)
                                 if isKnown then
                                     -- One icon only: the second return would land in rankText.
-                                    Add(spellID, spellName, (C_Spell.GetSpellTexture(spellID)))
+                                    Add(spellId, spellName, (C_Spell.GetSpellTexture(spellId)))
                                 end
                             end
                         end
@@ -955,7 +957,7 @@ initFrame:SetScript("OnEvent", function(self)
                 Add(t[1], t[2], t[3], t[4])
             end
         end
-        return out
+        return result
     end
 
     -- The words a collection entry can be searched by besides its own name,
@@ -969,35 +971,35 @@ initFrame:SetScript("OnEvent", function(self)
     -- invented here: only what the collection API actually hands back is
     -- indexed.
     local function SourceKeywords(sourceType, isFavorite)
-        local out = isFavorite and (CludesUI.L("favorite"):lower() .. " ") or ""
-        local label = sourceType and _G["BATTLE_PET_SOURCE_" .. sourceType]
-        if label then
-            out = out .. label:lower()
+        local result = isFavorite and (CludesUI.L("favorite"):lower() .. " ") or ""
+        local labelText = sourceType and _G["BATTLE_PET_SOURCE_" .. sourceType]
+        if labelText then
+            result = result .. labelText:lower()
         end
-        return out ~= "" and out or nil
+        return result ~= "" and result or nil
     end
 
     local function MountEntries()
-        local out = {}
+        local result = {}
         -- The roll the Mount Journal's own button makes, offered ahead of the
         -- collection itself: it is the entry most palettes want, and hunting
         -- for it among several hundred mounts sorted by name is not a search
         -- anyone can make. pin is what holds it there past the sort.
         do
-            local slot = { kind = "randommount" }
-            local icon, name = ns.SlotDisplay(slot)
-            out[1] = { icon = icon, name = name, slot = slot, pin = true }
+            local slotIndex = { kind = "randommount" }
+            local glyph, name = mod.SlotDisplay(slotIndex)
+            result[1] = { icon = glyph, name = name, slot = slotIndex, pin = true }
         end
         -- Beside it, and pinned for the same reason: an entry that summons
         -- whatever the player rode last. Its target changes on its own, so it
         -- is a kind rather than a mount -- there is nothing here to pick.
         do
-            local slot = { kind = "lastmount" }
-            local icon = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = "Last Used Mount", slot = slot, pin = true }
+            local slotIndex = { kind = "lastmount" }
+            local glyph = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = "Last Used Mount", slot = slotIndex, pin = true }
         end
         for _, mountID in ipairs(C_MountJournal.GetMountIDs()) do
-            local name, spellID, icon, _, _, sourceType, isFavorite, _, _, hideOnChar, isCollected =
+            local name, spellId, glyph, _, _, sourceType, isFavorite, _, _, hideOnChar, isCollected =
                 C_MountJournal.GetMountInfoByID(mountID)
             -- isUsable is deliberately not read here. It moves with where the
             -- player stands -- the Mount Journal rebuilds its list on
@@ -1005,35 +1007,35 @@ initFrame:SetScript("OnEvent", function(self)
             -- aquatic mount from anyone picking on dry ground. Whether a mount
             -- can be summoned is a run-time question, not a pick-time one.
             if name and isCollected and not hideOnChar then
-                out[#out + 1] = {
-                    icon = icon,
+                result[#result + 1] = {
+                    icon = glyph,
                     name = name,
                     -- Where it came from, and whether it is a favorite, so both
                     -- are things the search box can be asked for.
                     keywords = SourceKeywords(sourceType, isFavorite),
                     -- spellID is banked at pickup time because ResolveAction
                     -- needs the summon spell and it is already in hand here.
-                    slot = { kind = "mount", id = mountID, spellID = spellID, name = name },
+                    slot = { kind = "mount", id = mountID, spellID = spellId, name = name },
                 }
             end
         end
-        return out
+        return result
     end
 
     local function ItemEntries()
-        local out, seen = {}, {}
+        local result, seen = {}, {}
         local function ScanBag(bag)
-            for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                local itemID = info and info.itemID
+            for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local itemId = details and details.itemID
                 -- Only items with a use effect. The palette fires "/use item:<id>",
                 -- so an item without one is a slot that can never do anything.
-                if itemID and not seen[itemID] and info.itemName and C_Item.GetItemSpell(itemID) then
-                    seen[itemID] = true
-                    out[#out + 1] = {
-                        icon = info.iconFileID,
-                        name = info.itemName,
-                        slot = { kind = "item", id = itemID, name = info.itemName },
+                if itemId and not seen[itemId] and details.itemName and C_Item.GetItemSpell(itemId) then
+                    seen[itemId] = true
+                    result[#result + 1] = {
+                        icon = details.iconFileID,
+                        name = details.itemName,
+                        slot = { kind = "item", id = itemId, name = details.itemName },
                     }
                 end
             end
@@ -1045,7 +1047,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- where a lot of players keep their potions and phials -- exactly the
         -- items someone puts on a palette.
         ScanBag(Enum.BagIndex.ReagentBag)
-        return out
+        return result
     end
 
     -- The toy box has no ID-based enumeration, only a walk over the list the
@@ -1086,7 +1088,7 @@ initFrame:SetScript("OnEvent", function(self)
         C_ToyBox.SetFilterString("")
         C_ToyBox.ForceToyRefilter()
 
-        local ok, err = pcall(scan)
+        local success, err = pcall(scan)
 
         C_ToyBox.SetCollectedShown(saved.collected)
         C_ToyBox.SetUncollectedShown(saved.uncollected)
@@ -1110,78 +1112,79 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
-        if not ok then
+        if not success then
             error(err, 0)
         end
     end
 
     local function ToyEntries()
-        local out = {}
+        local result = {}
         -- A different owned hearthstone on every open, pinned ahead of the
         -- collection the way the random mount leads the mounts. Named for what
         -- the ENTRY is rather than for the toy it happens to draw right now.
         do
-            local slot = { kind = "randomhearth" }
-            local icon = ns.SlotDisplay(slot)
-            out[1] = { icon = icon, name = "Random Hearthstone", slot = slot, pin = true }
+            local slotIndex = { kind = "randomhearth" }
+            local glyph = mod.SlotDisplay(slotIndex)
+            result[1] = { icon = glyph, name = "Random Hearthstone", slot = slotIndex, pin = true }
         end
         ScanToysUnfiltered(function()
             for i = 1, (C_ToyBox.GetNumFilteredToys() or 0) do
-                local itemID = C_ToyBox.GetToyFromIndex(i)
-                if itemID and itemID > 0 and PlayerHasToy(itemID) then
-                    local _, name, icon, isFavorite = C_ToyBox.GetToyInfo(itemID)
+                local itemId = C_ToyBox.GetToyFromIndex(i)
+                if itemId and itemId > 0 and PlayerHasToy(itemId) then
+                    local _, name, glyph, isFavorite = C_ToyBox.GetToyInfo(itemId)
                     if name then
                         -- Favorite only: the toy API hands back no source for
                         -- an individual toy, and a source guessed from anywhere
                         -- else would be a made-up answer in a search box.
-                        out[#out + 1] = {
-                            icon = icon,
+                        result[#result + 1] = {
+                            icon = glyph,
                             name = name,
                             keywords = SourceKeywords(nil, isFavorite),
-                            slot = { kind = "toy", id = itemID, name = name },
+                            slot = { kind = "toy", id = itemId, name = name },
                         }
                     end
                 end
             end
         end)
-        return out
+        return result
     end
 
     local function MacroEntries()
-        local out = {}
+        local result = {}
         local numAccount, numChar = GetNumMacros()
         -- Two separate blocks: the per-character macros start at a fixed offset
         -- rather than continuing from the account ones
         -- (Blizzard_MacroUI.lua:155).
-        local function AddBlock(first, count)
-            for i = first, first + (count or 0) - 1 do
-                local name, icon = GetMacroInfo(i)
+        local function AddBlock(first, total)
+            for i = first, first + (total or 0) - 1 do
+                local name, glyph = GetMacroInfo(i)
                 if name then
                     -- Stored by name, matching SlotFromCursor: the index moves
                     -- when the macro list is reordered, the name does not.
-                    out[#out + 1] = { icon = icon, name = name, slot = { kind = "macro", name = name } }
+                    result[#result + 1] =
+                        { icon = glyph, name = name, slot = { kind = "macro", name = name } }
                 end
             end
         end
         AddBlock(1, numAccount)
         AddBlock(Constants.MacroConsts.MAX_ACCOUNT_MACROS + 1, numChar)
-        return out
+        return result
     end
 
     local function PetEntries()
-        local out = {}
-        for _, guid in ipairs(C_PetJournal.GetOwnedPetIDs()) do
-            local info = C_PetJournal.GetPetInfoTableByPetID(guid)
-            local name = info and (info.customName or info.name)
+        local result = {}
+        for _, unitGuid in ipairs(C_PetJournal.GetOwnedPetIDs()) do
+            local details = C_PetJournal.GetPetInfoTableByPetID(unitGuid)
+            local name = details and (details.customName or details.name)
             if name then
-                out[#out + 1] = {
-                    icon = info.icon,
+                result[#result + 1] = {
+                    icon = details.icon,
                     name = name,
-                    slot = { kind = "battlepet", guid = guid, name = name },
+                    slot = { kind = "battlepet", guid = unitGuid, name = name },
                 }
             end
         end
-        return out
+        return result
     end
 
     -- This character's own specializations, in the order the game lists them.
@@ -1189,22 +1192,22 @@ initFrame:SetScript("OnEvent", function(self)
     -- the index back at fire time, so the same palette carried to an alt
     -- points at nothing instead of at somebody else's spec.
     local function SpecEntries()
-        local out = {}
+        local result = {}
         local classID = select(3, UnitClass("player"))
         if not classID or not C_SpecializationInfo then
-            return out
+            return result
         end
         for i = 1, (C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0) do
-            local specID, name, _, icon = C_SpecializationInfo.GetSpecializationInfo(i)
+            local specID, name, _, glyph = C_SpecializationInfo.GetSpecializationInfo(i)
             if specID and name then
-                out[#out + 1] = {
-                    icon = icon,
+                result[#result + 1] = {
+                    icon = glyph,
                     name = name,
                     slot = { kind = "spec", specID = specID, name = name },
                 }
             end
         end
-        return out
+        return result
     end
 
     -- The most specializations any class has -- four, the druid's alone.
@@ -1216,9 +1219,9 @@ initFrame:SetScript("OnEvent", function(self)
         end
         local most = 0
         for classID = 1, GetNumClasses() do
-            local n = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
-            if n > most then
-                most = n
+            local num = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
+            if num > most then
+                most = num
             end
         end
         return most
@@ -1233,30 +1236,30 @@ initFrame:SetScript("OnEvent", function(self)
     -- offered three could not put a druid's fourth on a palette built FOR the
     -- druid. The usability filter hides the extras until an alt has them.
     local function DynamicSpecEntries()
-        local out = {}
+        local result = {}
         -- Named by the module that also RESOLVES the kind, so an older
         -- CludesUIQuickdraw beside a newer options page offers nothing
         -- rather than a kind that module could not fire.
-        if not ns.SpecPositionName then
-            return out
+        if not mod.SpecPositionName then
+            return result
         end
         for i = 1, MaxSpecCount() do
-            local slot = { kind = "dynamicspec", index = i }
-            local icon = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = ns.SpecPositionName(i), slot = slot }
+            local slotIndex = { kind = "dynamicspec", index = i }
+            local glyph = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = mod.SpecPositionName(i), slot = slotIndex }
         end
-        return out
+        return result
     end
 
     -- Both lists, fixed first: naming a spec is what a player picking one on
     -- their main usually means, and the by-position block reads as the
     -- alternative to it rather than as the lead.
     local function AllSpecEntries()
-        local out = SpecEntries()
-        for _, entry in ipairs(DynamicSpecEntries()) do
-            out[#out + 1] = entry
+        local result = SpecEntries()
+        for _, record in ipairs(DynamicSpecEntries()) do
+            result[#result + 1] = record
         end
-        return out
+        return result
     end
 
     -- Profession POSITIONS (DynamicSpecEntries counterpart): the five
@@ -1266,30 +1269,31 @@ initFrame:SetScript("OnEvent", function(self)
     -- Unlearned or inapplicable positions resolve to nothing and go dark under
     -- Hide Unavailable Actions (see Dynamic Profession in CludesUIQuickdraw).
     local function DynamicProfessionEntries()
-        local out = {}
-        if not ns.ProfessionPositionName then
-            return out
+        local result = {}
+        if not mod.ProfessionPositionName then
+            return result
         end
         for i = 1, 5 do
-            local slot = { kind = "dynamicprofession", index = i }
-            local icon = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = ns.ProfessionPositionName(i), slot = slot }
+            local slotIndex = { kind = "dynamicprofession", index = i }
+            local glyph = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = mod.ProfessionPositionName(i), slot = slotIndex }
         end
         for i = 1, 5 do
-            local slot = { kind = "dynamicprofession", index = i, extra = true }
-            local icon = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = ns.ProfessionPositionName(i, true), slot = slot }
+            local slotIndex = { kind = "dynamicprofession", index = i, extra = true }
+            local glyph = mod.SlotDisplay(slotIndex)
+            result[#result + 1] =
+                { icon = glyph, name = mod.ProfessionPositionName(i, true), slot = slotIndex }
         end
         for i = 1, CludesUI.IS_FOREVER and 0 or 2 do
-            local slot = { kind = "dynamicprofession", index = i, specialization = true }
-            local icon = ns.SlotDisplay(slot)
-            out[#out + 1] = {
-                icon = icon,
-                name = ns.ProfessionPositionName(i, false, true),
-                slot = slot,
+            local slotIndex = { kind = "dynamicprofession", index = i, specialization = true }
+            local glyph = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = {
+                icon = glyph,
+                name = mod.ProfessionPositionName(i, false, true),
+                slot = slotIndex,
             }
         end
-        return out
+        return result
     end
 
     -- The markers need no enumeration at all: the slot kinds carry the icon
@@ -1299,11 +1303,11 @@ initFrame:SetScript("OnEvent", function(self)
     -- one thing a user has already decided between before opening the menu --
     -- so Markers holds two lists rather than one, and neither is long enough to
     -- scroll. See the subs field on its category below.
-    local function MarkerAdder(out)
-        return function(kind, id, name)
-            local slot = { kind = kind, id = id }
-            local icon, drawn = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = name or drawn, slot = slot }
+    local function MarkerAdder(result)
+        return function(kindOf, ident, name)
+            local slotIndex = { kind = kindOf, id = ident }
+            local glyph, drawn = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = name or drawn, slot = slotIndex }
         end
     end
 
@@ -1317,8 +1321,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- that suffix says which one is up next, which is the point of it; on a
     -- menu row it would read as the one marker this row places.
     local function TargetMarkerEntries()
-        local out = {}
-        local Add = MarkerAdder(out)
+        local result = {}
+        local Add = MarkerAdder(result)
         Add("cycleraidtarget", nil, "Cycle Target Markers")
         for i = 1, 8 do
             Add("raidtarget", i)
@@ -1327,18 +1331,18 @@ initFrame:SetScript("OnEvent", function(self)
         -- The all-units counterpart of the /tm 0 row above; the world markers
         -- need none because their 0 row already clears them all.
         Add("clearmarkers")
-        return out
+        return result
     end
 
     local function WorldMarkerEntries()
-        local out = {}
-        local Add = MarkerAdder(out)
+        local result = {}
+        local Add = MarkerAdder(result)
         Add("cycleworldmarker", nil, "Cycle World Markers")
         for i = 1, 8 do
             Add("worldmarker", i)
         end
         Add("worldmarker", 0)
-        return out
+        return result
     end
 
     -- The interface panels this client has, in micro-menu order. The module
@@ -1348,30 +1352,30 @@ initFrame:SetScript("OnEvent", function(self)
     -- client has none) never reach the list, so a row here always opens
     -- something.
     local function PanelEntries()
-        local out = {}
-        for _, slot in ipairs(ns.PanelSlots and ns.PanelSlots(true) or {}) do
-            local icon, name = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = name, slot = slot }
+        local result = {}
+        for _, slotIndex in ipairs(mod.PanelSlots and mod.PanelSlots(true) or {}) do
+            local glyph, name = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = name, slot = slotIndex }
         end
-        return out
+        return result
     end
 
     local function OutfitEntries()
-        local out = {}
-        for _, slot in ipairs(ns.OutfitSlots and ns.OutfitSlots() or {}) do
-            local icon, name = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = name, slot = slot }
+        local result = {}
+        for _, slotIndex in ipairs(mod.OutfitSlots and mod.OutfitSlots() or {}) do
+            local glyph, name = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = name, slot = slotIndex }
         end
-        return out
+        return result
     end
 
     local function EquipmentSetEntries()
-        local out = {}
-        for _, slot in ipairs(ns.EquipmentSetSlots()) do
-            local icon, name = ns.SlotDisplay(slot)
-            out[#out + 1] = { icon = icon, name = name, slot = slot }
+        local result = {}
+        for _, slotIndex in ipairs(mod.EquipmentSetSlots()) do
+            local glyph, name = mod.SlotDisplay(slotIndex)
+            result[#result + 1] = { icon = glyph, name = name, slot = slotIndex }
         end
-        return out
+        return result
     end
 
     -- Every palette this one may open. Not a list of things the game owns, so
@@ -1383,16 +1387,16 @@ initFrame:SetScript("OnEvent", function(self)
     -- holding A -- which would send every push and every draw round until the
     -- client gave out.
     local function PaletteEntries()
-        local out = {}
+        local result = {}
         for i = 1, PaletteCount() do
-            if i ~= editPalette and ns.CanNest and ns.CanNest(editPalette, i) then
+            if i ~= editPalette and mod.CanNest and mod.CanNest(editPalette, i) then
                 local palette = Palette(i)
                 local name = (palette and palette.name) or AutoName(i)
-                local count = palette and #palette.slots or 0
-                out[#out + 1] = {
+                local total = palette and #palette.slots or 0
+                result[#result + 1] = {
                     -- Same icon SlotDisplay draws it by: its first entry.
                     icon = PaletteListIcon(palette),
-                    name = (count > 0) and (name .. "  |cff808080(" .. count .. ")|r")
+                    name = (total > 0) and (name .. "  |cff808080(" .. total .. ")|r")
                         or (name .. "  |cff808080(empty)|r"),
                     -- No name on the slot: SlotDisplay reads the palette's own,
                     -- so renaming the palette renames the entry that opens it.
@@ -1400,7 +1404,7 @@ initFrame:SetScript("OnEvent", function(self)
                 }
             end
         end
-        return out
+        return result
     end
 
     -- custom = the typed-macro pane rather than a list of things to enumerate.
@@ -1483,9 +1487,9 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Which list the Back row goes home to, filled in here because a table
     -- literal cannot name itself. A category with no parent is at the root.
-    for _, cat in ipairs(PICKER_CATEGORIES) do
-        for _, sub in ipairs(cat.subs or {}) do
-            sub.parent = cat
+    for _, category in ipairs(PICKER_CATEGORIES) do
+        for _, subFrame in ipairs(category.subs or {}) do
+            subFrame.parent = category
         end
     end
 
@@ -1498,7 +1502,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     -- Returns true when a slot was actually committed.
-    local function AssignEntry(entry)
+    local function AssignEntry(record)
         local palette = Palette(editPalette)
         if not palette then
             return false
@@ -1506,9 +1510,9 @@ initFrame:SetScript("OnEvent", function(self)
         -- The stored slot is a COPY: the entry belongs to the cached list, and
         -- handing that one table to two entries would alias a single saved slot
         -- into both of them.
-        local slot = {}
-        for k, v in pairs(entry.slot) do
-            slot[k] = v
+        local slotIndex = {}
+        for k, v in pairs(record.slot) do
+            slotIndex[k] = v
         end
         if pickerReplaceIndex then
             -- Opened by a right-click on an existing entry: the pick replaces
@@ -1519,8 +1523,8 @@ initFrame:SetScript("OnEvent", function(self)
             if not palette.slots[pickerReplaceIndex] then
                 return false
             end
-            palette.slots[pickerReplaceIndex] = slot
-        elseif not ns.AddSlot(palette, slot) then
+            palette.slots[pickerReplaceIndex] = slotIndex
+        elseif not mod.AddSlot(palette, slotIndex) then
             -- ns.AddSlot refuses a full palette. Unreachable from here -- a
             -- full palette draws no "+" to click -- but the refusal must not
             -- fall through into a Refresh that has nothing to show.
@@ -1549,54 +1553,54 @@ initFrame:SetScript("OnEvent", function(self)
         local tA = CludesUI.TEXT_DIM_A or 0.85
         local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
 
-        local menu = CreateFrame("Frame", nil, UIParent)
+        local dropMenu = CreateFrame("Frame", nil, UIParent)
         -- The options window is on DIALOG (CludesUI.lua:7126), so the menu
         -- has to sit a strata above it or the panel draws over it.
-        menu:SetFrameStrata("FULLSCREEN_DIALOG")
-        menu:SetFrameLevel(300)
-        menu:SetClampedToScreen(true)
-        menu:SetSize(PICK_W, 10)
-        menu:EnableMouse(true)
-        menu:Hide()
+        dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+        dropMenu:SetFrameLevel(300)
+        dropMenu:SetClampedToScreen(true)
+        dropMenu:SetSize(PICK_W, 10)
+        dropMenu:EnableMouse(true)
+        dropMenu:Hide()
 
-        local mbg = menu:CreateTexture(nil, "BACKGROUND")
+        local mbg = dropMenu:CreateTexture(nil, "BACKGROUND")
         mbg:SetAllPoints()
         mbg:SetColorTexture(bgR, bgG, bgB, bgA)
-        CludesUI.MakeRoundedBorder(menu, 1, 1, 1, brdA, mbg, nil, true)
+        CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, brdA, mbg, nil, true)
 
-        menu.title = CludesUI.MakeFont(menu, 12, nil, 1, 1, 1, 0.9)
-        menu.title:SetPoint("TOP", menu, "TOP", 0, -7)
-        menu.title:SetJustifyH("CENTER")
+        dropMenu.title = CludesUI.MakeFont(dropMenu, 12, nil, 1, 1, 1, 0.9)
+        dropMenu.title:SetPoint("TOP", dropMenu, "TOP", 0, -7)
+        dropMenu.title:SetJustifyH("CENTER")
 
-        menu.back = CreateFrame("Button", nil, menu)
-        menu.back:SetHeight(PICK_ROW_H)
-        menu.back:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -PICK_HEAD_H)
-        menu.back:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -PICK_HEAD_H)
-        menu.back:SetFrameLevel(menu:GetFrameLevel() + 2)
-        local bHl = menu.back:CreateTexture(nil, "ARTWORK")
+        dropMenu.back = CreateFrame("Button", nil, dropMenu)
+        dropMenu.back:SetHeight(PICK_ROW_H)
+        dropMenu.back:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -PICK_HEAD_H)
+        dropMenu.back:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -PICK_HEAD_H)
+        dropMenu.back:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+        local bHl = dropMenu.back:CreateTexture(nil, "ARTWORK")
         bHl:SetAllPoints()
         bHl:SetColorTexture(1, 1, 1, 0)
-        local bAr = menu.back:CreateTexture(nil, "OVERLAY")
+        local bAr = dropMenu.back:CreateTexture(nil, "OVERLAY")
         bAr:SetSize(12, 12)
-        bAr:SetPoint("LEFT", menu.back, "LEFT", 8, 0)
+        bAr:SetPoint("LEFT", dropMenu.back, "LEFT", 8, 0)
         bAr:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-left.png")
         bAr:SetVertexColor(tR, tG, tB, tA)
         if bAr.SetSnapToPixelGrid then
             bAr:SetSnapToPixelGrid(false)
             bAr:SetTexelSnappingBias(0)
         end
-        local bTx = CludesUI.MakeFont(menu.back, 11, nil, tR, tG, tB, tA)
+        local bTx = CludesUI.MakeFont(dropMenu.back, 11, nil, tR, tG, tB, tA)
         bTx:SetPoint("LEFT", bAr, "RIGHT", 6, 0)
         bTx:SetText(CludesUI.L("Categories"))
         -- Named, because a sub-category's entries go back to the sub-list
         -- rather than to the root and the row has to say which.
-        menu.backText = bTx
-        menu.back:SetScript("OnEnter", function()
+        dropMenu.backText = bTx
+        dropMenu.back:SetScript("OnEnter", function()
             bHl:SetColorTexture(1, 1, 1, hlA)
             bTx:SetTextColor(1, 1, 1, 1)
             bAr:SetVertexColor(1, 1, 1, 1)
         end)
-        menu.back:SetScript("OnLeave", function()
+        dropMenu.back:SetScript("OnLeave", function()
             bHl:SetColorTexture(1, 1, 1, 0)
             bTx:SetTextColor(tR, tG, tB, tA)
             bAr:SetVertexColor(tR, tG, tB, tA)
@@ -1605,75 +1609,75 @@ initFrame:SetScript("OnEvent", function(self)
         -- its own list, everything else to the root. menu.cat is nil in both
         -- list views, so a sub-list's own Back lands at the root, which is the
         -- only place left to go.
-        menu.back:SetScript("OnClick", function()
-            ShowPickerCategories(menu.cat and menu.cat.parent or nil)
+        dropMenu.back:SetScript("OnClick", function()
+            ShowPickerCategories(dropMenu.cat and dropMenu.cat.parent or nil)
         end)
 
-        menu.search = CreateFrame("EditBox", nil, menu)
-        menu.search:SetHeight(22)
-        menu.search:SetPoint("TOPLEFT", menu.back, "BOTTOMLEFT", 7, -4)
-        menu.search:SetPoint("TOPRIGHT", menu.back, "BOTTOMRIGHT", -7, -4)
-        menu.search:SetFrameLevel(menu:GetFrameLevel() + 2)
-        menu.search:SetFont(FONT, 11, "")
-        menu.search:SetTextColor(1, 1, 1, 0.9)
-        menu.search:SetAutoFocus(false)
-        menu.search:SetMaxLetters(40)
-        menu.search:SetTextInsets(6, 6, 0, 0)
-        local sBg = menu.search:CreateTexture(nil, "BACKGROUND")
+        dropMenu.search = CreateFrame("EditBox", nil, dropMenu)
+        dropMenu.search:SetHeight(22)
+        dropMenu.search:SetPoint("TOPLEFT", dropMenu.back, "BOTTOMLEFT", 7, -4)
+        dropMenu.search:SetPoint("TOPRIGHT", dropMenu.back, "BOTTOMRIGHT", -7, -4)
+        dropMenu.search:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+        dropMenu.search:SetFont(FONT, 11, "")
+        dropMenu.search:SetTextColor(1, 1, 1, 0.9)
+        dropMenu.search:SetAutoFocus(false)
+        dropMenu.search:SetMaxLetters(40)
+        dropMenu.search:SetTextInsets(6, 6, 0, 0)
+        local sBg = dropMenu.search:CreateTexture(nil, "BACKGROUND")
         sBg:SetAllPoints()
         sBg:SetColorTexture(0, 0, 0, 0.4)
-        CludesUI.MakeRoundedBorder(menu.search, 1, 1, 1, 0.10, sBg)
-        menu.searchPH = menu.search:CreateFontString(nil, "OVERLAY")
-        menu.searchPH:SetFont(FONT, 11, "")
-        menu.searchPH:SetTextColor(0.5, 0.5, 0.5, 0.6)
-        menu.searchPH:SetPoint("LEFT", menu.search, "LEFT", 6, 0)
-        menu.searchPH:SetText(CludesUI.L("Search..."))
-        menu.search:SetScript("OnEscapePressed", function(s)
+        CludesUI.MakeRoundedBorder(dropMenu.search, 1, 1, 1, 0.10, sBg)
+        dropMenu.searchPH = dropMenu.search:CreateFontString(nil, "OVERLAY")
+        dropMenu.searchPH:SetFont(FONT, 11, "")
+        dropMenu.searchPH:SetTextColor(0.5, 0.5, 0.5, 0.6)
+        dropMenu.searchPH:SetPoint("LEFT", dropMenu.search, "LEFT", 6, 0)
+        dropMenu.searchPH:SetText(CludesUI.L("Search..."))
+        dropMenu.search:SetScript("OnEscapePressed", function(s)
             s:ClearFocus()
         end)
-        menu.search:SetScript("OnEnterPressed", function(s)
+        dropMenu.search:SetScript("OnEnterPressed", function(s)
             s:ClearFocus()
         end)
-        menu.search:SetScript("OnTextChanged", function(s)
-            menu.searchPH:SetShown((s:GetText() or "") == "")
+        dropMenu.search:SetScript("OnTextChanged", function(s)
+            dropMenu.searchPH:SetShown((s:GetText() or "") == "")
             -- Re-filters the cached list; ShowPickerCategory never clears the box.
-            if menu.cat then
-                ShowPickerCategory(menu.cat)
+            if dropMenu.cat then
+                ShowPickerCategory(dropMenu.cat)
             end
         end)
 
-        menu.scroll = CreateFrame("ScrollFrame", nil, menu)
-        menu.scroll:SetFrameLevel(menu:GetFrameLevel() + 1)
-        menu.scroll:EnableMouseWheel(true)
-        menu.list = CreateFrame("Frame", nil, menu.scroll)
-        menu.list:SetWidth(PICK_W - 2)
-        menu.scroll:SetScrollChild(menu.list)
+        dropMenu.scroll = CreateFrame("ScrollFrame", nil, dropMenu)
+        dropMenu.scroll:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
+        dropMenu.scroll:EnableMouseWheel(true)
+        dropMenu.list = CreateFrame("Frame", nil, dropMenu.scroll)
+        dropMenu.list:SetWidth(PICK_W - 2)
+        dropMenu.scroll:SetScrollChild(dropMenu.list)
         -- Thin track and thumb, as on the CDM source picker
         -- (CUI_CooldownManager_Options.lua:16016): a capped 250px menu holding a
         -- few hundred mounts gives no other sign that it scrolls.
-        menu.track = menu.scroll:CreateTexture(nil, "ARTWORK")
-        menu.track:SetWidth(3)
-        menu.track:SetColorTexture(1, 1, 1, 0.06)
-        menu.track:SetPoint("TOPRIGHT", menu.scroll, "TOPRIGHT", -1, 0)
-        menu.track:SetPoint("BOTTOMRIGHT", menu.scroll, "BOTTOMRIGHT", -1, 0)
-        menu.track:Hide()
-        menu.thumb = menu.scroll:CreateTexture(nil, "OVERLAY")
-        menu.thumb:SetWidth(3)
-        menu.thumb:SetColorTexture(1, 1, 1, 0.25)
-        menu.thumb:Hide()
+        dropMenu.track = dropMenu.scroll:CreateTexture(nil, "ARTWORK")
+        dropMenu.track:SetWidth(3)
+        dropMenu.track:SetColorTexture(1, 1, 1, 0.06)
+        dropMenu.track:SetPoint("TOPRIGHT", dropMenu.scroll, "TOPRIGHT", -1, 0)
+        dropMenu.track:SetPoint("BOTTOMRIGHT", dropMenu.scroll, "BOTTOMRIGHT", -1, 0)
+        dropMenu.track:Hide()
+        dropMenu.thumb = dropMenu.scroll:CreateTexture(nil, "OVERLAY")
+        dropMenu.thumb:SetWidth(3)
+        dropMenu.thumb:SetColorTexture(1, 1, 1, 0.25)
+        dropMenu.thumb:Hide()
 
         -- Hairline under the root list's first row (the nest category),
         -- separating it from the game-owned categories below. Drawn on the
         -- boundary between rows 1 and 2 so the pooled rows' fixed pitch is
         -- untouched; only ShowPickerCategories' root view shows it.
-        menu.catDivider = menu.list:CreateTexture(nil, "ARTWORK")
-        menu.catDivider:SetColorTexture(1, 1, 1, brdA)
-        menu.catDivider:SetHeight(1)
-        menu.catDivider:SetPoint("TOPLEFT", menu.list, "TOPLEFT", 6, -PICK_ROW_H)
-        menu.catDivider:SetPoint("TOPRIGHT", menu.list, "TOPRIGHT", -6, -PICK_ROW_H)
-        menu.catDivider:Hide()
+        dropMenu.catDivider = dropMenu.list:CreateTexture(nil, "ARTWORK")
+        dropMenu.catDivider:SetColorTexture(1, 1, 1, brdA)
+        dropMenu.catDivider:SetHeight(1)
+        dropMenu.catDivider:SetPoint("TOPLEFT", dropMenu.list, "TOPLEFT", 6, -PICK_ROW_H)
+        dropMenu.catDivider:SetPoint("TOPRIGHT", dropMenu.list, "TOPRIGHT", -6, -PICK_ROW_H)
+        dropMenu.catDivider:Hide()
 
-        function menu:UpdateThumb()
+        function dropMenu:UpdateThumb()
             local visH, fullH = self.scroll:GetHeight(), self.list:GetHeight()
             local maxScroll = math.max(0, fullH - visH)
             if maxScroll <= 0 then
@@ -1690,21 +1694,21 @@ initFrame:SetScript("OnEvent", function(self)
             self.thumb:SetPoint("TOPRIGHT", self.track, "TOPRIGHT", 0, -frac * (visH - thumbH))
         end
 
-        menu.scroll:SetScript("OnMouseWheel", function(self, delta)
-            local maxScroll = math.max(0, menu.list:GetHeight() - self:GetHeight())
+        dropMenu.scroll:SetScript("OnMouseWheel", function(self, delta)
+            local maxScroll = math.max(0, dropMenu.list:GetHeight() - self:GetHeight())
             if maxScroll <= 0 then
                 return
             end
             self:SetVerticalScroll(
                 math.max(0, math.min(maxScroll, (self:GetVerticalScroll() or 0) - delta * PICK_ROW_H * 2))
             )
-            menu:UpdateThumb()
+            dropMenu:UpdateThumb()
         end)
 
         -- Pooled rows, re-labelled per view: switching category and every
         -- keystroke in the search box re-runs the populate.
-        menu.rows = {}
-        function menu:GetRow(i)
+        dropMenu.rows = {}
+        function dropMenu:GetRow(i)
             local r = self.rows[i]
             if r then
                 return r
@@ -1741,38 +1745,38 @@ initFrame:SetScript("OnEvent", function(self)
         --  Custom Macro pane. Typed macro text, stored as a macrotext slot --
         --  the one kind that has nothing to enumerate.
         -----------------------------------------------------------------------
-        local custom = CreateFrame("Frame", nil, menu)
-        custom:SetPoint("TOPLEFT", menu.back, "BOTTOMLEFT", 7, -6)
-        custom:SetPoint("TOPRIGHT", menu.back, "BOTTOMRIGHT", -7, -6)
+        local custom = CreateFrame("Frame", nil, dropMenu)
+        custom:SetPoint("TOPLEFT", dropMenu.back, "BOTTOMLEFT", 7, -6)
+        custom:SetPoint("TOPRIGHT", dropMenu.back, "BOTTOMRIGHT", -7, -6)
         custom:SetHeight(150)
-        custom:SetFrameLevel(menu:GetFrameLevel() + 2)
+        custom:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
         custom:Hide()
-        menu.custom = custom
+        dropMenu.custom = custom
 
-        local function MakeInput(parent, height, multiline)
-            local box = CreateFrame("EditBox", nil, parent)
-            box:SetHeight(height)
-            box:SetFrameLevel(parent:GetFrameLevel() + 1)
-            box:SetFont(FONT, 11, "")
-            box:SetTextColor(1, 1, 1, 0.9)
-            box:SetAutoFocus(false)
-            box:SetTextInsets(5, 5, 3, 3)
-            box:SetMultiLine(multiline == true)
+        local function MakeInput(hostFrame, height, multiline)
+            local boxFrame = CreateFrame("EditBox", nil, hostFrame)
+            boxFrame:SetHeight(height)
+            boxFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
+            boxFrame:SetFont(FONT, 11, "")
+            boxFrame:SetTextColor(1, 1, 1, 0.9)
+            boxFrame:SetAutoFocus(false)
+            boxFrame:SetTextInsets(5, 5, 3, 3)
+            boxFrame:SetMultiLine(multiline == true)
             -- Newlines are part of a macro, so a multiline box must not treat
             -- Enter as "commit"; the Add button is the only commit.
             if not multiline then
-                box:SetScript("OnEnterPressed", function(s)
+                boxFrame:SetScript("OnEnterPressed", function(s)
                     s:ClearFocus()
                 end)
             end
-            box:SetScript("OnEscapePressed", function(s)
+            boxFrame:SetScript("OnEscapePressed", function(s)
                 s:ClearFocus()
             end)
-            local bg = box:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0, 0, 0, 0.4)
-            CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.10, bg)
-            return box
+            local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            backdrop:SetColorTexture(0, 0, 0, 0.4)
+            CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.10, backdrop)
+            return boxFrame
         end
 
         local nameLbl = CludesUI.MakeFont(custom, 10, nil, tR, tG, tB, tA)
@@ -1813,19 +1817,19 @@ initFrame:SetScript("OnEvent", function(self)
             if body == "" then
                 return
             end
-            local label = strtrim(nameBox:GetText() or "")
-            if label == "" then
-                label = "Macro"
+            local labelText = strtrim(nameBox:GetText() or "")
+            if labelText == "" then
+                labelText = "Macro"
             end
             -- No icon is stored: SlotDisplay falls back to the question mark,
             -- which is what an unnamed custom macro looks like on an action bar
             -- too.
-            if AssignEntry({ slot = { kind = "macrotext", macrotext = body, name = label } }) then
+            if AssignEntry({ slot = { kind = "macrotext", macrotext = body, name = labelText } }) then
                 nameBox:SetText("")
                 textBox:SetText("")
             end
         end)
-        menu:SetScript("OnHide", function(m)
+        dropMenu:SetScript("OnHide", function(m)
             m.search:ClearFocus()
             nameBox:ClearFocus()
             textBox:ClearFocus()
@@ -1837,7 +1841,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Click-outside dismissal, same test the CDM picker uses. The anchor is
         -- excluded so the "+" click that toggles the menu shut is not also read
         -- as a click outside it.
-        menu:SetScript("OnUpdate", function(m)
+        dropMenu:SetScript("OnUpdate", function(m)
             if
                 IsMouseButtonDown("LeftButton")
                 and not m:IsMouseOver()
@@ -1847,74 +1851,76 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end)
 
-        pickerMenu = menu
-        return menu
+        pickerMenu = dropMenu
+        return dropMenu
     end
 
     -- Anchors the list under whichever header rows the current view shows and
     -- sizes the menu to its content.
-    local function PickerFit(menu, count)
+    local function PickerFit(dropMenu, total)
         -- Measured off the rows themselves rather than off menu.cat: a
         -- sub-category list shows the Back row without being an entry view,
         -- and reserving no space for it would put the first row under it.
         -- Views with no search box (category lists, noSearch categories)
         -- collapse the nav strip to the Back row alone.
-        local top = PICK_HEAD_H
-        if menu.back:IsShown() then
-            top = top + (menu.search:IsShown() and PICK_NAV_H or (PICK_ROW_H + 4))
+        local topY = PICK_HEAD_H
+        if dropMenu.back:IsShown() then
+            topY = topY + (dropMenu.search:IsShown() and PICK_NAV_H or (PICK_ROW_H + 4))
         end
-        menu.scroll:ClearAllPoints()
-        menu.scroll:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -top)
-        menu.scroll:SetPoint("RIGHT", menu, "RIGHT", -1, 0)
-        local listH = math.max(PICK_ROW_H, count * PICK_ROW_H)
-        menu.list:SetHeight(listH)
+        dropMenu.scroll:ClearAllPoints()
+        dropMenu.scroll:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -topY)
+        dropMenu.scroll:SetPoint("RIGHT", dropMenu, "RIGHT", -1, 0)
+        local listH = math.max(PICK_ROW_H, total * PICK_ROW_H)
+        dropMenu.list:SetHeight(listH)
         local visH = math.min(listH, PICK_MAX_LIST)
-        menu.scroll:SetHeight(visH)
-        menu:SetHeight(top + visH + 4)
-        menu.scroll:SetVerticalScroll(0)
-        menu:UpdateThumb()
+        dropMenu.scroll:SetHeight(visH)
+        dropMenu:SetHeight(topY + visH + 4)
+        dropMenu.scroll:SetVerticalScroll(0)
+        dropMenu:UpdateThumb()
     end
 
     -- parent = nil for the root list, or the category whose sub-list to show.
-    ShowPickerCategories = function(parent)
-        local menu = EnsurePickerMenu()
-        local cats = parent and parent.subs or PICKER_CATEGORIES
+    ShowPickerCategories = function(hostFrame)
+        local dropMenu = EnsurePickerMenu()
+        local cats = hostFrame and hostFrame.subs or PICKER_CATEGORIES
         -- No cat: this is a list of categories, and the search box has nothing
         -- to filter. The Back row is the one thing that differs between the two
         -- levels -- the root has nowhere above it.
-        menu.cat = nil
-        menu.title:SetText(
-            CludesUI.L(parent and parent.label or (pickerReplaceIndex and "Change Action" or "Add Action"))
+        dropMenu.cat = nil
+        dropMenu.title:SetText(
+            CludesUI.L(
+                hostFrame and hostFrame.label or (pickerReplaceIndex and "Change Action" or "Add Action")
+            )
         )
-        menu.back:SetShown(parent ~= nil)
-        menu.backText:SetText(CludesUI.L("Categories"))
+        dropMenu.back:SetShown(hostFrame ~= nil)
+        dropMenu.backText:SetText(CludesUI.L("Categories"))
         -- Focus first: hiding a focused edit box leaves the keyboard captured by
         -- a box that is no longer on screen.
-        menu.search:ClearFocus()
-        menu.search:Hide()
-        menu.custom:Hide()
-        menu.scroll:Show()
+        dropMenu.search:ClearFocus()
+        dropMenu.search:Hide()
+        dropMenu.custom:Hide()
+        dropMenu.scroll:Show()
         -- Only the root list carries the nest row, so only it draws the
         -- divider under row 1.
-        menu.catDivider:SetShown(parent == nil)
+        dropMenu.catDivider:SetShown(hostFrame == nil)
 
-        for i, cat in ipairs(cats) do
-            local r = menu:GetRow(i)
+        for i, category in ipairs(cats) do
+            local r = dropMenu:GetRow(i)
             r.icon:Hide()
             -- Rows are shared with the entry views, which anchor the label to
             -- the icon -- so both views re-anchor it every time.
             r.label:ClearAllPoints()
             r.label:SetPoint("LEFT", r, "LEFT", 8, 0)
             r.label:SetPoint("RIGHT", r, "RIGHT", -6, 0)
-            r.label:SetText(CludesUI.L(cat.label))
+            r.label:SetText(CludesUI.L(category.label))
             r:SetScript("OnClick", function()
-                if cat.custom then
+                if category.custom then
                     ShowPickerCustom()
-                elseif cat.subs then
-                    ShowPickerCategories(cat)
+                elseif category.subs then
+                    ShowPickerCategories(category)
                 else
-                    menu.search:SetText("")
-                    ShowPickerCategory(cat)
+                    dropMenu.search:SetText("")
+                    ShowPickerCategory(category)
                 end
             end)
             r:Show()
@@ -1924,10 +1930,10 @@ initFrame:SetScript("OnEvent", function(self)
         -- otherwise lives on middle-click alone, and not every mouse has a
         -- middle button. Root only -- inside a category the list is answers
         -- to "change it to what", and Back already leads out.
-        local count = #cats
-        if parent == nil and pickerReplaceIndex then
-            count = count + 1
-            local r = menu:GetRow(count)
+        local total = #cats
+        if hostFrame == nil and pickerReplaceIndex then
+            total = total + 1
+            local r = dropMenu:GetRow(total)
             r.icon:Hide()
             r.label:ClearAllPoints()
             r.label:SetPoint("LEFT", r, "LEFT", 8, 0)
@@ -1938,48 +1944,48 @@ initFrame:SetScript("OnEvent", function(self)
                 -- guard mirrors AssignEntry's: a slot already gone leaves
                 -- nothing to remove and the menu stays up.
                 local palette = Palette(editPalette)
-                if palette and pickerReplaceIndex and ns.RemoveSlot(palette, pickerReplaceIndex) then
+                if palette and pickerReplaceIndex and mod.RemoveSlot(palette, pickerReplaceIndex) then
                     HidePicker()
                     Refresh()
                 end
             end)
             r:Show()
         end
-        for i = count + 1, #menu.rows do
-            menu.rows[i]:Hide()
+        for i = total + 1, #dropMenu.rows do
+            dropMenu.rows[i]:Hide()
         end
 
-        PickerFit(menu, count)
-        menu:Show()
+        PickerFit(dropMenu, total)
+        dropMenu:Show()
     end
 
-    ShowPickerCategory = function(cat)
-        local menu = EnsurePickerMenu()
-        menu.cat = cat
-        menu.title:SetText(CludesUI.L(cat.label))
-        menu.back:Show()
-        menu.backText:SetText(CludesUI.L(cat.parent and cat.parent.label or "Categories"))
+    ShowPickerCategory = function(category)
+        local dropMenu = EnsurePickerMenu()
+        dropMenu.cat = category
+        dropMenu.title:SetText(CludesUI.L(category.label))
+        dropMenu.back:Show()
+        dropMenu.backText:SetText(CludesUI.L(category.parent and category.parent.label or "Categories"))
         -- Focus first when hiding: a hidden edit box keeps the keyboard.
-        if cat.noSearch then
-            menu.search:ClearFocus()
-            menu.search:Hide()
+        if category.noSearch then
+            dropMenu.search:ClearFocus()
+            dropMenu.search:Hide()
         else
-            menu.search:Show()
+            dropMenu.search:Show()
             -- The placeholder names what the box searches. A list that also
             -- matches source and favorite is worth nothing if the only way to
             -- find that out is to guess it.
-            menu.searchPH:SetText(
-                CludesUI.L(cat.keywordHint and "Search name, source, favorite..." or "Search...")
+            dropMenu.searchPH:SetText(
+                CludesUI.L(category.keywordHint and "Search name, source, favorite..." or "Search...")
             )
-            menu.searchPH:SetShown((menu.search:GetText() or "") == "")
+            dropMenu.searchPH:SetShown((dropMenu.search:GetText() or "") == "")
         end
-        menu.custom:Hide()
-        menu.scroll:Show()
-        menu.catDivider:Hide()
+        dropMenu.custom:Hide()
+        dropMenu.scroll:Show()
+        dropMenu.catDivider:Hide()
 
-        local list = pickerLists[cat.key]
-        if not list then
-            list = cat.build()
+        local entries = pickerLists[category.key]
+        if not entries then
+            entries = category.build()
             -- Alphabetical rather than in enumeration order: the spellbook's own
             -- grouping means nothing once the tabs are gone, and a name is what
             -- the user is scanning for. A category can opt out for a list whose
@@ -1989,8 +1995,8 @@ initFrame:SetScript("OnEvent", function(self)
             -- Pinning is per entry rather than per category so a list that is
             -- otherwise alphabetical can still lead with the row the user came
             -- for.
-            if not cat.keepOrder then
-                table.sort(list, function(a, b)
+            if not category.keepOrder then
+                table.sort(entries, function(a, b)
                     if (a.pin or false) ~= (b.pin or false) then
                         return a.pin == true
                     end
@@ -2002,12 +2008,12 @@ initFrame:SetScript("OnEvent", function(self)
                     return (a.rankNum or math.huge) > (b.rankNum or math.huge)
                 end)
             end
-            pickerLists[cat.key] = list
+            pickerLists[category.key] = entries
         end
 
-        local filter = cat.noSearch and "" or (menu.search:GetText() or ""):lower()
-        local n = 0
-        for _, entry in ipairs(list) do
+        local filter = category.noSearch and "" or (dropMenu.search:GetText() or ""):lower()
+        local num = 0
+        for _, record in ipairs(entries) do
             -- The name first, then whatever else the entry knows about itself.
             -- A picker holding several hundred rows that can only be searched
             -- by name can only be searched by someone who already knows the
@@ -2016,33 +2022,33 @@ initFrame:SetScript("OnEvent", function(self)
             -- already lowercase; this runs on every keystroke.
             if
                 filter == ""
-                or entry.name:lower():find(filter, 1, true)
-                or (entry.keywords and entry.keywords:find(filter, 1, true))
+                or record.name:lower():find(filter, 1, true)
+                or (record.keywords and record.keywords:find(filter, 1, true))
             then
-                n = n + 1
-                local r = menu:GetRow(n)
-                r.icon:SetTexture(entry.icon or QUESTION_MARK)
+                num = num + 1
+                local r = dropMenu:GetRow(num)
+                r.icon:SetTexture(record.icon or QUESTION_MARK)
                 -- Rows are pooled across categories, and the marker textures
                 -- take the full rect where action icons take the crop.
-                if ns.ApplyIconCrop then
-                    ns.ApplyIconCrop(r.icon, entry.icon)
+                if mod.ApplyIconCrop then
+                    mod.ApplyIconCrop(r.icon, record.icon)
                 end
                 r.icon:Show()
                 r.label:ClearAllPoints()
                 r.label:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
                 r.label:SetPoint("RIGHT", r, "RIGHT", -6, 0)
-                r.label:SetText(CludesUI.L(entry.name))
+                r.label:SetText(CludesUI.L(record.name))
                 r:SetScript("OnClick", function()
-                    AssignEntry(entry)
+                    AssignEntry(record)
                 end)
                 r:Show()
             end
         end
 
-        local shown = n
-        if n == 0 then
+        local isShown = num
+        if num == 0 then
             -- An empty menu reads as broken, so say why it is empty.
-            local r = menu:GetRow(1)
+            local r = dropMenu:GetRow(1)
             r.icon:Hide()
             r.label:ClearAllPoints()
             r.label:SetPoint("LEFT", r, "LEFT", 8, 0)
@@ -2050,42 +2056,42 @@ initFrame:SetScript("OnEvent", function(self)
             r.label:SetText(filter == "" and CludesUI.L("Nothing to add") or CludesUI.L("No matches"))
             r:SetScript("OnClick", nil)
             r:Show()
-            shown = 1
+            isShown = 1
         end
-        for i = shown + 1, #menu.rows do
-            menu.rows[i]:Hide()
+        for i = isShown + 1, #dropMenu.rows do
+            dropMenu.rows[i]:Hide()
         end
 
-        PickerFit(menu, shown)
-        menu:Show()
+        PickerFit(dropMenu, isShown)
+        dropMenu:Show()
     end
 
     ShowPickerCustom = function()
-        local menu = EnsurePickerMenu()
+        local dropMenu = EnsurePickerMenu()
         -- No cat recorded: menu.cat means "a list view is up, re-filter it on a
         -- keystroke", and there is no list here.
-        menu.cat = nil
-        menu.title:SetText(CludesUI.L("Custom Macro"))
-        menu.back:Show()
+        dropMenu.cat = nil
+        dropMenu.title:SetText(CludesUI.L("Custom Macro"))
+        dropMenu.back:Show()
         -- Restated rather than left as it was: the row is shared, and the view
         -- before this one may have been a sub-category's.
-        menu.backText:SetText(CludesUI.L("Categories"))
-        menu.search:ClearFocus()
-        menu.search:Hide()
+        dropMenu.backText:SetText(CludesUI.L("Categories"))
+        dropMenu.search:ClearFocus()
+        dropMenu.search:Hide()
         -- Hiding the scroll frame takes the pooled rows with it: they are its
         -- scroll child's children.
-        menu.scroll:Hide()
-        menu.catDivider:Hide()
-        menu.custom:Show()
-        menu:SetHeight(PICK_HEAD_H + PICK_ROW_H + 6 + menu.custom:GetHeight() + 4)
-        menu:Show()
+        dropMenu.scroll:Hide()
+        dropMenu.catDivider:Hide()
+        dropMenu.custom:Show()
+        dropMenu:SetHeight(PICK_HEAD_H + PICK_ROW_H + 6 + dropMenu.custom:GetHeight() + 4)
+        dropMenu:Show()
     end
 
     -- replaceIndex: open in replace mode on that slot (right-click on an
     -- entry); nil is the "+" append mode.
     local function TogglePicker(widget, replaceIndex)
-        local menu = EnsurePickerMenu()
-        if menu:IsShown() and pickerAnchor == widget then
+        local dropMenu = EnsurePickerMenu()
+        if dropMenu:IsShown() and pickerAnchor == widget then
             HidePicker()
             return
         end
@@ -2096,13 +2102,13 @@ initFrame:SetScript("OnEvent", function(self)
         wipe(pickerLists)
         pickerAnchor = widget
         pickerReplaceIndex = replaceIndex
-        menu:ClearAllPoints()
-        menu:SetPoint("TOP", widget, "BOTTOM", 0, -4)
+        dropMenu:ClearAllPoints()
+        dropMenu:SetPoint("TOP", widget, "BOTTOM", 0, -4)
         -- Cleared before the SetText below, which fires OnTextChanged: with the
         -- previous open's category still recorded, that would re-enumerate and
         -- briefly show the wrong view.
-        menu.cat = nil
-        menu.search:SetText("")
+        dropMenu.cat = nil
+        dropMenu.search:SetText("")
         ShowPickerCategories()
     end
 
@@ -2117,21 +2123,21 @@ initFrame:SetScript("OnEvent", function(self)
     --  no to every spell on the wrong class.
     ---------------------------------------------------------------------------
     local function TargetMarkerSlots()
-        local out = {}
+        local result = {}
         for i = 1, 8 do
-            out[#out + 1] = { kind = "raidtarget", id = i }
+            result[#result + 1] = { kind = "raidtarget", id = i }
         end
-        out[#out + 1] = { kind = "raidtarget", id = 0 }
-        return out
+        result[#result + 1] = { kind = "raidtarget", id = 0 }
+        return result
     end
 
     local function WorldMarkerSlots()
-        local out = {}
+        local result = {}
         for i = 1, 8 do
-            out[#out + 1] = { kind = "worldmarker", id = i }
+            result[#result + 1] = { kind = "worldmarker", id = i }
         end
-        out[#out + 1] = { kind = "worldmarker", id = 0 }
-        return out
+        result[#result + 1] = { kind = "worldmarker", id = 0 }
+        return result
     end
 
     -- Numeric /ping aliases (1 attack, 2 warning, 3 on my way, 4 assist, 5 look):
@@ -2213,41 +2219,41 @@ initFrame:SetScript("OnEvent", function(self)
     -- said in the menu rather than fixed by raising a cap on its own -- some
     -- collections are simply larger than any menu.
     local function HearthstoneSlots()
-        local out, dropped = {}, 0
-        for _, itemID in ipairs(HEARTH_ITEMS) do
-            if C_Item.GetItemCount(itemID) > 0 then
-                out[#out + 1] = { kind = "item", id = itemID }
+        local result, dropped = {}, 0
+        for _, itemId in ipairs(HEARTH_ITEMS) do
+            if C_Item.GetItemCount(itemId) > 0 then
+                result[#result + 1] = { kind = "item", id = itemId }
             end
         end
         for _, toyID in ipairs(HEARTH_TOYS) do
             if PlayerHasToy(toyID) then
-                if #out < MAX_SLOTS then
-                    out[#out + 1] = { kind = "toy", id = toyID }
+                if #result < MAX_SLOTS then
+                    result[#result + 1] = { kind = "toy", id = toyID }
                 else
                     dropped = dropped + 1
                 end
             end
         end
-        return out, dropped
+        return result, dropped
     end
 
     -- Keep Blizzard's order and report anything over the menu cap.
     local function OutfitSlots()
-        local out = ns.OutfitSlots and ns.OutfitSlots() or {}
-        local dropped = math.max(0, #out - MAX_SLOTS)
-        for i = #out, MAX_SLOTS + 1, -1 do
-            out[i] = nil
+        local result = mod.OutfitSlots and mod.OutfitSlots() or {}
+        local dropped = math.max(0, #result - MAX_SLOTS)
+        for i = #result, MAX_SLOTS + 1, -1 do
+            result[i] = nil
         end
-        return out, dropped
+        return result, dropped
     end
 
     local function EquipmentSetSlots()
-        local out = ns.EquipmentSetSlots()
-        local dropped = math.max(0, #out - MAX_SLOTS)
-        for i = #out, MAX_SLOTS + 1, -1 do
-            out[i] = nil
+        local result = mod.EquipmentSetSlots()
+        local dropped = math.max(0, #result - MAX_SLOTS)
+        for i = #result, MAX_SLOTS + 1, -1 do
+            result[i] = nil
         end
-        return out, dropped
+        return result, dropped
     end
 
     -- Self-teleports only, keyed by class. Mage portals are deliberately not
@@ -2287,37 +2293,37 @@ initFrame:SetScript("OnEvent", function(self)
         },
     }
     local function TeleportSlots()
-        local out, dropped = {}, 0
-        local list = TELEPORT_SPELLS[select(2, UnitClass("player"))]
-        for _, spellID in ipairs(list or {}) do
-            if IsPlayerSpell(spellID) then
-                if #out < MAX_SLOTS then
-                    out[#out + 1] = { kind = "spell", id = spellID }
+        local result, dropped = {}, 0
+        local entries = TELEPORT_SPELLS[select(2, UnitClass("player"))]
+        for _, spellId in ipairs(entries or {}) do
+            if IsPlayerSpell(spellId) then
+                if #result < MAX_SLOTS then
+                    result[#result + 1] = { kind = "spell", id = spellId }
                 else
                     dropped = dropped + 1
                 end
             end
         end
-        return out, dropped
+        return result, dropped
     end
 
     -- The same bag walk ItemEntries does, narrowed to drinkable consumables.
     -- Numeric subclasses: Enum.ItemConsumableSubclass stops at Other, the
     -- finer rows exist only as these constants (ItemDocumentation.lua).
     local function PotionSlots()
-        local out, seen = {}, {}
+        local result, seen = {}, {}
         local function ScanBag(bag)
-            for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                local itemID = info and info.itemID
-                if itemID and not seen[itemID] and #out < MAX_SLOTS and C_Item.GetItemSpell(itemID) then
-                    seen[itemID] = true
-                    local classID, subClassID = select(6, C_Item.GetItemInfoInstant(itemID))
+            for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local itemId = details and details.itemID
+                if itemId and not seen[itemId] and #result < MAX_SLOTS and C_Item.GetItemSpell(itemId) then
+                    seen[itemId] = true
+                    local classID, subClassID = select(6, C_Item.GetItemInfoInstant(itemId))
                     if
                         classID == Enum.ItemClass.Consumable
                         and (subClassID == 1 or subClassID == 2 or subClassID == 3)
                     then
-                        out[#out + 1] = { kind = "item", id = itemID }
+                        result[#result + 1] = { kind = "item", id = itemId }
                     end
                 end
             end
@@ -2326,7 +2332,7 @@ initFrame:SetScript("OnEvent", function(self)
             ScanBag(bag)
         end
         ScanBag(Enum.BagIndex.ReagentBag)
-        return out
+        return result
     end
 
     -- Every form a druid can be in, plus the two that are really ways of
@@ -2344,11 +2350,11 @@ initFrame:SetScript("OnEvent", function(self)
         114282, -- Treant Form
     }
     local function FormSlots()
-        local out, dropped = {}, 0
-        for _, spellID in ipairs(FORM_SPELLS) do
-            if IsPlayerSpell(spellID) then
-                if #out < MAX_SLOTS then
-                    out[#out + 1] = { kind = "spell", id = spellID }
+        local result, dropped = {}, 0
+        for _, spellId in ipairs(FORM_SPELLS) do
+            if IsPlayerSpell(spellId) then
+                if #result < MAX_SLOTS then
+                    result[#result + 1] = { kind = "spell", id = spellId }
                 else
                     dropped = dropped + 1
                 end
@@ -2359,15 +2365,15 @@ initFrame:SetScript("OnEvent", function(self)
         -- Only offered once a form has been found, so the preset stays hidden
         -- on a class that has none. The clear icon the marker entries use,
         -- because it says the same thing.
-        if #out > 0 and #out < MAX_SLOTS then
-            out[#out + 1] = {
+        if #result > 0 and #result < MAX_SLOTS then
+            result[#result + 1] = {
                 kind = "macrotext",
                 macrotext = "/cancelform",
                 name = "Cancel Form",
                 icon = "Interface\\Buttons\\UI-GroupLoot-Pass-Up",
             }
         end
-        return out, dropped
+        return result, dropped
     end
 
     -- One-of-a-set toggles that are not forms: a warrior's stances and a
@@ -2378,17 +2384,17 @@ initFrame:SetScript("OnEvent", function(self)
         PALADIN = { 465, 32223, 183435, 317920 }, -- Devotion, Crusader, Retribution, Concentration
     }
     local function StanceSlots()
-        local out, dropped = {}, 0
-        for _, spellID in ipairs(STANCE_SPELLS[select(2, UnitClass("player"))] or {}) do
-            if IsPlayerSpell(spellID) then
-                if #out < MAX_SLOTS then
-                    out[#out + 1] = { kind = "spell", id = spellID }
+        local result, dropped = {}, 0
+        for _, spellId in ipairs(STANCE_SPELLS[select(2, UnitClass("player"))] or {}) do
+            if IsPlayerSpell(spellId) then
+                if #result < MAX_SLOTS then
+                    result[#result + 1] = { kind = "spell", id = spellId }
                 else
                     dropped = dropped + 1
                 end
             end
         end
-        return out, dropped
+        return result, dropped
     end
 
     -- By position rather than by identity. A preset is the palette a player
@@ -2401,8 +2407,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- fit. Empty is the stale-module case, and leaves the preset unoffered.
     local function SpecSlots()
         local slots = {}
-        for _, entry in ipairs(DynamicSpecEntries()) do
-            slots[#slots + 1] = entry.slot
+        for _, record in ipairs(DynamicSpecEntries()) do
+            slots[#slots + 1] = record.slot
         end
         return slots
     end
@@ -2423,29 +2429,29 @@ initFrame:SetScript("OnEvent", function(self)
     -- at the moment the menu is built. See the note under QD-07a in the bug
     -- report for the self-refilling version and why it is not this.
     local function QuestItemSlots()
-        local out, seen, dropped = {}, {}, 0
-        local function Add(itemID)
-            if not itemID or seen[itemID] then
+        local result, seen, dropped = {}, {}, 0
+        local function Add(itemId)
+            if not itemId or seen[itemId] then
                 return
             end
-            if not C_Item.GetItemSpell(itemID) then
+            if not C_Item.GetItemSpell(itemId) then
                 return
             end
-            seen[itemID] = true
-            if #out < MAX_SLOTS then
-                out[#out + 1] = { kind = "item", id = itemID }
+            seen[itemId] = true
+            if #result < MAX_SLOTS then
+                result[#result + 1] = { kind = "item", id = itemId }
             else
                 dropped = dropped + 1
             end
         end
         local function ScanBag(bag)
-            for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                local itemID = info and info.itemID
-                if itemID and not seen[itemID] then
-                    local classID = select(6, C_Item.GetItemInfoInstant(itemID))
+            for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local itemId = details and details.itemID
+                if itemId and not seen[itemId] then
+                    local classID = select(6, C_Item.GetItemInfoInstant(itemId))
                     if classID == Enum.ItemClass.Questitem then
-                        Add(itemID)
+                        Add(itemId)
                     end
                 end
             end
@@ -2456,18 +2462,18 @@ initFrame:SetScript("OnEvent", function(self)
         ScanBag(Enum.BagIndex.ReagentBag)
 
         for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-            local info = C_QuestLog.GetInfo(i)
-            if info and not info.isHeader then
+            local details = C_QuestLog.GetInfo(i)
+            if details and not details.isHeader then
                 -- The LINK, which is the first return; the second is the
                 -- button's texture, not an id. GetItemInfoInstant takes a link
                 -- and hands back the itemID first.
-                local link = GetQuestLogSpecialItemInfo(i)
-                if link then
-                    Add((C_Item.GetItemInfoInstant(link)))
+                local itemLink = GetQuestLogSpecialItemInfo(i)
+                if itemLink then
+                    Add((C_Item.GetItemInfoInstant(itemLink)))
                 end
             end
         end
-        return out, dropped
+        return result, dropped
     end
 
     -- By position rather than by identity, the same reasoning as SpecSlots
@@ -2477,8 +2483,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- see DynamicProfessionEntries for what each position means.
     local function ProfessionSlots()
         local slots = {}
-        for _, entry in ipairs(DynamicProfessionEntries()) do
-            slots[#slots + 1] = entry.slot
+        for _, record in ipairs(DynamicProfessionEntries()) do
+            slots[#slots + 1] = record.slot
         end
         return slots
     end
@@ -2490,7 +2496,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- lands on MAX_SLOTS exactly rather than reporting an overflow every time.
     -- Both are still in the picker for anyone who wants them.
     local function InterfacePanelSlots()
-        return ns.PanelSlots and ns.PanelSlots(false) or {}
+        return mod.PanelSlots and mod.PanelSlots(false) or {}
     end
 
     local PALETTE_PRESETS = {
@@ -2522,12 +2528,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- offer the preset at all), and each table in it is fresh from the
     -- builder, so nothing here needs copying.
     local function AddPalette(preset, slots)
-        local count = PaletteCount()
-        if count >= MAX_PALETTES then
+        local total = PaletteCount()
+        if total >= MAX_PALETTES then
             return
         end
-        Set("paletteCount", count + 1)
-        local palette = Palette(count + 1)
+        Set("paletteCount", total + 1)
+        local palette = Palette(total + 1)
         if palette then
             -- The index may have been used and abandoned by the retired
             -- palette-count slider, whose decrease hid palettes without
@@ -2537,14 +2543,14 @@ initFrame:SetScript("OnEvent", function(self)
             palette.appearance = nil
             -- Seed the name in the player's language: it is user data from the
             -- moment it exists (renameable), so store the translated label.
-            palette.name = (preset and CludesUI.L(preset.label)) or AutoName(count + 1)
+            palette.name = (preset and CludesUI.L(preset.label)) or AutoName(total + 1)
             for _, s in ipairs(slots or {}) do
-                if not ns.AddSlot(palette, s) then
+                if not mod.AddSlot(palette, s) then
                     break
                 end
             end
         end
-        editPalette = count + 1
+        editPalette = total + 1
         HidePicker()
         RebuildPage()
     end
@@ -2552,13 +2558,13 @@ initFrame:SetScript("OnEvent", function(self)
     -- One pooled row of the shared menu, filled in. Shared by the two views
     -- below that list something other than actions; the action views anchor
     -- their labels the same two ways inline.
-    local function MenuRow(menu, i, icon, label, onClick)
-        local r = menu:GetRow(i)
-        if icon then
-            if type(icon) == "table" and icon.atlas then
-                r.icon:SetAtlas(icon.atlas)
+    local function MenuRow(dropMenu, i, glyph, labelText, onClick)
+        local r = dropMenu:GetRow(i)
+        if glyph then
+            if type(glyph) == "table" and glyph.atlas then
+                r.icon:SetAtlas(glyph.atlas)
             else
-                r.icon:SetTexture(icon)
+                r.icon:SetTexture(glyph)
             end
             r.icon:Show()
             r.label:ClearAllPoints()
@@ -2569,7 +2575,7 @@ initFrame:SetScript("OnEvent", function(self)
             r.label:SetPoint("LEFT", r, "LEFT", 8, 0)
         end
         r.label:SetPoint("RIGHT", r, "RIGHT", -6, 0)
-        r.label:SetText(label)
+        r.label:SetText(labelText)
         r:SetScript("OnClick", onClick)
         r:Show()
     end
@@ -2577,65 +2583,65 @@ initFrame:SetScript("OnEvent", function(self)
     -- Open the shared menu as a plain list with `title` at the top, ready for
     -- MenuRow. Returns the menu, or nil when this click was the one that
     -- closes an already-open list on the same anchor.
-    local function OpenListMenu(anchor, title)
-        if not anchor then
+    local function OpenListMenu(anchorFrame, titleText)
+        if not anchorFrame then
             return nil
         end
-        local menu = EnsurePickerMenu()
-        if menu:IsShown() and pickerAnchor == anchor then
+        local dropMenu = EnsurePickerMenu()
+        if dropMenu:IsShown() and pickerAnchor == anchorFrame then
             HidePicker()
             return nil
         end
-        pickerAnchor = anchor
-        menu:ClearAllPoints()
-        menu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
-        menu.cat = nil
-        menu.title:SetText(CludesUI.L(title))
-        menu.back:Hide()
-        menu.search:ClearFocus()
-        menu.search:Hide()
-        menu.custom:Hide()
-        menu.scroll:Show()
-        menu.catDivider:Hide()
-        return menu
+        pickerAnchor = anchorFrame
+        dropMenu:ClearAllPoints()
+        dropMenu:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
+        dropMenu.cat = nil
+        dropMenu.title:SetText(CludesUI.L(titleText))
+        dropMenu.back:Hide()
+        dropMenu.search:ClearFocus()
+        dropMenu.search:Hide()
+        dropMenu.custom:Hide()
+        dropMenu.scroll:Show()
+        dropMenu.catDivider:Hide()
+        return dropMenu
     end
 
     -- A view on the same anchored menu the action picker uses, so the add
     -- button and the "+" entry cannot both have one open: whichever opens
     -- second takes the menu over.
-    local function ShowAddPaletteMenu(anchor)
-        local menu = OpenListMenu(anchor, "Add Action Menu")
-        if not menu then
+    local function ShowAddPaletteMenu(anchorFrame)
+        local dropMenu = OpenListMenu(anchorFrame, "Add Action Menu")
+        if not dropMenu then
             return
         end
 
-        MenuRow(menu, 1, nil, CludesUI.L("Empty Action Menu"), function()
+        MenuRow(dropMenu, 1, nil, CludesUI.L("Empty Action Menu"), function()
             AddPalette(nil)
         end)
-        local n = 1
+        local num = 1
         for _, preset in ipairs(PALETTE_PRESETS) do
             local slots, dropped = preset.build()
             if #slots > 0 then
-                n = n + 1
-                local icon = ns.SlotDisplay(slots[1])
+                num = num + 1
+                local glyph = mod.SlotDisplay(slots[1])
                 -- The count, and what a full menu could not take. A preset that
                 -- stopped at the cap and said nothing looked like a preset that
                 -- had found everything there was.
-                local count = "  |cff808080(" .. #slots .. ")|r"
+                local total = "  |cff808080(" .. #slots .. ")|r"
                 if dropped and dropped > 0 then
-                    count = count .. " |cffd08050" .. CludesUI.Lf("%1$d did not fit", dropped) .. "|r"
+                    total = total .. " |cffd08050" .. CludesUI.Lf("%1$d did not fit", dropped) .. "|r"
                 end
-                MenuRow(menu, n, icon or QUESTION_MARK, CludesUI.L(preset.label) .. count, function()
+                MenuRow(dropMenu, num, glyph or QUESTION_MARK, CludesUI.L(preset.label) .. total, function()
                     AddPalette(preset, slots)
                 end)
             end
         end
-        for i = n + 1, #menu.rows do
-            menu.rows[i]:Hide()
+        for i = num + 1, #dropMenu.rows do
+            dropMenu.rows[i]:Hide()
         end
 
-        PickerFit(menu, n)
-        menu:Show()
+        PickerFit(dropMenu, num)
+        dropMenu:Show()
     end
 
     -- Deletion really removes the palette rather than hiding it the way the
@@ -2643,10 +2649,10 @@ initFrame:SetScript("OnEvent", function(self)
     -- that pointed at them follows -- nested entries repoint to the shifted
     -- index, entries that opened the deleted palette are removed, and each
     -- shifted palette's keybind moves with it.
-    local function DeletePalette(index)
-        local p = DB()
-        local count = PaletteCount()
-        if not p or count <= 1 or index < 1 or index > count then
+    local function DeletePalette(slotPos)
+        local p = SavedDB()
+        local total = PaletteCount()
+        if not p or total <= 1 or slotPos < 1 or slotPos > total then
             return
         end
 
@@ -2659,16 +2665,16 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Materialize every live palette first: the shift walks 1 .. count and
         -- table.remove stops at the first hole.
-        for i = 1, count do
+        for i = 1, total do
             Palette(i)
         end
 
         -- Keys the deleted palette shared stay with the palettes sharing them,
         -- before the indexes move.
-        local handed = HandOffKeys(index, GetBindingKey(BINDING_PREFIX .. index))
+        local handed = HandOffKeys(slotPos, GetBindingKey(BINDING_PREFIX .. slotPos))
 
-        table.remove(p.palettes, index)
-        Set("paletteCount", count - 1)
+        table.remove(p.palettes, slotPos)
+        Set("paletteCount", total - 1)
 
         -- The auto-names close ranks with everything else. A palette the user
         -- never renamed carries the number it was made under, so deleting
@@ -2676,31 +2682,31 @@ initFrame:SetScript("OnEvent", function(self)
         -- index 1 -- and Add, which names by index, would then hand out that
         -- same name a second time. Only the auto-name moves: a name the user
         -- typed is theirs, whatever it happens to look like.
-        for i = index, count - 1 do
+        for i = slotPos, total - 1 do
             local palette = Palette(i)
             if palette and palette.name == AutoName(i + 1) then
                 palette.name = AutoName(i)
             end
         end
 
-        for i = 1, count - 1 do
+        for i = 1, total - 1 do
             local palette = Palette(i)
-            for j = #palette.slots, 1, -1 do
-                local s = palette.slots[j]
+            for jdx = #palette.slots, 1, -1 do
+                local s = palette.slots[jdx]
                 if s.kind == "palette" then
-                    local target = tonumber(s.palette)
-                    if target == index then
-                        table.remove(palette.slots, j)
-                    elseif target and target > index then
-                        s.palette = target - 1
+                    local targetUnit = tonumber(s.palette)
+                    if targetUnit == slotPos then
+                        table.remove(palette.slots, jdx)
+                    elseif targetUnit and targetUnit > slotPos then
+                        s.palette = targetUnit - 1
                     end
                 end
             end
             -- A shared key follows its holder down one index.
             local share = tonumber(palette.keyShare)
-            if share == index then
+            if share == slotPos then
                 palette.keyShare = nil
-            elseif share and share > index then
+            elseif share and share > slotPos then
                 palette.keyShare = share - 1
             end
         end
@@ -2709,21 +2715,21 @@ initFrame:SetScript("OnEvent", function(self)
         -- snapshotted, everything from the deleted index up is unbound, and
         -- then each successor's keys are rebound one action lower. Interleaving
         -- the two passes would unbind keys the previous step just moved.
-        local keys, any = {}, false
-        for n = 1, MAX_PALETTES do
-            keys[n] = { GetBindingKey(BINDING_PREFIX .. n) }
-            if n >= index and keys[n][1] then
+        local keyList, any = {}, false
+        for num = 1, MAX_PALETTES do
+            keyList[num] = { GetBindingKey(BINDING_PREFIX .. num) }
+            if num >= slotPos and keyList[num][1] then
                 any = true
             end
         end
-        for n = index, MAX_PALETTES do
-            for _, k in ipairs(keys[n]) do
+        for num = slotPos, MAX_PALETTES do
+            for _, k in ipairs(keyList[num]) do
                 SetBinding(k)
             end
         end
-        for n = index, MAX_PALETTES - 1 do
-            for _, k in ipairs(keys[n + 1] or {}) do
-                SetBinding(k, BINDING_PREFIX .. n)
+        for num = slotPos, MAX_PALETTES - 1 do
+            for _, k in ipairs(keyList[num + 1] or {}) do
+                SetBinding(k, BINDING_PREFIX .. num)
             end
         end
         if any or handed then
@@ -2733,11 +2739,11 @@ initFrame:SetScript("OnEvent", function(self)
         -- Keep the editor pointed at the palette it was on, which now sits one
         -- index lower; deleting the edited palette itself falls to whichever
         -- palette took its number.
-        if editPalette > index then
+        if editPalette > slotPos then
             editPalette = editPalette - 1
         end
-        if editPalette > count - 1 then
-            editPalette = count - 1
+        if editPalette > total - 1 then
+            editPalette = total - 1
         end
         RebuildPage()
     end
@@ -2766,16 +2772,16 @@ initFrame:SetScript("OnEvent", function(self)
         m:SetClampedToScreen(true)
         m:SetSize(MM_W, 4)
         m:Hide()
-        local bg = m:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
+        local backdrop = m:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
         CludesUI.MakeBorder(m, 1, 1, 1, CludesUI.DD_BRD_A, PPQ)
         -- Click-outside dismissal + anchor scale matching, the profile
         -- menu's own. The anchor is re-pointed per page build (m._anchor).
         m:SetScript("OnShow", function(self)
-            local anchor = self._anchor
-            if anchor then
-                self:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
+            local anchorFrame = self._anchor
+            if anchorFrame then
+                self:SetScale(anchorFrame:GetEffectiveScale() / UIParent:GetEffectiveScale())
             end
             self:SetScript("OnUpdate", function(mm)
                 local a2 = mm._anchor
@@ -2797,8 +2803,8 @@ initFrame:SetScript("OnEvent", function(self)
         local m = EnsureMenuMenu()
         local FONT = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local mH = 4
-        local count = PaletteCount()
-        for i = 1, count do
+        local total = PaletteCount()
+        for i = 1, total do
             local itm = mmItems[i]
             if not itm then
                 itm = CreateFrame("Button", nil, m)
@@ -2813,19 +2819,19 @@ initFrame:SetScript("OnEvent", function(self)
                 ico:SetPoint("LEFT", itm, "LEFT", 8, 0)
                 ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
                 itm._ico = ico
-                local lbl = itm:CreateFontString(nil, "OVERLAY")
-                lbl:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
-                lbl:SetPoint("LEFT", ico, "RIGHT", 6, 0)
-                lbl:SetPoint("RIGHT", itm, "RIGHT", -(MM_X * 2 + 22), 0)
-                lbl:SetJustifyH("LEFT")
-                lbl:SetWordWrap(false)
-                lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                itm._lbl = lbl
-                local hl = itm:CreateTexture(nil, "ARTWORK")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 1)
-                hl:SetAlpha(0)
-                itm._hl = hl
+                local labelFS = itm:CreateFontString(nil, "OVERLAY")
+                labelFS:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
+                labelFS:SetPoint("LEFT", ico, "RIGHT", 6, 0)
+                labelFS:SetPoint("RIGHT", itm, "RIGHT", -(MM_X * 2 + 22), 0)
+                labelFS:SetJustifyH("LEFT")
+                labelFS:SetWordWrap(false)
+                labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                itm._lbl = labelFS
+                local highlight = itm:CreateTexture(nil, "ARTWORK")
+                highlight:SetAllPoints()
+                highlight:SetColorTexture(1, 1, 1, 1)
+                highlight:SetAlpha(0)
+                itm._hl = highlight
 
                 local xBtn = CreateFrame("Button", nil, itm)
                 xBtn:SetSize(MM_X, MM_X)
@@ -2863,21 +2869,21 @@ initFrame:SetScript("OnEvent", function(self)
                     editBtn:SetAlpha(a2)
                 end
                 itm:SetScript("OnEnter", function()
-                    lbl:SetTextColor(1, 1, 1, 1)
-                    hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
+                    labelFS:SetTextColor(1, 1, 1, 1)
+                    highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
                     SetAllInlineAlpha(0.8)
                 end)
                 itm:SetScript("OnLeave", function()
                     if IsOverInline() then
                         return
                     end
-                    lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                    hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                    labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                    highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
                     SetAllInlineAlpha(0.4)
                 end)
                 local function InlineBtnEnter(self2)
-                    lbl:SetTextColor(1, 1, 1, 1)
-                    hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
+                    labelFS:SetTextColor(1, 1, 1, 1)
+                    highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
                     SetAllInlineAlpha(0.8)
                     self2:SetAlpha(1)
                 end
@@ -2886,8 +2892,8 @@ initFrame:SetScript("OnEvent", function(self)
                         self2:SetAlpha(0.8)
                         return
                     end
-                    lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                    hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                    labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                    highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
                     SetAllInlineAlpha(0.4)
                 end
                 xBtn:SetScript("OnEnter", function(self2)
@@ -2931,18 +2937,18 @@ initFrame:SetScript("OnEvent", function(self)
                 itm._editBtn:SetPoint("RIGHT", itm._xBtn, "LEFT", -4, 0)
             end
 
-            local idx = i
+            local position = i
             itm:SetScript("OnClick", function()
                 mmMenu:Hide()
-                if idx ~= editPalette then
-                    editPalette = idx
+                if position ~= editPalette then
+                    editPalette = position
                     RebuildPage()
                 end
             end)
             itm._xBtn:SetScript("OnClick", function()
                 mmMenu:Hide()
-                local pal2 = Palette(idx)
-                local nm = (pal2 and pal2.name) or AutoName(idx)
+                local pal2 = Palette(position)
+                local nm = (pal2 and pal2.name) or AutoName(position)
                 CludesUI:ShowConfirmPopup({
                     title = "Delete Action Menu",
                     message = CludesUI.Lf(
@@ -2954,22 +2960,22 @@ initFrame:SetScript("OnEvent", function(self)
                     confirmText = "Delete",
                     cancelText = "Cancel",
                     onConfirm = function()
-                        DeletePalette(idx)
+                        DeletePalette(position)
                     end,
                 })
             end)
             itm._editBtn:SetScript("OnClick", function()
                 mmMenu:Hide()
-                local pal2 = Palette(idx)
-                local cur = (pal2 and pal2.name) or AutoName(idx)
+                local pal2 = Palette(position)
+                local current = (pal2 and pal2.name) or AutoName(position)
                 CludesUI:ShowInputPopup({
                     title = "Rename Action Menu",
-                    message = CludesUI.Lf('Enter a new name for "%1$s":', cur),
-                    placeholder = cur,
+                    message = CludesUI.Lf('Enter a new name for "%1$s":', current),
+                    placeholder = current,
                     confirmText = "Rename",
                     cancelText = "Cancel",
                     onConfirm = function(newName)
-                        local pal3 = Palette(idx)
+                        local pal3 = Palette(position)
                         if not pal3 then
                             return
                         end
@@ -2980,7 +2986,7 @@ initFrame:SetScript("OnEvent", function(self)
                             newName = newName:sub(1, 24)
                         end
                         if newName == "" then
-                            newName = AutoName(idx)
+                            newName = AutoName(position)
                         end
                         if newName == pal3.name then
                             return
@@ -2993,7 +2999,7 @@ initFrame:SetScript("OnEvent", function(self)
             itm:Show()
             mH = mH + 26
         end
-        for i = count + 1, #mmItems do
+        for i = total + 1, #mmItems do
             mmItems[i]:Hide()
         end
         m:SetHeight(mH + 4)
@@ -3003,42 +3009,42 @@ initFrame:SetScript("OnEvent", function(self)
     -- not): the Profiles page's Active Profile dropdown look, verbatim.
     -- Nothing during the search index prebuild: its row is a stand-in with no
     -- frame to build on, and the row's own label is what the index lists.
-    local function BuildMenuSelector(rgn)
+    local function BuildMenuSelector(region)
         if CludesUI._prebuilding then
             return
         end
         local PPQ = CludesUI.PanelPP
-        local btn = CreateFrame("Button", nil, rgn)
+        local btn = CreateFrame("Button", nil, region)
         -- 170x30, the exact face BuildDropdownControl gives every standard
         -- row dropdown, so this selector reads as one of them.
         PPQ.Size(btn, MM_W, 30)
-        btn:SetFrameLevel(rgn:GetFrameLevel() + 3)
-        PPQ.Point(btn, "RIGHT", rgn, "RIGHT", -20, 0)
-        local bg = btn:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-        local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, CludesUI.DD_BRD_A, bg)
+        btn:SetFrameLevel(region:GetFrameLevel() + 3)
+        PPQ.Point(btn, "RIGHT", region, "RIGHT", -20, 0)
+        local backdrop = btn:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
+        local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, CludesUI.DD_BRD_A, backdrop)
         -- The resting alpha is the text colour's, the channel the hover
         -- colours below write, so a hover and leave land back on it.
-        local lbl = CludesUI.MakeFont(btn, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
-        lbl:SetJustifyH("LEFT")
-        lbl:SetWordWrap(false)
-        lbl:SetMaxLines(1)
-        lbl:SetPoint("LEFT", btn, "LEFT", 12, 0)
+        local labelFS = CludesUI.MakeFont(btn, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
+        labelFS:SetJustifyH("LEFT")
+        labelFS:SetWordWrap(false)
+        labelFS:SetMaxLines(1)
+        labelFS:SetPoint("LEFT", btn, "LEFT", 12, 0)
         local arrow = CludesUI.MakeDropdownArrow(btn, 12, PPQ)
-        lbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
+        labelFS:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
         local pal = Palette(editPalette)
-        lbl:SetText((pal and pal.name) or AutoName(editPalette))
+        labelFS:SetText((pal and pal.name) or AutoName(editPalette))
         local s = CludesUI.RD_DD_COLOURS
         btn:SetScript("OnEnter", function()
-            lbl:SetTextColor(s[21], s[22], s[23], s[24])
+            labelFS:SetTextColor(s[21], s[22], s[23], s[24])
             brd:SetColor(s[13], s[14], s[15], s[16])
-            bg:SetColorTexture(s[5], s[6], s[7], s[8])
+            backdrop:SetColorTexture(s[5], s[6], s[7], s[8])
         end)
         btn:SetScript("OnLeave", function()
-            lbl:SetTextColor(s[17], s[18], s[19], s[20])
+            labelFS:SetTextColor(s[17], s[18], s[19], s[20])
             brd:SetColor(s[9], s[10], s[11], s[12])
-            bg:SetColorTexture(s[1], s[2], s[3], s[4])
+            backdrop:SetColorTexture(s[1], s[2], s[3], s[4])
         end)
         if Cfg("enabled") ~= true then
             btn:SetAlpha(0.4)
@@ -3061,7 +3067,7 @@ initFrame:SetScript("OnEvent", function(self)
             RebuildMenuRows()
             m:Show()
         end)
-        rgn._lastInline = btn
+        region._lastInline = btn
         return btn
     end
 
@@ -3093,26 +3099,26 @@ initFrame:SetScript("OnEvent", function(self)
     -- so BUTTON1 and BUTTON2 are both reachable and unbind is still one click.
     -- The wheel stays uncapturable on purpose: a tick cannot be HELD, and hold
     -- is the palette's whole input model -- key down opens, key up fires.
-    local function BuildKeybindButton(rgn, spec)
+    local function BuildKeybindButton(region, specInfo)
         -- Nothing during the search index prebuild, as BuildMenuSelector.
         if CludesUI._prebuilding then
             return
         end
         local palette = editPalette
         local action = BINDING_PREFIX .. palette
-        local plainMouse = spec and spec.plainMouse
+        local plainMouse = specInfo and specInfo.plainMouse
         -- BuildPage's own Disabled() is a local of that function and out of
         -- scope here, the same reason BuildMenuSelector reads Cfg directly.
         -- A spec may widen the gate and name the requirement for the disabled
         -- tooltip.
-        local Disabled = (spec and spec.disabled)
+        local Disabled = (specInfo and specInfo.disabled)
             or function()
                 return Cfg("enabled") ~= true
             end
 
         -- Right-click means two different things on a plainMouse picker
         -- depending on whether it is armed, so it has to say which.
-        local tip = plainMouse
+        local tipText = plainMouse
                 and CludesUI.L(
                     "Left-click to set a keybind, then press any key or\n"
                         .. "click any mouse button to use it.\n"
@@ -3121,46 +3127,46 @@ initFrame:SetScript("OnEvent", function(self)
             or CludesUI.L("Left-click to set a keybind.\nRight-click to unbind.")
         -- The palette's own keybind row sits under a heading that already says
         -- what the key is, but a spec-driven picker has only its label.
-        if spec and spec.intro then
-            tip = CludesUI.L(spec.intro) .. "\n\n" .. tip
+        if specInfo and specInfo.intro then
+            tipText = CludesUI.L(specInfo.intro) .. "\n\n" .. tipText
         end
         -- A shared key (Assign to Spec) names the menus it is shared with.
-        if not spec then
-            local owner, names = ns.ShareOwner(palette), {}
-            if owner then
-                names[1] = MenuName(owner)
+        if not specInfo then
+            local ownerFrame, nameList = mod.ShareOwner(palette), {}
+            if ownerFrame then
+                nameList[1] = MenuName(ownerFrame)
             else
                 for _, s in ipairs(Sharers(palette)) do
-                    names[#names + 1] = MenuName(s)
+                    nameList[#nameList + 1] = MenuName(s)
                 end
             end
-            if #names > 0 then
-                tip = CludesUI.Lf("Shared with %1$s.", table.concat(names, ", ")) .. "\n\n" .. tip
+            if #nameList > 0 then
+                tipText = CludesUI.Lf("Shared with %1$s.", table.concat(nameList, ", ")) .. "\n\n" .. tipText
             end
         end
 
-        local kbBtn = CludesUI.BuildKeybindButton(rgn, {
+        local kbBtn = CludesUI.BuildKeybindButton(region, {
             w = 126,
             h = 29,
             level = 4,
             mouse = true,
             plainMouse = plainMouse,
-            tooltip = tip,
+            tooltip = tipText,
             disabled = Disabled,
-            disabledTip = (spec and spec.disabledReason) or "the module",
+            disabledTip = (specInfo and specInfo.disabledReason) or "the module",
             -- A menu sharing a key shows the key it shares.
-            get = (spec and spec.read) or function()
+            get = (specInfo and specInfo.read) or function()
                 local k1, k2 = GetBindingKey(action)
                 if k1 or k2 then
                     return k1, k2
                 end
-                local owner = ns.ShareOwner(palette)
-                if owner then
-                    return GetBindingKey(BINDING_PREFIX .. owner)
+                local ownerFrame = mod.ShareOwner(palette)
+                if ownerFrame then
+                    return GetBindingKey(BINDING_PREFIX .. ownerFrame)
                 end
                 return nil
             end,
-            set = (spec and spec.commit) or function(chord)
+            set = (specInfo and specInfo.commit) or function(chord)
                 CommitKey(palette, chord)
             end,
             canArm = function()
@@ -3171,8 +3177,8 @@ initFrame:SetScript("OnEvent", function(self)
                 return false
             end,
         })
-        CludesUI.PanelPP.Point(kbBtn, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._lastInline = kbBtn
+        CludesUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
+        region._lastInline = kbBtn
         return kbBtn
     end
 
@@ -3186,25 +3192,25 @@ initFrame:SetScript("OnEvent", function(self)
             return previewView:HitTest()
         end
 
-        local shown = previewView:ShownCount()
-        if shown < 1 then
+        local isShown = previewView:ShownCount()
+        if isShown < 1 then
             return nil
         end
 
         local mx, my = GetCursorPosition()
         local best, bestDist
-        for i = 1, shown do
-            local w = previewView:GetSlotWidget(i)
+        for i = 1, isShown do
+            local wid = previewView:GetSlotWidget(i)
             -- Not folded into an `and`: that truncates to one value and would
             -- drop cy on the floor.
             local cx, cy
-            if w:IsShown() then
-                cx, cy = w:GetCenter()
+            if wid:IsShown() then
+                cx, cy = wid:GetCenter()
             end
             if cx then
                 -- GetCenter is in the widget's own scaled space; the cursor is
                 -- in screen units, so the scale has to be applied to compare.
-                local es = w:GetEffectiveScale()
+                local es = wid:GetEffectiveScale()
                 local dx, dy = mx - cx * es, my - cy * es
                 local d = dx * dx + dy * dy
                 if not bestDist or d < bestDist then
@@ -3219,16 +3225,19 @@ initFrame:SetScript("OnEvent", function(self)
     -- whenever nothing is being dragged.
     local function PreviewDragUpdate()
         local es = previewView:GetFrame():GetEffectiveScale()
-        local x, y = GetCursorPosition()
-        x, y = x / es, y / es
+        local posX, posY = GetCursorPosition()
+        posX, posY = posX / es, posY / es
         if not dragging then
-            if math.abs(x - dragStartX) < DRAG_THRESHOLD and math.abs(y - dragStartY) < DRAG_THRESHOLD then
+            if
+                math.abs(posX - dragStartX) < DRAG_THRESHOLD
+                and math.abs(posY - dragStartY) < DRAG_THRESHOLD
+            then
                 return
             end
             dragging = true
-            local w = previewView:GetSlotWidget(dragFrom)
-            w:SetAlpha(0.4)
-            w:SetFrameLevel(previewView:GetFrame():GetFrameLevel() + 20)
+            local wid = previewView:GetSlotWidget(dragFrom)
+            wid:SetAlpha(0.4)
+            wid:SetFrameLevel(previewView:GetFrame():GetFrameLevel() + 20)
             HidePreviewTooltip()
         end
         -- The entry under the cursor. The "+" entry resolves to the
@@ -3237,16 +3246,16 @@ initFrame:SetScript("OnEvent", function(self)
         -- n can reach 0 mid-drag -- right-click removes while the left
         -- button is still held -- and min(hit, 0) is 0, which is TRUTHY
         -- in Lua and would index widget 0.
-        local n = previewView:SlotCount()
-        dragTarget = (hit and n > 0) and math.min(hit, n) or nil
+        local num = previewView:SlotCount()
+        dragTarget = (hit and num > 0) and math.min(hit, num) or nil
         previewView:SetSelection(dragTarget)
     end
 
     local function EndPreviewDrag()
         if dragFrom then
-            local w = previewView:GetSlotWidget(dragFrom)
-            w:SetAlpha(1)
-            w:SetFrameLevel(previewView:GetFrame():GetFrameLevel() + 1)
+            local wid = previewView:GetSlotWidget(dragFrom)
+            wid:SetAlpha(1)
+            wid:SetFrameLevel(previewView:GetFrame():GetFrameLevel() + 1)
         end
         dragFrom, dragging = nil, false
         if previewBlock then
@@ -3256,11 +3265,11 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function InstallPreviewScripts()
-        for i = 1, (ns.MAX_SLOTS or 12) do
-            local w = previewView:GetSlotWidget(i)
-            w:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
+        for i = 1, (mod.MAX_SLOTS or 12) do
+            local wid = previewView:GetSlotWidget(i)
+            wid:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 
-            w:SetScript("OnEnter", function(self)
+            wid:SetScript("OnEnter", function(self)
                 if dragging then
                     return
                 end
@@ -3269,7 +3278,7 @@ initFrame:SetScript("OnEvent", function(self)
                 previewView:SetSelection(self.index)
                 PreviewTooltip(self)
             end)
-            w:SetScript("OnLeave", function()
+            wid:SetScript("OnLeave", function()
                 if dragging then
                     return
                 end
@@ -3277,18 +3286,18 @@ initFrame:SetScript("OnEvent", function(self)
                 HidePreviewTooltip()
             end)
 
-            w:SetScript("OnClick", function(self, button)
-                if button == "MiddleButton" then
+            wid:SetScript("OnClick", function(self, btnFrame)
+                if btnFrame == "MiddleButton" then
                     if self.isPlaceholder then
                         return
                     end
                     local palette = Palette(editPalette)
-                    if palette and ns.RemoveSlot(palette, self.index) then
+                    if palette and mod.RemoveSlot(palette, self.index) then
                         Refresh()
                     end
                     return
                 end
-                if button == "RightButton" then
+                if btnFrame == "RightButton" then
                     -- The picker in replace mode: the pick lands on THIS slot
                     -- (AssignEntry). Nothing to change on the "+" -- its
                     -- left-click already opens the append picker.
@@ -3306,12 +3315,12 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 PreviewPlace(self)
             end)
-            w:SetScript("OnReceiveDrag", function(self)
+            wid:SetScript("OnReceiveDrag", function(self)
                 PreviewPlace(self)
             end)
 
-            w:SetScript("OnMouseDown", function(self, button)
-                if button ~= "LeftButton" or self.isPlaceholder then
+            wid:SetScript("OnMouseDown", function(self, btnFrame)
+                if btnFrame ~= "LeftButton" or self.isPlaceholder then
                     return
                 end
                 -- A loaded cursor means "place this here", not "reorder".
@@ -3319,16 +3328,16 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 local es = previewView:GetFrame():GetEffectiveScale()
-                local x, y = GetCursorPosition()
-                dragStartX, dragStartY = x / es, y / es
+                local posX, posY = GetCursorPosition()
+                dragStartX, dragStartY = posX / es, posY / es
                 dragFrom, dragTarget = self.index, nil
                 previewBlock:SetScript("OnUpdate", PreviewDragUpdate)
             end)
 
             -- OnMouseUp is delivered to the frame that got OnMouseDown even when
             -- the cursor has left it, which is what makes the drop work at all.
-            w:SetScript("OnMouseUp", function(self, button)
-                if button ~= "LeftButton" or dragFrom ~= self.index then
+            wid:SetScript("OnMouseUp", function(self, btnFrame)
+                if btnFrame ~= "LeftButton" or dragFrom ~= self.index then
                     return
                 end
                 local from, to, moved = dragFrom, dragTarget, dragging
@@ -3337,7 +3346,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 local palette = Palette(editPalette)
-                if palette and ns.MoveSlot(palette, from, to) then
+                if palette and mod.MoveSlot(palette, from, to) then
                     Refresh()
                 end
             end)
@@ -3346,13 +3355,13 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- yPos is the running page offset; returns the height consumed. The
     -- search index prebuild only takes the height: the preview lists nothing.
-    local function BuildPreview(parent, yPos)
+    local function BuildPreview(hostFrame, yPos)
         if CludesUI._prebuilding then
             return PREVIEW_H
         end
         -- PanelPP, not PP: panel-context geometry snaps to the options window's
         -- own pixel grid, which is what every other options page uses.
-        local PP = CludesUI.PanelPP
+        local Pix = CludesUI.PanelPP
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 45
 
         -- A rebuild re-fans the palette, so the entry the picker is anchored to may
@@ -3361,7 +3370,7 @@ initFrame:SetScript("OnEvent", function(self)
         HidePicker()
 
         if not previewBlock then
-            previewBlock = CreateFrame("Frame", nil, parent)
+            previewBlock = CreateFrame("Frame", nil, hostFrame)
             -- Held by this file across builds: out of its page's frame pool, so
             -- no later dress of the page hands it out for another use, and the
             -- live palette view built on it below stays as it is.
@@ -3376,11 +3385,11 @@ initFrame:SetScript("OnEvent", function(self)
             -- after unlock mode, /cqd) until something rebuilds the page.
             previewBlock._searchIgnore = true
 
-            local bg = previewBlock:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            previewBlock._bg = bg
+            local backdrop = previewBlock:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            previewBlock._bg = backdrop
 
-            previewView = ns.CreatePaletteView(previewBlock, {
+            previewView = mod.CreatePaletteView(previewBlock, {
                 interactive = true,
                 geom = PreviewGeom,
                 -- Arrangement is what this preview is for; a live cooldown swipe
@@ -3405,10 +3414,10 @@ initFrame:SetScript("OnEvent", function(self)
                 -- own scroll frame and the page keeps scrolling over the
                 -- preview. Only Shift+Scroll walks the strip.
                 if not IsShiftKeyDown() then
-                    local sf = CludesUI._scrollFrame
-                    local handler = sf and sf:GetScript("OnMouseWheel")
+                    local scrollFrame = CludesUI._scrollFrame
+                    local handler = scrollFrame and scrollFrame:GetScript("OnMouseWheel")
                     if handler then
-                        handler(sf, delta)
+                        handler(scrollFrame, delta)
                     end
                     return
                 end
@@ -3420,15 +3429,15 @@ initFrame:SetScript("OnEvent", function(self)
                 then
                     return
                 end
-                local shown = previewView.shownCount or 0
-                if shown < 2 then
+                local isShown = previewView.shownCount or 0
+                if isShown < 2 then
                     return
                 end
                 local step = (delta > 0) and -1 or 1
                 if ACfg("fanInvert") == true then
                     step = -step
                 end
-                previewView:SetFanCenter((((previewView.fanTarget or 1) - 1 + step) % shown) + 1)
+                previewView:SetFanCenter((((previewView.fanTarget or 1) - 1 + step) % isShown) + 1)
             end)
 
             local hint = CludesUI.MakeFont(previewBlock, 12, nil, 0.5, 0.5, 0.5)
@@ -3465,27 +3474,27 @@ initFrame:SetScript("OnEvent", function(self)
             previewBlock._dim = dim
         end
 
-        previewBlock:SetParent(parent)
+        previewBlock:SetParent(hostFrame)
         -- The block reads as one row of its section's alternation: tick the
         -- same per-parent counter the widget rows use and take whatever shade
         -- this position lands on. A fixed shade only matches until the row
         -- count above changes -- which is not hypothetical, it is how the
         -- icon row's removal left this block the same color as its neighbor.
         local rc = CludesUI._rowCounters
-        rc[parent] = (rc[parent] or 0) + 1
+        rc[hostFrame] = (rc[hostFrame] or 0) + 1
         previewBlock._bg:SetColorTexture(
             0,
             0,
             0,
-            (rc[parent] % 2 == 0) and CludesUI.ROW_BG_EVEN or CludesUI.ROW_BG_ODD
+            (rc[hostFrame] % 2 == 0) and CludesUI.ROW_BG_EVEN or CludesUI.ROW_BG_ODD
         )
         previewBlock:ClearAllPoints()
         -- Anchored on both sides rather than sized from parent:GetWidth(): the
         -- wrapper's own width is not resolved yet on the first build, and this
         -- block is cached, so a zero read would stick for the panel's lifetime.
-        PP.Point(previewBlock, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yPos)
-        PP.Point(previewBlock, "TOPRIGHT", parent, "TOPRIGHT", -CONTENT_PAD, yPos)
-        PP.Height(previewBlock, PREVIEW_H)
+        Pix.Point(previewBlock, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yPos)
+        Pix.Point(previewBlock, "TOPRIGHT", hostFrame, "TOPRIGHT", -CONTENT_PAD, yPos)
+        Pix.Height(previewBlock, PREVIEW_H)
         -- Re-asserted per build: an explicit frame level is absolute, and the
         -- block's own level moves when it is re-parented to a fresh wrapper.
         previewBlock._dim:SetFrameLevel(previewBlock:GetFrameLevel() + 30)
@@ -3523,15 +3532,15 @@ initFrame:SetScript("OnEvent", function(self)
     -- exactly what the source draws right now. A menu's actions, name, icon
     -- and keybind are not settings and are never touched.
     local function CopyAllMenuSettings(srcIdx, dstIdx)
-        local src = ns.PaletteProfile and ns.PaletteProfile(srcIdx)
+        local source = mod.PaletteProfile and mod.PaletteProfile(srcIdx)
         local dst = Palette(dstIdx)
-        local keys = ns.APPEARANCE_KEYS
-        if not src or not dst or not keys then
+        local keyList = mod.APPEARANCE_KEYS
+        if not source or not dst or not keyList then
             return
         end
         dst.appearance = dst.appearance or {}
-        for key in pairs(keys) do
-            local v = src[key]
+        for key in pairs(keyList) do
+            local v = source[key]
             if type(v) == "table" then
                 v = CludesUI.Lite.DeepCopy(v)
             end
@@ -3551,16 +3560,16 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildSpecPair(row, ddW)
         local palIdx = editPalette
         local ALL = CludesUI.SPEC_PICK_ALL
-        local items, roles = CludesUI.SpecPickItems({ roles = true })
+        local itemList, roles = CludesUI.SpecPickItems({ roles = true })
         local cbDD, cbRefresh
         local sharesBroken = false
         cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
             row,
             ddW,
             row:GetFrameLevel() + 2,
-            items,
+            itemList,
             function(key)
-                local specs = ns.PaletteSpecs(palIdx)
+                local specs = mod.PaletteSpecs(palIdx)
                 if key == ALL then
                     return specs == nil
                 end
@@ -3588,26 +3597,26 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local role = roles[key]
                 if key == ALL or role then
-                    local set
+                    local group
                     if role then
-                        set = {}
+                        group = {}
                         for i = 1, #role do
-                            set[role[i]] = true
+                            group[role[i]] = true
                         end
                     end
-                    pal.specs = set
+                    pal.specs = group
                     cbDD:Click() -- close, as the Resource Bars picker does
                 else
-                    local set = pal.specs or {}
+                    local group = pal.specs or {}
                     local ids = CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
                     if ids then
                         for i = 1, #ids do
-                            set[ids[i]] = val and true or nil
+                            group[ids[i]] = val and true or nil
                         end
                     else
-                        set[key] = val and true or nil
+                        group[key] = val and true or nil
                     end
-                    pal.specs = next(set) and set or nil
+                    pal.specs = next(group) and group or nil
                 end
                 local broke = CheckShares()
                 Refresh()
@@ -3640,11 +3649,11 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "the module",
             }
         )
-        local tip = CludesUI.L("Choose the specs this action menu works in.")
+        local tipText = CludesUI.L("Choose the specs this action menu works in.")
         cbDD:HookScript("OnEnter", function()
             local open = CludesUI._openDropdownMenu
             if not (open and open:IsShown()) then
-                CludesUI.ShowWidgetTooltip(cbDD, tip)
+                CludesUI.ShowWidgetTooltip(cbDD, tipText)
             end
         end)
         cbDD:HookScript("OnLeave", function()
@@ -3652,10 +3661,10 @@ initFrame:SetScript("OnEvent", function(self)
         end)
         CludesUI.RegisterWidgetRefresh(cbRefresh)
 
-        local label = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
-        label:SetText(CludesUI.L("Assign to Spec"))
-        label:SetTextColor(1, 1, 1, 0.6)
-        return label, cbDD
+        local labelText = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
+        labelText:SetText(CludesUI.L("Assign to Spec"))
+        labelText:SetTextColor(1, 1, 1, 0.6)
+        return labelText, cbDD
     end
 
     -- The row below the preview: Assign to Spec, and with another menu to copy
@@ -3665,7 +3674,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- the chosen one onto the edited menu after a confirm popup; its getValue
     -- always returns the placeholder so the dropdown stores nothing, and the
     -- registered widget refresh snaps the label back after each pick.
-    local function BuildApplyRow(parent, y, withCopy)
+    local function BuildApplyRow(hostFrame, posY, withCopy)
         local PPQ = CludesUI.PanelPP
         local curIdx = editPalette
 
@@ -3676,15 +3685,15 @@ initFrame:SetScript("OnEvent", function(self)
             return ROW_H
         end
         local contentPad = CludesUI.CONTENT_PAD or 45
-        local rowFrame = CreateFrame("Frame", nil, parent)
-        PPQ.Size(rowFrame, parent:GetWidth() - contentPad * 2, ROW_H)
-        PPQ.Point(rowFrame, "TOPLEFT", parent, "TOPLEFT", contentPad, y)
+        local rowFrame = CreateFrame("Frame", nil, hostFrame)
+        PPQ.Size(rowFrame, hostFrame:GetWidth() - contentPad * 2, ROW_H)
+        PPQ.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
 
         local DD_W, GAP, PAIR_GAP = 180, 12, 40
         local specLabel, specDD = BuildSpecPair(rowFrame, DD_W)
         local totalW = specLabel:GetStringWidth() + GAP + DD_W
 
-        local label, ddBtn
+        local labelText, ddBtn
         if withCopy then
             local ddValues = { [""] = "Choose Menu..." }
             local ddOrder = {}
@@ -3695,9 +3704,9 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
 
-            label = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
-            label:SetText(CludesUI.L("Apply All Settings From"))
-            label:SetTextColor(1, 1, 1, 0.6)
+            labelText = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
+            labelText:SetText(CludesUI.L("Apply All Settings From"))
+            labelText:SetTextColor(1, 1, 1, 0.6)
 
             ddBtn = CludesUI.BuildDropdownControl(
                 rowFrame,
@@ -3732,14 +3741,14 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.RegisterWidgetRefresh(function()
                 ddBtn._refreshLabel()
             end)
-            totalW = totalW + PAIR_GAP + label:GetStringWidth() + GAP + DD_W
+            totalW = totalW + PAIR_GAP + labelText:GetStringWidth() + GAP + DD_W
         end
 
         specLabel:SetPoint("LEFT", rowFrame, "CENTER", -totalW / 2, 0)
         specDD:SetPoint("LEFT", specLabel, "RIGHT", GAP, 0)
-        if label then
-            label:SetPoint("LEFT", specDD, "RIGHT", PAIR_GAP, 0)
-            ddBtn:SetPoint("LEFT", label, "RIGHT", GAP, 0)
+        if labelText then
+            labelText:SetPoint("LEFT", specDD, "RIGHT", PAIR_GAP, 0)
+            ddBtn:SetPoint("LEFT", labelText, "RIGHT", GAP, 0)
         end
 
         return ROW_H
@@ -3748,7 +3757,7 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  Build Page
     ---------------------------------------------------------------------------
-    local function BuildPage(pageName, parent, yOffset)
+    local function BuildPage(page, hostFrame, yOffset)
         -- The search index prebuild leaves no page behind for the watcher to
         -- keep current, so the watcher waits for the first live build.
         if not CludesUI._prebuilding then
@@ -3756,13 +3765,13 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, row, h
+        local posY = yOffset
+        local _, row, hgt
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
         end
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         -- Not `== false`: the master switch is opt-in, so an absent key counts
         -- as off. The appearance sub-settings below stay nil-means-on.
@@ -3798,13 +3807,13 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         --  GENERAL
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "GENERAL", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
+        posY = posY - hgt
 
         local addPaletteBtn
-        row, h = W:DualRow(
-            parent,
-            y,
+        row, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "toggle",
                 text = "Enable Action Wheel",
@@ -3843,17 +3852,17 @@ initFrame:SetScript("OnEvent", function(self)
             }
         )
         addPaletteBtn = row._rightRegion and row._rightRegion._control
-        y = y - h
+        posY = posY - hgt
 
         -----------------------------------------------------------------------
         --  ACTION MENU SETUP
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "ACTION MENU SETUP", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "ACTION MENU SETUP", posY)
+        posY = posY - hgt
 
-        row, h = W:DualRow(
-            parent,
-            y,
+        row, hgt = W:DualRow(
+            hostFrame,
+            posY,
             -- Two label halves: the selector and the keybind button are both
             -- bespoke controls attached below. The selector is the custom
             -- Profiles-style dropdown whose rows carry the inline rename and
@@ -3865,7 +3874,7 @@ initFrame:SetScript("OnEvent", function(self)
         )
         BuildMenuSelector(row._leftRegion)
         BuildKeybindButton(row._rightRegion)
-        y = y - h
+        posY = posY - hgt
 
         -- The Select Key, then the switch that needs it: the key is the
         -- PREREQUISITE (a latched menu nothing can answer would be a trap), so
@@ -3880,9 +3889,9 @@ initFrame:SetScript("OnEvent", function(self)
             local key = Cfg("confirmKey")
             return type(key) == "string" and key ~= ""
         end
-        row, h = W:DualRow(
-            parent,
-            y,
+        row, hgt = W:DualRow(
+            hostFrame,
+            posY,
             -- A label half, like the keybind row above: the control underneath
             -- is the same bespoke listening button, attached after the row.
             { type = "label", text = "Toggled Menu Select Action" },
@@ -3929,7 +3938,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- A bare mouse button is the point of this one. See BuildKeybindButton.
             plainMouse = true,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Its opposite, and on a row of its own: nothing else belongs beside a
         -- cancel key. Escape already backs out of any menu and stays that way;
@@ -3941,9 +3950,9 @@ initFrame:SetScript("OnEvent", function(self)
         -- is what brings this row in and out. A cancelKey bound earlier stays
         -- stored while hidden and returns with the row.
         if HasSelectKey() then
-            row, h = W:DualRow(
-                parent,
-                y,
+            row, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 { type = "label", text = "Menu Cancel Action" },
                 { type = "label", text = "" }
             )
@@ -3985,20 +3994,20 @@ initFrame:SetScript("OnEvent", function(self)
                 -- this is for.
                 plainMouse = true,
             })
-            y = y - h
+            posY = posY - hgt
         end
 
-        y = y - BuildPreview(parent, y)
+        posY = posY - BuildPreview(hostFrame, posY)
 
         -- Assign to Spec, and beside it Apply All Settings From while there is
         -- another menu to copy from.
-        y = y - BuildApplyRow(parent, y, paletteCount > 1)
+        posY = posY - BuildApplyRow(hostFrame, posY, paletteCount > 1)
 
         -----------------------------------------------------------------------
         --  LAYOUT
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "LAYOUT", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+        posY = posY - hgt
 
         -- The page keeps the two decisions every palette needs -- which
         -- layout it draws as and where it opens -- and the two sizes everyone
@@ -4037,7 +4046,7 @@ initFrame:SetScript("OnEvent", function(self)
             }
         end
 
-        row, h = W:DualRow(parent, y, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Layout",
             disabled = Disabled,
@@ -4128,7 +4137,7 @@ initFrame:SetScript("OnEvent", function(self)
                 },
             })
         end
-        y = y - h
+        posY = posY - hgt
 
         -----------------------------------------------------------------------
         --  Grid dials -- on the page only while the edited menu draws as a
@@ -4136,7 +4145,7 @@ initFrame:SetScript("OnEvent", function(self)
         --  per-menu; the cog on Layout keeps the rest of the grid's rows.
         -----------------------------------------------------------------------
         if layoutMode == "GRID" then
-            row, h = W:DualRow(parent, y, {
+            row, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Auto Columns",
                 disabled = Disabled,
@@ -4180,7 +4189,7 @@ initFrame:SetScript("OnEvent", function(self)
                     Refresh()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end
 
         -----------------------------------------------------------------------
@@ -4191,7 +4200,7 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         if layoutMode == "ARC" then
             local arcRow
-            arcRow, h = W:DualRow(parent, y, {
+            arcRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Distance from Center",
                 min = 50,
@@ -4253,7 +4262,7 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
         end
 
         -----------------------------------------------------------------------
@@ -4264,9 +4273,9 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         if layoutMode == "FAN" then
             local fanRow
-            fanRow, h = W:DualRow(
-                parent,
-                y,
+            fanRow, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 {
                     type = "dropdown",
                     text = "Fan Direction",
@@ -4358,7 +4367,7 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
         end
 
         -----------------------------------------------------------------------
@@ -4371,7 +4380,7 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         if builtWithNest then
             local nestRow
-            nestRow, h = W:DualRow(parent, y, {
+            nestRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Nest Distance",
                 disabled = Disabled,
@@ -4480,10 +4489,10 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
         end
 
-        row, h = W:DualRow(parent, y, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Icon Size",
             disabled = Disabled,
@@ -4514,15 +4523,15 @@ initFrame:SetScript("OnEvent", function(self)
                 Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -----------------------------------------------------------------------
         --  APPEARANCE
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "APPEARANCE", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "APPEARANCE", posY)
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Cooldowns",
             disabled = Disabled,
@@ -4548,7 +4557,7 @@ initFrame:SetScript("OnEvent", function(self)
                 Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Selection Color is the accent|custom|class swatch trio -- the
         -- standard dual-swatch treatment (AttachLookSwatches in
@@ -4560,7 +4569,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- A label half, not a colorpicker: the custom swatch IS the picker.
         -- The swatches are left out of the search index prebuild, whose row
         -- is a stand-in with no frame to build on.
-        row, h = W:DualRow(parent, y, { type = "label", text = "Selection Color" }, {
+        row, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Selection Color" }, {
             type = "toggle",
             text = "Show Action Text Label",
             disabled = Disabled,
@@ -4575,11 +4584,11 @@ initFrame:SetScript("OnEvent", function(self)
             end,
         })
         if not CludesUI._prebuilding then
-            local rgn = row._leftRegion
+            local region = row._leftRegion
             local PPQ = CludesUI.PanelPP
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 row:GetFrameLevel() + 3,
                 function()
                     local c = ACfg("selectColor") or {}
@@ -4594,7 +4603,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PPQ.Point(customSwatch, "RIGHT", rgn, "RIGHT", -20, 0)
+            PPQ.Point(customSwatch, "RIGHT", region, "RIGHT", -20, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self2, ...)
                 if Disabled() then
@@ -4620,7 +4629,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 row:GetFrameLevel() + 3,
                 function()
                     return CludesUI.ResolveActiveAccent()
@@ -4653,7 +4662,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- live like the accent. Its click chooses the mode; there is no
             -- picker behind it, the class decides the color.
             local classSwatch, updateClass = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 row:GetFrameLevel() + 3,
                 function()
                     local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
@@ -4683,7 +4692,7 @@ initFrame:SetScript("OnEvent", function(self)
             classSwatch:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            rgn._lastInline = classSwatch
+            region._lastInline = classSwatch
 
             local function refreshSwatches()
                 updateCustom()
@@ -4696,11 +4705,11 @@ initFrame:SetScript("OnEvent", function(self)
                 else
                     -- Exactly one of the three lit: class outranks custom,
                     -- matching the module's SelectColor resolution.
-                    local class = ACfg("useClassColor") == true
-                    local custom = not class and ACfg("selectColorCustom") == true
-                    classSwatch:SetAlpha(class and 1 or 0.3)
+                    local classFile = ACfg("useClassColor") == true
+                    local custom = not classFile and ACfg("selectColorCustom") == true
+                    classSwatch:SetAlpha(classFile and 1 or 0.3)
                     customSwatch:SetAlpha(custom and 1 or 0.3)
-                    accentSwatch:SetAlpha((class or custom) and 0.3 or 1)
+                    accentSwatch:SetAlpha((classFile or custom) and 0.3 or 1)
                 end
             end
             CludesUI.RegisterWidgetRefresh(refreshSwatches)
@@ -4709,12 +4718,12 @@ initFrame:SetScript("OnEvent", function(self)
         -- No Selection Effects cog: the zoom and both falloffs are hardcoded
         -- off in the module (FalloffRatios / SelectedZoom), pending the
         -- user's own animation pass.
-        y = y - h
+        posY = posY - hgt
 
         local wmRow
-        wmRow, h = W:DualRow(
-            parent,
-            y,
+        wmRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "toggle",
                 text = "Hide Unavailable Actions",
@@ -4752,7 +4761,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
 
         -- Inline cog on Toggle World Markers: the placed-marker pip opt-out.
         CludesUI.BuildInlineCog(wmRow._rightRegion, {
@@ -4773,10 +4782,10 @@ initFrame:SetScript("OnEvent", function(self)
             },
         })
 
-        _, h = W:Spacer(parent, y, 10)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 10)
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -4810,9 +4819,9 @@ initFrame:SetScript("OnEvent", function(self)
                     wipe(p.addons.CludesUIQuickdraw)
                 end
             end
-            local target = _G._CUQD_AceDB
-            if target and target.profile and ns.DB_DEFAULTS then
-                CludesUI.Lite.DeepMergeDefaults(target.profile, ns.DB_DEFAULTS.profile)
+            local targetUnit = _G._CUQD_AceDB
+            if targetUnit and targetUnit.profile and mod.DB_DEFAULTS then
+                CludesUI.Lite.DeepMergeDefaults(targetUnit.profile, mod.DB_DEFAULTS.profile)
             end
             if _G._CUQD_Apply then
                 _G._CUQD_Apply()

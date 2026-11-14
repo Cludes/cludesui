@@ -23,10 +23,10 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  reads ECHAT.SB_KIT (nil on the CludesUI look, so each hook there costs
 --  one nil test) and calls the helpers below.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 local CUI = _G.CludesUI
-local ECHAT = ns.ECHAT
-if not ECHAT or not CUI then
+local CHAT = mod.ECHAT
+if not CHAT or not CUI then
     return
 end
 local CFD = CUI._chatCFD
@@ -42,18 +42,18 @@ local function PNG(name)
     return { file = MEDIA .. name, w = 18, h = 18, gold = true }
 end
 -- A kit entry: the base button's fields, then the entry's own.
-local function Entry(base, t)
+local function Entry(baseValue, t)
     t = t or {}
-    if base then
-        for k, v in pairs(base) do
+    if baseValue then
+        for k, val in pairs(baseValue) do
             if t[k] == nil then
-                t[k] = v
+                t[k] = val
             end
         end
     end
     return t
 end
-ECHAT.SB_Entry = Entry -- the WoW Forever kit (CludesUIChat_Forever.lua)
+CHAT.SB_Entry = Entry -- the WoW Forever kit (CludesUIChat_Forever.lua)
 
 -- Button bases. w/h at scale 1; padT/padB = the art's transparent rows (the
 -- visible gap between icons is measured art to art).
@@ -109,7 +109,7 @@ local GEAR = { -- the Damage Meter settings gear: the whole button is the art
 }
 local GEAR_PROBE = { atlas = GEAR.idle }
 
-ECHAT.SB_KITS = {
+CHAT.SB_KITS = {
     blizzard = {
         col = { dx = 1, top = -7, bot = 10 },
         gap = 4,
@@ -117,16 +117,13 @@ ECHAT.SB_KITS = {
         voiceState = true,
         flash = "fade",
         friends = Entry(QJ),
-        guild = Entry(
-            PLATE,
-            {
-                count = "below",
-                glyph = {
-                    { atlas = "friends-icon-tab-guildmates", w = 17, h = 17 },
-                    PNG("chat_guild.png"),
-                },
-            }
-        ),
+        guild = Entry(PLATE, {
+            count = "below",
+            glyph = {
+                { atlas = "friends-icon-tab-guildmates", w = 17, h = 17 },
+                PNG("chat_guild.png"),
+            },
+        }),
         durability = Entry(PLATE, { count = "below", alert = true, glyph = { PNG("chat_durability.png") } }),
         copy = Entry(PLATE, { glyph = { PNG("chat_copy.png") } }),
         portals = Entry(PLATE, { glyph = { PNG("chat_portal.png") } }),
@@ -167,35 +164,29 @@ ECHAT.SB_KITS = {
         friends = Entry(QJ),
         guild = Entry(BEVEL, { count = "below", glyph = { PNG("chat_guild.png") } }),
         durability = Entry(BEVEL, { count = "below", alert = true, glyph = { PNG("chat_durability.png") } }),
-        copy = Entry(
-            BEVEL,
-            {
-                glyph = {
-                    {
-                        file = "Interface\\Buttons\\UI-GuildButton-PublicNote-Up",
-                        probe = true,
-                        tc = { 0.125, 0.875, 0.0625, 0.9375 },
-                        w = 12,
-                        h = 14,
-                    },
-                    PNG("chat_copy.png"),
+        copy = Entry(BEVEL, {
+            glyph = {
+                {
+                    file = "Interface\\Buttons\\UI-GuildButton-PublicNote-Up",
+                    probe = true,
+                    tc = { 0.125, 0.875, 0.0625, 0.9375 },
+                    w = 12,
+                    h = 14,
                 },
-            }
-        ),
+                PNG("chat_copy.png"),
+            },
+        }),
         portals = Entry(BEVEL, { glyph = { PNG("chat_portal.png") } }),
-        voice = Entry(
-            BEVEL,
-            {
-                glyph = {
-                    {
-                        file = "Interface\\Common\\VoiceChat-Speaker",
-                        tc = { 0, 0.59375, 0.15625, 0.90625 },
-                        w = 11,
-                        h = 14,
-                    },
+        voice = Entry(BEVEL, {
+            glyph = {
+                {
+                    file = "Interface\\Common\\VoiceChat-Speaker",
+                    tc = { 0, 0.59375, 0.15625, 0.90625 },
+                    w = 11,
+                    h = 14,
                 },
-            }
-        ),
+            },
+        }),
         chatmenu = Entry(BUBBLE),
         -- The bubble is the chat menu's: while Chat Menu is built, our cog on
         -- the bevel instead.
@@ -225,14 +216,14 @@ ECHAT.SB_KITS = {
         },
     },
 }
-ECHAT.SB_KITS.classic.scroll.chat = Entry(ECHAT.SB_KITS.classic.scroll.sidebar, { w = 24, h = 24 })
+CHAT.SB_KITS.classic.scroll.chat = Entry(CHAT.SB_KITS.classic.scroll.sidebar, { w = 24, h = 24 })
 
 -- Worst equipment alert -> durability glyph tint: the kits' gold while all is
 -- fine (full opacity, so it never reads as disabled), then orange (damaged)
 -- and red (broken); Blizzard's damaged yellow is nearly the gold. An entry's
 -- own alertColors would override it.
-ECHAT.SB_ALERT = { [0] = { GOLD_R, GOLD_G, GOLD_B, 1 }, { 1, 0.5, 0.1, 1 }, { 0.93, 0.07, 0.07, 1 } }
-ECHAT.SB_REF = {
+CHAT.SB_ALERT = { [0] = { GOLD_R, GOLD_G, GOLD_B, 1 }, { 1, 0.5, 0.1, 1 }, { 0.93, 0.07, 0.07, 1 } }
+CHAT.SB_REF = {
     friends = "friendsBtn",
     guild = "guildBtn",
     durability = "durabilityBtn",
@@ -242,26 +233,26 @@ ECHAT.SB_REF = {
     chatmenu = "chatMenuBtn",
     settings = "settingsBtn",
 }
-ECHAT._sbBdMemo = {}
+CHAT._sbBdMemo = {}
 
 -- The stock kit for this session (the style is latched before the sidebar
 -- is built). The two hot hooks the main file tests stay nil on the
 -- CludesUI look.
-function ECHAT.SB_Latch()
-    local key = ns.ChatStock and ns.ChatStock() and ns.ChatStyle()
+function CHAT.SB_Latch()
+    local key = mod.ChatStock and mod.ChatStock() and mod.ChatStyle()
     -- WoW Forever: the kit's bronze square buttons.
-    if key and ns.ChatForever() and ECHAT.SB_KITS.forever then
+    if key and mod.ChatForever() and CHAT.SB_KITS.forever then
         key = "forever"
     end
-    local kit = key and ECHAT.SB_KITS[key] or nil
-    ECHAT.SB_KIT = kit
-    ECHAT.SB_SyncBackdrop = (kit and kit.backdrop) and ECHAT._SB_SyncBackdropImpl or nil
-    ECHAT.SB_FlashSync = kit and ECHAT._SB_FlashSyncImpl or nil
+    local kit = key and CHAT.SB_KITS[key] or nil
+    CHAT.SB_KIT = kit
+    CHAT.SB_SyncBackdrop = (kit and kit.backdrop) and CHAT._SB_SyncBackdropImpl or nil
+    CHAT.SB_FlashSync = kit and CHAT._SB_FlashSyncImpl or nil
 end
 
 -- Art present in this client (memoised on our own data table, once per
 -- session): atlases through GetAtlasInfo, probed files through their id.
-function ECHAT.SB_ArtOK(e)
+function CHAT.SB_ArtOK(e)
     if not e then
         return false
     end
@@ -279,7 +270,7 @@ function ECHAT.SB_ArtOK(e)
     return e._ok
 end
 local function Pick(e)
-    while e and not ECHAT.SB_ArtOK(e) do
+    while e and not CHAT.SB_ArtOK(e) do
         e = e.alt
     end
     return e
@@ -313,26 +304,26 @@ end
 
 -- Default sidebar width: Blizzard's 29px column (30 = the slider minimum),
 -- or the kit's own column, following Icon Size; 40 on the CludesUI look.
-function ECHAT.SidebarWidthDefault()
-    if not ECHAT.SB_KIT then
+function CHAT.SidebarWidthDefault()
+    if not CHAT.SB_KIT then
         return 40
     end
-    return math.max(30, math.floor((ECHAT.SB_KIT.colW or 29) * (ECHAT.DB().sidebarIconScale or 1) + 0.5))
+    return math.max(30, math.floor((CHAT.SB_KIT.colW or 29) * (CHAT.DB().sidebarIconScale or 1) + 0.5))
 end
 
 -- The sidebar on the kit's column seat: Blizzard's ButtonFrame rect (its
 -- right edge 1px inside our panel, which sits 4px outside the chat
 -- background), mirrored for Show Sidebar on Right; Separate Sidebar adds its
 -- gap.
-function ECHAT.SB_Place(sb, bg, cfg)
-    local c = ECHAT.SB_KIT.col
-    local gap = (cfg.sidebarSeparate == true) and (cfg.sidebarSeparateSpacing or 8) or 0
-    if cfg.sidebarRight then
-        sb:SetPoint("TOPLEFT", bg, "TOPRIGHT", -c.dx + gap, c.top)
-        sb:SetPoint("BOTTOMLEFT", bg, "BOTTOMRIGHT", -c.dx + gap, c.bot)
+function CHAT.SB_Place(scrollBar, bg, conf)
+    local c = CHAT.SB_KIT.col
+    local gap = (conf.sidebarSeparate == true) and (conf.sidebarSeparateSpacing or 8) or 0
+    if conf.sidebarRight then
+        scrollBar:SetPoint("TOPLEFT", bg, "TOPRIGHT", -c.dx + gap, c.top)
+        scrollBar:SetPoint("BOTTOMLEFT", bg, "BOTTOMRIGHT", -c.dx + gap, c.bot)
     else
-        sb:SetPoint("TOPRIGHT", bg, "TOPLEFT", c.dx - gap, c.top)
-        sb:SetPoint("BOTTOMRIGHT", bg, "BOTTOMLEFT", c.dx - gap, c.bot)
+        scrollBar:SetPoint("TOPRIGHT", bg, "TOPLEFT", c.dx - gap, c.top)
+        scrollBar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMLEFT", c.dx - gap, c.bot)
     end
 end
 
@@ -340,19 +331,19 @@ end
 -- FloatingBorderedFrame template Blizzard hangs on its ButtonFrame) on a
 -- child of our sidebar, under the buttons, in the window colour.
 local BD = "Interface\\ChatFrame\\"
-function ECHAT.SB_BuildBackdrop(sidebar, d)
-    local bd = CreateFrame("Frame", nil, sidebar)
-    bd:SetAllPoints()
-    bd:SetFrameLevel(sidebar:GetFrameLevel())
-    bd:EnableMouse(false)
-    local fill = bd:CreateTexture(nil, "BACKGROUND")
-    fill:SetPoint("TOPLEFT", sidebar, "TOPLEFT", -2, 3)
-    fill:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", 2, -6)
-    local function Corner(point, x, y, l, r, t, b)
-        local c = bd:CreateTexture(nil, "BORDER")
+function CHAT.SB_BuildBackdrop(sidebar, d)
+    local edge = CreateFrame("Frame", nil, sidebar)
+    edge:SetAllPoints()
+    edge:SetFrameLevel(sidebar:GetFrameLevel())
+    edge:EnableMouse(false)
+    local fillTex = edge:CreateTexture(nil, "BACKGROUND")
+    fillTex:SetPoint("TOPLEFT", sidebar, "TOPLEFT", -2, 3)
+    fillTex:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", 2, -6)
+    local function Corner(anchorPoint, posX, posY, l, r, t, b)
+        local c = edge:CreateTexture(nil, "BORDER")
         c:SetTexture(BD .. "UI-ChatFrame-BorderCorner")
         c:SetSize(8, 8)
-        c:SetPoint(point, fill, point, x, y)
+        c:SetPoint(anchorPoint, fillTex, anchorPoint, posX, posY)
         c:SetTexCoord(l, r, t, b)
         return c
     end
@@ -360,46 +351,46 @@ function ECHAT.SB_BuildBackdrop(sidebar, d)
     local bl = Corner("BOTTOMLEFT", -4, -4, 0, 1, 1, 0)
     local tr = Corner("TOPRIGHT", 4, 4, 1, 0, 0, 1)
     local br = Corner("BOTTOMRIGHT", 4, -4, 1, 0, 1, 0)
-    local left = bd:CreateTexture(nil, "BORDER")
-    left:SetTexture(BD .. "UI-ChatFrame-BorderLeft", nil, "REPEAT")
-    left:SetVertTile(true)
-    left:SetWidth(16)
-    left:SetPoint("TOPLEFT", tl, "BOTTOMLEFT")
-    left:SetPoint("BOTTOMLEFT", bl, "TOPLEFT")
-    local right = bd:CreateTexture(nil, "BORDER")
+    local leftX = edge:CreateTexture(nil, "BORDER")
+    leftX:SetTexture(BD .. "UI-ChatFrame-BorderLeft", nil, "REPEAT")
+    leftX:SetVertTile(true)
+    leftX:SetWidth(16)
+    leftX:SetPoint("TOPLEFT", tl, "BOTTOMLEFT")
+    leftX:SetPoint("BOTTOMLEFT", bl, "TOPLEFT")
+    local right = edge:CreateTexture(nil, "BORDER")
     right:SetTexture(BD .. "UI-ChatFrame-BorderLeft", nil, "REPEAT")
     right:SetVertTile(true)
     right:SetWidth(16)
     right:SetTexCoord(1, 0, 0, 1)
     right:SetPoint("TOPRIGHT", tr, "BOTTOMRIGHT")
     right:SetPoint("BOTTOMRIGHT", br, "TOPRIGHT")
-    local bottom = bd:CreateTexture(nil, "BORDER")
+    local bottom = edge:CreateTexture(nil, "BORDER")
     bottom:SetTexture(BD .. "UI-ChatFrame-BorderTop", "REPEAT")
     bottom:SetHorizTile(true)
     bottom:SetHeight(16)
     bottom:SetTexCoord(0, 1, 1, 0)
     bottom:SetPoint("BOTTOMLEFT", bl, "BOTTOMRIGHT")
     bottom:SetPoint("BOTTOMRIGHT", br, "BOTTOMLEFT")
-    local top = bd:CreateTexture(nil, "BORDER")
-    top:SetTexture(BD .. "UI-ChatFrame-BorderTop", "REPEAT")
-    top:SetHorizTile(true)
-    top:SetHeight(16)
-    top:SetPoint("TOPLEFT", tl, "TOPRIGHT")
-    top:SetPoint("TOPRIGHT", tr, "TOPLEFT")
-    d.sbBackdrop, d.sbFill = bd, fill
-    d.sbRims = { tl, bl, tr, br, left, right, bottom, top }
-    if ECHAT.SB_SyncBackdrop then
-        ECHAT.SB_SyncBackdrop(true)
+    local topY = edge:CreateTexture(nil, "BORDER")
+    topY:SetTexture(BD .. "UI-ChatFrame-BorderTop", "REPEAT")
+    topY:SetHorizTile(true)
+    topY:SetHeight(16)
+    topY:SetPoint("TOPLEFT", tl, "TOPRIGHT")
+    topY:SetPoint("TOPRIGHT", tr, "TOPLEFT")
+    d.sbBackdrop, d.sbFill = edge, fillTex
+    d.sbRims = { tl, bl, tr, br, leftX, right, bottom, topY }
+    if CHAT.SB_SyncBackdrop then
+        CHAT.SB_SyncBackdrop(true)
     end
 end
 
 -- The backdrop in the SELECTED window's stored colour and opacity (what
 -- Blizzard paints its own column in); memoised, a secret read skips.
-function ECHAT._SB_SyncBackdropImpl(force)
+function CHAT._SB_SyncBackdropImpl(force)
     local cf1 = _G.ChatFrame1
     local d = cf1 and CFD(cf1)
-    local fill = d and d.sbFill
-    if not fill then
+    local fillTex = d and d.sbFill
+    if not fillTex then
         return
     end
     -- Hidden (Hide Sidebar Background): nothing to paint; showing it again
@@ -407,39 +398,39 @@ function ECHAT._SB_SyncBackdropImpl(force)
     if not force and not d.sbBackdrop:IsShown() then
         return
     end
-    local id = 1
+    local ident = 1
     local sel = GENERAL_CHAT_DOCK
         and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
     local cc = Constants and Constants.ChatFrameConstants
-    local sid = sel and sel.GetID and sel:GetID()
-    if sid and sid >= 1 and sid <= ((cc and cc.MaxChatWindows) or 10) then
-        id = sid
+    local spellRef = sel and sel.GetID and sel:GetID()
+    if spellRef and spellRef >= 1 and spellRef <= ((cc and cc.MaxChatWindows) or 10) then
+        ident = spellRef
     end
     if not GetChatWindowInfo then
         return
     end
-    local _, _, r, g, b, a = GetChatWindowInfo(id)
+    local _, _, r, g, b, a = GetChatWindowInfo(ident)
     if type(a) ~= "number" or (issecretvalue and (issecretvalue(r) or issecretvalue(a))) then
         return
     end
-    local m = ECHAT._sbBdMemo
+    local m = CHAT._sbBdMemo
     if not force and m[1] == r and m[2] == g and m[3] == b and m[4] == a then
         return
     end
     m[1], m[2], m[3], m[4] = r, g, b, a
-    fill:SetColorTexture(r, g, b, a)
+    fillTex:SetColorTexture(r, g, b, a)
     local rims = d.sbRims
-    for i = 1, #rims do
-        rims[i]:SetVertexColor(r, g, b, a)
+    for idx = 1, #rims do
+        rims[idx]:SetVertexColor(r, g, b, a)
     end
 end
 
 -- Pressed glyph: Blizzard's (-1,-2) at 0.75 (vanilla -Down art moves the
 -- glyph the same way). Shared functions on our buttons, no closures.
 -- _sbGYs = a kit glyph's own lift at the current Icon Size (nil = centred).
-function ECHAT.SB_GlyphDown(self, button)
-    if button and button ~= "LeftButton" then
+function CHAT.SB_GlyphDown(self, btnFrame)
+    if btnFrame and btnFrame ~= "LeftButton" then
         return
     end
     local ic = self._icon
@@ -452,7 +443,7 @@ function ECHAT.SB_GlyphDown(self, button)
 end
 -- Also on OnHide (a press can end off the button): only a pressed glyph has
 -- anything to put back.
-function ECHAT.SB_GlyphUp(self)
+function CHAT.SB_GlyphUp(self)
     if not self._sbPushed then
         return
     end
@@ -466,7 +457,7 @@ function ECHAT.SB_GlyphUp(self)
 end
 -- The gear's states follow Blizzard's own order (pressed-hover, hover,
 -- pressed, idle).
-function ECHAT.SB_GearPaint(self)
+function CHAT.SB_GearPaint(self)
     local ic = self._icon
     if not ic then
         return
@@ -480,37 +471,37 @@ function ECHAT.SB_GearPaint(self)
         ic:SetAtlas(a)
     end
 end
-function ECHAT.SB_GearEnter(self)
+function CHAT.SB_GearEnter(self)
     self._sbOver = true
-    ECHAT.SB_GearPaint(self)
+    CHAT.SB_GearPaint(self)
 end
-function ECHAT.SB_GearLeave(self)
+function CHAT.SB_GearLeave(self)
     self._sbOver = nil
-    ECHAT.SB_GearPaint(self)
+    CHAT.SB_GearPaint(self)
 end
-function ECHAT.SB_GearDown(self, button)
-    if button and button ~= "LeftButton" then
+function CHAT.SB_GearDown(self, btnFrame)
+    if btnFrame and btnFrame ~= "LeftButton" then
         return
     end
     self._sbDown = true
-    ECHAT.SB_GearPaint(self)
+    CHAT.SB_GearPaint(self)
 end
-function ECHAT.SB_GearUp(self)
+function CHAT.SB_GearUp(self)
     self._sbDown = nil
-    ECHAT.SB_GearPaint(self)
+    CHAT.SB_GearPaint(self)
 end
 
 -- Dress one of our sidebar buttons with the kit's entry for `key`.
-function ECHAT.SB_Dress(btn, key)
-    local kit = ECHAT.SB_KIT
+function CHAT.SB_Dress(btn, key)
+    local kit = CHAT.SB_KIT
     local e = kit and kit[key]
     if not e then
         return
     end
-    if e.withChatMenu and ECHAT.SB_ChatMenuOn then
+    if e.withChatMenu and CHAT.SB_ChatMenuOn then
         e = e.withChatMenu
     end
-    if e.gear and not ECHAT.SB_ArtOK(GEAR_PROBE) then
+    if e.gear and not CHAT.SB_ArtOK(GEAR_PROBE) then
         e = e.alt
     end
     btn._sbEntry = e
@@ -523,12 +514,12 @@ function ECHAT.SB_Dress(btn, key)
         icon:SetAllPoints(btn)
         icon:SetDesaturated(false)
         icon:SetVertexColor(1, 1, 1, 1)
-        ECHAT.SB_GearPaint(btn)
-        btn:HookScript("OnEnter", ECHAT.SB_GearEnter)
-        btn:HookScript("OnLeave", ECHAT.SB_GearLeave)
-        btn:HookScript("OnMouseDown", ECHAT.SB_GearDown)
-        btn:HookScript("OnMouseUp", ECHAT.SB_GearUp)
-        btn:HookScript("OnHide", ECHAT.SB_GearUp)
+        CHAT.SB_GearPaint(btn)
+        btn:HookScript("OnEnter", CHAT.SB_GearEnter)
+        btn:HookScript("OnLeave", CHAT.SB_GearLeave)
+        btn:HookScript("OnMouseDown", CHAT.SB_GearDown)
+        btn:HookScript("OnMouseUp", CHAT.SB_GearUp)
+        btn:HookScript("OnHide", CHAT.SB_GearUp)
         return
     end
     SetStateArt(btn, "Normal", Pick(e.n))
@@ -536,7 +527,7 @@ function ECHAT.SB_Dress(btn, key)
     SetStateArt(btn, "Highlight", Pick(e.hl), e.hlBlend)
     -- WoW Forever: the kit's bronze plate under the glyph (our frames).
     if e.plate then
-        ECHAT.FV_Plate(btn, true)
+        CHAT.FV_Plate(btn, true)
     end
     if e.inset then
         local t = btn:CreateTexture(nil, "BACKGROUND")
@@ -545,9 +536,9 @@ function ECHAT.SB_Dress(btn, key)
     end
     local g
     if e.glyph then
-        for i = 1, #e.glyph do
-            if ECHAT.SB_ArtOK(e.glyph[i]) then
-                g = e.glyph[i]
+        for idx = 1, #e.glyph do
+            if CHAT.SB_ArtOK(e.glyph[idx]) then
+                g = e.glyph[idx]
                 break
             end
         end
@@ -584,9 +575,9 @@ function ECHAT.SB_Dress(btn, key)
         icon:Show()
         if e.push then
             btn._sbGlyph = true
-            btn:HookScript("OnMouseDown", ECHAT.SB_GlyphDown)
-            btn:HookScript("OnMouseUp", ECHAT.SB_GlyphUp)
-            btn:HookScript("OnHide", ECHAT.SB_GlyphUp)
+            btn:HookScript("OnMouseDown", CHAT.SB_GlyphDown)
+            btn:HookScript("OnMouseUp", CHAT.SB_GlyphUp)
+            btn:HookScript("OnHide", CHAT.SB_GlyphUp)
         end
     else
         icon:Hide()
@@ -596,8 +587,8 @@ end
 -- Scroll-to-bottom button: the art the stock UI shows in that seat, plus the
 -- scrolled-back flash (a copy of the art, ADD, animated only while the
 -- selected window is scrolled back). Re-run on every seat change.
-function ECHAT.SB_DressScroll(btn, seat)
-    local kit = ECHAT.SB_KIT
+function CHAT.SB_DressScroll(btn, seat)
+    local kit = CHAT.SB_KIT
     local e = kit and kit.scroll and kit.scroll[seat]
     if not e then
         return
@@ -613,7 +604,7 @@ function ECHAT.SB_DressScroll(btn, seat)
     -- (re-run on every seat change; the chat seat wears plain art, which a
     -- move back to the plate clears).
     if e.plate or btn._fvPlate then
-        ECHAT.FV_Plate(btn, e.plate == true)
+        CHAT.FV_Plate(btn, e.plate == true)
     end
     if e.plate and btn.ClearNormalTexture then
         btn:ClearNormalTexture()
@@ -621,7 +612,7 @@ function ECHAT.SB_DressScroll(btn, seat)
         btn:ClearHighlightTexture()
     end
     local g = e.glyph and e.glyph[1]
-    if g and btn._icon and ECHAT.SB_ArtOK(g) then
+    if g and btn._icon and CHAT.SB_ArtOK(g) then
         local ic, tint = btn._icon, g.tint or kit.tint
         ic:SetDrawLayer("OVERLAY")
         ic:ClearAllPoints()
@@ -646,12 +637,12 @@ function ECHAT.SB_DressScroll(btn, seat)
         fl:Hide()
         local ag = fl:CreateAnimationGroup()
         ag:SetLooping("REPEAT")
-        local function Step(order, from, to, dur)
+        local function Step(sequence, from, to, dur)
             local a = ag:CreateAnimation("Alpha")
             a:SetFromAlpha(from)
             a:SetToAlpha(to)
             a:SetDuration(dur)
-            a:SetOrder(order)
+            a:SetOrder(sequence)
         end
         if kit.flash == "blink" then
             -- Vanilla: hard on for half a second, off for half a second.
@@ -689,28 +680,28 @@ end
 -- button, which sits above the Blizzard Style backdrop (a region of the
 -- sidebar itself would share the backdrop's frame level and can draw under
 -- its fill).
-function ECHAT.SB_MakeCount(btn, sidebar, key)
+function CHAT.SB_MakeCount(btn, sidebar, key)
     local e = btn._sbEntry
     local inside = e and e.count == "inside"
-    local fs = btn:CreateFontString(nil, "OVERLAY")
-    CUI.PrimeFontShadow(fs, true)
-    fs:SetFont(ECHAT.GetFont(), 10, "")
+    local fontStr = btn:CreateFontString(nil, "OVERLAY")
+    CUI.PrimeFontShadow(fontStr, true)
+    fontStr:SetFont(CHAT.GetFont(), 10, "")
     -- A kit count colour (WoW Forever's tan), else white.
-    local cc = ECHAT.SB_KIT and ECHAT.SB_KIT.countColor
+    local cc = CHAT.SB_KIT and CHAT.SB_KIT.countColor
     if cc then
-        fs:SetTextColor(cc[1], cc[2], cc[3], 1)
+        fontStr:SetTextColor(cc[1], cc[2], cc[3], 1)
     else
-        fs:SetTextColor(1, 1, 1, 1)
+        fontStr:SetTextColor(1, 1, 1, 1)
     end
     if inside then
-        fs:SetPoint("BOTTOM", btn, "BOTTOM", 0, (ECHAT.SB_KIT and ECHAT.SB_KIT.countY) or 4)
+        fontStr:SetPoint("BOTTOM", btn, "BOTTOM", 0, (CHAT.SB_KIT and CHAT.SB_KIT.countY) or 4)
     else
         -- Right under the VISIBLE art: the button's transparent bottom rows
         -- come off (re-anchored with Icon Size in SB_ApplyScale).
-        fs:SetPoint("TOP", btn, "BOTTOM", 0, (e and e.padB) or 0)
+        fontStr:SetPoint("TOP", btn, "BOTTOM", 0, (e and e.padB) or 0)
     end
-    fs._sbInside = inside or nil
-    return fs
+    fontStr._sbInside = inside or nil
+    return fontStr
 end
 
 -- Sizes, pads and free-move heights from the kit and Icon Size (constants,
@@ -718,16 +709,16 @@ end
 -- re-runs the chain (through the width pass when the width follows Icon Size).
 local COUNT_REF = { "friendsCount", "guildCount", "durabilityPct" }
 local COUNT_OWNER = { friendsCount = "friendsBtn", guildCount = "guildBtn", durabilityPct = "durabilityBtn" }
-function ECHAT.SB_ApplyScale(d, s, force)
+function CHAT.SB_ApplyScale(d, s, force)
     -- Memo inputs: the scale and the count font (a profile swap can change
     -- the font alone).
-    local font = ECHAT.GetFont()
+    local font = CHAT.GetFont()
     local rescaled = d._sbScale ~= s
     if not force and not rescaled and d._sbFont == font then
         return
     end
     d._sbScale, d._sbFont = s, font
-    for _, ref in pairs(ECHAT.SB_REF) do
+    for _, ref in pairs(CHAT.SB_REF) do
         local btn = d[ref]
         local e = btn and btn._sbEntry
         if e then
@@ -755,25 +746,25 @@ function ECHAT.SB_ApplyScale(d, s, force)
         end
     end
     local fsz = math.max(7, 10 * s)
-    for i = 1, #COUNT_REF do
-        local fs = d[COUNT_REF[i]]
-        if fs then
-            CUI.PrimeFontShadow(fs, true)
-            fs:SetFont(font, fsz, "")
-            fs._freeMoveH = fsz
-            local owner = d[COUNT_OWNER[COUNT_REF[i]]]
-            if owner then
-                fs:ClearAllPoints()
-                if fs._sbInside then
-                    fs:SetPoint(
+    for idx = 1, #COUNT_REF do
+        local fontStr = d[COUNT_REF[idx]]
+        if fontStr then
+            CUI.PrimeFontShadow(fontStr, true)
+            fontStr:SetFont(font, fsz, "")
+            fontStr._freeMoveH = fsz
+            local ownerFrame = d[COUNT_OWNER[COUNT_REF[idx]]]
+            if ownerFrame then
+                fontStr:ClearAllPoints()
+                if fontStr._sbInside then
+                    fontStr:SetPoint(
                         "BOTTOM",
-                        owner,
+                        ownerFrame,
                         "BOTTOM",
                         0,
-                        ((ECHAT.SB_KIT and ECHAT.SB_KIT.countY) or 4) * s
+                        ((CHAT.SB_KIT and CHAT.SB_KIT.countY) or 4) * s
                     )
                 else
-                    fs:SetPoint("TOP", owner, "BOTTOM", 0, owner._sbPadB or 0)
+                    fontStr:SetPoint("TOP", ownerFrame, "BOTTOM", 0, ownerFrame._sbPadB or 0)
                 end
             end
         end
@@ -793,22 +784,22 @@ function ECHAT.SB_ApplyScale(d, s, force)
     if force or not rescaled then
         return
     end
-    if ECHAT.DB().sidebarWidth == nil and ECHAT.ApplySidebarWidth then
-        ECHAT.ApplySidebarWidth()
-    elseif ECHAT.ApplySidebarIcons then
-        ECHAT.ApplySidebarIcons()
+    if CHAT.DB().sidebarWidth == nil and CHAT.ApplySidebarWidth then
+        CHAT.ApplySidebarWidth()
+    elseif CHAT.ApplySidebarIcons then
+        CHAT.ApplySidebarIcons()
     end
 end
 
 -- Durability doll tint from the worst equipment alert (0 fine, 1 damaged,
 -- 2 broken); paints on change only.
-function ECHAT.SB_DurabilityAlert(btn)
+function CHAT.SB_DurabilityAlert(btn)
     if not (btn and btn._icon and GetInventoryAlertStatus) then
         return
     end
     local worst = 0
-    for i = 1, 11 do
-        local st = GetInventoryAlertStatus(i)
+    for idx = 1, 11 do
+        local st = GetInventoryAlertStatus(idx)
         if type(st) == "number" and not (issecretvalue and issecretvalue(st)) and st > worst then
             worst = st
         end
@@ -821,41 +812,41 @@ function ECHAT.SB_DurabilityAlert(btn)
     end
     btn._sbAlert = worst
     local e = btn._sbEntry
-    local c = ((e and e.alertColors) or ECHAT.SB_ALERT)[worst]
+    local c = ((e and e.alertColors) or CHAT.SB_ALERT)[worst]
     btn._icon:SetVertexColor(c[1], c[2], c[3], c[4])
 end
 
 -- Blizzard Style voice button: the headset while a voice channel is active,
 -- the voice-chat icon otherwise (Blizzard's own two events).
-function ECHAT.SB_PaintVoice()
-    local btn = ECHAT._sbVoiceBtn
+function CHAT.SB_PaintVoice()
+    local btn = CHAT._sbVoiceBtn
     if not (btn and btn._icon and btn._sbGW) then
         return
     end
-    local on = C_VoiceChat and C_VoiceChat.GetActiveChannelID and C_VoiceChat.GetActiveChannelID() ~= nil
+    local enabled = C_VoiceChat and C_VoiceChat.GetActiveChannelID and C_VoiceChat.GetActiveChannelID() ~= nil
         or false
-    if btn._sbVoiceOn == on then
+    if btn._sbVoiceOn == enabled then
         return
     end
-    btn._sbVoiceOn = on
-    btn._icon:SetAtlas(on and "chatframe-button-icon-headset" or "chatframe-button-icon-voicechat")
+    btn._sbVoiceOn = enabled
+    btn._icon:SetAtlas(enabled and "chatframe-button-icon-headset" or "chatframe-button-icon-voicechat")
 end
-function ECHAT.SB_WatchVoice(btn)
-    ECHAT._sbVoiceBtn = btn
-    if not ECHAT._sbVoiceEvents then
+function CHAT.SB_WatchVoice(btn)
+    CHAT._sbVoiceBtn = btn
+    if not CHAT._sbVoiceEvents then
         local f = CreateFrame("Frame")
         f:RegisterEvent("VOICE_CHAT_CHANNEL_ACTIVATED")
         f:RegisterEvent("VOICE_CHAT_CHANNEL_DEACTIVATED")
-        f:SetScript("OnEvent", ECHAT.SB_PaintVoice)
-        ECHAT._sbVoiceEvents = f
+        f:SetScript("OnEvent", CHAT.SB_PaintVoice)
+        CHAT._sbVoiceEvents = f
     end
-    ECHAT.SB_PaintVoice()
+    CHAT.SB_PaintVoice()
 end
 
 -- The scroll button flashes while the selected window is scrolled back:
 -- started and stopped on the engine's own scrollbar edges and on a selection
 -- change, the animation itself runs in C.
-function ECHAT._SB_FlashSyncImpl()
+function CHAT._SB_FlashSyncImpl()
     local cf1 = _G.ChatFrame1
     local d = cf1 and CFD(cf1)
     local btn = d and d.scrollBtn
@@ -868,12 +859,12 @@ function ECHAT._SB_FlashSyncImpl()
         and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
     ) or cf1
-    local on = (ECHAT.EngineIsScrolled and ECHAT.EngineIsScrolled(sel)) and true or false
-    if btn._sbFlashing == on then
+    local enabled = (CHAT.EngineIsScrolled and CHAT.EngineIsScrolled(sel)) and true or false
+    if btn._sbFlashing == enabled then
         return
     end
-    btn._sbFlashing = on
-    if on then
+    btn._sbFlashing = enabled
+    if enabled then
         fl:Show()
         ag:Play()
     else

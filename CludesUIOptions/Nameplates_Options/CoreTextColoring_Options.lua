@@ -9,33 +9,33 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Positions section; returns y. Shared helpers come from ns._NPO_OptEnv, the
 --  text slots from ns.NPO_TEXT_SLOTS and ns.NPO_TextSlotShown.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUINameplates"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUINameplates"]
+if not mod then
     return
 end -- module disabled: no options page
 
-local function BuildCoreTextColoring(parent, y, W)
-    local env = ns._NPO_OptEnv
-    local DB, DBVal, defaults = env.DB, env.DBVal, env.defaults
-    local PP, UpdatePreview, RefreshAllPlates = env.PP, env.UpdatePreview, env.RefreshAllPlates
+local function BuildCoreTextColoring(hostFrame, posY, Widgets)
+    local environ = mod._NPO_OptEnv
+    local SavedDB, DBVal, defaultSet = environ.DB, environ.DBVal, environ.defaults
+    local Pix, UpdatePreview, RefreshAllPlates = environ.PP, environ.UpdatePreview, environ.RefreshAllPlates
 
     -- The assigned texts in position order. While none is assigned the section
     -- is not built at all (no header, no spacer).
-    local shown = {}
-    local slots = ns.NPO_TEXT_SLOTS
-    for i = 1, #slots do
-        if ns.NPO_TextSlotShown(slots[i].key) then
-            shown[#shown + 1] = slots[i]
+    local isShown = {}
+    local slots = mod.NPO_TEXT_SLOTS
+    for idx = 1, #slots do
+        if mod.NPO_TextSlotShown(slots[idx].key) then
+            isShown[#isShown + 1] = slots[idx]
         end
     end
-    if #shown == 0 then
-        return y
+    if #isShown == 0 then
+        return posY
     end
 
-    local _, h = W:SectionHeader(parent, "CORE TEXT COLORING", y)
-    y = y - h
+    local _, hgt = Widgets:SectionHeader(hostFrame, "CORE TEXT COLORING", posY)
+    posY = posY - hgt
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     -- Text Coloring halves: one per assigned text, in their own section. The
     -- dropdown picks the slot's colour mode; ns.NP_SlotColorMode reads the saved
@@ -48,36 +48,36 @@ local function BuildCoreTextColoring(parent, y, W)
     -- of Target, which names another unit).
     local COLOR_MODE_ORDER = { "custom", "class" }
     local COLOR_MODE_ORDER_LEVEL = { "custom", "class", "level" }
-    local function TextColoringCfg(slotKey, label)
+    local function TextColoringCfg(slotKey, labelText)
         local el = DBVal(slotKey)
         if el == "none" then
             return CludesUI.BlankRowCfg()
         end
-        local values, order
+        local values, sequence
         if el == "targetOfTarget" then
-            values, order = { custom = "Custom", class = "Class" }, COLOR_MODE_ORDER
+            values, sequence = { custom = "Custom", class = "Class" }, COLOR_MODE_ORDER
         else
             values = { custom = "Custom", class = "Hostility / Class", level = "Level Difficulty" }
-            order = COLOR_MODE_ORDER_LEVEL
+            sequence = COLOR_MODE_ORDER_LEVEL
         end
         return {
             type = "dropdown",
-            text = label,
+            text = labelText,
             values = values,
-            order = order,
+            order = sequence,
             getValue = function()
-                return ns.NP_SlotColorMode(slotKey, DB())
+                return mod.NP_SlotColorMode(slotKey, SavedDB())
             end,
             -- The mode is saved only when the pick differs from what the slot derives
             -- with none saved, so picking the derived value pins nothing. Rebuild: the
             -- shared NPC swatches exist only on a Hostility / Class half.
-            setValue = function(v)
-                local db = DB()
-                db[slotKey .. "ColorMode"] = nil
-                if ns.NP_SlotColorMode(slotKey, db) ~= v then
-                    db[slotKey .. "ColorMode"] = v
+            setValue = function(val)
+                local saved = SavedDB()
+                saved[slotKey .. "ColorMode"] = nil
+                if mod.NP_SlotColorMode(slotKey, saved) ~= val then
+                    saved[slotKey .. "ColorMode"] = val
                 end
-                ns.RefreshAllSettings()
+                mod.RefreshAllSettings()
                 UpdatePreview()
                 CludesUI:RefreshPage(true)
             end,
@@ -95,19 +95,19 @@ local function BuildCoreTextColoring(parent, y, W)
     -- keys for Spec Overrides. Every write goes through the dropdown, a cog row or
     -- a swatch, which the Spec Overrides capture follows on its own.
     local npcSwatchUpdates = {} -- the shared NPC swatches of every row, repainted together
-    local function MakeTextColoringInline(row, regionKey, slotKey, title)
+    local function MakeTextColoringInline(rowFrame, regionKey, slotKey, titleText)
         local el = DBVal(slotKey)
         if el == "none" then
             return
         end
-        local rgn = row[regionKey]
+        local region = rowFrame[regionKey]
         local colorKey = slotKey .. "Color"
         local isToT = el == "targetOfTarget"
         local function Mode()
-            return ns.NP_SlotColorMode(slotKey, DB())
+            return mod.NP_SlotColorMode(slotKey, SavedDB())
         end
         local function Apply()
-            ns.RefreshAllSettings()
+            mod.RefreshAllSettings()
             UpdatePreview()
         end
 
@@ -120,13 +120,13 @@ local function BuildCoreTextColoring(parent, y, W)
             local diffKey = slotKey .. "LevelDiffOn"
             -- A part colour not picked yet starts from the slot colour.
             local function PartColor(key)
-                local db = DB()
-                local c = (db and (db[key] or db[colorKey])) or defaults[colorKey]
+                local saved = SavedDB()
+                local c = (saved and (saved[key] or saved[colorKey])) or defaultSet[colorKey]
                 return c.r, c.g, c.b
             end
-            cog = CludesUI.BuildInlineCog(rgn, {
-                title = title,
-                captureRegion = rgn,
+            cog = CludesUI.BuildInlineCog(region, {
+                title = titleText,
+                captureRegion = region,
                 rows = {
                     {
                         type = "toggle",
@@ -134,8 +134,8 @@ local function BuildCoreTextColoring(parent, y, W)
                         get = function()
                             return DBVal(nameOnKey) == true
                         end,
-                        set = function(v)
-                            DB()[nameOnKey] = v
+                        set = function(val)
+                            SavedDB()[nameOnKey] = val
                             Apply()
                         end,
                     },
@@ -149,7 +149,7 @@ local function BuildCoreTextColoring(parent, y, W)
                             return PartColor(nameColorKey)
                         end,
                         set = function(r, g, b)
-                            DB()[nameColorKey] = { r = r, g = g, b = b }
+                            SavedDB()[nameColorKey] = { r = r, g = g, b = b }
                             Apply()
                         end,
                     },
@@ -159,10 +159,10 @@ local function BuildCoreTextColoring(parent, y, W)
                         get = function()
                             return DBVal(lvlOnKey) == true
                         end,
-                        set = function(v)
-                            DB()[lvlOnKey] = v
-                            if v then
-                                DB()[diffKey] = false
+                        set = function(val)
+                            SavedDB()[lvlOnKey] = val
+                            if val then
+                                SavedDB()[diffKey] = false
                             end
                             Apply()
                         end,
@@ -177,7 +177,7 @@ local function BuildCoreTextColoring(parent, y, W)
                             return PartColor(lvlColorKey)
                         end,
                         set = function(r, g, b)
-                            DB()[lvlColorKey] = { r = r, g = g, b = b }
+                            SavedDB()[lvlColorKey] = { r = r, g = g, b = b }
                             Apply()
                         end,
                     },
@@ -190,12 +190,12 @@ local function BuildCoreTextColoring(parent, y, W)
                             return Mode() == "level"
                         end,
                         get = function()
-                            return ns.NP_SlotLevelDiff(slotKey, DB())
+                            return mod.NP_SlotLevelDiff(slotKey, SavedDB())
                         end,
-                        set = function(v)
-                            DB()[diffKey] = v
-                            if v then
-                                DB()[lvlOnKey] = false
+                        set = function(val)
+                            SavedDB()[diffKey] = val
+                            if val then
+                                SavedDB()[lvlOnKey] = false
                             end
                             Apply()
                         end,
@@ -206,16 +206,16 @@ local function BuildCoreTextColoring(parent, y, W)
 
         -- The custom swatch and the first NPC swatch (never shown together) both
         -- sit beside the cog, or beside the dropdown on a half without one.
-        local anchor = rgn._lastInline or rgn._control
-        local gap = rgn._lastInline and -8 or -12
-        local custom, updateCustom = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-            local c = (DB() and DB()[colorKey]) or defaults[colorKey]
+        local anchorFrame = region._lastInline or region._control
+        local gap = region._lastInline and -8 or -12
+        local custom, updateCustom = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+            local c = (SavedDB() and SavedDB()[colorKey]) or defaultSet[colorKey]
             return c.r, c.g, c.b
         end, function(r, g, b)
-            DB()[colorKey] = { r = r, g = g, b = b }
+            SavedDB()[colorKey] = { r = r, g = g, b = b }
             Apply()
         end, nil, 20)
-        PP.Point(custom, "RIGHT", anchor, "LEFT", gap, 0)
+        Pix.Point(custom, "RIGHT", anchorFrame, "LEFT", gap, 0)
         custom:SetScript("OnEnter", function()
             if isToT and Mode() == "class" then
                 CludesUI.ShowWidgetTooltip(custom, CludesUI.L("NPC Target Color"))
@@ -232,31 +232,31 @@ local function BuildCoreTextColoring(parent, y, W)
         local npc, npcUpd
         if not isToT and Mode() == "class" then
             npc, npcUpd = {}, {}
-            local prev, prevGap = anchor, gap
-            local function NPCSwatch(key, fallbackKey, tip)
+            local prev, prevGap = anchorFrame, gap
+            local function NPCSwatch(key, fallbackKey, tipText)
                 local sw, upd = CludesUI.BuildColorSwatch(
-                    rgn,
-                    rgn:GetFrameLevel() + 5,
+                    region,
+                    region:GetFrameLevel() + 5,
                     function()
-                        local c = (DB() and DB()[key]) or defaults[fallbackKey]
+                        local c = (SavedDB() and SavedDB()[key]) or defaultSet[fallbackKey]
                         return c.r, c.g, c.b
                     end,
                     -- Read live by the per-unit painter, so a health colour pass repaints.
                     function(r, g, b)
-                        DB()[key] = { r = r, g = g, b = b }
+                        SavedDB()[key] = { r = r, g = g, b = b }
                         RefreshAllPlates()
                         UpdatePreview()
-                        for i = 1, #npcSwatchUpdates do
-                            npcSwatchUpdates[i]()
+                        for idx = 1, #npcSwatchUpdates do
+                            npcSwatchUpdates[idx]()
                         end
                     end,
                     nil,
                     20
                 )
-                PP.Point(sw, "RIGHT", prev, "LEFT", prevGap, 0)
+                Pix.Point(sw, "RIGHT", prev, "LEFT", prevGap, 0)
                 prev, prevGap = sw, -8
                 sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, tip)
+                    CludesUI.ShowWidgetTooltip(sw, tipText)
                 end)
                 sw:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
@@ -278,15 +278,15 @@ local function BuildCoreTextColoring(parent, y, W)
             updateCustom()
             local npcOn = npc and m == "class"
             if npc then
-                for i = 1, #npc do
-                    npc[i]:SetShown(npcOn)
-                    npcUpd[i]()
+                for idx = 1, #npc do
+                    npc[idx]:SetShown(npcOn)
+                    npcUpd[idx]()
                 end
             end
             -- The label clamp's bound (read a frame after the build): the
             -- leftmost item this mode shows, the cog when no swatch shows, the
             -- dropdown itself on a half with neither.
-            rgn._lastInline = (npcOn and npc[#npc]) or (showCustom and custom) or cog
+            region._lastInline = (npcOn and npc[#npc]) or (showCustom and custom) or cog
         end
         CludesUI.RegisterWidgetRefresh(ShowForMode)
         ShowForMode()
@@ -294,28 +294,28 @@ local function BuildCoreTextColoring(parent, y, W)
 
     -- Two halves per row in position order; an odd last half sits beside a
     -- blank one.
-    for k = 1, #shown, 2 do
-        local l, r = shown[k], shown[k + 1]
-        local row, rowH = W:DualRow(
-            parent,
-            y,
+    for k = 1, #isShown, 2 do
+        local l, r = isShown[k], isShown[k + 1]
+        local rowFrame, rowH = Widgets:DualRow(
+            hostFrame,
+            posY,
             TextColoringCfg(l.key, l.coloring),
             r and TextColoringCfg(r.key, r.coloring) or CludesUI.BlankRowCfg()
         )
         if not CludesUI._prebuilding then
-            MakeTextColoringInline(row, "_leftRegion", l.key, l.coloring)
+            MakeTextColoringInline(rowFrame, "_leftRegion", l.key, l.coloring)
             if r then
-                MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring)
+                MakeTextColoringInline(rowFrame, "_rightRegion", r.key, r.coloring)
             end
         end
-        y = y - rowH
+        posY = posY - rowH
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y
+    return posY
 end
 
 -- Used by DisplayLayout_Options.lua
-ns.NPO_BuildCoreTextColoring = BuildCoreTextColoring
+mod.NPO_BuildCoreTextColoring = BuildCoreTextColoring

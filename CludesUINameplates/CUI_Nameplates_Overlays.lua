@@ -8,27 +8,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  focus), the threat percent text, the threat gap, hover and target overlay.
 --  Reads the earlier nameplate files through ns and ns._npInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._npInternals
+local _, mod = ...
+local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs, type = pairs, type
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local UnitIsUnit = UnitIsUnit
 local UnitClass = UnitClass
 local _, PLAYER_CLASS = UnitClass("player")
 
-local defaults, GetFont, GetNPOutline = I.defaults, I.GetFont, I.GetNPOutline
-local HP_BAR_SLOTS, SetFSFont = I.HP_BAR_SLOTS, I.SetFSFont
-local GetHealthBarWidth = I.GetHealthBarWidth
+local defaultSet, GetFont, GetNPOutline = Inner.defaults, Inner.GetFont, Inner.GetNPOutline
+local HP_BAR_SLOTS, SetFSFont = Inner.HP_BAR_SLOTS, Inner.SetFSFont
+local GetHealthBarWidth = Inner.GetHealthBarWidth
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v)
-    p = v
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
+    p = val
 end
 
 -------------------------------------------------------------------------------
@@ -40,70 +40,70 @@ local GLOW_MARGIN = 0.48
 local GLOW_CORNER = 12
 local GLOW_EXTEND = 6
 
-local function EnsureGlow(plate)
-    if plate.glow then
+local function EnsureGlow(backing)
+    if backing.glow then
         return
     end
-    plate.glowFrame = CreateFrame("Frame", nil, plate)
-    plate.glowFrame:SetFrameStrata("BACKGROUND")
-    plate.glowFrame:SetFrameLevel(1)
-    plate.glowFrame:SetPoint("TOPLEFT", plate.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
-    plate.glowFrame:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
+    backing.glowFrame = CreateFrame("Frame", nil, backing)
+    backing.glowFrame:SetFrameStrata("BACKGROUND")
+    backing.glowFrame:SetFrameLevel(1)
+    backing.glowFrame:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
+    backing.glowFrame:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
     -- Glow tint/opacity come from the target "Glow Color" setting; textures are collected so ApplyTarget can recolor them live.
-    plate.glowTextures = {}
-    local gc = ns.GetTargetGlowColor()
-    local ga = ns.GetTargetGlowAlpha()
+    backing.glowTextures = {}
+    local gc = mod.GetTargetGlowColor()
+    local ga = mod.GetTargetGlowAlpha()
     local function MkTex()
-        local t = plate.glowFrame:CreateTexture(nil, "BACKGROUND")
+        local t = backing.glowFrame:CreateTexture(nil, "BACKGROUND")
         t:SetTexture(GLOW_TEX)
         t:SetVertexColor(gc.r, gc.g, gc.b, ga)
         t:SetBlendMode("ADD")
-        plate.glowTextures[#plate.glowTextures + 1] = t
+        backing.glowTextures[#backing.glowTextures + 1] = t
         return t
     end
-    plate.glowTL = MkTex()
-    plate.glowTL:SetSize(GLOW_CORNER, GLOW_CORNER)
-    plate.glowTL:SetPoint("TOPLEFT")
-    plate.glowTL:SetTexCoord(0, GLOW_MARGIN, 0, GLOW_MARGIN)
-    plate.glowTR = MkTex()
-    plate.glowTR:SetSize(GLOW_CORNER, GLOW_CORNER)
-    plate.glowTR:SetPoint("TOPRIGHT")
-    plate.glowTR:SetTexCoord(1 - GLOW_MARGIN, 1, 0, GLOW_MARGIN)
-    plate.glowBL = MkTex()
-    plate.glowBL:SetSize(GLOW_CORNER, GLOW_CORNER)
-    plate.glowBL:SetPoint("BOTTOMLEFT")
-    plate.glowBL:SetTexCoord(0, GLOW_MARGIN, 1 - GLOW_MARGIN, 1)
-    plate.glowBR = MkTex()
-    plate.glowBR:SetSize(GLOW_CORNER, GLOW_CORNER)
-    plate.glowBR:SetPoint("BOTTOMRIGHT")
-    plate.glowBR:SetTexCoord(1 - GLOW_MARGIN, 1, 1 - GLOW_MARGIN, 1)
-    plate.glowTop = MkTex()
-    plate.glowTop:SetHeight(GLOW_CORNER)
-    plate.glowTop:SetPoint("TOPLEFT", plate.glowTL, "TOPRIGHT")
-    plate.glowTop:SetPoint("TOPRIGHT", plate.glowTR, "TOPLEFT")
-    plate.glowTop:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 0, GLOW_MARGIN)
-    plate.glowBottom = MkTex()
-    plate.glowBottom:SetHeight(GLOW_CORNER)
-    plate.glowBottom:SetPoint("BOTTOMLEFT", plate.glowBL, "BOTTOMRIGHT")
-    plate.glowBottom:SetPoint("BOTTOMRIGHT", plate.glowBR, "BOTTOMLEFT")
-    plate.glowBottom:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 1 - GLOW_MARGIN, 1)
-    plate.glowLeft = MkTex()
-    plate.glowLeft:SetWidth(GLOW_CORNER)
-    plate.glowLeft:SetPoint("TOPLEFT", plate.glowTL, "BOTTOMLEFT")
-    plate.glowLeft:SetPoint("BOTTOMLEFT", plate.glowBL, "TOPLEFT")
-    plate.glowLeft:SetTexCoord(0, GLOW_MARGIN, GLOW_MARGIN, 1 - GLOW_MARGIN)
-    plate.glowRight = MkTex()
-    plate.glowRight:SetWidth(GLOW_CORNER)
-    plate.glowRight:SetPoint("TOPRIGHT", plate.glowTR, "BOTTOMRIGHT")
-    plate.glowRight:SetPoint("BOTTOMRIGHT", plate.glowBR, "TOPRIGHT")
-    plate.glowRight:SetTexCoord(1 - GLOW_MARGIN, 1, GLOW_MARGIN, 1 - GLOW_MARGIN)
+    backing.glowTL = MkTex()
+    backing.glowTL:SetSize(GLOW_CORNER, GLOW_CORNER)
+    backing.glowTL:SetPoint("TOPLEFT")
+    backing.glowTL:SetTexCoord(0, GLOW_MARGIN, 0, GLOW_MARGIN)
+    backing.glowTR = MkTex()
+    backing.glowTR:SetSize(GLOW_CORNER, GLOW_CORNER)
+    backing.glowTR:SetPoint("TOPRIGHT")
+    backing.glowTR:SetTexCoord(1 - GLOW_MARGIN, 1, 0, GLOW_MARGIN)
+    backing.glowBL = MkTex()
+    backing.glowBL:SetSize(GLOW_CORNER, GLOW_CORNER)
+    backing.glowBL:SetPoint("BOTTOMLEFT")
+    backing.glowBL:SetTexCoord(0, GLOW_MARGIN, 1 - GLOW_MARGIN, 1)
+    backing.glowBR = MkTex()
+    backing.glowBR:SetSize(GLOW_CORNER, GLOW_CORNER)
+    backing.glowBR:SetPoint("BOTTOMRIGHT")
+    backing.glowBR:SetTexCoord(1 - GLOW_MARGIN, 1, 1 - GLOW_MARGIN, 1)
+    backing.glowTop = MkTex()
+    backing.glowTop:SetHeight(GLOW_CORNER)
+    backing.glowTop:SetPoint("TOPLEFT", backing.glowTL, "TOPRIGHT")
+    backing.glowTop:SetPoint("TOPRIGHT", backing.glowTR, "TOPLEFT")
+    backing.glowTop:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 0, GLOW_MARGIN)
+    backing.glowBottom = MkTex()
+    backing.glowBottom:SetHeight(GLOW_CORNER)
+    backing.glowBottom:SetPoint("BOTTOMLEFT", backing.glowBL, "BOTTOMRIGHT")
+    backing.glowBottom:SetPoint("BOTTOMRIGHT", backing.glowBR, "BOTTOMLEFT")
+    backing.glowBottom:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 1 - GLOW_MARGIN, 1)
+    backing.glowLeft = MkTex()
+    backing.glowLeft:SetWidth(GLOW_CORNER)
+    backing.glowLeft:SetPoint("TOPLEFT", backing.glowTL, "BOTTOMLEFT")
+    backing.glowLeft:SetPoint("BOTTOMLEFT", backing.glowBL, "TOPLEFT")
+    backing.glowLeft:SetTexCoord(0, GLOW_MARGIN, GLOW_MARGIN, 1 - GLOW_MARGIN)
+    backing.glowRight = MkTex()
+    backing.glowRight:SetWidth(GLOW_CORNER)
+    backing.glowRight:SetPoint("TOPRIGHT", backing.glowTR, "BOTTOMRIGHT")
+    backing.glowRight:SetPoint("BOTTOMRIGHT", backing.glowBR, "TOPRIGHT")
+    backing.glowRight:SetTexCoord(1 - GLOW_MARGIN, 1, GLOW_MARGIN, 1 - GLOW_MARGIN)
     -- Center fill: covers the gap between top/bottom edges inside the health bar
-    plate.glowCenter = MkTex()
-    plate.glowCenter:SetPoint("TOPLEFT", plate.glowLeft, "TOPRIGHT")
-    plate.glowCenter:SetPoint("BOTTOMRIGHT", plate.glowRight, "BOTTOMLEFT")
-    plate.glowCenter:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, GLOW_MARGIN, 1 - GLOW_MARGIN)
-    plate.glow = plate.glowFrame
-    plate.glowFrame:Hide()
+    backing.glowCenter = MkTex()
+    backing.glowCenter:SetPoint("TOPLEFT", backing.glowLeft, "TOPRIGHT")
+    backing.glowCenter:SetPoint("BOTTOMRIGHT", backing.glowRight, "BOTTOMLEFT")
+    backing.glowCenter:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, GLOW_MARGIN, 1 - GLOW_MARGIN)
+    backing.glow = backing.glowFrame
+    backing.glowFrame:Hide()
 end
 
 -- Execute Pulse Glow (Extras, default off): red glow around the health bar pulsing while the
@@ -160,12 +160,12 @@ do
     local lowCurve, curveAt -- cached curve + the threshold it was built for
 
     local function AnyKnown(ids)
-        local sb = C_SpellBook
-        if not (sb and sb.IsSpellKnown) then
+        local scrollBar = C_SpellBook
+        if not (scrollBar and scrollBar.IsSpellKnown) then
             return false
         end
-        for i = 1, #ids do
-            if sb.IsSpellKnown(ids[i]) then
+        for idx = 1, #ids do
+            if scrollBar.IsSpellKnown(ids[idx]) then
                 return true
             end
         end
@@ -178,18 +178,18 @@ do
             CludesUI._RefreshSpecID()
             specID = CludesUI._specID
         end
-        local def = specID and EXEC[specID]
-        if not def then
+        local spec_def = specID and EXEC[specID]
+        if not spec_def then
             return nil
         end
         -- Gate first: an unmet requirement means no execute exists at all.
-        if def.requires and not AnyKnown(def.requires) then
+        if spec_def.requires and not AnyKnown(spec_def.requires) then
             return nil
         end
-        local pct = def.base
-        if def.talents and AnyKnown(def.talents) then
-            if not pct or def.talentPct > pct then
-                pct = def.talentPct
+        local pct = spec_def.base
+        if spec_def.talents and AnyKnown(spec_def.talents) then
+            if not pct or spec_def.talentPct > pct then
+                pct = spec_def.talentPct
             end
         end
         return pct
@@ -197,11 +197,11 @@ do
 
     --- The player's current execute-window fraction, or nil when this spec
     --- and talent build has no execute (feature fully disabled).
-    function ns.GetExecuteThreshold()
+    function mod.GetExecuteThreshold()
         return threshold
     end
 
-    function ns.GetLowHpGlowCurve()
+    function mod.GetLowHpGlowCurve()
         local t = threshold
         if not t then
             return nil
@@ -246,9 +246,9 @@ do
                 lowCurve, curveAt = nil, nil
                 -- Re-apply per plate: the gate creates/tears down the whole effect, so
                 -- gaining/losing an execute flips the glow with no settings change.
-                if ns.plates and ns.ApplyLowHpGlow then
-                    for _, plate in pairs(ns.plates) do
-                        ns.ApplyLowHpGlow(plate)
+                if mod.plates and mod.ApplyLowHpGlow then
+                    for _, backing in pairs(mod.plates) do
+                        mod.ApplyLowHpGlow(backing)
                     end
                 end
             end)
@@ -256,18 +256,18 @@ do
     end
 end
 
-function ns.EnsureLowHpGlow(plate)
-    if plate.lowHpGlowFrame then
+function mod.EnsureLowHpGlow(backing)
+    if backing.lowHpGlowFrame then
         return
     end
-    local f = CreateFrame("Frame", nil, plate)
+    local f = CreateFrame("Frame", nil, backing)
     f:SetFrameStrata("BACKGROUND")
     f:SetFrameLevel(1)
-    f:SetPoint("TOPLEFT", plate.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
-    f:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
-    plate.lowHpGlowFrame = f
+    f:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
+    f:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
+    backing.lowHpGlowFrame = f
     local texs = {}
-    plate.lowHpGlowTextures = texs
+    backing.lowHpGlowTextures = texs
     local function MkTex()
         local t = f:CreateTexture(nil, "BACKGROUND")
         -- Dedicated art (not the shared target-glow texture) so brightness can be tuned without touching the target glow.
@@ -294,11 +294,11 @@ function ns.EnsureLowHpGlow(plate)
     br:SetSize(GLOW_CORNER, GLOW_CORNER)
     br:SetPoint("BOTTOMRIGHT")
     br:SetTexCoord(1 - GLOW_MARGIN, 1, 1 - GLOW_MARGIN, 1)
-    local top = MkTex()
-    top:SetHeight(GLOW_CORNER)
-    top:SetPoint("TOPLEFT", tl, "TOPRIGHT")
-    top:SetPoint("TOPRIGHT", tr, "TOPLEFT")
-    top:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 0, GLOW_MARGIN)
+    local topY = MkTex()
+    topY:SetHeight(GLOW_CORNER)
+    topY:SetPoint("TOPLEFT", tl, "TOPRIGHT")
+    topY:SetPoint("TOPRIGHT", tr, "TOPLEFT")
+    topY:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 0, GLOW_MARGIN)
     local bot = MkTex()
     bot:SetHeight(GLOW_CORNER)
     bot:SetPoint("BOTTOMLEFT", bl, "BOTTOMRIGHT")
@@ -326,27 +326,27 @@ function ns.EnsureLowHpGlow(plate)
     a:SetToAlpha(0.35)
     a:SetDuration(0.55)
     a:SetSmoothing("IN_OUT")
-    plate.lowHpGlowPulse = ag
+    backing.lowHpGlowPulse = ag
 end
 
-function ns.ApplyLowHpGlow(plate)
+function mod.ApplyLowHpGlow(backing)
     -- Two hard gates: setting on AND spec/talents have an execute window. Failing either,
     -- nothing is created; the health-update eval short-circuits on a nil texture list.
-    if not (p and p.lowHpGlow == true) or not ns.GetExecuteThreshold() then
-        if plate.lowHpGlowFrame then
-            plate.lowHpGlowPulse:Stop()
-            plate.lowHpGlowFrame:Hide()
+    if not (p and p.lowHpGlow == true) or not mod.GetExecuteThreshold() then
+        if backing.lowHpGlowFrame then
+            backing.lowHpGlowPulse:Stop()
+            backing.lowHpGlowFrame:Hide()
         end
         -- Own flag mirrors the frame's shown state (this function is its only
         -- toggler) so the per-tick health paint reads a field, not IsShown().
-        plate._lowHpGlowOn = nil
+        backing._lowHpGlowOn = nil
         return
     end
-    ns.EnsureLowHpGlow(plate)
-    plate.lowHpGlowFrame:Show()
-    plate._lowHpGlowOn = true
-    if not plate.lowHpGlowPulse:IsPlaying() then
-        plate.lowHpGlowPulse:Play()
+    mod.EnsureLowHpGlow(backing)
+    backing.lowHpGlowFrame:Show()
+    backing._lowHpGlowOn = true
+    if not backing.lowHpGlowPulse:IsPlaying() then
+        backing.lowHpGlowPulse:Play()
     end
 end
 
@@ -355,17 +355,17 @@ end
 -- full-alpha red: no pulse animation and no health curve. Visibility alone is
 -- the signal, driven from UpdateHealthColor's own Near Aggro color decision
 -- (clean threat booleans, so it behaves identically in and out of restriction).
-function ns.EnsureNearAggroGlow(plate)
-    if plate.naGlowFrame then
+function mod.EnsureNearAggroGlow(backing)
+    if backing.naGlowFrame then
         return
     end
-    local f = CreateFrame("Frame", nil, plate)
+    local f = CreateFrame("Frame", nil, backing)
     f:SetFrameStrata("BACKGROUND")
     f:SetFrameLevel(1)
-    f:SetPoint("TOPLEFT", plate.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
-    f:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
+    f:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
+    f:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
     f:Hide()
-    plate.naGlowFrame = f
+    backing.naGlowFrame = f
     local function MkTex()
         local t = f:CreateTexture(nil, "BACKGROUND")
         t:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
@@ -389,11 +389,11 @@ function ns.EnsureNearAggroGlow(plate)
     br:SetSize(GLOW_CORNER, GLOW_CORNER)
     br:SetPoint("BOTTOMRIGHT")
     br:SetTexCoord(1 - GLOW_MARGIN, 1, 1 - GLOW_MARGIN, 1)
-    local top = MkTex()
-    top:SetHeight(GLOW_CORNER)
-    top:SetPoint("TOPLEFT", tl, "TOPRIGHT")
-    top:SetPoint("TOPRIGHT", tr, "TOPLEFT")
-    top:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 0, GLOW_MARGIN)
+    local topY = MkTex()
+    topY:SetHeight(GLOW_CORNER)
+    topY:SetPoint("TOPLEFT", tl, "TOPRIGHT")
+    topY:SetPoint("TOPRIGHT", tr, "TOPLEFT")
+    topY:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, 0, GLOW_MARGIN)
     local bot = MkTex()
     bot:SetHeight(GLOW_CORNER)
     bot:SetPoint("BOTTOMLEFT", bl, "BOTTOMRIGHT")
@@ -417,31 +417,31 @@ end
 
 -- Highlight target style: translucent wash across the target's health bar. Lazy (only the
 -- target ever shows it), kept SEPARATE from plate.highlight (mouseover) so the two never fight.
-local function EnsureTargetHighlight(plate)
-    if plate.targetHighlight then
+local function EnsureTargetHighlight(backing)
+    if backing.targetHighlight then
         return
     end
     -- Blizzard Style: under the stock selection ring and deselected overlay
     -- (OVERLAY 4/5), still above the fill; the CUI and classic looks keep it on top.
-    local t = plate.health:CreateTexture(nil, "OVERLAY", nil, ns.NP_Style() == "blizzard" and 0 or 5)
-    t:SetAllPoints(plate.health)
-    local c = ns.GetTargetHighlightColor()
-    t:SetColorTexture(c.r, c.g, c.b, ns.GetTargetHighlightAlpha())
+    local t = backing.health:CreateTexture(nil, "OVERLAY", nil, mod.NP_Style() == "blizzard" and 0 or 5)
+    t:SetAllPoints(backing.health)
+    local c = mod.GetTargetHighlightColor()
+    t:SetColorTexture(c.r, c.g, c.b, mod.GetTargetHighlightAlpha())
     t:Hide()
-    plate.targetHighlight = t
+    backing.targetHighlight = t
     -- Blizzard Style: inside the stock bar shape like the fill.
-    if plate._blizzBarMask then
-        t:AddMaskTexture(plate._blizzBarMask)
-        plate._blizzMaskedTarget = true
+    if backing._blizzBarMask then
+        t:AddMaskTexture(backing._blizzBarMask)
+        backing._blizzMaskedTarget = true
     end
-    ns.NP_ApplyRounding(plate, "health")
+    mod.NP_ApplyRounding(backing, "health")
 end
 
 -- Target arrow styles: key -> { l=left texture, r=right texture, w=drawn width at height 16
 -- (scale 1), label }. All source art is 66px tall; w = round(nativeWidth * 11/36): 36->11,
 -- 72->22, 90->28. Height always 16. Shared by enemy/friendly plates + options.
-ns.TARGET_ARROW_DIR = "Interface\\AddOns\\CludesUINameplates\\Media\\Arrows\\"
-ns.TARGET_ARROW_STYLES = {
+mod.TARGET_ARROW_DIR = "Interface\\AddOns\\CludesUINameplates\\Media\\Arrows\\"
+mod.TARGET_ARROW_STYLES = {
     simple = { l = "arrow_left", r = "arrow_right", w = 11, label = "Simple Arrows" },
     double = { l = "arrow_leftx2", r = "arrow_rightx2", w = 22, label = "Double Arrows" },
     barbed = { l = "barbed-left", r = "barbed-right", w = 28, label = "Barbed" },
@@ -459,7 +459,7 @@ ns.TARGET_ARROW_STYLES = {
     split = { l = "split-left", r = "split-right", w = 22, label = "Split" },
     winged = { l = "winged-left", r = "winged-right", w = 28, label = "Winged" },
 }
-ns.TARGET_ARROW_ORDER = {
+mod.TARGET_ARROW_ORDER = {
     "simple",
     "double",
     "winged",
@@ -479,13 +479,13 @@ ns.TARGET_ARROW_ORDER = {
 }
 
 -- Resolve a profile to its arrow style table. targetArrowStyle is the current key; legacy profiles fall back to targetArrowDouble (then Simple).
-function ns.ResolveTargetArrowStyle(prof)
+function mod.ResolveTargetArrowStyle(prof)
     local key = prof and (prof.targetArrowStyle or (prof.targetArrowDouble and "double")) or nil
-    return ns.TARGET_ARROW_STYLES[key] or ns.TARGET_ARROW_STYLES.simple
+    return mod.TARGET_ARROW_STYLES[key] or mod.TARGET_ARROW_STYLES.simple
 end
 
 -- Target arrow tint: the player's class color when targetArrowClassColor is on, else the custom targetArrowColor (default white).
-function ns.GetTargetArrowColor(prof)
+function mod.GetTargetArrowColor(prof)
     if prof and prof.targetArrowClassColor then
         local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[PLAYER_CLASS]
         if cc then
@@ -500,11 +500,11 @@ function ns.GetTargetArrowColor(prof)
     return 1, 1, 1
 end
 
-local function EnsureArrows(plate)
-    if plate.leftArrow then
+local function EnsureArrows(backing)
+    if backing.leftArrow then
         return
     end
-    local st = ns.ResolveTargetArrowStyle(p)
+    local st = mod.ResolveTargetArrowStyle(p)
     local sc = (p and p.targetArrowScale) or 1.0
     local aw, ah = math.floor(st.w * sc + 0.5), math.floor(16 * sc + 0.5)
     -- Regions OF the health bar (the plate subtree is aspect-restricted and unmeasurable). NO
@@ -513,32 +513,33 @@ local function EnsureArrows(plate)
     -- PositionArrowsOutsideAuras (runs on every target apply, after Show()). An unanchored
     -- hidden texture has no rect and draws nothing, so the creation state is safe. Rendering
     -- outside the bar rect is fine (health SetClipsChildren(false)).
-    local arrowParent = plate.health
+    local arrowParent = backing.health
     -- Aura containers carry UntrustedLayoutScriptExecution once they hold a group, and only
     -- aspect-bearing objects may anchor to them. Aspects cannot be gained later
     -- (SetParent/SetPoint inheritance is blocked), so arrows must be BORN inside a template
     -- holder to inherit its aspect; the containers file then anchors them to the side aura
     -- containers. Clients without the template keep the plain parent (no aspect needed).
-    local ok, holder = pcall(CreateFrame, "Frame", nil, plate.health, "DisableUntrustedLayoutScriptsTemplate")
-    if ok and holder then
-        holder:SetAllPoints(plate.health)
-        holder:SetFrameLevel(plate.health:GetFrameLevel())
-        plate.arrowHost = holder
-        arrowParent = holder
+    local success, holderFrame =
+        pcall(CreateFrame, "Frame", nil, backing.health, "DisableUntrustedLayoutScriptsTemplate")
+    if success and holderFrame then
+        holderFrame:SetAllPoints(backing.health)
+        holderFrame:SetFrameLevel(backing.health:GetFrameLevel())
+        backing.arrowHost = holderFrame
+        arrowParent = holderFrame
     end
-    plate.leftArrow = arrowParent:CreateTexture(nil, "OVERLAY")
-    plate.leftArrow:SetTexture(ns.TARGET_ARROW_DIR .. st.l .. ".png")
-    plate.rightArrow = arrowParent:CreateTexture(nil, "OVERLAY")
-    plate.rightArrow:SetTexture(ns.TARGET_ARROW_DIR .. st.r .. ".png")
-    PP.Size(plate.leftArrow, aw, ah)
-    plate.leftArrow:Hide()
-    PP.Size(plate.rightArrow, aw, ah)
-    plate.rightArrow:Hide()
+    backing.leftArrow = arrowParent:CreateTexture(nil, "OVERLAY")
+    backing.leftArrow:SetTexture(mod.TARGET_ARROW_DIR .. st.l .. ".png")
+    backing.rightArrow = arrowParent:CreateTexture(nil, "OVERLAY")
+    backing.rightArrow:SetTexture(mod.TARGET_ARROW_DIR .. st.r .. ".png")
+    Pix.Size(backing.leftArrow, aw, ah)
+    backing.leftArrow:Hide()
+    Pix.Size(backing.rightArrow, aw, ah)
+    backing.rightArrow:Hide()
 end
 
 -- Target/Focus overlay textures: stripe overlays live in the nameplates Media folder (resolved
 -- by name); everything else resolves through the shared health-bar lookup (CUI + SharedMedia).
-ns.OVERLAY_STRIPE_KEYS = {
+mod.OVERLAY_STRIPE_KEYS = {
     ["striped-v2"] = true,
     ["striped-wide-v2"] = true,
     ["stripes-medium"] = true,
@@ -546,15 +547,15 @@ ns.OVERLAY_STRIPE_KEYS = {
     ["stripes-small-spread"] = true,
     ["striped-tiny"] = true,
 }
-function ns.ResolveOverlayTexPath(key)
+function mod.ResolveOverlayTexPath(key)
     if not key or key == "none" then
         return nil
     end
-    if ns.OVERLAY_STRIPE_KEYS[key] then
+    if mod.OVERLAY_STRIPE_KEYS[key] then
         return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. key .. ".png"
     end
     if CludesUI.ResolveTexturePath then
-        return CludesUI.ResolveTexturePath(ns.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
+        return CludesUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
     end
     return nil
 end
@@ -567,15 +568,15 @@ end
 -- stretch the full pattern). Width comes from settings, never from measuring the plate subtree
 -- (restricted regions forbid reads there).
 local STRIPE_NATIVE_W = 200
-local function ApplyOverlayGeometry(fillT, bgT, health, isStripe)
+local function ApplyOverlayGeometry(fillT, bgT, healthBar, isStripe)
     fillT:ClearAllPoints()
     bgT:ClearAllPoints()
-    fillT:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-    fillT:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-    fillT:SetPoint("RIGHT", health, "RIGHT", 0, 0)
-    bgT:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-    bgT:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-    bgT:SetPoint("RIGHT", health, "RIGHT", 0, 0)
+    fillT:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    fillT:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+    fillT:SetPoint("RIGHT", healthBar, "RIGHT", 0, 0)
+    bgT:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    bgT:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+    bgT:SetPoint("RIGHT", healthBar, "RIGHT", 0, 0)
     local u = 1
     if isStripe then
         u = GetHealthBarWidth() / STRIPE_NATIVE_W
@@ -596,53 +597,53 @@ local function OverlayBgAlpha(fullFlag, fillAlpha)
     return fillAlpha * 0.3
 end
 
-local function EnsureFocusOverlay(plate)
-    if plate.focusClipFill then
+local function EnsureFocusOverlay(backing)
+    if backing.focusClipFill then
         return
     end
-    local overlayAlpha = (p and p.focusOverlayAlpha) or defaults.focusOverlayAlpha
-    local overlayColor = (p and p.focusOverlayColor) or defaults.focusOverlayColor
+    local overlayAlpha = (p and p.focusOverlayAlpha) or defaultSet.focusOverlayAlpha
+    local overlayColor = (p and p.focusOverlayColor) or defaultSet.focusOverlayColor
     local STRIPE_TEX = "Interface\\AddOns\\CludesUINameplates\\Media\\striped-v2.png"
-    local fillTex = plate.health:GetStatusBarTexture()
-    plate.focusClipFill = CreateFrame("Frame", nil, plate.health)
-    plate.focusClipFill:SetClipsChildren(true)
+    local fillTex = backing.health:GetStatusBarTexture()
+    backing.focusClipFill = CreateFrame("Frame", nil, backing.health)
+    backing.focusClipFill:SetClipsChildren(true)
     -- Vertical bounds come from the health bar itself so the overlay never pixel-snaps 1px short; only the RIGHT edge tracks the fill.
-    plate.focusClipFill:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.focusClipFill:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.focusClipFill:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
-    plate.focusClipFill:SetFrameLevel(plate.health:GetFrameLevel() + 1)
-    plate.focusOverlayFill = plate.focusClipFill:CreateTexture(nil, "ARTWORK", nil, 2)
+    backing.focusClipFill:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.focusClipFill:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.focusClipFill:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
+    backing.focusClipFill:SetFrameLevel(backing.health:GetFrameLevel() + 1)
+    backing.focusOverlayFill = backing.focusClipFill:CreateTexture(nil, "ARTWORK", nil, 2)
     -- Full bar height/width (anchored LEFT+RIGHT to health bar) so the diagonal pattern stays continuous across the split and snaps with the clip's edges.
-    plate.focusOverlayFill:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.focusOverlayFill:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.focusOverlayFill:SetPoint("RIGHT", plate.health, "RIGHT", 0, 0)
-    plate.focusOverlayFill:SetTexture(STRIPE_TEX)
-    plate.focusOverlayFill:SetAlpha(overlayAlpha)
-    plate.focusOverlayFill:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
-    plate.focusClipFill:Hide()
-    plate.focusClipBg = CreateFrame("Frame", nil, plate.health)
-    plate.focusClipBg:SetClipsChildren(true)
-    plate.focusClipBg:SetPoint("TOPRIGHT", plate.health, "TOPRIGHT", 0, 0)
-    plate.focusClipBg:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMRIGHT", 0, 0)
-    plate.focusClipBg:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
-    plate.focusClipBg:SetFrameLevel(plate.health:GetFrameLevel() + 1)
-    plate.focusOverlayBg = plate.focusClipBg:CreateTexture(nil, "ARTWORK", nil, 1)
-    plate.focusOverlayBg:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.focusOverlayBg:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.focusOverlayBg:SetPoint("RIGHT", plate.health, "RIGHT", 0, 0)
-    plate.focusOverlayBg:SetTexture(STRIPE_TEX)
-    plate.focusOverlayBg:SetAlpha(OverlayBgAlpha(p and p.focusOverlayFullBgAlpha, overlayAlpha))
-    plate.focusOverlayBg:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
+    backing.focusOverlayFill:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.focusOverlayFill:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.focusOverlayFill:SetPoint("RIGHT", backing.health, "RIGHT", 0, 0)
+    backing.focusOverlayFill:SetTexture(STRIPE_TEX)
+    backing.focusOverlayFill:SetAlpha(overlayAlpha)
+    backing.focusOverlayFill:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
+    backing.focusClipFill:Hide()
+    backing.focusClipBg = CreateFrame("Frame", nil, backing.health)
+    backing.focusClipBg:SetClipsChildren(true)
+    backing.focusClipBg:SetPoint("TOPRIGHT", backing.health, "TOPRIGHT", 0, 0)
+    backing.focusClipBg:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", 0, 0)
+    backing.focusClipBg:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
+    backing.focusClipBg:SetFrameLevel(backing.health:GetFrameLevel() + 1)
+    backing.focusOverlayBg = backing.focusClipBg:CreateTexture(nil, "ARTWORK", nil, 1)
+    backing.focusOverlayBg:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.focusOverlayBg:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.focusOverlayBg:SetPoint("RIGHT", backing.health, "RIGHT", 0, 0)
+    backing.focusOverlayBg:SetTexture(STRIPE_TEX)
+    backing.focusOverlayBg:SetAlpha(OverlayBgAlpha(p and p.focusOverlayFullBgAlpha, overlayAlpha))
+    backing.focusOverlayBg:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
     -- Creation-time texcoord for the STRIPE_TEX default; the state-gated apply re-runs it with the actual texture kind.
-    ApplyOverlayGeometry(plate.focusOverlayFill, plate.focusOverlayBg, plate.health, true)
-    plate.focusClipBg:Hide()
+    ApplyOverlayGeometry(backing.focusOverlayFill, backing.focusOverlayBg, backing.health, true)
+    backing.focusClipBg:Hide()
     -- Rounded corners: the new overlay joins the rounded body
-    if plate._npRounded then
-        ns.NP_ApplyRounding(plate, "health")
+    if backing._npRounded then
+        mod.NP_ApplyRounding(backing, "health")
     end
 end
 
-ns.FOCUS_LETTER_ANCHORS = {
+mod.FOCUS_LETTER_ANCHORS = {
     CENTER = true,
     LEFT = true,
     RIGHT = true,
@@ -654,56 +655,56 @@ ns.FOCUS_LETTER_ANCHORS = {
     BOTTOMRIGHT = true,
 }
 
-function ns.GetFocusLetterAnchor(db)
-    local anchor = (db and db.focusLetterAnchor) or defaults.focusLetterAnchor
-    return ns.FOCUS_LETTER_ANCHORS[anchor] and anchor or defaults.focusLetterAnchor
+function mod.GetFocusLetterAnchor(saved)
+    local anchorFrame = (saved and saved.focusLetterAnchor) or defaultSet.focusLetterAnchor
+    return mod.FOCUS_LETTER_ANCHORS[anchorFrame] and anchorFrame or defaultSet.focusLetterAnchor
 end
 
-function ns.EnsureFocusLetter(plate)
-    if plate.focusLetter then
+function mod.EnsureFocusLetter(backing)
+    if backing.focusLetter then
         return
     end
-    plate.focusLetter = plate.healthTextFrame:CreateFontString(nil, "OVERLAY")
-    plate.focusLetter:SetJustifyH("CENTER")
-    plate.focusLetter:SetJustifyV("MIDDLE")
-    plate.focusLetter:Hide()
+    backing.focusLetter = backing.healthTextFrame:CreateFontString(nil, "OVERLAY")
+    backing.focusLetter:SetJustifyH("CENTER")
+    backing.focusLetter:SetJustifyV("MIDDLE")
+    backing.focusLetter:Hide()
 end
 
-function ns.ApplyFocusLetter(plate, unit, db)
-    if db.focusLetterEnabled == true and UnitIsUnit(unit, "focus") then
-        ns.EnsureFocusLetter(plate)
-        local size = db.focusLetterSize or defaults.focusLetterSize
-        local anchor = ns.GetFocusLetterAnchor(db)
-        local x = db.focusLetterX or defaults.focusLetterX
-        local y = db.focusLetterY or defaults.focusLetterY
+function mod.ApplyFocusLetter(backing, unitToken, saved)
+    if saved.focusLetterEnabled == true and UnitIsUnit(unitToken, "focus") then
+        mod.EnsureFocusLetter(backing)
+        local dim = saved.focusLetterSize or defaultSet.focusLetterSize
+        local anchorFrame = mod.GetFocusLetterAnchor(saved)
+        local posX = saved.focusLetterX or defaultSet.focusLetterX
+        local posY = saved.focusLetterY or defaultSet.focusLetterY
         local font = GetFont()
         local outline = GetNPOutline()
         if
-            not plate._focusLetterShown
-            or plate._focusLetterSize ~= size
-            or plate._focusLetterAnchor ~= anchor
-            or plate._focusLetterX ~= x
-            or plate._focusLetterY ~= y
-            or plate._focusLetterFont ~= font
-            or plate._focusLetterOutline ~= outline
+            not backing._focusLetterShown
+            or backing._focusLetterSize ~= dim
+            or backing._focusLetterAnchor ~= anchorFrame
+            or backing._focusLetterX ~= posX
+            or backing._focusLetterY ~= posY
+            or backing._focusLetterFont ~= font
+            or backing._focusLetterOutline ~= outline
         then
-            plate._focusLetterShown = true
-            plate._focusLetterSize = size
-            plate._focusLetterAnchor = anchor
-            plate._focusLetterX = x
-            plate._focusLetterY = y
-            plate._focusLetterFont = font
-            plate._focusLetterOutline = outline
-            SetFSFont(plate.focusLetter, size, outline)
-            plate.focusLetter:SetText("F")
-            plate.focusLetter:ClearAllPoints()
-            plate.focusLetter:SetPoint(anchor, plate.health, anchor, x, y)
-            plate.focusLetter:SetTextColor(1, 1, 1, 1)
+            backing._focusLetterShown = true
+            backing._focusLetterSize = dim
+            backing._focusLetterAnchor = anchorFrame
+            backing._focusLetterX = posX
+            backing._focusLetterY = posY
+            backing._focusLetterFont = font
+            backing._focusLetterOutline = outline
+            SetFSFont(backing.focusLetter, dim, outline)
+            backing.focusLetter:SetText("F")
+            backing.focusLetter:ClearAllPoints()
+            backing.focusLetter:SetPoint(anchorFrame, backing.health, anchorFrame, posX, posY)
+            backing.focusLetter:SetTextColor(1, 1, 1, 1)
         end
-        plate.focusLetter:Show()
-    elseif plate.focusLetter then
-        plate._focusLetterShown = nil
-        plate.focusLetter:Hide()
+        backing.focusLetter:Show()
+    elseif backing.focusLetter then
+        backing._focusLetterShown = nil
+        backing.focusLetter:Hide()
     end
 end
 
@@ -714,55 +715,62 @@ end
 --  field read while it is off. The font string is made on first paint.
 --  ns._npTgapOn is the Threat Gap mode on top of it (NP_PaintThreatGap).
 -------------------------------------------------------------------------------
-ns._npTptOn = false
-ns._npTgapOn = false
+mod._npTptOn = false
+mod._npTgapOn = false
 
-function ns.NP_RefreshThreatPctFlag()
-    ns._npTptOn = CludesUI.IS_FOREVER == true and p ~= nil and p.threatPctEnabled == true
-    ns._npTgapOn = ns._npTptOn and p.threatPctMode == "gap"
+function mod.NP_RefreshThreatPctFlag()
+    mod._npTptOn = CludesUI.IS_FOREVER == true and p ~= nil and p.threatPctEnabled == true
+    mod._npTgapOn = mod._npTptOn and p.threatPctMode == "gap"
 end
 
-function ns.EnsureThreatPctText(plate)
-    if plate.threatPctText then
+function mod.EnsureThreatPctText(backing)
+    if backing.threatPctText then
         return
     end
-    plate.threatPctText = plate.healthTextFrame:CreateFontString(nil, "OVERLAY")
-    plate.threatPctText:SetWordWrap(false)
-    plate.threatPctText:Hide()
+    backing.threatPctText = backing.healthTextFrame:CreateFontString(nil, "OVERLAY")
+    backing.threatPctText:SetWordWrap(false)
+    backing.threatPctText:Hide()
 end
 
-function ns.ApplyThreatPctPos(plate)
-    ns.EnsureThreatPctText(plate)
-    local db = p or defaults
-    local posKey = db.threatPctPosition or defaults.threatPctPosition
-    local slot = HP_BAR_SLOTS[(posKey == "RIGHT" and 1) or (posKey == "LEFT" and 2) or 3]
-    local size = db.threatPctSize or defaults.threatPctSize
-    local xOff = db.threatPctXOffset or defaults.threatPctXOffset
-    local yOff = db.threatPctYOffset or defaults.threatPctYOffset
+function mod.ApplyThreatPctPos(backing)
+    mod.EnsureThreatPctText(backing)
+    local saved = p or defaultSet
+    local posKey = saved.threatPctPosition or defaultSet.threatPctPosition
+    local slotIndex = HP_BAR_SLOTS[(posKey == "RIGHT" and 1) or (posKey == "LEFT" and 2) or 3]
+    local dim = saved.threatPctSize or defaultSet.threatPctSize
+    local xOff = saved.threatPctXOffset or defaultSet.threatPctXOffset
+    local yOff = saved.threatPctYOffset or defaultSet.threatPctYOffset
     local font = GetFont()
     local outline = GetNPOutline()
     if
-        plate._tptPos ~= posKey
-        or plate._tptSize ~= size
-        or plate._tptX ~= xOff
-        or plate._tptY ~= yOff
-        or plate._tptFont ~= font
-        or plate._tptOutline ~= outline
+        backing._tptPos ~= posKey
+        or backing._tptSize ~= dim
+        or backing._tptX ~= xOff
+        or backing._tptY ~= yOff
+        or backing._tptFont ~= font
+        or backing._tptOutline ~= outline
     then
-        plate._tptPos = posKey
-        plate._tptSize = size
-        plate._tptX = xOff
-        plate._tptY = yOff
-        plate._tptFont = font
-        plate._tptOutline = outline
-        SetFSFont(plate.threatPctText, size, outline)
-        plate.threatPctText:ClearAllPoints()
-        if slot.anchor == "CENTER" then
-            plate.threatPctText:SetPoint("CENTER", plate.health, "CENTER", xOff, yOff)
+        backing._tptPos = posKey
+        backing._tptSize = dim
+        backing._tptX = xOff
+        backing._tptY = yOff
+        backing._tptFont = font
+        backing._tptOutline = outline
+        SetFSFont(backing.threatPctText, dim, outline)
+        backing.threatPctText:ClearAllPoints()
+        if slotIndex.anchor == "CENTER" then
+            backing.threatPctText:SetPoint("CENTER", backing.health, "CENTER", xOff, yOff)
         else
-            PP.Point(plate.threatPctText, slot.anchor, plate.health, slot.point, slot.xOff + xOff, yOff)
+            Pix.Point(
+                backing.threatPctText,
+                slotIndex.anchor,
+                backing.health,
+                slotIndex.point,
+                slotIndex.xOff + xOff,
+                yOff
+            )
         end
-        plate.threatPctText:SetJustifyH(slot.anchor)
+        backing.threatPctText:SetJustifyH(slotIndex.anchor)
     end
 end
 
@@ -770,25 +778,31 @@ end
 -- straight to PaintThreatPct, never compared or stored. In Threat Gap mode
 -- the target's plate is painted once per frame by the gap flush (gapNow),
 -- the gap standing in for the percent while its values read plainly.
-function ns.NP_UpdateThreatPct(plate, unit, gapNow)
-    if ns._npTgapOn and plate._isTarget and not gapNow then
-        ns.NP_RequestThreatGap(plate)
+function mod.NP_UpdateThreatPct(backing, unitToken, gapNow)
+    if mod._npTgapOn and backing._isTarget and not gapNow then
+        mod.NP_RequestThreatGap(backing)
         return
     end
     local show = false
-    if ns._npTptOn then
-        local isTanking, status, pct = UnitDetailedThreatSituation("player", unit)
+    if mod._npTptOn then
+        local isTanking, status, pct = UnitDetailedThreatSituation("player", unitToken)
         if type(pct) == "number" then
-            ns.ApplyThreatPctPos(plate)
-            if not (ns._npTgapOn and plate._isTarget and ns.NP_PaintThreatGap(plate.threatPctText)) then
-                CludesUI.PaintThreatPct(plate.threatPctText, pct, status, isTanking, p.threatPctColorByThreat)
+            mod.ApplyThreatPctPos(backing)
+            if not (mod._npTgapOn and backing._isTarget and mod.NP_PaintThreatGap(backing.threatPctText)) then
+                CludesUI.PaintThreatPct(
+                    backing.threatPctText,
+                    pct,
+                    status,
+                    isTanking,
+                    p.threatPctColorByThreat
+                )
             end
             show = true
         end
     end
-    if show ~= (plate._tptShown or false) then
-        plate._tptShown = show or nil
-        plate.threatPctText:SetShown(show)
+    if show ~= (backing._tptShown or false) then
+        backing._tptShown = show or nil
+        backing.threatPctText:SetShown(show)
     end
 end
 
@@ -806,21 +820,21 @@ end
 -------------------------------------------------------------------------------
 do
     local RAID, PARTY = {}, { "pet" }
-    for i = 1, 40 do
-        RAID[#RAID + 1] = "raid" .. i
-        RAID[#RAID + 1] = "raidpet" .. i
+    for idx = 1, 40 do
+        RAID[#RAID + 1] = "raid" .. idx
+        RAID[#RAID + 1] = "raidpet" .. idx
     end
-    for i = 1, 4 do
-        PARTY[#PARTY + 1] = "party" .. i
-        PARTY[#PARTY + 1] = "partypet" .. i
+    for idx = 1, 4 do
+        PARTY[#PARTY + 1] = "party" .. idx
+        PARTY[#PARTY + 1] = "partypet" .. idx
     end
     local holderTok -- the group token that last held aggro on the target
     local flush, pending -- the once-per-frame repaint (built on first use) and its plate
 
     -- A frame's threat events collapse into one repaint after them: a hidden
     -- frame shown by the request, its OnUpdate hiding it before the paint.
-    function ns.NP_RequestThreatGap(plate)
-        pending = plate
+    function mod.NP_RequestThreatGap(backing)
+        pending = backing
         if not flush then
             flush = CreateFrame("Frame")
             flush:SetScript("OnUpdate", function(self)
@@ -828,14 +842,14 @@ do
                 local pl = pending
                 pending = nil
                 if pl and pl.unit and pl._isTarget then
-                    ns.NP_UpdateThreatPct(pl, pl.unit, true)
+                    mod.NP_UpdateThreatPct(pl, pl.unit, true)
                 end
             end)
         end
         flush:Show()
     end
 
-    function ns.NP_PaintThreatGap(fs)
+    function mod.NP_PaintThreatGap(fontStr)
         local isTanking, _, _, rawPct, raw = UnitDetailedThreatSituation("player", "target")
         if
             issecretvalue(isTanking)
@@ -846,18 +860,18 @@ do
             return false
         end
         local inRaid = IsInRaid()
-        local list = inRaid and RAID or PARTY
+        local entries = inRaid and RAID or PARTY
         -- The group's own tokens: raidN + raidpetN, or pet + partyN + partypetN.
-        local n = GetNumGroupMembers()
-        local last = inRaid and 2 * n or 1 + 2 * (n > 0 and n - 1 or 0)
-        if last > #list then
-            last = #list
+        local num = GetNumGroupMembers()
+        local last = inRaid and 2 * num or 1 + 2 * (num > 0 and num - 1 or 0)
+        if last > #entries then
+            last = #entries
         end
         local other
         if isTanking then
             other = 0
-            for i = 1, last do
-                local u = list[i]
+            for idx = 1, last do
+                local u = entries[idx]
                 if UnitExists(u) then
                     local me = UnitIsUnit(u, "player")
                     if issecretvalue(me) then
@@ -886,8 +900,8 @@ do
             end
             if not other then
                 holderTok = nil
-                for i = 1, last do
-                    local u = list[i]
+                for idx = 1, last do
+                    local u = entries[idx]
                     if UnitExists(u) then
                         local t, _, _, _, r = UnitDetailedThreatSituation(u, "target")
                         if issecretvalue(t) or issecretvalue(r) then
@@ -912,14 +926,14 @@ do
         if not ahead then
             gap = -gap
         end
-        local db = p or defaults
+        local saved = p or defaultSet
         CludesUI.PaintThreatGap(
-            fs,
-            ns.AbbreviateNumbers(math.floor(gap + 0.5)),
+            fontStr,
+            mod.AbbreviateNumbers(math.floor(gap + 0.5)),
             ahead,
-            db.threatPctColorByThreat,
-            db.threatGapAheadColor or defaults.threatGapAheadColor,
-            db.threatGapBehindColor or defaults.threatGapBehindColor
+            saved.threatPctColorByThreat,
+            saved.threatGapAheadColor or defaultSet.threatGapAheadColor,
+            saved.threatGapBehindColor or defaultSet.threatGapBehindColor
         )
         return true
     end
@@ -927,102 +941,102 @@ end
 
 -- Options setters of every threatPct key: the flag, then layout and paint on
 -- the live plates only (the layout memo compares every layout input).
-function ns.RefreshThreatPct()
-    ns.NP_RefreshThreatPctFlag()
-    for _, plate in pairs(ns.plates) do
-        if plate.unit and (ns._npTptOn or plate._tptShown) then
-            ns.NP_UpdateThreatPct(plate, plate.unit)
+function mod.RefreshThreatPct()
+    mod.NP_RefreshThreatPctFlag()
+    for _, backing in pairs(mod.plates) do
+        if backing.unit and (mod._npTptOn or backing._tptShown) then
+            mod.NP_UpdateThreatPct(backing, backing.unit)
         end
     end
 end
 
-ns.EnsureHoverOverlay = function(plate)
-    if plate.hoverClipFill then
+mod.EnsureHoverOverlay = function(backing)
+    if backing.hoverClipFill then
         return
     end
-    local overlayAlpha = (p and p.hoverAlpha) or defaults.hoverAlpha
-    local overlayColor = (p and p.hoverColor) or defaults.hoverColor
+    local overlayAlpha = (p and p.hoverAlpha) or defaultSet.hoverAlpha
+    local overlayColor = (p and p.hoverColor) or defaultSet.hoverColor
     local STRIPE_TEX = "Interface\\AddOns\\CludesUINameplates\\Media\\striped-v2.png"
-    local fillTex = plate.health:GetStatusBarTexture()
-    plate.hoverClipFill = CreateFrame("Frame", nil, plate.health)
-    plate.hoverClipFill:SetClipsChildren(true)
-    plate.hoverClipFill:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.hoverClipFill:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.hoverClipFill:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
-    plate.hoverClipFill:SetFrameLevel(plate.health:GetFrameLevel() + 1)
-    plate.hoverOverlayFill = plate.hoverClipFill:CreateTexture(nil, "ARTWORK", nil, 2)
-    plate.hoverOverlayFill:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.hoverOverlayFill:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.hoverOverlayFill:SetPoint("RIGHT", plate.health, "RIGHT", 0, 0)
-    plate.hoverOverlayFill:SetTexture(STRIPE_TEX)
-    plate.hoverOverlayFill:SetAlpha(overlayAlpha)
-    plate.hoverOverlayFill:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
-    plate.hoverClipFill:Hide()
-    plate.hoverClipBg = CreateFrame("Frame", nil, plate.health)
-    plate.hoverClipBg:SetClipsChildren(true)
-    plate.hoverClipBg:SetPoint("TOPRIGHT", plate.health, "TOPRIGHT", 0, 0)
-    plate.hoverClipBg:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMRIGHT", 0, 0)
-    plate.hoverClipBg:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
-    plate.hoverClipBg:SetFrameLevel(plate.health:GetFrameLevel() + 1)
-    plate.hoverOverlayBg = plate.hoverClipBg:CreateTexture(nil, "ARTWORK", nil, 1)
-    plate.hoverOverlayBg:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.hoverOverlayBg:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.hoverOverlayBg:SetPoint("RIGHT", plate.health, "RIGHT", 0, 0)
-    plate.hoverOverlayBg:SetTexture(STRIPE_TEX)
-    plate.hoverOverlayBg:SetAlpha(OverlayBgAlpha(p and p.hoverOverlayFullBgAlpha, overlayAlpha))
-    plate.hoverOverlayBg:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
+    local fillTex = backing.health:GetStatusBarTexture()
+    backing.hoverClipFill = CreateFrame("Frame", nil, backing.health)
+    backing.hoverClipFill:SetClipsChildren(true)
+    backing.hoverClipFill:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.hoverClipFill:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.hoverClipFill:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
+    backing.hoverClipFill:SetFrameLevel(backing.health:GetFrameLevel() + 1)
+    backing.hoverOverlayFill = backing.hoverClipFill:CreateTexture(nil, "ARTWORK", nil, 2)
+    backing.hoverOverlayFill:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.hoverOverlayFill:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.hoverOverlayFill:SetPoint("RIGHT", backing.health, "RIGHT", 0, 0)
+    backing.hoverOverlayFill:SetTexture(STRIPE_TEX)
+    backing.hoverOverlayFill:SetAlpha(overlayAlpha)
+    backing.hoverOverlayFill:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
+    backing.hoverClipFill:Hide()
+    backing.hoverClipBg = CreateFrame("Frame", nil, backing.health)
+    backing.hoverClipBg:SetClipsChildren(true)
+    backing.hoverClipBg:SetPoint("TOPRIGHT", backing.health, "TOPRIGHT", 0, 0)
+    backing.hoverClipBg:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", 0, 0)
+    backing.hoverClipBg:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
+    backing.hoverClipBg:SetFrameLevel(backing.health:GetFrameLevel() + 1)
+    backing.hoverOverlayBg = backing.hoverClipBg:CreateTexture(nil, "ARTWORK", nil, 1)
+    backing.hoverOverlayBg:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.hoverOverlayBg:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.hoverOverlayBg:SetPoint("RIGHT", backing.health, "RIGHT", 0, 0)
+    backing.hoverOverlayBg:SetTexture(STRIPE_TEX)
+    backing.hoverOverlayBg:SetAlpha(OverlayBgAlpha(p and p.hoverOverlayFullBgAlpha, overlayAlpha))
+    backing.hoverOverlayBg:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
     -- Creation-time texcoord for the STRIPE_TEX default; the state-gated apply re-runs it with the actual texture kind.
-    ApplyOverlayGeometry(plate.hoverOverlayFill, plate.hoverOverlayBg, plate.health, true)
-    plate.hoverClipBg:Hide()
+    ApplyOverlayGeometry(backing.hoverOverlayFill, backing.hoverOverlayBg, backing.health, true)
+    backing.hoverClipBg:Hide()
     -- Rounded corners: the new overlay joins the rounded body
-    if plate._npRounded then
-        ns.NP_ApplyRounding(plate, "health")
+    if backing._npRounded then
+        mod.NP_ApplyRounding(backing, "health")
     end
 end
 
-ns.EnsureTargetOverlay = function(plate)
-    if plate.targetClipFill then
+mod.EnsureTargetOverlay = function(backing)
+    if backing.targetClipFill then
         return
     end
-    local overlayAlpha = (p and p.targetOverlayAlpha) or defaults.targetOverlayAlpha
-    local overlayColor = (p and p.targetOverlayColor) or defaults.targetOverlayColor
+    local overlayAlpha = (p and p.targetOverlayAlpha) or defaultSet.targetOverlayAlpha
+    local overlayColor = (p and p.targetOverlayColor) or defaultSet.targetOverlayColor
     local STRIPE_TEX = "Interface\\AddOns\\CludesUINameplates\\Media\\striped-v2.png"
-    local fillTex = plate.health:GetStatusBarTexture()
-    plate.targetClipFill = CreateFrame("Frame", nil, plate.health)
-    plate.targetClipFill:SetClipsChildren(true)
+    local fillTex = backing.health:GetStatusBarTexture()
+    backing.targetClipFill = CreateFrame("Frame", nil, backing.health)
+    backing.targetClipFill:SetClipsChildren(true)
     -- Vertical bounds come from the health bar itself so the overlay never pixel-snaps 1px short; only the RIGHT edge tracks the fill.
-    plate.targetClipFill:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.targetClipFill:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.targetClipFill:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
-    plate.targetClipFill:SetFrameLevel(plate.health:GetFrameLevel() + 1)
-    plate.targetOverlayFill = plate.targetClipFill:CreateTexture(nil, "ARTWORK", nil, 2)
+    backing.targetClipFill:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.targetClipFill:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.targetClipFill:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
+    backing.targetClipFill:SetFrameLevel(backing.health:GetFrameLevel() + 1)
+    backing.targetOverlayFill = backing.targetClipFill:CreateTexture(nil, "ARTWORK", nil, 2)
     -- Full bar height/width (anchored LEFT+RIGHT to health bar) so the diagonal pattern stays continuous across the split and snaps with the clip's edges.
-    plate.targetOverlayFill:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.targetOverlayFill:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.targetOverlayFill:SetPoint("RIGHT", plate.health, "RIGHT", 0, 0)
-    plate.targetOverlayFill:SetTexture(STRIPE_TEX)
-    plate.targetOverlayFill:SetAlpha(overlayAlpha)
-    plate.targetOverlayFill:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
-    plate.targetClipFill:Hide()
-    plate.targetClipBg = CreateFrame("Frame", nil, plate.health)
-    plate.targetClipBg:SetClipsChildren(true)
-    plate.targetClipBg:SetPoint("TOPRIGHT", plate.health, "TOPRIGHT", 0, 0)
-    plate.targetClipBg:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMRIGHT", 0, 0)
-    plate.targetClipBg:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
-    plate.targetClipBg:SetFrameLevel(plate.health:GetFrameLevel() + 1)
-    plate.targetOverlayBg = plate.targetClipBg:CreateTexture(nil, "ARTWORK", nil, 1)
-    plate.targetOverlayBg:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
-    plate.targetOverlayBg:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMLEFT", 0, 0)
-    plate.targetOverlayBg:SetPoint("RIGHT", plate.health, "RIGHT", 0, 0)
-    plate.targetOverlayBg:SetTexture(STRIPE_TEX)
-    plate.targetOverlayBg:SetAlpha(OverlayBgAlpha(p and p.targetOverlayFullBgAlpha, overlayAlpha))
-    plate.targetOverlayBg:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
+    backing.targetOverlayFill:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.targetOverlayFill:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.targetOverlayFill:SetPoint("RIGHT", backing.health, "RIGHT", 0, 0)
+    backing.targetOverlayFill:SetTexture(STRIPE_TEX)
+    backing.targetOverlayFill:SetAlpha(overlayAlpha)
+    backing.targetOverlayFill:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
+    backing.targetClipFill:Hide()
+    backing.targetClipBg = CreateFrame("Frame", nil, backing.health)
+    backing.targetClipBg:SetClipsChildren(true)
+    backing.targetClipBg:SetPoint("TOPRIGHT", backing.health, "TOPRIGHT", 0, 0)
+    backing.targetClipBg:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", 0, 0)
+    backing.targetClipBg:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
+    backing.targetClipBg:SetFrameLevel(backing.health:GetFrameLevel() + 1)
+    backing.targetOverlayBg = backing.targetClipBg:CreateTexture(nil, "ARTWORK", nil, 1)
+    backing.targetOverlayBg:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
+    backing.targetOverlayBg:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMLEFT", 0, 0)
+    backing.targetOverlayBg:SetPoint("RIGHT", backing.health, "RIGHT", 0, 0)
+    backing.targetOverlayBg:SetTexture(STRIPE_TEX)
+    backing.targetOverlayBg:SetAlpha(OverlayBgAlpha(p and p.targetOverlayFullBgAlpha, overlayAlpha))
+    backing.targetOverlayBg:SetVertexColor(overlayColor.r, overlayColor.g, overlayColor.b)
     -- Creation-time texcoord for the STRIPE_TEX default; the state-gated apply re-runs it with the actual texture kind.
-    ApplyOverlayGeometry(plate.targetOverlayFill, plate.targetOverlayBg, plate.health, true)
-    plate.targetClipBg:Hide()
+    ApplyOverlayGeometry(backing.targetOverlayFill, backing.targetOverlayBg, backing.health, true)
+    backing.targetClipBg:Hide()
     -- Rounded corners: the new overlay joins the rounded body
-    if plate._npRounded then
-        ns.NP_ApplyRounding(plate, "health")
+    if backing._npRounded then
+        mod.NP_ApplyRounding(backing, "health")
     end
 end
 
@@ -1045,56 +1059,56 @@ local CAST_UNINT_KEYS = {
     Boss = "castingUnintBoss",
 }
 
-local function LayoutCastTint(t, fill, path)
+local function LayoutCastTint(t, fill, filePath)
     t:ClearAllPoints()
     t:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
     t:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
-    t:SetTexture(path)
+    t:SetTexture(filePath)
 end
 
 -- Anchors and texture follow the fill, which a health texture swap replaces.
-function ns.NP_LayoutCastTints(plate)
-    local fill = plate.health:GetStatusBarTexture()
-    local key = (p and p.healthBarTexture) or defaults.healthBarTexture
-    local path = CludesUI.ResolveTexturePath(ns.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
-    LayoutCastTint(plate.castTintUnint, fill, path)
-    LayoutCastTint(plate.castTintInt, fill, path)
+function mod.NP_LayoutCastTints(backing)
+    local fill = backing.health:GetStatusBarTexture()
+    local key = (p and p.healthBarTexture) or defaultSet.healthBarTexture
+    local filePath = CludesUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
+    LayoutCastTint(backing.castTintUnint, fill, filePath)
+    LayoutCastTint(backing.castTintInt, fill, filePath)
 end
 
 -- Bumped on settings changes (RefreshAllSettings, the options' RefreshAllPlates): each plate
 -- repaints its tint colors once when its gen is stale.
 local castTintGen = 0
-function ns.NP_CastTintsDirty()
+function mod.NP_CastTintsDirty()
     castTintGen = castTintGen + 1
 end
 
-local function EnsureCastTints(plate)
-    if plate.castTintInt then
+local function EnsureCastTints(backing)
+    if backing.castTintInt then
         return
     end
-    local health = plate.health
-    plate.castTintUnint = health:CreateTexture(nil, "ARTWORK", nil, 1)
-    plate.castTintInt = health:CreateTexture(nil, "ARTWORK", nil, 2)
-    plate.castTintUnint:AddMaskTexture(plate._absorbMask)
-    plate.castTintInt:AddMaskTexture(plate._absorbMask)
-    plate.castTintUnint:Hide()
-    plate.castTintInt:Hide()
-    plate._castIntOn, plate._castUnintOn = false, false
-    ns.NP_LayoutCastTints(plate)
-    if plate._blizzBarMask then
-        ns.NP_ApplyBlizzBarArt(plate)
+    local healthBar = backing.health
+    backing.castTintUnint = healthBar:CreateTexture(nil, "ARTWORK", nil, 1)
+    backing.castTintInt = healthBar:CreateTexture(nil, "ARTWORK", nil, 2)
+    backing.castTintUnint:AddMaskTexture(backing._absorbMask)
+    backing.castTintInt:AddMaskTexture(backing._absorbMask)
+    backing.castTintUnint:Hide()
+    backing.castTintInt:Hide()
+    backing._castIntOn, backing._castUnintOn = false, false
+    mod.NP_LayoutCastTints(backing)
+    if backing._blizzBarMask then
+        mod.NP_ApplyBlizzBarArt(backing)
     end
-    if plate._npRounded then
-        ns.NP_ApplyRounding(plate, "health")
+    if backing._npRounded then
+        mod.NP_ApplyRounding(backing, "health")
     end
 end
 
-local function TierOn(keys, tier)
-    local v = p and p[keys[tier]]
-    if v == nil then
-        v = defaults[keys[tier]]
+local function TierOn(keyList, tier)
+    local val = p and p[keyList[tier]]
+    if val == nil then
+        val = defaultSet[keyList[tier]]
     end
-    return v == true
+    return val == true
 end
 
 -- tier: the mob type GetReactionColor marked (ns._reactionCastTier), nil to hide. lit: the unit
@@ -1102,72 +1116,72 @@ end
 -- (Modify Out of Combat). fold: UpdateHealthColor folded the bar to Off-Tank Aggro (the answer
 -- is SECRET); the tints take the same fold. Runs on every health color pass, so each setter
 -- is change-checked, except while folded (secret colors, like the bar's own).
-function ns.NP_ApplyCastTints(plate, tier, lit, fold)
+function mod.NP_ApplyCastTints(backing, tier, lit, fold)
     if tier == nil and not (p and p.castingEnemyColors) then
         -- Turned off: the plate forgets its casts, so its color passes stop calling here.
-        plate._castSeen, plate._castIntA, plate._castUnintA = nil, nil, nil
+        backing._castSeen, backing._castIntA, backing._castUnintA = nil, nil, nil
     end
     local intOn = tier ~= nil and TierOn(CAST_INT_KEYS, tier)
     local unintOn = tier ~= nil and TierOn(CAST_UNINT_KEYS, tier)
-    local ti, tu = plate.castTintInt, plate.castTintUnint
+    local ti, tu = backing.castTintInt, backing.castTintUnint
     if intOn or unintOn then
         if not ti then
-            EnsureCastTints(plate)
-            ti, tu = plate.castTintInt, plate.castTintUnint
-            ti:SetAlpha(plate._castIntA or 0)
-            tu:SetAlpha(plate._castUnintA or 0)
+            EnsureCastTints(backing)
+            ti, tu = backing.castTintInt, backing.castTintUnint
+            ti:SetAlpha(backing._castIntA or 0)
+            tu:SetAlpha(backing._castUnintA or 0)
         end
         -- Folded: only the shown tints, each recomputed every pass (secret, uncached).
         -- A hidden one keeps a stale color; the gen reset below repaints it on the next
         -- plain pass.
         local folded = false
         if fold then
-            local MaybeDarken = I.MaybeDarken
-            local otc = I._C("offTankAggro")
-            local ok = true
+            local MaybeDarken = Inner.MaybeDarken
+            local otc = Inner._C("offTankAggro")
+            local success = true
             if intOn then
-                local c = (p and p.castingIntColor) or defaults.castingIntColor
+                local c = (p and p.castingIntColor) or defaultSet.castingIntColor
                 local r, g, b = MaybeDarken(c.r, c.g, c.b, lit)
                 local okI
-                okI, r, g, b = ns.ComputeOffTankFold(plate.unit, r, g, b, otc.r, otc.g, otc.b)
+                okI, r, g, b = mod.ComputeOffTankFold(backing.unit, r, g, b, otc.r, otc.g, otc.b)
                 if okI then
                     ti:SetVertexColor(r, g, b)
                 else
-                    ok = false
+                    success = false
                 end
             end
-            if ok and unintOn then
-                local c = (p and p.castingUnintColor) or defaults.castingUnintColor
+            if success and unintOn then
+                local c = (p and p.castingUnintColor) or defaultSet.castingUnintColor
                 local r, g, b = MaybeDarken(c.r, c.g, c.b, lit)
                 local okU
-                okU, r, g, b = ns.ComputeOffTankFold(plate.unit, r, g, b, otc.r, otc.g, otc.b)
+                okU, r, g, b = mod.ComputeOffTankFold(backing.unit, r, g, b, otc.r, otc.g, otc.b)
                 if okU then
                     tu:SetVertexColor(r, g, b)
                 else
-                    ok = false
+                    success = false
                 end
             end
             -- Never cached: the next plain pass always repaints.
-            plate._castTintGen = nil
-            folded = ok
+            backing._castTintGen = nil
+            folded = success
         end
-        if not folded and (plate._castTintGen ~= castTintGen or plate._castTintLit ~= lit) then
-            plate._castTintGen, plate._castTintLit = castTintGen, lit
-            local MaybeDarken = I.MaybeDarken
-            local ic = (p and p.castingIntColor) or defaults.castingIntColor
-            local uc = (p and p.castingUnintColor) or defaults.castingUnintColor
+        if not folded and (backing._castTintGen ~= castTintGen or backing._castTintLit ~= lit) then
+            backing._castTintGen, backing._castTintLit = castTintGen, lit
+            local MaybeDarken = Inner.MaybeDarken
+            local ic = (p and p.castingIntColor) or defaultSet.castingIntColor
+            local uc = (p and p.castingUnintColor) or defaultSet.castingUnintColor
             ti:SetVertexColor(MaybeDarken(ic.r, ic.g, ic.b, lit))
             tu:SetVertexColor(MaybeDarken(uc.r, uc.g, uc.b, lit))
         end
     elseif not ti then
         return
     end
-    if plate._castIntOn ~= intOn then
-        plate._castIntOn = intOn
+    if backing._castIntOn ~= intOn then
+        backing._castIntOn = intOn
         ti:SetShown(intOn)
     end
-    if plate._castUnintOn ~= unintOn then
-        plate._castUnintOn = unintOn
+    if backing._castUnintOn ~= unintOn then
+        backing._castUnintOn = unintOn
         tu:SetShown(unintOn)
     end
 end
@@ -1175,41 +1189,41 @@ end
 -- A cast's start or interruptible flip (kickProtected: true = cannot be interrupted, maybe
 -- SECRET). Each kind's alpha turns 1 once seen and stays 1 while the mob holds the plate;
 -- the alphas change only here.
-function ns.NP_NoteCastKind(plate, kickProtected)
+function mod.NP_NoteCastKind(backing, kickProtected)
     local eval = C_CurveUtil.EvaluateColorValueFromBoolean
     -- _castSeen: nil = not checked yet, false = a player (never tinted), true = noted.
-    local seen = plate._castSeen
+    local seen = backing._castSeen
     if seen == false then
         return
     end
     local first = seen == nil
     if first then
         -- Never players (an enemy player's class color stays); checked once per unit.
-        if UnitIsPlayer(plate.unit) then
-            plate._castSeen = false
+        if UnitIsPlayer(backing.unit) then
+            backing._castSeen = false
             return
         end
-        plate._castSeen = true
-        plate._castIntA, plate._castUnintA = 0, 0
+        backing._castSeen = true
+        backing._castIntA, backing._castUnintA = 0, 0
     end
-    plate._castIntA = eval(kickProtected, plate._castIntA, 1)
-    plate._castUnintA = eval(kickProtected, 1, plate._castUnintA)
-    if plate.castTintInt then
-        plate.castTintInt:SetAlpha(plate._castIntA)
-        plate.castTintUnint:SetAlpha(plate._castUnintA)
+    backing._castIntA = eval(kickProtected, backing._castIntA, 1)
+    backing._castUnintA = eval(kickProtected, 1, backing._castUnintA)
+    if backing.castTintInt then
+        backing.castTintInt:SetAlpha(backing._castIntA)
+        backing.castTintUnint:SetAlpha(backing._castUnintA)
     end
     if first then
-        plate:UpdateHealthColor()
+        backing:UpdateHealthColor()
     end
 end
 
 -- The plate's unit left (ClearUnit) or changed (the token swap): forget its casts.
-function ns.NP_ResetCastKind(plate)
-    plate._castSeen, plate._castIntA, plate._castUnintA = nil, nil, nil
-    ns.NP_ApplyCastTints(plate, nil)
+function mod.NP_ResetCastKind(backing)
+    backing._castSeen, backing._castIntA, backing._castUnintA = nil, nil, nil
+    mod.NP_ApplyCastTints(backing, nil)
 end
 
-I.ApplyOverlayGeometry, I.EnsureArrows = ApplyOverlayGeometry, EnsureArrows
-I.EnsureFocusOverlay, I.EnsureGlow = EnsureFocusOverlay, EnsureGlow
-I.EnsureTargetHighlight, I.OverlayBgAlpha = EnsureTargetHighlight, OverlayBgAlpha
-I.broken = false
+Inner.ApplyOverlayGeometry, Inner.EnsureArrows = ApplyOverlayGeometry, EnsureArrows
+Inner.EnsureFocusOverlay, Inner.EnsureGlow = EnsureFocusOverlay, EnsureGlow
+Inner.EnsureTargetHighlight, Inner.OverlayBgAlpha = EnsureTargetHighlight, OverlayBgAlpha
+Inner.broken = false

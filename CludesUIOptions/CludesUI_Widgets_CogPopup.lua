@@ -17,7 +17,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- Deferred work on a pooled frame stops once the frame was reset (dressed
     -- again for another use): its generation moved on, or it waits idle.
     local PoolGen, PoolIsIdle = CludesUI._Pool.Gen, CludesUI._Pool.IsIdle
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local SolidTex = CludesUI.SolidTex
     local MakeFont = CludesUI.MakeFont
     local MakeDropdownArrow = CludesUI.MakeDropdownArrow
@@ -45,21 +45,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return panelPopups[a] < panelPopups[b]
     end
     local function HidePanelPopups()
-        local n = 0
-        for pf in pairs(panelPopups) do
-            if pf:IsShown() then
-                n = n + 1
-                hideList[n] = pf
+        local num = 0
+        for popFrame in pairs(panelPopups) do
+            if popFrame:IsShown() then
+                num = num + 1
+                hideList[num] = popFrame
             end
         end
-        if n > 1 then
+        if num > 1 then
             table.sort(hideList, PopupOrder)
         end
-        for i = 1, n do
-            local pf = hideList[i]
-            hideList[i] = nil
-            if pf:IsShown() then
-                pf:Hide()
+        for idx = 1, num do
+            local popFrame = hideList[idx]
+            hideList[idx] = nil
+            if popFrame:IsShown() then
+                popFrame:Hide()
             end
         end
     end
@@ -89,42 +89,42 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --  shows. Rows take every field they take in opts.rows. The popup is clamped to
     --  the screen.
     -------------------------------------------------------------------------------
-    local function BuildCogPopup(opts)
+    local function BuildCogPopup(options)
         -- Every row the popup can show: opts.rows, or the rows of every section in order.
-        local allRows = opts.rows
-        if opts.sections then
+        local allRows = options.rows
+        if options.sections then
             allRows = {}
-            for _, sec in ipairs(opts.sections) do
-                for _, row in ipairs(sec.rows) do
-                    allRows[#allRows + 1] = row
+            for _, sec in ipairs(options.sections) do
+                for _, rowFrame in ipairs(sec.rows) do
+                    allRows[#allRows + 1] = rowFrame
                 end
             end
         end
         -- Spec Overrides capture: a cog's settings belong to its hosting slot -- ONE setting, captured whole. When the call site passes captureRegion (the DualRow half-region the cog sits in), every row with get/set joins that slot's capture group.
         -- row.noCapture opts a single row out (same flag DualRow honors): a popup can mix capturing rows with rows that must not capture (settings stored per palette rather than under a flat key).
-        if opts.captureRegion and CludesUI.AddCaptureAccessor and allRows then
-            for _, row in ipairs(allRows) do
+        if options.captureRegion and CludesUI.AddCaptureAccessor and allRows then
+            for _, rowFrame in ipairs(allRows) do
                 if
-                    row.get
-                    and row.set
-                    and not row.noCapture
-                    and row.type ~= "button"
-                    and row.type ~= "reorder"
-                    and row.type ~= "reordercheck"
+                    rowFrame.get
+                    and rowFrame.set
+                    and not rowFrame.noCapture
+                    and rowFrame.type ~= "button"
+                    and rowFrame.type ~= "reorder"
+                    and rowFrame.type ~= "reordercheck"
                 then
-                    CludesUI.AddCaptureAccessor(opts.captureRegion, {
-                        type = row.type,
-                        text = row.label,
-                        getValue = row.get,
-                        setValue = row.set,
-                        min = row.min,
-                        max = row.max,
-                        step = row.step,
-                        values = row.values,
-                        order = row.order,
+                    CludesUI.AddCaptureAccessor(options.captureRegion, {
+                        type = rowFrame.type,
+                        text = rowFrame.label,
+                        getValue = rowFrame.get,
+                        setValue = rowFrame.set,
+                        min = rowFrame.min,
+                        max = rowFrame.max,
+                        step = rowFrame.step,
+                        values = rowFrame.values,
+                        order = rowFrame.order,
                         -- Grouping kept so the Spec Overrides page mirrors the slot 1:1 with a real inline cog.
                         fromCog = true,
-                        cogTitle = opts.title,
+                        cogTitle = options.title,
                     })
                 end
             end
@@ -157,15 +157,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- A section's hidden takes part the same way.
         local dynamic = false
         if allRows then
-            for _, row in ipairs(allRows) do
-                if row.hidden then
+            for _, rowFrame in ipairs(allRows) do
+                if rowFrame.hidden then
                     dynamic = true
                     break
                 end
             end
         end
-        if opts.sections and not dynamic then
-            for _, sec in ipairs(opts.sections) do
+        if options.sections and not dynamic then
+            for _, sec in ipairs(options.sections) do
                 if sec.hidden then
                     dynamic = true
                     break
@@ -178,13 +178,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return ""
             end
             local sig = ""
-            if opts.sections then
-                for si, sec in ipairs(opts.sections) do
+            if options.sections then
+                for si, sec in ipairs(options.sections) do
                     if sec.hidden and sec.hidden() then
                         sig = sig .. "s" .. si .. ","
                     else
-                        for ri, row in ipairs(sec.rows) do
-                            if row.hidden and row.hidden() then
+                        for ri, rowFrame in ipairs(sec.rows) do
+                            if rowFrame.hidden and rowFrame.hidden() then
                                 sig = sig .. si .. "." .. ri .. ","
                             end
                         end
@@ -192,9 +192,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 return sig
             end
-            for i, row in ipairs(opts.rows) do
-                if row.hidden and row.hidden() then
-                    sig = sig .. i .. ","
+            for idx, rowFrame in ipairs(options.rows) do
+                if rowFrame.hidden and rowFrame.hidden() then
+                    sig = sig .. idx .. ","
                 end
             end
             return sig
@@ -215,17 +215,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if not allRows then
                 return nil
             end
-            for _, row in ipairs(allRows) do
-                if row.set then
-                    local _s = row.set
+            for _, rowFrame in ipairs(allRows) do
+                if rowFrame.set then
+                    local _s = rowFrame.set
                     local function NotifyingSet(...)
-                        local f = popupOwner or opts.captureRegion
+                        local f = popupOwner or options.captureRegion
                         local snap = CludesUI._SOAttribution(f)
                         _s(...)
                         CludesUI._NotifySettingWrite(f, snap)
                     end
                     popupRows = popupRows or {}
-                    popupRows[row] = setmetatable({ set = NotifyingSet }, { __index = row })
+                    popupRows[rowFrame] = setmetatable({ set = NotifyingSet }, { __index = rowFrame })
                 end
             end
             return popupRows
@@ -243,67 +243,67 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- col = { measure = the rows its width is measured from, title,
             -- first, last = its rows' range in rows }; colStart[i] = the column
             -- rows[i] starts. A rows popup is one column with no title.
-            local rows, cols, colStart = {}, {}, {}
+            local rowList, cols, colStart = {}, {}, {}
             local notifying = PopupRows()
             local multi = false -- one column per shown section
-            if not opts.sections then
-                for _, row in ipairs(opts.rows) do
-                    if not (dynamic and row.hidden and row.hidden()) then
-                        rows[#rows + 1] = (notifying and notifying[row]) or row
+            if not options.sections then
+                for _, rowFrame in ipairs(options.rows) do
+                    if not (dynamic and rowFrame.hidden and rowFrame.hidden()) then
+                        rowList[#rowList + 1] = (notifying and notifying[rowFrame]) or rowFrame
                     end
                 end
-                cols[1] = { measure = opts.rows }
+                cols[1] = { measure = options.rows }
             else
-                local shown = {}
-                for _, sec in ipairs(opts.sections) do
+                local isShown = {}
+                for _, sec in ipairs(options.sections) do
                     if not (sec.hidden and sec.hidden()) then
-                        for _, row in ipairs(sec.rows) do
-                            if not (row.hidden and row.hidden()) then
-                                shown[#shown + 1] = sec
+                        for _, rowFrame in ipairs(sec.rows) do
+                            if not (rowFrame.hidden and rowFrame.hidden()) then
+                                isShown[#isShown + 1] = sec
                                 break
                             end
                         end
                     end
                 end
-                multi = #shown > 0 and #shown >= (opts.columnsFrom or 2)
+                multi = #isShown > 0 and #isShown >= (options.columnsFrom or 2)
                 if not multi then
                     -- One column: stackLast sections after the others.
-                    local order = {}
-                    for _, sec in ipairs(shown) do
+                    local sequence = {}
+                    for _, sec in ipairs(isShown) do
                         if not sec.stackLast then
-                            order[#order + 1] = sec
+                            sequence[#sequence + 1] = sec
                         end
                     end
-                    for _, sec in ipairs(shown) do
+                    for _, sec in ipairs(isShown) do
                         if sec.stackLast then
-                            order[#order + 1] = sec
+                            sequence[#sequence + 1] = sec
                         end
                     end
-                    shown = order
+                    isShown = sequence
                     cols[1] = { measure = {} }
                 end
-                for _, sec in ipairs(shown) do
-                    local col = cols[1]
+                for _, sec in ipairs(isShown) do
+                    local column = cols[1]
                     if multi then
-                        col = { measure = sec.rows, title = sec.title, first = #rows + 1 }
-                        cols[#cols + 1] = col
-                        colStart[#rows + 1] = col
+                        column = { measure = sec.rows, title = sec.title, first = #rowList + 1 }
+                        cols[#cols + 1] = column
+                        colStart[#rowList + 1] = column
                     else
-                        for _, row in ipairs(sec.rows) do
-                            col.measure[#col.measure + 1] = row
+                        for _, rowFrame in ipairs(sec.rows) do
+                            column.measure[#column.measure + 1] = rowFrame
                         end
                     end
-                    for _, row in ipairs(sec.rows) do
-                        if not (row.hidden and row.hidden()) then
-                            rows[#rows + 1] = (notifying and notifying[row]) or row
+                    for _, rowFrame in ipairs(sec.rows) do
+                        if not (rowFrame.hidden and rowFrame.hidden()) then
+                            rowList[#rowList + 1] = (notifying and notifying[rowFrame]) or rowFrame
                         end
                     end
-                    col.last = #rows
+                    column.last = #rowList
                 end
             end
             if not multi then
                 colStart[1] = cols[1]
-                cols[1].first, cols[1].last = 1, #rows
+                cols[1].first, cols[1].last = 1, #rowList
             end
             -- Measure slider labels to find maxLblW: per column, each sizing its
             -- sliders and its width as a one-column popup does
@@ -315,51 +315,53 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             tmpFS:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
             tmpFS:Show()
             local COG_DD_W = 130
-            for _, col in ipairs(cols) do
+            for _, column in ipairs(cols) do
                 local maxLblW = 0
                 -- Widest label + dropdown pair (a dropdown or checkbox-list row may ask
                 -- for a wider control with row.ddWidth; every other row uses COG_DD_W).
                 local maxDDNeed = COG_DD_W
-                for _, row in ipairs(col.measure) do
-                    if row.type == "slider" or row.type == "input" then
-                        tmpFS:SetText(CludesUI.L(row.label))
-                        local w = tmpFS:GetStringWidth()
-                        if w > maxLblW then
-                            maxLblW = w
+                for _, rowFrame in ipairs(column.measure) do
+                    if rowFrame.type == "slider" or rowFrame.type == "input" then
+                        tmpFS:SetText(CludesUI.L(rowFrame.label))
+                        local wid = tmpFS:GetStringWidth()
+                        if wid > maxLblW then
+                            maxLblW = wid
                         end
                     elseif
-                        row.type == "dropdown"
-                        or row.type == "segmented"
-                        or row.type == "reordercheck"
+                        rowFrame.type == "dropdown"
+                        or rowFrame.type == "segmented"
+                        or rowFrame.type == "reordercheck"
                     then
-                        tmpFS:SetText(CludesUI.L(row.label))
-                        local w = tmpFS:GetStringWidth()
+                        tmpFS:SetText(CludesUI.L(rowFrame.label))
+                        local wid = tmpFS:GetStringWidth()
                             + (
-                                ((row.type == "dropdown" or row.type == "reordercheck") and row.ddWidth)
-                                or COG_DD_W
+                                (
+                                    (rowFrame.type == "dropdown" or rowFrame.type == "reordercheck")
+                                    and rowFrame.ddWidth
+                                ) or COG_DD_W
                             )
-                        if w > maxDDNeed then
-                            maxDDNeed = w
+                        if wid > maxDDNeed then
+                            maxDDNeed = wid
                         end
                     elseif
-                        row.type == "toggle"
-                        or row.type == "colorpicker"
-                        or row.type == "multiswatch"
-                        or row.type == "button"
+                        rowFrame.type == "toggle"
+                        or rowFrame.type == "colorpicker"
+                        or rowFrame.type == "multiswatch"
+                        or rowFrame.type == "button"
                     then
                         -- A long label must not run under the right-aligned switch or swatches, or past a button's edges.
-                        tmpFS:SetText(CludesUI.L(row.label))
+                        tmpFS:SetText(CludesUI.L(rowFrame.label))
                         local control = TG_W
-                        if row.type == "colorpicker" then
+                        if rowFrame.type == "colorpicker" then
                             control = 20
-                        elseif row.type == "multiswatch" then
-                            control = #(row.swatches or {}) * 28
-                        elseif row.type == "button" then
+                        elseif rowFrame.type == "multiswatch" then
+                            control = #(rowFrame.swatches or {}) * 28
+                        elseif rowFrame.type == "button" then
                             control = 16
                         end
-                        local w = tmpFS:GetStringWidth() + control
-                        if w > maxDDNeed then
-                            maxDDNeed = w
+                        local wid = tmpFS:GetStringWidth() + control
+                        if wid > maxDDNeed then
+                            maxDDNeed = wid
                         end
                     end
                 end
@@ -368,10 +370,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
 
                 local SLIDER_LEFT = SIDE_PAD + maxLblW + LABEL_SLIDER_GAP
-                local TARGET_W = opts.minWidth or 260
+                local TARGET_W = options.minWidth or 260
                 local SLIDER_W = math.max(80, TARGET_W - SLIDER_LEFT - SLIDER_INPUT_GAP - INPUT_W - SIDE_PAD)
                 local POPUP_W = math.max(
-                    opts.minWidth or MIN_POPUP_W,
+                    options.minWidth or MIN_POPUP_W,
                     SLIDER_LEFT + SLIDER_W + SLIDER_INPUT_GAP + INPUT_W + SIDE_PAD
                 )
                 -- Widen for dropdown rows (label + gap + dropdown + padding)
@@ -379,18 +381,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if ddNeeded > POPUP_W then
                     POPUP_W = ddNeeded
                 end
-                if opts.minWidth and opts.minWidth > POPUP_W then
-                    POPUP_W = opts.minWidth
+                if options.minWidth and options.minWidth > POPUP_W then
+                    POPUP_W = options.minWidth
                 end
                 -- Stretch the track to fill a widened popup so no gap opens between the slider and its value box. Gated on minWidth so un-widened cog popups keep their original slider width.
-                if opts.minWidth then
+                if options.minWidth then
                     SLIDER_W =
                         math.max(SLIDER_W, POPUP_W - SLIDER_LEFT - SLIDER_INPUT_GAP - INPUT_W - SIDE_PAD)
                 end
                 -- A column also fits its title, in whole units (its divider sits on them).
                 if multi then
-                    if col.title then
-                        tmpFS:SetText(CludesUI.L(col.title))
+                    if column.title then
+                        tmpFS:SetText(CludesUI.L(column.title))
                         local tw = SIDE_PAD + tmpFS:GetStringWidth() + SIDE_PAD
                         if tw > POPUP_W then
                             POPUP_W = tw
@@ -398,17 +400,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     POPUP_W = math.ceil(POPUP_W)
                 end
-                col.sliderLeft, col.sliderW, col.w = SLIDER_LEFT, SLIDER_W, POPUP_W
+                column.sliderLeft, column.sliderW, column.w = SLIDER_LEFT, SLIDER_W, POPUP_W
             end
             tmpFS:Hide()
             local SLIDER_LEFT, SLIDER_W, POPUP_W = cols[1].sliderLeft, cols[1].sliderW, cols[1].w
 
-            local function RowH(row)
-                if row.type == "toggle" or row.type == "segmented" then
+            local function RowH(rowFrame)
+                if rowFrame.type == "toggle" or rowFrame.type == "segmented" then
                     return TOGGLE_ROW_H
-                elseif row.type == "dropdown" or row.type == "reorder" or row.type == "reordercheck" then
+                elseif
+                    rowFrame.type == "dropdown"
+                    or rowFrame.type == "reorder"
+                    or rowFrame.type == "reordercheck"
+                then
                     return DROPDOWN_ROW_H
-                elseif row.type == "button" then
+                elseif rowFrame.type == "button" then
                     return ROW_H + 4
                 end
                 return ROW_H
@@ -419,43 +425,43 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local contentBottom -- columns: the last band's bottom
             if not multi then
                 cols[1].y = -totalH
-                for i, row in ipairs(rows) do
-                    if i > 1 then
+                for idx, rowFrame in ipairs(rowList) do
+                    if idx > 1 then
                         totalH = totalH + GAP
                     end
-                    totalH = totalH + RowH(row)
+                    totalH = totalH + RowH(rowFrame)
                 end
             else
                 -- Bands of up to opts.maxColumns columns side by side, a 1px divider
                 -- between columns: a band is as tall as its tallest column, the
                 -- popup as wide as its widest band.
-                local perBand = math.max(1, opts.maxColumns or 4)
-                local x, band = 0, nil
+                local perBand = math.max(1, options.maxColumns or 4)
+                local posX, band = 0, nil
                 POPUP_W = 0
-                for ci, col in ipairs(cols) do
-                    local h = col.title and (HDR_H + HDR_GAP) or 0
-                    for i = col.first, col.last do
-                        if i > col.first then
-                            h = h + GAP
+                for ci, column in ipairs(cols) do
+                    local hgt = column.title and (HDR_H + HDR_GAP) or 0
+                    for idx = column.first, column.last do
+                        if idx > column.first then
+                            hgt = hgt + GAP
                         end
-                        h = h + RowH(rows[i])
+                        hgt = hgt + RowH(rowList[idx])
                     end
                     if (ci - 1) % perBand == 0 then
                         if band then
                             totalH = totalH + band.h + BAND_GAP
                         end
                         band = { y = -totalH, h = 0 }
-                        x = 0
+                        posX = 0
                     else
-                        x = x + 1 -- the divider
+                        posX = posX + 1 -- the divider
                     end
-                    col.x, col.y, col.band = x, band.y, band
-                    x = x + col.w
-                    if x > POPUP_W then
-                        POPUP_W = x
+                    column.x, column.y, column.band = posX, band.y, band
+                    posX = posX + column.w
+                    if posX > POPUP_W then
+                        POPUP_W = posX
                     end
-                    if h > band.h then
-                        band.h = h
+                    if hgt > band.h then
+                        band.h = hgt
                     end
                 end
                 totalH = totalH + band.h
@@ -465,36 +471,44 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             -- Footer (optional unlock mode link)
             local FOOTER_H = 0
-            if opts.footer and opts.footer.unlockKey then
+            if options.footer and options.footer.unlockKey then
                 FOOTER_H = 42 -- 2 lines of small text + padding
                 totalH = totalH + FOOTER_H
             end
 
-            local pf, isNew = PoolKept(anchorBtn, "cog:" .. (sig or ""), "Frame", CludesUI.OverlayParent())
-            pf:SetSize(POPUP_W, totalH)
-            pf:SetFrameStrata(opts.frameStrata or "DIALOG")
-            pf:SetFrameLevel(opts.frameLevel or 200)
-            pf:EnableMouse(true)
-            pf:Hide()
+            local popFrame, isNew =
+                PoolKept(anchorBtn, "cog:" .. (sig or ""), "Frame", CludesUI.OverlayParent())
+            popFrame:SetSize(POPUP_W, totalH)
+            popFrame:SetFrameStrata(options.frameStrata or "DIALOG")
+            popFrame:SetFrameLevel(options.frameLevel or 200)
+            popFrame:EnableMouse(true)
+            popFrame:Hide()
             -- Spec Overrides auto-capture: edits inside this popup attribute to the slot whose cog opened it.
-            pf._cuiOptionsPopup = true
+            popFrame._cuiOptionsPopup = true
             -- Controller cursor: the popup blocks what is under it but is not a stop itself.
-            CludesUI.PadHint(pf, "nodepass")
+            CludesUI.PadHint(popFrame, "nodepass")
 
             -- Match panel scale so the popup matches scrollable-area widgets
             local ppScale = CludesUI.GetPopupScale() or 1
-            pf:SetScale(ppScale)
+            popFrame:SetScale(ppScale)
             if isNew and CludesUI._popupFrames then
-                CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = pf }
+                CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = popFrame }
             end
 
-            local bg = SolidTex(pf, "BACKGROUND", 0.062, 0.070, 0.082, opts.bgAlpha or 0.95)
-            bg:SetAllPoints()
-            CludesUI.MakeRoundedBorder(pf, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg)
+            local backdrop = SolidTex(popFrame, "BACKGROUND", 0.062, 0.070, 0.082, options.bgAlpha or 0.95)
+            backdrop:SetAllPoints()
+            CludesUI.MakeRoundedBorder(
+                popFrame,
+                BORDER_COLOR.r,
+                BORDER_COLOR.g,
+                BORDER_COLOR.b,
+                0.15,
+                backdrop
+            )
 
             -- House look: an accent cap along the top, the title on the left in capitals.
             local cap = SolidTex(
-                pf,
+                popFrame,
                 "ARTWORK",
                 CludesUI.CLUDES_GREEN.r,
                 CludesUI.CLUDES_GREEN.g,
@@ -504,14 +518,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             cap:SetPoint("TOPLEFT")
             cap:SetPoint("TOPRIGHT")
             cap:SetHeight(2)
-            local titleFS = MakeFont(pf, TITLE_H, "", 1, 1, 1)
+            local titleFS = MakeFont(popFrame, TITLE_H, "", 1, 1, 1)
             titleFS:SetAlpha(0.9)
-            titleFS:SetPoint("TOPLEFT", pf, "TOPLEFT", 14, -TOP_PAD)
-            titleFS:SetText(CludesUI.L(opts.title or ""):upper())
+            titleFS:SetPoint("TOPLEFT", popFrame, "TOPLEFT", 14, -TOP_PAD)
+            titleFS:SetText(CludesUI.L(options.title or ""):upper())
 
             -- A sections popup can be wide: it stays on screen.
-            if opts.sections then
-                pf:SetClampedToScreen(true)
+            if options.sections then
+                popFrame:SetClampedToScreen(true)
             end
             -- The frame each column's rows anchor to: the popup itself for one
             -- column; per column, a frame whose top-left sits at the column's
@@ -519,50 +533,50 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- (and across the popup between bands).
             if multi then
                 local prevBand
-                for _, col in ipairs(cols) do
-                    local a = CreateFrame("Frame", nil, pf)
-                    a:SetPoint("TOPLEFT", pf, "TOPLEFT", col.x, 0)
-                    a:SetSize(col.w, totalH)
-                    col.anchor = a
+                for _, column in ipairs(cols) do
+                    local a = CreateFrame("Frame", nil, popFrame)
+                    a:SetPoint("TOPLEFT", popFrame, "TOPLEFT", column.x, 0)
+                    a:SetSize(column.w, totalH)
+                    column.anchor = a
                     if prevBand then
                         local div =
-                            SolidTex(pf, "BORDER", BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15)
-                        PP.DisablePixelSnap(div)
-                        if col.band == prevBand then
-                            PP.Point(div, "TOPLEFT", pf, "TOPLEFT", col.x - 1, col.y)
-                            PP.Size(div, 1, col.band.h)
+                            SolidTex(popFrame, "BORDER", BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15)
+                        Pix.DisablePixelSnap(div)
+                        if column.band == prevBand then
+                            Pix.Point(div, "TOPLEFT", popFrame, "TOPLEFT", column.x - 1, column.y)
+                            Pix.Size(div, 1, column.band.h)
                         else
-                            PP.Point(div, "TOPLEFT", pf, "TOPLEFT", 1, col.y + BAND_GAP / 2)
-                            PP.Size(div, POPUP_W - 2, 1)
+                            Pix.Point(div, "TOPLEFT", popFrame, "TOPLEFT", 1, column.y + BAND_GAP / 2)
+                            Pix.Size(div, POPUP_W - 2, 1)
                         end
                     end
-                    prevBand = col.band
+                    prevBand = column.band
                 end
             else
-                cols[1].anchor = pf
+                cols[1].anchor = popFrame
             end
 
             local curY = -(TOP_PAD + TITLE_H + TITLE_GAP)
             -- The column the rows below are built in: its frame and width.
-            local ca, COL_W = pf, POPUP_W
+            local ca, COL_W = popFrame, POPUP_W
             -- A dropdown-height row's disabled overlay (row.disabled set): dims the row,
             -- blocks it and explains the lock; the refresh shows it while disabled.
-            local function RowDisabledOverlay(row, y)
-                if not row.disabled then
+            local function RowDisabledOverlay(rowFrame, posY)
+                if not rowFrame.disabled then
                     return nil
                 end
-                local dis = CreateFrame("Frame", nil, pf)
-                dis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, y)
-                dis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, y)
+                local dis = CreateFrame("Frame", nil, popFrame)
+                dis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, posY)
+                dis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, posY)
                 dis:SetHeight(DROPDOWN_ROW_H)
-                dis:SetFrameLevel(pf:GetFrameLevel() + 10)
+                dis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                 dis:EnableMouse(true)
                 local disTex = SolidTex(dis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                 disTex:SetAllPoints()
                 dis:SetScript("OnEnter", function(self)
-                    local tip = ResolveDisabledTip(row)
-                    if tip and CludesUI.ShowWidgetTooltip then
-                        CludesUI.ShowWidgetTooltip(self, tip)
+                    local tipText = ResolveDisabledTip(rowFrame)
+                    if tipText and CludesUI.ShowWidgetTooltip then
+                        CludesUI.ShowWidgetTooltip(self, tipText)
                     end
                 end)
                 dis:SetScript("OnLeave", function()
@@ -570,44 +584,45 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 return dis
             end
-            for i, row in ipairs(rows) do
-                local col = colStart[i]
-                if col then
+            for idx, rowFrame in ipairs(rowList) do
+                local column = colStart[idx]
+                if column then
                     -- A column's first row: the column's frame, widths, top and title.
                     ca, COL_W, SLIDER_LEFT, SLIDER_W, curY =
-                        col.anchor, col.w, col.sliderLeft, col.sliderW, col.y
-                    if col.title then
-                        local hdr = MakeFont(pf, 11, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
-                        hdr:SetText(CludesUI.L(col.title))
-                        hdr:SetPoint("TOPLEFT", ca, "TOPLEFT", SIDE_PAD, curY)
+                        column.anchor, column.w, column.sliderLeft, column.sliderW, column.y
+                    if column.title then
+                        local heading =
+                            MakeFont(popFrame, 11, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
+                        heading:SetText(CludesUI.L(column.title))
+                        heading:SetPoint("TOPLEFT", ca, "TOPLEFT", SIDE_PAD, curY)
                         CludesUI.RegAccent({
                             type = "callback",
-                            obj = hdr,
+                            obj = heading,
                             fn = function(r, g, b)
-                                hdr:SetTextColor(r, g, b)
+                                heading:SetTextColor(r, g, b)
                             end,
                         })
                         curY = curY - HDR_H - HDR_GAP
                     end
-                elseif i > 1 then
+                elseif idx > 1 then
                     curY = curY - GAP
                 end
 
-                if row.type == "slider" then
-                    local srow = PixelizeSliderCfg(row)
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
+                if rowFrame.type == "slider" then
+                    local srow = PixelizeSliderCfg(rowFrame)
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
 
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, pf)
-                        hitFrame:SetPoint("TOPLEFT", lbl, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", lbl, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(pf:GetFrameLevel() + 3)
+                    if rowFrame.tooltip then
+                        local hitFrame = CreateFrame("Frame", nil, popFrame)
+                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
+                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
+                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                         hitFrame:EnableMouse(true)
                         hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(lbl, row.tooltip)
+                            CludesUI.ShowWidgetTooltip(labelFS, rowFrame.tooltip)
                         end)
                         hitFrame:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
@@ -615,7 +630,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
 
                     local track, valBox, updateVisual = BuildSliderCore(
-                        pf,
+                        popFrame,
                         SLIDER_W,
                         4,
                         12,
@@ -635,19 +650,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     valBox:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
 
                     local sliderDis
-                    if row.disabled then
-                        sliderDis = CreateFrame("Frame", nil, pf)
+                    if rowFrame.disabled then
+                        sliderDis = CreateFrame("Frame", nil, popFrame)
                         sliderDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         sliderDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
                         sliderDis:SetHeight(ROW_H)
-                        sliderDis:SetFrameLevel(pf:GetFrameLevel() + 10)
+                        sliderDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         sliderDis:EnableMouse(true)
                         local disTex = SolidTex(sliderDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                         disTex:SetAllPoints()
                         sliderDis:SetScript("OnEnter", function(self)
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         sliderDis:SetScript("OnLeave", function()
@@ -660,23 +675,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         updateVisual = updateVisual,
                         get = srow.get,
                         disOverlay = sliderDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - ROW_H
-                elseif row.type == "toggle" then
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - TOGGLE_ROW_H / 2 - 1)
+                elseif rowFrame.type == "toggle" then
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - TOGGLE_ROW_H / 2 - 1)
 
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, pf)
-                        hitFrame:SetPoint("TOPLEFT", lbl, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", lbl, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(pf:GetFrameLevel() + 3)
+                    if rowFrame.tooltip then
+                        local hitFrame = CreateFrame("Frame", nil, popFrame)
+                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
+                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
+                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                         hitFrame:EnableMouse(true)
                         hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(lbl, row.tooltip)
+                            CludesUI.ShowWidgetTooltip(labelFS, rowFrame.tooltip)
                         end)
                         hitFrame:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
@@ -684,11 +699,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
 
                     local cogToggle, _, cogSnap = BuildToggleControl(
-                        pf,
-                        pf:GetFrameLevel() + 2,
-                        row.get,
-                        function(v)
-                            row.set(v)
+                        popFrame,
+                        popFrame:GetFrameLevel() + 2,
+                        rowFrame.get,
+                        function(val)
+                            rowFrame.set(val)
                         end,
                         { sizeRatio = 0.8, noAnim = true }
                     )
@@ -699,28 +714,28 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     UpdateToggleVisual()
                     cogToggle:SetScript("OnClick", function()
-                        local cur = row.get()
-                        row.set(not cur)
+                        local current = rowFrame.get()
+                        rowFrame.set(not current)
                         UpdateToggleVisual()
-                        if pf._refresh then
-                            pf._refresh()
+                        if popFrame._refresh then
+                            popFrame._refresh()
                         end
                     end)
 
                     local toggleDis
-                    if row.disabled then
-                        toggleDis = CreateFrame("Frame", nil, pf)
+                    if rowFrame.disabled then
+                        toggleDis = CreateFrame("Frame", nil, popFrame)
                         toggleDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         toggleDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
                         toggleDis:SetHeight(TOGGLE_ROW_H)
-                        toggleDis:SetFrameLevel(pf:GetFrameLevel() + 10)
+                        toggleDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         toggleDis:EnableMouse(true)
                         local disTex = SolidTex(toggleDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                         disTex:SetAllPoints()
                         toggleDis:SetScript("OnEnter", function(self)
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         toggleDis:SetScript("OnLeave", function()
@@ -732,31 +747,31 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         type = "toggle",
                         updateVisual = UpdateToggleVisual,
                         disOverlay = toggleDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - TOGGLE_ROW_H
-                elseif row.type == "dropdown" then
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
+                elseif rowFrame.type == "dropdown" then
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
 
                     -- Cog-popup dropdowns render 10% smaller than the panel dropdowns.
                     local DD_SCALE = 0.9
                     local ddBtn, ddLbl = BuildDropdownControl(
-                        pf,
-                        row.ddWidth or COG_DD_W,
-                        pf:GetFrameLevel() + 2,
-                        row.values,
-                        row.order,
-                        row.get,
-                        function(v)
-                            row.set(v)
-                            if pf._refresh then
-                                pf._refresh()
+                        popFrame,
+                        rowFrame.ddWidth or COG_DD_W,
+                        popFrame:GetFrameLevel() + 2,
+                        rowFrame.values,
+                        rowFrame.order,
+                        rowFrame.get,
+                        function(val)
+                            rowFrame.set(val)
+                            if popFrame._refresh then
+                                popFrame._refresh()
                             end
                         end,
-                        row.itemDisabled
+                        rowFrame.itemDisabled
                     )
                     ddBtn:SetScale(DD_SCALE)
                     ddBtn:ClearAllPoints()
@@ -768,9 +783,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         -SIDE_PAD / DD_SCALE,
                         (curY - DROPDOWN_ROW_H / 2) / DD_SCALE
                     )
-                    if row.tooltip then
-                        ddBtn._ttText = row.tooltip
-                        ddBtn._ttOpts = row.tooltipOpts
+                    if rowFrame.tooltip then
+                        ddBtn._ttText = rowFrame.tooltip
+                        ddBtn._ttOpts = rowFrame.tooltipOpts
                     end
                     -- Propagate popup scale and the 10% reduction to the lazily-built menu so the open list matches the shrunk control.
                     ddBtn:HookScript("OnClick", function(self)
@@ -780,60 +795,62 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 self._ddMenu._cogScaled = true
                             end
                             -- Keep the menu above the cog popup: BuildDropdownMenu creates it at FULLSCREEN_DIALOG 200, which sits BEHIND a popup that is itself FULLSCREEN_DIALOG.
-                            self._ddMenu:SetFrameStrata(pf:GetFrameStrata())
-                            self._ddMenu:SetFrameLevel(pf:GetFrameLevel() + 30)
+                            self._ddMenu:SetFrameStrata(popFrame:GetFrameStrata())
+                            self._ddMenu:SetFrameLevel(popFrame:GetFrameLevel() + 30)
                         end
                     end)
 
                     -- Disabled overlay, mirroring slider/input handling
-                    local ddDis = RowDisabledOverlay(row, curY)
+                    local ddDis = RowDisabledOverlay(rowFrame, curY)
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "dropdown",
                         btn = ddBtn,
                         lbl = ddLbl,
-                        get = row.get,
-                        values = row.values,
+                        get = rowFrame.get,
+                        values = rowFrame.values,
                         refresh = ddBtn._ddRefresh,
                         disOverlay = ddDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - DROPDOWN_ROW_H
-                elseif row.type == "reordercheck" then
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
+                elseif rowFrame.type == "reordercheck" then
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
 
-                    local items = type(row.items) == "function" and row.items() or row.items or {}
+                    local itemList = type(rowFrame.items) == "function" and rowFrame.items()
+                        or rowFrame.items
+                        or {}
                     local ddBtn, refresh
                     ddBtn, refresh = CludesUI.BuildReorderCBDropdown(
-                        pf,
-                        row.ddWidth or COG_DD_W,
-                        pf:GetFrameLevel() + 2,
-                        items,
-                        row.get,
-                        function(k, v, order)
-                            row.set(k, v, order)
-                            if pf._refresh then
-                                pf._refresh()
+                        popFrame,
+                        rowFrame.ddWidth or COG_DD_W,
+                        popFrame:GetFrameLevel() + 2,
+                        itemList,
+                        rowFrame.get,
+                        function(k, val, sequence)
+                            rowFrame.set(k, val, sequence)
+                            if popFrame._refresh then
+                                popFrame._refresh()
                             end
                         end,
                         {
-                            hint = row.hint,
-                            hint2 = row.hint2,
-                            grip = row.grip,
-                            openOrder = row.openOrder,
-                            tail = row.tail,
+                            hint = rowFrame.hint,
+                            hint2 = rowFrame.hint2,
+                            grip = rowFrame.grip,
+                            openOrder = rowFrame.openOrder,
+                            tail = rowFrame.tail,
                             onTail = function(k)
-                                if row.onTail then
-                                    row.onTail(k, ddBtn)
+                                if rowFrame.onTail then
+                                    rowFrame.onTail(k, ddBtn)
                                 end
                             end,
-                            tailSelected = row.tailSelected,
-                            setOrder = function(keys)
-                                if row.setOrder then
-                                    row.setOrder(keys)
+                            tailSelected = rowFrame.tailSelected,
+                            setOrder = function(keyList)
+                                if rowFrame.setOrder then
+                                    rowFrame.setOrder(keyList)
                                 end
                             end,
                         }
@@ -850,40 +867,40 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     )
                     ddBtn:HookScript("OnClick", function(self)
                         if self._ddMenu then
-                            self._ddMenu:SetFrameStrata(pf:GetFrameStrata())
-                            self._ddMenu:SetFrameLevel(pf:GetFrameLevel() + 30)
+                            self._ddMenu:SetFrameStrata(popFrame:GetFrameStrata())
+                            self._ddMenu:SetFrameLevel(popFrame:GetFrameLevel() + 30)
                         end
                     end)
-                    local rcDis = RowDisabledOverlay(row, curY)
+                    local rcDis = RowDisabledOverlay(rowFrame, curY)
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "reordercheck",
                         btn = ddBtn,
                         refresh = refresh,
                         disOverlay = rcDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - DROPDOWN_ROW_H
-                elseif row.type == "segmented" then
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - TOGGLE_ROW_H / 2 - 1)
+                elseif rowFrame.type == "segmented" then
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - TOGGLE_ROW_H / 2 - 1)
 
                     local seg, _seg2, segRefresh = CludesUI.BuildSegmentedControl({
-                        parent = pf,
-                        keys = row.keys,
-                        labels = row.labels,
+                        parent = popFrame,
+                        keys = rowFrame.keys,
+                        labels = rowFrame.labels,
                         autoWidth = true,
                         square = true,
                         height = 22,
                         getChecked = function(key)
-                            return row.get() == key
+                            return rowFrame.get() == key
                         end,
                         onToggle = function(key)
-                            row.set(key)
-                            if pf._refresh then
-                                pf._refresh()
+                            rowFrame.set(key)
+                            if popFrame._refresh then
+                                popFrame._refresh()
                             end
                         end,
                     })
@@ -891,19 +908,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     seg:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - TOGGLE_ROW_H / 2)
 
                     local segDis
-                    if row.disabled then
-                        segDis = CreateFrame("Frame", nil, pf)
+                    if rowFrame.disabled then
+                        segDis = CreateFrame("Frame", nil, popFrame)
                         segDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         segDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
                         segDis:SetHeight(TOGGLE_ROW_H)
-                        segDis:SetFrameLevel(pf:GetFrameLevel() + 10)
+                        segDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         segDis:EnableMouse(true)
                         local disTex = SolidTex(segDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                         disTex:SetAllPoints()
                         segDis:SetScript("OnEnter", function(self)
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         segDis:SetScript("OnLeave", function()
@@ -916,66 +933,73 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         seg = seg,
                         refresh = segRefresh,
                         disOverlay = segDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - TOGGLE_ROW_H
-                elseif row.type == "colorpicker" then
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
+                elseif rowFrame.type == "colorpicker" then
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
 
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, pf)
-                        hitFrame:SetPoint("TOPLEFT", lbl, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", lbl, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(pf:GetFrameLevel() + 3)
+                    if rowFrame.tooltip then
+                        local hitFrame = CreateFrame("Frame", nil, popFrame)
+                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
+                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
+                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                         hitFrame:EnableMouse(true)
                         hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(lbl, row.tooltip)
+                            CludesUI.ShowWidgetTooltip(labelFS, rowFrame.tooltip)
                         end)
                         hitFrame:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
                     end
 
-                    local cpSwatch, cpUpdate = BuildColorSwatch(pf, pf:GetFrameLevel() + 2, function()
-                        return row.get()
-                    end, function(r, g, b, a)
-                        row.set(r, g, b, a)
-                        if pf._refresh then
-                            pf._refresh()
-                        end
-                    end, row.hasAlpha, 20)
+                    local cpSwatch, cpUpdate = BuildColorSwatch(
+                        popFrame,
+                        popFrame:GetFrameLevel() + 2,
+                        function()
+                            return rowFrame.get()
+                        end,
+                        function(r, g, b, a)
+                            rowFrame.set(r, g, b, a)
+                            if popFrame._refresh then
+                                popFrame._refresh()
+                            end
+                        end,
+                        rowFrame.hasAlpha,
+                        20
+                    )
                     cpSwatch:ClearAllPoints()
                     cpSwatch:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
 
                     -- Disabled: blocking overlays on label + swatch (inline swatch pattern)
                     local cpSwBlock, cpLblBlock
-                    if row.disabled then
+                    if rowFrame.disabled then
                         cpSwBlock = CreateFrame("Frame", nil, cpSwatch)
                         cpSwBlock:SetAllPoints()
                         cpSwBlock:SetFrameLevel(cpSwatch:GetFrameLevel() + 10)
                         cpSwBlock:EnableMouse(true)
                         cpSwBlock:SetScript("OnEnter", function()
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(cpSwatch, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(cpSwatch, tipText)
                             end
                         end)
                         cpSwBlock:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
 
-                        cpLblBlock = CreateFrame("Frame", nil, pf)
-                        cpLblBlock:SetPoint("TOPLEFT", lbl, "TOPLEFT", -2, 2)
-                        cpLblBlock:SetPoint("BOTTOMRIGHT", lbl, "BOTTOMRIGHT", 2, -2)
-                        cpLblBlock:SetFrameLevel(pf:GetFrameLevel() + 10)
+                        cpLblBlock = CreateFrame("Frame", nil, popFrame)
+                        cpLblBlock:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
+                        cpLblBlock:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
+                        cpLblBlock:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         cpLblBlock:EnableMouse(true)
                         cpLblBlock:SetScript("OnEnter", function()
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(lbl, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(labelFS, tipText)
                             end
                         end)
                         cpLblBlock:SetScript("OnLeave", function()
@@ -987,18 +1011,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         type = "colorpicker",
                         updateSwatch = cpUpdate,
                         swatch = cpSwatch,
-                        lbl = lbl,
+                        lbl = labelFS,
                         swBlock = cpSwBlock,
                         lblBlock = cpLblBlock,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
 
-                    if row.disabled then
-                        local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
+                    if rowFrame.disabled then
+                        local initDis = type(rowFrame.disabled) == "function" and rowFrame.disabled()
+                            or rowFrame.disabled
                         cpSwatch:SetAlpha(initDis and 0.3 or 1)
                         -- Label dims by alpha rather than the dark row overlay the other
                         -- types use: that overlay would tint the swatch's own color.
-                        lbl:SetAlpha(initDis and 0.2 or 0.6)
+                        labelFS:SetAlpha(initDis and 0.2 or 0.6)
                         if cpSwBlock then
                             if initDis then
                                 cpSwBlock:Show()
@@ -1016,88 +1041,89 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
 
                     curY = curY - ROW_H
-                elseif row.type == "multiswatch" then
+                elseif rowFrame.type == "multiswatch" then
                     -- Cog-row form of the main-page multiSwatch slot: label + N swatches right-to-left from the right edge; click one or the other, the inactive one dims. Same swatch spec: getValue/setValue/hasAlpha/tooltip/onClick (original picker click stashed on _eabOrigClick)/refreshAlpha.
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
 
                     local MSW_GAP = 8
                     local mswX = -SIDE_PAD
                     local mswUpdates, mswAlphas = {}, {}
-                    local mswSwatches = row.swatches or {}
-                    for i = #mswSwatches, 1, -1 do
-                        local sc = mswSwatches[i]
-                        local swatch, updateSwatch = BuildColorSwatch(
-                            pf,
-                            pf:GetFrameLevel() + 2,
+                    local mswSwatches = rowFrame.swatches or {}
+                    for idx = #mswSwatches, 1, -1 do
+                        local sc = mswSwatches[idx]
+                        local colorSwatch, updateSwatch = BuildColorSwatch(
+                            popFrame,
+                            popFrame:GetFrameLevel() + 2,
                             sc.getValue,
                             function(r, g, b, a)
-                                local f = popupOwner or opts.captureRegion
+                                local f = popupOwner or options.captureRegion
                                 local snap = CludesUI._SOAttribution(f)
                                 if sc.setValue then
                                     sc.setValue(r, g, b, a)
                                 end
                                 CludesUI._NotifySettingWrite(f, snap)
-                                if pf._refresh then
-                                    pf._refresh()
+                                if popFrame._refresh then
+                                    popFrame._refresh()
                                 end
                             end,
                             sc.hasAlpha,
                             20
                         )
-                        swatch:ClearAllPoints()
-                        swatch:SetPoint("RIGHT", ca, "TOPRIGHT", mswX, curY - ROW_H / 2)
+                        colorSwatch:ClearAllPoints()
+                        colorSwatch:SetPoint("RIGHT", ca, "TOPRIGHT", mswX, curY - ROW_H / 2)
                         mswX = mswX - 20 - MSW_GAP
                         if sc.onClick then
-                            swatch._eabOrigClick = swatch:GetScript("OnClick")
-                            swatch:SetScript("OnClick", function(self, ...)
-                                local f = popupOwner or opts.captureRegion
+                            colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
+                            colorSwatch:SetScript("OnClick", function(self, ...)
+                                local f = popupOwner or options.captureRegion
                                 local snap = CludesUI._SOAttribution(f)
                                 sc.onClick(self, ...)
                                 CludesUI._NotifySettingWrite(f, snap)
-                                if pf._refresh then
-                                    pf._refresh()
+                                if popFrame._refresh then
+                                    popFrame._refresh()
                                 end
                             end)
                         end
                         if sc.tooltip then
-                            swatch:HookScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(swatch, sc.tooltip)
+                            colorSwatch:HookScript("OnEnter", function()
+                                CludesUI.ShowWidgetTooltip(colorSwatch, sc.tooltip)
                             end)
-                            swatch:HookScript("OnLeave", function()
+                            colorSwatch:HookScript("OnLeave", function()
                                 CludesUI.HideWidgetTooltip()
                             end)
                         end
                         mswUpdates[#mswUpdates + 1] = updateSwatch
                         if sc.refreshAlpha then
-                            mswAlphas[#mswAlphas + 1] = { sw = swatch, fn = sc.refreshAlpha }
-                            swatch:SetAlpha(sc.refreshAlpha())
+                            mswAlphas[#mswAlphas + 1] = { sw = colorSwatch, fn = sc.refreshAlpha }
+                            colorSwatch:SetAlpha(sc.refreshAlpha())
                         end
                     end
 
                     -- Row-level disabled overlay, as on the slider/input rows
                     local mswDis
-                    if row.disabled then
-                        mswDis = CreateFrame("Frame", nil, pf)
+                    if rowFrame.disabled then
+                        mswDis = CreateFrame("Frame", nil, popFrame)
                         mswDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         mswDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
                         mswDis:SetHeight(ROW_H)
-                        mswDis:SetFrameLevel(pf:GetFrameLevel() + 10)
+                        mswDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         mswDis:EnableMouse(true)
                         local disTex = SolidTex(mswDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                         disTex:SetAllPoints()
                         mswDis:SetScript("OnEnter", function(self)
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         mswDis:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
-                        local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
+                        local initDis = type(rowFrame.disabled) == "function" and rowFrame.disabled()
+                            or rowFrame.disabled
                         if initDis then
                             mswDis:Show()
                         else
@@ -1110,43 +1136,43 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         updates = mswUpdates,
                         alphaFns = mswAlphas,
                         disOverlay = mswDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - ROW_H
-                elseif row.type == "input" then
-                    local lbl = MakeFont(pf, 11, nil, 1, 1, 1)
-                    lbl:SetAlpha(0.6)
-                    lbl:SetText(CludesUI.L(row.label))
-                    lbl:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
+                elseif rowFrame.type == "input" then
+                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                    labelFS:SetAlpha(0.6)
+                    labelFS:SetText(CludesUI.L(rowFrame.label))
+                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
 
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, pf)
-                        hitFrame:SetPoint("TOPLEFT", lbl, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", lbl, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(pf:GetFrameLevel() + 3)
+                    if rowFrame.tooltip then
+                        local hitFrame = CreateFrame("Frame", nil, popFrame)
+                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
+                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
+                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                         hitFrame:EnableMouse(true)
                         hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(lbl, row.tooltip)
+                            CludesUI.ShowWidgetTooltip(labelFS, rowFrame.tooltip)
                         end)
                         hitFrame:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
                     end
 
-                    local inputW = row.inputWidth or 80
+                    local inputW = rowFrame.inputWidth or 80
                     local SAVE_W = 34
                     local SAVE_GAP = 4
 
                     -- commitOnBlur: no Save button, commit on Enter and focus loss (matches the threshold EditBoxes). Otherwise an explicit Save button sits right of the input.
-                    local commitOnBlur = row.commitOnBlur
-                    local EG = CLUDES_GREEN
+                    local commitOnBlur = rowFrame.commitOnBlur
+                    local ACC = CLUDES_GREEN
                     local saveBtn, saveBg, saveLbl
                     if not commitOnBlur then
-                        saveBtn = CreateFrame("Button", nil, pf)
+                        saveBtn = CreateFrame("Button", nil, popFrame)
                         saveBtn:SetSize(SAVE_W, ROW_H - 4)
                         saveBtn:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
-                        saveBtn:SetFrameLevel(pf:GetFrameLevel() + 3)
-                        saveBg = SolidTex(saveBtn, "BACKGROUND", EG.r, EG.g, EG.b, 0.85)
+                        saveBtn:SetFrameLevel(popFrame:GetFrameLevel() + 3)
+                        saveBg = SolidTex(saveBtn, "BACKGROUND", ACC.r, ACC.g, ACC.b, 0.85)
                         saveBg:SetAllPoints()
                         CludesUI.RoundBody(saveBtn, saveBg)
                         saveLbl = MakeFont(saveBtn, 10, nil, 1, 1, 1)
@@ -1155,40 +1181,40 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         saveLbl:SetPoint("CENTER")
                         saveBtn:SetScript("OnEnter", function()
                             saveBg:SetColorTexture(
-                                EG.r + (1 - EG.r) * 0.25,
-                                EG.g + (1 - EG.g) * 0.25,
-                                EG.b + (1 - EG.b) * 0.25,
+                                ACC.r + (1 - ACC.r) * 0.25,
+                                ACC.g + (1 - ACC.g) * 0.25,
+                                ACC.b + (1 - ACC.b) * 0.25,
                                 0.95
                             )
                             saveLbl:SetAlpha(1)
                         end)
                         saveBtn:SetScript("OnLeave", function()
-                            saveBg:SetColorTexture(EG.r, EG.g, EG.b, 0.85)
+                            saveBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85)
                             saveLbl:SetAlpha(0.9)
                         end)
                     end
 
-                    local box = CreateFrame("EditBox", nil, pf)
-                    box:SetSize(inputW, ROW_H - 4)
+                    local boxFrame = CreateFrame("EditBox", nil, popFrame)
+                    boxFrame:SetSize(inputW, ROW_H - 4)
                     if commitOnBlur then
-                        box:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
+                        boxFrame:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
                     else
-                        box:SetPoint("RIGHT", saveBtn, "LEFT", -SAVE_GAP, 0)
+                        boxFrame:SetPoint("RIGHT", saveBtn, "LEFT", -SAVE_GAP, 0)
                     end
-                    box:SetAutoFocus(false)
-                    box:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
-                    box:SetTextColor(1, 1, 1, POPUP_INPUT_A)
-                    box:SetJustifyH(row.inputJustify or "CENTER")
-                    if row.inputJustify == "LEFT" then
-                        box:SetTextInsets(6, 6, 0, 0)
+                    boxFrame:SetAutoFocus(false)
+                    boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
+                    boxFrame:SetTextColor(1, 1, 1, POPUP_INPUT_A)
+                    boxFrame:SetJustifyH(rowFrame.inputJustify or "CENTER")
+                    if rowFrame.inputJustify == "LEFT" then
+                        boxFrame:SetTextInsets(6, 6, 0, 0)
                     end
-                    local boxBg = SolidTex(box, "BACKGROUND", 0.12, 0.12, 0.12, 0.8)
+                    local boxBg = SolidTex(boxFrame, "BACKGROUND", 0.12, 0.12, 0.12, 0.8)
                     boxBg:SetAllPoints()
-                    CludesUI.RoundBody(box, boxBg)
-                    box:SetText(row.get and row.get() or "")
+                    CludesUI.RoundBody(boxFrame, boxBg)
+                    boxFrame:SetText(rowFrame.get and rowFrame.get() or "")
                     -- Left-aligned text that overflows shows its start, not its end.
-                    if row.inputJustify == "LEFT" then
-                        box:SetCursorPosition(0)
+                    if rowFrame.inputJustify == "LEFT" then
+                        boxFrame:SetCursorPosition(0)
                     end
 
                     local _committing = false -- guard ClearFocus -> OnEditFocusLost reentry
@@ -1197,12 +1223,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             return
                         end
                         _committing = true
-                        box:ClearFocus()
-                        if row.set then
-                            row.set(box:GetText())
+                        boxFrame:ClearFocus()
+                        if rowFrame.set then
+                            rowFrame.set(boxFrame:GetText())
                         end
-                        if pf._refresh then
-                            pf._refresh()
+                        if popFrame._refresh then
+                            popFrame._refresh()
                         end
                         -- Brief white flash on the save button as confirmation
                         if saveBg then
@@ -1213,28 +1239,28 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 if PoolGen(saveBg) ~= g or PoolIsIdle(saveBg) then
                                     return
                                 end
-                                saveBg:SetColorTexture(EG.r, EG.g, EG.b, 0.85)
+                                saveBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85)
                                 saveLbl:SetText(CludesUI.L("Save"))
                             end)
                         end
                         _committing = false
                     end
 
-                    box:SetScript("OnEnterPressed", function(self)
+                    boxFrame:SetScript("OnEnterPressed", function(self)
                         ApplyInput()
                     end)
-                    box:SetScript("OnEscapePressed", function(self)
+                    boxFrame:SetScript("OnEscapePressed", function(self)
                         -- Cancel: guard + restore BEFORE ClearFocus -- in commitOnBlur mode ClearFocus fires OnEditFocusLost, which would otherwise SAVE the discarded text.
                         _committing = true
-                        self:SetText(row.get and row.get() or "")
-                        if row.inputJustify == "LEFT" then
+                        self:SetText(rowFrame.get and rowFrame.get() or "")
+                        if rowFrame.inputJustify == "LEFT" then
                             self:SetCursorPosition(0)
                         end
                         self:ClearFocus()
                         _committing = false
                     end)
                     if commitOnBlur then
-                        box:SetScript("OnEditFocusLost", function()
+                        boxFrame:SetScript("OnEditFocusLost", function()
                             ApplyInput()
                         end)
                     else
@@ -1244,19 +1270,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
 
                     local inputDis
-                    if row.disabled then
-                        inputDis = CreateFrame("Frame", nil, pf)
+                    if rowFrame.disabled then
+                        inputDis = CreateFrame("Frame", nil, popFrame)
                         inputDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         inputDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
                         inputDis:SetHeight(ROW_H)
-                        inputDis:SetFrameLevel(pf:GetFrameLevel() + 10)
+                        inputDis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                         inputDis:EnableMouse(true)
                         local disTex = SolidTex(inputDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                         disTex:SetAllPoints()
                         inputDis:SetScript("OnEnter", function(self)
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         inputDis:SetScript("OnLeave", function()
@@ -1266,51 +1292,51 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "input",
-                        box = box,
-                        get = row.get,
+                        box = boxFrame,
+                        get = rowFrame.get,
                         disOverlay = inputDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                         saveBg = saveBg,
-                        leftJustify = row.inputJustify == "LEFT",
+                        leftJustify = rowFrame.inputJustify == "LEFT",
                     }
                     curY = curY - ROW_H
-                elseif row.type == "button" then
+                elseif rowFrame.type == "button" then
                     local BTN_ROW_H = ROW_H + 4
-                    local btn = CreateFrame("Button", nil, pf)
-                    PP.Size(btn, COL_W - SIDE_PAD * 2, BTN_ROW_H)
-                    PP.Point(btn, "TOP", ca, "TOPLEFT", COL_W / 2, curY)
-                    btn:SetFrameLevel(pf:GetFrameLevel() + 2)
-                    local btnBg = SolidTex(btn, "BACKGROUND", 0.18, 0.18, 0.18, 0.85)
+                    local button = CreateFrame("Button", nil, popFrame)
+                    Pix.Size(button, COL_W - SIDE_PAD * 2, BTN_ROW_H)
+                    Pix.Point(button, "TOP", ca, "TOPLEFT", COL_W / 2, curY)
+                    button:SetFrameLevel(popFrame:GetFrameLevel() + 2)
+                    local btnBg = SolidTex(button, "BACKGROUND", 0.18, 0.18, 0.18, 0.85)
                     btnBg:SetAllPoints()
-                    local btnLbl = MakeFont(btn, 11, nil, 1, 1, 1)
+                    local btnLbl = MakeFont(button, 11, nil, 1, 1, 1)
                     btnLbl:SetAlpha(0.7)
                     btnLbl:SetPoint("CENTER")
-                    btnLbl:SetText(CludesUI.L(row.label))
-                    btn:SetScript("OnEnter", function()
+                    btnLbl:SetText(CludesUI.L(rowFrame.label))
+                    button:SetScript("OnEnter", function()
                         btnBg:SetColorTexture(0.25, 0.25, 0.25, 0.85)
                         btnLbl:SetAlpha(1)
                     end)
-                    btn:SetScript("OnLeave", function()
+                    button:SetScript("OnLeave", function()
                         btnBg:SetColorTexture(0.18, 0.18, 0.18, 0.85)
                         btnLbl:SetAlpha(0.7)
                     end)
-                    btn:SetScript("OnClick", function()
-                        if row.action then
-                            row.action()
+                    button:SetScript("OnClick", function()
+                        if rowFrame.action then
+                            rowFrame.action()
                         end
-                        if pf._refresh then
-                            pf._refresh()
+                        if popFrame._refresh then
+                            popFrame._refresh()
                         end
                     end)
                     rowWidgets[#rowWidgets + 1] = { type = "button" }
                     curY = curY - BTN_ROW_H
-                elseif row.type == "reorder" then
+                elseif rowFrame.type == "reorder" then
                     -- Full-width dropdown button opening a drag-to-reorder menu (hint label + draggable rows), matching the raid/party "Sort By" reorder section.
                     local RR_W = COL_W - SIDE_PAD * 2
-                    local ddBtn = CreateFrame("Button", nil, pf)
+                    local ddBtn = CreateFrame("Button", nil, popFrame)
                     ddBtn:SetSize(RR_W, DROPDOWN_ROW_H - 2)
                     ddBtn:SetPoint("TOP", ca, "TOPLEFT", COL_W / 2, curY - 1)
-                    ddBtn:SetFrameLevel(pf:GetFrameLevel() + 2)
+                    ddBtn:SetFrameLevel(popFrame:GetFrameLevel() + 2)
                     local rBg = SolidTex(
                         ddBtn,
                         "BACKGROUND",
@@ -1327,8 +1353,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     rLbl:SetWordWrap(false)
                     rLbl:SetMaxLines(1)
                     rLbl:SetPoint("LEFT", ddBtn, "LEFT", 8, 0)
-                    rLbl:SetText(CludesUI.L(row.label))
-                    local rArrow = MakeDropdownArrow(ddBtn, 12, PP)
+                    rLbl:SetText(CludesUI.L(rowFrame.label))
+                    local rArrow = MakeDropdownArrow(ddBtn, 12, Pix)
                     rLbl:SetPoint("RIGHT", rArrow, "LEFT", -5, 0)
                     ddBtn:SetScript("OnEnter", function()
                         rBg:SetColorTexture(
@@ -1355,18 +1381,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     -- belongs to the popup (hidden with it, dressed again with it).
                     local MH = 26
                     local FONT = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-                    local menu = PoolOwned(pf, "reorder", "Frame", CludesUI.OverlayParent())
-                    menu:SetFrameStrata("FULLSCREEN_DIALOG")
-                    menu:SetFrameLevel(220)
-                    menu:SetClampedToScreen(true)
-                    menu:SetWidth(RR_W)
-                    menu:Hide()
+                    local dropMenu = PoolOwned(popFrame, "reorder", "Frame", CludesUI.OverlayParent())
+                    dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+                    dropMenu:SetFrameLevel(220)
+                    dropMenu:SetClampedToScreen(true)
+                    dropMenu:SetWidth(RR_W)
+                    dropMenu:Hide()
                     -- Controller cursor: Cancel clicks the button (it toggles the list closed).
                     if CludesUI.PadCP() then
-                        menu.CloseButton = ddBtn
+                        dropMenu.CloseButton = ddBtn
                     end
                     local mBg2 = SolidTex(
-                        menu,
+                        dropMenu,
                         "BACKGROUND",
                         CludesUI.DD_BG_R,
                         CludesUI.DD_BG_G,
@@ -1374,14 +1400,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         0.98
                     )
                     mBg2:SetAllPoints()
-                    CludesUI.MakeRoundedBorder(menu, 1, 1, 1, CludesUI.DD_BRD_A, mBg2, nil, true)
-                    menu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
-                    ddBtn._ddMenu = menu -- popup click-outside ignores menu interaction
+                    CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CludesUI.DD_BRD_A, mBg2, nil, true)
+                    dropMenu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
+                    ddBtn._ddMenu = dropMenu -- popup click-outside ignores menu interaction
 
                     -- Declared before OnShow so its OnUpdate can suppress the click-away dismiss while a row is being dragged.
                     local dragRow, dsY, isDragging = nil, nil, false
 
-                    menu:SetScript("OnShow", function(self)
+                    dropMenu:SetScript("OnShow", function(self)
                         self:SetScale(ddBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
                         self:SetScript("OnUpdate", function(m)
                             if isDragging then
@@ -1394,7 +1420,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             end
                         end)
                     end)
-                    menu:SetScript("OnHide", function(self)
+                    dropMenu:SetScript("OnHide", function(self)
                         self:SetScript("OnUpdate", nil)
                         -- Controller cursor: back onto the button (a no-op once the popup hid it too).
                         if CludesUI.PadCursorShown() then
@@ -1403,11 +1429,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end)
 
                     local mY = -2
-                    local ht = menu:CreateFontString(nil, "OVERLAY")
+                    local ht = dropMenu:CreateFontString(nil, "OVERLAY")
                     ht:SetFont(FONT, 10, "")
-                    ht:SetPoint("TOPLEFT", menu, "TOPLEFT", 10, mY - 4)
+                    ht:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, mY - 4)
                     ht:SetTextColor(1, 1, 1, 0.25)
-                    ht:SetText(CludesUI.L(row.hint or "Drag to Reorder"))
+                    ht:SetText(CludesUI.L(rowFrame.hint or "Drag to Reorder"))
                     mY = mY - 18
 
                     -- Height cap: rows live on a scroll child. Menus longer than
@@ -1415,15 +1441,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     -- the drag math below is scroll-child-relative, so reordering
                     -- keeps working while scrolled. No maxVisible = full height,
                     -- scrolling never engages (exact legacy behavior).
-                    local scroller = CreateFrame("ScrollFrame", nil, menu)
-                    scroller:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, mY)
-                    scroller:SetPoint("TOPRIGHT", menu, "TOPRIGHT", 0, mY)
-                    scroller:SetFrameLevel(menu:GetFrameLevel() + 1)
+                    local scroller = CreateFrame("ScrollFrame", nil, dropMenu)
+                    scroller:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, mY)
+                    scroller:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", 0, mY)
+                    scroller:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
                     local sChild = CreateFrame("Frame", nil, scroller)
                     scroller:SetScrollChild(sChild)
                     local maxScroll = 0
-                    menu:EnableMouseWheel(true)
-                    menu:SetScript("OnMouseWheel", function(_, delta)
+                    dropMenu:EnableMouseWheel(true)
+                    dropMenu:SetScript("OnMouseWheel", function(_, delta)
                         if maxScroll <= 0 then
                             return
                         end
@@ -1445,12 +1471,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     insLine:Hide()
 
                     local function PersistOrder()
-                        local keys = {}
+                        local keyList = {}
                         for _, rf in ipairs(rowFrames) do
-                            keys[#keys + 1] = rf._key
+                            keyList[#keyList + 1] = rf._key
                         end
-                        if row.set then
-                            row.set(keys)
+                        if rowFrame.set then
+                            rowFrame.set(keyList)
                         end
                     end
 
@@ -1465,7 +1491,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 return
                             end
                             isDragging = true
-                            self:SetFrameLevel(menu:GetFrameLevel() + 10)
+                            self:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
                             self:SetAlpha(0.8)
                             for _, r2 in ipairs(rowFrames) do
                                 if r2._lbl then
@@ -1473,7 +1499,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 end
                             end
                         end
-                        local sc = menu:GetEffectiveScale()
+                        local sc = dropMenu:GetEffectiveScale()
                         local cY = cy / sc
                         local mT = sChild:GetTop() or 0
                         local iI = #rowFrames
@@ -1501,7 +1527,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local function MakeRow()
                         local rf = CreateFrame("Button", nil, sChild)
                         rf:SetHeight(MH)
-                        rf:SetFrameLevel(menu:GetFrameLevel() + 2)
+                        rf:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
                         local rl = rf:CreateFontString(nil, "OVERLAY")
                         rl:SetFont(FONT, 13, "")
@@ -1557,10 +1583,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             end
                             isDragging = false
                             insLine:Hide()
-                            self:SetFrameLevel(menu:GetFrameLevel() + 2)
+                            self:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                             self:SetAlpha(1)
                             local _, cy = GetCursorPosition()
-                            local sc = menu:GetEffectiveScale()
+                            local sc = dropMenu:GetEffectiveScale()
                             cy = cy / sc
                             local mT = sChild:GetTop() or 0
                             local from = self._cbIndex
@@ -1603,9 +1629,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     -- now, a tracked spell list). An unchanged list keeps its rows.
                     local itemSig
                     local function Populate()
-                        local items = (row.items and row.items()) or {}
+                        local itemList = (rowFrame.items and rowFrame.items()) or {}
                         local sig = ""
-                        for _, it in ipairs(items) do
+                        for _, it in ipairs(itemList) do
                             sig = sig .. tostring(it.key) .. "\n" .. tostring(it.label) .. "\n"
                         end
                         if sig == itemSig then
@@ -1613,7 +1639,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end
                         itemSig = sig
                         wipe(rowFrames)
-                        for ci, it in ipairs(items) do
+                        for ci, it in ipairs(itemList) do
                             local rf = rowPool[ci] or MakeRow()
                             rowPool[ci] = rf
                             local ry = cbBaseY - (ci - 1) * MH
@@ -1625,57 +1651,58 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             rf:Show()
                             rowFrames[ci] = rf
                         end
-                        for i = #items + 1, #rowPool do
-                            rowPool[i]:Hide()
+                        for idx = #itemList + 1, #rowPool do
+                            rowPool[idx]:Hide()
                         end
-                        local visN = #items
-                        if row.maxVisible and row.maxVisible > 0 and visN > row.maxVisible then
-                            visN = row.maxVisible
+                        local visN = #itemList
+                        if rowFrame.maxVisible and rowFrame.maxVisible > 0 and visN > rowFrame.maxVisible then
+                            visN = rowFrame.maxVisible
                         end
-                        local listH, visH = #items * MH, visN * MH
+                        local listH, visH = #itemList * MH, visN * MH
                         scroller:SetHeight(math.max(visH, 1))
                         sChild:SetSize(RR_W, math.max(listH, 1))
                         scroller:SetVerticalScroll(0)
                         maxScroll = math.max(0, listH - visH)
-                        menu:SetHeight(20 + visH + 4)
+                        dropMenu:SetHeight(20 + visH + 4)
                     end
                     Populate()
-                    CludesUI.TrackOverlay(menu)
+                    CludesUI.TrackOverlay(dropMenu)
 
                     ddBtn:SetScript("OnClick", function()
-                        if menu:IsShown() then
-                            menu:Hide()
+                        if dropMenu:IsShown() then
+                            dropMenu:Hide()
                         else
                             Populate()
-                            menu:Show()
+                            dropMenu:Show()
                         end
                         -- Controller cursor: into the opened list.
-                        if CludesUI.PadCursorShown() and menu:IsShown() then
-                            CludesUI.PadFocus(menu)
+                        if CludesUI.PadCursorShown() and dropMenu:IsShown() then
+                            CludesUI.PadFocus(dropMenu)
                         end
                     end)
 
                     -- Disabled overlay: dim + block + hide menu
                     local reorderDis
-                    if row.disabled then
-                        reorderDis = CreateFrame("Frame", nil, pf)
+                    if rowFrame.disabled then
+                        reorderDis = CreateFrame("Frame", nil, popFrame)
                         reorderDis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, curY)
                         reorderDis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, curY)
                         reorderDis:SetHeight(DROPDOWN_ROW_H)
-                        reorderDis:SetFrameLevel(pf:GetFrameLevel() + 12)
+                        reorderDis:SetFrameLevel(popFrame:GetFrameLevel() + 12)
                         reorderDis:EnableMouse(true)
                         local disTex = SolidTex(reorderDis, "OVERLAY", 0.062, 0.070, 0.082, 0.70)
                         disTex:SetAllPoints()
                         reorderDis:SetScript("OnEnter", function(self)
-                            local tip = ResolveDisabledTip(row)
-                            if tip and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tip)
+                            local tipText = ResolveDisabledTip(rowFrame)
+                            if tipText and CludesUI.ShowWidgetTooltip then
+                                CludesUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         reorderDis:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
-                        local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
+                        local initDis = type(rowFrame.disabled) == "function" and rowFrame.disabled()
+                            or rowFrame.disabled
                         if initDis then
                             reorderDis:Show()
                         else
@@ -1686,9 +1713,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     rowWidgets[#rowWidgets + 1] = {
                         type = "reorder",
                         btn = ddBtn,
-                        menu = menu,
+                        menu = dropMenu,
                         disOverlay = reorderDis,
-                        disCheck = row.disabled,
+                        disCheck = rowFrame.disabled,
                     }
                     curY = curY - DROPDOWN_ROW_H
                 end
@@ -1698,13 +1725,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 curY = contentBottom
             end
 
-            if opts.footer and opts.footer.unlockKey then
+            if options.footer and options.footer.unlockKey then
                 local footerY = curY - 10
-                local line1 = MakeFont(pf, 12, nil, 0x78 / 255, 0x7b / 255, 0x81 / 255)
+                local line1 = MakeFont(popFrame, 12, nil, 0x78 / 255, 0x7b / 255, 0x81 / 255)
                 line1:SetText(CludesUI.L("Reposition freely with"))
-                line1:SetPoint("TOP", pf, "TOPLEFT", POPUP_W / 2, footerY)
+                line1:SetPoint("TOP", popFrame, "TOPLEFT", POPUP_W / 2, footerY)
 
-                local unlockBtn = CreateFrame("Button", nil, pf)
+                local unlockBtn = CreateFrame("Button", nil, popFrame)
                 unlockBtn:SetSize(80, 14)
                 unlockBtn:SetPoint("TOP", line1, "BOTTOM", 0, -5)
                 local _ugr, _ugg, _ugb = CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b
@@ -1716,8 +1743,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 unlockFS:SetText(CludesUI.L("Layout Mode"))
                 unlockFS:SetPoint("CENTER")
                 unlockBtn:SetScript("OnClick", function()
-                    pf:Hide()
-                    CludesUI.OpenUnlockModeAt(opts.footer.unlockKey)
+                    popFrame:Hide()
+                    CludesUI.OpenUnlockModeAt(options.footer.unlockKey)
                 end)
                 unlockBtn:SetScript("OnEnter", function(self)
                     unlockFS:SetTextColor(_uhr, _uhg, _uhb)
@@ -1729,7 +1756,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
             end
             -- Re-read every get function and update visuals
-            pf._refresh = function()
+            popFrame._refresh = function()
                 for _, rw in ipairs(rowWidgets) do
                     if rw.type == "slider" then
                         if rw.disOverlay and rw.disCheck then
@@ -1873,13 +1900,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             end
                         end
                         if rw.updates then
-                            for i = 1, #rw.updates do
-                                rw.updates[i]()
+                            for idx = 1, #rw.updates do
+                                rw.updates[idx]()
                             end
                         end
                         if rw.alphaFns then
-                            for i = 1, #rw.alphaFns do
-                                local a = rw.alphaFns[i]
+                            for idx = 1, #rw.alphaFns do
+                                local a = rw.alphaFns[idx]
                                 a.sw:SetAlpha(a.fn())
                             end
                         end
@@ -1917,13 +1944,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end
                 -- A change made inside flipped a row.hidden: the matching frame takes over.
-                if dynamic and pf:IsShown() and HiddenSig() ~= pf._sig then
+                if dynamic and popFrame:IsShown() and HiddenSig() ~= popFrame._sig then
                     SwapVariant()
                 end
             end
 
             -- True while a dropdown menu opened from inside this popup is shown and moused over. Exposed so external close-logic (e.g. a parent menu driving this popup as a flyout with its own _clickOutside disabled) stays open when a clicked dropdown list extends below the popup's own rect.
-            pf._anyDropdownHovered = function()
+            popFrame._anyDropdownHovered = function()
                 for _, rw in ipairs(rowWidgets) do
                     if
                         (rw.type == "dropdown" or rw.type == "reorder" or rw.type == "reordercheck")
@@ -1945,13 +1972,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             -- Click-outside-to-close; also closes when scrolled out of view
             local wasDown = false
-            pf._clickOutside = function(self)
+            popFrame._clickOutside = function(self)
                 local down = IsMouseButtonDown("LeftButton")
                 if down and not wasDown then
                     if
                         not self:IsMouseOver()
                         and not (popupOwner and popupOwner:IsMouseOver())
-                        and not pf._anyDropdownHovered()
+                        and not popFrame._anyDropdownHovered()
                     then
                         self:Hide()
                     end
@@ -1991,33 +2018,33 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
 
-            pf:SetScript("OnHide", function(self)
+            popFrame:SetScript("OnHide", function(self)
                 self:SetScript("OnUpdate", nil)
-                local owner = popupOwner
+                local ownerFrame = popupOwner
                 popupOwner = nil
-                pf._owner = nil
+                popFrame._owner = nil
                 -- Dim the anchor back to cog idle alpha; skipped via noOwnerDim when the anchor isn't a cog (e.g. a preview icon) and must not fade.
                 -- A hand-built glyph button goes back to its idle alpha through SetGlyphAlpha.
-                if owner and owner._cuiCogState then
-                    owner._cuiCogState()
-                elseif owner and not opts.noOwnerDim then
-                    if owner._glyphA then
-                        CludesUI.SetGlyphAlpha(owner, 0.4)
+                if ownerFrame and ownerFrame._cuiCogState then
+                    ownerFrame._cuiCogState()
+                elseif ownerFrame and not options.noOwnerDim then
+                    if ownerFrame._glyphA then
+                        CludesUI.SetGlyphAlpha(ownerFrame, 0.4)
                     else
-                        owner:SetAlpha(0.4)
+                        ownerFrame:SetAlpha(0.4)
                     end
                 end
                 -- Controller cursor: back onto the cog (not for the hover-opened popups,
                 -- where it stays free; a no-op once the cog is hidden).
-                if owner and not opts.noOwnerDim and CludesUI.PadCursorShown() then
-                    CludesUI.PadFocus(owner)
+                if ownerFrame and not options.noOwnerDim and CludesUI.PadCursorShown() then
+                    CludesUI.PadFocus(ownerFrame)
                 end
             end)
 
             -- Close when the main CludesUI frame hides (HidePanelPopups)
-            if CludesUI._mainFrame and not panelPopups[pf] then
+            if CludesUI._mainFrame and not panelPopups[popFrame] then
                 panelPopupN = panelPopupN + 1
-                panelPopups[pf] = panelPopupN
+                panelPopups[popFrame] = panelPopupN
                 if not panelHooked then
                     panelHooked = true
                     CludesUI._mainFrame:HookScript("OnHide", HidePanelPopups)
@@ -2026,13 +2053,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             -- Every dress (a no-op once tracked): a popup first made before the
             -- controller overlay layer existed is tracked once it sits on it.
-            CludesUI.TrackOverlay(pf)
-            popupFrame = pf
-            pf._sig = sig
+            CludesUI.TrackOverlay(popFrame)
+            popupFrame = popFrame
+            popFrame._sig = sig
             if variants then
-                variants[sig] = pf
+                variants[sig] = popFrame
             end
-            return pf
+            return popFrame
         end
 
         -- showFn: toggle popup anchored to a button. Wrapped in a callable table so callers can access showFn._popupFrame.
@@ -2040,14 +2067,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             __call = function(self, anchorBtn)
                 if dynamic then
                     -- The frame for the rows shown right now (built on first need).
-                    local cur = popupFrame
-                    local want = variants[HiddenSig()] or CreatePopup(HiddenSig(), anchorBtn)
-                    popupFrame = cur
-                    if popupFrame ~= want then
+                    local current = popupFrame
+                    local wanted = variants[HiddenSig()] or CreatePopup(HiddenSig(), anchorBtn)
+                    popupFrame = current
+                    if popupFrame ~= wanted then
                         if popupFrame and popupFrame:IsShown() then
                             popupFrame:Hide()
                         end
-                        popupFrame = want
+                        popupFrame = wanted
                     end
                     self._popupFrame = popupFrame
                 elseif not popupFrame then
@@ -2101,7 +2128,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- anchor closes the popup), and the cursor moves into the popup. Not for the
                 -- hover-opened popups (noOwnerDim: the anchor is a menu row, not a cog), where
                 -- the cursor must stay free to walk past the row.
-                if CludesUI.PadCP() and not opts.noOwnerDim then
+                if CludesUI.PadCP() and not options.noOwnerDim then
                     popupFrame.CloseButton = anchorBtn.Click and anchorBtn or nil
                     if CludesUI.PadCursorShown() then
                         CludesUI.PadFocus(popupFrame)
@@ -2113,36 +2140,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Open, a change made inside flipped a row.hidden: the frame for the new
         -- set of rows takes the same anchor, without the open animation.
         SwapVariant = function()
-            local owner = popupOwner
-            if not (dynamic and owner) then
+            local ownerFrame = popupOwner
+            if not (dynamic and ownerFrame) then
                 return
             end
             local old = popupFrame
-            local want = variants[HiddenSig()] or CreatePopup(HiddenSig(), owner)
+            local wanted = variants[HiddenSig()] or CreatePopup(HiddenSig(), ownerFrame)
             popupFrame = old
-            if want == old then
+            if wanted == old then
                 return
             end
             if old then
                 old:Hide()
             end -- its OnHide lets go of the owner
-            popupFrame = want
-            showFn._popupFrame = want
-            popupOwner = owner
-            want._owner = owner
-            want._refresh()
-            want:ClearAllPoints()
-            want:SetPoint("TOP", owner, "BOTTOM", 0, -5)
-            want:SetAlpha(1)
-            want:Show()
-            want:SetScript("OnUpdate", want._clickOutside)
-            if owner._cuiCogState then
-                owner._cuiCogState()
+            popupFrame = wanted
+            showFn._popupFrame = wanted
+            popupOwner = ownerFrame
+            wanted._owner = ownerFrame
+            wanted._refresh()
+            wanted:ClearAllPoints()
+            wanted:SetPoint("TOP", ownerFrame, "BOTTOM", 0, -5)
+            wanted:SetAlpha(1)
+            wanted:Show()
+            wanted:SetScript("OnUpdate", wanted._clickOutside)
+            if ownerFrame._cuiCogState then
+                ownerFrame._cuiCogState()
             end
-            if CludesUI.PadCP() and not opts.noOwnerDim then
-                want.CloseButton = owner.Click and owner or nil
+            if CludesUI.PadCP() and not options.noOwnerDim then
+                wanted.CloseButton = ownerFrame.Click and ownerFrame or nil
                 if CludesUI.PadCursorShown() then
-                    CludesUI.PadFocus(want)
+                    CludesUI.PadFocus(wanted)
                 end
             end
         end

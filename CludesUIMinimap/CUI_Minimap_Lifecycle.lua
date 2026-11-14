@@ -8,24 +8,24 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  OnEnable and the Farming HUD compatibility.
 --  Reads the earlier Minimap files through ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local defaults, EBS, GetFFD = I.defaults, I.EBS, I.GetFFD
-local flyoutSavedRegions, ApplyOmniumFolio = I.flyoutSavedRegions, I.ApplyOmniumFolio
-local ApplyMinimap, SetMMKeyHidden = I.ApplyMinimap, I.SetMMKeyHidden
-local SetApplyAll = I.SetApplyAll
+local defaultSet, SKIN, GetFFD = Inner.defaults, Inner.EBS, Inner.GetFFD
+local flyoutSavedRegions, ApplyOmniumFolio = Inner.flyoutSavedRegions, Inner.ApplyOmniumFolio
+local ApplyMinimap, SetMMKeyHidden = Inner.ApplyMinimap, Inner.SetMMKeyHidden
+local SetApplyAll = Inner.SetApplyAll
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local _mmKeyHidden
-I.mmKeyHiddenSetters[#I.mmKeyHiddenSetters + 1] = function(v)
-    _mmKeyHidden = v
+Inner.mmKeyHiddenSetters[#Inner.mmKeyHiddenSetters + 1] = function(val)
+    _mmKeyHidden = val
 end
 
 -- Assigned below; SetApplyAll hands it to CludesUIMinimap.lua. It runs
@@ -46,7 +46,7 @@ local ApplyAll
 -- hiding it is Visibility's job. EBS fields, not locals.
 -- An open Farming HUD owns the reparented map, so it stays at full alpha until the
 -- HUD's hide edge hands the Opacity back.
-function EBS._MapAlpha(p)
+function SKIN._MapAlpha(p)
     if FarmHud and FarmHud:IsShown() then
         return 1
     end
@@ -59,19 +59,19 @@ end
 
 -- Write the map alpha only when it differs from the stored one (GetAlpha returns the
 -- stored float, hence the tolerance); a secret stored alpha is simply overwritten.
-function EBS._WriteMapAlpha(mm, p)
-    local a = EBS._MapAlpha(p)
-    local cur = mm:GetAlpha()
-    if issecretvalue(cur) or math.abs(cur - a) > 0.001 then
+function SKIN._WriteMapAlpha(mm, p)
+    local a = SKIN._MapAlpha(p)
+    local current = mm:GetAlpha()
+    if issecretvalue(current) or math.abs(current - a) > 0.001 then
         mm:SetAlpha(a)
     end
 end
 
 -- Opacity setting change or HUD edge: one alpha write, whatever the visibility state.
-function EBS._ApplyMapAlpha()
-    local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+function SKIN._ApplyMapAlpha()
+    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     if Minimap and p and p.enabled then
-        EBS._WriteMapAlpha(Minimap, p)
+        SKIN._WriteMapAlpha(Minimap, p)
     end
 end
 
@@ -82,42 +82,42 @@ end
 -- layout apply, so a post-hook on that call puts ours back (installed with the
 -- first value; it returns at once while the setting is unset).
 -- Edit Mode's current Icon Size (percent), or nil before its layout is applied.
-function EBS._EditModeIconScale()
+function SKIN._EditModeIconScale()
     local c = MinimapCluster
     local s = Enum and Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.IconScale
     if not (c and s ~= nil and c.GetSettingValue) then
         return nil
     end
-    local ok, v = pcall(c.GetSettingValue, c, s)
-    if ok and type(v) == "number" and v > 0 then
-        return v
+    local success, val = pcall(c.GetSettingValue, c, s)
+    if success and type(val) == "number" and val > 0 then
+        return val
     end
     return nil
 end
-function EBS._ApplyMinimapIconScale()
-    local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-    local v = p and p.iconScale
+function SKIN._ApplyMinimapIconScale()
+    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    local val = p and p.iconScale
     if not (Minimap and Minimap.SetIconScale) then
         return
     end
     local d = GetFFD(Minimap)
-    if not v then
+    if not val then
         -- Unset after a value (a profile swap): hand the map back Edit Mode's.
         if d.iconScaleSet then
             d.iconScaleSet = nil
-            local ev = EBS._EditModeIconScale()
+            local ev = SKIN._EditModeIconScale()
             if ev then
                 Minimap:SetIconScale(ev / 100)
             end
         end
         return
     end
-    Minimap:SetIconScale(v / 100)
+    Minimap:SetIconScale(val / 100)
     d.iconScaleSet = true
     if not d.iconScaleHooked and MinimapCluster and MinimapCluster.SetIconScale then
         d.iconScaleHooked = true
         hooksecurefunc(MinimapCluster, "SetIconScale", function()
-            local m = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+            local m = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
             if m and m.iconScale then
                 Minimap:SetIconScale(m.iconScale / 100)
             end
@@ -129,7 +129,7 @@ end
 -- and stays mouse-enabled, so it would show and drag an empty Blizzard minimap:
 -- alpha 0 with the mouse off, on that one frame only. Edit Mode never resets
 -- either, so one write holds; the minimap stays ours until a reload.
-function EBS._SuppressMinimapSelection()
+function SKIN._SuppressMinimapSelection()
     local sel = MinimapCluster and MinimapCluster.Selection
     if not sel then
         return
@@ -163,18 +163,18 @@ local function MinimapDriverString(p, vm)
     if vm then
         return CludesUI.BuildVisibilityDriverString("", vm)
     end
-    local mode = p.visibility
-    if mode == "in_combat" then
+    local modeName = p.visibility
+    if modeName == "in_combat" then
         return "[combat] show; hide"
     end
-    if mode == "out_of_combat" then
+    if modeName == "out_of_combat" then
         return "[nocombat] show; hide"
     end
     return nil
 end
 
 local function UpdateMinimapVisibility()
-    local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     local minimap = Minimap
     if not minimap then
         return
@@ -190,7 +190,7 @@ local function UpdateMinimapVisibility()
 
     -- Opacity first, in every branch (the driver's, and in combat): the alpha is ours
     -- whoever owns Show()/Hide(), and a hidden map carries it into its next Show().
-    EBS._WriteMapAlpha(minimap, p)
+    SKIN._WriteMapAlpha(minimap, p)
 
     -- Minimap:Show()/Hide() is protected during lockdown, and combat transitions deliver
     -- inside lockdown (PLAYER_REGEN_DISABLED already reports InCombatLockdown), so
@@ -199,19 +199,19 @@ local function UpdateMinimapVisibility()
     -- and a transparent map still takes the mouse. A secure state driver is the only thing that can legally hide this frame mid-combat, so combat-dependent selections get one; others keep plain Show()/Hide().
     local vm = CludesUI.GetActiveVisibilityModes(p, "visibility")
     -- Mouseover cannot be expressed as a macro conditional, and the poll's own Show()/Hide() would fight a driver, so those selections stay on Lua.
-    local want = not _mmKeyHidden
+    local wanted = not _mmKeyHidden
             and CludesUI.VisDependsOnCombat(p, "visibility")
             and not (vm and vm.mouseover)
             and MinimapDriverString(p, vm)
         or nil
-    if want ~= _mmDriverStr and not InCombatLockdown() then
+    if wanted ~= _mmDriverStr and not InCombatLockdown() then
         -- Registering evaluates immediately (Show()s/Hide()s the frame), so only swap out of combat; the dispatcher re-fires on PLAYER_REGEN_ENABLED to finish.
-        if want then
-            RegisterStateDriver(minimap, "visibility", want)
+        if wanted then
+            RegisterStateDriver(minimap, "visibility", wanted)
         else
             UnregisterStateDriver(minimap, "visibility")
         end
-        _mmDriverStr = want
+        _mmDriverStr = wanted
     end
     -- The driver owns Show()/Hide() from here; the alpha set above is all this pass adds.
     if _mmDriverStr then
@@ -252,7 +252,7 @@ hooksecurefunc("ToggleMinimap", function()
         return
     end
     SetMMKeyHidden(not Minimap:IsShown())
-    local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     if p and p.enabled then
         UpdateMinimapVisibility()
     end
@@ -348,78 +348,78 @@ do
 
         -- Close when clicking elsewhere
         menuFrame:RegisterEvent("GLOBAL_MOUSE_DOWN")
-        menuFrame:SetScript("OnEvent", function(self, event)
-            if event == "GLOBAL_MOUSE_DOWN" and menuOpen then
+        menuFrame:SetScript("OnEvent", function(self, evt)
+            if evt == "GLOBAL_MOUSE_DOWN" and menuOpen then
                 if not self:IsMouseOver() then
                     SetMenuVisible(false)
                 end
             end
         end)
 
-        local y = -PADDING
-        for _, item in ipairs(menuItems) do
-            if item.divider then
+        local posY = -PADDING
+        for _, itemInfo in ipairs(menuItems) do
+            if itemInfo.divider then
                 local div = menuFrame:CreateTexture(nil, "ARTWORK")
-                div:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 8, y - 4)
-                div:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -8, y - 4)
+                div:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 8, posY - 4)
+                div:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -8, posY - 4)
                 div:SetHeight(1)
                 div:SetColorTexture(0.3, 0.3, 0.3, 0.6)
-                y = y - DIVIDER_H
-            elseif item.fn then
+                posY = posY - DIVIDER_H
+            elseif itemInfo.fn then
                 -- Plain button (no secure template needed)
-                local btn = CreateFrame("Button", nil, menuFrame)
-                btn:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, y)
-                btn:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, y)
-                btn:SetHeight(BUTTON_H)
+                local button = CreateFrame("Button", nil, menuFrame)
+                button:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, posY)
+                button:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, posY)
+                button:SetHeight(BUTTON_H)
 
-                local hl = btn:CreateTexture(nil, "HIGHLIGHT")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 0.08)
+                local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+                highlight:SetAllPoints()
+                highlight:SetColorTexture(1, 1, 1, 0.08)
 
-                local label = btn:CreateFontString(nil, "OVERLAY")
-                CludesUI.PrimeFontShadow(label, true)
-                label:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
-                label:SetPoint("LEFT", btn, "LEFT", 10, 0)
-                label:SetTextColor(0.9, 0.9, 0.9)
-                label:SetText(CludesUI.L(item.text))
+                local labelText = button:CreateFontString(nil, "OVERLAY")
+                CludesUI.PrimeFontShadow(labelText, true)
+                labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
+                labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
+                labelText:SetTextColor(0.9, 0.9, 0.9)
+                labelText:SetText(CludesUI.L(itemInfo.text))
 
-                local itemFn = item.fn
-                btn:SetScript("OnClick", function()
+                local itemFn = itemInfo.fn
+                button:SetScript("OnClick", function()
                     SetMenuVisible(false)
                     itemFn()
                 end)
 
-                y = y - BUTTON_H
+                posY = posY - BUTTON_H
             else
                 -- Secure click passthrough to a Blizzard MicroButton
-                local microRef = item.microButton and _G[item.microButton]
-                local btnName = "CUI_MicroMenu_" .. item.text:gsub("%s", "")
-                local btn = CreateFrame(
+                local microRef = itemInfo.microButton and _G[itemInfo.microButton]
+                local btnName = "CUI_MicroMenu_" .. itemInfo.text:gsub("%s", "")
+                local button = CreateFrame(
                     "Button",
                     btnName,
                     menuFrame,
                     "SecureActionButtonTemplate,SecureHandlerStateTemplate"
                 )
-                btn:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, y)
-                btn:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, y)
-                btn:SetHeight(BUTTON_H)
+                button:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, posY)
+                button:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, posY)
+                button:SetHeight(BUTTON_H)
 
                 -- "/click <name>" macro transport: the 12.1 "click" secure action
                 -- crashes on a Blizzard typo (SecureTemplates:564); MicroButtons are globally named so the macro reaches them directly.
                 local secureType = "macro"
                 if microRef then
-                    btn:SetAttribute("*macrotext1", "/click " .. item.microButton)
+                    button:SetAttribute("*macrotext1", "/click " .. itemInfo.microButton)
                 end
-                btn:SetAttribute("useOnKeyDown", false)
-                btn:SetAttribute("*type1", secureType)
-                btn:EnableMouse(true)
-                btn:RegisterForClicks("AnyUp")
+                button:SetAttribute("useOnKeyDown", false)
+                button:SetAttribute("*type1", secureType)
+                button:EnableMouse(true)
+                button:RegisterForClicks("AnyUp")
 
                 -- Activate secure click from the restricted environment; without this,
                 -- addon-set attributes are not trusted. The restore branch MUST match
                 -- the transport above -- a mismatched type silently reverts the 12.1 macro transport on the first combat exit.
-                RegisterStateDriver(btn, "combatlock", "[combat] combat; nocombat")
-                btn:SetAttribute(
+                RegisterStateDriver(button, "combatlock", "[combat] combat; nocombat")
+                button:SetAttribute(
                     "_onstate-combatlock",
                     ([[
                     if newstate == 'combat' then
@@ -432,28 +432,28 @@ do
                 ]]):format(secureType)
                 )
 
-                local hl = btn:CreateTexture(nil, "HIGHLIGHT")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 0.08)
+                local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+                highlight:SetAllPoints()
+                highlight:SetColorTexture(1, 1, 1, 0.08)
 
-                local label = btn:CreateFontString(nil, "OVERLAY")
-                CludesUI.PrimeFontShadow(label, true)
-                label:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
-                label:SetPoint("LEFT", btn, "LEFT", 10, 0)
-                label:SetTextColor(0.9, 0.9, 0.9)
-                label:SetText(CludesUI.L(item.text))
+                local labelText = button:CreateFontString(nil, "OVERLAY")
+                CludesUI.PrimeFontShadow(labelText, true)
+                labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
+                labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
+                labelText:SetTextColor(0.9, 0.9, 0.9)
+                labelText:SetText(CludesUI.L(itemInfo.text))
 
-                btn:HookScript("OnClick", function()
+                button:HookScript("OnClick", function()
                     C_Timer.After(0, function()
                         SetMenuVisible(false)
                     end)
                 end)
 
-                y = y - BUTTON_H
+                posY = posY - BUTTON_H
             end
         end
 
-        menuFrame:SetSize(MENU_WIDTH, -y + PADDING)
+        menuFrame:SetSize(MENU_WIDTH, -posY + PADDING)
         menuFrame:Show()
         SetMenuVisible(false)
     end
@@ -468,7 +468,7 @@ do
         end
         SetMenuVisible(not menuOpen)
     end
-    EBS._ToggleMicroMenu = ToggleMicroMenu
+    SKIN._ToggleMicroMenu = ToggleMicroMenu
 
     local hookFrame = CreateFrame("Frame")
     hookFrame:RegisterEvent("PLAYER_LOGIN")
@@ -483,17 +483,17 @@ end
 --  element linked to the minimap measures from.
 -------------------------------------------------------------------------------
 local function MDB()
-    return EBS.db and EBS.db.profile.minimap
+    return SKIN.db and SKIN.db.profile.minimap
 end
 
 -- Inset from the square canvas (canvas units): a square frame's outer box,
 -- its title bar and rims included, or a cropped map's visible band.
 local function MoverInsets()
     local m = MDB()
-    local crop = m and EBS._MapCrop(m, m.mapSize or 140) or 0
-    if EBS._MinimapFvSquare() then
-        local o = EBS._SqOut()
-        return -o, -o, crop - (EBS._fvTitleOn and EBS._SqTitle() or o), crop - o
+    local crop = m and SKIN._MapCrop(m, m.mapSize or 140) or 0
+    if SKIN._MinimapFvSquare() then
+        local o = SKIN._SqOut()
+        return -o, -o, crop - (SKIN._fvTitleOn and SKIN._SqTitle() or o), crop - o
     end
     return 0, 0, crop, crop
 end
@@ -503,22 +503,22 @@ end
 -- unlock mode too, so a drag measures from the same edges as the apply.
 -- Chained in front of any provider installed before this file loaded.
 local prevExtent = CludesUI._GetAnchorTargetExtent
-CludesUI._GetAnchorTargetExtent = function(targetKey, side)
+CludesUI._GetAnchorTargetExtent = function(targetKey, sideName)
     if targetKey == "EBS_Minimap" and Minimap and Minimap:GetLeft() then
         local l, r, t, b = MoverInsets()
         local ratio = Minimap:GetEffectiveScale() / UIParent:GetEffectiveScale()
-        if side == "LEFT" then
+        if sideName == "LEFT" then
             return (Minimap:GetLeft() + l) * ratio
-        elseif side == "RIGHT" then
+        elseif sideName == "RIGHT" then
             return (Minimap:GetRight() - r) * ratio
-        elseif side == "TOP" then
+        elseif sideName == "TOP" then
             return (Minimap:GetTop() - t) * ratio
-        elseif side == "BOTTOM" then
+        elseif sideName == "BOTTOM" then
             return (Minimap:GetBottom() + b) * ratio
         end
     end
     if prevExtent then
-        return prevExtent(targetKey, side)
+        return prevExtent(targetKey, sideName)
     end
     return nil
 end
@@ -528,7 +528,7 @@ end
 -- miss: every ApplyMinimap pass ends here, and the elements linked to the
 -- minimap follow a change.
 local extL, extR, extT, extB
-function EBS._NotifyMinimapExtent()
+function SKIN._NotifyMinimapExtent()
     local l, r, t, b = MoverInsets()
     if l == extL and r == extR and t == extT and b == extB then
         return
@@ -539,11 +539,11 @@ function EBS._NotifyMinimapExtent()
     end
 end
 
-function EBS:OnInitialize()
-    EBS.db = CludesUI.Lite.NewDB("CludesUIMinimapDB", defaults)
+function SKIN:OnInitialize()
+    SKIN.db = CludesUI.Lite.NewDB("CludesUIMinimapDB", defaultSet)
 
     -- Migrate legacy hideGreatVault/hidePortals into hideExtraBtns table
-    local mp = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     if mp then
         if mp.hideGreatVault ~= nil or mp.hidePortals ~= nil then
             if not mp.hideExtraBtns then
@@ -569,12 +569,12 @@ function EBS:OnInitialize()
     end
 
     -- Global bridge for options <-> main communication
-    _G._CUMM_DB = EBS.db
+    _G._CUMM_DB = SKIN.db
     _G._CUMM_ApplyMinimap = ApplyMinimap
     _G._CUMM_FullRebuildMinimap = FullRebuildMinimap
-    _G._CUMM_ApplyMapAlpha = EBS._ApplyMapAlpha
-    _G._CUMM_ApplyIconScale = EBS._ApplyMinimapIconScale
-    _G._CUMM_EditModeIconScale = EBS._EditModeIconScale
+    _G._CUMM_ApplyMapAlpha = SKIN._ApplyMapAlpha
+    _G._CUMM_ApplyIconScale = SKIN._ApplyMinimapIconScale
+    _G._CUMM_EditModeIconScale = SKIN._EditModeIconScale
 
     -- Register visibility updater + mouseover target
     CludesUI.RegisterVisibilityUpdater(UpdateMinimapVisibility)
@@ -587,7 +587,7 @@ function EBS:OnInitialize()
             if InCombatLockdown() or _mmKeyHidden then
                 return false
             end
-            local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+            local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
             if not (p and p.enabled) then
                 return false
             end
@@ -595,12 +595,12 @@ function EBS:OnInitialize()
             return CludesUI.VisWantsMouseover(p, "visibility")
         end, function()
             -- A hover reveal shows the map at its Opacity, not full alpha.
-            return EBS._MapAlpha(EBS.db and EBS.db.profile and EBS.db.profile.minimap)
+            return SKIN._MapAlpha(SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap)
         end)
     end
 end
 
-function EBS:OnEnable()
+function SKIN:OnEnable()
     ApplyAll()
 
     -- Re-apply after PLAYER_ENTERING_WORLD so accent colors from the theme system (which updates CLUDES_GREEN at PLAYER_LOGIN) are picked up.
@@ -623,7 +623,7 @@ function EBS:OnEnable()
     folioRefresh:RegisterEvent("PLAYER_ENTERING_WORLD")
     folioRefresh:SetScript("OnEvent", function()
         C_Timer.After(0, ApplyOmniumFolio)
-        C_Timer.After(0, EBS._ApplyAddonCompartment)
+        C_Timer.After(0, SKIN._ApplyAddonCompartment)
     end)
 
     -- If GameTimeFrame still doesn't exist, watch for Blizzard_TimeManager to load
@@ -633,7 +633,7 @@ function EBS:OnEnable()
         tmWatcher:SetScript("OnEvent", function(self, _, addon)
             if addon == "Blizzard_TimeManager" then
                 self:UnregisterAllEvents()
-                if EBS.db.profile.minimap.enabled then
+                if SKIN.db.profile.minimap.enabled then
                     C_Timer.After(0, ApplyMinimap)
                 end
             end
@@ -666,12 +666,12 @@ function EBS:OnEnable()
                     local m = MDB()
                     return not m or not m.enabled
                 end,
-                savePos = function(_, point, relPoint, x, y)
+                savePos = function(_, anchorPoint, relPoint, posX, posY)
                     local m = MDB()
                     if not m then
                         return
                     end
-                    m.position = { point = point, relPoint = relPoint, x = x, y = y }
+                    m.position = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     if not CludesUI._unlockActive then
                         ApplyMinimap()
                     end
@@ -728,8 +728,8 @@ do
             end
         end)
 
-        hooksecurefunc(Minimap, "SetParent", function(mm, parent)
-            if FarmHud:IsShown() and parent ~= FarmHud and not _fhLock then
+        hooksecurefunc(Minimap, "SetParent", function(mm, hostFrame)
+            if FarmHud:IsShown() and hostFrame ~= FarmHud and not _fhLock then
                 _fhLock = true
                 mm:SetParent(FarmHud)
                 _fhLock = false
@@ -748,9 +748,9 @@ do
             end
 
             -- Square border host (solid strips or textured backdrop)
-            local host = GetFFD(Minimap).borderHost
-            if host then
-                host:SetAlpha(alpha)
+            local hostRegion = GetFFD(Minimap).borderHost
+            if hostRegion then
+                hostRegion:SetAlpha(alpha)
             end
 
             -- WoW Forever look's Forever Square frame (the apply pass never sets
@@ -765,13 +765,13 @@ do
         -- edge hands our Opacity back.
         FarmHud:HookScript("OnShow", function()
             ToggleMinimapBorders(false)
-            EBS._ApplyMapAlpha()
+            SKIN._ApplyMapAlpha()
         end)
         FarmHud:HookScript("OnHide", function()
             ToggleMinimapBorders(true)
-            EBS._ApplyMapAlpha()
+            SKIN._ApplyMapAlpha()
         end)
     end)
 end
 
-I.broken = false
+Inner.broken = false

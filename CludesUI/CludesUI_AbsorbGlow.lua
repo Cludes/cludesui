@@ -2,7 +2,7 @@ if CUI_CLIENT_BLOCKED then
     return
 end
 -- Shared opt-in shield glow. Callers own settings, event registration and visibility.
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local Glow = {}
 CludesUI.AbsorbGlow = Glow
 
@@ -18,21 +18,21 @@ Glow.art = {
     },
 }
 function Glow.Width(art)
-    return art[4] and PP.Scale(art[3]) or art[3]
+    return art[4] and Pix.Scale(art[3]) or art[3]
 end
 
 function Glow.Build(ab)
     local hp = ab._hpBar
     -- Own clip host above the shield bars: the health-side half of the line
     -- would otherwise be cut by the missing-health clip.
-    local host = CreateFrame("Frame", nil, hp)
-    host:SetAllPoints(hp)
-    host:SetClipsChildren(true)
-    host:SetFrameLevel(hp:GetFrameLevel() + 4)
+    local hostRegion = CreateFrame("Frame", nil, hp)
+    hostRegion:SetAllPoints(hp)
+    hostRegion:SetClipsChildren(true)
+    hostRegion:SetFrameLevel(hp:GetFrameLevel() + 4)
     -- Each line sits on its own frame: boolean alpha works on frames (on a
     -- texture it renders nothing on this client).
-    local edgeHost = CreateFrame("Frame", nil, host)
-    edgeHost:SetAllPoints(host)
+    local edgeHost = CreateFrame("Frame", nil, hostRegion)
+    edgeHost:SetAllPoints(hostRegion)
     -- Invisible gate bar on the edge: fed the absorb over a 0-1 range, its
     -- fill is full with ANY shield and empty without one, so the line drawn
     -- over the fill needs no boolean read of the secret amount.
@@ -43,10 +43,10 @@ function Glow.Build(ab)
     gate:SetValue(0)
     local edge = edgeHost:CreateTexture(nil, "OVERLAY")
     edge:SetAllPoints(gate:GetStatusBarTexture())
-    local bfHost = CreateFrame("Frame", nil, host)
-    bfHost:SetAllPoints(host)
+    local bfHost = CreateFrame("Frame", nil, hostRegion)
+    bfHost:SetAllPoints(hostRegion)
     local bf = bfHost:CreateTexture(nil, "OVERLAY")
-    local g = { host = host, edgeHost = edgeHost, gate = gate, edge = edge, bfHost = bfHost, bf = bf }
+    local g = { host = hostRegion, edgeHost = edgeHost, gate = gate, edge = edge, bfHost = bfHost, bf = bf }
     if CreateUnitHealPredictionCalculator and UnitGetDetailedHealPrediction then
         local calc = CreateUnitHealPredictionCalculator()
         -- Configured once: the Missing Health clamp makes GetDamageAbsorbs'
@@ -72,22 +72,22 @@ function Glow.Anchor(ab)
     end
     local rev = g.rev
     local near, far = rev and "RIGHT" or "LEFT", rev and "LEFT" or "RIGHT"
-    local off = rev and 1 or -1
-    local fill = ab:GetStatusBarTexture()
+    local offset = rev and 1 or -1
+    local fillTex = ab:GetStatusBarTexture()
     local gate, bf = g.gate, g.bf
     gate:ClearAllPoints()
     if g.ge >= 3 then
-        gate:SetPoint("CENTER", fill, near, off, 0)
+        gate:SetPoint("CENTER", fillTex, near, offset, 0)
     else
-        gate:SetPoint("CENTER", ab._forward, near, off, 0)
+        gate:SetPoint("CENTER", ab._forward, near, offset, 0)
     end
     bf:ClearAllPoints()
     if g.anc == 1 then
-        bf:SetPoint("CENTER", fill, near, off, 0)
+        bf:SetPoint("CENTER", fillTex, near, offset, 0)
     elseif g.anc == 2 then
-        bf:SetPoint("CENTER", fill, far, -off, 0)
+        bf:SetPoint("CENTER", fillTex, far, -offset, 0)
     else
-        bf:SetPoint("CENTER", ab, far, off, 0)
+        bf:SetPoint("CENTER", ab, far, offset, 0)
     end
 end
 
@@ -95,7 +95,7 @@ end
 -- overshielding and the overshield line shows only then; 5: the line shows
 -- only while the shield reaches current health. The boolean only ever
 -- reaches SetAlphaFromBoolean.
-function Glow.Flip(ab, unit)
+function Glow.Flip(ab, unitToken)
     local g = ab._glow
     local ge = g.ge
     if ge == 3 then
@@ -109,7 +109,7 @@ function Glow.Flip(ab, unit)
         bh:SetAlpha(0)
         return
     end
-    UnitGetDetailedHealPrediction(unit, nil, calc)
+    UnitGetDetailedHealPrediction(unitToken, nil, calc)
     local _, clamped = calc:GetDamageAbsorbs()
     if ge == 5 then
         eh:SetAlphaFromBoolean(clamped, 1, 0)
@@ -122,14 +122,14 @@ end
 -- Value pass, from the absorb painter while the line is on: the gate takes
 -- the raw absorb, sizes follow the bar height and the pixel grid (a
 -- whole-pixel width moves with it; size-gated), then the flip.
-function Glow.Paint(ab, unit, absorbAmt, hpH)
+function Glow.Paint(ab, unitToken, absorbAmt, hpH)
     local g = ab._glow
-    if g.szH ~= hpH or g.szM ~= PP.mult then
-        g.szH, g.szM = hpH, PP.mult
-        local w = Glow.Width(g.art)
-        g.gate:SetSize(w, hpH)
-        g.bf:SetSize(w, hpH)
+    if g.szH ~= hpH or g.szM ~= Pix.mult then
+        g.szH, g.szM = hpH, Pix.mult
+        local wid = Glow.Width(g.art)
+        g.gate:SetSize(wid, hpH)
+        g.bf:SetSize(wid, hpH)
     end
     g.gate:SetValue(absorbAmt)
-    Glow.Flip(ab, unit)
+    Glow.Flip(ab, unitToken)
 end

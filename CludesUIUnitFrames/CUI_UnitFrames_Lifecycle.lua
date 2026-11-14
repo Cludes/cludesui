@@ -9,31 +9,31 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Boss Frame Range Dimming, Player Dispel Overlay helpers, Party Mode.
 --  Loads before PlayerAuraBars/ForeverImbues/AuraContainers (event order).
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)
     or GetSpecialization
 local issecretvalue = issecretvalue
 
-local I = ns._internals
-local frames, defaults, ResolveFontPath = I.frames, I.defaults, I.ResolveFontPath
+local Inner = mod._internals
+local frameList, defaultSet, ResolveFontPath = Inner.frames, Inner.defaults, Inner.ResolveFontPath
 local healthBarTextureNames, healthBarTextureOrder, healthBarTextures =
-    I.healthBarTextureNames, I.healthBarTextureOrder, I.healthBarTextures
-local RegisterUFUnlockElements = I.RegisterUFUnlockElements
-local InitializeFrames, SetupOptionsPanel = I.InitializeFrames, I.SetupOptionsPanel
-local db -- assigned by CludesUF:OnInitialize below, no setter
+    Inner.healthBarTextureNames, Inner.healthBarTextureOrder, Inner.healthBarTextures
+local RegisterUFUnlockElements = Inner.RegisterUFUnlockElements
+local InitializeFrames, SetupOptionsPanel = Inner.InitializeFrames, Inner.SetupOptionsPanel
+local saved -- assigned by CludesUF:OnInitialize below, no setter
 
 local CludesUF = CludesUI.Lite.NewAddon("CludesUIUnitFrames")
 
 function CludesUF:OnInitialize()
-    db = CludesUI.Lite.NewDB("CludesUIUnitFramesDB", defaults, true)
-    I.SetDB(db)
+    saved = CludesUI.Lite.NewDB("CludesUIUnitFramesDB", defaultSet, true)
+    Inner.SetDB(saved)
 
     -- A fresh install starts Target of Target on the Target frame's look; a
     -- profile from an earlier version keeps Automatic (no lookSource). Written
     -- here, not a default: the logout strip drops a value equal to its default.
     if CludesUI._firstInstallPending then
-        local tot = db.profile.targettarget
+        local tot = saved.profile.targettarget
         if tot and tot.lookSource == nil then
             tot.lookSource = "target"
         end
@@ -61,19 +61,19 @@ local function EnableBody()
     -- build (the Style page seeds on the switch); a profile none of them has
     -- reached yet keeps its own values in the CludesUI slot first, so a
     -- switch back restores them.
-    if ns.UF_Blizz() then
-        local p = db.profile
+    if mod.UF_Blizz() then
+        local p = saved.profile
         if
             p.stockCastTextureSeeded == nil
             and p.classicTextureSeeded == nil
             and p.stockCombatSeededStyle == nil
             and CludesUI.BankEuiStyleSlot
         then
-            CludesUI.BankEuiStyleSlot(p, ns.UF_StyleSlotKeys())
+            CludesUI.BankEuiStyleSlot(p, mod.UF_StyleSlotKeys())
         end
         -- WoW Forever's own seed the same way: the other looks' class
         -- resource goes to its Forever-only slot first.
-        if ns.UF_Forever() and not p.foreverClassPowerSeeded and p.player then
+        if mod.UF_Forever() and not p.foreverClassPowerSeeded and p.player then
             local s = p._foreverStyleSlots
             if type(s) ~= "table" then
                 s = {}
@@ -84,7 +84,7 @@ local function EnableBody()
                 ["player.showClassPowerBar"] = p.player.showClassPowerBar,
             }
         end
-        ns.UF_SeedStock(p, ns.UF_Style(), ns.UF_Forever())
+        mod.UF_SeedStock(p, mod.UF_Style(), mod.UF_Forever())
     end
     InitializeFrames()
     -- Register with unlock mode synchronously: on a combat reload this runs
@@ -104,13 +104,13 @@ local function EnableBody()
     end
     C_Timer.After(0, function()
         -- Restore the threat watchers saved enabled (nothing registers when off).
-        ns.SyncPlayerThreat()
-        if ns.SyncThreatPct then
-            ns.SyncThreatPct()
+        mod.SyncPlayerThreat()
+        if mod.SyncThreatPct then
+            mod.SyncThreatPct()
         end
     end)
     -- After InitializeFrames, which decided the target frame's source.
-    ns.UF_SyncTargetSounds()
+    mod.UF_SyncTargetSounds()
 end
 
 do
@@ -124,8 +124,8 @@ do
         self:UnregisterEvent("PLAYER_LOGIN")
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         loginFired = true
-        if ns._eufEnablePending then
-            ns._eufEnablePending = nil
+        if mod._eufEnablePending then
+            mod._eufEnablePending = nil
             EnableBody()
         end
     end)
@@ -136,7 +136,7 @@ do
             -- parent-context billing lasts only until the next reload).
             EnableBody()
         else
-            ns._eufEnablePending = true
+            mod._eufEnablePending = true
         end
         -- Incompatible addon detection is handled globally by CludesUI
     end
@@ -179,9 +179,11 @@ do
 
     -- Login, the options toggle and every reload pass (a profile switch or
     -- override changes the saved toggle without its setter).
-    function ns.UF_SyncTargetSounds()
-        local on = db and db.profile.targetSounds == true and ns.GetUnitFrameSource("target") ~= "blizzard"
-        if on then
+    function mod.UF_SyncTargetSounds()
+        local enabled = saved
+            and saved.profile.targetSounds == true
+            and mod.GetUnitFrameSource("target") ~= "blizzard"
+        if enabled then
             hadTarget = UnitExists("target") and true or false
             ev:RegisterEvent("PLAYER_TARGET_CHANGED")
         else
@@ -195,13 +197,13 @@ end
 -- CUI_PlayerAuraBars_Bars.lua's ns.PAB_Get/SetGrowDirection so
 -- the settings field names stay defined in exactly one file.
 
-function CludesUF:GetGrowDirectionForBar(barKey)
-    return ns.PAB_GetGrowDirection and ns.PAB_GetGrowDirection(barKey)
+function CludesUF:GetGrowDirectionForBar(barId)
+    return mod.PAB_GetGrowDirection and mod.PAB_GetGrowDirection(barId)
 end
 
-function CludesUF:SetGrowDirectionForBar(barKey, dir)
-    if ns.PAB_SetGrowDirection then
-        ns.PAB_SetGrowDirection(barKey, dir)
+function CludesUF:SetGrowDirectionForBar(barId, dir)
+    if mod.PAB_SetGrowDirection then
+        mod.PAB_SetGrowDirection(barId, dir)
     end
 end
 
@@ -242,51 +244,51 @@ do
     local harmSpell, helpSpell
     local visCount, ticker = 0, nil
 
-    local function Known(sid)
+    local function Known(spellRef)
         if C_SpellBook and C_SpellBook.IsSpellInSpellBook and Enum.SpellBookSpellBank then
-            return C_SpellBook.IsSpellInSpellBook(sid, Enum.SpellBookSpellBank.Player, true)
+            return C_SpellBook.IsSpellInSpellBook(spellRef, Enum.SpellBookSpellBank.Player, true)
         end
-        return IsSpellKnown and IsSpellKnown(sid)
+        return IsSpellKnown and IsSpellKnown(spellRef)
     end
 
     local function ResolveRangeSpells()
         harmSpell, helpSpell = nil, nil
         local _, pClass = UnitClass("player")
-        for _, sid in ipairs(HARM_CHAIN[pClass] or {}) do
-            if Known(sid) then
-                harmSpell = sid
+        for _, spellRef in ipairs(HARM_CHAIN[pClass] or {}) do
+            if Known(spellRef) then
+                harmSpell = spellRef
                 break
             end
         end
-        local spec = GetSpecialization and GetSpecialization()
-        local role = spec and GetSpecializationRole and GetSpecializationRole(spec)
+        local specInfo = GetSpecialization and GetSpecialization()
+        local role = specInfo and GetSpecializationRole and GetSpecializationRole(specInfo)
         if role == "HEALER" then
             helpSpell = HELP_HEAL[pClass]
         end
         -- WoW Forever has no spec roles: a healing class counts as its healing
         -- spec and range-checks with its best heal in the spellbook.
         if CludesUI.IS_FOREVER then
-            local list = CludesUI.FOREVER_HEAL_SPELLS[pClass]
-            for i = 1, (list and #list or 0) do
-                if Known(list[i]) then
-                    helpSpell = list[i]
+            local entries = CludesUI.FOREVER_HEAL_SPELLS[pClass]
+            for idx = 1, (entries and #entries or 0) do
+                if Known(entries[idx]) then
+                    helpSpell = entries[idx]
                     break
                 end
             end
         end
     end
 
-    local function TickOne(f, unit)
-        if not db then
+    local function TickOne(f, unitToken)
+        if not saved then
             return
         end
-        local oor = (db.profile.boss and db.profile.boss.oorAlpha) or 0.4
-        if oor >= 1 or not UnitExists(unit) then
+        local oor = (saved.profile.boss and saved.profile.boss.oorAlpha) or 0.4
+        if oor >= 1 or not UnitExists(unitToken) then
             f:SetAlpha(1)
             return
         end
         local spell
-        if UnitCanAttack("player", unit) then
+        if UnitCanAttack("player", unitToken) then
             spell = harmSpell
         else
             spell = helpSpell
@@ -297,7 +299,7 @@ do
             -- (unit not range-checkable right now / spell momentarily not
             -- evaluable), which it rejects. issecretvalue runs first so the
             -- nil check never touches a secret.
-            local inRange = C_Spell.IsSpellInRange(spell, unit)
+            local inRange = C_Spell.IsSpellInRange(spell, unitToken)
             if issecretvalue(inRange) or inRange ~= nil then
                 f:SetAlphaFromBoolean(inRange, 1, oor)
             else
@@ -309,19 +311,19 @@ do
     end
 
     local function Tick()
-        for i = 1, 5 do
-            local f = frames["boss" .. i]
+        for idx = 1, 5 do
+            local f = frameList["boss" .. idx]
             if f and f:IsVisible() then
-                TickOne(f, "boss" .. i)
+                TickOne(f, "boss" .. idx)
             end
         end
     end
 
     local function UpdateTicker()
-        local want = visCount > 0
-        if want and not ticker then
+        local wanted = visCount > 0
+        if wanted and not ticker then
             ticker = C_Timer.NewTicker(0.4, Tick)
-        elseif not want and ticker then
+        elseif not wanted and ticker then
             ticker:Cancel()
             ticker = nil
         end
@@ -329,20 +331,20 @@ do
 
     local hooked = false
     local function InstallHooks()
-        if hooked or not frames["boss1"] then
+        if hooked or not frameList["boss1"] then
             return
         end
         hooked = true
-        for i = 1, 5 do
-            local f = frames["boss" .. i]
+        for idx = 1, 5 do
+            local f = frameList["boss" .. idx]
             if f then
-                local unit = "boss" .. i
+                local unitToken = "boss" .. idx
                 if f:IsVisible() then
                     visCount = visCount + 1
                 end
                 f:HookScript("OnShow", function(self)
                     visCount = visCount + 1
-                    TickOne(self, unit)
+                    TickOne(self, unitToken)
                     UpdateTicker()
                 end)
                 f:HookScript("OnHide", function(self)
@@ -394,7 +396,7 @@ do
     local POISON_CLEANSING_TOTEM = 383013
     local _, ufPlayerClass = UnitClass("player")
     local poisonTotemKnown = ufPlayerClass == "SHAMAN" and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
-    function ns.UF_RefreshPoisonTotem()
+    function mod.UF_RefreshPoisonTotem()
         local known = ufPlayerClass == "SHAMAN" and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
         if known == poisonTotemKnown then
             return false
@@ -404,7 +406,7 @@ do
     end
     -- Shared with the 12.1 container slots (CUI_UnitFrames_AuraContainers.lua),
     -- which apply the same rule by choosing which slot style stays visible.
-    function ns.UF_TokenBlindDispel(typeKey)
+    function mod.UF_TokenBlindDispel(typeKey)
         local races = RACIAL_DISPEL_TYPES[typeKey]
         if races then
             local _, raceToken = UnitRace("player")
@@ -416,12 +418,12 @@ do
         return false
     end
 
-    ns.UpdatePlayerDispelOverlay = function()
+    mod.UpdatePlayerDispelOverlay = function()
         -- The container dispel slots own the overlay; poke their fingerprinted
         -- reload so dropdown/cog edits apply live instead of waiting for the
         -- next full container pass.
-        if ns.UF_ReloadPlayerDispelSlots then
-            ns.UF_ReloadPlayerDispelSlots()
+        if mod.UF_ReloadPlayerDispelSlots then
+            mod.UF_ReloadPlayerDispelSlots()
         end
     end
 end
@@ -435,15 +437,15 @@ end
 --  (CludesUI.PartySpin_Create, CludesUI_PartyMode.lua).
 -------------------------------------------------------------------------------
 do
-    local list = {}
-    local groups = { { pivot = UIParent, frames = list } }
+    local entries = {}
+    local groups = { { pivot = UIParent, frames = entries } }
     CludesUI.PartySpin_Create({
         target = "unitFrames",
         collect = function()
-            wipe(list)
-            for _, f in pairs(frames) do
+            wipe(entries)
+            for _, f in pairs(frameList) do
                 if type(f) == "table" and f.GetCenter then
-                    list[#list + 1] = f
+                    entries[#entries + 1] = f
                 end
             end
             return groups
@@ -455,8 +457,8 @@ end
 -- core fires its own edge (re-fired after combat for the secure frames).
 if CludesUI.RegisterVisEdge then
     CludesUI.RegisterVisEdge(function()
-        if ns.UpdateFrameVisibility then
-            ns.UpdateFrameVisibility()
+        if mod.UpdateFrameVisibility then
+            mod.UpdateFrameVisibility()
         end
     end)
 end

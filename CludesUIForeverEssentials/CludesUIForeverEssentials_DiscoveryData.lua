@@ -201,7 +201,13 @@ function module.DiscoveryData()
             turnIn = "librarian",
             name = "The Dalaran Digest, Vol. 23",
             spots = {
-                { 1421, 63.5, 63.1, "Ambermill", "On a bookshelf in the north-east corner of the main hall." },
+                {
+                    1421,
+                    63.5,
+                    63.1,
+                    "Ambermill",
+                    "On a bookshelf in the north-east corner of the main hall.",
+                },
             },
         },
         {
@@ -333,7 +339,13 @@ function module.DiscoveryData()
             turnIn = "librarian",
             name = "Demons and You",
             spots = {
-                { 1443, 55.1, 26.2, "Thunder Axe Fortress", "On a bench against a wall in the big building." },
+                {
+                    1443,
+                    55.1,
+                    26.2,
+                    "Thunder Axe Fortress",
+                    "On a bench against a wall in the big building.",
+                },
             },
         },
         {

@@ -74,8 +74,8 @@ local reverse = {}
 -- anything that must never be translated (non-strings, empty, secret combat
 -- values, pure numbers, letterless strings like hex/coords) before the lookup.
 local function L(s)
-    local cat = activeCatalog
-    if not cat then
+    local category = activeCatalog
+    if not category then
         return s
     end
     if type(s) ~= "string" or s == "" then
@@ -90,9 +90,9 @@ local function L(s)
     if not s:find("%a") then
         return s
     end
-    local v = cat[s]
-    if type(v) == "string" then
-        return v
+    local val = category[s]
+    if type(val) == "string" then
+        return val
     end
     return s -- untranslated key -> silent English fallback
 end
@@ -216,43 +216,43 @@ local function Activate()
     if locale == "enUS" then
         activeCatalog = nil
     else
-        local src = localeData[locale]
+        local source = localeData[locale]
         -- Fill keys this locale leaves out from its FALLBACK locale once here,
         -- so L() stays one lookup. Own entries (including "= true") win; the
         -- fallback table is released afterwards.
         local fbCode = FALLBACK[locale]
         local fb = fbCode and localeData[fbCode]
         if fb then
-            if not src then
-                src = {}
-                localeData[locale] = src
+            if not source then
+                source = {}
+                localeData[locale] = source
             end
-            for k, v in pairs(fb) do
-                if src[k] == nil then
-                    src[k] = v
+            for key, val in pairs(fb) do
+                if source[key] == nil then
+                    source[key] = val
                 end
             end
             localeData[fbCode] = nil
         end
-        if src then
+        if source then
             -- Resolve the "= true" keep-English sentinel and build the reverse map.
-            for k, v in pairs(src) do
-                if v == true then
-                    src[k] = k
-                    v = k
+            for key, val in pairs(source) do
+                if val == true then
+                    source[key] = key
+                    val = key
                 end
                 -- Prefer all-uppercase keys when two keys share a translation
                 -- in some locales, so EnKey() resolves section headers correctly.
                 if
-                    type(v) == "string"
-                    and type(k) == "string"
-                    and (not reverse[v] or (k == k:upper() and reverse[v] ~= reverse[v]:upper()))
+                    type(val) == "string"
+                    and type(key) == "string"
+                    and (not reverse[val] or (key == key:upper() and reverse[val] ~= reverse[val]:upper()))
                 then
-                    reverse[v] = k
+                    reverse[val] = key
                 end
             end
         end
-        activeCatalog = src -- nil if no locale file shipped for this code
+        activeCatalog = source -- nil if no locale file shipped for this code
     end
 end
 

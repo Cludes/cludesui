@@ -22,7 +22,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  lines and the Seals row in the CDM Add menu (SpellPicker_Options.lua); the
 --  aura icon engine and its hooks stay for custom buffs.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 if CludesUI.IS_FOREVER ~= true then
     return
 end
@@ -30,7 +30,7 @@ local _, playerClass = UnitClass("player")
 if playerClass ~= "PALADIN" then
     return
 end
-if not ns.CDM_AuraIconProvider then
+if not mod.CDM_AuraIconProvider then
     return
 end
 
@@ -52,30 +52,34 @@ local SEAL_SEEDS = {
 }
 
 -- The Add menu's Seals row reads it.
-ns.CDM_SEALS_SPELL = SEALS
+mod.CDM_SEALS_SPELL = SEALS
 
 -- cd: cooldownID -> whether it is the Seals entry; linked: the entry's linked
 -- spells; known: a seal is in the spellbook; native: Blizzard draws its own
 -- Seals frame, the stand-in stands down.
-local S = { cd = {} }
+local Stl = { cd = {} }
 
 local IsSecret = CludesUI.IsSecret
 
 -- Blizzard's API copy of an entry's info is never secret.
-local function IsSealsInfo(info)
-    return info ~= nil
-        and (info.spellID == SEALS or info.overrideSpellID == SEALS or info.overrideTooltipSpellID == SEALS)
+local function IsSealsInfo(details)
+    return details ~= nil
+        and (
+            details.spellID == SEALS
+            or details.overrideSpellID == SEALS
+            or details.overrideTooltipSpellID == SEALS
+        )
 end
 
 local function IsSealsCd(cdID)
     if type(cdID) ~= "number" or IsSecret(cdID) then
         return false
     end
-    local known = S.cd[cdID]
+    local known = Stl.cd[cdID]
     if known == nil then
         local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
         known = IsSealsInfo(gci and gci(cdID)) and true or false
-        S.cd[cdID] = known
+        Stl.cd[cdID] = known
     end
     return known
 end
@@ -90,73 +94,73 @@ local function Aliases()
         return nil
     end
     local ids, linked = {}, {}
-    for _, cat in pairs(cats) do
-        local ok, set = pcall(CV.GetCooldownViewerCategorySet, cat, true)
-        if ok and type(set) == "table" then
-            for _, cdID in ipairs(set) do
-                local info = type(cdID) == "number"
+    for _, category in pairs(cats) do
+        local success, group = pcall(CV.GetCooldownViewerCategorySet, category, true)
+        if success and type(group) == "table" then
+            for _, cdID in ipairs(group) do
+                local details = type(cdID) == "number"
                     and not IsSecret(cdID)
                     and CV.GetCooldownViewerCooldownInfo(cdID)
-                if info and IsSealsInfo(info) then
-                    S.cd[cdID] = true
-                    local a, b = info.spellID, info.overrideSpellID
+                if details and IsSealsInfo(details) then
+                    Stl.cd[cdID] = true
+                    local a, b = details.spellID, details.overrideSpellID
                     if type(a) == "number" and a > 0 and a ~= SEALS then
                         ids[#ids + 1] = a
                     end
                     if type(b) == "number" and b > 0 and b ~= SEALS then
                         ids[#ids + 1] = b
                     end
-                    if type(info.linkedSpellIDs) == "table" then
-                        for i = 1, #info.linkedSpellIDs do
-                            linked[#linked + 1] = info.linkedSpellIDs[i]
+                    if type(details.linkedSpellIDs) == "table" then
+                        for idx = 1, #details.linkedSpellIDs do
+                            linked[#linked + 1] = details.linkedSpellIDs[idx]
                         end
                     end
                 end
             end
         end
     end
-    S.linked = linked
+    Stl.linked = linked
     return ids
 end
 
-local function AddID(set, names, id)
-    if type(id) ~= "number" or IsSecret(id) or id <= 0 then
+local function AddID(group, nameList, ident)
+    if type(ident) ~= "number" or IsSecret(ident) or ident <= 0 then
         return
     end
-    set[id] = true
-    local name = C_Spell.GetSpellName(id)
+    group[ident] = true
+    local name = C_Spell.GetSpellName(ident)
     if name then
-        names[name] = true
+        nameList[name] = true
     end
 end
 
 -- Every seal id: the seeds, the entry's linked spells, and every spellbook
 -- spell (each rank is its own spell on Forever) sharing their names.
 local function Include()
-    local set, names = {}, {}
-    for i = 1, #SEAL_SEEDS do
-        AddID(set, names, SEAL_SEEDS[i])
+    local group, nameList = {}, {}
+    for idx = 1, #SEAL_SEEDS do
+        AddID(group, nameList, SEAL_SEEDS[idx])
     end
-    local linked = S.linked
+    local linked = Stl.linked
     if linked then
-        for i = 1, #linked do
-            AddID(set, names, linked[i])
+        for idx = 1, #linked do
+            AddID(group, nameList, linked[idx])
         end
     end
     local known = false
     pcall(function()
         local bank = Enum.SpellBookSpellBank.Player
         local SPELL = Enum.SpellBookItemType.Spell
-        for line = 1, C_SpellBook.GetNumSpellBookSkillLines() or 0 do
-            local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
+        for lineTex = 1, C_SpellBook.GetNumSpellBookSkillLines() or 0 do
+            local li = C_SpellBook.GetSpellBookSkillLineInfo(lineTex)
             if li and li.itemIndexOffset and li.numSpellBookItems then
-                for slot = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
-                    local it = C_SpellBook.GetSpellBookItemInfo(slot, bank)
-                    local sid = it and it.itemType == SPELL and it.spellID
-                    if sid then
-                        local name = C_Spell.GetSpellName(sid)
-                        if name and names[name] then
-                            set[sid] = true
+                for slotIndex = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
+                    local it = C_SpellBook.GetSpellBookItemInfo(slotIndex, bank)
+                    local spellRef = it and it.itemType == SPELL and it.spellID
+                    if spellRef then
+                        local name = C_Spell.GetSpellName(spellRef)
+                        if name and nameList[name] then
+                            group[spellRef] = true
                             known = true
                         end
                     end
@@ -164,46 +168,46 @@ local function Include()
             end
         end
     end)
-    S.known = known
+    Stl.known = known
     local ids = {}
-    for id in pairs(set) do
-        ids[#ids + 1] = id
+    for ident in pairs(group) do
+        ids[#ids + 1] = ident
     end
     table.sort(ids)
-    return set, table.concat(ids, ",")
+    return group, table.concat(ids, ",")
 end
 
 local function Icon()
-    if not S.art then
-        S.art = C_Spell.GetSpellTexture(SEALS)
-        for i = 1, #SEAL_SEEDS do
-            if S.art then
+    if not Stl.art then
+        Stl.art = C_Spell.GetSpellTexture(SEALS)
+        for idx = 1, #SEAL_SEEDS do
+            if Stl.art then
                 break
             end
-            S.art = C_Spell.GetSpellTexture(SEAL_SEEDS[i])
+            Stl.art = C_Spell.GetSpellTexture(SEAL_SEEDS[idx])
         end
     end
-    return S.art
+    return Stl.art
 end
 
 -- After a reanchor that placed the stand-in: Blizzard's own Seals frame on a
 -- bar means its fix landed, so the stand-in stands down for the session (the
 -- next reanchor drops its frames).
 local function Placed()
-    if S.native then
+    if Stl.native then
         return
     end
-    local icons = ns.cdmBarIcons
+    local icons = mod.cdmBarIcons
     if not icons then
         return
     end
-    for _, list in pairs(icons) do
-        for i = 1, #list do
-            local f = list[i]
+    for _, entries in pairs(icons) do
+        for idx = 1, #entries do
+            local f = entries[idx]
             if f and not f._isPresetFrame and not f._isPlaceholderFrame and IsSealsCd(f.cooldownID) then
-                S.native = true
-                if ns.QueueReanchor then
-                    ns.QueueReanchor()
+                Stl.native = true
+                if mod.QueueReanchor then
+                    mod.QueueReanchor()
                 end
                 return
             end
@@ -211,17 +215,17 @@ local function Placed()
     end
 end
 
-ns.CDM_AuraIconProvider(SEALS, {
+mod.CDM_AuraIconProvider(SEALS, {
     key = "seals",
     tip = SEALS,
     Include = Include,
     Icon = Icon,
     -- Grey only while no seal is known; a seal that is down is the Seals icon.
     Desaturate = function()
-        return not S.known
+        return not Stl.known
     end,
     Off = function()
-        return S.native
+        return Stl.native
     end,
     Aliases = Aliases,
     Placed = Placed,

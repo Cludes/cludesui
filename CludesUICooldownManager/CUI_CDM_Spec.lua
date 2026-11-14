@@ -8,17 +8,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  handling and the bar roots.
 --  Reads the earlier CDM files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local GetTime = GetTime
 
-local ECME, SpellStore = I.ECME, I.SpellStore
+local ECME, SpellStore = Inner.ECME, Inner.SpellStore
 
 -------------------------------------------------------------------------------
 --  Spec helpers
@@ -32,7 +32,7 @@ local ECME, SpellStore = I.ECME, I.SpellStore
 -------------------------------------------------------------------------------
 local _cachedSpecKey = nil
 
-function ns.GetActiveSpecKey()
+function mod.GetActiveSpecKey()
     if _cachedSpecKey then
         return _cachedSpecKey
     end
@@ -49,10 +49,10 @@ function ns.GetActiveSpecKey()
 end
 
 -- Early-login wakeFrame use only (before CDM setup completes); never called during spec change processing.
-function ns.InvalidateSpecKey()
+function mod.InvalidateSpecKey()
     _cachedSpecKey = nil
-    ns._cachedSpecProfiles = nil
-    ns._cdmStoreMemo = nil
+    mod._cachedSpecProfiles = nil
+    mod._cdmStoreMemo = nil
 end
 
 -- Live spec key from the game API without touching the cache; nil if not ready.
@@ -67,7 +67,7 @@ local function ComputeLiveSpecKey()
     end
     return tostring(specID)
 end
-ns.ComputeLiveSpecKey = ComputeLiveSpecKey
+mod.ComputeLiveSpecKey = ComputeLiveSpecKey
 
 if CludesUI.IS_FOREVER then
     -- WoW Forever reports one spec per class. The store key is the Forever
@@ -90,18 +90,18 @@ if CludesUI.IS_FOREVER then
         if not specID or specID == 0 then
             return nil
         end
-        local sp = ns.GetActiveSpecProfiles()
-        local m = ns._fvSpecKeyMemo
+        local sp = mod.GetActiveSpecProfiles()
+        local m = mod._fvSpecKeyMemo
         if m and m.root == sp and m.raw == specID then
             return m.key
         end
         local key = tostring(CludesUI.SpecFor(specID, CludesUI.SpecHasStringEntry, sp))
-        ns._fvSpecKeyMemo = { root = sp, raw = specID, key = key }
+        mod._fvSpecKeyMemo = { root = sp, raw = specID, key = key }
         return key
     end
-    ns.ComputeLiveSpecKey = ComputeLiveSpecKey
-    function ns.GetActiveSpecKey()
-        if _cachedSpecKey and ns._fvSpecKeyRoot == ns.GetActiveSpecProfiles() then
+    mod.ComputeLiveSpecKey = ComputeLiveSpecKey
+    function mod.GetActiveSpecKey()
+        if _cachedSpecKey and mod._fvSpecKeyRoot == mod.GetActiveSpecProfiles() then
             return _cachedSpecKey
         end
         local key = ComputeLiveSpecKey()
@@ -109,7 +109,7 @@ if CludesUI.IS_FOREVER then
             return nil
         end
         _cachedSpecKey = key
-        ns._fvSpecKeyRoot = ns.GetActiveSpecProfiles()
+        mod._fvSpecKeyRoot = mod.GetActiveSpecProfiles()
         return key
     end
 end
@@ -117,13 +117,13 @@ end
 -- Per-character key of the bar size cache and the Repopulate requests and
 -- records; all three stores take over older keys through CharKey. No longer
 -- used for spec storage.
-function ns.GetCharKey()
-    local db = CludesUIDB
+function mod.GetCharKey()
+    local saved = CludesUIDB
     return CludesUI.CharKey(
         "-",
-        db and db.cdmCachedBarSizes,
-        db and db.cdmRepopulatePending,
-        db and db.cdmRepopulateDone
+        saved and saved.cdmCachedBarSizes,
+        saved and saved.cdmRepopulatePending,
+        saved and saved.cdmRepopulateDone
     ) or "Unknown-Unknown"
 end
 
@@ -134,18 +134,18 @@ end
 
 local function GetStore()
     local p = ECME.db.profile
-    local specKey = ns.GetActiveSpecKey()
+    local specKey = mod.GetActiveSpecKey()
     return EnsureSpec(p, specKey)
 end
 
-local function EnsureMappings(store)
-    if not store.mappings then
-        store.mappings = {}
+local function EnsureMappings(storage)
+    if not storage.mappings then
+        storage.mappings = {}
     end
-    if #store.mappings == 0 then
-        store.mappings[1] = {
+    if #storage.mappings == 0 then
+        storage.mappings[1] = {
             enabled = false,
-            name = ns.DEFAULT_MAPPING_NAME,
+            name = mod.DEFAULT_MAPPING_NAME,
             actionBar = 1,
             actionButton = 1,
             cdmSlot = 1,
@@ -155,14 +155,14 @@ local function EnsureMappings(store)
             glowColor = { r = 1, g = 0.82, b = 0.1 },
         }
     end
-    store.selectedMapping = tonumber(store.selectedMapping) or 1
-    if store.selectedMapping < 1 then
-        store.selectedMapping = 1
+    storage.selectedMapping = tonumber(storage.selectedMapping) or 1
+    if storage.selectedMapping < 1 then
+        storage.selectedMapping = 1
     end
-    if store.selectedMapping > #store.mappings then
-        store.selectedMapping = #store.mappings
+    if storage.selectedMapping > #storage.mappings then
+        storage.selectedMapping = #storage.mappings
     end
-    for _, m in ipairs(store.mappings) do
+    for _, m in ipairs(storage.mappings) do
         if m.enabled == nil then
             m.enabled = true
         end
@@ -177,7 +177,7 @@ local function EnsureMappings(store)
             m.glowColor = { r = 1, g = 0.82, b = 0.1 }
         end
         m.name = tostring(m.name or "")
-        if type(m.actionBar) ~= "string" or not ns.CDM_BAR_ROOTS[m.actionBar] then
+        if type(m.actionBar) ~= "string" or not mod.CDM_BAR_ROOTS[m.actionBar] then
             m.actionBar = tonumber(m.actionBar) or 1
         end
         m.actionButton = tonumber(m.actionButton) or 1
@@ -186,8 +186,8 @@ local function EnsureMappings(store)
 end
 
 -- Expose for options
-ns.GetStore = GetStore
-ns.EnsureMappings = EnsureMappings
+mod.GetStore = GetStore
+mod.EnsureMappings = EnsureMappings
 
 -------------------------------------------------------------------------------
 --  Per-Spec Profile Helpers
@@ -206,28 +206,28 @@ MAIN_BAR_KEYS[GHOST_CD_BAR_KEY] = true
 --  Priority: overrideSpellID > first linkedSpellID > spellID. The base spellID field
 --  can be a spec aura (e.g. 137007 "Unholy Death Knight") while the real tracked spell lives in linkedSpellIDs.
 -------------------------------------------------------------------------------
-local function ResolveInfoSpellID(info)
-    if not info then
+local function ResolveInfoSpellID(details)
+    if not details then
         return nil
     end
-    local sid
-    if info.overrideSpellID and info.overrideSpellID > 0 then
-        sid = info.overrideSpellID
+    local spellRef
+    if details.overrideSpellID and details.overrideSpellID > 0 then
+        spellRef = details.overrideSpellID
     else
-        local linked = info.linkedSpellIDs
+        local linked = details.linkedSpellIDs
         if linked then
-            for i = 1, #linked do
-                if linked[i] and linked[i] > 0 then
-                    sid = linked[i]
+            for idx = 1, #linked do
+                if linked[idx] and linked[idx] > 0 then
+                    spellRef = linked[idx]
                     break
                 end
             end
         end
-        if not sid and info.spellID and info.spellID > 0 then
-            sid = info.spellID
+        if not spellRef and details.spellID and details.spellID > 0 then
+            spellRef = details.spellID
         end
     end
-    return sid
+    return spellRef
 end
 
 -------------------------------------------------------------------------------
@@ -236,15 +236,15 @@ end
 --  child frame knows the correct one via GetAuraSpellID/GetSpellID at runtime. Falls back
 --  to ResolveInfoSpellID when those are unavailable. ONLY used in out-of-combat paths (snapshot, dropdown, reconcile).
 -------------------------------------------------------------------------------
-local function ResolveChildSpellID(child)
-    if not child then
+local function ResolveChildSpellID(childFrame)
+    if not childFrame then
         return nil
     end
     -- Prefer the aura spellID (most accurate for buff viewers). Comparisons are pcall-wrapped:
     -- these methods can return SECRET numbers in combat, which cannot be compared with > 0.
-    if child.GetAuraSpellID then
-        local ok, auraID = pcall(child.GetAuraSpellID, child)
-        if ok and auraID then
+    if childFrame.GetAuraSpellID then
+        local success, auraID = pcall(childFrame.GetAuraSpellID, childFrame)
+        if success and auraID then
             local cmpOk, gt = pcall(function()
                 return auraID > 0
             end)
@@ -253,9 +253,9 @@ local function ResolveChildSpellID(child)
             end
         end
     end
-    if child.GetSpellID then
-        local ok, fid = pcall(child.GetSpellID, child)
-        if ok and fid then
+    if childFrame.GetSpellID then
+        local success, fid = pcall(childFrame.GetSpellID, childFrame)
+        if success and fid then
             local cmpOk, gt = pcall(function()
                 return fid > 0
             end)
@@ -264,10 +264,10 @@ local function ResolveChildSpellID(child)
             end
         end
     end
-    local cdID = child.cooldownID or (child.cooldownInfo and child.cooldownInfo.cooldownID)
+    local cdID = childFrame.cooldownID or (childFrame.cooldownInfo and childFrame.cooldownInfo.cooldownID)
     if cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-        local info = C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
-        return ResolveInfoSpellID(info)
+        local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
+        return ResolveInfoSpellID(details)
     end
     return nil
 end
@@ -279,12 +279,12 @@ local DeepCopy = CludesUI.Lite.DeepCopy
 --  elements don't jump. Zero impact on spell logic or icons. Stored at
 --  CludesUIDB.cdmCachedBarSizes[charKey][specKey][barKey] = count
 -------------------------------------------------------------------------------
-function ns.SaveCachedBarSizes()
+function mod.SaveCachedBarSizes()
     if not CludesUIDB then
         return
     end
-    local charKey = ns.GetCharKey()
-    local specKey = ns.GetActiveSpecKey()
+    local charKey = mod.GetCharKey()
+    local specKey = mod.GetActiveSpecKey()
     if not specKey or specKey == "0" then
         return
     end
@@ -294,18 +294,18 @@ function ns.SaveCachedBarSizes()
     if not CludesUIDB.cdmCachedBarSizes[charKey] then
         CludesUIDB.cdmCachedBarSizes[charKey] = {}
     end
-    local frames = ns.cdmBarFrames
-    local iconsByKey = ns.cdmBarIcons
-    if not frames or not iconsByKey then
+    local frameList = mod.cdmBarFrames
+    local iconsByKey = mod.cdmBarIcons
+    if not frameList or not iconsByKey then
         return
     end
     local counts = {}
-    for key, frame in pairs(frames) do
+    for key, widget in pairs(frameList) do
         local icons = iconsByKey[key]
         if icons then
             local vis = 0
-            for _, icon in ipairs(icons) do
-                if icon:IsShown() then
+            for _, glyph in ipairs(icons) do
+                if glyph:IsShown() then
                     vis = vis + 1
                 end
             end
@@ -320,7 +320,7 @@ end
 --- Save the current spec's non-spell per-spec data. Spell data lives directly in the global store via ns.GetBarSpellData() and never needs copying.
 local function SaveCurrentSpecProfile()
     local p = ECME.db.profile
-    local specKey = ns.GetActiveSpecKey()
+    local specKey = mod.GetActiveSpecKey()
     if not specKey or specKey == "0" then
         return
     end
@@ -333,7 +333,7 @@ local function SaveCurrentSpecProfile()
     -- Bar Glows and Tracked Buff Bars live in specProfiles[specKey]; GetBarGlows()/GetTrackedBuffBars() read/write there directly, so nothing extra to copy here.
 
     -- Snapshot visible icon counts for pre-sizing on next login
-    ns.SaveCachedBarSizes()
+    mod.SaveCachedBarSizes()
 end
 
 --- Spec change processing. NEVER a fixed wall-clock delay: Blizzard's viewer pools repopulate
@@ -345,20 +345,20 @@ local function ProcessSpecChange(newSpecKey)
     if not newSpecKey then
         return
     end
-    ns._spellOrderDirty = true -- force spell order cache rebuild
+    mod._spellOrderDirty = true -- force spell order cache rebuild
 
     -- Atomic swap: write the new key BEFORE rebuilding so every GetBarSpellData call during the rebuild reads the correct spec.
     _cachedSpecKey = newSpecKey
-    ns._cachedSpecProfiles = nil
-    ns._cdmStoreMemo = nil
+    mod._cachedSpecProfiles = nil
+    mod._cdmStoreMemo = nil
 
     -- Suppress the _CUCME_Apply rebuild the profile system fires via RefreshAllAddons: the talent_reconcile rebuild below is strictly stronger.
-    ns._specChangeJustRan = true
+    mod._specChangeJustRan = true
     -- Time-box stamp for the justRan consume in _CUCME_Apply: suppression is honored only while
     -- the spec change is recent, so a flag left armed by a non-consuming path fails OPEN (extra rebuild) instead of eating a needed one.
-    ns._specChangeAt = GetTime()
+    mod._specChangeAt = GetTime()
 
-    ns._pendingApplyOnReanchor = true
+    mod._pendingApplyOnReanchor = true
 
     -- Full wipe + rebuild: talent_reconcile takes FullCDMRebuild's isFullWipe branch (wipes
     -- icon arrays, _prevIconRefs/_prevVisibleCount, anchor state in _hookFrameData, all FC
@@ -367,10 +367,10 @@ local function ProcessSpecChange(newSpecKey)
     -- synchronous pass: on a spec switch it runs BEFORE the per-spec profile swap, so
     -- barDataByKey still carries the OLD spec's Always-Show/Keep-in-Place flags and injecting
     -- would flash placeholders the new spec never asked for. The following reanchor (profile_import, or the next buff event) re-injects correctly from the active profile.
-    if ns.FullCDMRebuild then
-        ns._cdmSpecRebuildStale = true
-        ns.FullCDMRebuild("talent_reconcile")
-        ns._cdmSpecRebuildStale = false
+    if mod.FullCDMRebuild then
+        mod._cdmSpecRebuildStale = true
+        mod.FullCDMRebuild("talent_reconcile")
+        mod._cdmSpecRebuildStale = false
     end
 
     -- Signal the profile system that CDM's spec rebuild is complete: clears _specProfileSwitching and re-applies width/height matches.
@@ -379,11 +379,11 @@ local function ProcessSpecChange(newSpecKey)
     -- Refresh the CDM options pages now that _cachedSpecKey is swapped: their own
     -- PLAYER_SPECIALIZATION_CHANGED watcher can fire before SPELLS_CHANGED, so driving it
     -- here guarantees they rebuild against the new spec instead of keeping the old spec's selected bar.
-    if ns.OnTBBSpecChanged then
-        ns.OnTBBSpecChanged()
+    if mod.OnTBBSpecChanged then
+        mod.OnTBBSpecChanged()
     end
 end
-ns.ProcessSpecChange = ProcessSpecChange
+mod.ProcessSpecChange = ProcessSpecChange
 
 -- Compare live spec to cached; if different, process the change. Called exclusively from
 -- SPELLS_CHANGED. Idempotent: after ProcessSpecChange the cached key matches live and subsequent calls are no-ops.
@@ -393,22 +393,22 @@ local function CheckSpecChange()
         ProcessSpecChange(liveKey)
     end
 end
-ns.CheckSpecChange = CheckSpecChange
+mod.CheckSpecChange = CheckSpecChange
 
 -------------------------------------------------------------------------------
 --  CDM Bar Roots
 -------------------------------------------------------------------------------
-ns.CDM_BAR_ROOTS = {
+mod.CDM_BAR_ROOTS = {
     CDM_COOLDOWN = "EssentialCooldownViewer",
     CDM_UTILITY = "UtilityCooldownViewer",
 }
 
-I.CheckSpecChange = CheckSpecChange
-I.ComputeLiveSpecKey, I.EnsureMappings = ComputeLiveSpecKey, EnsureMappings
-I.GetStore, I.GHOST_CD_BAR_KEY, I.MAIN_BAR_KEYS = GetStore, GHOST_CD_BAR_KEY, MAIN_BAR_KEYS
-I.ResolveChildSpellID, I.ResolveInfoSpellID = ResolveChildSpellID, ResolveInfoSpellID
-I.SaveCurrentSpecProfile = SaveCurrentSpecProfile
-I.GetCachedSpecKey = function()
+Inner.CheckSpecChange = CheckSpecChange
+Inner.ComputeLiveSpecKey, Inner.EnsureMappings = ComputeLiveSpecKey, EnsureMappings
+Inner.GetStore, Inner.GHOST_CD_BAR_KEY, Inner.MAIN_BAR_KEYS = GetStore, GHOST_CD_BAR_KEY, MAIN_BAR_KEYS
+Inner.ResolveChildSpellID, Inner.ResolveInfoSpellID = ResolveChildSpellID, ResolveInfoSpellID
+Inner.SaveCurrentSpecProfile = SaveCurrentSpecProfile
+Inner.GetCachedSpecKey = function()
     return _cachedSpecKey
 end
-I.broken = false
+Inner.broken = false

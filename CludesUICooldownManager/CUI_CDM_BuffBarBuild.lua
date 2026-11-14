@@ -7,42 +7,42 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  BuildTrackedBuffBars: builds or rebuilds every tracking bar.
 --  Reads the earlier Tracking Bars files through ns and ns._buffBarInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._buffBarInternals
+local _, mod = ...
+local Inner = mod._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pcall = pcall
 
-local TBB_POPULAR_BUFFS, _tbbWake, GroupGrowOf = I.TBB_POPULAR_BUFFS, I._tbbWake, I.GroupGrowOf
-local GroupSpacingOf, ResetReflowStates = I.GroupSpacingOf, I.ResetReflowStates
-local tbbFrames, ApplyTrackedBuffBarSettings = I.tbbFrames, I.ApplyTrackedBuffBarSettings
-local CreateTrackedBuffBarFrame = I.CreateTrackedBuffBarFrame
-local EffectiveIconSpellID, TBBUsesVisCondition = I.EffectiveIconSpellID, I.TBBUsesVisCondition
-local SetECME, SetRebuildPending = I.SetECME, I.SetRebuildPending
-local SetReflowDirty, SetTickFrame = I.SetReflowDirty, I.SetTickFrame
-local SetAnyPandemic, SetAnyThreshold = I.SetAnyPandemic, I.SetAnyThreshold
-local SetAnyStacks, SetAnyVisCond = I.SetAnyStacks, I.SetAnyVisCond
+local TBB_POPULAR_BUFFS, _tbbWake, GroupGrowOf = Inner.TBB_POPULAR_BUFFS, Inner._tbbWake, Inner.GroupGrowOf
+local GroupSpacingOf, ResetReflowStates = Inner.GroupSpacingOf, Inner.ResetReflowStates
+local tbbFrames, ApplyTrackedBuffBarSettings = Inner.tbbFrames, Inner.ApplyTrackedBuffBarSettings
+local CreateTrackedBuffBarFrame = Inner.CreateTrackedBuffBarFrame
+local EffectiveIconSpellID, TBBUsesVisCondition = Inner.EffectiveIconSpellID, Inner.TBBUsesVisCondition
+local SetECME, SetRebuildPending = Inner.SetECME, Inner.SetRebuildPending
+local SetReflowDirty, SetTickFrame = Inner.SetReflowDirty, Inner.SetTickFrame
+local SetAnyPandemic, SetAnyThreshold = Inner.SetAnyPandemic, Inner.SetAnyThreshold
+local SetAnyStacks, SetAnyVisCond = Inner.SetAnyStacks, Inner.SetAnyVisCond
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-I.ecmeSetters[#I.ecmeSetters + 1] = function(v)
-    ECME = v
+Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val)
+    ECME = val
 end
 local tbbTickFrame
-I.tickFrameSetters[#I.tickFrameSetters + 1] = function(v)
-    tbbTickFrame = v
+Inner.tickFrameSetters[#Inner.tickFrameSetters + 1] = function(val)
+    tbbTickFrame = val
 end
 
 -------------------------------------------------------------------------------
 --  Build / Rebuild All Tracking Bars
 -------------------------------------------------------------------------------
-function ns.BuildTrackedBuffBars()
-    SetECME(ns.ECME)
+function mod.BuildTrackedBuffBars()
+    SetECME(mod.ECME)
     if not ECME or not ECME.db then
         return
     end
@@ -51,24 +51,24 @@ function ns.BuildTrackedBuffBars()
     SetReflowDirty(true)
 
     -- Per-spec unlock-link views: the global anchor/match stores must hold THIS spec's TBB entries before any anchored-state below is read.
-    ns.SyncTBBUnlockLinks()
+    mod.SyncTBBUnlockLinks()
 
     local p = ECME.db.profile
 
     -- NEVER auto-swap width/height per build: the Vertical Orientation toggle already swaps
     -- dimensions, and a per-build swap fights slider input and makes resizes erratic.
     do
-        local tbb = ns.GetTrackedBuffBars()
-        local bars = tbb and tbb.bars
-        if bars then
+        local tbb = mod.GetTrackedBuffBars()
+        local barList = tbb and tbb.bars
+        if barList then
         end
     end
 
     -- "Use Blizzard CDM Bars": hide all TBB frames and bail
     if p.cdmBars and p.cdmBars.useBlizzardBuffBars then
-        for i = 1, #tbbFrames do
-            if tbbFrames[i] then
-                tbbFrames[i]:Hide()
+        for idx = 1, #tbbFrames do
+            if tbbFrames[idx] then
+                tbbFrames[idx]:Hide()
             end
         end
         _tbbWake._enabled = false
@@ -80,19 +80,19 @@ function ns.BuildTrackedBuffBars()
     end
 
     -- Pre-populate bars for spells newly added to Blizzard's Tracked Bars section BEFORE reading the bar list, so this rebuild picks them up.
-    ns.EnsureTBBAutoBars()
+    mod.EnsureTBBAutoBars()
 
-    local tbb = ns.GetTrackedBuffBars()
+    local tbb = mod.GetTrackedBuffBars()
     -- Hold the per-group orientation invariant before reading any configs
-    ns.EnforceTBBGroupOrientation(tbb)
-    local bars = tbb.bars
-    local _tbbPos = ns.GetTBBPositions()
+    mod.EnforceTBBGroupOrientation(tbb)
+    local barList = tbb.bars
+    local _tbbPos = mod.GetTBBPositions()
     ResetReflowStates()
 
     -- Hide bars beyond current count
-    for i = #bars + 1, #tbbFrames do
-        if tbbFrames[i] then
-            tbbFrames[i]:Hide()
+    for idx = #barList + 1, #tbbFrames do
+        if tbbFrames[idx] then
+            tbbFrames[idx]:Hide()
         end
     end
 
@@ -106,61 +106,61 @@ function ns.BuildTrackedBuffBars()
     local anyLust = false -- any enabled bloodlust bar -> needs the Sated listener
     local anyAntiClip = false -- WoW Forever: any enabled bar drawing the anti-clip glow
     local lastBarByGroup = {} -- gid -> previous enabled member frame (chain tail)
-    for i, cfg in ipairs(bars) do
+    for idx, conf in ipairs(barList) do
         -- Update gating flags
-        if cfg.pandemicGlow then
+        if conf.pandemicGlow then
             _anyPandemic = true
         end
-        if cfg.stackThresholdEnabled then
+        if conf.stackThresholdEnabled then
             _anyThreshold = true
             _anyStacks = true
         end
-        if (cfg.stacksPosition or "center") ~= "none" then
+        if (conf.stacksPosition or "center") ~= "none" then
             _anyStacks = true
         end
-        if cfg.stackBasedBar and cfg.trackType ~= "cooldown" and cfg.stackThresholdMaxEnabled then
+        if conf.stackBasedBar and conf.trackType ~= "cooldown" and conf.stackThresholdMaxEnabled then
             _anyStacks = true
         end
-        local visCond = TBBUsesVisCondition(cfg)
+        local visCond = TBBUsesVisCondition(conf)
         if visCond then
             _anyVisCond = true
         end
 
-        if not tbbFrames[i] then
-            tbbFrames[i] = CreateTrackedBuffBarFrame(UIParent, i)
+        if not tbbFrames[idx] then
+            tbbFrames[idx] = CreateTrackedBuffBarFrame(UIParent, idx)
         end
-        local bar = tbbFrames[i]
+        local barFrame = tbbFrames[idx]
         -- Per-bar gate flag for the tick (our frame; the tick never re-derives it).
-        bar._tbbVisCond = visCond or nil
+        barFrame._tbbVisCond = visCond or nil
 
-        if cfg.enabled == false then
-            bar:Hide()
+        if conf.enabled == false then
+            barFrame:Hide()
         else
             anyEnabled = true
-            if cfg.popularKey == "bloodlust" then
+            if conf.popularKey == "bloodlust" then
                 anyLust = true
             end
-            if cfg.pandemicGlow then
+            if conf.pandemicGlow then
                 anyAntiClip = true
             end
-            ApplyTrackedBuffBarSettings(bar, cfg)
+            ApplyTrackedBuffBarSettings(barFrame, conf)
 
             -- Icon texture: preset icon, else the EFFECTIVE (override-resolved) form of the
             -- saved spell, never the raw saved id -- a bar saved for a base form seeds the
             -- talented override's icon and vice versa. The live tick re-derives from the
             -- bound frame/aura and overwrites this seed whenever better data exists.
-            if bar._icon and bar._icon._tex then
+            if barFrame._icon and barFrame._icon._tex then
                 local iconID
-                if cfg.popularKey then
+                if conf.popularKey then
                     for _, pe in ipairs(TBB_POPULAR_BUFFS) do
-                        if pe.key == cfg.popularKey then
+                        if pe.key == conf.popularKey then
                             iconID = pe.icon
                             break
                         end
                     end
                 end
                 if not iconID then
-                    local effSID = EffectiveIconSpellID(cfg)
+                    local effSID = EffectiveIconSpellID(conf)
                     if effSID then
                         local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(effSID)
                         if spInfo then
@@ -169,118 +169,125 @@ function ns.BuildTrackedBuffBars()
                     end
                 end
                 if iconID then
-                    bar._icon._tex:SetTexture(iconID)
+                    barFrame._icon._tex:SetTexture(iconID)
                 end
                 -- Rebuilds can re-pair bar index <-> config (add/remove shifts indices), so
                 -- reset per-bar icon source state and let the next tick re-derive instead of trusting stale caches.
-                bar._lastIconSID = nil
-                bar._cachedBlizzIconTex = nil
-                bar._cachedBlizzIconOwner = nil
+                barFrame._lastIconSID = nil
+                barFrame._cachedBlizzIconTex = nil
+                barFrame._cachedBlizzIconOwner = nil
             end
 
             -- Name text
-            local namePos2 = cfg.namePosition or ((cfg.showName ~= false) and "left" or "none")
-            if namePos2 ~= "none" and bar._nameText then
-                local customName = ns.TBBCustomName(cfg)
-                local displayName = customName or cfg.name
+            local namePos2 = conf.namePosition or ((conf.showName ~= false) and "left" or "none")
+            if namePos2 ~= "none" and barFrame._nameText then
+                local customName = mod.TBBCustomName(conf)
+                local displayName = customName or conf.name
                 -- Preset bars take the live label the same way the icon does above
                 -- (the copy saved at pick time can name the other faction's lust),
                 -- unless the bar has a name of its own.
-                if cfg.popularKey and not customName then
+                if conf.popularKey and not customName then
                     for _, pe in ipairs(TBB_POPULAR_BUFFS) do
-                        if pe.key == cfg.popularKey then
+                        if pe.key == conf.popularKey then
                             displayName = pe.name or displayName
                             break
                         end
                     end
                 end
-                if (not displayName or displayName == "") and cfg.spellID and cfg.spellID > 0 then
-                    local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(cfg.spellID)
+                if (not displayName or displayName == "") and conf.spellID and conf.spellID > 0 then
+                    local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(conf.spellID)
                     displayName = spInfo and spInfo.name
                     if not displayName and C_Spell.RequestLoadSpellData then
-                        C_Spell.RequestLoadSpellData(cfg.spellID)
+                        C_Spell.RequestLoadSpellData(conf.spellID)
                     end
                 end
-                bar._nameText:SetText(displayName or "")
-                bar._nameSet = displayName and displayName ~= "" or false
+                barFrame._nameText:SetText(displayName or "")
+                barFrame._nameSet = displayName and displayName ~= "" or false
             end
 
             -- Saved position / grouping. A group's FIRST enabled member takes the independent
             -- branch (its own saved pos) and becomes the group anchor; later members chain to
             -- the previous member using the group's grow/spacing. Independent bars (gid 0) always take the independent branch.
-            local gid = ns.TBBBarGroupID(cfg)
-            local prevInGroup = gid ~= 0 and lastBarByGroup[gid] or nil
+            local groupId = mod.TBBBarGroupID(conf)
+            local prevInGroup = groupId ~= 0 and lastBarByGroup[groupId] or nil
             if prevInGroup then
                 -- Grouped: position relative to the previous member
-                local growDir = (GroupGrowOf(tbb, gid) or "DOWN"):upper()
-                local spacing = GroupSpacingOf(tbb, gid) or 2
-                bar:ClearAllPoints()
+                local growDir = (GroupGrowOf(tbb, groupId) or "DOWN"):upper()
+                local spacing = GroupSpacingOf(tbb, groupId) or 2
+                barFrame:ClearAllPoints()
                 if growDir == "UP" then
-                    bar:SetPoint("BOTTOM", prevInGroup, "TOP", 0, spacing)
+                    barFrame:SetPoint("BOTTOM", prevInGroup, "TOP", 0, spacing)
                 elseif growDir == "RIGHT" then
-                    bar:SetPoint("LEFT", prevInGroup, "RIGHT", spacing, 0)
+                    barFrame:SetPoint("LEFT", prevInGroup, "RIGHT", spacing, 0)
                 elseif growDir == "LEFT" then
-                    bar:SetPoint("RIGHT", prevInGroup, "LEFT", -spacing, 0)
+                    barFrame:SetPoint("RIGHT", prevInGroup, "LEFT", -spacing, 0)
                 else
-                    bar:SetPoint("TOP", prevInGroup, "BOTTOM", 0, -spacing)
+                    barFrame:SetPoint("TOP", prevInGroup, "BOTTOM", 0, -spacing)
                 end
             else
                 -- Independent positioning (group anchors and ungrouped bars). A global group's
                 -- anchor reads the shared registry position and its anchored-ness through the group's stable TBBG_ key.
-                local gkeyPos = gid ~= 0 and ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid) or nil
-                local posKey = tostring(i)
-                local pos, unlockKey
+                local gkeyPos = groupId ~= 0 and mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
+                    or nil
+                local posKey = tostring(idx)
+                local place, unlockKey
                 if gkeyPos then
-                    local entry = ns.TBBGlobalGroup(gkeyPos)
-                    pos = entry and entry.pos
+                    local record = mod.TBBGlobalGroup(gkeyPos)
+                    place = record and record.pos
                     unlockKey = "TBBG_" .. gkeyPos
                     -- Stamp the anchor bar's size onto the registry entry so the
                     -- "Shift Elements If No Bars" stand-in (memberless specs)
                     -- holds the slot at the size the group last rendered. Gated
                     -- on the option so None profiles see zero new writes; a
                     -- never-stamped entry's stand-in uses the bar defaults.
-                    if entry and (entry.shiftNoBar == "Up" or entry.shiftNoBar == "Down") then
-                        entry.width = cfg.width or 270
-                        entry.height = cfg.height or 24
+                    if record and (record.shiftNoBar == "Up" or record.shiftNoBar == "Down") then
+                        record.width = conf.width or 270
+                        record.height = conf.height or 24
                     end
                 else
-                    pos = _tbbPos[posKey]
+                    place = _tbbPos[posKey]
                     unlockKey = "TBB_" .. posKey
                 end
-                if pos and pos.point then
+                if place and place.point then
                     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
-                    if not anchored or not bar:GetLeft() then
-                        bar:ClearAllPoints()
-                        if pos.scale then
+                    if not anchored or not barFrame:GetLeft() then
+                        barFrame:ClearAllPoints()
+                        if place.scale then
                             pcall(function()
-                                bar:SetScale(pos.scale)
+                                barFrame:SetScale(place.scale)
                             end)
                         end
-                        bar:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
+                        barFrame:SetPoint(
+                            place.point,
+                            UIParent,
+                            place.relPoint or place.point,
+                            place.x or 0,
+                            place.y or 0
+                        )
                     end
                 else
                     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
-                    if not anchored or not bar:GetLeft() then
-                        bar:ClearAllPoints()
-                        bar:SetPoint(
+                    if not anchored or not barFrame:GetLeft() then
+                        barFrame:ClearAllPoints()
+                        barFrame:SetPoint(
                             "CENTER",
                             UIParent,
                             "CENTER",
                             0,
-                            200 - (i - 1) * ((cfg.height or 24) + 4)
+                            200 - (idx - 1) * ((conf.height or 24) + 4)
                         )
                     end
                 end
             end
 
-            if gid ~= 0 then
-                lastBarByGroup[gid] = bar
+            if groupId ~= 0 then
+                lastBarByGroup[groupId] = barFrame
             end
-            bar._tbbReady = true
-            bar._isPassive = nil
-            bar._stackCount = 0
-            bar._isLifebloom = nil -- re-resolve Lifebloom identity after rebuild
-            bar:Hide() -- tick shows it when active
+            barFrame._tbbReady = true
+            barFrame._isPassive = nil
+            barFrame._stackCount = 0
+            barFrame._isLifebloom = nil -- re-resolve Lifebloom identity after rebuild
+            barFrame:Hide() -- tick shows it when active
         end
     end
     SetAnyPandemic(_anyPandemic)
@@ -289,8 +296,8 @@ function ns.BuildTrackedBuffBars()
     SetAnyVisCond(_anyVisCond)
     -- WoW Forever: a Tracking Bar's Pandemic Glow is the anti-clip glow, which
     -- listens to your casts only while an enabled bar uses it (CUI_CDM_ForeverAntiClip.lua).
-    if ns.CDM_AntiClipBars then
-        ns.CDM_AntiClipBars(anyAntiClip)
+    if mod.CDM_AntiClipBars then
+        mod.CDM_AntiClipBars(anyAntiClip)
     end
 
     -- Tick frame: every frame while anything is live (bar fill+spark need smooth updates);
@@ -298,7 +305,7 @@ function ns.BuildTrackedBuffBars()
     _tbbWake._enabled = anyEnabled and true or false
     if anyEnabled then
         if not tbbTickFrame then
-            SetTickFrame(ns.TakeShell())
+            SetTickFrame(mod.TakeShell())
             local tbbAccum = 0
             tbbTickFrame:SetScript("OnUpdate", function(self, elapsed)
                 tbbAccum = tbbAccum + elapsed
@@ -307,7 +314,7 @@ function ns.BuildTrackedBuffBars()
                 end
                 self._lastDt = tbbAccum
                 tbbAccum = 0
-                ns.UpdateTrackedBuffBarTimers()
+                mod.UpdateTrackedBuffBarTimers()
             end)
         end
         _tbbWake.Wake()
@@ -320,7 +327,7 @@ function ns.BuildTrackedBuffBars()
 
     -- Start/stop the player-only Sated-debuff listener that drives the lust displays. Goes
     -- through the arbiter so a Custom Auras (icon) lust display keeps the listener armed even when no Tracking Bar lust bar exists.
-    ns.UpdateLustListener()
+    mod.UpdateLustListener()
 
     -- "Shift Elements If No Bars" (global groups): position each opted-in
     -- group's stand-in, and on an empty<->populated EDGE re-cascade the group's
@@ -331,29 +338,29 @@ function ns.BuildTrackedBuffBars()
     -- via the per-key memo so a None-everywhere profile schedules ZERO anchor
     -- work here; unlock entry/exit manage the shift themselves.
     do
-        local reg = ns.GetTBBGlobalGroups and ns.GetTBBGlobalGroups()
+        local reg = mod.GetTBBGlobalGroups and mod.GetTBBGlobalGroups()
         if reg then
-            for gk, entry in pairs(reg) do
+            for gk, record in pairs(reg) do
                 -- Also keep maintaining a stand-in that already exists with the
                 -- option back at None (session fallback, see TBBStandinFrame):
                 -- it must track registry-pos edits from other specs instead of
                 -- freezing anchored children on a phantom (audit-caught).
                 if
-                    entry.shiftNoBar == "Up"
-                    or entry.shiftNoBar == "Down"
-                    or (ns.TBBStandinFrame and ns.TBBStandinFrame(gk))
+                    record.shiftNoBar == "Up"
+                    or record.shiftNoBar == "Down"
+                    or (mod.TBBStandinFrame and mod.TBBStandinFrame(gk))
                 then
-                    ns.TBBEnsureStandin(gk)
+                    mod.TBBEnsureStandin(gk)
                 end
                 if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
                     -- dir: 0 = covered (members present or option off), +/-1 =
                     -- shifting. Unset memo reads as 0, so the first build with
                     -- nothing to shift schedules nothing (ERB memo parity).
-                    local dir = ns.TBBShiftDirFor(entry, gk)
-                    local memo = ns._tbbShiftDirMemo
+                    local dir = mod.TBBShiftDirFor(record, gk)
+                    local memo = mod._tbbShiftDirMemo
                     if not memo then
                         memo = {}
-                        ns._tbbShiftDirMemo = memo
+                        mod._tbbShiftDirMemo = memo
                     end
                     if dir ~= (memo[gk] or 0) then
                         memo[gk] = dir
@@ -365,31 +372,31 @@ function ns.BuildTrackedBuffBars()
     end
 
     -- Unlock mode
-    if ns.RegisterTBBUnlockElements then
-        ns.RegisterTBBUnlockElements()
+    if mod.RegisterTBBUnlockElements then
+        mod.RegisterTBBUnlockElements()
     end
 
     -- 12.1 engine-driven decimal timer text (nil on 12.0: module self-gates)
-    if ns.TBBDecimals_Sync then
-        ns.TBBDecimals_Sync()
+    if mod.TBBDecimals_Sync then
+        mod.TBBDecimals_Sync()
     end
 
     -- Match pads follow each bar's border settings: a bar or group whose pad
     -- changed is re-pushed through its match once, deferred (compare-only here).
     if CludesUI.MatchPadChanged then
-        for i = 1, #bars do
-            CludesUI.MatchPadChanged(ns._tbbUKey[i])
+        for idx = 1, #barList do
+            CludesUI.MatchPadChanged(mod._tbbUKey[idx])
         end
-        local greg = ns.GetTBBGlobalGroups and ns.GetTBBGlobalGroups()
+        local greg = mod.GetTBBGlobalGroups and mod.GetTBBGlobalGroups()
         if greg then
             for gk in pairs(greg) do
-                CludesUI.MatchPadChanged(ns._tbbgUKey[gk])
+                CludesUI.MatchPadChanged(mod._tbbgUKey[gk])
             end
         end
     end
 
     -- Group loot rolls already up keep clear of the rebuilt bars.
-    ns.RequestLootPlacement()
+    mod.RequestLootPlacement()
 end
 
-I.broken = false
+Inner.broken = false

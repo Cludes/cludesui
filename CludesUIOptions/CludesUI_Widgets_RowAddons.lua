@@ -15,7 +15,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- host are reset and dressed again by the next build instead of made anew;
     -- elsewhere this is CreateFrame.
     local CreateFrame = CludesUI._Pool.CreateFrame
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local RegisterWidgetRefresh = CludesUI.RegisterWidgetRefresh
     local MakeStyledButton = CludesUI.MakeStyledButton
     local WB_COLOURS = CludesUI.WB_COLOURS
@@ -32,28 +32,28 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- chaining left of the control (slider/dropdown) like the sync icon / cog. Used
     -- to gate the row's control (e.g. enable/disable the duration text). The toggle
     -- itself is never disabled. opts: region, getValue, setValue, onToggle, sizeRatio.
-    local function BuildInlineToggle(opts)
-        local region = opts.region
-        if not region then
+    local function BuildInlineToggle(options)
+        local regionFrame = options.region
+        if not regionFrame then
             return nil
         end
         local toggle, _, tgSnap = BuildToggleControl(
-            region,
-            region:GetFrameLevel() + 5,
-            opts.getValue,
-            function(v)
-                if opts.setValue then
-                    opts.setValue(v)
+            regionFrame,
+            regionFrame:GetFrameLevel() + 5,
+            options.getValue,
+            function(val)
+                if options.setValue then
+                    options.setValue(val)
                 end
-                if opts.onToggle then
-                    opts.onToggle(v)
+                if options.onToggle then
+                    options.onToggle(val)
                 end
             end,
-            { sizeRatio = opts.sizeRatio or 0.8 }
+            { sizeRatio = options.sizeRatio or 0.8 }
         )
         toggle:ClearAllPoints()
-        toggle:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-        region._lastInline = toggle
+        toggle:SetPoint("RIGHT", regionFrame._lastInline or regionFrame._control, "LEFT", -8, 0)
+        regionFrame._lastInline = toggle
         RegisterWidgetRefresh(tgSnap)
         return toggle
     end
@@ -63,9 +63,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- 0.4 idle, 0.7 hovered). They show as the cogs' dots below do: 0.55 idle /
     -- 0.75 hovered, 0.15 disabled, and linearly between (the Raid & Party Frames
     -- eye's 0.6 while its preview is on).
-    function CludesUI.SetGlyphAlpha(btn, a)
-        btn._glyphA = a
-        btn:SetAlpha(a <= 0.15 and a or math.min(1, 0.55 + (a - 0.4) * 2 / 3))
+    function CludesUI.SetGlyphAlpha(button, a)
+        button._glyphA = a
+        button:SetAlpha(a <= 0.15 and a or math.min(1, 0.55 + (a - 0.4) * 2 / 3))
     end
 
     -- Inline cogs draw a vertical ellipsis with an accent notification dot above
@@ -108,71 +108,71 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     end
 
     -- The cog being built: module, page, section, row label and popup title.
-    function CogDot.Key(rgn, opts)
-        local row = rgn:GetParent()
-        local content = row and row:GetParent()
-        local sec = content and content._currentSection
-        local cfg, title = rgn._cfg, opts.title
-        local label = cfg and cfg.text or rgn._labelText
+    function CogDot.Key(rgn, options)
+        local rowFrame = rgn:GetParent()
+        local contentFrame = rowFrame and rowFrame:GetParent()
+        local sec = contentFrame and contentFrame._currentSection
+        local conf, titleText = rgn._cfg, options.title
+        local labelText = conf and conf.text or rgn._labelText
         return (CludesUI._buildingModule or CludesUI:GetActiveModule() or "")
             .. "\31"
             .. (CludesUI._buildingPage or CludesUI:GetActivePage() or "")
             .. "\31"
             .. (sec and sec._sectionName or "")
             .. "\31"
-            .. (type(label) == "string" and label or "")
+            .. (type(labelText) == "string" and labelText or "")
             .. "\31"
-            .. (type(title) == "string" and title or "")
+            .. (type(titleText) == "string" and titleText or "")
     end
 
     function CogDot.Id(s)
-        local h, mod = 0, CogDot.MOD
-        for i = 1, #s do
-            h = (h * 31 + s:byte(i)) % mod
+        local hgt, mod = 0, CogDot.MOD
+        for idx = 1, #s do
+            hgt = (hgt * 31 + s:byte(idx)) % mod
         end
         local c = CogDot.CHARS
-        local a = h % 64
-        h = (h - a) / 64
-        local b = h % 64
-        h = (h - b) / 64
-        local d = h % 64
-        h = (h - d) / 64
-        local e = h % 64
-        h = (h - e) / 64
-        return string.char(c[a + 1], c[b + 1], c[d + 1], c[e + 1], c[h + 1])
+        local a = hgt % 64
+        hgt = (hgt - a) / 64
+        local b = hgt % 64
+        hgt = (hgt - b) / 64
+        local d = hgt % 64
+        hgt = (hgt - d) / 64
+        local e = hgt % 64
+        hgt = (hgt - e) / 64
+        return string.char(c[a + 1], c[b + 1], c[d + 1], c[e + 1], c[hgt + 1])
     end
 
     -- The opened cogs as a set, read from the saved string once a session.
     function CogDot.Seen()
-        local set = CogDot.set
-        if set then
-            return set
+        local group = CogDot.set
+        if group then
+            return group
         end
-        set = {}
+        group = {}
         local str = CludesUIDB and CludesUIDB.cogSeen
         if type(str) == "string" then
-            for i = 1, #str - 4, 5 do
-                set[str:sub(i, i + 4)] = true
+            for idx = 1, #str - 4, 5 do
+                group[str:sub(idx, idx + 4)] = true
             end
         end
-        CogDot.set = set
-        return set
+        CogDot.set = group
+        return group
     end
 
     -- A cog opened for the first time: its id joins the saved string, and every
     -- built cog with that id (the same row on another unit or bar) loses its dot.
-    function CogDot.Mark(id)
-        local set = CogDot.Seen()
-        if set[id] then
+    function CogDot.Mark(ident)
+        local group = CogDot.Seen()
+        if group[ident] then
             return
         end
-        set[id] = true
+        group[ident] = true
         if CludesUIDB then
             local str = CludesUIDB.cogSeen
-            CludesUIDB.cogSeen = (type(str) == "string" and str or "") .. id
+            CludesUIDB.cogSeen = (type(str) == "string" and str or "") .. ident
         end
         for b in pairs(CogDot.live) do
-            if b._cuiCogId == id then
+            if b._cuiCogId == ident then
                 b._cuiCogPulse:Stop()
                 b._cuiCogNote:Hide()
             end
@@ -184,16 +184,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- of the unrounded height, a share on a half pixel (the step and the
     -- notification dot's offsets at 30 pixels) rounds either way with the float
     -- error a cog's effective scale carries.
-    function CogDot.Px(v)
-        return math.floor(v + 0.5)
+    function CogDot.Px(val)
+        return math.floor(val + 0.5)
     end
 
     -- The dots in whole pixels on the cog's pixel layer: the middle one centred,
     -- the others a step above and below, the notification dot (and the pulse ring
     -- under it) up and left of the top one.
     function CogDot.Fit(L, k)
-        local w, h = L.parent:GetSize()
-        local wp, hp = math.floor(w * k + 0.5), math.floor(h * k + 0.5)
+        local wid, hgt = L.parent:GetSize()
+        local wp, hp = math.floor(wid * k + 0.5), math.floor(hgt * k + 0.5)
         if wp == L.wp and hp == L.hp then
             return
         end
@@ -201,38 +201,38 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local Px = CogDot.Px
         local d = math.max(2, Px(hp * CogDot.DOT))
         local step = math.max(d + 1, Px(hp * CogDot.STEP))
-        local n = math.max(3, Px(hp * CogDot.NOTE))
-        local x, y = math.floor((wp - d) / 2), math.floor((hp - d) / 2)
+        local num = math.max(3, Px(hp * CogDot.NOTE))
+        local posX, posY = math.floor((wp - d) / 2), math.floor((hp - d) / 2)
         local layer = L._frame
-        for i = 1, 3 do
-            local t = L[i]
+        for idx = 1, 3 do
+            local t = L[idx]
             CludesUI.SetCircleArt(t, d)
             t:SetSize(d, d)
             t:ClearAllPoints()
-            t:SetPoint("TOPLEFT", layer, "TOPLEFT", x, (2 - i) * step - y)
+            t:SetPoint("TOPLEFT", layer, "TOPLEFT", posX, (2 - idx) * step - posY)
         end
         -- Its outer edge reaches as far past the column's left edge as the same
         -- spot to the right would past its right edge, so the rounding mirrors.
         -- Kept inside the button, which a small cog's rounded sizes can leave.
-        local reach = Px((d - n) / 2 + hp * CogDot.NX) + n - d
-        local nx = math.max(0, x - reach)
-        local ny = math.max(0, Px(y - step + (d - n) / 2 - hp * CogDot.NY))
+        local reach = Px((d - num) / 2 + hp * CogDot.NX) + num - d
+        local nx = math.max(0, posX - reach)
+        local ny = math.max(0, Px(posY - step + (d - num) / 2 - hp * CogDot.NY))
         local note, ring = L.note, L.ring
-        CludesUI.SetCircleArt(note, n)
-        note:SetSize(n, n)
+        CludesUI.SetCircleArt(note, num)
+        note:SetSize(num, num)
         note:ClearAllPoints()
         note:SetPoint("TOPLEFT", layer, "TOPLEFT", nx, -ny)
-        CludesUI.SetCircleArt(ring, n)
-        ring:SetSize(n, n)
+        CludesUI.SetCircleArt(ring, num)
+        ring:SetSize(num, num)
         ring:ClearAllPoints()
         ring:SetPoint("CENTER", note, "CENTER")
     end
 
     -- The pulse: a ring of the dot's colour grows from it and fades, three times.
     function CogDot.PulseLoop(ag)
-        local n = (ag._cuiLoops or 0) + 1
-        ag._cuiLoops = n
-        if n >= 3 then
+        local num = (ag._cuiLoops or 0) + 1
+        ag._cuiLoops = num
+        if num >= 3 then
             ag:Stop()
         end
     end
@@ -246,14 +246,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- An edit to the setting of a cog never opened: its dot shows here and on the
     -- cog's twins until the panel closes, and every dot this edit brings up on
     -- screen pulses.
-    function CogDot.Edited(id)
-        if CogDot.Seen()[id] then
+    function CogDot.Edited(ident)
+        if CogDot.Seen()[ident] then
             return
         end
-        CogDot.edited[id] = true
+        CogDot.edited[ident] = true
         local up
         for b in pairs(CogDot.live) do
-            if b._cuiCogId == id and b._cuiCogState then
+            if b._cuiCogId == ident and b._cuiCogState then
                 b._cuiCogState()
                 if b._cuiCogNote:IsShown() and b:IsVisible() then
                     up = true
@@ -261,7 +261,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
         end
-        CogDot.up[id] = up
+        CogDot.up[ident] = up
     end
 
     -- The panel closed (not hidden with the UI, which leaves it shown): this
@@ -306,9 +306,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     end
 
     local function InScrollArea(f)
-        local sf = CludesUI._scrollFrame
+        local scrollFrame = CludesUI._scrollFrame
         while f do
-            if f == sf then
+            if f == scrollFrame then
                 return true
             end
             f = f:GetParent()
@@ -322,10 +322,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not (cogTipCog and cogTipInScroll) then
             return
         end
-        local sf = CludesUI._scrollFrame
+        local scrollFrame = CludesUI._scrollFrame
         local _, cy = cogTipCog:GetCenter()
-        local top, bottom = sf:GetTop(), sf:GetBottom()
-        if cy and top and bottom and cy <= top and cy >= bottom then
+        local topY, bottom = scrollFrame:GetTop(), scrollFrame:GetBottom()
+        if cy and topY and bottom and cy <= topY and cy >= bottom then
             if not cogTip:IsShown() then
                 CludesUI.ShowTipCallout(cogTip)
             end
@@ -375,33 +375,33 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- half (frame or one of its two parents) registered (a page the setter built
     -- again holds a new cog of the same id, which CogDot.Edited finds). A disabled
     -- cog is left alone; the tip goes to a visible one.
-    function CludesUI._CogWriteNotice(frame)
-        if type(frame) ~= "table" or CludesUI._prebuilding then
+    function CludesUI._CogWriteNotice(widget)
+        if type(widget) ~= "table" or CludesUI._prebuilding then
             return
         end
         local cog
         for _ = 1, 3 do
-            cog = frame._cuiCog
-            if cog or not frame.GetParent then
+            cog = widget._cuiCog
+            if cog or not widget.GetParent then
                 break
             end
-            frame = frame:GetParent()
-            if not frame then
+            widget = widget:GetParent()
+            if not widget then
                 return
             end
         end
         if not cog then
             return
         end
-        local id, off = cog._cuiCogId, cog._cuiCogOff
-        if off and off() then
+        local ident, offset = cog._cuiCogId, cog._cuiCogOff
+        if offset and offset() then
             -- The edit turned its own cog off: the one that turns it back on
             -- brings the dot up again, with its pulse.
-            CogDot.up[id] = nil
+            CogDot.up[ident] = nil
             return
         end
-        if not CogDot.up[id] then
-            CogDot.Edited(id)
+        if not CogDot.up[ident] then
+            CogDot.Edited(ident)
         end
         if not CogTipSeen() and cog:IsVisible() then
             ShowCogTip(cog)
@@ -417,42 +417,42 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --   0.15 disabled (the button at 0.3). Disabled blocks the click and shows the requirement tooltip. A button that paints its own states, opts.paint(btn, off, hot),
     --   draws opts.icon bare instead, 26 square and with no dot (the unlock jump).
     -- A cog with a dot is the one its region's writes light (the cog notice above; the last such cog built on the region).
-    local function BuildInlineCog(rgn, opts)
+    local function BuildInlineCog(rgn, options)
         if CludesUI._prebuilding then
             return
         end
         -- A disabled cog with no tooltip of its own explains itself with its host control's requirement.
-        local tipSrc = (opts.disabled and not opts.disabledTooltip) and rgn._cfg or opts
-        if opts.disabled and not (tipSrc and tipSrc.disabledTooltip) and CludesUI.IsDevModeActive() then
+        local tipSrc = (options.disabled and not options.disabledTooltip) and rgn._cfg or options
+        if options.disabled and not (tipSrc and tipSrc.disabledTooltip) and CludesUI.IsDevModeActive() then
             error("BuildInlineCog: disabled needs a disabledTooltip", 2)
         end
-        local show = opts.show or select(2, BuildCogPopup(opts))
-        local paint = opts.paint
-        local h = opts.size or (paint and 26 or 30)
-        local btn = CreateFrame("Button", nil, rgn)
-        btn:SetSize(paint and h or math.floor(h * 0.8 + 0.5), h)
-        PP.Point(
-            btn,
+        local show = options.show or select(2, BuildCogPopup(options))
+        local paint = options.paint
+        local hgt = options.size or (paint and 26 or 30)
+        local button = CreateFrame("Button", nil, rgn)
+        button:SetSize(paint and hgt or math.floor(hgt * 0.8 + 0.5), hgt)
+        Pix.Point(
+            button,
             "RIGHT",
-            opts.anchorTo or (opts.chain ~= false and rgn._lastInline) or rgn._control or rgn,
-            opts.relPoint or "LEFT",
-            -(opts.gap or 8),
+            options.anchorTo or (options.chain ~= false and rgn._lastInline) or rgn._control or rgn,
+            options.relPoint or "LEFT",
+            -(options.gap or 8),
             0
         )
-        if opts.chain ~= false then
-            rgn._lastInline = btn
+        if options.chain ~= false then
+            rgn._lastInline = button
         end
-        btn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-        local tex, L, note, id, hostCfg
+        button:SetFrameLevel(rgn:GetFrameLevel() + 5)
+        local texture, L, note, ident, hostCfg
         if paint then
-            tex = btn:CreateTexture(nil, "OVERLAY")
-            tex:SetTexture(opts.icon)
-            tex:SetAllPoints()
-            btn._icon = tex
+            texture = button:CreateTexture(nil, "OVERLAY")
+            texture:SetTexture(options.icon)
+            texture:SetAllPoints()
+            button._icon = texture
         else
             -- The three dots, the notification dot and its pulse ring: white and
             -- accent art on a pixel layer, placed in whole pixels (CogDot.Fit).
-            L = CludesUI.MakePixelLayer(btn, CogDot.Fit)
+            L = CludesUI.MakePixelLayer(button, CogDot.Fit)
             local layer = L._frame
             L[1] = layer:CreateTexture(nil, "ARTWORK")
             L[2] = layer:CreateTexture(nil, "ARTWORK")
@@ -482,29 +482,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             pulse:SetLooping("REPEAT")
             pulse:SetScript("OnLoop", CogDot.PulseLoop)
             L:Fit()
-            id = CogDot.Id(CogDot.Key(rgn, opts))
+            ident = CogDot.Id(CogDot.Key(rgn, options))
             hostCfg = rgn._cfg
-            btn._cuiCogId, btn._cuiCogNote, btn._cuiCogPulse = id, note, pulse
-            CogDot.live[btn] = true
+            button._cuiCogId, button._cuiCogNote, button._cuiCogPulse = ident, note, pulse
+            CogDot.live[button] = true
             -- The cog notice: the region's writes light this cog.
-            btn._cuiCogOff = opts.disabled
-            rgn._cuiCog = btn
-            btn:SetScript("OnHide", CogHidden)
+            button._cuiCogOff = options.disabled
+            rgn._cuiCog = button
+            button:SetScript("OnHide", CogHidden)
         end
 
-        local block
-        if opts.disabled then
-            block = CreateFrame("Frame", nil, btn)
-            block:SetAllPoints()
-            block:SetFrameLevel(btn:GetFrameLevel() + 10)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
-                local tip = tipSrc and ResolveDisabledTip(tipSrc)
-                if tip then
-                    ShowWidgetTooltip(btn, tip)
+        local blockData
+        if options.disabled then
+            blockData = CreateFrame("Frame", nil, button)
+            blockData:SetAllPoints()
+            blockData:SetFrameLevel(button:GetFrameLevel() + 10)
+            blockData:EnableMouse(true)
+            blockData:SetScript("OnEnter", function()
+                local tipText = tipSrc and ResolveDisabledTip(tipSrc)
+                if tipText then
+                    ShowWidgetTooltip(button, tipText)
                 end
             end)
-            block:SetScript("OnLeave", function()
+            blockData:SetScript("OnLeave", function()
                 HideWidgetTooltip()
             end)
         end
@@ -512,13 +512,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- the moment of the event can disagree with the hit test on an edge);
         -- a refresh pass asks the rect.
         local function State(hover)
-            local off = opts.disabled and opts.disabled()
-            local pf = type(show) == "table" and show._popupFrame
-            local open = (opts.isOpen and opts.isOpen(btn)) or (pf and pf:IsShown() and pf._owner == btn)
+            local offset = options.disabled and options.disabled()
+            local popFrame = type(show) == "table" and show._popupFrame
+            local open = (options.isOpen and options.isOpen(button))
+                or (popFrame and popFrame:IsShown() and popFrame._owner == button)
             local hot = open
             if not hot then
                 if hover == nil then
-                    hot = btn:IsMouseOver()
+                    hot = button:IsMouseOver()
                 else
                     hot = hover
                 end
@@ -529,71 +530,71 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- panel session, until the cog is first opened, never while the cog or
             -- the setting it sits on is disabled.
             if paint then
-                paint(btn, off, hot)
+                paint(button, offset, hot)
             else
-                btn:SetAlpha(off and 0.3 or 1)
-                local a = off and 0.5 or (hot and 0.75 or 0.55)
+                button:SetAlpha(offset and 0.3 or 1)
+                local a = offset and 0.5 or (hot and 0.75 or 0.55)
                 L[1]:SetAlpha(a)
                 L[2]:SetAlpha(a)
                 L[3]:SetAlpha(a)
-                local dot = CogDot.edited[id] == true
+                local dot = CogDot.edited[ident] == true
                     and not (
-                        off
-                        or CogDot.Seen()[id]
+                        offset
+                        or CogDot.Seen()[ident]
                         or (hostCfg and hostCfg.disabled and hostCfg.disabled())
                     )
                 note:SetShown(dot)
                 if not dot then
-                    btn._cuiCogPulse:Stop()
+                    button._cuiCogPulse:Stop()
                 end
             end
-            if block then
-                block:SetShown(off and true or false)
+            if blockData then
+                blockData:SetShown(offset and true or false)
             end
         end
-        btn._cuiCogState = State
+        button._cuiCogState = State
         -- opts.paint reads the accent (the unlock jump), so it repaints on accent changes.
         -- Keyed by the texture: the page pool forgets the entry when it resets it.
         if paint then
             CludesUI.RegAccent({
                 type = "callback",
-                obj = tex,
+                obj = texture,
                 fn = function()
                     State()
                 end,
             })
         end
 
-        btn:SetScript("OnEnter", function(self)
+        button:SetScript("OnEnter", function(self)
             State(true)
-            if opts.tip then
-                ShowWidgetTooltip(self, opts.tip)
+            if options.tip then
+                ShowWidgetTooltip(self, options.tip)
             end
         end)
-        btn:SetScript("OnLeave", function()
+        button:SetScript("OnLeave", function()
             State(false)
-            if opts.tip then
+            if options.tip then
                 HideWidgetTooltip()
             end
         end)
-        btn:SetScript("OnClick", function(self)
+        button:SetScript("OnClick", function(self)
             -- A cog clicked while the cog tip is up: the tip has done its job.
             -- Opened once, its dot is gone for good.
             if not paint then
                 if cogTipCog then
                     CogTipDone()
                 end
-                CogDot.Mark(id)
+                CogDot.Mark(ident)
             end
             show(self)
         end)
         State()
         -- A refresh re-reads the disabled states: the cog's own and, for the dot,
         -- its setting's.
-        if opts.disabled or (hostCfg and hostCfg.disabled) then
+        if options.disabled or (hostCfg and hostCfg.disabled) then
             RegisterWidgetRefresh(State)
         end
-        return btn, show
+        return button, show
     end
 
     -- Inline text button on a DualRow half-region, left of its last inline item or
@@ -604,36 +605,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- (as ResolveDisabledTip): greyed, click-blocked, without hover colours and
     -- explaining itself on hover while disabled, re-checked with the page's
     -- widgets. Returns the button; nil during the search prebuild.
-    function CludesUI.BuildInlineButton(rgn, text, onClick, opts)
+    function CludesUI.BuildInlineButton(rgn, textValue, onClick, options)
         if CludesUI._prebuilding then
             return
         end
-        opts = opts or {}
-        local btn = CreateFrame("Button", nil, rgn)
-        PP.Size(btn, opts.width or 110, opts.height or 24)
-        local anchor = (opts.chain ~= false and rgn._lastInline) or rgn._control
-        if anchor then
-            PP.Point(btn, "RIGHT", anchor, "LEFT", -(opts.gap or 8), 0)
+        options = options or {}
+        local button = CreateFrame("Button", nil, rgn)
+        Pix.Size(button, options.width or 110, options.height or 24)
+        local anchorFrame = (options.chain ~= false and rgn._lastInline) or rgn._control
+        if anchorFrame then
+            Pix.Point(button, "RIGHT", anchorFrame, "LEFT", -(options.gap or 8), 0)
         else
-            PP.Point(btn, "RIGHT", rgn, "RIGHT", -20, 0)
+            Pix.Point(button, "RIGHT", rgn, "RIGHT", -20, 0)
         end
-        if opts.chain ~= false then
-            rgn._lastInline = btn
+        if options.chain ~= false then
+            rgn._lastInline = button
         end
-        btn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-        MakeStyledButton(btn, text, 11, WB_COLOURS, onClick)
-        local tip, disabled = opts.tip, opts.disabled
-        if not (tip or disabled) then
-            return btn
+        button:SetFrameLevel(rgn:GetFrameLevel() + 5)
+        MakeStyledButton(button, textValue, 11, WB_COLOURS, onClick)
+        local tipText, disabled = options.tip, options.disabled
+        if not (tipText or disabled) then
+            return button
         end
         -- The styled button's hover scripts paint its hover colours; these wrap
         -- them so a disabled button keeps its resting colours.
-        local hoverOn, hoverOff = btn:GetScript("OnEnter"), btn:GetScript("OnLeave")
+        local hoverOn, hoverOff = button:GetScript("OnEnter"), button:GetScript("OnLeave")
         -- A state with no text hides the other state's tooltip (a flip replays this).
         local function OnEnter(self)
             if disabled and disabled() then
                 hoverOff(self)
-                local t = ResolveDisabledTip(opts)
+                local t = ResolveDisabledTip(options)
                 if t then
                     ShowWidgetTooltip(self, t)
                 else
@@ -642,7 +643,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             hoverOn(self)
-            local t = tip
+            local t = tipText
             if type(t) == "function" then
                 t = t()
             end
@@ -652,34 +653,34 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 HideWidgetTooltip()
             end
         end
-        btn:SetScript("OnEnter", OnEnter)
-        btn:SetScript("OnLeave", function(self)
+        button:SetScript("OnEnter", OnEnter)
+        button:SetScript("OnLeave", function(self)
             hoverOff(self)
             HideWidgetTooltip()
         end)
         if disabled then
             -- Motion scripts keep running while disabled, so hover explains the lock.
-            btn:SetMotionScriptsWhileDisabled(true)
+            button:SetMotionScriptsWhileDisabled(true)
             local shownOff
             local function State()
-                local off = disabled() and true or false
-                if off == shownOff then
+                local offset = disabled() and true or false
+                if offset == shownOff then
                     return
                 end
                 local flipped = shownOff ~= nil
-                shownOff = off
-                btn:SetEnabled(not off)
-                btn:SetAlpha(off and 0.35 or 1)
+                shownOff = offset
+                button:SetEnabled(not offset)
+                button:SetAlpha(offset and 0.35 or 1)
                 -- A flip while it holds the mouse repaints and re-explains for the
                 -- new state (a menu open over it keeps the focus instead).
-                if flipped and GetMouseFoci()[1] == btn then
-                    OnEnter(btn)
+                if flipped and GetMouseFoci()[1] == button then
+                    OnEnter(button)
                 end
             end
             State()
             RegisterWidgetRefresh(State)
         end
-        return btn
+        return button
     end
 
     -- Opens Unlock Mode from an options row with the element `key` selected and
@@ -717,20 +718,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- button; nil during the search prebuild.
     -- The glyph in the accent: 70% at rest, full while hovered, 20% while
     -- disabled (owner 2026-10-23).
-    local function UnlockJumpPaint(btn, off, hot)
-        btn:SetAlpha(off and 0.2 or (hot and 1 or 0.7))
+    local function UnlockJumpPaint(button, offset, hot)
+        button:SetAlpha(offset and 0.2 or (hot and 1 or 0.7))
         local r, g, b = CludesUI.GetAccentColor()
-        btn._icon:SetVertexColor(r, g, b)
+        button._icon:SetVertexColor(r, g, b)
     end
 
-    function CludesUI.BuildUnlockJump(rgn, opts)
+    function CludesUI.BuildUnlockJump(rgn, options)
         if CludesUI._prebuilding then
             return
         end
-        local key = opts.key
-        local btn = BuildInlineCog(rgn, {
+        local key = options.key
+        local button = BuildInlineCog(rgn, {
             icon = CludesUI.UNLOCK_ICON,
-            tip = opts.tooltip or "Move in Layout Mode",
+            tip = options.tooltip or "Move in Layout Mode",
             show = function()
                 local k = key
                 if type(k) == "function" then
@@ -740,25 +741,25 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     CludesUI.OpenUnlockModeAt(k)
                 end
             end,
-            disabled = opts.disabled,
-            disabledTooltip = opts.disabledTooltip,
-            rawTooltip = opts.rawTooltip,
-            requireState = opts.requireState,
-            size = opts.size,
-            gap = opts.gap,
-            anchorTo = opts.anchorTo,
-            relPoint = opts.relPoint,
-            chain = opts.chain,
+            disabled = options.disabled,
+            disabledTooltip = options.disabledTooltip,
+            rawTooltip = options.rawTooltip,
+            requireState = options.requireState,
+            size = options.size,
+            gap = options.gap,
+            anchorTo = options.anchorTo,
+            relPoint = options.relPoint,
+            chain = options.chain,
             paint = UnlockJumpPaint,
         })
         -- The glyph's art is square (30x30), so the cog icon's own fill of the
         -- button is its fit; drawn unsnapped, since it lands between texel sizes.
-        local icon = btn._icon
-        if icon.SetSnapToPixelGrid then
-            icon:SetSnapToPixelGrid(false)
-            icon:SetTexelSnappingBias(0)
+        local glyph = button._icon
+        if glyph.SetSnapToPixelGrid then
+            glyph:SetSnapToPixelGrid(false)
+            glyph:SetTexelSnappingBias(0)
         end
-        return btn
+        return button
     end
 
     -- "Move in Unlock Mode" on a section header (W:SectionHeader's frame): the
@@ -770,31 +771,31 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- rawTooltip/requireState (the element's own enable, where it has one), size
     -- (20). Returns the button; nil during the search prebuild or without a
     -- titled header.
-    function CludesUI.BuildSectionUnlockJump(hdr, opts)
+    function CludesUI.BuildSectionUnlockJump(heading, options)
         if CludesUI._prebuilding then
             return
         end
-        local label = hdr and hdr._label
-        if not label then
+        local labelText = heading and heading._label
+        if not labelText then
             return
         end
-        local size = opts.size or 20
-        local btn = CludesUI.BuildUnlockJump(hdr, {
-            key = opts.key,
-            tooltip = opts.tooltip,
-            disabled = opts.disabled,
-            disabledTooltip = opts.disabledTooltip,
-            rawTooltip = opts.rawTooltip,
-            requireState = opts.requireState,
-            size = size,
+        local dim = options.size or 20
+        local button = CludesUI.BuildUnlockJump(heading, {
+            key = options.key,
+            tooltip = options.tooltip,
+            disabled = options.disabled,
+            disabledTooltip = options.disabledTooltip,
+            rawTooltip = options.rawTooltip,
+            requireState = options.requireState,
+            size = dim,
             chain = false,
-            anchorTo = label,
+            anchorTo = labelText,
             relPoint = "RIGHT",
             gap = 0,
         })
-        btn:ClearAllPoints()
-        PP.Point(btn, "LEFT", label, "RIGHT", 3, 0)
-        return btn
+        button:ClearAllPoints()
+        Pix.Point(button, "LEFT", labelText, "RIGHT", 3, 0)
+        return button
     end
 
     -------------------------------------------------------------------------------
@@ -831,98 +832,98 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --   hides, clicks do nothing and hover explains the lock, re-checked with the
     --   page's widgets. Never touches region._lastInline or region._control.
     -- Returns the button; nil during the search prebuild.
-    local function BuildRowLabelMenu(rgn, opts)
+    local function BuildRowLabelMenu(rgn, options)
         if CludesUI._prebuilding then
             return
         end
-        local label = rgn._label
-        if not label then
+        local labelText = rgn._label
+        if not labelText then
             return
         end
-        local locked = opts.locked
-        local lockCfg = locked and { disabledTooltip = opts.lockTip, rawTooltip = opts.rawLockTip }
-        local btn = CreateFrame("Button", nil, rgn)
-        btn:SetFrameLevel(rgn:GetFrameLevel() + 12)
-        local arrow = btn:CreateTexture(nil, "ARTWORK")
+        local locked = options.locked
+        local lockCfg = locked and { disabledTooltip = options.lockTip, rawTooltip = options.rawLockTip }
+        local button = CreateFrame("Button", nil, rgn)
+        button:SetFrameLevel(rgn:GetFrameLevel() + 12)
+        local arrow = button:CreateTexture(nil, "ARTWORK")
         arrow:SetTexture(ROW_MENU_ARROW)
         arrow:SetSize(17, 17)
-        arrow:SetPoint("LEFT", label, "LEFT", math.ceil(label:GetStringWidth()) + 6, -1)
+        arrow:SetPoint("LEFT", labelText, "LEFT", math.ceil(labelText:GetStringWidth()) + 6, -1)
         -- The label clamp (QueueLabelClamp) keeps room for it and moves it with a cut label.
         rgn._labelArrow = arrow
-        btn:SetPoint("TOPLEFT", label, "TOPLEFT", -4, 5)
-        btn:SetPoint("BOTTOMRIGHT", arrow, "BOTTOMRIGHT", 2, -2)
-        local menu
-        local function Lit(on)
-            if on then
+        button:SetPoint("TOPLEFT", labelText, "TOPLEFT", -4, 5)
+        button:SetPoint("BOTTOMRIGHT", arrow, "BOTTOMRIGHT", 2, -2)
+        local dropMenu
+        local function Lit(enabled)
+            if enabled then
                 local r, g, b = RowMenuLitColor()
                 arrow:SetVertexColor(r, g, b)
-                label:SetTextColor(r, g, b)
+                labelText:SetTextColor(r, g, b)
             else
                 arrow:SetVertexColor(1, 1, 1)
-                label:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)
+                labelText:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)
             end
         end
         local function OnEnter()
             if locked and locked() then
-                local tip = ResolveDisabledTip(lockCfg)
-                if tip then
-                    ShowWidgetTooltip(btn, tip)
+                local tipText = ResolveDisabledTip(lockCfg)
+                if tipText then
+                    ShowWidgetTooltip(button, tipText)
                 end
                 return
             end
             Lit(true)
-            if opts.tooltip and not (menu and menu:IsShown()) then
-                ShowWidgetTooltip(btn, opts.tooltip)
+            if options.tooltip and not (dropMenu and dropMenu:IsShown()) then
+                ShowWidgetTooltip(button, options.tooltip)
             end
         end
         local function OnLeave()
-            if not (menu and menu:IsShown()) then
+            if not (dropMenu and dropMenu:IsShown()) then
                 Lit(false)
             end
             HideWidgetTooltip()
         end
-        btn:SetScript("OnEnter", OnEnter)
-        btn:SetScript("OnLeave", OnLeave)
-        local proxyLbl = CludesUI.MakeFont(btn, 12, nil, 1, 1, 1)
+        button:SetScript("OnEnter", OnEnter)
+        button:SetScript("OnLeave", OnLeave)
+        local proxyLbl = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local function EnsureMenu()
-            if menu then
-                return menu
+            if dropMenu then
+                return dropMenu
             end
             local m, _, refresh = BuildDropdownMenu(
-                btn,
-                opts.menuWidth or 170,
-                opts.order,
-                opts.values,
-                opts.getValue or NoSelection,
-                opts.setValue,
+                button,
+                options.menuWidth or 170,
+                options.order,
+                options.values,
+                options.getValue or NoSelection,
+                options.setValue,
                 proxyLbl,
                 "regular",
-                opts.itemDisabled
+                options.itemDisabled
             )
-            menu = m
+            dropMenu = m
             -- The wiring takes the button's hover scripts: its own run again after.
             WireDropdownScripts(
-                btn,
+                button,
                 proxyLbl,
                 NO_PAINT,
                 NO_PAINT,
-                menu,
+                dropMenu,
                 refresh,
                 CludesUI.RD_DD_COLOURS,
                 true
             )
-            btn:HookScript("OnEnter", OnEnter)
-            btn:HookScript("OnLeave", OnLeave)
-            menu:HookScript("OnShow", function()
+            button:HookScript("OnEnter", OnEnter)
+            button:HookScript("OnLeave", OnLeave)
+            dropMenu:HookScript("OnShow", function()
                 Lit(true)
             end)
-            menu:HookScript("OnHide", function()
-                Lit(btn:IsMouseOver())
+            dropMenu:HookScript("OnHide", function()
+                Lit(button:IsMouseOver())
             end)
-            return menu
+            return dropMenu
         end
-        btn:SetScript("OnClick", function()
+        button:SetScript("OnClick", function()
             if locked and locked() then
                 return
             end
@@ -934,24 +935,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 m:Show()
             end
         end)
-        btn:HookScript("OnHide", function()
-            if menu then
-                menu:Hide()
+        button:HookScript("OnHide", function()
+            if dropMenu then
+                dropMenu:Hide()
             end
         end)
         Lit(false)
         if locked then
             -- Disabled while locked, still hovered to explain the lock.
-            btn:SetMotionScriptsWhileDisabled(true)
+            button:SetMotionScriptsWhileDisabled(true)
             local function SyncLock()
-                local off = locked() and true or false
-                arrow:SetShown(not off)
-                btn:SetEnabled(not off)
+                local offset = locked() and true or false
+                arrow:SetShown(not offset)
+                button:SetEnabled(not offset)
             end
             SyncLock()
             RegisterWidgetRefresh(SyncLock)
         end
-        return btn
+        return button
     end
 
     -- The list hangs off the button, as wide as the button unless opts.width says
@@ -959,60 +960,60 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- opts: width, order, values, getValue() (default: nothing selected),
     --   setValue(v), itemDisabled(v) (as BuildRowLabelMenu). Returns the toggle the
     --   button's click calls; nil during the search prebuild.
-    local function AttachButtonMenu(btn, opts)
+    local function AttachButtonMenu(button, options)
         if CludesUI._prebuilding then
             return
         end
-        local enter, leave = btn:GetScript("OnEnter"), btn:GetScript("OnLeave")
-        local proxyLbl = CludesUI.MakeFont(btn, 12, nil, 1, 1, 1)
+        local enter, leave = button:GetScript("OnEnter"), button:GetScript("OnLeave")
+        local proxyLbl = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
-        local menu
+        local dropMenu
         local function EnsureMenu()
-            if menu then
-                return menu
+            if dropMenu then
+                return dropMenu
             end
             local m, _, refresh = BuildDropdownMenu(
-                btn,
-                opts.width or btn:GetWidth(),
-                opts.order,
-                opts.values,
-                opts.getValue or NoSelection,
-                opts.setValue,
+                button,
+                options.width or button:GetWidth(),
+                options.order,
+                options.values,
+                options.getValue or NoSelection,
+                options.setValue,
                 proxyLbl,
                 "regular",
-                opts.itemDisabled
+                options.itemDisabled
             )
-            menu = m
+            dropMenu = m
             WireDropdownScripts(
-                btn,
+                button,
                 proxyLbl,
                 NO_PAINT,
                 NO_PAINT,
-                menu,
+                dropMenu,
                 refresh,
                 CludesUI.RD_DD_COLOURS,
                 true
             )
             if enter then
-                btn:HookScript("OnEnter", enter)
+                button:HookScript("OnEnter", enter)
             end
             if leave then
-                btn:HookScript("OnLeave", function(self)
-                    if not menu:IsShown() then
+                button:HookScript("OnLeave", function(self)
+                    if not dropMenu:IsShown() then
                         leave(self)
                     end
                 end)
-                menu:HookScript("OnHide", function()
-                    if not btn:IsMouseOver() then
-                        leave(btn)
+                dropMenu:HookScript("OnHide", function()
+                    if not button:IsMouseOver() then
+                        leave(button)
                     end
                 end)
             end
-            return menu
+            return dropMenu
         end
-        btn:HookScript("OnHide", function()
-            if menu then
-                menu:Hide()
+        button:HookScript("OnHide", function()
+            if dropMenu then
+                dropMenu:Hide()
             end
         end)
         return function()
@@ -1047,53 +1048,53 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- renders where the hidden rows would start (via BuildLessCommonExpander), expanded it renders below the
     -- revealed rows (via FinishLessCommonExpander). Expanded state flips it into the collapse form: up arrows and a
     -- "Hide ..." label -- the Hide key is derived from the ENGLISH label before localization so both variants are proper L() lookup keys.
-    local function BuildLessCommonLink(parent, y, sectionKey, label, expanded)
+    local function BuildLessCommonLink(hostFrame, posY, sectionKey, labelText, expanded)
         local ARROW_SZ, ARROW_GAP = 12, 6
-        local btn = CreateFrame("Button", nil, parent)
-        btn:SetHeight(22)
-        btn:SetPoint("TOP", parent, "TOP", 0, y - 12)
-        btn:SetFrameLevel(parent:GetFrameLevel() + 5)
+        local button = CreateFrame("Button", nil, hostFrame)
+        button:SetHeight(22)
+        button:SetPoint("TOP", hostFrame, "TOP", 0, posY - 12)
+        button:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
 
         local arrowTex = expanded and LESS_COMMON_ARROW_UP or LESS_COMMON_ARROW_DOWN
-        local text = expanded and (label:gsub("^Show", "Hide", 1)) or label
+        local textValue = expanded and (labelText:gsub("^Show", "Hide", 1)) or labelText
 
-        local fs = CludesUI.MakeFont(btn, 13, nil, 1, 1, 1)
-        fs:SetPoint("LEFT", btn, "LEFT", ARROW_SZ + ARROW_GAP, 0)
-        fs:SetText(CludesUI.L(text))
-        fs:SetAlpha(0.7)
+        local fontStr = CludesUI.MakeFont(button, 13, nil, 1, 1, 1)
+        fontStr:SetPoint("LEFT", button, "LEFT", ARROW_SZ + ARROW_GAP, 0)
+        fontStr:SetText(CludesUI.L(textValue))
+        fontStr:SetAlpha(0.7)
 
-        local leftArrow = btn:CreateTexture(nil, "OVERLAY")
+        local leftArrow = button:CreateTexture(nil, "OVERLAY")
         leftArrow:SetSize(ARROW_SZ, ARROW_SZ)
         leftArrow:SetTexture(arrowTex)
-        leftArrow:SetPoint("RIGHT", fs, "LEFT", -ARROW_GAP, 0)
+        leftArrow:SetPoint("RIGHT", fontStr, "LEFT", -ARROW_GAP, 0)
         leftArrow:SetAlpha(0.7)
 
-        local rightArrow = btn:CreateTexture(nil, "OVERLAY")
+        local rightArrow = button:CreateTexture(nil, "OVERLAY")
         rightArrow:SetSize(ARROW_SZ, ARROW_SZ)
         rightArrow:SetTexture(arrowTex)
-        rightArrow:SetPoint("LEFT", fs, "RIGHT", ARROW_GAP, 0)
+        rightArrow:SetPoint("LEFT", fontStr, "RIGHT", ARROW_GAP, 0)
         rightArrow:SetAlpha(0.7)
 
-        btn:SetWidth(math.max((fs:GetStringWidth() or 0) + 2 * (ARROW_SZ + ARROW_GAP) + 8, 120))
+        button:SetWidth(math.max((fontStr:GetStringWidth() or 0) + 2 * (ARROW_SZ + ARROW_GAP) + 8, 120))
 
-        local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-        btn:SetScript("OnEnter", function()
-            fs:SetTextColor(EG.r, EG.g, EG.b)
-            fs:SetAlpha(1)
-            leftArrow:SetVertexColor(EG.r, EG.g, EG.b)
+        local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+        button:SetScript("OnEnter", function()
+            fontStr:SetTextColor(ACC.r, ACC.g, ACC.b)
+            fontStr:SetAlpha(1)
+            leftArrow:SetVertexColor(ACC.r, ACC.g, ACC.b)
             leftArrow:SetAlpha(1)
-            rightArrow:SetVertexColor(EG.r, EG.g, EG.b)
+            rightArrow:SetVertexColor(ACC.r, ACC.g, ACC.b)
             rightArrow:SetAlpha(1)
         end)
-        btn:SetScript("OnLeave", function()
-            fs:SetTextColor(1, 1, 1)
-            fs:SetAlpha(0.7)
+        button:SetScript("OnLeave", function()
+            fontStr:SetTextColor(1, 1, 1)
+            fontStr:SetAlpha(0.7)
             leftArrow:SetVertexColor(1, 1, 1)
             leftArrow:SetAlpha(0.7)
             rightArrow:SetVertexColor(1, 1, 1)
             rightArrow:SetAlpha(0.7)
         end)
-        btn:SetScript("OnClick", function()
+        button:SetScript("OnClick", function()
             local sess = CludesUI._lessCommonExpanded
             if not sess then
                 sess = {}
@@ -1103,19 +1104,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             CludesUI:RefreshPage(true)
         end)
 
-        return y - 40
+        return posY - 40
     end
 
-    local function BuildLessCommonExpander(parent, y, sectionKey, label)
+    local function BuildLessCommonExpander(hostFrame, posY, sectionKey, labelText)
         -- Hidden search pre-build: always build the wrapped rows so they register in the global search index; no link (the page is never shown).
         if CludesUI._prebuilding then
-            return true, y
+            return true, posY
         end
         -- This page reads the search flag: a search transition rebuilds it (SetLessCommonSearchActive).
         CludesUI._passReadSearchFlag = true
         -- Active search (either box): sections render force-expanded with NO link line at all; clearing the search collapses them back. Transient flag -- the session Show/Hide state below is untouched and restores afterwards (see SetLessCommonSearchActive).
         if CludesUI._lessCommonSearchActive then
-            return true, y
+            return true, posY
         end
         local sess = CludesUI._lessCommonExpanded
         if not sess then
@@ -1124,34 +1125,34 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         -- Expanded: render nothing here -- the caller builds the rows, then FinishLessCommonExpander places the "Hide ..." link below them.
         if sess[sectionKey] then
-            return true, y
+            return true, posY
         end
-        return false, BuildLessCommonLink(parent, y, sectionKey, label, false)
+        return false, BuildLessCommonLink(hostFrame, posY, sectionKey, labelText, false)
     end
 
     -- Call after the wrapped rows (safe to call unconditionally: no-ops while the section is collapsed, during the search pre-build or during an active search).
-    local function FinishLessCommonExpander(parent, y, sectionKey, label)
+    local function FinishLessCommonExpander(hostFrame, posY, sectionKey, labelText)
         if CludesUI._prebuilding then
-            return y
+            return posY
         end
         CludesUI._passReadSearchFlag = true
         if CludesUI._lessCommonSearchActive then
-            return y
+            return posY
         end
         local sess = CludesUI._lessCommonExpanded
         if not (sess and sess[sectionKey]) then
-            return y
+            return posY
         end
-        return BuildLessCommonLink(parent, y, sectionKey, label, true)
+        return BuildLessCommonLink(hostFrame, posY, sectionKey, labelText, true)
     end
 
     -- Search-driven expansion (both the sidebar global box and the top-bar module box call this with query ~= ""). While active, every less-common section renders expanded with no link; on clear, sections fall back to their session Show/Hide state. Idempotent -- only transitions act, and only on the pages whose last build read the flag (the expanders above, Bar Glows): those go (or are marked for a rebuild), and the active one is rebuilt in place, unless a page switch is clearing the box (the page being left is rebuilt on its next visit).
-    local function SetLessCommonSearchActive(active)
-        active = active and true or false
-        if (CludesUI._lessCommonSearchActive or false) == active then
+    local function SetLessCommonSearchActive(isActive)
+        isActive = isActive and true or false
+        if (CludesUI._lessCommonSearchActive or false) == isActive then
             return
         end
-        CludesUI._lessCommonSearchActive = active
+        CludesUI._lessCommonSearchActive = isActive
         if CludesUI._InvalidateSearchSensitive() and not CludesUI._selectingPage then
             CludesUI:RefreshPage(true)
         end
@@ -1160,14 +1161,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- A colour scale across a swatch: stops = { { r, g, b }, ... }, drawn left to
     -- right in equal steps over its fill (for a swatch that picks a scale, such as
     -- the meters' value gradient).
-    local function PaintSwatchGradient(swatch, stops)
+    local function PaintSwatchGradient(colorSwatch, stops)
         local steps = #stops - 1
-        local w = swatch:GetWidth()
-        for i = 1, steps do
-            local from, to = stops[i], stops[i + 1]
-            local seg = swatch:CreateTexture(nil, "ARTWORK", nil, 1)
-            seg:SetPoint("TOPLEFT", swatch, "TOPLEFT", w * (i - 1) / steps, 0)
-            seg:SetPoint("BOTTOMRIGHT", swatch, "BOTTOMLEFT", w * i / steps, 0)
+        local wid = colorSwatch:GetWidth()
+        for idx = 1, steps do
+            local from, to = stops[idx], stops[idx + 1]
+            local seg = colorSwatch:CreateTexture(nil, "ARTWORK", nil, 1)
+            seg:SetPoint("TOPLEFT", colorSwatch, "TOPLEFT", wid * (idx - 1) / steps, 0)
+            seg:SetPoint("BOTTOMRIGHT", colorSwatch, "BOTTOMLEFT", wid * idx / steps, 0)
             seg:SetColorTexture(1, 1, 1, 1)
             seg:SetGradient(
                 "HORIZONTAL",
@@ -1187,30 +1188,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --  opts.size: the swatch size (nil = 20, the inline swatch size; BuildColorSwatch's own 24 is a swatch half's).
     --  sc.gradient: colour stops shown across the swatch in place of its colour (PaintSwatchGradient).
     -------------------------------------------------------------------------------
-    local function BuildInlineSwatches(region, swatches, opts)
+    local function BuildInlineSwatches(regionFrame, swatches, options)
         -- Hidden search pre-build: swatches index nothing and the pre-built page is never shown, so none are built (its regions are stand-ins with no frame to build on).
         if CludesUI._prebuilding then
             return
         end
-        opts = opts or {}
-        local level = region:GetFrameLevel() + 3
-        local anchorTo = region._lastInline or region._control
-        for i = #swatches, 1, -1 do
-            local sc = swatches[i]
-            local swatch, updateSwatch =
-                BuildColorSwatch(region, level, sc.getValue, sc.setValue, sc.hasAlpha, opts.size or 20)
-            PP.Point(swatch, "RIGHT", anchorTo, "LEFT", -8, 0)
-            anchorTo = swatch
-            region._lastInline = swatch
+        options = options or {}
+        local level = regionFrame:GetFrameLevel() + 3
+        local anchorTo = regionFrame._lastInline or regionFrame._control
+        for idx = #swatches, 1, -1 do
+            local sc = swatches[idx]
+            local colorSwatch, updateSwatch = BuildColorSwatch(
+                regionFrame,
+                level,
+                sc.getValue,
+                sc.setValue,
+                sc.hasAlpha,
+                options.size or 20
+            )
+            Pix.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
+            anchorTo = colorSwatch
+            regionFrame._lastInline = colorSwatch
             if sc.gradient then
-                PaintSwatchGradient(swatch, sc.gradient)
+                PaintSwatchGradient(colorSwatch, sc.gradient)
             end
             if sc.onClick then
-                swatch._eabOrigClick = swatch:GetScript("OnClick")
-                swatch:SetScript("OnClick", sc.onClick)
+                colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
+                colorSwatch:SetScript("OnClick", sc.onClick)
             end
             local function SwatchEffectiveDisabled()
-                if opts.disabled and opts.disabled() then
+                if options.disabled and options.disabled() then
                     return true
                 end
                 if sc.disabled ~= nil then
@@ -1221,16 +1228,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 return false
             end
-            if opts.disabled or sc.disabled then
-                local swatchBlock = CreateFrame("Frame", nil, swatch)
+            if options.disabled or sc.disabled then
+                local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
                 swatchBlock:SetAllPoints()
-                swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
                 swatchBlock:EnableMouse(true)
                 swatchBlock:SetScript("OnEnter", function()
-                    local src = (sc.disabledTooltip ~= nil) and sc or opts
-                    local tip = ResolveDisabledTip(src)
-                    if tip then
-                        ShowWidgetTooltip(swatch, tip)
+                    local source = (sc.disabledTooltip ~= nil) and sc or options
+                    local tipText = ResolveDisabledTip(source)
+                    if tipText then
+                        ShowWidgetTooltip(colorSwatch, tipText)
                     end
                 end)
                 swatchBlock:SetScript("OnLeave", function()
@@ -1238,10 +1245,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 local function UpdateSwatchDisabled()
                     if SwatchEffectiveDisabled() then
-                        swatch:SetAlpha(0.3)
+                        colorSwatch:SetAlpha(0.3)
                         swatchBlock:Show()
                     else
-                        swatch:SetAlpha(1)
+                        colorSwatch:SetAlpha(1)
                         swatchBlock:Hide()
                     end
                 end
@@ -1249,15 +1256,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 RegisterWidgetRefresh(UpdateSwatchDisabled)
             end
             if sc.tooltip then
-                swatch:HookScript("OnEnter", function()
-                    ShowWidgetTooltip(swatch, sc.tooltip)
+                colorSwatch:HookScript("OnEnter", function()
+                    ShowWidgetTooltip(colorSwatch, sc.tooltip)
                 end)
-                swatch:HookScript("OnLeave", function()
+                colorSwatch:HookScript("OnLeave", function()
                     HideWidgetTooltip()
                 end)
             end
             if sc.refreshAlpha then
-                local _sw, _ra = swatch, sc.refreshAlpha
+                local _sw, _ra = colorSwatch, sc.refreshAlpha
                 local function UpdateAlpha()
                     if SwatchEffectiveDisabled() then
                         return
@@ -1284,9 +1291,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --            SSet("tnbEnabled", v); ApplyAll()
     --        end) }
     -------------------------------------------------------------------------------
-    local function SectionToggleSetValue(fn)
-        return function(v)
-            fn(v)
+    local function SectionToggleSetValue(func)
+        return function(val)
+            func(val)
             CludesUI:RefreshPage(true)
         end
     end
@@ -1306,10 +1313,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --          ... build the dependent row(s) ...
     --      end
     -------------------------------------------------------------------------------
-    local function DependentSetValue(pred, fn)
-        return function(v)
+    local function DependentSetValue(pred, func)
+        return function(val)
             local before = pred() and true or false
-            fn(v)
+            func(val)
             if (pred() and true or false) ~= before then
                 CludesUI:RefreshPage(true)
             end
@@ -1338,23 +1345,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --    disabledTip = (optional) tooltip string for disabled state
     --  Returns: row, height (same as W:DualRow)
     -------------------------------------------------------------------------------
-    local function BuildCursorAnchorRow(opts)
-        local W = opts.W
-        local parent = opts.parent
-        local getData = opts.getData
-        local onApply = opts.onApply
+    local function BuildCursorAnchorRow(options)
+        local Widgets = options.W
+        local hostFrame = options.parent
+        local getData = options.getData
+        local onApply = options.onApply
 
-        local row, h = W:DualRow(parent, opts.y, {
+        local rowFrame, hgt = Widgets:DualRow(hostFrame, options.y, {
             type = "toggle",
             text = "Anchor to Cursor",
-            disabled = opts.disabledFn,
-            disabledTooltip = opts.disabledTip,
+            disabled = options.disabledFn,
+            disabledTooltip = options.disabledTip,
             getValue = function()
                 return getData().anchorTo == "mouse"
             end,
-            setValue = function(v)
+            setValue = function(val)
                 local old = getData().anchorTo
-                local new = v and "mouse" or "none"
+                local new = val and "mouse" or "none"
                 getData().anchorTo = new
                 -- Cursor anchor requires a reload to take effect cleanly (Blizzard viewer Layout fights icon positions on live switch).
                 local changed = (old == "mouse") ~= (new == "mouse")
@@ -1377,7 +1384,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             values = { left = "Left", right = "Right", top = "Top", bottom = "Bottom" },
             order = { "left", "right", "top", "bottom" },
             disabled = function()
-                if opts.disabledFn and opts.disabledFn() then
+                if options.disabledFn and options.disabledFn() then
                     return true
                 end
                 return getData().anchorTo ~= "mouse"
@@ -1386,22 +1393,22 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             getValue = function()
                 return getData().anchorPosition or "right"
             end,
-            setValue = function(v)
-                getData().anchorPosition = v
+            setValue = function(val)
+                getData().anchorPosition = val
                 onApply()
             end,
         })
 
         -- "(Applies on Window Close)" subtitle
         do
-            local suffix = row._leftRegion:CreateFontString(nil, "OVERLAY")
+            local suffix = rowFrame._leftRegion:CreateFontString(nil, "OVERLAY")
             suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
             suffix:SetText(CludesUI.L("(Applies on Window Close)"))
             local anchorLabel
-            local regions = { row._leftRegion:GetRegions() }
-            for i = 1, #regions do
-                local reg = regions[i]
+            local regions = { rowFrame._leftRegion:GetRegions() }
+            for idx = 1, #regions do
+                local reg = regions[idx]
                 if reg and reg.GetText and CludesUI.EnKey(reg:GetText()) == "Anchor to Cursor" then
                     anchorLabel = reg
                     break
@@ -1410,12 +1417,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if anchorLabel then
                 suffix:SetPoint("LEFT", anchorLabel, "RIGHT", 5, 0)
             else
-                suffix:SetPoint("LEFT", row._leftRegion, "LEFT", 120, 0)
+                suffix:SetPoint("LEFT", rowFrame._leftRegion, "LEFT", 120, 0)
             end
         end
 
         -- Inline cog: X + Y offsets
-        BuildInlineCog(row._rightRegion, {
+        BuildInlineCog(rowFrame._rightRegion, {
             title = "Cursor Offset",
             rows = {
                 {
@@ -1427,8 +1434,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     get = function()
                         return getData().anchorOffsetX or 0
                     end,
-                    set = function(v)
-                        getData().anchorOffsetX = v
+                    set = function(val)
+                        getData().anchorOffsetX = val
                         onApply()
                     end,
                 },
@@ -1441,15 +1448,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     get = function()
                         return getData().anchorOffsetY or 0
                     end,
-                    set = function(v)
-                        getData().anchorOffsetY = v
+                    set = function(val)
+                        getData().anchorOffsetY = val
                         onApply()
                     end,
                 },
             },
         })
 
-        return row, h
+        return rowFrame, hgt
     end
     CludesUI.BuildCursorAnchorRow = BuildCursorAnchorRow
 end -- end deferred init

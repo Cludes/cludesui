@@ -8,18 +8,18 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and SkinEditBox.
 --  Reads the earlier Chat files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local ECHAT = ns.ECHAT
+local CHAT = mod.ECHAT
 
-local CFD, GetEditBoxFont, GetEditBoxFontSize = I.CFD, I.GetEditBoxFont, I.GetEditBoxFontSize
-local GetEditBoxHeight, GetOutlineFlag = I.GetEditBoxHeight, I.GetOutlineFlag
+local CFD, GetEditBoxFont, GetEditBoxFontSize = Inner.CFD, Inner.GetEditBoxFont, Inner.GetEditBoxFontSize
+local GetEditBoxHeight, GetOutlineFlag = Inner.GetEditBoxHeight, Inner.GetOutlineFlag
 
 -------------------------------------------------------------------------------
 --  Chat frame reskin
@@ -95,15 +95,15 @@ local function PermanentEditBox(eb)
     if not eb or type(eb.GetName) ~= "function" then
         return false
     end
-    local n = eb:GetName()
-    local i = n and tonumber(n:match("^ChatFrame(%d+)EditBox$"))
+    local num = eb:GetName()
+    local i = num and tonumber(num:match("^ChatFrame(%d+)EditBox$"))
     return i ~= nil and i <= 10
 end
 
 -- Shared registration point for the focus-gained side: the permanent-frame
 -- gate is applied once and the owner string keeps repeat passes idempotent.
 -- On ECHAT rather than a file local: CUI_Chat_Init.lua registers through it too.
-function ECHAT._RegisterEditBoxFocusGained(owner, fn)
+function CHAT._RegisterEditBoxFocusGained(ownerFrame, func)
     if not (EventRegistry and EventRegistry.RegisterCallback) then
         return
     end
@@ -111,8 +111,8 @@ function ECHAT._RegisterEditBoxFocusGained(owner, fn)
         if not PermanentEditBox(eb) then
             return
         end
-        fn(eb)
-    end, owner)
+        func(eb)
+    end, ownerFrame)
 end
 
 local function EnsureChatStateCallbacks()
@@ -132,27 +132,27 @@ local function EnsureChatStateCallbacks()
         if not PermanentEditBox(eb) then
             return
         end
-        ECHAT.RefreshInputTopStrips()
+        CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopShow")
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxHide", function(_, eb)
         if not PermanentEditBox(eb) then
             return
         end
-        ECHAT.RefreshInputTopStrips()
+        CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopHide")
     -- IM Style keeps a closed box shown, so there the strip follows the focus
     -- (ECHAT.InputTopStripActive) and is re-derived on both focus edges.
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusGained", function(_, eb)
-        if not PermanentEditBox(eb) or not ECHAT.InputOnTop(ECHAT.DB()) then
+        if not PermanentEditBox(eb) or not CHAT.InputOnTop(CHAT.DB()) then
             return
         end
-        ECHAT.RefreshInputTopStrips()
+        CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopFocusIn")
     EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusLost", function(_, eb)
-        if not PermanentEditBox(eb) or not ECHAT.InputOnTop(ECHAT.DB()) then
+        if not PermanentEditBox(eb) or not CHAT.InputOnTop(CHAT.DB()) then
             return
         end
-        ECHAT.RefreshInputTopStrips()
+        CHAT.RefreshInputTopStrips()
     end, "CUI_Chat_InputTopFocusOut")
 
     -- Sent-line capture for the Up/Down recall history. Blizzard triggers
@@ -166,25 +166,25 @@ local function EnsureChatStateCallbacks()
             return
         end
         local d = CFD(eb)
-        local h = d.history
-        if not h then
+        local hgt = d.history
+        if not hgt then
             return
         end
-        local line = d.pendingLine
+        local lineTex = d.pendingLine
         d.pendingLine = nil
-        local text = eb:GetText()
+        local textValue = eb:GetText()
         -- type() and issecretvalue() BEFORE any comparison. `text == ""` on a
         -- secret string THROWS ("attempt to compare ... a secret string
         -- value"), and this callback runs inside SendText one line before
         -- SendChatMessage, so the throw would swallow the message and read as
         -- the very bug this file is fixing. A BN-whisper reply produces one.
-        if type(text) ~= "string" then
+        if type(textValue) ~= "string" then
             return
         end
-        if issecretvalue and issecretvalue(text) then
+        if issecretvalue and issecretvalue(textValue) then
             return
         end
-        if text == "" and line then
+        if textValue == "" and lineTex then
             -- Kept only when ParseText ran it as an ADDON's command: that slot
             -- in Blizzard's slash table is addon-written, so a typed one runs as
             -- addon code from the slash lookup on (a recalled one runs the steps
@@ -194,7 +194,7 @@ local function EnsureChatStateCallbacks()
             -- from addon code). Chat types and channel numbers are checked first,
             -- in ParseText's order: a line it reads as a chat type (an addon's
             -- own /raid included) would switch the box's chat type as addon code.
-            local lineCmd = line:match("^(/[^%s]+)")
+            local lineCmd = lineTex:match("^(/[^%s]+)")
             local slots, types = hash_SlashCmdList, hash_ChatTypeInfoList
             if
                 lineCmd
@@ -209,25 +209,25 @@ local function EnsureChatStateCallbacks()
                     and slots[lineCmd] ~= nil
                     and not issecurevariable(slots, lineCmd)
                 then
-                    text = line
+                    textValue = lineTex
                 end
             end
         end
-        if text == "" then
+        if textValue == "" then
             return
         end
         -- ExtractChannel returns without SetText or ClearChat when the channel
         -- is not joined (ChatFrameEditBox.lua:123-125), so "/c <name> msg"
         -- survives to here whole. Harmless: recalling it re-sends what the
         -- user typed.
-        local cmd = text:match("^%s*(/%S+)")
+        local cmd = textValue:match("^%s*(/%S+)")
         if cmd and IsSecureCmd and IsSecureCmd(cmd) then
             return
         end
-        if h[#h] ~= text then
-            h[#h + 1] = text
-            if #h > 50 then
-                table.remove(h, 1)
+        if hgt[#hgt] ~= textValue then
+            hgt[#hgt + 1] = textValue
+            if #hgt > 50 then
+                table.remove(hgt, 1)
             end
         end
     end, "CUI_Chat_SendLineCapture")
@@ -247,14 +247,14 @@ end
 --  SkinEditBox: ALL edit box modifications in one place. Chrome/position/font
 --  apply to ALL frames (including temp 11+); HOOKS only on frames 1-10.
 -------------------------------------------------------------------------------
-local function SkinEditBox(cf)
-    local name = cf:GetName()
+local function SkinEditBox(castFrame)
+    local name = castFrame:GetName()
     if not name then
         return
     end
     local eb = _G[name .. "EditBox"]
-    local idx = tonumber(name:match("ChatFrame(%d+)"))
-    if not eb or not idx or CFD(eb).skinned then
+    local position = tonumber(name:match("ChatFrame(%d+)"))
+    if not eb or not position or CFD(eb).skinned then
         return
     end
     CFD(eb).skinned = true
@@ -263,7 +263,7 @@ local function SkinEditBox(cf)
     -- focus border), anchors, height and text insets are left alone; only
     -- the font follows the chat's, like the chat text itself. WoW Forever
     -- hides that art like the CludesUI look and seats the box in its kit.
-    if not ns.ChatStockArt() then
+    if not mod.ChatStockArt() then
         for _, texName in ipairs({
             name .. "EditBoxLeft",
             name .. "EditBoxMid",
@@ -272,9 +272,9 @@ local function SkinEditBox(cf)
             name .. "EditBoxFocusMid",
             name .. "EditBoxFocusRight",
         }) do
-            local tex = _G[texName]
-            if tex then
-                tex:SetAlpha(0)
+            local texture = _G[texName]
+            if texture then
+                texture:SetAlpha(0)
             end
         end
         if eb.focusLeft then
@@ -288,12 +288,12 @@ local function SkinEditBox(cf)
         end
 
         -- Flush below the chat frame, for ALL frames including temp 11+.
-        if ns.ChatForever() then
-            ECHAT.FV_PlaceEditBox(cf, eb, GetEditBoxHeight())
+        if mod.ChatForever() then
+            CHAT.FV_PlaceEditBox(castFrame, eb, GetEditBoxHeight())
         else
             eb:ClearAllPoints()
-            eb:SetPoint("TOPLEFT", cf, "BOTTOMLEFT", -10, -8)
-            eb:SetPoint("TOPRIGHT", cf, "BOTTOMRIGHT", 5, -8)
+            eb:SetPoint("TOPLEFT", castFrame, "BOTTOMLEFT", -10, -8)
+            eb:SetPoint("TOPRIGHT", castFrame, "BOTTOMRIGHT", 5, -8)
             eb:SetHeight(GetEditBoxHeight())
         end
     end -- not stock art
@@ -301,9 +301,9 @@ local function SkinEditBox(cf)
     -- Same outline as the chat frames and ECHAT.ApplyFonts (both read
     -- GetOutlineFlag), so the input box always matches the rest of chat --
     -- hardcoding "" here leaves it un-outlined with the drop shadow showing.
-    local ebSize = GetEditBoxFontSize(cf:GetID())
+    local ebSize = GetEditBoxFontSize(castFrame:GetID())
     eb:SetFont(GetEditBoxFont(), ebSize, GetOutlineFlag())
-    if not ns.ChatStockArt() then
+    if not mod.ChatStockArt() then
         eb:SetTextInsets(8, 8, 0, 0)
     end
 
@@ -329,7 +329,7 @@ local function SkinEditBox(cf)
     -- shared ChatHistory access tables and EVERY chat message errors in
     -- HistoryKeeper for the rest of the session. Only permanent docked frames
     -- (1-10) may be hooked; temp windows (11+) get visuals only.
-    if idx <= 10 then
+    if position <= 10 then
         -- Header re-font and the input-on-top strip reclaim are EventRegistry
         -- callbacks, not HookScripts. Both of those dispatch points sit inside
         -- ChatFrameUtil.ActivateChat (Show() then SetFocus(), both ahead of the
@@ -337,7 +337,7 @@ local function SkinEditBox(cf)
         -- taints the attribute every send reads back. Full rationale in the
         -- chat-state callbacks block above.
         EnsureChatStateCallbacks()
-        ECHAT._RegisterEditBoxFocusGained("CUI_Chat_HeaderFont", ApplyEditBoxHeaderFont)
+        CHAT._RegisterEditBoxFocusGained("CUI_Chat_HeaderFont", ApplyEditBoxHeaderFont)
 
         -- Plain Up/Down input recall. The Midnight edit box performs no native recall
         -- on plain arrows regardless of alt-arrow mode, so recall is Lua-side over an
@@ -367,11 +367,11 @@ local function SkinEditBox(cf)
                     -- order), so the whole typed line is still here; ParseText
                     -- may run it and empty the box before the send callback
                     -- reads it. Read-only copy, consumed by that callback.
-                    local line = self:GetText()
-                    if type(line) ~= "string" or (issecretvalue and issecretvalue(line)) then
-                        line = nil
+                    local lineTex = self:GetText()
+                    if type(lineTex) ~= "string" or (issecretvalue and issecretvalue(lineTex)) then
+                        lineTex = nil
                     end
-                    CFD(self).pendingLine = line
+                    CFD(self).pendingLine = lineTex
                     return
                 end
                 if key ~= "UP" and key ~= "DOWN" then
@@ -396,22 +396,24 @@ local function SkinEditBox(cf)
                         and C_ChallengeMode.IsChallengeModeActive()
                     )
                 if restricted then
-                    if not ECHAT._recallLockdownNoticeShown then
-                        ECHAT._recallLockdownNoticeShown = true
-                        local cf = self.chatFrame or DEFAULT_CHAT_FRAME
-                        cf:AddMessage(CludesUI.L("Chat recall is unavailable here. Use Alt+Up and Alt+Down."))
+                    if not CHAT._recallLockdownNoticeShown then
+                        CHAT._recallLockdownNoticeShown = true
+                        local castFrame = self.chatFrame or DEFAULT_CHAT_FRAME
+                        castFrame:AddMessage(
+                            CludesUI.L("Chat recall is unavailable here. Use Alt+Up and Alt+Down.")
+                        )
                     end
                     return
                 end
                 local d = CFD(self)
-                local h = d.history
-                if #h == 0 then
+                local hgt = d.history
+                if #hgt == 0 then
                     return
                 end
                 if key == "UP" then
                     d.histIdx = d.histIdx + 1
-                    if d.histIdx > #h then
-                        d.histIdx = #h
+                    if d.histIdx > #hgt then
+                        d.histIdx = #hgt
                     end
                 else
                     d.histIdx = d.histIdx - 1
@@ -422,9 +424,9 @@ local function SkinEditBox(cf)
                 if d.histIdx == 0 then
                     self:SetText("")
                 else
-                    local entry = h[#h - d.histIdx + 1]
-                    if entry then
-                        self:SetText(entry)
+                    local record = hgt[#hgt - d.histIdx + 1]
+                    if record then
+                        self:SetText(record)
                     else
                         self:SetText("")
                     end
@@ -434,5 +436,5 @@ local function SkinEditBox(cf)
     end
 end
 
-I._skinned, I.CHAT_MSG_EVENTS, I.SkinEditBox = _skinned, CHAT_MSG_EVENTS, SkinEditBox
-I.broken = false
+Inner._skinned, Inner.CHAT_MSG_EVENTS, Inner.SkinEditBox = _skinned, CHAT_MSG_EVENTS, SkinEditBox
+Inner.broken = false

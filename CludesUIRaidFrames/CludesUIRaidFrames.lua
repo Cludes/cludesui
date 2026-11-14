@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  8 per-group headers (separated mode) + 1 combined header (flat mode).
 --  Secret-value-safe absorb shields matching UnitFrames visuals.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 if
     not (
         CludesUI
@@ -32,44 +32,44 @@ then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Blizzard raid and party frame suppression hides and scales through the parent's HideFrame and SetFrameScale, and the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, and the Name Format asks its UnitNameFormat, and the [name:last] and [target:last] tags its OwnSurnameHidden, and the texts that show names take their font family through its ApplyModuleFontFamily and SetFontFamily, and the 3D portraits follow a faded UI through its UIScaledAlpha and OnUIAlphaChanged, and the preview names its members from its PREVIEW_ROSTER)
-CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
+CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
 
 local ERF = CludesUI.Lite.NewAddon(ADDON_NAME)
-ns.ERF = ERF
+mod.ERF = ERF
 _G.CludesUIRaidFrames = ERF
 
 -- Parent-addon table cached on ns: hot event paths (UNIT_AURA,
 -- PLAYER_REGEN_DISABLED) reading the GLOBAL CludesUI from an event frame
 -- still in a secure execution context raise benign self-taint; table-field
 -- reads do not.
-ns.CludesUI = CludesUI
+mod.CludesUI = CludesUI
 
 -- Addon name external nickname providers key us by. Suite = the brand
 -- "CludesUI" (what providers register support for); standalone = our
 -- renamed folder name (ADDON_NAME), the per-addon key. "Standalone" survives
 -- the standalone token rename, so detection is rename-immune and the
 -- "CludesUI" literal is only reached in the suite.
-ns.EXT_NICK = CludesUI.EXT_NICK
-ns.NICK_ADDON = ADDON_NAME:find("Standalone") and ADDON_NAME or ns.EXT_NICK.addon
+mod.EXT_NICK = CludesUI.EXT_NICK
+mod.NICK_ADDON = ADDON_NAME:find("Standalone") and ADDON_NAME or mod.EXT_NICK.addon
 
 -- Keep subgroup identity separate from its visual slot. Invalid imported
 -- orders fall back to the original layout without touching SavedVariables.
-function ns._RFValidatedGroupOrder(order)
-    if type(order) ~= "table" or #order ~= 8 then
+function mod._RFValidatedGroupOrder(sequence)
+    if type(sequence) ~= "table" or #sequence ~= 8 then
         return nil
     end
-    for i = 1, 8 do
-        local group = order[i]
+    for idx = 1, 8 do
+        local group = sequence[idx]
         if type(group) ~= "number" or group < 1 or group > 8 or group % 1 ~= 0 then
             return nil
         end
-        for previous = 1, i - 1 do
-            if order[previous] == group then
+        for previous = 1, idx - 1 do
+            if sequence[previous] == group then
                 return nil
             end
         end
     end
-    return order
+    return sequence
 end
 
 -------------------------------------------------------------------------------
@@ -89,18 +89,18 @@ end
 --  lifts a button's text carrier to ns.LVL_AURA + 6, above the aura band's
 --  children. On `ns`, shared with CUI_RaidFrames_BuffManager.lua.
 -------------------------------------------------------------------------------
-ns.LVL_DISPEL_OVERLAY = 7 -- Blizzard private-aura dispel gradient: below the border (+8) and name/health text (LVL_TEXT) so it renders BEHIND them (like the regular dispel overlay), but above the health bar so it stays visible. Per-slot private-aura icons stay above at LVL_AURA.
-ns.LVL_ROLE_BEHIND = 7 -- role icon with Show Behind Border: just under the base border (+8; strips +9)
-ns.LVL_RAISE = 10 -- hover/target/aggro-recolor border (strips +11: above base strips +9
+mod.LVL_DISPEL_OVERLAY = 7 -- Blizzard private-aura dispel gradient: below the border (+8) and name/health text (LVL_TEXT) so it renders BEHIND them (like the regular dispel overlay), but above the health bar so it stays visible. Per-slot private-aura icons stay above at LVL_AURA.
+mod.LVL_ROLE_BEHIND = 7 -- role icon with Show Behind Border: just under the base border (+8; strips +9)
+mod.LVL_RAISE = 10 -- hover/target/aggro-recolor border (strips +11: above base strips +9
 -- and the dispel / Buff Manager border strips +10; ties threat
 -- strips +11 but the raise container is created later so it
 -- wins). MUST stay below ns.LVL_TEXT:
 -- UpdateBorder creates strips lazily AFTER the text
 -- carriers, so a tie with text puts the border on top.
-ns.LVL_TEXT = 12 -- text band: name/health text, role icon, leader crown;
+mod.LVL_TEXT = 12 -- text band: name/health text, role icon, leader crown;
 -- above every border incl. the raise, below the aura band
-ns.LVL_AURA = 13 -- base level for every aura icon/bar (children at +1..+5)
-ns.LVL_MARKER = 26 -- raid marker icon (always on top -- above the dispel
+mod.LVL_AURA = 13 -- base level for every aura icon/bar (children at +1..+5)
+mod.LVL_MARKER = 26 -- raid marker icon (always on top -- above the dispel
 -- type icon band at +21..+25, which itself sits above
 -- the aura band so it wins a corner shared with debuffs)
 
@@ -110,11 +110,11 @@ ns.LVL_MARKER = 26 -- raid marker icon (always on top -- above the dispel
 --  incl. the hover/target raise while auras still draw over it. Re-applied on
 --  reload to recover from container SetFrameStrata cascade resets.
 -------------------------------------------------------------------------------
-function ns.ApplyLeaderStrata(frame)
-    local parent = frame:GetParent()
-    if parent then
-        frame:SetFrameStrata(parent:GetFrameStrata())
-        frame:SetFrameLevel(parent:GetFrameLevel() + (ns.LVL_AURA - 1))
+function mod.ApplyLeaderStrata(widget)
+    local hostFrame = widget:GetParent()
+    if hostFrame then
+        widget:SetFrameStrata(hostFrame:GetFrameStrata())
+        widget:SetFrameLevel(hostFrame:GetFrameLevel() + (mod.LVL_AURA - 1))
     end
 end
 
@@ -130,15 +130,15 @@ end
 -------------------------------------------------------------------------------
 do
     local pool = {}
-    local n = 120
-    for i = 1, n do
-        pool[i] = CreateFrame("Frame")
+    local num = 120
+    for idx = 1, num do
+        pool[idx] = CreateFrame("Frame")
     end
-    ns.TakeShell = function()
-        if n > 0 then
-            local f = pool[n]
-            pool[n] = nil
-            n = n - 1
+    mod.TakeShell = function()
+        if num > 0 then
+            local f = pool[num]
+            pool[num] = nil
+            num = num - 1
             return f
         end
         -- Pool exhausted (not expected): still works but bills the parent;
@@ -149,13 +149,13 @@ end
 
 -- "Run once after combat" for one-shot combat-gated deferrals. The shell is taken
 -- in the main chunk, so drained work bills RaidFrames. Keys are per purpose.
-ns.CombatQueue = CludesUI.NewCombatQueue(ns.TakeShell())
+mod.CombatQueue = CludesUI.NewCombatQueue(mod.TakeShell())
 
 -------------------------------------------------------------------------------
 --  Locals & upvalues
 -------------------------------------------------------------------------------
-local PP = nil -- set in OnEnable once parent is ready
-local db = nil
+local Pix = nil -- set in OnEnable once parent is ready
+local saved = nil
 local floor = math.floor
 local pairs = pairs
 local ipairs = ipairs
@@ -249,55 +249,55 @@ local ROLE_ICON_STYLES = {
     },
 }
 -- Read-only share with the options file's style preview (this file loads first).
-ns.ROLE_ICON_STYLES = ROLE_ICON_STYLES
+mod.ROLE_ICON_STYLES = ROLE_ICON_STYLES
 
-local function ApplyRoleIcon(texture, role, style)
+local function ApplyRoleIcon(texture, role, look)
     -- Caller supplies style from its own settings context (party proxy /
     -- preview override) so unsynced party roleIconStyle holds; raid profile only when omitted.
-    style = style or (db and db.profile.roleIconStyle) or "modern"
-    local map = ROLE_ICON_STYLES[style]
+    look = look or (saved and saved.profile.roleIconStyle) or "modern"
+    local map = ROLE_ICON_STYLES[look]
     if not map then
         return false
     end
-    local icon = map[role]
-    if not icon then
+    local glyph = map[role]
+    if not glyph then
         return false
     end
     if map._isTexture then
-        texture:SetTexture(icon)
+        texture:SetTexture(glyph)
         texture:SetTexCoord(0, 1, 0, 1)
     else
-        texture:SetAtlas(icon)
+        texture:SetAtlas(glyph)
     end
     return true
 end
 
 -- Text shares the icon's carrier and anchor, and is created only when enabled.
-function ns.ApplyRoleText(icon, role, s)
+function mod.ApplyRoleText(glyph, role, s)
     if not s.roleText then
         return
     end
-    local text = icon._roleText
-    if not text then
-        text = icon:GetParent():CreateFontString(nil, "OVERLAY")
-        icon._roleText = text
+    local textValue = glyph._roleText
+    if not textValue then
+        textValue = glyph:GetParent():CreateFontString(nil, "OVERLAY")
+        glyph._roleText = textValue
     end
     local colorKey = role == "TANK" and "roleTextTankColor"
         or role == "HEALER" and "roleTextHealerColor"
         or "roleTextDPSColor"
-    local color = s[colorKey] or ns._internals.defaults.profile[colorKey]
-    text:SetTextColor(color.r, color.g, color.b)
-    CludesUI.ApplyModuleFont(text, nil, s.roleIconSize or 14, "raidFrames")
-    local pos = icon:GetPoint() or "CENTER"
-    text:ClearAllPoints()
-    text:SetPoint(pos, icon, pos, 0, 0)
-    text:SetText(
+    local color = s[colorKey] or mod._internals.defaults.profile[colorKey]
+    textValue:SetTextColor(color.r, color.g, color.b)
+    CludesUI.ApplyModuleFont(textValue, nil, s.roleIconSize or 14, "raidFrames")
+    local place = glyph:GetPoint() or "CENTER"
+    textValue:ClearAllPoints()
+    textValue:SetPoint(place, glyph, place, 0, 0)
+    textValue:SetText(
         role == "TANK" and CludesUI.L("Tank")
             or role == "HEALER" and CludesUI.L("Healer")
             or CludesUI.L("DPS")
     )
-    icon:Hide()
-    text:Show()
+    glyph:Hide()
+    textValue:Show()
 end
 
 -- Raid marker textures
@@ -362,16 +362,16 @@ local THREAT_ACTIVE = { [2] = true, [3] = true }
 
 -- Combat indicator media + class sprite coords (shared with the Unit Frames
 -- combat icon assets).
-ns._COMBAT_MEDIA = "Interface\\AddOns\\CludesUI\\media\\combat\\"
-ns._COMBAT_CLASS_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
+mod._COMBAT_MEDIA = "Interface\\AddOns\\CludesUI\\media\\combat\\"
+mod._COMBAT_CLASS_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
 
 -------------------------------------------------------------------------------
 --  Default settings
 -------------------------------------------------------------------------------
 -- Level Text's default position: attached to the name on WoW Forever, None on
 -- retail (the per-client default rule; every fallback below reads it).
-ns.RF_LEVEL_DEFAULT = (CludesUI.IS_FOREVER == true) and "name" or "none"
-local defaults = {
+mod.RF_LEVEL_DEFAULT = (CludesUI.IS_FOREVER == true) and "name" or "none"
+local defaultSet = {
     profile = {
         -- Size & layout
         frameWidth = 125,
@@ -534,7 +534,7 @@ local defaults = {
         -- Level Text: the unit's level in front of the name, or on its own spot in the name's colour
         -- (Health Text's host). None = nothing built.
         levelTextSize = 10,
-        levelTextPosition = ns.RF_LEVEL_DEFAULT, -- "name" ("60 Name"), "nameDiv" ("60 | Name"), "none" or a 9-point spot
+        levelTextPosition = mod.RF_LEVEL_DEFAULT, -- "name" ("60 Name"), "nameDiv" ("60 | Name"), "none" or a 9-point spot
         levelTextOffsetX = 0,
         levelTextOffsetY = 0,
         healthTextMode = "none", -- "none", "percent", "number"
@@ -888,13 +888,13 @@ local defaults = {
 -------------------------------------------------------------------------------
 local allButtons = {} -- flat list of all created buttons
 local unitToButton = {} -- unitToken -> button map (rebuilt on roster change)
-ns._xfUnitToButton = {} -- unitToken -> Extra Frames duplicate (XF.CAP-bounded;
+mod._xfUnitToButton = {} -- unitToken -> Extra Frames duplicate (XF.CAP-bounded;
 -- owned by XF_Apply, never by the rebuild paths)
 local separatedHdrs = {} -- [1..8] group headers
 local containerFrame = nil -- top-level positioning frame
-ns._flatButtons = {} -- buttons owned by the flat (merged) header
-ns._flatHeader = nil -- single header for merge-groups mode
-ns._flatGfStr = nil -- merged groupFilter LayoutGroups would write (Self Position fallback)
+mod._flatButtons = {} -- buttons owned by the flat (merged) header
+mod._flatHeader = nil -- single header for merge-groups mode
+mod._flatGfStr = nil -- merged groupFilter LayoutGroups would write (Self Position fallback)
 local eventFrame = CreateFrame("Frame")
 local unitTrackers = {} -- [unitToken] = tracker frame
 local inCombat = false
@@ -906,7 +906,7 @@ local inCombat = false
 --  combat" -> always; else outOfCombat. `s` = a scaled raid/party/extra proxy
 --  or db.profile. On ns so OnEnter can reach it.
 -------------------------------------------------------------------------------
-ns._ResolveTooltipMode = function(s)
+mod._ResolveTooltipMode = function(s)
     if not s then
         return "outOfCombat"
     end
@@ -925,28 +925,28 @@ end
 
 -- Whether the frame's UNIT tooltip is allowed now (mode + combat state). Unit
 -- tip only: aura-icon tips obey their own section's "Hide Tooltips" toggle.
-function ns.RaidFrameTooltipAllowed(button)
-    local fd = button and ns.GetFFD and ns.GetFFD(button)
+function mod.RaidFrameTooltipAllowed(btnFrame)
+    local fd = btnFrame and mod.GetFFD and mod.GetFFD(btnFrame)
     local s = (
         fd
         and (
-            fd._isParty and ns._scaledPartyProxy
-            or (fd._isExtra and ns._scaledExtraProxy)
-            or ns._scaledProfile
+            fd._isParty and mod._scaledPartyProxy
+            or (fd._isExtra and mod._scaledExtraProxy)
+            or mod._scaledProfile
         )
-    ) or ns._scaledProfile
+    ) or mod._scaledProfile
     -- The Blizz UI Enhanced peek modifier lifts the mode so a hidden tip can still be read on hover, matching the global tooltips.
     if CludesUI._tooltipPeekHeld and CludesUI._tooltipPeekHeld() then
         return true
     end
-    local ttMode = ns._ResolveTooltipMode(s)
+    local ttMode = mod._ResolveTooltipMode(s)
     if ttMode == "never" then
         return false
     end
     if ttMode == "outOfCombat" and inCombat then
         return false
     end
-    if ttMode == "outOfBossCombat" and ns._inBossCombat then
+    if ttMode == "outOfBossCombat" and mod._inBossCombat then
         return false
     end
     return true
@@ -956,70 +956,70 @@ end
 --  Suppress Blizzard raid frames (zero CPU when ours are active). Raid
 --  container unconditional here; party is conditional, from UpdateVisibility.
 -------------------------------------------------------------------------------
-ns._blizzHiddenParent = CreateFrame("Frame", nil, UIParent)
-ns._blizzHiddenParent:SetAllPoints()
-ns._blizzHiddenParent:Hide()
+mod._blizzHiddenParent = CreateFrame("Frame", nil, UIParent)
+mod._blizzHiddenParent:SetAllPoints()
+mod._blizzHiddenParent:Hide()
 
 do
     local hookedFrames = {}
     local looseFrames = {}
 
-    local watcher = ns.TakeShell()
+    local watcher = mod.TakeShell()
     watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
     watcher:SetScript("OnEvent", function()
-        for frame in next, looseFrames do
-            frame:SetParent(ns._blizzHiddenParent)
+        for widget in next, looseFrames do
+            widget:SetParent(mod._blizzHiddenParent)
         end
         wipe(looseFrames)
     end)
 
-    local function resetParent(self, parent)
-        if parent ~= ns._blizzHiddenParent then
+    local function resetParent(self, hostFrame)
+        if hostFrame ~= mod._blizzHiddenParent then
             if InCombatLockdown() and self:IsProtected() then
                 looseFrames[self] = true
             else
-                self:SetParent(ns._blizzHiddenParent)
+                self:SetParent(mod._blizzHiddenParent)
             end
         end
     end
 
-    local function handleFrame(frame, doNotReparent)
-        if not frame then
+    local function handleFrame(widget, doNotReparent)
+        if not widget then
             return
         end
-        frame:UnregisterAllEvents()
-        CludesUI.HideFrame(frame)
+        widget:UnregisterAllEvents()
+        CludesUI.HideFrame(widget)
         if not doNotReparent then
-            frame:SetParent(ns._blizzHiddenParent)
-            if not hookedFrames[frame] then
-                hooksecurefunc(frame, "SetParent", resetParent)
-                hookedFrames[frame] = true
+            widget:SetParent(mod._blizzHiddenParent)
+            if not hookedFrames[widget] then
+                hooksecurefunc(widget, "SetParent", resetParent)
+                hookedFrames[widget] = true
             end
         end
-        local health = frame.healthBar
-            or frame.healthbar
-            or frame.HealthBar
-            or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)
+        local health = widget.healthBar
+            or widget.healthbar
+            or widget.HealthBar
+            or (widget.HealthBarsContainer and widget.HealthBarsContainer.healthBar)
         if health then
             health:UnregisterAllEvents()
         end
-        local power = frame.manabar or frame.ManaBar
+        local power = widget.manabar or widget.ManaBar
         if power then
             power:UnregisterAllEvents()
         end
-        local castbar = frame.castBar or frame.spellbar or frame.CastingBarFrame
+        local castbar = widget.castBar or widget.spellbar or widget.CastingBarFrame
         if castbar then
             castbar:UnregisterAllEvents()
         end
-        local altpower = frame.powerBarAlt or frame.PowerBarAlt
+        local altpower = widget.powerBarAlt or widget.PowerBarAlt
         if altpower then
             altpower:UnregisterAllEvents()
         end
-        local buffs = frame.BuffFrame or frame.AurasFrame
+        local buffs = widget.BuffFrame or widget.AurasFrame
         if buffs then
             buffs:UnregisterAllEvents()
         end
-        local debuffs = frame.DebuffFrame
+        local debuffs = widget.DebuffFrame
         if debuffs then
             debuffs:UnregisterAllEvents()
         end
@@ -1034,21 +1034,21 @@ do
     -- snap state under our taint), keeping the frame's spot: Edit Mode's save
     -- recomputes a moved party or raid frame's anchor from its geometry times
     -- its scale.
-    local function suppressEditModeOverlay(frame)
-        if not frame then
+    local function suppressEditModeOverlay(widget)
+        if not widget then
             return
         end
         pcall(function()
-            frame:SetAlpha(0)
+            widget:SetAlpha(0)
             if not InCombatLockdown() then
-                CludesUI.SetFrameScale(frame, 0.001, true)
+                CludesUI.SetFrameScale(widget, 0.001, true)
             end
             -- Per-frame Blizzard selection textures. No-op if absent.
-            if frame.selectionHighlight and frame.selectionHighlight.SetShown then
-                frame.selectionHighlight:SetShown(false)
+            if widget.selectionHighlight and widget.selectionHighlight.SetShown then
+                widget.selectionHighlight:SetShown(false)
             end
-            if frame.selectionIndicator and frame.selectionIndicator.SetShown then
-                frame.selectionIndicator:SetShown(false)
+            if widget.selectionIndicator and widget.selectionIndicator.SetShown then
+                widget.selectionIndicator:SetShown(false)
             end
         end)
     end
@@ -1076,12 +1076,12 @@ do
     -- party frames can never stand in for ours (a group joined in combat), without
     -- latching -- the member frames, which Edit Mode can build later (raid-style),
     -- are handled the first time our party frames show out of combat.
-    ns._SuppressBlizzParty = function(early)
-        if ns._blizzPartySuppressed then
+    mod._SuppressBlizzParty = function(early)
+        if mod._blizzPartySuppressed then
             return
         end
         if not early then
-            ns._blizzPartySuppressed = true
+            mod._blizzPartySuppressed = true
         end
         if PartyFrame then
             handleFrame(PartyFrame)
@@ -1094,8 +1094,8 @@ do
                 end
             end
             local MEMBERS_PER_GROUP = _G.MEMBERS_PER_RAID_GROUP or 5
-            for i = 1, MEMBERS_PER_GROUP do
-                handleFrame(_G["CompactPartyFrameMember" .. i])
+            for idx = 1, MEMBERS_PER_GROUP do
+                handleFrame(_G["CompactPartyFrameMember" .. idx])
             end
             -- Party Edit Mode overlay: only while we own the party frames (from
             -- UpdateVisibility), so untouched Blizzard party frames keep movers.
@@ -1116,9 +1116,9 @@ do
         suppressEditModeOverlay(PartyFrame)
         suppressEditModeOverlay(_G["CompactPartyFrame"])
     end
-    ns._ApplyEditModeOverlaySuppression = applyEditModeOverlaySuppression
+    mod._ApplyEditModeOverlaySuppression = applyEditModeOverlaySuppression
 
-    local editModeWatcher = ns.TakeShell()
+    local editModeWatcher = mod.TakeShell()
     editModeWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
     editModeWatcher:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
     editModeWatcher:SetScript("OnEvent", function()
@@ -1191,8 +1191,8 @@ end
 --  pin a string's face for good, so every font write to these strings goes
 --  through here.
 -------------------------------------------------------------------------------
-local function ApplyFont(fs, size)
-    CludesUI.ApplyModuleFontFamily(fs, nil, size, "raidFrames")
+local function ApplyFont(fontStr, dim)
+    CludesUI.ApplyModuleFontFamily(fontStr, nil, dim, "raidFrames")
 end
 
 -------------------------------------------------------------------------------
@@ -1205,15 +1205,15 @@ local healthBarTextureOrder = {}
 local function InitHealthBarTextures()
     -- Seed from the shared catalogue INTO the existing file-scope tables
     -- (their identity is load-bearing: resolver closures capture them).
-    local t, n, o = CludesUI.BuildBarTextureTables(true)
-    for k, v in pairs(t) do
-        healthBarTextures[k] = v
+    local t, num, o = CludesUI.BuildBarTextureTables(true)
+    for k, val in pairs(t) do
+        healthBarTextures[k] = val
     end
-    for k, v in pairs(n) do
-        healthBarTextureNames[k] = v
+    for k, val in pairs(num) do
+        healthBarTextureNames[k] = val
     end
-    for i, k in ipairs(o) do
-        healthBarTextureOrder[i] = k
+    for idx, k in ipairs(o) do
+        healthBarTextureOrder[idx] = k
     end
     -- RF-only divergence: "none" is a real solid texture here, not nil.
     healthBarTextures["none"] = "Interface\\Buttons\\WHITE8X8"
@@ -1235,7 +1235,7 @@ end
 
 -- s: the settings to read (the profile when nil).
 local function ResolveHealthTexture(s)
-    local key = (s or db.profile).healthBarTexture or "atrocity"
+    local key = (s or saved.profile).healthBarTexture or "atrocity"
     return CludesUI.ResolveTexturePath(
         healthBarTextures,
         key,
@@ -1244,55 +1244,55 @@ local function ResolveHealthTexture(s)
 end
 
 -- Expose for options panel
-ns.healthBarTextures = healthBarTextures
-ns.healthBarTextureNames = healthBarTextureNames
-ns.healthBarTextureOrder = healthBarTextureOrder
+mod.healthBarTextures = healthBarTextures
+mod.healthBarTextureNames = healthBarTextureNames
+mod.healthBarTextureOrder = healthBarTextureOrder
 
 -- Style page choice (Blizzard Style / Classic WoW UI, CUI_RaidFrames_Stock.lua):
 -- "cui" | "blizzard" | "classic", read from the profile flags once and
 -- latched for the session (every switch reloads). The runtime reads only
 -- this, never the flags.
-function ns.RF_Style()
-    local v = ns._rfStyle
-    if v then
-        return v
+function mod.RF_Style()
+    local val = mod._rfStyle
+    if val then
+        return val
     end
-    local p = db and db.profile
+    local p = saved and saved.profile
     if not p then
         return "cui"
     end
-    v = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
-    ns._rfStyle = v
-    return v
+    val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+    mod._rfStyle = val
+    return val
 end
-function ns.RF_Stock()
-    return ns.RF_Style() ~= "cui"
+function mod.RF_Stock()
+    return mod.RF_Style() ~= "cui"
 end
-function ns.RF_Classic()
-    return ns.RF_Style() == "classic"
+function mod.RF_Classic()
+    return mod.RF_Style() == "classic"
 end
 -- Party page "Frame Style" under a stock style: the style key while the
 -- party wears the stock portrait party frame ("Party Frames"), else false.
 -- Latched like RF_Style (the choice reloads); the runtime reads only this.
 -- The memo test is ~= nil: false is a real latched value.
-function ns.RF_PartyKit()
-    local v = ns._rfPartyKit
-    if v ~= nil then
-        return v
+function mod.RF_PartyKit()
+    local val = mod._rfPartyKit
+    if val ~= nil then
+        return val
     end
-    local p = db and db.profile
+    local p = saved and saved.profile
     if not p then
         return false
     end
-    local st = ns.RF_Style()
-    v = (st ~= "cui" and p.partyFrameStyle == "party") and st or false
-    ns._rfPartyKit = v
-    return v
+    local st = mod.RF_Style()
+    val = (st ~= "cui" and p.partyFrameStyle == "party") and st or false
+    mod._rfPartyKit = val
+    return val
 end
 -- Settings the Party Frames layout replaces (its rows are hidden on the
 -- Party page): the party settings view reads them neutral while it is on
 -- (with the kit's debuff row: ns.RF_KitViewKeys, CUI_RaidFrames_Stock.lua).
-ns.RF_KIT_NEUTRAL = {
+mod.RF_KIT_NEUTRAL = {
     healthVerticalFill = false,
     healthInvertFill = false,
     topNameBarEnabled = false,
@@ -1301,8 +1301,8 @@ ns.RF_KIT_NEUTRAL = {
 }
 -- The CludesUI border's effective size (0 under a stock style, whose edge
 -- replaces it).
-function ns.RF_EffBorderSize(s)
-    if ns.RF_Stock() then
+function mod.RF_EffBorderSize(s)
+    if mod.RF_Stock() then
         return 0
     end
     return (s and s.borderSize) or 1
@@ -1310,12 +1310,12 @@ end
 -- A custom border the Color Custom Borders options can recolor (Threat Borders
 -- and Dispel Border cogs): a Border Style other than Solid with a size, under
 -- the CludesUI style. Read from the saved keys, like the options gate.
-function ns.RF_CustomBorderOn(s)
+function mod.RF_CustomBorderOn(s)
     local tex = s and s.borderTexture
     if tex == nil or tex == "" or tex == "solid" then
         return false
     end
-    return ns.RF_EffBorderSize(s) > 0
+    return mod.RF_EffBorderSize(s) > 0
 end
 
 -- Threat highlight (aggro: status 2-3; Threat Borders size 0 = off): the red
@@ -1324,27 +1324,27 @@ end
 -- own border instead (ApplyBorderColor, below hover/target): no inner border is
 -- drawn and the slider size does not gate it. The border repaints only when the
 -- aggro state flips; d is the FFD table, never the Blizzard button.
-function ns.RF_PaintThreat(d, s, unit)
+function mod.RF_PaintThreat(d, s, unitToken)
     local tf = d.threatFrame
     if not tf then
         return
     end
     local bs = s.threatBorderSize or 0
-    local compact = ns.RF_ButtonCompact(d, s)
-    local rc = not compact and s.threatCustomBorder == true and ns.RF_CustomBorderOn(s)
+    local compact = mod.RF_ButtonCompact(d, s)
+    local rc = not compact and s.threatCustomBorder == true and mod.RF_CustomBorderOn(s)
     local status
     if bs > 0 or rc then
-        status = UnitThreatSituation(unit)
+        status = UnitThreatSituation(unitToken)
         -- One group unit token reads plain (documented); a secret status still
         -- reads as no aggro rather than being indexed or compared.
         if issecretvalue(status) then
             status = nil
         end
     end
-    local on = status and THREAT_ACTIVE[status] and PP and true or false
+    local on = status and THREAT_ACTIVE[status] and Pix and true or false
     if d.stockHl then
         tf:Hide()
-        ns.RF_StockAggro(d, on and status or nil)
+        mod.RF_StockAggro(d, on and status or nil)
         return
     end
     local agg = (rc and on) or nil
@@ -1355,7 +1355,7 @@ function ns.RF_PaintThreat(d, s, unit)
         end
     end
     if on and not rc then
-        PP.UpdateBorder(tf, bs, 1, 0, 0, 1)
+        Pix.UpdateBorder(tf, bs, 1, 0, 0, 1)
         tf:Show()
     else
         tf:Hide()
@@ -1365,8 +1365,8 @@ end
 -- Vertical health fill: SetOrientation drives the fill AXIS. Raid and party
 -- resolve through the caller's settings table (party gets its own when the
 -- Health Bar section is unsynced).
-ns.RF_IsVerticalFill = function(s)
-    return (s or db.profile).healthVerticalFill and true or false
+mod.RF_IsVerticalFill = function(s)
+    return (s or saved.profile).healthVerticalFill and true or false
 end
 
 -- Fill-texture rotation, DERIVED (never set standalone) so it cannot go stale against
@@ -1377,23 +1377,26 @@ end
 -- native size on BOTH axes and are correct at any bar shape -- rotating fights the
 -- tiling and stretches them. Tiling is read off the LIVE fill texture, so this stays
 -- correct no matter which style function last touched the bar.
-ns.RF_ApplyFillRotation = function(bar)
-    if not (bar and bar.SetRotatesTexture) then
+mod.RF_ApplyFillRotation = function(barFrame)
+    if not (barFrame and barFrame.SetRotatesTexture) then
         return
     end
-    local vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
-    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
-    local tiled = fill
-        and ((fill.GetHorizTile and fill:GetHorizTile()) or (fill.GetVertTile and fill:GetVertTile()))
-    bar:SetRotatesTexture((vert and not tiled) and true or false)
+    local vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
+    local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
+    local tiled = fillTex
+        and (
+            (fillTex.GetHorizTile and fillTex:GetHorizTile())
+            or (fillTex.GetVertTile and fillTex:GetVertTile())
+        )
+    barFrame:SetRotatesTexture((vert and not tiled) and true or false)
 end
 
 -- Inverted health fill: SetReverseFill swaps which SIDE of the seam the fill
 -- texture paints -- missing health takes the bar colour and current health is
 -- left to the background. Raid and party resolve through the caller's settings
 -- table (party gets its own when the Health Bar section is unsynced).
-ns.RF_IsInvertedFill = function(s)
-    return (s or db.profile).healthInvertFill and true or false
+mod.RF_IsInvertedFill = function(s)
+    return (s or saved.profile).healthInvertFill and true or false
 end
 
 -------------------------------------------------------------------------------
@@ -1423,20 +1426,20 @@ end
 -- entry can be rebuilt by the next paint without losing either. host is stored only
 -- when it is NOT the overlay itself -- the Debuff Manager hangs its overlay off a
 -- wrapper frame, and that wrapper is what a fill swap has to re-anchor.
-ns.RF_RegisterBarTint = function(bar, tex, host, owner)
-    if not (bar and tex) then
+mod.RF_RegisterBarTint = function(barFrame, tex, hostRegion, ownerFrame)
+    if not (barFrame and tex) then
         return
     end
-    if host and host ~= tex then
-        tex._cuiTintHost = host
+    if hostRegion and hostRegion ~= tex then
+        tex._cuiTintHost = hostRegion
     end
-    if owner then
-        tex._cuiTintOwner = owner
+    if ownerFrame then
+        tex._cuiTintOwner = ownerFrame
     end
-    local reg = bar._cuiBarTints
+    local reg = barFrame._cuiBarTints
     if not reg then
         reg = setmetatable({}, { __mode = "k" })
-        bar._cuiBarTints = reg
+        barFrame._cuiBarTints = reg
     end
     if reg[tex] == nil then
         reg[tex] = {}
@@ -1452,24 +1455,24 @@ end
 -- a live overlay belonging to another owner, and an overlay that is displayed but
 -- not repainted never re-registers -- the next Health Bar Texture change would
 -- then skip it and leave it on the old art.
-ns.RF_ClearBarTints = function(bar, owner)
-    local reg = bar and bar._cuiBarTints
-    if not (reg and owner) then
+mod.RF_ClearBarTints = function(barFrame, ownerFrame)
+    local reg = barFrame and barFrame._cuiBarTints
+    if not (reg and ownerFrame) then
         return
     end
     for tex in pairs(reg) do
-        if tex._cuiTintOwner == owner then
+        if tex._cuiTintOwner == ownerFrame then
             reg[tex] = nil
         end
     end
 end
 
-ns.RF_TintOverBarFill = function(tex, bar, r, g, b, a)
+mod.RF_TintOverBarFill = function(tex, barFrame, r, g, b, a)
     if not tex then
         return
     end
-    ns.RF_RegisterBarTint(bar, tex)
-    local reg = bar and bar._cuiBarTints
+    mod.RF_RegisterBarTint(barFrame, tex)
+    local reg = barFrame and barFrame._cuiBarTints
     local ent = reg and reg[tex]
     -- Stored pre-multiply: the refresh path calls back in with these, so folding
     -- the fill opacity in here would compound it on every pass.
@@ -1484,12 +1487,12 @@ ns.RF_TintOverBarFill = function(tex, bar, r, g, b, a)
     -- either would latch dimmed. Dark Mode is deliberately not inherited -- it
     -- dims the fill texture, and a colour the user picked should not be
     -- auto-dimmed.
-    if bar then
-        a = a * (bar._cuiFillOpacity or 1)
+    if barFrame then
+        a = a * (barFrame._cuiFillOpacity or 1)
     end
-    local fill = bar and bar.GetStatusBarTexture and bar:GetStatusBarTexture()
-    local path = fill and fill.GetTexture and fill:GetTexture()
-    if not path then
+    local fillTex = barFrame and barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
+    local filePath = fillTex and fillTex.GetTexture and fillTex:GetTexture()
+    if not filePath then
         -- Reset both: a texcoord from the textured branch survives the swap, and
         -- SetColorTexture bakes the color into the texture rather than into the
         -- vertex color, so a stale vertex color would multiply it.
@@ -1498,9 +1501,9 @@ ns.RF_TintOverBarFill = function(tex, bar, r, g, b, a)
         tex:SetVertexColor(1, 1, 1, 1)
         return
     end
-    tex:SetTexture(path)
-    if fill.GetTexCoord then
-        tex:SetTexCoord(fill:GetTexCoord())
+    tex:SetTexture(filePath)
+    if fillTex.GetTexCoord then
+        tex:SetTexCoord(fillTex:GetTexCoord())
     end
     tex:SetVertexColor(r, g, b, a)
 end
@@ -1509,12 +1512,12 @@ end
 -- (RF_AnchorCurHealth only rewrites one TOPLEFT/BOTTOMRIGHT pair): the caller
 -- isolates this, and a ClearAllPoints that succeeded ahead of a denied anchor
 -- write would strand the overlay with no anchor at all for the rest of the session.
-ns.RF_RefreshOneBarTint = function(bar, tex, ent, fill)
+mod.RF_RefreshOneBarTint = function(barFrame, tex, ent, fillTex)
     if ent.r then
-        ns.RF_TintOverBarFill(tex, bar, ent.r, ent.g, ent.b, ent.a)
+        mod.RF_TintOverBarFill(tex, barFrame, ent.r, ent.g, ent.b, ent.a)
     end
-    if fill then
-        ns.RF_AnchorCurHealth(tex._cuiTintHost or tex, bar, fill)
+    if fillTex then
+        mod.RF_AnchorCurHealth(tex._cuiTintHost or tex, barFrame, fillTex)
     end
 end
 
@@ -1522,14 +1525,14 @@ end
 -- runs from bare ReloadFrames calls where a throw would abort the styling loop
 -- mid-iteration. RF_TintOverBarFill only ever rewrites an entry it was handed, so
 -- the walk cannot gain keys mid-iteration.
-ns.RF_RefreshBarTints = function(bar)
-    local reg = bar and bar._cuiBarTints
+mod.RF_RefreshBarTints = function(barFrame)
+    local reg = barFrame and barFrame._cuiBarTints
     if not reg then
         return
     end
-    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
     for tex, ent in pairs(reg) do
-        pcall(ns.RF_RefreshOneBarTint, bar, tex, ent, fill)
+        pcall(mod.RF_RefreshOneBarTint, barFrame, tex, ent, fillTex)
     end
 end
 
@@ -1542,16 +1545,16 @@ end
 -- property. They read the _cuiInv stamp left on the bar (always our own
 -- StatusBar) instead of the settings, so the value they paint -- current or
 -- missing health -- always matches the fill direction set here.
-ns.RF_ApplyHealthOrientation = function(bar, s)
-    if not bar then
+mod.RF_ApplyHealthOrientation = function(barFrame, s)
+    if not barFrame then
         return false
     end
-    local vert = ns.RF_IsVerticalFill(s)
-    local invert = ns.RF_IsInvertedFill(s)
-    bar:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
-    bar:SetReverseFill(invert)
-    bar._cuiInv = invert
-    ns.RF_ApplyFillRotation(bar)
+    local vert = mod.RF_IsVerticalFill(s)
+    local invert = mod.RF_IsInvertedFill(s)
+    barFrame:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
+    barFrame:SetReverseFill(invert)
+    barFrame._cuiInv = invert
+    mod.RF_ApplyFillRotation(barFrame)
     return vert, invert
 end
 
@@ -1559,7 +1562,7 @@ end
 -- the absorb, heal and clip anchors hang off: its right edge, its top edge on a
 -- vertical bar, and the opposite edge under Inverted Fill. Paired top then
 -- bottom on the horizontal axis, left then right on the vertical one.
-ns.RF_HpEdge = function(vert, invert)
+mod.RF_HpEdge = function(vert, invert)
     if vert then
         if invert then
             return "BOTTOMLEFT", "BOTTOMRIGHT"
@@ -1579,23 +1582,23 @@ end
 -- TOPLEFT/BOTTOMRIGHT pair in every case, so a re-anchor overwrites both points
 -- without a ClearAllPoints. vert/invert: the fill direction from the caller's
 -- settings; omitted, it is read off the bar. Style passes only.
-ns.RF_AnchorCurHealth = function(region, bar, fill, vert, invert)
+mod.RF_AnchorCurHealth = function(regionFrame, barFrame, fillTex, vert, invert)
     if invert == nil then
-        invert = bar.GetReverseFill and bar:GetReverseFill()
+        invert = barFrame.GetReverseFill and barFrame:GetReverseFill()
     end
-    if not (fill and invert) then
-        region:SetAllPoints(fill or bar)
+    if not (fillTex and invert) then
+        regionFrame:SetAllPoints(fillTex or barFrame)
         return
     end
     if vert == nil then
-        vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
+        vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
     end
     if vert then
-        region:SetPoint("TOPLEFT", fill, "BOTTOMLEFT", 0, 0)
-        region:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+        regionFrame:SetPoint("TOPLEFT", fillTex, "BOTTOMLEFT", 0, 0)
+        regionFrame:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     else
-        region:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-        region:SetPoint("BOTTOMRIGHT", fill, "BOTTOMLEFT", 0, 0)
+        regionFrame:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+        regionFrame:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMLEFT", 0, 0)
     end
 end
 
@@ -1603,9 +1606,9 @@ end
 -- ABSORB_STYLE_TEX, "sm:" SharedMedia keys through the health-bar lookup. Used
 -- by live render AND preview so a saved SM key paints identically.
 -- Caller-handled keys (blizzardModern / maxHealthStripes) never reach this.
-function ns.ResolveAbsorbStyleTex(style, fallback)
-    return ABSORB_STYLE_TEX[style]
-        or (CludesUI.ResolveTexturePath(healthBarTextures, style, fallback))
+function mod.ResolveAbsorbStyleTex(look, fallback)
+    return ABSORB_STYLE_TEX[look]
+        or (CludesUI.ResolveTexturePath(healthBarTextures, look, fallback))
         or fallback
 end
 
@@ -1622,7 +1625,7 @@ end
 -- icons/text. Visuals (fills, absorbs, dispel) keep the real bar.
 -- Party Frames kit: the host is the visible party frame (_cuiKitRef, our
 -- frame at the art's rect), whatever Uniform Icon Anchoring says.
-function ns.RF_AnchorHost(health, s)
+function mod.RF_AnchorHost(health, s)
     local kit = health and health._cuiKitRef
     if kit then
         return kit
@@ -1635,17 +1638,17 @@ function ns.RF_AnchorHost(health, s)
 end
 -- Bar-relative texts (health, heal-absorb and status text): on the kit's
 -- health bar under the Party Frames kit, where the stock frame puts them.
-function ns.RF_BarHost(health, s)
+function mod.RF_BarHost(health, s)
     if health and health._cuiKitRef then
         return health
     end
-    return ns.RF_AnchorHost(health, s)
+    return mod.RF_AnchorHost(health, s)
 end
 
 -- "Extend Health Bar Behind Power": the health-height inset layout sites subtract for
 -- the power bar. On returns 0 -- health spans the full frame and the power bar (higher
 -- frame level, own bg) draws over its bottom strip; off returns powerH untouched.
-function ns.RF_HealthPowerInset(s, powerH)
+function mod.RF_HealthPowerInset(s, powerH)
     if s and s.extendHealthBehindPower then
         return 0
     end
@@ -1657,8 +1660,8 @@ end
 -- "NONE" case (a solo healer's mana bar must not fall through to the DPS
 -- toggle) and a stale premade-listing role (listed as tank, playing dps).
 -- Other units keep the assigned role.
-ns._ResolvePowerRole = function(unit)
-    return CludesUI.UnitEffectiveRole(unit)
+mod._ResolvePowerRole = function(unitToken)
+    return CludesUI.UnitEffectiveRole(unitToken)
 end
 
 -------------------------------------------------------------------------------
@@ -1666,15 +1669,15 @@ end
 --  overrides, cascading toward 20-man (the base) when a tier is undefined.
 --  Tiers: 10, 15, 20(base), 25, 30, 40
 -------------------------------------------------------------------------------
-ns._GetRaidSizeFrameDimensions = function(groupSize)
-    local s = db.profile
+mod._GetRaidSizeFrameDimensions = function(groupSize)
+    local s = saved.profile
     local baseW = s.frameWidth or 125
     local baseH = s.frameHeight or 60
     -- Single cascade authority (ns._RFResolveTierOverride, defined in the
     -- growth-origin block): exact tier, then one step toward 20, then base.
-    local _, ov = ns._RFResolveTierOverride(groupSize)
-    if ov then
-        return ov.width or baseW, ov.height or baseH
+    local _, shade = mod._RFResolveTierOverride(groupSize)
+    if shade then
+        return shade.width or baseW, shade.height or baseH
     end
     return baseW, baseH
 end
@@ -1683,9 +1686,9 @@ end
 -- here. Hide Groups 5-8 in Mythic Raid (opt-in): inside a Mythic raid
 -- (difficulty 16, groups 1-4 only) groups 5-8 hide on top of Show Groups.
 -- The capped set is ONE reused table: read it at once, never hold it.
-ns._mythicGroups = {}
-ns._VisibleGroups = function()
-    local s = db.profile
+mod._mythicGroups = {}
+mod._VisibleGroups = function()
+    local s = saved.profile
     local vg = s.visibleGroups
     if not s.mythicRaidHideGroups then
         return vg
@@ -1694,7 +1697,7 @@ ns._VisibleGroups = function()
     if difficultyID ~= 16 then
         return vg
     end
-    local t = ns._mythicGroups
+    local t = mod._mythicGroups
     for g = 1, 8 do
         t[g] = g <= 4 and not (vg and vg[g] == false)
     end
@@ -1705,22 +1708,22 @@ end
 -- from Size" on (default), members of subgroups hidden via Show Groups are not
 -- counted, so the breakpoint reflects visible members only. Explicitly off:
 -- returns GetNumGroupMembers() verbatim.
-ns._GetEffectiveRaidSize = function()
-    local n = GetNumGroupMembers() or 0
-    if n == 0 then
-        return n
+mod._GetEffectiveRaidSize = function()
+    local num = GetNumGroupMembers() or 0
+    if num == 0 then
+        return num
     end
-    local s = db.profile
+    local s = saved.profile
     if s.excludeHiddenGroupsFromSize == false then
-        return n
+        return num
     end
     -- Subgroups only exist in a raid; party/solo has nothing to exclude.
     if not IsInRaid() then
-        return n
+        return num
     end
-    local vg = ns._VisibleGroups()
+    local vg = mod._VisibleGroups()
     if not vg then
-        return n
+        return num
     end
     -- Skip the roster walk entirely when no group is actually hidden.
     local anyHidden = false
@@ -1731,28 +1734,28 @@ ns._GetEffectiveRaidSize = function()
         end
     end
     if not anyHidden then
-        return n
+        return num
     end
-    local count = 0
-    for ri = 1, n do
-        local _, _, sub = GetRaidRosterInfo(ri)
+    local total = 0
+    for ri = 1, num do
+        local _, _, subFrame = GetRaidRosterInfo(ri)
         -- Fail OPEN on nil subgroup: while the roster streams in after joining,
         -- GetRaidRosterInfo returns nil for unarrived members; dropping them
         -- undercounts the raid onto the wrong tier. Count unknowns as visible;
         -- the next roster pass refines downward.
-        if not sub or vg[sub] ~= false then
-            count = count + 1
+        if not subFrame or vg[subFrame] ~= false then
+            total = total + 1
         end
     end
     -- Degenerate guard: every populated group hidden -> raw count, never a 0-man raid.
-    if count == 0 then
-        return n
+    if total == 0 then
+        return num
     end
-    return count
+    return total
 end
 
 -- Track current active tier so we know when to re-layout
-ns._currentSizeTier = 20
+mod._currentSizeTier = 20
 
 -- Main-chunk locals the CUI_RaidFrames_*.lua files re-import by name.
 -- dbSetters and the five lists beside it: every file that reads one of
@@ -1760,14 +1763,14 @@ ns._currentSizeTier = 20
 -- it writes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_RaidFrames_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(ns, "_internals", {
+CludesUI.NewInternals(mod, "_internals", {
     AbbreviateNumbers = AbbreviateNumbers,
     ABSORB_STYLE_ALPHA = ABSORB_STYLE_ALPHA,
     ABSORB_STYLE_TEX = ABSORB_STYLE_TEX,
     allButtons = allButtons,
     ApplyFont = ApplyFont,
     ApplyRoleIcon = ApplyRoleIcon,
-    defaults = defaults,
+    defaults = defaultSet,
     DISPEL_COLORS = DISPEL_COLORS,
     DISPEL_ICON_ATLAS = DISPEL_ICON_ATLAS,
     ERF = ERF,
@@ -1789,23 +1792,23 @@ CludesUI.NewInternals(ns, "_internals", {
     unitToButton = unitToButton,
     unitTrackers = unitTrackers,
     dbSetters = {
-        function(v)
-            db = v
+        function(val)
+            saved = val
         end,
     },
     PPSetters = {
-        function(v)
-            PP = v
+        function(val)
+            Pix = val
         end,
     },
     containerFrameSetters = {
-        function(v)
-            containerFrame = v
+        function(val)
+            containerFrame = val
         end,
     },
     inCombatSetters = {
-        function(v)
-            inCombat = v
+        function(val)
+            inCombat = val
         end,
     },
     readyCheckActiveSetters = {},

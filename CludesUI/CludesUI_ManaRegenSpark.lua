@@ -67,16 +67,16 @@ local timerSpan = timer:CreateAnimation("Animation")
 
 -- True when the spell's cost includes mana. A secret amount counts as a cost;
 -- only a plain 0 is free.
-local function CostsMana(spellID)
-    if issecretvalue(spellID) or not spellID then
+local function CostsMana(spellId)
+    if issecretvalue(spellId) or not spellId then
         return false
     end
-    local costs = C_Spell.GetSpellPowerCost(spellID)
+    local costs = C_Spell.GetSpellPowerCost(spellId)
     if not costs then
         return false
     end
-    for i = 1, #costs do
-        local c = costs[i]
+    for idx = 1, #costs do
+        local c = costs[idx]
         if not issecretvalue(c.type) and c.type == MANA then
             local amt = c.cost
             return issecretvalue(amt) or (type(amt) == "number" and amt > 0)
@@ -89,15 +89,15 @@ end
 -- Two points span the bar's thickness, so resizes follow with no Lua. The
 -- inputs are the bar's orientation and reverse fill (the overlay's fill
 -- texture is set once, at build); while they hold, the anchors stand.
-local function Layout(h)
-    local bar = h.bar
-    local vert = bar:GetOrientation() == "VERTICAL"
-    local rev = bar:GetReverseFill() and true or false
-    if h.vert == vert and h.rev == rev then
+local function Layout(hgt)
+    local barFrame = hgt.bar
+    local vert = barFrame:GetOrientation() == "VERTICAL"
+    local rev = barFrame:GetReverseFill() and true or false
+    if hgt.vert == vert and hgt.rev == rev then
         return
     end
-    h.vert, h.rev = vert, rev
-    local o, s = h.overlay, h.spark
+    hgt.vert, hgt.rev = vert, rev
+    local o, s = hgt.overlay, hgt.spark
     o:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
     o:SetReverseFill(rev)
     local ft = o:GetStatusBarTexture()
@@ -120,9 +120,9 @@ end
 -- position, or hides it: it draws only while a sweep runs that the host
 -- shows (the 5s window, or any sweep in Regen Ticks mode), the bar shows
 -- mana and the bar is visible.
-local function Arm(h)
-    local o = h.overlay
-    if sweepEnd and (inWindow or h.ticks) and mana[h.key] and h.bar:IsVisible() then
+local function Arm(hgt)
+    local o = hgt.overlay
+    if sweepEnd and (inWindow or hgt.ticks) and mana[hgt.key] and hgt.bar:IsVisible() then
         o:Show()
         o:SetTimerDuration(dur, IMMEDIATE, ELAPSED)
     else
@@ -135,8 +135,8 @@ local function Idle()
     sweepEnd = nil
     inWindow = false
     regenSeen = false
-    for _, h in pairs(hosts) do
-        h.overlay:Hide()
+    for _, hgt in pairs(hosts) do
+        hgt.overlay:Hide()
     end
 end
 
@@ -144,17 +144,17 @@ end
 -- end of the one before (start), so the cadence does not drift by a frame
 -- per hop; a start already a full sweep behind restarts from now.
 local function Sweep(len, start)
-    local now = GetTime()
-    if not start or start + len <= now then
-        start = now
+    local nowTime = GetTime()
+    if not start or start + len <= nowTime then
+        start = nowTime
     end
     sweepEnd = start + len
     dur:SetTimeFromStart(start, len)
-    for _, h in pairs(hosts) do
-        Arm(h)
+    for _, hgt in pairs(hosts) do
+        Arm(hgt)
     end
     timer:Stop()
-    timerSpan:SetDuration(sweepEnd - now)
+    timerSpan:SetDuration(sweepEnd - nowTime)
     timer:Play()
 end
 
@@ -171,8 +171,8 @@ timer:SetScript("OnFinished", function()
     end
 end)
 
-ev:SetScript("OnEvent", function(_, event, _, arg2, arg3)
-    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+ev:SetScript("OnEvent", function(_, evt, _, arg2, arg3)
+    if evt == "UNIT_SPELLCAST_SUCCEEDED" then
         if CostsMana(arg3) then
             inWindow = true
             regenSeen = false
@@ -192,11 +192,11 @@ end)
 -- UNIT_POWER_UPDATE while one of those is in Regen Ticks mode. When the last
 -- visible host goes, both are dropped and the cycle ends.
 local function Listen()
-    local on, tk = false, false
-    for _, h in pairs(hosts) do
-        if h.bar:IsVisible() then
-            on = true
-            if h.ticks then
+    local enabled, tk = false, false
+    for _, hgt in pairs(hosts) do
+        if hgt.bar:IsVisible() then
+            enabled = true
+            if hgt.ticks then
                 tk = true
             end
         end
@@ -209,11 +209,11 @@ local function Listen()
             ev:UnregisterEvent("UNIT_POWER_UPDATE")
         end
     end
-    if on == listening then
+    if enabled == listening then
         return
     end
-    listening = on
-    if on then
+    listening = enabled
+    if enabled then
         ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     else
         ev:UnregisterAllEvents()
@@ -224,17 +224,17 @@ end
 
 -- Hooked once on each host bar (our own StatusBars). A bar that is not
 -- attached returns at once; a shown bar joins the running sweep.
-local function OnHostShow(bar)
-    local h = built[bar]
-    if hosts[h.key] == h then
+local function OnHostShow(barFrame)
+    local hgt = built[barFrame]
+    if hosts[hgt.key] == hgt then
         Listen()
-        Arm(h)
+        Arm(hgt)
     end
 end
 
-local function OnHostHide(bar)
-    local h = built[bar]
-    if hosts[h.key] == h then
+local function OnHostHide(barFrame)
+    local hgt = built[barFrame]
+    if hosts[hgt.key] == hgt then
         Listen()
     end
 end
@@ -244,13 +244,13 @@ CludesUI.ManaRegenSpark = MRS
 
 -- The host's option is on and its bar can draw; ticks = Regen Ticks mode.
 -- Lays the spark out on every call, so hosts call it on every rebuild.
-function MRS.Attach(key, bar, ticks)
+function MRS.Attach(key, barFrame, ticks)
     ticks = ticks and true or false
-    local h = built[bar]
-    if not h then
-        local o = CreateFrame("StatusBar", nil, bar)
-        o:SetAllPoints(bar)
-        o:SetFrameLevel(bar:GetFrameLevel() + 2)
+    local hgt = built[barFrame]
+    if not hgt then
+        local o = CreateFrame("StatusBar", nil, barFrame)
+        o:SetAllPoints(barFrame)
+        o:SetFrameLevel(barFrame:GetFrameLevel() + 2)
         o:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         o:GetStatusBarTexture():SetAlpha(0)
         o:SetMinMaxValues(0, 1)
@@ -259,38 +259,38 @@ function MRS.Attach(key, bar, ticks)
         local s = o:CreateTexture(nil, "OVERLAY", nil, 1)
         s:SetTexture(SPARK_TEX)
         s:SetBlendMode("ADD")
-        h = { bar = bar, overlay = o, spark = s }
-        built[bar] = h
-        bar:HookScript("OnShow", OnHostShow)
-        bar:HookScript("OnHide", OnHostHide)
+        hgt = { bar = barFrame, overlay = o, spark = s }
+        built[barFrame] = hgt
+        barFrame:HookScript("OnShow", OnHostShow)
+        barFrame:HookScript("OnHide", OnHostHide)
     end
-    Layout(h)
+    Layout(hgt)
     local old = hosts[key]
-    if old == h then
+    if old == hgt then
         -- Same bar: only a mode change needs the events and the spark redone.
-        if h.ticks ~= ticks then
-            h.ticks = ticks
+        if hgt.ticks ~= ticks then
+            hgt.ticks = ticks
             Listen()
-            Arm(h)
+            Arm(hgt)
         end
         return
     end
     if old then
         old.overlay:Hide()
     end
-    h.key, h.ticks = key, ticks
-    hosts[key] = h
+    hgt.key, hgt.ticks = key, ticks
+    hosts[key] = hgt
     Listen()
-    Arm(h)
+    Arm(hgt)
 end
 
 function MRS.Detach(key)
-    local h = hosts[key]
-    if not h then
+    local hgt = hosts[key]
+    if not hgt then
         return
     end
     hosts[key] = nil
-    h.overlay:Hide()
+    hgt.overlay:Hide()
     Listen()
 end
 
@@ -302,11 +302,11 @@ function MRS.SetMana(key, isMana)
         return
     end
     mana[key] = isMana
-    local h = hosts[key]
-    if h then
+    local hgt = hosts[key]
+    if hgt then
         if isMana then
-            Layout(h)
+            Layout(hgt)
         end
-        Arm(h)
+        Arm(hgt)
     end
 end

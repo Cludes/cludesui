@@ -18,7 +18,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Stats panel: your crit, haste, mastery and versatility, kept up to date
 --  through buffs and procs.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local DROPS = {
     [1237104] = "FEAST",
@@ -47,12 +47,12 @@ local GATEWAY_SHARD = 188152
 local function Font()
     return CludesUI.GetFontPath(nil)
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 
-function ns.HelperSettings()
-    local p = ns.RaidLeadDB()
+function mod.HelperSettings()
+    local p = mod.RaidLeadDB()
     p.helpers = p.helpers or {}
     local s = p.helpers
     if s.drops == nil then
@@ -74,13 +74,13 @@ end
 --  Feast alerts
 -------------------------------------------------------------------------------
 --- Called by Comms.lua (and for our own drops) with who dropped what.
-function ns.ReceiveDrop(who, kind)
-    local s = ns.HelperSettings()
-    if not s.drops or not DROP_TEXT[kind] then
+function mod.ReceiveDrop(who, kindOf)
+    local s = mod.HelperSettings()
+    if not s.drops or not DROP_TEXT[kindOf] then
         return
     end
     local name = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
-    CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kind]))
+    CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kindOf]))
     if s.dropSound then
         PlaySound(SOUNDKIT.READY_CHECK, "Master")
     end
@@ -88,31 +88,31 @@ end
 
 local dropEv = CreateFrame("Frame")
 dropEv:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-dropEv:SetScript("OnEvent", function(_, _, _, _, spellID)
-    if Secret(spellID) then
+dropEv:SetScript("OnEvent", function(_, _, _, _, spellId)
+    if Secret(spellId) then
         return
     end
-    local kind = DROPS[spellID]
-    if not kind or not IsInGroup() then
+    local kindOf = DROPS[spellId]
+    if not kindOf or not IsInGroup() then
         return
     end
     -- Our message comes back to us as well, which prints our own drop.
-    if not (ns.SendDrop and ns.SendDrop(kind)) then
-        ns.ReceiveDrop(UnitName("player"), kind)
+    if not (mod.SendDrop and mod.SendDrop(kindOf)) then
+        mod.ReceiveDrop(UnitName("player"), kindOf)
     end
 end)
 
 -------------------------------------------------------------------------------
 --  Movable text frames (Gateway Usable, Stats)
 -------------------------------------------------------------------------------
-local function Movable(name, key, label, order, w, h, default, isHidden)
+local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidden)
     local f = CreateFrame("Frame", name, UIParent)
-    f:SetSize(w, h)
+    f:SetSize(wid, hgt)
     local function Place()
         if InCombatLockdown() then
             return
         end
-        local p = ns.HelperSettings()[key]
+        local p = mod.HelperSettings()[key]
         f:ClearAllPoints()
         if p then
             f:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
@@ -125,9 +125,9 @@ local function Movable(name, key, label, order, w, h, default, isHidden)
         CludesUI:RegisterUnlockElements({
             CludesUI.MakeUnlockElement({
                 key = "RLEAD_" .. key,
-                label = label,
+                label = labelText,
                 group = "Raid Lead",
-                order = order,
+                order = sequence,
                 noAnchorTarget = true,
                 noResize = true,
                 isHidden = isHidden,
@@ -137,14 +137,15 @@ local function Movable(name, key, label, order, w, h, default, isHidden)
                 getSize = function()
                     return f:GetWidth(), f:GetHeight()
                 end,
-                savePos = function(_, point, relPoint, x, y)
-                    ns.HelperSettings()[key] = { point = point, relPoint = relPoint, x = x, y = y }
+                savePos = function(_, anchorPoint, relPoint, posX, posY)
+                    mod.HelperSettings()[key] =
+                        { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 end,
                 loadPos = function()
-                    return ns.HelperSettings()[key]
+                    return mod.HelperSettings()[key]
                 end,
                 clearPos = function()
-                    ns.HelperSettings()[key] = nil
+                    mod.HelperSettings()[key] = nil
                 end,
                 applyPos = Place,
             }),
@@ -161,22 +162,22 @@ local function GateUpdate()
     if not gate then
         return
     end
-    local on = ns.HelperSettings().gateway and IsInGroup()
-    if on then
+    local enabled = mod.HelperSettings().gateway and IsInGroup()
+    if enabled then
         local usable = C_Item.IsUsableItem(GATEWAY_SHARD)
-        on = not Secret(usable) and usable and true or false
+        enabled = not Secret(usable) and usable and true or false
     end
-    gate:SetShown(on or (CludesUI._unlockActive and ns.HelperSettings().gateway) or false)
+    gate:SetShown(enabled or (CludesUI._unlockActive and mod.HelperSettings().gateway) or false)
 end
 
 -------------------------------------------------------------------------------
 --  Stats panel
 -------------------------------------------------------------------------------
 local stats, statsText
-local function Pct(fn, ...)
-    local ok, v = pcall(fn, ...)
-    if ok and type(v) == "number" and not Secret(v) then
-        return v
+local function Pct(func, ...)
+    local success, val = pcall(func, ...)
+    if success and type(val) == "number" and not Secret(val) then
+        return val
     end
 end
 
@@ -184,7 +185,7 @@ local function StatsUpdate()
     if not stats then
         return
     end
-    if not ns.HelperSettings().stats then
+    if not mod.HelperSettings().stats then
         stats:Hide()
         return
     end
@@ -197,8 +198,8 @@ local function StatsUpdate()
         local b = Pct(GetVersatilityBonus, CR_VERSATILITY_DAMAGE_DONE) or 0
         vers = a and (a + b)
     end
-    local function F(v)
-        return v and ("%.1f%%"):format(v) or "?"
+    local function F(val)
+        return val and ("%.1f%%"):format(val) or "?"
     end
     statsText:SetText(
         ("|cff9aa6b2Crit|r %s\n|cff9aa6b2Haste|r %s\n|cff9aa6b2Mastery|r %s\n|cff9aa6b2Vers|r %s"):format(
@@ -223,7 +224,7 @@ local function QueueStats()
     end)
 end
 
-function ns.RefreshHelpers()
+function mod.RefreshHelpers()
     GateUpdate()
     StatsUpdate()
 end
@@ -241,8 +242,8 @@ ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 ev:RegisterUnitEvent("UNIT_AURA", "player")
 ev:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
 local registered
-ev:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_ENTERING_WORLD" and not gate then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_ENTERING_WORLD" and not gate then
         gate = Movable(
             "CludesUIRaidLeadGateway",
             "gatewayPos",
@@ -252,7 +253,7 @@ ev:SetScript("OnEvent", function(_, event)
             24,
             { "CENTER", UIParent, "CENTER", 0, -60 },
             function()
-                return not ns.HelperSettings().gateway
+                return not mod.HelperSettings().gateway
             end
         )
         gateText = gate:CreateFontString(nil, "OVERLAY")
@@ -269,7 +270,7 @@ ev:SetScript("OnEvent", function(_, event)
             60,
             { "RIGHT", UIParent, "RIGHT", -260, 0 },
             function()
-                return not ns.HelperSettings().stats
+                return not mod.HelperSettings().stats
             end
         )
         statsText = stats:CreateFontString(nil, "OVERLAY")
@@ -279,7 +280,7 @@ ev:SetScript("OnEvent", function(_, event)
         stats:Hide()
     end
     if
-        event == "PLAYER_ENTERING_WORLD"
+        evt == "PLAYER_ENTERING_WORLD"
         and not registered
         and not InCombatLockdown()
         and CludesUI.RegisterUnlockElements
@@ -288,14 +289,10 @@ ev:SetScript("OnEvent", function(_, event)
         gate.register()
         stats.register()
     end
-    if
-        event == "ACTIONBAR_UPDATE_USABLE"
-        or event == "GROUP_ROSTER_UPDATE"
-        or event == "PLAYER_ENTERING_WORLD"
-    then
+    if evt == "ACTIONBAR_UPDATE_USABLE" or evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ENTERING_WORLD" then
         GateUpdate()
     end
-    if event ~= "ACTIONBAR_UPDATE_USABLE" and event ~= "GROUP_ROSTER_UPDATE" then
+    if evt ~= "ACTIONBAR_UPDATE_USABLE" and evt ~= "GROUP_ROSTER_UPDATE" then
         QueueStats()
     end
 end)

@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  buttons. Each one runs the same code as its /raidlead command.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIRaidLead"
-local ns = CludesUI._ModuleNS[ADDON_NAME]
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME]
+if not mod then
     return
 end
 
@@ -24,82 +24,67 @@ initFrame:SetScript("OnEvent", function(self)
 
     local function Run(cmd)
         return function()
-            if ns.Command then
-                ns.Command(cmd)
+            if mod.Command then
+                mod.Command(cmd)
             end
         end
     end
 
-    local function BuildPage(_, parent, yOffset)
+    local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "RAID GROUPS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "RAID GROUPS", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "labeledButton",
-                text = "Sort by Role",
-                buttonText = "Sort",
-                width = 90,
-                tooltip = "Tanks, melee, ranged, then healers, filling group 1 upward. Raid leader or assistant, out of combat.",
-                onClick = Run("roles"),
-            },
-            {
-                type = "labeledButton",
-                text = "Split Into Two Halves",
-                buttonText = "Split",
-                width = 90,
-                tooltip = "Two balanced halves for split runs. Each kind is dealt out in turn, so both sides get the same mix.",
-                onClick = Run("split"),
-            }
-        )
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, {
+            type = "labeledButton",
+            text = "Sort by Role",
+            buttonText = "Sort",
+            width = 90,
+            tooltip = "Tanks, melee, ranged, then healers, filling group 1 upward. Raid leader or assistant, out of combat.",
+            onClick = Run("roles"),
+        }, {
+            type = "labeledButton",
+            text = "Split Into Two Halves",
+            buttonText = "Split",
+            width = 90,
+            tooltip = "Two balanced halves for split runs. Each kind is dealt out in turn, so both sides get the same mix.",
+            onClick = Run("split"),
+        })
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "labeledButton",
-                text = "Put Everyone Back",
-                buttonText = "Undo",
-                width = 90,
-                tooltip = "Back to how the groups were before the last sort or split.",
-                onClick = Run("undo"),
-            },
-            {
-                type = "labeledButton",
-                text = "Stop a Sort",
-                buttonText = "Stop",
-                width = 90,
-                tooltip = "Stops a sort that is under way. Players already moved stay where they are.",
-                onClick = Run("stop"),
-            }
-        )
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, {
+            type = "labeledButton",
+            text = "Put Everyone Back",
+            buttonText = "Undo",
+            width = 90,
+            tooltip = "Back to how the groups were before the last sort or split.",
+            onClick = Run("undo"),
+        }, {
+            type = "labeledButton",
+            text = "Stop a Sort",
+            buttonText = "Stop",
+            width = 90,
+            tooltip = "Stops a sort that is under way. Players already moved stay where they are.",
+            onClick = Run("stop"),
+        })
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "label",
-                text = "Melee and ranged are told apart by class, which is a guess for Druids, Shamans and Hunters. Results print in chat.",
-            },
-            { type = "label", text = "" }
-        )
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, {
+            type = "label",
+            text = "Melee and ranged are told apart by class, which is a guess for Druids, Shamans and Hunters. Results print in chat.",
+        }, { type = "label", text = "" })
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "INVITES", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "INVITES", posY)
+        posY = posY - hgt
 
-        local inv = ns.InviteSettings()
-        _, h = W:DualRow(parent, y, {
+        local inv = mod.InviteSettings()
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Roster",
             inputWidth = 220,
@@ -108,8 +93,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return inv.list
             end,
-            setValue = function(v)
-                inv.list = v or ""
+            setValue = function(val)
+                inv.list = val or ""
             end,
         }, {
             type = "labeledButton",
@@ -118,12 +103,12 @@ initFrame:SetScript("OnEvent", function(self)
             width = 90,
             tooltip = "Invites everyone on the roster who is not in the group yet. A party becomes a raid when it needs to.",
             onClick = function()
-                ns.InviteList()
+                mod.InviteList()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Assistants",
             inputWidth = 220,
@@ -132,8 +117,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return inv.promote
             end,
-            setValue = function(v)
-                inv.promote = v or ""
+            setValue = function(val)
+                inv.promote = val or ""
             end,
         }, {
             type = "labeledButton",
@@ -141,37 +126,37 @@ initFrame:SetScript("OnEvent", function(self)
             buttonText = "Promote",
             width = 90,
             onClick = function()
-                ns.PromoteList(false)
+                mod.PromoteList(false)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Promote Assistants When They Join",
             tooltip = "While you lead the raid, everyone on the assistants list is promoted as they join.",
             getValue = function()
                 return inv.autoPromote
             end,
-            setValue = function(v)
-                inv.autoPromote = v and true or false
+            setValue = function(val)
+                inv.autoPromote = val and true or false
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "READY CHECK", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "READY CHECK", posY)
+        posY = posY - hgt
 
-        local rc = ns.ReadyCheckSettings()
-        _, h = W:DualRow(parent, y, {
+        local rc = mod.ReadyCheckSettings()
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Gear and Cooldown Check",
             tooltip = "On every ready check, CludesUI users report their durability, item level, missing enchants and raid cooldowns that are not ready. The leader and assistants see a list.",
             getValue = function()
                 return rc.enabled
             end,
-            setValue = function(v)
-                rc.enabled = v and true or false
+            setValue = function(val)
+                rc.enabled = val and true or false
             end,
         }, {
             type = "slider",
@@ -182,20 +167,20 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return rc.minDurability
             end,
-            setValue = function(v)
-                rc.minDurability = math.floor(v + 0.5)
+            setValue = function(val)
+                rc.minDurability = math.floor(val + 0.5)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "See Your Own Report",
             buttonText = "Show",
             width = 90,
             tooltip = "Opens the ready check list with just your own report.",
             onClick = function()
-                ns.ShowReadyWindow()
+                mod.ShowReadyWindow()
             end,
         }, {
             type = "toggle",
@@ -204,24 +189,24 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return rc.consumables
             end,
-            setValue = function(v)
-                rc.consumables = v and true or false
+            setValue = function(val)
+                rc.consumables = val and true or false
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "BREAK TIMER", y)
-        y = y - h
-        local bt = ns.BreakSettings()
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:SectionHeader(hostFrame, "BREAK TIMER", posY)
+        posY = posY - hgt
+        local bt = mod.BreakSettings()
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Break Timers",
             tooltip = "When the leader or an assistant starts a break, a bar counts it down for every CludesUI user in the group. Move it in Layout Mode.",
             getValue = function()
                 return bt.enabled
             end,
-            setValue = function(v)
-                bt.enabled = v and true or false
+            setValue = function(val)
+                bt.enabled = val and true or false
             end,
         }, {
             type = "toggle",
@@ -229,19 +214,19 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return bt.sound
             end,
-            setValue = function(v)
-                bt.sound = v and true or false
+            setValue = function(val)
+                bt.sound = val and true or false
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "Start a Break",
             buttonText = "5 min",
             width = 90,
             tooltip = "Starts a 5 minute break for the group. /raidlead break 10 starts one of any length.",
             onClick = function()
-                ns.StartBreak(5)
+                mod.StartBreak(5)
             end,
         }, {
             type = "labeledButton",
@@ -249,23 +234,23 @@ initFrame:SetScript("OnEvent", function(self)
             buttonText = "End",
             width = 90,
             onClick = function()
-                ns.StartBreak(0)
+                mod.StartBreak(0)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "KICK ROTATION", y)
-        y = y - h
-        local ks = ns.KickSettings()
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:SectionHeader(hostFrame, "KICK ROTATION", posY)
+        posY = posY - hgt
+        local ks = mod.KickSettings()
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Kick Rotation",
             tooltip = "Shows whose interrupt is next. The order comes from an intstart / intend block in the boss's note (one line of names per rotation), or the Kick Order below for other fights. Each cast of the tracked unit moves the turn on.",
             getValue = function()
                 return ks.enabled
             end,
-            setValue = function(v)
-                ks.enabled = v and true or false
+            setValue = function(val)
+                ks.enabled = val and true or false
             end,
         }, {
             type = "segmented",
@@ -276,12 +261,12 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ks.unit
             end,
-            setValue = function(v)
-                ks.unit = v
+            setValue = function(val)
+                ks.unit = val
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Kick Order",
             inputWidth = 160,
@@ -291,8 +276,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ks.order
             end,
-            setValue = function(text)
-                ks.order = (text or ""):match("^%s*(.-)%s*$")
+            setValue = function(textValue)
+                ks.order = (textValue or ""):match("^%s*(.-)%s*$")
             end,
         }, {
             type = "labeledButton",
@@ -301,38 +286,38 @@ initFrame:SetScript("OnEvent", function(self)
             width = 90,
             tooltip = "Shows the box for a few seconds so you can place it in Layout Mode.",
             onClick = function()
-                ns.PreviewKicks()
+                mod.PreviewKicks()
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Sound on Your Turn",
             getValue = function()
                 return ks.sound
             end,
-            setValue = function(v)
-                ks.sound = v and true or false
+            setValue = function(val)
+                ks.sound = val and true or false
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "VERSIONS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "VERSIONS", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "Check CludesUI Versions",
             buttonText = "Check",
             width = 90,
             tooltip = "Asks everyone in the group which CludesUI version they run. The answer prints in chat after a few seconds.",
             onClick = function()
-                ns.VersionCheck()
+                mod.VersionCheck()
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -346,26 +331,26 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:RefreshPage(true)
     end
 
-    local function BuildTrackingPage(_, parent, yOffset)
+    local function BuildTrackingPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
-        local im, pace = ns.ImmunitySettings(), ns.PaceSettings()
+        local posY = yOffset
+        local _, hgt
+        local im, pace = mod.ImmunitySettings(), mod.PaceSettings()
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "IMMUNITIES ON YOU", y)
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:SectionHeader(hostFrame, "IMMUNITIES ON YOU", posY)
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Immunities on You",
             tooltip = "Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you. Works in combat. Move it in Layout Mode.",
             getValue = function()
                 return im.enabled
             end,
-            setValue = function(v)
-                im.enabled = v and true or false
-                ns.RefreshImmunities()
+            setValue = function(val)
+                im.enabled = val and true or false
+                mod.RefreshImmunities()
             end,
         }, {
             type = "slider",
@@ -376,18 +361,18 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return im.size
             end,
-            setValue = function(v)
-                im.size = math.floor(v + 0.5)
-                ns.RefreshImmunities()
+            setValue = function(val)
+                im.size = math.floor(val + 0.5)
+                mod.RefreshImmunities()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         local extra = {}
-        for _, id in ipairs(im.extra) do
-            local n = C_Spell.GetSpellName(id)
-            extra[#extra + 1] = (type(n) == "string" and n or "Spell") .. " (" .. id .. ")"
+        for _, ident in ipairs(im.extra) do
+            local num = C_Spell.GetSpellName(ident)
+            extra[#extra + 1] = (type(num) == "string" and num or "Spell") .. " (" .. ident .. ")"
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Add an Immunity",
             inputStyle = "popup",
@@ -397,11 +382,11 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ""
             end,
-            setValue = function(text)
-                local id = tonumber(text)
-                if id and id > 0 then
-                    table.insert(im.extra, math.floor(id))
-                    ns.RefreshImmunities()
+            setValue = function(textValue)
+                local ident = tonumber(textValue)
+                if ident and ident > 0 then
+                    table.insert(im.extra, math.floor(ident))
+                    mod.RefreshImmunities()
                     Refresh()
                 end
             end,
@@ -412,30 +397,30 @@ initFrame:SetScript("OnEvent", function(self)
             width = 90,
             onClick = function()
                 wipe(im.extra)
-                ns.RefreshImmunities()
+                mod.RefreshImmunities()
                 Refresh()
             end,
         } or { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "AURA GLOWS", y)
-        y = y - h
-        local ag = ns.AuraGlowSettings()
+        _, hgt = W:SectionHeader(hostFrame, "AURA GLOWS", posY)
+        posY = posY - hgt
+        local ag = mod.AuraGlowSettings()
         local glowNames = {}
-        for _, id in ipairs(ag.spells) do
-            local n = C_Spell.GetSpellName(id)
-            glowNames[#glowNames + 1] = (type(n) == "string" and n or "Spell") .. " (" .. id .. ")"
+        for _, ident in ipairs(ag.spells) do
+            local num = C_Spell.GetSpellName(ident)
+            glowNames[#glowNames + 1] = (type(num) == "string" and num or "Spell") .. " (" .. ident .. ")"
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Aura Glows",
             tooltip = "While an aura you add here is on you, its icon shows with a glowing border and its time. Works in boss fights. Changes apply out of combat. Move it in Layout Mode.",
             getValue = function()
                 return ag.enabled
             end,
-            setValue = function(v)
-                ag.enabled = v and true or false
-                ns.RebuildAuraGlows()
+            setValue = function(val)
+                ag.enabled = val and true or false
+                mod.RebuildAuraGlows()
             end,
         }, {
             type = "slider",
@@ -446,13 +431,13 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ag.size
             end,
-            setValue = function(v)
-                ag.size = math.floor(v + 0.5)
-                ns.RebuildAuraGlows()
+            setValue = function(val)
+                ag.size = math.floor(val + 0.5)
+                mod.RebuildAuraGlows()
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Add an Aura",
             inputStyle = "popup",
@@ -462,11 +447,11 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ""
             end,
-            setValue = function(text)
-                for _, id in ipairs(ns.ParseSpellIDs(text)) do
-                    table.insert(ag.spells, id)
+            setValue = function(textValue)
+                for _, ident in ipairs(mod.ParseSpellIDs(textValue)) do
+                    table.insert(ag.spells, ident)
                 end
-                ns.RebuildAuraGlows()
+                mod.RebuildAuraGlows()
                 Refresh()
             end,
         }, #glowNames > 0 and {
@@ -476,28 +461,28 @@ initFrame:SetScript("OnEvent", function(self)
             width = 90,
             onClick = function()
                 wipe(ag.spells)
-                ns.RebuildAuraGlows()
+                mod.RebuildAuraGlows()
                 Refresh()
             end,
         } or { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "GROUP HELPERS", y)
-        y = y - h
-        local hs = ns.HelperSettings()
-        local function HSet(key, v)
-            hs[key] = v and true or false
-            ns.RefreshHelpers()
+        _, hgt = W:SectionHeader(hostFrame, "GROUP HELPERS", posY)
+        posY = posY - hgt
+        local hs = mod.HelperSettings()
+        local function HSet(key, val)
+            hs[key] = val and true or false
+            mod.RefreshHelpers()
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Feast and Cauldron Alerts",
             tooltip = "A chat line naming who dropped a feast, cauldron, Soulwell or repair bot. Only drops by CludesUI users are seen: the game shows addons no one else's casts.",
             getValue = function()
                 return hs.drops
             end,
-            setValue = function(v)
-                HSet("drops", v)
+            setValue = function(val)
+                HSet("drops", val)
             end,
         }, {
             type = "toggle",
@@ -505,20 +490,20 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return hs.dropSound
             end,
-            setValue = function(v)
-                HSet("dropSound", v)
+            setValue = function(val)
+                HSet("dropSound", val)
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Gateway Usable",
             tooltip = "Gateway usable shows while you are close enough to a warlock's Demonic Gateway to click it. Move it in Layout Mode.",
             getValue = function()
                 return hs.gateway
             end,
-            setValue = function(v)
-                HSet("gateway", v)
+            setValue = function(val)
+                HSet("gateway", val)
             end,
         }, {
             type = "toggle",
@@ -527,23 +512,23 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return hs.stats
             end,
-            setValue = function(v)
-                HSet("stats", v)
+            setValue = function(val)
+                HSet("stats", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "BOSS PACE", y)
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:SectionHeader(hostFrame, "BOSS PACE", posY)
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Boss Pace",
             tooltip = "A bar with the boss's health and a marker for where it should be to kill it in your target time: green while ahead, red while behind. The pace is a straight line, so phases and intermissions throw it off. Move it in Layout Mode.",
             getValue = function()
                 return pace.enabled
             end,
-            setValue = function(v)
-                pace.enabled = v and true or false
+            setValue = function(val)
+                pace.enabled = val and true or false
             end,
         }, {
             type = "input",
@@ -555,27 +540,27 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ""
             end,
-            setValue = function(text)
-                text = text and text:match("^%s*(.-)%s*$") or ""
-                if text ~= "" then
-                    table.insert(pace.targets, { boss = text, seconds = 300 })
+            setValue = function(textValue)
+                textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
+                if textValue ~= "" then
+                    table.insert(pace.targets, { boss = textValue, seconds = 300 })
                     Refresh()
                 end
             end,
         })
-        y = y - h
-        for i, t in ipairs(pace.targets) do
-            _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        for idx, t in ipairs(pace.targets) do
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "input",
                 text = t.boss .. ": Target Kill Time",
                 inputWidth = 80,
                 placeholder = "5:00",
                 tooltip = "Minutes and seconds, like 5:30. Press Enter to save.",
                 getValue = function()
-                    return ns.FormatDuration(t.seconds)
+                    return mod.FormatDuration(t.seconds)
                 end,
-                setValue = function(text)
-                    local s = ns.ParseDuration(text)
+                setValue = function(textValue)
+                    local s = mod.ParseDuration(textValue)
                     if s and s > 0 then
                         t.seconds = s
                     end
@@ -587,36 +572,36 @@ initFrame:SetScript("OnEvent", function(self)
                 width = 70,
                 tooltip = "Shows the bar for this boss now, with your target as the clock. With no boss targeted the bar stays empty.",
                 onClick = function()
-                    ns.StartPace(t.boss, t.seconds)
+                    mod.StartPace(t.boss, t.seconds)
                 end,
             })
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "labeledButton",
                 text = "Remove " .. t.boss,
                 buttonText = "Remove",
                 width = 90,
                 onClick = function()
-                    table.remove(pace.targets, i)
+                    table.remove(pace.targets, idx)
                     Refresh()
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
         end
 
-        if ns.TimelineSettings then
-            local tl = ns.TimelineSettings()
-            _, h = W:SectionHeader(parent, "BOSS TIMELINES", y)
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+        if mod.TimelineSettings then
+            local tl = mod.TimelineSettings()
+            _, hgt = W:SectionHeader(hostFrame, "BOSS TIMELINES", posY)
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Upcoming Ability Bars",
                 tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Layout Mode.",
                 getValue = function()
                     return tl.bars
                 end,
-                setValue = function(v)
-                    tl.bars = v and true or false
+                setValue = function(val)
+                    tl.bars = val and true or false
                 end,
             }, {
                 type = "toggle",
@@ -625,20 +610,20 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return tl.alerts
                 end,
-                setValue = function(v)
-                    tl.alerts = v and true or false
+                setValue = function(val)
+                    tl.alerts = val and true or false
                 end,
             })
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Only My Role",
                 tooltip = "Bars and the timeline window show only the mechanics for your role: raid damage and soaks for healers, tankbusters and frontals for tanks.",
                 getValue = function()
                     return tl.mine
                 end,
-                setValue = function(v)
-                    tl.mine = v and true or false
+                setValue = function(val)
+                    tl.mine = val and true or false
                 end,
             }, {
                 type = "toggle",
@@ -647,12 +632,12 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return tl.tts
                 end,
-                setValue = function(v)
-                    tl.tts = v and true or false
+                setValue = function(val)
+                    tl.tts = val and true or false
                 end,
             })
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Bars Shown",
                 min = 3,
@@ -662,8 +647,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return tl.count
                 end,
-                setValue = function(v)
-                    tl.count = math.floor(v + 0.5)
+                setValue = function(val)
+                    tl.count = math.floor(val + 0.5)
                 end,
             }, {
                 type = "slider",
@@ -675,19 +660,19 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return tl.ahead
                 end,
-                setValue = function(v)
-                    tl.ahead = math.floor(v + 0.5)
+                setValue = function(val)
+                    tl.ahead = math.floor(val + 0.5)
                 end,
             })
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "labeledButton",
                 text = "Boss Timeline Window",
                 buttonText = "Open",
                 width = 90,
                 tooltip = "Each boss's abilities and when they come, Heroic or Mythic, with Test to run one as if pulled. Also /cbt.",
                 onClick = function()
-                    ns.OpenTimeline()
+                    mod.OpenTimeline()
                 end,
             }, {
                 type = "toggle",
@@ -696,36 +681,36 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return tl.phaseChat
                 end,
-                setValue = function(v)
-                    tl.phaseChat = v and true or false
+                setValue = function(val)
+                    tl.phaseChat = val and true or false
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
-    local function BuildNicknamesPage(_, parent, yOffset)
+    local function BuildNicknamesPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "NICKNAMES", y)
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:SectionHeader(hostFrame, "NICKNAMES", posY)
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Your Nickname",
             inputWidth = 160,
             placeholder = "Nickname",
             tooltip = "Sent to your guild when you log in and to your group when it changes. Other CludesUI users see it on their raid and unit frames. Press Enter to save.",
             getValue = function()
-                return ns.MyNickname()
+                return mod.MyNickname()
             end,
-            setValue = function(text)
-                ns.SetMyNickname(text)
+            setValue = function(textValue)
+                mod.SetMyNickname(textValue)
                 Refresh()
             end,
         }, {
@@ -735,12 +720,12 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return not CludesUIDB.cuiNicknamesOff
             end,
-            setValue = function(v)
-                CludesUIDB.cuiNicknamesOff = not v or nil
+            setValue = function(val)
+                CludesUIDB.cuiNicknamesOff = not val or nil
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "Paste Nicknames",
             buttonText = "Paste",
@@ -748,17 +733,17 @@ initFrame:SetScript("OnEvent", function(self)
             tooltip = 'One "Character=Nickname" per line.',
             onClick = function()
                 CludesUI:ShowImportPopup(function(str)
-                    local n = ns.ImportNicknames(str)
+                    local num = mod.ImportNicknames(str)
                     CludesUI.Print(
-                        ("|cff4cc9f0Raid Lead:|r added %d nickname%s."):format(n, n == 1 and "" or "s")
+                        ("|cff4cc9f0Raid Lead:|r added %d nickname%s."):format(num, num == 1 and "" or "s")
                     )
                     Refresh()
                 end, "Nicknames", "One Character=Nickname per line")
             end,
-        }, { type = "label", text = "Known nicknames: " .. ns.NicknameCount() })
-        y = y - h
+        }, { type = "label", text = "Known nicknames: " .. mod.NicknameCount() })
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -770,44 +755,44 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:InvalidatePageCache()
         CludesUI:RefreshPage(true)
     end
-    ns.OnSharedChanged = function()
+    mod.OnSharedChanged = function()
         if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
             Redraw()
         end
     end
 
-    local function Summary(text)
-        local list, skipped = ns.NoteParser.Parse(text or "", function(id)
-            local n = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id)
-            return type(n) == "string" and n or nil
+    local function Summary(textValue)
+        local entries, skipped = mod.NoteParser.Parse(textValue or "", function(ident)
+            local num = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
+            return type(num) == "string" and num or nil
         end)
-        local s = #list .. " reminder" .. (#list == 1 and "" or "s")
+        local s = #entries .. " reminder" .. (#entries == 1 and "" or "s")
         if skipped > 0 then
             s = s .. ", " .. skipped .. " phase line" .. (skipped == 1 and "" or "s") .. " skipped"
         end
         return s
     end
 
-    local function BuildRemindersPage(_, parent, yOffset)
+    local function BuildRemindersPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
-        local r = ns.ReminderSettings()
+        local posY = yOffset
+        local _, hgt
+        local r = mod.ReminderSettings()
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "REMINDERS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "REMINDERS", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Encounter Reminders",
             tooltip = "When a boss is pulled, its note's lines for you appear before their time with a countdown. Move them in Layout Mode.",
             getValue = function()
                 return r.enabled
             end,
-            setValue = function(v)
-                r.enabled = v and true or false
+            setValue = function(val)
+                r.enabled = val and true or false
             end,
         }, {
             type = "toggle",
@@ -816,13 +801,13 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return r.acceptShared
             end,
-            setValue = function(v)
-                r.acceptShared = v and true or false
+            setValue = function(val)
+                r.acceptShared = val and true or false
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Show Seconds Before",
             min = 1,
@@ -831,8 +816,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return r.lead
             end,
-            setValue = function(v)
-                r.lead = math.floor(v + 0.5)
+            setValue = function(val)
+                r.lead = math.floor(val + 0.5)
             end,
         }, {
             type = "slider",
@@ -843,27 +828,27 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return r.fontSize
             end,
-            setValue = function(v)
-                r.fontSize = math.floor(v + 0.5)
-                ns.ApplyReminderLook()
+            setValue = function(val)
+                r.fontSize = math.floor(val + 0.5)
+                mod.ApplyReminderLook()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         local soundValues, soundOrder = { [""] = "None" }, { "" }
-        for _, f in ipairs(ns.SOUND_FILES) do
+        for _, f in ipairs(mod.SOUND_FILES) do
             soundValues[f] = f:gsub("%.%a+$", ""):gsub("(%l)(%u)", "%1 %2")
             soundOrder[#soundOrder + 1] = f
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Speak Reminders",
             tooltip = "Reads each reminder aloud with the game's text to speech voice.",
             getValue = function()
                 return r.tts
             end,
-            setValue = function(v)
-                r.tts = v and true or false
+            setValue = function(val)
+                r.tts = val and true or false
             end,
         }, {
             type = "dropdown",
@@ -873,51 +858,46 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return r.sound or ""
             end,
-            setValue = function(v)
-                r.sound = v
-                if v ~= "" then
-                    ns.PreviewSound(v)
+            setValue = function(val)
+                r.sound = val
+                if val ~= "" then
+                    mod.PreviewSound(val)
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "BOSS NOTES", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "BOSS NOTES", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "input",
-                text = "Add a Boss",
-                inputStyle = "popup",
-                placeholder = "Boss name",
-                inputWidth = 160,
-                tooltip = 'The boss\'s name as the game shows it at the pull. Use "any" for a note that runs on every boss.',
-                getValue = function()
-                    return ""
-                end,
-                setValue = function(text)
-                    text = text and text:match("^%s*(.-)%s*$") or ""
-                    if text == "" then
-                        return
-                    end
-                    table.insert(r.notes, { boss = text, text = "" })
-                    Redraw()
-                end,
-            },
-            {
-                type = "label",
-                text = "Lines are {time:1:30} then the text. Names on a line make it theirs; {tank}, {healer}, {dps} and {everyone} work too.",
-            }
-        )
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, {
+            type = "input",
+            text = "Add a Boss",
+            inputStyle = "popup",
+            placeholder = "Boss name",
+            inputWidth = 160,
+            tooltip = 'The boss\'s name as the game shows it at the pull. Use "any" for a note that runs on every boss.',
+            getValue = function()
+                return ""
+            end,
+            setValue = function(textValue)
+                textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
+                if textValue == "" then
+                    return
+                end
+                table.insert(r.notes, { boss = textValue, text = "" })
+                Redraw()
+            end,
+        }, {
+            type = "label",
+            text = "Lines are {time:1:30} then the text. Names on a line make it theirs; {tank}, {healer}, {dps} and {everyone} work too.",
+        })
+        posY = posY - hgt
 
-        for i, note in ipairs(r.notes) do
-            _, h = W:SectionHeader(parent, note.boss:upper() .. "  -  " .. Summary(note.text), y)
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+        for idx, note in ipairs(r.notes) do
+            _, hgt = W:SectionHeader(hostFrame, note.boss:upper() .. "  -  " .. Summary(note.text), posY)
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "labeledButton",
                 text = "Paste or Replace the Note",
                 buttonText = "Paste",
@@ -936,26 +916,26 @@ initFrame:SetScript("OnEvent", function(self)
                 width = 90,
                 tooltip = "Runs the note as if the boss was pulled now. Lines for you appear on screen.",
                 onClick = function()
-                    local n, skipped = ns.RunNote(note.text)
+                    local num, skipped = mod.RunNote(note.text)
                     CludesUI.Print(
                         ("|cff4cc9f0Raid Lead:|r testing %s: %d reminder%s for you%s."):format(
                             note.boss,
-                            n,
-                            n == 1 and "" or "s",
+                            num,
+                            num == 1 and "" or "s",
                             skipped > 0 and (", " .. skipped .. " phase lines skipped") or ""
                         )
                     )
                 end,
             })
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "labeledButton",
                 text = "Send to the Group",
                 buttonText = "Send",
                 width = 90,
                 tooltip = "Sends this note to everyone in the group who runs CludesUI. Leader or assistant only.",
                 onClick = function()
-                    ns.ShareNote(note.boss, note.text)
+                    mod.ShareNote(note.boss, note.text)
                 end,
             }, {
                 type = "labeledButton",
@@ -963,21 +943,21 @@ initFrame:SetScript("OnEvent", function(self)
                 buttonText = "Remove",
                 width = 90,
                 onClick = function()
-                    table.remove(r.notes, i)
+                    table.remove(r.notes, idx)
                     Redraw()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end
 
-        local sharedAny = next(ns.sharedNotes)
+        local sharedAny = next(mod.sharedNotes)
         if sharedAny then
-            _, h = W:SectionHeader(parent, "SENT BY THE RAID LEADER (THIS SESSION)", y)
-            y = y - h
-            for boss, s in pairs(ns.sharedNotes) do
-                _, h = W:DualRow(
-                    parent,
-                    y,
+            _, hgt = W:SectionHeader(hostFrame, "SENT BY THE RAID LEADER (THIS SESSION)", posY)
+            posY = posY - hgt
+            for boss, s in pairs(mod.sharedNotes) do
+                _, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     { type = "label", text = boss .. ", from " .. s.from .. ": " .. Summary(s.text) },
                     {
                         type = "labeledButton",
@@ -985,16 +965,16 @@ initFrame:SetScript("OnEvent", function(self)
                         buttonText = "Forget",
                         width = 90,
                         onClick = function()
-                            ns.sharedNotes[boss] = nil
+                            mod.sharedNotes[boss] = nil
                             Redraw()
                         end,
                     }
                 )
-                y = y - h
+                posY = posY - hgt
             end
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -1003,42 +983,42 @@ initFrame:SetScript("OnEvent", function(self)
     local PAGE_SOUNDS = "Aura Sounds"
 
     local function Rebuild()
-        ns.RebuildAuraSounds()
+        mod.RebuildAuraSounds()
         CludesUI:InvalidatePageCache()
         CludesUI:RefreshPage(true)
     end
 
     local soundValues, soundOrder = {}, {}
-    for _, f in ipairs(ns.SOUND_FILES) do
+    for _, f in ipairs(mod.SOUND_FILES) do
         soundValues[f] = f:gsub("%.%a+$", ""):gsub("(%l)(%u)", "%1 %2")
         soundOrder[#soundOrder + 1] = f
     end
     local whenValues, whenOrder = {}, {}
-    for _, w in ipairs(ns.SOUND_WHEN) do
-        whenValues[w.id] = w.label
-        whenOrder[#whenOrder + 1] = w.id
+    for _, wid in ipairs(mod.SOUND_WHEN) do
+        whenValues[wid.id] = wid.label
+        whenOrder[#whenOrder + 1] = wid.id
     end
 
-    local function SpellName(id)
-        local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id)
+    local function SpellName(ident)
+        local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
         if type(name) == "string" and name ~= "" then
             return name
         end
-        return "Spell " .. id
+        return "Spell " .. ident
     end
 
-    local function BuildSoundsPage(_, parent, yOffset)
+    local function BuildSoundsPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
-        local list = ns.RaidLeadDB().sounds
+        local posY = yOffset
+        local _, hgt
+        local entries = mod.RaidLeadDB().sounds
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "AURA SOUNDS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "AURA SOUNDS", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Add a Spell ID",
             inputStyle = "popup",
@@ -1048,32 +1028,32 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ""
             end,
-            setValue = function(text)
-                local id = tonumber(text)
-                if not id or id <= 0 then
+            setValue = function(textValue)
+                local ident = tonumber(textValue)
+                if not ident or ident <= 0 then
                     return
                 end
-                list[#list + 1] =
-                    { id = math.floor(id), when = "added", sound = "WarningSiren.ogg", on = true }
+                entries[#entries + 1] =
+                    { id = math.floor(ident), when = "added", sound = "WarningSiren.ogg", on = true }
                 Rebuild()
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        for i, e in ipairs(list) do
+        for idx, e in ipairs(entries) do
             local name = SpellName(e.id)
-            _, h = W:SectionHeader(parent, name:upper(), y)
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:SectionHeader(hostFrame, name:upper(), posY)
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Play a Sound for " .. name,
                 tooltip = "Spell ID " .. e.id,
                 getValue = function()
                     return e.on ~= false
                 end,
-                setValue = function(v)
-                    e.on = v and true or false
-                    ns.RebuildAuraSounds()
+                setValue = function(val)
+                    e.on = val and true or false
+                    mod.RebuildAuraSounds()
                 end,
             }, {
                 type = "dropdown",
@@ -1083,13 +1063,13 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return e.when or "added"
                 end,
-                setValue = function(v)
-                    e.when = v
-                    ns.RebuildAuraSounds()
+                setValue = function(val)
+                    e.when = val
+                    mod.RebuildAuraSounds()
                 end,
             })
-            y = y - h
-            _, h = W:DualRow(parent, y, {
+            posY = posY - hgt
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Sound",
                 values = soundValues,
@@ -1097,10 +1077,10 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return e.sound or "WarningSiren.ogg"
                 end,
-                setValue = function(v)
-                    e.sound = v
-                    ns.PreviewSound(v)
-                    ns.RebuildAuraSounds()
+                setValue = function(val)
+                    e.sound = val
+                    mod.PreviewSound(val)
+                    mod.RebuildAuraSounds()
                 end,
             }, {
                 type = "labeledButton",
@@ -1108,35 +1088,35 @@ initFrame:SetScript("OnEvent", function(self)
                 buttonText = "Remove",
                 width = 90,
                 onClick = function()
-                    table.remove(list, i)
+                    table.remove(entries, idx)
                     Rebuild()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     CludesUI:RegisterModule(ADDON_NAME, {
         title = "Raid Lead",
         description = "Tools for raid leaders: sort or split the raid, and sounds for auras on you.",
         pages = { PAGE, PAGE_REMINDERS, PAGE_TRACKING, PAGE_SOUNDS, PAGE_NICKNAMES },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == PAGE then
-                return BuildPage(pageName, parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            if page == PAGE then
+                return BuildPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_REMINDERS then
-                return BuildRemindersPage(pageName, parent, yOffset)
+            if page == PAGE_REMINDERS then
+                return BuildRemindersPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_TRACKING then
-                return BuildTrackingPage(pageName, parent, yOffset)
+            if page == PAGE_TRACKING then
+                return BuildTrackingPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_NICKNAMES then
-                return BuildNicknamesPage(pageName, parent, yOffset)
+            if page == PAGE_NICKNAMES then
+                return BuildNicknamesPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_SOUNDS then
-                return BuildSoundsPage(pageName, parent, yOffset)
+            if page == PAGE_SOUNDS then
+                return BuildSoundsPage(page, hostFrame, yOffset)
             end
         end,
     })

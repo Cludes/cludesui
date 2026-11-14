@@ -8,37 +8,37 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  state.
 --  Reads the earlier preview files through ns and ns._previewInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._previewInternals
+local _, mod = ...
+local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local ipairs = ipairs
 local CreateFrame = CreateFrame
 
-local RF = ns._internals -- the table of the Raid Frames chain
-local ApplyFont, defaults, IsPowerBarEnabled = RF.ApplyFont, RF.defaults, RF.IsPowerBarEnabled
+local RF = mod._internals -- the table of the Raid Frames chain
+local ApplyFont, defaultSet, IsPowerBarEnabled = RF.ApplyFont, RF.defaults, RF.IsPowerBarEnabled
 local PixelSnap, ResolveHealthTexture = RF.PixelSnap, RF.ResolveHealthTexture
 
-local previewFrames, PvActive, PvFrames = I.previewFrames, I.PvActive, I.PvFrames
+local previewFrames, PvActive, PvFrames = Inner.previewFrames, Inner.PvActive, Inner.PvFrames
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
-local db
-RF.dbSetters[#RF.dbSetters + 1] = function(v)
-    db = v
+local saved
+RF.dbSetters[#RF.dbSetters + 1] = function(val)
+    saved = val
 end
-local PP
-RF.PPSetters[#RF.PPSetters + 1] = function(v)
-    PP = v
+local Pix
+RF.PPSetters[#RF.PPSetters + 1] = function(val)
+    Pix = val
 end
 local containerFrame
-RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(v)
-    containerFrame = v
+RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val)
+    containerFrame = val
 end
 
 -- Preview frames: standalone frames NOT managed by SecureGroupHeaderTemplate.
@@ -46,72 +46,72 @@ end
 -- our own lightweight frames that look identical for the options preview.
 local previewGroupLabels = {} -- [1..4] FontStrings showing group numbers
 local previewContainer = nil -- standalone anchor frame for preview (doesn't move with containerFrame)
-I.previewContainerSetters[#I.previewContainerSetters + 1] = function(v)
-    previewContainer = v
+Inner.previewContainerSetters[#Inner.previewContainerSetters + 1] = function(val)
+    previewContainer = val
 end
 
-local function CreatePreviewFrame(index, party)
-    local s = db.profile
-    local w = PixelSnap(s.frameWidth or 72)
-    local h = PixelSnap(s.frameHeight or 46)
+local function CreatePreviewFrame(slotPos, party)
+    local s = saved.profile
+    local wid = PixelSnap(s.frameWidth or 72)
+    local hgt = PixelSnap(s.frameHeight or 46)
     local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
     -- Party Frames kit (party preview only): the stock frame's own layout.
-    local kit = party and ns.RF_PartyKit()
-    local healthH = PixelSnap(h - ns.RF_HealthPowerInset(s, powerH))
+    local kit = party and mod.RF_PartyKit()
+    local healthH = PixelSnap(hgt - mod.RF_HealthPowerInset(s, powerH))
 
     local f = CreateFrame("Frame", nil, previewContainer or containerFrame)
-    f:SetSize(w, h)
+    f:SetSize(wid, hgt)
     f:SetFrameStrata("HIGH")
     f:Hide()
 
     -- Background
-    local bgc = s.customBgColor or defaults.customBgColor
-    local bg = f:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
-    if PP then
-        PP.DisablePixelSnap(bg)
+    local bgc = s.customBgColor or defaultSet.customBgColor
+    local backdrop = f:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+    if Pix then
+        Pix.DisablePixelSnap(backdrop)
     end
 
     -- Health bar
-    local health = CreateFrame("StatusBar", nil, f)
-    health:SetFrameLevel(f:GetFrameLevel() + 2)
-    health:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    health:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
-    health:SetHeight(healthH)
-    health:SetStatusBarTexture(ResolveHealthTexture())
-    health:GetStatusBarTexture():SetHorizTile(false)
-    if PP then
-        PP.DisablePixelSnap(health)
+    local healthBar = CreateFrame("StatusBar", nil, f)
+    healthBar:SetFrameLevel(f:GetFrameLevel() + 2)
+    healthBar:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    healthBar:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    healthBar:SetHeight(healthH)
+    healthBar:SetStatusBarTexture(ResolveHealthTexture())
+    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    if Pix then
+        Pix.DisablePixelSnap(healthBar)
     end
-    health:SetMinMaxValues(0, 100)
-    health:SetValue(100)
+    healthBar:SetMinMaxValues(0, 100)
+    healthBar:SetValue(100)
 
     -- Full-height anchor reference (mirrors the live buttons' d.uniformRef so
     -- Uniform Icon Anchoring previews identically; see ns.RF_AnchorHost).
     f._uniformRef = CreateFrame("Frame", nil, f)
-    f._uniformRef:SetFrameLevel(health:GetFrameLevel())
-    f._uniformRef:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+    f._uniformRef:SetFrameLevel(healthBar:GetFrameLevel())
+    f._uniformRef:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
     f._uniformRef:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
-    health._cuiUniformRef = f._uniformRef
-    f._uniformRef._cuiHealth = health
+    healthBar._cuiUniformRef = f._uniformRef
+    f._uniformRef._cuiHealth = healthBar
 
     -- Absorb shield preview (dual clip-frame, matching real frames)
     -- Mask: constrains absorb rendering to health bar bounds
-    local absorbMask = health:CreateMaskTexture()
-    absorbMask:SetAllPoints(health)
+    local absorbMask = healthBar:CreateMaskTexture()
+    absorbMask:SetAllPoints(healthBar)
     absorbMask:SetTexture("Interface\\Buttons\\WHITE8X8")
 
     -- Current HP clip: bounds the backfill bar to the filled health area
-    local curClip = CreateFrame("Frame", nil, health)
-    curClip:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-    curClip:SetPoint("BOTTOMRIGHT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+    local curClip = CreateFrame("Frame", nil, healthBar)
+    curClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    curClip:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
     curClip:SetClipsChildren(true)
 
     -- Missing HP clip: bounds the forward bar to the empty health area
-    local missClip = CreateFrame("Frame", nil, health)
-    missClip:SetPoint("TOPLEFT", health:GetStatusBarTexture(), "TOPRIGHT", -1, 0)
-    missClip:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+    local missClip = CreateFrame("Frame", nil, healthBar)
+    missClip:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", -1, 0)
+    missClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
     missClip:SetClipsChildren(true)
 
     -- Backfill bar: grows into filled health from the right (overshield)
@@ -133,12 +133,12 @@ local function CreatePreviewFrame(index, party)
     backfillBar._modernBase = bfBase
     backfillBar:SetStatusBarColor(1, 1, 1, 0.3)
     backfillBar:SetReverseFill(true)
-    backfillBar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
-    backfillBar:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-    backfillBar:SetWidth(health:GetWidth())
-    backfillBar:SetHeight(health:GetHeight())
+    backfillBar:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+    backfillBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+    backfillBar:SetWidth(healthBar:GetWidth())
+    backfillBar:SetHeight(healthBar:GetHeight())
     -- Absorb on top of the HP cluster (above heal absorb/heal pred and max health).
-    backfillBar:SetFrameLevel(health:GetFrameLevel() + 3)
+    backfillBar:SetFrameLevel(healthBar:GetFrameLevel() + 3)
     backfillBar:SetMinMaxValues(0, 100)
     backfillBar:Hide()
 
@@ -159,26 +159,26 @@ local function CreatePreviewFrame(index, party)
     fwBase:Hide()
     forwardBar._modernBase = fwBase
     forwardBar:SetStatusBarColor(1, 1, 1, 0.3)
-    forwardBar:SetPoint("TOPLEFT", health:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-    forwardBar:SetPoint("BOTTOMLEFT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
-    forwardBar:SetWidth(health:GetWidth())
-    forwardBar:SetHeight(health:GetHeight())
+    forwardBar:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+    forwardBar:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+    forwardBar:SetWidth(healthBar:GetWidth())
+    forwardBar:SetHeight(healthBar:GetHeight())
     -- Match backfill (the heal prediction draws over it at this level, as live).
-    forwardBar:SetFrameLevel(health:GetFrameLevel() + 3)
+    forwardBar:SetFrameLevel(healthBar:GetFrameLevel() + 3)
     forwardBar:SetMinMaxValues(0, 100)
     forwardBar:Hide()
 
     -- "Default Blizz Frames" spark (preview): mirrors live -- a fixed 16px cast_spark
     -- glow on a non-clipping host above the shield, CENTER pinned to the forward bar's
     -- LEFT edge (the seam). Gated by the preview's plain absorb compare in the renderer.
-    local sparkHost = CreateFrame("Frame", nil, health)
-    sparkHost:SetAllPoints(health)
+    local sparkHost = CreateFrame("Frame", nil, healthBar)
+    sparkHost:SetAllPoints(healthBar)
     sparkHost:SetClipsChildren(true)
-    sparkHost:SetFrameLevel(health:GetFrameLevel() + 4)
+    sparkHost:SetFrameLevel(healthBar:GetFrameLevel() + 4)
     local gateBar = CreateFrame("StatusBar", nil, sparkHost)
     gateBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     gateBar:SetStatusBarColor(1, 1, 1, 0)
-    gateBar:SetSize(16, health:GetHeight())
+    gateBar:SetSize(16, healthBar:GetHeight())
     gateBar:SetMinMaxValues(0, 1)
     gateBar:SetValue(0)
     gateBar:SetPoint("CENTER", forwardBar, "LEFT", -1, 0)
@@ -193,7 +193,7 @@ local function CreatePreviewFrame(index, party)
     local bfSpark = sparkHost:CreateTexture(nil, "OVERLAY")
     bfSpark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
     bfSpark:SetBlendMode("ADD")
-    bfSpark:SetSize(16, health:GetHeight())
+    bfSpark:SetSize(16, healthBar:GetHeight())
     bfSpark:SetPoint("CENTER", forwardBar, "LEFT", -1, 0)
     bfSpark:Hide()
     forwardBar._bfSpark = bfSpark
@@ -202,10 +202,10 @@ local function CreatePreviewFrame(index, party)
     do
         -- Own clip frame (mirrors live): right/left span the full bar, overlay
         -- clips to filled health. Bounds set per healAbsorbEdgeMode in render.
-        local healClip = CreateFrame("Frame", nil, health)
+        local healClip = CreateFrame("Frame", nil, healthBar)
         healClip:SetClipsChildren(true)
-        healClip:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-        healClip:SetPoint("BOTTOMRIGHT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        healClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        healClip:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
         f._healClip = healClip
         local ha = CreateFrame("StatusBar", nil, healClip)
         ha:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -216,11 +216,11 @@ local function CreatePreviewFrame(index, party)
         end
         ha:SetStatusBarColor(0.8, 0.15, 0.15, 0.65)
         ha:SetReverseFill(true)
-        ha:SetPoint("TOPRIGHT", health:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-        ha:SetPoint("BOTTOMRIGHT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
-        ha:SetWidth(health:GetWidth())
-        ha:SetHeight(health:GetHeight())
-        ha:SetFrameLevel(health:GetFrameLevel() + 1)
+        ha:SetPoint("TOPRIGHT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+        ha:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        ha:SetWidth(healthBar:GetWidth())
+        ha:SetHeight(healthBar:GetHeight())
+        ha:SetFrameLevel(healthBar:GetFrameLevel() + 1)
         ha:SetMinMaxValues(0, 100)
         ha._mask = absorbMask
         -- Black backing behind the heal-absorb texture (preview; mirrors live).
@@ -246,11 +246,11 @@ local function CreatePreviewFrame(index, party)
         end
         hp:SetStatusBarColor(0.3, 0.8, 0.3, 0.4)
         hp:SetReverseFill(false)
-        hp:SetPoint("TOPLEFT", health:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-        hp:SetPoint("BOTTOMLEFT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
-        hp:SetWidth(health:GetWidth())
-        hp:SetHeight(health:GetHeight())
-        hp:SetFrameLevel(health:GetFrameLevel() + 3) -- over the absorb, as live
+        hp:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+        hp:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        hp:SetWidth(healthBar:GetWidth())
+        hp:SetHeight(healthBar:GetHeight())
+        hp:SetFrameLevel(healthBar:GetFrameLevel() + 3) -- over the absorb, as live
         hp:SetMinMaxValues(0, 100)
         hp:Hide()
         f._healPredBar = hp
@@ -258,7 +258,7 @@ local function CreatePreviewFrame(index, party)
 
     -- Reduced max health bar (preview): black bg + red striped overlay on right side
     do
-        local rmh = CreateFrame("StatusBar", nil, health)
+        local rmh = CreateFrame("StatusBar", nil, healthBar)
         rmh:SetStatusBarTexture(CludesUI.MAX_HEALTH_STRIPES_TEX)
         local rmhFill = rmh:GetStatusBarTexture()
         if rmhFill then
@@ -268,8 +268,8 @@ local function CreatePreviewFrame(index, party)
         end
         rmh:SetStatusBarColor(0.7, 0.1, 0.1, 1)
         rmh:SetReverseFill(true)
-        rmh:SetAllPoints(health)
-        rmh:SetFrameLevel(health:GetFrameLevel() + 2)
+        rmh:SetAllPoints(healthBar)
+        rmh:SetFrameLevel(healthBar:GetFrameLevel() + 2)
         rmh:SetMinMaxValues(0, 1)
         rmh:Hide()
         -- Black background behind the stripes
@@ -296,7 +296,7 @@ local function CreatePreviewFrame(index, party)
         tb:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 0)
         tb:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", 0, 0)
         tb:SetHeight(4)
-        tb:SetFrameLevel(health:GetFrameLevel() + 3)
+        tb:SetFrameLevel(healthBar:GetFrameLevel() + 3)
         tb:SetMinMaxValues(0, 100)
         tb:Hide()
         absorbBar._topBar = tb
@@ -311,7 +311,7 @@ local function CreatePreviewFrame(index, party)
         thb:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 0)
         thb:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", 0, 0)
         thb:SetHeight(4)
-        thb:SetFrameLevel(health:GetFrameLevel() + 3)
+        thb:SetFrameLevel(healthBar:GetFrameLevel() + 3)
         thb:SetMinMaxValues(0, 100)
         thb:Hide()
         absorbBar._healTopBar = thb
@@ -329,8 +329,8 @@ local function CreatePreviewFrame(index, party)
         power:SetHeight(powerH)
         power:SetStatusBarTexture(ResolveHealthTexture())
         power:GetStatusBarTexture():SetHorizTile(false)
-        if PP then
-            PP.DisablePixelSnap(power)
+        if Pix then
+            Pix.DisablePixelSnap(power)
         end
         power:SetMinMaxValues(0, 100)
         power:SetValue(100)
@@ -342,8 +342,8 @@ local function CreatePreviewFrame(index, party)
             (s.powerBgColor or {}).b or 0,
             (s.powerBgDarkness or 70) / 100
         )
-        if PP then
-            PP.DisablePixelSnap(pwBg)
+        if Pix then
+            Pix.DisablePixelSnap(pwBg)
         end
         f._powerBg = pwBg
 
@@ -351,8 +351,8 @@ local function CreatePreviewFrame(index, party)
         local pwBdr = CreateFrame("Frame", nil, f)
         pwBdr:SetAllPoints(power)
         pwBdr:SetFrameLevel(power:GetFrameLevel() + 1)
-        if PP then
-            PP.CreateBorder(pwBdr, 0, 0, 0, 1, 1)
+        if Pix then
+            Pix.CreateBorder(pwBdr, 0, 0, 0, 1, 1)
         end
         f._powerBorder = pwBdr
     end
@@ -364,21 +364,21 @@ local function CreatePreviewFrame(index, party)
     bdrFrame:SetFrameLevel(f:GetFrameLevel() + 8)
 
     local function PvApplyBorderColor()
-        if not PP then
+        if not Pix then
             return
         end
         -- Overlay ahead of _scaledProfile: border/hover/target keys are not
         -- tier-scaled, so the effective overlay may shadow them safely.
-        local s = ns._previewSettingsOverride
-            or (ns._partyPvActive and ns._scaledPartyProxy)
-            or ns._pvOverlayProxy
-            or ns._scaledProfile
-        if ns.RF_ButtonCompact(f, s) then
-            ns.RF_CompactHighlight(bdrFrame, f, s, f)
+        local s = mod._previewSettingsOverride
+            or (mod._partyPvActive and mod._scaledPartyProxy)
+            or mod._pvOverlayProxy
+            or mod._scaledProfile
+        if mod.RF_ButtonCompact(f, s) then
+            mod.RF_CompactHighlight(bdrFrame, f, s, f)
             return
         end
         if f.kit then
-            ns.RF_KitHighlight(
+            mod.RF_KitHighlight(
                 f,
                 bdrFrame,
                 s,
@@ -389,15 +389,15 @@ local function CreatePreviewFrame(index, party)
         end
         if f.stockEdge then
             local hover = f._hovered and s.hoverBorderEnabled ~= false
-            local lvl = f:GetFrameLevel() + (hover and ns.LVL_RAISE or 8)
+            local lvl = f:GetFrameLevel() + (hover and mod.LVL_RAISE or 8)
             if bdrFrame:GetFrameLevel() ~= lvl then
                 bdrFrame:SetFrameLevel(lvl)
-                local container = PP.GetBorders(bdrFrame)
-                if container then
-                    container:SetFrameLevel(lvl + 1)
+                local boxHolder = Pix.GetBorders(bdrFrame)
+                if boxHolder then
+                    boxHolder:SetFrameLevel(lvl + 1)
                 end
             end
-            ns.RF_StockHighlight(f, bdrFrame, s, hover, f._isTarget and s.targetBorderEnabled ~= false)
+            mod.RF_StockHighlight(f, bdrFrame, s, hover, f._isTarget and s.targetBorderEnabled ~= false)
             return
         end
         local r, g, b, a
@@ -434,25 +434,25 @@ local function CreatePreviewFrame(index, party)
         -- while highlighted (handles negative Frame Spacing in the preview too).
         -- Guard the level writes so a refresh only touches them on a real change.
         local pl = f:GetFrameLevel()
-        local lvl = s.borderBehind and math.max(0, pl - 1) or (pl + (raised and ns.LVL_RAISE or 8))
-        local container = PP.GetBorders(bdrFrame)
-        if bdrFrame:GetFrameLevel() ~= lvl or (container and container:GetFrameLevel() ~= lvl + 1) then
+        local lvl = s.borderBehind and math.max(0, pl - 1) or (pl + (raised and mod.LVL_RAISE or 8))
+        local boxHolder = Pix.GetBorders(bdrFrame)
+        if bdrFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1) then
             bdrFrame:SetFrameLevel(lvl)
-            if container then
-                container:SetFrameLevel(lvl + 1)
+            if boxHolder then
+                boxHolder:SetFrameLevel(lvl + 1)
             end
             -- Textured styles: the backdrop child too, as on live frames.
-            local bd = CludesUI._bdBorderData and CludesUI._bdBorderData[bdrFrame]
-            if bd then
-                bd:SetFrameLevel(lvl)
+            local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[bdrFrame]
+            if edge then
+                edge:SetFrameLevel(lvl)
             end
         end
         if (s.borderSize or 1) <= 0 then
-            ns.ApplyHighlightBorder(bdrFrame, s, hlSize, r, g, b, a, hlPx)
+            mod.ApplyHighlightBorder(bdrFrame, s, hlSize, r, g, b, a, hlPx)
             return
         end
         if hlSize then
-            r, g, b = ns.RF_VisibleHighlight(s, r, g, b)
+            r, g, b = mod.RF_VisibleHighlight(s, r, g, b)
         end
         bdrFrame._hlBorderSize = nil
         CludesUI.SetBorderStyleColor(bdrFrame, r, g, b, a)
@@ -461,10 +461,10 @@ local function CreatePreviewFrame(index, party)
             and f._powerBorder
             and f._powerBorder._powerArtMode == "divider"
         then
-            ns.RF_ColorPowerDivider(f._powerBorder, r, g, b, a)
+            mod.RF_ColorPowerDivider(f._powerBorder, r, g, b, a)
         end
         if s.topNameBarDividerMatchColor == true and f._topNameBar and f._topNameBar._divider then
-            ns.RF_ColorPowerDivider(f._topNameBar._divider, r, g, b, a)
+            mod.RF_ColorPowerDivider(f._topNameBar._divider, r, g, b, a)
         end
     end
     f._ApplyBorderColor = PvApplyBorderColor
@@ -484,8 +484,8 @@ local function CreatePreviewFrame(index, party)
     threatFrame:SetAllPoints(f)
     threatFrame:SetFrameLevel(f:GetFrameLevel() + 10)
     threatFrame:Hide()
-    if PP then
-        PP.CreateBorder(threatFrame, 1, 0, 0, 1, 2)
+    if Pix then
+        Pix.CreateBorder(threatFrame, 1, 0, 0, 1, 2)
     end
 
     -- Click to toggle target in test mode (recolors the single border)
@@ -493,11 +493,11 @@ local function CreatePreviewFrame(index, party)
         if not PvActive() then
             return
         end
-        for _, pf in ipairs(PvFrames()) do
-            if pf ~= self and pf._isTarget then
-                pf._isTarget = false
-                if pf._ApplyBorderColor then
-                    pf._ApplyBorderColor()
+        for _, popFrame in ipairs(PvFrames()) do
+            if popFrame ~= self and popFrame._isTarget then
+                popFrame._isTarget = false
+                if popFrame._ApplyBorderColor then
+                    popFrame._ApplyBorderColor()
                 end
             end
         end
@@ -507,16 +507,16 @@ local function CreatePreviewFrame(index, party)
 
     -- Dispel border
     local dispelBdrFrame = CreateFrame("Frame", nil, f)
-    dispelBdrFrame:SetAllPoints(health)
-    dispelBdrFrame:SetFrameLevel(f:GetFrameLevel() + ns.LVL_RAISE - 1)
+    dispelBdrFrame:SetAllPoints(healthBar)
+    dispelBdrFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_RAISE - 1)
     dispelBdrFrame:Hide()
-    if PP then
-        PP.CreateBorder(dispelBdrFrame, 0.2, 0.6, 1, 1, 2)
+    if Pix then
+        Pix.CreateBorder(dispelBdrFrame, 0.2, 0.6, 1, 1, 2)
     end
 
     -- Dispel overlay (texture on health bar at ARTWORK sublevel 3: above fill
     -- and above the BM health-color overlay (sublevel 2), below absorbs/text)
-    local dispelOLTex = health:CreateTexture(nil, "ARTWORK", nil, 3)
+    local dispelOLTex = healthBar:CreateTexture(nil, "ARTWORK", nil, 3)
     dispelOLTex:SetTexture("Interface\\Buttons\\WHITE8X8")
     dispelOLTex:Hide()
 
@@ -524,9 +524,9 @@ local function CreatePreviewFrame(index, party)
     -- band: above the aura band so it covers debuff icons sharing its
     -- corner, below the marker band.
     local dispelIconFrame = CreateFrame("Frame", nil, f)
-    dispelIconFrame:SetFrameLevel(f:GetFrameLevel() + ns.LVL_MARKER - 1)
+    dispelIconFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_MARKER - 1)
     dispelIconFrame:SetSize(16, 16)
-    dispelIconFrame:SetPoint("CENTER", health, "CENTER", 0, 0)
+    dispelIconFrame:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
     dispelIconFrame:Hide()
     local dispelIconTex = dispelIconFrame:CreateTexture(nil, "ARTWORK")
     dispelIconTex:SetAllPoints()
@@ -535,8 +535,8 @@ local function CreatePreviewFrame(index, party)
     -- Marker carrier: above the frame border (incl. hover/target raise) so the
     -- leader icon and raid marker render on top of it (mirrors real frames).
     local markerCarrier = CreateFrame("Frame", nil, f)
-    markerCarrier:SetAllPoints(health)
-    markerCarrier:SetFrameLevel(f:GetFrameLevel() + ns.LVL_MARKER)
+    markerCarrier:SetAllPoints(healthBar)
+    markerCarrier:SetFrameLevel(f:GetFrameLevel() + mod.LVL_MARKER)
 
     -- Raid marker (on marker carrier, above the border)
     local raidMarker = markerCarrier:CreateTexture(nil, "OVERLAY", nil, 2)
@@ -547,7 +547,7 @@ local function CreatePreviewFrame(index, party)
     -- Ready check icon (position/size re-applied in the preview indicator pass)
     local readyCheck = markerCarrier:CreateTexture(nil, "OVERLAY")
     readyCheck:SetSize(PixelSnap(s.readyCheckSize or 20), PixelSnap(s.readyCheckSize or 20))
-    readyCheck:SetPoint("CENTER", health, "CENTER", 0, 0)
+    readyCheck:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
     readyCheck:Hide()
 
     -- Combat icon (position/size/style re-applied in the preview indicator pass)
@@ -557,8 +557,8 @@ local function CreatePreviewFrame(index, party)
 
     -- Text carrier: text band (above every border incl. the raise, below auras).
     local textCarrier = CreateFrame("Frame", nil, f)
-    textCarrier:SetAllPoints(health)
-    textCarrier:SetFrameLevel(f:GetFrameLevel() + ns.LVL_TEXT)
+    textCarrier:SetAllPoints(healthBar)
+    textCarrier:SetFrameLevel(f:GetFrameLevel() + mod.LVL_TEXT)
     -- The texts are built on it by ApplyPreviewData (ns.RF_TextPreview).
     f.textCarrier = textCarrier
 
@@ -574,8 +574,8 @@ local function CreatePreviewFrame(index, party)
     -- (mirrors the real frames): clears the general border while auras draw over
     -- it; the hover/target border raise intentionally covers it.
     local roleCarrier = CreateFrame("Frame", nil, f)
-    roleCarrier:SetAllPoints(health)
-    roleCarrier:SetFrameLevel(f:GetFrameLevel() + (ns.LVL_AURA - 1))
+    roleCarrier:SetAllPoints(healthBar)
+    roleCarrier:SetFrameLevel(f:GetFrameLevel() + (mod.LVL_AURA - 1))
     local roleIcon = roleCarrier:CreateTexture(nil, "OVERLAY")
     local riSz = PixelSnap(s.roleIconSize or 14)
     roleIcon:SetSize(riSz, riSz)
@@ -589,7 +589,7 @@ local function CreatePreviewFrame(index, party)
     local liPos = (s.leaderIconPosition or "top"):upper()
     leaderIcon:SetPoint(
         liPos,
-        ns.RF_AnchorHost(health, s),
+        mod.RF_AnchorHost(healthBar, s),
         liPos,
         s.leaderIconOffsetX or 0,
         s.leaderIconOffsetY or 0
@@ -604,8 +604,8 @@ local function CreatePreviewFrame(index, party)
     tnb:SetHeight(PixelSnap(s.topNameBarHeight or 20))
     local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
     tnbBg:SetAllPoints()
-    if PP then
-        PP.DisablePixelSnap(tnbBg)
+    if Pix then
+        Pix.DisablePixelSnap(tnbBg)
     end
     local tnbText = tnb:CreateFontString(nil, "OVERLAY")
     ApplyFont(tnbText, s.topNameBarTextSize or 11)
@@ -613,8 +613,8 @@ local function CreatePreviewFrame(index, party)
     tnb:Hide()
 
     -- Store references
-    f._bg = bg
-    f._health = health
+    f._bg = backdrop
+    f._health = healthBar
     f._absorbBar = absorbBar
     f._power = power
     f._border = bdrFrame
@@ -623,9 +623,9 @@ local function CreatePreviewFrame(index, party)
     -- the Party Frames kit (host, art, portrait; stamps health._cuiKitRef
     -- here, before any refresh anchors to the host).
     if kit then
-        ns.RF_KitBuild(f, f, health, power, bdrFrame)
-    elseif ns.RF_Stock() then
-        ns.RF_StockBuild(f, f, power)
+        mod.RF_KitBuild(f, f, healthBar, power, bdrFrame)
+    elseif mod.RF_Stock() then
+        mod.RF_StockBuild(f, f, power)
     end
     f._dispelBdrFrame = dispelBdrFrame
     f._dispelOLTex = dispelOLTex
@@ -642,8 +642,8 @@ local function CreatePreviewFrame(index, party)
     f._combatIcon = combatIcon
 
     -- Helper: create a preview aura icon with texture, cooldown, border
-    local function MakePreviewAuraIcon(parent, level, sz)
-        local di = CreateFrame("Frame", nil, parent)
+    local function MakePreviewAuraIcon(hostFrame, level, sz)
+        local di = CreateFrame("Frame", nil, hostFrame)
         di:SetFrameLevel(level)
         di:SetSize(sz, sz)
         di:Hide()
@@ -662,8 +662,8 @@ local function CreatePreviewFrame(index, party)
         local dbdr = CreateFrame("Frame", nil, di)
         dbdr:SetAllPoints()
         dbdr:SetFrameLevel(di:GetFrameLevel() + 1)
-        if PP then
-            PP.CreateBorder(dbdr, 0, 0, 0, 1, 1)
+        if Pix then
+            Pix.CreateBorder(dbdr, 0, 0, 0, 1, 1)
         end
         di._borderFrame = dbdr
         local countCarrier = CreateFrame("Frame", nil, di)
@@ -689,35 +689,35 @@ local function CreatePreviewFrame(index, party)
     -- Debuff preview icons. Pool sized to the max debuffCap (8) so the player
     -- frame can showcase a full wrapping layout; only a few are shown otherwise.
     f._pvDebuffs = {}
-    for i = 1, 8 do
-        f._pvDebuffs[i] = MakePreviewAuraIcon(f, f:GetFrameLevel() + ns.LVL_AURA, ns.RFC_DebuffSize(s))
+    for idx = 1, 8 do
+        f._pvDebuffs[idx] = MakePreviewAuraIcon(f, f:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(s))
     end
 
     -- Static dispel debuff icon (shown when dispel eyeball is on)
-    f._pvDispelDebuff = MakePreviewAuraIcon(f, f:GetFrameLevel() + ns.LVL_AURA, ns.RFC_DebuffSize(s))
+    f._pvDispelDebuff = MakePreviewAuraIcon(f, f:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(s))
 
     -- Defensive preview icons
     f._pvDefs = {}
-    for i = 1, 4 do
-        f._pvDefs[i] = MakePreviewAuraIcon(f, f:GetFrameLevel() + ns.LVL_AURA, s.defSize or 22)
+    for idx = 1, 4 do
+        f._pvDefs[idx] = MakePreviewAuraIcon(f, f:GetFrameLevel() + mod.LVL_AURA, s.defSize or 22)
     end
 
     -- Buff preview icons (test mode: configured buffs cycled across frames)
     f._pvBuffs = {}
-    for i = 1, 8 do
-        f._pvBuffs[i] = MakePreviewAuraIcon(f, f:GetFrameLevel() + ns.LVL_AURA, 18)
+    for idx = 1, 8 do
+        f._pvBuffs[idx] = MakePreviewAuraIcon(f, f:GetFrameLevel() + mod.LVL_AURA, 18)
     end
 
     return f
 end
 
-local function GetOrCreatePreviewFrame(index)
-    if not previewFrames[index] then
-        previewFrames[index] = CreatePreviewFrame(index)
+local function GetOrCreatePreviewFrame(slotPos)
+    if not previewFrames[slotPos] then
+        previewFrames[slotPos] = CreatePreviewFrame(slotPos)
     end
-    return previewFrames[index]
+    return previewFrames[slotPos]
 end
 
-I.CreatePreviewFrame, I.GetOrCreatePreviewFrame = CreatePreviewFrame, GetOrCreatePreviewFrame
-I.previewGroupLabels = previewGroupLabels
-I.broken = false
+Inner.CreatePreviewFrame, Inner.GetOrCreatePreviewFrame = CreatePreviewFrame, GetOrCreatePreviewFrame
+Inner.previewGroupLabels = previewGroupLabels
+Inner.broken = false

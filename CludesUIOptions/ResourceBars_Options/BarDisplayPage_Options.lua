@@ -6,26 +6,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Resource Bars options: Class, Power and Health Bars page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+if not mod then
     return
 end -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- Bar Display page
-function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
-    local env = ns._CURB_OptEnv
-    local DB, PP, Refresh, SmoothRefresh = env.DB, env.PP, env.Refresh, env.SmoothRefresh
-    local TexBgRowCfg = env.TexBgRowCfg
+function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
+    local environ = mod._CURB_OptEnv
+    local SavedDB, Pix, Refresh, SmoothRefresh =
+        environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
+    local TexBgRowCfg = environ.TexBgRowCfg
     local RebuildClass, RebuildPower, RebuildHealth, _clickMappings =
-        env.RebuildClass, env.RebuildPower, env.RebuildHealth, env._clickMappings
+        environ.RebuildClass, environ.RebuildPower, environ.RebuildHealth, environ._clickMappings
     local _previewHeaderBuilder, CLASSIC_SYNC_KEYS, CLASSIC_MATCH_KEYS =
-        env._previewHeaderBuilder, env.CLASSIC_SYNC_KEYS, env.CLASSIC_MATCH_KEYS
+        environ._previewHeaderBuilder, environ.CLASSIC_SYNC_KEYS, environ.CLASSIC_MATCH_KEYS
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
+    local posY = yOffset
+    local _, hgt
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     -- Shared row references for sync icon flashTargets, filled per section
     local _syncRows = {}
@@ -37,37 +38,37 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- UpdatePreviewHeader re-reads every eye (ns._erbPvEyes): not every flip
     -- that blocks a bar rebuilds the page. `after`: the title's Move in Unlock
     -- Mode button, which the eye then follows instead of the title itself.
-    ns._erbPvHidden = ns._erbPvHidden or {}
+    mod._erbPvHidden = mod._erbPvHidden or {}
     if not CludesUI._prebuilding then
-        ns._erbPvEyes = {}
+        mod._erbPvEyes = {}
     end
-    local function AddPreviewEye(hdr, label, key, after)
-        if CludesUI._prebuilding or not hdr then
+    local function AddPreviewEye(heading, labelText, key, after)
+        if CludesUI._prebuilding or not heading then
             return
         end
-        local hidden = ns._erbPvHidden
-        local lbl
-        for _, rgn in ipairs({ hdr:GetRegions() }) do
-            if rgn.GetText and CludesUI.EnKey(rgn:GetText()) == label then
-                lbl = rgn
+        local hidden = mod._erbPvHidden
+        local labelFS
+        for _, region in ipairs({ heading:GetRegions() }) do
+            if region.GetText and CludesUI.EnKey(region:GetText()) == labelText then
+                labelFS = region
                 break
             end
         end
-        local eyeBtn = CreateFrame("Button", nil, hdr)
-        PP.Size(eyeBtn, 24, 24)
+        local eyeBtn = CreateFrame("Button", nil, heading)
+        Pix.Size(eyeBtn, 24, 24)
         if after then
-            PP.Point(eyeBtn, "LEFT", after, "RIGHT", 4, 0)
-        elseif lbl then
-            PP.Point(eyeBtn, "LEFT", lbl, "RIGHT", 5, 0)
+            Pix.Point(eyeBtn, "LEFT", after, "RIGHT", 4, 0)
+        elseif labelFS then
+            Pix.Point(eyeBtn, "LEFT", labelFS, "RIGHT", 5, 0)
         else
-            PP.Point(eyeBtn, "LEFT", hdr, "BOTTOMLEFT", 85, 8)
+            Pix.Point(eyeBtn, "LEFT", heading, "BOTTOMLEFT", 85, 8)
         end
-        eyeBtn:SetFrameLevel(hdr:GetFrameLevel() + 5)
+        eyeBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
         local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function Blocked()
-            local p = DB()
-            return p and env.PreviewAvail(p, key) or nil
+            local p = SavedDB()
+            return p and environ.PreviewAvail(p, key) or nil
         end
         -- A button the pool dressed again since (another page) is not this eye any more.
         local gen = CludesUI._Pool.Gen(eyeBtn)
@@ -76,19 +77,19 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 return
             end
             local blocked = Blocked()
-            local shown = not blocked and not hidden[key]
+            local isShown = not blocked and not hidden[key]
             -- The art is named the other way round: EYE_INVISIBLE_ICON is the open eye.
-            eyeTex:SetTexture(shown and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+            eyeTex:SetTexture(isShown and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
             CludesUI.SetGlyphAlpha(eyeBtn, blocked and 0.15 or 0.4)
         end
-        ns._erbPvEyes[key] = RefreshEye
+        mod._erbPvEyes[key] = RefreshEye
         RefreshEye()
         eyeBtn:SetScript("OnClick", function()
             if Blocked() then
                 return
             end
             hidden[key] = not hidden[key] or nil
-            env.UpdatePreviewHeader()
+            environ.UpdatePreviewHeader()
         end)
         eyeBtn:SetScript("OnEnter", function(self)
             local blocked = Blocked()
@@ -141,8 +142,8 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         for k, name in pairs(hbtValues) do
             v[k] = name
         end
-        for i = 1, #hbtOrder do
-            o[i] = hbtOrder[i]
+        for idx = 1, #hbtOrder do
+            o[idx] = hbtOrder[idx]
         end
         return v, o
     end
@@ -150,7 +151,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- Randomize the preview fill on every visit to this page
     local minPips = math.floor(5 * 0.50 + 0.5)
     local maxPips = math.floor(5 * 0.75 + 0.5)
-    env.SetDisplayPreviewValues(math.random(minPips, maxPips), math.random(30, 80))
+    environ.SetDisplayPreviewValues(math.random(minPips, maxPips), math.random(30, 80))
 
     CludesUI:SetContentHeader(_previewHeaderBuilder)
 
@@ -166,28 +167,28 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- Per-spec editing lives in the shared Spec Overrides system (spec groups + editing-as); legacy Advanced data migrates via MigrateRBAdvancedProfile.
 
     local generalSection
-    generalSection, h = W:SectionHeader(parent, "BAR DISPLAY", y)
-    y = y - h
+    generalSection, hgt = W:SectionHeader(hostFrame, "BAR DISPLAY", posY)
+    posY = posY - hgt
 
     -- Row 1: Visibility | Visibility Options. One control drives all three bars: the scalar and the multi-select set write to health/primary/secondary in lockstep; reads come from secondary, the representative.
-    local function ApplyVisScalarAll(_, mode)
-        local p = DB()
+    local function ApplyVisScalarAll(_, modeName)
+        local p = SavedDB()
         if not p then
             return
         end
-        p.secondary.visibility = mode
-        p.health.visibility = mode
-        p.primary.visibility = mode
+        p.secondary.visibility = modeName
+        p.health.visibility = modeName
+        p.primary.visibility = modeName
     end
     local function MirrorVisModes()
-        local p = DB()
+        local p = SavedDB()
         if not p then
             return
         end
-        local src = p.secondary.visibilityModes
-        if src then
+        local source = p.secondary.visibilityModes
+        if source then
             local c1, c2 = {}, {}
-            for k in pairs(src) do
+            for k in pairs(source) do
                 c1[k] = true
                 c2[k] = true
             end
@@ -202,48 +203,48 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- booleans all fan out to health/primary/secondary; reads come from secondary,
     -- the representative.
     local visRow
-    visRow, h = CludesUI.BuildVisibilityRow(
+    visRow, hgt = CludesUI.BuildVisibilityRow(
         W,
-        parent,
-        y,
+        hostFrame,
+        posY,
         {
             getStore = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.secondary
             end,
             -- The override marker fans out like the scalar and the option lanes do;
             -- secondary leads, matching getStore above.
             getStores = function()
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return nil
                 end
                 -- Built by presence, never as a literal triple: a nil in the middle
                 -- would leave a hole the # operator reads past.
-                local out = {}
+                local result = {}
                 if p.secondary then
-                    out[#out + 1] = p.secondary
+                    result[#result + 1] = p.secondary
                 end
                 if p.health then
-                    out[#out + 1] = p.health
+                    result[#result + 1] = p.health
                 end
                 if p.primary then
-                    out[#out + 1] = p.primary
+                    result[#result + 1] = p.primary
                 end
-                return out
+                return result
             end,
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             applyScalarFn = ApplyVisScalarAll,
             getOption = function(k)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return false
                 end
                 return p.secondary[k] or false
             end,
             setOption = function(k, v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -271,7 +272,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             setValue = function() end,
         }
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Smooth Bars checkbox dropdown. Each item enables native StatusBar interpolation
     -- on its bar; off = a plain SetValue with zero added cost. Defaults all off.
@@ -291,14 +292,14 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             rightRgn:GetFrameLevel() + 2,
             smoothItems,
             function(k)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return false
                 end
                 return (p[k] and p[k].smoothBars) or false
             end,
             function(k, v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -310,7 +311,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 end
             end
         )
-        PP.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
+        Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
         rightRgn._control = cbDD
         rightRgn._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
@@ -325,7 +326,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- stays live in every case, never disabled.
     local bgLabel = "Background"
     do
-        local p0 = DB()
+        local p0 = SavedDB()
         if p0 and p0.splitBg == true then
             bgLabel = "Background (Class Resource)"
         elseif p0 and p0.secondary.darkTheme then
@@ -333,18 +334,18 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         end
     end
     local bgRow
-    bgRow, h = W:DualRow(parent, y, {
+    bgRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Dark Mode Class Resource",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return false
             end
             return p.secondary.darkTheme
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -361,7 +362,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         step = 1,
         trackWidth = 120,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return 75
             end
@@ -371,7 +372,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             return math.floor(((p.health.bgA or 0.75) * 100) + 0.5)
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -388,11 +389,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Background inline swatch is color-only: opacity lives in the slider, a view over the same bgA keys.
     if not CludesUI._prebuilding then
-        local rgn = bgRow._rightRegion
-        local ctrl = rgn._control
+        local region = bgRow._rightRegion
+        local ctrl = region._control
 
         -- Split cog. The feature is an options-side VIEW: the bars already read their own keys
         -- at runtime (health.bg*, primary.bg*, secondary.barBg*) and the unified row just writes
@@ -403,7 +404,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         -- is built LAZILY on first show, so the closure reaches it via showFn._popupFrame, stamped
         -- by the show wrapper on first open.
         local _, splitCogShow
-        _, splitCogShow = CludesUI.BuildInlineCog(rgn, {
+        _, splitCogShow = CludesUI.BuildInlineCog(region, {
             title = "Background",
             minWidth = 290,
             rows = {
@@ -411,11 +412,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     type = "toggle",
                     label = "Choose background per bar",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.splitBg) == true
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -443,31 +444,38 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             },
         })
 
-        local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(rgn, bgRow:GetFrameLevel() + 3, function()
-            local p = DB()
-            if p and p.splitBg == true then
-                return p.secondary.barBgR or 0, p.secondary.barBgG or 0, p.secondary.barBgB or 0
-            end
-            return (p and p.health.bgR or 0x11 / 255),
-                (p and p.health.bgG or 0x11 / 255),
-                (p and p.health.bgB or 0x11 / 255)
-        end, function(r, g, b)
-            local p = DB()
-            if not p then
-                return
-            end
-            if p.splitBg == true then
-                p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = r, g, b
-            else
-                p.health.bgR, p.health.bgG, p.health.bgB = r, g, b
-                p.primary.bgR, p.primary.bgG, p.primary.bgB = r, g, b
-                p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = r, g, b
-            end
-            SmoothRefresh()
-            CludesUI:RefreshPage()
-        end, nil, 20)
-        PP.Point(bgSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-        rgn._lastInline = bgSwatch
+        local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(
+            region,
+            bgRow:GetFrameLevel() + 3,
+            function()
+                local p = SavedDB()
+                if p and p.splitBg == true then
+                    return p.secondary.barBgR or 0, p.secondary.barBgG or 0, p.secondary.barBgB or 0
+                end
+                return (p and p.health.bgR or 0x11 / 255),
+                    (p and p.health.bgG or 0x11 / 255),
+                    (p and p.health.bgB or 0x11 / 255)
+            end,
+            function(r, g, b)
+                local p = SavedDB()
+                if not p then
+                    return
+                end
+                if p.splitBg == true then
+                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = r, g, b
+                else
+                    p.health.bgR, p.health.bgG, p.health.bgB = r, g, b
+                    p.primary.bgR, p.primary.bgG, p.primary.bgB = r, g, b
+                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = r, g, b
+                end
+                SmoothRefresh()
+                CludesUI:RefreshPage()
+            end,
+            nil,
+            20
+        )
+        Pix.Point(bgSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+        region._lastInline = bgSwatch
         CludesUI.RegisterWidgetRefresh(bgUpdateSwatch)
     end
 
@@ -475,10 +483,10 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- everyone else. Health writes health.*, Power writes primary.* only; the class resource's
     -- barBg* stays with the unified Background row above, which relabels and narrows to those keys.
     do
-        local p0 = DB()
+        local p0 = SavedDB()
         if p0 and p0.splitBg == true then
             local splitRow
-            splitRow, h = W:DualRow(parent, y, {
+            splitRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Health Background",
                 min = 0,
@@ -486,11 +494,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 step = 1,
                 trackWidth = 120,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return math.floor(((p and p.health.bgA or 0.75) * 100) + 0.5)
                 end,
                 setValue = function(v)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -506,11 +514,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 step = 1,
                 trackWidth = 120,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return math.floor(((p and p.primary.bgA or 0.75) * 100) + 0.5)
                 end,
                 setValue = function(v)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -519,21 +527,21 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     CludesUI:RefreshPage()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
             if not CludesUI._prebuilding then
-                local rgn = splitRow._leftRegion
-                local ctrl = rgn._control
+                local region = splitRow._leftRegion
+                local ctrl = region._control
                 local hSwatch, hUpdateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     splitRow:GetFrameLevel() + 3,
                     function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.health.bgR or 0x11 / 255),
                             (p and p.health.bgG or 0x11 / 255),
                             (p and p.health.bgB or 0x11 / 255)
                     end,
                     function(r, g, b)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -544,23 +552,23 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     nil,
                     20
                 )
-                PP.Point(hSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(hSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(hUpdateSwatch)
             end
             if not CludesUI._prebuilding then
-                local rgn = splitRow._rightRegion
-                local ctrl = rgn._control
+                local region = splitRow._rightRegion
+                local ctrl = region._control
                 local pSwatch, pUpdateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     splitRow:GetFrameLevel() + 3,
                     function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.primary.bgR or 0x11 / 255),
                             (p and p.primary.bgG or 0x11 / 255),
                             (p and p.primary.bgB or 0x11 / 255)
                     end,
                     function(r, g, b)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -571,7 +579,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     nil,
                     20
                 )
-                PP.Point(pSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(pSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(pUpdateSwatch)
             end
         end
@@ -586,20 +594,20 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     local strataValues = CludesUI.FRAME_STRATA_LABELS
     local strataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
     local texRow
-    texRow, h = W:DualRow(parent, y, {
+    texRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Texture",
         values = hbtValues,
         order = hbtOrder,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return "none"
             end
             return p.general.barTexture or "none"
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -613,11 +621,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         values = strataValues,
         order = strataOrder,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.general.frameStrata or "MEDIUM"
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -625,30 +633,30 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             SmoothRefresh()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        local function BarTextureRow(label, barKey)
+        local function BarTextureRow(labelText, barId)
             local v, o = CopyTexDD()
             v.__match = "Match Main Texture"
             table.insert(o, 1, "---")
             table.insert(o, 1, "__match")
             return {
                 type = "dropdown",
-                label = label,
+                label = labelText,
                 values = v,
                 order = o,
                 ddWidth = 170,
                 get = function()
-                    local p = DB()
-                    return p and ns.ERB_BarTexture(p, barKey) or "__match"
+                    local p = SavedDB()
+                    return p and mod.ERB_BarTexture(p, barId) or "__match"
                 end,
                 set = function(val)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
                     local was = p.splitTex == true
-                    ns.ERB_SetBarTexture(p, barKey, val ~= "__match" and val)
+                    mod.ERB_SetBarTexture(p, barId, val ~= "__match" and val)
                     SmoothRefresh()
                     -- The Global Settings Textures page shows the health and power rows
                     -- only while one has its own texture: drop its cached build on a flip.
@@ -658,29 +666,29 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 end,
             }
         end
-        local function BarStrataRow(label, barKey)
+        local function BarStrataRow(labelText, barId)
             local v, o = { __match = "Match Main Strata" }, { "__match", "---" }
-            for i = 1, #strataOrder do
-                local k = strataOrder[i]
+            for idx = 1, #strataOrder do
+                local k = strataOrder[idx]
                 v[k] = strataValues[k]
                 o[#o + 1] = k
             end
             return {
                 type = "dropdown",
-                label = label,
+                label = labelText,
                 values = v,
                 order = o,
                 ddWidth = 150,
                 get = function()
-                    local p = DB()
-                    return p and p[barKey].frameStrata or "__match"
+                    local p = SavedDB()
+                    return p and p[barId].frameStrata or "__match"
                 end,
                 set = function(val)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p[barKey].frameStrata = val ~= "__match" and val or false
+                    p[barId].frameStrata = val ~= "__match" and val or false
                     SmoothRefresh()
                 end,
             }
@@ -696,11 +704,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     label = "Blizzard Class Resource Bar Texture",
                     tooltip = "Bar-style class resources (Insanity, Maelstrom, Astral Power, etc.) use Blizzard's default player frame bar artwork instead of the texture above.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.secondary.useBlizzardAtlas) or false
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -720,11 +728,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     label = "Continuous Texture for Pip Resources",
                     tooltip = "Spreads the texture across all pips instead of restarting it on each one. Useful for gradient textures.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.secondary.useContinuousTexture) or false
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -749,7 +757,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- only; a blank slot otherwise). Border Around All draws one frame round
     -- the resource bars as a group; greyed only while off, so a setting whose
     -- bars stop lining up can still be turned off.
-    local borderAllOn = ns.ERB_BorderAllRow()
+    local borderAllOn = mod.ERB_BorderAllRow()
     local borderAllCfg = CludesUI.BlankRowCfg()
     if borderAllOn then
         borderAllCfg = {
@@ -757,17 +765,17 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             text = "Border Around All",
             tooltip = "Draws one frame around the resource bars instead of one per bar.",
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return true
                 end
                 if p.general.classicBorderAll then
                     return false
                 end
-                return not ns.ERB_GroupCheck(p)
+                return not mod.ERB_GroupCheck(p)
             end,
             disabledTooltip = function()
-                local _, why = ns.ERB_GroupCheck(DB())
+                local _, why = mod.ERB_GroupCheck(SavedDB())
                 if why == "count" then
                     return "This option requires at least two resource bars to be shown."
                 end
@@ -778,34 +786,34 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             end,
             rawTooltip = true,
             getValue = function()
-                local p = DB()
+                local p = SavedDB()
                 return (p and p.general.classicBorderAll) and true or false
             end,
             setValue = function(v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
                 p.general.classicBorderAll = v and true or false
                 -- One classic frame, one size: the lead bar's Border Size
                 -- for all three (Blizzard Style has no Border Size).
-                if v and ns.ERB_ClassicBorderRow() then
-                    local s = ns.ERB_GroupLeadCfg(p).stockBorderScale
-                    for i = 1, #CLASSIC_SYNC_KEYS do
-                        p[CLASSIC_SYNC_KEYS[i]].stockBorderScale = s
+                if v and mod.ERB_ClassicBorderRow() then
+                    local s = mod.ERB_GroupLeadCfg(p).stockBorderScale
+                    for idx = 1, #CLASSIC_SYNC_KEYS do
+                        p[CLASSIC_SYNC_KEYS[idx]].stockBorderScale = s
                     end
                 end
                 Refresh()
                 -- The size-match pads follow the shared scale.
-                for i = 1, #CLASSIC_MATCH_KEYS do
-                    CludesUI.ReapplyMatchPads(CLASSIC_MATCH_KEYS[i])
+                for idx = 1, #CLASSIC_MATCH_KEYS do
+                    CludesUI.ReapplyMatchPads(CLASSIC_MATCH_KEYS[idx])
                 end
                 CludesUI:RefreshPage()
             end,
         }
     end
     local blizzArtRow
-    blizzArtRow, h = W:DualRow(parent, y, {
+    blizzArtRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Blizzard Class Resource Art",
         tooltip = "Replaces the class resource bar with Blizzard's own class resource frame, such as Holy Power, Combo Points, Chi, Soul Shards, Arcane Charges, Essence or Runes.",
@@ -814,17 +822,17 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         -- holds that frame (Unit Frames wins it). Greyed only while off, so
         -- it can still be turned off there.
         disabled = function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return true
             end
             if p.secondary.blizzardClassArt then
                 return false
             end
-            return not (ns.ERB_BlizzClassArtSupported and ns.ERB_BlizzClassArtSupported())
+            return not (mod.ERB_BlizzClassArtSupported and mod.ERB_BlizzClassArtSupported())
         end,
         disabledTooltip = function()
-            local why = ns.ERB_BlizzClassArtSupported and select(2, ns.ERB_BlizzClassArtSupported())
+            local why = mod.ERB_BlizzClassArtSupported and select(2, mod.ERB_BlizzClassArtSupported())
             if why == "uf" then
                 return "This option can't be used while the Unit Frames class resource is set to Blizzard."
             end
@@ -838,11 +846,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         end,
         rawTooltip = true,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return (p and p.secondary.blizzardClassArt) and true or false
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -851,16 +859,16 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             CludesUI:RefreshPage()
         end,
     }, borderAllCfg)
-    y = y - h
+    posY = posY - hgt
     -- Inline scale cog on "Blizzard Class Resource Art". Greyed while the
     -- toggle is off (its setter refreshes the page).
     if not CludesUI._prebuilding then
-        local rgn = blizzArtRow._leftRegion
+        local region = blizzArtRow._leftRegion
         local function artOff()
-            local p = DB()
+            local p = SavedDB()
             return not (p and p.secondary.blizzardClassArt)
         end
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             disabled = artOff,
             disabledTooltip = "Blizzard Class Resource Art",
             title = "Blizzard Class Resource Art",
@@ -872,17 +880,17 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     max = 200,
                     step = 5,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return math.floor(((p and p.secondary.blizzardClassArtScale) or 1) * 100 + 0.5)
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
                         p.secondary.blizzardClassArtScale = v / 100
-                        if ns.ERB_ApplyBlizzClassArt then
-                            ns.ERB_ApplyBlizzClassArt()
+                        if mod.ERB_ApplyBlizzClassArt then
+                            mod.ERB_ApplyBlizzClassArt()
                         end
                     end,
                 },
@@ -893,17 +901,17 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- line between the grouped bars. Greyed while the toggle is off (its
     -- setter refreshes the page).
     if borderAllOn and not CludesUI._prebuilding then
-        local rgn = blizzArtRow._rightRegion
+        local region = blizzArtRow._rightRegion
         local function groupOff()
-            local p = DB()
+            local p = SavedDB()
             return not (p and p.general.classicBorderAll)
         end
         local function repaint()
-            if ns.ERB_GroupDirty then
-                ns.ERB_GroupDirty()
+            if mod.ERB_GroupDirty then
+                mod.ERB_GroupDirty()
             end
         end
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             disabled = groupOff,
             disabledTooltip = "Border Around All",
             title = "Border Around All",
@@ -915,7 +923,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     max = 5,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         local v = p and p.general.classicBorderAllSepSize
                         if v == nil then
                             v = 1
@@ -923,7 +931,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         return v
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -935,7 +943,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     type = "colorpicker",
                     label = "Separator Color",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         local g = p and p.general
                         return (g and g.classicBorderAllSepR) or 0,
                             (g and g.classicBorderAllSepG) or 0,
@@ -943,7 +951,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                             1
                     end,
                     set = function(r, g, b)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -956,23 +964,23 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
     -- BAR SHIFTING: what the bars and the elements anchored to them do while
     -- the class resource or the power bar is missing.
-    _, h = W:SectionHeader(parent, "BAR SHIFTING", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "BAR SHIFTING", posY)
+    posY = posY - hgt
 
     -- Row 1: Expand Power Bar if No Resource | Shift Elements if No Resource
     local shiftRow
-    shiftRow, h = W:DualRow(parent, y, {
+    shiftRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Expand Power Bar if No Resource",
         tooltip = "When the class resource bar is not shown, this automatically adds the class resource height to the power bar.",
         -- Mutually exclusive with "Shift Elements if No Resource": grey this while shift is set, but only when this is itself OFF so a legacy profile with both on can still turn this off (no deadlock).
         disabled = function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return false
             end
@@ -987,7 +995,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             return shiftOn and not p.primary.expandIfNoResource and true or false
         end,
         disabledTooltip = function()
-            local p = DB()
+            local p = SavedDB()
             if p and not p.primary.enabled then
                 return "Power Bar"
             end
@@ -1001,7 +1009,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
                 return false
             end
-            local p = DB()
+            local p = SavedDB()
             return p and p.primary.expandIfNoResource
         end,
         setValue = function(v)
@@ -1009,7 +1017,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             if v and CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
                 return
             end
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -1030,7 +1038,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         -- turn this off (no deadlock). Independent of "Show Class Resource" -- the shift setting is
         -- exactly what's wanted while the resource bar is hidden, so that toggle must NOT change this control's disabled state.
         disabled = function()
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return false
             end
@@ -1044,11 +1052,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         values = { None = "None", Up = "Up", Down = "Down" },
         order = { "None", "Up", "Down" },
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return (p and p.secondary.shiftElementsIfNoResource) or "None"
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -1061,25 +1069,25 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline reposition cog on "Expand Power Bar if No Resource": Extra Y Offset.
     -- Greyed whenever the expand cannot apply (the toggle off, the Power Bar
     -- off, or the bar Height Matched), with the toggle's own reasons.
     if not CludesUI._prebuilding then
-        local rgn = shiftRow._leftRegion
+        local region = shiftRow._leftRegion
         local function heightMatched()
             return CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power")
         end
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 if not (p and p.primary.enabled and p.primary.expandIfNoResource) then
                     return true
                 end
                 return heightMatched() and true or false
             end,
             disabledTooltip = function()
-                local p = DB()
+                local p = SavedDB()
                 if p and not p.primary.enabled then
                     return "Power Bar"
                 end
@@ -1098,11 +1106,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.primary.expandIfNoResourceExtraY) or 0
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -1115,8 +1123,8 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     end
     -- Inline reposition cog on "Shift Elements if No Resource": Extra Y Offset
     if not CludesUI._prebuilding then
-        local rgn = shiftRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = shiftRow._rightRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Shift Offset",
             rows = {
                 {
@@ -1127,11 +1135,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.secondary.shiftElementsIfNoResourceExtraY) or 0
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -1152,7 +1160,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
 
     -- Row 2: Shift Elements if No Power | Hide Power Bar if Resource
     local shiftRow2
-    shiftRow2, h = W:DualRow(parent, y, {
+    shiftRow2, hgt = W:DualRow(hostFrame, posY, {
         type = "segmented",
         text = "Shift Elements if No Power",
         tooltip = "Shifts any elements anchored to the power bar up or down to offset the missing power bar. Applies both when the Power Bar is disabled and for specs that have no power (for example, Beast Mastery and Marksmanship Hunters, whose Focus shows as the class resource bar).",
@@ -1160,11 +1168,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         values = { None = "None", Up = "Up", Down = "Down" },
         order = { "None", "Up", "Down" },
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return (p and p.primary.shiftElementsIfNoPower) or "None"
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -1177,16 +1185,16 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         text = "Hide Power Bar if Resource",
         tooltip = "Hides the power bar whenever the class resource bar is showing.",
         disabled = function()
-            local p = DB()
+            local p = SavedDB()
             return not (p and p.secondary.enabled)
         end,
         disabledTooltip = "Class Resource",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return (p and p.secondary.hidePowerIfResource) and true or false
         end,
         setValue = function(v)
-            local p = DB()
+            local p = SavedDB()
             if not p then
                 return
             end
@@ -1194,11 +1202,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             RebuildClass()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline reposition cog on "Shift Elements if No Power": Extra Y Offset
     if not CludesUI._prebuilding then
-        local rgn = shiftRow2._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = shiftRow2._leftRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Shift Offset",
             rows = {
                 {
@@ -1209,11 +1217,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.primary.shiftElementsIfNoPowerExtraY) or 0
                     end,
                     set = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -1231,15 +1239,15 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
     -- CLASS RESOURCE BAR (header + Row 1 etc. now via the shared builder)
     local classSection, classEnableRow, classResourceTextRow, classJump
-    y, classSection, classEnableRow, classResourceTextRow, classJump =
-        ns.ERB_BuildClassResourceSection(parent, y, {
+    posY, classSection, classEnableRow, classResourceTextRow, classJump =
+        mod.ERB_BuildClassResourceSection(hostFrame, posY, {
             cfg = function()
-                return DB().secondary
+                return SavedDB().secondary
             end,
             advanced = false,
             syncRows = _syncRows,
@@ -1247,13 +1255,13 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     AddPreviewEye(classSection, "CLASS RESOURCE BAR", "classResource", classJump)
 
     -- Row: Anchor to Cursor | Cursor Position (cog: X + Y). Appended outside the shared section builder, so it carries its own hidden-while-disabled gate (the builder's toggle rebuilds on flips)
-    if DB().secondary.enabled then
+    if SavedDB().secondary.enabled then
         local _, cursorH = CludesUI.BuildCursorAnchorRow({
             W = W,
-            parent = parent,
-            y = y,
+            parent = hostFrame,
+            y = posY,
             getData = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.secondary or {}
             end,
             onApply = function()
@@ -1261,17 +1269,17 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 SmoothRefresh()
             end,
         })
-        y = y - cursorH
+        posY = posY - cursorH
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
     -- POWER BAR (section header + Row 1 now via the shared builder)
     local powerSection, powerEnableRow, powerJump
-    y, powerSection, powerEnableRow, powerJump = ns.ERB_BuildPowerSection(parent, y, {
+    posY, powerSection, powerEnableRow, powerJump = mod.ERB_BuildPowerSection(hostFrame, posY, {
         cfg = function()
-            return DB().primary
+            return SavedDB().primary
         end,
         advanced = false,
         syncRows = _syncRows,
@@ -1279,13 +1287,13 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     AddPreviewEye(powerSection, "POWER BAR", "power", powerJump)
 
     -- Row: Anchor to Cursor | Cursor Position (cog: X + Y). Appended outside the shared section builder, so it carries its own hidden-while-disabled gate (the builder's toggle rebuilds on flips)
-    if DB().primary.enabled then
+    if SavedDB().primary.enabled then
         local _, cursorH = CludesUI.BuildCursorAnchorRow({
             W = W,
-            parent = parent,
-            y = y,
+            parent = hostFrame,
+            y = posY,
             getData = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.primary or {}
             end,
             onApply = function()
@@ -1293,11 +1301,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 SmoothRefresh()
             end,
         })
-        y = y - cursorH
+        posY = posY - cursorH
     end
 
     -- Row 7: Power Type override (spec-dependent, like UF Power Type dropdown). Hidden with the rest of the Power section while the bar is off.
-    if DB().primary.enabled then
+    if SavedDB().primary.enabled then
         local _, playerClass = UnitClass("player")
         -- A spec's third label is an extra choice ("always": Balance's Mana in
         -- every form); tip = the row's tooltip for the class.
@@ -1316,16 +1324,16 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         local classAlts = SPEC_POWER_ALTS[playerClass]
         -- Retail only: WoW Forever has no specs (see the druid row below).
         if classAlts and not CludesUI.IS_FOREVER then
-            local spec = GetSpecialization and GetSpecialization()
-            local data = spec and classAlts[spec]
-            if data then
-                local ptValues = { ["default"] = data[1], ["alt"] = data[2], ["always"] = data[3] }
+            local specInfo = GetSpecialization and GetSpecialization()
+            local payload = specInfo and classAlts[specInfo]
+            if payload then
+                local ptValues = { ["default"] = payload[1], ["alt"] = payload[2], ["always"] = payload[3] }
                 local ptOrder = { "default", "alt" }
-                if data[3] then
+                if payload[3] then
                     ptOrder[3] = "always"
                 end
                 local powerTypeRow
-                powerTypeRow, h = W:DualRow(parent, y, {
+                powerTypeRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Power Type",
                     tooltip = classAlts.tip,
@@ -1341,19 +1349,20 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         if not s or not classAlts[s] then
                             return "default"
                         end
-                        local sid = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(s)
-                        if not sid then
+                        local spellRef = C_SpecializationInfo
+                            and C_SpecializationInfo.GetSpecializationInfo(s)
+                        if not spellRef then
                             return "default"
                         end
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return "default"
                         end
-                        local ov = p.primary.powerTypeOverride
-                        if ov and ov[sid] == "mana" then
+                        local shade = p.primary.powerTypeOverride
+                        if shade and shade[spellRef] == "mana" then
                             return "always"
                         end
-                        if ov and ov[sid] then
+                        if shade and shade[spellRef] then
                             return "alt"
                         end
                         return "default"
@@ -1363,11 +1372,12 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         if not s then
                             return
                         end
-                        local sid = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(s)
-                        if not sid then
+                        local spellRef = C_SpecializationInfo
+                            and C_SpecializationInfo.GetSpecializationInfo(s)
+                        if not spellRef then
                             return
                         end
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -1375,21 +1385,21 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                             if not p.primary.powerTypeOverride then
                                 p.primary.powerTypeOverride = {}
                             end
-                            p.primary.powerTypeOverride[sid] = true
+                            p.primary.powerTypeOverride[spellRef] = true
                         elseif v == "always" then
                             if not p.primary.powerTypeOverride then
                                 p.primary.powerTypeOverride = {}
                             end
-                            p.primary.powerTypeOverride[sid] = "mana"
+                            p.primary.powerTypeOverride[spellRef] = "mana"
                         else
                             if p.primary.powerTypeOverride then
-                                p.primary.powerTypeOverride[sid] = nil
+                                p.primary.powerTypeOverride[spellRef] = nil
                             end
                         end
                         RebuildPower()
                     end,
                 }, { type = "label", text = "" })
-                y = y - h
+                posY = posY - hgt
 
                 local function UpdatePowerTypeRow()
                     local s = GetSpecialization and GetSpecialization()
@@ -1420,14 +1430,14 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 values = { off = "Off", fsr = "5-Second Rule", ticks = "Regen Ticks" },
                 order = { "off", "fsr", "ticks" },
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     if not (p and p.primary.manaRegenSpark) then
                         return "off"
                     end
                     return p.primary.manaRegenSparkMode == "ticks" and "ticks" or "fsr"
                 end,
                 setValue = function(v)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -1443,11 +1453,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 text = "Spell Cost Prediction",
                 tooltip = "While you cast, shows on the bar the mana the spell will cost.",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.primary.powerCostPrediction == true or false
                 end,
                 setValue = function(v)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -1458,20 +1468,20 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             }
             -- Spell Cost Color, left of the toggle: dimmed and blocked
             -- while Spell Cost Prediction is off.
-            local function CostSwatch(rgn)
+            local function CostSwatch(region)
                 if CludesUI._prebuilding then
                     return
                 end
-                CludesUI.BuildInlineSwatches(rgn, {
+                CludesUI.BuildInlineSwatches(region, {
                     {
                         tooltip = "Spell Cost Color",
                         getValue = function()
-                            local p = DB()
+                            local p = SavedDB()
                             local r, g, b = SCP.Color(p and p.primary)
                             return r, g, b, 1
                         end,
                         setValue = function(r, g, b)
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
@@ -1480,7 +1490,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     },
                 }, {
                     disabled = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return not (p and p.primary.powerCostPrediction == true)
                     end,
                     disabledTooltip = "Spell Cost Prediction",
@@ -1488,19 +1498,19 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 })
             end
             if playerClass == "DRUID" then
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "segmented",
                     text = "Power Type",
                     tooltip = "Mana keeps the bar on Mana in Bear and Cat Form.",
                     values = { ["default"] = "Match Form", ["alt"] = "Mana" },
                     order = { "default", "alt" },
                     getValue = function()
-                        local p = DB()
-                        local ov = p and p.primary.powerTypeOverride
-                        return (ov and ov.foreverDruid) and "alt" or "default"
+                        local p = SavedDB()
+                        local shade = p and p.primary.powerTypeOverride
+                        return (shade and shade.foreverDruid) and "alt" or "default"
                     end,
                     setValue = function(v)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -1516,7 +1526,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 }, sparkCfg)
-                y = y - h
+                posY = posY - hgt
 
                 -- Mana Bar while Shapeshifted (CUI_ResourceBars_ForeverDruidMana.lua):
                 -- a thin mana bar attached to the Power Bar in Bear and Cat Form.
@@ -1524,13 +1534,13 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 -- Edits go straight to the module: the companion is not part of the
                 -- bar build, so a full ApplyAll would rebuild every bar.
                 local function FdmCfg()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.primary.foreverDruidMana
                 end
                 local function FdmTypeMana()
-                    local p = DB()
-                    local ov = p and p.primary.powerTypeOverride
-                    return (ov and ov.foreverDruid) and true or false
+                    local p = SavedDB()
+                    local shade = p and p.primary.powerTypeOverride
+                    return (shade and shade.foreverDruid) and true or false
                 end
                 local function FdmOff()
                     if FdmTypeMana() then
@@ -1559,12 +1569,12 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     return "This option requires a Mana Bar Text format other than None"
                 end
                 local function RefreshFDM()
-                    if ns.FDM_Apply then
-                        ns.FDM_Apply()
+                    if mod.FDM_Apply then
+                        mod.FDM_Apply()
                     end
                 end
                 local fdmRow
-                fdmRow, h = W:DualRow(parent, y, {
+                fdmRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Mana Bar while Shapeshifted",
                     tooltip = "Shows a thin mana bar with the Power Bar while in Bear and Cat Form.",
@@ -1619,7 +1629,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
                 if not CludesUI._prebuilding then
                     -- Placement cog: position, gap, height, offsets
                     CludesUI.BuildInlineCog(fdmRow._leftRegion, {
@@ -1903,32 +1913,32 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 end
                 if SCP then
                     local costRow
-                    costRow, h = W:DualRow(parent, y, costCfg, CludesUI.BlankRowCfg())
-                    y = y - h
+                    costRow, hgt = W:DualRow(hostFrame, posY, costCfg, CludesUI.BlankRowCfg())
+                    posY = posY - hgt
                     CostSwatch(costRow._leftRegion)
                 end
             elseif CludesUI.ManaRegenSpark then
                 if SCP then
                     local costRow
-                    costRow, h = W:DualRow(parent, y, costCfg, sparkCfg)
-                    y = y - h
+                    costRow, hgt = W:DualRow(hostFrame, posY, costCfg, sparkCfg)
+                    posY = posY - hgt
                     CostSwatch(costRow._leftRegion)
                 else
-                    _, h = W:DualRow(parent, y, sparkCfg, CludesUI.BlankRowCfg())
-                    y = y - h
+                    _, hgt = W:DualRow(hostFrame, posY, sparkCfg, CludesUI.BlankRowCfg())
+                    posY = posY - hgt
                 end
             end
         end
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
     -- HEALTH BAR (section header + Row 1 now via the shared builder)
     local healthSection, healthEnableRow, healthJump
-    y, healthSection, healthEnableRow, healthJump = ns.ERB_BuildHealthSection(parent, y, {
+    posY, healthSection, healthEnableRow, healthJump = mod.ERB_BuildHealthSection(hostFrame, posY, {
         cfg = function()
-            return DB().health
+            return SavedDB().health
         end,
         advanced = false,
         syncRows = _syncRows,
@@ -1936,13 +1946,13 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     AddPreviewEye(healthSection, "HEALTH BAR", "health", healthJump)
 
     -- Row: Anchor to Cursor | Cursor Position (cog: X + Y). Appended outside the shared section builder, so it carries its own hidden-while-disabled gate (the builder's toggle rebuilds on flips)
-    if DB().health.enabled then
+    if SavedDB().health.enabled then
         local _, cursorH = CludesUI.BuildCursorAnchorRow({
             W = W,
-            parent = parent,
-            y = y,
+            parent = hostFrame,
+            y = posY,
             getData = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.health or {}
             end,
             onApply = function()
@@ -1950,11 +1960,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 SmoothRefresh()
             end,
         })
-        y = y - cursorH
+        posY = posY - cursorH
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
     -- ARCANE SOUL (SUNFURY)
     -- Mage-only: the section is absent entirely for every other class rather
@@ -1968,19 +1978,19 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         -- so a full ApplyAll would rebuild every bar to retint one string.
         -- The preview header shows the same sample, so it follows too.
         local function RefreshAS()
-            if ns.AS_Apply then
-                ns.AS_Apply()
+            if mod.AS_Apply then
+                mod.AS_Apply()
             end
-            env.UpdatePreviewHeader()
+            environ.UpdatePreviewHeader()
         end
         local asOff = function()
-            local p = DB()
+            local p = SavedDB()
             return p and not p.arcaneSoul.enabled
         end
         local AS_TIP = "Arcane Soul Helper"
 
-        asSection, h = W:SectionHeader(parent, "ARCANE SOUL (SUNFURY)", y)
-        y = y - h
+        asSection, hgt = W:SectionHeader(hostFrame, "ARCANE SOUL (SUNFURY)", posY)
+        posY = posY - hgt
         local asJump = CludesUI.BuildSectionUnlockJump(
             asSection,
             { key = "CUI_ArcaneSoul", disabled = asOff, disabledTooltip = AS_TIP }
@@ -1988,16 +1998,16 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         AddPreviewEye(asSection, "ARCANE SOUL (SUNFURY)", "arcaneSoul", asJump)
 
         -- Row: Enable Arcane Soul Helper (+ position cog) | Show Threshold
-        asEnableRow, h = W:DualRow(parent, y, {
+        asEnableRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Arcane Soul Helper",
             tooltip = "Shows a countdown to the Arcane Soul window over the last seconds of Arcane Surge, then the time left inside it. Sunfury Arcane Mages only.",
             getValue = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.arcaneSoul.enabled
             end,
             setValue = function(v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -2015,11 +2025,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             disabled = asOff,
             disabledTooltip = AS_TIP,
             getValue = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.arcaneSoul.threshold or 5
             end,
             setValue = function(v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -2027,14 +2037,14 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 RefreshAS()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Inline position cog (X/Y + unlock) on Enable, as on the GCD Bar page
         if not CludesUI._prebuilding then
-            local rgn = asEnableRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = asEnableRow._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and not p.arcaneSoul.enabled
                 end,
                 disabledTooltip = AS_TIP,
@@ -2047,7 +2057,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         max = 600,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return 0
                             end
@@ -2055,7 +2065,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                             return (a.unlockPos and a.unlockPos.x) or 0
                         end,
                         set = function(v)
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
@@ -2076,7 +2086,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         max = 600,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return -150
                             end
@@ -2084,7 +2094,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                             return (a.unlockPos and a.unlockPos.y) or -150
                         end,
                         set = function(v)
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
@@ -2109,11 +2119,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         local asFormatOrder = { "seconds", "gcd", "secondsGcd" }
         -- The LAST warning only exists where the Soul window counts Barrages.
         local function AsSoulCountsGcd()
-            local p = DB()
+            local p = SavedDB()
             local m = p and p.arcaneSoul.countMode
             return m == "gcd" or m == "secondsGcd"
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Countdown Format",
             tooltip = "Seconds counts the time down in tenths. GCD Count counts whole global cooldowns instead, so inside Arcane Soul it reads as the number of Arcane Barrages that still fit, ending on a coloured LAST. Seconds + GCD in Soul mixes the two: tenths counting down to the window, Barrage count once it opens.",
@@ -2122,11 +2132,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             values = asFormatValues,
             order = asFormatOrder,
             getValue = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.arcaneSoul.countMode or "seconds"
             end,
             setValue = function(v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -2142,11 +2152,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             disabled = asOff,
             disabledTooltip = AS_TIP,
             getValue = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and p.arcaneSoul.textSize or 24
             end,
             setValue = function(v)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -2157,7 +2167,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Row: Font | Font Outline (mirrors the Battle Res text controls)
         do
@@ -2169,7 +2179,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 ["thick"] = { text = "Thick Outline" },
             }
             local asOutlineOrder = { "__global", "none", "outline", "thick" }
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Font",
                 disabled = asOff,
@@ -2177,11 +2187,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 values = asFontValues,
                 order = asFontOrder,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.arcaneSoul.font or "__global"
                 end,
                 setValue = function(v)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -2196,11 +2206,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 values = asOutlineValues,
                 order = asOutlineOrder,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.arcaneSoul.outlineMode or "__global"
                 end,
                 setValue = function(v)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -2208,11 +2218,11 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     RefreshAS()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end
 
         -- Row: Colors (pre-Soul / in-Soul / final GCD)
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "multiSwatch",
             text = "Colors",
             disabled = asOff,
@@ -2222,7 +2232,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     tooltip = "Countdown to Soul",
                     hasAlpha = false,
                     getValue = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 1, 1, 1
                         end
@@ -2230,7 +2240,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         return a.preR or 0.64, a.preG or 0.21, a.preB or 0.93
                     end,
                     setValue = function(r, g, b)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -2243,7 +2253,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     tooltip = "Inside Soul",
                     hasAlpha = false,
                     getValue = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 1, 1, 1
                         end
@@ -2251,7 +2261,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         return a.soulR or 0.64, a.soulG or 0.21, a.soulB or 0.93
                     end,
                     setValue = function(r, g, b)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -2265,12 +2275,12 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                     tooltip = "Last Barrage",
                     hasAlpha = false,
                     disabled = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return not p or not p.arcaneSoul.enabled or not AsSoulCountsGcd()
                     end,
                     disabledTooltip = "This option requires Countdown Format to count GCDs inside Arcane Soul",
                     getValue = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 1, 1, 1
                         end
@@ -2278,7 +2288,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                         return a.lastR or 1.0, a.lastG or 0.25, a.lastB or 0.25
                     end,
                     setValue = function(r, g, b)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -2289,10 +2299,10 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 },
             },
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:Spacer(parent, y, 16)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 16)
+        posY = posY - hgt
     end
 
     -- Wire up click mappings for preview hit overlays (never from a hidden pre-build: the shared live table would end up pointing at off-screen rows).
@@ -2308,5 +2318,5 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
         end
     end
 
-    return math.abs(y)
+    return math.abs(posY)
 end

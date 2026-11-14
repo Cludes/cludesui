@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Custom damage meter frame using C_DamageMeter API.
 --  Multi-window support (up to 5). Zero Blizzard frame hooks. All settings live.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 if
     not (
         CludesUI
@@ -20,21 +20,21 @@ then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the meter values redraw through the parent's RegisterNumberFormatCallback; the meter texts take their font families through ApplyModuleFontFamily)
-CludesUI._ModuleNS["CludesUIDamageMeters"] = ns -- LOD options files read this module ns via the registry
-ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CludesUI._ModuleNS["CludesUIDamageMeters"] = mod -- LOD options files read this module ns via the registry
+mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 local CUI = CludesUI
 
 -- Constants
 local BAR_POOL_SIZE = 40
 local RANK_STRINGS = {}
-for i = 1, 40 do
-    RANK_STRINGS[i] = i .. "."
+for idx = 1, 40 do
+    RANK_STRINGS[idx] = idx .. "."
 end
 local MIN_W, MIN_H = 150, 50
 local TICK_COMBAT = 1
 local REFRESH_RATE_FLOOR = 0.5 -- default floor; skipped when unsafeRefreshRate is on
 local REFRESH_RATE_HARD_FLOOR = 0.2 -- absolute floor regardless of unsafeRefreshRate (the Unsafe slider's minimum); also guards a corrupt/imported 0 or negative value reaching the ticker
-ns._REFRESH_RATE_FLOOR = REFRESH_RATE_FLOOR -- published so the options page's toggle-off snap-back uses the same value instead of a second hardcoded 0.5
+mod._REFRESH_RATE_FLOOR = REFRESH_RATE_FLOOR -- published so the options page's toggle-off snap-back uses the same value instead of a second hardcoded 0.5
 local PEAK_BUDGET = 1.5
 local BAR_TEX = "Interface\\Buttons\\WHITE8X8"
 local MEDIA = "Interface\\AddOns\\CludesUIDamageMeters\\Media\\"
@@ -238,8 +238,8 @@ local function EnsureDB()
     return _dmDB
 end
 
-ns.EDM = {}
-ns.EDM.DB = function()
+mod.EDM = {}
+mod.EDM.DB = function()
     local d = _G._CUDM_DB
     if d and d.profile and d.profile.dm then
         return d.profile.dm
@@ -247,15 +247,15 @@ ns.EDM.DB = function()
     return {}
 end
 
-local function DB()
-    return ns.EDM.DB()
+local function SavedDB()
+    return mod.EDM.DB()
 end
 -- The header's height: the Header Height setting, plus the Forever header
 -- band's rail under it (ns.DMFvRail; 0 on every other look).
 local function GetHeaderH()
-    local c = DB()
-    local h = c.hdrHeight or 22
-    return h + ns.DMFvRail(h)
+    local c = SavedDB()
+    local hgt = c.hdrHeight or 22
+    return hgt + mod.DMFvRail(hgt)
 end
 
 -- Main-chunk locals of this file the CUI_DamageMeters_*.lua files re-import by
@@ -266,10 +266,10 @@ end
 -- _curViewFrozenDur in GetCurrentViewDuration, State's only copy).
 -- broken: true while a part file loads; a file that fails leaves it set, and
 -- the files behind it return at their first lines.
-CludesUI.NewInternals(ns, "_dmInternals", {
+CludesUI.NewInternals(mod, "_dmInternals", {
     BAR_POOL_SIZE = BAR_POOL_SIZE,
     BAR_TEX = BAR_TEX,
-    DB = DB,
+    DB = SavedDB,
     DM_TYPE_ICONS = DM_TYPE_ICONS,
     DM_TYPE_NAMES = DM_TYPE_NAMES,
     EnsureDB = EnsureDB,

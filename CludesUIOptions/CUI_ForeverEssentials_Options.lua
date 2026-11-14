@@ -28,14 +28,14 @@ local PAGE_PVP = "PvP"
 -- Item quality dropdown values and order from Poor up to last, each in its
 -- colour (the General and Loot pages).
 _G._CUI_ItemQualityValues = function(last)
-    local values, order = {}, {}
+    local values, sequence = {}, {}
     for q = Enum.ItemQuality.Poor, last do
         local key, color = tostring(q), ITEM_QUALITY_COLORS[q]
-        local label = _G["ITEM_QUALITY" .. q .. "_DESC"] or key
-        values[key] = color and (color.hex .. label .. "|r") or label
-        order[#order + 1] = key
+        local labelText = _G["ITEM_QUALITY" .. q .. "_DESC"] or key
+        values[key] = color and (color.hex .. labelText .. "|r") or labelText
+        sequence[#sequence + 1] = key
     end
-    return values, order
+    return values, sequence
 end
 
 -- Page reuse: a frame this file builds goes through the options frame pool
@@ -97,42 +97,42 @@ initFrame:SetScript("OnEvent", function(self)
             "dungeon entrance",
             "instance",
         },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == PAGE_GENERAL and _G._CUI_BuildForeverGeneralPage then
-                return _G._CUI_BuildForeverGeneralPage(pageName, parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            if page == PAGE_GENERAL and _G._CUI_BuildForeverGeneralPage then
+                return _G._CUI_BuildForeverGeneralPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_TRAVEL and _G._CUI_BuildFlightTimerPage then
-                return _G._CUI_BuildFlightTimerPage(pageName, parent, yOffset)
+            if page == PAGE_TRAVEL and _G._CUI_BuildFlightTimerPage then
+                return _G._CUI_BuildFlightTimerPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_THREAT and _G._CUI_BuildThreatMeterPage then
-                return _G._CUI_BuildThreatMeterPage(pageName, parent, yOffset)
+            if page == PAGE_THREAT and _G._CUI_BuildThreatMeterPage then
+                return _G._CUI_BuildThreatMeterPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_LOOT and _G._CUI_BuildLootFeedPage then
-                return _G._CUI_BuildLootFeedPage(pageName, parent, yOffset)
+            if page == PAGE_LOOT and _G._CUI_BuildLootFeedPage then
+                return _G._CUI_BuildLootFeedPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_MACROS and _G._CUI_BuildForeverMacrosPage then
-                return _G._CUI_BuildForeverMacrosPage(pageName, parent, yOffset)
+            if page == PAGE_MACROS and _G._CUI_BuildForeverMacrosPage then
+                return _G._CUI_BuildForeverMacrosPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_TRAINING and _G._CUI_BuildForeverTrainingPage then
-                return _G._CUI_BuildForeverTrainingPage(pageName, parent, yOffset)
+            if page == PAGE_TRAINING and _G._CUI_BuildForeverTrainingPage then
+                return _G._CUI_BuildForeverTrainingPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_PVP and _G._CUI_BuildForeverPvPPage then
-                return _G._CUI_BuildForeverPvPPage(pageName, parent, yOffset)
+            if page == PAGE_PVP and _G._CUI_BuildForeverPvPPage then
+                return _G._CUI_BuildForeverPvPPage(page, hostFrame, yOffset)
             end
         end,
         -- The Travel, Threat, Loot and Macros headers live in the content header; declaring a
         -- page's builder makes a cached page whose header was dropped rebuild with it.
-        getHeaderBuilder = function(pageName)
-            if pageName == PAGE_TRAVEL then
+        getHeaderBuilder = function(page)
+            if page == PAGE_TRAVEL then
                 return _G._CUI_TravelHeaderBuilder
             end
-            if pageName == PAGE_THREAT then
+            if page == PAGE_THREAT then
                 return _G._CUI_ThreatHeaderBuilder
             end
-            if pageName == PAGE_LOOT then
+            if page == PAGE_LOOT then
                 return _G._CUI_LootHeaderBuilder
             end
-            if pageName == PAGE_MACROS and CludesUI._MacroManager.Enabled() then
+            if page == PAGE_MACROS and CludesUI._MacroManager.Enabled() then
                 return _G._CUI_MacrosHeaderBuilder
             end
         end,

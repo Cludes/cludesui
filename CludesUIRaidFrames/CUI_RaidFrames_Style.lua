@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  secure half of the button setup.
 --  Reads the earlier Raid Frames files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
@@ -33,17 +33,18 @@ local C_Timer = C_Timer
 local issecretvalue = issecretvalue
 local CreateFrame = CreateFrame
 
-local ApplyFont, defaults, GetFFD, PixelSnap = I.ApplyFont, I.defaults, I.GetFFD, I.PixelSnap
-local ResolveHealthTexture, unitToButton = I.ResolveHealthTexture, I.unitToButton
-local CreateAbsorbBar, UpdateAbsorb = I.CreateAbsorbBar, I.UpdateAbsorb
+local ApplyFont, defaultSet, GetFFD, PixelSnap =
+    Inner.ApplyFont, Inner.defaults, Inner.GetFFD, Inner.PixelSnap
+local ResolveHealthTexture, unitToButton = Inner.ResolveHealthTexture, Inner.unitToButton
+local CreateAbsorbBar, UpdateAbsorb = Inner.CreateAbsorbBar, Inner.UpdateAbsorb
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
-local PP
-I.PPSetters[#I.PPSetters + 1] = function(v)
-    PP = v
+local Pix
+Inner.PPSetters[#Inner.PPSetters + 1] = function(val)
+    Pix = val
 end
 
 -------------------------------------------------------------------------------
@@ -58,25 +59,25 @@ end
 -- (a raid-wide shield landing on everyone in one frame); the belt below
 -- spreads its own marks across ticks so it never fills the budget itself.
 -- The flush frame is hidden whenever the set is empty.
-ns._abDirty = {}
-ns._abFlushBudget = 20
-ns._abFlush = CreateFrame("Frame")
-ns._abFlush:Hide()
-ns._abFlush:SetScript("OnUpdate", function(self)
-    local dirty = ns._abDirty
-    local left = ns._abFlushBudget
-    local now = GetTime()
-    for button in pairs(dirty) do
-        dirty[button] = nil
+mod._abDirty = {}
+mod._abFlushBudget = 20
+mod._abFlush = CreateFrame("Frame")
+mod._abFlush:Hide()
+mod._abFlush:SetScript("OnUpdate", function(self)
+    local dirty = mod._abDirty
+    local leftX = mod._abFlushBudget
+    local nowTime = GetTime()
+    for btnFrame in pairs(dirty) do
+        dirty[btnFrame] = nil
         -- The button's CURRENT occupant, never the token captured at mark
         -- time: a header reassignment between mark and flush would paint the
         -- old occupant's absorb onto the new one.
-        local unit = button:GetAttribute("unit")
-        if unit then
-            UpdateAbsorb(button, unit, now)
+        local unitToken = btnFrame:GetAttribute("unit")
+        if unitToken then
+            UpdateAbsorb(btnFrame, unitToken, nowTime)
         end
-        left = left - 1
-        if left <= 0 then
+        leftX = leftX - 1
+        if leftX <= 0 then
             break
         end
     end
@@ -85,11 +86,11 @@ ns._abFlush:SetScript("OnUpdate", function(self)
         self:Hide()
     end
 end)
-function ns._MarkAbsorbDirty(button, unit)
+function mod._MarkAbsorbDirty(btnFrame, unitToken)
     -- unit is kept for the callers' convenience; the flush re-reads the
     -- button's current occupant itself.
-    ns._abDirty[button] = true
-    ns._abFlush:Show()
+    mod._abDirty[btnFrame] = true
+    mod._abFlush:Show()
 end
 
 -- Armed-members belt: covers the ONE transition with no event at all -- an
@@ -109,31 +110,31 @@ end
 -- within 0.45s (event-active) are still skipped by the stamp compare.
 -- Membership churn reshuffles the walk order harmlessly: a member is at worst
 -- visited twice in a row or waits one extra sweep once.
-ns._abArmed = ns._abArmed or {}
-ns._abBeltPhase = 0
-function ns._AbArm(button, unit, d)
+mod._abArmed = mod._abArmed or {}
+mod._abBeltPhase = 0
+function mod._AbArm(btnFrame, unitToken, d)
     d._absActive = true
-    ns._abArmed[button] = unit
-    if not ns._abBelt and C_Timer then
-        ns._abBelt = C_Timer.NewTicker(0.1, function()
-            local now = GetTime()
-            local phase = ns._abBeltPhase
-            ns._abBeltPhase = (phase + 1) % 5
+    mod._abArmed[btnFrame] = unitToken
+    if not mod._abBelt and C_Timer then
+        mod._abBelt = C_Timer.NewTicker(0.1, function()
+            local nowTime = GetTime()
+            local phase = mod._abBeltPhase
+            mod._abBeltPhase = (phase + 1) % 5
             local any = false
-            local i = 0
-            for btn, u in pairs(ns._abArmed) do
+            local idx = 0
+            for btn, u in pairs(mod._abArmed) do
                 any = true
-                if i % 5 == phase then
+                if idx % 5 == phase then
                     local ab = GetFFD(btn).absorbBar
-                    if not ab or (now - (ab._paintAt or 0)) > 0.45 then
-                        ns._MarkAbsorbDirty(btn, u)
+                    if not ab or (nowTime - (ab._paintAt or 0)) > 0.45 then
+                        mod._MarkAbsorbDirty(btn, u)
                     end
                 end
-                i = i + 1
+                idx = idx + 1
             end
             if not any then
-                ns._abBelt:Cancel()
-                ns._abBelt = nil
+                mod._abBelt:Cancel()
+                mod._abBelt = nil
             end
         end)
     end
@@ -142,24 +143,24 @@ end
 -- Effective icon size for dispellable debuffs routed to their own anchor ("Dispellable Debuff
 -- Location"): 0 = match the main Debuff Size. Reads scaled proxies transparently (the key is in
 -- INDICATOR_SCALE_KEYS; 0 scales to 0, so the match sentinel survives).
-function ns.DispellableDebuffSize(s)
-    local v = s.dispellableDebuffSize
-    if v and v > 0 then
-        return v
+function mod.DispellableDebuffSize(s)
+    local val = s.dispellableDebuffSize
+    if val and val > 0 then
+        return val
     end
     return s.debuffSize or 18
 end
 
 -- Grid placement for debuff icons. opts (optional) overrides pos/grow/ox/oy/size for a
 -- sub-group (e.g. dispellable debuffs on their own anchor); spacing/wrap/perRow stay shared.
-function ns.DebuffGridPoint(s, idx0, total, opts)
-    local pos = (opts and opts.pos) or s.debuffPosition or "bottomleft"
-    local grow = (opts and opts.grow) or s.debuffGrowDirection or "RIGHT"
-    local sz = PixelSnap((opts and opts.size) or s.debuffSize or 18)
+function mod.DebuffGridPoint(s, idx0, sum, options)
+    local place = (options and options.pos) or s.debuffPosition or "bottomleft"
+    local grow = (options and options.grow) or s.debuffGrowDirection or "RIGHT"
+    local sz = PixelSnap((options and options.size) or s.debuffSize or 18)
     local spc = PixelSnap(s.debuffSpacing or 1)
     local step = sz + spc
-    local ox = (opts and opts.ox) or s.debuffOffsetX or 0
-    local oy = (opts and opts.oy) or s.debuffOffsetY or 0
+    local ox = (options and options.ox) or s.debuffOffsetX or 0
+    local oy = (options and options.oy) or s.debuffOffsetY or 0
     local perRow = s.debuffPerRow or 1
     if perRow < 1 then
         perRow = 1
@@ -167,23 +168,23 @@ function ns.DebuffGridPoint(s, idx0, total, opts)
 
     -- Icon corner anchored to the same corner of the health bar. Every position is explicit, so the default fallback is only a safety net.
     local corner = "BOTTOMLEFT"
-    if pos == "topleft" then
+    if place == "topleft" then
         corner = "TOPLEFT"
-    elseif pos == "top" then
+    elseif place == "top" then
         corner = "TOP"
-    elseif pos == "topright" then
+    elseif place == "topright" then
         corner = "TOPRIGHT"
-    elseif pos == "left" then
+    elseif place == "left" then
         corner = "LEFT"
-    elseif pos == "center" then
+    elseif place == "center" then
         corner = "CENTER"
-    elseif pos == "right" then
+    elseif place == "right" then
         corner = "RIGHT"
-    elseif pos == "bottomleft" then
+    elseif place == "bottomleft" then
         corner = "BOTTOMLEFT"
-    elseif pos == "bottom" then
+    elseif place == "bottom" then
         corner = "BOTTOM"
-    elseif pos == "bottomright" then
+    elseif place == "bottomright" then
         corner = "BOTTOMRIGHT"
     end
 
@@ -210,9 +211,9 @@ function ns.DebuffGridPoint(s, idx0, total, opts)
     local wrap = s.debuffWrapDirection
     local centerSvy
     if grow == "CENTER" then
-        if pos:find("top", 1, true) then
+        if place:find("top", 1, true) then
             centerSvy = -1
-        elseif pos:find("bottom", 1, true) then
+        elseif place:find("bottom", 1, true) then
             centerSvy = 1
         end
     end
@@ -227,13 +228,13 @@ function ns.DebuffGridPoint(s, idx0, total, opts)
     elseif wrap == "LEFT" then
         svx = -1
     elseif horizontal then
-        if pos == "bottomleft" or pos == "bottom" or pos == "bottomright" then
+        if place == "bottomleft" or place == "bottom" or place == "bottomright" then
             svy = 1
         else
             svy = -1
         end
     else
-        if pos == "topright" or pos == "right" or pos == "bottomright" then
+        if place == "topright" or place == "right" or place == "bottomright" then
             svx = -1
         else
             svx = 1
@@ -241,22 +242,22 @@ function ns.DebuffGridPoint(s, idx0, total, opts)
     end
 
     -- perRow == 1 is a single line ALONG the growth direction (no wrapping), keeping the growth control meaningful; >= 2 wraps into rows.
-    local row, col
+    local rowFrame, column
     if perRow <= 1 then
-        row, col = 0, idx0
+        rowFrame, column = 0, idx0
     else
-        row = floor(idx0 / perRow)
-        col = idx0 % perRow
+        rowFrame = floor(idx0 / perRow)
+        column = idx0 % perRow
     end
     local centerOff = 0
     if grow == "CENTER" then
-        local rowCount = (perRow <= 1) and (total or 0) or min(perRow, max(0, (total or 0) - row * perRow))
+        local rowCount = (perRow <= 1) and (sum or 0) or min(perRow, max(0, (sum or 0) - rowFrame * perRow))
         if rowCount > 0 then
             centerOff = -((rowCount - 1) * step) / 2
         end
     end
-    local along = col * step
-    local across = row * step
+    local along = column * step
+    local across = rowFrame * step
     local fx = ox + gvx * along + svx * across + centerOff
     local fy = oy + gvy * along + svy * across
     return corner, fx, fy
@@ -269,7 +270,7 @@ end
 -------------------------------------------------------------------------------
 do
     local MOVE_THRESHOLD = 4
-    local watcher = ns.TakeShell()
+    local watcher = mod.TakeShell()
     local inLook = false
     local lastX, lastY = 0, 0
 
@@ -283,7 +284,7 @@ do
 
     -- True if the cursor is over one of our visible unit buttons (direct IsMouseOver test against the registry).
     local function overOwnFrame()
-        local reg = ns._cuiUnitButtons
+        local reg = mod._cuiUnitButtons
         if not reg then
             return false
         end
@@ -303,19 +304,19 @@ do
         if inLook then
             return
         end
-        local x, y = GetCursorPosition()
-        if abs(x - lastX) > MOVE_THRESHOLD or abs(y - lastY) > MOVE_THRESHOLD then
+        local posX, posY = GetCursorPosition()
+        if abs(posX - lastX) > MOVE_THRESHOLD or abs(posY - lastY) > MOVE_THRESHOLD then
             pcall(MouselookStart)
             inLook = true
         end
     end
 
-    watcher:SetScript("OnEvent", function(_, event, button)
-        if event == "GLOBAL_MOUSE_DOWN" then
-            if button ~= "RightButton" then
+    watcher:SetScript("OnEvent", function(_, evt, btnFrame)
+        if evt == "GLOBAL_MOUSE_DOWN" then
+            if btnFrame ~= "RightButton" then
                 return
             end
-            if not (db and db.profile and db.profile.freeRightClickCamera) then
+            if not (saved and saved.profile and saved.profile.freeRightClickCamera) then
                 return
             end
             if not overOwnFrame() then
@@ -324,26 +325,26 @@ do
             inLook = false
             lastX, lastY = GetCursorPosition()
             watcher:SetScript("OnUpdate", onUpdate)
-        elseif event == "GLOBAL_MOUSE_UP" then
-            if button == "RightButton" then
+        elseif evt == "GLOBAL_MOUSE_UP" then
+            if btnFrame == "RightButton" then
                 stopLook()
             end
-        elseif event == "PLAYER_REGEN_ENABLED" then
+        elseif evt == "PLAYER_REGEN_ENABLED" then
             -- safety: never leave mouselook stuck after a combat-state change
             if not IsMouseButtonDown(2) then
                 stopLook()
             end
-        elseif event == "PLAYER_LOGIN" then
-            if ns.FRCM_Refresh then
-                ns.FRCM_Refresh()
+        elseif evt == "PLAYER_LOGIN" then
+            if mod.FRCM_Refresh then
+                mod.FRCM_Refresh()
             end
         end
     end)
     watcher:RegisterEvent("PLAYER_LOGIN")
 
     -- Register the per-click global events only while the feature is on (zero cost when off). Call on toggle.
-    function ns.FRCM_Refresh()
-        if db and db.profile and db.profile.freeRightClickCamera then
+    function mod.FRCM_Refresh()
+        if saved and saved.profile and saved.profile.freeRightClickCamera then
             watcher:RegisterEvent("GLOBAL_MOUSE_DOWN")
             watcher:RegisterEvent("GLOBAL_MOUSE_UP")
             watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -363,12 +364,12 @@ end
 -- companion key against `size` and the drawn texture), nil = the legacy size. The drawn size
 -- (and px) is cached on the border frame so a group-wide target swap is a color write per
 -- button rather than a restyle; callers clear it when the base border returns.
-function ns.ApplyHighlightBorder(bf, s, size, r, g, b, a, px)
-    if not (PP and bf) then
+function mod.ApplyHighlightBorder(bf, s, dim, r, g, b, a, px)
+    if not (Pix and bf) then
         return
     end
     local texKey = s.borderTexture or "solid"
-    if not size or size <= 0 then
+    if not dim or dim <= 0 then
         if bf._hlBorderSize then
             CludesUI.ApplyBorderStyle(bf, 0, r, g, b, a, texKey)
             -- Keep the cache when the style call bailed (still shown) so the next one retries the hide.
@@ -380,13 +381,13 @@ function ns.ApplyHighlightBorder(bf, s, size, r, g, b, a, px)
     end
     -- IsShown: a base restyle to Border Size 0 hides the frame without clearing the cache,
     -- so the size alone would let a hover/target repaint after one land on a hidden border.
-    if bf._hlBorderSize == size and bf._hlBorderPx == px and bf:IsShown() then
+    if bf._hlBorderSize == dim and bf._hlBorderPx == px and bf:IsShown() then
         CludesUI.SetBorderStyleColor(bf, r, g, b, a)
         return
     end
     CludesUI.ApplyBorderStyle(
         bf,
-        size,
+        dim,
         r,
         g,
         b,
@@ -397,11 +398,11 @@ function ns.ApplyHighlightBorder(bf, s, size, r, g, b, a, px)
         s.borderTextureShiftX,
         s.borderTextureShiftY,
         "unitframes",
-        size,
+        dim,
         nil,
         px
     )
-    bf._hlBorderSize = size
+    bf._hlBorderSize = dim
     bf._hlBorderPx = px
 end
 
@@ -409,91 +410,96 @@ end
 -- color (nearly) equal to the border's own shows no change at all: every
 -- textured style but Pixels seeds a white border and the highlight defaults
 -- to white. Such a highlight draws gold instead (white on a gold border).
-function ns.RF_VisibleHighlight(s, r, g, b)
+function mod.RF_VisibleHighlight(s, r, g, b)
     local c = s.borderColor
-    local br, bg, bb = 0, 0, 0
+    local br, backdrop, bb = 0, 0, 0
     if c then
-        br, bg, bb = c.r, c.g, c.b
+        br, backdrop, bb = c.r, c.g, c.b
     end
-    if math.abs(r - br) + math.abs(g - bg) + math.abs(b - bb) >= 0.15 then
+    if math.abs(r - br) + math.abs(g - backdrop) + math.abs(b - bb) >= 0.15 then
         return r, g, b
     end
-    if math.abs(1 - br) + math.abs(0.82 - bg) + math.abs(bb) >= 0.15 then
+    if math.abs(1 - br) + math.abs(0.82 - backdrop) + math.abs(bb) >= 0.15 then
         return 1, 0.82, 0
     end
     return 1, 1, 1
 end
 
-function ns.RF_ColorPowerDivider(host, r, g, b, a)
-    if not host or host._powerArtMode ~= "divider" then
+function mod.RF_ColorPowerDivider(hostRegion, r, g, b, a)
+    if not hostRegion or hostRegion._powerArtMode ~= "divider" then
         return
     end
-    host._powerArtR, host._powerArtG, host._powerArtB, host._powerArtAlpha = r, g, b, a
-    host._powerArtTex:SetVertexColor(r, g, b, a)
+    hostRegion._powerArtR, hostRegion._powerArtG, hostRegion._powerArtB, hostRegion._powerArtAlpha =
+        r, g, b, a
+    hostRegion._powerArtTex:SetVertexColor(r, g, b, a)
 end
 
-function ns.RF_ClearPowerBorderArt(host)
-    if not host or not host._powerArtKey then
+function mod.RF_ClearPowerBorderArt(hostRegion)
+    if not hostRegion or not hostRegion._powerArtKey then
         return
     end
-    if host._powerArtTex then
-        host._powerArtTex:Hide()
+    if hostRegion._powerArtTex then
+        hostRegion._powerArtTex:Hide()
     end
-    if host._powerArtSeam then
-        host._powerArtSeam:Hide()
+    if hostRegion._powerArtSeam then
+        hostRegion._powerArtSeam:Hide()
     end
-    CludesUI.HideBorderStyle(host)
-    CludesUI.RegisterPxReapply(host, nil)
-    PP.ShowBorder(host)
-    host._powerArtKey = nil
-    host._powerArtMode = nil
+    CludesUI.HideBorderStyle(hostRegion)
+    CludesUI.RegisterPxReapply(hostRegion, nil)
+    Pix.ShowBorder(hostRegion)
+    hostRegion._powerArtKey = nil
+    hostRegion._powerArtMode = nil
 end
 
-function ns.RF_LayoutPowerBorderArt(host)
-    if not host:IsShown() or not host._powerArtKey then
+function mod.RF_LayoutPowerBorderArt(hostRegion)
+    if not hostRegion:IsShown() or not hostRegion._powerArtKey then
         return
     end
-    if host._powerArtMode == "border" then
+    if hostRegion._powerArtMode == "border" then
         CludesUI.ApplyBorderStyle(
-            host,
-            host._powerArtSize,
-            host._powerArtR,
-            host._powerArtG,
-            host._powerArtB,
-            host._powerArtAlpha,
-            host._powerArtKey,
-            host._powerArtOffset,
-            host._powerArtOffsetY,
-            host._powerArtShiftX,
-            host._powerArtShiftY,
+            hostRegion,
+            hostRegion._powerArtSize,
+            hostRegion._powerArtR,
+            hostRegion._powerArtG,
+            hostRegion._powerArtB,
+            hostRegion._powerArtAlpha,
+            hostRegion._powerArtKey,
+            hostRegion._powerArtOffset,
+            hostRegion._powerArtOffsetY,
+            hostRegion._powerArtShiftX,
+            hostRegion._powerArtShiftY,
             "unitframes",
-            host._powerArtSize,
+            hostRegion._powerArtSize,
             nil,
-            host._powerArtPx
+            hostRegion._powerArtPx
         )
         return
     end
-    local seam = host._powerArtSeam
-    seam:SetFrameStrata(host:GetFrameStrata())
-    seam:SetFrameLevel(host:GetParent():GetFrameLevel() + ns.LVL_TEXT - 1)
-    local es = host:GetEffectiveScale()
+    local seam = hostRegion._powerArtSeam
+    seam:SetFrameStrata(hostRegion:GetFrameStrata())
+    seam:SetFrameLevel(hostRegion:GetParent():GetFrameLevel() + mod.LVL_TEXT - 1)
+    local es = hostRegion:GetEffectiveScale()
     if not (es and es > 0.01) then
         es = UIParent:GetEffectiveScale()
     end
-    local thick =
-        CludesUI.BorderCompanionThickness(host._powerArtKey, host._powerArtSize, host._powerArtPx, es)
+    local thick = CludesUI.BorderCompanionThickness(
+        hostRegion._powerArtKey,
+        hostRegion._powerArtSize,
+        hostRegion._powerArtPx,
+        es
+    )
     local realPP = CludesUI.PP
     local raise = realPP.SnapForES(thick * 5 / 32, es) - realPP.perfect / es
-    local t = host._powerArtTex
+    local t = hostRegion._powerArtTex
     t:ClearAllPoints()
-    if host._powerArtEdge == "BOTTOM" then
+    if hostRegion._powerArtEdge == "BOTTOM" then
         t:SetTexCoord(0, 1, 1, 0)
-        t:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 0, -raise)
-        t:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, -raise)
+        t:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 0, -raise)
+        t:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", 0, -raise)
     else
         t:SetTexCoord(0, 1, 0, 1)
-        t:SetPoint("TOPLEFT", host, "TOPLEFT", 0, raise)
-        t:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, raise)
+        t:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 0, raise)
+        t:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", 0, raise)
     end
     t:SetHeight(thick)
     t:Show()
@@ -501,99 +507,105 @@ function ns.RF_LayoutPowerBorderArt(host)
 end
 
 -- Settings passes refresh the cached art; ordinary power paints reuse it.
-function ns.RF_ApplyPowerBorderArt(host, s, force, preview, nameBar)
-    local mode = nameBar and "divider" or (s.powerBorderStyle or "cui")
+function mod.RF_ApplyPowerBorderArt(hostRegion, s, force, preview, nameBar)
+    local modeName = nameBar and "divider" or (s.powerBorderStyle or "cui")
     local key = (
         (nameBar and s.topNameBarDivider == true) or (not nameBar and s.powerBorderMatchFrame == true)
     )
-        and not ns.RF_Stock()
+        and not mod.RF_Stock()
         and s.borderTexture
-    if not CludesUI._pixelArtBorders[key] or (mode ~= "divider" and mode ~= "border") then
-        ns.RF_ClearPowerBorderArt(host)
+    if not CludesUI._pixelArtBorders[key] or (modeName ~= "divider" and modeName ~= "border") then
+        mod.RF_ClearPowerBorderArt(hostRegion)
         return false
     end
-    local size = s.borderSize or 1
+    local dim = s.borderSize or 1
     local height = nameBar and (s.topNameBarHeight or 20) or (s.powerHeight or 4)
-    if size <= 0 or (mode == "divider" and height < 4) then
-        ns.RF_ClearPowerBorderArt(host)
-        host:Hide()
+    if dim <= 0 or (modeName == "divider" and height < 4) then
+        mod.RF_ClearPowerBorderArt(hostRegion)
+        hostRegion:Hide()
         return true
     end
     if
         not force
-        and host._powerArtKey == key
-        and host._powerArtMode == mode
-        and host._powerArtSize == size
+        and hostRegion._powerArtKey == key
+        and hostRegion._powerArtMode == modeName
+        and hostRegion._powerArtSize == dim
     then
-        host:Show()
+        hostRegion:Show()
         return true
     end
-    CludesUI.HideBorderStyle(host)
-    if host._powerArtTex then
-        host._powerArtTex:Hide()
+    CludesUI.HideBorderStyle(hostRegion)
+    if hostRegion._powerArtTex then
+        hostRegion._powerArtTex:Hide()
     end
-    if host._powerArtSeam then
-        host._powerArtSeam:Hide()
+    if hostRegion._powerArtSeam then
+        hostRegion._powerArtSeam:Hide()
     end
-    host._powerArtKey, host._powerArtMode = key, mode
-    host._powerArtEdge = (nameBar and not s.topNameBarBottom) and "BOTTOM" or "TOP"
-    host._powerArtSize = size
-    host._powerArtPx = CludesUI.BorderPx(s.borderSizePx, size, key)
+    hostRegion._powerArtKey, hostRegion._powerArtMode = key, modeName
+    hostRegion._powerArtEdge = (nameBar and not s.topNameBarBottom) and "BOTTOM" or "TOP"
+    hostRegion._powerArtSize = dim
+    hostRegion._powerArtPx = CludesUI.BorderPx(s.borderSizePx, dim, key)
     local c = s.borderColor
-    host._powerArtR, host._powerArtG, host._powerArtB = c and c.r or 0, c and c.g or 0, c and c.b or 0
-    host._powerArtAlpha = s.borderAlpha or 1
-    host._powerArtOffset, host._powerArtOffsetY = s.borderTextureOffset, s.borderTextureOffsetY
-    host._powerArtShiftX, host._powerArtShiftY = s.borderTextureShiftX, s.borderTextureShiftY
-    if mode == "divider" then
-        local t = host._powerArtTex
+    hostRegion._powerArtR, hostRegion._powerArtG, hostRegion._powerArtB =
+        c and c.r or 0, c and c.g or 0, c and c.b or 0
+    hostRegion._powerArtAlpha = s.borderAlpha or 1
+    hostRegion._powerArtOffset, hostRegion._powerArtOffsetY = s.borderTextureOffset, s.borderTextureOffsetY
+    hostRegion._powerArtShiftX, hostRegion._powerArtShiftY = s.borderTextureShiftX, s.borderTextureShiftY
+    if modeName == "divider" then
+        local t = hostRegion._powerArtTex
         if not t then
             -- On the Buff / Debuff Manager preview (a frame of the options page
             -- pool, CludesUI_FramePool.lua) the seam is pooled with its host
             -- and handed out again by the next build; elsewhere a plain new frame.
-            local seam = POOL.CreateFrame("Frame", nil, host)
-            seam:SetAllPoints(host)
-            host._powerArtSeam = seam
+            local seam = POOL.CreateFrame("Frame", nil, hostRegion)
+            seam:SetAllPoints(hostRegion)
+            hostRegion._powerArtSeam = seam
             t = seam:CreateTexture(nil, "ARTWORK")
-            PP.DisablePixelSnap(t)
-            host._powerArtTex = t
+            Pix.DisablePixelSnap(t)
+            hostRegion._powerArtTex = t
         end
         t:SetTexture(CludesUI.GetBorderCompanion(key, "sepH"))
-        t:SetVertexColor(host._powerArtR, host._powerArtG, host._powerArtB, host._powerArtAlpha)
+        t:SetVertexColor(
+            hostRegion._powerArtR,
+            hostRegion._powerArtG,
+            hostRegion._powerArtB,
+            hostRegion._powerArtAlpha
+        )
     end
-    host:Show()
-    ns.RF_LayoutPowerBorderArt(host)
+    hostRegion:Show()
+    mod.RF_LayoutPowerBorderArt(hostRegion)
     CludesUI.RegisterPxReapply(
-        host,
-        (mode == "divider" and not preview) and ns.RF_LayoutPowerBorderArt or nil
+        hostRegion,
+        (modeName == "divider" and not preview) and mod.RF_LayoutPowerBorderArt or nil
     )
     return true, true
 end
 
-function ns.RF_ApplyTopNameDivider(tnb, s, preview)
-    local host = tnb._divider
+function mod.RF_ApplyTopNameDivider(tnb, s, preview)
+    local hostRegion = tnb._divider
     local key = s.borderTexture
     if
-        not PP
+        not Pix
         or not s.topNameBarEnabled
         or s.topNameBarDivider ~= true
-        or ns.RF_Stock()
+        or mod.RF_Stock()
         or not CludesUI._pixelArtBorders[key]
         or (s.borderSize or 1) <= 0
         or (s.topNameBarHeight or 20) < 4
     then
-        if host then
-            ns.RF_ClearPowerBorderArt(host)
-            host:Hide()
+        if hostRegion then
+            mod.RF_ClearPowerBorderArt(hostRegion)
+            hostRegion:Hide()
         end
         return
     end
-    if not host then
+    if not hostRegion then
         -- Pooled with the options preview's replica, as the seam above.
-        host = POOL.CreateFrame("Frame", nil, tnb:GetParent())
-        host:SetAllPoints(tnb)
-        tnb._divider = host
+        hostRegion = POOL.CreateFrame("Frame", nil, tnb:GetParent())
+        hostRegion:SetAllPoints(tnb)
+        tnb._divider = hostRegion
     end
-    ns.RF_ApplyPowerBorderArt(host, s, true, preview, true)
+    mod.RF_ApplyPowerBorderArt(hostRegion, s, true, preview, true)
 end
 
 -- Unit tooltip and hover border for a raid/party button; the detached
@@ -618,7 +630,7 @@ local function ButtonOnEnter(self)
     -- Unit-tooltip gating: see ns.RaidFrameTooltipAllowed. It reads through the party-aware
     -- proxy, NOT raw db.profile -- else party_<key> overrides from a custom party
     -- "Range & Tooltip" section are never seen.
-    if not ns.RaidFrameTooltipAllowed(self) then
+    if not mod.RaidFrameTooltipAllowed(self) then
         return
     end
     local u = self:GetAttribute("unit")
@@ -628,31 +640,31 @@ local function ButtonOnEnter(self)
         -- secure unit attribute: a literal "raidN"/"partyN"/"player" string lacks the
         -- secure-frame origin that makes GameTooltip:GetUnit() return a secret, so external
         -- tooltip addons can resolve the unit. Falls back to the attribute if no clean token.
-        local tip, g = u, UnitGUID(u)
+        local tipText, g = u, UnitGUID(u)
         if g and not (issecretvalue and issecretvalue(g)) then
             if UnitGUID("player") == g then
-                tip = "player"
+                tipText = "player"
             elseif IsInRaid() then
-                for i = 1, GetNumGroupMembers() do
-                    local tk = "raid" .. i
+                for idx = 1, GetNumGroupMembers() do
+                    local tk = "raid" .. idx
                     local tg = UnitGUID(tk)
                     if tg and not (issecretvalue and issecretvalue(tg)) and tg == g then
-                        tip = tk
+                        tipText = tk
                         break
                     end
                 end
             else
-                for i = 1, GetNumSubgroupMembers() do
-                    local tk = "party" .. i
+                for idx = 1, GetNumSubgroupMembers() do
+                    local tk = "party" .. idx
                     local tg = UnitGUID(tk)
                     if tg and not (issecretvalue and issecretvalue(tg)) and tg == g then
-                        tip = tk
+                        tipText = tk
                         break
                     end
                 end
             end
         end
-        GameTooltip:SetUnit(tip)
+        GameTooltip:SetUnit(tipText)
         GameTooltip:Show()
     end
 end
@@ -664,13 +676,13 @@ local function ButtonOnLeave(self)
     end
     GameTooltip:Hide()
 end
-ns.RF_ButtonOnEnter, ns.RF_ButtonOnLeave = ButtonOnEnter, ButtonOnLeave
+mod.RF_ButtonOnEnter, mod.RF_ButtonOnLeave = ButtonOnEnter, ButtonOnLeave
 
 -------------------------------------------------------------------------------
 --  Style a single button (called once per button at creation time)
 -------------------------------------------------------------------------------
-local function StyleButton(button)
-    local d = GetFFD(button)
+local function StyleButton(btnFrame)
+    local d = GetFFD(btnFrame)
     if d.styled then
         return
     end
@@ -679,90 +691,90 @@ local function StyleButton(button)
     -- Register our unit buttons so the free right-click camera watcher can tell when the cursor is
     -- over one. These are SecureGroupHeader/SecureUnitButton frames (Blizzard-owned), so membership
     -- lives in an external weak table, never a key on the button.
-    ns._cuiUnitButtons = ns._cuiUnitButtons or setmetatable({}, { __mode = "k" })
-    ns._cuiUnitButtons[button] = true
+    mod._cuiUnitButtons = mod._cuiUnitButtons or setmetatable({}, { __mode = "k" })
+    mod._cuiUnitButtons[btnFrame] = true
 
-    local s = db.profile
+    local s = saved.profile
     -- The Anchor* closures below are stored on `d` and RE-CALLED after d._isParty / d._isExtra are
     -- set (StyleButton runs before that). They MUST resolve the settings source LIVE via LiveS()
     -- rather than capture this raid `s`, or party/extra frames would anchor every indicator, text
     -- and aura at the RAID position. The body keeps the raw `s` for creation-time sizing.
     local function LiveS()
-        return d._isParty and ns._scaledPartyProxy
-            or (d._isExtra and ns._scaledExtraProxy)
-            or ns._scaledProfile
+        return d._isParty and mod._scaledPartyProxy
+            or (d._isExtra and mod._scaledExtraProxy)
+            or mod._scaledProfile
     end
-    local w = PixelSnap(s.frameWidth or 72)
-    local h = PixelSnap(s.frameHeight or 46)
+    local wid = PixelSnap(s.frameWidth or 72)
+    local hgt = PixelSnap(s.frameHeight or 46)
     -- The power bar is ALWAYS created (hidden) so a later swap into a power-enabled profile has a
     -- bar to show; UpdateButton drives per-role show/hide + matching health height. Health starts
     -- FULL height, else the bottom powerH strip shows dark bg as an "empty power bar" until the
     -- first UpdateButton (visible ~0.5s at login).
     local powerH = PixelSnap(s.powerHeight or 4)
-    local healthH = h
+    local healthH = hgt
 
     -- No SetSize here: sizing is window-phase work (combat-blocked), owned by
     -- ns._StyleButtonSecure below plus the header's initialConfigFunction.
 
     -- Background (visible behind the health bar where HP is missing)
-    local bg = button:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    local bgc = s.customBgColor or defaults.customBgColor
-    bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
-    if PP then
-        PP.DisablePixelSnap(bg)
+    local backdrop = btnFrame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    local bgc = s.customBgColor or defaultSet.customBgColor
+    backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+    if Pix then
+        Pix.DisablePixelSnap(backdrop)
     end
-    d.bg = bg
+    d.bg = backdrop
 
     -- Health bar
-    local health = CreateFrame("StatusBar", nil, button)
-    health:SetFrameLevel(button:GetFrameLevel() + 2)
-    health:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-    health:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
-    health:SetHeight(healthH)
+    local healthBar = CreateFrame("StatusBar", nil, btnFrame)
+    healthBar:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
+    healthBar:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", 0, 0)
+    healthBar:SetPoint("TOPRIGHT", btnFrame, "TOPRIGHT", 0, 0)
+    healthBar:SetHeight(healthH)
     local texPath = ResolveHealthTexture()
-    health:SetStatusBarTexture(texPath)
-    health:GetStatusBarTexture():SetHorizTile(false)
-    if PP then
-        PP.DisablePixelSnap(health)
+    healthBar:SetStatusBarTexture(texPath)
+    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    if Pix then
+        Pix.DisablePixelSnap(healthBar)
     end
     -- Fill axis + inversion. StyleButton runs before d._isParty is set, so these use
     -- the raid values; ReanchorAbsorbToFill re-resolves both against the button's real
     -- settings source each update.
-    ns.RF_ApplyHealthOrientation(health, s)
-    health:SetMinMaxValues(0, 100)
-    health:SetValue(100)
+    mod.RF_ApplyHealthOrientation(healthBar, s)
+    healthBar:SetMinMaxValues(0, 100)
+    healthBar:SetValue(100)
     -- Pre-paint tint: a StatusBar texture renders WHITE (default vertex
     -- color) until the first content paint assigns the real class/reaction
     -- color a few frames after login (the styling drain). Start dark so the
     -- loading shell reads as calm empty frames instead of a flat white flash.
-    health:SetStatusBarColor(0.12, 0.12, 0.12)
-    d.health = health
+    healthBar:SetStatusBarColor(0.12, 0.12, 0.12)
+    d.health = healthBar
 
     -- Full-height anchor reference for Uniform Icon Anchoring: top tracks the health bar (so the
     -- Top Name Bar inset carries over), bottom pins to the button -- exactly where the health bar
     -- sits with no power bar. ns.RF_AnchorHost swaps decorations onto it; _cuiHealth points back
     -- for the few sites that must hug the real bar (full-overlay BM bars).
-    d.uniformRef = CreateFrame("Frame", nil, button)
-    d.uniformRef:SetFrameLevel(health:GetFrameLevel())
-    d.uniformRef:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-    d.uniformRef:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
-    health._cuiUniformRef = d.uniformRef
-    d.uniformRef._cuiHealth = health
+    d.uniformRef = CreateFrame("Frame", nil, btnFrame)
+    d.uniformRef:SetFrameLevel(healthBar:GetFrameLevel())
+    d.uniformRef:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    d.uniformRef:SetPoint("BOTTOMRIGHT", btnFrame, "BOTTOMRIGHT", 0, 0)
+    healthBar._cuiUniformRef = d.uniformRef
+    d.uniformRef._cuiHealth = healthBar
 
     -- Power bar: ALWAYS created, hidden, anchored to the button bottom for pixel alignment;
     -- UpdateButton's per-role gate shows/fills it. Unconditional creation is what lets a
     -- power-OFF login profile swap into a power-ON one.
     do
-        local power = CreateFrame("StatusBar", nil, button)
-        power:SetFrameLevel(button:GetFrameLevel() + 3)
-        power:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
-        power:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
+        local power = CreateFrame("StatusBar", nil, btnFrame)
+        power:SetFrameLevel(btnFrame:GetFrameLevel() + 3)
+        power:SetPoint("BOTTOMLEFT", btnFrame, "BOTTOMLEFT", 0, 0)
+        power:SetPoint("BOTTOMRIGHT", btnFrame, "BOTTOMRIGHT", 0, 0)
         power:SetHeight(powerH)
         power:SetStatusBarTexture(texPath)
         power:GetStatusBarTexture():SetHorizTile(false)
-        if PP then
-            PP.DisablePixelSnap(power)
+        if Pix then
+            Pix.DisablePixelSnap(power)
         end
         power:SetMinMaxValues(0, 1)
         power:SetValue(1)
@@ -776,18 +788,18 @@ local function StyleButton(button)
             (s.powerBgColor or {}).b or 0,
             (s.powerBgDarkness or 70) / 100
         )
-        if PP then
-            PP.DisablePixelSnap(pwBg)
+        if Pix then
+            Pix.DisablePixelSnap(pwBg)
         end
         d.power = power
         d.powerBg = pwBg
 
         -- Power border frame
-        local pwBdrFrame = CreateFrame("Frame", nil, button)
+        local pwBdrFrame = CreateFrame("Frame", nil, btnFrame)
         pwBdrFrame:SetAllPoints(power)
         pwBdrFrame:SetFrameLevel(power:GetFrameLevel() + 1)
-        if PP then
-            PP.CreateBorder(pwBdrFrame, 0, 0, 0, 1, 1)
+        if Pix then
+            Pix.CreateBorder(pwBdrFrame, 0, 0, 0, 1, 1)
         end
         d.powerBorderFrame = pwBdrFrame
 
@@ -798,15 +810,15 @@ local function StyleButton(button)
 
     -- Top Name Bar: ALWAYS created, hidden. The layout/refresh pass sizes, reserves and shows it from settings; UpdateButton sets the text.
     do
-        local tnb = CreateFrame("Frame", nil, button)
-        tnb:SetFrameLevel(button:GetFrameLevel() + 4)
-        tnb:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-        tnb:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
+        local tnb = CreateFrame("Frame", nil, btnFrame)
+        tnb:SetFrameLevel(btnFrame:GetFrameLevel() + 4)
+        tnb:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", 0, 0)
+        tnb:SetPoint("TOPRIGHT", btnFrame, "TOPRIGHT", 0, 0)
         tnb:SetHeight(PixelSnap(s.topNameBarHeight or 20))
         local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
         tnbBg:SetAllPoints()
-        if PP then
-            PP.DisablePixelSnap(tnbBg)
+        if Pix then
+            Pix.DisablePixelSnap(tnbBg)
         end
         local tnbText = tnb:CreateFontString(nil, "OVERLAY")
         ApplyFont(tnbText, s.topNameBarTextSize or 11)
@@ -818,50 +830,50 @@ local function StyleButton(button)
     end
 
     -- Absorb shields
-    CreateAbsorbBar(button, health)
+    CreateAbsorbBar(btnFrame, healthBar)
 
     -- Border frame
-    local bdrFrame = CreateFrame("Frame", nil, button)
-    bdrFrame:SetAllPoints(button)
-    bdrFrame:SetFrameLevel(button:GetFrameLevel() + 8)
+    local bdrFrame = CreateFrame("Frame", nil, btnFrame)
+    bdrFrame:SetAllPoints(btnFrame)
+    bdrFrame:SetFrameLevel(btnFrame:GetFrameLevel() + 8)
     d.borderFrame = bdrFrame
     -- Styled via CludesUI.ApplyBorderStyle (PP or textured/SharedMedia) in UpdateBorder.
     -- Hover/Target are color states recolored onto this single border, not separate frames.
 
     -- Threat border
-    local threatFrame = CreateFrame("Frame", nil, button)
-    threatFrame:SetAllPoints(button)
-    threatFrame:SetFrameLevel(button:GetFrameLevel() + 10)
+    local threatFrame = CreateFrame("Frame", nil, btnFrame)
+    threatFrame:SetAllPoints(btnFrame)
+    threatFrame:SetFrameLevel(btnFrame:GetFrameLevel() + 10)
     threatFrame:Hide()
     d.threatFrame = threatFrame
-    if PP then
-        PP.CreateBorder(threatFrame, 1, 0, 0, 1, 2)
+    if Pix then
+        Pix.CreateBorder(threatFrame, 1, 0, 0, 1, 2)
     end
 
     -- Party Frames kit (the stock portrait party frame, latched): built here,
     -- before every anchor closure below and before the aura containers, so
     -- each of them takes the kit's host and spots from its first call.
-    if d._isParty and ns.RF_PartyKit() then
-        ns.RF_KitBuild(button, d, health, d.power, bdrFrame)
+    if d._isParty and mod.RF_PartyKit() then
+        mod.RF_KitBuild(btnFrame, d, healthBar, d.power, bdrFrame)
     end
 
     -- Text carrier: the texts in the text band (ns.LVL_TEXT) -- above every border incl.
     -- the raise, below the aura band. Their FontStrings are built on it on first need
     -- (ns.RF_TextLayout, run by AnchorTexts below and by the paints when the settings changed).
-    local textCarrier = CreateFrame("Frame", nil, button)
-    textCarrier:SetAllPoints(health)
-    textCarrier:SetFrameLevel(button:GetFrameLevel() + ns.LVL_TEXT)
+    local textCarrier = CreateFrame("Frame", nil, btnFrame)
+    textCarrier:SetAllPoints(healthBar)
+    textCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + mod.LVL_TEXT)
     d.textCarrier = textCarrier
     -- The second carrier for texts whose Show Above Icons differs from the name's: built
     -- here with the first (never in a later layout pass), levelled by ns.RF_TextLayout.
-    local textCarrierAlt = CreateFrame("Frame", nil, button)
-    textCarrierAlt:SetAllPoints(health)
-    textCarrierAlt:SetFrameLevel(button:GetFrameLevel() + ns.LVL_TEXT)
+    local textCarrierAlt = CreateFrame("Frame", nil, btnFrame)
+    textCarrierAlt:SetAllPoints(healthBar)
+    textCarrierAlt:SetFrameLevel(btnFrame:GetFrameLevel() + mod.LVL_TEXT)
     d._txAlt = textCarrierAlt
     -- Status text (DEAD / OFFLINE / AFK -- always shown, own position/size/color).
     -- Party Frames kit: in the text band, so the Classic art (drawn over the
     -- bars) never covers it; it still anchors to the kit health bar.
-    local statusFS = (d.kit and textCarrier or health):CreateFontString(nil, "OVERLAY")
+    local statusFS = (d.kit and textCarrier or healthBar):CreateFontString(nil, "OVERLAY")
     local stc = s.statusTextColor or { r = 1, g = 1, b = 1 }
     ApplyFont(statusFS, s.statusTextSize or 14)
     statusFS:SetJustifyH("CENTER")
@@ -871,29 +883,29 @@ local function StyleButton(button)
 
     local function AnchorStatusText()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = ns.RF_BarHost(health, s) -- Uniform Icon Anchoring host swap / kit bar
+        local healthBar = mod.RF_BarHost(healthBar, s) -- Uniform Icon Anchoring host swap / kit bar
         statusFS:ClearAllPoints()
-        local pos = s.statusTextPosition or "center"
+        local place = s.statusTextPosition or "center"
         local ox = s.statusTextOffsetX or 0
         local oy = s.statusTextOffsetY or 0
-        if pos == "topleft" then
-            statusFS:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
-        elseif pos == "top" then
-            statusFS:SetPoint("TOP", health, "TOP", ox, -2 + oy)
-        elseif pos == "topright" then
-            statusFS:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
-        elseif pos == "left" then
-            statusFS:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
-        elseif pos == "right" then
-            statusFS:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
-        elseif pos == "bottomleft" then
-            statusFS:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
-        elseif pos == "bottom" then
-            statusFS:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
-        elseif pos == "bottomright" then
-            statusFS:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        if place == "topleft" then
+            statusFS:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 2 + ox, -2 + oy)
+        elseif place == "top" then
+            statusFS:SetPoint("TOP", healthBar, "TOP", ox, -2 + oy)
+        elseif place == "topright" then
+            statusFS:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -2 + ox, -2 + oy)
+        elseif place == "left" then
+            statusFS:SetPoint("LEFT", healthBar, "LEFT", 2 + ox, oy)
+        elseif place == "right" then
+            statusFS:SetPoint("RIGHT", healthBar, "RIGHT", -2 + ox, oy)
+        elseif place == "bottomleft" then
+            statusFS:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        elseif place == "bottom" then
+            statusFS:SetPoint("BOTTOM", healthBar, "BOTTOM", ox, 2 + oy)
+        elseif place == "bottomright" then
+            statusFS:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -2 + ox, 2 + oy)
         else -- center
-            statusFS:SetPoint("CENTER", health, "CENTER", ox, oy)
+            statusFS:SetPoint("CENTER", healthBar, "CENTER", ox, oy)
         end
     end
     AnchorStatusText()
@@ -901,9 +913,9 @@ local function StyleButton(button)
 
     -- Role icon. Carrier sits in the text band (ns.LVL_AURA - 1 = ns.LVL_TEXT): above every border incl. the raise, auras still over it.
     -- Level is owned by AnchorRoleIcon (live-resolves the "Show Behind Border" option); this is just the initial value.
-    local roleCarrier = CreateFrame("Frame", nil, button)
-    roleCarrier:SetAllPoints(health)
-    roleCarrier:SetFrameLevel(button:GetFrameLevel() + (ns.LVL_AURA - 1))
+    local roleCarrier = CreateFrame("Frame", nil, btnFrame)
+    roleCarrier:SetAllPoints(healthBar)
+    roleCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + (mod.LVL_AURA - 1))
     local roleIcon = roleCarrier:CreateTexture(nil, "OVERLAY")
     local riSz = PixelSnap(s.roleIconSize or 14)
     roleIcon:SetSize(riSz, riSz)
@@ -914,40 +926,46 @@ local function StyleButton(button)
         local s = LiveS() -- party/extra-aware (see LiveS note above)
         -- Show Behind Border: just under the base border; default: the text band.
         roleCarrier:SetFrameLevel(
-            button:GetFrameLevel() + (s.roleIconBehindBorder and ns.LVL_ROLE_BEHIND or (ns.LVL_AURA - 1))
+            btnFrame:GetFrameLevel() + (s.roleIconBehindBorder and mod.LVL_ROLE_BEHIND or (mod.LVL_AURA - 1))
         )
-        local health = ns.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
         roleIcon:ClearAllPoints()
         -- Party Frames kit: the stock spot plus the user's offsets.
         if d.kitG then
-            ns.RF_KitSpot(d.kitG.role, roleIcon, button, s.roleIconOffsetX, s.roleIconOffsetY)
+            mod.RF_KitSpot(d.kitG.role, roleIcon, btnFrame, s.roleIconOffsetX, s.roleIconOffsetY)
             return
         end
         -- Attach Role Icons: the name bar's rect is the same with or without a power bar
         if s.roleIconOnNameBar and s.topNameBarEnabled and d.topNameBar then
-            local pos = (s.roleNameBarPosition or "left"):upper()
-            roleIcon:SetPoint(pos, d.topNameBar, pos, s.roleNameBarOffsetX or 0, s.roleNameBarOffsetY or 0)
+            local place = (s.roleNameBarPosition or "left"):upper()
+            roleIcon:SetPoint(
+                place,
+                d.topNameBar,
+                place,
+                s.roleNameBarOffsetX or 0,
+                s.roleNameBarOffsetY or 0
+            )
             return
         end
         -- The position key uppercases directly to a valid anchor point, so all
         -- 9 positions resolve like the Marker Position dropdown.
-        local pos = (s.roleIconPosition or "bottomleft"):upper()
-        roleIcon:SetPoint(pos, health, pos, s.roleIconOffsetX or 0, s.roleIconOffsetY or 0)
+        local place = (s.roleIconPosition or "bottomleft"):upper()
+        roleIcon:SetPoint(place, healthBar, place, s.roleIconOffsetX or 0, s.roleIconOffsetY or 0)
     end
     AnchorRoleIcon()
     d.AnchorRoleIcon = AnchorRoleIcon
 
     -- Marker carrier: above the frame border (incl. the hover/target raise) so the raid marker renders on top, not clipped behind it.
-    local markerCarrier = CreateFrame("Frame", nil, button)
-    markerCarrier:SetAllPoints(health)
-    markerCarrier:SetFrameLevel(button:GetFrameLevel() + ns.LVL_MARKER)
+    local markerCarrier = CreateFrame("Frame", nil, btnFrame)
+    markerCarrier:SetAllPoints(healthBar)
+    markerCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + mod.LVL_MARKER)
 
     -- Leader/assistant icon. Own host frame (strata/level contract in ns.ApplyLeaderStrata) --
     -- NOT the marker carrier, whose high level keeps the raid marker always on top. Parented to
     -- the button so it tracks the frame; SetAllPoints(health) anchors it to the health bar.
-    d.leaderHost = CreateFrame("Frame", nil, button)
-    d.leaderHost:SetAllPoints(health)
-    ns.ApplyLeaderStrata(d.leaderHost)
+    d.leaderHost = CreateFrame("Frame", nil, btnFrame)
+    d.leaderHost:SetAllPoints(healthBar)
+    mod.ApplyLeaderStrata(d.leaderHost)
 
     local leaderIcon = d.leaderHost:CreateTexture(nil, "OVERLAY")
     local liSz = PixelSnap(s.leaderIconSize or 14)
@@ -955,7 +973,7 @@ local function StyleButton(button)
     local liPos = (s.leaderIconPosition or "top"):upper()
     leaderIcon:SetPoint(
         liPos,
-        ns.RF_AnchorHost(health, s),
+        mod.RF_AnchorHost(healthBar, s),
         liPos,
         s.leaderIconOffsetX or 0,
         s.leaderIconOffsetY or 0
@@ -964,7 +982,7 @@ local function StyleButton(button)
     d.leaderIcon = leaderIcon
     -- Party Frames kit: the stock spot (re-seated by the party reload pass).
     if d.kitG then
-        ns.RF_KitLeader(d, LiveS())
+        mod.RF_KitLeader(d, LiveS())
     end
 
     -- Raid marker (on marker carrier, above the border)
@@ -977,29 +995,29 @@ local function StyleButton(button)
 
     local function AnchorRaidMarker()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = ns.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
         raidMarker:ClearAllPoints()
-        local pos = s.raidMarkerPosition or "center"
+        local place = s.raidMarkerPosition or "center"
         local ox = s.raidMarkerOffsetX or 0
         local oy = s.raidMarkerOffsetY or 0
-        if pos == "topleft" then
-            raidMarker:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
-        elseif pos == "top" then
-            raidMarker:SetPoint("TOP", health, "TOP", ox, -2 + oy)
-        elseif pos == "topright" then
-            raidMarker:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
-        elseif pos == "left" then
-            raidMarker:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
-        elseif pos == "right" then
-            raidMarker:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
-        elseif pos == "bottomleft" then
-            raidMarker:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
-        elseif pos == "bottom" then
-            raidMarker:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
-        elseif pos == "bottomright" then
-            raidMarker:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        if place == "topleft" then
+            raidMarker:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 2 + ox, -2 + oy)
+        elseif place == "top" then
+            raidMarker:SetPoint("TOP", healthBar, "TOP", ox, -2 + oy)
+        elseif place == "topright" then
+            raidMarker:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -2 + ox, -2 + oy)
+        elseif place == "left" then
+            raidMarker:SetPoint("LEFT", healthBar, "LEFT", 2 + ox, oy)
+        elseif place == "right" then
+            raidMarker:SetPoint("RIGHT", healthBar, "RIGHT", -2 + ox, oy)
+        elseif place == "bottomleft" then
+            raidMarker:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        elseif place == "bottom" then
+            raidMarker:SetPoint("BOTTOM", healthBar, "BOTTOM", ox, 2 + oy)
+        elseif place == "bottomright" then
+            raidMarker:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -2 + ox, 2 + oy)
         else -- center
-            raidMarker:SetPoint("CENTER", health, "CENTER", ox, oy)
+            raidMarker:SetPoint("CENTER", healthBar, "CENTER", ox, oy)
         end
     end
     AnchorRaidMarker()
@@ -1013,34 +1031,34 @@ local function StyleButton(button)
 
     local function AnchorReadyCheck()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = ns.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
         readyCheck:ClearAllPoints()
-        local pos = s.readyCheckPosition or "center"
+        local place = s.readyCheckPosition or "center"
         local ox = s.readyCheckOffsetX or 0
         local oy = s.readyCheckOffsetY or 0
         -- Party Frames kit: centred on the portrait, as stock.
         if d.kitG and d.kitPortrait then
-            ns.RF_KitSpot(d.kitG.rc, readyCheck, d.kitPortrait, ox, oy)
+            mod.RF_KitSpot(d.kitG.rc, readyCheck, d.kitPortrait, ox, oy)
             return
         end
-        if pos == "topleft" then
-            readyCheck:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
-        elseif pos == "top" then
-            readyCheck:SetPoint("TOP", health, "TOP", ox, -2 + oy)
-        elseif pos == "topright" then
-            readyCheck:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
-        elseif pos == "left" then
-            readyCheck:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
-        elseif pos == "right" then
-            readyCheck:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
-        elseif pos == "bottomleft" then
-            readyCheck:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
-        elseif pos == "bottom" then
-            readyCheck:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
-        elseif pos == "bottomright" then
-            readyCheck:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        if place == "topleft" then
+            readyCheck:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 2 + ox, -2 + oy)
+        elseif place == "top" then
+            readyCheck:SetPoint("TOP", healthBar, "TOP", ox, -2 + oy)
+        elseif place == "topright" then
+            readyCheck:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -2 + ox, -2 + oy)
+        elseif place == "left" then
+            readyCheck:SetPoint("LEFT", healthBar, "LEFT", 2 + ox, oy)
+        elseif place == "right" then
+            readyCheck:SetPoint("RIGHT", healthBar, "RIGHT", -2 + ox, oy)
+        elseif place == "bottomleft" then
+            readyCheck:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        elseif place == "bottom" then
+            readyCheck:SetPoint("BOTTOM", healthBar, "BOTTOM", ox, 2 + oy)
+        elseif place == "bottomright" then
+            readyCheck:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -2 + ox, 2 + oy)
         else -- center
-            readyCheck:SetPoint("CENTER", health, "CENTER", ox, oy)
+            readyCheck:SetPoint("CENTER", healthBar, "CENTER", ox, oy)
         end
     end
     AnchorReadyCheck()
@@ -1055,10 +1073,16 @@ local function StyleButton(button)
 
     local function AnchorCombatIcon()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = ns.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
         combatIcon:ClearAllPoints()
-        local pos = (s.combatIndicatorPosition or "right"):upper()
-        combatIcon:SetPoint(pos, health, pos, s.combatIndicatorOffsetX or 0, s.combatIndicatorOffsetY or 0)
+        local place = (s.combatIndicatorPosition or "right"):upper()
+        combatIcon:SetPoint(
+            place,
+            healthBar,
+            place,
+            s.combatIndicatorOffsetX or 0,
+            s.combatIndicatorOffsetY or 0
+        )
     end
     AnchorCombatIcon()
     d.AnchorCombatIcon = AnchorCombatIcon
@@ -1071,9 +1095,9 @@ local function StyleButton(button)
         -- (ns.LVL_TEXT); "Show Above Icons" (the name's cog) lifts it above the band's children
         -- (+6 clears each aura unit's +1..+5), still below the marker carrier.
         textCarrier:SetFrameLevel(
-            button:GetFrameLevel() + (s.nameTextAboveIcons and (ns.LVL_AURA + 6) or ns.LVL_TEXT)
+            btnFrame:GetFrameLevel() + (s.nameTextAboveIcons and (mod.LVL_AURA + 6) or mod.LVL_TEXT)
         )
-        ns.RF_TextLayout(d, s)
+        mod.RF_TextLayout(d, s)
     end
     AnchorTexts()
     d.AnchorTexts = AnchorTexts
@@ -1082,10 +1106,10 @@ local function StyleButton(button)
     -- Highlight states bump it up, normal restores the base level. The PP container's level is
     -- fixed at creation, so it must be moved explicitly (borderFrame alone won't move it).
     local function ApplyBorderLevel(raised, s)
-        if not (PP and d.borderFrame) then
+        if not (Pix and d.borderFrame) then
             return
         end
-        local pl = button:GetFrameLevel()
+        local pl = btnFrame:GetFrameLevel()
         -- Under a stock style the CludesUI border is stood down, so Show
         -- Behind has nothing to lower (the hover border must stay on top).
         -- Resolved LIVE like UpdateBorder (the caller passes its own LiveS()), so a
@@ -1093,25 +1117,25 @@ local function StyleButton(button)
         -- follows it) stays in step.
         s = s or LiveS()
         local lvl = (s.borderBehind and not d.stockEdge and not d.kit) and math.max(0, pl - 1)
-            or (pl + (raised and ns.LVL_RAISE or 8))
+            or (pl + (raised and mod.LVL_RAISE or 8))
         -- Runs on hover/target transitions and restyles: skip the SetFrameLevel calls unless
         -- the level actually changes -- the common case is two getters.
-        local container = PP.GetBorders(d.borderFrame)
+        local boxHolder = Pix.GetBorders(d.borderFrame)
         if
             d.borderFrame:GetFrameLevel() == lvl
-            and (not container or container:GetFrameLevel() == lvl + 1)
+            and (not boxHolder or boxHolder:GetFrameLevel() == lvl + 1)
         then
             return
         end
         d.borderFrame:SetFrameLevel(lvl)
-        if container then
-            container:SetFrameLevel(lvl + 1)
+        if boxHolder then
+            boxHolder:SetFrameLevel(lvl + 1)
         end
         -- A textured style draws on a backdrop child levelled only at style time: carry
         -- it too, so the raise also clears the Color Custom Borders copies (base + 1).
-        local bd = CludesUI._bdBorderData and CludesUI._bdBorderData[d.borderFrame]
-        if bd then
-            bd:SetFrameLevel(lvl)
+        local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[d.borderFrame]
+        if edge then
+            edge:SetFrameLevel(lvl)
         end
     end
 
@@ -1119,19 +1143,19 @@ local function StyleButton(button)
     -- Borders' Color Custom Borders, flagged by ns.RF_PaintThreat) > normal. A borderless
     -- frame has nothing to recolor, so the highlight draws its own (ns.ApplyHighlightBorder).
     local function ApplyBorderColor()
-        if not (PP and d.borderFrame) then
+        if not (Pix and d.borderFrame) then
             return
         end
         -- Re-called long after StyleButton: resolve LIVE (see LiveS note) so party overrides and profile swaps are honored.
         local s = LiveS()
-        if ns.RF_ButtonCompact(d, s) then
-            ns.RF_CompactHighlight(d.borderFrame, d, s, button)
+        if mod.RF_ButtonCompact(d, s) then
+            mod.RF_CompactHighlight(d.borderFrame, d, s, btnFrame)
             return
         end
         -- Party Frames kit: hover and target glow along the frame art.
         if d.kit then
             ApplyBorderLevel(false, s)
-            ns.RF_KitHighlight(
+            mod.RF_KitHighlight(
                 d,
                 d.borderFrame,
                 s,
@@ -1145,7 +1169,7 @@ local function StyleButton(button)
         if d.stockEdge then
             local hover = d._hovered and s.hoverBorderEnabled ~= false
             ApplyBorderLevel(hover, s)
-            ns.RF_StockHighlight(d, d.borderFrame, s, hover, d._isTarget and s.targetBorderEnabled ~= false)
+            mod.RF_StockHighlight(d, d.borderFrame, s, hover, d._isTarget and s.targetBorderEnabled ~= false)
             return
         end
         local r, g, b, a
@@ -1160,7 +1184,7 @@ local function StyleButton(button)
             r, g, b, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
-        elseif d._aggroBdr and s.threatCustomBorder == true and ns.RF_CustomBorderOn(s) then
+        elseif d._aggroBdr and s.threatCustomBorder == true and mod.RF_CustomBorderOn(s) then
             -- The threat color, raised like hover/target so it also covers the dispel
             -- Color Custom Borders copies (base + 9). Settings re-checked live: a
             -- restyle can run before the next threat paint clears the flag.
@@ -1172,11 +1196,11 @@ local function StyleButton(button)
         end
         ApplyBorderLevel(raised, s)
         if (s.borderSize or 1) <= 0 then
-            ns.ApplyHighlightBorder(d.borderFrame, s, hlSize, r, g, b, a, hlPx)
+            mod.ApplyHighlightBorder(d.borderFrame, s, hlSize, r, g, b, a, hlPx)
             return
         end
         if hlSize then
-            r, g, b = ns.RF_VisibleHighlight(s, r, g, b)
+            r, g, b = mod.RF_VisibleHighlight(s, r, g, b)
         end
         d.borderFrame._hlBorderSize = nil
         CludesUI.SetBorderStyleColor(d.borderFrame, r, g, b, a)
@@ -1185,10 +1209,10 @@ local function StyleButton(button)
             and d.powerBorderFrame
             and d.powerBorderFrame._powerArtMode == "divider"
         then
-            ns.RF_ColorPowerDivider(d.powerBorderFrame, r, g, b, a)
+            mod.RF_ColorPowerDivider(d.powerBorderFrame, r, g, b, a)
         end
         if s.topNameBarDividerMatchColor == true and d.topNameBar and d.topNameBar._divider then
-            ns.RF_ColorPowerDivider(d.topNameBar._divider, r, g, b, a)
+            mod.RF_ColorPowerDivider(d.topNameBar._divider, r, g, b, a)
         end
     end
     d.ApplyBorderColor = ApplyBorderColor
@@ -1196,7 +1220,7 @@ local function StyleButton(button)
     -- Apply border (style/size/texture/offsets via shared ApplyBorderStyle,
     -- then recolor for state). "Show Behind" lowers it below the frame; else +8.
     local function UpdateBorder()
-        if not (PP and d.borderFrame) then
+        if not (Pix and d.borderFrame) then
             return
         end
         -- Re-called from Reload paths long after StyleButton: resolve LIVE (see LiveS note).
@@ -1204,15 +1228,15 @@ local function StyleButton(button)
         local bs = s.borderSize or 1
         local bc = s.borderColor or { r = 0, g = 0, b = 0 }
         local texKey = s.borderTexture or "solid"
-        local pl = button:GetFrameLevel()
-        local compact = ns.RF_ButtonCompact(d, s)
+        local pl = btnFrame:GetFrameLevel()
+        local compact = mod.RF_ButtonCompact(d, s)
         if compact or d._compactBorder then
             d._compactBorder = compact
         end
         if compact then
             CludesUI.ApplyBorderStyle(d.borderFrame, 0, 0, 0, 0, 0, "solid")
             ApplyBorderColor()
-            CludesUI.RoundCorners(button, 0)
+            CludesUI.RoundCorners(btnFrame, 0)
             return
         end
         -- Stock styles: the CludesUI border stands down for the stock edge
@@ -1222,16 +1246,16 @@ local function StyleButton(button)
             CludesUI.ApplyBorderStyle(d.borderFrame, 0, 0, 0, 0, 0, "solid")
             d.borderFrame._hlBorderSize = nil
             ApplyBorderColor()
-            CludesUI.RoundCorners(button, 0)
+            CludesUI.RoundCorners(btnFrame, 0)
             return
         end
         if d.stockEdge then
             d.borderFrame:SetFrameLevel(pl + 8)
             CludesUI.ApplyBorderStyle(d.borderFrame, 0, 0, 0, 0, 0, "solid")
             d.borderFrame._hlBorderSize = nil
-            ns.RF_StockSeat(d)
+            mod.RF_StockSeat(d)
             ApplyBorderColor()
-            CludesUI.RoundCorners(button, 0)
+            CludesUI.RoundCorners(btnFrame, 0)
             return
         end
         d.borderFrame:SetFrameLevel(s.borderBehind and math.max(0, pl - 1) or (pl + 8))
@@ -1257,7 +1281,7 @@ local function StyleButton(button)
         -- The power border rides in the body so its edge strips round too.
         local radius = s.cornerRadius or 0
         if radius > 0 then
-            CludesUI.RoundCorners(button, radius, {
+            CludesUI.RoundCorners(btnFrame, radius, {
                 roots = { d.health, d.power, d.topNameBar, d.powerBorderFrame },
                 textures = { d.bg },
                 border = d.borderFrame,
@@ -1265,11 +1289,11 @@ local function StyleButton(button)
                 corners = s.cornerMask,
             })
         else
-            CludesUI.RoundCorners(button, 0)
+            CludesUI.RoundCorners(btnFrame, 0)
         end
     end
-    if ns.RF_Stock() and not d.kit then
-        ns.RF_StockBuild(button, d, d.power)
+    if mod.RF_Stock() and not d.kit then
+        mod.RF_StockBuild(btnFrame, d, d.power)
     end
     UpdateBorder()
     d.UpdateBorder = UpdateBorder
@@ -1278,7 +1302,7 @@ local function StyleButton(button)
     local function UpdatePowerBorder(force)
         -- Party Frames kit: the mana bar sits in the art's own track.
         if d.kit then
-            ns.RF_ClearPowerBorderArt(d.powerBorderFrame)
+            mod.RF_ClearPowerBorderArt(d.powerBorderFrame)
             if d.powerBorderFrame then
                 d.powerBorderFrame:Hide()
             end
@@ -1286,25 +1310,25 @@ local function StyleButton(button)
         end
         -- No-op while the power bar is hidden: the border frame always exists and unconditional
         -- callers must not draw over a hidden bar. UpdateButton calls this AFTER power:Show().
-        if not PP or not d.powerBorderFrame then
+        if not Pix or not d.powerBorderFrame then
             return
         end
         if d.power and not d.power:IsShown() then
-            ns.RF_ClearPowerBorderArt(d.powerBorderFrame)
+            mod.RF_ClearPowerBorderArt(d.powerBorderFrame)
             d.powerBorderFrame:Hide()
             return
         end
         -- Classic WoW UI: the stock health/power divider in place of the power border.
         if d.stockDiv then
-            ns.RF_ClearPowerBorderArt(d.powerBorderFrame)
+            mod.RF_ClearPowerBorderArt(d.powerBorderFrame)
             d.powerBorderFrame:Hide()
-            ns.RF_StockDivider(d)
+            mod.RF_StockDivider(d)
             return
         end
         -- Re-called long after StyleButton: resolve LIVE (see LiveS note) -- a captured `s` misses party overrides and profile swaps.
         local s = LiveS()
         if s.powerBorderMatchFrame == true or d.powerBorderFrame._powerArtKey then
-            local handled, refreshed = ns.RF_ApplyPowerBorderArt(d.powerBorderFrame, s, force)
+            local handled, refreshed = mod.RF_ApplyPowerBorderArt(d.powerBorderFrame, s, force)
             if handled then
                 if
                     refreshed
@@ -1316,12 +1340,12 @@ local function StyleButton(button)
                 return
             end
         end
-        local style = s.powerBorderStyle or "cui"
-        if style == "cui" then
+        local look = s.powerBorderStyle or "cui"
+        if look == "cui" then
             -- CUI style: 1px divider, white at 20% opacity
-            PP.UpdateBorder(d.powerBorderFrame, 1, 1, 1, 1, 0.2)
+            Pix.UpdateBorder(d.powerBorderFrame, 1, 1, 1, 1, 0.2)
             d.powerBorderFrame:Show()
-            local ppC = PP.GetBorders(d.powerBorderFrame)
+            local ppC = Pix.GetBorders(d.powerBorderFrame)
             if ppC then
                 if ppC._bottom then
                     ppC._bottom:SetAlpha(0)
@@ -1345,11 +1369,11 @@ local function StyleButton(button)
         end
         local bc = s.powerBorderColor
         local ba = s.powerBorderAlpha or 1
-        PP.UpdateBorder(d.powerBorderFrame, bs, bc.r, bc.g, bc.b, ba)
+        Pix.UpdateBorder(d.powerBorderFrame, bs, bc.r, bc.g, bc.b, ba)
         d.powerBorderFrame:Show()
-        local ppC = PP.GetBorders(d.powerBorderFrame)
+        local ppC = Pix.GetBorders(d.powerBorderFrame)
         if ppC then
-            if style == "divider" then
+            if look == "divider" then
                 if ppC._bottom then
                     ppC._bottom:SetAlpha(0)
                 end
@@ -1382,8 +1406,8 @@ local function StyleButton(button)
     d.UpdatePowerBorder = UpdatePowerBorder
 
     -- Tooltip handlers
-    button:HookScript("OnEnter", ButtonOnEnter)
-    button:HookScript("OnLeave", ButtonOnLeave)
+    btnFrame:HookScript("OnEnter", ButtonOnEnter)
+    btnFrame:HookScript("OnLeave", ButtonOnLeave)
 
     -- Private auras: re-anchor whenever the secure header reassigns this button's unit. The engine
     -- drops private-aura anchors on unit reassignment (join/leave, sort, zone-in) even when the
@@ -1391,7 +1415,7 @@ local function StyleButton(button)
     -- when the token CHANGES) can leave the anchor dropped. OnAttributeChanged is the reliable
     -- per-button signal for exactly those reassignments. HookScript (NEVER SetScript) preserves the
     -- secure header's own handlers; helpers go through ns because they are defined later.
-    button:HookScript("OnAttributeChanged", function(self, name)
+    btnFrame:HookScript("OnAttributeChanged", function(self, name)
         if name ~= "unit" then
             return
         end
@@ -1409,10 +1433,10 @@ local function StyleButton(button)
             if d._isExtra then
                 -- map owned by XF_Apply
             elseif d._isParty then
-                if ns._partyFramesVisible then
-                    ns._partyUnitToButton[u] = self
+                if mod._partyFramesVisible then
+                    mod._partyUnitToButton[u] = self
                 end
-            elseif ns._raidFramesVisible then
+            elseif mod._raidFramesVisible then
                 unitToButton[u] = self
             end
             -- The secure header re-sets EVERY child's unit on EVERY re-process (each
@@ -1423,13 +1447,13 @@ local function StyleButton(button)
             -- assist gate run; the roster timer refreshes roster-derived state
             -- (leader/role/power layout) for unchanged occupants. A secret guid
             -- (never memoized) or a cleared/unstyled button takes the full path.
-            local guid = UnitGUID(u)
-            if issecretvalue(guid) then
-                guid = nil
+            local unitGuid = UnitGUID(u)
+            if issecretvalue(unitGuid) then
+                unitGuid = nil
             end
-            if guid and d._lastGuid == guid and d._lastUnit == u then
-                if ns.RFC_OnUnitAssigned then
-                    ns.RFC_OnUnitAssigned(self, d, u)
+            if unitGuid and d._lastGuid == unitGuid and d._lastUnit == u then
+                if mod.RFC_OnUnitAssigned then
+                    mod.RFC_OnUnitAssigned(self, d, u)
                 end
                 return
             end
@@ -1446,7 +1470,7 @@ local function StyleButton(button)
                 d._lastUnit = u
                 d._appliedHidePower = nil
             end
-            d._lastGuid = d.styled and guid or nil
+            d._lastGuid = d.styled and unitGuid or nil
             -- A ping marker belongs to the previous occupant; its pin-removed edge
             -- can no longer reach this button once the person moved.
             if d.pingFrame then
@@ -1454,19 +1478,19 @@ local function StyleButton(button)
             end
             -- Containers first: the legacy refresh below still has restriction-era failure modes,
             -- and an error there must not starve the container of its unit assignment.
-            if ns.RFC_OnUnitAssigned then
-                ns.RFC_OnUnitAssigned(self, d, u)
+            if mod.RFC_OnUnitAssigned then
+                mod.RFC_OnUnitAssigned(self, d, u)
             end
             -- Party Frames kit / party portrait: the new occupant's portrait
             -- (ahead of the legacy refresh for the same reason as the containers).
             if d.kitPortrait or d.pt then
-                ns.RF_PtPaint(d, u, "UnitChanged")
+                mod.RF_PtPaint(d, u, "UnitChanged")
             end
-            if ns._RefreshAssignedButton then
-                ns._RefreshAssignedButton(self, u)
+            if mod._RefreshAssignedButton then
+                mod._RefreshAssignedButton(self, u)
             end
-            if ns._UpdateButtonRange then
-                ns._UpdateButtonRange(u, self)
+            if mod._UpdateButtonRange then
+                mod._UpdateButtonRange(u, self)
             end
         else
             -- Cleared (button hidden by the header) or not yet resolvable: forget the
@@ -1477,8 +1501,8 @@ local function StyleButton(button)
 
     -- 12.1 aura containers (container shell creation is combat-legal since
     -- 68914, so this rides the deferred styling pass with the rest of the body)
-    if ns.RFC_SetupButton then
-        ns.RFC_SetupButton(button, health, d)
+    if mod.RFC_SetupButton then
+        mod.RFC_SetupButton(btnFrame, healthBar, d)
     end
 end
 
@@ -1491,34 +1515,34 @@ end
 --  post-screen execution so the suite's shared login watchdog budget never
 --  pays for it. Idempotent via d.securestyled, mirroring d.styled.
 -------------------------------------------------------------------------------
-ns._StyleButtonSecure = function(button)
-    local d = GetFFD(button)
+mod._StyleButtonSecure = function(btnFrame)
+    local d = GetFFD(btnFrame)
     if d.securestyled then
         return
     end
     d.securestyled = true
-    local s = db.profile
+    local s = saved.profile
     -- Party buttons take the party box (their creator stamps _isParty
     -- first); everything else the raid size.
     if d._isParty then
-        local pw, ph = ns.RF_PartyDims(s)
-        button:SetSize(PixelSnap(pw), PixelSnap(ph))
+        local pw, ph = mod.RF_PartyDims(s)
+        btnFrame:SetSize(PixelSnap(pw), PixelSnap(ph))
     else
-        button:SetSize(PixelSnap(s.frameWidth or 72), PixelSnap(s.frameHeight or 46))
+        btnFrame:SetSize(PixelSnap(s.frameWidth or 72), PixelSnap(s.frameHeight or 46))
     end
 
     -- Secure click: left=target, right=menu
-    button:RegisterForClicks("AnyUp")
-    button:SetAttribute("type1", "target")
+    btnFrame:RegisterForClicks("AnyUp")
+    btnFrame:SetAttribute("type1", "target")
     -- Wildcard fallback so left-click target survives if the click-cast engine later clears type1.
-    button:SetAttribute("*type1", "target")
+    btnFrame:SetAttribute("*type1", "target")
     -- The engine gates SecureUnitButton's togglemenu; route right-click through a SecureActionButton
     -- proxy so the menu (and protected items like Set Focus) works without taint (*type2 = "click").
     if CludesUI.AttachSecureUnitMenu then
-        CludesUI.AttachSecureUnitMenu(button)
+        CludesUI.AttachSecureUnitMenu(btnFrame)
     else
-        button:SetAttribute("type2", "togglemenu")
-        button:SetAttribute("*type2", "togglemenu")
+        btnFrame:SetAttribute("type2", "togglemenu")
+        btnFrame:SetAttribute("*type2", "togglemenu")
     end
 
     -- Hover ping support, MIXIN-PURE: Blizzard's mixin methods run untouched
@@ -1530,17 +1554,17 @@ ns._StyleButtonSecure = function(button)
     -- restricted content (both field-failed 2026-08-20). Writes are safe --
     -- our own spawned secure template, once per button, out of combat.
     if PingableType_UnitFrameMixin then
-        Mixin(button, PingableType_UnitFrameMixin)
-        button:SetAttribute("ping-receiver", true)
+        Mixin(btnFrame, PingableType_UnitFrameMixin)
+        btnFrame:SetAttribute("ping-receiver", true)
     end
 
     -- Register for click-casting (CUI built-in system)
-    if ns.CC_RegisterFrame then
-        ns.CC_RegisterFrame(button)
+    if mod.CC_RegisterFrame then
+        mod.CC_RegisterFrame(btnFrame)
     elseif ClickCastFrames then
-        ClickCastFrames[button] = true
+        ClickCastFrames[btnFrame] = true
     end
 end
 
-I.StyleButton = StyleButton
-I.broken = false
+Inner.StyleButton = StyleButton
+Inner.broken = false

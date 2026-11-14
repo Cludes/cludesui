@@ -54,7 +54,7 @@ local SATED_DEBUFFS = {
     390435, -- Exhaustion (Fury of the Aspects)
 }
 
-local _, ns = ...
+local _, mod = ...
 
 local SHAPE_MASKS = CludesUI.SHAPE_MASKS
 local BORDER_PX = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
@@ -63,12 +63,12 @@ local BORDER_PX = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
 --  DB access. We reuse the BattleRes DB handle (same SavedVariable) so we do
 --  not create a second NewDB on the shared table.
 -------------------------------------------------------------------------------
-local db
-local function P() -- our own profile slice
-    return db and db.profile and db.profile.bloodlust
+local saved
+local function Prm() -- our own profile slice
+    return saved and saved.profile and saved.profile.bloodlust
 end
 local function BR() -- BattleRes profile slice (proxy fallback source)
-    return db and db.profile and db.profile.battleRes
+    return saved and saved.profile and saved.profile.battleRes
 end
 
 -- Per-key fallback defaults (mirror the battleRes appearance defaults). Used
@@ -89,7 +89,7 @@ local APP_DEFAULTS = {
 
 -- Effective (proxied) appearance value: bloodlust override -> battleRes -> default.
 local function EP(key)
-    local bl = P()
+    local bl = Prm()
     if bl and bl[key] ~= nil then
         return bl[key]
     end
@@ -101,7 +101,7 @@ local function EP(key)
 end
 
 local function EP_borderColor()
-    local bl = P()
+    local bl = Prm()
     if bl and bl.borderColor ~= nil then
         return bl.borderColor
     end
@@ -125,7 +125,7 @@ local READY_DEFAULTS = {
 }
 
 local function RP(key)
-    local bl = P()
+    local bl = Prm()
     if bl and bl[key] ~= nil then
         return bl[key]
     end
@@ -133,14 +133,14 @@ local function RP(key)
 end
 
 local function RP_color()
-    local c = P() and P().readyColor
+    local c = Prm() and Prm().readyColor
     if c then
         return c.r or 1, c.g or 1, c.b or 1
     end
     return 1, 1, 1
 end
 
-local frame, iconTex, borderTex, durationFS, countFS, cooldownFrame
+local widget, iconTex, borderTex, durationFS, countFS, cooldownFrame
 local textOverlay, buffTextOverlay, readyFS -- text layers (see CreateBloodlustFrame for the level stack)
 local buffOverlay, buffTex, buffCooldown, buffDurationFS, buffBorderTex -- the 40s active-lust overlay (sits on top of the debuff icon)
 local _satedActive = false
@@ -186,54 +186,54 @@ end
 -- Snap a config-driven layout offset onto the pixel grid. The frame's own edges
 -- and center are snapped already (ApplyShape / ApplyPosition), so snapping the
 -- offset is what keeps the child anchored to it on the grid too.
-local function _snapOff(v)
-    local PP = CludesUI and CludesUI.PP
-    if PP and PP.Snap then
-        return PP.Snap(v)
+local function _snapOff(val)
+    local Pix = CludesUI and CludesUI.PP
+    if Pix and Pix.Snap then
+        return Pix.Snap(val)
     end
-    return v
+    return val
 end
 
 -- Custom-shape outline, shared with the Battle Res icon (CludesUIQoL_BattleRes.lua).
-local _applyShapeOutline = ns.QoL_ApplyShapeOutline
+local _applyShapeOutline = mod.QoL_ApplyShapeOutline
 
 -- Border for one icon layer: PP edge strips for "none"/"cropped", the
 -- shape-matching atlas (shapeTex) otherwise. Applied to the debuff icon AND to
 -- the 40s buff overlay, whose opaque icon would otherwise cover the debuff
 -- icon's border. level pins the PP strip container (see CreateBloodlustFrame).
-local function _applyBorder(host, shapeTex, level)
-    local PP = CludesUI and CludesUI.PP
+local function _applyBorder(hostRegion, shapeTex, level)
+    local Pix = CludesUI and CludesUI.PP
     local shape = EP("shape") or "none"
     local bs = BORDER_PX[EP("borderSize") or "thin"] or 1
 
     if shape == "none" or shape == "cropped" then
         shapeTex:Hide()
-        _applyShapeOutline(host, nil, 0)
-        if PP then
-            if not PP.GetBorders(host) then
-                PP.CreateBorder(host, 0, 0, 0, 1, 1, "OVERLAY", 2)
+        _applyShapeOutline(hostRegion, nil, 0)
+        if Pix then
+            if not Pix.GetBorders(hostRegion) then
+                Pix.CreateBorder(hostRegion, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
-            local brd = PP.GetBorders(host)
+            local brd = Pix.GetBorders(hostRegion)
             if brd then
                 brd:SetFrameLevel(level)
             end
             if bs > 0 then
                 local r, g, b, a = _resolveBorderColor()
-                PP.UpdateBorder(host, bs, r, g, b, a)
-                PP.ShowBorder(host)
+                Pix.UpdateBorder(hostRegion, bs, r, g, b, a)
+                Pix.ShowBorder(hostRegion)
             else
-                PP.HideBorder(host)
+                Pix.HideBorder(hostRegion)
             end
         end
         return
     end
 
-    if PP and PP.GetBorders(host) then
-        PP.HideBorder(host)
+    if Pix and Pix.GetBorders(hostRegion) then
+        Pix.HideBorder(hostRegion)
     end
     shapeTex:Hide()
     local r, g, b, a = _resolveBorderColor()
-    _applyShapeOutline(host, shape, bs, r, g, b, a)
+    _applyShapeOutline(hostRegion, shape, bs, r, g, b, a)
 end
 
 -- Configure the buff overlay (texture coords + optional shape mask) so it
@@ -246,7 +246,7 @@ local function _applyBuffShape()
     local shape = EP("shape") or "none"
 
     buffOverlay:ClearAllPoints()
-    buffOverlay:SetAllPoints(frame)
+    buffOverlay:SetAllPoints(widget)
     buffTex:SetAllPoints(buffOverlay)
     buffCooldown:ClearAllPoints()
     buffCooldown:SetAllPoints(buffOverlay)
@@ -261,7 +261,7 @@ local function _applyBuffShape()
     buffDurationFS:ClearAllPoints()
     buffDurationFS:SetPoint(
         "CENTER",
-        frame,
+        widget,
         "CENTER",
         _snapOff(EP("durationOffsetX") or 0),
         _snapOff(EP("durationOffsetY") or 0)
@@ -307,28 +307,28 @@ local function _applyBuffShape()
 end
 
 local function ApplyShape()
-    if not frame then
+    if not widget then
         return
     end
 
-    local PP = CludesUI and CludesUI.PP
+    local Pix = CludesUI and CludesUI.PP
     local shape = EP("shape") or "none"
 
-    local size = EP("iconSize") or 40
-    local fw, fh = size, size
+    local dim = EP("iconSize") or 40
+    local fw, fh = dim, dim
     if shape == "cropped" then
-        fh = math.floor(size * 0.80 + 0.5)
+        fh = math.floor(dim * 0.80 + 0.5)
     end
-    if PP and PP.Snap then
-        fw, fh = PP.Snap(fw), PP.Snap(fh)
+    if Pix and Pix.Snap then
+        fw, fh = Pix.Snap(fw), Pix.Snap(fh)
     end
-    frame:SetSize(fw, fh)
+    widget:SetSize(fw, fh)
     iconTex:ClearAllPoints()
-    iconTex:SetAllPoints(frame)
+    iconTex:SetAllPoints(widget)
 
     if cooldownFrame then
         cooldownFrame:ClearAllPoints()
-        cooldownFrame:SetAllPoints(frame)
+        cooldownFrame:SetAllPoints(widget)
     end
 
     -- Duration text (centered) and count text (bottom-right). Sated debuffs
@@ -342,7 +342,7 @@ local function ApplyShape()
     durationFS:ClearAllPoints()
     durationFS:SetPoint(
         "CENTER",
-        frame,
+        widget,
         "CENTER",
         _snapOff(EP("durationOffsetX") or 0),
         _snapOff(EP("durationOffsetY") or 0)
@@ -356,7 +356,7 @@ local function ApplyShape()
     countFS:ClearAllPoints()
     countFS:SetPoint(
         "BOTTOMRIGHT",
-        frame,
+        widget,
         "BOTTOMRIGHT",
         _snapOff(-2 + (EP("countOffsetX") or 0)),
         _snapOff(2 + (EP("countOffsetY") or 0))
@@ -374,7 +374,7 @@ local function ApplyShape()
         readyFS:ClearAllPoints()
         readyFS:SetPoint(
             "CENTER",
-            frame,
+            widget,
             "CENTER",
             _snapOff(RP("readyOffsetX") or 0),
             _snapOff(RP("readyOffsetY") or 0)
@@ -388,7 +388,7 @@ local function ApplyShape()
     -- cooldownFrame sits at -- a level TIE the border only won by creation
     -- order. Pin it to its slot in the stack documented at CreateBloodlustFrame
     -- instead of an implicit tie-break a future overlay could flip.
-    _applyBorder(frame, borderTex, frame:GetFrameLevel() + 2)
+    _applyBorder(widget, borderTex, widget:GetFrameLevel() + 2)
 
     -----------------------------------------------------------------------
     --  BASE CASE: "none" or "cropped" -- plain texture, no mask
@@ -426,7 +426,7 @@ local function ApplyShape()
     local maskPath = SHAPE_MASKS[shape]
     if maskPath then
         if not iconTex._mask then
-            iconTex._mask = frame:CreateMaskTexture()
+            iconTex._mask = widget:CreateMaskTexture()
             iconTex._mask:SetAllPoints(iconTex)
             iconTex:AddMaskTexture(iconTex._mask)
         end
@@ -466,14 +466,14 @@ local function _defaultLeftOfBrezCenter()
 end
 
 local function ApplyPosition()
-    if not frame then
+    if not widget then
         return
     end
-    local p = P()
+    local p = Prm()
     if not p then
         return
     end
-    frame:ClearAllPoints()
+    widget:ClearAllPoints()
     local cx, cy
     if p.pos and p.pos.centerX and p.pos.centerY then
         cx, cy = p.pos.centerX, p.pos.centerY
@@ -482,16 +482,16 @@ local function ApplyPosition()
     end
     local PPp = CludesUI and CludesUI.PP
     if PPp and PPp.SnapCenterForDim then
-        cx = PPp.SnapCenterForDim(cx, frame:GetWidth())
-        cy = PPp.SnapCenterForDim(cy, frame:GetHeight())
+        cx = PPp.SnapCenterForDim(cx, widget:GetWidth())
+        cy = PPp.SnapCenterForDim(cy, widget:GetHeight())
     end
-    frame:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
+    widget:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
 end
 
 -- Seed a concrete starting position (left of Brez) the first time the tracker
 -- is switched away from "Never". Does nothing if a position already exists.
 local function SeedDefaultPos()
-    local p = P()
+    local p = Prm()
     if not p then
         return
     end
@@ -511,17 +511,17 @@ local function _findSated()
     if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then
         return nil
     end
-    for i = 1, #SATED_DEBUFFS do
-        local sid = SATED_DEBUFFS[i]
+    for idx = 1, #SATED_DEBUFFS do
+        local spellRef = SATED_DEBUFFS[idx]
         -- Known-spellId query works mid-fight ONLY because Sated-class ids are
         -- field-proven unflagged: GetPlayerAuraBySpellID is RequiresNonSecretAura
         -- and returns ZERO VALUES for a restriction-FLAGGED spell while its aura
         -- is up (Burning Rush proved this 2026-08-13 -- do NOT copy this probe
         -- as a general presence pattern; flagged ids need an engine container).
         -- We never read the (possibly secret) spellId back off the aura.
-        local aura = C_UnitAuras.GetPlayerAuraBySpellID(sid)
+        local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellRef)
         if aura then
-            return aura, sid
+            return aura, spellRef
         end
     end
     return nil
@@ -550,16 +550,16 @@ end
 -- the swipe is set from a DurationObject (no value is read by us); under 12.1
 -- restrictions it falls back to the cached/self-timed expiry. The numeric
 -- countdown text is filled in by the ticker with the same fallback.
-local function _applyActiveAura(aura, sid)
-    if not frame then
+local function _applyActiveAura(aura, spellRef)
+    if not widget then
         return
     end
 
-    local tex = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(sid)
-    if not tex and C_Spell and C_Spell.GetSpellTexture then
-        tex = C_Spell.GetSpellTexture(PREVIEW_SPELL_ID)
+    local texture = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
+    if not texture and C_Spell and C_Spell.GetSpellTexture then
+        texture = C_Spell.GetSpellTexture(PREVIEW_SPELL_ID)
     end
-    iconTex:SetTexture(tex or 136080)
+    iconTex:SetTexture(texture or 136080)
 
     if cooldownFrame then
         local iid = aura.auraInstanceID
@@ -604,15 +604,15 @@ local function _lustBuffIcon()
     if _lustIconResolved then
         return _lustIconCache
     end
-    for i = 1, #LUST_SPELLS do
-        local sid = LUST_SPELLS[i]
-        local known = (IsPlayerSpell and IsPlayerSpell(sid)) or (IsSpellKnown and IsSpellKnown(sid))
+    for idx = 1, #LUST_SPELLS do
+        local spellRef = LUST_SPELLS[idx]
+        local known = (IsPlayerSpell and IsPlayerSpell(spellRef)) or (IsSpellKnown and IsSpellKnown(spellRef))
         if known then
-            local tex = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(sid)
-            if tex then
-                _lustIconCache = tex
+            local texture = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
+            if texture then
+                _lustIconCache = texture
                 _lustIconResolved = true
-                return tex
+                return texture
             end
         end
     end
@@ -674,7 +674,7 @@ end
 -- Lockout gone: swap to the lust icon, clear the swipe and show the label in
 -- place of the countdown. Guarded so the 0.5s poll re-applies nothing.
 local function _showReadyState()
-    if _readyShown or not frame then
+    if _readyShown or not widget then
         return
     end
     iconTex:SetTexture(_lustBuffIcon())
@@ -707,10 +707,10 @@ local function _syncDesat()
     if not iconTex then
         return
     end
-    local want = (RP("desaturateSated") and not _readyShown) and true or false
-    if want ~= _lastDesat then
-        iconTex:SetDesaturated(want)
-        _lastDesat = want
+    local wanted = (RP("desaturateSated") and not _readyShown) and true or false
+    if wanted ~= _lastDesat then
+        iconTex:SetDesaturated(wanted)
+        _lastDesat = wanted
     end
 end
 
@@ -738,12 +738,12 @@ local _state = {
 --  Visibility / text
 -------------------------------------------------------------------------------
 local function ShouldShow()
-    local p = P()
+    local p = Prm()
     if not p or not p.enabled then
         return false
     end
-    local v = p.visibility or "NEVER"
-    if v == "NEVER" then
+    local val = p.visibility or "NEVER"
+    if val == "NEVER" then
         return false
     end
     -- Options preview: forced on screen while the page is up, skipping the state
@@ -775,8 +775,8 @@ local function ShouldShow()
         return false
     end
 
-    local wantMPlus = (v == "MPLUS_AND_RAID" or v == "MPLUS")
-    local wantRaid = (v == "MPLUS_AND_RAID" or v == "RAID")
+    local wantMPlus = (val == "MPLUS_AND_RAID" or val == "MPLUS")
+    local wantRaid = (val == "MPLUS_AND_RAID" or val == "RAID")
     if wantMPlus and _state.inChallenge then
         return true
     end
@@ -786,7 +786,7 @@ local function ShouldShow()
     return false
 end
 
-FormatTime = ns.FormatTime
+FormatTime = mod.FormatTime
 
 local _lastDurText
 local function _setDur(s)
@@ -800,7 +800,7 @@ end
 -- countdown so icon size, shape and the duration offsets can be judged. It loops
 -- on expiry, so a long options session keeps showing something.
 local function _showPreviewLockout()
-    if not frame then
+    if not widget then
         return
     end
     _hideReadyState()
@@ -822,7 +822,7 @@ end
 -- (a safety net in case a UNIT_AURA removal event is ever missed). When the remaining
 -- time is secret (in combat) the swipe still animates but the number is left blank.
 local function PollSated()
-    if not frame then
+    if not widget then
         return
     end
     local aura, auraSid = _findSated()
@@ -880,12 +880,12 @@ local function PollSated()
 end
 
 function UpdateVisibility()
-    if not frame then
+    if not widget then
         return
     end
     if ShouldShow() then
-        if not frame:IsShown() then
-            frame:Show()
+        if not widget:IsShown() then
+            widget:Show()
         end
         -- The ticker exists to animate the countdown, so it runs only while the
         -- lockout does. In the ready state there is nothing to count down and a
@@ -901,8 +901,8 @@ function UpdateVisibility()
         end
         PollSated()
     else
-        if frame:IsShown() then
-            frame:Hide()
+        if widget:IsShown() then
+            widget:Hide()
         end
         if _ticker then
             _ticker:Cancel()
@@ -929,11 +929,11 @@ function _G._CUI_Bloodlust_SetPreviewOwner(f)
 end
 
 local function _refreshSated()
-    local aura, sid = _findSated()
+    local aura, spellRef = _findSated()
     _satedActive = (aura ~= nil)
     if aura then
         _syncSatedGuess(aura)
-        _applyActiveAura(aura, sid)
+        _applyActiveAura(aura, spellRef)
     else
         _satedExpiryGuess = 0
     end
@@ -947,8 +947,8 @@ end
 --  is registered solely while the tracker is enabled.
 -------------------------------------------------------------------------------
 local _eventFrame
-local function _onEvent(_, event, _, updateInfo)
-    if event == "UNIT_AURA" then
+local function _onEvent(_, evt, _, updateInfo)
+    if evt == "UNIT_AURA" then
         local was = _satedWasPresent
         local present = _refreshSated()
         _satedWasPresent = present
@@ -964,8 +964,8 @@ local function _onEvent(_, event, _, updateInfo)
         -- zone/login, which the zone guard covers; boolean use of a secret errors).
         local isFull = false
         if not issecretvalue(updateInfo) and updateInfo then
-            local v = updateInfo.isFullUpdate
-            if not issecretvalue(v) and v then
+            local val = updateInfo.isFullUpdate
+            if not issecretvalue(val) and val then
                 isFull = true
             end
         end
@@ -974,23 +974,23 @@ local function _onEvent(_, event, _, updateInfo)
             -- the cache is exact even while the real expiry is secret.
             -- Re-apply so the swipe picks it up now, not on the next event.
             _satedExpiryGuess = GetTime() + 600
-            local aura, sid = _findSated()
+            local aura, spellRef = _findSated()
             if aura then
-                _applyActiveAura(aura, sid)
+                _applyActiveAura(aura, spellRef)
             end
             _showBuffOverlay()
         end
-    elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
+    elseif evt == "PLAYER_SPECIALIZATION_CHANGED" then
         -- A spec swap can add or remove this character's lust spell. Drop the cached
         -- icon and tear the ready label down properly -- clearing only the latch
         -- would leave the fontstring on screen with the old icon behind it.
         _lustIconResolved = false
         _lustIconCache = nil
         _hideReadyState()
-    elseif event == "PLAYER_DEAD" then
+    elseif evt == "PLAYER_DEAD" then
         -- Buffs drop on death; hide the active-lust overlay even if 40s remain.
         _hideBuffOverlay()
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         _lustIconResolved = false
         _lustIconCache = nil
         _refreshSated()
@@ -999,9 +999,9 @@ local function _onEvent(_, event, _, updateInfo)
         -- suppress edges briefly while the zone's aura table settles.
         _satedWasPresent = _satedActive
         _buffZoneGuard = GetTime() + 1.5
-        ns.RefreshInstanceState(_state)
+        mod.RefreshInstanceState(_state)
     else
-        ns.ApplyInstanceEvent(_state, event)
+        mod.ApplyInstanceEvent(_state, evt)
     end
     UpdateVisibility()
 end
@@ -1032,27 +1032,27 @@ end
 --  Frame creation
 -------------------------------------------------------------------------------
 local function CreateBloodlustFrame()
-    if frame then
-        return frame
+    if widget then
+        return widget
     end
-    frame = CreateFrame("Frame", "CludesUIBloodlustIcon", UIParent)
-    frame:SetFrameStrata("MEDIUM")
-    frame:SetSize(40, 40)
-    frame:Hide()
+    widget = CreateFrame("Frame", "CludesUIBloodlustIcon", UIParent)
+    widget:SetFrameStrata("MEDIUM")
+    widget:SetSize(40, 40)
+    widget:Hide()
 
-    iconTex = frame:CreateTexture(nil, "ARTWORK")
-    iconTex:SetAllPoints(frame)
+    iconTex = widget:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints(widget)
     iconTex:SetTexture(_lustBuffIcon() or 136080)
     iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    borderTex = frame:CreateTexture(nil, "OVERLAY")
+    borderTex = widget:CreateTexture(nil, "OVERLAY")
     borderTex:Hide()
 
-    cooldownFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-    cooldownFrame:SetAllPoints(frame)
+    cooldownFrame = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    cooldownFrame:SetAllPoints(widget)
     cooldownFrame:SetDrawEdge(false)
     cooldownFrame:SetHideCountdownNumbers(true) -- we render our own duration text
-    cooldownFrame:SetFrameLevel(frame:GetFrameLevel() + 1)
+    cooldownFrame:SetFrameLevel(widget:GetFrameLevel() + 1)
 
     -- TWO text layers, one per state, so each state's text reads over its own
     -- border and swipe while the opaque 40s buff icon still covers the debuff
@@ -1061,9 +1061,9 @@ local function CreateBloodlustFrame()
     --   +0 iconTex   +1 cooldownFrame   +2 PP border (pinned in ApplyShape)
     --   +3 debuff text: duration / count / ready
     --   +5 buffOverlay   +6 buffCooldown   +7 buff PP border   +8 buff text
-    textOverlay = CreateFrame("Frame", nil, frame)
-    textOverlay:SetAllPoints(frame)
-    textOverlay:SetFrameLevel(frame:GetFrameLevel() + 3)
+    textOverlay = CreateFrame("Frame", nil, widget)
+    textOverlay:SetAllPoints(widget)
+    textOverlay:SetFrameLevel(widget:GetFrameLevel() + 3)
 
     durationFS = textOverlay:CreateFontString(nil, "OVERLAY")
     durationFS:SetFont(
@@ -1095,8 +1095,8 @@ local function CreateBloodlustFrame()
     -- 40s active-lust overlay. Sits ABOVE the debuff icon and its swipe; shown
     -- for 40s on a fresh debuff acquire, then hidden, revealing the untouched
     -- debuff icon underneath. We never modify the debuff icon itself.
-    buffOverlay = CreateFrame("Frame", nil, frame)
-    buffOverlay:SetAllPoints(frame)
+    buffOverlay = CreateFrame("Frame", nil, widget)
+    buffOverlay:SetAllPoints(widget)
     buffOverlay:SetFrameLevel(cooldownFrame:GetFrameLevel() + 4)
     buffOverlay:Hide()
 
@@ -1127,23 +1127,23 @@ local function CreateBloodlustFrame()
     )
     buffDurationFS:SetText("")
 
-    return frame
+    return widget
 end
 
 -------------------------------------------------------------------------------
 --  Apply (settings entry point)
 -------------------------------------------------------------------------------
 local function Apply()
-    if not db then
+    if not saved then
         return
     end
-    if not frame then
+    if not widget then
         CreateBloodlustFrame()
     end
     ApplyShape()
     _applyBuffShape()
     ApplyPosition()
-    local p = P()
+    local p = Prm()
     local enabled = p and p.enabled and (p.visibility ~= "NEVER")
     _ensureEvents(enabled)
     if enabled then
@@ -1151,7 +1151,7 @@ local function Apply()
         -- Baseline so a debuff already present when the tracker is enabled does
         -- not retroactively pop the 40s buff overlay.
         _satedWasPresent = _satedActive
-        ns.RefreshInstanceState(_state)
+        mod.RefreshInstanceState(_state)
     end
     UpdateVisibility()
 end
@@ -1168,7 +1168,7 @@ local function RegisterUnlock()
     if not MK then
         return
     end
-    local loadPos, clearPos = ns.CenterPosFns(P)
+    local loadPos, clearPos = mod.CenterPosFns(Prm)
 
     CludesUI:RegisterUnlockElements({
         MK({
@@ -1178,52 +1178,52 @@ local function RegisterUnlock()
             order = 601,
             noAnchorTarget = true, -- icon size changes; nothing should anchor to it
             isHidden = function()
-                local p = P()
+                local p = Prm()
                 return not p or not p.enabled or (p.visibility == "NEVER")
             end,
             getFrame = function()
-                if not frame then
+                if not widget then
                     CreateBloodlustFrame()
                 end
-                return frame
+                return widget
             end,
             getSize = function()
                 local s = EP("iconSize") or 40
                 return s, s
             end,
             linkedDimensions = true, -- always square; one slider drives both
-            setWidth = function(_, w)
-                local p = P()
+            setWidth = function(_, wid)
+                local p = Prm()
                 if not p then
                     return
                 end
                 local PPb = CludesUI and CludesUI.PP
-                p.iconSize = math.max(16, PPb and PPb.Snap(w) or math.floor(w + 0.5))
+                p.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_Bloodlust")
                 end
             end,
-            setHeight = function(_, h)
-                local p = P()
+            setHeight = function(_, hgt)
+                local p = Prm()
                 if not p then
                     return
                 end
                 local PPb = CludesUI and CludesUI.PP
-                p.iconSize = math.max(16, PPb and PPb.Snap(h) or math.floor(h + 0.5))
+                p.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_Bloodlust")
                 end
             end,
-            savePos = function(_, point, relPoint, x, y)
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
-                local p = P()
+                local p = Prm()
                 if not p then
                     return
                 end
-                p.pos = { centerX = x, centerY = y }
+                p.pos = { centerX = posX, centerY = posY }
             end,
             loadPos = loadPos,
             clearPos = clearPos,
@@ -1254,9 +1254,9 @@ boot:SetScript("OnEvent", function(self)
             C_Timer.After(0.2, init) -- BattleRes DB not ready yet
             return
         end
-        db = d
+        saved = d
         _G._CUI_Bloodlust_DB = function()
-            return db
+            return saved
         end
         CreateBloodlustFrame()
         Apply()

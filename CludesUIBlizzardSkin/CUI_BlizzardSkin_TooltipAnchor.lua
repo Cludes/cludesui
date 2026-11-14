@@ -7,11 +7,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Where the default tooltip sits: the UberTooltips CVar, anchor to cursor,
 --  the fixed position with its Unlock Mode mover, growth direction.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not I or I.last ~= "Dialogs" then
+if not Inner or Inner.last ~= "Dialogs" then
     return
 end
 
@@ -52,12 +52,12 @@ end
 -- frame, so both anchor modes must leave Blizzard's anchoring alone there;
 -- IsForbidden is the only method safe to call on such a frame, so it is asked
 -- first and nothing else is touched. File scope on purpose: the cursor and fixed anchor modes (separate do-blocks) both need it.
-local function TooltipOwnerUsable(parent)
-    if not parent then
+local function TooltipOwnerUsable(hostFrame)
+    if not hostFrame then
         return false
     end
-    local fn = parent.IsForbidden
-    if type(fn) == "function" and fn(parent) then
+    local func = hostFrame.IsForbidden
+    if type(func) == "function" and func(hostFrame) then
         return false
     end
     return true
@@ -112,11 +112,11 @@ do
             if scale <= 0 then
                 return
             end
-            local x, y = GetCursorPosition()
-            if x ~= lastX or y ~= lastY then
-                lastX, lastY = x, y
+            local posX, posY = GetCursorPosition()
+            if posX ~= lastX or posY ~= lastY then
+                lastX, lastY = posX, posY
                 self:ClearAllPoints()
-                self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+                self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX / scale, posY / scale)
             end
         end)
         return cursorFrame
@@ -124,17 +124,17 @@ do
 
     -- Show + position the tracking frame at the pointer NOW: the OnUpdate alone only
     -- repositions it next frame, so a tooltip anchored to it and shown synchronously this frame (as the custom CDM frames do) would have no valid rect yet and render nothing.
-    local function PositionCursorFrameNow(cf)
-        cf:Show()
+    local function PositionCursorFrameNow(castFrame)
+        castFrame:Show()
         local scale = UIParent:GetEffectiveScale()
         if scale > 0 then
-            local x, y = GetCursorPosition()
-            cf:ClearAllPoints()
-            cf:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+            local posX, posY = GetCursorPosition()
+            castFrame:ClearAllPoints()
+            castFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX / scale, posY / scale)
         end
     end
 
-    local function ApplyCursorAnchor(tooltip, parent)
+    local function ApplyCursorAnchor(tooltip, hostFrame)
         if not TooltipIsGlobalLike(tooltip) then
             return
         end
@@ -146,18 +146,18 @@ do
             return
         end
         -- Owner checked as well as the tooltip: a forbidden owner cannot be passed to SetOwner below. See TooltipOwnerUsable.
-        if not TooltipOwnerUsable(parent) or tooltip:IsForbidden() then
+        if not TooltipOwnerUsable(hostFrame) or tooltip:IsForbidden() then
             return
         end
         -- "Show Tooltips" suppression parks the tip in a hidden host (CUI_BlizzardSkin_TooltipVisibility.lua): it stays alive and invisible so the peek modifier can reveal it, so anchor it normally -- it must already ride the cursor when revealed.
-        local cf = EnsureCursorFrame()
-        PositionCursorFrameNow(cf)
-        local point = POINT_FOR_POS[CludesUIDB.tooltipCursorPosition or "top"] or "BOTTOM"
-        tooltip:SetOwner(parent, "ANCHOR_NONE")
+        local castFrame = EnsureCursorFrame()
+        PositionCursorFrameNow(castFrame)
+        local anchorPoint = POINT_FOR_POS[CludesUIDB.tooltipCursorPosition or "top"] or "BOTTOM"
+        tooltip:SetOwner(hostFrame, "ANCHOR_NONE")
         tooltip:ClearAllPoints()
         tooltip:SetPoint(
-            point,
-            cf,
+            anchorPoint,
+            castFrame,
             "CENTER",
             CludesUIDB.tooltipCursorOffsetX or 0,
             CludesUIDB.tooltipCursorOffsetY or 0
@@ -183,13 +183,13 @@ do
         if tooltip:IsForbidden() then
             return
         end
-        local cf = EnsureCursorFrame()
-        PositionCursorFrameNow(cf)
-        local point = POINT_FOR_POS[CludesUIDB.tooltipCursorPosition or "top"] or "BOTTOM"
+        local castFrame = EnsureCursorFrame()
+        PositionCursorFrameNow(castFrame)
+        local anchorPoint = POINT_FOR_POS[CludesUIDB.tooltipCursorPosition or "top"] or "BOTTOM"
         tooltip:ClearAllPoints()
         tooltip:SetPoint(
-            point,
-            cf,
+            anchorPoint,
+            castFrame,
             "CENTER",
             CludesUIDB.tooltipCursorOffsetX or 0,
             CludesUIDB.tooltipCursorOffsetY or 0
@@ -307,7 +307,7 @@ do
         if not l or not b then
             return
         end
-        local w, ch = c:GetWidth() or 0, c:GetHeight() or 0
+        local wid, ch = c:GetWidth() or 0, c:GetHeight() or 0
         local us = UIParent:GetEffectiveScale() or 1
         if us <= 0 then
             return
@@ -318,9 +318,9 @@ do
         -- matching corner sits exactly there; an idle container may be
         -- collapsed to a sliver (corners coincide), still correct.
         local uw, uh = UIParent:GetWidth(), UIParent:GetHeight()
-        local ccx = (l + w / 2) * r - uw / 2
+        local ccx = (l + wid / 2) * r - uw / 2
         local ccy = (b + ch / 2) * r - uh / 2
-        local px = (ccx < 0) and (l * r) or ((l + w) * r)
+        local px = (ccx < 0) and (l * r) or ((l + wid) * r)
         local py = (ccy < 0) and (b * r) or ((b + ch) * r)
         prof.tooltipFixedPos = {
             centerX = px + ((ccx < 0) and (FIXED_W / 2) or (-FIXED_W / 2)) - uw / 2,
@@ -334,10 +334,10 @@ do
         local af = EnsureFixedFrame()
         EnsureSeeded()
         local prof = ActiveProfile()
-        local pos = prof and prof.tooltipFixedPos
+        local place = prof and prof.tooltipFixedPos
         af:ClearAllPoints()
-        if pos and pos.centerX and pos.centerY then
-            af:SetPoint("CENTER", UIParent, "CENTER", pos.centerX, pos.centerY)
+        if place and place.centerX and place.centerY then
+            af:SetPoint("CENTER", UIParent, "CENTER", place.centerX, place.centerY)
         else
             af:SetPoint("CENTER", UIParent, "CENTER", -350, -150)
         end
@@ -353,9 +353,9 @@ do
             cy = b + (af:GetHeight() or 0) / 2 - UIParent:GetHeight() / 2
         else
             local prof = ActiveProfile()
-            local pos = prof and prof.tooltipFixedPos
-            if pos and pos.centerX and pos.centerY then
-                cx, cy = pos.centerX, pos.centerY
+            local place = prof and prof.tooltipFixedPos
+            if place and place.centerX and place.centerY then
+                cx, cy = place.centerX, place.centerY
             end
         end
         local dir = CludesUIDB and CludesUIDB.tooltipGrowthDirection
@@ -385,14 +385,14 @@ do
             return
         end
         local corner = CornerFor(af)
-        local point, relTo = tooltip:GetPoint(1)
+        local anchorPoint, relTo = tooltip:GetPoint(1)
         -- GetPoint can hand back a SECRET point: Blizzard anchors the world cursor
         -- tooltip (SetWorldCursor -> GameTooltip_SetDefaultAnchor) from restricted
         -- code, and comparing a secret raises, so the classification MUST short-circuit
         -- ahead of the compares. A secret anchor is by definition not ours: treat it as
         -- a deviation and re-point. Our own write reads back clean, so the early-out works again from the next call on.
-        local secretPt = issecretvalue and (issecretvalue(point) or issecretvalue(relTo))
-        if not secretPt and tooltip:GetNumPoints() == 1 and point == corner and relTo == af then
+        local secretPt = issecretvalue and (issecretvalue(anchorPoint) or issecretvalue(relTo))
+        if not secretPt and tooltip:GetNumPoints() == 1 and anchorPoint == corner and relTo == af then
             return
         end
         _fixedEnforcing = true
@@ -401,7 +401,7 @@ do
         _fixedEnforcing = false
     end
 
-    local function ApplyFixedAnchor(tooltip, parent)
+    local function ApplyFixedAnchor(tooltip, hostFrame)
         if not TooltipIsGlobalLike(tooltip) then
             return
         end
@@ -415,7 +415,7 @@ do
         -- leave Blizzard's anchoring alone AND disarm SetPoint enforcement.
         -- Arming happens in the SetDefaultAnchor hook before this runs; leaving
         -- it armed would let EnforceFixed yank the tooltip into our box with no matching SetOwner. See TooltipOwnerUsable.
-        if not TooltipOwnerUsable(parent) then
+        if not TooltipOwnerUsable(hostFrame) then
             _fixedArmed = false
             return
         end
@@ -426,11 +426,11 @@ do
         elseif not CludesUI.IsUnlockAnchored("CUI_TooltipAnchor") then
             PositionFromSaved()
         end
-        tooltip:SetOwner(parent, "ANCHOR_NONE")
+        tooltip:SetOwner(hostFrame, "ANCHOR_NONE")
         EnforceFixed(tooltip)
     end
 
-    hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tooltip, parent)
+    hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tooltip, hostFrame)
         if not TooltipIsGlobalLike(tooltip) then
             return
         end
@@ -439,7 +439,7 @@ do
         if tooltip == GameTooltip then
             _fixedArmed = true
         end
-        ApplyFixedAnchor(tooltip, parent)
+        ApplyFixedAnchor(tooltip, hostFrame)
     end)
     -- Every explicit tooltip build starts with SetOwner, which runs BEFORE the SetDefaultAnchor post-hook re-arms the flag, so explicitly-anchored uses (bags, other addons) never get their anchors rewritten.
     hooksecurefunc(GameTooltip, "SetOwner", function(self)
@@ -450,8 +450,8 @@ do
         -- Left on our box, Blizzard's next restricted SetPoint fails with an anchor family error.
         -- pcall'd: an owner's forbidden layout aspect restricts the tooltip without
         -- IsForbidden reporting it (see _ttUsable), and this runs on every SetOwner.
-        local ok, _, relTo = pcall(self.GetPoint, self, 1)
-        if not ok or (issecretvalue and issecretvalue(relTo)) then
+        local success, _, relTo = pcall(self.GetPoint, self, 1)
+        if not success or (issecretvalue and issecretvalue(relTo)) then
             return
         end
         if relTo == anchorFrame then
@@ -502,21 +502,21 @@ do
                 getSize = function()
                     return FIXED_W, FIXED_H
                 end,
-                savePos = function(_, _point, _relPoint, x, y)
+                savePos = function(_, _point, _relPoint, posX, posY)
                     -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                     -- still sits at the dragged spot, so never read the live position.
                     local prof = ActiveProfile()
                     if not prof then
                         return
                     end
-                    prof.tooltipFixedPos = { centerX = x, centerY = y }
+                    prof.tooltipFixedPos = { centerX = posX, centerY = posY }
                 end,
                 loadPos = function()
                     EnsureSeeded()
                     local prof = ActiveProfile()
-                    local pos = prof and prof.tooltipFixedPos
-                    if pos and pos.centerX and pos.centerY then
-                        return { point = "CENTER", relPoint = "CENTER", x = pos.centerX, y = pos.centerY }
+                    local place = prof and prof.tooltipFixedPos
+                    if place and place.centerX and place.centerY then
+                        return { point = "CENTER", relPoint = "CENTER", x = place.centerX, y = place.centerY }
                     end
                     return nil
                 end,
@@ -538,8 +538,8 @@ do
     local boot = CreateFrame("Frame")
     boot:RegisterEvent("PLAYER_LOGIN")
     boot:RegisterEvent("PLAYER_ENTERING_WORLD")
-    boot:SetScript("OnEvent", function(self, event)
-        if event == "PLAYER_LOGIN" then
+    boot:SetScript("OnEvent", function(self, evt)
+        if evt == "PLAYER_LOGIN" then
             EnsureFixedFrame()
             PositionFromSaved()
             RegisterUnlock()
@@ -595,28 +595,28 @@ do
         if tooltip:IsForbidden() then
             return
         end
-        local point, relTo, _, x, y = tooltip:GetPoint(1)
+        local anchorPoint, relTo, _, posX, posY = tooltip:GetPoint(1)
         -- A point written by restricted code (world cursor tooltip) is SECRET:
         -- find() and == on it raise, and the forced corner cannot be derived from it
         -- at all. Skip this pass; the next one, after a clean re-anchor, enforces normally.
-        if issecretvalue and (issecretvalue(point) or issecretvalue(x) or issecretvalue(y)) then
+        if issecretvalue and (issecretvalue(anchorPoint) or issecretvalue(posX) or issecretvalue(posY)) then
             return
         end
-        if not point then
+        if not anchorPoint then
             return
         end
         relTo = relTo or GameTooltipDefaultContainer
         if not relTo then
             return
         end
-        local horiz = (point:find("LEFT") and "LEFT") or (point:find("RIGHT") and "RIGHT") or ""
+        local horiz = (anchorPoint:find("LEFT") and "LEFT") or (anchorPoint:find("RIGHT") and "RIGHT") or ""
         local newPoint = ((dir == "down") and "TOP" or "BOTTOM") .. horiz
-        if tooltip:GetNumPoints() == 1 and point == newPoint then
+        if tooltip:GetNumPoints() == 1 and anchorPoint == newPoint then
             return
         end
         _growthEnforcing = true
         tooltip:ClearAllPoints()
-        tooltip:SetPoint(newPoint, relTo, newPoint, x or 0, y or 0)
+        tooltip:SetPoint(newPoint, relTo, newPoint, posX or 0, posY or 0)
         _growthEnforcing = false
     end
 
@@ -643,4 +643,4 @@ do
     end)
 end
 
-I.last = "TooltipAnchor"
+Inner.last = "TooltipAnchor"

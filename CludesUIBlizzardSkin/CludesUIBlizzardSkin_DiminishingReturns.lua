@@ -628,8 +628,8 @@ local STAT_INFO = {
 --   nextPenaltyPct  : the penalty (%) of the next bracket, or nil at the hard cap
 --   nextThreshold   : raw rating at which that next bracket begins, or nil
 function CludesUI.GetStatDR(statName, rawRating)
-    local info = STAT_INFO[statName]
-    if not info or not rawRating or rawRating <= 0 then
+    local details = STAT_INFO[statName]
+    if not details or not rawRating or rawRating <= 0 then
         return nil
     end
 
@@ -637,7 +637,7 @@ function CludesUI.GetStatDR(statName, rawRating)
     if level < 1 then
         level = 1
     end
-    local conv = info.conv[level] or info.conv[#info.conv]
+    local conv = details.conv[level] or details.conv[#details.conv]
     if not conv or conv <= 0 then
         return nil
     end
@@ -649,11 +649,11 @@ function CludesUI.GetStatDR(statName, rawRating)
     local consumed = 0 -- cumulative gross % at bracket boundaries
     local nextPenaltyPct, nextThreshold
 
-    for i, bracket in ipairs(info.brackets) do
+    for idx, bracket in ipairs(details.brackets) do
         if remaining <= bracket.size then
             keptPct = keptPct + remaining * (1 - bracket.penalty)
             penaltyPct = bracket.penalty * 100 -- bracket we ended in = marginal penalty
-            local nextBracket = info.brackets[i + 1]
+            local nextBracket = details.brackets[idx + 1]
             if nextBracket then
                 -- The next bracket begins at the end of this one.
                 nextPenaltyPct = nextBracket.penalty * 100

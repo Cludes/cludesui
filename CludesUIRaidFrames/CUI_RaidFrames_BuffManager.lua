@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  20/spec). Rendered by the aura containers (CUI_RaidFrames_AuraContainers.lua)
 --  from the indicator config; no per-frame allocs (wipe + reuse).
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
@@ -72,27 +72,27 @@ tinsert(INDICATOR_TYPE_ORDER, 4, "---")
 -- machinery has no aura-container equivalent (styled after the party-tab sync
 -- overlays). UI-only (the runtime side of these settings is inert elsewhere);
 -- callers anchor the returned frame.
-local function BuildPTROverlay(parentFrame, label, fontSize)
+local function BuildPTROverlay(parentFrame, labelText, fontSize)
     -- Options page pool (CludesUI_FramePool.lua): on a page's pooled tile
     -- the overlay is handed out again by the next render instead of made anew.
     local CreateFrame = POOL.CreateFrame
-    local ov = CreateFrame("Frame", nil, parentFrame)
-    ov._searchIgnore = true -- inline search must never re-anchor/collapse it
-    ov:SetFrameLevel(parentFrame:GetFrameLevel() + 60)
-    ov:EnableMouse(true)
-    local bg = ov:CreateTexture(nil, "OVERLAY")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.098, 0.090, 0.082, 0.95)
-    local fs = ov:CreateFontString(nil, "OVERLAY")
+    local shade = CreateFrame("Frame", nil, parentFrame)
+    shade._searchIgnore = true -- inline search must never re-anchor/collapse it
+    shade:SetFrameLevel(parentFrame:GetFrameLevel() + 60)
+    shade:EnableMouse(true)
+    local backdrop = shade:CreateTexture(nil, "OVERLAY")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.098, 0.090, 0.082, 0.95)
+    local fontStr = shade:CreateFontString(nil, "OVERLAY")
     local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-    fs:SetFont(fp, fontSize or 12, "")
-    fs:SetPoint("LEFT", ov, "LEFT", 8, 0)
-    fs:SetPoint("RIGHT", ov, "RIGHT", -8, 0)
-    fs:SetJustifyH("CENTER")
-    fs:SetTextColor(0.86, 0.24, 0.24, 0.95)
-    fs:SetText(CludesUI.Lf("%1$s Removed in 12.1 Unless API Changes", CludesUI.L(label)))
-    ov._msg = fs
-    return ov
+    fontStr:SetFont(fp, fontSize or 12, "")
+    fontStr:SetPoint("LEFT", shade, "LEFT", 8, 0)
+    fontStr:SetPoint("RIGHT", shade, "RIGHT", -8, 0)
+    fontStr:SetJustifyH("CENTER")
+    fontStr:SetTextColor(0.86, 0.24, 0.24, 0.95)
+    fontStr:SetText(CludesUI.Lf("%1$s Removed in 12.1 Unless API Changes", CludesUI.L(labelText)))
+    shade._msg = fontStr
+    return shade
 end
 
 -- 9-position grid
@@ -302,15 +302,15 @@ local HEALER_SPECS = {
     },
 }
 
-ns.BM_HEALER_SPECS = HEALER_SPECS
+mod.BM_HEALER_SPECS = HEALER_SPECS
 
 -- Spec lookup by key and by spec ID (locale-independent identifier).
 local SPEC_BY_KEY = {}
 local SPEC_BY_ID = {}
-for _, spec in ipairs(HEALER_SPECS) do
-    SPEC_BY_KEY[spec.key] = spec
-    if spec.specID then
-        SPEC_BY_ID[spec.specID] = spec
+for _, specInfo in ipairs(HEALER_SPECS) do
+    SPEC_BY_KEY[specInfo.key] = specInfo
+    if specInfo.specID then
+        SPEC_BY_ID[specInfo.specID] = specInfo
     end
 end
 
@@ -337,16 +337,16 @@ local function CurrentSpecKey()
     -- WoW Forever: the retail spec the class acts as in the Buff Manager,
     -- resolved the same way (nil until the v2 file has loaded).
     if CludesUI.IS_FOREVER then
-        local sid = ns.BM2_ForeverSpecID and ns.BM2_ForeverSpecID()
-        if not sid then
+        local spellRef = mod.BM2_ForeverSpecID and mod.BM2_ForeverSpecID()
+        if not spellRef then
             return nil
         end
-        local borrow = BORROW_SPECS[sid]
+        local borrow = BORROW_SPECS[spellRef]
         if borrow then
             return borrow.source
         end
-        local spec = SPEC_BY_ID[sid]
-        return spec and spec.key or nil
+        local specInfo = SPEC_BY_ID[spellRef]
+        return specInfo and specInfo.key or nil
     end
     local specIdx = GetSpecialization and GetSpecialization()
     if not specIdx then
@@ -361,16 +361,16 @@ local function CurrentSpecKey()
     if borrow then
         return borrow.source
     end
-    local spec = SPEC_BY_ID[specID]
-    return spec and spec.key or nil
+    local specInfo = SPEC_BY_ID[specID]
+    return specInfo and specInfo.key or nil
 end
-ns.BM_CurrentSpecKey = CurrentSpecKey
+mod.BM_CurrentSpecKey = CurrentSpecKey
 
 -- Healer/support key for a specialization ID WITHOUT borrow resolution.
 -- nil = not in the healer/Aug list (so the spec owns a "spec<ID>" bucket).
-function ns.BM_SpecKeyForSpecID(specID)
-    local spec = SPEC_BY_ID[specID]
-    return spec and spec.key or nil
+function mod.BM_SpecKeyForSpecID(specID)
+    local specInfo = SPEC_BY_ID[specID]
+    return specInfo and specInfo.key or nil
 end
 
 -- Role GROUP bucket for a specialization ID: membership in the healer/Aug
@@ -378,7 +378,7 @@ end
 -- Healers/Aug bucket), then TANK role -> "tanks", everything else -> "dps".
 -- Shared by the Buff Manager v2 union, the Debuff Manager union and both
 -- pages' editing-spec rosters. nil specID = no bucket (no spec yet).
-function ns.BM_RoleBucketForSpecID(specID)
+function mod.BM_RoleBucketForSpecID(specID)
     -- WoW Forever specs carry no role: no role bucket there.
     if CludesUI.IS_FOREVER then
         return nil
@@ -403,8 +403,8 @@ end
 
 -- Curated display names by spell ID (from the spec lists above)
 local STORED_NAME_BY_ID = {}
-for _, spec in ipairs(HEALER_SPECS) do
-    for _, spell in ipairs(spec.spells) do
+for _, specInfo in ipairs(HEALER_SPECS) do
+    for _, spell in ipairs(specInfo.spells) do
         if not spell.hide then
             STORED_NAME_BY_ID[spell.id] = spell.name
         end
@@ -417,32 +417,32 @@ STORED_NAME_BY_ID[212641] = "Guardian of Ancient Kings (Glyph of the Queen)"
 -- API cannot ("Echo Reversion" vs "Reversion") and localize via L(); the client
 -- name is the uncurated fallback. No cache -- L() must stay live for locale swaps.
 local SPELL_NAME_BY_ID = setmetatable({}, {
-    __index = function(_, id)
-        local nm = STORED_NAME_BY_ID[id]
+    __index = function(_, ident)
+        local nm = STORED_NAME_BY_ID[ident]
         if nm then
             return CludesUI.L(nm)
         end
-        return C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id)
+        return C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
     end,
 })
 -- Shared with CludesUIOptions/CUI_RaidFrames_ManagerPages.lua (same ns):
 -- the Filter Editor and its dropdowns build spell row labels off this too, so
 -- curated names (e.g. distinguishing two client-side-identical spell names)
 -- apply there as well, not just in this file's own dropdowns.
-ns.SPELL_NAME_BY_ID = SPELL_NAME_BY_ID
+mod.SPELL_NAME_BY_ID = SPELL_NAME_BY_ID
 
 local SPEC_DD_VALUES = {}
 local SPEC_DD_ORDER = {}
-for _, spec in ipairs(HEALER_SPECS) do
-    SPEC_DD_VALUES[spec.key] = spec.name
-    SPEC_DD_ORDER[#SPEC_DD_ORDER + 1] = spec.key
+for _, specInfo in ipairs(HEALER_SPECS) do
+    SPEC_DD_VALUES[specInfo.key] = specInfo.name
+    SPEC_DD_ORDER[#SPEC_DD_ORDER + 1] = specInfo.key
 end
 
 -- GROUP buckets of the editing-spec dropdown (core list, shared with the
 -- Debuff Manager and Player Aura Bars rosters): shared unions whose
 -- indicators render across every matching spec (concrete specs show them as
 -- inherited tiles with a per-spec enable).
-ns.BM_GROUP_BUCKET_INFO = CludesUI.SPEC_GROUP_BUCKET_INFO
+mod.BM_GROUP_BUCKET_INFO = CludesUI.SPEC_GROUP_BUCKET_INFO
 
 -- Group buckets a CONCRETE bucket (healer spec key or "spec<ID>") inherits
 -- from, in display order: All Specs always, All Non Healers/Aug for
@@ -450,38 +450,38 @@ ns.BM_GROUP_BUCKET_INFO = CludesUI.SPEC_GROUP_BUCKET_INFO
 -- unknown keys (nothing inherits there). Membership tests the SPEC (tracked
 -- or not), never the key shape: the Debuff Manager views healer specs
 -- through "spec<ID>" keys too.
-function ns.BM_InheritedGroupsFor(bucketKey, dmView)
+function mod.BM_InheritedGroupsFor(bucketKey, dmView)
     local hs = bucketKey and SPEC_BY_KEY[bucketKey]
-    local sid = hs and hs.specID
-    if not sid then
+    local spellRef = hs and hs.specID
+    if not spellRef then
         local m = type(bucketKey) == "string" and bucketKey:match("^spec(%d+)$")
-        sid = m and tonumber(m)
+        spellRef = m and tonumber(m)
     end
-    if not sid then
+    if not spellRef then
         return nil
     end
-    local out = { "allspecs" }
+    local result = { "allspecs" }
     -- WoW Forever: a class renders All Specs and its own bucket only (no role
     -- groups there, All Non Healers/Aug included), so it inherits All Specs
     -- alone in the Buff and Debuff Manager views alike.
     if CludesUI.IS_FOREVER then
-        return out
+        return result
     end
-    if not SPEC_BY_ID[sid] then
-        out[#out + 1] = "nonhealer"
+    if not SPEC_BY_ID[spellRef] then
+        result[#result + 1] = "nonhealer"
     end
-    local roleKey = ns.BM_RoleBucketForSpecID(sid)
+    local roleKey = mod.BM_RoleBucketForSpecID(spellRef)
     if roleKey then
-        out[#out + 1] = roleKey
+        result[#result + 1] = roleKey
     end
-    return out
+    return result
 end
 
 -- Sidebar/preview id offsets per group bucket: every bucket allocates ids
 -- from the same base, so unioned DISPLAY lists shift inherited entries into
 -- unique ranges (the runtime union in BM2_SpecIndicators carries its own
 -- offsets). Role groups never co-occur, so they share one slot.
-ns.BM_INH_OFFSETS = {
+mod.BM_INH_OFFSETS = {
     allspecs = 2000000,
     nonhealer = 4000000,
     tanks = 3000000,
@@ -605,12 +605,12 @@ local PREVIEW_NO_DURATION = {
     [369459] = true, -- Source of Magic
     [974] = true, -- Earth Shield
 }
-ns.BM_PREVIEW_NO_DURATION = PREVIEW_NO_DURATION
+mod.BM_PREVIEW_NO_DURATION = PREVIEW_NO_DURATION
 
 -- Preview cooldown seeds keyed "frameIdx:spellID": fraction remaining 0.2-0.9, generated once and reused.
 local pvCDSeeds = {}
-local function GetPvCDSeed(frameIdx, spellID)
-    local key = frameIdx .. ":" .. spellID
+local function GetPvCDSeed(frameIdx, spellId)
+    local key = frameIdx .. ":" .. spellId
     if not pvCDSeeds[key] then
         pvCDSeeds[key] = 0.2 + math.random() * 0.7
     end
@@ -655,7 +655,7 @@ local DEFAULT_INDICATORS = {
     },
 }
 
-local function PopulateDefaults(list, specKey)
+local function PopulateDefaults(entries, specKey)
     local presets = DEFAULT_INDICATORS[specKey]
     if not presets then
         return
@@ -666,60 +666,60 @@ local function PopulateDefaults(list, specKey)
         if preset.pos == "TOPRIGHT" then
             ind.growDirection = "LEFT"
         end
-        tinsert(list, ind)
+        tinsert(entries, ind)
     end
 end
 
 -- Legacy->v2 import inputs: preset table + factory, used to detect untouched default spec buckets.
-ns.BM_DefaultIndicators = DEFAULT_INDICATORS
-ns.BM_NewIndicator = NewIndicator
+mod.BM_DefaultIndicators = DEFAULT_INDICATORS
+mod.BM_NewIndicator = NewIndicator
 
 -------------------------------------------------------------------------------
 --  Assignment helpers
 -------------------------------------------------------------------------------
-local function GetSpecIndicators(db, specKey)
+local function GetSpecIndicators(saved, specKey)
     -- Buff Manager v2 (flag-gated): storage lives in p.bm2 spec tables
     -- (spell -> filter -> indicator), legacy-shaped plus a `filters` map, so
     -- the ENTIRE editor works on them unchanged through this one accessor.
     -- v2 keys by the CURRENT player spec (class:index); healer specKey ignored.
-    if ns.BM2_SpecInds then
+    if mod.BM2_SpecInds then
         -- Key routes: healer spec key = that set, "nonhealer" = shared bucket, nil = the active key.
-        local inds = ns.BM2_SpecInds(specKey)
+        local inds = mod.BM2_SpecInds(specKey)
         if inds then
             return inds
         end
     end
-    if not db or not db.profile then
+    if not saved or not saved.profile then
         return {}
     end
-    if not db.profile.bmIndicators then
-        db.profile.bmIndicators = {}
+    if not saved.profile.bmIndicators then
+        saved.profile.bmIndicators = {}
     end
-    if not db.profile.bmIndicators[specKey] then
-        db.profile.bmIndicators[specKey] = {}
-        PopulateDefaults(db.profile.bmIndicators[specKey], specKey)
+    if not saved.profile.bmIndicators[specKey] then
+        saved.profile.bmIndicators[specKey] = {}
+        PopulateDefaults(saved.profile.bmIndicators[specKey], specKey)
     end
-    return db.profile.bmIndicators[specKey]
+    return saved.profile.bmIndicators[specKey]
 end
-ns.BM_PrimaryByAlt = PRIMARY_BY_ALT
+mod.BM_PrimaryByAlt = PRIMARY_BY_ALT
 
 -- First tracked spec of the player's class, nil for untracked classes; the per-indicator all-specs fallback resolves through it.
 local function ClassFallbackSpecKey()
     local _, classToken = UnitClass("player")
     if classToken then
-        for _, spec in ipairs(HEALER_SPECS) do
-            if spec.classToken == classToken then
-                return spec.key
+        for _, specInfo in ipairs(HEALER_SPECS) do
+            if specInfo.classToken == classToken then
+                return specInfo.key
             end
         end
     end
     return nil
 end
-ns.BM_ClassFallbackSpecKey = ClassFallbackSpecKey
+mod.BM_ClassFallbackSpecKey = ClassFallbackSpecKey
 
-local function CountSpecIndicators(db, specKey)
-    local list = GetSpecIndicators(db, specKey)
-    return #list
+local function CountSpecIndicators(saved, specKey)
+    local entries = GetSpecIndicators(saved, specKey)
+    return #entries
 end
 
 -------------------------------------------------------------------------------
@@ -727,20 +727,20 @@ end
 --  counter. Rebuilt whenever indicators change (login, spec change, editor
 --  writes).
 -------------------------------------------------------------------------------
-local function RebuildLookup(db)
-    if not db or not db.profile then
+local function RebuildLookup(saved)
+    if not saved or not saved.profile then
         return
     end
 
     -- Ensure defaults are populated for all specs (triggers on first load)
-    for _, spec in ipairs(HEALER_SPECS) do
-        GetSpecIndicators(db, spec.key)
+    for _, specInfo in ipairs(HEALER_SPECS) do
+        GetSpecIndicators(saved, specInfo.key)
     end
 
     DetectActiveSpecKey()
 
     -- Sync nextIndicatorId to highest existing id
-    for _, specData in pairs(db.profile.bmIndicators) do
+    for _, specData in pairs(saved.profile.bmIndicators) do
         if type(specData) == "table" then
             for _, ind in ipairs(specData) do
                 if ind.id and ind.id >= nextIndicatorId then
@@ -751,7 +751,7 @@ local function RebuildLookup(db)
     end
 end
 
-ns.BM_RebuildLookup = RebuildLookup
+mod.BM_RebuildLookup = RebuildLookup
 
 -------------------------------------------------------------------------------
 --  Pool sizes
@@ -762,12 +762,12 @@ local BAR_POOL_SIZE = 4
 -- Size + anchor a bar indicator to its unit's health bar; shared by live and
 -- preview so they stay 1:1. Full Width/Height off = slider size at the anchor;
 -- on = edge-pinned to the health bar (pixel-for-pixel), anchor still drives the free axis.
-local function BM_PlaceBar(bar, health, ind, iscale)
-    local w = ind.barWidth or 30
-    local h = ind.barHeight or 4
+local function BM_PlaceBar(barFrame, healthBar, ind, iscale)
+    local wid = ind.barWidth or 30
+    local hgt = ind.barHeight or 4
     local isVert = (ind.orientation or "HORIZONTAL") == "VERTICAL"
-    bar:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-    bar:ClearAllPoints()
+    barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
+    barFrame:ClearAllPoints()
     -- Full Width/Height follow the fill axis like barWidth/barHeight: vertical
     -- bars swap the spanned screen edge, so "Full Width" always spans horizontal.
     -- Explicit if/else, not `a and b or c` -- the values are booleans.
@@ -778,35 +778,39 @@ local function BM_PlaceBar(bar, health, ind, iscale)
         fullW, fullH = ind.barFullWidth, ind.barFullHeight
     end
     -- Full pins span the health bar itself, keeping the real bar even when Uniform Icon Anchoring passes the full-height reference (it back-points).
-    local hugBar = health._cuiHealth or health
+    local hugBar = healthBar._cuiHealth or healthBar
     if fullW and fullH then
         -- Exact overlay of the health bar.
-        bar:SetAllPoints(hugBar)
+        barFrame:SetAllPoints(hugBar)
     elseif fullW then
         -- Full width; cross-axis slider sets thickness, vertical edge places it.
-        local pos = ind.position or "TOPLEFT"
-        local vEdge = (pos:find("BOTTOM", 1, true) and "BOTTOM") or (pos:find("TOP", 1, true) and "TOP") or ""
+        local place = ind.position or "TOPLEFT"
+        local vEdge = (place:find("BOTTOM", 1, true) and "BOTTOM")
+            or (place:find("TOP", 1, true) and "TOP")
+            or ""
         local oy = (ind.offsetY or 0) * iscale
-        bar:SetPoint(vEdge .. "LEFT", health, vEdge .. "LEFT", 0, oy)
-        bar:SetPoint(vEdge .. "RIGHT", health, vEdge .. "RIGHT", 0, oy)
-        bar:SetHeight(isVert and w or h)
+        barFrame:SetPoint(vEdge .. "LEFT", healthBar, vEdge .. "LEFT", 0, oy)
+        barFrame:SetPoint(vEdge .. "RIGHT", healthBar, vEdge .. "RIGHT", 0, oy)
+        barFrame:SetHeight(isVert and wid or hgt)
     elseif fullH then
         -- Full height; cross-axis slider sets thickness, horizontal edge places it.
-        local pos = ind.position or "TOPLEFT"
-        local hEdge = (pos:find("RIGHT", 1, true) and "RIGHT") or (pos:find("LEFT", 1, true) and "LEFT") or ""
+        local place = ind.position or "TOPLEFT"
+        local hEdge = (place:find("RIGHT", 1, true) and "RIGHT")
+            or (place:find("LEFT", 1, true) and "LEFT")
+            or ""
         local ox = (ind.offsetX or 0) * iscale
-        bar:SetPoint("TOP" .. hEdge, hugBar, "TOP" .. hEdge, ox, 0)
-        bar:SetPoint("BOTTOM" .. hEdge, hugBar, "BOTTOM" .. hEdge, ox, 0)
-        bar:SetWidth(isVert and h or w)
+        barFrame:SetPoint("TOP" .. hEdge, hugBar, "TOP" .. hEdge, ox, 0)
+        barFrame:SetPoint("BOTTOM" .. hEdge, hugBar, "BOTTOM" .. hEdge, ox, 0)
+        barFrame:SetWidth(isVert and hgt or wid)
     else
         if isVert then
-            bar:SetSize(h, w)
+            barFrame:SetSize(hgt, wid)
         else
-            bar:SetSize(w, h)
+            barFrame:SetSize(wid, hgt)
         end
-        bar:SetPoint(
+        barFrame:SetPoint(
             ind.position or "TOPLEFT",
-            health,
+            healthBar,
             ind.position or "TOPLEFT",
             (ind.offsetX or 0) * iscale,
             (ind.offsetY or 0) * iscale
@@ -818,14 +822,14 @@ end
 -- unit button's level; own border at base+1, count/duration text carrier pinned
 -- at +18 regardless of mode. Runs per assignment: pool frames are reused across indicators with different modes.
 local function BM_ApplyIconLevel(fr, ind, baseLvl)
-    local off = FRAMELVL_BASE[ind.frameLevel or "medium"] or FRAMELVL_BASE.medium
-    fr:SetFrameLevel(baseLvl + off)
+    local offset = FRAMELVL_BASE[ind.frameLevel or "medium"] or FRAMELVL_BASE.medium
+    fr:SetFrameLevel(baseLvl + offset)
     -- Swipe + border one above the icon, text carrier on top; set each explicitly, not by child-level propagation.
     if fr._cooldown then
-        fr._cooldown:SetFrameLevel(baseLvl + off + 1)
+        fr._cooldown:SetFrameLevel(baseLvl + offset + 1)
     end
     if fr._bdr then
-        fr._bdr:SetFrameLevel(baseLvl + off + 1)
+        fr._bdr:SetFrameLevel(baseLvl + offset + 1)
     end
     if fr._textCarrier then
         fr._textCarrier:SetFrameLevel(baseLvl + FRAMELVL_TEXT)
@@ -833,8 +837,8 @@ local function BM_ApplyIconLevel(fr, ind, baseLvl)
 end
 
 -- Bars have no border/text sub-frames: base only, defaulting to Behind Borders.
-local function BM_ApplyBarLevel(bar, ind, baseLvl)
-    bar:SetFrameLevel(
+local function BM_ApplyBarLevel(barFrame, ind, baseLvl)
+    barFrame:SetFrameLevel(
         baseLvl + (FRAMELVL_BASE[ind.frameLevel or "behindBorders"] or FRAMELVL_BASE.behindBorders)
     )
 end
@@ -843,20 +847,20 @@ end
 -- every other style (solid, textured glow/shadow/blizz/lightspark/dialog,
 -- LibSharedMedia) goes through CludesUI.ApplyBorderStyle (PP-vs-
 -- BackdropTemplate swap; one renderer active, style stamped on frame). r,g,b,a are non-secret configured values; callers Show().
-local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
-    local style = ind.borderStyle or "solid"
+local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
+    local look = ind.borderStyle or "solid"
     -- Sweep is not offered: no secret-safe way to drive the perimeter reveal on containers, and a full ring duplicates Solid. Stale picks render Solid.
-    if style == "sweepcw" or style == "sweepccw" then
-        style = "solid"
+    if look == "sweepcw" or look == "sweepccw" then
+        look = "solid"
     end
     local bw = ind.borderWidth or 2
     local Glows = CludesUI.Glows
-    local parent = borderFrame:GetParent()
-    local baseLvl = (parent and parent:GetFrameLevel()) or borderFrame:GetFrameLevel()
+    local hostFrame = borderFrame:GetParent()
+    local baseLvl = (hostFrame and hostFrame:GetFrameLevel()) or borderFrame:GetFrameLevel()
     -- One under the raise (+9: solid strips +10, textured +9): over the base border,
     -- under the hover/target/aggro raise and the text band. Matches creation.
-    borderFrame:SetFrameLevel(baseLvl + ns.LVL_RAISE - 1)
-    if style == "dashed" then
+    borderFrame:SetFrameLevel(baseLvl + mod.LVL_RAISE - 1)
+    if look == "dashed" then
         CludesUI.HideBorderStyle(borderFrame)
         Glows.StartProceduralAnts(
             borderFrame,
@@ -880,7 +884,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
         Glows.StopProceduralAnts(borderFrame)
         if CludesUI.ApplyBorderStyle then
             -- Solid takes width as literal pixels; textured styles index the edge-size map (steps 1-4 only), so cap to dodge the >4 fallback.
-            local sz = (style == "solid") and bw or math.min(bw, 4)
+            local sz = (look == "solid") and bw or math.min(bw, 4)
             -- Exact size (borderWidthPx, against the step and style drawn): 15th argument.
             CludesUI.ApplyBorderStyle(
                 borderFrame,
@@ -889,7 +893,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
                 g,
                 b,
                 a,
-                style,
+                look,
                 nil,
                 nil,
                 nil,
@@ -897,7 +901,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
                 nil,
                 nil,
                 nil,
-                CludesUI.BorderPx(ind.borderWidthPx, sz, style)
+                CludesUI.BorderPx(ind.borderWidthPx, sz, look)
             )
         end
     end
@@ -909,14 +913,14 @@ end
 -- the C-side animated engine instead (identical in/out of secret; w/h come from OUR frame -- the engine never measures there).
 -- Where the client can, the host is bound to its slot button (BmEffectInit), which runs the march itself while it shows an aura: a start
 -- or stop the button refuses while auras are restricted re-runs at the lift (the glow engine defers it).
-function ns.BM_ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
+function mod.BM_ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
     local Glows = CludesUI.Glows
-    if w and (ind.borderStyle or "solid") == "dashed" then
+    if wid and (ind.borderStyle or "solid") == "dashed" then
         CludesUI.HideBorderStyle(borderFrame)
         -- Same level as the static styles (this branch returns first): otherwise the host stays at slot+1, one level BELOW the health bar (unit+2).
-        local parent = borderFrame:GetParent()
-        local baseLvl = (parent and parent:GetFrameLevel()) or borderFrame:GetFrameLevel()
-        borderFrame:SetFrameLevel(baseLvl + ns.LVL_RAISE - 1)
+        local hostFrame = borderFrame:GetParent()
+        local baseLvl = (hostFrame and hostFrame:GetFrameLevel()) or borderFrame:GetFrameLevel()
+        borderFrame:SetFrameLevel(baseLvl + mod.LVL_RAISE - 1)
         Glows.StartAnimatedAnts(
             borderFrame,
             ind.borderDashCount or 8,
@@ -925,17 +929,17 @@ function ns.BM_ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
             r,
             g,
             b,
-            w,
-            h,
+            wid,
+            hgt,
             a
         )
         return
     end
     -- Leaving dashed tears the animated march down (no-op if never armed).
-    if w then
+    if wid then
         Glows.StopAnimatedAnts(borderFrame)
     end
-    ApplyEffectBorder(borderFrame, ind, r, g, b, a, w, h)
+    ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
 end
 
 -------------------------------------------------------------------------------
@@ -969,9 +973,9 @@ end
 -- Second return = the owning GROUP bucket key when the id came from an
 -- INHERITED preview copy (display-offset id ranges; see BM_INH_OFFSETS).
 local function BM_FindIndicatorById(indId)
-    local specKey = ns._bmSelectedSpecKey
+    local specKey = mod._bmSelectedSpecKey
     -- v2: resolve against the REAL store (legacy is stale/absent, preview ids come from v2 copies) -- selection must hit storage so edits stick.
-    local inds = ns.BM2_SpecInds(specKey)
+    local inds = mod.BM2_SpecInds(specKey)
     if inds then
         for _, ind in ipairs(inds) do
             if ind.id == indId then
@@ -984,14 +988,14 @@ local function BM_FindIndicatorById(indId)
     -- at the 1000001 base (seeded buckets; legacy small ids exist only
     -- in healer-key OWN buckets), so a floor keeps a wrong-offset probe
     -- from landing in another bucket's small-id band.
-    local groups = ns.BM_InheritedGroupsFor and ns.BM_InheritedGroupsFor(specKey)
+    local groups = mod.BM_InheritedGroupsFor and mod.BM_InheritedGroupsFor(specKey)
     if groups then
         for gi = 1, #groups do
             local gkey = groups[gi]
-            local off = ns.BM_INH_OFFSETS[gkey] or 0
-            local rawId = indId - off
+            local offset = mod.BM_INH_OFFSETS[gkey] or 0
+            local rawId = indId - offset
             if rawId >= 1000000 and rawId ~= indId then
-                local ginds = ns.BM2_SpecInds(gkey)
+                local ginds = mod.BM2_SpecInds(gkey)
                 if ginds then
                     for _, ind in ipairs(ginds) do
                         if ind.id == rawId then
@@ -1005,7 +1009,7 @@ local function BM_FindIndicatorById(indId)
     return nil
 end
 
-local function PvInd_OnClick(self, button)
+local function PvInd_OnClick(self, btnFrame)
     if not self._bmIndId then
         return
     end
@@ -1015,7 +1019,7 @@ local function PvInd_OnClick(self, button)
     end
 
     -- Right-click: deliberately no action.
-    if button == "RightButton" then
+    if btnFrame == "RightButton" then
         return
     end
 
@@ -1023,23 +1027,23 @@ local function PvInd_OnClick(self, button)
     -- inherited copy selects its read-only tile instead.
     if inhGroup then
         selectedIndicator = nil
-        ns._bm2InhSel = { group = inhGroup, id = ind.id }
+        mod._bm2InhSel = { group = inhGroup, id = ind.id }
     else
         selectedIndicator = ind
-        ns._bm2InhSel = nil
+        mod._bm2InhSel = nil
     end
     CludesUI:RefreshPage(true)
 end
 
-local function AttachPvIndHover(fr, PP)
-    if PP then
+local function AttachPvIndHover(fr, Pix)
+    if Pix then
         -- The preview's pooled frames (options page pool): handed out again by the next render.
         local CreateFrame = POOL.CreateFrame
         local hb = CreateFrame("Frame", nil, fr)
         hb:SetAllPoints()
         hb:SetFrameLevel(fr:GetFrameLevel() + 8)
         hb:EnableMouse(false)
-        PP.CreateBorder(hb, 0, 0, 0, 0, 2)
+        Pix.CreateBorder(hb, 0, 0, 0, 0, 2)
         hb:Hide()
         fr._hoverBdr = hb
     end
@@ -1049,8 +1053,8 @@ local function AttachPvIndHover(fr, PP)
     fr:SetScript("OnMouseUp", PvInd_OnClick)
 end
 
-function ns.BM_CreatePreviewIndicators(f, health, PP)
-    if not health then
+function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
+    if not healthBar then
         return
     end
     -- Options page pool (CludesUI_FramePool.lua): on the Buff Manager's kept
@@ -1063,15 +1067,15 @@ function ns.BM_CreatePreviewIndicators(f, health, PP)
     -- extra headroom covers the editing-spec union too -- concrete views
     -- preview inherited group buckets on top of their own list, and overflow
     -- is a silent vanish.
-    for i = 1, ICON_POOL_SIZE + 24 do
-        local fr = CreateFrame("Frame", nil, health)
-        fr:SetFrameLevel(f:GetFrameLevel() + ns.LVL_AURA)
+    for idx = 1, ICON_POOL_SIZE + 24 do
+        local fr = CreateFrame("Frame", nil, healthBar)
+        fr:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
         fr:SetSize(12, 12)
         fr:Hide()
 
         local tex = fr:CreateTexture(nil, "ARTWORK")
-        if PP then
-            PP.DisablePixelSnap(tex)
+        if Pix then
+            Pix.DisablePixelSnap(tex)
         end
         tex:SetAllPoints()
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -1088,12 +1092,12 @@ function ns.BM_CreatePreviewIndicators(f, health, PP)
         cooldown:Hide()
         fr._cooldown = cooldown
 
-        if PP then
+        if Pix then
             local bdr = CreateFrame("Frame", nil, fr)
             bdr:SetAllPoints()
             bdr:SetFrameLevel(fr:GetFrameLevel() + 1)
             bdr:EnableMouse(false)
-            PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
+            Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
             fr._bdr = bdr
         end
 
@@ -1104,71 +1108,71 @@ function ns.BM_CreatePreviewIndicators(f, health, PP)
         fr._textCarrier = textCarrier
         local countFS = textCarrier:CreateFontString(nil, "OVERLAY")
         countFS:SetPoint("BOTTOMRIGHT", fr, "BOTTOMRIGHT", 1, -1)
-        local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-        CludesUI.ApplyIconTextFont(countFS, fontPath, 8, "raidFrames")
+        local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+        CludesUI.ApplyIconTextFont(countFS, fontFile, 8, "raidFrames")
         countFS:SetTextColor(1, 1, 1)
         fr._count = countFS
 
         local durFS = textCarrier:CreateFontString(nil, "OVERLAY")
         durFS:SetPoint("CENTER", fr, "CENTER", 0, 0)
-        CludesUI.ApplyIconTextFont(durFS, fontPath, 8, "raidFrames")
+        CludesUI.ApplyIconTextFont(durFS, fontFile, 8, "raidFrames")
         durFS:SetTextColor(1, 1, 1)
         durFS:Hide()
         fr._durText = durFS
 
-        AttachPvIndHover(fr, PP)
-        iconPool[i] = fr
+        AttachPvIndHover(fr, Pix)
+        iconPool[idx] = fr
     end
 
     local barPool = {}
     -- +4: bar indicators inherited from group buckets preview alongside the
     -- edited bucket's own (same union-headroom reasoning as the icon pool).
-    for i = 1, BAR_POOL_SIZE + 4 do
-        local bar = CreateFrame("StatusBar", nil, health)
-        bar:SetFrameLevel(f:GetFrameLevel() + ns.LVL_AURA)
-        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        bar:SetMinMaxValues(0, 1)
-        bar:SetValue(0.6)
-        bar:Hide()
+    for idx = 1, BAR_POOL_SIZE + 4 do
+        local barFrame = CreateFrame("StatusBar", nil, healthBar)
+        barFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
+        barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        barFrame:SetMinMaxValues(0, 1)
+        barFrame:SetValue(0.6)
+        barFrame:Hide()
 
-        local bg = bar:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0.5)
-        bar._bg = bg
+        local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0, 0, 0, 0.5)
+        barFrame._bg = backdrop
 
-        AttachPvIndHover(bar, PP)
-        barPool[i] = bar
+        AttachPvIndHover(barFrame, Pix)
+        barPool[idx] = barFrame
     end
 
     -- Frame effect overlays for preview: ARTWORK sublevel 2 sits below the dispel overlay (sublevel 3), matching the real frames.
-    local hcOverlay = health:CreateTexture(nil, "ARTWORK", nil, 2)
-    local pvFillTex = health:GetStatusBarTexture()
+    local hcOverlay = healthBar:CreateTexture(nil, "ARTWORK", nil, 2)
+    local pvFillTex = healthBar:GetStatusBarTexture()
     if pvFillTex then
         hcOverlay:SetAllPoints(pvFillTex)
     else
-        hcOverlay:SetAllPoints(health)
+        hcOverlay:SetAllPoints(healthBar)
     end
     hcOverlay:SetTexture("Interface\\Buttons\\WHITE8X8")
     hcOverlay:Hide()
 
     -- Background Color: whole health area, BELOW the fill (ARTWORK -2) so the tint reads as the bar's background, matching the real frames.
-    local bgOverlay = health:CreateTexture(nil, "ARTWORK", nil, -2)
-    bgOverlay:SetAllPoints(health)
+    local bgOverlay = healthBar:CreateTexture(nil, "ARTWORK", nil, -2)
+    bgOverlay:SetAllPoints(healthBar)
     bgOverlay:SetTexture("Interface\\Buttons\\WHITE8X8")
     bgOverlay:Hide()
 
     local effectBorder = CreateFrame("Frame", nil, f)
     effectBorder:SetAllPoints(f)
-    effectBorder:SetFrameLevel(f:GetFrameLevel() + ns.LVL_RAISE - 1)
+    effectBorder:SetFrameLevel(f:GetFrameLevel() + mod.LVL_RAISE - 1)
     effectBorder:Hide()
-    if PP then
-        PP.CreateBorder(effectBorder, 0, 1, 0, 1, 2)
+    if Pix then
+        Pix.CreateBorder(effectBorder, 0, 1, 0, 1, 2)
     end
 
     f._bmIconPool = iconPool
     f._bmBarPool = barPool
     f._bmHCOverlay = hcOverlay
-    f._bmHCBar = health
+    f._bmHCBar = healthBar
     f._bmBGOverlay = bgOverlay
     f._bmEffectBorder = effectBorder
 end
@@ -1178,17 +1182,17 @@ end
 -------------------------------------------------------------------------------
 local previewSpellIcons = {}
 
-local function GetSpellIcon(spellID)
-    if previewSpellIcons[spellID] then
-        return previewSpellIcons[spellID]
+local function GetSpellIcon(spellId)
+    if previewSpellIcons[spellId] then
+        return previewSpellIcons[spellId]
     end
-    local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)
-    local icon = (info and info.iconID) or 136243
-    previewSpellIcons[spellID] = icon
-    return icon
+    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellId)
+    local glyph = (details and details.iconID) or 136243
+    previewSpellIcons[spellId] = glyph
+    return glyph
 end
 
-function ns.BM_ApplyPreviewIndicators(f, index, s)
+function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
     local iconPool = f._bmIconPool
     local barPool = f._bmBarPool
     if not iconPool then
@@ -1197,10 +1201,10 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
     -- A manager page replica built in party style keeps reading the party view.
     s = f._bmPvS or s
     -- Party preview passes the party proxy as `s`; use the party scale.
-    local iscale = ((s == ns._scaledPartyProxy) and ns._partyBmScale or ns._bmScale) or 1
+    local iscale = ((s == mod._scaledPartyProxy) and mod._partyBmScale or mod._bmScale) or 1
     -- The frames this preview stands for, which each indicator's Show In is
     -- tested against as the live frames test it (ns.BM2_SpecIndicators).
-    local pvKind = (f._bmPvS or (s ~= nil and s == ns._scaledPartyProxy)) and "party" or "raid"
+    local pvKind = (f._bmPvS or (s ~= nil and s == mod._scaledPartyProxy)) and "party" or "raid"
 
     -- Hide all first (reset cooldowns so they re-apply fresh)
     for _, fr in ipairs(iconPool) do
@@ -1240,19 +1244,19 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
     f:SetAlpha(1)
 
     -- Only show on slot 1 (player) for the preview
-    if index ~= 1 then
+    if slotPos ~= 1 then
         return
     end
 
-    local db = ns.db
-    if not db or not db.profile then
+    local saved = mod.db
+    if not saved or not saved.profile then
         return
     end
-    local health = ns.RF_AnchorHost and ns.RF_AnchorHost(f._health, s) or f._health
-    if not health then
+    local healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(f._health, s) or f._health
+    if not healthBar then
         return
     end
-    local PP = CludesUI.PanelPP or CludesUI.PP
+    local Pix = CludesUI.PanelPP or CludesUI.PP
     -- Base level for the Frame Level setting (mirrors the live render).
     local pvBaseLvl = f:GetFrameLevel()
 
@@ -1260,7 +1264,7 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
     local iPoolIdx = 0
     local bPoolIdx = 0
 
-    local activeSpecKey = ns._bmSelectedSpecKey
+    local activeSpecKey = mod._bmSelectedSpecKey
     local specList
     -- Preview the SELECTED v2 bucket with RESOLVED spell unions.
     do
@@ -1269,54 +1273,54 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
         -- HoTs -- those can never be their own casts). Untagged/custom ids and
         -- ALL-class entries always pass; show-anyone entries are never class-filtered.
         local edClass
-        for i = 1, #HEALER_SPECS do
-            if HEALER_SPECS[i].key == activeSpecKey then
-                edClass = HEALER_SPECS[i].classToken
+        for idx = 1, #HEALER_SPECS do
+            if HEALER_SPECS[idx].key == activeSpecKey then
+                edClass = HEALER_SPECS[idx].classToken
                 break
             end
         end
         -- Per-spec buckets: class from the spec ID in the key.
         if not edClass and type(activeSpecKey) == "string" then
-            local sid = activeSpecKey:match("^spec(%d+)$")
-            if sid and GetSpecializationInfoByID then
-                local _, _, _, _, _, cf = GetSpecializationInfoByID(tonumber(sid))
-                edClass = cf
+            local spellRef = activeSpecKey:match("^spec(%d+)$")
+            if spellRef and GetSpecializationInfoByID then
+                local _, _, _, _, _, castFrame = GetSpecializationInfoByID(tonumber(spellRef))
+                edClass = castFrame
             end
             -- WoW Forever: no by-ID spec lookup; the class from the spec table.
-            if not edClass and sid and CludesUI.IS_FOREVER then
-                edClass = CludesUI.SpecClassOf(tonumber(sid))
+            if not edClass and spellRef and CludesUI.IS_FOREVER then
+                edClass = CludesUI.SpecClassOf(tonumber(spellRef))
             end
         end
         if not edClass then
-            local _, cf = UnitClass("player")
-            edClass = cf
+            local _, castFrame = UnitClass("player")
+            edClass = castFrame
         end
-        local spellClass = ns.BM2_SpellClass
-        local out = {}
+        local spellClass = mod.BM2_SpellClass
+        local result = {}
         -- Shared per-indicator preview synthesis; idOffset shifts INHERITED
         -- copies into their display id range (BM_INH_OFFSETS) so ids stay
         -- unique for the anchor pass, selection highlight and click-resolve.
         -- list = the indicator's own bucket, where its Anchor To root lives.
-        local function AppendPv(ind, idOffset, list)
+        local function AppendPv(ind, idOffset, entries)
             -- Show In: left out where the live frames of this kind leave it out.
-            local showIn = ns.BM2_EffectiveShowIn and ns.BM2_EffectiveShowIn(ind, list)
+            local showIn = mod.BM2_EffectiveShowIn and mod.BM2_EffectiveShowIn(ind, entries)
             if (showIn == "raid" and pvKind == "party") or (showIn == "party" and pvKind ~= "party") then
                 return
             end
             local resolved
-            if ns.BM2_ResolveSpells then
-                resolved = ns.BM2_ResolveSpells(ind)
+            if mod.BM2_ResolveSpells then
+                resolved = mod.BM2_ResolveSpells(ind)
             end
             if not (resolved and #resolved > 0) then
                 return
             end
             -- Own-only is per-indicator: preview only spells the edited class could have cast.
             local kept = {}
-            for j = 1, #resolved do
-                local sid = resolved[j]
-                local c = spellClass and spellClass[sid]
+            for jdx = 1, #resolved do
+                local spellRef = resolved[jdx]
+                local c = spellClass and spellClass[spellRef]
                 if not (ind.ownOnly == true) or c == nil or c == "ALL" or c == edClass then
-                    kept[#kept + 1] = sid
+                    kept[#kept + 1] = spellRef
                 end
             end
             if #kept == 0 then
@@ -1328,15 +1332,15 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
             end
             -- Preview parity: per-filter square colors expand exactly like the
             -- live view assembly.
-            if ns.BM2_SquareFilterColors then
-                v.spellColors = ns.BM2_SquareFilterColors(ind) or ind.spellColors
+            if mod.BM2_SquareFilterColors then
+                v.spellColors = mod.BM2_SquareFilterColors(ind) or ind.spellColors
             end
             -- Healing-preset groups preview stacked icons (HoTs coexist); others preview ONE. Read by the render cap.
             local multi = false
-            if ind.filters and ns.BM2_GetFilter then
+            if ind.filters and mod.BM2_GetFilter then
                 for fid in pairs(ind.filters) do
-                    local pf = ns.BM2_GetFilter(fid)
-                    if pf and (pf.preset == "coreheals" or pf.preset == "lesserheals") then
+                    local popFrame = mod.BM2_GetFilter(fid)
+                    if popFrame and (popFrame.preset == "coreheals" or popFrame.preset == "lesserheals") then
                         multi = true
                         break
                     end
@@ -1344,9 +1348,9 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
             end
             v._pvMulti = multi
             -- Lead with an edited-class spell so the single-icon preview shows something that spec could cast/receive.
-            for j = 2, #kept do
-                if spellClass and spellClass[kept[j]] == edClass then
-                    kept[1], kept[j] = kept[j], kept[1]
+            for jdx = 2, #kept do
+                if spellClass and spellClass[kept[jdx]] == edClass then
+                    kept[1], kept[jdx] = kept[jdx], kept[1]
                     break
                 end
             end
@@ -1359,28 +1363,30 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                     v.anchorTo = v.anchorTo + idOffset
                 end
             end
-            out[#out + 1] = v
+            result[#result + 1] = v
         end
-        local inds = ns.BM2_SpecInds(activeSpecKey)
+        local inds = mod.BM2_SpecInds(activeSpecKey)
         if inds then
-            for i = 1, #inds do
-                AppendPv(inds[i], nil, inds)
+            for idx = 1, #inds do
+                AppendPv(inds[idx], nil, inds)
             end
         end
         -- Concrete views union the inherited group buckets, so the preview
         -- matches what the spec actually renders; per-spec disabled entries
         -- are excluded (they do not render live either).
-        local inhGroups = ns.BM_InheritedGroupsFor and ns.BM_InheritedGroupsFor(activeSpecKey)
+        local inhGroups = mod.BM_InheritedGroupsFor and mod.BM_InheritedGroupsFor(activeSpecKey)
         if inhGroups then
             for gi = 1, #inhGroups do
                 local gkey = inhGroups[gi]
-                local ginds = ns.BM2_SpecInds(gkey)
+                local ginds = mod.BM2_SpecInds(gkey)
                 if ginds then
-                    local off = ns.BM_INH_OFFSETS[gkey] or 0
-                    for i = 1, #ginds do
-                        local gind = ginds[i]
-                        if not (ns.BM2_InhDisabled and ns.BM2_InhDisabled(activeSpecKey, gkey, gind.id)) then
-                            AppendPv(gind, off, ginds)
+                    local offset = mod.BM_INH_OFFSETS[gkey] or 0
+                    for idx = 1, #ginds do
+                        local gind = ginds[idx]
+                        if
+                            not (mod.BM2_InhDisabled and mod.BM2_InhDisabled(activeSpecKey, gkey, gind.id))
+                        then
+                            AppendPv(gind, offset, ginds)
                         end
                     end
                 end
@@ -1388,19 +1394,19 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
         end
         -- Party Frames kit (manager page replica in party style): the live party
         -- frames take the kit's Buff Size and one run outside the frame.
-        if f._bmPvS and ns.RF_PartyKit and ns.RF_PartyKit() and ns.RF_KitBmView then
-            out = ns.RF_KitBmView(out, true)
+        if f._bmPvS and mod.RF_PartyKit and mod.RF_PartyKit() and mod.RF_KitBmView then
+            result = mod.RF_KitBmView(result, true)
         end
         -- Anchor To: stamp members with their terminal root and order them right after it, so the preview renders each set as one run.
         do
             local byId, isMember = {}, {}
-            for i = 1, #out do
-                if out[i].id ~= nil then
-                    byId[out[i].id] = out[i]
+            for idx = 1, #result do
+                if result[idx].id ~= nil then
+                    byId[result[idx].id] = result[idx]
                 end
             end
-            for i = 1, #out do
-                local v = out[i]
+            for idx = 1, #result do
+                local v = result[idx]
                 local t = v.anchorTo and byId[v.anchorTo]
                 if t and (t.type or "icon") == (v.type or "icon") then
                     local seen = { [v] = true }
@@ -1416,22 +1422,22 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                 end
             end
             local ordered = {}
-            for i = 1, #out do
-                local v = out[i]
+            for idx = 1, #result do
+                local v = result[idx]
                 if not isMember[v] then
                     ordered[#ordered + 1] = v
                     if v.id ~= nil then
-                        for j = 1, #out do
-                            if out[j]._pvAnchorRoot == v.id then
-                                ordered[#ordered + 1] = out[j]
+                        for jdx = 1, #result do
+                            if result[jdx]._pvAnchorRoot == v.id then
+                                ordered[#ordered + 1] = result[jdx]
                             end
                         end
                     end
                 end
             end
-            out = ordered
+            result = ordered
         end
-        specList = out
+        specList = result
     end
     -- Anchor To continuation state: root id -> banked cursor/anchor, consumed by member indicators ordered right after their root.
     local pvChain = {}
@@ -1444,12 +1450,12 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
 
                     -- Frame effects: show when selected or when all-indicators eyeball is on
                     if not typeInfo or not typeInfo.placed then
-                        local isSelected = ns._bmSelectedIndId and ind.id == ns._bmSelectedIndId
-                        local wantShow = isSelected or ns._bmAllIndicatorsVisible
+                        local isSelected = mod._bmSelectedIndId and ind.id == mod._bmSelectedIndId
+                        local wantShow = isSelected or mod._bmAllIndicatorsVisible
                         if wantShow then
                             if indType == "healthcolor" and f._bmHCOverlay then
                                 local c = ind.color or { r = 0, g = 1, b = 0 }
-                                ns.RF_TintOverBarFill(
+                                mod.RF_TintOverBarFill(
                                     f._bmHCOverlay,
                                     f._bmHCBar,
                                     c.r,
@@ -1460,10 +1466,14 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                 f._bmHCOverlay:Show()
                             elseif indType == "bgcolor" and f._bmBGOverlay then
                                 local c = ind.color or { r = 0, g = 1, b = 0 }
-                                ns.RF_TexBgTint(f._bmBGOverlay, ns.RF_TexBgPath(s), ns.RF_IsVerticalFill(s))
+                                mod.RF_TexBgTint(
+                                    f._bmBGOverlay,
+                                    mod.RF_TexBgPath(s),
+                                    mod.RF_IsVerticalFill(s)
+                                )
                                 f._bmBGOverlay:SetColorTexture(c.r, c.g, c.b, (ind.opacity or 100) / 100)
                                 f._bmBGOverlay:Show()
-                            elseif indType == "border" and f._bmEffectBorder and PP then
+                            elseif indType == "border" and f._bmEffectBorder and Pix then
                                 local c = ind.color or { r = 0, g = 1, b = 0 }
                                 ApplyEffectBorder(
                                     f._bmEffectBorder,
@@ -1483,15 +1493,15 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                     if typeInfo and typeInfo.placed then
                         if indType == "bar" then
                             bPoolIdx = bPoolIdx + 1
-                            local bar = barPool and barPool[bPoolIdx]
-                            if bar then
-                                BM_ApplyBarLevel(bar, ind, pvBaseLvl)
-                                bar:SetReverseFill(ind.reverseFill or false)
+                            local barFrame = barPool and barPool[bPoolIdx]
+                            if barFrame then
+                                BM_ApplyBarLevel(barFrame, ind, pvBaseLvl)
+                                barFrame:SetReverseFill(ind.reverseFill or false)
                                 local c = ind.color or { r = 0, g = 1, b = 0 }
-                                bar:SetStatusBarColor(c.r, c.g, c.b, (ind.barColorOpacity or 100) / 100)
-                                if bar._bg then
+                                barFrame:SetStatusBarColor(c.r, c.g, c.b, (ind.barColorOpacity or 100) / 100)
+                                if barFrame._bg then
                                     local bgc = ind.barBgColor or { r = 0, g = 0, b = 0 }
-                                    bar._bg:SetColorTexture(
+                                    barFrame._bg:SetColorTexture(
                                         bgc.r,
                                         bgc.g,
                                         bgc.b,
@@ -1500,23 +1510,24 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                 end
                                 local barSid = ind.spells and ind.spells[1]
                                 if barSid and not PREVIEW_NO_DURATION[barSid] then
-                                    bar:SetValue(GetPvCDSeed(index, barSid))
+                                    barFrame:SetValue(GetPvCDSeed(slotPos, barSid))
                                 else
-                                    bar:SetValue(1)
+                                    barFrame:SetValue(1)
                                 end
-                                BM_PlaceBar(bar, health, ind, iscale)
+                                BM_PlaceBar(barFrame, healthBar, ind, iscale)
                                 -- v2 only: non-selected groups dim like icons (legacy preview never dimmed bars).
-                                local barSel = ns._bmSelectedIndId and ind.id == ns._bmSelectedIndId
-                                bar:SetAlpha((barSel or ns._bmAllIndicatorsVisible) and 1 or 0.5)
-                                bar._bmIndId = ind.id
-                                bar:Show()
+                                local barSel = mod._bmSelectedIndId and ind.id == mod._bmSelectedIndId
+                                barFrame:SetAlpha((barSel or mod._bmAllIndicatorsVisible) and 1 or 0.5)
+                                barFrame._bmIndId = ind.id
+                                barFrame:Show()
                             end
                         else
                             local growDir = ind.growDirection or "RIGHT"
                             local sz = (ind.size or 12) * iscale
-                            local snap = ns.PixelSnap or function(v)
-                                return v
-                            end
+                            local snap = mod.PixelSnap
+                                or function(v)
+                                    return v
+                                end
                             local gap = snap((ind.spacing or 1) * iscale)
                             -- Anchor To: members continue the root's run with its growth/anchor/cursor (member wrap previews linear; live wraps properly).
                             local anchorPos = ind.position or "TOPLEFT"
@@ -1527,17 +1538,17 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                 growDir = chainSt.grow
                                 anchorPos, anchorOX, anchorOY = chainSt.posKey, chainSt.ox, chainSt.oy
                             end
-                            local isSelected = ns._bmSelectedIndId and ind.id == ns._bmSelectedIndId
+                            local isSelected = mod._bmSelectedIndId and ind.id == mod._bmSelectedIndId
                             local maxShow
                             if ind._pvMulti ~= nil then
                                 -- v2: healing-preset groups cap at 4 selected/2 unselected (uncapped unions drain the icon pool and hide other groups); others show ONE.
                                 if ind._pvMulti then
-                                    maxShow = (isSelected or ns._bmAllIndicatorsVisible) and 4 or 2
+                                    maxShow = (isSelected or mod._bmAllIndicatorsVisible) and 4 or 2
                                 else
                                     maxShow = 1
                                 end
                             else
-                                maxShow = (isSelected or ns._bmAllIndicatorsVisible) and #ind.spells or 2
+                                maxShow = (isSelected or mod._bmAllIndicatorsVisible) and #ind.spells or 2
                             end
                             -- Grid preview (12.1): mirror the live wrap/cap.
                             local per, wrapUp, wrapLeft = 0, false, false
@@ -1596,7 +1607,7 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                 per = 0
                             end
                             local lineStart = cursor
-                            for si, sid in ipairs(ind.spells) do
+                            for si, spellRef in ipairs(ind.spells) do
                                 if si > maxShow then
                                     break
                                 end
@@ -1638,24 +1649,30 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                         cursor = cursor + iconSz + gap
                                         gx = wrapLeft and -lineOff or lineOff
                                     end
-                                    fr:SetPoint(pvSelfPoint, health, anchorPos, anchorOX + gx, anchorOY + gy)
+                                    fr:SetPoint(
+                                        pvSelfPoint,
+                                        healthBar,
+                                        anchorPos,
+                                        anchorOX + gx,
+                                        anchorOY + gy
+                                    )
                                     -- "Hide Icons" (icon only): keep frame alpha so stacks preview; zero texture, swipe, border.
                                     local pvHideIcon = (indType == "icon") and ind.hideIcon == true
                                     local pvAlpha = pvHideIcon and 1 or (ind.iconOpacity or 100) / 100
-                                    if ns._bmAllIndicatorsVisible then
+                                    if mod._bmAllIndicatorsVisible then
                                         pvAlpha = 1
                                     elseif not isSelected then
                                         pvAlpha = pvAlpha * 0.5
                                     end
                                     fr:SetAlpha(pvAlpha)
                                     if indType == "icon" then
-                                        fr._tex:SetTexture(GetSpellIcon(sid))
+                                        fr._tex:SetTexture(GetSpellIcon(spellRef))
                                         local _z = s.bmIconZoom or 0.08
                                         fr._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
                                         fr._tex:SetVertexColor(1, 1, 1, pvHideIcon and 0 or 1)
                                     else
                                         -- Per-ability color (preview): this spell's color, then legacy ind.color, then default.
-                                        local c = (ind.spellColors and ind.spellColors[sid])
+                                        local c = (ind.spellColors and ind.spellColors[spellRef])
                                             or ind.color
                                             or { r = 0, g = 1, b = 0 }
                                         -- Reset vertex first (as live): a reused icon frame can carry a faded tint that blanks it.
@@ -1664,7 +1681,8 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                         fr._tex:SetTexCoord(0, 1, 0, 1)
                                     end
                                     -- Fixed preview stacks: Blistering Scales 8, Lifebloom 2
-                                    local previewStacks = (sid == 360827 and "8") or (sid == 33763 and "2")
+                                    local previewStacks = (spellRef == 360827 and "8")
+                                        or (spellRef == 33763 and "2")
                                     if ind.showStacks and previewStacks then
                                         local sSz = (ind.stacksTextSize or 8) * iscale
                                         local sc = ind.stacksTextColor or { r = 1, g = 1, b = 1 }
@@ -1687,19 +1705,19 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                         fr._count:SetText("")
                                     end
                                     fr._bmIndId = ind.id
-                                    fr._bmSpellId = sid
+                                    fr._bmSpellId = spellRef
                                     fr._bmIndType = indType
                                     fr:Show()
                                     -- Preview cooldown swipe (frame must be visible first)
                                     if fr._cooldown then
-                                        if not PREVIEW_NO_DURATION[sid] then
-                                            local seed = GetPvCDSeed(index, sid)
+                                        if not PREVIEW_NO_DURATION[spellRef] then
+                                            local seed = GetPvCDSeed(slotPos, spellRef)
                                             local fakeDisplay = math.floor(3 + seed * 17)
                                             -- Use a long future expiry so swipe barely moves
-                                            local now = GetTime()
+                                            local nowTime = GetTime()
                                             local dur = 3600
                                             local elapsed = dur * (1 - seed)
-                                            fr._cooldown:SetCooldown(now - elapsed, dur)
+                                            fr._cooldown:SetCooldown(nowTime - elapsed, dur)
                                             fr._cooldown:SetDrawSwipe(
                                                 (not pvHideIcon) and (ind.showDuration ~= false)
                                             )
@@ -1737,8 +1755,8 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                             end
                                         end
                                     end
-                                    if fr._bdr and PP then
-                                        local border = not pvHideIcon and ns.RFC_AuraBorder(ind, "indBorder")
+                                    if fr._bdr and Pix then
+                                        local border = not pvHideIcon and mod.RFC_AuraBorder(ind, "indBorder")
                                             or nil
                                         local pandemicPreview = indType == "icon"
                                             and isSelected
@@ -1761,7 +1779,7 @@ function ns.BM_ApplyPreviewIndicators(f, index, s)
                                                     { c.r, c.g, c.b, 1, size = ind.pandemicBorderWidth or 2 }
                                             end
                                         end
-                                        ns.RFC_ApplyAuraBorder(
+                                        mod.RFC_ApplyAuraBorder(
                                             fr._bdr,
                                             fr._bdr,
                                             border,
@@ -1796,17 +1814,17 @@ local selectedSpecKey = nil
 
 -- WoW Forever: the page opens on All Specs each time it is entered (a tab
 -- switch, or the panel opening on it); rebuilds while on it keep the pick.
-function ns.BM_EnterAllSpecs()
+function mod.BM_EnterAllSpecs()
     if not CludesUI.IS_FOREVER then
         return
     end
-    ns._bm2SpecInited = true
+    mod._bm2SpecInited = true
     if selectedSpecKey == "allspecs" then
         return
     end
     selectedSpecKey = "allspecs"
     selectedIndicator = nil
-    ns._bm2InhSel = nil
+    mod._bm2InhSel = nil
 end
 
 -- Class token of the EDITED bucket (dropdown selection): healer keys map
@@ -1818,14 +1836,14 @@ local function SelectedBucketClass()
     if hs then
         return hs.classToken
     end
-    local sid = type(key) == "string" and key:match("^spec(%d+)$")
-    if sid and GetSpecializationInfoByID then
-        local _, _, _, _, _, cf = GetSpecializationInfoByID(tonumber(sid))
-        return cf
+    local spellRef = type(key) == "string" and key:match("^spec(%d+)$")
+    if spellRef and GetSpecializationInfoByID then
+        local _, _, _, _, _, castFrame = GetSpecializationInfoByID(tonumber(spellRef))
+        return castFrame
     end
     -- WoW Forever: no by-ID spec lookup; the class from the spec table.
-    if sid and CludesUI.IS_FOREVER then
-        return CludesUI.SpecClassOf(tonumber(sid))
+    if spellRef and CludesUI.IS_FOREVER then
+        return CludesUI.SpecClassOf(tonumber(spellRef))
     end
     return nil
 end
@@ -1842,9 +1860,9 @@ local function AutoDetectSpec()
     -- Fallback for the options UI: pick the first tracked spec for the player's class so a non-tracked spec (e.g. a DPS spec) still opens on something sane.
     local _, classToken = UnitClass("player")
     if classToken then
-        for _, spec in ipairs(HEALER_SPECS) do
-            if spec.classToken == classToken then
-                return spec.key
+        for _, specInfo in ipairs(HEALER_SPECS) do
+            if specInfo.classToken == classToken then
+                return specInfo.key
             end
         end
     end
@@ -1861,16 +1879,16 @@ end
 --  kitAuras ("buffs" | "debuffs": the kit hint under that row),
 --  overrideTips ({ raid = tip, party = tip }: override marks per segment).
 --  Returns pvFrame, sectionH, scale.
-function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
+function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, options)
     -- Options page pool (CludesUI_FramePool.lua): on a manager page's kept
     -- root the replica is handed out again, in creation order, by the next render.
     local CreateFrame = POOL.CreateFrame
-    opts = opts or {}
+    options = options or {}
     -- Party style: the read-only party view (party size without an attached
     -- portrait, party section overrides, party indicator scale), as the live
     -- party frames read it. The kit's art is not rebuilt here.
-    if opts.party and ns._scaledPartyProxy then
-        s = ns._scaledPartyProxy
+    if options.party and mod._scaledPartyProxy then
+        s = mod._scaledPartyProxy
     end
     local PV_SCALE = 1.5
     local rawW = s.frameWidth or 72
@@ -1882,7 +1900,7 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
     end
     -- Party frames run much wider than raid cells: also keep the width inside
     -- the preview column (centered on centerX).
-    if opts.party then
+    if options.party then
         local maxW = centerX * 2 - previewPad * 2
         if maxW > 0 and rawW * PV_SCALE > maxW then
             PV_SCALE = maxW / rawW
@@ -1895,32 +1913,32 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
 
     -- Raid/Party row: captioned "Preview" and seated on the replica, so it
     -- reads as a view switch, not as a second set of settings.
-    local kitMode = opts.party
-        and ns.RF_PartyKit
-        and ns.RF_PartyKit()
-        and ns.RF_KitBuffMode
-        and ns.RF_KitBuffMode(ns.db and ns.db.profile)
+    local kitMode = options.party
+        and mod.RF_PartyKit
+        and mod.RF_PartyKit()
+        and mod.RF_KitBuffMode
+        and mod.RF_KitBuffMode(mod.db and mod.db.profile)
     local rowH = 0
-    if opts.styleToggle then
-        local row = CreateFrame("Frame", nil, parent)
-        local cap = row:CreateFontString(nil, "OVERLAY")
-        cap:SetFont(fontPath, 12, "")
+    if options.styleToggle then
+        local rowFrame = CreateFrame("Frame", nil, hostFrame)
+        local cap = rowFrame:CreateFontString(nil, "OVERLAY")
+        cap:SetFont(fontFile, 12, "")
         cap:SetTextColor(1, 1, 1, 0.75)
         cap:SetText(CludesUI.L("Preview"))
-        local seg, segBtn = ns.BM_BuildPreviewStyleToggle(row)
-        row:SetSize(math.ceil(cap:GetStringWidth()) + 10 + seg:GetWidth(), 22)
-        row:SetPoint("TOP", parent, "TOPLEFT", floor(centerX), topY)
-        cap:SetPoint("LEFT", row, "LEFT", 0, 0)
-        seg:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+        local seg, segBtn = mod.BM_BuildPreviewStyleToggle(rowFrame)
+        rowFrame:SetSize(math.ceil(cap:GetStringWidth()) + 10 + seg:GetWidth(), 22)
+        rowFrame:SetPoint("TOP", hostFrame, "TOPLEFT", floor(centerX), topY)
+        cap:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+        seg:SetPoint("RIGHT", rowFrame, "RIGHT", 0, 0)
         -- Overrides that apply on that side: a gold "i" (the overrides UI's
         -- badge) in the segment's free right padding, carrying the tip.
         -- Motion only: the segment keeps its clicks.
-        local tips = opts.overrideTips
+        local tips = options.overrideTips
         if tips then
             local gold = CludesUI._SPECOV_GOLD
             for key, btn in pairs(segBtn) do
-                local tip = tips[key]
-                if tip then
+                local tipText = tips[key]
+                if tipText then
                     local badge = CreateFrame("Frame", nil, btn)
                     badge:SetSize(12, 12)
                     badge:SetPoint("RIGHT", btn, "RIGHT", -5, 0)
@@ -1931,7 +1949,7 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
                     ico:SetVertexColor(gold[1], gold[2], gold[3], 0.85)
                     badge:SetScript("OnEnter", function(self)
                         ico:SetVertexColor(gold[1], gold[2], gold[3], 1)
-                        CludesUI.ShowWidgetTooltip(self, tip)
+                        CludesUI.ShowWidgetTooltip(self, tipText)
                     end)
                     badge:SetScript("OnLeave", function()
                         ico:SetVertexColor(gold[1], gold[2], gold[3], 0.85)
@@ -1941,34 +1959,34 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
                 end
             end
         end
-        row:EnableMouse(true)
-        row:SetScript("OnEnter", function(self)
+        rowFrame:EnableMouse(true)
+        rowFrame:SetScript("OnEnter", function(self)
             CludesUI.ShowWidgetTooltip(
                 self,
                 CludesUI.L("Only changes the preview. Raid and party frames share these settings.")
             )
         end)
-        row:SetScript("OnLeave", function()
+        rowFrame:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         rowH = 22 + 24
         -- The kit decides these auras' size and place on party frames: name
         -- the override and its value, in the accent colour.
-        if kitMode and opts.kitAuras then
-            local p = ns.db.profile
-            local hint = parent:CreateFontString(nil, "OVERLAY")
-            hint:SetFont(fontPath, 11, "")
+        if kitMode and options.kitAuras then
+            local p = mod.db.profile
+            local hint = hostFrame:CreateFontString(nil, "OVERLAY")
+            hint:SetFont(fontFile, 11, "")
             local ar, ag, ab = CludesUI.ResolveActiveAccent()
             hint:SetTextColor(ar or 1, ag or 1, ab or 1, 0.9)
             hint:SetWidth(centerX * 2 - previewPad * 2)
             hint:SetWordWrap(true)
             hint:SetJustifyH("CENTER")
-            hint:SetPoint("TOP", row, "BOTTOM", 0, -8)
-            if opts.kitAuras == "buffs" then
+            hint:SetPoint("TOP", rowFrame, "BOTTOM", 0, -8)
+            if options.kitAuras == "buffs" then
                 hint:SetText(
                     CludesUI.Lf(
                         "Party Frames kit override: Buff Size %d (Party > Frame Style)",
-                        ns.RF_KitBuffSize and ns.RF_KitBuffSize(p) or 15
+                        mod.RF_KitBuffSize and mod.RF_KitBuffSize(p) or 15
                     )
                 )
             else
@@ -1984,22 +2002,22 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
     end
     -- Kit buffs above the frame: room for their lines (at the Buff Manager scale).
     local aboveH = 0
-    if kitMode == "ABOVE" and opts.kitAuras == "buffs" and ns.RF_KitAboveUnits then
-        aboveH = math.ceil(ns.RF_KitAboveUnits(ns.db.profile) * (ns._partyBmScale or 1) * PV_SCALE)
+    if kitMode == "ABOVE" and options.kitAuras == "buffs" and mod.RF_KitAboveUnits then
+        aboveH = math.ceil(mod.RF_KitAboveUnits(mod.db.profile) * (mod._partyBmScale or 1) * PV_SCALE)
     end
-    sectionH = max(sectionH + rowH + aboveH, opts.minH or 91)
+    sectionH = max(sectionH + rowH + aboveH, options.minH or 91)
     topY = topY - rowH - aboveH
 
-    local pvFrame = CreateFrame("Frame", nil, parent)
+    local pvFrame = CreateFrame("Frame", nil, hostFrame)
     pvFrame:SetSize(rawW, rawH)
     pvFrame:SetScale(PV_SCALE)
-    pvFrame:SetPoint("TOP", parent, "TOPLEFT", floor(centerX / PV_SCALE), topY / PV_SCALE)
+    pvFrame:SetPoint("TOP", hostFrame, "TOPLEFT", floor(centerX / PV_SCALE), topY / PV_SCALE)
     -- The side the kit's buff run takes (callers keep their controls off it).
-    pvFrame._bmKitSide = (opts.kitAuras == "buffs") and kitMode or nil
+    pvFrame._bmKitSide = (options.kitAuras == "buffs") and kitMode or nil
 
     local bgc = s.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
-    local bg = pvFrame:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
+    local backdrop = pvFrame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
 
     local rawPowerH = (s.powerShowForHealer or s.powerShowForTank or s.powerShowForDPS)
             and (s.powerHeight or 4)
@@ -2007,13 +2025,13 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
     local matchPowerBorder = s.powerBorderMatchFrame == true
         and rawPowerH > 0
         and (s.powerBorderStyle == "divider" or s.powerBorderStyle == "border")
-        and not ns.RF_Stock()
+        and not mod.RF_Stock()
         and CludesUI._pixelArtBorders[s.borderTexture]
     local rawTopBarH = s.topNameBarEnabled and (s.topNameBarHeight or 20) or 0
     local matchTopNameDivider = s.topNameBarDivider == true
         and rawTopBarH >= 4
         and (s.borderSize or 1) > 0
-        and not ns.RF_Stock()
+        and not mod.RF_Stock()
         and CludesUI._pixelArtBorders[s.borderTexture]
     -- Show on Bottom: the bar takes the bottom edge, health starts at the top and
     -- the power bar sits on the bar (as the live LayoutTopNameBar lays it out).
@@ -2024,32 +2042,32 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
     -- Health bar (matches the custom preview build exactly)
     local texKey = s.healthBarTexture or "atrocity"
     local texPath = CludesUI.ResolveTexturePath(
-        ns.healthBarTextures or {},
+        mod.healthBarTextures or {},
         texKey,
         "Interface\\Buttons\\WHITE8X8"
     ) or "Interface\\Buttons\\WHITE8X8"
-    local health = CreateFrame("StatusBar", nil, pvFrame)
-    health:SetFrameLevel(pvFrame:GetFrameLevel() + 2)
-    health:SetPoint("TOPLEFT", pvFrame, "TOPLEFT", 0, healthTopY)
-    health:SetPoint("TOPRIGHT", pvFrame, "TOPRIGHT", 0, healthTopY)
-    health:SetHeight(healthH)
-    health:SetStatusBarTexture(texPath)
-    health:GetStatusBarTexture():SetHorizTile(false)
-    health:SetMinMaxValues(0, 100)
-    health:SetValue(85)
+    local healthBar = CreateFrame("StatusBar", nil, pvFrame)
+    healthBar:SetFrameLevel(pvFrame:GetFrameLevel() + 2)
+    healthBar:SetPoint("TOPLEFT", pvFrame, "TOPLEFT", 0, healthTopY)
+    healthBar:SetPoint("TOPRIGHT", pvFrame, "TOPRIGHT", 0, healthTopY)
+    healthBar:SetHeight(healthH)
+    healthBar:SetStatusBarTexture(texPath)
+    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    healthBar:SetMinMaxValues(0, 100)
+    healthBar:SetValue(85)
 
     -- Full-height anchor reference (mirrors the live buttons' d.uniformRef so Uniform Icon Anchoring previews identically; see ns.RF_AnchorHost).
     do
         local pvUniformRef = CreateFrame("Frame", nil, pvFrame)
-        pvUniformRef:SetFrameLevel(health:GetFrameLevel())
-        pvUniformRef:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        pvUniformRef:SetFrameLevel(healthBar:GetFrameLevel())
+        pvUniformRef:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
         pvUniformRef:SetPoint("BOTTOMRIGHT", pvFrame, "BOTTOMRIGHT", 0, rawBottomY)
-        health._cuiUniformRef = pvUniformRef
-        pvUniformRef._cuiHealth = health
+        healthBar._cuiUniformRef = pvUniformRef
+        pvUniformRef._cuiHealth = healthBar
     end
 
     -- Preview class color from the player's active spec (falls back to class)
-    local previewClass = opts.previewClass
+    local previewClass = options.previewClass
     if not previewClass and activeSpecKey_BM and SPEC_BY_KEY[activeSpecKey_BM] then
         previewClass = SPEC_BY_KEY[activeSpecKey_BM].classToken
     end
@@ -2058,47 +2076,51 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
         previewClass = pc
     end
     local cc = CludesUI.GetClassColor(previewClass)
-    local mode = s.healthColorMode or "class"
-    local fillTex = health:GetStatusBarTexture()
+    local modeName = s.healthColorMode or "class"
+    local fillTex = healthBar:GetStatusBarTexture()
     -- Textured Background, as on the live frames.
-    ns.RF_TexBgLayer(health, bg, ns.RF_TexBgOpaque(s, mode == "dark") and ns.RF_TexBgPath(s) or nil)
-    if mode == "dark" then
+    mod.RF_TexBgLayer(
+        healthBar,
+        backdrop,
+        mod.RF_TexBgOpaque(s, modeName == "dark") and mod.RF_TexBgPath(s) or nil
+    )
+    if modeName == "dark" then
         local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
-        health:SetStatusBarColor(dfr, dfg, dfb, 1)
+        healthBar:SetStatusBarColor(dfr, dfg, dfb, 1)
         if fillTex then
             fillTex:SetAlpha(dfa)
         end
-        bg:ClearAllPoints()
-        bg:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
-        bg:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-        bg:SetColorTexture(CludesUI.GetDarkModeBg())
-    elseif mode == "classic" then
+        backdrop:ClearAllPoints()
+        backdrop:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+        backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+        backdrop:SetColorTexture(CludesUI.GetDarkModeBg())
+    elseif modeName == "classic" then
         local pct = 0.85
         local r = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
         local g = pct > 0.5 and 1 or (pct * 2)
-        health:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
+        healthBar:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
         if fillTex then
             fillTex:SetAlpha(1)
         end
-        bg:SetAllPoints()
-        bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
-    elseif mode == "custom" then
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+    elseif modeName == "custom" then
         local cfc = s.customFillColor or { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
-        health:SetStatusBarColor(cfc.r, cfc.g, cfc.b, (s.healthBarOpacity or 100) / 100)
+        healthBar:SetStatusBarColor(cfc.r, cfc.g, cfc.b, (s.healthBarOpacity or 100) / 100)
         if fillTex then
             fillTex:SetAlpha(1)
         end
-        bg:SetAllPoints()
-        bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
     else
         if cc then
-            health:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
+            healthBar:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
         end
         if fillTex then
             fillTex:SetAlpha(1)
         end
-        bg:SetAllPoints()
-        bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
     end
 
     if rawPowerH > 0 then
@@ -2121,23 +2143,23 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
         pwBg:SetAllPoints()
         local pbc = (s.powerBgPowerColored and pInfo) or s.powerBgColor or { r = 0, g = 0, b = 0 }
         local pbF = (s.powerBgPowerColored and pInfo) and CludesUI.GetPowerBgDarkenFactor() or 1
-        ns.RF_TexBgTint(pwBg, ns.RF_TexBgPath(s))
+        mod.RF_TexBgTint(pwBg, mod.RF_TexBgPath(s))
         pwBg:SetColorTexture(pbc.r * pbF, pbc.g * pbF, pbc.b * pbF, (s.powerBgDarkness or 70) / 100)
         -- Classic WoW UI: the stock edge and divider stand in (as live).
-        if PP and ns.RF_Classic and ns.RF_Classic() then
-            ns.RF_StockBuild(pvFrame, pvFrame, power)
-            ns.RF_StockDivider(pvFrame)
-        elseif PP and s.powerBorderStyle and s.powerBorderStyle ~= "none" then
+        if Pix and mod.RF_Classic and mod.RF_Classic() then
+            mod.RF_StockBuild(pvFrame, pvFrame, power)
+            mod.RF_StockDivider(pvFrame)
+        elseif Pix and s.powerBorderStyle and s.powerBorderStyle ~= "none" then
             local pbSize = matchPowerBorder and (s.borderSize or 1) or (s.powerBorderSize or 1)
             if pbSize > 0 then
                 local pwBdr = CreateFrame("Frame", nil, pvFrame)
                 pwBdr:SetAllPoints(power)
                 pwBdr:SetFrameLevel(power:GetFrameLevel() + 1)
-                PP.CreateBorder(pwBdr, 0, 0, 0, 1, 1)
-                if not (matchPowerBorder and ns.RF_ApplyPowerBorderArt(pwBdr, s, true, true)) then
+                Pix.CreateBorder(pwBdr, 0, 0, 0, 1, 1)
+                if not (matchPowerBorder and mod.RF_ApplyPowerBorderArt(pwBdr, s, true, true)) then
                     local pBc = s.powerBorderColor or { r = 0, g = 0, b = 0 }
-                    PP.UpdateBorder(pwBdr, pbSize, pBc.r, pBc.g, pBc.b, s.powerBorderAlpha or 1)
-                    local ppC = PP.GetBorders(pwBdr)
+                    Pix.UpdateBorder(pwBdr, pbSize, pBc.r, pBc.g, pBc.b, s.powerBorderAlpha or 1)
+                    local ppC = Pix.GetBorders(pwBdr)
                     if ppC and s.powerBorderStyle == "divider" then
                         if ppC._bottom then
                             ppC._bottom:SetAlpha(0)
@@ -2154,17 +2176,17 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
         end
     end
 
-    if PP then
+    if Pix then
         -- Stock styles: the stock edge stands in for the CludesUI border.
-        if ns.RF_Stock and ns.RF_Stock() then
-            ns.RF_StockBuild(pvFrame, pvFrame)
+        if mod.RF_Stock and mod.RF_Stock() then
+            mod.RF_StockBuild(pvFrame, pvFrame)
         end
-        local bsz = ns.RF_EffBorderSize and ns.RF_EffBorderSize(s) or (s.borderSize or 1)
+        local bsz = mod.RF_EffBorderSize and mod.RF_EffBorderSize(s) or (s.borderSize or 1)
         if bsz > 0 then
             local bdr = CreateFrame("Frame", nil, pvFrame)
             bdr:SetAllPoints(pvFrame)
             bdr:SetFrameLevel(pvFrame:GetFrameLevel() + 8)
-            PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
+            Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
             local bc = s.borderColor or { r = 0, g = 0, b = 0 }
             if matchPowerBorder or matchTopNameDivider then
                 CludesUI.ApplyBorderStyle(
@@ -2185,7 +2207,7 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
                     CludesUI.BorderPx(s.borderSizePx, bsz, s.borderTexture)
                 )
             else
-                PP.UpdateBorder(bdr, bsz, bc.r, bc.g, bc.b, s.borderAlpha or 1)
+                Pix.UpdateBorder(bdr, bsz, bc.r, bc.g, bc.b, s.borderAlpha or 1)
             end
         end
     end
@@ -2195,16 +2217,16 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
     local textCarrier = CreateFrame("Frame", nil, pvFrame)
     textCarrier:SetAllPoints(pvFrame)
     textCarrier:SetFrameLevel(
-        pvFrame:GetFrameLevel() + (s.nameTextAboveIcons and (ns.LVL_AURA + 6) or (ns.LVL_TEXT or 12))
+        pvFrame:GetFrameLevel() + (s.nameTextAboveIcons and (mod.LVL_AURA + 6) or (mod.LVL_TEXT or 12))
     )
     local outline = (CludesUI.GetFontOutlineFlag("raidFrames")) or ""
     local playerName = UnitName("player") or "Player"
     if Ambiguate then
         playerName = Ambiguate(playerName, "short")
     end
-    playerName = ns.RF_FormatName(playerName, s)
+    playerName = mod.RF_FormatName(playerName, s)
     -- Level Position "Attach to Name" (either format): the Top Name Bar shows the level too.
-    local lvlAttach = ns.RF_TextNameAttach(s)
+    local lvlAttach = mod.RF_TextNameAttach(s)
 
     -- Top Name Bar band (preview replica)
     if s.topNameBarEnabled then
@@ -2224,16 +2246,16 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
         tnbBg:SetColorTexture(tbgc.r, tbgc.g, tbgc.b, (s.topNameBarBgOpacity or 80) / 100)
         local tnbText = tnb:CreateFontString(nil, "OVERLAY")
         -- The player's name: a font family, with no shadow as a plain SetFont.
-        CludesUI.SetFontFamily(tnbText, fontPath, s.topNameBarTextSize or 11, outline, false)
+        CludesUI.SetFontFamily(tnbText, fontFile, s.topNameBarTextSize or 11, outline, false)
         tnbText:SetWordWrap(false)
         if lvlAttach then
-            tnbText:SetFormattedText(lvlAttach[1], ns._RFPreviewLevel(), playerName)
+            tnbText:SetFormattedText(lvlAttach[1], mod._RFPreviewLevel(), playerName)
         else
             tnbText:SetText(playerName)
         end
         -- This preview draws no role icon, so the name keeps its full width.
         tnb._cuiRoleIcon = false
-        ns.RF_PlaceTopNameText(tnbText, tnb, s)
+        mod.RF_PlaceTopNameText(tnbText, tnb, s)
         if (s.topNameBarTextColorMode or "class") == "custom" then
             local c = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
             tnbText:SetTextColor(c.r, c.g, c.b)
@@ -2243,28 +2265,28 @@ function ns.BM_BuildSimplePreview(parent, s, fontPath, PP, centerX, topY, opts)
             tnbText:SetTextColor(1, 1, 1)
         end
         if s.topNameBarDivider == true then
-            ns.RF_ApplyTopNameDivider(tnb, s, true)
+            mod.RF_ApplyTopNameDivider(tnb, s, true)
         end
     end
 
     -- The texts as live, from this replica's sample values (85% health, 72% mana,
     -- shown with the power sample only). A fresh state per build: the carrier's pooled
     -- FontStrings come back through the pool.
-    ns.RF_TextPreview({ textCarrier = textCarrier, _health = health, _txW = rawW }, s, {
+    mod.RF_TextPreview({ textCarrier = textCarrier, _health = healthBar, _txW = rawW }, s, {
         hpPct = 85,
         hpPer = 12000,
         ppPct = 72,
         ppPer = 2500,
         ha = 85 * 3000,
-        name = ns.CapName(playerName, s),
+        name = mod.CapName(playerName, s),
         power = rawPowerH > 0 or nil,
         class = previewClass,
         pToken = "MANA",
     })
 
-    pvFrame._health = health
+    pvFrame._health = healthBar
     -- Settings source for every later indicator pass on this replica (nil = the caller's).
-    pvFrame._bmPvS = opts.party and s or nil
+    pvFrame._bmPvS = options.party and s or nil
 
     return pvFrame, sectionH, PV_SCALE
 end
@@ -2273,7 +2295,7 @@ end
 -- party (dungeon, arena, solo, party). Keybind and Dark Mode hold wherever the
 -- player is, so a group with either reaches both; neither when it has no
 -- condition.
-function ns.BM_CondSides(g)
+function mod.BM_CondSides(g)
     local c = g and g.conds or {}
     if c.keybind or c.darkmode then
         return true, true
@@ -2284,12 +2306,12 @@ end
 
 -- The preview side an override editing session pins ("raid" | "party"): a
 -- condition group that applies on only one kind of frames. nil = free.
-function ns.BM_PreviewPinnedSide()
-    local kind, gid = CludesUI.SpecOverrides_EditSessionInfo()
-    if kind ~= "cond" then
+function mod.BM_PreviewPinnedSide()
+    local kindOf, groupId = CludesUI.SpecOverrides_EditSessionInfo()
+    if kindOf ~= "cond" then
         return nil
     end
-    local toRaid, toParty = ns.BM_CondSides(CludesUI.Conditions_GroupById(gid))
+    local toRaid, toParty = mod.BM_CondSides(CludesUI.Conditions_GroupById(groupId))
     if toParty and not toRaid then
         return "party"
     end
@@ -2301,12 +2323,12 @@ end
 
 -- The manager previews' style: the pinned side while one applies, else the
 -- session choice of the switch.
-function ns.BM_PreviewIsParty()
-    local pinned = ns.BM_PreviewPinnedSide()
+function mod.BM_PreviewIsParty()
+    local pinned = mod.BM_PreviewPinnedSide()
     if pinned then
         return pinned == "party"
     end
-    return ns._bmPvParty == true
+    return mod._bmPvParty == true
 end
 
 -- The base debuff settings an override can hold key by key (the Debuff
@@ -2345,7 +2367,7 @@ local DM_BASE_KEYS = {
 -- system). "bm": groups with their own Buff Manager; "dm": groups with their
 -- own Debuff Manager and overrides holding base debuff settings. A condition
 -- group lands on the side whose frames it applies on; spec groups land on both.
-function ns.BM_PreviewOverrideTips(kind)
+function mod.BM_PreviewOverrideTips(kindOf)
     local raid, party, seenR, seenP = nil, nil, {}, {}
     local function Add(name, toRaid, toParty)
         name = name or "?"
@@ -2360,61 +2382,61 @@ function ns.BM_PreviewOverrideTips(kind)
             party[#party + 1] = name
         end
     end
-    local function AddCond(gid)
-        local g = gid and CludesUI.Conditions_GroupById(gid)
+    local function AddCond(groupId)
+        local g = groupId and CludesUI.Conditions_GroupById(groupId)
         if not g then
             return
         end
-        local toRaid, toParty = ns.BM_CondSides(g)
+        local toRaid, toParty = mod.BM_CondSides(g)
         if not (toRaid or toParty) then
             toRaid, toParty = true, true
         end
         Add(g.name, toRaid, toParty)
     end
     -- Groups with their own Buff or Debuff Manager.
-    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kind)
-    for i = 1, #specGids do
-        local g = CludesUI.SpecOverrides_GroupById(specGids[i])
+    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kindOf)
+    for idx = 1, #specGids do
+        local g = CludesUI.SpecOverrides_GroupById(specGids[idx])
         if g then
             Add(g.name, true, true)
         end
     end
-    for i = 1, #condGids do
-        AddCond(condGids[i])
+    for idx = 1, #condGids do
+        AddCond(condGids[idx])
     end
-    if kind == "dm" then
+    if kindOf == "dm" then
         local holders = CludesUI.SpecOverrides_CapturedBy("CludesUIRaidFrames", DM_BASE_KEYS)
-        for j = 1, #holders do
-            local h = holders[j]
-            if h.kind == "cond" then
-                AddCond(h.id)
+        for jdx = 1, #holders do
+            local hgt = holders[jdx]
+            if hgt.kind == "cond" then
+                AddCond(hgt.id)
             else
                 -- Spec values: the spec's group, else the spec's own name.
-                local og = CludesUI.SpecOverrides_OwningGroupFor(h.id)
+                local og = CludesUI.SpecOverrides_OwningGroupFor(hgt.id)
                 local name = og and og.name
                 if not name and GetSpecializationInfoByID then
-                    local _, sn = GetSpecializationInfoByID(h.id)
+                    local _, sn = GetSpecializationInfoByID(hgt.id)
                     name = sn
                 end
                 Add(name, true, true)
             end
         end
     end
-    local sub = (kind == "bm") and CludesUI.L("These overrides use their own Buff Manager.")
+    local subFrame = (kindOf == "bm") and CludesUI.L("These overrides use their own Buff Manager.")
         or CludesUI.L("These overrides hold their own debuff settings.")
     local rgb = CludesUI._SPECOV_GOLD
     local gold = CludesUI.HexColor(rgb[1], rgb[2], rgb[3])
-    local function Tip(names)
-        if not names then
+    local function Tip(nameList)
+        if not nameList then
             return nil
         end
         return gold
             .. CludesUI.L("Overridden by:")
             .. "|r "
-            .. table.concat(names, ", ")
+            .. table.concat(nameList, ", ")
             .. "\n"
             .. CludesUI.COLOR_CODES.DIM
-            .. sub
+            .. subFrame
             .. "|r"
     end
     return Tip(raid), Tip(party)
@@ -2423,39 +2445,39 @@ end
 -- Raid / Party style switch of the manager pages' previews. Session only
 -- (never saved): the Buff and Debuff Manager settings are shared by both.
 -- Returns the control and its segment buttons by key.
-function ns.BM_BuildPreviewStyleToggle(parent)
+function mod.BM_BuildPreviewStyleToggle(hostFrame)
     local seg, _, _, btnOf = CludesUI.BuildSegmentedControl({
-        parent = parent,
+        parent = hostFrame,
         keys = { "raid", "party" },
         labels = { raid = "Raid", party = "Party" },
         autoWidth = true,
         square = true,
         height = 22,
         getChecked = function(key)
-            return (key == "party") == ns.BM_PreviewIsParty()
+            return (key == "party") == mod.BM_PreviewIsParty()
         end,
         -- An override editing session whose contexts show one kind of frames
         -- pins the preview to that side; the other segment greys out.
         isDisabled = function(key)
-            local pinned = ns.BM_PreviewPinnedSide()
+            local pinned = mod.BM_PreviewPinnedSide()
             return pinned ~= nil and key ~= pinned
         end,
         disabledTip = function()
             local name = CludesUI.SpecOverrides_EditSessionName() or "?"
-            if ns.BM_PreviewPinnedSide() == "party" then
+            if mod.BM_PreviewPinnedSide() == "party" then
                 return CludesUI.Lf("Editing %s: it applies to party frames only.", name)
             end
             return CludesUI.Lf("Editing %s: it applies to raid frames only.", name)
         end,
         onToggle = function(key)
-            if ns.BM_PreviewPinnedSide() then
+            if mod.BM_PreviewPinnedSide() then
                 return
             end
             local party = (key == "party")
-            if party == (ns._bmPvParty == true) then
+            if party == (mod._bmPvParty == true) then
                 return
             end
-            ns._bmPvParty = party
+            mod._bmPvParty = party
             CludesUI:RefreshPage(true)
         end,
     })
@@ -2478,18 +2500,18 @@ do
     reg.CludesUIRaidFrames = pages
 end
 
-function ns.BM_BuildOverrideList(parent, y, width, fontPath, kind)
-    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kind)
+function mod.BM_BuildOverrideList(hostFrame, posY, width, fontFile, kindOf)
+    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kindOf)
     if #specGids + #condGids == 0 then
-        return y
+        return posY
     end
     -- The fork live on this page (session-applied conditional first).
-    local lockInfo = (kind == "dm") and CludesUI.SpecOverrides_DmPageLockInfo
+    local lockInfo = (kindOf == "dm") and CludesUI.SpecOverrides_DmPageLockInfo
         or CludesUI.SpecOverrides_BmPageLockInfo
     local liveKind, liveGid = lockInfo()
     local ovList = {}
-    for i = 1, #specGids do
-        local g = CludesUI.SpecOverrides_GroupById(specGids[i])
+    for idx = 1, #specGids do
+        local g = CludesUI.SpecOverrides_GroupById(specGids[idx])
         if g then
             ovList[#ovList + 1] = {
                 kind = "spec",
@@ -2500,8 +2522,8 @@ function ns.BM_BuildOverrideList(parent, y, width, fontPath, kind)
             }
         end
     end
-    for i = 1, #condGids do
-        local g = CludesUI.Conditions_GroupById(condGids[i])
+    for idx = 1, #condGids do
+        local g = CludesUI.Conditions_GroupById(condGids[idx])
         if g then
             ovList[#ovList + 1] = {
                 kind = "cond",
@@ -2513,69 +2535,69 @@ function ns.BM_BuildOverrideList(parent, y, width, fontPath, kind)
         end
     end
     if #ovList == 0 then
-        return y
+        return posY
     end
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
 
     -- PAB section header: inset divider, centered caps label.
-    local hdrLine = parent:CreateTexture(nil, "ARTWORK")
-    PP.Height(hdrLine, 1)
-    PP.Point(hdrLine, "TOPLEFT", parent, "TOPLEFT", 8, y)
-    PP.Point(hdrLine, "TOPRIGHT", parent, "TOPLEFT", width - 8, y)
+    local hdrLine = hostFrame:CreateTexture(nil, "ARTWORK")
+    Pix.Height(hdrLine, 1)
+    Pix.Point(hdrLine, "TOPLEFT", hostFrame, "TOPLEFT", 8, posY)
+    Pix.Point(hdrLine, "TOPRIGHT", hostFrame, "TOPLEFT", width - 8, posY)
     hdrLine:SetColorTexture(1, 1, 1, 0.08)
-    local hdr = parent:CreateFontString(nil, "OVERLAY")
-    hdr:SetFont(fontPath, 11, "")
-    PP.Point(hdr, "TOP", parent, "TOPLEFT", floor(width / 2), y - 13)
-    hdr:SetTextColor(0.6, 0.6, 0.6)
+    local heading = hostFrame:CreateFontString(nil, "OVERLAY")
+    heading:SetFont(fontFile, 11, "")
+    Pix.Point(heading, "TOP", hostFrame, "TOPLEFT", floor(width / 2), posY - 13)
+    heading:SetTextColor(0.6, 0.6, 0.6)
     -- Caps like the PAB headers; string.upper is ASCII-only, so a translation
     -- with non-ASCII letters keeps its own case instead of mixing.
     local hdrText = CludesUI.L("Overrides")
     if not hdrText:find("[\128-\255]") then
         hdrText = string.upper(hdrText)
     end
-    hdr:SetText(hdrText)
-    y = y - 32
+    heading:SetText(hdrText)
+    posY = posY - 32
 
     -- Rows are the shared manager tiles at the Player Aura Bars metrics (58px,
     -- 14px pencil); the live fork is the selected tile with a gold dot.
     -- Tile click = editing-as toggle, pencil = edit the group (card parity).
     local applyIcon = CludesUI.SpecOverrides_ApplyGroupIcon
     local gold = CludesUI._SPECOV_GOLD
-    for i = 1, #ovList do
-        local ov = ovList[i]
-        local tileH = CludesUI.BuildManagerTile(parent, y, {
+    for idx = 1, #ovList do
+        local shade = ovList[idx]
+        local tileH = CludesUI.BuildManagerTile(hostFrame, posY, {
             width = width,
-            fontPath = fontPath,
+            fontPath = fontFile,
             height = 58,
             textRight = -28,
             editSize = 14,
             editSnap = true,
-            title = ov.name,
-            subtitle = CludesUI.L(ov.kind == "spec" and "Spec" or "Conditional"),
+            title = shade.name,
+            subtitle = CludesUI.L(shade.kind == "spec" and "Spec" or "Conditional"),
             iconApply = function(tex)
-                applyIcon(tex, ov.icon)
+                applyIcon(tex, shade.icon)
             end,
-            selected = ov.active,
-            statusDot = ov.active and gold or nil,
+            selected = shade.active,
+            statusDot = shade.active and gold or nil,
             onSelect = function()
-                CludesUI.SpecOverrides_ToggleOverrideEdit(ov.kind, ov.gid)
+                CludesUI.SpecOverrides_ToggleOverrideEdit(shade.kind, shade.gid)
             end,
             onEdit = function()
-                CludesUI.SpecOverrides_EditOverrideGroup(ov.kind, ov.gid)
+                CludesUI.SpecOverrides_EditOverrideGroup(shade.kind, shade.gid)
             end,
         })
-        y = y - tileH
+        posY = posY - tileH
     end
-    return y - 8
+    return posY - 8
 end
 
-function ns.BM_BuildPage(pageName, parent, yOffset)
+function mod.BM_BuildPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     if not W then
         return 0
     end
-    local db = ns.db
-    if not db then
+    local saved = mod.db
+    if not saved then
         return 0
     end
     -- Options page pool (CludesUI_FramePool.lua): everything below builds on
@@ -2584,7 +2606,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     local CreateFrame = POOL.CreateFrame
     -- Override-session gate: heals a stale BM layer FIRST (renders the edited group's fork) and reports the end overlay; nil = normal WYSIWYG.
     local bmOverlayState = CludesUI.SpecOverrides_BmPagePrelude() or nil
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
 
     -- Auto-detect spec on first open
     if not selectedSpecKey then
@@ -2593,38 +2615,38 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
     -- Light update: rebuild lookup + refresh frames/preview, no page rebuild (sliders/settings that don't change structure).
     local function ReloadAndUpdate()
-        RebuildLookup(db)
-        if ns.ReloadFrames then
-            ns.ReloadFrames()
+        RebuildLookup(saved)
+        if mod.ReloadFrames then
+            mod.ReloadFrames()
         end
-        local pv = ns._bmPreviewFrame
-        if pv and pv._health and ns.BM_ApplyPreviewIndicators then
-            ns.BM_ApplyPreviewIndicators(pv, 1, db.profile)
+        local pv = mod._bmPreviewFrame
+        if pv and pv._health and mod.BM_ApplyPreviewIndicators then
+            mod.BM_ApplyPreviewIndicators(pv, 1, saved.profile)
         end
     end
     -- The Assigned Buffs filter picks (the manager-pages file) update the
     -- frames and preview in place through this.
-    ns._bmReloadAndUpdate = ReloadAndUpdate
+    mod._bmReloadAndUpdate = ReloadAndUpdate
 
     -- Full update: also rebuilds the page (preview, sidebar, settings) -- used by create/delete/toggle/dropdown changes that alter structure.
     local function ReloadAndRebuild()
-        RebuildLookup(db)
-        if ns.ReloadFrames then
-            ns.ReloadFrames()
+        RebuildLookup(saved)
+        if mod.ReloadFrames then
+            mod.ReloadFrames()
         end
         CludesUI:RefreshPage(true)
     end
 
-    local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-    local _, h
+    local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local _, hgt
     local PAD = 20 -- consistent left/right padding for creation bar + settings
-    local s = db.profile
+    local s = saved.profile
 
     -- Current spec's indicators for the sidebar. v2: editing dropdown stays functional (healer specs + shared Non-Healer bucket); defaults to current spec on first page open each session.
-    if ns.BM2_SpecKey and not ns._bm2SpecInited then
-        ns._bm2SpecInited = true
+    if mod.BM2_SpecKey and not mod._bm2SpecInited then
+        mod._bm2SpecInited = true
         -- WoW Forever lands on All Specs (see ns.BM_EnterAllSpecs).
-        local landKey = CludesUI.IS_FOREVER and "allspecs" or ns.BM2_SpecKey()
+        local landKey = CludesUI.IS_FOREVER and "allspecs" or mod.BM2_SpecKey()
         -- Non-healers land on their CONCRETE "spec<ID>" view, not the shared
         -- All Non Healers/Aug group: the concrete view is where inherited
         -- group tiles (All Specs / Non Healers / role) are visible, so the
@@ -2632,9 +2654,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         -- bucket stays one dropdown pick away.
         if landKey == "nonhealer" then
             local specIdx = GetSpecialization and GetSpecialization()
-            local sid = specIdx and GetSpecializationInfo and GetSpecializationInfo(specIdx)
-            if sid then
-                landKey = "spec" .. sid
+            local spellRef = specIdx and GetSpecializationInfo and GetSpecializationInfo(specIdx)
+            if spellRef then
+                landKey = "spec" .. spellRef
             end
         end
         selectedSpecKey = landKey
@@ -2642,32 +2664,32 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     -- WoW Forever lists All Specs and one row per class, keyed to the bucket
     -- that class renders now: a class view follows it (the player's class
     -- moves with a live spec override's Buff Manager fork).
-    if CludesUI.IS_FOREVER and ns.BM2_ForeverKey and selectedSpecKey ~= "allspecs" then
+    if CludesUI.IS_FOREVER and mod.BM2_ForeverKey and selectedSpecKey ~= "allspecs" then
         local cls = SelectedBucketClass()
-        local key = cls and ns.BM2_ForeverKey(cls)
+        local key = cls and mod.BM2_ForeverKey(cls)
         if key and key ~= selectedSpecKey then
             selectedSpecKey = key
             selectedIndicator = nil
-            ns._bm2InhSel = nil
+            mod._bm2InhSel = nil
         end
     end
-    local specIndicators = selectedSpecKey and GetSpecIndicators(db, selectedSpecKey) or {}
+    local specIndicators = selectedSpecKey and GetSpecIndicators(saved, selectedSpecKey) or {}
 
     -- Group buckets this view INHERITS from (concrete spec views only):
     -- their indicators lead the sidebar as read-only tiles with a per-spec
     -- enable. nil on group-bucket views.
-    local inheritedGroups = ns.BM_InheritedGroupsFor and ns.BM_InheritedGroupsFor(selectedSpecKey) or nil
+    local inheritedGroups = mod.BM_InheritedGroupsFor and mod.BM_InheritedGroupsFor(selectedSpecKey) or nil
 
     -- Inherited-tile selection (ns._bm2InhSel = { group, id }): resolve it
     -- against the owning group's store; drop it when the view no longer
     -- inherits that group or the indicator is gone. While valid it OWNS the
     -- left pane (read-only), so the indicator selection clears.
     local inhSelInd = nil
-    if ns._bm2InhSel then
-        local isel = ns._bm2InhSel
+    if mod._bm2InhSel then
+        local isel = mod._bm2InhSel
         for gi = 1, #(inheritedGroups or {}) do
             if inheritedGroups[gi] == isel.group then
-                for _, gind in ipairs(GetSpecIndicators(db, isel.group) or {}) do
+                for _, gind in ipairs(GetSpecIndicators(saved, isel.group) or {}) do
                     if gind.id == isel.id then
                         inhSelInd = gind
                         break
@@ -2677,7 +2699,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             end
         end
         if not inhSelInd then
-            ns._bm2InhSel = nil
+            mod._bm2InhSel = nil
         end
     end
     if inhSelInd then
@@ -2706,22 +2728,22 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     -- Expose selected spec + indicator ID for preview logic. An inherited
     -- selection exposes its DISPLAY id (group offset applied) so the preview
     -- highlight finds the unioned copy.
-    ns._bmSelectedSpecKey = selectedSpecKey
+    mod._bmSelectedSpecKey = selectedSpecKey
     if inhSelInd then
-        ns._bmSelectedIndId = ns._bm2InhSel.id + (ns.BM_INH_OFFSETS[ns._bm2InhSel.group] or 0)
+        mod._bmSelectedIndId = mod._bm2InhSel.id + (mod.BM_INH_OFFSETS[mod._bm2InhSel.group] or 0)
     else
-        ns._bmSelectedIndId = selectedIndicator and selectedIndicator.id or nil
+        mod._bmSelectedIndId = selectedIndicator and selectedIndicator.id or nil
     end
 
     -- Editing-spec roster lead (CludesUI.BuildSpecBucketRoster): the
     -- healer/Aug specs and a divider between the group buckets and every
     -- other spec in the game. Standard spec icons throughout.
-    local function HealerRosterLead(values, order, icons)
+    local function HealerRosterLead(values, sequence, icons)
         local inHealerList = {}
-        for i = 1, #SPEC_DD_ORDER do
-            local key = SPEC_DD_ORDER[i]
+        for idx = 1, #SPEC_DD_ORDER do
+            local key = SPEC_DD_ORDER[idx]
             values[key] = CludesUI.L(SPEC_DD_VALUES[key])
-            order[#order + 1] = key
+            sequence[#sequence + 1] = key
             local hs = SPEC_BY_KEY[key]
             if hs and hs.specID then
                 inHealerList[hs.specID] = true
@@ -2731,7 +2753,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 end
             end
         end
-        order[#order + 1] = "---b"
+        sequence[#sequence + 1] = "---b"
         return inHealerList
     end
 
@@ -2757,18 +2779,18 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     -- Outer container: parented to scrollFrame, fills entire viewport. One
     -- for the session (the options page pool): every render dresses it again,
     -- and its reset is the previous render's teardown.
-    local outerRoot = POOL.Kept(ns, "bmRoot", "Frame", scrollFrame)
+    local outerRoot = POOL.Kept(mod, "bmRoot", "Frame", scrollFrame)
     outerRoot:SetAllPoints(scrollFrame)
     outerRoot:SetFrameLevel(scrollFrame:GetFrameLevel() + 5)
 
     -- Store reference so we can clean up on page switch
-    if ns._addNewPopup then
-        ns._addNewPopup:Hide()
+    if mod._addNewPopup then
+        mod._addNewPopup:Hide()
     end
     if CludesUI._pickMenu then
         CludesUI._pickMenu:Hide()
     end
-    ns._bmRoot = outerRoot
+    mod._bmRoot = outerRoot
 
     -- Override-session full-page overlay (state from the prelude above).
     -- "activate" offers to fork a custom Buff Manager for the edited override
@@ -2778,8 +2800,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     -- early and must still be covered; high frame level, child of outerRoot so every teardown path destroys it.
     if bmOverlayState then
         local st = bmOverlayState
-        local ov, btn = CludesUI.BuildActivationOverlay(outerRoot, {
-            fontPath = fontPath,
+        local shade, btn = CludesUI.BuildActivationOverlay(outerRoot, {
+            fontPath = fontFile,
             width = parentW,
             title = CludesUI.L("Custom Buff Manager"),
             text = st.text,
@@ -2807,32 +2829,35 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     CludesUI.SpecOverrides_ActivateBm(st.kind, st.gid)
                     return
                 end
-                local values, order = CludesUI.SpecOverrides_BmSeedSources(st.kind, st.gid)
+                local values, sequence = CludesUI.SpecOverrides_BmSeedSources(st.kind, st.gid)
                 chosen = "main"
                 if not createPopup then
                     local POPUP_W, POPUP_PAD, ROW_H, LABEL_H = 260, 10, 30, 14
                     local LBL_GAP, DD_GAP = 4, 11
-                    local popup = CreateFrame("Frame", nil, ov)
-                    popup:Hide() -- start hidden so Show() triggers OnShow
-                    popup:SetFrameStrata("DIALOG")
-                    popup:SetFrameLevel(ov:GetFrameLevel() + 20)
-                    popup:SetSize(POPUP_W, POPUP_PAD + LABEL_H + LBL_GAP + ROW_H + DD_GAP + ROW_H + POPUP_PAD)
-                    popup:EnableMouse(true)
-                    popup:SetClampedToScreen(true)
-                    local pbg = popup:CreateTexture(nil, "BACKGROUND")
+                    local dialog = CreateFrame("Frame", nil, shade)
+                    dialog:Hide() -- start hidden so Show() triggers OnShow
+                    dialog:SetFrameStrata("DIALOG")
+                    dialog:SetFrameLevel(shade:GetFrameLevel() + 20)
+                    dialog:SetSize(
+                        POPUP_W,
+                        POPUP_PAD + LABEL_H + LBL_GAP + ROW_H + DD_GAP + ROW_H + POPUP_PAD
+                    )
+                    dialog:EnableMouse(true)
+                    dialog:SetClampedToScreen(true)
+                    local pbg = dialog:CreateTexture(nil, "BACKGROUND")
                     pbg:SetAllPoints()
                     pbg:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-                    CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.2, pbg)
+                    CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.2, pbg)
                     -- Click-away close (not while the dropdown's own menu is open).
-                    popup:SetScript("OnShow", function(p2)
+                    dialog:SetScript("OnShow", function(p2)
                         p2:SetScript("OnUpdate", function(m)
                             if not self:IsMouseOver() and not m:IsMouseOver() then
-                                local dd = m._srcDD
+                                local dropdown = m._srcDD
                                 if
-                                    dd
-                                    and dd._ddMenu
-                                    and dd._ddMenu:IsShown()
-                                    and dd._ddMenu:IsMouseOver()
+                                    dropdown
+                                    and dropdown._ddMenu
+                                    and dropdown._ddMenu:IsShown()
+                                    and dropdown._ddMenu:IsMouseOver()
                                 then
                                     return
                                 end
@@ -2842,24 +2867,24 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                             end
                         end)
                     end)
-                    popup:SetScript("OnHide", function(p2)
+                    dialog:SetScript("OnHide", function(p2)
                         p2:SetScript("OnUpdate", nil)
                     end)
                     local ddW = POPUP_W - POPUP_PAD * 2
                     local py = -POPUP_PAD
-                    local srcLbl = popup:CreateFontString(nil, "OVERLAY")
-                    srcLbl:SetFont(fontPath, 11, "")
-                    srcLbl:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
+                    local srcLbl = dialog:CreateFontString(nil, "OVERLAY")
+                    srcLbl:SetFont(fontFile, 11, "")
+                    srcLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
                     srcLbl:SetText(CludesUI.L("Start From"))
                     srcLbl:SetTextColor(1, 1, 1, 0.6)
                     py = py - LABEL_H - LBL_GAP
-                    popup._srcValues, popup._srcOrder = values, order
+                    dialog._srcValues, dialog._srcOrder = values, sequence
                     local srcDD = CludesUI.BuildDropdownControl(
-                        popup,
+                        dialog,
                         ddW,
-                        popup:GetFrameLevel() + 2,
-                        popup._srcValues,
-                        popup._srcOrder,
+                        dialog:GetFrameLevel() + 2,
+                        dialog._srcValues,
+                        dialog._srcOrder,
                         function()
                             return chosen
                         end,
@@ -2867,31 +2892,31 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                             chosen = v
                         end
                     )
-                    srcDD:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
-                    popup._srcDD = srcDD
+                    srcDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                    dialog._srcDD = srcDD
                     py = py - ROW_H - DD_GAP
                     local ac = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-                    local cBtn = CreateFrame("Button", nil, popup)
+                    local cBtn = CreateFrame("Button", nil, dialog)
                     cBtn:SetSize(ddW, ROW_H)
-                    cBtn:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
-                    cBtn:SetFrameLevel(popup:GetFrameLevel() + 1)
+                    cBtn:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                    cBtn:SetFrameLevel(dialog:GetFrameLevel() + 1)
                     local cBg = cBtn:CreateTexture(nil, "BACKGROUND")
                     cBg:SetAllPoints()
                     cBg:SetColorTexture(ac.r, ac.g, ac.b, 0.8)
                     CludesUI.RoundBody(cBtn, cBg)
                     local cLbl = cBtn:CreateFontString(nil, "OVERLAY")
                     CludesUI.PrimeFontShadow(cLbl, true)
-                    cLbl:SetFont(fontPath, 12, "")
+                    cLbl:SetFont(fontFile, 12, "")
                     cLbl:SetPoint("CENTER")
                     cLbl:SetText(CludesUI.L("Create Custom Buff Manager"))
                     cLbl:SetTextColor(1, 1, 1)
                     cBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
                     CludesUI.OutlineButton(cBtn, cBg, true)
                     cBtn:SetScript("OnClick", function()
-                        popup:Hide()
+                        dialog:Hide()
                         CludesUI.SpecOverrides_ActivateBm(st.kind, st.gid, chosen)
                     end)
-                    createPopup = popup
+                    createPopup = dialog
                 else
                     -- Refresh the source list in place (other overrides may have
                     -- gained or lost a Buff Manager since the popup was built).
@@ -2900,15 +2925,15 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     for k, v in pairs(values) do
                         createPopup._srcValues[k] = v
                     end
-                    for i = 1, #order do
-                        createPopup._srcOrder[i] = order[i]
+                    for idx = 1, #sequence do
+                        createPopup._srcOrder[idx] = sequence[idx]
                     end
-                    local dd = createPopup._srcDD
-                    if dd._invalidateMenu then
-                        dd._invalidateMenu()
+                    local dropdown = createPopup._srcDD
+                    if dropdown._invalidateMenu then
+                        dropdown._invalidateMenu()
                     end
-                    if dd._refreshLabel then
-                        dd._refreshLabel()
+                    if dropdown._refreshLabel then
+                        dropdown._refreshLabel()
                     end
                 end
                 createPopup:ClearAllPoints()
@@ -2970,14 +2995,14 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     if inheritedGroups then
         for gi = 1, #inheritedGroups do
             local gkey = inheritedGroups[gi]
-            local ginfo = ns.BM_GROUP_BUCKET_INFO[gkey]
+            local ginfo = mod.BM_GROUP_BUCKET_INFO[gkey]
             local gname = ginfo and CludesUI.L(ginfo.name) or gkey
-            for _, gind in ipairs(GetSpecIndicators(db, gkey) or {}) do
-                local gSpells = ns.BM2_ResolveSpells and ns.BM2_ResolveSpells(gind) or gind.spells
+            for _, gind in ipairs(GetSpecIndicators(saved, gkey) or {}) do
+                local gSpells = mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(gind) or gind.spells
                 local face = 136243
                 if gSpells and #gSpells > 0 then
                     face = GetSpellIcon(
-                        (ns.BM2_PreferredSpell and ns.BM2_PreferredSpell(gind, SelectedBucketClass()))
+                        (mod.BM2_PreferredSpell and mod.BM2_PreferredSpell(gind, SelectedBucketClass()))
                             or gSpells[1]
                     )
                 end
@@ -2992,34 +3017,34 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 tileY = tileY
                     - CludesUI.BuildManagerTile(sidebarFrame, tileY, {
                         width = sidebarW,
-                        fontPath = fontPath,
+                        fontPath = fontFile,
                         icon = face,
                         title = gind.name and CludesUI.L(gind.name) or CludesUI.L(gTypeName),
                         titleUnclamped = true,
                         posText = posText,
                         subtitle = gname,
                         inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
-                        selected = ns._bm2InhSel
-                            and ns._bm2InhSel.group == gkey
-                            and ns._bm2InhSel.id == gind.id,
+                        selected = mod._bm2InhSel
+                            and mod._bm2InhSel.group == gkey
+                            and mod._bm2InhSel.id == gind.id,
                         dimmed = not gind.enabled,
-                        enabled = not ns.BM2_InhDisabled(selectedSpecKey, gkey, gind.id),
+                        enabled = not mod.BM2_InhDisabled(selectedSpecKey, gkey, gind.id),
                         showToggle = true,
                         onSelect = function()
                             selectedIndicator = nil
-                            ns._bm2InhSel = { group = gkey, id = gind.id }
+                            mod._bm2InhSel = { group = gkey, id = gind.id }
                             CludesUI:RefreshPage(true)
                         end,
                         onToggle = function()
-                            ns.BM2_SetInhDisabled(
+                            mod.BM2_SetInhDisabled(
                                 selectedSpecKey,
                                 gkey,
                                 gind.id,
-                                not ns.BM2_InhDisabled(selectedSpecKey, gkey, gind.id)
+                                not mod.BM2_InhDisabled(selectedSpecKey, gkey, gind.id)
                             )
-                            RebuildLookup(db)
-                            if ns.ReloadFrames then
-                                ns.ReloadFrames()
+                            RebuildLookup(saved)
+                            if mod.ReloadFrames then
+                                mod.ReloadFrames()
                             end
                             CludesUI:RefreshPage(true)
                         end,
@@ -3033,22 +3058,22 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     -- spell > class-tagged > all-class). Returns face, subtitle.
     local function TileFaceSub(ind)
         local tileSpells = ind.spells
-        if ns.BM2_ResolveSpells then
-            tileSpells = ns.BM2_ResolveSpells(ind)
+        if mod.BM2_ResolveSpells then
+            tileSpells = mod.BM2_ResolveSpells(ind)
         end
         if not (tileSpells and #tileSpells > 0) then
             return 136243, CludesUI.L("(no spells)")
         end
-        local names = {}
-        for _, sid in ipairs(tileSpells) do
-            names[#names + 1] = SPELL_NAME_BY_ID[sid]
-                or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid))
-                or tostring(sid)
+        local nameList = {}
+        for _, spellRef in ipairs(tileSpells) do
+            nameList[#nameList + 1] = SPELL_NAME_BY_ID[spellRef]
+                or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRef))
+                or tostring(spellRef)
         end
         return GetSpellIcon(
-            (ns.BM2_PreferredSpell and ns.BM2_PreferredSpell(ind, SelectedBucketClass())) or tileSpells[1]
+            (mod.BM2_PreferredSpell and mod.BM2_PreferredSpell(ind, SelectedBucketClass())) or tileSpells[1]
         ),
-            table.concat(names, ", ")
+            table.concat(nameList, ", ")
     end
     for _, ind in ipairs(specIndicators) do
         -- The selected indicator's filters are edited live in the settings
@@ -3065,7 +3090,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
         local tileH, tile = CludesUI.BuildManagerTile(sidebarFrame, tileY, {
             width = sidebarW,
-            fontPath = fontPath,
+            fontPath = fontFile,
             icon = face,
             iconFn = isSel and function()
                 return (TileFaceSub(ind))
@@ -3082,7 +3107,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             enabled = ind.enabled,
             showToggle = true,
             onSelect = function()
-                ns._bm2InhSel = nil
+                mod._bm2InhSel = nil
                 selectedIndicator = ind
                 CludesUI:RefreshPage(true)
             end,
@@ -3094,23 +3119,23 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 end
                 CludesUI.ShowPickMenu(tileFrame, {
                     title = CludesUI.L("Add To"),
-                    fontPath = fontPath,
+                    fontPath = fontFile,
                     items = CludesUI.SpecBucketMenuItems(
                         selectedSpecKey,
                         HealerRosterLead,
-                        ns.BM2_ForeverKey
+                        mod.BM2_ForeverKey
                     ),
                     onPick = function(key)
                         -- Target cap: silently blocked at the limit (house
                         -- silent-correction pattern; CountSpecIndicators
                         -- seeds only the picked bucket).
-                        if CountSpecIndicators(db, key) >= MAX_PER_SPEC then
+                        if CountSpecIndicators(saved, key) >= MAX_PER_SPEC then
                             return
                         end
-                        if ns.BM2_CopyIndicator and ns.BM2_CopyIndicator(ind, key) then
-                            RebuildLookup(db)
-                            if ns.ReloadFrames then
-                                ns.ReloadFrames()
+                        if mod.BM2_CopyIndicator and mod.BM2_CopyIndicator(ind, key) then
+                            RebuildLookup(saved)
+                            if mod.ReloadFrames then
+                                mod.ReloadFrames()
                             end
                             CludesUI:RefreshPage(true)
                         end
@@ -3119,9 +3144,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             end,
             onToggle = function()
                 ind.enabled = not ind.enabled
-                RebuildLookup(db)
-                if ns.ReloadFrames then
-                    ns.ReloadFrames()
+                RebuildLookup(saved)
+                if mod.ReloadFrames then
+                    mod.ReloadFrames()
                 end
                 CludesUI:RefreshPage(true)
             end,
@@ -3136,10 +3161,10 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     confirmText = "Delete",
                     cancelText = "Cancel",
                     onConfirm = function()
-                        local list = GetSpecIndicators(db, selectedSpecKey)
-                        for i = #list, 1, -1 do
-                            if list[i].id == ind.id then
-                                tremove(list, i)
+                        local entries = GetSpecIndicators(saved, selectedSpecKey)
+                        for idx = #entries, 1, -1 do
+                            if entries[idx].id == ind.id then
+                                tremove(entries, idx)
                                 break
                             end
                         end
@@ -3150,15 +3175,15 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         -- keys from every concrete bucket (stale keys are inert
                         -- but would leak forever).
                         if
-                            ns.BM2_SweepInhDis
-                            and ns.BM_GROUP_BUCKET_INFO
-                            and ns.BM_GROUP_BUCKET_INFO[selectedSpecKey]
+                            mod.BM2_SweepInhDis
+                            and mod.BM_GROUP_BUCKET_INFO
+                            and mod.BM_GROUP_BUCKET_INFO[selectedSpecKey]
                         then
-                            ns.BM2_SweepInhDis(selectedSpecKey, ind.id)
+                            mod.BM2_SweepInhDis(selectedSpecKey, ind.id)
                         end
-                        RebuildLookup(db)
-                        if ns.ReloadFrames then
-                            ns.ReloadFrames()
+                        RebuildLookup(saved)
+                        if mod.ReloadFrames then
+                            mod.ReloadFrames()
                         end
                         CludesUI:RefreshPage(true)
                     end,
@@ -3168,17 +3193,17 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             -- spells/signature -- page refresh suffices.
             editTooltip = CludesUI.L("Rename Indicator"),
             onEdit = function()
-                local cur = ind.name or typeName
+                local current = ind.name or typeName
                 CludesUI:ShowInputPopup({
                     title = CludesUI.L("Rename Indicator"),
                     message = CludesUI.L("Enter a new name for this indicator:"),
-                    placeholder = cur,
+                    placeholder = current,
                     confirmText = CludesUI.L("Rename"),
                     cancelText = CludesUI.L("Cancel"),
-                    onConfirm = function(text)
-                        text = text and text:gsub("^%s+", ""):gsub("%s+$", "") or ""
+                    onConfirm = function(textValue)
+                        textValue = textValue and textValue:gsub("^%s+", ""):gsub("%s+$", "") or ""
                         -- Empty reverts to the type-name default.
-                        ind.name = (text ~= "") and text or nil
+                        ind.name = (textValue ~= "") and textValue or nil
                         CludesUI:RefreshPage(true)
                     end,
                 })
@@ -3187,9 +3212,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
         -- Frame Alpha is removed: the notice covers the tile body but leaves the right controls usable so it can still be toggled off or deleted.
         if ind.type == "framealpha" then
-            local ov = BuildPTROverlay(tile, "Frame Alpha", 10)
-            ov:SetPoint("TOPLEFT", tile, "TOPLEFT", 0, 0)
-            ov:SetPoint("BOTTOMRIGHT", tile, "BOTTOMRIGHT", -52, 1)
+            local shade = BuildPTROverlay(tile, "Frame Alpha", 10)
+            shade:SetPoint("TOPLEFT", tile, "TOPLEFT", 0, 0)
+            shade:SetPoint("BOTTOMRIGHT", tile, "BOTTOMRIGHT", -52, 1)
         end
 
         tileY = tileY - tileH
@@ -3204,12 +3229,12 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         local inhCount = 0
         if inheritedGroups then
             for gi = 1, #inheritedGroups do
-                inhCount = inhCount + #(GetSpecIndicators(db, inheritedGroups[gi]) or {})
+                inhCount = inhCount + #(GetSpecIndicators(saved, inheritedGroups[gi]) or {})
             end
         end
         if inhCount == 0 then
             local hint = sidebarFrame:CreateFontString(nil, "OVERLAY")
-            hint:SetFont(fontPath, 11, "")
+            hint:SetFont(fontFile, 11, "")
             hint:SetPoint("TOP", sidebarFrame, "TOPLEFT", floor(sidebarW / 2), tileY - 8)
             hint:SetWidth(sidebarW - 24)
             hint:SetJustifyH("CENTER")
@@ -3245,7 +3270,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         local addLabel = addBtn:CreateFontString(nil, "OVERLAY")
         -- Drop shadow via the shadow FontObject, primed BEFORE SetFont (SetShadowOffset alone does not render).
         CludesUI.PrimeFontShadow(addLabel, true)
-        addLabel:SetFont(fontPath, 12, "")
+        addLabel:SetFont(fontFile, 12, "")
         addLabel:SetPoint("CENTER")
         addLabel:SetText(CludesUI.L("Add New"))
         addLabel:SetTextColor(1, 1, 1)
@@ -3255,9 +3280,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
         addBtn:SetScript("OnClick", function(self)
             -- Toggle popup
-            local popup = ns._addNewPopup
-            if popup and popup:IsShown() then
-                popup:Hide()
+            local dialog = mod._addNewPopup
+            if dialog and dialog:IsShown() then
+                dialog:Hide()
                 return
             end
 
@@ -3266,38 +3291,38 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             end
 
             -- Relabel the Filters and Extra Spells dropdowns (OnHide wiped the picks)
-            if popup and popup._refreshDDs then
-                popup._refreshDDs()
+            if dialog and dialog._refreshDDs then
+                dialog._refreshDDs()
             end
 
-            if not popup then
+            if not dialog then
                 local POPUP_W = 220
                 local POPUP_PAD = 10
                 local ROW_H = 30
                 local LABEL_H = 14
                 local GAP = 6
 
-                popup = CreateFrame("Frame", nil, UIParent)
-                popup:Hide() -- start hidden so Show() triggers OnShow
-                popup:SetFrameStrata("DIALOG")
-                popup:SetFrameLevel(200)
+                dialog = CreateFrame("Frame", nil, UIParent)
+                dialog:Hide() -- start hidden so Show() triggers OnShow
+                dialog:SetFrameStrata("DIALOG")
+                dialog:SetFrameLevel(200)
                 local LBL_GAP = 4 -- label to dropdown
                 local DD_GAP = 11 -- dropdown to next label/button
                 -- Three label+dropdown pairs: Indicator, Filters, Extra Spells.
-                popup:SetSize(
+                dialog:SetSize(
                     POPUP_W,
                     POPUP_PAD + 3 * (LABEL_H + LBL_GAP + ROW_H + DD_GAP) + ROW_H + POPUP_PAD
                 )
-                popup:EnableMouse(true)
-                popup:SetClampedToScreen(true)
+                dialog:EnableMouse(true)
+                dialog:SetClampedToScreen(true)
 
-                local bg = popup:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
-                bg:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-                CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.2, bg)
+                local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
+                backdrop:SetAllPoints()
+                backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.95)
+                CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.2, backdrop)
 
                 -- Auto-close when clicking outside (but not on child dropdown menus)
-                popup:SetScript("OnShow", function(p)
+                dialog:SetScript("OnShow", function(p)
                     p:SetScript("OnUpdate", function(m)
                         if not self:IsMouseOver() and not m:IsMouseOver() then
                             local indDD2 = m._indDD
@@ -3333,7 +3358,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                             if ip and ip:IsShown() then
                                 return
                             end
-                            if ns._bm2FilterEditor then
+                            if mod._bm2FilterEditor then
                                 return
                             end
                             if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
@@ -3342,7 +3367,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         end
                     end)
                 end)
-                popup:SetScript("OnHide", function(p)
+                dialog:SetScript("OnHide", function(p)
                     p:SetScript("OnUpdate", nil)
                     -- Clear spell selections so reopening starts fresh
                     if p._v2Filters then
@@ -3364,23 +3389,23 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
                 -- v2 creation flow: Indicator type, then the SAME Filters and
                 -- Extra Spells dropdowns as Assigned Buffs; picks apply to the new indicator on Create.
-                popup._v2Filters = {}
-                popup._v2NegFilters = {}
-                popup._v2Extras = {}
+                dialog._v2Filters = {}
+                dialog._v2NegFilters = {}
+                dialog._v2Extras = {}
                 -- Extras typed through Custom Spell ID: tracked as that aura alone.
-                popup._v2Exact = {}
+                dialog._v2Exact = {}
 
-                local indLbl2 = popup:CreateFontString(nil, "OVERLAY")
-                indLbl2:SetFont(fontPath, 11, "")
-                indLbl2:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
+                local indLbl2 = dialog:CreateFontString(nil, "OVERLAY")
+                indLbl2:SetFont(fontFile, 11, "")
+                indLbl2:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
                 indLbl2:SetText(CludesUI.L("Indicator"))
                 indLbl2:SetTextColor(1, 1, 1, 0.6)
                 py = py - LABEL_H - LBL_GAP
 
                 local indDD = CludesUI.BuildDropdownControl(
-                    popup,
+                    dialog,
                     ddW,
-                    popup:GetFrameLevel() + 2,
+                    dialog:GetFrameLevel() + 2,
                     INDICATOR_TYPE_VALUES,
                     INDICATOR_TYPE_ORDER,
                     function()
@@ -3390,22 +3415,22 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         selectedType = v
                     end
                 )
-                indDD:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
-                popup._indDD = indDD
+                indDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                dialog._indDD = indDD
                 py = py - ROW_H - DD_GAP
 
-                local fltLbl = popup:CreateFontString(nil, "OVERLAY")
-                fltLbl:SetFont(fontPath, 11, "")
-                fltLbl:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
+                local fltLbl = dialog:CreateFontString(nil, "OVERLAY")
+                fltLbl:SetFont(fontFile, 11, "")
+                fltLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
                 fltLbl:SetText(CludesUI.L("Filters"))
                 fltLbl:SetTextColor(1, 1, 1, 0.6)
                 py = py - LABEL_H - LBL_GAP
                 local fltDDY = py
                 py = py - ROW_H - DD_GAP
 
-                local exLbl = popup:CreateFontString(nil, "OVERLAY")
-                exLbl:SetFont(fontPath, 11, "")
-                exLbl:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
+                local exLbl = dialog:CreateFontString(nil, "OVERLAY")
+                exLbl:SetFont(fontFile, 11, "")
+                exLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
                 exLbl:SetText(CludesUI.L("Extra Spells"))
                 exLbl:SetTextColor(1, 1, 1, 0.6)
                 py = py - LABEL_H - LBL_GAP
@@ -3415,9 +3440,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -- Built once: both menus re-read their items on every open, so a
                 -- reopen only relabels the two dropdowns (OnHide wiped the picks).
                 local function BuildV2DDs()
-                    if popup._fltDD then
-                        popup._fltRefresh()
-                        popup._exRefresh()
+                    if dialog._fltDD then
+                        dialog._fltRefresh()
+                        dialog._exRefresh()
                         return
                     end
 
@@ -3425,46 +3450,46 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     -- Two-lane rows: Show picks (popup._v2Filters) and Hide picks
                     -- (popup._v2NegFilters), applied to the new indicator on Create.
                     local function FItems()
-                        local filters = (ns.BM2_Filters and ns.BM2_Filters()) or {}
+                        local filters = (mod.BM2_Filters and mod.BM2_Filters()) or {}
                         local fItems = {
                             {
                                 isTopAction = true,
                                 label = "Edit Filters",
                                 onClick = function()
-                                    if ns.BMP_ShowFilterEditor then
-                                        ns.BMP_ShowFilterEditor(popup._v2Filters, popup._v2NegFilters)
+                                    if mod.BMP_ShowFilterEditor then
+                                        mod.BMP_ShowFilterEditor(dialog._v2Filters, dialog._v2NegFilters)
                                     end
                                 end,
                             },
                             { isHeader = true, label = "Show", rightLabel = "Hide" },
                         }
-                        for i = 1, #filters do
+                        for idx = 1, #filters do
                             fItems[#fItems + 1] =
-                                { key = filters[i].id, label = filters[i].name, dual = true }
+                                { key = filters[idx].id, label = filters[idx].name, dual = true }
                         end
                         return fItems
                     end
                     local fltDD, fltRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        popup,
+                        dialog,
                         ddW,
-                        popup:GetFrameLevel() + 2,
+                        dialog:GetFrameLevel() + 2,
                         FItems,
                         function(k, neg)
                             if neg then
-                                return popup._v2NegFilters[k] and true or false
+                                return dialog._v2NegFilters[k] and true or false
                             end
-                            return popup._v2Filters[k] and true or false
+                            return dialog._v2Filters[k] and true or false
                         end,
                         function(k, v, neg)
                             if neg then
-                                popup._v2NegFilters[k] = v and true or nil
+                                dialog._v2NegFilters[k] = v and true or nil
                                 if v then
-                                    popup._v2Filters[k] = nil
+                                    dialog._v2Filters[k] = nil
                                 end
                             else
-                                popup._v2Filters[k] = v and true or nil
+                                dialog._v2Filters[k] = v and true or nil
                                 if v then
-                                    popup._v2NegFilters[k] = nil
+                                    dialog._v2NegFilters[k] = nil
                                 end
                             end
                         end,
@@ -3472,22 +3497,22 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         12
                     )
                     fltDD:SetSize(ddW, ROW_H)
-                    fltDD:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, fltDDY)
-                    popup._fltDD, popup._fltRefresh = fltDD, fltRefresh
+                    fltDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, fltDDY)
+                    dialog._fltDD, dialog._fltRefresh = fltDD, fltRefresh
 
-                    local function SpellEntry(id)
+                    local function SpellEntry(ident)
                         -- Curated name first (distinguishes variants the client
                         -- API can't, e.g. two spell IDs both named "Sense Power"
                         -- by Blizzard); SPELL_NAME_BY_ID already falls back to
                         -- the live API internally when no curated name exists.
-                        local name = SPELL_NAME_BY_ID[id]
-                        local label = name or ("Spell " .. tostring(id))
+                        local name = SPELL_NAME_BY_ID[ident]
+                        local labelText = name or ("Spell " .. tostring(ident))
                         -- Truncated rows still need to be told apart on hover.
                         return {
-                            key = id,
-                            label = label,
-                            tooltip = label,
-                            icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id),
+                            key = ident,
+                            label = labelText,
+                            tooltip = labelText,
+                            icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident),
                         }
                     end
                     -- Dynamic items: fresh per menu open. Spells already supplied by
@@ -3498,46 +3523,46 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     -- Custom Spell ID: a typed ID is tracked as that aura alone,
                     -- one already picked from Presets included, and the closed
                     -- dropdown names it at once.
-                    local idAction = ns.BM2_SpellIdAction(function(id)
-                        popup._v2Extras[id] = true
-                        popup._v2Exact[id] = true
-                        popup._exRefresh(true)
+                    local idAction = mod.BM2_SpellIdAction(function(ident)
+                        dialog._v2Extras[ident] = true
+                        dialog._v2Exact[ident] = true
+                        dialog._exRefresh(true)
                     end)
                     local function EItems()
                         -- WoW Forever: a rank alternate stands for its family's
                         -- primary, so Presets offers no second row for that buff.
                         -- nil on every other client.
-                        local ap = ns.BM2_ForeverAltPrimary
+                        local ap = mod.BM2_ForeverAltPrimary
                         local covered = {}
-                        if ns.BM2_GetFilter then
-                            for fid in pairs(popup._v2Filters) do
-                                local f = ns.BM2_GetFilter(fid)
+                        if mod.BM2_GetFilter then
+                            for fid in pairs(dialog._v2Filters) do
+                                local f = mod.BM2_GetFilter(fid)
                                 if f then
-                                    for id, on in pairs(f.spells) do
-                                        if on and not ns.BM2_OtherClientSpell(f, id) then
-                                            covered[id] = true
-                                            if ap and ap[id] then
-                                                covered[ap[id]] = true
+                                    for ident, on in pairs(f.spells) do
+                                        if on and not mod.BM2_OtherClientSpell(f, ident) then
+                                            covered[ident] = true
+                                            if ap and ap[ident] then
+                                                covered[ap[ident]] = true
                                             end
                                         end
                                     end
                                 end
                             end
                         end
-                        local universe = (ns.BM2_AllPresetSpells and ns.BM2_AllPresetSpells()) or {}
+                        local universe = (mod.BM2_AllPresetSpells and mod.BM2_AllPresetSpells()) or {}
                         local selList, rest = {}, {}
                         local seen = {}
-                        for id in pairs(popup._v2Extras) do
-                            seen[id] = true
-                            if ap and ap[id] then
-                                seen[ap[id]] = true
+                        for ident in pairs(dialog._v2Extras) do
+                            seen[ident] = true
+                            if ap and ap[ident] then
+                                seen[ap[ident]] = true
                             end
-                            selList[#selList + 1] = SpellEntry(id)
+                            selList[#selList + 1] = SpellEntry(ident)
                         end
-                        for i = 1, #universe do
-                            local id = universe[i]
-                            if not seen[id] and not covered[id] then
-                                rest[#rest + 1] = SpellEntry(id)
+                        for idx = 1, #universe do
+                            local ident = universe[idx]
+                            if not seen[ident] and not covered[ident] then
+                                rest[#rest + 1] = SpellEntry(ident)
                             end
                         end
                         table.sort(selList, ByLabel)
@@ -3545,28 +3570,28 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         local eItems = { idAction }
                         if #selList > 0 then
                             eItems[#eItems + 1] = { isHeader = true, label = "Selected" }
-                            for i = 1, #selList do
-                                eItems[#eItems + 1] = selList[i]
+                            for idx = 1, #selList do
+                                eItems[#eItems + 1] = selList[idx]
                             end
                         end
                         eItems[#eItems + 1] = { isHeader = true, label = "Presets" }
-                        for i = 1, #rest do
-                            eItems[#eItems + 1] = rest[i]
+                        for idx = 1, #rest do
+                            eItems[#eItems + 1] = rest[idx]
                         end
                         return eItems
                     end
                     local exDD, exRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        popup,
+                        dialog,
                         ddW,
-                        popup:GetFrameLevel() + 2,
+                        dialog:GetFrameLevel() + 2,
                         EItems,
                         function(k)
-                            return popup._v2Extras[k] and true or false
+                            return dialog._v2Extras[k] and true or false
                         end,
                         function(k, v)
-                            popup._v2Extras[k] = v and true or nil
+                            dialog._v2Extras[k] = v and true or nil
                             if not v then
-                                popup._v2Exact[k] = nil
+                                dialog._v2Exact[k] = nil
                             end
                         end,
                         nil,
@@ -3574,24 +3599,24 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         true
                     )
                     exDD:SetSize(ddW, ROW_H)
-                    exDD:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, exDDY)
-                    popup._exDD, popup._exRefresh = exDD, exRefresh
+                    exDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, exDDY)
+                    dialog._exDD, dialog._exRefresh = exDD, exRefresh
                 end
                 BuildV2DDs()
-                popup._refreshDDs = BuildV2DDs
+                dialog._refreshDDs = BuildV2DDs
 
                 -- Create button
-                local cBtn = CreateFrame("Button", nil, popup)
+                local cBtn = CreateFrame("Button", nil, dialog)
                 cBtn:SetSize(ddW, ROW_H)
-                cBtn:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
-                cBtn:SetFrameLevel(popup:GetFrameLevel() + 1)
+                cBtn:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                cBtn:SetFrameLevel(dialog:GetFrameLevel() + 1)
                 local cBg = cBtn:CreateTexture(nil, "BACKGROUND")
                 cBg:SetAllPoints()
                 cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
                 CludesUI.RoundBody(cBtn, cBg)
                 local cTx = cBtn:CreateFontString(nil, "OVERLAY")
                 cTx:SetPoint("CENTER")
-                cTx:SetFont(fontPath, 12, "")
+                cTx:SetFont(fontFile, 12, "")
                 cTx:SetText(CludesUI.L("Create"))
                 cTx:SetTextColor(1, 1, 1)
                 cBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
@@ -3600,60 +3625,60 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     if not selectedSpecKey then
                         return
                     end
-                    if CountSpecIndicators(db, selectedSpecKey) >= MAX_PER_SPEC then
+                    if CountSpecIndicators(saved, selectedSpecKey) >= MAX_PER_SPEC then
                         return
                     end
                     -- v2: create through the v2 store (correct id namespace, edited bucket),
                     -- then assign picked filters/extra spells as Assigned Buffs does (incl. presets' own-only default).
-                    local newInd = ns.BM2_AddIndicator(selectedType, selectedSpecKey)
+                    local newInd = mod.BM2_AddIndicator(selectedType, selectedSpecKey)
                     if newInd then
-                        for fid in pairs(popup._v2Filters or {}) do
+                        for fid in pairs(dialog._v2Filters or {}) do
                             newInd.filters[fid] = true
                         end
-                        if popup._v2NegFilters and next(popup._v2NegFilters) then
+                        if dialog._v2NegFilters and next(dialog._v2NegFilters) then
                             newInd.negFilters = {}
-                            for fid in pairs(popup._v2NegFilters) do
+                            for fid in pairs(dialog._v2NegFilters) do
                                 newInd.negFilters[fid] = true
                             end
                         end
                         local exList = {}
-                        for sid in pairs(popup._v2Extras or {}) do
-                            exList[#exList + 1] = sid
+                        for spellRef in pairs(dialog._v2Extras or {}) do
+                            exList[#exList + 1] = spellRef
                         end
                         table.sort(exList)
-                        for i = 1, #exList do
-                            newInd.spells[#newInd.spells + 1] = exList[i]
-                            if popup._v2Exact[exList[i]] then
-                                ns.BM2_SetSpellExact(newInd, exList[i], true)
+                        for idx = 1, #exList do
+                            newInd.spells[#newInd.spells + 1] = exList[idx]
+                            if dialog._v2Exact[exList[idx]] then
+                                mod.BM2_SetSpellExact(newInd, exList[idx], true)
                             end
                         end
                         selectedIndicator = newInd
                     end
-                    ns._bm2InhSel = nil
-                    RebuildLookup(db)
-                    if ns.ReloadFrames then
-                        ns.ReloadFrames()
+                    mod._bm2InhSel = nil
+                    RebuildLookup(saved)
+                    if mod.ReloadFrames then
+                        mod.ReloadFrames()
                     end
-                    popup:Hide()
+                    dialog:Hide()
                     CludesUI:RefreshPage(true)
                 end)
 
-                ns._addNewPopup = popup
+                mod._addNewPopup = dialog
             end
 
             -- Position below the Add New button, centered on sidebar
-            popup:ClearAllPoints()
+            dialog:ClearAllPoints()
             local sc = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
-            popup:SetScale(sc)
-            popup:SetPoint("TOP", self, "BOTTOM", 0, -12)
-            popup:Show()
+            dialog:SetScale(sc)
+            dialog:SetPoint("TOP", self, "BOTTOM", 0, -12)
+            dialog:Show()
         end)
 
         tileY = tileY - ADD_BTN_PAD - ADD_BTN_H - ADD_BTN_PAD
     end
 
     -- Override list (shared with the Debuff Manager sidebar).
-    tileY = ns.BM_BuildOverrideList(sidebarFrame, tileY, sidebarW, fontPath, "bm")
+    tileY = mod.BM_BuildOverrideList(sidebarFrame, tileY, sidebarW, fontFile, "bm")
 
     -------------------------------------------------------------------
     --  LEFT COLUMN (72%): Fixed top area + scrollable settings below
@@ -3675,8 +3700,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     local CLASS_SPRITE_TEX = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\modern.tga"
     local CLASS_SPRITE_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
     local SPEC_CLASS_MAP = {}
-    for _, spec in ipairs(HEALER_SPECS) do
-        SPEC_CLASS_MAP[spec.key] = spec.classToken
+    for _, specInfo in ipairs(HEALER_SPECS) do
+        SPEC_CLASS_MAP[specInfo.key] = specInfo.classToken
     end
 
     do
@@ -3686,7 +3711,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         -- Roster shared with the right-click "Add To" menu (built once per
         -- page build here; the menu rebuilds it lazily per open).
         local specDDValues, specDDOrder, specDDIcons, specDDClass =
-            CludesUI.BuildSpecBucketRoster(HealerRosterLead, ns.BM2_ForeverKey)
+            CludesUI.BuildSpecBucketRoster(HealerRosterLead, mod.BM2_ForeverKey)
 
         ---------------------------------------------------------------
         --  LEFT 65%: Preview frame (centered). Health color class =
@@ -3704,23 +3729,16 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             local _, pc = UnitClass("player")
             previewClass = pc
         end
-        local ovRaid, ovParty = ns.BM_PreviewOverrideTips("bm")
-        local pvFrame, sectionH, PV_SCALE = ns.BM_BuildSimplePreview(
-            leftFrame,
-            s,
-            fontPath,
-            PP,
-            pvSplitW / 2,
-            ly - 20,
-            {
+        local ovRaid, ovParty = mod.BM_PreviewOverrideTips("bm")
+        local pvFrame, sectionH, PV_SCALE =
+            mod.BM_BuildSimplePreview(leftFrame, s, fontFile, Pix, pvSplitW / 2, ly - 20, {
                 previewClass = previewClass,
-                party = ns.BM_PreviewIsParty(),
+                party = mod.BM_PreviewIsParty(),
                 styleToggle = true,
                 kitAuras = "buffs",
                 overrideTips = { raid = ovRaid, party = ovParty },
-            }
-        )
-        local health = pvFrame._health
+            })
+        local healthBar = pvFrame._health
 
         -- Vertical divider between preview and editing spec
         local splitDiv = leftFixed:CreateTexture(nil, "ARTWORK")
@@ -3750,8 +3768,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         end
         local selCoords = selClass and CLASS_SPRITE_COORDS[selClass]
         local selGroup = selectedSpecKey
-            and ns.BM_GROUP_BUCKET_INFO
-            and ns.BM_GROUP_BUCKET_INFO[selectedSpecKey]
+            and mod.BM_GROUP_BUCKET_INFO
+            and mod.BM_GROUP_BUCKET_INFO[selectedSpecKey]
         if selCoords then
             classIconBg:SetTexCoord(selCoords[1], selCoords[2], selCoords[3], selCoords[4])
         elseif selGroup then
@@ -3767,7 +3785,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         local groupTopY = ly - (sectionH - groupH) / 2
 
         local specLabel = leftFixed:CreateFontString(nil, "OVERLAY")
-        specLabel:SetFont(fontPath, 12, "")
+        specLabel:SetFont(fontFile, 12, "")
         specLabel:SetPoint("TOP", leftFixed, "TOPLEFT", specCenterX, groupTopY)
         specLabel:SetJustifyH("CENTER")
         specLabel:SetText(CludesUI.L("Editing Spec"))
@@ -3778,7 +3796,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             icon = function(key)
                 -- Standard spec icons; group buckets wear their roster
                 -- icon.
-                local g = ns.BM_GROUP_BUCKET_INFO and ns.BM_GROUP_BUCKET_INFO[key]
+                local g = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[key]
                 if g then
                     return g.icon
                 end
@@ -3807,25 +3825,25 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             function(v)
                 selectedSpecKey = v
                 selectedIndicator = nil
-                ns._bm2InhSel = nil
+                mod._bm2InhSel = nil
                 CludesUI:RefreshPage(true)
             end
         )
         specDD:SetPoint("TOP", specLabel, "BOTTOM", 0, -7)
 
         -- Buff manager indicators on the preview
-        if ns.BM_CreatePreviewIndicators then
-            ns.BM_CreatePreviewIndicators(pvFrame, health, PP)
+        if mod.BM_CreatePreviewIndicators then
+            mod.BM_CreatePreviewIndicators(pvFrame, healthBar, Pix)
         end
-        if ns.BM_ApplyPreviewIndicators then
-            ns.BM_ApplyPreviewIndicators(pvFrame, 1, s)
+        if mod.BM_ApplyPreviewIndicators then
+            mod.BM_ApplyPreviewIndicators(pvFrame, 1, s)
         end
 
         -- Eyeball toggle: show all indicators at full opacity
         do
             local EYE_VIS = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVIS = CludesUI.EYE_INVISIBLE_ICON
-            ns._bmAllIndicatorsVisible = ns._bmAllIndicatorsVisible or false
+            mod._bmAllIndicatorsVisible = mod._bmAllIndicatorsVisible or false
 
             local eyeBtn = CreateFrame("Button", nil, leftFrame)
             eyeBtn:SetSize(26, 26)
@@ -3839,14 +3857,14 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
             local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
-            eyeTex:SetTexture(ns._bmAllIndicatorsVisible and EYE_INVIS or EYE_VIS)
+            eyeTex:SetTexture(mod._bmAllIndicatorsVisible and EYE_INVIS or EYE_VIS)
             eyeBtn:SetAlpha(0.4)
 
             eyeBtn:SetScript("OnClick", function()
-                ns._bmAllIndicatorsVisible = not ns._bmAllIndicatorsVisible
-                eyeTex:SetTexture(ns._bmAllIndicatorsVisible and EYE_INVIS or EYE_VIS)
-                if ns.BM_ApplyPreviewIndicators then
-                    ns.BM_ApplyPreviewIndicators(pvFrame, 1, db.profile)
+                mod._bmAllIndicatorsVisible = not mod._bmAllIndicatorsVisible
+                eyeTex:SetTexture(mod._bmAllIndicatorsVisible and EYE_INVIS or EYE_VIS)
+                if mod.BM_ApplyPreviewIndicators then
+                    mod.BM_ApplyPreviewIndicators(pvFrame, 1, saved.profile)
                 end
             end)
             eyeBtn:SetScript("OnEnter", function(self)
@@ -3860,7 +3878,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         end
 
         -- Store reference so ReloadAndUpdate can refresh preview live
-        ns._bmPreviewFrame = pvFrame
+        mod._bmPreviewFrame = pvFrame
 
         -- Small helper subtitle under the preview explaining icon interactions; click
         -- to dismiss permanently (CludesUIDB.bmIconHintDismissed). When dismissed it is not built and the extra 10px gap below collapses to 0.
@@ -3869,7 +3887,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             local hintBtn = CreateFrame("Button", nil, leftFrame)
             hintBtn:SetPoint("TOP", pvFrame, "BOTTOM", 0, -8)
             local hintFS = hintBtn:CreateFontString(nil, "OVERLAY")
-            hintFS:SetFont(fontPath, 11, "")
+            hintFS:SetFont(fontFile, 11, "")
             hintFS:SetAllPoints(hintBtn)
             hintFS:SetJustifyH("CENTER")
             hintFS:SetWordWrap(false)
@@ -3914,14 +3932,14 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
     -- Accent-colored title (on fixed area)
     local settingsTitle = leftFixed:CreateFontString(nil, "OVERLAY")
-    settingsTitle:SetFont(fontPath, 18, "")
+    settingsTitle:SetFont(fontFile, 18, "")
     settingsTitle:SetPoint("TOPLEFT", leftFixed, "TOPLEFT", PAD, ly)
     settingsTitle:SetJustifyH("LEFT")
     settingsTitle:SetWordWrap(false)
 
     -- Spell names as a separate white 75% opacity font string (inline after title)
     local spellsTitle = leftFixed:CreateFontString(nil, "OVERLAY")
-    spellsTitle:SetFont(fontPath, 13, "")
+    spellsTitle:SetFont(fontFile, 13, "")
     spellsTitle:SetPoint("LEFT", settingsTitle, "RIGHT", 4, 0)
     spellsTitle:SetPoint("RIGHT", leftFixed, "RIGHT", -PAD, 0)
     spellsTitle:SetJustifyH("LEFT")
@@ -3980,8 +3998,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         --  belong to the group.
         -------------------------------------------------------------------
         local ind = inhSelInd
-        local gkey = ns._bm2InhSel.group
-        local ginfo = ns.BM_GROUP_BUCKET_INFO[gkey]
+        local gkey = mod._bm2InhSel.group
+        local ginfo = mod.BM_GROUP_BUCKET_INFO[gkey]
         local gname = ginfo and CludesUI.L(ginfo.name) or gkey
         local inhTypeName = INDICATOR_TYPE_MAP[ind.type] and INDICATOR_TYPE_MAP[ind.type].name or ind.type
         settingsTitle:SetTextColor(0.55, 0.72, 1)
@@ -3991,26 +4009,26 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         -- Child x = padDiff + PAD aligns with the PAD margin (the scroll
         -- child is widened by padDiff each side and shifted left, so x = 0
         -- sits OFF the visible column and clips).
-        local info = leftFrame:CreateFontString(nil, "OVERLAY")
-        info:SetFont(fontPath, 12, "")
-        info:SetPoint("TOPLEFT", leftFrame, "TOPLEFT", padDiff + PAD, sy - 14)
-        info:SetPoint("RIGHT", leftFrame, "RIGHT", -(padDiff + PAD), 0)
-        info:SetJustifyH("LEFT")
-        info:SetWordWrap(true)
-        info:SetText(
+        local details = leftFrame:CreateFontString(nil, "OVERLAY")
+        details:SetFont(fontFile, 12, "")
+        details:SetPoint("TOPLEFT", leftFrame, "TOPLEFT", padDiff + PAD, sy - 14)
+        details:SetPoint("RIGHT", leftFrame, "RIGHT", -(padDiff + PAD), 0)
+        details:SetJustifyH("LEFT")
+        details:SetWordWrap(true)
+        details:SetText(
             CludesUI.Lf(
                 "Inherited from %1$s. Edit it there, or use the tile toggle to enable or disable it for this spec.",
                 gname
             )
         )
-        info:SetTextColor(0.65, 0.65, 0.65)
+        details:SetTextColor(0.65, 0.65, 0.65)
         sy = sy - 64
 
-        local link = CreateFrame("Button", nil, leftFrame)
-        link:SetPoint("TOPLEFT", leftFrame, "TOPLEFT", padDiff + PAD, sy - 4)
-        link:SetFrameLevel(leftFrame:GetFrameLevel() + 2)
-        local linkFS = link:CreateFontString(nil, "OVERLAY")
-        linkFS:SetFont(fontPath, 12, "")
+        local itemLink = CreateFrame("Button", nil, leftFrame)
+        itemLink:SetPoint("TOPLEFT", leftFrame, "TOPLEFT", padDiff + PAD, sy - 4)
+        itemLink:SetFrameLevel(leftFrame:GetFrameLevel() + 2)
+        local linkFS = itemLink:CreateFontString(nil, "OVERLAY")
+        linkFS:SetFont(fontFile, 12, "")
         linkFS:SetPoint("TOPLEFT")
         linkFS:SetText(CludesUI.Lf("Edit in %1$s", gname))
         local lac = CludesUI.CLUDES_GREEN
@@ -4019,23 +4037,23 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         else
             linkFS:SetTextColor(0.30, 0.79, 0.94, 0.85)
         end
-        link:SetSize(linkFS:GetStringWidth() + 4, 18)
-        link:SetScript("OnEnter", function()
+        itemLink:SetSize(linkFS:GetStringWidth() + 4, 18)
+        itemLink:SetScript("OnEnter", function()
             linkFS:SetAlpha(1)
         end)
-        link:SetScript("OnLeave", function()
+        itemLink:SetScript("OnLeave", function()
             linkFS:SetAlpha(0.85)
         end)
-        link:SetScript("OnClick", function()
+        itemLink:SetScript("OnClick", function()
             selectedSpecKey = gkey
             selectedIndicator = ind
-            ns._bm2InhSel = nil
+            mod._bm2InhSel = nil
             CludesUI:RefreshPage(true)
         end)
         -- WoW Forever: All Non Healers/Aug is not in the Editing Spec list
         -- there, so its tiles stay read-only (the tile toggle still works).
         if CludesUI.IS_FOREVER and gkey == "nonhealer" then
-            link:Hide()
+            itemLink:Hide()
         end
         sy = sy - 30
     elseif selectedIndicator then
@@ -4045,8 +4063,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
         -- v2: Assigned Filters section leads the settings (built by the manager-pages
         -- file; returns the new y cursor); the rest of the legacy per-type settings apply to the same v2 indicator table.
-        if ns.BMP_BuildAssignedFilters then
-            sy = ns.BMP_BuildAssignedFilters(leftFrame, sy, ind, fontPath)
+        if mod.BMP_BuildAssignedFilters then
+            sy = mod.BMP_BuildAssignedFilters(leftFrame, sy, ind, fontFile)
         end
 
         -- Build title: accent "Icon Indicator: " + white "Rejuvenation, Lifebloom"
@@ -4065,10 +4083,10 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         else
             local spellNames = {}
             if ind.spells then
-                for _, sid in ipairs(ind.spells) do
-                    spellNames[#spellNames + 1] = SPELL_NAME_BY_ID[sid]
-                        or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid))
-                        or tostring(sid)
+                for _, spellRef in ipairs(ind.spells) do
+                    spellNames[#spellNames + 1] = SPELL_NAME_BY_ID[spellRef]
+                        or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRef))
+                        or tostring(spellRef)
                 end
             end
             spellsTitle:SetText(
@@ -4079,10 +4097,10 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
         -- Helper: build a DualRow inside leftFrame
         local function SettingsRow(leftCfg, rightCfg)
-            local row
-            row, h = W:DualRow(leftFrame, sy, leftCfg, rightCfg)
-            sy = sy - h
-            return row
+            local rowFrame
+            rowFrame, hgt = W:DualRow(leftFrame, sy, leftCfg, rightCfg)
+            sy = sy - hgt
+            return rowFrame
         end
 
         -- Own Only is per-INDICATOR (no per-source dropdown).
@@ -4102,17 +4120,17 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         end
 
         -- Auto-default growth direction based on position
-        local function GetDefaultGrow(pos)
-            if pos == "RIGHT" or pos == "TOPRIGHT" or pos == "BOTTOMRIGHT" then
+        local function GetDefaultGrow(place)
+            if place == "RIGHT" or place == "TOPRIGHT" or place == "BOTTOMRIGHT" then
                 return "LEFT"
             end
-            if pos == "LEFT" or pos == "TOPLEFT" or pos == "BOTTOMLEFT" then
+            if place == "LEFT" or place == "TOPLEFT" or place == "BOTTOMLEFT" then
                 return "RIGHT"
             end
-            if pos == "TOP" then
+            if place == "TOP" then
                 return "DOWN"
             end
-            if pos == "BOTTOM" then
+            if place == "BOTTOM" then
                 return "UP"
             end
             return "RIGHT"
@@ -4122,8 +4140,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         -- duration text below the threshold via the engine color curve (secret-safe);
         -- default OFF so existing indicators are unchanged.
         local function BuildThresholdRow()
-            _, h = W:SectionHeader(leftFrame, "THRESHOLD TEXT", sy)
-            sy = sy - h
+            _, hgt = W:SectionHeader(leftFrame, "THRESHOLD TEXT", sy)
+            sy = sy - hgt
 
             -- Sub-settings are interactive only while Enable Threshold is on.
             local thOff = function()
@@ -4162,9 +4180,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
             -- Inline swatch on the toggle: threshold text color; dimmed and inert while the threshold is off.
             do
-                local rgn = thRow._leftRegion
+                local region = thRow._leftRegion
                 local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     thRow:GetFrameLevel() + 3,
                     function()
                         local c = ind.thresholdColor or { r = 1, g = 0.2, b = 0.2 }
@@ -4177,7 +4195,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     false,
                     20
                 )
-                swatch:SetPoint("RIGHT", rgn._control, "LEFT", -8, 0)
+                swatch:SetPoint("RIGHT", region._control, "LEFT", -8, 0)
                 -- Click-gate while the threshold is off (dimmed swatch).
                 local origClick = swatch:GetScript("OnClick")
                 swatch:SetScript("OnClick", function(self, ...)
@@ -4206,7 +4224,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     SwatchState()
                 end)
                 SwatchState()
-                rgn._lastInline = swatch
+                region._lastInline = swatch
             end
         end
 
@@ -4214,8 +4232,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             -----------------------------------------------------------
             --  CORE
             -----------------------------------------------------------
-            _, h = W:SectionHeader(leftFrame, "CORE", sy)
-            sy = sy - h
+            _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
+            sy = sy - hgt
 
             -- Assignment lives in ASSIGNED BUFFS: rows are Position | Growth
             -- Direction, then Own Only.
@@ -4240,28 +4258,28 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 posValues[k] = POSITION_VALUES[k]
             end
             local anchorVals = {}
-            local list = GetSpecIndicators(db, selectedSpecKey) or {}
+            local entries = GetSpecIndicators(saved, selectedSpecKey) or {}
             local byId = {}
-            for i = 1, #list do
-                if list[i].id ~= nil then
-                    byId[list[i].id] = list[i]
+            for idx = 1, #entries do
+                if entries[idx].id ~= nil then
+                    byId[entries[idx].id] = entries[idx]
                 end
             end
             -- Following the candidate's own anchor links must never reach back to this indicator (no cycles).
-            local function WouldCycle(target)
-                local seen, cur = {}, target
-                while cur do
-                    if cur == ind or seen[cur] then
+            local function WouldCycle(targetUnit)
+                local seen, current = {}, targetUnit
+                while current do
+                    if current == ind or seen[current] then
                         return true
                     end
-                    seen[cur] = true
-                    cur = cur.anchorTo and byId[cur.anchorTo] or nil
+                    seen[current] = true
+                    current = current.anchorTo and byId[current.anchorTo] or nil
                 end
                 return false
             end
             local ao = {}
-            for i = 1, #list do
-                local t = list[i]
+            for idx = 1, #entries do
+                local t = entries[idx]
                 if
                     t ~= ind
                     and t.id ~= nil
@@ -4270,13 +4288,17 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     and not WouldCycle(t)
                 then
                     local key = "@" .. t.id
-                    local label = (t.name and t.name ~= "" and t.name) or nil
-                    if not label then
-                        local sid = ns.BM2_PreferredSpell and ns.BM2_PreferredSpell(t, SelectedBucketClass())
-                        local nm = sid and C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid)
-                        label = nm or ("Indicator " .. t.id)
+                    local labelText = (t.name and t.name ~= "" and t.name) or nil
+                    if not labelText then
+                        local spellRef = mod.BM2_PreferredSpell
+                            and mod.BM2_PreferredSpell(t, SelectedBucketClass())
+                        local nm = spellRef
+                            and C_Spell
+                            and C_Spell.GetSpellName
+                            and C_Spell.GetSpellName(spellRef)
+                        labelText = nm or ("Indicator " .. t.id)
                     end
-                    anchorVals[key] = label
+                    anchorVals[key] = labelText
                     ao[#ao + 1] = key
                 end
             end
@@ -4298,15 +4320,15 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                             end
                         end,
                         icon = function(key)
-                            local id = tonumber(string.match(key, "^@(%d+)$"))
-                            local t = id and byId[id]
-                            local sid = t
-                                and ns.BM2_PreferredSpell
-                                and ns.BM2_PreferredSpell(t, SelectedBucketClass())
-                            return sid
+                            local ident = tonumber(string.match(key, "^@(%d+)$"))
+                            local t = ident and byId[ident]
+                            local spellRef = t
+                                and mod.BM2_PreferredSpell
+                                and mod.BM2_PreferredSpell(t, SelectedBucketClass())
+                            return spellRef
                                     and C_Spell
                                     and C_Spell.GetSpellTexture
-                                    and C_Spell.GetSpellTexture(sid)
+                                    and C_Spell.GetSpellTexture(spellRef)
                                 or nil
                         end,
                     },
@@ -4408,7 +4430,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
             -- Cog for position offset X/Y (rides the Position slot, LEFT in both modes)
             do
-                local rgn = posRow._leftRegion
+                local region = posRow._leftRegion
                 -- Anchored: only the ALONG-RUN offset does anything (cross-axis
                 -- has no engine expression in a shared flow); Frame Level is inert
                 -- on continuation groups. Run axis comes from the anchor target's growth (terminal root).
@@ -4416,25 +4438,25 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     if not ind.anchorTo then
                         return nil
                     end
-                    local list = GetSpecIndicators(db, selectedSpecKey) or {}
+                    local entries = GetSpecIndicators(saved, selectedSpecKey) or {}
                     local byId2 = {}
-                    for i = 1, #list do
-                        if list[i].id ~= nil then
-                            byId2[list[i].id] = list[i]
+                    for idx = 1, #entries do
+                        if entries[idx].id ~= nil then
+                            byId2[entries[idx].id] = entries[idx]
                         end
                     end
-                    local seen, cur = {}, byId2[ind.anchorTo]
-                    while cur and cur.anchorTo and not seen[cur] do
-                        seen[cur] = true
-                        cur = byId2[cur.anchorTo]
+                    local seen, current = {}, byId2[ind.anchorTo]
+                    while current and current.anchorTo and not seen[current] do
+                        seen[current] = true
+                        current = byId2[current.anchorTo]
                     end
-                    if not cur then
+                    if not current then
                         return nil
                     end
-                    local g = cur.growDirection or "RIGHT"
+                    local g = current.growDirection or "RIGHT"
                     return g == "UP" or g == "DOWN"
                 end
-                CludesUI.BuildInlineCog(rgn, {
+                CludesUI.BuildInlineCog(region, {
                     title = "Position Offset",
                     rows = {
                         {
@@ -4497,8 +4519,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             -----------------------------------------------------------
             --  DISPLAY
             -----------------------------------------------------------
-            _, h = W:SectionHeader(leftFrame, "DISPLAY", sy)
-            sy = sy - h
+            _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
+            sy = sy - hgt
 
             local IconHidden = function()
                 return indType == "icon" and ind.hideIcon == true
@@ -4534,8 +4556,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
 
             -- Icon Zoom cog (icon type only): one profile-wide value shared by all icon indicators.
             if indType == "icon" then
-                local rgn = sizeRow._leftRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = sizeRow._leftRegion
+                CludesUI.BuildInlineCog(region, {
                     disabled = IconHidden,
                     disabledTooltip = "Hide Icons",
                     requireState = "disabled",
@@ -4548,10 +4570,10 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                             max = 0.20,
                             step = 0.01,
                             get = function()
-                                return ns.db.profile.bmIconZoom or 0.08
+                                return mod.db.profile.bmIconZoom or 0.08
                             end,
                             set = function(v)
-                                ns.db.profile.bmIconZoom = v
+                                mod.db.profile.bmIconZoom = v
                                 ReloadAndUpdate()
                             end,
                         },
@@ -4589,7 +4611,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     ReloadAndUpdate()
                 end,
             })
-            sy = ns.RFO_AuraBorderSettings(leftFrame, sy, W, function(k)
+            sy = mod.RFO_AuraBorderSettings(leftFrame, sy, W, function(k)
                 return ind["indBorder" .. k]
             end, function(k, v)
                 ind["indBorder" .. k] = v
@@ -4617,8 +4639,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 end,
             })
             do
-                local rgn = durRow._leftRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = durRow._leftRegion
+                CludesUI.BuildInlineCog(region, {
                     title = "Duration Text",
                     rows = {
                         {
@@ -4666,20 +4688,20 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     },
                 })
 
-                local swatch = CludesUI.BuildColorSwatch(rgn, durRow:GetFrameLevel() + 3, function()
+                local swatch = CludesUI.BuildColorSwatch(region, durRow:GetFrameLevel() + 3, function()
                     local c = ind.durationTextColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b, 1
                 end, function(r, g, b)
                     ind.durationTextColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
-                swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = swatch
+                swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = swatch
             end
 
             do
-                local rgn = durRow._rightRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = durRow._rightRegion
+                CludesUI.BuildInlineCog(region, {
                     disabled = function()
                         return ind.showStacks == false
                     end,
@@ -4732,16 +4754,16 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 })
             end
             do
-                local rgn = durRow._rightRegion
-                local swatch = CludesUI.BuildColorSwatch(rgn, durRow:GetFrameLevel() + 3, function()
+                local region = durRow._rightRegion
+                local swatch = CludesUI.BuildColorSwatch(region, durRow:GetFrameLevel() + 3, function()
                     local c = ind.stacksTextColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b, 1
                 end, function(r, g, b)
                     ind.stacksTextColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
-                swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = swatch
+                swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = swatch
             end
             -- Display-level Icon Glow (v2): permanent, every visible icon of the
             -- group glows while shown. No Max Duration setting by design: the
@@ -4754,22 +4776,18 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             local mdRow =
                 SettingsRow(GO.DropdownSpec(glowDesc, "Icon Glow"), { type = "label", text = "Glow Color" })
             if not CludesUI._prebuilding then
-                local rgn = mdRow._leftRegion
-                GO.AttachInline(rgn, glowDesc, mdRow._rightRegion)
-                local pv = GO.BuildPreview(
-                    rgn,
-                    glowDesc,
-                    {
-                        bar = false,
-                        width = 26,
-                        height = 26,
-                        anchor = rgn._lastInline or rgn._control,
-                        x = -12,
-                    }
-                )
+                local region = mdRow._leftRegion
+                GO.AttachInline(region, glowDesc, mdRow._rightRegion)
+                local pv = GO.BuildPreview(region, glowDesc, {
+                    bar = false,
+                    width = 26,
+                    height = 26,
+                    anchor = region._lastInline or region._control,
+                    x = -12,
+                })
                 if pv then
-                    pv:SetFrameLevel(rgn:GetFrameLevel() + 5)
-                    rgn._lastInline = pv
+                    pv:SetFrameLevel(region:GetFrameLevel() + 5)
+                    region._lastInline = pv
                 end
             end
 
@@ -4795,12 +4813,12 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             -- Per-ability color swatches (square only), right-to-left like every inline
             -- swatch row (ability 1 at the right edge); no per-spell color falls back to ind.color, then the default.
             if indType == "square" then
-                local rgn = extraRow._leftRegion
+                local region = extraRow._leftRegion
                 local DEFAULT_SQ = { r = 0.30, g = 0.79, b = 0.94 }
                 local prev = nil
-                for _, sid in ipairs(ind.spells or {}) do
-                    local mySid = sid
-                    local swatch = CludesUI.BuildColorSwatch(rgn, extraRow:GetFrameLevel() + 3, function()
+                for _, spellRef in ipairs(ind.spells or {}) do
+                    local mySid = spellRef
+                    local swatch = CludesUI.BuildColorSwatch(region, extraRow:GetFrameLevel() + 3, function()
                         local c = (ind.spellColors and ind.spellColors[mySid]) or ind.color or DEFAULT_SQ
                         return c.r, c.g, c.b, 1
                     end, function(r, g, b)
@@ -4813,7 +4831,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     if prev then
                         swatch:SetPoint("RIGHT", prev, "LEFT", -8, 0)
                     else
-                        swatch:SetPoint("RIGHT", rgn, "RIGHT", -20, 0)
+                        swatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
                     end
                     prev = swatch
                     -- Tooltip: ability name so each swatch is identifiable.
@@ -4835,32 +4853,39 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     local fids = {}
                     -- Presets only the other client offers get no swatch here.
                     for fid in pairs(ind.filters) do
-                        if not ns.BM2_HiddenPresetFilter(fid) then
+                        if not mod.BM2_HiddenPresetFilter(fid) then
                             fids[#fids + 1] = fid
                         end
                     end
                     table.sort(fids)
                     for _, fid in ipairs(fids) do
                         local myFid = fid
-                        local swatch = CludesUI.BuildColorSwatch(rgn, extraRow:GetFrameLevel() + 3, function()
-                            local c = (ind.filterColors and ind.filterColors[myFid])
-                                or ind.color
-                                or DEFAULT_SQ
-                            return c.r, c.g, c.b, 1
-                        end, function(r, g, b)
-                            if not ind.filterColors then
-                                ind.filterColors = {}
-                            end
-                            ind.filterColors[myFid] = { r = r, g = g, b = b }
-                            ReloadAndUpdate()
-                        end, false, 20)
+                        local swatch = CludesUI.BuildColorSwatch(
+                            region,
+                            extraRow:GetFrameLevel() + 3,
+                            function()
+                                local c = (ind.filterColors and ind.filterColors[myFid])
+                                    or ind.color
+                                    or DEFAULT_SQ
+                                return c.r, c.g, c.b, 1
+                            end,
+                            function(r, g, b)
+                                if not ind.filterColors then
+                                    ind.filterColors = {}
+                                end
+                                ind.filterColors[myFid] = { r = r, g = g, b = b }
+                                ReloadAndUpdate()
+                            end,
+                            false,
+                            20
+                        )
                         if prev then
                             swatch:SetPoint("RIGHT", prev, "LEFT", -8, 0)
                         else
-                            swatch:SetPoint("RIGHT", rgn, "RIGHT", -20, 0)
+                            swatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
                         end
                         prev = swatch
-                        local f = ns.BM2_GetFilter and ns.BM2_GetFilter(myFid)
+                        local f = mod.BM2_GetFilter and mod.BM2_GetFilter(myFid)
                         local fname = (f and f.name) or ("Filter " .. tostring(myFid))
                         swatch:HookScript("OnEnter", function()
                             CludesUI.ShowWidgetTooltip(swatch, fname)
@@ -4870,7 +4895,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         end)
                     end
                 end
-                rgn._lastInline = prev
+                region._lastInline = prev
             end
 
             -- Pandemic Border (icon only, not on WoW Forever): the game shows it while
@@ -4909,8 +4934,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 }, extraCfg)
-                local rgn = pandemicRow._leftRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = pandemicRow._leftRegion
+                CludesUI.BuildInlineCog(region, {
                     disabled = pandemicOff,
                     disabledTooltip = pandemicTip,
                     requireState = pandemicState,
@@ -4951,28 +4976,24 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         },
                     },
                 })
-                CludesUI.BuildInlineSwatches(
-                    rgn,
+                CludesUI.BuildInlineSwatches(region, {
                     {
-                        {
-                            tooltip = "Pandemic Border Color",
-                            getValue = function()
-                                local c = ind.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
-                                return c.r, c.g, c.b, 1
-                            end,
-                            setValue = function(r, g, b)
-                                ind.pandemicBorderColor = { r = r, g = g, b = b }
-                                ReloadAndUpdate()
-                            end,
-                        },
+                        tooltip = "Pandemic Border Color",
+                        getValue = function()
+                            local c = ind.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
+                            return c.r, c.g, c.b, 1
+                        end,
+                        setValue = function(r, g, b)
+                            ind.pandemicBorderColor = { r = r, g = g, b = b }
+                            ReloadAndUpdate()
+                        end,
                     },
-                    {
-                        disabled = pandemicOff,
-                        disabledTooltip = pandemicTip,
-                        requireState = pandemicState,
-                        size = 20,
-                    }
-                )
+                }, {
+                    disabled = pandemicOff,
+                    disabledTooltip = pandemicTip,
+                    requireState = pandemicState,
+                    size = 20,
+                })
             end
 
             -- THRESHOLD section
@@ -4982,8 +5003,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  BAR: CORE
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "CORE", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
+                sy = sy - hgt
 
                 SettingsRow({
                     type = "dropdown",
@@ -5038,8 +5059,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     end,
                 })
                 do
-                    local rgn = posRow._leftRegion
-                    CludesUI.BuildInlineCog(rgn, {
+                    local region = posRow._leftRegion
+                    CludesUI.BuildInlineCog(region, {
                         title = "Position Offset",
                         rows = {
                             {
@@ -5090,8 +5111,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  BAR: DISPLAY
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "DISPLAY", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
+                sy = sy - hgt
 
                 local isVert = (ind.orientation or "HORIZONTAL") == "VERTICAL"
 
@@ -5191,9 +5212,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     end,
                 })
                 do
-                    local rgn = barBgRow._leftRegion
+                    local region = barBgRow._leftRegion
                     local colorSwatch = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         barBgRow:GetFrameLevel() + 3,
                         function()
                             local c = ind.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
@@ -5206,20 +5227,27 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         false,
                         20
                     )
-                    colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = colorSwatch
+                    colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                    region._lastInline = colorSwatch
                 end
                 do
-                    local rgn = barBgRow._rightRegion
-                    local bgSwatch = CludesUI.BuildColorSwatch(rgn, barBgRow:GetFrameLevel() + 3, function()
-                        local c = ind.barBgColor or { r = 0, g = 0, b = 0 }
-                        return c.r, c.g, c.b, 1
-                    end, function(r, g, b)
-                        ind.barBgColor = { r = r, g = g, b = b }
-                        ReloadAndUpdate()
-                    end, false, 20)
-                    bgSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = bgSwatch
+                    local region = barBgRow._rightRegion
+                    local bgSwatch = CludesUI.BuildColorSwatch(
+                        region,
+                        barBgRow:GetFrameLevel() + 3,
+                        function()
+                            local c = ind.barBgColor or { r = 0, g = 0, b = 0 }
+                            return c.r, c.g, c.b, 1
+                        end,
+                        function(r, g, b)
+                            ind.barBgColor = { r = r, g = g, b = b }
+                            ReloadAndUpdate()
+                        end,
+                        false,
+                        20
+                    )
+                    bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                    region._lastInline = bgSwatch
                 end
 
                 -- THRESHOLD section
@@ -5243,8 +5271,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     end,
                 }, { type = "label", text = "" })
                 do
-                    local rgn = posRow._leftRegion
-                    CludesUI.BuildInlineCog(rgn, {
+                    local region = posRow._leftRegion
+                    CludesUI.BuildInlineCog(region, {
                         title = "Position Offset",
                         rows = {
                             {
@@ -5287,8 +5315,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  FRAME BORDER: CORE
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "CORE", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
+                sy = sy - hgt
 
                 SettingsRow({
                     type = "dropdown",
@@ -5319,8 +5347,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  FRAME BORDER: DISPLAY
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "DISPLAY", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
+                sy = sy - hgt
 
                 -- Offered styles: shared border-texture set minus "shadow" (identical
                 -- to glow without behind/black handling) and "lightspark" (oversized
@@ -5444,9 +5472,9 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     end,
                 }, dashesSlot)
                 do
-                    local rgn = bdrColorRow._leftRegion
+                    local region = bdrColorRow._leftRegion
                     local colorSwatch = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         bdrColorRow:GetFrameLevel() + 3,
                         function()
                             local c = ind.color or { r = ac.r, g = ac.g, b = ac.b }
@@ -5459,8 +5487,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                         false,
                         20
                     )
-                    colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = colorSwatch
+                    colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                    region._lastInline = colorSwatch
                 end
             elseif indType == "healthcolor" or indType == "bgcolor" then
                 -----------------------------------------------------------
@@ -5468,8 +5496,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 --  (identical settings; bgcolor tints the health bar's
                 --  background area instead of the fill)
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "CORE", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
+                sy = sy - hgt
 
                 SettingsRow({
                     type = "dropdown",
@@ -5500,8 +5528,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  HEALTH BAR COLOR: DISPLAY
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "DISPLAY", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
+                sy = sy - hgt
 
                 SettingsRow({
                     type = "colorpicker",
@@ -5534,8 +5562,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  FRAME ALPHA: CORE
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "CORE", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "CORE", sy)
+                sy = sy - hgt
 
                 SettingsRow({
                     type = "dropdown",
@@ -5565,8 +5593,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 -----------------------------------------------------------
                 --  FRAME ALPHA: DISPLAY
                 -----------------------------------------------------------
-                _, h = W:SectionHeader(leftFrame, "DISPLAY", sy)
-                sy = sy - h
+                _, hgt = W:SectionHeader(leftFrame, "DISPLAY", sy)
+                sy = sy - hgt
 
                 SettingsRow({
                     type = "slider",

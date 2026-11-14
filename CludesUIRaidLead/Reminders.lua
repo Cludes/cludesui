@@ -14,15 +14,15 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Notes the raid leader sends (Comms.lua) are kept for the session and run
 --  in place of your own for that boss.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local Parser = ns.NoteParser
+local _, mod = ...
+local Parser = mod.NoteParser
 
 local SOUND_DIR = "Interface\\AddOns\\CludesUI\\media\\sounds\\"
 local MAX_LINES = 4
 local HOLD = 1.5 -- seconds a reminder stays up after its time
 
 local function Settings()
-    local p = ns.RaidLeadDB()
+    local p = mod.RaidLeadDB()
     p.reminders = p.reminders or {}
     local r = p.reminders
     r.notes = r.notes or {}
@@ -46,14 +46,14 @@ local function Settings()
     end
     return r
 end
-ns.ReminderSettings = Settings
+mod.ReminderSettings = Settings
 
 local shared = {} -- boss (lowercase) -> { from, text }, this session only
-ns.sharedNotes = shared
+mod.sharedNotes = shared
 
-local function SpellName(id)
-    local n = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id)
-    return (type(n) == "string" and n ~= "") and n or nil
+local function SpellName(ident)
+    local num = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
+    return (type(num) == "string" and num ~= "") and num or nil
 end
 
 local function Clean(s)
@@ -61,7 +61,7 @@ local function Clean(s)
 end
 
 --- The note that would run for a boss name: a shared one first, then yours.
-function ns.NoteFor(bossName)
+function mod.NoteFor(bossName)
     local key = Clean(bossName)
     if shared[key] then
         return shared[key].text, shared[key].from
@@ -69,10 +69,10 @@ function ns.NoteFor(bossName)
     if shared.any then
         return shared.any.text, shared.any.from
     end
-    for _, n in ipairs(Settings().notes) do
-        local b = Clean(n.boss)
+    for _, num in ipairs(Settings().notes) do
+        local b = Clean(num.boss)
         if b == key or b == "any" then
-            return n.text, nil
+            return num.text, nil
         end
     end
     return nil
@@ -81,87 +81,87 @@ end
 -------------------------------------------------------------------------------
 --  Display
 -------------------------------------------------------------------------------
-local anchor, lines = nil, {}
-local active = {} -- { text, at (GetTime when due) }
+local anchorFrame, lines = nil, {}
+local isActive = {} -- { text, at (GetTime when due) }
 
 local function Font()
     return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT
 end
 
 local function BuildDisplay()
-    if anchor then
+    if anchorFrame then
         return
     end
-    anchor = CreateFrame("Frame", "CludesUIRaidLeadReminders", UIParent)
-    anchor:SetSize(420, 40 * MAX_LINES)
-    anchor:SetFrameStrata("HIGH")
-    for i = 1, MAX_LINES do
-        local fs = anchor:CreateFontString(nil, "OVERLAY")
-        fs:SetPoint("TOP", anchor, "TOP", 0, -(i - 1) * 40)
-        fs:SetJustifyH("CENTER")
-        lines[i] = fs
+    anchorFrame = CreateFrame("Frame", "CludesUIRaidLeadReminders", UIParent)
+    anchorFrame:SetSize(420, 40 * MAX_LINES)
+    anchorFrame:SetFrameStrata("HIGH")
+    for idx = 1, MAX_LINES do
+        local fontStr = anchorFrame:CreateFontString(nil, "OVERLAY")
+        fontStr:SetPoint("TOP", anchorFrame, "TOP", 0, -(idx - 1) * 40)
+        fontStr:SetJustifyH("CENTER")
+        lines[idx] = fontStr
     end
-    ns.ApplyReminderLook()
+    mod.ApplyReminderLook()
 end
 
-function ns.ApplyReminderLook()
-    if not anchor then
+function mod.ApplyReminderLook()
+    if not anchorFrame then
         return
     end
     local r = Settings()
     local p = r.pos
     if not InCombatLockdown() then
-        anchor:ClearAllPoints()
+        anchorFrame:ClearAllPoints()
         if p then
-            anchor:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+            anchorFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
         else
-            anchor:SetPoint("CENTER", UIParent, "CENTER", 0, 220)
+            anchorFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 220)
         end
     end
-    for i = 1, MAX_LINES do
-        CludesUI.Kit.Font(lines[i], r.fontSize, nil)
-        lines[i]:SetPoint("TOP", anchor, "TOP", 0, -(i - 1) * (r.fontSize + 12))
+    for idx = 1, MAX_LINES do
+        CludesUI.Kit.Font(lines[idx], r.fontSize, nil)
+        lines[idx]:SetPoint("TOP", anchorFrame, "TOP", 0, -(idx - 1) * (r.fontSize + 12))
     end
 end
 
 local function Repaint()
-    local now = GetTime()
-    for i = #active, 1, -1 do
-        if now > active[i].at + HOLD then
-            table.remove(active, i)
+    local nowTime = GetTime()
+    for idx = #isActive, 1, -1 do
+        if nowTime > isActive[idx].at + HOLD then
+            table.remove(isActive, idx)
         end
     end
-    for i = 1, MAX_LINES do
-        local a = active[i]
+    for idx = 1, MAX_LINES do
+        local a = isActive[idx]
         if a then
-            local left = a.at - now
-            local tail = left > 0.05 and ("  " .. CludesUI.Kit.AccentHex() .. math.ceil(left) .. "|r")
+            local leftX = a.at - nowTime
+            local tail = leftX > 0.05 and ("  " .. CludesUI.Kit.AccentHex() .. math.ceil(leftX) .. "|r")
                 or "  |cffff6040NOW|r"
-            lines[i]:SetText(a.text .. tail)
-            lines[i]:Show()
+            lines[idx]:SetText(a.text .. tail)
+            lines[idx]:Show()
         else
-            lines[i]:Hide()
+            lines[idx]:Hide()
         end
     end
-    if #active == 0 then
-        anchor:SetScript("OnUpdate", nil)
+    if #isActive == 0 then
+        anchorFrame:SetScript("OnUpdate", nil)
     end
 end
 
-local function Speak(text)
+local function Speak(textValue)
     if not (C_VoiceChat and C_VoiceChat.SpeakText) then
         return
     end
     local voice
     if C_TTSSettings and C_TTSSettings.GetVoiceOptionID and Enum and Enum.TtsVoiceType then
-        local ok, v = pcall(C_TTSSettings.GetVoiceOptionID, Enum.TtsVoiceType.Standard)
-        if ok then
-            voice = v
+        local success, val = pcall(C_TTSSettings.GetVoiceOptionID, Enum.TtsVoiceType.Standard)
+        if success then
+            voice = val
         end
     end
     if not voice and C_VoiceChat.GetTtsVoices then
-        local list = C_VoiceChat.GetTtsVoices()
-        voice = list and list[1] and list[1].voiceID
+        local entries = C_VoiceChat.GetTtsVoices()
+        voice = entries and entries[1] and entries[1].voiceID
     end
     if not voice then
         return
@@ -172,54 +172,51 @@ local function Speak(text)
         if ok1 and type(r) == "number" then
             rate = r
         end
-        local ok2, v = pcall(C_TTSSettings.GetSpeechVolume)
-        if ok2 and type(v) == "number" then
-            volume = v
+        local ok2, val = pcall(C_TTSSettings.GetSpeechVolume)
+        if ok2 and type(val) == "number" then
+            volume = val
         end
     end
-    pcall(C_VoiceChat.SpeakText, voice, (text:gsub("{rt%d}", ""):gsub("|T.-|t", "")), rate, volume, true)
+    pcall(C_VoiceChat.SpeakText, voice, (textValue:gsub("{rt%d}", ""):gsub("|T.-|t", "")), rate, volume, true)
 end
 
-local function Show(entry)
+local function Show(record)
     BuildDisplay()
     local r = Settings()
-    table.insert(
-        active,
-        {
-            text = entry.text:gsub("{rt(%d)}", "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%1:0|t"),
-            at = GetTime() + math.min(r.lead, entry.at),
-        }
-    )
-    while #active > MAX_LINES do
-        table.remove(active, 1)
+    table.insert(isActive, {
+        text = record.text:gsub("{rt(%d)}", "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%1:0|t"),
+        at = GetTime() + math.min(r.lead, record.at),
+    })
+    while #isActive > MAX_LINES do
+        table.remove(isActive, 1)
     end
     if r.tts then
-        Speak(entry.text)
+        Speak(record.text)
     end
     if r.sound and r.sound ~= "" then
         PlaySoundFile(SOUND_DIR .. r.sound, "Master")
     end
-    anchor:SetScript("OnUpdate", Repaint)
+    anchorFrame:SetScript("OnUpdate", Repaint)
     Repaint()
 end
 
 --- One line on the reminder display, due in `at` seconds (Boss Timelines'
 --- encounter alerts). speak: false for silence, true to say the text, or
 --- other words to say; sound: whether to play the reminder sound.
-function ns.ShowReminder(text, at, speak, sound)
+function mod.ShowReminder(textValue, at, speak, sound)
     BuildDisplay()
-    table.insert(active, { text = text, at = GetTime() + math.max(0, at) })
-    while #active > MAX_LINES do
-        table.remove(active, 1)
+    table.insert(isActive, { text = textValue, at = GetTime() + math.max(0, at) })
+    while #isActive > MAX_LINES do
+        table.remove(isActive, 1)
     end
     if speak then
-        Speak(type(speak) == "string" and speak or text)
+        Speak(type(speak) == "string" and speak or textValue)
     end
     local r = Settings()
     if sound and r.sound and r.sound ~= "" then
         PlaySoundFile(SOUND_DIR .. r.sound, "Master")
     end
-    anchor:SetScript("OnUpdate", Repaint)
+    anchorFrame:SetScript("OnUpdate", Repaint)
     Repaint()
 end
 
@@ -230,9 +227,9 @@ local run = 0 -- bumped on every pull and wipe, so old timers stand down
 
 local function Roster()
     local set = {}
-    for i = 1, GetNumGroupMembers() do
-        local unit = IsInRaid() and ("raid" .. i) or (i == 1 and "player" or ("party" .. (i - 1)))
-        local name = UnitName(unit)
+    for idx = 1, GetNumGroupMembers() do
+        local unitToken = IsInRaid() and ("raid" .. idx) or (idx == 1 and "player" or ("party" .. (idx - 1)))
+        local name = UnitName(unitToken)
         if type(name) == "string" and not (issecretvalue and issecretvalue(name)) then
             set[name:lower()] = true
         end
@@ -242,22 +239,22 @@ local function Roster()
 end
 
 local function MyRole()
-    local spec = GetSpecialization and GetSpecialization()
-    return spec and GetSpecializationRole(spec) or "DAMAGER"
+    local specInfo = GetSpecialization and GetSpecialization()
+    return specInfo and GetSpecializationRole(specInfo) or "DAMAGER"
 end
 
 --- Starts a note's reminders as if the boss had just been pulled.
 --- Returns how many reminders are for you and how many phase lines were skipped.
-function ns.RunNote(text)
+function mod.RunNote(textValue)
     run = run + 1
     local mine = run
-    wipe(active)
-    local list, skipped = Parser.Parse(text, SpellName)
+    wipe(isActive)
+    local entries, skipped = Parser.Parse(textValue, SpellName)
     local me, role, roster = UnitName("player"), MyRole(), Roster()
-    local count = 0
-    for _, e in ipairs(list) do
+    local total = 0
+    for _, e in ipairs(entries) do
         if Parser.IsFor(e, me, role, roster) then
-            count = count + 1
+            total = total + 1
             local delay = math.max(0, e.at - Settings().lead)
             C_Timer.After(delay, function()
                 if run == mine then
@@ -266,13 +263,13 @@ function ns.RunNote(text)
             end)
         end
     end
-    return count, skipped
+    return total, skipped
 end
 
-function ns.StopReminders()
+function mod.StopReminders()
     run = run + 1
-    wipe(active)
-    if anchor then
+    wipe(isActive)
+    if anchorFrame then
         Repaint()
     end
 end
@@ -280,9 +277,9 @@ end
 local events = CreateFrame("Frame")
 events:RegisterEvent("ENCOUNTER_START")
 events:RegisterEvent("ENCOUNTER_END")
-events:SetScript("OnEvent", function(_, event, _, encounterName)
-    if event == "ENCOUNTER_END" then
-        return ns.StopReminders()
+events:SetScript("OnEvent", function(_, evt, _, encounterName)
+    if evt == "ENCOUNTER_END" then
+        return mod.StopReminders()
     end
     if not Settings().enabled then
         return
@@ -290,31 +287,31 @@ events:SetScript("OnEvent", function(_, event, _, encounterName)
     if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then
         return
     end
-    local text = ns.NoteFor(encounterName)
-    if text then
-        ns.RunNote(text)
+    local textValue = mod.NoteFor(encounterName)
+    if textValue then
+        mod.RunNote(textValue)
     end
 end)
 
 --- Called by Comms.lua when the leader sends a note.
-function ns.ReceiveSharedNote(from, boss, text)
+function mod.ReceiveSharedNote(from, boss, textValue)
     if not Settings().acceptShared then
         return
     end
-    shared[Clean(boss)] = { from = from, text = text }
-    local list, skipped = Parser.Parse(text, SpellName)
+    shared[Clean(boss)] = { from = from, text = textValue }
+    local entries, skipped = Parser.Parse(textValue, SpellName)
     CludesUI.Print(
         ("|cff4cc9f0Raid Lead:|r %s sent reminders for %s (%d line%s%s)."):format(
             from,
             boss,
-            #list,
-            #list == 1 and "" or "s",
+            #entries,
+            #entries == 1 and "" or "s",
             skipped > 0 and (", " .. skipped .. " phase line" .. (skipped == 1 and "" or "s") .. " skipped")
                 or ""
         )
     )
-    if ns.OnSharedChanged then
-        ns.OnSharedChanged()
+    if mod.OnSharedChanged then
+        mod.OnSharedChanged()
     end
 end
 
@@ -343,13 +340,13 @@ reg:SetScript("OnEvent", function()
             end,
             getFrame = function()
                 BuildDisplay()
-                return anchor
+                return anchorFrame
             end,
             getSize = function()
                 return 420, (Settings().fontSize + 12) * 2
             end,
-            savePos = function(_, point, relPoint, x, y)
-                Settings().pos = { point = point, relPoint = relPoint, x = x, y = y }
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                Settings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
             loadPos = function()
                 return Settings().pos
@@ -357,7 +354,7 @@ reg:SetScript("OnEvent", function()
             clearPos = function()
                 Settings().pos = nil
             end,
-            applyPos = ns.ApplyReminderLook,
+            applyPos = mod.ApplyReminderLook,
         }),
     }, "CludesUIRaidLead")
 end)

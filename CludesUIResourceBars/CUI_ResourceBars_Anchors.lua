@@ -8,56 +8,56 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  anchor system: anchor frames, bar anchoring and free positions.
 --  Reads the earlier Resource Bars files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local floor = math.floor
 
-local ERB, SnapXY, IsPowerBarHidden = I.ERB, I.SnapXY, I.IsPowerBarHidden
-local IsSpecDisabled, IsVerticalOrientation = I.IsSpecDisabled, I.IsVerticalOrientation
-local OrientedSize = I.OrientedSize
+local ERB, SnapXY, IsPowerBarHidden = Inner.ERB, Inner.SnapXY, Inner.IsPowerBarHidden
+local IsSpecDisabled, IsVerticalOrientation = Inner.IsSpecDisabled, Inner.IsVerticalOrientation
+local OrientedSize = Inner.OrientedSize
 
 local mainFrame
-I.mainFrameSetters[#I.mainFrameSetters + 1] = function(v)
-    mainFrame = v
+Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val)
+    mainFrame = val
 end
 local healthBar
-I.healthBarSetters[#I.healthBarSetters + 1] = function(v)
-    healthBar = v
+Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
+    healthBar = val
 end
 local primaryBar
-I.primaryBarSetters[#I.primaryBarSetters + 1] = function(v)
-    primaryBar = v
+Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
+    primaryBar = val
 end
 local secondaryFrame
-I.secondaryFrameSetters[#I.secondaryFrameSetters + 1] = function(v)
-    secondaryFrame = v
+Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val)
+    secondaryFrame = val
 end
 local secondaryBar
-I.secondaryBarSetters[#I.secondaryBarSetters + 1] = function(v)
-    secondaryBar = v
+Inner.secondaryBarSetters[#Inner.secondaryBarSetters + 1] = function(val)
+    secondaryBar = val
 end
 local castBarFrame
-I.castBarFrameSetters[#I.castBarFrameSetters + 1] = function(v)
-    castBarFrame = v
+Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val)
+    castBarFrame = val
 end
 local gcdBarFrame
-I.gcdBarFrameSetters[#I.gcdBarFrameSetters + 1] = function(v)
-    gcdBarFrame = v
+Inner.gcdBarFrameSetters[#Inner.gcdBarFrameSetters + 1] = function(val)
+    gcdBarFrame = val
 end
 local totemBarFrame
-I.totemBarFrameSetters[#I.totemBarFrameSetters + 1] = function(v)
-    totemBarFrame = v
+Inner.totemBarFrameSetters[#Inner.totemBarFrameSetters + 1] = function(val)
+    totemBarFrame = val
 end
 local cachedSecondary
-I.cachedSecondarySetters[#I.cachedSecondarySetters + 1] = function(v)
-    cachedSecondary = v
+Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val)
+    cachedSecondary = val
 end
 
 local RefreshAnchoredBarsForUnlockTarget
@@ -78,7 +78,7 @@ function CludesUI.ERB_PlayerStackBars()
     if not p then
         return nil
     end
-    local bars, n = nil, 0
+    local barList, num = nil, 0
     local function add(f)
         if not (f and f:IsShown()) then
             return
@@ -88,9 +88,9 @@ function CludesUI.ERB_PlayerStackBars()
             return
         end
         local s = f:GetEffectiveScale() or 1
-        bars = bars or {}
-        n = n + 1
-        bars[n] = { l = (f:GetLeft() or 0) * s, r = (f:GetRight() or 0) * s, t = ft * s, b = fb * s }
+        barList = barList or {}
+        num = num + 1
+        barList[num] = { l = (f:GetLeft() or 0) * s, r = (f:GetRight() or 0) * s, t = ft * s, b = fb * s }
     end
     if not IsPowerBarHidden() then
         add(primaryBar)
@@ -106,10 +106,10 @@ function CludesUI.ERB_PlayerStackBars()
         add(secondaryFrame)
         add(secondaryBar)
     end
-    if ns._FDMStackBottomFrame then
-        add(ns._FDMStackBottomFrame())
+    if mod._FDMStackBottomFrame then
+        add(mod._FDMStackBottomFrame())
     end
-    return bars
+    return barList
 end
 
 -- Unlock mode: register with shared CludesUI unlock system
@@ -122,33 +122,33 @@ local function RegisterUnlockElements()
     -- Shared helper: save position to a settings sub-table and apply to frame
     -- centerShiftY: extra Y on a stored CENTER, as the bar's own build adds it.
     local function MakePosHelpers(getSettings, frame_fn, defaultOffX, defaultOffY, centerShiftY)
-        local function savePos(key, point, relPoint, x, y)
-            if not point then
+        local function savePos(key, anchorPoint, relPoint, posX, posY)
+            if not anchorPoint then
                 return
             end
             local s = getSettings()
-            s.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            s.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
                 local f = frame_fn()
                 if f then
                     f:ClearAllPoints()
-                    f:SetPoint(point, UIParent, relPoint or point, x, y)
+                    f:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
                 end
             end
-            ns.ERB_GroupDirty()
+            mod.ERB_GroupDirty()
         end
         local function loadPos()
-            local pos = getSettings().unlockPos
-            if not pos then
+            local place = getSettings().unlockPos
+            if not place then
                 return nil
             end
-            local pt = pos.point
+            local pt = place.point
             -- The resize re-apply reads this, not applyPos (0 while expand is suppressed).
-            local y = pos.y
-            if centerShiftY and pt == "CENTER" and y then
-                y = y + centerShiftY()
+            local posY = place.y
+            if centerShiftY and pt == "CENTER" and posY then
+                posY = posY + centerShiftY()
             end
-            return { point = pt, relPoint = pos.relPoint or pt, x = pos.x, y = y }
+            return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = posY }
         end
         local function clearPos()
             local s = getSettings()
@@ -161,19 +161,19 @@ local function RegisterUnlockElements()
             end
         end
         local function applyPos()
-            ns.ERB_GroupDirty()
+            mod.ERB_GroupDirty()
             local s = getSettings()
             if s.anchorTo and s.anchorTo ~= "none" then
                 return
             end
-            local pos = s.unlockPos
-            if not pos then
+            local place = s.unlockPos
+            if not place then
                 return
             end
             local f = frame_fn()
             if f then
-                local pt = pos.point
-                local px, py = pos.x, pos.y
+                local pt = place.point
+                local px, py = place.x, place.y
                 if centerShiftY and pt == "CENTER" and py then
                     py = py + centerShiftY()
                 end
@@ -185,7 +185,7 @@ local function RegisterUnlockElements()
                     -- center offset that lands edges on whole pixels. Plain SnapForES
                     -- forces edges to half pixels, drifting 1px on save/exit or spec swap.
                     local isCenterAnchor = (pt == "CENTER")
-                        and (pos.relPoint == "CENTER" or pos.relPoint == nil)
+                        and (place.relPoint == "CENTER" or place.relPoint == nil)
                     if isCenterAnchor and PPa.SnapCenterForDim then
                         px = PPa.SnapCenterForDim(px, f:GetWidth() or 0, es)
                         py = PPa.SnapCenterForDim(py, f:GetHeight() or 0, es)
@@ -195,7 +195,7 @@ local function RegisterUnlockElements()
                     end
                 end
                 f:ClearAllPoints()
-                f:SetPoint(pt, UIParent, pos.relPoint or pt, px, py)
+                f:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
             end
         end
         return savePos, loadPos, clearPos, applyPos
@@ -208,11 +208,11 @@ local function RegisterUnlockElements()
     -- pass hands every matched bar its size again after each resize burst (CDM
     -- bars resize all through combat), and a rebuild is a full ApplyAll, so an
     -- unchanged size rebuilds nothing.
-    local function SetDim(t, key, v)
-        if t[key] == v then
+    local function SetDim(t, key, val)
+        if t[key] == val then
             return
         end
-        t[key] = v
+        t[key] = val
         Rebuild()
     end
     local function LiveMove(key)
@@ -220,22 +220,22 @@ local function RegisterUnlockElements()
             RefreshAnchoredBarsForUnlockTarget(key)
         end
         -- A bar moved on its own: the "Border Around All" group re-judges.
-        ns.ERB_GroupDirty()
+        mod.ERB_GroupDirty()
     end
 
     local elements = {}
 
     -- Health Bar
     do
-        local function S()
+        local function Stl()
             return ERB.db.profile.health
         end
         -- Size callbacks use the spec-resolved config so matching lands where the
         -- bar renders; position always stays on S() (global).
         local function SS()
-            return _G._CURB_ResolveHealthCfg() or S()
+            return _G._CURB_ResolveHealthCfg() or Stl()
         end
-        local save, load, clear, apply = MakePosHelpers(S, function()
+        local save, load, clear, apply = MakePosHelpers(Stl, function()
             return healthBar
         end, 0, -65)
         elements[#elements + 1] = MK({
@@ -247,7 +247,7 @@ local function RegisterUnlockElements()
                 return healthBar
             end,
             isHidden = function()
-                local s = S()
+                local s = Stl()
                 return not s.enabled or IsSpecDisabled(s)
             end,
             -- Reported through the ON-SCREEN axes, not the stored ones: a vertical
@@ -263,42 +263,42 @@ local function RegisterUnlockElements()
             -- up with the frame on screen. Under the CludesUI look: a textured
             -- border's reach outside the bar (ns.ERB_EuiBorderPad), else nil.
             getMatchPad = function()
-                local style = ns.ERB_BarsStyle()
-                if style == "cui" then
-                    local pw, ph = ns.ERB_EuiBorderPad(SS())
+                local look = mod.ERB_BarsStyle()
+                if look == "cui" then
+                    local pw, ph = mod.ERB_EuiBorderPad(SS())
                     if pw then
                         return pw, ph
                     end
                 end
-                if style == "cui" then
+                if look == "cui" then
                     return nil
                 end
                 local s, g = SS(), ERB.db.profile.general
                 local ori = s.orientation or (g and g.orientation) or "HORIZONTAL"
-                if style == "blizzard" then
-                    return ns.ERB_BlizzMatchPad(IsVerticalOrientation(ori))
+                if look == "blizzard" then
+                    return mod.ERB_BlizzMatchPad(IsVerticalOrientation(ori))
                 end
-                local w, h = OrientedSize(s.width, s.height, ori)
-                return ns.ERB_ClassicMatchPad(w, h, IsVerticalOrientation(ori), ns.ERB_BarFrameK(s))
+                local wid, hgt = OrientedSize(s.width, s.height, ori)
+                return mod.ERB_ClassicMatchPad(wid, hgt, IsVerticalOrientation(ori), mod.ERB_BarFrameK(s))
             end,
-            setWidth = function(_, w)
+            setWidth = function(_, wid)
                 local s, g = SS(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
-                    SetDim(s, "height", PP.Snap(w))
+                    SetDim(s, "height", Pix.Snap(wid))
                 else
-                    SetDim(s, "width", PP.Snap(w))
+                    SetDim(s, "width", Pix.Snap(wid))
                 end
             end,
-            setHeight = function(_, h)
+            setHeight = function(_, hgt)
                 local s, g = SS(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
-                    SetDim(s, "width", PP.Snap(h))
+                    SetDim(s, "width", Pix.Snap(hgt))
                 else
-                    SetDim(s, "height", PP.Snap(h))
+                    SetDim(s, "height", Pix.Snap(hgt))
                 end
             end,
             isAnchored = function()
-                local s = S()
+                local s = Stl()
                 return s.anchorTo and s.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
@@ -312,22 +312,22 @@ local function RegisterUnlockElements()
 
     -- Power Bar
     do
-        local function S()
+        local function Stl()
             return ERB.db.profile.primary
         end
         local function SS()
-            return _G._CURB_ResolvePowerCfg() or S()
+            return _G._CURB_ResolvePowerCfg() or Stl()
         end
         -- Expand Power Bar if No Resource grows it toward the class resource slot.
         local save, load, clear, apply = MakePosHelpers(
-            S,
+            Stl,
             function()
                 return primaryBar
             end,
             0,
             -74,
             function()
-                return ns.ERB_PowerExpandShiftY or 0
+                return mod.ERB_PowerExpandShiftY or 0
             end
         )
         elements[#elements + 1] = MK({
@@ -339,7 +339,7 @@ local function RegisterUnlockElements()
                 return primaryBar
             end,
             isHidden = function()
-                local s = S()
+                local s = Stl()
                 return s.enabled == false or IsSpecDisabled(s)
             end,
             -- On-screen axes, as with the health bar above.
@@ -353,46 +353,46 @@ local function RegisterUnlockElements()
             end,
             -- Stock styles: the frame outside the fill (see the health bar).
             getMatchPad = function()
-                local style = ns.ERB_BarsStyle()
-                if style == "cui" then
-                    local pw, ph = ns.ERB_EuiBorderPad(SS())
+                local look = mod.ERB_BarsStyle()
+                if look == "cui" then
+                    local pw, ph = mod.ERB_EuiBorderPad(SS())
                     if pw then
                         return pw, ph
                     end
                 end
-                if style == "cui" then
+                if look == "cui" then
                     return nil
                 end
                 local s, g = SS(), ERB.db.profile.general
                 local ori = s.orientation or (g and g.orientation) or "HORIZONTAL"
-                if style == "blizzard" then
-                    return ns.ERB_BlizzMatchPad(IsVerticalOrientation(ori))
+                if look == "blizzard" then
+                    return mod.ERB_BlizzMatchPad(IsVerticalOrientation(ori))
                 end
-                local w, h = OrientedSize(s.width or 214, s.height or 14, ori)
-                return ns.ERB_ClassicMatchPad(w, h, IsVerticalOrientation(ori), ns.ERB_BarFrameK(s))
+                local wid, hgt = OrientedSize(s.width or 214, s.height or 14, ori)
+                return mod.ERB_ClassicMatchPad(wid, hgt, IsVerticalOrientation(ori), mod.ERB_BarFrameK(s))
             end,
             -- WoW Forever druid: the mover wraps the Mana Bar while Shapeshifted
             -- shown below the bar (CUI_ResourceBars_ForeverDruidMana.lua); nil
             -- on every other client and class.
-            getBottomExtra = ns.FDM_BottomExtra,
-            setWidth = function(_, w)
+            getBottomExtra = mod.FDM_BottomExtra,
+            setWidth = function(_, wid)
                 local s, g = SS(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
-                    SetDim(s, "height", PP.Snap(w))
+                    SetDim(s, "height", Pix.Snap(wid))
                 else
-                    SetDim(s, "width", PP.Snap(w))
+                    SetDim(s, "width", Pix.Snap(wid))
                 end
             end,
-            setHeight = function(_, h)
+            setHeight = function(_, hgt)
                 local s, g = SS(), ERB.db.profile.general
                 if IsVerticalOrientation(s.orientation or (g and g.orientation)) then
-                    SetDim(s, "width", PP.Snap(h))
+                    SetDim(s, "width", Pix.Snap(hgt))
                 else
-                    SetDim(s, "height", PP.Snap(h))
+                    SetDim(s, "height", Pix.Snap(hgt))
                 end
             end,
             isAnchored = function()
-                local s = S()
+                local s = Stl()
                 return s.anchorTo and s.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
@@ -406,31 +406,36 @@ local function RegisterUnlockElements()
             -- while Expand Power Bar if No Resource grows the bar, and a layer
             -- banking that would save the shift into the stored position.
             loadRawPos = function()
-                local pos = S().unlockPos
-                if not (pos and pos.point) then
+                local place = Stl().unlockPos
+                if not (place and place.point) then
                     return nil
                 end
-                return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+                return {
+                    point = place.point,
+                    relPoint = place.relPoint or place.point,
+                    x = place.x,
+                    y = place.y,
+                }
             end,
             saveRawPos = function(_, p)
                 if not (p and p.point) then
                     return
                 end
-                S().unlockPos = { point = p.point, relPoint = p.relPoint or p.point, x = p.x, y = p.y }
-                ns.ERB_GroupDirty()
+                Stl().unlockPos = { point = p.point, relPoint = p.relPoint or p.point, x = p.x, y = p.y }
+                mod.ERB_GroupDirty()
             end,
         })
     end
 
     -- Class Resource (pips/runes)
     do
-        local function S()
+        local function Stl()
             return ERB.db.profile.secondary
         end
         local function SS()
-            return _G._CURB_ResolveSecondaryCfg() or S()
+            return _G._CURB_ResolveSecondaryCfg() or Stl()
         end
-        local save, load, clear, apply = MakePosHelpers(S, function()
+        local save, load, clear, apply = MakePosHelpers(Stl, function()
             return secondaryFrame
         end, 0, -38)
         elements[#elements + 1] = MK({
@@ -454,46 +459,47 @@ local function RegisterUnlockElements()
             end,
             -- Stock styles: the frame outside the row (see the health bar).
             getMatchPad = function()
-                local style = ns.ERB_BarsStyle()
-                if style == "cui" then
-                    local pw, ph = ns.ERB_EuiBorderPad(SS())
+                local look = mod.ERB_BarsStyle()
+                if look == "cui" then
+                    local pw, ph = mod.ERB_EuiBorderPad(SS())
                     if pw then
                         return pw, ph
                     end
                 end
-                if style == "cui" then
+                if look == "cui" then
                     return nil
                 end
                 local s = SS()
                 local vertical = (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL"
-                if style == "blizzard" then
-                    return ns.ERB_BlizzMatchPad(vertical)
+                if look == "blizzard" then
+                    return mod.ERB_BlizzMatchPad(vertical)
                 end
-                local w, h = OrientedSize(s.pipWidth, s.pipHeight, vertical and "VERTICAL_UP" or "HORIZONTAL")
-                return ns.ERB_ClassicMatchPad(w, h, vertical, ns.ERB_BarFrameK(s))
+                local wid, hgt =
+                    OrientedSize(s.pipWidth, s.pipHeight, vertical and "VERTICAL_UP" or "HORIZONTAL")
+                return mod.ERB_ClassicMatchPad(wid, hgt, vertical, mod.ERB_BarFrameK(s))
             end,
-            setWidth = function(_, w)
+            setWidth = function(_, wid)
                 local s = SS()
                 if (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
-                    SetDim(s, "pipHeight", PP.Snap(w))
+                    SetDim(s, "pipHeight", Pix.Snap(wid))
                 else
-                    SetDim(s, "pipWidth", PP.Snap(w))
+                    SetDim(s, "pipWidth", Pix.Snap(wid))
                 end
             end,
-            setHeight = function(_, h)
+            setHeight = function(_, hgt)
                 local s = SS()
                 if (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
-                    SetDim(s, "pipWidth", PP.Snap(h))
+                    SetDim(s, "pipWidth", Pix.Snap(hgt))
                 else
-                    SetDim(s, "pipHeight", PP.Snap(h))
+                    SetDim(s, "pipHeight", Pix.Snap(hgt))
                 end
             end,
             isHidden = function()
-                local s = S()
+                local s = Stl()
                 return s.enabled == false or IsSpecDisabled(s)
             end,
             isAnchored = function()
-                local s = S()
+                local s = Stl()
                 return s.anchorTo and s.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
@@ -507,44 +513,44 @@ local function RegisterUnlockElements()
 
     -- Cast Bar
     do
-        local function S()
+        local function Stl()
             return ERB.db.profile.castBar
         end
-        local function castSave(key, point, relPoint, x, y)
-            if not point then
+        local function castSave(key, anchorPoint, relPoint, posX, posY)
+            if not anchorPoint then
                 return
             end
-            local cb = S()
-            cb.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            local cb = Stl()
+            cb.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and castBarFrame then
                 castBarFrame:ClearAllPoints()
-                castBarFrame:SetPoint(point, UIParent, relPoint or point, x, y)
+                castBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
             end
         end
         local function castLoad()
-            local pos = S().unlockPos
-            if not pos then
+            local place = Stl().unlockPos
+            if not place then
                 return nil
             end
-            local pt = pos.point
-            return { point = pt, relPoint = pos.relPoint or pt, x = pos.x, y = pos.y }
+            local pt = place.point
+            return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function castClear()
-            local cb = S()
+            local cb = Stl()
             cb.unlockPos = nil
             cb.anchorX = 0
             cb.anchorY = -54
         end
         local function castApply()
-            local pos = S().unlockPos
-            if not pos then
+            local place = Stl().unlockPos
+            if not place then
                 return
             end
             if castBarFrame then
-                local pt = pos.point
-                local sx, sy = SnapXY(pos.x, pos.y, castBarFrame, pos)
+                local pt = place.point
+                local sx, sy = SnapXY(place.x, place.y, castBarFrame, place)
                 castBarFrame:ClearAllPoints()
-                castBarFrame:SetPoint(pt, UIParent, pos.relPoint or pt, sx, sy)
+                castBarFrame:SetPoint(pt, UIParent, place.relPoint or pt, sx, sy)
             end
         end
         elements[#elements + 1] = MK({
@@ -557,8 +563,8 @@ local function RegisterUnlockElements()
                 return castBarFrame
             end,
             getSize = function()
-                local cb = S()
-                return cb.width + ns.ERB_CastIconW(cb), cb.height
+                local cb = Stl()
+                return cb.width + mod.ERB_CastIconW(cb), cb.height
             end,
             -- Stock styles: the frame outside the bar. Classic WoW UI: the
             -- vanilla frame, icon included (it wraps bar and icon together).
@@ -567,15 +573,15 @@ local function RegisterUnlockElements()
             -- label, not the frame (the mover wraps it through getBottomExtra).
             -- CludesUI look: the textured border round bar and icon.
             getMatchPad = function()
-                local cs = ns.ERB_CastStyle()
+                local cs = mod.ERB_CastStyle()
                 if cs == "classic" then
-                    return ns.ERB_ClassicMatchPad(0, 0, false, ns.ERB_ClassicFrameK(S()))
+                    return mod.ERB_ClassicMatchPad(0, 0, false, mod.ERB_ClassicFrameK(Stl()))
                 end
-                if cs == "blizzard" and ns.ERB_BlizzAtlas("frame") then
-                    return (ns.ERB_CastIconW(S()) > 0) and 2 or 4, 4
+                if cs == "blizzard" and mod.ERB_BlizzAtlas("frame") then
+                    return (mod.ERB_CastIconW(Stl()) > 0) and 2 or 4, 4
                 end
                 if cs == "cui" then
-                    return ns.ERB_EuiBorderPad(S())
+                    return mod.ERB_EuiBorderPad(Stl())
                 end
                 return nil
             end,
@@ -583,18 +589,22 @@ local function RegisterUnlockElements()
             -- hang 13px below the bar; the mover wraps them. Classic WoW UI
             -- has no text box.
             getBottomExtra = function()
-                local cb = S()
-                if ns.ERB_CastStyle() == "blizzard" and cb.showSpellText and ns.ERB_BlizzAtlas("textbox") then
+                local cb = Stl()
+                if
+                    mod.ERB_CastStyle() == "blizzard"
+                    and cb.showSpellText
+                    and mod.ERB_BlizzAtlas("textbox")
+                then
                     return 13
                 end
                 return 0
             end,
-            setWidth = function(_, w)
-                local cb = S()
-                SetDim(cb, "width", PP.Snap(math.max(w - ns.ERB_CastIconW(cb), 10)))
+            setWidth = function(_, wid)
+                local cb = Stl()
+                SetDim(cb, "width", Pix.Snap(math.max(wid - mod.ERB_CastIconW(cb), 10)))
             end,
-            setHeight = function(_, h)
-                SetDim(S(), "height", PP.Snap(h))
+            setHeight = function(_, hgt)
+                SetDim(Stl(), "height", Pix.Snap(hgt))
             end,
             savePos = castSave,
             loadPos = castLoad,
@@ -605,44 +615,44 @@ local function RegisterUnlockElements()
 
     -- GCD Bar
     do
-        local function S()
+        local function Stl()
             return ERB.db.profile.gcdBar
         end
-        local function gcdSave(key, point, relPoint, x, y)
-            if not point then
+        local function gcdSave(key, anchorPoint, relPoint, posX, posY)
+            if not anchorPoint then
                 return
             end
-            local g = S()
-            g.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            local g = Stl()
+            g.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and gcdBarFrame then
                 gcdBarFrame:ClearAllPoints()
-                gcdBarFrame:SetPoint(point, UIParent, relPoint or point, x, y)
+                gcdBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
             end
         end
         local function gcdLoad()
-            local pos = S().unlockPos
-            if not pos then
+            local place = Stl().unlockPos
+            if not place then
                 return nil
             end
-            local pt = pos.point
-            return { point = pt, relPoint = pos.relPoint or pt, x = pos.x, y = pos.y }
+            local pt = place.point
+            return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function gcdClear()
-            local g = S()
+            local g = Stl()
             g.unlockPos = nil
             g.anchorX = 0
             g.anchorY = -78
         end
         local function gcdApply()
-            local pos = S().unlockPos
-            if not pos then
+            local place = Stl().unlockPos
+            if not place then
                 return
             end
             if gcdBarFrame then
-                local pt = pos.point
-                local sx, sy = SnapXY(pos.x, pos.y, gcdBarFrame, pos)
+                local pt = place.point
+                local sx, sy = SnapXY(place.x, place.y, gcdBarFrame, place)
                 gcdBarFrame:ClearAllPoints()
-                gcdBarFrame:SetPoint(pt, UIParent, pos.relPoint or pt, sx, sy)
+                gcdBarFrame:SetPoint(pt, UIParent, place.relPoint or pt, sx, sy)
             end
         end
         elements[#elements + 1] = MK({
@@ -655,27 +665,27 @@ local function RegisterUnlockElements()
                 return gcdBarFrame
             end,
             getSize = function()
-                local g = S()
+                local g = Stl()
                 return OrientedSize(g.width, g.height, g.orientation or "HORIZONTAL")
             end,
             -- The textured border's reach outside the bar (every look draws it).
             getMatchPad = function()
-                return ns.ERB_EuiBorderPad(S())
+                return mod.ERB_EuiBorderPad(Stl())
             end,
-            setWidth = function(_, w)
-                local g = S()
+            setWidth = function(_, wid)
+                local g = Stl()
                 if IsVerticalOrientation(g.orientation) then
-                    SetDim(g, "height", PP.Snap(math.max(w, 4)))
+                    SetDim(g, "height", Pix.Snap(math.max(wid, 4)))
                 else
-                    SetDim(g, "width", PP.Snap(math.max(w, 10)))
+                    SetDim(g, "width", Pix.Snap(math.max(wid, 10)))
                 end
             end,
-            setHeight = function(_, h)
-                local g = S()
+            setHeight = function(_, hgt)
+                local g = Stl()
                 if IsVerticalOrientation(g.orientation) then
-                    SetDim(g, "width", PP.Snap(math.max(h, 10)))
+                    SetDim(g, "width", Pix.Snap(math.max(hgt, 10)))
                 else
-                    SetDim(g, "height", PP.Snap(math.max(h, 4)))
+                    SetDim(g, "height", Pix.Snap(math.max(hgt, 4)))
                 end
             end,
             savePos = gcdSave,
@@ -687,41 +697,41 @@ local function RegisterUnlockElements()
 
     -- Totem Bar
     do
-        local function S()
+        local function Stl()
             return ERB.db.profile.totemBar
         end
-        local function totemSave(key, point, relPoint, x, y)
-            if not point then
+        local function totemSave(key, anchorPoint, relPoint, posX, posY)
+            if not anchorPoint then
                 return
             end
-            local tb = S()
-            tb.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            local tb = Stl()
+            tb.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and totemBarFrame then
                 totemBarFrame:ClearAllPoints()
-                totemBarFrame:SetPoint(point, UIParent, relPoint or point, x, y)
+                totemBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
             end
         end
         local function totemLoad()
-            local pos = S().unlockPos
-            if not pos then
+            local place = Stl().unlockPos
+            if not place then
                 return nil
             end
-            local pt = pos.point
-            return { point = pt, relPoint = pos.relPoint or pt, x = pos.x, y = pos.y }
+            local pt = place.point
+            return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function totemClear()
-            S().unlockPos = nil
+            Stl().unlockPos = nil
         end
         local function totemApply()
-            local pos = S().unlockPos
-            if not pos then
+            local place = Stl().unlockPos
+            if not place then
                 return
             end
             if totemBarFrame then
-                local pt = pos.point
-                local sx, sy = SnapXY(pos.x, pos.y, totemBarFrame, pos)
+                local pt = place.point
+                local sx, sy = SnapXY(place.x, place.y, totemBarFrame, place)
                 totemBarFrame:ClearAllPoints()
-                totemBarFrame:SetPoint(pt, UIParent, pos.relPoint or pt, sx, sy)
+                totemBarFrame:SetPoint(pt, UIParent, place.relPoint or pt, sx, sy)
             end
         end
         elements[#elements + 1] = MK({
@@ -735,7 +745,7 @@ local function RegisterUnlockElements()
                 return totemBarFrame
             end,
             getSize = function()
-                local tb = S()
+                local tb = Stl()
                 local iconSz = tb.iconSize or 30
                 local spacing = tb.spacing or 2
                 -- Estimate extent based on max 5 totems; swap W/H when vertical
@@ -754,16 +764,16 @@ local function RegisterUnlockElements()
 
     -- Arcane Soul (Sunfury Arcane Mage): returns nil for every other class, so
     -- the mover only exists where the feature can.
-    if ns.AS_MakeUnlockElement then
-        elements[#elements + 1] = ns.AS_MakeUnlockElement(MK)
+    if mod.AS_MakeUnlockElement then
+        elements[#elements + 1] = mod.AS_MakeUnlockElement(MK)
     end
     -- Swing Timer (WoW Forever): returns nil on clients without C_SwingTimer.
-    if ns.ST_MakeUnlockElement then
-        elements[#elements + 1] = ns.ST_MakeUnlockElement(MK, Rebuild)
+    if mod.ST_MakeUnlockElement then
+        elements[#elements + 1] = mod.ST_MakeUnlockElement(MK, Rebuild)
     end
     -- Call Totem Bar (WoW Forever): nil elsewhere.
-    if ns.CT_MakeUnlockElement then
-        elements[#elements + 1] = ns.CT_MakeUnlockElement(MK)
+    if mod.CT_MakeUnlockElement then
+        elements[#elements + 1] = mod.CT_MakeUnlockElement(MK)
     end
 
     CludesUI:RegisterUnlockElements(elements, "CludesUIResourceBars")
@@ -799,9 +809,9 @@ local ERB_ANCHOR_FRAMES = {
 local ERB_VALID_ANCHORS = CludesUI.RESOURCE_BAR_ANCHOR_KEYS
 
 local function ResolveAnchorFrame(anchorKey)
-    local fn = ERB_ANCHOR_FRAMES[anchorKey]
-    if fn then
-        return fn()
+    local func = ERB_ANCHOR_FRAMES[anchorKey]
+    if func then
+        return func()
     end
     return nil
 end
@@ -818,11 +828,11 @@ end
 -- bounds (GetTop/GetCenter) are unavailable. Dragged bars store unlockPos as
 -- CENTER/CENTER; free bars use offsetY relative to the centered mainFrame --
 -- both CENTER-relative, so comparable.
-local function BarEffectiveY(cfg)
-    if cfg and cfg.unlockPos and cfg.unlockPos.point and cfg.unlockPos.y then
-        return cfg.unlockPos.y
+local function BarEffectiveY(conf)
+    if conf and conf.unlockPos and conf.unlockPos.point and conf.unlockPos.y then
+        return conf.unlockPos.y
     end
-    return (cfg and cfg.offsetY) or 0
+    return (conf and conf.offsetY) or 0
 end
 
 -- "Expand Power Bar if No Resource" direction: the power bar fills the area the
@@ -869,50 +879,50 @@ end
 -- on the anchor edge midpoint, false = corner there.
 -- SetFrameClickThrough recursively sets mouse passthrough on a frame and its
 -- children, storing original state on first call so it can be restored.
-local function SetFrameClickThrough(frame, clickThrough)
-    if not frame then
+local function SetFrameClickThrough(widget, clickThrough)
+    if not widget then
         return
     end
     if clickThrough then
         -- Store original state if not already stored
-        if frame._erbMouseWas == nil then
-            frame._erbMouseWas = frame:IsMouseEnabled()
+        if widget._erbMouseWas == nil then
+            widget._erbMouseWas = widget:IsMouseEnabled()
         end
-        frame:EnableMouse(false)
-        if frame.EnableMouseClicks then
-            frame:EnableMouseClicks(false)
+        widget:EnableMouse(false)
+        if widget.EnableMouseClicks then
+            widget:EnableMouseClicks(false)
         end
-        if frame.EnableMouseMotion then
-            frame:EnableMouseMotion(false)
+        if widget.EnableMouseMotion then
+            widget:EnableMouseMotion(false)
         end
     else
         -- Restore original state
-        if frame._erbMouseWas ~= nil then
-            frame:EnableMouse(frame._erbMouseWas)
-            frame._erbMouseWas = nil
+        if widget._erbMouseWas ~= nil then
+            widget:EnableMouse(widget._erbMouseWas)
+            widget._erbMouseWas = nil
         end
     end
-    for _, child in ipairs({ frame:GetChildren() }) do
-        SetFrameClickThrough(child, clickThrough)
+    for _, childFrame in ipairs({ widget:GetChildren() }) do
+        SetFrameClickThrough(childFrame, clickThrough)
     end
 end
 
-local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, growthDir, growCentered)
+local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, growthDir, growCentered)
     -- Always clear any previous mouse-tracking OnUpdate
-    if frame._erbMouseTrack then
-        frame:SetScript("OnUpdate", nil)
-        if frame._erbMouseShell then
-            frame._erbMouseShell:SetScript("OnUpdate", nil)
-            frame._erbMouseShell:Hide()
+    if widget._erbMouseTrack then
+        widget:SetScript("OnUpdate", nil)
+        if widget._erbMouseShell then
+            widget._erbMouseShell:SetScript("OnUpdate", nil)
+            widget._erbMouseShell:Hide()
         end
-        frame._erbMouseTrack = nil
+        widget._erbMouseTrack = nil
         local g = ERB.db and ERB.db.profile and ERB.db.profile.general
-        frame:SetFrameStrata(g and g.frameStrata or "MEDIUM")
-        frame:SetFrameLevel(5)
+        widget:SetFrameStrata(g and g.frameStrata or "MEDIUM")
+        widget:SetFrameLevel(5)
         -- Restore mouse on frame and all children
-        SetFrameClickThrough(frame, false)
-        if frame.EnableMouseMotion then
-            frame:EnableMouseMotion(true)
+        SetFrameClickThrough(widget, false)
+        if widget.EnableMouseMotion then
+            widget:EnableMouseMotion(true)
         end
     end
 
@@ -924,7 +934,7 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
     -- Snap offsets to physical pixel grid
     local PPa = CludesUI and CludesUI.PP
     if PPa and PPa.SnapForES then
-        local es = frame:GetEffectiveScale()
+        local es = widget:GetEffectiveScale()
         offsetX = PPa.SnapForES(offsetX, es)
         offsetY = PPa.SnapForES(offsetY, es)
     end
@@ -969,32 +979,32 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
             baseOX = 15 + offsetX
             baseOY = offsetY
         end
-        frame:SetFrameStrata("TOOLTIP")
-        frame:SetFrameLevel(9980)
-        frame:ClearAllPoints()
-        frame:SetPoint(pointFrom, UIParent, "BOTTOMLEFT", 0, 0)
-        frame._erbMouseTrack = true
+        widget:SetFrameStrata("TOOLTIP")
+        widget:SetFrameLevel(9980)
+        widget:ClearAllPoints()
+        widget:SetPoint(pointFrom, UIParent, "BOTTOMLEFT", 0, 0)
+        widget._erbMouseTrack = true
         -- Make frame and all children fully click-through while following cursor
-        SetFrameClickThrough(frame, true)
+        SetFrameClickThrough(widget, true)
         local lastMX, lastMY
         -- Cursor-follow runs per RENDER FRAME on a pool shell (bills ResourceBars via
         -- frame-birth attribution): a 60Hz anim ticker visibly steps against a gliding
         -- cursor since position has no engine easing. Kept cheap: raw-pixel early-out
         -- on unmoved frames, in-place SetPoint on moves.
-        if not frame._erbMouseShell then
-            frame._erbMouseShell = ns.TakeShell()
+        if not widget._erbMouseShell then
+            widget._erbMouseShell = mod.TakeShell()
         end
-        frame._erbMouseShell:Show()
-        frame._erbMouseShell:SetScript("OnUpdate", function()
+        widget._erbMouseShell:Show()
+        widget._erbMouseShell:SetScript("OnUpdate", function()
             local cx, cy = GetCursorPosition()
             if cx ~= lastMX or cy ~= lastMY then
                 local firstMove = lastMX == nil
                 lastMX, lastMY = cx, cy
                 local s = UIParent:GetEffectiveScale()
                 if firstMove then
-                    frame:ClearAllPoints()
+                    widget:ClearAllPoints()
                 end
-                frame:SetPoint(
+                widget:SetPoint(
                     pointFrom,
                     UIParent,
                     "BOTTOMLEFT",
@@ -1010,8 +1020,8 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
             return false
         end
         local framePoint, targetPoint = GetAnchorPoints()
-        frame:ClearAllPoints()
-        frame:SetPoint(framePoint, partyFrame, targetPoint, offsetX, offsetY)
+        widget:ClearAllPoints()
+        widget:SetPoint(framePoint, partyFrame, targetPoint, offsetX, offsetY)
         return true
     elseif anchorKey == "playerframe" then
         local playerFrame = CludesUI.FindPlayerUnitFrame()
@@ -1019,8 +1029,8 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
             return false
         end
         local framePoint, targetPoint = GetAnchorPoints()
-        frame:ClearAllPoints()
-        frame:SetPoint(framePoint, playerFrame, targetPoint, offsetX, offsetY)
+        widget:ClearAllPoints()
+        widget:SetPoint(framePoint, playerFrame, targetPoint, offsetX, offsetY)
         return true
     end
 
@@ -1029,11 +1039,11 @@ local function ApplyBarAnchor(frame, anchorKey, anchorPos, offsetX, offsetY, gro
         return false
     end
 
-    frame:ClearAllPoints()
+    widget:ClearAllPoints()
     local framePoint, targetPoint = GetAnchorPoints()
-    local ok
-    ok = pcall(frame.SetPoint, frame, framePoint, targetFrame, targetPoint, offsetX, offsetY)
-    return ok or false
+    local success
+    success = pcall(widget.SetPoint, widget, framePoint, targetFrame, targetPoint, offsetX, offsetY)
+    return success or false
 end
 
 local UNLOCK_TARGET_TO_ERB_ANCHOR = {
@@ -1044,42 +1054,42 @@ local UNLOCK_TARGET_TO_ERB_ANCHOR = {
     ERB_GCDBar = "erb_gcdbar",
 }
 
-local function GetAnchorOffsets(settings)
-    if not settings then
+local function GetAnchorOffsets(prefs)
+    if not prefs then
         return 0, 0
     end
-    local offsetX = settings.anchorOffsetX
+    local offsetX = prefs.anchorOffsetX
     if offsetX == nil then
-        offsetX = settings.anchorX
+        offsetX = prefs.anchorX
     end
-    local offsetY = settings.anchorOffsetY
+    local offsetY = prefs.anchorOffsetY
     if offsetY == nil then
-        offsetY = settings.anchorY
+        offsetY = prefs.anchorY
     end
     return offsetX or 0, offsetY or 0
 end
 
-local function ApplyFreeBarPosition(frame, settings, defaultX, defaultY, width, height)
-    if not frame then
+local function ApplyFreeBarPosition(widget, prefs, defaultX, defaultY, width, height)
+    if not widget then
         return
     end
 
-    local pos = settings and settings.unlockPos
-    frame:SetSize(width, height)
-    frame:ClearAllPoints()
+    local place = prefs and prefs.unlockPos
+    widget:SetSize(width, height)
+    widget:ClearAllPoints()
 
-    if pos and pos.point then
-        local sx, sy = SnapXY(pos.x, pos.y, frame, pos)
-        frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, sx, sy)
+    if place and place.point then
+        local sx, sy = SnapXY(place.x, place.y, widget, place)
+        widget:SetPoint(place.point, UIParent, place.relPoint or place.point, sx, sy)
         return
     end
 
-    frame:SetPoint(
+    widget:SetPoint(
         "CENTER",
         mainFrame,
         "CENTER",
-        settings.offsetX or defaultX or 0,
-        settings.offsetY or defaultY or 0
+        prefs.offsetX or defaultX or 0,
+        prefs.offsetY or defaultY or 0
     )
 end
 
@@ -1096,27 +1106,27 @@ local function ReapplyInternalBarAnchors()
     }
 
     for _ = 1, 2 do
-        for _, info in ipairs(anchoredBars) do
-            local frame = info.frame
-            local settings = info.settings
-            local anchorKey = settings and settings.anchorTo
+        for _, details in ipairs(anchoredBars) do
+            local widget = details.frame
+            local prefs = details.settings
+            local anchorKey = prefs and prefs.anchorTo
             if
-                frame
-                and settings
-                and frame:IsShown()
+                widget
+                and prefs
+                and widget:IsShown()
                 and anchorKey
                 and anchorKey ~= "none"
                 and ERB_ANCHOR_FRAMES[anchorKey]
             then
-                local offsetX, offsetY = GetAnchorOffsets(settings)
+                local offsetX, offsetY = GetAnchorOffsets(prefs)
                 ApplyBarAnchor(
-                    frame,
+                    widget,
                     anchorKey,
-                    settings.anchorPosition,
+                    prefs.anchorPosition,
                     offsetX,
                     offsetY,
-                    settings.growthDirection,
-                    settings.growCentered
+                    prefs.growthDirection,
+                    prefs.growCentered
                 )
             end
         end
@@ -1130,34 +1140,34 @@ RefreshAnchoredBarsForUnlockTarget = function(unlockKey)
     end
 
     local p = ERB.db.profile
-    local bars = {
+    local barList = {
         { frame = healthBar, settings = p.health },
         { frame = primaryBar, settings = p.primary },
         { frame = secondaryFrame, settings = p.secondary },
     }
 
     for _ = 1, 2 do
-        for _, info in ipairs(bars) do
-            local frame = info.frame
-            local settings = info.settings
-            if frame and settings and frame:IsShown() and settings.anchorTo == targetAnchor then
-                local offsetX, offsetY = GetAnchorOffsets(settings)
+        for _, details in ipairs(barList) do
+            local widget = details.frame
+            local prefs = details.settings
+            if widget and prefs and widget:IsShown() and prefs.anchorTo == targetAnchor then
+                local offsetX, offsetY = GetAnchorOffsets(prefs)
                 ApplyBarAnchor(
-                    frame,
-                    settings.anchorTo,
-                    settings.anchorPosition,
+                    widget,
+                    prefs.anchorTo,
+                    prefs.anchorPosition,
                     offsetX,
                     offsetY,
-                    settings.growthDirection,
-                    settings.growCentered
+                    prefs.growthDirection,
+                    prefs.growCentered
                 )
             end
         end
     end
 end
 
-I.ApplyBarAnchor, I.ApplyFreeBarPosition = ApplyBarAnchor, ApplyFreeBarPosition
-I.GetAnchorOffsets, I.NormalizeAnchorKey = GetAnchorOffsets, NormalizeAnchorKey
-I.ReapplyInternalBarAnchors = ReapplyInternalBarAnchors
-I.RegisterUnlockElements, I.ResolveExpandDirSign = RegisterUnlockElements, ResolveExpandDirSign
-I.broken = false
+Inner.ApplyBarAnchor, Inner.ApplyFreeBarPosition = ApplyBarAnchor, ApplyFreeBarPosition
+Inner.GetAnchorOffsets, Inner.NormalizeAnchorKey = GetAnchorOffsets, NormalizeAnchorKey
+Inner.ReapplyInternalBarAnchors = ReapplyInternalBarAnchors
+Inner.RegisterUnlockElements, Inner.ResolveExpandDirSign = RegisterUnlockElements, ResolveExpandDirSign
+Inner.broken = false

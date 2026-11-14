@@ -4,8 +4,8 @@ end
 
 local ADDON_NAME = "CludesUISimpleLootCouncil"
 local MODULE_DESC = "Loot council voting for your raid, synced over addon messages."
-local ns = CludesUI._ModuleNS[ADDON_NAME]
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME]
+if not mod then
     return
 end
 
@@ -16,50 +16,50 @@ initFrame:SetScript("OnEvent", function(self)
 
     local CreateFrame = CludesUI._Pool.CreateFrame
 
-    if ns.slcInert then
+    if mod.slcInert then
         local PAGE_INERT = "General"
         CludesUI:RegisterModule(ADDON_NAME, {
             title = "Simple Loot Council",
             description = MODULE_DESC,
             pages = { PAGE_INERT },
-            buildPage = function(pageName, parent, yOffset)
+            buildPage = function(pageName, hostFrame, yOffset)
                 if pageName ~= PAGE_INERT then
                     return
                 end
-                local W, PP, PAD = CludesUI.Widgets, CludesUI.PanelPP, CludesUI.CONTENT_PAD
-                local y, _, h = yOffset
+                local W, Pix, PAD = CludesUI.Widgets, CludesUI.PanelPP, CludesUI.CONTENT_PAD
+                local posY, _, hgt = yOffset
                 CludesUI:ClearContentHeader()
                 if not CludesUI.IsSearchPrebuild() then
-                    parent._showRowDivider = true
+                    hostFrame._showRowDivider = true
                 end
-                _, h = W:SectionHeader(parent, CludesUI.L("OLDER STANDALONE ADDON"), y)
-                y = y - h
-                local row = CreateFrame("Frame", nil, parent)
-                row._skipRowDivider = true
-                local label = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
-                label:SetAlpha(0.85)
-                label:SetJustifyH("LEFT")
-                label:SetWordWrap(true)
-                label:SetWidth(parent:GetWidth() - PAD * 2 - 40)
-                label:SetPoint("TOPLEFT", row, "TOPLEFT", 20, -10)
-                label:SetText(
+                _, hgt = W:SectionHeader(hostFrame, CludesUI.L("OLDER STANDALONE ADDON"), posY)
+                posY = posY - hgt
+                local rowFrame = CreateFrame("Frame", nil, hostFrame)
+                rowFrame._skipRowDivider = true
+                local labelText = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1)
+                labelText:SetAlpha(0.85)
+                labelText:SetJustifyH("LEFT")
+                labelText:SetWordWrap(true)
+                labelText:SetWidth(hostFrame:GetWidth() - PAD * 2 - 40)
+                labelText:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", 20, -10)
+                labelText:SetText(
                     CludesUI.L(
                         "An older SimpleLootCouncil addon is enabled, so the Simple Loot Council module is off until that addon is disabled or updated."
                     )
                 )
-                PP.Size(row, parent:GetWidth() - PAD * 2, 54)
-                PP.Point(row, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-                y = y - 54
-                _, h = W:DualRow(parent, y, {
+                Pix.Size(rowFrame, hostFrame:GetWidth() - PAD * 2, 54)
+                Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", PAD, posY)
+                posY = posY - 54
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "button",
                     text = CludesUI.L("Disable and Reload"),
                     noCapture = true,
                     onClick = function()
-                        CludesUI.RequestReload(nil, nil, ns.DisableStandalone)
+                        CludesUI.RequestReload(nil, nil, mod.DisableStandalone)
                     end,
                 }, CludesUI.BlankRowCfg())
-                y = y - h
-                return math.abs(y)
+                posY = posY - hgt
+                return math.abs(posY)
             end,
         })
         return
@@ -108,75 +108,75 @@ initFrame:SetScript("OnEvent", function(self)
 
     local councilEntries, councilDirty = nil, true
     local councilEvents = {}
-    local function CouncilEntries(spec)
+    local function CouncilEntries(specInfo)
         if councilDirty or not councilEntries then
-            councilEntries, councilDirty = spec.entries(), false
+            councilEntries, councilDirty = specInfo.entries(), false
         end
         return councilEntries
     end
 
     local subscribed
     local gameEvents = {}
-    local function Heard(event)
-        if councilEvents[event] then
+    local function Heard(evt)
+        if councilEvents[evt] then
             councilDirty = true
         end
         Invalidate()
     end
     local watcher = _G.CreateFrame("Frame")
-    watcher:SetScript("OnEvent", function(_, event)
-        Heard(event)
+    watcher:SetScript("OnEvent", function(_, evt)
+        Heard(evt)
     end)
     local function Subscribe(slc, Schema)
         if subscribed then
             return
         end
         subscribed = true
-        for _, event in ipairs(Schema.Row("council").refreshOn) do
-            councilEvents[event] = true
+        for _, evt in ipairs(Schema.Row("council").refreshOn) do
+            councilEvents[evt] = true
         end
-        for _, event in ipairs(Schema.Events()) do
-            if event:find("^%u[%u_]*$") then
-                gameEvents[#gameEvents + 1] = event
-            elseif event == "SessionChanged" then
-                slc.Callbacks:Register(event, function(_, kind)
-                    if kind == nil or Schema.SESSION_KINDS[kind] then
+        for _, evt in ipairs(Schema.Events()) do
+            if evt:find("^%u[%u_]*$") then
+                gameEvents[#gameEvents + 1] = evt
+            elseif evt == "SessionChanged" then
+                slc.Callbacks:Register(evt, function(_, kindOf)
+                    if kindOf == nil or Schema.SESSION_KINDS[kindOf] then
                         Invalidate()
                     end
                 end)
             else
-                slc.Callbacks:Register(event, function()
-                    Heard(event)
+                slc.Callbacks:Register(evt, function()
+                    Heard(evt)
                 end)
             end
         end
     end
-    local function Listen(on)
-        for _, event in ipairs(gameEvents) do
-            if on then
-                watcher:RegisterEvent(event)
+    local function Listen(enabled)
+        for _, evt in ipairs(gameEvents) do
+            if enabled then
+                watcher:RegisterEvent(evt)
             else
-                watcher:UnregisterEvent(event)
+                watcher:UnregisterEvent(evt)
             end
         end
     end
 
-    local function Cfg(row)
-        local cfg = {
-            type = row.type,
-            text = row.text,
-            tooltip = row.tooltip,
-            values = row.values,
-            order = row.order,
-            inputWidth = row.inputWidth,
-            min = row.min,
-            max = row.max,
-            step = row.step,
-            valueSnap = row.valueSnap,
+    local function Cfg(rowFrame)
+        local conf = {
+            type = rowFrame.type,
+            text = rowFrame.text,
+            tooltip = rowFrame.tooltip,
+            values = rowFrame.values,
+            order = rowFrame.order,
+            inputWidth = rowFrame.inputWidth,
+            min = rowFrame.min,
+            max = rowFrame.max,
+            step = rowFrame.step,
+            valueSnap = rowFrame.valueSnap,
 
             noCapture = true,
         }
-        local locked, disabled = row.locked, row.disabled
+        local locked, disabled = rowFrame.locked, rowFrame.disabled
         local function LockReason()
             if not locked then
                 return nil
@@ -184,65 +184,65 @@ initFrame:SetScript("OnEvent", function(self)
             local _, reason = locked()
             return reason
         end
-        cfg.getValue = function()
+        conf.getValue = function()
             if LockReason() then
                 return (locked())
             end
-            return row.getValue()
+            return rowFrame.getValue()
         end
-        cfg.setValue = function(value)
+        conf.setValue = function(value)
             if not LockReason() then
-                row.setValue(value)
+                rowFrame.setValue(value)
             end
             Invalidate()
         end
 
         if disabled then
-            cfg.disabled = function()
+            conf.disabled = function()
                 return disabled() ~= nil
             end
-            cfg.disabledTooltip = disabled
+            conf.disabledTooltip = disabled
 
-            cfg.rawTooltip = true
+            conf.rawTooltip = true
         end
-        return cfg
+        return conf
     end
 
     local CHECKS_W = 230
-    local function ChecksReason(row)
-        if row.disabled then
-            return row.disabled()
+    local function ChecksReason(rowFrame)
+        if rowFrame.disabled then
+            return rowFrame.disabled()
         end
         return nil
     end
-    local function ChecksLock(target, row)
-        if not row.disabled then
-            return target
+    local function ChecksLock(targetUnit, rowFrame)
+        if not rowFrame.disabled then
+            return targetUnit
         end
-        target.disabled = function()
-            return ChecksReason(row) ~= nil
+        targetUnit.disabled = function()
+            return ChecksReason(rowFrame) ~= nil
         end
-        target.disabledTooltip = function()
-            return ChecksReason(row)
+        targetUnit.disabledTooltip = function()
+            return ChecksReason(rowFrame)
         end
-        target.rawTooltip = true
-        return target
+        targetUnit.rawTooltip = true
+        return targetUnit
     end
 
-    local function RowLabel(row)
-        if row.id == "councilQueue" then
-            if row.cuiText then
-                return CludesUI.L(row.cuiText)
+    local function RowLabel(rowFrame)
+        if rowFrame.id == "councilQueue" then
+            if rowFrame.cuiText then
+                return CludesUI.L(rowFrame.cuiText)
             end
             return CludesUI.L("Council can manage queue")
         end
-        return row.text
+        return rowFrame.text
     end
-    local function ChecksCfg(row)
+    local function ChecksCfg(rowFrame)
         return ChecksLock({
             type = "dropdown",
-            text = RowLabel(row),
-            tooltip = row.tooltip,
+            text = RowLabel(rowFrame),
+            tooltip = rowFrame.tooltip,
             noCapture = true,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -250,7 +250,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return "__placeholder"
             end,
             setValue = function() end,
-        }, row)
+        }, rowFrame)
     end
 
     local function MultiselectTips()
@@ -261,68 +261,68 @@ initFrame:SetScript("OnEvent", function(self)
             },
         }
     end
-    local function ChecksItems(row)
-        if row.type ~= "multiselect" then
-            return row.items
+    local function ChecksItems(rowFrame)
+        if rowFrame.type ~= "multiselect" then
+            return rowFrame.items
         end
-        local tips = MultiselectTips()[row.id]
-        local items = {}
-        for i, item in ipairs(row.items) do
-            local tip = item.tooltip or (tips and tips[item.key])
-            items[i] = { key = item.key, label = item.text, tooltip = tip }
+        local tips = MultiselectTips()[rowFrame.id]
+        local itemList = {}
+        for idx, itemInfo in ipairs(rowFrame.items) do
+            local tipText = itemInfo.tooltip or (tips and tips[itemInfo.key])
+            itemList[idx] = { key = itemInfo.key, label = itemInfo.text, tooltip = tipText }
         end
-        return items
+        return itemList
     end
 
     local CHECKS_PAD = 80
     local measure
-    local function ChecksWidth(items)
+    local function ChecksWidth(itemList)
         if not measure then
             measure = UIParent:CreateFontString(nil, "OVERLAY")
             measure:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
             measure:Hide()
         end
         local widest = 0
-        for _, item in ipairs(items) do
-            measure:SetText(item.label or "")
+        for _, itemInfo in ipairs(itemList) do
+            measure:SetText(itemInfo.label or "")
             widest = math.max(widest, math.ceil(measure:GetStringWidth() or 0))
         end
         return widest + CHECKS_PAD
     end
-    local function ChecksDecorator(row)
-        local items = ChecksItems(row)
+    local function ChecksDecorator(rowFrame)
+        local itemList = ChecksItems(rowFrame)
         local function Get(key)
-            if row.lockedValue and row.locked and select(2, row.locked()) then
-                return row.lockedValue(key)
+            if rowFrame.lockedValue and rowFrame.locked and select(2, rowFrame.locked()) then
+                return rowFrame.lockedValue(key)
             end
-            return row.getValue(key)
+            return rowFrame.getValue(key)
         end
-        return function(region)
-            local width = region._control and region._control:GetWidth() or 0
+        return function(regionFrame)
+            local width = regionFrame._control and regionFrame._control:GetWidth() or 0
             if width < 50 then
                 width = CHECKS_W
             end
-            if row.id == "councilQueue" then
-                width = ChecksWidth(items)
+            if rowFrame.id == "councilQueue" then
+                width = ChecksWidth(itemList)
             else
-                width = math.max(width, ChecksWidth(items))
+                width = math.max(width, ChecksWidth(itemList))
             end
-            if region._control then
-                region._control:Hide()
+            if regionFrame._control then
+                regionFrame._control:Hide()
             end
-            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
-                region,
+            local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
+                regionFrame,
                 width,
-                region:GetFrameLevel() + 2,
-                items,
+                regionFrame:GetFrameLevel() + 2,
+                itemList,
                 Get,
                 function(key, value)
                     if
-                        not ChecksReason(row)
-                        and not (row.locked and select(2, row.locked()))
-                        and (value or not row.exclusive)
+                        not ChecksReason(rowFrame)
+                        and not (rowFrame.locked and select(2, rowFrame.locked()))
+                        and (value or not rowFrame.exclusive)
                     then
-                        row.setValue(key, value)
+                        rowFrame.setValue(key, value)
                     end
                     Invalidate()
                 end,
@@ -331,20 +331,20 @@ initFrame:SetScript("OnEvent", function(self)
                 nil,
                 nil,
                 nil,
-                ChecksLock({ emptyLabel = "None", noAllLabel = row.exclusive }, row)
+                ChecksLock({ emptyLabel = "None", noAllLabel = rowFrame.exclusive }, rowFrame)
             )
-            CludesUI.PanelPP.Point(dd, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = dd
-            region._lastInline = nil
+            CludesUI.PanelPP.Point(dropdown, "RIGHT", regionFrame, "RIGHT", -20, 0)
+            regionFrame._control = dropdown
+            regionFrame._lastInline = nil
             CludesUI.RegisterWidgetRefresh(refresh)
         end
     end
 
-    local function StyledTag(parent, width, onClick, make)
-        local btn = (make or CreateFrame)("Button", nil, parent)
+    local function StyledTag(hostFrame, width, onClick, make)
+        local btn = (make or CreateFrame)("Button", nil, hostFrame)
         CludesUI.PanelPP.Size(btn, width, 24)
-        btn:SetFrameLevel(parent:GetFrameLevel() + 5)
-        local _, border, label = CludesUI.MakeStyledButton(btn, "", 11, CludesUI.WB_COLOURS)
+        btn:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
+        local _, border, labelText = CludesUI.MakeStyledButton(btn, "", 11, CludesUI.WB_COLOURS)
 
         local function Edge()
             local c = btn.tone
@@ -357,9 +357,9 @@ initFrame:SetScript("OnEvent", function(self)
             Edge()
         end
         btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-        btn:SetScript("OnClick", function(_, button)
+        btn:SetScript("OnClick", function(_, btnFrame)
             CludesUI.HideWidgetTooltip()
-            onClick(button)
+            onClick(btnFrame)
         end)
         local hoverOn, hoverOff = btn:GetScript("OnEnter"), btn:GetScript("OnLeave")
         btn:SetScript("OnEnter", function(b)
@@ -374,15 +374,15 @@ initFrame:SetScript("OnEvent", function(self)
             Edge()
             CludesUI.HideWidgetTooltip()
         end)
-        btn.Label = label
+        btn.Label = labelText
         return btn
     end
 
     local SUG_ROW_H = 26
     local sugPopup
     local function SugPaint(p)
-        for i, row in ipairs(p.rows) do
-            row.hl:SetColorTexture(1, 1, 1, i == p.selected and 0.08 or 0)
+        for idx, rowFrame in ipairs(p.rows) do
+            rowFrame.hl:SetColorTexture(1, 1, 1, idx == p.selected and 0.08 or 0)
         end
     end
     local function SugPopup()
@@ -395,16 +395,16 @@ initFrame:SetScript("OnEvent", function(self)
         p:SetClampedToScreen(true)
         p:EnableMouse(true)
         p:Hide()
-        local bg = p:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.098, 0.090, 0.082, 0.97)
-        p._brd = CludesUI.MakeRoundedBorder(p, 1, 1, 1, 0.12, bg)
+        local backdrop = p:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.098, 0.090, 0.082, 0.97)
+        p._brd = CludesUI.MakeRoundedBorder(p, 1, 1, 1, 0.12, backdrop)
         p.rows, p.selected = {}, 0
 
         local away = _G.CreateFrame("Frame")
         away:SetScript("OnEvent", function()
-            local owner = p.owner
-            if not p:IsMouseOver() and not (owner and owner:IsMouseOver()) then
+            local ownerFrame = p.owner
+            if not p:IsMouseOver() and not (ownerFrame and ownerFrame:IsMouseOver()) then
                 p:Hide()
             end
         end)
@@ -417,34 +417,34 @@ initFrame:SetScript("OnEvent", function(self)
         sugPopup = p
         return p
     end
-    local function SugRow(p, i)
-        local row = p.rows[i]
-        if row then
-            return row
+    local function SugRow(p, idx)
+        local rowFrame = p.rows[idx]
+        if rowFrame then
+            return rowFrame
         end
-        row = _G.CreateFrame("Button", nil, p)
-        row:SetHeight(SUG_ROW_H)
-        row:SetPoint("TOPLEFT", p, "TOPLEFT", 4, -4 - (i - 1) * SUG_ROW_H)
-        row:SetPoint("TOPRIGHT", p, "TOPRIGHT", -4, -4 - (i - 1) * SUG_ROW_H)
-        row.hl = row:CreateTexture(nil, "ARTWORK")
-        row.hl:SetAllPoints()
-        row.hl:SetColorTexture(1, 1, 1, 0)
-        row.label = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
-        row.label:SetPoint("LEFT", row, "LEFT", 8, 0)
-        row.label:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-        row.label:SetJustifyH("LEFT")
-        row.label:SetWordWrap(false)
-        row:SetScript("OnEnter", function()
-            p.selected = i
+        rowFrame = _G.CreateFrame("Button", nil, p)
+        rowFrame:SetHeight(SUG_ROW_H)
+        rowFrame:SetPoint("TOPLEFT", p, "TOPLEFT", 4, -4 - (idx - 1) * SUG_ROW_H)
+        rowFrame:SetPoint("TOPRIGHT", p, "TOPRIGHT", -4, -4 - (idx - 1) * SUG_ROW_H)
+        rowFrame.hl = rowFrame:CreateTexture(nil, "ARTWORK")
+        rowFrame.hl:SetAllPoints()
+        rowFrame.hl:SetColorTexture(1, 1, 1, 0)
+        rowFrame.label = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1)
+        rowFrame.label:SetPoint("LEFT", rowFrame, "LEFT", 8, 0)
+        rowFrame.label:SetPoint("RIGHT", rowFrame, "RIGHT", -8, 0)
+        rowFrame.label:SetJustifyH("LEFT")
+        rowFrame.label:SetWordWrap(false)
+        rowFrame:SetScript("OnEnter", function()
+            p.selected = idx
             SugPaint(p)
         end)
-        row:SetScript("OnClick", function()
-            if p.onPick and row.entry then
-                p.onPick(row.entry)
+        rowFrame:SetScript("OnClick", function()
+            if p.onPick and rowFrame.entry then
+                p.onPick(rowFrame.entry)
             end
         end)
-        p.rows[i] = row
-        return row
+        p.rows[idx] = rowFrame
+        return rowFrame
     end
     local function SugOpen()
         return sugPopup ~= nil and sugPopup:IsShown()
@@ -458,9 +458,9 @@ initFrame:SetScript("OnEvent", function(self)
 
     local addHolder, addBox, addButton
     local addHandlers = {}
-    local function AddBox(row, width, buttonText)
+    local function AddBox(rowFrame, width, buttonText)
         if not addHolder then
-            addHolder = _G.CreateFrame("Frame", nil, row)
+            addHolder = _G.CreateFrame("Frame", nil, rowFrame)
             addBox = _G.CreateFrame("EditBox", nil, addHolder)
             addBox:SetHeight(28)
             addBox:SetAutoFocus(false)
@@ -469,9 +469,9 @@ initFrame:SetScript("OnEvent", function(self)
             addBox:SetTextColor(1, 1, 1, 0.9)
             addBox:SetJustifyH("LEFT")
             addBox:SetTextInsets(10, 10, 0, 0)
-            local bg = addBox:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0, 0, 0, 0.5)
+            local backdrop = addBox:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            backdrop:SetColorTexture(0, 0, 0, 0.5)
             CludesUI.MakeBorder(addBox, 1, 1, 1, 0.2)
             addButton = _G.CreateFrame("Button", nil, addHolder)
             CludesUI.PanelPP.Size(addButton, 90, 28)
@@ -505,10 +505,10 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end)
         end
-        addHolder:SetParent(row)
+        addHolder:SetParent(rowFrame)
         addHolder:ClearAllPoints()
-        addHolder:SetAllPoints(row)
-        addHolder:SetFrameLevel(row:GetFrameLevel() + 1)
+        addHolder:SetAllPoints(rowFrame)
+        addHolder:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
         addButton:SetFrameLevel(addHolder:GetFrameLevel() + 2)
         addBox.slcSuggest = function()
             return sugPopup
@@ -528,35 +528,38 @@ initFrame:SetScript("OnEvent", function(self)
     local LOGO_RULE_X = 51
     local MODULE_TITLE = "Simple Loot Council"
 
-    local function FindTitle(frame, depth, translated)
-        for _, region in ipairs({ frame:GetRegions() }) do
-            local text = region.GetText and region:GetText()
-            if (text == MODULE_TITLE or text == translated) and (select(2, region:GetFont()) or 0) >= 30 then
-                return region
+    local function FindTitle(widget, depth, translated)
+        for _, regionFrame in ipairs({ widget:GetRegions() }) do
+            local textValue = regionFrame.GetText and regionFrame:GetText()
+            if
+                (textValue == MODULE_TITLE or textValue == translated)
+                and (select(2, regionFrame:GetFont()) or 0) >= 30
+            then
+                return regionFrame
             end
         end
         if depth == 0 then
             return nil
         end
-        for _, child in ipairs({ frame:GetChildren() }) do
-            local found = FindTitle(child, depth - 1, translated)
+        for _, childFrame in ipairs({ widget:GetChildren() }) do
+            local found = FindTitle(childFrame, depth - 1, translated)
             if found then
                 return found
             end
         end
     end
 
-    local function FindText(frame, depth, text)
-        for _, region in ipairs({ frame:GetRegions() }) do
-            if region.GetText and region:GetText() == text then
-                return region
+    local function FindText(widget, depth, textValue)
+        for _, regionFrame in ipairs({ widget:GetRegions() }) do
+            if regionFrame.GetText and regionFrame:GetText() == textValue then
+                return regionFrame
             end
         end
         if depth == 0 then
             return nil
         end
-        for _, child in ipairs({ frame:GetChildren() }) do
-            local found = FindText(child, depth - 1, text)
+        for _, childFrame in ipairs({ widget:GetChildren() }) do
+            local found = FindText(childFrame, depth - 1, textValue)
             if found then
                 return found
             end
@@ -581,10 +584,10 @@ initFrame:SetScript("OnEvent", function(self)
 
     local linkMeasure
     local function WidenLinkPopup(url)
-        local host = CludesUI.OverlayParent and CludesUI.OverlayParent() or UIParent
-        for _, popup in ipairs({ host:GetChildren() }) do
-            local box = popup._eb
-            if box and popup:IsShown() and box.GetText and box:GetText() == url then
+        local hostRegion = CludesUI.OverlayParent and CludesUI.OverlayParent() or UIParent
+        for _, dialog in ipairs({ hostRegion:GetChildren() }) do
+            local boxFrame = dialog._eb
+            if boxFrame and dialog:IsShown() and boxFrame.GetText and boxFrame:GetText() == url then
                 if not linkMeasure then
                     linkMeasure = UIParent:CreateFontString(nil, "OVERLAY")
                     linkMeasure:SetFontObject(GameFontHighlight)
@@ -594,14 +597,14 @@ initFrame:SetScript("OnEvent", function(self)
                 if type(width) ~= "number" or (issecretvalue and issecretvalue(width)) then
                     return
                 end
-                local boxW, popW = box:GetWidth(), popup:GetWidth()
-                box:SetWidth(math.max(boxW, math.ceil(width) + 24))
-                popup:SetWidth(math.max(popW, math.ceil(width) + 64))
-                if not popup._slcWidened then
-                    popup._slcWidened = true
-                    popup:HookScript("OnHide", function()
-                        box:SetWidth(boxW)
-                        popup:SetWidth(popW)
+                local boxW, popW = boxFrame:GetWidth(), dialog:GetWidth()
+                boxFrame:SetWidth(math.max(boxW, math.ceil(width) + 24))
+                dialog:SetWidth(math.max(popW, math.ceil(width) + 64))
+                if not dialog._slcWidened then
+                    dialog._slcWidened = true
+                    dialog:HookScript("OnHide", function()
+                        boxFrame:SetWidth(boxW)
+                        dialog:SetWidth(popW)
                     end)
                 end
                 return
@@ -640,12 +643,12 @@ initFrame:SetScript("OnEvent", function(self)
             bannerTexture = bannerTitle:GetParent():CreateTexture(nil, "ARTWORK")
             bannerTexture:SetPoint("TOPLEFT", bannerTitle, "TOPLEFT", 0, 0)
 
-            local slot = {
+            local slotIndex = {
                 ApplyLogo = function()
                     ApplyBanner(SLC())
                 end,
             }
-            slc.Style.logoWindows[#slc.Style.logoWindows + 1] = slot
+            slc.Style.logoWindows[#slc.Style.logoWindows + 1] = slotIndex
         end
 
         if not bannerVersion then
@@ -660,9 +663,9 @@ initFrame:SetScript("OnEvent", function(self)
             bannerDesc = FindText(main, 6, CludesUI.L(MODULE_DESC))
             bannerDescText = bannerDesc and bannerDesc:GetText()
             if bannerDesc and bannerDesc.GetPoint then
-                local point, rel, relPoint, x, y = bannerDesc:GetPoint(1)
-                if point then
-                    bannerDescAnchor = { point, rel, relPoint, x or 0, y or 0 }
+                local anchorPoint, rel, relPoint, posX, posY = bannerDesc:GetPoint(1)
+                if anchorPoint then
+                    bannerDescAnchor = { anchorPoint, rel, relPoint, posX or 0, posY or 0 }
                 end
             end
         end
@@ -705,9 +708,9 @@ initFrame:SetScript("OnEvent", function(self)
         for _, section in ipairs(Schema.Sections()) do
             byId[section.id] = section
         end
-        for _, id in ipairs(PAGE_SECTIONS[pageName] or {}) do
-            if byId[id] then
-                list[#list + 1] = byId[id]
+        for _, ident in ipairs(PAGE_SECTIONS[pageName] or {}) do
+            if byId[ident] then
+                list[#list + 1] = byId[ident]
             end
         end
         return list
@@ -744,11 +747,11 @@ initFrame:SetScript("OnEvent", function(self)
         entry.cover:SetShown(not searching and entry.locked() and true or false)
     end
     hooksecurefunc(CludesUI, "ApplyInlineSearch", function(_, query)
-        local now = query ~= nil and query ~= ""
-        if now == searching then
+        local nowTime = query ~= nil and query ~= ""
+        if nowTime == searching then
             return
         end
-        searching = now
+        searching = nowTime
         for _, covers in pairs(lockCovers) do
             for _, entry in ipairs(covers) do
                 PaintCover(entry)
@@ -756,44 +759,44 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end)
 
-    local function BuildSettingsPage(pageName, parent, yOffset)
+    local function BuildSettingsPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local PP = CludesUI.PanelPP
+        local Pix = CludesUI.PanelPP
         local PAD = CludesUI.CONTENT_PAD
 
         local prebuild = CludesUI.IsSearchPrebuild()
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
         local slc = SLC()
         if not slc then
-            return math.abs(y)
+            return math.abs(posY)
         end
 
         if not prebuild then
-            parent._showRowDivider = true
+            hostFrame._showRowDivider = true
         end
         councilDirty = true
-        local Schema, S = slc.UI.OptionsSchema, slc.Style
+        local Schema, Stl = slc.UI.OptionsSchema, slc.Style
 
         local T, Format = slc.Locale.Text, slc.Locale.Format
         local refreshes = {}
-        local function OnRefresh(fn)
-            refreshes[#refreshes + 1] = fn
+        local function OnRefresh(func)
+            refreshes[#refreshes + 1] = func
         end
 
         local covers = {}
         if not prebuild then
             lockCovers[pageName] = covers
         end
-        local function LockCover(top, bottom, text, locked, onLock)
-            local cover = CreateFrame("Frame", nil, parent)
+        local function LockCover(topY, bottom, textValue, locked, onLock)
+            local cover = CreateFrame("Frame", nil, hostFrame)
             cover._searchIgnore = true
-            PP.Size(cover, parent:GetWidth() - PAD * 2, top - bottom)
-            PP.Point(cover, "TOPLEFT", parent, "TOPLEFT", PAD, top)
-            cover:SetFrameLevel(parent:GetFrameLevel() + 30)
+            Pix.Size(cover, hostFrame:GetWidth() - PAD * 2, topY - bottom)
+            Pix.Point(cover, "TOPLEFT", hostFrame, "TOPLEFT", PAD, topY)
+            cover:SetFrameLevel(hostFrame:GetFrameLevel() + 30)
             cover:EnableMouse(true)
             cover:EnableMouseWheel(true)
             cover:SetScript("OnMouseWheel", function(_, delta)
@@ -801,9 +804,9 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 local page = CludesUI._scrollFrame
-                local fn = page and page:GetScript("OnMouseWheel")
-                if fn then
-                    fn(page, delta)
+                local func = page and page:GetScript("OnMouseWheel")
+                if func then
+                    func(page, delta)
                 end
             end)
             local shade = cover:CreateTexture(nil, "BACKGROUND")
@@ -811,7 +814,7 @@ initFrame:SetScript("OnEvent", function(self)
             shade:SetColorTexture(0.05, 0.05, 0.05, 0.8)
             local lockLabel = CludesUI.MakeFont(cover, 14, nil, 1, 1, 1)
             lockLabel:SetPoint("CENTER", cover, "CENTER", 0, 0)
-            lockLabel:SetText(text)
+            lockLabel:SetText(textValue)
             local entry = { cover = cover, locked = locked }
             covers[#covers + 1] = entry
             OnRefresh(function()
@@ -824,101 +827,101 @@ initFrame:SetScript("OnEvent", function(self)
 
         local colX, colW = 0, nil
         local function Width()
-            return colW or (parent:GetWidth() - PAD * 2)
+            return colW or (hostFrame:GetWidth() - PAD * 2)
         end
 
         local function Row(height)
-            local row = CreateFrame("Frame", nil, parent)
-            PP.Size(row, Width(), height)
-            PP.Point(row, "TOPLEFT", parent, "TOPLEFT", PAD + colX, y)
-            row._skipRowDivider = true
-            CludesUI.RowBg(row, parent)
-            y = y - height
-            return row
+            local rowFrame = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(rowFrame, Width(), height)
+            Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, posY)
+            rowFrame._skipRowDivider = true
+            CludesUI.RowBg(rowFrame, hostFrame)
+            posY = posY - height
+            return rowFrame
         end
 
-        local function Note(text, alpha)
-            local row = CreateFrame("Frame", nil, parent)
-            row._skipRowDivider = true
-            local label = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
-            label:SetAlpha(alpha or 0.45)
-            label:SetJustifyH("LEFT")
-            label:SetWordWrap(true)
-            label:SetWidth(Width() - 40)
-            label:SetPoint("TOPLEFT", row, "TOPLEFT", 20, -10)
-            label:SetText(text)
-            local textH = label:GetStringHeight()
+        local function Note(textValue, alpha)
+            local rowFrame = CreateFrame("Frame", nil, hostFrame)
+            rowFrame._skipRowDivider = true
+            local labelText = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1)
+            labelText:SetAlpha(alpha or 0.45)
+            labelText:SetJustifyH("LEFT")
+            labelText:SetWordWrap(true)
+            labelText:SetWidth(Width() - 40)
+            labelText:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", 20, -10)
+            labelText:SetText(textValue)
+            local textH = labelText:GetStringHeight()
             if type(textH) ~= "number" or (issecretvalue and issecretvalue(textH)) then
                 textH = 14
             end
             local height = math.max(34, math.ceil(textH) + 20)
-            PP.Size(row, Width(), height)
-            PP.Point(row, "TOPLEFT", parent, "TOPLEFT", PAD + colX, y)
-            y = y - height
-            return label
+            Pix.Size(rowFrame, Width(), height)
+            Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, posY)
+            posY = posY - height
+            return labelText
         end
 
-        local function ClassText(classFile, text, fallback)
-            local r, g, b = S.ClassColor(classFile)
-            return S.Colorize(r and { r, g, b } or fallback or S.color.text, text)
+        local function ClassText(classFile, textValue, fallback)
+            local r, g, b = Stl.ClassColor(classFile)
+            return Stl.Colorize(r and { r, g, b } or fallback or Stl.color.text, textValue)
         end
         local function PlayerText(fullName)
             local record = slc.Player:Get(fullName)
             return ClassText(record and record.classFile, Ambiguate(fullName, "short"))
         end
         local function RankText(rankName)
-            return S.Colorize(S.color.accentPale, rankName)
+            return Stl.Colorize(Stl.color.accentPale, rankName)
         end
-        local faint = S.ColorStart(S.Flatten(S.color.textFaint))
+        local faint = Stl.ColorStart(Stl.Flatten(Stl.color.textFaint))
 
         local pending, lastRightId
-        local function Place(cfg, decorate, id, dependsOn)
+        local function Place(conf, decorate, ident, dependsOn)
             if not pending then
-                pending = { cfg = cfg, decorate = decorate, id = id, dependsOn = dependsOn }
+                pending = { cfg = conf, decorate = decorate, id = ident, dependsOn = dependsOn }
                 return
             end
-            local frame
-            frame, h = W:DualRow(parent, y, pending.cfg, cfg)
-            y = y - h
+            local widget
+            widget, hgt = W:DualRow(hostFrame, posY, pending.cfg, conf)
+            posY = posY - hgt
             if not prebuild then
                 if pending.decorate then
-                    pending.decorate(frame._leftRegion)
+                    pending.decorate(widget._leftRegion)
                 end
                 if decorate then
-                    decorate(frame._rightRegion)
+                    decorate(widget._rightRegion)
                 end
             end
-            pending, lastRightId = nil, id
+            pending, lastRightId = nil, ident
         end
 
         local function Flush()
             if not pending then
                 return
             end
-            local frame
+            local widget
             if pending.dependsOn and pending.dependsOn == lastRightId then
-                frame, h = W:DualRow(parent, y, CludesUI.BlankRowCfg(), pending.cfg)
-                y = y - h
+                widget, hgt = W:DualRow(hostFrame, posY, CludesUI.BlankRowCfg(), pending.cfg)
+                posY = posY - hgt
                 if not prebuild and pending.decorate then
-                    pending.decorate(frame._rightRegion)
+                    pending.decorate(widget._rightRegion)
                 end
             else
-                frame, h = W:DualRow(parent, y, pending.cfg, CludesUI.BlankRowCfg())
-                y = y - h
+                widget, hgt = W:DualRow(hostFrame, posY, pending.cfg, CludesUI.BlankRowCfg())
+                posY = posY - hgt
                 if not prebuild and pending.decorate then
-                    pending.decorate(frame._leftRegion)
+                    pending.decorate(widget._leftRegion)
                 end
             end
             pending, lastRightId = nil, nil
         end
 
-        local function Decorator(row)
-            if not row.danger then
+        local function Decorator(rowFrame)
+            if not rowFrame.danger then
                 return nil
             end
-            return function(region)
-                if region._label then
-                    region._label:SetTextColor(S.Unpack(S.color.bad))
+            return function(regionFrame)
+                if regionFrame._label then
+                    regionFrame._label:SetTextColor(Stl.Unpack(Stl.color.bad))
                 end
             end
         end
@@ -938,26 +941,26 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         if withTools then
-            _, h = W:SectionHeader(parent, T["Tools"]:upper(), y)
-            y = y - h
-            for i = 1, #actions, 2 do
-                local a, b = actions[i], actions[i + 1]
-                _, h = W:WideDualButton(parent, a.text, b and b.text, y, Open(a), b and Open(b))
-                y = y - h
+            _, hgt = W:SectionHeader(hostFrame, T["Tools"]:upper(), posY)
+            posY = posY - hgt
+            for idx = 1, #actions, 2 do
+                local a, b = actions[idx], actions[idx + 1]
+                _, hgt = W:WideDualButton(hostFrame, a.text, b and b.text, posY, Open(a), b and Open(b))
+                posY = posY - hgt
             end
         end
 
         local councilCols
         if not withStatus then
         elseif prebuild then
-            _, h = W:WideDualButton(parent, main.openText, main.historyText, y)
-            y = y - h
-            y = y - 32
+            _, hgt = W:WideDualButton(hostFrame, main.openText, main.historyText, posY)
+            posY = posY - hgt
+            posY = posY - 32
         else
-            _, h = W:Spacer(parent, y, 10)
-            y = y - h
+            _, hgt = W:Spacer(hostFrame, posY, 10)
+            posY = posY - hgt
             local cards
-            y, cards = CludesUI.BuildActionCardRow(parent, y, {
+            posY, cards = CludesUI.BuildActionCardRow(hostFrame, posY, {
                 {
                     icon = ICON_OPEN,
                     title = main.openText,
@@ -987,74 +990,74 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end)
 
-            _, h = W:Spacer(parent, y, 14)
-            y = y - h
+            _, hgt = W:Spacer(hostFrame, posY, 14)
+            posY = posY - hgt
 
-            local full = parent:GetWidth() - PAD * 2
+            local full = hostFrame:GetWidth() - PAD * 2
             councilCols = CouncilColumns(full)
             local lines = CouncilLines(#CouncilMembers(inForce, PlayerText, RankText), councilCols)
             local capacity = lines * councilCols
             local height = LIST_Y + lines * COUNCIL_CELL_H + COUNCIL_BOTTOM
 
-            local block = CreateFrame("Frame", nil, parent)
-            PP.Size(block, full, height)
-            PP.Point(block, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-            block._skipRowDivider = true
-            CludesUI.RowBg(block, parent)
-            y = y - height
+            local blockData = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(blockData, full, height)
+            Pix.Point(blockData, "TOPLEFT", hostFrame, "TOPLEFT", PAD, posY)
+            blockData._skipRowDivider = true
+            CludesUI.RowBg(blockData, hostFrame)
+            posY = posY - height
 
-            local link = CreateFrame("Button", nil, parent)
-            link._isSpacer = true
-            link:SetSize(parent:GetWidth(), 20)
-            link:SetPoint("TOP", parent, "TOP", 0, y - 15)
-            local text = link:CreateFontString(nil, "OVERLAY")
-            text:SetFont(CludesUI.GetFontPath() or "Fonts\\FRIZQT__.TTF", 15, "")
-            text:SetTextColor(1, 1, 1, 0.75)
-            text:SetPoint("TOP", link, "TOP", 0, 0)
-            text:SetText(CludesUI.L("Friends not running CUI? Download the standalone version here!"))
+            local itemLink = CreateFrame("Button", nil, hostFrame)
+            itemLink._isSpacer = true
+            itemLink:SetSize(hostFrame:GetWidth(), 20)
+            itemLink:SetPoint("TOP", hostFrame, "TOP", 0, posY - 15)
+            local textValue = itemLink:CreateFontString(nil, "OVERLAY")
+            textValue:SetFont(CludesUI.GetFontPath() or "Fonts\\FRIZQT__.TTF", 15, "")
+            textValue:SetTextColor(1, 1, 1, 0.75)
+            textValue:SetPoint("TOP", itemLink, "TOP", 0, 0)
+            textValue:SetText(CludesUI.L("Friends not running CUI? Download the standalone version here!"))
 
-            local width = text.GetStringWidth and text:GetStringWidth()
+            local width = textValue.GetStringWidth and textValue:GetStringWidth()
             if type(width) == "number" and not (issecretvalue and issecretvalue(width)) then
-                link:SetSize(width + 4, 20)
+                itemLink:SetSize(width + 4, 20)
             end
-            link:SetScript("OnEnter", function()
-                text:SetTextColor(1, 1, 1, 1)
+            itemLink:SetScript("OnEnter", function()
+                textValue:SetTextColor(1, 1, 1, 1)
             end)
-            link:SetScript("OnLeave", function()
-                text:SetTextColor(1, 1, 1, 0.75)
+            itemLink:SetScript("OnLeave", function()
+                textValue:SetTextColor(1, 1, 1, 0.75)
             end)
-            link:SetScript("OnClick", function(self)
+            itemLink:SetScript("OnClick", function(self)
                 if CludesUI.ShowLinkPopup then
                     CludesUI.ShowLinkPopup(STANDALONE_URL, self)
                     WidenLinkPopup(STANDALONE_URL)
                 end
             end)
-            y = y - 32
+            posY = posY - 32
 
             local statusTags = Schema.Row("statusTags")
-            local activeTag = StyledTag(block, 90, function(button)
-                if button == "LeftButton" and statusTags.clickActive() then
+            local activeTag = StyledTag(blockData, 90, function(btnFrame)
+                if btnFrame == "LeftButton" and statusTags.clickActive() then
                     Invalidate()
                 end
             end)
             activeTag:Hide()
-            PP.Point(activeTag, "TOPLEFT", block, "TOPLEFT", 16, -12)
+            Pix.Point(activeTag, "TOPLEFT", blockData, "TOPLEFT", 16, -12)
             OnRefresh(function()
-                local title, tone, lines = statusTags.activeTooltip()
+                local titleText, tone, lines = statusTags.activeTooltip()
 
                 if tone == "accent" and not slc.PlayerIsMasterLooter() then
                     tone = "good"
                 end
-                activeTag.Label:SetText(S.Colorize(S.color[tone], lootMaster.activeText))
+                activeTag.Label:SetText(Stl.Colorize(Stl.color[tone], lootMaster.activeText))
                 activeTag.tip = table.concat(lines, "\n")
-                activeTag:SetTone(S.color[tone])
+                activeTag:SetTone(Stl.color[tone])
                 FitTag(activeTag)
 
-                activeTag:SetShown(title == statusTags.activeText)
+                activeTag:SetShown(titleText == statusTags.activeText)
             end)
 
-            local liveTag = StyledTag(block, 60, function(button)
-                if statusTags.clickLive(button) then
+            local liveTag = StyledTag(blockData, 60, function(btnFrame)
+                if statusTags.clickLive(btnFrame) then
                     Invalidate()
                 end
             end)
@@ -1066,84 +1069,84 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 local _, tone, lines = statusTags.liveTooltip()
-                liveTag.Label:SetText(S.Colorize(S.color[tone], statusTags.liveText))
+                liveTag.Label:SetText(Stl.Colorize(Stl.color[tone], statusTags.liveText))
                 liveTag.tip = table.concat(lines, "\n")
-                liveTag:SetTone(S.color[tone])
+                liveTag:SetTone(Stl.color[tone])
                 FitTag(liveTag)
                 liveTag:ClearAllPoints()
                 if activeTag:IsShown() then
-                    PP.Point(liveTag, "LEFT", activeTag, "RIGHT", 8, 0)
+                    Pix.Point(liveTag, "LEFT", activeTag, "RIGHT", 8, 0)
                 else
-                    PP.Point(liveTag, "TOPLEFT", block, "TOPLEFT", 16, -12)
+                    Pix.Point(liveTag, "TOPLEFT", blockData, "TOPLEFT", 16, -12)
                 end
             end)
 
-            local mlLabel = CludesUI.MakeFont(block, 11, nil, 1, 1, 1)
+            local mlLabel = CludesUI.MakeFont(blockData, 11, nil, 1, 1, 1)
             mlLabel:SetAlpha(0.45)
-            mlLabel:SetPoint("TOP", block, "TOP", 0, -ML_LABEL_Y)
+            mlLabel:SetPoint("TOP", blockData, "TOP", 0, -ML_LABEL_Y)
             mlLabel:SetText(lootMaster.heading)
-            local mlName = CludesUI.MakeFont(block, 22, nil, 1, 1, 1)
-            mlName:SetPoint("TOP", block, "TOP", 0, -ML_NAME_Y)
+            local mlName = CludesUI.MakeFont(blockData, 22, nil, 1, 1, 1)
+            mlName:SetPoint("TOP", blockData, "TOP", 0, -ML_NAME_Y)
 
-            local mlNote = CludesUI.MakeFont(block, 16, nil, 1, 1, 1)
+            local mlNote = CludesUI.MakeFont(blockData, 16, nil, 1, 1, 1)
             mlNote:SetPoint("LEFT", mlName, "RIGHT", 8, 0)
 
-            local gray = S.Flatten({ 1, 1, 1, 0.45 })
-            local noteGray = S.ColorStart(gray)
+            local gray = Stl.Flatten({ 1, 1, 1, 0.45 })
+            local noteGray = Stl.ColorStart(gray)
 
-            local headHolder = CreateFrame("Frame", nil, block)
-            PP.Size(headHolder, 160, 14)
-            PP.Point(headHolder, "TOP", block, "TOP", 0, -DIVIDER_Y)
+            local headHolder = CreateFrame("Frame", nil, blockData)
+            Pix.Size(headHolder, 160, 14)
+            Pix.Point(headHolder, "TOP", blockData, "TOP", 0, -DIVIDER_Y)
             local heading = CludesUI.MakeFont(headHolder, 11, nil, 1, 1, 1)
             heading:SetAlpha(0.45)
             heading:SetPoint("LEFT", headHolder, "LEFT", 0, 0)
             heading:SetText(inForce.heading)
             local voters = CludesUI.MakeFont(headHolder, 12, nil, 1, 1, 1)
             voters:SetPoint("RIGHT", headHolder, "RIGHT", 0, 0)
-            for _, side in ipairs({ "LEFT", "RIGHT" }) do
-                local rule = block:CreateTexture(nil, "ARTWORK")
+            for _, sideName in ipairs({ "LEFT", "RIGHT" }) do
+                local rule = blockData:CreateTexture(nil, "ARTWORK")
                 rule:SetColorTexture(1, 1, 1, 0.08)
                 rule:SetHeight(1)
-                if side == "LEFT" then
-                    rule:SetPoint("TOPLEFT", block, "TOPLEFT", 40, -(DIVIDER_Y + 7))
+                if sideName == "LEFT" then
+                    rule:SetPoint("TOPLEFT", blockData, "TOPLEFT", 40, -(DIVIDER_Y + 7))
                     rule:SetPoint("TOPRIGHT", headHolder, "TOPLEFT", -14, -7)
                 else
                     rule:SetPoint("TOPLEFT", headHolder, "TOPRIGHT", 14, -7)
-                    rule:SetPoint("TOPRIGHT", block, "TOPRIGHT", -40, -(DIVIDER_Y + 7))
+                    rule:SetPoint("TOPRIGHT", blockData, "TOPRIGHT", -40, -(DIVIDER_Y + 7))
                 end
             end
 
             local entryRows = {}
-            for i = 1, capacity do
-                local row = CreateFrame("Frame", nil, block)
-                PP.Size(row, COUNCIL_CELL_W - 10, COUNCIL_CELL_H)
-                row.label = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
-                row.label:SetJustifyH("CENTER")
-                row.label:SetWordWrap(false)
-                row.label:SetPoint("LEFT", row, "LEFT", 0, 0)
-                row.label:SetPoint("RIGHT", row, "RIGHT", 0, 0)
-                row:EnableMouse(true)
-                row:SetScript("OnEnter", function(self)
+            for idx = 1, capacity do
+                local rowFrame = CreateFrame("Frame", nil, blockData)
+                Pix.Size(rowFrame, COUNCIL_CELL_W - 10, COUNCIL_CELL_H)
+                rowFrame.label = CludesUI.MakeFont(rowFrame, 13, nil, 1, 1, 1)
+                rowFrame.label:SetJustifyH("CENTER")
+                rowFrame.label:SetWordWrap(false)
+                rowFrame.label:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+                rowFrame.label:SetPoint("RIGHT", rowFrame, "RIGHT", 0, 0)
+                rowFrame:EnableMouse(true)
+                rowFrame:SetScript("OnEnter", function(self)
                     if self.tip then
                         CludesUI.ShowWidgetTooltip(self, self.tip)
                     end
                 end)
-                row:SetScript("OnLeave", function()
+                rowFrame:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                entryRows[i] = row
+                entryRows[idx] = rowFrame
             end
-            local emptyLabel = CludesUI.MakeFont(block, 13, nil, 1, 1, 1)
-            emptyLabel:SetPoint("TOP", block, "TOP", 0, -(LIST_Y + 4))
+            local emptyLabel = CludesUI.MakeFont(blockData, 13, nil, 1, 1, 1)
+            emptyLabel:SetPoint("TOP", blockData, "TOP", 0, -(LIST_Y + 4))
 
             OnRefresh(function()
                 local master = lootMaster.fullName()
                 mlName:SetText(
-                    master and PlayerText(master) or S.Colorize(S.color.textFaint, lootMaster.unknown)
+                    master and PlayerText(master) or Stl.Colorize(Stl.color.textFaint, lootMaster.unknown)
                 )
                 local note
                 if slc.IsLootPromoted() and UnitIsGroupLeader("player") then
-                    note = S.Colorize(gray, T["(Promoted)"])
+                    note = Stl.Colorize(gray, T["(Promoted)"])
                 elseif lootMaster.stored() then
                     local kept = slc.db.lootMasterKept
                     local record = slc.Player:Get(kept.guid or kept.name)
@@ -1151,32 +1154,34 @@ initFrame:SetScript("OnEvent", function(self)
                         (record and record.classFile) or kept.classFile,
                         Ambiguate(kept.name, "short")
                     ) .. noteGray
-                    note = S.Colorize(gray, Format(T["(%s stored)"], Format(T["%s auto-promotion"], who)))
+                    note = Stl.Colorize(gray, Format(T["(%s stored)"], Format(T["%s auto-promotion"], who)))
                 end
                 mlNote:SetText(note or "")
             end)
             OnRefresh(function()
                 local entries, count = CouncilMembers(inForce, PlayerText, RankText)
-                voters:SetText(S.Colorize(count == 0 and S.color.bad or S.color.accentPale, tostring(count)))
+                voters:SetText(
+                    Stl.Colorize(count == 0 and Stl.color.bad or Stl.color.accentPale, tostring(count))
+                )
                 local headW = math.ceil(heading:GetStringWidth() or 0)
                 local countW = math.ceil(voters:GetStringWidth() or 0)
-                PP.Size(headHolder, headW + 8 + countW, 14)
+                Pix.Size(headHolder, headW + 8 + countW, 14)
                 emptyLabel:SetShown(#entries == 0)
                 if #entries == 0 then
                     emptyLabel:SetText(
-                        count == 0 and S.Colorize(S.color.bad, inForce.emptyText)
-                            or S.Colorize(S.color.textFaint, inForce.othersEmpty)
+                        count == 0 and Stl.Colorize(Stl.color.bad, inForce.emptyText)
+                            or Stl.Colorize(Stl.color.textFaint, inForce.othersEmpty)
                     )
                 end
 
                 if #entries > capacity then
                     local hidden, members, ranksHidden = {}, 0, false
-                    for i = capacity, #entries do
-                        local entry = entries[i]
+                    for idx = capacity, #entries do
+                        local entry = entries[idx]
                         hidden[#hidden + 1] = entry.count and Format(T["%s (%s)"], entry.text, entry.count)
                             or entry.text
-                        for _, line in ipairs(entry.rank and entry.tooltip or {}) do
-                            hidden[#hidden + 1] = "  " .. line
+                        for _, lineTex in ipairs(entry.rank and entry.tooltip or {}) do
+                            hidden[#hidden + 1] = "  " .. lineTex
                         end
                         if entry.rank then
                             ranksHidden = true
@@ -1204,33 +1209,33 @@ initFrame:SetScript("OnEvent", function(self)
                             ),
                     }
                 end
-                local shown = math.min(#entries, capacity)
-                for i, row in ipairs(entryRows) do
-                    local entry = i <= shown and entries[i]
-                    row:SetShown(entry and true or false)
+                local isShown = math.min(#entries, capacity)
+                for idx, rowFrame in ipairs(entryRows) do
+                    local entry = idx <= isShown and entries[idx]
+                    rowFrame:SetShown(entry and true or false)
                     if entry then
-                        local line = math.floor((i - 1) / councilCols)
-                        local inLine = math.min(councilCols, shown - line * councilCols)
-                        local left = math.floor((full - inLine * COUNCIL_CELL_W) / 2)
-                        row:ClearAllPoints()
-                        PP.Point(
-                            row,
+                        local lineTex = math.floor((idx - 1) / councilCols)
+                        local inLine = math.min(councilCols, isShown - lineTex * councilCols)
+                        local leftX = math.floor((full - inLine * COUNCIL_CELL_W) / 2)
+                        rowFrame:ClearAllPoints()
+                        Pix.Point(
+                            rowFrame,
                             "TOPLEFT",
-                            block,
+                            blockData,
                             "TOPLEFT",
-                            left + ((i - 1) % councilCols) * COUNCIL_CELL_W + 5,
-                            -(LIST_Y + line * COUNCIL_CELL_H)
+                            leftX + ((idx - 1) % councilCols) * COUNCIL_CELL_W + 5,
+                            -(LIST_Y + lineTex * COUNCIL_CELL_H)
                         )
-                        row.label:SetText(
+                        rowFrame.label:SetText(
                             entry.count and Format(T["%s (%s)"], entry.text, entry.count) or entry.text
                         )
-                        local tip = entry.tooltip
+                        local tipText = entry.tooltip
                             and #entry.tooltip > 0
                             and (
                                 (entry.overflow and "" or entry.text .. "\n")
                                 .. table.concat(entry.tooltip, "\n")
                             )
-                        row.tip = tip or nil
+                        rowFrame.tip = tipText or nil
                     end
                 end
             end)
@@ -1238,15 +1243,15 @@ initFrame:SetScript("OnEvent", function(self)
 
         local custom = {}
 
-        function custom.responses(spec)
-            for index, built in ipairs(spec.list()) do
+        function custom.responses(specInfo)
+            for slotPos, built in ipairs(specInfo.list()) do
                 local entry = built
                 OnRefresh(function()
-                    entry = spec.list()[index] or entry
+                    entry = specInfo.list()[slotPos] or entry
                 end)
                 Place({
                     type = "input",
-                    text = Format(spec.nameLabel, index),
+                    text = Format(specInfo.nameLabel, slotPos),
                     inputStyle = "popup",
                     inputWidth = 180,
                     noCapture = true,
@@ -1254,59 +1259,56 @@ initFrame:SetScript("OnEvent", function(self)
                         return entry.text or ""
                     end,
 
-                    setValue = function(text)
-                        spec.setName(index, text)
+                    setValue = function(textValue)
+                        specInfo.setName(slotPos, textValue)
                         Invalidate()
                     end,
-                }, function(region)
-                    if region._label then
-                        region._label:SetText("")
+                }, function(regionFrame)
+                    if regionFrame._label then
+                        regionFrame._label:SetText("")
                     end
-                    local box = region._control
-                    if box then
-                        box:ClearAllPoints()
-                        PP.Point(box, "LEFT", region, "LEFT", 20, 0)
+                    local boxFrame = regionFrame._control
+                    if boxFrame then
+                        boxFrame:ClearAllPoints()
+                        Pix.Point(boxFrame, "LEFT", regionFrame, "LEFT", 20, 0)
 
-                        box:SetMaxLetters(spec.maxLetters)
-                        if focusResponse == index then
+                        boxFrame:SetMaxLetters(specInfo.maxLetters)
+                        if focusResponse == slotPos then
                             focusResponse = nil
-                            box:SetFocus()
-                            box:HighlightText()
+                            boxFrame:SetFocus()
+                            boxFrame:HighlightText()
                         end
                     end
 
-                    CludesUI.BuildInlineSwatches(
-                        region,
+                    CludesUI.BuildInlineSwatches(regionFrame, {
                         {
-                            {
-                                getValue = function()
-                                    return entry.r or 0.8, entry.g or 0.8, entry.b or 0.8, 1
-                                end,
-                                setValue = function(r, g, b)
-                                    spec.setColour(entry, r, g, b)
-                                end,
-                            },
-                        }
-                    )
+                            getValue = function()
+                                return entry.r or 0.8, entry.g or 0.8, entry.b or 0.8, 1
+                            end,
+                            setValue = function(r, g, b)
+                                specInfo.setColour(entry, r, g, b)
+                            end,
+                        },
+                    })
 
-                    local swatch = region._lastInline
+                    local colorSwatch = regionFrame._lastInline
 
                     local auto
-                    if box and swatch and swatch ~= box then
-                        auto = CreateFrame("Button", nil, region)
+                    if boxFrame and colorSwatch and colorSwatch ~= boxFrame then
+                        auto = CreateFrame("Button", nil, regionFrame)
                         auto.slcAutoroll = true
                         local check, _, _, apply =
-                            CludesUI.BuildCheckboxControl(auto, region:GetFrameLevel() + 2)
-                        PP.Point(check, "RIGHT", auto, "RIGHT", 0, 0)
-                        local label = CludesUI.MakeFont(auto, 12, nil, 1, 1, 1)
-                        label:SetAlpha(0.6)
-                        label:SetPoint("RIGHT", check, "LEFT", -6, 0)
-                        label:SetText(spec.autorollText)
-                        local labelW = label:GetStringWidth()
+                            CludesUI.BuildCheckboxControl(auto, regionFrame:GetFrameLevel() + 2)
+                        Pix.Point(check, "RIGHT", auto, "RIGHT", 0, 0)
+                        local labelText = CludesUI.MakeFont(auto, 12, nil, 1, 1, 1)
+                        labelText:SetAlpha(0.6)
+                        labelText:SetPoint("RIGHT", check, "LEFT", -6, 0)
+                        labelText:SetText(specInfo.autorollText)
+                        local labelW = labelText:GetStringWidth()
                         if type(labelW) ~= "number" or (issecretvalue and issecretvalue(labelW)) then
                             labelW = 50
                         end
-                        PP.Size(auto, math.ceil(labelW) + 6 + 18, 24)
+                        Pix.Size(auto, math.ceil(labelW) + 6 + 18, 24)
                         local hovering = false
                         local function Paint()
                             apply(entry.autoroll == true, hovering)
@@ -1314,7 +1316,7 @@ initFrame:SetScript("OnEvent", function(self)
                         auto:SetScript("OnEnter", function(b)
                             hovering = true
                             Paint()
-                            CludesUI.ShowWidgetTooltip(b, spec.autorollHelp)
+                            CludesUI.ShowWidgetTooltip(b, specInfo.autorollHelp)
                         end)
                         auto:SetScript("OnLeave", function()
                             hovering = false
@@ -1322,74 +1324,79 @@ initFrame:SetScript("OnEvent", function(self)
                             CludesUI.HideWidgetTooltip()
                         end)
                         auto:SetScript("OnClick", function()
-                            if spec.sessionLocked() then
+                            if specInfo.sessionLocked() then
                                 return
                             end
-                            spec.setAutoroll(entry, not (entry.autoroll == true))
+                            specInfo.setAutoroll(entry, not (entry.autoroll == true))
                             Paint()
                             Invalidate()
                         end)
                         OnRefresh(Paint)
                         Paint()
                         auto:ClearAllPoints()
-                        PP.Point(auto, "LEFT", box, "RIGHT", 8, 0)
-                        swatch:ClearAllPoints()
-                        PP.Point(swatch, "LEFT", auto, "RIGHT", 8, 0)
+                        Pix.Point(auto, "LEFT", boxFrame, "RIGHT", 8, 0)
+                        colorSwatch:ClearAllPoints()
+                        Pix.Point(colorSwatch, "LEFT", auto, "RIGHT", 8, 0)
                     end
-                    local requirement = spec.deleteRequirement
-                    local delete = CludesUI.BuildInlineButton(region, spec.confirmDelete().accept, function()
-                        if requirement() then
-                            return
-                        end
-                        local copy = spec.confirmDelete()
-                        S.Confirm({
-                            title = copy.title,
-                            body = copy.body,
-                            accept = copy.accept,
-                            onAccept = function()
-                                if spec.remove(index) then
-                                    Invalidate()
-                                end
-                            end,
-                        })
-                    end, {
-                        width = 70,
-                        disabled = function()
-                            return requirement() ~= nil
+                    local requirement = specInfo.deleteRequirement
+                    local delete = CludesUI.BuildInlineButton(
+                        regionFrame,
+                        specInfo.confirmDelete().accept,
+                        function()
+                            if requirement() then
+                                return
+                            end
+                            local copy = specInfo.confirmDelete()
+                            Stl.Confirm({
+                                title = copy.title,
+                                body = copy.body,
+                                accept = copy.accept,
+                                onAccept = function()
+                                    if specInfo.remove(slotPos) then
+                                        Invalidate()
+                                    end
+                                end,
+                            })
                         end,
-                        disabledTooltip = requirement,
-                        rawTooltip = true,
-                    })
-                    if delete and swatch and swatch ~= box then
+                        {
+                            width = 70,
+                            disabled = function()
+                                return requirement() ~= nil
+                            end,
+                            disabledTooltip = requirement,
+                            rawTooltip = true,
+                        }
+                    )
+                    if delete and colorSwatch and colorSwatch ~= boxFrame then
                         delete:ClearAllPoints()
-                        PP.Point(delete, "LEFT", swatch, "RIGHT", 8, 0)
+                        Pix.Point(delete, "LEFT", colorSwatch, "RIGHT", 8, 0)
                     end
 
-                    if box and swatch and delete and swatch ~= box then
-                        local total = box:GetWidth()
+                    if boxFrame and colorSwatch and delete and colorSwatch ~= boxFrame then
+                        local sum = boxFrame:GetWidth()
                             + 8
                             + (auto and (auto:GetWidth() + 8) or 0)
-                            + swatch:GetWidth()
+                            + colorSwatch:GetWidth()
                             + 8
                             + delete:GetWidth()
-                        local room = region:GetWidth()
-                        if type(total) == "number" and type(room) == "number" and room > total then
-                            box:ClearAllPoints()
-                            PP.Point(box, "LEFT", region, "LEFT", math.floor((room - total) / 2), 0)
+                        local room = regionFrame:GetWidth()
+                        if type(sum) == "number" and type(room) == "number" and room > sum then
+                            boxFrame:ClearAllPoints()
+                            Pix.Point(boxFrame, "LEFT", regionFrame, "LEFT", math.floor((room - sum) / 2), 0)
                         end
                     end
                 end)
             end
-            if #spec.list() < spec.max then
+            if #specInfo.list() < specInfo.max then
                 Place({
                     type = "button",
-                    text = spec.addText,
+                    text = specInfo.addText,
                     noCapture = true,
                     onClick = function()
                         local accent = CludesUI.CLUDES_GREEN
-                        local index = spec.add(accent.r, accent.g, accent.b)
-                        if index then
-                            focusResponse = index
+                        local slotPos = specInfo.add(accent.r, accent.g, accent.b)
+                        if slotPos then
+                            focusResponse = slotPos
                             Invalidate()
                         end
                     end,
@@ -1400,12 +1407,12 @@ initFrame:SetScript("OnEvent", function(self)
 
         local PRIDE_ON = { ["i am gay"] = true, ["im gay"] = true }
         local PRIDE_OFF = { ["i am not gay"] = true, ["im not gay"] = true }
-        local function PrideRequest(text)
-            if text:find("-", 1, true) then
+        local function PrideRequest(textValue)
+            if textValue:find("-", 1, true) then
                 return nil
             end
             local phrase = slc.Locale
-                .Fold(text)
+                .Fold(textValue)
                 :gsub("\226\128\153", "")
                 :gsub("'", "")
                 :gsub("%s+", " ")
@@ -1419,21 +1426,21 @@ initFrame:SetScript("OnEvent", function(self)
             return nil
         end
 
-        local function Rainbow(text)
-            if text:find("[\128-\255]") then
-                return text
+        local function Rainbow(textValue)
+            if textValue:find("[\128-\255]") then
+                return textValue
             end
-            return S.Rainbow(text)
+            return Stl.Rainbow(textValue)
         end
 
-        local function TryPride(text)
-            local wanted = PrideRequest(text)
+        local function TryPride(textValue)
+            local wanted = PrideRequest(textValue)
             if wanted == nil then
                 return false
             end
             local current = slc.db and slc.db.pride and true or false
             if wanted == current then
-                S.Confirm({
+                Stl.Confirm({
                     title = CludesUI.L("Gay Mode"),
                     acknowledge = true,
                     body = wanted and Rainbow(CludesUI.L("You're already gay"))
@@ -1441,99 +1448,103 @@ initFrame:SetScript("OnEvent", function(self)
                 })
                 return true
             end
-            S.Confirm({
+            Stl.Confirm({
                 title = CludesUI.L("Gay Mode"),
                 accept = CludesUI.L("Yes"),
                 body = wanted and Rainbow(CludesUI.L("Are you sure you're gay?"))
                     or CludesUI.L("Are you sure you're not gay?"),
                 onAccept = function()
                     slc.db.pride = wanted
-                    S.RefreshLogos()
+                    Stl.RefreshLogos()
                     slc.Log:I("UI", "pride mode " .. (wanted and "on" or "off"))
                 end,
             })
             return true
         end
 
-        function custom.council(spec)
+        function custom.council(specInfo)
             if prebuild then
                 return
             end
             local status = Note("", 0.85)
             OnRefresh(function()
                 local good, warn =
-                    S.ColorStart(S.Flatten(S.color.good)), S.ColorStart(S.Flatten(S.color.warn))
-                local state, leader = spec.authorship()
-                status:SetText(spec.statusText(state, leader, good, warn))
+                    Stl.ColorStart(Stl.Flatten(Stl.color.good)), Stl.ColorStart(Stl.Flatten(Stl.color.warn))
+                local state, leader = specInfo.authorship()
+                status:SetText(specInfo.statusText(state, leader, good, warn))
             end)
 
-            Note(spec.hint())
-            local box = AddBox(Row(50), math.min(260, Width() - 20 - 8 - 90 - 20), spec.addText())
+            Note(specInfo.hint())
+            local boxFrame = AddBox(Row(50), math.min(260, Width() - 20 - 8 - 90 - 20), specInfo.addText())
 
             local function AddTyped()
                 CloseSuggestions()
-                local name = box:GetText():trim()
+                local name = boxFrame:GetText():trim()
                 if name == "" then
                     return
                 end
 
                 if TryPride(name) then
-                    box:SetText("")
-                    box:ClearFocus()
+                    boxFrame:SetText("")
+                    boxFrame:ClearFocus()
                     return
                 end
-                if spec.add(name) then
-                    box:SetText("")
+                if specInfo.add(name) then
+                    boxFrame:SetText("")
                 end
-                box:ClearFocus()
+                boxFrame:ClearFocus()
                 councilDirty = true
                 Invalidate()
             end
 
-            local shown = {}
+            local isShown = {}
             local function Fill(b, entry)
-                local fill = spec.suggestionText(entry)
-                b:SetText(fill)
-                b:SetCursorPosition(#fill)
+                local fillTex = specInfo.suggestionText(entry)
+                b:SetText(fillTex)
+                b:SetCursorPosition(#fillTex)
                 b:SetFocus()
             end
             local function ShowList(b)
                 CloseSuggestions()
-                if #shown == 0 then
+                if #isShown == 0 then
                     return
                 end
                 local p = SugPopup()
                 p.owner = b
                 p.onPick = function(entry)
                     CloseSuggestions()
-                    shown = {}
+                    isShown = {}
                     Fill(b, entry)
                 end
-                for index, entry in ipairs(shown) do
-                    local row = SugRow(p, index)
+                for slotPos, entry in ipairs(isShown) do
+                    local rowFrame = SugRow(p, slotPos)
                     local name = (tostring(entry.name):gsub("|", "||"))
                     local rank = (tostring(entry.rank or ""):gsub("|", "||"))
-                    row.entry = entry
-                    row.label:SetText(
-                        ClassText(entry.classFile, name, entry.online and S.color.text or S.color.textFaint)
+                    rowFrame.entry = entry
+                    rowFrame.label:SetText(
+                        ClassText(
+                            entry.classFile,
+                            name,
+                            entry.online and Stl.color.text or Stl.color.textFaint
+                        )
                             .. "  "
                             .. faint
                             .. rank
                             .. "|r"
                     )
-                    row:Show()
+                    rowFrame:Show()
                 end
-                for index = #shown + 1, #p.rows do
-                    p.rows[index].entry = nil
-                    p.rows[index]:Hide()
+                for slotPos = #isShown + 1, #p.rows do
+                    p.rows[slotPos].entry = nil
+                    p.rows[slotPos]:Hide()
                 end
                 p.selected = 0
                 SugPaint(p)
-                local own, base = b:GetEffectiveScale(), _G.UIParent:GetEffectiveScale()
-                if type(own) == "number" and type(base) == "number" and base > 0 and own > 0 then
-                    p:SetScale(own / base)
+                local own, baseValue = b:GetEffectiveScale(), _G.UIParent:GetEffectiveScale()
+                if type(own) == "number" and type(baseValue) == "number" and baseValue > 0 and own > 0 then
+                    p:SetScale(own / baseValue)
                 end
-                p:SetSize(b:GetWidth(), #shown * SUG_ROW_H + 8)
+                p:SetSize(b:GetWidth(), #isShown * SUG_ROW_H + 8)
                 p:ClearAllPoints()
                 p:SetPoint("TOPLEFT", b, "BOTTOMLEFT", 0, -2)
                 p._brd:Fit()
@@ -1544,38 +1555,38 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 CloseSuggestions()
-                shown = {}
-                local text = (b:GetText() or ""):trim()
+                isShown = {}
+                local textValue = (b:GetText() or ""):trim()
 
-                if select(2, text:gsub("[^\128-\191]", "")) < SUGGEST_MIN_CHARS then
+                if select(2, textValue:gsub("[^\128-\191]", "")) < SUGGEST_MIN_CHARS then
                     return
                 end
-                if PrideRequest(text) ~= nil then
+                if PrideRequest(textValue) ~= nil then
                     return
                 end
-                shown = spec.suggest(text, SUGGEST_MAX)
+                isShown = specInfo.suggest(textValue, SUGGEST_MAX)
                 ShowList(b)
             end
             local function Arrow(_, key)
-                if not SugOpen() or #shown == 0 then
+                if not SugOpen() or #isShown == 0 then
                     return
                 end
                 local p = sugPopup
                 if key == "UP" then
-                    p.selected = p.selected == 0 and #shown or math.max(p.selected - 1, 1)
+                    p.selected = p.selected == 0 and #isShown or math.max(p.selected - 1, 1)
                 elseif key == "DOWN" then
-                    p.selected = p.selected == 0 and 1 or math.min(p.selected + 1, #shown)
+                    p.selected = p.selected == 0 and 1 or math.min(p.selected + 1, #isShown)
                 else
                     return
                 end
                 SugPaint(p)
             end
             local function Enter()
-                local entry = SugOpen() and shown[sugPopup.selected]
+                local entry = SugOpen() and isShown[sugPopup.selected]
                 if entry then
                     CloseSuggestions()
-                    shown = {}
-                    Fill(box, entry)
+                    isShown = {}
+                    Fill(boxFrame, entry)
                 else
                     AddTyped()
                 end
@@ -1583,103 +1594,106 @@ initFrame:SetScript("OnEvent", function(self)
             addHandlers.add, addHandlers.typed = AddTyped, Typed
             addHandlers.arrow, addHandlers.enter = Arrow, Enter
 
-            local entries, here = CouncilEntries(spec), slc.GetCandidates()
+            local entries, here = CouncilEntries(specInfo), slc.GetCandidates()
             OnRefresh(function()
-                entries, here = CouncilEntries(spec), slc.GetCandidates()
+                entries, here = CouncilEntries(specInfo), slc.GetCandidates()
             end)
-            for index = 1, #entries do
-                local row = Row(34)
-                local label = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
-                label:SetPoint("LEFT", row, "LEFT", 20, 0)
-                label:SetPoint("RIGHT", row, "RIGHT", -98, 0)
-                label:SetJustifyH("LEFT")
-                label:SetWordWrap(false)
+            for slotPos = 1, #entries do
+                local rowFrame = Row(34)
+                local labelText = CludesUI.MakeFont(rowFrame, 13, nil, 1, 1, 1)
+                labelText:SetPoint("LEFT", rowFrame, "LEFT", 20, 0)
+                labelText:SetPoint("RIGHT", rowFrame, "RIGHT", -98, 0)
+                labelText:SetJustifyH("LEFT")
+                labelText:SetWordWrap(false)
                 local entry, present
                 OnRefresh(function()
-                    entry = entries[index]
+                    entry = entries[slotPos]
                     present = entry.kind ~= "rank" and (here[entry.fullName] and true or false)
-                    local now = present
+                    local nowTime = present
                     if entry.kind == "rank" then
                         local name = RankText(entry.name)
                         if not entry.known then
-                            label:SetText(
-                                S.Colorize(
-                                    S.Flatten(S.color.textFaint),
+                            labelText:SetText(
+                                Stl.Colorize(
+                                    Stl.Flatten(Stl.color.textFaint),
                                     Format(T["%s  no such rank"], entry.name)
                                 )
                             )
                         elseif entry.present == 0 then
-                            label:SetText(Format(T["%s%s  none here|r"], name, faint))
+                            labelText:SetText(Format(T["%s%s  none here|r"], name, faint))
                         else
-                            label:SetText(Format(T["%s%s  %d here|r"], name, faint, entry.present))
+                            labelText:SetText(Format(T["%s%s  %d here|r"], name, faint, entry.present))
                         end
                     elseif entry.pending then
-                        label:SetText(
+                        labelText:SetText(
                             ClassText(
                                 entry.classFile,
                                 entry.fullName or entry.guid or "?",
-                                S.Flatten(S.color.textFaint)
+                                Stl.Flatten(Stl.color.textFaint)
                             )
                         )
                     else
                         local short = ClassText(entry.classFile, Ambiguate(entry.fullName or "?", "short"))
-                        label:SetText(now and short or Format(T["%s%s  not here|r"], short, faint))
+                        labelText:SetText(nowTime and short or Format(T["%s%s  not here|r"], short, faint))
                     end
                 end)
 
-                row:EnableMouse(true)
-                row:SetScript("OnEnter", function(r)
+                rowFrame:EnableMouse(true)
+                rowFrame:SetScript("OnEnter", function(r)
                     if not entry then
                         return
                     end
-                    local title, lines = spec.describe(entry, present)
-                    local text = { S.Colorize(S.color.accent, title) }
-                    for _, line in ipairs(lines) do
-                        local body = line.value and (slc.Locale.SectionTitle(line.text) .. " " .. line.value)
-                            or line.text
-                        text[#text + 1] = line.tone and S.Colorize(S.color[line.tone], body) or body
+                    local titleText, lines = specInfo.describe(entry, present)
+                    local textValue = { Stl.Colorize(Stl.color.accent, titleText) }
+                    for _, lineTex in ipairs(lines) do
+                        local body = lineTex.value
+                                and (slc.Locale.SectionTitle(lineTex.text) .. " " .. lineTex.value)
+                            or lineTex.text
+                        textValue[#textValue + 1] = lineTex.tone
+                                and Stl.Colorize(Stl.color[lineTex.tone], body)
+                            or body
                     end
-                    CludesUI.ShowWidgetTooltip(r, table.concat(text, "\n"), { justify = "LEFT" })
+                    CludesUI.ShowWidgetTooltip(r, table.concat(textValue, "\n"), { justify = "LEFT" })
                 end)
-                row:SetScript("OnLeave", function()
+                rowFrame:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                CludesUI.BuildInlineButton(row, T["Remove"], function()
+                CludesUI.BuildInlineButton(rowFrame, T["Remove"], function()
                     if not entry then
                         return
                     end
-                    spec.remove(entry)
+                    specInfo.remove(entry)
                     councilDirty = true
                     Invalidate()
                 end, { width = 70 })
             end
             if #entries == 0 then
-                Note(spec.emptyText())
+                Note(specInfo.emptyText())
             end
         end
 
-        function custom.councilRanks(spec)
+        function custom.councilRanks(specInfo)
             if not prebuild then
-                Note(S.Colorize(S.color.accent, spec.heading:upper()), 0.85)
-                for _, hint in ipairs(spec.hints()) do
+                Note(Stl.Colorize(Stl.color.accent, specInfo.heading:upper()), 0.85)
+                for _, hint in ipairs(specInfo.hints()) do
                     Note(hint)
                 end
             end
-            local ranks = spec.ranks()
-            local count = math.min(#ranks, spec.maxRows)
+            local ranks = specInfo.ranks()
+            local count = math.min(#ranks, specInfo.maxRows)
             local viewH = math.min(count, RANK_VISIBLE) * RANK_ROW_H
             if prebuild then
-                y = y - viewH
+                posY = posY - viewH
             elseif count > 0 then
-                local sf = CreateFrame("ScrollFrame", nil, parent)
-                PP.Size(sf, Width(), viewH)
-                PP.Point(sf, "TOPLEFT", parent, "TOPLEFT", PAD + colX, y)
-                y = y - viewH
-                local list = CreateFrame("Frame", nil, sf)
-                PP.Size(list, Width(), count * RANK_ROW_H)
-                sf:SetScrollChild(list)
+                local scrollFrame = CreateFrame("ScrollFrame", nil, hostFrame)
+                Pix.Size(scrollFrame, Width(), viewH)
+                Pix.Point(scrollFrame, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, posY)
+                posY = posY - viewH
+                local list = CreateFrame("Frame", nil, scrollFrame)
+                Pix.Size(list, Width(), count * RANK_ROW_H)
+                scrollFrame:SetScrollChild(list)
                 if count > RANK_VISIBLE then
-                    local updateThumb = CludesUI.AttachSmoothScrollbar(sf, {
+                    local updateThumb = CludesUI.AttachSmoothScrollbar(scrollFrame, {
                         step = RANK_ROW_H,
                         child = list,
                         panelWheel = true,
@@ -1687,25 +1701,26 @@ initFrame:SetScript("OnEvent", function(self)
                     })
                     OnRefresh(updateThumb)
                 end
-                for index = 1, count do
-                    local name = ranks[index].name
-                    local row = CreateFrame("Frame", nil, list)
-                    PP.Size(row, Width(), RANK_ROW_H)
-                    PP.Point(row, "TOPLEFT", list, "TOPLEFT", 0, -(index - 1) * RANK_ROW_H)
-                    CludesUI.RowBg(row, list)
-                    local btn = CreateFrame("Button", nil, row)
-                    btn:SetAllPoints(row)
-                    local box, _, _, apply = CludesUI.BuildCheckboxControl(btn, row:GetFrameLevel() + 1)
-                    PP.Point(box, "LEFT", btn, "LEFT", 20, 0)
-                    local label = CludesUI.MakeFont(btn, 14, nil, 1, 1, 1)
-                    label:SetPoint("LEFT", box, "RIGHT", 10, 0)
-                    label:SetPoint("RIGHT", btn, "RIGHT", -20, 0)
-                    label:SetJustifyH("LEFT")
-                    label:SetWordWrap(false)
-                    label:SetText(RankText(name))
+                for slotPos = 1, count do
+                    local name = ranks[slotPos].name
+                    local rowFrame = CreateFrame("Frame", nil, list)
+                    Pix.Size(rowFrame, Width(), RANK_ROW_H)
+                    Pix.Point(rowFrame, "TOPLEFT", list, "TOPLEFT", 0, -(slotPos - 1) * RANK_ROW_H)
+                    CludesUI.RowBg(rowFrame, list)
+                    local btn = CreateFrame("Button", nil, rowFrame)
+                    btn:SetAllPoints(rowFrame)
+                    local boxFrame, _, _, apply =
+                        CludesUI.BuildCheckboxControl(btn, rowFrame:GetFrameLevel() + 1)
+                    Pix.Point(boxFrame, "LEFT", btn, "LEFT", 20, 0)
+                    local labelText = CludesUI.MakeFont(btn, 14, nil, 1, 1, 1)
+                    labelText:SetPoint("LEFT", boxFrame, "RIGHT", 10, 0)
+                    labelText:SetPoint("RIGHT", btn, "RIGHT", -20, 0)
+                    labelText:SetJustifyH("LEFT")
+                    labelText:SetWordWrap(false)
+                    labelText:SetText(RankText(name))
                     local hovering = false
                     local function Paint()
-                        apply(spec.isEmpowered(name) and true or false, hovering)
+                        apply(specInfo.isEmpowered(name) and true or false, hovering)
                     end
                     btn:SetScript("OnEnter", function()
                         hovering = true
@@ -1716,7 +1731,7 @@ initFrame:SetScript("OnEvent", function(self)
                         Paint()
                     end)
                     btn:SetScript("OnClick", function()
-                        spec.setEmpowered(name, not spec.isEmpowered(name))
+                        specInfo.setEmpowered(name, not specInfo.isEmpowered(name))
                         Paint()
 
                         councilDirty = true
@@ -1726,7 +1741,7 @@ initFrame:SetScript("OnEvent", function(self)
                     Paint()
                 end
             end
-            local empty = spec.empty()
+            local empty = specInfo.empty()
             if empty and not prebuild then
                 Note(empty)
             end
@@ -1734,56 +1749,56 @@ initFrame:SetScript("OnEvent", function(self)
 
         function custom.councilPair(councilSpec, rankSpec)
             local GAP = 20
-            local full = parent:GetWidth() - PAD * 2
+            local full = hostFrame:GetWidth() - PAD * 2
             local half = math.floor((full - GAP) / 2)
-            local top = y
+            local topY = posY
             colX, colW = 0, half
             custom.council(councilSpec)
-            local leftEnd = y
-            y = top
+            local leftEnd = posY
+            posY = topY
             colX = half + GAP
             custom.councilRanks(rankSpec)
-            local rightEnd = y
+            local rightEnd = posY
             colX, colW = 0, nil
-            y = math.min(leftEnd, rightEnd)
+            posY = math.min(leftEnd, rightEnd)
             if not prebuild then
-                local rule = parent:CreateTexture(nil, "ARTWORK")
+                local rule = hostFrame:CreateTexture(nil, "ARTWORK")
                 rule:SetColorTexture(1, 1, 1, 0.08)
                 rule:SetWidth(1)
-                rule:SetPoint("TOPLEFT", parent, "TOPLEFT", PAD + half + GAP / 2, top - 4)
-                rule:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", PAD + half + GAP / 2, y + 4)
+                rule:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", PAD + half + GAP / 2, topY - 4)
+                rule:SetPoint("BOTTOMLEFT", hostFrame, "TOPLEFT", PAD + half + GAP / 2, posY + 4)
             end
         end
 
-        function custom.alts(spec)
-            local main = spec.main()
-            local alts = spec.alts(main)
+        function custom.alts(specInfo)
+            local main = specInfo.main()
+            local alts = specInfo.alts(main)
             local function Qualified(fullName)
                 if not fullName then
-                    return S.Colorize(S.color.textMuted, spec.unknownText)
+                    return Stl.Colorize(Stl.color.textMuted, specInfo.unknownText)
                 end
-                local character, realm, colour = spec.nameParts(fullName, function(classFile)
-                    local r, g, b = S.ClassColor(classFile)
+                local character, realm, colour = specInfo.nameParts(fullName, function(classFile)
+                    local r, g, b = Stl.ClassColor(classFile)
                     return r and { r = r, g = g, b = b } or nil
                 end)
-                return S.Colorize(colour and { colour.r, colour.g, colour.b } or S.color.text, character)
-                    .. S.Colorize(S.color.text, realm)
+                return Stl.Colorize(colour and { colour.r, colour.g, colour.b } or Stl.color.text, character)
+                    .. Stl.Colorize(Stl.color.text, realm)
             end
             if not prebuild then
                 local mainLine = Note("", 0.85)
                 OnRefresh(function()
-                    mainLine:SetText(Format(T["Main: %s"], Qualified(spec.main())))
+                    mainLine:SetText(Format(T["Main: %s"], Qualified(specInfo.main())))
                 end)
             end
 
-            local function Box(text, submit)
+            local function Box(textValue, submit)
                 local kept = ""
                 return {
                     type = "input",
-                    text = text,
+                    text = textValue,
                     inputStyle = "popup",
                     inputWidth = 200,
-                    placeholder = spec.hint(),
+                    placeholder = specInfo.hint(),
                     noCapture = true,
                     getValue = function()
                         return kept
@@ -1797,7 +1812,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                 }
             end
-            local showAlts = spec.showAlts
+            local showAlts = specInfo.showAlts
             local showCfg = {
                 type = "toggle",
                 text = showAlts.text,
@@ -1810,9 +1825,9 @@ initFrame:SetScript("OnEvent", function(self)
             }
 
             if #alts == 0 then
-                Place(Box(spec.designateText, spec.designateMain))
+                Place(Box(specInfo.designateText, specInfo.designateMain))
             end
-            Place(Box(spec.addText, spec.addAlt))
+            Place(Box(specInfo.addText, specInfo.addAlt))
             Place(showCfg)
             Flush()
             if prebuild then
@@ -1820,26 +1835,26 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             OnRefresh(function()
-                alts = spec.alts(spec.main())
+                alts = specInfo.alts(specInfo.main())
             end)
-            for index = 1, #alts do
-                local row = Row(34)
+            for slotPos = 1, #alts do
+                local rowFrame = Row(34)
 
-                local label = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
-                label:SetPoint("LEFT", row, "LEFT", 20, 0)
+                local labelText = CludesUI.MakeFont(rowFrame, 13, nil, 1, 1, 1)
+                labelText:SetPoint("LEFT", rowFrame, "LEFT", 20, 0)
 
                 OnRefresh(function()
-                    label:SetText(Qualified(alts[index]))
+                    labelText:SetText(Qualified(alts[slotPos]))
                 end)
-                local copy = spec.confirmRemove()
-                CludesUI.BuildInlineButton(row, copy.accept, function()
-                    local alt = alts[index]
-                    S.Confirm({
+                local copy = specInfo.confirmRemove()
+                CludesUI.BuildInlineButton(rowFrame, copy.accept, function()
+                    local alt = alts[slotPos]
+                    Stl.Confirm({
                         title = copy.title,
                         body = copy.body,
                         accept = copy.accept,
                         onAccept = function()
-                            spec.removeAlt(alt)
+                            specInfo.removeAlt(alt)
                             Invalidate()
                         end,
                     })
@@ -1849,22 +1864,22 @@ initFrame:SetScript("OnEvent", function(self)
 
         local sections = PageSections(Schema, pageName)
         for _, section in ipairs(sections) do
-            _, h = W:SectionHeader(parent, section.title:upper(), y)
-            y = y - h
-            local rowsTop = y
-            for _, row in ipairs(section.rows) do
-                if row.hidden and row.hidden() then
-                elseif row.type == "checks" or row.type == "multiselect" then
-                    Place(ChecksCfg(row), ChecksDecorator(row), row.id, row.dependsOn)
-                elseif row.id == "council" then
+            _, hgt = W:SectionHeader(hostFrame, section.title:upper(), posY)
+            posY = posY - hgt
+            local rowsTop = posY
+            for _, rowFrame in ipairs(section.rows) do
+                if rowFrame.hidden and rowFrame.hidden() then
+                elseif rowFrame.type == "checks" or rowFrame.type == "multiselect" then
+                    Place(ChecksCfg(rowFrame), ChecksDecorator(rowFrame), rowFrame.id, rowFrame.dependsOn)
+                elseif rowFrame.id == "council" then
                     Flush()
-                    custom.councilPair(row, Schema.Row("councilRanks"))
-                elseif row.id == "councilRanks" then
-                elseif row.custom then
+                    custom.councilPair(rowFrame, Schema.Row("councilRanks"))
+                elseif rowFrame.id == "councilRanks" then
+                elseif rowFrame.custom then
                     Flush()
-                    custom[row.id](row)
+                    custom[rowFrame.id](rowFrame)
                 else
-                    Place(Cfg(row), Decorator(row), row.id, row.dependsOn)
+                    Place(Cfg(rowFrame), Decorator(rowFrame), rowFrame.id, rowFrame.dependsOn)
                 end
             end
             Flush()
@@ -1874,28 +1889,28 @@ initFrame:SetScript("OnEvent", function(self)
                 (section.id == "council" or section.id == "master" or section.id == "voting")
                 and section.locked
                 and not prebuild
-                and y < rowsTop
+                and posY < rowsTop
             then
-                LockCover(rowsTop, y, reason or Schema.LootMasterLockReason(), function()
+                LockCover(rowsTop, posY, reason or Schema.LootMasterLockReason(), function()
                     return section.locked() ~= nil
                 end)
             end
 
-            if section.id == "responses" and not prebuild and y < rowsTop then
-                local spec = Schema.Row("responses")
-                LockCover(rowsTop, y, spec.sessionLockedText, spec.sessionLocked)
+            if section.id == "responses" and not prebuild and posY < rowsTop then
+                local specInfo = Schema.Row("responses")
+                LockCover(rowsTop, posY, specInfo.sessionLockedText, specInfo.sessionLocked)
             end
         end
 
         if prebuild then
-            return math.abs(y)
+            return math.abs(posY)
         end
 
         local function Shape()
             local parts = {}
             for _, section in ipairs(sections) do
-                for _, row in ipairs(section.rows) do
-                    parts[#parts + 1] = (row.hidden and row.hidden()) and "h" or "v"
+                for _, rowFrame in ipairs(section.rows) do
+                    parts[#parts + 1] = (rowFrame.hidden and rowFrame.hidden()) and "h" or "v"
                 end
             end
             local ranks = Schema.Row("councilRanks")
@@ -1920,8 +1935,8 @@ initFrame:SetScript("OnEvent", function(self)
                 RequestRebuild()
                 return
             end
-            for i = 1, #refreshes do
-                refreshes[i]()
+            for idx = 1, #refreshes do
+                refreshes[idx]()
             end
         end
         CludesUI.RegisterWidgetRefresh(RefreshAll)
@@ -1929,29 +1944,29 @@ initFrame:SetScript("OnEvent", function(self)
 
         Subscribe(slc, Schema)
 
-        parent:SetScript("OnShow", function()
+        hostFrame:SetScript("OnShow", function()
             Listen(true)
         end)
-        parent:SetScript("OnHide", function()
+        hostFrame:SetScript("OnHide", function()
             Listen(false)
         end)
-        if parent:IsVisible() then
+        if hostFrame:IsVisible() then
             Listen(true)
         end
         if not prebuild then
             ShowBanner()
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     CludesUI:RegisterModule(ADDON_NAME, {
         title = "Simple Loot Council",
         description = MODULE_DESC,
         pages = PAGES,
-        buildPage = function(pageName, parent, yOffset)
+        buildPage = function(pageName, hostFrame, yOffset)
             if PAGE_SECTIONS[pageName] then
-                return BuildSettingsPage(pageName, parent, yOffset)
+                return BuildSettingsPage(pageName, hostFrame, yOffset)
             end
         end,
 

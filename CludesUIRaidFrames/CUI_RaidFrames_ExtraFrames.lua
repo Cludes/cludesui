@@ -7,13 +7,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Extra Frames: duplicates of chosen raid members.
 --  Reads the earlier Raid Frames files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs = pairs
 local ipairs = ipairs
@@ -27,14 +27,14 @@ local GetNumGroupMembers = GetNumGroupMembers
 local C_Timer = C_Timer
 local CreateFrame = CreateFrame
 
-local allButtons, ApplyFont, GetFFD = I.allButtons, I.ApplyFont, I.GetFFD
-local IsPowerBarEnabled, PixelSnap = I.IsPowerBarEnabled, I.PixelSnap
-local unitToButton, StyleButton, UpdateButton = I.unitToButton, I.StyleButton, I.UpdateButton
-local UpdateReadyCheck, LayoutTopNameBar = I.UpdateReadyCheck, I.LayoutTopNameBar
+local allButtons, ApplyFont, GetFFD = Inner.allButtons, Inner.ApplyFont, Inner.GetFFD
+local IsPowerBarEnabled, PixelSnap = Inner.IsPowerBarEnabled, Inner.PixelSnap
+local unitToButton, StyleButton, UpdateButton = Inner.unitToButton, Inner.StyleButton, Inner.UpdateButton
+local UpdateReadyCheck, LayoutTopNameBar = Inner.UpdateReadyCheck, Inner.LayoutTopNameBar
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -53,25 +53,25 @@ end
 --  combat. Excluded from preview/unlock mode like FB.
 -------------------------------------------------------------------------------
 do
-    local XF = { buttons = {}, trackers = {} }
-    ns._XF = XF
-    local FB = ns._FB
+    local Xfer = { buttons = {}, trackers = {} }
+    mod._XF = Xfer
+    local FB = mod._FB
 
-    XF.Settings = function()
-        return db and db.profile and db.profile.extraFrames
+    Xfer.Settings = function()
+        return saved and saved.profile and saved.profile.extraFrames
     end
 
-    XF.ShouldBeActive = function()
-        local set = XF.Settings()
-        if not set then
+    Xfer.ShouldBeActive = function()
+        local group = Xfer.Settings()
+        if not group then
             return false
         end
-        return set.showTanks or #(set.players or {}) > 0
+        return group.showTanks or #(group.players or {}) > 0
     end
 
     -- Hard selection bound (internal, no user setting): a full mythic roster's
     -- worth of duplicates while keeping per-unit event mirroring bounded.
-    XF.CAP = 20
+    Xfer.CAP = 20
 
     -- Effective growth axes: primary run direction + perpendicular wrap.
     -- Attached modes stack group-sized runs of 5 like additional raid groups:
@@ -81,11 +81,11 @@ do
     -- Direction (falling back to the legacy Horizontal toggle) and wraps along
     -- Wrap Direction. Wrap values not perpendicular to the primary run (stale
     -- after a direction change, or a parallel group growth) fall back to the default.
-    XF.GrowInfo = function(set, s)
+    Xfer.GrowInfo = function(group, s)
         local grow, wrap
-        if set and set.position == "free" then
-            grow = set.growDirection or (set.freeHorizontal and "RIGHT" or "DOWN")
-            wrap = set.wrapDirection
+        if group and group.position == "free" then
+            grow = group.growDirection or (group.freeHorizontal and "RIGHT" or "DOWN")
+            wrap = group.wrapDirection
         else
             grow = (s and s.unitGrowth) or "DOWN"
             wrap = (s and s.groupGrowth) or "RIGHT"
@@ -97,7 +97,7 @@ do
             if wrap == "DOWNRIGHT" then
                 wrap = "RIGHT"
             end
-            if set and set.position == "left" then
+            if group and group.position == "left" then
                 wrap = (wrap == "RIGHT" and "LEFT")
                     or (wrap == "LEFT" and "RIGHT")
                     or (wrap == "DOWN" and "UP")
@@ -122,37 +122,37 @@ do
     -- selection (the container is sized to the live selection; a CENTER pin
     -- would drift). Falls back to the legacy CENTER anchor (freePos) until the
     -- user drags the mover once. Called by FB.Anchor through the owner hook.
-    XF.FreeAnchor = function(c, set)
-        local r = set and set.freeRect
+    Xfer.FreeAnchor = function(c, group)
+        local r = group and group.freeRect
         if not r then
             return false
         end
-        local grow, wrap, horizontal = XF.GrowInfo(set, db and db.profile)
-        local corner, x, y = FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, r)
-        FB.FreePin(c, corner, x, y)
+        local grow, wrap, horizontal = Xfer.GrowInfo(group, saved and saved.profile)
+        local corner, posX, posY = FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, r)
+        FB.FreePin(c, corner, posX, posY)
         return true
     end
 
     -- Called by the shared mover on drag stop: capture the dropped rect for the corner pin above.
-    XF.SaveFreeRect = function(mover)
-        FB.SaveMoverRect(mover, XF.Settings())
+    Xfer.SaveFreeRect = function(mover)
+        FB.SaveMoverRect(mover, Xfer.Settings())
     end
 
     -- Ordered raid units to duplicate (bounded by XF.CAP): tanks in roster order first
     -- (Show Tanks on), then manually added names currently in the raid. Names are stored
     -- AND matched in GetRaidRosterInfo's format so realm suffixes always agree; names not
     -- in the roster are skipped but kept (they reappear when that player rejoins).
-    XF.ResolveUnits = function()
-        local set = XF.Settings()
+    Xfer.ResolveUnits = function()
+        local group = Xfer.Settings()
         local units = {}
-        if not set or not IsInRaid() then
+        if not group or not IsInRaid() then
             return units
         end
-        local cap = XF.CAP
+        local cap = Xfer.CAP
         local seen = {}
-        local n = GetNumGroupMembers() or 0
-        if set.showTanks then
-            for i = 1, n do
+        local num = GetNumGroupMembers() or 0
+        if group.showTanks then
+            for i = 1, num do
                 if #units >= cap then
                     break
                 end
@@ -161,22 +161,22 @@ do
                     name
                     and not seen[name]
                     and CludesUI.UnitEffectiveRole("raid" .. i) == "TANK"
-                    -- Exclude Myself (Show Tanks cog): the tanks auto-include
-                    -- skips the player's own frame; explicit hotkey picks below
-                    -- still add it.
-                    and not (set.excludeSelfTank and UnitIsUnit("raid" .. i, "player"))
+                    -- Exclude Myself (Show Tanks cog): the tanks auto-include
+                    -- skips the player's own frame; explicit hotkey picks below
+                    -- still add it.
+                    and not (group.excludeSelfTank and UnitIsUnit("raid" .. i, "player"))
                 then
                     seen[name] = true
                     units[#units + 1] = "raid" .. i
                 end
             end
         end
-        for _, mname in ipairs(set.players or {}) do
+        for _, mname in ipairs(group.players or {}) do
             if #units >= cap then
                 break
             end
             if not seen[mname] then
-                for i = 1, n do
+                for i = 1, num do
                     if (GetRaidRosterInfo(i)) == mname then
                         seen[mname] = true
                         units[#units + 1] = "raid" .. i
@@ -191,12 +191,12 @@ do
     -- The pitch between the duplicates. Attached beside Compact raid frames they take
     -- the groups' one pixel, so their rows stay level with the groups' (FB.Pitch: the
     -- boss group does the same).
-    XF.Pitch = function(set, s)
-        if set and set.position ~= "free" and ns.RF_CompactOn(db.profile, false) then
-            return ns.RF_OnePixel(false)
+    Xfer.Pitch = function(group, s)
+        if group and group.position ~= "free" and mod.RF_CompactOn(saved.profile, false) then
+            return mod.RF_OnePixel(false)
         end
         -- Same grid as FB.FreePin: the extra container's own scale.
-        return CludesUI.PP.SnapForES(s.cellSpacing or 2, XF.container:GetEffectiveScale())
+        return CludesUI.PP.SnapForES(s.cellSpacing or 2, Xfer.container:GetEffectiveScale())
     end
 
     -- Geometry only: container size, button stacking, per-button size (Extra
@@ -204,99 +204,101 @@ do
     -- ns._ResizeButtons). All VISUALS come from the shared StyleButton /
     -- ReloadFrames pipeline (buttons are in allButtons); ReloadFrames tail-calls
     -- XF_Apply so this offset pass always runs after the bulk base-size pass.
-    XF.Layout = function()
-        if not XF.built then
+    Xfer.Layout = function()
+        if not Xfer.built then
             return
         end
-        local s = ns._scaledProfile or db.profile
-        local set = XF.Settings()
-        local w =
-            PixelSnap(math.max(10, (ns._activeSizeW or s.frameWidth or 72) + ((set and set.extraWidth) or 0)))
-        local h = PixelSnap(
-            math.max(10, (ns._activeSizeH or s.frameHeight or 46) + ((set and set.extraHeight) or 0))
+        local s = mod._scaledProfile or saved.profile
+        local group = Xfer.Settings()
+        local wid = PixelSnap(
+            math.max(10, (mod._activeSizeW or s.frameWidth or 72) + ((group and group.extraWidth) or 0))
+        )
+        local hgt = PixelSnap(
+            math.max(10, (mod._activeSizeH or s.frameHeight or 46) + ((group and group.extraHeight) or 0))
         )
         -- Indicator/aura/BM auto-resize: ratio of the custom size to what the
         -- real frames currently render at (clamped like the tier scales). The
         -- extra proxy and ns._xfBmScale pick this up everywhere a duplicate
         -- renders, composing with the raid tier scales.
-        local aw = PixelSnap(ns._activeSizeW or s.frameWidth or 72)
-        local ah = PixelSnap(ns._activeSizeH or s.frameHeight or 46)
+        local aw = PixelSnap(mod._activeSizeW or s.frameWidth or 72)
+        local ah = PixelSnap(mod._activeSizeH or s.frameHeight or 46)
         local ratio = 1
         -- Auto Resize Indicators cog toggle (nil = ON, additive key): off keeps
         -- indicators/auras/BM at the real frames' base scale regardless of the
         -- extra frames' custom size.
-        if aw > 0 and ah > 0 and (not set or set.autoResizeIndicators ~= false) then
-            ratio = math.max(math.min(math.min(w / aw, h / ah), 1.3), 0.7)
+        if aw > 0 and ah > 0 and (not group or group.autoResizeIndicators ~= false) then
+            ratio = math.max(math.min(math.min(wid / aw, hgt / ah), 1.3), 0.7)
         end
-        ns._xfExtraRatio = ratio
-        if ns._RefreshProxyModes then
-            ns._RefreshProxyModes()
+        mod._xfExtraRatio = ratio
+        if mod._RefreshProxyModes then
+            mod._RefreshProxyModes()
         end
-        ns._xfBmScale = (ns._bmScale or 1) * ratio
-        local sp = XF.Pitch(set, s)
-        XF.pitch = sp
+        mod._xfBmScale = (mod._bmScale or 1) * ratio
+        local sp = Xfer.Pitch(group, s)
+        Xfer.pitch = sp
         -- Free Move lays out on its own axes; attached modes stack group-sized
         -- runs of 5 (unitGrowth within a run, group growth across).
-        local grow, wrap, horizontal = XF.GrowInfo(set, s)
+        local grow, wrap, horizontal = Xfer.GrowInfo(group, s)
         -- Grid size = the live selection; when the mover is shown outside a raid
         -- there is no selection yet, so estimate from the configuration.
-        local count = XF.activeCount or 0
-        if count < 1 then
-            count = ((set and set.showTanks) and 2 or 0) + ((set and set.players) and #set.players or 0)
-            if count < 1 then
-                count = 1
+        local total = Xfer.activeCount or 0
+        if total < 1 then
+            total = ((group and group.showTanks) and 2 or 0)
+                + ((group and group.players) and #group.players or 0)
+            if total < 1 then
+                total = 1
             end
-            if count > XF.CAP then
-                count = XF.CAP
+            if total > Xfer.CAP then
+                total = Xfer.CAP
             end
         end
         -- Frames per run: attached always uses full group-sized runs of 5 (a
         -- partially filled run still spans 5, exactly like a real group); Free
         -- Move wraps at Wrap After (0/unset = one single run).
         local per
-        if set and set.position == "free" then
-            local wa = tonumber(set.wrapAfter) or 0
-            per = (wa > 0) and wa or count
-            if per > count then
-                per = count
+        if group and group.position == "free" then
+            local wa = tonumber(group.wrapAfter) or 0
+            per = (wa > 0) and wa or total
+            if per > total then
+                per = total
             end
         else
             per = 5
         end
-        local lines = math.ceil(count / per)
+        local lines = math.ceil(total / per)
 
         -- The container spans the occupied grid. Its anchor corner (FB.Anchor's
         -- attached slotting, XF.FreeAnchor's free pin) is the corner the grid
         -- grows away from, so frame 1 holds position as the selection changes.
-        local runW, runH = w * per + sp * (per - 1), h * per + sp * (per - 1)
+        local runW, runH = wid * per + sp * (per - 1), hgt * per + sp * (per - 1)
         if horizontal then
-            XF.container:SetSize(runW, h * lines + sp * (lines - 1))
+            Xfer.container:SetSize(runW, hgt * lines + sp * (lines - 1))
         else
-            XF.container:SetSize(w * lines + sp * (lines - 1), runH)
+            Xfer.container:SetSize(wid * lines + sp * (lines - 1), runH)
         end
 
-        local stepW, stepH = w + sp, h + sp
+        local stepW, stepH = wid + sp, hgt + sp
         local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
         local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
-        for i, b in ipairs(XF.buttons) do
-            b:SetSize(w, h)
+        for i, b in ipairs(Xfer.buttons) do
+            b:SetSize(wid, hgt)
             b:ClearAllPoints()
-            local off = i - 1
-            local line = math.floor(off / per)
-            local pos = off - line * per
+            local offset = i - 1
+            local lineTex = math.floor(offset / per)
+            local place = offset - lineTex * per
             -- Map the (run, wrap) grid coordinate onto screen axes: the primary
             -- run carries pos, the wrap axis carries line; the anchor corner is
             -- the one both directions grow away from (frame 1 sits there).
             local hUnits, vUnits, hDir, vDir
             if horizontal then
-                hUnits, vUnits, hDir, vDir = pos, line, grow, wrap
+                hUnits, vUnits, hDir, vDir = place, lineTex, grow, wrap
             else
-                hUnits, vUnits, hDir, vDir = line, pos, wrap, grow
+                hUnits, vUnits, hDir, vDir = lineTex, place, wrap, grow
             end
             local corner = (vDir == "UP" and "BOTTOM" or "TOP") .. (hDir == "LEFT" and "RIGHT" or "LEFT")
             b:SetPoint(
                 corner,
-                XF.container,
+                Xfer.container,
                 corner,
                 (hDir == "LEFT" and -hUnits or hUnits) * stepW,
                 (vDir == "UP" and vUnits or -vUnits) * stepH
@@ -308,8 +310,8 @@ do
                 d.health:SetHeight(
                     (
                         (d.power and d.power:IsShown())
-                            and PixelSnap(h - ns.RF_HealthPowerInset(s, powerH))
-                        or h
+                            and PixelSnap(hgt - mod.RF_HealthPowerInset(s, powerH))
+                        or hgt
                     ) - topBarH
                 )
             end
@@ -317,11 +319,11 @@ do
             -- Scaled visual pass: re-apply every ratio-affected element through
             -- the extra proxy (mirrors ReloadFrames per-button styling) so texts/
             -- indicators/auras/BM buffs auto-resize. Bounded to the built slots.
-            local xs = ns._scaledExtraProxy
+            local xs = mod._scaledExtraProxy
             if xs.topNameBarDivider == true or (d.topNameBar and d.topNameBar._divider) then
                 LayoutTopNameBar(
                     xs,
-                    h,
+                    hgt,
                     (d.power and d.power:IsShown()) and powerH or 0,
                     d.health,
                     d.topNameBar,
@@ -342,7 +344,7 @@ do
             -- width (the layout derives it from the BASE frame width).
             if d.AnchorTexts then
                 d.AnchorTexts()
-                ns.RF_TextNameWidth(d, w)
+                mod.RF_TextNameWidth(d, wid)
             end
             if d.statusText then
                 ApplyFont(d.statusText, xs.statusTextSize or 14)
@@ -364,7 +366,7 @@ do
                 local liPos = (xs.leaderIconPosition or "top"):upper()
                 d.leaderIcon:SetPoint(
                     liPos,
-                    ns.RF_AnchorHost(d.health, xs),
+                    mod.RF_AnchorHost(d.health, xs),
                     liPos,
                     xs.leaderIconOffsetX or 0,
                     xs.leaderIconOffsetY or 0
@@ -392,10 +394,10 @@ do
                 end
             end
             if d.pingFrame then
-                ns._RFAnchorPing(d)
+                mod._RFAnchorPing(d)
             end
-            if ns.RF_FvMissingAnchor then
-                ns.RF_FvMissingAnchor(b, d)
+            if mod.RF_FvMissingAnchor then
+                mod.RF_FvMissingAnchor(b, d)
             end
         end
     end
@@ -404,7 +406,7 @@ do
     -- UNIT_* only (safe for RegisterUnitEvent's C-side filter); the two
     -- unit-payload broadcast events (READY_CHECK_CONFIRM, PLAYER_FLAGS_CHANGED)
     -- are plain registrations filtered in the handler.
-    XF.EVENTS = {
+    Xfer.EVENTS = {
         -- UNIT_AURA deliberately absent (Blizzard parity: their CompactUnitFrame
         -- repaints prediction from health/absorb events only). The one gap -- an
         -- aura-granted shield expiring on its TIMER on an unhit, topped unit
@@ -430,156 +432,160 @@ do
     -- only when the selection reaches them (callers are all OOC). d._isExtra is set BEFORE
     -- StyleButton so the OnAttributeChanged hook it installs never writes the real routing
     -- maps. Buttons join allButtons so every bulk restyle/update pass covers them.
-    XF.EnsureBuilt = function(count)
-        if not XF.built then
-            XF.built = true
-            local container = CreateFrame("Frame", "ERFExtraFramesContainer", UIParent)
-            container:Hide()
-            XF.container = container
+    Xfer.EnsureBuilt = function(total)
+        if not Xfer.built then
+            Xfer.built = true
+            local boxHolder = CreateFrame("Frame", "ERFExtraFramesContainer", UIParent)
+            boxHolder:Hide()
+            Xfer.container = boxHolder
         end
-        local want = count or 5
-        if want < 5 then
-            want = 5
+        local wanted = total or 5
+        if wanted < 5 then
+            wanted = 5
         end
 
-        for i = #XF.buttons + 1, want do
-            local b = CreateFrame("Button", "ERFExtraFrame" .. i, XF.container, "SecureUnitButtonTemplate")
+        for i = #Xfer.buttons + 1, wanted do
+            local b = CreateFrame("Button", "ERFExtraFrame" .. i, Xfer.container, "SecureUnitButtonTemplate")
             b:Hide()
             GetFFD(b)._isExtra = true
-            ns._StyleButtonSecure(b)
+            mod._StyleButtonSecure(b)
             StyleButton(b)
             allButtons[#allButtons + 1] = b
 
             -- Per-slot tracker: (re)registered for the assigned unit in XF_Apply,
             -- mirroring the central hub's per-unit reactions for this duplicate.
             -- Bounded to the built slots; zero registrations while a slot is empty.
-            local t = ns.TakeShell()
-            t:SetScript("OnEvent", function(_, event, unit, updateInfo)
+            local t = mod.TakeShell()
+            t:SetScript("OnEvent", function(_, evt, unitToken, updateInfo)
                 if not b:IsVisible() then
                     return
                 end
-                if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
-                    ns._UpdateButtonHealth(b, unit)
-                    if event == "UNIT_MAXHEALTH" then
-                        ns._ResettleButtonHealth(b)
+                if evt == "UNIT_HEALTH" or evt == "UNIT_MAXHEALTH" then
+                    mod._UpdateButtonHealth(b, unitToken)
+                    if evt == "UNIT_MAXHEALTH" then
+                        mod._ResettleButtonHealth(b)
                         -- Max moves the absorb bars' range; value-only health
                         -- changes touch nothing UpdateAbsorb paints (overlays are
                         -- clip-anchored; the missing-health clamp edge rides the
                         -- armed belt / next absorb event instead).
                         local d = GetFFD(b)
                         if d._absActive then
-                            ns._MarkAbsorbDirty(b, unit)
+                            mod._MarkAbsorbDirty(b, unitToken)
                         end
                     end
-                elseif event == "UNIT_POWER_UPDATE" then
+                elseif evt == "UNIT_POWER_UPDATE" then
                     local d = GetFFD(b)
                     if d.power and d.power:IsShown() then
                         -- Value only; type/color/bounds ride the UNIT_DISPLAYPOWER
                         -- edge (see the header dispatcher's branch).
                         local pType = d._pwType
                         if pType == nil then
-                            ns._RFPowerTypeEdge(d, unit)
+                            mod._RFPowerTypeEdge(d, unitToken)
                             pType = d._pwType
                         end
-                        local ppct = UnitPowerPercent(unit, pType, true, CurveConstants.ScaleTo100)
+                        local ppct = UnitPowerPercent(unitToken, pType, true, CurveConstants.ScaleTo100)
                         d.power:SetValue(ppct)
                         -- Power Texts ride the same value (one field test while off);
                         -- the Custom texts follow below, power bar or not.
                         if d._pwtOn then
-                            ns.RF_TextPower(d, unit, ppct, pType, true)
+                            mod.RF_TextPower(d, unitToken, ppct, pType, true)
                         end
                     end
                     local tp = d._txP
                     if tp and tp.reads and tp.reads.pp then
-                        ns.RF_TextRepaintCustom(d, unit, "pp")
+                        mod.RF_TextRepaintCustom(d, unitToken, "pp")
                     end
-                elseif event == "UNIT_DISPLAYPOWER" then
+                elseif evt == "UNIT_DISPLAYPOWER" then
                     local d = GetFFD(b)
                     if d.power and d.power:IsShown() then
-                        ns._RFPowerTypeEdge(d, unit)
-                        local ppct = UnitPowerPercent(unit, d._pwType, true, CurveConstants.ScaleTo100)
+                        mod._RFPowerTypeEdge(d, unitToken)
+                        local ppct = UnitPowerPercent(unitToken, d._pwType, true, CurveConstants.ScaleTo100)
                         d.power:SetValue(ppct)
                         if d._pwtOn then
-                            ns.RF_TextPower(d, unit, ppct, d._pwType, true)
+                            mod.RF_TextPower(d, unitToken, ppct, d._pwType, true)
                         end
                     end
                     local tp = d._txP
                     if tp and tp.reads and tp.reads.pp then
-                        ns.RF_TextRepaintCustom(d, unit, "pp")
+                        mod.RF_TextRepaintCustom(d, unitToken, "pp")
                     end
                 elseif
-                    event == "UNIT_ABSORB_AMOUNT_CHANGED"
-                    or event == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED"
-                    or event == "UNIT_HEAL_PREDICTION"
-                    or event == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED"
+                    evt == "UNIT_ABSORB_AMOUNT_CHANGED"
+                    or evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED"
+                    or evt == "UNIT_HEAL_PREDICTION"
+                    or evt == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED"
                 then
                     -- The event IS the arm: plainly observable even while the
                     -- values are secret. Paint coalesces to once per render frame.
                     -- Prediction is view-gated: with the feature off for this
                     -- button's view the event changes no pixel and must not arm.
-                    local dd = GetFFD(b)
-                    if event == "UNIT_HEAL_PREDICTION" then
-                        local sv = dd._isParty and ns._scaledPartyProxy
-                            or (dd._isExtra and ns._scaledExtraProxy)
-                            or ns._scaledProfile
+                    local dropdown = GetFFD(b)
+                    if evt == "UNIT_HEAL_PREDICTION" then
+                        local sv = dropdown._isParty and mod._scaledPartyProxy
+                            or (dropdown._isExtra and mod._scaledExtraProxy)
+                            or mod._scaledProfile
                         if sv.healPrediction then
-                            ns._AbArm(b, unit, dd)
-                            ns._MarkAbsorbDirty(b, unit)
+                            mod._AbArm(b, unitToken, dropdown)
+                            mod._MarkAbsorbDirty(b, unitToken)
                         end
                     else
-                        if event ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
-                            ns._AbArm(b, unit, dd)
+                        if evt ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
+                            mod._AbArm(b, unitToken, dropdown)
                         end
-                        ns._MarkAbsorbDirty(b, unit)
-                        if event == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then
-                            ns.UpdateHealAbsorbTextFor(b, unit)
+                        mod._MarkAbsorbDirty(b, unitToken)
+                        if evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then
+                            mod.UpdateHealAbsorbTextFor(b, unitToken)
                         end
                         -- Custom texts showing the amount this event moved (two field reads while
                         -- none does); the max-health-modifier edge moves health only.
-                        local tp = dd._txP
-                        if tp and tp.reads and event ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
-                            ns.RF_TextRepaintCustom(
-                                dd,
-                                unit,
-                                event == "UNIT_ABSORB_AMOUNT_CHANGED" and "abs" or "habs"
+                        local tp = dropdown._txP
+                        if tp and tp.reads and evt ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
+                            mod.RF_TextRepaintCustom(
+                                dropdown,
+                                unitToken,
+                                evt == "UNIT_ABSORB_AMOUNT_CHANGED" and "abs" or "habs"
                             )
                         end
-                        if event == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
-                            dd._rmhPct = nil -- reduced-max cache: this is its only value edge
-                            ns._UpdateButtonHealth(b, unit)
-                            ns._ResettleButtonHealth(b)
+                        if evt == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
+                            dropdown._rmhPct = nil -- reduced-max cache: this is its only value edge
+                            mod._UpdateButtonHealth(b, unitToken)
+                            mod._ResettleButtonHealth(b)
                         end
                     end -- prediction view-gate else
-                elseif event == "UNIT_THREAT_LIST_UPDATE" or event == "UNIT_THREAT_SITUATION_UPDATE" then
+                elseif evt == "UNIT_THREAT_LIST_UPDATE" or evt == "UNIT_THREAT_SITUATION_UPDATE" then
                     local d = GetFFD(b)
-                    ns.RF_PaintThreat(d, d._isExtra and ns._scaledExtraProxy or ns._scaledProfile, unit)
-                elseif event == "UNIT_IN_RANGE_UPDATE" then
-                    ns._UpdateButtonRange(unit, b)
-                elseif event == "UNIT_FLAGS" then
-                    ns._UpdateCombatIconFor(unit, b)
-                elseif event == "READY_CHECK_CONFIRM" then
+                    mod.RF_PaintThreat(
+                        d,
+                        d._isExtra and mod._scaledExtraProxy or mod._scaledProfile,
+                        unitToken
+                    )
+                elseif evt == "UNIT_IN_RANGE_UPDATE" then
+                    mod._UpdateButtonRange(unitToken, b)
+                elseif evt == "UNIT_FLAGS" then
+                    mod._UpdateCombatIconFor(unitToken, b)
+                elseif evt == "READY_CHECK_CONFIRM" then
                     -- Plain registration; filter to this slot's unit here
-                    if unit and unit == b:GetAttribute("unit") then
-                        UpdateReadyCheck(b, unit)
+                    if unitToken and unitToken == b:GetAttribute("unit") then
+                        UpdateReadyCheck(b, unitToken)
                     end
-                elseif event == "PLAYER_FLAGS_CHANGED" then
-                    if unit and unit == b:GetAttribute("unit") then
+                elseif evt == "PLAYER_FLAGS_CHANGED" then
+                    if unitToken and unitToken == b:GetAttribute("unit") then
                         UpdateButton(b)
                     end
-                elseif event == "UNIT_LEVEL" then
-                    ns._RFRepaintLevel(b)
-                elseif event == "UNIT_TARGET" then
-                    ns.RF_TextRepaintCustom(GetFFD(b), unit, "tgt")
+                elseif evt == "UNIT_LEVEL" then
+                    mod._RFRepaintLevel(b)
+                elseif evt == "UNIT_TARGET" then
+                    mod.RF_TextRepaintCustom(GetFFD(b), unitToken, "tgt")
                 else -- UNIT_NAME_UPDATE / UNIT_CONNECTION
                     UpdateButton(b)
-                    if event == "UNIT_CONNECTION" then
-                        ns._UpdateButtonRange(unit, b)
+                    if evt == "UNIT_CONNECTION" then
+                        mod._UpdateButtonRange(unitToken, b)
                     end
                 end
             end)
-            XF.trackers[i] = t
+            Xfer.trackers[i] = t
 
-            XF.buttons[i] = b
+            Xfer.buttons[i] = b
         end
     end
 
@@ -590,74 +596,74 @@ do
     -- swaps. The SetAttribute write triggers the StyleButton OnAttributeChanged
     -- hook, which repaints in full (UpdateButton + auras + dispel + BM), seeds
     -- range and re-registers private auras -- same path as a real header assignment.
-    function ns.XF_Apply()
-        if not db or not db.profile then
+    function mod.XF_Apply()
+        if not saved or not saved.profile then
             return
         end
-        local set = XF.Settings()
-        if not set then
+        local group = Xfer.Settings()
+        if not group then
             return
         end
         if InCombatLockdown() then
-            XF.applyDirty = true
+            Xfer.applyDirty = true
             return
         end
 
-        local units = XF.ShouldBeActive() and XF.ResolveUnits() or {}
-        XF.activeCount = #units
+        local units = Xfer.ShouldBeActive() and Xfer.ResolveUnits() or {}
+        Xfer.activeCount = #units
         if #units == 0 then
-            if XF.built then
-                for _, b in ipairs(XF.buttons) do
+            if Xfer.built then
+                for _, b in ipairs(Xfer.buttons) do
                     b:Hide()
                 end
-                XF.container:Hide()
-                for i = 1, #XF.trackers do
-                    XF.trackers[i]:UnregisterAllEvents()
+                Xfer.container:Hide()
+                for i = 1, #Xfer.trackers do
+                    Xfer.trackers[i]:UnregisterAllEvents()
                 end
             end
-            if XF.mover then
-                XF.mover:Hide()
+            if Xfer.mover then
+                Xfer.mover:Hide()
             end
-            wipe(ns._xfUnitToButton)
+            wipe(mod._xfUnitToButton)
             -- The boss group may have been chained behind this container;
             -- re-anchor it back onto the raid (no-op when FB is not built).
             FB.Anchor()
-            if ns._NotifyTrackerProviders then
-                ns._NotifyTrackerProviders()
+            if mod._NotifyTrackerProviders then
+                mod._NotifyTrackerProviders()
             end
             return
         end
 
-        XF.EnsureBuilt(#units)
-        XF.Layout()
-        FB.Anchor(XF)
-        XF.container:Show()
-        wipe(ns._xfUnitToButton)
-        for i = 1, #XF.buttons do
-            local b = XF.buttons[i]
-            local unit = units[i]
-            local t = XF.trackers[i]
+        Xfer.EnsureBuilt(#units)
+        Xfer.Layout()
+        FB.Anchor(Xfer)
+        Xfer.container:Show()
+        wipe(mod._xfUnitToButton)
+        for i = 1, #Xfer.buttons do
+            local b = Xfer.buttons[i]
+            local unitToken = units[i]
+            local t = Xfer.trackers[i]
             t:UnregisterAllEvents()
-            if unit then
+            if unitToken then
                 -- Class token cache for the power border (mirrors RebuildUnitMap)
                 local d = GetFFD(b)
-                local _, classToken = UnitClass(unit)
+                local _, classToken = UnitClass(unitToken)
                 d.classToken = classToken
-                b:SetAttribute("unit", unit)
-                ns._xfUnitToButton[unit] = b
+                b:SetAttribute("unit", unitToken)
+                mod._xfUnitToButton[unitToken] = b
                 -- Fail-open backstop for a mid-raid reconnect: the roster can still be
                 -- streaming, so UnitName(unit) may be nil at this first paint and the
                 -- slot commits a blank name (field report: blank until /reload even
                 -- though UNIT_NAME_UPDATE and the roster re-apply are both wired).
                 -- Re-arms until the name resolves, bounded, and only repaints while
                 -- this slot still holds the same unit. No-op when the name is cached.
-                if not UnitName(unit) then
+                if not UnitName(unitToken) then
                     local tries = 0
                     local function RetryName()
-                        if b:GetAttribute("unit") ~= unit then
+                        if b:GetAttribute("unit") ~= unitToken then
                             return
                         end
-                        if UnitName(unit) then
+                        if UnitName(unitToken) then
                             UpdateButton(b)
                             return
                         end
@@ -668,20 +674,20 @@ do
                     end
                     C_Timer.After(2, RetryName)
                 end
-                for _, ev in ipairs(XF.EVENTS) do
-                    t:RegisterUnitEvent(ev, unit)
+                for _, ev in ipairs(Xfer.EVENTS) do
+                    t:RegisterUnitEvent(ev, unitToken)
                 end
                 -- UNIT_FLAGS is opt-in: extra frames mirror the raid combat-icon toggle.
-                if db.profile.showCombatIndicator then
-                    t:RegisterUnitEvent("UNIT_FLAGS", unit)
+                if saved.profile.showCombatIndicator then
+                    t:RegisterUnitEvent("UNIT_FLAGS", unitToken)
                 end
                 -- UNIT_LEVEL is opt-in too: only while a view shows the level.
-                if ns.RF_TextWanted("level") then
-                    t:RegisterUnitEvent("UNIT_LEVEL", unit)
+                if mod.RF_TextWanted("level") then
+                    t:RegisterUnitEvent("UNIT_LEVEL", unitToken)
                 end
                 -- UNIT_TARGET likewise: only while a view's Custom text shows [target].
-                if ns.RF_TextWanted("tgt") then
-                    t:RegisterUnitEvent("UNIT_TARGET", unit)
+                if mod.RF_TextWanted("tgt") then
+                    t:RegisterUnitEvent("UNIT_TARGET", unitToken)
                 end
                 t:RegisterEvent("READY_CHECK_CONFIRM")
                 t:RegisterEvent("PLAYER_FLAGS_CHANGED")
@@ -696,17 +702,17 @@ do
         -- Extra frames are excluded from _CollectTrackerFrames (duplicates), but
         -- name-scanning trackers do index them, and PLAYER_ROLES_ASSIGNED reshuffles
         -- them with no event those trackers listen for.
-        if ns._NotifyTrackerProviders then
-            ns._NotifyTrackerProviders()
+        if mod._NotifyTrackerProviders then
+            mod._NotifyTrackerProviders()
         end
     end
 
-    function ns.XF_IsMoverShown()
-        return XF.mover and XF.mover:IsShown() or false
+    function mod.XF_IsMoverShown()
+        return Xfer.mover and Xfer.mover:IsShown() or false
     end
 
-    function ns.XF_SetMoverShown(show)
-        FB.SetMoverShown(XF, show, "ERFExtraFramesMover", "Extra Frames")
+    function mod.XF_SetMoverShown(show)
+        FB.SetMoverShown(Xfer, show, "ERFExtraFramesMover", "Extra Frames")
     end
 
     -- Hidden bind target (pure Lua keybinding, no Bindings.xml; same pattern as
@@ -715,49 +721,49 @@ do
     local bindBtn = CreateFrame("Button", "ERFExtraFramesBindBtn", UIParent)
     bindBtn:Hide()
 
-    XF.ToggleHovered = function()
-        if not db or not db.profile then
+    Xfer.ToggleHovered = function()
+        if not saved or not saved.profile then
             return
         end
         if not IsInRaid() then
             return
         end
-        local set = XF.Settings()
-        if not set then
+        local group = Xfer.Settings()
+        if not group then
             return
         end
         -- The real raid frame under the mouse, or one of our own duplicates
         -- (pressing the hotkey on a duplicate removes that player too).
-        local unit
-        for u, btn in pairs(unitToButton) do
-            if btn:IsShown() and btn:IsMouseOver() then
-                unit = u
+        local unitToken
+        for u, button in pairs(unitToButton) do
+            if button:IsShown() and button:IsMouseOver() then
+                unitToken = u
                 break
             end
         end
-        if not unit then
-            for _, b in ipairs(XF.buttons) do
+        if not unitToken then
+            for _, b in ipairs(Xfer.buttons) do
                 if b:IsShown() and b:IsMouseOver() then
-                    unit = b:GetAttribute("unit")
+                    unitToken = b:GetAttribute("unit")
                     break
                 end
             end
         end
-        if not unit then
+        if not unitToken then
             return
         end
-        local idx = tonumber(unit:match("^raid(%d+)$"))
+        local idx = tonumber(unitToken:match("^raid(%d+)$"))
         local name = idx and GetRaidRosterInfo(idx)
         if not name then
             return
         end
 
-        local players = set.players or {}
-        set.players = players
-        for k, v in ipairs(players) do
-            if v == name then
+        local players = group.players or {}
+        group.players = players
+        for k, val in ipairs(players) do
+            if val == name then
                 table.remove(players, k)
-                ns.XF_Apply()
+                mod.XF_Apply()
                 return
             end
         end
@@ -765,36 +771,36 @@ do
         -- An Exclude-Myself'd player tank is NOT covered, so their manual add
         -- stays legitimate.
         if
-            set.showTanks
-            and CludesUI.UnitEffectiveRole(unit) == "TANK"
-            and not (set.excludeSelfTank and UnitIsUnit(unit, "player"))
+            group.showTanks
+            and CludesUI.UnitEffectiveRole(unitToken) == "TANK"
+            and not (group.excludeSelfTank and UnitIsUnit(unitToken, "player"))
         then
             return
         end
-        if #XF.ResolveUnits() >= XF.CAP then
+        if #Xfer.ResolveUnits() >= Xfer.CAP then
             return
         end
         players[#players + 1] = name
-        ns.XF_Apply()
+        mod.XF_Apply()
     end
 
     bindBtn:SetScript("OnClick", function()
-        XF.ToggleHovered()
+        Xfer.ToggleHovered()
     end)
 
     -- Standing event frame: exists even while inactive so the tanks toggle or a
     -- first hotkey add can activate the feature without a /reload, and so the
     -- saved hotkey is re-bound every login.
     do
-        local ev = ns.TakeShell()
+        local ev = mod.TakeShell()
         ev:RegisterEvent("PLAYER_LOGIN")
         ev:RegisterEvent("GROUP_ROSTER_UPDATE")
         ev:RegisterEvent("PLAYER_ROLES_ASSIGNED")
         ev:RegisterEvent("PLAYER_REGEN_ENABLED")
         -- No PLAYER_TARGET_CHANGED / RAID_TARGET_UPDATE here: the duplicates ride
         -- the central broadcast closures via ns._xfUnitToButton.
-        ev:SetScript("OnEvent", function(_, event)
-            if event == "PLAYER_LOGIN" then
+        ev:SetScript("OnEvent", function(_, evt)
+            if evt == "PLAYER_LOGIN" then
                 local key = CludesUIDB and CludesUIDB.extraFramesKey
                 if key then
                     ClearOverrideBindings(bindBtn)
@@ -802,27 +808,27 @@ do
                 end
                 return
             end
-            if not db then
+            if not saved then
                 return
             end
-            if event == "PLAYER_REGEN_ENABLED" then
-                if XF.applyDirty then
-                    XF.applyDirty = nil
-                    ns.XF_Apply()
+            if evt == "PLAYER_REGEN_ENABLED" then
+                if Xfer.applyDirty then
+                    Xfer.applyDirty = nil
+                    mod.XF_Apply()
                 end
-                if XF.anchorDirty then
-                    XF.anchorDirty = nil
-                    FB.Anchor(XF)
+                if Xfer.anchorDirty then
+                    Xfer.anchorDirty = nil
+                    FB.Anchor(Xfer)
                 end
             else -- GROUP_ROSTER_UPDATE / PLAYER_ROLES_ASSIGNED
                 -- Raid indices and the tank set both shift with the roster
-                if XF.ShouldBeActive() or XF.built then
-                    ns.XF_Apply()
+                if Xfer.ShouldBeActive() or Xfer.built then
+                    mod.XF_Apply()
                 end
             end
         end)
-        XF.eventFrame = ev
+        Xfer.eventFrame = ev
     end
 end -- XF scope block
 
-I.broken = false
+Inner.broken = false

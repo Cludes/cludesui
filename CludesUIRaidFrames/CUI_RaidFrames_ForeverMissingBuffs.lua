@@ -56,7 +56,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  ns.RF_FvMissingUnit from the secure header's unit assignment; on every
 --  other client all three stay nil.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
 if not (CludesUI and CludesUI.IS_FOREVER) then
     return
@@ -104,36 +104,36 @@ local FAMILIES = {
     { key = "kings", class = "PALADIN", blessing = true, icon = 20217, from = { "kings" } },
 }
 local NUM_FAMILIES = #FAMILIES
-for i = 1, NUM_FAMILIES do
-    local fam = FAMILIES[i]
-    local names, ranks, ids = {}, {}, {}
+for idx = 1, NUM_FAMILIES do
+    local fam = FAMILIES[idx]
+    local nameList, ranks, ids = {}, {}, {}
     for _, key in ipairs(fam.from) do
         local shared = CludesUI.FOREVER_BUFF_FAMILIES[key]
-        for _, id in ipairs(shared.names) do
-            names[#names + 1] = id
+        for _, ident in ipairs(shared.names) do
+            nameList[#nameList + 1] = ident
         end
-        for _, id in ipairs(shared.single) do
-            ranks[#ranks + 1] = id
+        for _, ident in ipairs(shared.single) do
+            ranks[#ranks + 1] = ident
         end
-        for _, id in ipairs(shared.group) do
-            ranks[#ranks + 1] = id
+        for _, ident in ipairs(shared.group) do
+            ranks[#ranks + 1] = ident
         end
-        for _, id in ipairs(shared.ids) do
-            ids[#ids + 1] = id
+        for _, ident in ipairs(shared.ids) do
+            ids[#ids + 1] = ident
         end
         -- Only these classes need it (nil = everyone).
         fam.only = shared.beneficiaries
     end
-    fam.names, fam.ranks, fam.ids = names, ranks, ids
+    fam.names, fam.ranks, fam.ids = nameList, ranks, ids
 end
 local FAMILY_BY_ID = {} -- spell id -> family index
 local BLESS_INDEX = {} -- blessing key -> family index
-for i = 1, NUM_FAMILIES do
-    for _, id in ipairs(FAMILIES[i].ids) do
-        FAMILY_BY_ID[id] = i
+for idx = 1, NUM_FAMILIES do
+    for _, ident in ipairs(FAMILIES[idx].ids) do
+        FAMILY_BY_ID[ident] = idx
     end
-    if FAMILIES[i].blessing then
-        BLESS_INDEX[FAMILIES[i].key] = i
+    if FAMILIES[idx].blessing then
+        BLESS_INDEX[FAMILIES[idx].key] = idx
     end
 end
 
@@ -159,39 +159,39 @@ local EX_KEY = {
 }
 local NO_BLESSINGS = {}
 local OLD_SINGLE = {} -- the older single-key form, one cached list per key
-local function Choice(s, role, class)
+local function Choice(s, role, classFile)
     local key = BLESS_KEY[role]
-    if class then
+    if classFile then
         local ex = s[EX_KEY[role]]
-        local own = type(ex) == "table" and ex[class]
+        local own = type(ex) == "table" and ex[classFile]
         if type(own) == "table" then
             return own
         end
     end
-    local v = s[key]
-    if v == nil then
-        v = (s.missingBuffsBlessing == false) and "none" or BLESS_DEFAULT[role]
+    local val = s[key]
+    if val == nil then
+        val = (s.missingBuffsBlessing == false) and "none" or BLESS_DEFAULT[role]
     end
-    if type(v) == "table" then
-        return v
+    if type(val) == "table" then
+        return val
     end
-    if not BLESS_INDEX[v] then
+    if not BLESS_INDEX[val] then
         return NO_BLESSINGS
     end
-    local one = OLD_SINGLE[v]
+    local one = OLD_SINGLE[val]
     if not one then
-        one = { v }
-        OLD_SINGLE[v] = one
+        one = { val }
+        OLD_SINGLE[val] = one
     end
     return one
 end
-ns.RF_FvBlessingChoice, ns.RF_FvBlessingKey, ns.RF_FvBlessingExKey = Choice, BLESS_KEY, EX_KEY
+mod.RF_FvBlessingChoice, mod.RF_FvBlessingKey, mod.RF_FvBlessingExKey = Choice, BLESS_KEY, EX_KEY
 
 -- A list takes a blessing when it holds a key the indicator knows: a saved key
 -- it skips (a blessing the game removed) does not count.
-local function TakesOne(list)
-    for i = 1, #list do
-        if BLESS_INDEX[list[i]] then
+local function TakesOne(entries)
+    for idx = 1, #entries do
+        if BLESS_INDEX[entries[idx]] then
             return true
         end
     end
@@ -207,8 +207,8 @@ local function BlessingsOn(s)
     for _, key in pairs(EX_KEY) do
         local ex = s[key]
         if type(ex) == "table" then
-            for _, list in pairs(ex) do
-                if type(list) == "table" and TakesOne(list) then
+            for _, entries in pairs(ex) do
+                if type(entries) == "table" and TakesOne(entries) then
                     return true
                 end
             end
@@ -221,15 +221,15 @@ end
 -- other class keeps the whole indicator off (no events, no overlays).
 local PLAYER_CLASS = select(2, UnitClass("player"))
 local CAN_EVER = false
-for i = 1, NUM_FAMILIES do
-    if FAMILIES[i].class == PLAYER_CLASS then
+for idx = 1, NUM_FAMILIES do
+    if FAMILIES[idx].class == PLAYER_CLASS then
         CAN_EVER = true
     end
 end
 
 -- Per group token: state[unit][key] = true (has it), false (lacks it) or nil
 -- (unknown); inst[unit] = the aura instances found, for the removed-aura probe.
-local state, inst = {}, {}
+local status, instance = {}, {}
 local provider = {} -- key -> the player can cast it (a rank in the spellbook)
 local blessCaster = false -- the player can cast any blessing (the role lists then apply)
 local groupTank = false -- a group member has the tank role (full passes)
@@ -237,39 +237,41 @@ local solo = true -- not in a group (full passes)
 local wantFam = {} -- key -> switched on where the indicator shows (raid, party or Extra Frames)
 local enabled = false
 local trusted = {} -- key -> readable right now (Trusted rebuilds it once per frame)
-local names = {} -- family index -> { localized names }
+local nameList = {} -- family index -> { localized names }
 local icons = {} -- family index -> texture
 
 local function SettingsFor(d)
-    return d._isParty and ns._scaledPartyProxy or (d._isExtra and ns._scaledExtraProxy) or ns._scaledProfile
+    return d._isParty and mod._scaledPartyProxy
+        or (d._isExtra and mod._scaledExtraProxy)
+        or mod._scaledProfile
 end
 
-local function FamilyNames(i)
-    local n = names[i]
-    if n then
-        return n
+local function FamilyNames(idx)
+    local num = nameList[idx]
+    if num then
+        return num
     end
-    n = {}
-    for _, id in ipairs(FAMILIES[i].names) do
-        local name = C_Spell.GetSpellName(id)
+    num = {}
+    for _, ident in ipairs(FAMILIES[idx].names) do
+        local name = C_Spell.GetSpellName(ident)
         if name then
-            n[#n + 1] = name
+            num[#num + 1] = name
         end
     end
     -- Spell data can be cold this early: keep an empty answer uncached.
-    if #n > 0 then
-        names[i] = n
+    if #num > 0 then
+        nameList[idx] = num
     end
-    return n
+    return num
 end
 
-local function FamilyIcon(i)
-    local tex = icons[i]
-    if not tex then
-        tex = C_Spell.GetSpellTexture(FAMILIES[i].icon)
-        icons[i] = tex
+local function FamilyIcon(idx)
+    local texture = icons[idx]
+    if not texture then
+        texture = C_Spell.GetSpellTexture(FAMILIES[idx].icon)
+        icons[idx] = texture
     end
-    return tex or 134400
+    return texture or 134400
 end
 
 -- Whether every player rank of a buff reads non-secret right now. The
@@ -278,26 +280,26 @@ end
 -- a lookup can only find a non-secret aura, so a stale "readable" turns a
 -- secret buff into a false "missing".
 local trustedAt
-local function Trusted(i)
-    local now = GetTime()
-    if trustedAt ~= now then
-        trustedAt = now
-        local S = C_Secrets
+local function Trusted(idx)
+    local nowTime = GetTime()
+    if trustedAt ~= nowTime then
+        trustedAt = nowTime
+        local Stl = C_Secrets
         for fi = 1, NUM_FAMILIES do
-            local ok = true
-            if S and S.ShouldSpellAuraBeSecret then
-                for _, id in ipairs(FAMILIES[fi].ranks) do
-                    local good, secret = pcall(S.ShouldSpellAuraBeSecret, id)
+            local success = true
+            if Stl and Stl.ShouldSpellAuraBeSecret then
+                for _, ident in ipairs(FAMILIES[fi].ranks) do
+                    local good, secret = pcall(Stl.ShouldSpellAuraBeSecret, ident)
                     if not good or issecretvalue(secret) or secret ~= false then
-                        ok = false
+                        success = false
                         break
                     end
                 end
             end
-            trusted[FAMILIES[fi].key] = ok
+            trusted[FAMILIES[fi].key] = success
         end
     end
-    return trusted[FAMILIES[i].key]
+    return trusted[FAMILIES[idx].key]
 end
 
 -- A buff's own switch in one settings table (nil = on); the blessings follow
@@ -311,15 +313,15 @@ end
 
 -- Worth reading: the player can cast it and it is switched on somewhere. A
 -- blessing the player cannot cast never shows and can never be theirs.
-local function Tracked(i)
-    local key = FAMILIES[i].key
+local function Tracked(idx)
+    local key = FAMILIES[idx].key
     return provider[key] and wantFam[key]
 end
 
 -- The member's assigned role ("TANK", "HEALER", "DAMAGER", "NONE"), or nil
 -- while it reads secret.
-local function RoleOf(unit)
-    local role = UnitGroupRolesAssigned(unit)
+local function RoleOf(unitToken)
+    local role = UnitGroupRolesAssigned(unitToken)
     if issecretvalue(role) then
         return nil
     end
@@ -328,24 +330,24 @@ end
 
 -- Thorns Only on Tank: the group's tanks, or the player while solo or in a
 -- group without one.
-local function ThornsHere(s, unit)
+local function ThornsHere(s, unitToken)
     if not s.missingBuffsThornsTank then
         return true
     end
     if groupTank then
-        return RoleOf(unit) == "TANK"
+        return RoleOf(unitToken) == "TANK"
     end
-    return UnitIsUnit(unit, "player")
+    return UnitIsUnit(unitToken, "player")
 end
 
 -- Salvation: every group member but a tank (no role assigned counts as not a
 -- tank, as for the blessings; a secret role reads unknown: no icon). Never
 -- solo, where threat is no one else's.
-local function SalvationHere(unit)
+local function SalvationHere(unitToken)
     if solo then
         return false
     end
-    local role = RoleOf(unit)
+    local role = RoleOf(unitToken)
     return role ~= nil and role ~= "TANK"
 end
 
@@ -375,38 +377,38 @@ end
 -- never assign roles) that the player can cast and the member lacks, so one
 -- another paladin gave moves the pick down the list (one the player cannot
 -- cast is skipped; one the member reads unknown for stops the walk).
-local function MissingBlessing(s, st, unit)
+local function MissingBlessing(s, st, unitToken)
     if st.mine ~= false then
         return nil
     end
     if solo then
-        if provider.kings and st.kings == false and UnitIsUnit(unit, "player") then
+        if provider.kings and st.kings == false and UnitIsUnit(unitToken, "player") then
             return BLESS_INDEX.kings
         end
         return nil
     end
-    local role = RoleOf(unit)
+    local role = RoleOf(unitToken)
     if not role then
         return nil
     end
     if not BLESS_KEY[role] then
         role = "DAMAGER"
     end
-    local _, class = UnitClass(unit)
-    if issecretvalue(class) then
-        class = nil
+    local _, classFile = UnitClass(unitToken)
+    if issecretvalue(classFile) then
+        classFile = nil
     end
-    local want = Choice(s, role, class)
-    for w = 1, #want do
-        local key = want[w]
-        local i = BLESS_INDEX[key]
-        if i and provider[key] then
+    local wanted = Choice(s, role, classFile)
+    for wid = 1, #wanted do
+        local key = wanted[wid]
+        local idx = BLESS_INDEX[key]
+        if idx and provider[key] then
             local has = st[key]
             if has == nil then
                 return nil
             end
             if has == false then
-                return i
+                return idx
             end
         end
     end
@@ -418,47 +420,53 @@ end
 -------------------------------------------------------------------------------
 -- Whether the buff serves the member's class (no list = everyone); a class
 -- the game keeps secret reads as unknown, so no icon.
-local function Serves(fam, unit)
+local function Serves(fam, unitToken)
     local only = fam.only
     if not only then
         return true
     end
-    local _, class = UnitClass(unit)
-    if issecretvalue(class) then
+    local _, classFile = UnitClass(unitToken)
+    if issecretvalue(classFile) then
         return false
     end
-    return only[class] == true
+    return only[classFile] == true
 end
 
-local function Evaluate(unit, restricted)
-    local st = state[unit]
+local function Evaluate(unitToken, restricted)
+    local st = status[unitToken]
     if not st then
         st = {}
-        state[unit] = st
+        status[unitToken] = st
     end
-    local found = inst[unit]
+    local found = instance[unitToken]
     if found then
         wipe(found)
     else
         found = {}
-        inst[unit] = found
+        instance[unitToken] = found
     end
-    local known = UnitExists(unit) and UnitIsConnected(unit) and UnitIsVisible(unit)
+    local known = UnitExists(unitToken) and UnitIsConnected(unitToken) and UnitIsVisible(unitToken)
     -- st.mine: the member has a blessing the player cast (a paladin keeps one
     -- blessing per target, so theirs is then done); nil while unknown.
     local mine = false
-    for i = 1, NUM_FAMILIES do
-        local key = FAMILIES[i].key
+    for idx = 1, NUM_FAMILIES do
+        local key = FAMILIES[idx].key
         local value
         -- A buff the player cannot cast, switched off everywhere, or one the
         -- member's class does not need, is never looked up (it never shows).
-        if known and Tracked(i) and not (restricted and not Trusted(i)) and Serves(FAMILIES[i], unit) then
-            local list = FamilyNames(i)
-            if #list > 0 then
+        if
+            known
+            and Tracked(idx)
+            and not (restricted and not Trusted(idx))
+            and Serves(FAMILIES[idx], unitToken)
+        then
+            local entries = FamilyNames(idx)
+            if #entries > 0 then
                 value = false
-                for n = 1, #list do
-                    local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unit, list[n], "HELPFUL")
-                    if not ok or issecretvalue(aura) then
+                for num = 1, #entries do
+                    local success, aura =
+                        pcall(C_UnitAuras.GetAuraDataBySpellName, unitToken, entries[num], "HELPFUL")
+                    if not success or issecretvalue(aura) then
                         value = nil
                         break
                     end
@@ -466,11 +474,11 @@ local function Evaluate(unit, restricted)
                         value = true
                         -- The caster, not isFromPlayerOrPlayerPet: that is
                         -- true for any player's aura, another paladin's too.
-                        if FAMILIES[i].blessing and mine ~= true then
-                            local src = aura.sourceUnit
-                            if issecretvalue(src) then
+                        if FAMILIES[idx].blessing and mine ~= true then
+                            local source = aura.sourceUnit
+                            if issecretvalue(source) then
                                 mine = nil
-                            elseif src == "player" then
+                            elseif source == "player" then
                                 mine = true
                             end
                         end
@@ -484,7 +492,7 @@ local function Evaluate(unit, restricted)
             end
         end
         st[key] = value
-        if value == nil and mine == false and FAMILIES[i].blessing and Tracked(i) then
+        if value == nil and mine == false and FAMILIES[idx].blessing and Tracked(idx) then
             mine = nil
         end
     end
@@ -510,8 +518,8 @@ end
 -- Re-reads what the player can cast; true when any buff changed.
 local function ScanProviders()
     local changed, anyBless = false, false
-    for i = 1, NUM_FAMILIES do
-        local fam = FAMILIES[i]
+    for idx = 1, NUM_FAMILIES do
+        local fam = FAMILIES[idx]
         local can = Knows(fam)
         if (provider[fam.key] == true) ~= can then
             provider[fam.key] = can
@@ -528,19 +536,19 @@ end
 -------------------------------------------------------------------------------
 --  Overlay
 -------------------------------------------------------------------------------
-local function Overlay(host, level)
-    local o = CreateFrame("Frame", nil, host)
+local function Overlay(hostRegion, level)
+    local o = CreateFrame("Frame", nil, hostRegion)
     o:SetFrameLevel(level)
     o:EnableMouse(false)
     o.slots = {}
-    for i = 1, NUM_FAMILIES do
-        local bg = o:CreateTexture(nil, "ARTWORK", nil, 0)
-        bg:SetColorTexture(0, 0, 0, 1)
-        local tex = o:CreateTexture(nil, "ARTWORK", nil, 1)
-        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        bg:Hide()
-        tex:Hide()
-        o.slots[i] = { bg = bg, tex = tex }
+    for idx = 1, NUM_FAMILIES do
+        local backdrop = o:CreateTexture(nil, "ARTWORK", nil, 0)
+        backdrop:SetColorTexture(0, 0, 0, 1)
+        local texture = o:CreateTexture(nil, "ARTWORK", nil, 1)
+        texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        backdrop:Hide()
+        texture:Hide()
+        o.slots[idx] = { bg = backdrop, tex = texture }
     end
     o:Hide()
     return o
@@ -553,8 +561,8 @@ local glowSpec = {}
 local NO_SHAPE = { [4] = true } -- Shape Glow follows an icon shape; these cells have none
 
 local function StopGlows(o, from)
-    for i = from, NUM_FAMILIES do
-        local g = o.slots[i].glow
+    for idx = from, NUM_FAMILIES do
+        local g = o.slots[idx].glow
         if g and g.fvOn then
             CludesUI.Glows.StopGlow(g)
             g.fvOn = nil
@@ -567,96 +575,96 @@ local function HideOverlay(o)
     o:Hide()
 end
 
-local function ApplyGlows(o, s, n, size)
+local function ApplyGlows(o, s, num, dim)
     local G = CludesUI.Glows
-    local spec = G.SpecFromPrefix(glowSpec, s, "missingBuffsGlow")
-    if not spec then
+    local specInfo = G.SpecFromPrefix(glowSpec, s, "missingBuffsGlow")
+    if not specInfo then
         StopGlows(o, 1)
         return
     end
-    spec.excludes = NO_SHAPE
-    for i = 1, n do
-        local slot = o.slots[i]
-        local g = slot.glow
+    specInfo.excludes = NO_SHAPE
+    for idx = 1, num do
+        local slotIndex = o.slots[idx]
+        local g = slotIndex.glow
         if not g then
             g = CreateFrame("Frame", nil, o)
-            g:SetAllPoints(slot.bg)
+            g:SetAllPoints(slotIndex.bg)
             g:SetFrameLevel(o:GetFrameLevel() + 2)
             g:EnableMouse(false)
-            slot.glow = g
+            slotIndex.glow = g
         end
-        G.StartSpecGlow(g, spec, size, size, "icon")
+        G.StartSpecGlow(g, specInfo, dim, dim, "icon")
         g.fvOn = true
     end
-    StopGlows(o, n + 1)
+    StopGlows(o, num + 1)
 end
 
 -- Lays out n icons (the family indices in list) at the configured position:
 -- the overlay is exactly as wide as its icons, so a right-side position grows
 -- leftward and a centred one stays centred. Same 9-point spots and edge inset
 -- as the raid marker.
-local function Layout(o, s, health, list, n)
-    local snap = ns.PixelSnap or function(v)
-        return v
+local function Layout(o, s, healthBar, entries, num)
+    local snap = mod.PixelSnap or function(val)
+        return val
     end
-    local size = snap(s.missingBuffsSize or 22)
+    local dim = snap(s.missingBuffsSize or 22)
     -- One physical pixel: the icon edge and the gap between icons.
     local edge = snap(1)
     if edge <= 0 then
         edge = 1
     end
-    for i = 1, NUM_FAMILIES do
-        local slot = o.slots[i]
-        if i <= n then
-            local x = (i - 1) * (size + edge)
-            slot.bg:ClearAllPoints()
-            slot.bg:SetPoint("TOPLEFT", o, "TOPLEFT", x, 0)
-            slot.bg:SetSize(size, size)
-            slot.tex:ClearAllPoints()
-            slot.tex:SetPoint("TOPLEFT", slot.bg, "TOPLEFT", edge, -edge)
-            slot.tex:SetPoint("BOTTOMRIGHT", slot.bg, "BOTTOMRIGHT", -edge, edge)
-            slot.tex:SetTexture(FamilyIcon(list[i]))
-            slot.bg:Show()
-            slot.tex:Show()
+    for idx = 1, NUM_FAMILIES do
+        local slotIndex = o.slots[idx]
+        if idx <= num then
+            local posX = (idx - 1) * (dim + edge)
+            slotIndex.bg:ClearAllPoints()
+            slotIndex.bg:SetPoint("TOPLEFT", o, "TOPLEFT", posX, 0)
+            slotIndex.bg:SetSize(dim, dim)
+            slotIndex.tex:ClearAllPoints()
+            slotIndex.tex:SetPoint("TOPLEFT", slotIndex.bg, "TOPLEFT", edge, -edge)
+            slotIndex.tex:SetPoint("BOTTOMRIGHT", slotIndex.bg, "BOTTOMRIGHT", -edge, edge)
+            slotIndex.tex:SetTexture(FamilyIcon(entries[idx]))
+            slotIndex.bg:Show()
+            slotIndex.tex:Show()
         else
-            slot.bg:Hide()
-            slot.tex:Hide()
+            slotIndex.bg:Hide()
+            slotIndex.tex:Hide()
         end
     end
-    if n == 0 then
+    if num == 0 then
         HideOverlay(o)
         return
     end
-    o:SetSize(n * size + (n - 1) * edge, size)
-    local host = ns.RF_AnchorHost(health, s)
-    local pos = s.missingBuffsPosition or "top"
+    o:SetSize(num * dim + (num - 1) * edge, dim)
+    local hostRegion = mod.RF_AnchorHost(healthBar, s)
+    local place = s.missingBuffsPosition or "top"
     local ox, oy = s.missingBuffsOffsetX or 0, s.missingBuffsOffsetY or 0
     o:ClearAllPoints()
-    if pos == "topleft" then
-        o:SetPoint("TOPLEFT", host, "TOPLEFT", 2 + ox, -2 + oy)
-    elseif pos == "top" then
-        o:SetPoint("TOP", host, "TOP", ox, -2 + oy)
-    elseif pos == "topright" then
-        o:SetPoint("TOPRIGHT", host, "TOPRIGHT", -2 + ox, -2 + oy)
-    elseif pos == "left" then
-        o:SetPoint("LEFT", host, "LEFT", 2 + ox, oy)
-    elseif pos == "right" then
-        o:SetPoint("RIGHT", host, "RIGHT", -2 + ox, oy)
-    elseif pos == "bottomleft" then
-        o:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 2 + ox, 2 + oy)
-    elseif pos == "bottom" then
-        o:SetPoint("BOTTOM", host, "BOTTOM", ox, 2 + oy)
-    elseif pos == "bottomright" then
-        o:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+    if place == "topleft" then
+        o:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 2 + ox, -2 + oy)
+    elseif place == "top" then
+        o:SetPoint("TOP", hostRegion, "TOP", ox, -2 + oy)
+    elseif place == "topright" then
+        o:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -2 + ox, -2 + oy)
+    elseif place == "left" then
+        o:SetPoint("LEFT", hostRegion, "LEFT", 2 + ox, oy)
+    elseif place == "right" then
+        o:SetPoint("RIGHT", hostRegion, "RIGHT", -2 + ox, oy)
+    elseif place == "bottomleft" then
+        o:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 2 + ox, 2 + oy)
+    elseif place == "bottom" then
+        o:SetPoint("BOTTOM", hostRegion, "BOTTOM", ox, 2 + oy)
+    elseif place == "bottomright" then
+        o:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", -2 + ox, 2 + oy)
     else
-        o:SetPoint("CENTER", host, "CENTER", ox, oy)
+        o:SetPoint("CENTER", hostRegion, "CENTER", ox, oy)
     end
-    ApplyGlows(o, s, n, size)
+    ApplyGlows(o, s, num, dim)
     o:Show()
 end
 
 local paintList = {}
-local function PaintButton(btn, d)
+local function PaintButton(button, d)
     if not d.health then
         return
     end
@@ -669,12 +677,12 @@ local function PaintButton(btn, d)
         end
         return
     end
-    local unit = btn:GetAttribute("unit")
-    local st = unit and state[unit]
-    local n = 0
+    local unitToken = button:GetAttribute("unit")
+    local st = unitToken and status[unitToken]
+    local num = 0
     if st then
-        for i = 1, NUM_FAMILIES do
-            local fam = FAMILIES[i]
+        for idx = 1, NUM_FAMILIES do
+            local fam = FAMILIES[idx]
             local key = fam.key
             -- This frame kind's own switch decides, so a buff turned off for
             -- party but on for raid shows on raid frames only.
@@ -683,68 +691,68 @@ local function PaintButton(btn, d)
                 and st[key] == false
                 and provider[key]
                 and FamOn(s, fam)
-                and (not fam.tankOnly or ThornsHere(s, unit))
-                and (not fam.notTank or SalvationHere(unit))
+                and (not fam.tankOnly or ThornsHere(s, unitToken))
+                and (not fam.notTank or SalvationHere(unitToken))
             then
-                n = n + 1
-                paintList[n] = i
+                num = num + 1
+                paintList[num] = idx
             end
         end
         -- One blessing at most, last: the member's role picks it.
         if blessCaster and BlessingsOn(s) then
-            local bi = MissingBlessing(s, st, unit)
+            local bi = MissingBlessing(s, st, unitToken)
             if bi then
-                n = n + 1
-                paintList[n] = bi
+                num = num + 1
+                paintList[num] = bi
             end
         end
     end
-    if n == 0 and not o then
+    if num == 0 and not o then
         return
     end
     if not o then
-        o = Overlay(btn, btn:GetFrameLevel() + ns.LVL_MARKER)
+        o = Overlay(button, button:GetFrameLevel() + mod.LVL_MARKER)
         d.fvMissing = o
     end
-    Layout(o, s, d.health, paintList, n)
+    Layout(o, s, d.health, paintList, num)
 end
 
-local function PaintUnit(unit)
-    local GetFFD = ns.GetFFD
-    local b = ns._raidUnitToButton and ns._raidUnitToButton[unit]
+local function PaintUnit(unitToken)
+    local GetFFD = mod.GetFFD
+    local b = mod._raidUnitToButton and mod._raidUnitToButton[unitToken]
     if b then
         PaintButton(b, GetFFD(b))
     end
-    b = ns._partyUnitToButton and ns._partyUnitToButton[unit]
+    b = mod._partyUnitToButton and mod._partyUnitToButton[unitToken]
     if b then
         PaintButton(b, GetFFD(b))
     end
-    b = ns._xfUnitToButton and ns._xfUnitToButton[unit]
+    b = mod._xfUnitToButton and mod._xfUnitToButton[unitToken]
     if b then
         PaintButton(b, GetFFD(b))
     end
 end
 
-local function PaintList(list)
-    if not list then
+local function PaintList(entries)
+    if not entries then
         return
     end
-    local GetFFD = ns.GetFFD
-    for i = 1, #list do
-        local b = list[i]
+    local GetFFD = mod.GetFFD
+    for idx = 1, #entries do
+        local b = entries[idx]
         PaintButton(b, GetFFD(b))
     end
 end
 
 local function PaintAll()
-    PaintList(ns._allButtons) -- raid + Extra Frames
-    PaintList(ns._partyAllButtons)
+    PaintList(mod._allButtons) -- raid + Extra Frames
+    PaintList(mod._partyAllButtons)
 end
 
-local function Mapped(unit)
-    return (ns._raidUnitToButton and ns._raidUnitToButton[unit])
-        or (ns._partyUnitToButton and ns._partyUnitToButton[unit])
-        or (ns._xfUnitToButton and ns._xfUnitToButton[unit])
+local function Mapped(unitToken)
+    return (mod._raidUnitToButton and mod._raidUnitToButton[unitToken])
+        or (mod._partyUnitToButton and mod._partyUnitToButton[unitToken])
+        or (mod._xfUnitToButton and mod._xfUnitToButton[unitToken])
 end
 
 -------------------------------------------------------------------------------
@@ -755,14 +763,14 @@ end
 local dirty, pendingBtns, flushArmed, fullArmed = {}, {}, false, false
 
 -- Full pass: every button's own unit, read off the button itself.
-local function EvaluateList(list, restricted)
-    if not list then
+local function EvaluateList(entries, restricted)
+    if not entries then
         return
     end
-    for i = 1, #list do
-        local unit = list[i]:GetAttribute("unit")
-        if unit and not state[unit] then
-            Evaluate(unit, restricted)
+    for idx = 1, #entries do
+        local unitToken = entries[idx]:GetAttribute("unit")
+        if unitToken and not status[unitToken] then
+            Evaluate(unitToken, restricted)
         end
     end
 end
@@ -783,20 +791,20 @@ local function Flush()
         wipe(pendingBtns)
         ScanProviders()
         ScanTank()
-        wipe(state)
-        wipe(inst)
-        EvaluateList(ns._allButtons, restricted)
-        EvaluateList(ns._partyAllButtons, restricted)
+        wipe(status)
+        wipe(instance)
+        EvaluateList(mod._allButtons, restricted)
+        EvaluateList(mod._partyAllButtons, restricted)
         PaintAll()
         return
     end
-    for unit in pairs(dirty) do
-        Evaluate(unit, restricted)
+    for unitToken in pairs(dirty) do
+        Evaluate(unitToken, restricted)
     end
-    for unit in pairs(dirty) do
-        PaintUnit(unit)
+    for unitToken in pairs(dirty) do
+        PaintUnit(unitToken)
     end
-    local GetFFD = ns.GetFFD
+    local GetFFD = mod.GetFFD
     for b in pairs(pendingBtns) do
         PaintButton(b, GetFFD(b))
     end
@@ -812,8 +820,8 @@ local function Arm()
     C_Timer.After(0, Flush)
 end
 
-local function MarkDirty(unit)
-    dirty[unit] = true
+local function MarkDirty(unitToken)
+    dirty[unitToken] = true
     Arm()
 end
 
@@ -830,10 +838,10 @@ end
 -- looked up again, but only while a buff the player provides stays readable
 -- under the restriction. The rest read unknown until it lifts, and the
 -- restriction edge re-reads everyone then.
-local function Unprobeable(unit)
-    for i = 1, NUM_FAMILIES do
-        if Tracked(i) and Trusted(i) then
-            MarkDirty(unit)
+local function Unprobeable(unitToken)
+    for idx = 1, NUM_FAMILIES do
+        if Tracked(idx) and Trusted(idx) then
+            MarkDirty(unitToken)
             return
         end
     end
@@ -841,76 +849,76 @@ end
 
 -- Probe the payload first: only an added or removed Missing Buffs aura
 -- sends the member back for a look-up; a full update always does.
-local function OnUnitAura(unit, info)
-    if not Mapped(unit) then
+local function OnUnitAura(unitToken, details)
+    if not Mapped(unitToken) then
         return
     end
-    if not info then
-        MarkDirty(unit)
+    if not details then
+        MarkDirty(unitToken)
         return
     end
-    if issecretvalue(info) then
-        Unprobeable(unit)
+    if issecretvalue(details) then
+        Unprobeable(unitToken)
         return
     end
-    local full = info.isFullUpdate
+    local full = details.isFullUpdate
     if issecretvalue(full) then
-        Unprobeable(unit)
+        Unprobeable(unitToken)
         return
     end
     if full then
-        MarkDirty(unit)
+        MarkDirty(unitToken)
         return
     end
-    local added = info.addedAuras
+    local added = details.addedAuras
     if added then
         if issecretvalue(added) then
-            Unprobeable(unit)
+            Unprobeable(unitToken)
             return
         end
-        for i = 1, #added do
-            local aura = added[i]
+        for idx = 1, #added do
+            local aura = added[idx]
             if issecretvalue(aura) then
-                Unprobeable(unit)
+                Unprobeable(unitToken)
                 return
             end
-            local sid = aura.spellId
-            if issecretvalue(sid) then
-                Unprobeable(unit)
+            local spellRef = aura.spellId
+            if issecretvalue(spellRef) then
+                Unprobeable(unitToken)
                 return
             end
-            local fi = sid and FAMILY_BY_ID[sid]
+            local fi = spellRef and FAMILY_BY_ID[spellRef]
             if fi and Tracked(fi) then
-                MarkDirty(unit)
+                MarkDirty(unitToken)
                 return
             end
         end
     end
-    local removed, found = info.removedAuraInstanceIDs, inst[unit]
+    local removed, found = details.removedAuraInstanceIDs, instance[unitToken]
     if removed and found and next(found) then
         if issecretvalue(removed) then
-            Unprobeable(unit)
+            Unprobeable(unitToken)
             return
         end
-        for i = 1, #removed do
-            local iid = removed[i]
+        for idx = 1, #removed do
+            local iid = removed[idx]
             if issecretvalue(iid) then
-                Unprobeable(unit)
+                Unprobeable(unitToken)
                 return
             end
             if found[iid] then
-                MarkDirty(unit)
+                MarkDirty(unitToken)
                 return
             end
         end
     end
 end
 
-local function OnTrackerEvent(_, event, unit, info)
-    if event == "UNIT_AURA" then
-        OnUnitAura(unit, info)
-    elseif Mapped(unit) then
-        MarkDirty(unit)
+local function OnTrackerEvent(_, evt, unitToken, details)
+    if evt == "UNIT_AURA" then
+        OnUnitAura(unitToken, details)
+    elseif Mapped(unitToken) then
+        MarkDirty(unitToken)
     end
 end
 
@@ -918,16 +926,16 @@ end
 -- (built here, so their events bill this module; registered only while on).
 -- ScanTank walks the same list (declared above it).
 TOKENS = { "player" }
-for i = 1, 4 do
-    TOKENS[#TOKENS + 1] = "party" .. i
+for idx = 1, 4 do
+    TOKENS[#TOKENS + 1] = "party" .. idx
 end
-for i = 1, 40 do
-    TOKENS[#TOKENS + 1] = "raid" .. i
+for idx = 1, 40 do
+    TOKENS[#TOKENS + 1] = "raid" .. idx
 end
 local trackers = {}
-for i = 1, #TOKENS, 2 do
+for idx = 1, #TOKENS, 2 do
     local f = CreateFrame("Frame")
-    f._u1, f._u2 = TOKENS[i], TOKENS[i + 1]
+    f._u1, f._u2 = TOKENS[idx], TOKENS[idx + 1]
     f:SetScript("OnEvent", OnTrackerEvent)
     trackers[#trackers + 1] = f
 end
@@ -935,14 +943,14 @@ end
 local CHAT_RESTRICTION = Enum.AddOnRestrictionType and Enum.AddOnRestrictionType.Chat
 
 local world = CreateFrame("Frame")
-world:SetScript("OnEvent", function(_, event, rtype)
-    if event == "SPELLS_CHANGED" then
+world:SetScript("OnEvent", function(_, evt, rtype)
+    if evt == "SPELLS_CHANGED" then
         -- A buff learned or lost (a rank trained, the Divine Spirit talent
         -- taken or dropped) re-reads everyone; anything else costs one scan.
         if ScanProviders() then
             MarkAll()
         end
-    elseif event == "ADDON_RESTRICTION_STATE_CHANGED" then
+    elseif evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         -- A restriction starting or lifting changes which buffs can be read.
         -- The pass runs next frame, after the activation dispatch, so it reads
         -- the settled state; addon chat restrictions never touch auras.
@@ -955,8 +963,8 @@ world:SetScript("OnEvent", function(_, event, rtype)
 end)
 
 local function SetEvents(on)
-    for i = 1, #trackers do
-        local f = trackers[i]
+    for idx = 1, #trackers do
+        local f = trackers[idx]
         if on then
             f:RegisterUnitEvent("UNIT_AURA", f._u1, f._u2)
             f:RegisterUnitEvent("UNIT_CONNECTION", f._u1, f._u2)
@@ -984,10 +992,10 @@ end
 -- all), and whether any buff's answer changed.
 local SETTINGS = {} -- scratch: this pass's three settings tables
 local function ScanWanted()
-    SETTINGS[1], SETTINGS[2], SETTINGS[3] = ns._scaledProfile, ns._scaledPartyProxy, ns._scaledExtraProxy
+    SETTINGS[1], SETTINGS[2], SETTINGS[3] = mod._scaledProfile, mod._scaledPartyProxy, mod._scaledExtraProxy
     local any, changed = false, false
-    for i = 1, NUM_FAMILIES do
-        local fam = FAMILIES[i]
+    for idx = 1, NUM_FAMILIES do
+        local fam = FAMILIES[idx]
         local on = false
         for t = 1, 3 do
             local s = SETTINGS[t]
@@ -1012,23 +1020,23 @@ end
 local syncArmed = false
 local function Sync()
     syncArmed = false
-    local want, changed = false, false
+    local wanted, changed = false, false
     if CAN_EVER then
-        want, changed = ScanWanted()
+        wanted, changed = ScanWanted()
     end
-    if want ~= enabled then
-        enabled = want
-        SetEvents(want)
-        if want then
+    if wanted ~= enabled then
+        enabled = wanted
+        SetEvents(wanted)
+        if wanted then
             MarkAll()
         else
-            wipe(state)
-            wipe(inst)
+            wipe(status)
+            wipe(instance)
             wipe(dirty)
             wipe(pendingBtns)
             PaintAll()
         end
-    elseif want and changed then
+    elseif wanted and changed then
         MarkAll()
     end
 end
@@ -1038,8 +1046,8 @@ end
 -------------------------------------------------------------------------------
 -- Each reload path, per button: re-lay the icons from what is known (no
 -- look-ups), then settle the on/off state once for the whole pass.
-function ns.RF_FvMissingAnchor(btn, d)
-    PaintButton(btn, d)
+function mod.RF_FvMissingAnchor(button, d)
+    PaintButton(button, d)
     if not syncArmed then
         syncArmed = true
         C_Timer.After(0, Sync)
@@ -1048,20 +1056,20 @@ end
 
 -- The secure header's unit assignment (every roster re-process, same unit
 -- included): only a button whose unit really changed looks its member up.
-function ns.RF_FvMissingUnit(btn, d, unit)
-    if not enabled or d._fvUnit == unit then
+function mod.RF_FvMissingUnit(button, d, unitToken)
+    if not enabled or d._fvUnit == unitToken then
         return
     end
-    d._fvUnit = unit
-    if not unit then
+    d._fvUnit = unitToken
+    if not unitToken then
         -- An emptied button hides: its glows leave the driver with it.
         if d.fvMissing then
             HideOverlay(d.fvMissing)
         end
         return
     end
-    pendingBtns[btn] = true
-    MarkDirty(unit)
+    pendingBtns[button] = true
+    MarkDirty(unitToken)
 end
 
 -- Options preview: a fixed spread of missing buffs while the indicators
@@ -1080,42 +1088,42 @@ local PREVIEW_ROLES = { "DAMAGER", "HEALER", "TANK" }
 local function PreviewBlessing(s)
     for r = 1, #PREVIEW_ROLES do
         local c = Choice(s, PREVIEW_ROLES[r])
-        for w = 1, #c do
-            local i = BLESS_INDEX[c[w]]
-            if i then
-                return i
+        for wid = 1, #c do
+            local idx = BLESS_INDEX[c[wid]]
+            if idx then
+                return idx
             end
         end
     end
 end
 local previewList = {}
-function ns.RF_FvMissingPreview(f, index, s, indVis)
-    local spread = indVis and s.showMissingBuffs ~= false and f._health and PREVIEW[index]
-    local n = 0
+function mod.RF_FvMissingPreview(f, slotPos, s, indVis)
+    local spread = indVis and s.showMissingBuffs ~= false and f._health and PREVIEW[slotPos]
+    local num = 0
     if spread then
         for k = 1, #spread do
-            local i = spread[k]
-            if i == "B" then
-                i = PreviewBlessing(s)
+            local idx = spread[k]
+            if idx == "B" then
+                idx = PreviewBlessing(s)
             end
-            if i and (FAMILIES[i].blessing or FamOn(s, FAMILIES[i])) then
-                n = n + 1
-                previewList[n] = i
+            if idx and (FAMILIES[idx].blessing or FamOn(s, FAMILIES[idx])) then
+                num = num + 1
+                previewList[num] = idx
             end
         end
     end
     local o = f._fvMissing
-    if n == 0 then
+    if num == 0 then
         if o then
             HideOverlay(o)
         end
         return
     end
     if not o then
-        o = Overlay(f, f:GetFrameLevel() + ns.LVL_MARKER)
+        o = Overlay(f, f:GetFrameLevel() + mod.LVL_MARKER)
         f._fvMissing = o
     end
-    Layout(o, s, f._health, previewList, n)
+    Layout(o, s, f._health, previewList, num)
 end
 
 -- First look once the world is up (the reload paths may not run at login).

@@ -99,12 +99,12 @@ KD.INTERRUPTS = INTERRUPTS
 -- the player's own spellbook holds while that demon is out.
 local COMMAND_CASTS = { [119910] = 19647, [119914] = 89766 }
 local CAST_IDS = {}
-for id, kick in pairs(COMMAND_CASTS) do
-    CAST_IDS[id] = kick
+for ident, kick in pairs(COMMAND_CASTS) do
+    CAST_IDS[ident] = kick
 end
-for id, k in pairs(INTERRUPTS) do
-    if k.tracked ~= false then
-        CAST_IDS[id] = id
+for ident, key in pairs(INTERRUPTS) do
+    if key.tracked ~= false then
+        CAST_IDS[ident] = ident
     end
 end
 
@@ -125,15 +125,15 @@ local MODS = {
 -- interrupts that are nodes, the cooldown talents, and Grimoire of Sacrifice
 -- (a warlock without a demon out interrupts through it).
 local WATCHED = { [108503] = true }
-for id, k in pairs(INTERRUPTS) do
-    if k.talent and k.tracked ~= false then
-        WATCHED[id] = true
+for ident, key in pairs(INTERRUPTS) do
+    if key.talent and key.tracked ~= false then
+        WATCHED[ident] = true
     end
 end
-for _, list in pairs(MODS) do
-    for i = 1, #list do
-        if list[i].talent then
-            WATCHED[list[i].talent] = true
+for _, entries in pairs(MODS) do
+    for idx = 1, #entries do
+        if entries[idx].talent then
+            WATCHED[entries[idx].talent] = true
         end
     end
 end
@@ -150,8 +150,8 @@ local DEMON_INTERRUPT = { Felhunter = 19647, Felguard = 89766, Wrathguard = 8976
 
 -- A kick spell is one of ours (or a demon command version): the spell ID it
 -- counts as, or nil.
-function KD.OwnCastKick(spellID)
-    return CAST_IDS[spellID]
+function KD.OwnCastKick(spellId)
+    return CAST_IDS[spellId]
 end
 
 -- Picks a class member's interrupt. class: token; specID: number or nil
@@ -160,15 +160,15 @@ end
 -- petFamily: a warlock's demon family or nil. Returns the spell ID (nil for
 -- none) and the spec the answer was read for (the class's healing spec when
 -- a healer's spec was not known), which the cooldown is read for too.
-function KD.KickSpell(class, specID, role, talents, petFamily)
+function KD.KickSpell(classFile, specID, role, talents, petFamily)
     if not specID and role == "HEALER" then
-        specID = HEALING_SPEC_OF[class]
+        specID = HEALING_SPEC_OF[classFile]
     end
-    if class == "WARLOCK" then
+    if classFile == "WARLOCK" then
         if petFamily then
-            local id = DEMON_INTERRUPT[petFamily]
-            if id then
-                return id, specID
+            local ident = DEMON_INTERRUPT[petFamily]
+            if ident then
+                return ident, specID
             end
         end
         if talents and talents[108503] and not petFamily then
@@ -182,16 +182,16 @@ function KD.KickSpell(class, specID, role, talents, petFamily)
     -- An unknown spec assumes the class's main interrupt; a known one takes
     -- the main interrupt when that spec has it, else the spec's own.
     local main, own
-    for id, k in pairs(INTERRUPTS) do
-        if k.class == class and k.tracked ~= false then
-            local specOk = (not k.specs) or not specID or k.specs[specID]
+    for ident, key in pairs(INTERRUPTS) do
+        if key.class == classFile and key.tracked ~= false then
+            local specOk = (not key.specs) or not specID or key.specs[specID]
             -- A read tree without the node: this member has no such kick.
-            local hasNode = not (k.talent and talents and not talents[id])
+            local hasNode = not (key.talent and talents and not talents[ident])
             if specOk and hasNode then
-                if k.main then
-                    main = id
-                elseif specID and k.specs and k.specs[specID] then
-                    own = id
+                if key.main then
+                    main = ident
+                elseif specID and key.specs and key.specs[specID] then
+                    own = ident
                 end
             end
         end
@@ -202,19 +202,19 @@ end
 -- The cooldown of a kick for its owner: the plain cooldown and the one after a
 -- successful interrupt (the same unless a talent shortens it then). specID,
 -- talents as above (nil = unknown: base values).
-function KD.Cooldown(spellID, specID, talents)
-    local k = INTERRUPTS[spellID]
-    if not k then
+function KD.Cooldown(spellId, specID, talents)
+    local key = INTERRUPTS[spellId]
+    if not key then
         return nil
     end
-    local cd, landed = k.cd, 0
-    local list = MODS[spellID]
-    if list then
+    local cd, landed = key.cd, 0
+    local entries = MODS[spellId]
+    if entries then
         local pct, flat = 0, 0
-        for i = 1, #list do
-            local m = list[i]
-            local on = (m.talent and talents and talents[m.talent]) or (m.spec and specID == m.spec)
-            if on then
+        for idx = 1, #entries do
+            local m = entries[idx]
+            local enabled = (m.talent and talents and talents[m.talent]) or (m.spec and specID == m.spec)
+            if enabled then
                 if m.pct then
                     pct = pct + m.pct
                 end
@@ -226,7 +226,7 @@ function KD.Cooldown(spellID, specID, talents)
                 end
             end
         end
-        cd = floor((k.cd * (1 + pct / 100) + flat) * 100 + 0.5) / 100
+        cd = floor((key.cd * (1 + pct / 100) + flat) * 100 + 0.5) / 100
     end
     if cd < 0.5 then
         cd = 0.5
@@ -240,10 +240,10 @@ end
 
 -- The spell whose icon stands for a class's interrupt when the member's own is
 -- not known (the bars' default icon).
-function KD.ClassMainKick(class)
-    for id, k in pairs(INTERRUPTS) do
-        if k.class == class and k.main then
-            return id
+function KD.ClassMainKick(classFile)
+    for ident, key in pairs(INTERRUPTS) do
+        if key.class == classFile and key.main then
+            return ident
         end
     end
     return nil
@@ -261,35 +261,35 @@ function KD.ClassLists()
     end
     classLists = {}
     local ids = {}
-    for id in pairs(INTERRUPTS) do
-        ids[#ids + 1] = id
+    for ident in pairs(INTERRUPTS) do
+        ids[#ids + 1] = ident
     end
     table.sort(ids)
-    local function add(class, id)
-        local list = classLists[class]
-        if not list then
-            list = {}
-            classLists[class] = list
+    local function add(classFile, ident)
+        local entries = classLists[classFile]
+        if not entries then
+            entries = {}
+            classLists[classFile] = entries
         end
-        list[#list + 1] = id
+        entries[#entries + 1] = ident
     end
-    for _, id in ipairs(ids) do
-        local k = INTERRUPTS[id]
-        if not k.main and not k.sacrifice then
-            add(k.class, id)
-        end
-    end
-    for _, id in ipairs(ids) do
-        if INTERRUPTS[id].main then
-            add(INTERRUPTS[id].class, id)
+    for _, ident in ipairs(ids) do
+        local key = INTERRUPTS[ident]
+        if not key.main and not key.sacrifice then
+            add(key.class, ident)
         end
     end
-    for id, kick in pairs(COMMAND_CASTS) do
-        add(INTERRUPTS[kick].class, id)
+    for _, ident in ipairs(ids) do
+        if INTERRUPTS[ident].main then
+            add(INTERRUPTS[ident].class, ident)
+        end
     end
-    for _, id in ipairs(ids) do
-        if INTERRUPTS[id].sacrifice then
-            add(INTERRUPTS[id].class, id)
+    for ident, kick in pairs(COMMAND_CASTS) do
+        add(INTERRUPTS[kick].class, ident)
+    end
+    for _, ident in ipairs(ids) do
+        if INTERRUPTS[ident].sacrifice then
+            add(INTERRUPTS[ident].class, ident)
         end
     end
     return classLists

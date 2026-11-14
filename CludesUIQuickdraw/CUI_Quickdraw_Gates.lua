@@ -8,17 +8,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  lattice gates.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local LIVE_STRATA, MAX_LATTICE, REGION_MAX = I.LIVE_STRATA, I.MAX_LATTICE, I.REGION_MAX
-local EnsureScrollCatcher, EnsureSecureHeader = I.EnsureScrollCatcher, I.EnsureSecureHeader
-local ARM_CLAIM = I.ARM_CLAIM
+local LIVE_STRATA, MAX_LATTICE, REGION_MAX = Inner.LIVE_STRATA, Inner.MAX_LATTICE, Inner.REGION_MAX
+local EnsureScrollCatcher, EnsureSecureHeader = Inner.EnsureScrollCatcher, Inner.EnsureSecureHeader
+local ARM_CLAIM = Inner.ARM_CLAIM
 
 -------------------------------------------------------------------------------
 --  Arming gates -- the pass-through rule, and the exclusive-ground rule
@@ -228,8 +228,8 @@ do
     --
     -- Wrapped in parentheses for the same reason LeaveSnippet's return is; see
     -- the note there.
-    function EnterSnippet(k, region)
-        if region then
+    function EnterSnippet(key, regionFrame)
+        if regionFrame then
             return (
                 ([==[
         local btn = self:GetFrameRef("btn")
@@ -302,7 +302,7 @@ __ARC_GROUND__
             local k = __CLAIM_K__
             __ARM_CLAIM__
         end
-    ]==]):gsub("__CLAIM_K__", tostring(k)):gsub("__ARM_CLAIM__", function()
+    ]==]):gsub("__CLAIM_K__", tostring(key)):gsub("__ARM_CLAIM__", function()
                 return ARM_CLAIM
             end)
         )
@@ -336,7 +336,7 @@ __ARC_GROUND__
     -- stale gate is put away, EXCEPT on the arc, where the region gates are up from
     -- the open precisely so that entering one can arm the claim. Hiding those the
     -- first time the cursor crossed one unarmed would take that way in away again.
-    function LeaveSnippet(k, region)
+    function LeaveSnippet(key, regionFrame)
         return (
             ([==[
         local btn = self:GetFrameRef("btn")
@@ -458,13 +458,14 @@ __ARC_GROUND__
             end
         end
     ]==])
-                :gsub("__STALE_TEST__", k and ("armed ~= " .. k) or "not armed")
+                :gsub("__STALE_TEST__", key and ("armed ~= " .. key) or "not armed")
                 -- Nothing at all for the gates that have no reason to ask: the
                 -- substitution leaves the line out rather than baking in a test that
                 -- is always false.
                 :gsub(
                     "__STALE_KEEP__",
-                    region and 'if btn and btn:GetAttribute("eqdMode") == "ANGULAR" then return end' or ""
+                    regionFrame and 'if btn and btn:GetAttribute("eqdMode") == "ANGULAR" then return end'
+                        or ""
                 )
                 :gsub("__CURSOR_OFFSET__", function()
                     return CURSOR_OFFSET
@@ -534,8 +535,8 @@ do
         if gate.SetPassThroughButtons then
             if not PASS_BUTTONS then
                 PASS_BUTTONS = { "LeftButton", "RightButton", "MiddleButton" }
-                for n = 4, 31 do
-                    PASS_BUTTONS[#PASS_BUTTONS + 1] = "Button" .. n
+                for num = 4, 31 do
+                    PASS_BUTTONS[#PASS_BUTTONS + 1] = "Button" .. num
                 end
             end
             gate:SetMouseClickEnabled(true)
@@ -545,11 +546,11 @@ do
         end
     end
 
-    function EnsureGates(index, btn, need)
-        local pool = gatePools[index]
+    function EnsureGates(slotPos, button, need)
+        local pool = gatePools[slotPos]
         if not pool then
             pool = { pgate = {}, rgate = {}, built = 0 }
-            gatePools[index] = pool
+            gatePools[slotPos] = pool
 
             -- The FLOOR. One per palette, under every other gate and over
             -- everything else, shown only while some claim is armed -- see
@@ -583,7 +584,7 @@ do
             -- under. See GateMouse, which is what makes that true.
             local fgate = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. index .. "FGate",
+                "CUIQuickdrawButton" .. slotPos .. "FGate",
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )
@@ -593,7 +594,7 @@ do
             GateMouse(fgate)
             fgate:Hide()
 
-            SecureHandlerSetFrameRef(fgate, "btn", btn)
+            SecureHandlerSetFrameRef(fgate, "btn", button)
             SecureHandlerSetFrameRef(fgate, "ui", UIParent)
             -- Both edges, for the same reason a region gate wraps both: the OnEnter
             -- is the test that matters, and the OnLeave is what raising the flag on
@@ -601,17 +602,17 @@ do
             -- gate, and re-testing there costs one geometric measurement.
             SecureHandlerWrapScript(fgate, "OnEnter", EnsureSecureHeader(), LeaveSnippet(nil))
             SecureHandlerWrapScript(fgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(nil))
-            SecureHandlerSetFrameRef(btn, "fgate", fgate)
+            SecureHandlerSetFrameRef(button, "fgate", fgate)
             pool.fgate = fgate
         end
         if pool.built >= need then
             return pool
         end
 
-        for k = pool.built + 1, need do
+        for key = pool.built + 1, need do
             local pgate = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. index .. "PGate" .. k,
+                "CUIQuickdrawButton" .. slotPos .. "PGate" .. key,
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )
@@ -620,9 +621,9 @@ do
             GateMouse(pgate)
             pgate:Hide()
 
-            SecureHandlerSetFrameRef(pgate, "btn", btn)
+            SecureHandlerSetFrameRef(pgate, "btn", button)
             SecureHandlerSetFrameRef(pgate, "ui", UIParent)
-            SecureHandlerWrapScript(pgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(k))
+            SecureHandlerWrapScript(pgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(key))
             -- The parent gate's own rect is exactly the claim's own cell, and it
             -- outranks every region gate of the same claim (level 20 against 10),
             -- so wherever a region reaches over that cell -- all of it, as an
@@ -639,19 +640,19 @@ do
             -- every way OUT of the claim now runs the same check, whether the
             -- last gate under the cursor was the parent's or one of its
             -- regions'.
-            SecureHandlerWrapScript(pgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(k))
+            SecureHandlerWrapScript(pgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(key))
 
             -- The button carries its own reference to every gate too, so the press
             -- branch of SNIPPET_PRE -- which only knows claim indices and boxes,
             -- never the frames themselves until it asks -- can place and size them.
-            SecureHandlerSetFrameRef(btn, "pgate" .. k, pgate)
+            SecureHandlerSetFrameRef(button, "pgate" .. key, pgate)
 
-            pool.pgate[k] = pgate
-            pool.rgate[k] = {}
+            pool.pgate[key] = pgate
+            pool.rgate[key] = {}
             for r = 1, REGION_MAX do
                 local rgate = CreateFrame(
                     "Frame",
-                    "CUIQuickdrawButton" .. index .. "RGate" .. k .. "_" .. r,
+                    "CUIQuickdrawButton" .. slotPos .. "RGate" .. key .. "_" .. r,
                     UIParent,
                     "SecureHandlerEnterLeaveTemplate"
                 )
@@ -660,7 +661,7 @@ do
                 GateMouse(rgate)
                 rgate:Hide()
 
-                SecureHandlerSetFrameRef(rgate, "btn", btn)
+                SecureHandlerSetFrameRef(rgate, "btn", button)
                 SecureHandlerSetFrameRef(rgate, "ui", UIParent)
                 -- OnEnter carries the ARC's way in, and nothing at all off it --
                 -- see EnterSnippet's `region` variant. It would still have to be
@@ -671,13 +672,13 @@ do
                 -- up. Left unwrapped, the flag stays permanently down and the
                 -- disarm test never runs -- a claim that ever armed stays armed for
                 -- the rest of the hold, nest stuck open and block stuck dim.
-                SecureHandlerWrapScript(rgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(k, true))
-                SecureHandlerWrapScript(rgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(k, true))
+                SecureHandlerWrapScript(rgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(key, true))
+                SecureHandlerWrapScript(rgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(key, true))
 
-                SecureHandlerSetFrameRef(btn, "rgate" .. k .. "_" .. r, rgate)
-                pool.rgate[k][r] = rgate
+                SecureHandlerSetFrameRef(button, "rgate" .. key .. "_" .. r, rgate)
+                pool.rgate[key][r] = rgate
             end
-            pool.built = k
+            pool.built = key
         end
         return pool
     end
@@ -716,8 +717,8 @@ do
     -- sized by the window, not by how many entries nest, and nine lean frames is
     -- what the whole thing costs. Only a strip that actually nests something
     -- ever builds it -- see the call in PushPalette.
-    function EnsureLatticeGates(index, btn)
-        local pool = gatePools[index]
+    function EnsureLatticeGates(slotPos, button)
+        local pool = gatePools[slotPos]
         if not pool or pool.lattice then
             return
         end
@@ -728,7 +729,7 @@ do
             -- offset, which is what the snippets loop.
             local g = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. index .. "LGate" .. (d + MAX_LATTICE),
+                "CUIQuickdrawButton" .. slotPos .. "LGate" .. (d + MAX_LATTICE),
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )
@@ -736,18 +737,18 @@ do
             g:SetFrameLevel(20)
             GateMouse(g)
             g:Hide()
-            SecureHandlerSetFrameRef(g, "btn", btn)
+            SecureHandlerSetFrameRef(g, "btn", button)
             SecureHandlerSetFrameRef(g, "catcher", EnsureScrollCatcher())
             -- OnEnter only: the lattice never disarms on leaving -- empty ground
             -- retains, per the sticky -- so there is no OnLeave body and the
             -- "_wrapentered" precondition the region gates work around never
             -- comes up.
             SecureHandlerWrapScript(g, "OnEnter", EnsureSecureHeader(), LatticeSnippet(d))
-            SecureHandlerSetFrameRef(btn, "lgate" .. d, g)
+            SecureHandlerSetFrameRef(button, "lgate" .. d, g)
             pool.lattice[d] = g
         end
     end
 end
 
-I.EnsureGates, I.EnsureLatticeGates, I.gatePools = EnsureGates, EnsureLatticeGates, gatePools
-I.broken = false
+Inner.EnsureGates, Inner.EnsureLatticeGates, Inner.gatePools = EnsureGates, EnsureLatticeGates, gatePools
+Inner.broken = false

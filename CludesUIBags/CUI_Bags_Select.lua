@@ -7,22 +7,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Pin and Assign selection modes, the Junk Marker and Sell Junk.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
 local CUI = CludesUI
 
-local BP, GetAccentRGB, GetFont, IsGearItem = I.BP, I.GetAccentRGB, I.GetFont, I.IsGearItem
-local IsItemPinned, NormalizePinKey = I.IsItemPinned, I.NormalizePinKey
-local SetBagFont, _openItemPanels, PinnedItems = I.SetBagFont, I._openItemPanels, I.PinnedItems
-local itemSlots, SetInsetBorderColor = I.itemSlots, I.SetInsetBorderColor
-local GetInsetBorderStyle, SetInsetBorderThickness = I.GetInsetBorderStyle, I.SetInsetBorderThickness
+local BP, GetAccentRGB, GetFont, IsGearItem = Inner.BP, Inner.GetAccentRGB, Inner.GetFont, Inner.IsGearItem
+local IsItemPinned, NormalizePinKey = Inner.IsItemPinned, Inner.NormalizePinKey
+local SetBagFont, _openItemPanels, PinnedItems = Inner.SetBagFont, Inner._openItemPanels, Inner.PinnedItems
+local itemSlots, SetInsetBorderColor = Inner.itemSlots, Inner.SetInsetBorderColor
+local GetInsetBorderStyle, SetInsetBorderThickness = Inner.GetInsetBorderStyle, Inner.SetInsetBorderThickness
 
 -------------------------------------------------------------------------------
 --  Pin Selection Mode
@@ -34,8 +34,8 @@ local EnterAssignSelectMode -- forward declaration
 -- The "+" look shared by the pin and assign "+" overlays and the Compact
 -- display's drop zones (CludesUIBags_Compact.lua): a dimmed button with a
 -- "+" that brightens on hover and shows the button's _plusTip.
-ns.PIN_PLUS_TIP = "Pin an Item"
-ns.ASSIGN_PLUS_TIP = "Assign an item to this category"
+mod.PIN_PLUS_TIP = "Pin an Item"
+mod.ASSIGN_PLUS_TIP = "Assign an item to this category"
 do
     local function PlusOnEnter(self)
         self._hover = true
@@ -47,24 +47,24 @@ do
         self.plus:SetTextColor(1, 1, 1, 0.5)
         CUI.HideWidgetTooltip()
     end
-    function ns.CreatePlusButton(parent, tip)
-        local ov = CreateFrame("Button", nil, parent)
-        ov.bg = ov:CreateTexture(nil, "BACKGROUND")
-        ov.bg:SetAllPoints()
-        ov.bg:SetColorTexture(0, 0, 0, 0.4)
-        ov.plus = ov:CreateFontString(nil, "OVERLAY")
-        ov.plus:SetFont(GetFont(), 18, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
-        ov.plus:SetPoint("CENTER", 0, 0)
-        ov.plus:SetText("+")
-        ov.plus:SetTextColor(1, 1, 1, 0.5)
-        ov._plusTip = tip
-        ov:SetScript("OnEnter", PlusOnEnter)
-        ov:SetScript("OnLeave", PlusOnLeave)
-        ov:RegisterForDrag("LeftButton")
-        return ov
+    function mod.CreatePlusButton(hostFrame, tipText)
+        local shade = CreateFrame("Button", nil, hostFrame)
+        shade.bg = shade:CreateTexture(nil, "BACKGROUND")
+        shade.bg:SetAllPoints()
+        shade.bg:SetColorTexture(0, 0, 0, 0.4)
+        shade.plus = shade:CreateFontString(nil, "OVERLAY")
+        shade.plus:SetFont(GetFont(), 18, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+        shade.plus:SetPoint("CENTER", 0, 0)
+        shade.plus:SetText("+")
+        shade.plus:SetTextColor(1, 1, 1, 0.5)
+        shade._plusTip = tipText
+        shade:SetScript("OnEnter", PlusOnEnter)
+        shade:SetScript("OnLeave", PlusOnLeave)
+        shade:RegisterForDrag("LeftButton")
+        return shade
     end
     -- Ends the hover look of a plus button hidden under the mouse (it may get no OnLeave)
-    function ns.EndPlusHover(btn)
+    function mod.EndPlusHover(btn)
         if btn._hover then
             PlusOnLeave(btn)
         end
@@ -73,10 +73,10 @@ end
 
 -- Pins the item on the cursor (the pin "+" overlay, the Compact Pinned drop
 -- zone) and refreshes; returns true when the cursor held an item.
-function ns.PinCursorItem()
+function mod.PinCursorItem()
     -- The third return is the item link: pins are keyed by it (NormalizePinKey)
-    local cursorType, itemID, cursorLink = GetCursorInfo()
-    if cursorType ~= "item" or not itemID then
+    local cursorType, itemId, cursorLink = GetCursorInfo()
+    if cursorType ~= "item" or not itemId then
         return false
     end
     local pinned = PinnedItems(true)
@@ -84,8 +84,8 @@ function ns.PinCursorItem()
         ClearCursor()
         return true
     end
-    if not IsItemPinned(pinned, cursorLink, itemID) then
-        pinned[NormalizePinKey(cursorLink, itemID)] = IsGearItem(cursorLink) and 1 or 999
+    if not IsItemPinned(pinned, cursorLink, itemId) then
+        pinned[NormalizePinKey(cursorLink, itemId)] = IsGearItem(cursorLink) and 1 or 999
     end
     ClearCursor()
     CUI_Bags:RefreshInventory()
@@ -94,12 +94,12 @@ end
 
 -- Assigns the item on the cursor to the category catKey (the assign "+"
 -- overlay, a Compact drop zone) and refreshes; returns true when it did.
-function ns.AssignCursorItem(catKey)
-    local cursorType, itemID = GetCursorInfo()
-    if cursorType ~= "item" or not itemID or not catKey then
+function mod.AssignCursorItem(catKey)
+    local cursorType, itemId = GetCursorInfo()
+    if cursorType ~= "item" or not itemId or not catKey then
         return false
     end
-    CUI_CategoryManager:AssignItem(itemID, catKey)
+    CUI_CategoryManager:AssignItem(itemId, catKey)
     ClearCursor()
     CUI_Bags:RefreshInventory()
     return true
@@ -108,9 +108,9 @@ end
 -- The "+" overlays lie over an empty slot's item button and its overlays (the
 -- window's level + 9 to + 15, ns.PinItemButton), so each placement levels them
 -- from the window's current level: 100 over a window at level 1
-local function OverSlots(ov)
-    ov:SetFrameLevel(CUI_Bags:GetFrameLevel() + 99)
-    return ov
+local function OverSlots(shade)
+    shade:SetFrameLevel(CUI_Bags:GetFrameLevel() + 99)
+    return shade
 end
 
 -- Pin "+" overlay: a click-catcher frame placed over a regular empty slot
@@ -118,12 +118,12 @@ local function GetOrCreatePinOverlay()
     if CUI_Bags._pinOverlayBtn then
         return OverSlots(CUI_Bags._pinOverlayBtn)
     end
-    local ov = ns.CreatePlusButton(CUI_Bags, ns.PIN_PLUS_TIP)
-    ns.SizeSlot(ov)
-    ov:SetScript("OnReceiveDrag", ns.PinCursorItem)
-    ov:SetScript("OnClick", function(self)
+    local shade = mod.CreatePlusButton(CUI_Bags, mod.PIN_PLUS_TIP)
+    mod.SizeSlot(shade)
+    shade:SetScript("OnReceiveDrag", mod.PinCursorItem)
+    shade:SetScript("OnClick", function(self)
         -- Click-to-place also pins
-        if ns.PinCursorItem() then
+        if mod.PinCursorItem() then
             return
         end
         -- Controller cursor on screen: select mode hit-tests the hidden
@@ -139,9 +139,9 @@ local function GetOrCreatePinOverlay()
         end
         EnterPinSelectMode()
     end)
-    ov:Hide()
-    CUI_Bags._pinOverlayBtn = ov
-    return OverSlots(ov)
+    shade:Hide()
+    CUI_Bags._pinOverlayBtn = shade
+    return OverSlots(shade)
 end
 
 -- Assign "+" overlay: click/drag an item to assign to a category; pooled so multiple sections can show one simultaneously.
@@ -153,10 +153,10 @@ local function GetOrCreateAssignOverlay()
     if _assignOverlays[_assignOverlayIdx] then
         return OverSlots(_assignOverlays[_assignOverlayIdx])
     end
-    local ov = ns.CreatePlusButton(CUI_Bags, ns.ASSIGN_PLUS_TIP)
-    ns.SizeSlot(ov)
+    local shade = mod.CreatePlusButton(CUI_Bags, mod.ASSIGN_PLUS_TIP)
+    mod.SizeSlot(shade)
     local function DoAssign(self)
-        if ns.AssignCursorItem(self._assignCatKey) then
+        if mod.AssignCursorItem(self._assignCatKey) then
             return
         end
         -- No cursor item: enter assign select mode (like pin select)
@@ -178,53 +178,53 @@ local function GetOrCreateAssignOverlay()
             EnterAssignSelectMode(self._assignCatKey)
         end
     end
-    ov:SetScript("OnReceiveDrag", DoAssign)
-    ov:SetScript("OnClick", DoAssign)
-    ov:Hide()
-    _assignOverlays[_assignOverlayIdx] = ov
-    return OverSlots(ov)
+    shade:SetScript("OnReceiveDrag", DoAssign)
+    shade:SetScript("OnClick", DoAssign)
+    shade:Hide()
+    _assignOverlays[_assignOverlayIdx] = shade
+    return OverSlots(shade)
 end
 
 local function ResetAssignOverlays()
-    for i = 1, _assignOverlayIdx do
-        _assignOverlays[i]:Hide()
+    for idx = 1, _assignOverlayIdx do
+        _assignOverlays[idx]:Hide()
     end
     _assignOverlayIdx = 0
 end
 
 ExitPinSelectMode = function()
     CUI_Bags._pinSelectMode = false
-    local cf = CUI_Bags._pinCatcher
-    if cf then
-        cf:UnregisterEvent("PLAYER_REGEN_DISABLED")
-        cf:Hide()
+    local castFrame = CUI_Bags._pinCatcher
+    if castFrame then
+        castFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        castFrame:Hide()
     end
-    local ov = CUI_Bags._pinOverlay
-    if ov then
-        ov:EnableMouse(false)
-        if not ov._fadeOut then
-            local fg = ov:CreateAnimationGroup()
+    local shade = CUI_Bags._pinOverlay
+    if shade then
+        shade:EnableMouse(false)
+        if not shade._fadeOut then
+            local fg = shade:CreateAnimationGroup()
             local a = fg:CreateAnimation("Alpha")
             a:SetFromAlpha(1)
             a:SetToAlpha(0)
             a:SetDuration(0.15)
             fg:SetScript("OnFinished", function()
-                ov:Hide()
-                ov:SetAlpha(1)
+                shade:Hide()
+                shade:SetAlpha(1)
             end)
-            ov._fadeOut = fg
+            shade._fadeOut = fg
         end
-        ov._fadeOut:Play()
+        shade._fadeOut:Play()
     end
-    local sf = CUI_Bags._scrollFrame
-    if sf then
-        sf:SetFrameStrata(CUI_Bags:GetFrameStrata())
+    local scrollFrame = CUI_Bags._scrollFrame
+    if scrollFrame then
+        scrollFrame:SetFrameStrata(CUI_Bags:GetFrameStrata())
     end
 end
 
 -- Repaints an open bank (RefreshBank returns while it is closed), so the
 -- search filter and Junk Marker changes show in both windows
-function ns.RefreshOpenBank()
+function mod.RefreshOpenBank()
     local bank = _G.CUI_BankFrame
     if bank then
         bank:RefreshBank()
@@ -241,41 +241,41 @@ local function ExitAssignSelectMode()
     CUI_Bags._assignSelectMode = false
     CUI_Bags._junkMode = nil
     _assignSelectCatKey = nil
-    local cf = CUI_Bags._assignCatcher
-    if cf then
-        cf._clearHover()
-        cf:UnregisterEvent("PLAYER_REGEN_DISABLED")
-        cf:Hide()
+    local castFrame = CUI_Bags._assignCatcher
+    if castFrame then
+        castFrame._clearHover()
+        castFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        castFrame:Hide()
     end
-    local ov = CUI_Bags._assignOverlay
-    if ov then
-        ov:EnableMouse(false)
-        if not ov:IsVisible() then
+    local shade = CUI_Bags._assignOverlay
+    if shade then
+        shade:EnableMouse(false)
+        if not shade:IsVisible() then
             -- Hidden with the bags: nothing to fade out
-            if ov._fadeIn then
-                ov._fadeIn:Stop()
+            if shade._fadeIn then
+                shade._fadeIn:Stop()
             end
-            ov:Hide()
-            ov:SetAlpha(1)
+            shade:Hide()
+            shade:SetAlpha(1)
         else
-            if not ov._fadeOut then
-                local fg = ov:CreateAnimationGroup()
+            if not shade._fadeOut then
+                local fg = shade:CreateAnimationGroup()
                 local a = fg:CreateAnimation("Alpha")
                 a:SetFromAlpha(1)
                 a:SetToAlpha(0)
                 a:SetDuration(0.15)
                 fg:SetScript("OnFinished", function()
-                    ov:Hide()
-                    ov:SetAlpha(1)
+                    shade:Hide()
+                    shade:SetAlpha(1)
                 end)
-                ov._fadeOut = fg
+                shade._fadeOut = fg
             end
-            ov._fadeOut:Play()
+            shade._fadeOut:Play()
         end
     end
-    local sf = CUI_Bags._scrollFrame
-    if sf then
-        sf:SetFrameStrata(CUI_Bags:GetFrameStrata())
+    local scrollFrame = CUI_Bags._scrollFrame
+    if scrollFrame then
+        scrollFrame:SetFrameStrata(CUI_Bags:GetFrameStrata())
     end
     -- The coin goes back into the header's layer
     local coin = wasJunk and CUI_Bags._junkBtn
@@ -290,7 +290,7 @@ local function ExitAssignSelectMode()
         if CUI_Bags:IsShown() then
             CUI_Bags:RefreshInventory()
         end
-        ns.RefreshOpenBank()
+        mod.RefreshOpenBank()
     end
 end
 
@@ -298,12 +298,12 @@ end
 -- only over the scroll frame (rows scrolled out of view stay shown under the
 -- header, the footer or outside the window; the scroll frame only clips them).
 -- Cursor / each button's OWN effective scale: GetRect() is in button units.
-function ns.SelectSlotUnderCursor()
-    if ns.OfflineUp and ns.OfflineUp() then
+function mod.SelectSlotUnderCursor()
+    if mod.OfflineUp and mod.OfflineUp() then
         return nil
     end -- an alt's items aren't real slots
-    local sf = CUI_Bags._scrollFrame
-    if not (sf and sf:IsMouseOver()) then
+    local scrollFrame = CUI_Bags._scrollFrame
+    if not (scrollFrame and scrollFrame:IsMouseOver()) then
         return nil
     end
     local rawCx, rawCy = GetCursorPosition()
@@ -313,13 +313,13 @@ function ns.SelectSlotUnderCursor()
             if btn:IsShown() and btn:GetParent():IsShown() then
                 local es = btn:GetEffectiveScale()
                 local cx, cy = rawCx / es, rawCy / es
-                local l, b, w, h = btn:GetRect()
-                if l and b and w and h and cx >= l and cx <= l + w and cy >= b and cy <= b + h then
+                local l, b, wid, hgt = btn:GetRect()
+                if l and b and wid and hgt and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
                     return btn
                 end
             end
         end
-        pool = ns.ListRows
+        pool = mod.ListRows
         if not pool then
             break
         end
@@ -329,25 +329,25 @@ end
 
 -- Mark mode: a mark is per item, so every shown slot holding it repaints
 -- (the item ID first: only those slots read the full item info)
-function ns.RepaintJunkItem(itemID)
+function mod.RepaintJunkItem(itemId)
     local pool = itemSlots
     for _ = 1, 2 do
         for _, btn in pairs(pool) do
             if btn:IsShown() and btn:GetParent():IsShown() then
-                local bag, slot = btn:GetParent():GetID(), btn:GetID()
-                if C_Container.GetContainerItemID(bag, slot) == itemID then
-                    local info = C_Container.GetContainerItemInfo(bag, slot)
-                    if info then
+                local bag, slotIndex = btn:GetParent():GetID(), btn:GetID()
+                if C_Container.GetContainerItemID(bag, slotIndex) == itemId then
+                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                    if details then
                         if btn._lvIcon then
-                            ns.ListPaintJunk(btn, info)
+                            mod.ListPaintJunk(btn, details)
                         else
-                            ns.GridPaintJunk(btn, info)
+                            mod.GridPaintJunk(btn, details)
                         end
                     end
                 end
             end
         end
-        pool = ns.ListRows
+        pool = mod.ListRows
         if not pool then
             break
         end
@@ -357,7 +357,7 @@ end
 -- junk: Junk Marker mode -- clicks toggle marks, the mode stays open, and only
 -- the bag window dims (the "+" assign dims the whole screen).
 EnterAssignSelectMode = function(catKey, junk)
-    if ns.OfflineUp and ns.OfflineUp() then
+    if mod.OfflineUp and mod.OfflineUp() then
         return
     end -- nothing live to pick while an alt or bank is up
     CUI_Bags._assignSelectMode = true
@@ -366,78 +366,78 @@ EnterAssignSelectMode = function(catKey, junk)
 
     local cacheKey = junk and "_assignOverlayBag" or "_assignOverlayFull"
     if not CUI_Bags[cacheKey] then
-        local ov = CreateFrame("Frame", nil, junk and CUI_Bags or UIParent)
+        local shade = CreateFrame("Frame", nil, junk and CUI_Bags or UIParent)
         if junk then
             -- The bag's own strata: the item grid rides the scroll frame, raised
             -- to FULLSCREEN_DIALOG below, so only the bag behind the items dims.
-            ov:SetFrameStrata(CUI_Bags:GetFrameStrata())
-            ov:SetFrameLevel(CUI_Bags:GetFrameLevel() + 20)
-            ov:SetAllPoints(CUI_Bags)
+            shade:SetFrameStrata(CUI_Bags:GetFrameStrata())
+            shade:SetFrameLevel(CUI_Bags:GetFrameLevel() + 20)
+            shade:SetAllPoints(CUI_Bags)
         else
-            ov:SetFrameStrata("FULLSCREEN_DIALOG")
-            ov:SetFrameLevel(0)
-            ov:SetAllPoints(UIParent)
+            shade:SetFrameStrata("FULLSCREEN_DIALOG")
+            shade:SetFrameLevel(0)
+            shade:SetAllPoints(UIParent)
         end
-        ov:EnableMouse(true)
-        ov.bg = ov:CreateTexture(nil, "BACKGROUND")
-        ov.bg:SetAllPoints()
-        ov.bg:SetColorTexture(0, 0, 0, 0.6)
-        ov:SetScript("OnMouseDown", function()
+        shade:EnableMouse(true)
+        shade.bg = shade:CreateTexture(nil, "BACKGROUND")
+        shade.bg:SetAllPoints()
+        shade.bg:SetColorTexture(0, 0, 0, 0.6)
+        shade:SetScript("OnMouseDown", function()
             ExitAssignSelectMode()
         end)
         -- Escape (and controller Back) ends the mode before closing the bags,
         -- through the escape proxy: the overlay takes no keyboard input
-        CludesUI.RegisterEscapeClose(ov, {
+        CludesUI.RegisterEscapeClose(shade, {
             notOwned = true,
             onEscape = function()
                 ExitAssignSelectMode()
             end,
         })
-        CUI_Bags[cacheKey] = ov
+        CUI_Bags[cacheKey] = shade
     end
     CUI_Bags._assignOverlay = CUI_Bags[cacheKey]
-    local ov = CUI_Bags._assignOverlay
+    local shade = CUI_Bags._assignOverlay
     -- A fade-out still running from a quick exit would hide the dim mid-mode,
     -- and the exit turned its mouse off
-    if ov._fadeOut then
-        ov._fadeOut:Stop()
+    if shade._fadeOut then
+        shade._fadeOut:Stop()
     end
-    ov:EnableMouse(true)
-    ov:SetAlpha(0)
-    ov:Show()
-    if not ov._fadeIn then
-        local fg = ov:CreateAnimationGroup()
+    shade:EnableMouse(true)
+    shade:SetAlpha(0)
+    shade:Show()
+    if not shade._fadeIn then
+        local fg = shade:CreateAnimationGroup()
         local a = fg:CreateAnimation("Alpha")
         a:SetFromAlpha(0)
         a:SetToAlpha(1)
         a:SetDuration(0.15)
         fg:SetScript("OnFinished", function()
-            ov:SetAlpha(1)
+            shade:SetAlpha(1)
         end)
-        ov._fadeIn = fg
+        shade._fadeIn = fg
     end
-    ov._fadeIn:Play()
+    shade._fadeIn:Play()
 
     -- Raise scroll frame above overlay
-    local sf = CUI_Bags._scrollFrame
-    if sf then
-        sf:SetFrameStrata("FULLSCREEN_DIALOG")
+    local scrollFrame = CUI_Bags._scrollFrame
+    if scrollFrame then
+        scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
     end
 
-    local FindBtnUnderCursor = ns.SelectSlotUnderCursor
+    local FindBtnUnderCursor = mod.SelectSlotUnderCursor
 
     -- Click catcher with hover highlight
     if not CUI_Bags._assignCatcher then
-        local cf = CreateFrame("Frame", nil, UIParent)
-        cf:SetFrameStrata("FULLSCREEN_DIALOG")
-        cf:SetFrameLevel(500)
-        cf:EnableMouse(true)
+        local castFrame = CreateFrame("Frame", nil, UIParent)
+        castFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+        castFrame:SetFrameLevel(500)
+        castFrame:EnableMouse(true)
         -- Combat ends the mode (registered only while it is on)
-        cf:SetScript("OnEvent", function()
+        castFrame:SetScript("OnEvent", function()
             ExitAssignSelectMode()
         end)
 
-        local hoverOv = cf:CreateTexture(nil, "OVERLAY")
+        local hoverOv = castFrame:CreateTexture(nil, "OVERLAY")
         hoverOv:SetColorTexture(1, 1, 1, 0.4)
         hoverOv:Hide()
         local hoveredBtn = nil
@@ -458,19 +458,19 @@ EnterAssignSelectMode = function(catKey, junk)
             hoverOv:ClearAllPoints()
             hoverOv:Hide()
         end
-        cf._clearHover = ClearHover
+        castFrame._clearHover = ClearHover
 
         -- Re-tests only when the cursor or the scroll moved, or on a show
         -- (_hoverDirty); the wheel scrolls under a still cursor
         local lastX, lastY, lastScroll
-        cf:SetScript("OnUpdate", function(self)
-            local x, y = GetCursorPosition()
-            local sf = CUI_Bags._scrollFrame
-            local s = sf and sf:GetVerticalScroll() or 0
-            if x == lastX and y == lastY and s == lastScroll and not self._hoverDirty then
+        castFrame:SetScript("OnUpdate", function(self)
+            local posX, posY = GetCursorPosition()
+            local scrollFrame = CUI_Bags._scrollFrame
+            local s = scrollFrame and scrollFrame:GetVerticalScroll() or 0
+            if posX == lastX and posY == lastY and s == lastScroll and not self._hoverDirty then
                 return
             end
-            lastX, lastY, lastScroll = x, y, s
+            lastX, lastY, lastScroll = posX, posY, s
             self._hoverDirty = nil
             local btn = FindBtnUnderCursor()
             if btn == hoveredBtn then
@@ -482,8 +482,8 @@ EnterAssignSelectMode = function(catKey, junk)
                 if savedR then
                     local ar, ag, ab = GetAccentRGB()
                     SetInsetBorderColor(btn, ar, ag, ab, 1)
-                    local PP = CUI and CUI.PP
-                    local px2 = ((PP and PP.mult) or 1) * 2
+                    local Pix = CUI and CUI.PP
+                    local px2 = ((Pix and Pix.mult) or 1) * 2
                     SetInsetBorderThickness(btn, px2)
                 end
                 hoverOv:ClearAllPoints()
@@ -493,8 +493,8 @@ EnterAssignSelectMode = function(catKey, junk)
             end
         end)
 
-        cf:SetScript("OnMouseDown", function(_, button)
-            if button == "RightButton" then
+        castFrame:SetScript("OnMouseDown", function(_, btnFrame)
+            if btnFrame == "RightButton" then
                 ClearHover()
                 ExitAssignSelectMode()
                 return
@@ -512,17 +512,17 @@ EnterAssignSelectMode = function(catKey, junk)
                 local bagID = btn:GetParent():GetID()
                 local slotID = btn:GetID()
                 if bagID and slotID and slotID > 0 then
-                    local info = C_Container.GetContainerItemInfo(bagID, slotID)
-                    if info and info.itemID and _assignSelectCatKey then
+                    local details = C_Container.GetContainerItemInfo(bagID, slotID)
+                    if details and details.itemID and _assignSelectCatKey then
                         if junkMode then
                             -- Only the item's own slots repaint, so nothing moves under
                             -- the cursor; the bag sorts the marks when the mode ends
-                            CUI_CategoryManager:ToggleJunk(info.itemID)
-                            ns.RepaintJunkItem(info.itemID)
+                            CUI_CategoryManager:ToggleJunk(details.itemID)
+                            mod.RepaintJunkItem(details.itemID)
                             CUI_Bags._junkDirty = true
                         else
                             ClearHover()
-                            CUI_CategoryManager:AssignItem(info.itemID, _assignSelectCatKey)
+                            CUI_CategoryManager:AssignItem(details.itemID, _assignSelectCatKey)
                             ExitAssignSelectMode()
                             CUI_Bags:RefreshInventory()
                         end
@@ -539,20 +539,20 @@ EnterAssignSelectMode = function(catKey, junk)
             ExitAssignSelectMode()
         end)
 
-        cf:SetAllPoints(UIParent)
-        cf:Hide()
-        CUI_Bags._assignCatcher = cf
+        castFrame:SetAllPoints(UIParent)
+        castFrame:Hide()
+        CUI_Bags._assignCatcher = castFrame
     end
-    local cf = CUI_Bags._assignCatcher
-    cf._hoverDirty = true
-    cf:RegisterEvent("PLAYER_REGEN_DISABLED")
-    cf:Show()
+    local castFrame = CUI_Bags._assignCatcher
+    castFrame._hoverDirty = true
+    castFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    castFrame:Show()
     -- Junk Marker: the coin stays bright above the dim and takes its own
     -- clicks above the catcher (a click on it ends the mode)
     local coin = junk and CUI_Bags._junkBtn
     if coin then
         coin:SetFrameStrata("FULLSCREEN_DIALOG")
-        coin:SetFrameLevel(cf:GetFrameLevel() + 1)
+        coin:SetFrameLevel(castFrame:GetFrameLevel() + 1)
     end
 end
 
@@ -562,9 +562,9 @@ end
 -------------------------------------------------------------------------------
 do
     local function BuildButtons()
-        local header = CUI_Bags._bagsBtn:GetParent()
+        local headerFrame = CUI_Bags._bagsBtn:GetParent()
         -- Placed by SyncHeaderIcons, left of the next shown header icon
-        local junk = CreateFrame("Button", nil, header)
+        local junk = CreateFrame("Button", nil, headerFrame)
         junk:SetSize(22, 22)
         -- Our own coin art (the item badge and the Junk category keep the game's
         -- coin). It sits inside a thin margin: drawn 24 px, the coin fills the button
@@ -592,12 +592,12 @@ do
                 return
             end
             -- An item on the cursor: mark or unmark that one
-            local cursorType, itemID = GetCursorInfo()
-            if cursorType == "item" and itemID then
-                CUI_CategoryManager:ToggleJunk(itemID)
+            local cursorType, itemId = GetCursorInfo()
+            if cursorType == "item" and itemId then
+                CUI_CategoryManager:ToggleJunk(itemId)
                 ClearCursor()
                 CUI_Bags:RefreshInventory()
-                ns.RefreshOpenBank()
+                mod.RefreshOpenBank()
                 return
             end
             -- Controller cursor on screen: mark mode hit-tests the hidden
@@ -616,11 +616,11 @@ do
         junk:SetScript("OnDoubleClick", function() end)
         CUI_Bags._junkBtn = junk
 
-        local sell = CreateFrame("Button", nil, header)
+        local sell = CreateFrame("Button", nil, headerFrame)
         sell:SetPoint("RIGHT", junk, "LEFT", -6, 0)
-        local bg = sell:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0.4)
+        local backdrop = sell:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0, 0, 0, 0.4)
         sell.label = sell:CreateFontString(nil, "OVERLAY")
         SetBagFont(sell.label, 10)
         sell.label:SetPoint("CENTER")
@@ -658,7 +658,7 @@ do
         local prev, gap = self._searchBox, 13
         local sortOn = p.bagShowSortIcon ~= false
         self._sortBtn:SetShown(sortOn)
-        local forever = ns.BagsForever()
+        local forever = mod.BagsForever()
         if sortOn or forever then
             prev, gap = self._sortBtn, 6
         end
@@ -672,7 +672,7 @@ do
             CUI_BagsWindow:Hide() -- opened only from Show Bags
         end
         -- Quick Actions (CludesUIBags_QuickActions.lua), off by default
-        local quick = ns.SyncQuickActionsIcon(prev, gap)
+        local quick = mod.SyncQuickActionsIcon(prev, gap)
         if quick then
             prev, gap = quick, 6
         end
@@ -692,9 +692,9 @@ do
         end
         -- The leftmost shown icon bounds the search on Forever and the title on CUI.
         if forever then
-            local search, header = self._searchBox, bags:GetParent()
+            local search, headerFrame = self._searchBox, bags:GetParent()
             search:ClearAllPoints()
-            search:SetPoint("LEFT", header, "TOPLEFT", 45, header._foreverToolsY)
+            search:SetPoint("LEFT", headerFrame, "TOPLEFT", 45, headerFrame._foreverToolsY)
             search:SetPoint("RIGHT", edge, "LEFT", -6, 0)
         end
         if not junkOn and self._junkMode then
@@ -713,27 +713,31 @@ do
     -- a fresh purchase of a marked item would otherwise go unasked). Returns how
     -- many junk items it kept back (the summary counts them as not sold).
     local function GatherJunkSlots(slots, ids)
-        local special = ns.SpecialBags()
+        local special = mod.SpecialBags()
         local setGear = CUI_CategoryManager:GetSetGearLookup()
         local pinned = PinnedItems()
         local kept = 0
         for bag = 0, 5 do
             if not (special and special[bag]) then
-                for slot = 1, C_Container.GetContainerNumSlots(bag) or 0 do
-                    local info = C_Container.GetContainerItemInfo(bag, slot)
-                    if info and info.itemID and CUI_CategoryManager:IsJunk(info.itemID, info.quality) then
-                        local keep = info.hasNoValue
-                            or setGear[bag * 1000 + slot]
-                            or (pinned and IsItemPinned(pinned, info.hyperlink, info.itemID))
+                for slotIndex = 1, C_Container.GetContainerNumSlots(bag) or 0 do
+                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                    if
+                        details
+                        and details.itemID
+                        and CUI_CategoryManager:IsJunk(details.itemID, details.quality)
+                    then
+                        local keep = details.hasNoValue
+                            or setGear[bag * 1000 + slotIndex]
+                            or (pinned and IsItemPinned(pinned, details.hyperlink, details.itemID))
                         if not keep then
-                            local p = C_Container.GetContainerItemPurchaseInfo(bag, slot, false)
+                            local p = C_Container.GetContainerItemPurchaseInfo(bag, slotIndex, false)
                             keep = p and p.refundSeconds and p.refundSeconds > 0
                         end
                         if keep then
                             kept = kept + 1
                         else
-                            slots[#slots + 1] = bag * 1000 + slot
-                            ids[#ids + 1] = info.itemID
+                            slots[#slots + 1] = bag * 1000 + slotIndex
+                            ids[#ids + 1] = details.itemID
                         end
                     end
                 end
@@ -756,18 +760,18 @@ do
         self._junkSelling = true
         local slots, ids, values, sent = {}, {}, {}, {}
         local kept = GatherJunkSlots(slots, ids)
-        local i, done = 0, false
+        local idx, done = 0, false
         local function Landed(k)
             local key = slots[k]
             return C_Container.GetContainerItemID(math.floor(key / 1000), key % 1000) ~= ids[k]
         end
         local function InFlight()
-            for n = 1, #sent do
-                local k = sent[n]
+            for num = 1, #sent do
+                local k = sent[num]
                 if not Landed(k) then
                     local key = slots[k]
-                    local info = C_Container.GetContainerItemInfo(math.floor(key / 1000), key % 1000)
-                    if info and info.isLocked then
+                    local details = C_Container.GetContainerItemInfo(math.floor(key / 1000), key % 1000)
+                    if details and details.isLocked then
                         return true
                     end
                 end
@@ -786,18 +790,18 @@ do
             end
             CUI_Bags._junkSelling = nil
             local sold, earned = 0, 0
-            for n = 1, #sent do
-                if Landed(sent[n]) then
-                    sold, earned = sold + 1, earned + values[sent[n]]
+            for num = 1, #sent do
+                if Landed(sent[num]) then
+                    sold, earned = sold + 1, earned + values[sent[num]]
                 end
             end
             -- Not sold: the junk kept back (no sell price, equipment sets, pins,
             -- refundable), and a gathered slot still holding its item (a sale
             -- refused or waiting on its confirmation, or the sweep cut short)
-            local left = kept
+            local leftX = kept
             for k = 1, #slots do
                 if not Landed(k) then
-                    left = left + 1
+                    leftX = leftX + 1
                 end
             end
             local tag = CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r "
@@ -808,8 +812,8 @@ do
                 end
                 CludesUI.Print(tag .. msg)
             end
-            if left > 0 then
-                CludesUI.Print(tag .. CludesUI.Lf("%d junk item(s) could not be sold.", left))
+            if leftX > 0 then
+                CludesUI.Print(tag .. CludesUI.Lf("%d junk item(s) could not be sold.", leftX))
             end
         end
         -- Sales still in flight: finish once the server has answered them (their
@@ -840,17 +844,17 @@ do
                 and not InCombatLockdown()
                 and not CursorHasItem()
             force = nil
-            while live and i < #slots do
-                i = i + 1
-                local key = slots[i]
-                local bag, slot = math.floor(key / 1000), key % 1000
-                local info = C_Container.GetContainerItemInfo(bag, slot)
+            while live and idx < #slots do
+                idx = idx + 1
+                local key = slots[idx]
+                local bag, slotIndex = math.floor(key / 1000), key % 1000
+                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
                 -- Still the gathered item, and not locked
-                if info and info.itemID == ids[i] and not info.isLocked then
-                    values[i] = ((info.hyperlink and select(11, GetItemInfo(info.hyperlink))) or 0)
-                        * (info.stackCount or 1)
-                    sent[#sent + 1] = i
-                    C_Container.UseContainerItem(bag, slot)
+                if details and details.itemID == ids[idx] and not details.isLocked then
+                    values[idx] = ((details.hyperlink and select(11, GetItemInfo(details.hyperlink))) or 0)
+                        * (details.stackCount or 1)
+                    sent[#sent + 1] = idx
+                    C_Container.UseContainerItem(bag, slotIndex)
                     C_Timer.After(0.08, step)
                     return
                 end
@@ -867,83 +871,83 @@ do
         if self:IsShown() then
             self:RefreshInventory()
         end
-        ns.RefreshOpenBank()
+        mod.RefreshOpenBank()
         CUI_CategoryManager:OnJunkChanged() -- the new profile may switch the Junk Marker
     end
 end -- Junk Marker
 
 EnterPinSelectMode = function()
-    if ns.OfflineUp and ns.OfflineUp() then
+    if mod.OfflineUp and mod.OfflineUp() then
         return
     end
     CUI_Bags._pinSelectMode = true
 
     -- Dark overlay covers the entire screen including bags
     if not CUI_Bags._pinOverlay then
-        local ov = CreateFrame("Frame", nil, UIParent)
-        ov:SetFrameStrata("FULLSCREEN_DIALOG")
-        ov:SetFrameLevel(0)
-        ov:SetAllPoints(UIParent)
-        ov:EnableMouse(true)
-        ov.bg = ov:CreateTexture(nil, "BACKGROUND")
-        ov.bg:SetAllPoints()
-        ov.bg:SetColorTexture(0, 0, 0, 0.6)
-        ov:SetScript("OnMouseDown", function()
+        local shade = CreateFrame("Frame", nil, UIParent)
+        shade:SetFrameStrata("FULLSCREEN_DIALOG")
+        shade:SetFrameLevel(0)
+        shade:SetAllPoints(UIParent)
+        shade:EnableMouse(true)
+        shade.bg = shade:CreateTexture(nil, "BACKGROUND")
+        shade.bg:SetAllPoints()
+        shade.bg:SetColorTexture(0, 0, 0, 0.6)
+        shade:SetScript("OnMouseDown", function()
             ExitPinSelectMode()
         end)
         -- Escape (and controller Back) ends the mode before closing the bags,
         -- through the escape proxy: the overlay takes no keyboard input
-        CludesUI.RegisterEscapeClose(ov, {
+        CludesUI.RegisterEscapeClose(shade, {
             notOwned = true,
             onEscape = function()
                 ExitPinSelectMode()
             end,
         })
-        CUI_Bags._pinOverlay = ov
+        CUI_Bags._pinOverlay = shade
     end
-    local ov = CUI_Bags._pinOverlay
+    local shade = CUI_Bags._pinOverlay
     -- A fade-out still running from a quick exit would hide the dim mid-mode,
     -- and the exit turned its mouse off (clicks outside the grid end the mode)
-    if ov._fadeOut then
-        ov._fadeOut:Stop()
+    if shade._fadeOut then
+        shade._fadeOut:Stop()
     end
-    ov:EnableMouse(true)
-    ov:SetAlpha(0)
-    ov:Show()
-    if not ov._fadeIn then
-        local fg = ov:CreateAnimationGroup()
+    shade:EnableMouse(true)
+    shade:SetAlpha(0)
+    shade:Show()
+    if not shade._fadeIn then
+        local fg = shade:CreateAnimationGroup()
         local a = fg:CreateAnimation("Alpha")
         a:SetFromAlpha(0)
         a:SetToAlpha(1)
         a:SetDuration(0.15)
         fg:SetScript("OnFinished", function()
-            ov:SetAlpha(1)
+            shade:SetAlpha(1)
         end)
-        ov._fadeIn = fg
+        shade._fadeIn = fg
     end
-    ov._fadeIn:Play()
+    shade._fadeIn:Play()
 
     -- Raise the scroll frame above the overlay so item icons are visible
-    local sf = CUI_Bags._scrollFrame
-    if sf then
-        sf:SetFrameStrata("FULLSCREEN_DIALOG")
+    local scrollFrame = CUI_Bags._scrollFrame
+    if scrollFrame then
+        scrollFrame:SetFrameStrata("FULLSCREEN_DIALOG")
     end
 
-    local FindBtnUnderCursor = ns.SelectSlotUnderCursor
+    local FindBtnUnderCursor = mod.SelectSlotUnderCursor
 
     -- Click catcher above the raised icons: swallows clicks (items aren't used/equipped), then pins whichever icon was clicked.
     if not CUI_Bags._pinCatcher then
-        local cf = CreateFrame("Frame", nil, UIParent)
-        cf:SetFrameStrata("FULLSCREEN_DIALOG")
-        cf:SetFrameLevel(500)
-        cf:EnableMouse(true)
+        local castFrame = CreateFrame("Frame", nil, UIParent)
+        castFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+        castFrame:SetFrameLevel(500)
+        castFrame:EnableMouse(true)
         -- Combat ends the mode (registered only while it is on)
-        cf:SetScript("OnEvent", function()
+        castFrame:SetScript("OnEvent", function()
             ExitPinSelectMode()
         end)
 
         -- Hover highlight: accent border (2px) + white overlay
-        local pinHoverOv = cf:CreateTexture(nil, "OVERLAY")
+        local pinHoverOv = castFrame:CreateTexture(nil, "OVERLAY")
         pinHoverOv:SetColorTexture(1, 1, 1, 0.4)
         pinHoverOv:Hide()
         local pinHoveredBtn = nil
@@ -965,19 +969,19 @@ EnterPinSelectMode = function()
             pinHoverOv:ClearAllPoints()
             pinHoverOv:Hide()
         end
-        cf._clearHover = ClearPinHover
+        castFrame._clearHover = ClearPinHover
 
         -- Re-tests only when the cursor or the scroll moved, or on a show or a
         -- bag refresh (_hoverDirty); the wheel scrolls under a still cursor
         local lastX, lastY, lastScroll
-        cf:SetScript("OnUpdate", function(self)
-            local x, y = GetCursorPosition()
-            local sf = CUI_Bags._scrollFrame
-            local s = sf and sf:GetVerticalScroll() or 0
-            if x == lastX and y == lastY and s == lastScroll and not self._hoverDirty then
+        castFrame:SetScript("OnUpdate", function(self)
+            local posX, posY = GetCursorPosition()
+            local scrollFrame = CUI_Bags._scrollFrame
+            local s = scrollFrame and scrollFrame:GetVerticalScroll() or 0
+            if posX == lastX and posY == lastY and s == lastScroll and not self._hoverDirty then
                 return
             end
-            lastX, lastY, lastScroll = x, y, s
+            lastX, lastY, lastScroll = posX, posY, s
             self._hoverDirty = nil
             local btn = FindBtnUnderCursor()
             if btn == pinHoveredBtn then
@@ -989,8 +993,8 @@ EnterPinSelectMode = function()
                 if pinSavedR then
                     local ar, ag, ab = GetAccentRGB()
                     SetInsetBorderColor(btn, ar, ag, ab, 1)
-                    local PP = CUI and CUI.PP
-                    local px2 = ((PP and PP.mult) or 1) * 2
+                    local Pix = CUI and CUI.PP
+                    local px2 = ((Pix and Pix.mult) or 1) * 2
                     SetInsetBorderThickness(btn, px2)
                 end
                 pinHoverOv:ClearAllPoints()
@@ -1000,8 +1004,8 @@ EnterPinSelectMode = function()
             end
         end)
 
-        cf:SetScript("OnMouseDown", function(_, button)
-            if button == "RightButton" then
+        castFrame:SetScript("OnMouseDown", function(_, btnFrame)
+            if btnFrame == "RightButton" then
                 ClearPinHover()
                 ExitPinSelectMode()
                 return
@@ -1011,8 +1015,8 @@ EnterPinSelectMode = function()
                 local bagID = btn:GetParent():GetID()
                 local slotID = btn:GetID()
                 if bagID and slotID and slotID > 0 then
-                    local info = C_Container.GetContainerItemInfo(bagID, slotID)
-                    if info and info.itemID then
+                    local details = C_Container.GetContainerItemInfo(bagID, slotID)
+                    if details and details.itemID then
                         local pinned = PinnedItems(true)
                         if not pinned then
                             ClearPinHover()
@@ -1020,7 +1024,7 @@ EnterPinSelectMode = function()
                             return
                         end
                         local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
-                        local pinKey = NormalizePinKey(itemLink, info.itemID)
+                        local pinKey = NormalizePinKey(itemLink, details.itemID)
                         pinned[pinKey] = (pinned[pinKey] or 0) + 1
                         ClearPinHover()
                         ExitPinSelectMode()
@@ -1033,23 +1037,23 @@ EnterPinSelectMode = function()
             ExitPinSelectMode()
         end)
 
-        cf:SetScript("OnHide", function()
+        castFrame:SetScript("OnHide", function()
             ClearPinHover()
         end)
-        CUI_Bags._pinCatcher = cf
+        CUI_Bags._pinCatcher = castFrame
     end
     -- Position catcher over the scroll frame area
-    local sf = CUI_Bags._scrollFrame
-    if sf and CUI.IS_FOREVER then
+    local scrollFrame = CUI_Bags._scrollFrame
+    if scrollFrame and CUI.IS_FOREVER then
         -- WoW Forever: the window can grow while open (fit to content), so the catcher follows the scroll frame.
         CUI_Bags._pinCatcher:ClearAllPoints()
-        CUI_Bags._pinCatcher:SetAllPoints(sf)
-    elseif sf then
-        local l, b, w, h = sf:GetRect()
-        if l and b and w and h then
+        CUI_Bags._pinCatcher:SetAllPoints(scrollFrame)
+    elseif scrollFrame then
+        local l, b, wid, hgt = scrollFrame:GetRect()
+        if l and b and wid and hgt then
             CUI_Bags._pinCatcher:ClearAllPoints()
             CUI_Bags._pinCatcher:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", l, b)
-            CUI_Bags._pinCatcher:SetSize(w, h)
+            CUI_Bags._pinCatcher:SetSize(wid, hgt)
         end
     end
     CUI_Bags._pinCatcher._hoverDirty = true
@@ -1057,7 +1061,7 @@ EnterPinSelectMode = function()
     CUI_Bags._pinCatcher:Show()
 end
 
-I.ExitAssignSelectMode, I.ExitPinSelectMode = ExitAssignSelectMode, ExitPinSelectMode
-I.GetOrCreateAssignOverlay = GetOrCreateAssignOverlay
-I.GetOrCreatePinOverlay, I.ResetAssignOverlays = GetOrCreatePinOverlay, ResetAssignOverlays
-I.broken = false
+Inner.ExitAssignSelectMode, Inner.ExitPinSelectMode = ExitAssignSelectMode, ExitPinSelectMode
+Inner.GetOrCreateAssignOverlay = GetOrCreateAssignOverlay
+Inner.GetOrCreatePinOverlay, Inner.ResetAssignOverlays = GetOrCreatePinOverlay, ResetAssignOverlays
+Inner.broken = false

@@ -124,13 +124,13 @@ function CludesUI.Conditions_GetGroups(create)
     return prof.condOverrideGroups
 end
 
-function CludesUI.Conditions_GroupById(gid)
+function CludesUI.Conditions_GroupById(groupId)
     local groups = CludesUI.Conditions_GetGroups()
     if not groups then
         return nil
     end
     for _, g in ipairs(groups) do
-        if g.id == gid then
+        if g.id == groupId then
             return g
         end
     end
@@ -257,10 +257,10 @@ local _establish = false -- post profile-apply: apply-only, no harvests
 -- held the overlay, and every bank that then resolved the applied gid as nil re-banked
 -- the overlay into the conditional DEFAULT maps -- permanent baseline loss on every
 -- /reload or login with a conditional active.
-local function PersistAppliedGid(gid)
+local function PersistAppliedGid(groupId)
     local prof = CludesUI.GetActiveProfileData()
     if prof then
-        prof.condAppliedGid = gid
+        prof.condAppliedGid = groupId
     end
 end
 
@@ -272,9 +272,9 @@ function CludesUI.Conditions_AppliedGid()
     -- lands): fall back to the persisted pointer, validated against the active
     -- profile's groups (a hand-edited or imported store may point at a deleted group).
     local prof = CludesUI.GetActiveProfileData()
-    local gid = prof and prof.condAppliedGid
-    if gid and CludesUI.Conditions_GroupById(gid) then
-        return gid
+    local groupId = prof and prof.condAppliedGid
+    if groupId and CludesUI.Conditions_GroupById(groupId) then
+        return groupId
     end
     return nil
 end
@@ -307,7 +307,7 @@ function CludesUI.Conditions_Recheck()
         return
     end
     local g = CludesUI.Conditions_ActiveGroup()
-    local gid = g and g.id or nil
+    local groupId = g and g.id or nil
     -- Effective applied state: the runtime pointer, or -- in the stale
     -- windows (fresh login, MarkStale-to-establish) -- the persisted pointer
     -- recording which conditional's values are baked into live data. Using
@@ -316,7 +316,7 @@ function CludesUI.Conditions_Recheck()
     -- adopting it, and the non-matching login handed the transition a nil
     -- oldGid, whose harvest banked the overlay into the DEFAULT maps.
     local applied = CludesUI.Conditions_AppliedGid()
-    if gid == applied and not _establish then
+    if groupId == applied and not _establish then
         -- Adopt a persisted pointer into the runtime on the no-op path so
         -- later compares and MarkStale operate on live state.
         _appliedGid = applied
@@ -355,18 +355,18 @@ function CludesUI.Conditions_Recheck()
         -- converge the flip on its own. Re-read both ends so the handler
         -- never harvests live against an outgoing group it no longer holds.
         g = CludesUI.Conditions_ActiveGroup()
-        gid = g and g.id or nil
+        groupId = g and g.id or nil
         applied = CludesUI.Conditions_AppliedGid()
-        if gid == applied then
+        if groupId == applied then
             _appliedGid = applied
             CludesUI.SpecOverrides_ResumeDefaultView()
             return
         end
     end
-    local ok, failed = handler(applied, gid, est)
-    if ok then
-        _appliedGid = gid
-        PersistAppliedGid(gid)
+    local success, failed = handler(applied, groupId, est)
+    if success then
+        _appliedGid = groupId
+        PersistAppliedGid(groupId)
     else
         -- Busy (spec transition / edit session / re-entrant refresh): keep
         -- the request and retry on the next signal.
@@ -390,11 +390,11 @@ end
 -------------------------------------------------------------------------------
 local _keyBtnPool = {}
 
-function CludesUI.Conditions_ToggleKey(gid)
+function CludesUI.Conditions_ToggleKey(groupId)
     if InCombatLockdown() then
         return
     end
-    local g = CludesUI.Conditions_GroupById(gid)
+    local g = CludesUI.Conditions_GroupById(groupId)
     if not g or not (g.conds and g.conds.keybind) then
         return
     end
@@ -407,28 +407,28 @@ function CludesUI.Conditions_RebuildKeyBindings()
         CludesUI.CombatQueue.Defer("ConditionsKeyBindings", CludesUI.Conditions_RebuildKeyBindings)
         return
     end
-    for _, btn in ipairs(_keyBtnPool) do
-        ClearOverrideBindings(btn)
+    for _, button in ipairs(_keyBtnPool) do
+        ClearOverrideBindings(button)
     end
     local groups = CludesUI.Conditions_GetGroups()
     if not groups then
         return
     end
-    local i = 0
+    local idx = 0
     for _, g in ipairs(groups) do
         if g.conds and g.conds.keybind and g.key and g.key ~= "" then
-            i = i + 1
-            local btn = _keyBtnPool[i]
-            if not btn then
-                btn = CreateFrame("Button", "CUICondKeyBtn" .. i, UIParent)
-                btn:Hide()
-                _keyBtnPool[i] = btn
+            idx = idx + 1
+            local button = _keyBtnPool[idx]
+            if not button then
+                button = CreateFrame("Button", "CUICondKeyBtn" .. idx, UIParent)
+                button:Hide()
+                _keyBtnPool[idx] = button
             end
-            local gid = g.id
-            btn:SetScript("OnClick", function()
-                CludesUI.Conditions_ToggleKey(gid)
+            local groupId = g.id
+            button:SetScript("OnClick", function()
+                CludesUI.Conditions_ToggleKey(groupId)
             end)
-            SetOverrideBindingClick(btn, true, g.key, btn:GetName())
+            SetOverrideBindingClick(button, true, g.key, button:GetName())
         end
     end
 end
@@ -458,21 +458,21 @@ if
 then
     evFrame:RegisterEvent("INPUT_DEVICE_INTERFACE_TRANSITION")
 end
-evFrame:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_REGEN_ENABLED" then
+evFrame:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_REGEN_ENABLED" then
         if _flipPending then
             _flipPending = false
             CludesUI.Conditions_Recheck()
         end
         return
     end
-    if event == "INPUT_DEVICE_INTERFACE_TRANSITION" then
+    if evt == "INPUT_DEVICE_INTERFACE_TRANSITION" then
         -- The style is read one frame after the transition event. A recheck
         -- in combat flags itself and the regen drain above re-resolves.
         C_Timer.After(0, CludesUI.Conditions_Recheck)
         return
     end
-    if event == "PLAYER_ENTERING_WORLD" then
+    if evt == "PLAYER_ENTERING_WORLD" then
         -- Bindings are per-profile data; re-assert after every load screen.
         CludesUI.Conditions_RebuildKeyBindings()
     end

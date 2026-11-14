@@ -10,8 +10,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  edit scope rebuilds the page, since its tooltips and the copy cog name it.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUILoadoutManager"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -26,8 +26,8 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function DB()
-        return ns.DB()
+    local function SavedDB()
+        return mod.DB()
     end
 
     local function Refresh(force)
@@ -35,7 +35,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     -- The module calls this when its state changes.
-    ns.OnStateChanged = function()
+    mod.OnStateChanged = function()
         if CludesUI:GetActiveModule() ~= ADDON_NAME then
             return
         end
@@ -43,7 +43,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function NotEnabled()
-        return not DB().enabled
+        return not SavedDB().enabled
     end
 
     -- Why a control is locked, shown as written (rawTooltip).
@@ -56,15 +56,15 @@ initFrame:SetScript("OnEvent", function(self)
     --  widgets draw them; the lines this page writes itself go through L/Lf.
     ---------------------------------------------------------------------------
     local DIM = CludesUI.COLOR_CODES.DIM
-    local function Grey(text)
-        return DIM .. tostring(text) .. "|r"
+    local function Grey(textValue)
+        return DIM .. tostring(textValue) .. "|r"
     end
 
     -- Assigned names in the suite accent, read on every call so a theme change
     -- lands with the next refresh.
-    local function Accent(text)
+    local function Accent(textValue)
         local c = CludesUI.CLUDES_GREEN
-        return CludesUI.HexColor(c.r, c.g, c.b) .. tostring(text) .. "|r"
+        return CludesUI.HexColor(c.r, c.g, c.b) .. tostring(textValue) .. "|r"
     end
 
     local ALL_SPECS_TEXT = CludesUI.L("All Specs")
@@ -80,7 +80,7 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- One assignment slot as "gear / talents", or "not set".
     local function PairSummary(gearName, talentStored)
-        local talentName = ns.TalentDisplayName(talentStored)
+        local talentName = mod.TalentDisplayName(talentStored)
         if not gearName and not talentName then
             return TXT_NOT_SET
         end
@@ -94,8 +94,8 @@ initFrame:SetScript("OnEvent", function(self)
     --  World last (it applies on the way out)
     ---------------------------------------------------------------------------
     local TYPE_INFO = {}
-    for _, info in ipairs(ns.INSTANCE_TYPE_ORDER) do
-        TYPE_INFO[info.key] = info
+    for _, details in ipairs(mod.INSTANCE_TYPE_ORDER) do
+        TYPE_INFO[details.key] = details
     end
 
     local TYPE_LAYOUT =
@@ -126,27 +126,27 @@ initFrame:SetScript("OnEvent", function(self)
 
     local function ScopeValues()
         -- Spec names come from the game already translated.
-        local values, order = { _noLoc = true, [ALL_SPECS] = ALL_SPECS_TEXT }, { ALL_SPECS }
-        for _, spec in ipairs(ns.GetSpecList()) do
-            values[tostring(spec.id)] = spec.name
-            order[#order + 1] = tostring(spec.id)
+        local values, sequence = { _noLoc = true, [ALL_SPECS] = ALL_SPECS_TEXT }, { ALL_SPECS }
+        for _, specInfo in ipairs(mod.GetSpecList()) do
+            values[tostring(specInfo.id)] = specInfo.name
+            sequence[#sequence + 1] = tostring(specInfo.id)
         end
-        return values, order
+        return values, sequence
     end
 
     local function GetScopeKey()
-        local scope = ns.GetScope()
+        local scope = mod.GetScope()
         return scope and tostring(scope) or ALL_SPECS
     end
 
     local function SetScopeKey(key)
-        ns.SetScope(key ~= ALL_SPECS and tonumber(key) or nil)
+        mod.SetScope(key ~= ALL_SPECS and tonumber(key) or nil)
         Refresh(true) -- the page's tooltips and the copy cog name the scope
     end
 
     local function ScopeLabel()
-        local scope = ns.GetScope()
-        return scope and tostring(ns.SpecName(scope)) or ALL_SPECS_TEXT
+        local scope = mod.GetScope()
+        return scope and tostring(mod.SpecName(scope)) or ALL_SPECS_TEXT
     end
 
     ---------------------------------------------------------------------------
@@ -163,17 +163,17 @@ initFrame:SetScript("OnEvent", function(self)
         for k in pairs(gearIcons) do
             gearIcons[k] = nil
         end
-        for _, set in ipairs(ns.ListEquipmentSets()) do
-            entries[#entries + 1] = { key = set.name, text = set.name }
-            gearIcons[set.name] = set.icon
-            sig[#sig + 1] = tostring(set.name) .. "=" .. tostring(set.icon)
+        for _, group in ipairs(mod.ListEquipmentSets()) do
+            entries[#entries + 1] = { key = group.name, text = group.name }
+            gearIcons[group.name] = group.icon
+            sig[#sig + 1] = tostring(group.name) .. "=" .. tostring(group.icon)
         end
         return entries, table.concat(sig, "\n")
     end
 
     local function TalentEntries()
         local entries, sig = {}, {}
-        for _, loadout in ipairs(ns.ListTalentLoadouts()) do
+        for _, loadout in ipairs(mod.ListTalentLoadouts()) do
             local key = tostring(loadout.configID)
             entries[#entries + 1] = { key = key, text = loadout.name }
             sig[#sig + 1] = key .. "=" .. tostring(loadout.name)
@@ -183,20 +183,20 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Menu options (_menuOpts) and the no-localize flag (_noLoc) ride along
     -- in the values table and survive a refill; everything else is replaced.
-    local function FillValues(values, order, noneText, entries)
+    local function FillValues(values, sequence, noneText, entries)
         for k in pairs(values) do
             if k ~= "_menuOpts" and k ~= "_noLoc" then
                 values[k] = nil
             end
         end
-        for i = #order, 1, -1 do
-            order[i] = nil
+        for idx = #sequence, 1, -1 do
+            sequence[idx] = nil
         end
         values[NONE] = noneText
-        order[1] = NONE
+        sequence[1] = NONE
         for _, e in ipairs(entries) do
             values[e.key] = e.text
-            order[#order + 1] = e.key
+            sequence[#sequence + 1] = e.key
         end
     end
 
@@ -206,16 +206,16 @@ initFrame:SetScript("OnEvent", function(self)
     local function LivePicker(noneText, entriesFn, menuOpts)
         -- Set, loadout and instance names are the game's or the player's own:
         -- never run them through L().
-        local values, order = { _noLoc = true }, {}
+        local values, sequence = { _noLoc = true }, {}
         if menuOpts then
             values._menuOpts = menuOpts
         end
         -- The search prebuild indexes the row, never its list.
         if CludesUI._prebuilding then
-            return values, order, Noop, Noop
+            return values, sequence, Noop, Noop
         end
         local entries, sig = entriesFn()
-        FillValues(values, order, noneText, entries)
+        FillValues(values, sequence, noneText, entries)
         local ddBtn
         local function Update()
             local e, s = entriesFn()
@@ -223,24 +223,24 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             sig = s
-            FillValues(values, order, noneText, e)
+            FillValues(values, sequence, noneText, e)
             if ddBtn and ddBtn._invalidateMenu then
                 ddBtn._invalidateMenu()
             end
         end
-        local function Attach(btn)
-            ddBtn = btn
+        local function Attach(button)
+            ddBtn = button
         end
-        return values, order, Update, Attach
+        return values, sequence, Update, Attach
     end
 
     local function SetSelectedTalentKey(key)
         if key == NONE then
-            ns.SetSelectedTalent(nil)
+            mod.SetSelectedTalent(nil)
         else
-            for _, loadout in ipairs(ns.ListTalentLoadouts()) do
+            for _, loadout in ipairs(mod.ListTalentLoadouts()) do
                 if tostring(loadout.configID) == key then
-                    ns.SetSelectedTalent(ns.StoreTalentLoadout(loadout))
+                    mod.SetSelectedTalent(mod.StoreTalentLoadout(loadout))
                     break
                 end
             end
@@ -252,37 +252,37 @@ initFrame:SetScript("OnEvent", function(self)
     --  Readers for the live labels
     ---------------------------------------------------------------------------
     local function LocationText()
-        local ctx = ns.GetContext()
-        if not ctx.inInstance then
+        local context = mod.GetContext()
+        if not context.inInstance then
             local zone = GetRealZoneText()
             if not zone or zone == "" then
-                zone = ctx.name
+                zone = context.name
             end
             return tostring(zone) .. "  " .. TXT_OPEN_WORLD
         end
-        local kind = INSTANCE_KIND[ctx.instanceType] or INSTANCE_KIND_OTHER
-        if ctx.difficultyName and ctx.difficultyName ~= "" then
-            kind = kind .. ", " .. ctx.difficultyName
+        local kindOf = INSTANCE_KIND[context.instanceType] or INSTANCE_KIND_OTHER
+        if context.difficultyName and context.difficultyName ~= "" then
+            kindOf = kindOf .. ", " .. context.difficultyName
         end
-        return tostring(ctx.name) .. "  " .. Grey(kind)
+        return tostring(context.name) .. "  " .. Grey(kindOf)
     end
 
     -- The difficulty a per-difficulty assignment here covers. A running key
     -- reads as Mythic, the difficulty you enter at (the module stores it so).
     local function DifficultyName()
-        return ns.DifficultyName(ns.GetContext())
+        return mod.DifficultyName(mod.GetContext())
     end
 
     -- Where a resolved assignment comes from, e.g. "(Raid default, Holy)".
     local function SourceText(level, key, scope)
-        local layer = scope and tostring(ns.SpecName(scope)) or ALL_SPECS_TEXT
+        local layer = scope and tostring(mod.SpecName(scope)) or ALL_SPECS_TEXT
         if level == "difficulty" then
             return Grey(CludesUI.Lf("(this instance, %1$s only, %2$s)", DifficultyName(), layer))
         elseif level == "instance" then
             return Grey(CludesUI.Lf("(this instance, %1$s)", layer))
         elseif level == "type" then
-            local info = TYPE_INFO[key]
-            local typeName = info and CludesUI.L(info.label) or tostring(key)
+            local details = TYPE_INFO[key]
+            local typeName = details and CludesUI.L(details.label) or tostring(key)
             return Grey(CludesUI.Lf("(%1$s default, %2$s)", typeName, layer))
         end
         return ""
@@ -291,15 +291,15 @@ initFrame:SetScript("OnEvent", function(self)
     -- This instance's assignment slot in the scope being edited, under the
     -- key the module writes for it. Returns inside, gear, talent.
     local function InstanceSlot(perDifficulty)
-        local ctx = ns.GetContext()
-        if not ctx.inInstance or not ctx.instanceID then
+        local context = mod.GetContext()
+        if not context.inInstance or not context.instanceID then
             return false
         end
-        local key = ns.AssignmentKey(ctx, perDifficulty)
+        local key = mod.AssignmentKey(context, perDifficulty)
         if not key then
             return true
         end
-        local R = ns.ReadTables()
+        local R = mod.ReadTables()
         if perDifficulty then
             return true, R.difficultySets[key], R.talentDifficultySets[key]
         end
@@ -315,7 +315,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function SavedEntries()
         local entries, sig = {}, {}
         wipe(savedByKey)
-        for _, e in ipairs(ns.ListInstanceAssignments()) do
+        for _, e in ipairs(mod.ListInstanceAssignments()) do
             local key = tostring(e.key)
             entries[#entries + 1] = { key = key, text = e.label }
             sig[#sig + 1] = key .. "=" .. e.label
@@ -329,7 +329,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function TypeSlot(key)
-        local R = ns.ReadTables()
+        local R = mod.ReadTables()
         return R.typeDefaults[key], R.talentTypeDefaults[key]
     end
 
@@ -341,50 +341,50 @@ initFrame:SetScript("OnEvent", function(self)
     -- inline controls so a long line ellipsizes, and a half with no tooltip
     -- of its own shows the whole line on hover while it is cut. Call after
     -- those controls are built.
-    local function LiveLabel(region, prefix, valueFn)
+    local function LiveLabel(regionFrame, prefixText, valueFn)
         if CludesUI._prebuilding then
             return
         end
-        local label = region and region._label
-        if not label then
+        local labelText = regionFrame and regionFrame._label
+        if not labelText then
             return
         end
-        local bound = region._lastInline or region._control
+        local bound = regionFrame._lastInline or regionFrame._control
         if bound then
-            label:SetPoint("RIGHT", bound, "LEFT", -12, 0)
+            labelText:SetPoint("RIGHT", bound, "LEFT", -12, 0)
         else
-            label:SetPoint("RIGHT", region, "RIGHT", -20, 0)
+            labelText:SetPoint("RIGHT", regionFrame, "RIGHT", -20, 0)
         end
         local function Update()
-            label:SetText(prefix .. "  " .. valueFn())
-            region._labelTruncated = label:IsTruncated()
+            labelText:SetText(prefixText .. "  " .. valueFn())
+            regionFrame._labelTruncated = labelText:IsTruncated()
         end
         Update()
         CludesUI.RegisterWidgetRefresh(Update)
-        if not region._labelHasHit then
-            local hit = CreateFrame("Frame", nil, region)
-            hit:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-            hit:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
+        if not regionFrame._labelHasHit then
+            local hit = CreateFrame("Frame", nil, regionFrame)
+            hit:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
+            hit:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
             hit:SetMouseClickEnabled(false)
             hit:SetScript("OnEnter", function()
-                if label:IsTruncated() then
-                    CludesUI.ShowWidgetTooltip(label, label:GetText())
+                if labelText:IsTruncated() then
+                    CludesUI.ShowWidgetTooltip(labelText, labelText:GetText())
                 end
             end)
             hit:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            region._labelRevealHit = hit
+            regionFrame._labelRevealHit = hit
         end
     end
 
     -- Compact button on a half-row. Inline controls chain right to left, so
     -- the first one built sits rightmost. tip shows while enabled, disabledTip
     -- (a sentence, or a function returning one) while disabled.
-    local function InlineButton(region, text, onClick, tip, disabledFn, disabledTip)
-        CludesUI.BuildInlineButton(region, text, onClick, {
+    local function InlineButton(regionFrame, textValue, onClick, tipText, disabledFn, disabledTip)
+        CludesUI.BuildInlineButton(regionFrame, textValue, onClick, {
             width = 58,
-            tip = tip,
+            tip = tipText,
             disabled = disabledFn,
             disabledTooltip = disabledTip,
             rawTooltip = true,
@@ -395,7 +395,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- page's, so the module registers the events behind the live rows only
     -- while the page is on screen.
     local pageWatch
-    local function WatchPage(parent)
+    local function WatchPage(hostFrame)
         if CludesUI._prebuilding then
             return
         end
@@ -403,29 +403,29 @@ initFrame:SetScript("OnEvent", function(self)
             pageWatch = CreateFrame("Frame")
             pageWatch._searchIgnore = true -- the inline search never hides it
             pageWatch:SetScript("OnShow", function()
-                ns.SetPageShown(true)
+                mod.SetPageShown(true)
             end)
             pageWatch:SetScript("OnHide", function()
-                ns.SetPageShown(false)
+                mod.SetPageShown(false)
             end)
         end
         pageWatch:Hide()
-        pageWatch:SetParent(parent)
+        pageWatch:SetParent(hostFrame)
         pageWatch:Show()
     end
 
     ---------------------------------------------------------------------------
     --  Page
     ---------------------------------------------------------------------------
-    local function BuildPage(pageName, parent, yOffset)
+    local function BuildPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local PP = CludesUI.PanelPP
-        local y = yOffset
-        local _, h
+        local Pix = CludesUI.PanelPP
+        local posY = yOffset
+        local _, hgt
 
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
         CludesUI:ClearContentHeader()
-        WatchPage(parent)
+        WatchPage(hostFrame)
 
         local scopeName = ScopeLabel()
 
@@ -433,22 +433,22 @@ initFrame:SetScript("OnEvent", function(self)
         --  General: the master switch, what swaps on its own (timing on the
         --  cog), and the two ways a swap is announced
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "GENERAL", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
+        posY = posY - hgt
 
         local swapRow
-        swapRow, h = W:DualRow(
-            parent,
-            y,
+        swapRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "toggle",
                 text = "Enable Loadout Manager",
                 tooltip = "Swaps gear and talents as you change content.",
                 getValue = function()
-                    return DB().enabled
+                    return SavedDB().enabled
                 end,
-                setValue = function(v)
-                    ns.SetEnabled(v)
+                setValue = function(val)
+                    mod.SetEnabled(val)
                     Refresh()
                 end,
             },
@@ -468,25 +468,42 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Loadout Manager",
             }
         )
-        y = y - h
+        posY = posY - hgt
 
         if not CludesUI._prebuilding then
             local rgn = swapRow._rightRegion
             if rgn._control then
                 rgn._control:Hide()
             end
-            local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(rgn, 170, rgn:GetFrameLevel() + 2, {
-                { key = "gear", label = "Gear Sets", tooltip = "Equip the assigned gear set." },
-                { key = "talent", label = "Talent Loadouts", tooltip = "Load the assigned talent loadout." },
-            }, function(k)
-                return DB()[k == "gear" and "gearEnabled" or "talentEnabled"] and true or false
-            end, function(k, v)
-                ns.SetChannelEnabled(k, v)
-            end, nil, nil, nil, nil, nil, {
-                disabled = NotEnabled,
-                disabledTooltip = "Loadout Manager",
-            })
-            PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
+            local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+                rgn,
+                170,
+                rgn:GetFrameLevel() + 2,
+                {
+                    { key = "gear", label = "Gear Sets", tooltip = "Equip the assigned gear set." },
+                    {
+                        key = "talent",
+                        label = "Talent Loadouts",
+                        tooltip = "Load the assigned talent loadout.",
+                    },
+                },
+                function(k)
+                    return SavedDB()[k == "gear" and "gearEnabled" or "talentEnabled"] and true or false
+                end,
+                function(k, val)
+                    mod.SetChannelEnabled(k, val)
+                end,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                {
+                    disabled = NotEnabled,
+                    disabledTooltip = "Loadout Manager",
+                }
+            )
+            Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = cbDD
             rgn._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbRefresh)
@@ -499,10 +516,10 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Queue In Combat",
                         tooltip = "Apply a swap due in combat once it ends.",
                         get = function()
-                            return DB().queueInCombat and true or false
+                            return SavedDB().queueInCombat and true or false
                         end,
-                        set = function(v)
-                            ns.SetQueueInCombat(v)
+                        set = function(val)
+                            mod.SetQueueInCombat(val)
                         end,
                     },
                     {
@@ -510,10 +527,10 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Re-Swap On Spec Change",
                         tooltip = "Swap again on a spec change in an instance.",
                         get = function()
-                            return DB().specSwap and true or false
+                            return SavedDB().specSwap and true or false
                         end,
-                        set = function(v)
-                            DB().specSwap = v and true or false
+                        set = function(val)
+                            SavedDB().specSwap = val and true or false
                         end,
                     },
                 },
@@ -522,43 +539,43 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Talent-Change Warning",
             tooltip = "Show DON'T MOVE while talents change.",
             getValue = function()
-                return DB().specWarning and true or false
+                return SavedDB().specWarning and true or false
             end,
-            setValue = function(v)
-                ns.SetSpecWarning(v)
+            setValue = function(val)
+                mod.SetSpecWarning(val)
             end,
         }, {
             type = "toggle",
             text = "Announce Swaps In Chat",
             getValue = function()
-                return DB().announce and true or false
+                return SavedDB().announce and true or false
             end,
-            setValue = function(v)
-                DB().announce = v and true or false
+            setValue = function(val)
+                SavedDB().announce = val and true or false
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -----------------------------------------------------------------------
         --  Current location: where you are and what applies here (live)
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "CURRENT LOCATION", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "CURRENT LOCATION", posY)
+        posY = posY - hgt
 
         local whereRow
-        whereRow, h = W:DualRow(parent, y, {
+        whereRow, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "Location",
             buttonText = "Check Now",
             width = 130,
             tooltip = "Check Now applies what is assigned here.",
             onClick = function()
-                ns.CheckAndSwap()
+                mod.CheckAndSwap()
                 Refresh()
             end,
         }, {
@@ -566,31 +583,31 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Specialization",
             tooltip = "Spec assignments win over All Specs.",
         })
-        y = y - h
+        posY = posY - hgt
         LiveLabel(whereRow._leftRegion, CludesUI.L("Location"), LocationText)
         LiveLabel(whereRow._rightRegion, CludesUI.L("Specialization"), function()
-            local specID = ns.GetCurrentSpecID()
-            return specID and Accent(ns.SpecName(specID)) or TXT_UNKNOWN
+            local specID = mod.GetCurrentSpecID()
+            return specID and Accent(mod.SpecName(specID)) or TXT_UNKNOWN
         end)
 
         local hereRow
-        hereRow, h = W:DualRow(
-            parent,
-            y,
+        hereRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             { type = "label", text = "Gear Here", tooltip = "The gear set that applies here." },
             { type = "label", text = "Talents Here", tooltip = "The talent loadout that applies here." }
         )
-        y = y - h
+        posY = posY - hgt
         LiveLabel(hereRow._leftRegion, CludesUI.L("Gear Here"), function()
-            local gear, level, key, scope = ns.ResolveGear(ns.GetContext())
+            local gear, level, key, scope = mod.ResolveGear(mod.GetContext())
             if not gear then
                 return TXT_NOTHING_HERE
             end
             return Accent(gear) .. "  " .. SourceText(level, key, scope)
         end)
         LiveLabel(hereRow._rightRegion, CludesUI.L("Talents Here"), function()
-            local talent, level, key, scope = ns.ResolveTalent(ns.GetContext())
-            local name = ns.TalentDisplayName(talent)
+            local talent, level, key, scope = mod.ResolveTalent(mod.GetContext())
+            local name = mod.TalentDisplayName(talent)
             if not name then
                 return TXT_NOTHING_HERE
             end
@@ -600,15 +617,15 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         --  Selected loadout: what the Save buttons assign, and to which layer
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "SELECTED LOADOUT", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "SELECTED LOADOUT", posY)
+        posY = posY - hgt
 
         local gearValues, gearOrder, gearUpdate, gearAttach =
             LivePicker(DIM .. CludesUI.L("No gear set") .. "|r", GearEntries, {
                 icon = function(key)
-                    local icon = gearIcons[key]
-                    if icon then
-                        return icon, 0.08, 0.92, 0.08, 0.92
+                    local glyph = gearIcons[key]
+                    if glyph then
+                        return glyph, 0.08, 0.92, 0.08, 0.92
                     end
                 end,
             })
@@ -622,13 +639,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- A pick counts only while its list holds it: a renamed or deleted
         -- set, or a loadout of another spec, reads as no pick.
         local function GearPick()
-            local name = ns.GetSelectedSet()
+            local name = mod.GetSelectedSet()
             if name ~= nil and gearValues[name] ~= nil then
                 return name
             end
         end
         local function TalentPickKey()
-            local sel = ns.GetSelectedTalent()
+            local sel = mod.GetSelectedTalent()
             local key = sel and tostring(sel.configID)
             if key and talentValues[key] ~= nil then
                 return key
@@ -636,8 +653,8 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- The module saves talents only into All Specs or the current spec.
         local function TalentScopeOK()
-            local scope = ns.GetScope()
-            return scope == nil or scope == ns.GetCurrentSpecID()
+            local scope = mod.GetScope()
+            return scope == nil or scope == mod.GetCurrentSpecID()
         end
         local function HasSelection()
             return GearPick() ~= nil or TalentPickKey() ~= nil
@@ -656,16 +673,16 @@ initFrame:SetScript("OnEvent", function(self)
         local function PrunePicks()
             gearUpdate()
             talentUpdate()
-            if ns.GetSelectedSet() ~= nil and not GearPick() then
-                ns.SetSelectedSet(nil)
+            if mod.GetSelectedSet() ~= nil and not GearPick() then
+                mod.SetSelectedSet(nil)
             end
-            if ns.GetSelectedTalent() ~= nil and not TalentPickKey() then
-                ns.SetSelectedTalent(nil)
+            if mod.GetSelectedTalent() ~= nil and not TalentPickKey() then
+                mod.SetSelectedTalent(nil)
             end
         end
 
         local pickRow
-        pickRow, h = W:DualRow(parent, y, {
+        pickRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Gear Set",
             values = gearValues,
@@ -674,8 +691,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return GearPick() or NONE
             end,
-            setValue = function(v)
-                ns.SetSelectedSet(v ~= NONE and v or nil)
+            setValue = function(val)
+                mod.SetSelectedSet(val ~= NONE and val or nil)
                 Refresh()
             end,
         }, {
@@ -694,7 +711,7 @@ initFrame:SetScript("OnEvent", function(self)
             disabledTooltip = TALENT_SCOPE,
             rawTooltip = true,
         })
-        y = y - h
+        posY = posY - hgt
         gearAttach(pickRow._leftRegion._control)
         talentAttach(pickRow._rightRegion._control)
 
@@ -705,7 +722,7 @@ initFrame:SetScript("OnEvent", function(self)
                     type = "button",
                     label = "Verify Assigned Sets",
                     action = function()
-                        ns.Verify()
+                        mod.Verify()
                     end,
                 },
             },
@@ -713,54 +730,49 @@ initFrame:SetScript("OnEvent", function(self)
 
         local scopeRow
         do
-            local values, order = ScopeValues()
-            scopeRow, h = W:DualRow(
-                parent,
-                y,
-                {
-                    type = "dropdown",
-                    text = "Assign For",
-                    values = values,
-                    order = order,
-                    getValue = GetScopeKey,
-                    setValue = SetScopeKey,
-                    tooltip = "Which specs the Save buttons apply to.",
-                },
-                {
-                    type = "labeledButton",
-                    text = "Equip Selection",
-                    buttonText = "Equip Now",
-                    width = 130,
-                    tooltip = "Equip the picked gear and talents now.",
-                    onClick = function()
-                        PrunePicks()
-                        ns.EquipSelected()
-                        Refresh()
-                    end,
-                    disabled = function()
-                        return not HasSelection()
-                    end,
-                    disabledTooltip = PICK_FIRST,
-                    rawTooltip = true,
-                }
-            )
-            y = y - h
+            local values, sequence = ScopeValues()
+            scopeRow, hgt = W:DualRow(hostFrame, posY, {
+                type = "dropdown",
+                text = "Assign For",
+                values = values,
+                order = sequence,
+                getValue = GetScopeKey,
+                setValue = SetScopeKey,
+                tooltip = "Which specs the Save buttons apply to.",
+            }, {
+                type = "labeledButton",
+                text = "Equip Selection",
+                buttonText = "Equip Now",
+                width = 130,
+                tooltip = "Equip the picked gear and talents now.",
+                onClick = function()
+                    PrunePicks()
+                    mod.EquipSelected()
+                    Refresh()
+                end,
+                disabled = function()
+                    return not HasSelection()
+                end,
+                disabledTooltip = PICK_FIRST,
+                rawTooltip = true,
+            })
+            posY = posY - hgt
         end
 
         -- Copy cog: one button per other layer. CopyScopeFrom replaces this
         -- layer outright, so the cog closes and a confirmation asks first.
         if not CludesUI._prebuilding then
-            local current = ns.GetScope()
+            local current = mod.GetScope()
             local copyTitle = CludesUI.Lf("Copy Into %1$s", scopeName)
-            local rows, cogShow = {}, nil
+            local rowList, cogShow = {}, nil
             local function AddCopy(sourceID, name)
-                rows[#rows + 1] = {
+                rowList[#rowList + 1] = {
                     type = "button",
                     label = CludesUI.Lf("Copy From %1$s", name),
                     action = function()
-                        local pf = cogShow and cogShow._popupFrame
-                        if pf and pf:IsShown() then
-                            pf:Hide()
+                        local popFrame = cogShow and cogShow._popupFrame
+                        if popFrame and popFrame:IsShown() then
+                            popFrame:Hide()
                         end
                         CludesUI:ShowConfirmPopup({
                             title = copyTitle,
@@ -772,7 +784,7 @@ initFrame:SetScript("OnEvent", function(self)
                             confirmText = "Copy",
                             cancelText = "Cancel",
                             onConfirm = function()
-                                ns.CopyScopeFrom(sourceID)
+                                mod.CopyScopeFrom(sourceID)
                                 Refresh()
                             end,
                         })
@@ -782,18 +794,18 @@ initFrame:SetScript("OnEvent", function(self)
             if current ~= nil then
                 AddCopy(nil, ALL_SPECS_TEXT)
             end
-            for _, spec in ipairs(ns.GetSpecList()) do
-                if spec.id ~= current then
-                    AddCopy(spec.id, spec.name)
+            for _, specInfo in ipairs(mod.GetSpecList()) do
+                if specInfo.id ~= current then
+                    AddCopy(specInfo.id, specInfo.name)
                 end
             end
-            if #rows > 0 then
+            if #rowList > 0 then
                 cogShow = select(
                     2,
                     CludesUI.BuildInlineCog(scopeRow._leftRegion, {
                         title = copyTitle,
                         minWidth = 220,
-                        rows = rows,
+                        rows = rowList,
                     })
                 )
             end
@@ -803,8 +815,8 @@ initFrame:SetScript("OnEvent", function(self)
         --  Instances: this instance's two slots, each with Save and Clear,
         --  then every saved instance, which can be cleared from anywhere
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "INSTANCES", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "INSTANCES", posY)
+        posY = posY - hgt
 
         -- The Save and Clear tips name the scope the buttons write to.
         local saveTip = CludesUI.Lf("Save the picked loadout here for %1$s.", scopeName)
@@ -812,16 +824,16 @@ initFrame:SetScript("OnEvent", function(self)
         local nothingTip = CludesUI.Lf("Nothing saved here for %1$s.", scopeName)
 
         local instRow
-        instRow, h = W:DualRow(
-            parent,
-            y,
+        instRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             { type = "label", text = "Any Difficulty", tooltip = "This instance on any difficulty." },
             { type = "label", text = "This Difficulty", tooltip = "This instance on this difficulty only." }
         )
-        y = y - h
+        posY = posY - hgt
 
         for _, perDiff in ipairs({ false, true }) do
-            local region = perDiff and instRow._rightRegion or instRow._leftRegion
+            local regionFrame = perDiff and instRow._rightRegion or instRow._leftRegion
             local function Inside()
                 return (InstanceSlot(perDiff)) and true or false
             end
@@ -831,10 +843,10 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             InlineButton(
-                region,
+                regionFrame,
                 "Clear",
                 function()
-                    ns.ClearCurrent(perDiff)
+                    mod.ClearCurrent(perDiff)
                     Refresh()
                 end,
                 clearTip,
@@ -846,11 +858,11 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             )
             InlineButton(
-                region,
+                regionFrame,
                 "Save",
                 function()
                     PrunePicks()
-                    ns.AssignCurrent(perDiff)
+                    mod.AssignCurrent(perDiff)
                     Refresh()
                 end,
                 saveTip,
@@ -862,7 +874,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             )
             LiveLabel(
-                region,
+                regionFrame,
                 perDiff and CludesUI.L("This Difficulty") or CludesUI.L("Any Difficulty"),
                 function()
                     local inside, g, t = InstanceSlot(perDiff)
@@ -884,7 +896,7 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI.RegisterWidgetRefresh(savedUpdate)
 
         local savedRow
-        savedRow, h = W:DualRow(parent, y, {
+        savedRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Saved Instances",
             values = savedValues,
@@ -896,8 +908,8 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 return NONE
             end,
-            setValue = function(v)
-                pickedSaved = (v ~= NONE) and v or nil
+            setValue = function(val)
+                pickedSaved = (val ~= NONE) and val or nil
                 Refresh()
             end,
         }, {
@@ -905,7 +917,7 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Assignment",
             tooltip = "What the picked instance holds.",
         })
-        y = y - h
+        posY = posY - hgt
         savedAttach(savedRow._leftRegion._control)
 
         InlineButton(
@@ -915,7 +927,7 @@ initFrame:SetScript("OnEvent", function(self)
                 local e = PickedSavedEntry()
                 pickedSaved = nil
                 if e then
-                    ns.ClearInstanceAssignment(e.key)
+                    mod.ClearInstanceAssignment(e.key)
                 end
                 Refresh()
             end,
@@ -940,30 +952,30 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         --  Content type defaults: two per row, each with Save and Clear
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "CONTENT TYPE DEFAULTS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "CONTENT TYPE DEFAULTS", posY)
+        posY = posY - hgt
 
-        local function TypeHalf(info)
-            if not info then
+        local function TypeHalf(details)
+            if not details then
                 return CludesUI.BlankRowCfg()
             end
-            return { type = "label", text = info.label, tooltip = TYPE_TIPS[info.key] }
+            return { type = "label", text = details.label, tooltip = TYPE_TIPS[details.key] }
         end
 
         -- A type's buttons write its default wherever you stand, so their tips
         -- name the type and the scope.
-        local function TypeControls(region, info)
-            local key = info.key
-            local typeName = CludesUI.L(info.label)
+        local function TypeControls(regionFrame, details)
+            local key = details.key
+            local typeName = CludesUI.L(details.label)
             local function IsSet()
                 local g, t = TypeSlot(key)
                 return g ~= nil or t ~= nil
             end
             InlineButton(
-                region,
+                regionFrame,
                 "Clear",
                 function()
-                    ns.ClearType(key)
+                    mod.ClearType(key)
                     Refresh()
                 end,
                 CludesUI.Lf("Clear the %1$s default for %2$s.", typeName, scopeName),
@@ -973,11 +985,11 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.Lf("No %1$s default saved for %2$s.", typeName, scopeName)
             )
             InlineButton(
-                region,
+                regionFrame,
                 "Save",
                 function()
                     PrunePicks()
-                    ns.AssignType(key)
+                    mod.AssignType(key)
                     Refresh()
                 end,
                 CludesUI.Lf("Save the picked loadout as the %1$s default for %2$s.", typeName, scopeName),
@@ -986,28 +998,28 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 SaveBlockedTip
             )
-            LiveLabel(region, typeName, function()
+            LiveLabel(regionFrame, typeName, function()
                 local g, t = TypeSlot(key)
                 return PairSummary(g, t)
             end)
         end
 
-        for i = 1, #TYPE_LAYOUT, 2 do
-            local left, right = TYPE_INFO[TYPE_LAYOUT[i]], TYPE_INFO[TYPE_LAYOUT[i + 1]]
-            local row
-            row, h = W:DualRow(parent, y, TypeHalf(left), TypeHalf(right))
-            y = y - h
-            TypeControls(row._leftRegion, left)
+        for idx = 1, #TYPE_LAYOUT, 2 do
+            local leftX, right = TYPE_INFO[TYPE_LAYOUT[idx]], TYPE_INFO[TYPE_LAYOUT[idx + 1]]
+            local rowFrame
+            rowFrame, hgt = W:DualRow(hostFrame, posY, TypeHalf(leftX), TypeHalf(right))
+            posY = posY - hgt
+            TypeControls(rowFrame._leftRegion, leftX)
             if right then
-                TypeControls(row._rightRegion, right)
+                TypeControls(rowFrame._rightRegion, right)
             end
         end
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
 
-        parent:SetHeight(math.abs(y - yOffset))
-        return math.abs(y)
+        hostFrame:SetHeight(math.abs(posY - yOffset))
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -1020,7 +1032,7 @@ initFrame:SetScript("OnEvent", function(self)
         buildPage = BuildPage,
         resetScope = "character",
         onReset = function()
-            ns.ResetAll()
+            mod.ResetAll()
         end,
     })
 end)

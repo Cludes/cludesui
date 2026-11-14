@@ -6,12 +6,12 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  our own little language, parsed into closures: nothing typed ever runs
 --  as lua. saved as extraExpr
 -------------------------------------------------------------------------------
-local FOLDER, ns = ...
+local FOLDER, mod = ...
 if CludesUI.HELD_BACK_ADDONS[FOLDER] then
     return
 end -- held back (CludesUIGroupFinder.lua)
-local GFNS = ns
-local CM = ns.CUI
+local GFNS = mod
+local CM = mod.CUI
 
 local EXPR_TEX = "Interface\\AddOns\\" .. FOLDER .. "\\media\\icons\\cui-expression.png"
 local Secret = CludesUI.IsSecret
@@ -56,8 +56,8 @@ local WORDS = {
     friends = "friends",
     voice = "voice",
 }
-for w, cls in pairs(CLASS_WORDS) do
-    WORDS[w] = cls
+for wid, cls in pairs(CLASS_WORDS) do
+    WORDS[wid] = cls
 end
 local LUST = { SHAMAN = true, MAGE = true, HUNTER = true, EVOKER = true }
 local BREZ = { DRUID = true, DEATHKNIGHT = true, WARLOCK = true, PALADIN = true }
@@ -88,43 +88,43 @@ local ONE = {
 }
 local KEYWORDS = { ["and"] = "and", ["or"] = "or", ["not"] = "not" }
 
-local function Tokens(src)
-    local out, i, n = {}, 1, #src
-    while i <= n do
-        local c = src:sub(i, i)
+local function Tokens(source)
+    local result, idx, n = {}, 1, #source
+    while idx <= n do
+        local c = source:sub(idx, idx)
         if c:match("%s") then
-            i = i + 1
+            idx = idx + 1
         else
-            local num = src:match("^%d+%.?%d*", i) or src:match("^%.%d+", i)
-            local word = not num and src:match("^[%a_][%w_]*", i)
-            local two = src:sub(i, i + 1)
+            local num = source:match("^%d+%.?%d*", idx) or source:match("^%.%d+", idx)
+            local word = not num and source:match("^[%a_][%w_]*", idx)
+            local two = source:sub(idx, idx + 1)
             if num then
-                out[#out + 1] = { t = "num", v = tonumber(num) }
-                i = i + #num
+                result[#result + 1] = { t = "num", v = tonumber(num) }
+                idx = idx + #num
             elseif word then
                 local lw = word:lower()
                 if KEYWORDS[lw] then
-                    out[#out + 1] = { t = KEYWORDS[lw] }
+                    result[#result + 1] = { t = KEYWORDS[lw] }
                 elseif lw == "true" or lw == "false" then
-                    out[#out + 1] = { t = "num", v = lw == "true" and 1 or 0 }
+                    result[#result + 1] = { t = "num", v = lw == "true" and 1 or 0 }
                 elseif WORDS[lw] then
-                    out[#out + 1] = { t = "var", v = WORDS[lw] }
+                    result[#result + 1] = { t = "var", v = WORDS[lw] }
                 else
                     return nil, CludesUI.Lf("unknown word: %1$s", word)
                 end
-                i = i + #word
+                idx = idx + #word
             elseif TWO[two] then
-                out[#out + 1] = { t = TWO[two] }
-                i = i + 2
+                result[#result + 1] = { t = TWO[two] }
+                idx = idx + 2
             elseif ONE[c] then
-                out[#out + 1] = { t = ONE[c] }
-                i = i + 1
+                result[#result + 1] = { t = ONE[c] }
+                idx = idx + 1
             else
                 return nil, CludesUI.Lf('can\'t use "%1$s"', c)
             end
         end
     end
-    return out
+    return result
 end
 
 -------------------------------------------------------------------------------
@@ -132,25 +132,25 @@ end
 --  a word we can't read for a group throws, and the group is kept
 -------------------------------------------------------------------------------
 local UNREADABLE = {}
-local function Truth(v)
-    return v ~= 0
+local function Truth(val)
+    return val ~= 0
 end
 
-local function Compile(src)
-    local toks, err = Tokens(src)
+local function Compile(source)
+    local toks, err = Tokens(source)
     if not toks then
         return nil, err
     end
     if #toks == 0 then
         return nil
     end
-    local pos = 1
+    local place = 1
     local function peek()
-        return toks[pos] and toks[pos].t
+        return toks[place] and toks[place].t
     end
     local function take()
-        pos = pos + 1
-        return toks[pos - 1]
+        place = place + 1
+        return toks[place - 1]
     end
 
     local Or
@@ -160,22 +160,22 @@ local function Compile(src)
             error(CludesUI.L("ends too soon"), 0)
         end
         if tk.t == "num" then
-            local v = tk.v
+            local val = tk.v
             return function()
-                return v
+                return val
             end
         elseif tk.t == "var" then
             local k = tk.v
-            return function(env)
-                local v = env[k]
-                if v == nil then
+            return function(environ)
+                local val = environ[k]
+                if val == nil then
                     error(UNREADABLE, 0)
                 end
-                return v
+                return val
             end
         elseif tk.t == "(" then
             local f = Or()
-            if take() == nil or toks[pos - 1].t ~= ")" then
+            if take() == nil or toks[place - 1].t ~= ")" then
                 error(CludesUI.L("missing )"), 0)
             end
             return f
@@ -186,8 +186,8 @@ local function Compile(src)
         if peek() == "-" then
             take()
             local f = Unary()
-            return function(env)
-                return -f(env)
+            return function(environ)
+                return -f(environ)
             end
         end
         return Primary()
@@ -197,13 +197,13 @@ local function Compile(src)
         while peek() == "*" or peek() == "/" do
             local op, a, b = take().t, f, Unary()
             if op == "*" then
-                f = function(env)
-                    return a(env) * b(env)
+                f = function(environ)
+                    return a(environ) * b(environ)
                 end
             else
-                f = function(env)
-                    local d = b(env)
-                    return d == 0 and 0 or a(env) / d
+                f = function(environ)
+                    local d = b(environ)
+                    return d == 0 and 0 or a(environ) / d
                 end
             end
         end
@@ -214,35 +214,35 @@ local function Compile(src)
         while peek() == "+" or peek() == "-" do
             local op, a, b = take().t, f, Mul()
             if op == "+" then
-                f = function(env)
-                    return a(env) + b(env)
+                f = function(environ)
+                    return a(environ) + b(environ)
                 end
             else
-                f = function(env)
-                    return a(env) - b(env)
+                f = function(environ)
+                    return a(environ) - b(environ)
                 end
             end
         end
         return f
     end
     local CMP = {
-        ["<"] = function(x, y)
-            return x < y
+        ["<"] = function(posX, posY)
+            return posX < posY
         end,
-        [">"] = function(x, y)
-            return x > y
+        [">"] = function(posX, posY)
+            return posX > posY
         end,
-        ["<="] = function(x, y)
-            return x <= y
+        ["<="] = function(posX, posY)
+            return posX <= posY
         end,
-        [">="] = function(x, y)
-            return x >= y
+        [">="] = function(posX, posY)
+            return posX >= posY
         end,
-        ["=="] = function(x, y)
-            return x == y
+        ["=="] = function(posX, posY)
+            return posX == posY
         end,
-        ["!="] = function(x, y)
-            return x ~= y
+        ["!="] = function(posX, posY)
+            return posX ~= posY
         end,
     }
     local function Cmp()
@@ -251,8 +251,8 @@ local function Compile(src)
         if test then
             take()
             local a, b = f, Add()
-            f = function(env)
-                return test(a(env), b(env)) and 1 or 0
+            f = function(environ)
+                return test(a(environ), b(environ)) and 1 or 0
             end
         end
         return f
@@ -261,8 +261,8 @@ local function Compile(src)
         if peek() == "not" then
             take()
             local f = Not()
-            return function(env)
-                return Truth(f(env)) and 0 or 1
+            return function(environ)
+                return Truth(f(environ)) and 0 or 1
             end
         end
         return Cmp()
@@ -272,8 +272,8 @@ local function Compile(src)
         while peek() == "and" do
             take()
             local a, b = f, Not()
-            f = function(env)
-                return (Truth(a(env)) and Truth(b(env))) and 1 or 0
+            f = function(environ)
+                return (Truth(a(environ)) and Truth(b(environ))) and 1 or 0
             end
         end
         return f
@@ -283,19 +283,19 @@ local function Compile(src)
         while peek() == "or" do
             take()
             local a, b = f, And()
-            f = function(env)
-                return (Truth(a(env)) or Truth(b(env))) and 1 or 0
+            f = function(environ)
+                return (Truth(a(environ)) or Truth(b(environ))) and 1 or 0
             end
         end
         return f
     end
 
-    local ok, f = pcall(Or)
-    if not ok then
+    local success, f = pcall(Or)
+    if not success then
         return nil, f
     end
-    if pos <= #toks then
-        return nil, CludesUI.Lf('unexpected "%1$s"', toks[pos].t)
+    if place <= #toks then
+        return nil, CludesUI.Lf('unexpected "%1$s"', toks[place].t)
     end
     return f
 end
@@ -307,12 +307,12 @@ local compiled, compiledFor, compileErr
 
 local function Current()
     local c = GFNS.Cfg and GFNS.Cfg()
-    local text = c and c.extraExpr
-    if text ~= compiledFor then
-        compiledFor = text
+    local textValue = c and c.extraExpr
+    if textValue ~= compiledFor then
+        compiledFor = textValue
         compiled, compileErr = nil, nil
-        if type(text) == "string" and text:find("%S") then
-            compiled, compileErr = Compile(text)
+        if type(textValue) == "string" and textValue:find("%S") then
+            compiled, compileErr = Compile(textValue)
         end
     end
     return compiled, compileErr
@@ -323,33 +323,34 @@ GFNS.ExtraExprActive = function()
 end
 
 -- one group's words, nil when the game hides one
-local env = {}
-local function Fill(id, info)
-    wipe(env)
-    local function num(v)
-        if type(v) == "number" and not Secret(v) then
-            return v
+local environ = {}
+local function Fill(ident, details)
+    wipe(environ)
+    local function num(val)
+        if type(val) == "number" and not Secret(val) then
+            return val
         end
     end
-    local counts = C_LFGList.GetSearchResultMemberCounts(id)
+    local counts = C_LFGList.GetSearchResultMemberCounts(ident)
     if Readable(counts) then
-        env.tanks, env.healers, env.dps = num(counts.TANK), num(counts.HEALER), num(counts.DAMAGER)
-        env.tanksLeft, env.healersLeft = num(counts.TANK_REMAINING), num(counts.HEALER_REMAINING)
-        env.dpsLeft = num(counts.DAMAGER_REMAINING)
+        environ.tanks, environ.healers, environ.dps =
+            num(counts.TANK), num(counts.HEALER), num(counts.DAMAGER)
+        environ.tanksLeft, environ.healersLeft = num(counts.TANK_REMAINING), num(counts.HEALER_REMAINING)
+        environ.dpsLeft = num(counts.DAMAGER_REMAINING)
     end
-    local n = num(info.numMembers)
-    env.members = n
+    local n = num(details.numMembers)
+    environ.members = n
     if n then
         local _, mine = UnitClass("player")
         local lust, brez, same, all = 0, 0, 0, true
         for _, cls in pairs(CLASS_WORDS) do
-            env[cls] = 0
+            environ[cls] = 0
         end
-        for i = 1, n do
-            local p = C_LFGList.GetSearchResultPlayerInfo(id, i)
+        for idx = 1, n do
+            local p = C_LFGList.GetSearchResultPlayerInfo(ident, idx)
             local cls = Readable(p) and p.classFilename
             if cls and not Secret(cls) then
-                env[cls] = (env[cls] or 0) + 1
+                environ[cls] = (environ[cls] or 0) + 1
                 if LUST[cls] then
                     lust = 1
                 end
@@ -365,38 +366,38 @@ local function Fill(id, info)
         end
         -- unreadable member: class words can't be trusted
         if all then
-            env.hasBL, env.hasBR, env.myClass = lust, brez, same
+            environ.hasBL, environ.hasBR, environ.myClass = lust, brez, same
         else
             for _, cls in pairs(CLASS_WORDS) do
-                env[cls] = nil
+                environ[cls] = nil
             end
         end
     end
-    env.score = num(info.leaderOverallDungeonScore)
-    env.ilvl = num(info.requiredItemLevel)
-    local age = num(info.age)
-    env.age = age and math.floor(age / 60)
-    local f1, f2, f3 = num(info.numBNetFriends), num(info.numCharFriends), num(info.numGuildMates)
+    environ.score = num(details.leaderOverallDungeonScore)
+    environ.ilvl = num(details.requiredItemLevel)
+    local age = num(details.age)
+    environ.age = age and math.floor(age / 60)
+    local f1, f2, f3 = num(details.numBNetFriends), num(details.numCharFriends), num(details.numGuildMates)
     if f1 and f2 and f3 then
-        env.friends = f1 + f2 + f3
+        environ.friends = f1 + f2 + f3
     end
-    local vc = info.voiceChat
+    local vc = details.voiceChat
     if not Secret(vc) then
-        env.voice = (type(vc) == "string" and vc ~= "") and 1 or 0
+        environ.voice = (type(vc) == "string" and vc ~= "") and 1 or 0
     end
 end
 
-GFNS.ExtraExprKeep = function(id, info)
+GFNS.ExtraExprKeep = function(ident, details)
     local f = Current()
-    if not f or not Readable(info) then
+    if not f or not Readable(details) then
         return true
     end
-    Fill(id, info)
-    local ok, v = pcall(f, env)
-    if not ok then
+    Fill(ident, details)
+    local success, val = pcall(f, environ)
+    if not success then
         return true
     end -- a word this group hides: keep it
-    return Truth(v)
+    return Truth(val)
 end
 
 -------------------------------------------------------------------------------
@@ -521,16 +522,16 @@ do
     for _, sec in ipairs(SECTIONS) do
         for _, bx in ipairs(sec.boxes) do
             for _, tg in ipairs(bx.tags) do
-                local w = tg[1]:lower()
-                HUE[w] = bx.color
-                if WORDS[w] then
-                    byKey[WORDS[w]] = bx.color
+                local wid = tg[1]:lower()
+                HUE[wid] = bx.color
+                if WORDS[wid] then
+                    byKey[WORDS[wid]] = bx.color
                 end
             end
         end
     end
-    for w, key in pairs(WORDS) do
-        HUE[w] = HUE[w] or byKey[key]
+    for wid, key in pairs(WORDS) do
+        HUE[wid] = HUE[wid] or byKey[key]
     end
     local cmp = HUE[">"]
     for _, op in ipairs({ "=", "~=", "&&", "||", "!" }) do
@@ -542,13 +543,13 @@ local function Hex(c)
 end
 local BAD_HEX = CludesUI.COLOR_CODES.BAD
 
-local function Colorize(text)
-    local out, i, n = {}, 1, #text
-    while i <= n do
-        local c = text:sub(i, i)
-        local word = text:match("^[%a_][%w_]*", i)
-        local num = not word and (text:match("^%d+%.?%d*", i) or text:match("^%.%d+", i))
-        local two = text:sub(i, i + 1)
+local function Colorize(textValue)
+    local result, idx, n = {}, 1, #textValue
+    while idx <= n do
+        local c = textValue:sub(idx, idx)
+        local word = textValue:match("^[%a_][%w_]*", idx)
+        local num = not word and (textValue:match("^%d+%.?%d*", idx) or textValue:match("^%.%d+", idx))
+        local two = textValue:sub(idx, idx + 1)
         local piece, hue
         if word then
             piece = word
@@ -566,25 +567,25 @@ local function Colorize(text)
         else
             piece, hue = c, HUE[c] or "bad"
         end
-        local shown = piece:gsub("|", "||")
+        local isShown = piece:gsub("|", "||")
         if hue == "bad" then
-            out[#out + 1] = BAD_HEX .. shown .. "|r"
+            result[#result + 1] = BAD_HEX .. isShown .. "|r"
         elseif hue then
-            out[#out + 1] = Hex(hue) .. shown .. "|r"
+            result[#result + 1] = Hex(hue) .. isShown .. "|r"
         else
-            out[#out + 1] = shown
+            result[#result + 1] = isShown
         end
-        i = i + #piece
+        idx = idx + #piece
     end
-    return table.concat(out)
+    return table.concat(result)
 end
 
 local TAG_H, TAG_PAD, TAG_GAP, BOX_PAD, BOX_GAP = 16, 6, 4, 6, 6
 local VPAD, ROW_GAP = 6, 8 -- group padding, gap between untitled rows
 
 -- a tag: small tinted box
-local function Tag(parent, K, spec, color, onClick)
-    local t = CreateFrame("Button", nil, parent)
+local function Tag(hostFrame, Keys, specInfo, color, onClick)
+    local t = CreateFrame("Button", nil, hostFrame)
     t:SetHeight(TAG_H)
     local r, g, b = color[1], color[2], color[3]
     t.fill = t:CreateTexture(nil, "BACKGROUND")
@@ -592,64 +593,64 @@ local function Tag(parent, K, spec, color, onClick)
     t.fill:SetColorTexture(r, g, b, 0.14)
     CM.MakeBorder(t, r, g, b, 0.45, CM.PanelPP)
     t.text = t:CreateFontString(nil, "OVERLAY")
-    K.Font(t.text, 9)
+    Keys.Font(t.text, 9)
     t.text:SetPoint("CENTER", 0, 0)
-    t.text:SetText(spec[1])
+    t.text:SetText(specInfo[1])
     t.text:SetTextColor(r, g, b, 1)
     t.minW = math.ceil(t.text:GetStringWidth()) + TAG_PAD * 2
     t:SetWidth(t.minW)
     t:SetScript("OnEnter", function(self)
         self.fill:SetColorTexture(r, g, b, 0.3)
-        K.Tip(self, spec[1], spec[2])
+        Keys.Tip(self, specInfo[1], specInfo[2])
     end)
     t:SetScript("OnLeave", function(self)
         self.fill:SetColorTexture(r, g, b, 0.14)
-        K.Untip()
+        Keys.Untip()
     end)
     t:SetScript("OnClick", function()
-        onClick(spec[1])
+        onClick(specInfo[1])
     end)
-    t.span = spec.span
+    t.span = specInfo.span
     return t
 end
 
 -- builds the sections once, layout(width) places them
-local function BuildHelp(panel, K, onClick)
+local function BuildHelp(panelFrame, Keys, onClick)
     local help = { sections = {} }
     for _, sec in ipairs(SECTIONS) do
-        local S = { boxes = {} }
+        local Stl = { boxes = {} }
         if sec.title then
-            S.title = panel:CreateFontString(nil, "OVERLAY")
-            K.Font(S.title, 9)
-            S.title:SetTextColor(0.55, 0.55, 0.55, 1)
-            S.title:SetText(sec.title)
+            Stl.title = panelFrame:CreateFontString(nil, "OVERLAY")
+            Keys.Font(Stl.title, 9)
+            Stl.title:SetTextColor(0.55, 0.55, 0.55, 1)
+            Stl.title:SetText(sec.title)
         end
-        for _, spec in ipairs(sec.boxes) do
-            local bx = CreateFrame("Frame", nil, panel)
+        for _, specInfo in ipairs(sec.boxes) do
+            local bx = CreateFrame("Frame", nil, panelFrame)
             local shade = bx:CreateTexture(nil, "BACKGROUND")
             shade:SetAllPoints()
             shade:SetColorTexture(0, 0, 0, 0.22)
-            if spec.title then
+            if specInfo.title then
                 bx.title = bx:CreateFontString(nil, "OVERLAY")
-                K.Font(bx.title, 8)
+                Keys.Font(bx.title, 8)
                 bx.title:SetPoint("TOPLEFT", bx, "TOPLEFT", BOX_PAD, -VPAD)
-                bx.title:SetTextColor(spec.color[1], spec.color[2], spec.color[3], 0.8)
-                bx.title:SetText(spec.title:upper())
-                if spec.examples then
+                bx.title:SetTextColor(specInfo.color[1], specInfo.color[2], specInfo.color[3], 0.8)
+                bx.title:SetText(specInfo.title:upper())
+                if specInfo.examples then
                     -- "?" next to the name: hover for examples
                     local q = CreateFrame("Frame", nil, bx)
                     q:SetSize(12, 12)
                     q:SetPoint("LEFT", bx.title, "RIGHT", 3, 0)
                     q:EnableMouse(true)
                     local qt = q:CreateFontString(nil, "OVERLAY")
-                    K.Font(qt, 9)
+                    Keys.Font(qt, 9)
                     qt:SetPoint("CENTER", 0, 0)
                     qt:SetText("?")
                     qt:SetTextColor(0.6, 0.6, 0.6, 1)
                     q:SetScript("OnEnter", function(self)
                         qt:SetTextColor(1, 1, 1, 1)
                         local lines = {}
-                        for _, ex in ipairs(spec.examples) do
+                        for _, ex in ipairs(specInfo.examples) do
                             -- starts with a color code so the tooltip keeps our colors
                             lines[#lines + 1] = "|cffffffff|r"
                                 .. Colorize(ex[1])
@@ -658,47 +659,47 @@ local function BuildHelp(panel, K, onClick)
                                 .. ex[2]
                                 .. "|r"
                         end
-                        K.Tip(self, CludesUI.Lf("%1$s Examples", spec.title), unpack(lines))
+                        Keys.Tip(self, CludesUI.Lf("%1$s Examples", specInfo.title), unpack(lines))
                     end)
                     q:SetScript("OnLeave", function()
                         qt:SetTextColor(0.6, 0.6, 0.6, 1)
-                        K.Untip()
+                        Keys.Untip()
                     end)
                 end
             end
-            bx.cols = spec.cols
+            bx.cols = specInfo.cols
             bx.tags = {}
-            for _, tg in ipairs(spec.tags) do
-                bx.tags[#bx.tags + 1] = Tag(bx, K, tg, spec.color, onClick)
+            for _, tg in ipairs(specInfo.tags) do
+                bx.tags[#bx.tags + 1] = Tag(bx, Keys, tg, specInfo.color, onClick)
             end
-            if spec.text then
+            if specInfo.text then
                 bx.plain = bx:CreateFontString(nil, "OVERLAY")
-                K.Font(bx.plain, 9)
+                Keys.Font(bx.plain, 9)
                 bx.plain:SetJustifyH("LEFT")
-                bx.plain:SetTextColor(spec.color[1], spec.color[2], spec.color[3], 1)
-                bx.plain:SetText(spec.text)
+                bx.plain:SetTextColor(specInfo.color[1], specInfo.color[2], specInfo.color[3], 1)
+                bx.plain:SetText(specInfo.text)
             end
-            S.boxes[#S.boxes + 1] = bx
+            Stl.boxes[#Stl.boxes + 1] = bx
         end
-        help.sections[#help.sections + 1] = S
+        help.sections[#help.sections + 1] = Stl
     end
 
     -- tags wrap left to right, returns the height
-    local function FlowBox(bx, w)
-        local top = bx.title and (VPAD + 10 + 4) or VPAD
+    local function FlowBox(bx, wid)
+        local topY = bx.title and (VPAD + 10 + 4) or VPAD
         if bx.plain then
             bx.plain:ClearAllPoints()
-            bx.plain:SetPoint("TOPLEFT", bx, "TOPLEFT", BOX_PAD + 2, -top - 2)
-            bx.plain:SetWidth(w - BOX_PAD * 2 - 2)
-            return top + 2 + math.max(12, math.ceil(bx.plain:GetStringHeight())) + VPAD
+            bx.plain:SetPoint("TOPLEFT", bx, "TOPLEFT", BOX_PAD + 2, -topY - 2)
+            bx.plain:SetWidth(wid - BOX_PAD * 2 - 2)
+            return topY + 2 + math.max(12, math.ceil(bx.plain:GetStringHeight())) + VPAD
         end
         if bx.cols then
-            local cw = math.floor((w - BOX_PAD * 2 - (bx.cols - 1) * TAG_GAP) / bx.cols)
-            local col, row = 0, 0
+            local cw = math.floor((wid - BOX_PAD * 2 - (bx.cols - 1) * TAG_GAP) / bx.cols)
+            local column, rowFrame = 0, 0
             for _, t in ipairs(bx.tags) do
                 local span = t.span and bx.cols or 1
-                if col > 0 and col + span > bx.cols then
-                    col, row = 0, row + 1
+                if column > 0 and column + span > bx.cols then
+                    column, rowFrame = 0, rowFrame + 1
                 end
                 t:SetWidth(cw * span + TAG_GAP * (span - 1))
                 t:ClearAllPoints()
@@ -706,88 +707,88 @@ local function BuildHelp(panel, K, onClick)
                     "TOPLEFT",
                     bx,
                     "TOPLEFT",
-                    BOX_PAD + col * (cw + TAG_GAP),
-                    -(top + row * (TAG_H + TAG_GAP))
+                    BOX_PAD + column * (cw + TAG_GAP),
+                    -(topY + rowFrame * (TAG_H + TAG_GAP))
                 )
-                col = col + span
-                if col >= bx.cols then
-                    col, row = 0, row + 1
+                column = column + span
+                if column >= bx.cols then
+                    column, rowFrame = 0, rowFrame + 1
                 end
             end
-            if col == 0 then
-                row = row - 1
+            if column == 0 then
+                rowFrame = rowFrame - 1
             end
-            return top + (row + 1) * (TAG_H + TAG_GAP) - TAG_GAP + VPAD
+            return topY + (rowFrame + 1) * (TAG_H + TAG_GAP) - TAG_GAP + VPAD
         end
-        local x, y = BOX_PAD, top
+        local posX, posY = BOX_PAD, topY
         for _, t in ipairs(bx.tags) do
             local tw = t:GetWidth()
-            if x > BOX_PAD and x + tw > w - BOX_PAD then
-                x, y = BOX_PAD, y + TAG_H + TAG_GAP
+            if posX > BOX_PAD and posX + tw > wid - BOX_PAD then
+                posX, posY = BOX_PAD, posY + TAG_H + TAG_GAP
             end
             t:ClearAllPoints()
-            t:SetPoint("TOPLEFT", bx, "TOPLEFT", x, -y)
-            x = x + tw + TAG_GAP
+            t:SetPoint("TOPLEFT", bx, "TOPLEFT", posX, -posY)
+            posX = posX + tw + TAG_GAP
         end
-        return y + TAG_H + VPAD
+        return posY + TAG_H + VPAD
     end
 
     -- the last row grows into the leftover height
-    function help.Layout(anchor, width, fill)
-        local y = 0
-        for si, S in ipairs(help.sections) do
-            if S.title then
-                S.title:ClearAllPoints()
-                S.title:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -y - 8)
-                y = y + 8 + 14
+    function help.Layout(anchorFrame, width, fillTex)
+        local posY = 0
+        for si, Stl in ipairs(help.sections) do
+            if Stl.title then
+                Stl.title:ClearAllPoints()
+                Stl.title:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, -posY - 8)
+                posY = posY + 8 + 14
             else
-                y = y + ROW_GAP
+                posY = posY + ROW_GAP
             end
-            local n = #S.boxes
+            local n = #Stl.boxes
             local bw = math.floor((width - (n - 1) * BOX_GAP) / n)
             local rowH = 0
-            for i, bx in ipairs(S.boxes) do
+            for idx, bx in ipairs(Stl.boxes) do
                 bx:SetWidth(bw)
                 rowH = math.max(rowH, FlowBox(bx, bw))
                 bx:ClearAllPoints()
-                bx:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", (i - 1) * (bw + BOX_GAP), -y)
+                bx:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", (idx - 1) * (bw + BOX_GAP), -posY)
             end
-            if si == #help.sections and fill and fill > y + rowH then
-                rowH = fill - y
+            if si == #help.sections and fillTex and fillTex > posY + rowH then
+                rowH = fillTex - posY
             end
-            for _, bx in ipairs(S.boxes) do
+            for _, bx in ipairs(Stl.boxes) do
                 bx:SetHeight(rowH)
             end
-            y = y + rowH
+            posY = posY + rowH
         end
-        return y
+        return posY
     end
     return help
 end
 
-local btn, panel, box, status, hint, shown
-local function Paint(K)
-    if not btn then
+local button, panelFrame, boxFrame, status, hint, isShown
+local function Paint(Keys)
+    if not button then
         return
     end
     local f, err = Current()
     if f then
-        btn.Glyph:SetVertexColor(K.Accent())
+        button.Glyph:SetVertexColor(Keys.Accent())
     else
-        btn.Glyph:SetVertexColor(K.GLYPH, K.GLYPH, K.GLYPH)
+        button.Glyph:SetVertexColor(Keys.GLYPH, Keys.GLYPH, Keys.GLYPH)
     end
-    btn.activeEdge:SetShown(f ~= nil)
-    if shown and box then
-        shown:SetText(Colorize(box:GetText()))
+    button.activeEdge:SetShown(f ~= nil)
+    if isShown and boxFrame then
+        isShown:SetText(Colorize(boxFrame:GetText()))
     end
     if not status then
         return
     end
-    local text = box and box:GetText() or ""
+    local textValue = boxFrame and boxFrame:GetText() or ""
     if hint then
-        hint:SetShown(text == "")
+        hint:SetShown(textValue == "")
     end
-    if not text:find("%S") then
+    if not textValue:find("%S") then
         status:SetText("")
     elseif f then
         status:SetText("|cff66dd66" .. CludesUI.L("Filtering with this expression.") .. "|r")
@@ -796,56 +797,56 @@ local function Paint(K)
     end
 end
 
-local function Build(SP, K)
-    btn = K.GlyphButton(SP, K.ROW1_H, EXPR_TEX)
-    btn.Glyph:SetSize(14, 14)
+local function Build(SP, Keys)
+    button = Keys.GlyphButton(SP, Keys.ROW1_H, EXPR_TEX)
+    button.Glyph:SetSize(14, 14)
     -- green edge while an expression is filtering
-    btn.activeEdge = CreateFrame("Frame", nil, btn)
-    btn.activeEdge:SetAllPoints()
-    btn.activeEdge:SetFrameLevel(btn:GetFrameLevel() + 3)
-    btn.activeEdge:EnableMouse(false)
-    CM.MakeBorder(btn.activeEdge, 0.3, 0.85, 0.4, 1, CM.PanelPP)
-    btn.activeEdge:Hide()
-    btn:SetFrameLevel(SP:GetFrameLevel() + 5)
+    button.activeEdge = CreateFrame("Frame", nil, button)
+    button.activeEdge:SetAllPoints()
+    button.activeEdge:SetFrameLevel(button:GetFrameLevel() + 3)
+    button.activeEdge:EnableMouse(false)
+    CM.MakeBorder(button.activeEdge, 0.3, 0.85, 0.4, 1, CM.PanelPP)
+    button.activeEdge:Hide()
+    button:SetFrameLevel(SP:GetFrameLevel() + 5)
 
-    panel = CreateFrame("Frame", nil, SP)
-    panel:SetFrameStrata("FULLSCREEN_DIALOG")
-    panel:SetFrameLevel(300)
-    panel:EnableMouse(true)
-    panel:SetClampedToScreen(true)
-    local bg = panel:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    local fr, fg, fb = K.ThemeFill()
-    bg:SetColorTexture(fr, fg, fb, 0.98)
-    CM.MakeBorder(panel, K.ThemeBorder())
+    panelFrame = CreateFrame("Frame", nil, SP)
+    panelFrame:SetFrameStrata("FULLSCREEN_DIALOG")
+    panelFrame:SetFrameLevel(300)
+    panelFrame:EnableMouse(true)
+    panelFrame:SetClampedToScreen(true)
+    local backdrop = panelFrame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    local fr, fg, fb = Keys.ThemeFill()
+    backdrop:SetColorTexture(fr, fg, fb, 0.98)
+    CM.MakeBorder(panelFrame, Keys.ThemeBorder())
 
-    local title = panel:CreateFontString(nil, "OVERLAY")
-    K.Font(title, 9)
-    title:SetTextColor(0.55, 0.55, 0.55, 1)
-    title:SetPoint("TOPLEFT", panel, "TOPLEFT", 9, -7)
-    title:SetText(CludesUI.L("Expressions"))
+    local titleText = panelFrame:CreateFontString(nil, "OVERLAY")
+    Keys.Font(titleText, 9)
+    titleText:SetTextColor(0.55, 0.55, 0.55, 1)
+    titleText:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 9, -7)
+    titleText:SetText(CludesUI.L("Expressions"))
 
     -- clear button, skinned
-    local clear = CreateFrame("Button", nil, panel)
+    local clear = CreateFrame("Button", nil, panelFrame)
     clear:SetSize(46, 16)
-    clear:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -4)
+    clear:SetPoint("TOPRIGHT", panelFrame, "TOPRIGHT", -8, -4)
     clear:SetNormalFontObject("GameFontHighlight")
     clear:SetText(" ")
     clear.Label = clear:CreateFontString(nil, "OVERLAY")
-    K.Font(clear.Label, 9)
+    Keys.Font(clear.Label, 9)
     clear.Label:SetPoint("CENTER", 0, 0)
     clear.Label:SetText(CludesUI.L("Clear"))
     local ct = clear.Label
     ct:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     local skin = CM._ModuleNS and CM._ModuleNS.CludesUIBlizzardSkin
-    local S = skin and skin.WSkin
-    if S and S.Button then
-        S.Button(clear, { "Label" })
+    local Stl = skin and skin.WSkin
+    if Stl and Stl.Button then
+        Stl.Button(clear, { "Label" })
     else
         local cbg = clear:CreateTexture(nil, "BACKGROUND")
         cbg:SetAllPoints()
         cbg:SetColorTexture(0.06, 0.06, 0.06, 0.95)
-        CM.MakeBorder(clear, K.ThemeBorder())
+        CM.MakeBorder(clear, Keys.ThemeBorder())
         local chl = clear:CreateTexture(nil, "HIGHLIGHT")
         chl:SetAllPoints()
         chl:SetColorTexture(1, 1, 1, 0.1)
@@ -858,53 +859,53 @@ local function Build(SP, K)
     end)
 
     -- the typing box
-    local well = CreateFrame("Frame", nil, panel)
-    well:SetPoint("TOPLEFT", panel, "TOPLEFT", 8, -22)
-    well:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -22)
+    local well = CreateFrame("Frame", nil, panelFrame)
+    well:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 8, -22)
+    well:SetPoint("TOPRIGHT", panelFrame, "TOPRIGHT", -8, -22)
     well:SetHeight(58)
     local wbg = well:CreateTexture(nil, "BACKGROUND")
     wbg:SetAllPoints()
     wbg:SetColorTexture(0.02, 0.02, 0.02, 1)
-    CM.MakeBorder(well, K.ThemeBorder())
-    box = CreateFrame("EditBox", nil, well)
-    box:SetMultiLine(true)
-    box:SetAutoFocus(false)
-    box:SetMaxLetters(500)
-    box:SetPoint("TOPLEFT", well, "TOPLEFT", 6, -5)
-    box:SetPoint("BOTTOMRIGHT", well, "BOTTOMRIGHT", -6, 5)
-    box:SetFontObject("ChatFontNormal")
-    K.Font(box, 10)
-    box:SetTextColor(1, 1, 1, 0)
+    CM.MakeBorder(well, Keys.ThemeBorder())
+    boxFrame = CreateFrame("EditBox", nil, well)
+    boxFrame:SetMultiLine(true)
+    boxFrame:SetAutoFocus(false)
+    boxFrame:SetMaxLetters(500)
+    boxFrame:SetPoint("TOPLEFT", well, "TOPLEFT", 6, -5)
+    boxFrame:SetPoint("BOTTOMRIGHT", well, "BOTTOMRIGHT", -6, 5)
+    boxFrame:SetFontObject("ChatFontNormal")
+    Keys.Font(boxFrame, 10)
+    boxFrame:SetTextColor(1, 1, 1, 0)
     -- colored copy on a layer above, so the selection sits under it
-    local ink = CreateFrame("Frame", nil, box)
-    ink:SetAllPoints(box)
-    ink:SetFrameLevel(box:GetFrameLevel() + 2)
+    local ink = CreateFrame("Frame", nil, boxFrame)
+    ink:SetAllPoints(boxFrame)
+    ink:SetFrameLevel(boxFrame:GetFrameLevel() + 2)
     ink:EnableMouse(false)
-    shown = ink:CreateFontString(nil, "ARTWORK")
-    K.Font(shown, 10)
-    shown:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
-    shown:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
-    shown:SetJustifyH("LEFT")
-    shown:SetJustifyV("TOP")
-    shown:SetWordWrap(true)
+    isShown = ink:CreateFontString(nil, "ARTWORK")
+    Keys.Font(isShown, 10)
+    isShown:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 0, 0)
+    isShown:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", 0, 0)
+    isShown:SetJustifyH("LEFT")
+    isShown:SetJustifyV("TOP")
+    isShown:SetWordWrap(true)
     -- placeholder example
     hint = well:CreateFontString(nil, "OVERLAY")
-    K.Font(hint, 10)
-    hint:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+    Keys.Font(hint, 10)
+    hint:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 0, 0)
     hint:SetTextColor(0.45, 0.45, 0.45, 1)
     hint:SetText(CludesUI.L("e.g. hasBL and hasBR and healer > 0"))
     well:EnableMouse(true)
     well:SetScript("OnMouseDown", function()
-        box:SetFocus()
+        boxFrame:SetFocus()
     end)
-    box:SetScript("OnEscapePressed", function(self)
+    boxFrame:SetScript("OnEscapePressed", function(self)
         self:ClearFocus()
     end)
     -- our own cursor, blinks while you type
     local caret = ink:CreateTexture(nil, "OVERLAY")
     caret:SetColorTexture(1, 1, 1, 0.9)
     caret:SetSize(1, 12)
-    caret:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+    caret:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 0, 0)
     caret:Hide()
     local blink = 0
     local function Blink(_, elapsed)
@@ -914,139 +915,139 @@ local function Build(SP, K)
             caret:SetShown(not caret:IsShown())
         end
     end
-    box:SetScript("OnCursorChanged", function(self, x, y, w, h)
+    boxFrame:SetScript("OnCursorChanged", function(self, posX, posY, wid, hgt)
         caret:ClearAllPoints()
-        caret:SetPoint("TOPLEFT", self, "TOPLEFT", x, y)
-        caret:SetSize(1, (h and h > 0) and h or 12)
+        caret:SetPoint("TOPLEFT", self, "TOPLEFT", posX, posY)
+        caret:SetSize(1, (hgt and hgt > 0) and hgt or 12)
         blink = 0
         caret:SetShown(self:HasFocus())
     end)
-    box:SetScript("OnEditFocusGained", function(self)
+    boxFrame:SetScript("OnEditFocusGained", function(self)
         blink = 0
         caret:Show()
         self:SetScript("OnUpdate", Blink)
     end)
-    box:SetScript("OnEditFocusLost", function(self)
+    boxFrame:SetScript("OnEditFocusLost", function(self)
         self:SetScript("OnUpdate", nil)
         caret:Hide()
     end)
-    box:SetScript("OnTextChanged", function(self, user)
+    boxFrame:SetScript("OnTextChanged", function(self, user)
         if not user then
             return
         end
         local c = GFNS.Cfg()
-        local text = self:GetText()
-        c.extraExpr = text:find("%S") and text or nil
-        Paint(K)
-        K.Refilter()
+        local textValue = self:GetText()
+        c.extraExpr = textValue:find("%S") and textValue or nil
+        Paint(Keys)
+        Keys.Refilter()
     end)
     clear:SetScript("OnClick", function()
-        box:SetText("")
+        boxFrame:SetText("")
         GFNS.Cfg().extraExpr = nil
-        Paint(K)
-        K.Refilter()
+        Paint(Keys)
+        Keys.Refilter()
     end)
 
-    status = panel:CreateFontString(nil, "OVERLAY")
-    K.Font(status, 9)
-    status:SetPoint("LEFT", title, "RIGHT", 10, 0)
+    status = panelFrame:CreateFontString(nil, "OVERLAY")
+    Keys.Font(status, 9)
+    status:SetPoint("LEFT", titleText, "RIGHT", 10, 0)
     status:SetPoint("RIGHT", clear, "LEFT", -8, 0)
     status:SetJustifyH("LEFT")
     status:SetWordWrap(false)
 
     -- click a tag: typed in at the cursor
     local function Insert(word)
-        local text, pos = box:GetText(), box:GetCursorPosition()
-        if not box:HasFocus() then
-            pos = #text
+        local textValue, place = boxFrame:GetText(), boxFrame:GetCursorPosition()
+        if not boxFrame:HasFocus() then
+            place = #textValue
         end
-        local before, after = text:sub(1, pos), text:sub(pos + 1)
+        local before, after = textValue:sub(1, place), textValue:sub(place + 1)
         if before ~= "" and not before:find("%s$") then
             word = " " .. word
         end
         if after ~= "" and not after:find("^%s") then
             word = word .. " "
         end
-        box:SetText(before .. word .. after)
-        box:SetFocus()
-        box:SetCursorPosition(pos + #word)
+        boxFrame:SetText(before .. word .. after)
+        boxFrame:SetFocus()
+        boxFrame:SetCursorPosition(place + #word)
         local c = GFNS.Cfg()
-        c.extraExpr = box:GetText()
-        Paint(K)
-        K.Refilter()
+        c.extraExpr = boxFrame:GetText()
+        Paint(Keys)
+        Keys.Refilter()
     end
-    local help = BuildHelp(panel, K, Insert)
+    local help = BuildHelp(panelFrame, Keys, Insert)
     local TOP, BOTTOM = 22 + 58, 10
     local function LayoutPanel()
-        local w = panel:GetWidth()
-        if not w or w < 50 then
+        local wid = panelFrame:GetWidth()
+        if not wid or wid < 50 then
             return
         end
-        panel:SetHeight(TOP + help.Layout(well, w - 16) + BOTTOM)
+        panelFrame:SetHeight(TOP + help.Layout(well, wid - 16) + BOTTOM)
     end
-    panel:SetHeight(TOP + BOTTOM)
-    panel:SetScript("OnSizeChanged", function(_, w)
-        if w and w > 50 then
+    panelFrame:SetHeight(TOP + BOTTOM)
+    panelFrame:SetScript("OnSizeChanged", function(_, wid)
+        if wid and wid > 50 then
             LayoutPanel()
         end
     end)
 
-    K.ClickOff(panel, function(self)
-        return self:IsMouseOver() or btn:IsMouseOver()
+    Keys.ClickOff(panelFrame, function(self)
+        return self:IsMouseOver() or button:IsMouseOver()
     end)
-    panel:HookScript("OnShow", function()
-        if K.Dim then
-            K.Dim(true)
+    panelFrame:HookScript("OnShow", function()
+        if Keys.Dim then
+            Keys.Dim(true)
         end
         LayoutPanel()
-        box:SetText(GFNS.Cfg().extraExpr or "")
-        Paint(K)
-        box:SetFocus()
-        box:SetCursorPosition(#box:GetText())
+        boxFrame:SetText(GFNS.Cfg().extraExpr or "")
+        Paint(Keys)
+        boxFrame:SetFocus()
+        boxFrame:SetCursorPosition(#boxFrame:GetText())
     end)
-    panel:HookScript("OnHide", function()
-        box:ClearFocus()
-        if K.Dim then
-            K.Dim(false)
+    panelFrame:HookScript("OnHide", function()
+        boxFrame:ClearFocus()
+        if Keys.Dim then
+            Keys.Dim(false)
         end
     end)
-    panel:Hide()
+    panelFrame:Hide()
 
-    btn:SetScript("OnClick", function()
-        if panel:IsShown() then
-            panel:Hide()
+    button:SetScript("OnClick", function()
+        if panelFrame:IsShown() then
+            panelFrame:Hide()
             return
         end
-        panel:ClearAllPoints()
-        local left = SP.SearchBox or btn
-        panel:SetPoint("TOPLEFT", left, "BOTTOMLEFT", 0, -K.GAP)
-        panel:SetPoint("TOPRIGHT", btn.refresh, "BOTTOMRIGHT", 0, -K.GAP)
-        panel:Show()
+        panelFrame:ClearAllPoints()
+        local leftX = SP.SearchBox or button
+        panelFrame:SetPoint("TOPLEFT", leftX, "BOTTOMLEFT", 0, -Keys.GAP)
+        panelFrame:SetPoint("TOPRIGHT", button.refresh, "BOTTOMRIGHT", 0, -Keys.GAP)
+        panelFrame:Show()
     end)
-    btn:SetScript("OnEnter", function(self)
+    button:SetScript("OnEnter", function(self)
         self.Glyph:SetAlpha(1)
         local f = Current()
-        K.Tip(
+        Keys.Tip(
             self,
             CludesUI.L("Expressions"),
             f and CludesUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr)
                 or CludesUI.L("Filter groups with your own rules")
         )
     end)
-    btn:SetScript("OnLeave", function(self)
+    button:SetScript("OnLeave", function(self)
         self.Glyph:SetAlpha(0.8)
-        K.Untip()
+        Keys.Untip()
     end)
-    btn:SetScript("OnHide", function()
-        panel:Hide()
+    button:SetScript("OnHide", function()
+        panelFrame:Hide()
     end)
     GFNS.ExtraExprReset = function()
         local c = GFNS.Cfg()
         c.extraExpr = nil
-        if box then
-            box:SetText("")
+        if boxFrame then
+            boxFrame:SetText("")
         end
-        Paint(K)
+        Paint(Keys)
     end
 end
 
@@ -1056,61 +1057,61 @@ end
 local lastK, lastSP
 local blockers = {}
 
-local function Block(target, on)
-    if not target then
+local function Block(targetUnit, enabled)
+    if not targetUnit then
         return
     end
-    local b = blockers[target]
+    local b = blockers[targetUnit]
     if not b then
-        if not on then
+        if not enabled then
             return
         end
-        b = CreateFrame("Button", nil, target:GetParent() or UIParent)
-        b:SetAllPoints(target)
+        b = CreateFrame("Button", nil, targetUnit:GetParent() or UIParent)
+        b:SetAllPoints(targetUnit)
         b:EnableMouse(true)
         b:RegisterForClicks("AnyUp")
-        blockers[target] = b
+        blockers[targetUnit] = b
     end
-    if on then
-        b:SetFrameStrata(target:GetFrameStrata())
-        b:SetFrameLevel(target:GetFrameLevel() + 20)
+    if enabled then
+        b:SetFrameStrata(targetUnit:GetFrameStrata())
+        b:SetFrameLevel(targetUnit:GetFrameLevel() + 20)
         b:Show()
-        target:SetAlpha(lastK and lastK.DIM_ALPHA or 0.35)
+        targetUnit:SetAlpha(lastK and lastK.DIM_ALPHA or 0.35)
     else
         b:Hide()
-        target:SetAlpha(1)
+        targetUnit:SetAlpha(1)
     end
 end
 
-GFNS.ExtraOnDim = function(on)
-    local K, SP = lastK, lastSP
-    if not (K and SP) then
+GFNS.ExtraOnDim = function(enabled)
+    local Keys, SP = lastK, lastSP
+    if not (Keys and SP) then
         return
     end
-    local exprOpen = on and panel and panel:IsShown()
-    local filtersOpen = on and not exprOpen and K.FiltersOpen and K.FiltersOpen()
-    Block(btn and btn:IsShown() and btn or nil, filtersOpen)
-    Block(K.Filters, exprOpen)
-    Block(btn and btn.refresh, exprOpen or filtersOpen)
+    local exprOpen = enabled and panelFrame and panelFrame:IsShown()
+    local filtersOpen = enabled and not exprOpen and Keys.FiltersOpen and Keys.FiltersOpen()
+    Block(button and button:IsShown() and button or nil, filtersOpen)
+    Block(Keys.Filters, exprOpen)
+    Block(button and button.refresh, exprOpen or filtersOpen)
     Block(SP.SearchBox, exprOpen or filtersOpen)
     local face = GFNS.GFFilterFace and GFNS.GFFilterFace() or SP.FilterButton
     Block(face, filtersOpen)
     if filtersOpen and face then
-        face:SetAlpha(K.DIM_ALPHA or 0.35)
+        face:SetAlpha(Keys.DIM_ALPHA or 0.35)
     end
 end
 
-GFNS.ExtraExprButton = function(SP, refresh, show, K)
-    lastK, lastSP = K, SP
-    if not btn then
-        Build(SP, K)
+GFNS.ExtraExprButton = function(SP, refresh, show, Keys)
+    lastK, lastSP = Keys, SP
+    if not button then
+        Build(SP, Keys)
     end
-    btn.refresh = refresh
-    btn:ClearAllPoints()
-    btn:SetPoint("RIGHT", refresh, "LEFT", -K.GAP, 0)
-    btn:SetShown(show)
-    Paint(K)
-    return show and btn or refresh
+    button.refresh = refresh
+    button:ClearAllPoints()
+    button:SetPoint("RIGHT", refresh, "LEFT", -Keys.GAP, 0)
+    button:SetShown(show)
+    Paint(Keys)
+    return show and button or refresh
 end
 
 -- reset with no box built yet

@@ -46,9 +46,9 @@ local FOCUS_MARK_COORDS = {
 local function OptionDisplayName(opt, noRequest)
     local ids = opt.items
     if ids and #ids == 1 then
-        local n = C_Item.GetItemInfo(ids[1])
-        if n then
-            return n
+        local num = C_Item.GetItemInfo(ids[1])
+        if num then
+            return num
         end
         if not noRequest then
             C_Item.RequestLoadItemDataByID(ids[1])
@@ -146,29 +146,29 @@ local GENERAL_DEFS = {
         extraChoices = {
             { key = "markIcon", label = "Focus Marker", default = FOCUS_DEFAULT_MARK },
         },
-        extraBody = function(db)
-            if not (db.autoMark or db.ping or db.announce) then
+        extraBody = function(saved)
+            if not (saved.autoMark or saved.ping or saved.announce) then
                 return nil
             end
             -- Every trailing command acts on the focus, so bail out when none
             -- was acquired rather than marking, pinging or announcing whatever
             -- happens to be targeted.
             local lines = { "/stopmacro [@focus,noexists]" }
-            local mark = db.markIcon
+            local mark = saved.markIcon
             if not FOCUS_MARK_COORDS[mark] then
                 mark = FOCUS_DEFAULT_MARK
             end
-            if db.autoMark then
+            if saved.autoMark then
                 -- `~` is the 12.0.7 macro extension that declines to overwrite
                 -- a marker a group member already placed.
                 lines[#lines + 1] = "/tm [@focus] ~" .. mark
             end
-            if db.ping then
+            if saved.ping then
                 -- Numeric alias (3 = On My Way): the word forms resolve through
                 -- localized PING_TYPE_* globals and only match on English clients.
                 lines[#lines + 1] = "/ping [@focus] 3"
             end
-            if db.announce then
+            if saved.announce then
                 -- %f is the built-in chat substitution for the focus unit's
                 -- name. The marker icon is only advertised when Auto Mark is
                 -- on -- otherwise the message would name a marker nothing set.
@@ -178,7 +178,7 @@ local GENERAL_DEFS = {
                 -- the old wording until a toggle is touched -- inherent to
                 -- macros).
                 local focusWord = (CludesUI.L("Focus")) or "Focus"
-                lines[#lines + 1] = db.autoMark and ("/p " .. focusWord .. ": {rt" .. mark .. "} %f")
+                lines[#lines + 1] = saved.autoMark and ("/p " .. focusWord .. ": {rt" .. mark .. "} %f")
                     or ("/p " .. focusWord .. ": %f")
             end
             return table.concat(lines, "\n")
@@ -205,45 +205,45 @@ end
 -- Priority order for a checkbox macro. Keeps a saved db.order and appends any option
 -- added since it was saved (so a new option never wipes a user's custom order); builds
 -- the default 1..n order when none is saved. A saved order already n long is returned as is.
-local function EnsureOrder(db, n)
-    local order = db.order
-    if type(order) == "table" and #order == n then
-        return order
+local function EnsureOrder(saved, num)
+    local sequence = saved.order
+    if type(sequence) == "table" and #sequence == num then
+        return sequence
     end
-    if type(order) ~= "table" then
-        order = {}
+    if type(sequence) ~= "table" then
+        sequence = {}
     end
     local seen, clean = {}, {}
-    for _, idx in ipairs(order) do
-        if type(idx) == "number" and idx >= 1 and idx <= n and not seen[idx] then
-            seen[idx] = true
-            clean[#clean + 1] = idx
+    for _, position in ipairs(sequence) do
+        if type(position) == "number" and position >= 1 and position <= num and not seen[position] then
+            seen[position] = true
+            clean[#clean + 1] = position
         end
     end
-    for i = 1, n do
+    for i = 1, num do
         if not seen[i] then
             clean[#clean + 1] = i
         end
     end
-    db.order = clean
+    saved.order = clean
     return clean
 end
 
 -------------------------------------------------------------------------------
 --  Macro body generation
 -------------------------------------------------------------------------------
-local function GetFirstAvailableItemID(def, db)
-    if not def.checkboxes then
+local function GetFirstAvailableItemID(spec_def, saved)
+    if not spec_def.checkboxes then
         return nil
     end
-    local cbs = def.checkboxes
-    local order = EnsureOrder(db, #cbs)
-    for _, idx in ipairs(order) do
-        local cb = cbs[idx]
-        if cb and db[cb.key] ~= false then
-            for _, itemID in ipairs(cb.items) do
-                if (C_Item.GetItemCount(itemID, false) or 0) > 0 then
-                    return itemID
+    local cbs = spec_def.checkboxes
+    local sequence = EnsureOrder(saved, #cbs)
+    for _, position in ipairs(sequence) do
+        local cb = cbs[position]
+        if cb and saved[cb.key] ~= false then
+            for _, itemId in ipairs(cb.items) do
+                if (C_Item.GetItemCount(itemId, false) or 0) > 0 then
+                    return itemId
                 end
             end
         end
@@ -251,8 +251,8 @@ local function GetFirstAvailableItemID(def, db)
     return nil
 end
 
-local function GetMacroInventoryKey(def, db)
-    return GetFirstAvailableItemID(def, db)
+local function GetMacroInventoryKey(spec_def, saved)
+    return GetFirstAvailableItemID(spec_def, saved)
 end
 
 -- Replace {n} placeholders in a macro string with the client-localized name of
@@ -261,49 +261,49 @@ end
 -- only accepts the client's own language; this makes them work on any locale.
 -- Returns nil if a referenced spell's data is not cached yet (kicks off an async
 -- load so a later refresh completes it); callers skip the macro write on nil.
-local function ResolveSpellTokens(text, spells)
-    if not text then
+local function ResolveSpellTokens(textValue, spells)
+    if not textValue then
         return nil
     end
-    if not spells or not text:find("{%d+}") then
-        return text
+    if not spells or not textValue:find("{%d+}") then
+        return textValue
     end
     local missing = false
-    local out = text:gsub("{(%d+)}", function(n)
-        local id = spells[tonumber(n)]
-        if not id then
-            return "{" .. n .. "}"
+    local result = textValue:gsub("{(%d+)}", function(num)
+        local ident = spells[tonumber(num)]
+        if not ident then
+            return "{" .. num .. "}"
         end
-        local info = C_Spell.GetSpellInfo(id)
-        if info and info.name then
-            return info.name
+        local details = C_Spell.GetSpellInfo(ident)
+        if details and details.name then
+            return details.name
         end
-        C_Spell.RequestLoadSpellData(id)
+        C_Spell.RequestLoadSpellData(ident)
         missing = true
         return ""
     end)
     if missing then
         return nil
     end
-    return out
+    return result
 end
 
-local function BuildMacroBody(def, db)
-    if def.checkboxes then
-        local cbs = def.checkboxes
-        local order = EnsureOrder(db, #cbs)
+local function BuildMacroBody(spec_def, saved)
+    if spec_def.checkboxes then
+        local cbs = spec_def.checkboxes
+        local sequence = EnsureOrder(saved, #cbs)
 
         -- Collect all enabled items
         local availItems = {}
         local firstItemID
-        for _, idx in ipairs(order) do
-            local cb = cbs[idx]
-            if cb and db[cb.key] ~= false then
-                for _, itemID in ipairs(cb.items) do
+        for _, position in ipairs(sequence) do
+            local cb = cbs[position]
+            if cb and saved[cb.key] ~= false then
+                for _, itemId in ipairs(cb.items) do
                     if not firstItemID then
-                        firstItemID = itemID
+                        firstItemID = itemId
                     end
-                    availItems[#availItems + 1] = itemID
+                    availItems[#availItems + 1] = itemId
                 end
             end
         end
@@ -313,39 +313,39 @@ local function BuildMacroBody(def, db)
         end
 
         local body = ""
-        if db.showTooltip ~= false then
-            local tipID = GetFirstAvailableItemID(def, db) or firstItemID
+        if saved.showTooltip ~= false then
+            local tipID = GetFirstAvailableItemID(spec_def, saved) or firstItemID
             if tipID then
                 body = "#showtooltip item:" .. tipID .. "\n"
             end
         end
         local lines = {}
-        for _, itemID in ipairs(availItems) do
-            lines[#lines + 1] = "/use item:" .. itemID
+        for _, itemId in ipairs(availItems) do
+            lines[#lines + 1] = "/use item:" .. itemId
         end
         if #lines == 0 then
             return ""
         end
         return body .. table.concat(lines, "\n")
-    elseif def.fixedBody then
-        local fbody = ResolveSpellTokens(def.fixedBody, def.spells)
+    elseif spec_def.fixedBody then
+        local fbody = ResolveSpellTokens(spec_def.fixedBody, spec_def.spells)
         if fbody == nil then
             return nil
         end -- spell data not cached; skip write
         local body = ""
-        if db.showTooltip ~= false and def.fixedTooltip then
-            local tip = ResolveSpellTokens(def.fixedTooltip, def.spells)
-            if tip == nil then
+        if saved.showTooltip ~= false and spec_def.fixedTooltip then
+            local tipText = ResolveSpellTokens(spec_def.fixedTooltip, spec_def.spells)
+            if tipText == nil then
                 return nil
             end
-            body = "#showtooltip " .. tip .. "\n"
-        elseif db.showTooltip ~= false then
+            body = "#showtooltip " .. tipText .. "\n"
+        elseif saved.showTooltip ~= false then
             body = "#showtooltip\n"
         end
         -- Optional trailing lines driven by the def's own extra toggles. Returns
         -- nil when every toggle is off, leaving the body untouched.
-        if def.extraBody then
-            local extra = def.extraBody(db)
+        if spec_def.extraBody then
+            local extra = spec_def.extraBody(saved)
             if extra and extra ~= "" then
                 return body .. fbody .. "\n" .. extra
             end
@@ -359,37 +359,37 @@ end
 -- keep the "?" placeholder so the game shows a live icon from their
 -- #showtooltip line. Multi-spell combo macros have no #showtooltip to derive
 -- from, so they'd show a bare "?" -- give them their first spell's texture.
-local function ResolveMacroIcon(def)
-    if def.macroIcon then
-        return def.macroIcon
+local function ResolveMacroIcon(spec_def)
+    if spec_def.macroIcon then
+        return spec_def.macroIcon
     end
-    if def.spells and def.fixedBody and not def.fixedTooltip then
-        local tex = def.spells[1] and C_Spell.GetSpellTexture(def.spells[1])
-        if tex then
-            return tex
+    if spec_def.spells and spec_def.fixedBody and not spec_def.fixedTooltip then
+        local texture = spec_def.spells[1] and C_Spell.GetSpellTexture(spec_def.spells[1])
+        if texture then
+            return texture
         end
     end
     return "INV_MISC_QUESTIONMARK"
 end
 
-local function UpdateMacro(def, db)
-    local idx = GetMacroIndexByName(def.name)
-    if idx ~= 0 then
+local function UpdateMacro(spec_def, saved)
+    local position = GetMacroIndexByName(spec_def.name)
+    if position ~= 0 then
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer("MacroFactory:" .. def.name, function()
-                local i = GetMacroIndexByName(def.name)
+            CludesUI.CombatQueue.Defer("MacroFactory:" .. spec_def.name, function()
+                local i = GetMacroIndexByName(spec_def.name)
                 if i == 0 then
                     return
                 end
-                local body = BuildMacroBody(def, GetMacroDB(def.name))
+                local body = BuildMacroBody(spec_def, GetMacroDB(spec_def.name))
                 if body then
                     EditMacro(i, nil, nil, body)
                 end
             end)
         else
-            local body = BuildMacroBody(def, db)
+            local body = BuildMacroBody(spec_def, saved)
             if body then
-                EditMacro(idx, nil, nil, body)
+                EditMacro(position, nil, nil, body)
             end
         end
     end
@@ -425,14 +425,14 @@ end
 local function ItemUpkeepPass()
     local any = false
     for i = 1, #ITEM_DEFS do
-        local def = ITEM_DEFS[i]
-        if GetMacroIndexByName(def.name) ~= 0 then
+        local spec_def = ITEM_DEFS[i]
+        if GetMacroIndexByName(spec_def.name) ~= 0 then
             any = true
-            local db = GetMacroDB(def.name)
-            local key = GetMacroInventoryKey(def, db)
-            if key ~= lastAvailableItems[def.name] then
-                lastAvailableItems[def.name] = key
-                UpdateMacro(def, db)
+            local saved = GetMacroDB(spec_def.name)
+            local key = GetMacroInventoryKey(spec_def, saved)
+            if key ~= lastAvailableItems[spec_def.name] then
+                lastAvailableItems[spec_def.name] = key
+                UpdateMacro(spec_def, saved)
             end
         end
     end
@@ -441,13 +441,13 @@ local function ItemUpkeepPass()
     end
 end
 
-itemUpkeep:SetScript("OnEvent", function(self, event)
-    if event == "BAG_UPDATE_DELAYED" or event == "PLAYER_REGEN_ENABLED" then
+itemUpkeep:SetScript("OnEvent", function(self, evt)
+    if evt == "BAG_UPDATE_DELAYED" or evt == "PLAYER_REGEN_ENABLED" then
         ItemUpkeepPass()
         return
     end
     -- PLAYER_ENTERING_WORLD and UPDATE_MACROS: one look each.
-    self:UnregisterEvent(event)
+    self:UnregisterEvent(evt)
     if CludesUI.IS_FOREVER or not CludesUI._ModuleNS["CludesUIQoL"] then
         return
     end
@@ -465,7 +465,7 @@ end)
 itemUpkeep:RegisterEvent("PLAYER_ENTERING_WORLD")
 itemUpkeep:RegisterEvent("UPDATE_MACROS")
 
-function CludesUI.BuildMacroFactory(parent, startY, PP)
+function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
     -- The options frame pool: this file is resident, and the options addon
     -- (whose Quality of Life page is the only caller of this builder) fills
     -- the table in place when it loads.
@@ -478,9 +478,9 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
     local SPEC_ICON_GAP = 70
     local FIRST_ICON_Y = -34
     local ROW_STRIDE = 66
-    local fontPath = CludesUI.GetFontPath() or STANDARD_TEXT_FONT
-    local EG = CludesUI.CLUDES_GREEN
-    local y = startY
+    local fontFile = CludesUI.GetFontPath() or STANDARD_TEXT_FONT
+    local ACC = CludesUI.CLUDES_GREEN
+    local posY = startY
 
     ---------------------------------------------------------------------------
     --  Spec macro definitions (keyed by specID)
@@ -490,10 +490,10 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
     local function mergeMacros(...)
         local t = {}
         for i = 1, select("#", ...) do
-            local src = select(i, ...)
-            if src then
-                for _, v in ipairs(src) do
-                    t[#t + 1] = v
+            local source = select(i, ...)
+            if source then
+                for _, val in ipairs(source) do
+                    t[#t + 1] = val
                 end
             end
         end
@@ -1598,8 +1598,9 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
     -- On a kept page (a pool host) the section is one frame for the session:
     -- each build dresses it again (its reset is the old section's teardown).
     -- A page built anew gets a new section, as everything on it is new.
-    local keep = Pool.Managed(parent)
-    local container = keep and Pool.Kept(MF, "section", "Frame", parent) or CreateFrame("Frame", nil, parent)
+    local keep = Pool.Managed(hostFrame)
+    local boxHolder = keep and Pool.Kept(MF, "section", "Frame", hostFrame)
+        or CreateFrame("Frame", nil, hostFrame)
     -- The right-click menu still open on the previous build closes with it,
     -- also when its icon is not dressed again (a shorter spec list leaves
     -- that button, and the menu it owns, out of this build).
@@ -1609,17 +1610,17 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
         end
         MF.openMenu = nil
     end
-    container:SetSize(parent:GetWidth(), SECTION_H)
-    container:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+    boxHolder:SetSize(hostFrame:GetWidth(), SECTION_H)
+    boxHolder:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 0, posY)
 
-    local halfW = parent:GetWidth() / 2
+    local halfW = hostFrame:GetWidth() / 2
     local allMacroButtons = {}
 
     -- Center divider (1px absolute pixel)
-    local divider = container:CreateTexture(nil, "ARTWORK")
+    local divider = boxHolder:CreateTexture(nil, "ARTWORK")
     divider:SetWidth(1)
-    divider:SetPoint("TOP", container, "TOP", 0, 0)
-    divider:SetPoint("BOTTOM", container, "BOTTOM", 0, 0)
+    divider:SetPoint("TOP", boxHolder, "TOP", 0, 0)
+    divider:SetPoint("BOTTOM", boxHolder, "BOTTOM", 0, 0)
     divider:SetColorTexture(1, 1, 1, 0.15)
     if divider.SetSnapToPixelGrid then
         divider:SetSnapToPixelGrid(false)
@@ -1635,42 +1636,42 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
         local isLeft = (anchorSide == "LEFT")
         local centerX = isLeft and (halfW / 2) or (halfW + halfW / 2)
 
-        local titleFS = container:CreateFontString(nil, "OVERLAY")
-        titleFS:SetFont(fontPath, 16, "")
+        local titleFS = boxHolder:CreateFontString(nil, "OVERLAY")
+        titleFS:SetFont(fontFile, 16, "")
         titleFS:SetTextColor(1, 1, 1, 1)
-        titleFS:SetPoint("TOP", container, "TOPLEFT", centerX, 0)
+        titleFS:SetPoint("TOP", boxHolder, "TOPLEFT", centerX, 0)
         titleFS:SetText(CludesUI.L(titleText))
 
         local numIcons = #defs
         local totalRows = math.ceil(numIcons / perRow)
 
         -- Scrollable viewport when content exceeds maxVisibleRows
-        local iconParent = container
-        local iconAnchor = container
+        local iconParent = boxHolder
+        local iconAnchor = boxHolder
         local scrollCenterX = centerX
         if maxVisibleRows and totalRows > maxVisibleRows then
             local visH = math.abs(FIRST_ICON_Y) + maxVisibleRows * ROW_STRIDE
             local contentH = math.abs(FIRST_ICON_Y) + totalRows * ROW_STRIDE
 
-            local sf = CreateFrame("ScrollFrame", nil, container)
-            sf:SetPoint(
+            local scrollFrame = CreateFrame("ScrollFrame", nil, boxHolder)
+            scrollFrame:SetPoint(
                 "TOPLEFT",
-                container,
+                boxHolder,
                 isLeft and "TOPLEFT" or "TOP",
                 0,
                 FIRST_ICON_Y + ICON_SIZE / 2 + 4
             )
-            sf:SetSize(halfW, visH)
-            sf:SetFrameLevel(container:GetFrameLevel() + 1)
-            sf:EnableMouseWheel(true)
-            sf:SetClipsChildren(true)
+            scrollFrame:SetSize(halfW, visH)
+            scrollFrame:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
+            scrollFrame:EnableMouseWheel(true)
+            scrollFrame:SetClipsChildren(true)
 
-            local sc = CreateFrame("Frame", nil, sf)
+            local sc = CreateFrame("Frame", nil, scrollFrame)
             sc:SetSize(halfW, contentH)
-            sf:SetScrollChild(sc)
+            scrollFrame:SetScrollChild(sc)
 
             CludesUI.AttachSmoothScrollbar(
-                sf,
+                scrollFrame,
                 { rightInset = 70, topInset = 32, bottomInset = 8, panelWheel = true }
             )
 
@@ -1679,7 +1680,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             scrollCenterX = halfW / 2
         end
 
-        for gi, def in ipairs(defs) do
+        for gi, spec_def in ipairs(defs) do
             local rowIdx = math.floor((gi - 1) / perRow)
             local colIdx = (gi - 1) % perRow
             local iconsInRow = math.min(perRow, numIcons - rowIdx * perRow)
@@ -1688,32 +1689,32 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             local iconY = FIRST_ICON_Y - rowIdx * ROW_STRIDE
 
             local btn = CreateFrame("Button", nil, iconParent)
-            PP.Size(btn, ICON_SIZE, ICON_SIZE)
+            Pix.Size(btn, ICON_SIZE, ICON_SIZE)
             btn:SetPoint("TOP", iconAnchor, "TOPLEFT", iconX, iconY)
             btn:SetFrameLevel(iconParent:GetFrameLevel() + 5)
 
-            local tex = btn:CreateTexture(nil, "ARTWORK")
-            tex:SetAllPoints()
-            tex:SetTexture(def.macroIcon or def.icon)
-            tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            btn._tex = tex
+            local texture = btn:CreateTexture(nil, "ARTWORK")
+            texture:SetAllPoints()
+            texture:SetTexture(spec_def.macroIcon or spec_def.icon)
+            texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            btn._tex = texture
 
             local bdr = CreateFrame("Frame", nil, btn)
             bdr:SetAllPoints()
             bdr:SetFrameLevel(btn:GetFrameLevel() + 1)
-            PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
+            Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
 
             local hoverBdr = CreateFrame("Frame", nil, btn)
             hoverBdr:SetPoint("TOPLEFT", btn, "TOPLEFT", -1, 1)
             hoverBdr:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 1, -1)
             hoverBdr:SetFrameLevel(btn:GetFrameLevel() + 2)
             local ar, ag, ab = CludesUI.GetAccentColor()
-            PP.CreateBorder(hoverBdr, ar, ag, ab, 1, 2)
+            Pix.CreateBorder(hoverBdr, ar, ag, ab, 1, 2)
             hoverBdr:Hide()
             btn._hoverBdr = hoverBdr
 
             local labelFS = iconParent:CreateFontString(nil, "OVERLAY")
-            labelFS:SetFont(fontPath, 13, "")
+            labelFS:SetFont(fontFile, 13, "")
             labelFS:SetTextColor(1, 1, 1, 0.9)
             labelFS:SetPoint("TOP", btn, "BOTTOM", 0, -4)
             -- Constrain to the icon stride and disable wrap so an over-long
@@ -1722,12 +1723,12 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             labelFS:SetWidth(ICON_SIZE + gap - 8)
             labelFS:SetWordWrap(false)
             labelFS:SetJustifyH("CENTER")
-            labelFS:SetText(CludesUI.L(def.label):gsub("\n", " "))
+            labelFS:SetText(CludesUI.L(spec_def.label):gsub("\n", " "))
             btn._label = labelFS
 
             -- Flash system (OnUpdate, no AnimationGroup)
             local flashFS = iconParent:CreateFontString(nil, "OVERLAY")
-            flashFS:SetFont(fontPath, 9, "")
+            flashFS:SetFont(fontFile, 9, "")
             flashFS:SetTextColor(1, 1, 1, 0)
             flashFS:SetPoint("TOP", btn, "BOTTOM", 0, -4)
             flashFS:Hide()
@@ -1771,41 +1772,41 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
 
             -- State
             local function MacroExists()
-                return GetMacroIndexByName(def.name) ~= 0
+                return GetMacroIndexByName(spec_def.name) ~= 0
             end
             local function RefreshState()
                 local exists = MacroExists()
-                tex:SetDesaturated(exists)
+                texture:SetDesaturated(exists)
                 btn._isGray = exists
             end
 
             local function GetDB()
-                return GetMacroDB(def.name)
+                return GetMacroDB(spec_def.name)
             end
 
             -- Dynamic icon: show the first selected item or equipped trinket
             local function RefreshIcon()
-                local db = GetDB()
-                local icon
-                if def.checkboxes then
-                    local cbs = def.checkboxes
-                    local order = EnsureOrder(db, #cbs)
-                    for _, idx in ipairs(order) do
-                        local cb = cbs[idx]
-                        if cb and db[cb.key] ~= false and cb.items and cb.items[1] then
-                            icon = C_Item.GetItemIconByID(cb.items[1])
-                            if icon then
+                local saved = GetDB()
+                local glyph
+                if spec_def.checkboxes then
+                    local cbs = spec_def.checkboxes
+                    local sequence = EnsureOrder(saved, #cbs)
+                    for _, position in ipairs(sequence) do
+                        local cb = cbs[position]
+                        if cb and saved[cb.key] ~= false and cb.items and cb.items[1] then
+                            glyph = C_Item.GetItemIconByID(cb.items[1])
+                            if glyph then
                                 break
                             end
                         end
                     end
-                elseif def.fixedTooltip then
-                    local slot = tonumber(def.fixedTooltip)
-                    if slot then
-                        icon = GetInventoryItemTexture("player", slot)
+                elseif spec_def.fixedTooltip then
+                    local slotIndex = tonumber(spec_def.fixedTooltip)
+                    if slotIndex then
+                        glyph = GetInventoryItemTexture("player", slotIndex)
                     end
                 end
-                tex:SetTexture(icon or def.macroIcon or def.icon)
+                texture:SetTexture(glyph or spec_def.macroIcon or spec_def.icon)
             end
             btn._refreshIcon = RefreshIcon
             RefreshIcon()
@@ -1819,10 +1820,10 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                     return
                 end
                 local MH, DH, HH, MW = 28, 14, 20, 240
-                local cbItems = def.checkboxes
+                local cbItems = spec_def.checkboxes
                 local hasCheckboxes = cbItems and #cbItems > 0
-                local xToggles = def.extraToggles
-                local xChoices = def.extraChoices
+                local xToggles = spec_def.extraToggles
+                local xChoices = spec_def.extraChoices
                 local xRows = (xToggles and #xToggles or 0) + (xChoices and #xChoices or 0)
                 -- Popups that hang outside the menu's own rect but still count as
                 -- "inside" for the click-outside-to-close test below.
@@ -1864,7 +1865,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                 aR:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
                 aR:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
                 local aL = aR:CreateFontString(nil, "OVERLAY")
-                aL:SetFont(fontPath, 13, "")
+                aL:SetFont(fontFile, 13, "")
                 aL:SetTextColor(0.75, 0.75, 0.75, 1)
                 aL:SetPoint("LEFT", aR, "LEFT", 12, 0)
                 local aHL = aR:CreateTexture(nil, "ARTWORK")
@@ -1892,16 +1893,16 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                         return
                     end
                     if MacroExists() then
-                        DeleteMacro(def.name)
+                        DeleteMacro(spec_def.name)
                     else
-                        local db = GetDB()
-                        local body = BuildMacroBody(def, db)
+                        local saved = GetDB()
+                        local body = BuildMacroBody(spec_def, saved)
                         if body == nil then
                             return
                         end -- spell data not cached yet
-                        CreateMacro(def.name, ResolveMacroIcon(def), body, nil)
-                        lastAvailableItems[def.name] = GetMacroInventoryKey(def, db)
-                        if def.checkboxes then
+                        CreateMacro(spec_def.name, ResolveMacroIcon(spec_def), body, nil)
+                        lastAvailableItems[spec_def.name] = GetMacroInventoryKey(spec_def, saved)
+                        if spec_def.checkboxes then
                             ArmItemUpkeep()
                         end
                         PlayFlash()
@@ -1928,12 +1929,12 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                 tBg:SetColorTexture(0.114, 0.106, 0.099, 1)
                 local tBrd = CludesUI.MakeRoundedBorder(tB, 0.4, 0.4, 0.4, 0.6, tBg)
                 local tCk = tB:CreateTexture(nil, "ARTWORK")
-                PP.SetInside(tCk, tB, 2, 2)
-                tCk:SetColorTexture(EG.r, EG.g, EG.b, 1)
+                Pix.SetInside(tCk, tB, 2, 2)
+                tCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                 tCk:SetSnapToPixelGrid(false)
                 CludesUI.RoundBody(tB, tCk, 2)
                 local tL = tR:CreateFontString(nil, "OVERLAY")
-                tL:SetFont(fontPath, 13, "")
+                tL:SetFont(fontFile, 13, "")
                 tL:SetTextColor(0.75, 0.75, 0.75, 1)
                 tL:SetPoint("LEFT", tR, "LEFT", 12, 0)
                 tL:SetText(CludesUI.L("Show Tooltip"))
@@ -1941,10 +1942,10 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                 tHL:SetAllPoints()
                 tHL:SetColorTexture(1, 1, 1, 0)
                 local function RefTT()
-                    local db = GetDB()
-                    if db.showTooltip ~= false then
+                    local saved = GetDB()
+                    if saved.showTooltip ~= false then
                         tCk:Show()
-                        tBrd:SetColor(EG.r, EG.g, EG.b, 0.8)
+                        tBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                     else
                         tCk:Hide()
                         tBrd:SetColor(0.4, 0.4, 0.4, 0.6)
@@ -1960,14 +1961,14 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                     tHL:SetColorTexture(1, 1, 1, 0)
                 end)
                 tR:SetScript("OnClick", function()
-                    local db = GetDB()
-                    if db.showTooltip ~= false then
-                        db.showTooltip = false
+                    local saved = GetDB()
+                    if saved.showTooltip ~= false then
+                        saved.showTooltip = false
                     else
-                        db.showTooltip = true
+                        saved.showTooltip = true
                     end
                     RefTT()
-                    UpdateMacro(def, db)
+                    UpdateMacro(spec_def, saved)
                 end)
                 mY = mY - MH
 
@@ -2000,12 +2001,12 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                         xBg:SetColorTexture(0.114, 0.106, 0.099, 1)
                         local xBrd = CludesUI.MakeRoundedBorder(xB, 0.4, 0.4, 0.4, 0.6, xBg)
                         local xCk = xB:CreateTexture(nil, "ARTWORK")
-                        PP.SetInside(xCk, xB, 2, 2)
-                        xCk:SetColorTexture(EG.r, EG.g, EG.b, 1)
+                        Pix.SetInside(xCk, xB, 2, 2)
+                        xCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                         xCk:SetSnapToPixelGrid(false)
                         CludesUI.RoundBody(xB, xCk, 2)
                         local xL = xR:CreateFontString(nil, "OVERLAY")
-                        xL:SetFont(fontPath, 13, "")
+                        xL:SetFont(fontFile, 13, "")
                         xL:SetTextColor(0.75, 0.75, 0.75, 1)
                         xL:SetPoint("LEFT", xR, "LEFT", 12, 0)
                         xL:SetText(CludesUI.L(xt.label))
@@ -2013,10 +2014,10 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                         xHL:SetAllPoints()
                         xHL:SetColorTexture(1, 1, 1, 0)
                         local function RefX()
-                            local db = GetDB()
-                            if db[xt.key] then
+                            local saved = GetDB()
+                            if saved[xt.key] then
                                 xCk:Show()
-                                xBrd:SetColor(EG.r, EG.g, EG.b, 0.8)
+                                xBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                             else
                                 xCk:Hide()
                                 xBrd:SetColor(0.4, 0.4, 0.4, 0.6)
@@ -2032,12 +2033,12 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                             xHL:SetColorTexture(1, 1, 1, 0)
                         end)
                         xR:SetScript("OnClick", function()
-                            local db = GetDB()
+                            local saved = GetDB()
                             -- Store nil rather than false when off, so an untouched
                             -- default leaves no key behind in SavedVariables.
-                            db[xt.key] = (not db[xt.key]) or nil
+                            saved[xt.key] = (not saved[xt.key]) or nil
                             RefX()
-                            UpdateMacro(def, db)
+                            UpdateMacro(spec_def, saved)
                         end)
                         mY = mY - MH
                     end
@@ -2056,18 +2057,18 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                         cHL:SetAllPoints()
                         cHL:SetColorTexture(1, 1, 1, 0)
                         local cL = cR:CreateFontString(nil, "OVERLAY")
-                        cL:SetFont(fontPath, 13, "")
+                        cL:SetFont(fontFile, 13, "")
                         cL:SetTextColor(0.75, 0.75, 0.75, 1)
                         cL:SetPoint("LEFT", cR, "LEFT", 12, 0)
                         cL:SetText(CludesUI.L(xc.label))
 
                         local cAr = cR:CreateFontString(nil, "OVERLAY")
-                        cAr:SetFont(fontPath, 9, "")
+                        cAr:SetFont(fontFile, 9, "")
                         cAr:SetTextColor(0.55, 0.55, 0.55, 1)
                         cAr:SetPoint("RIGHT", cR, "RIGHT", -10, 0)
                         cAr:SetText("v")
                         local cVal = cR:CreateFontString(nil, "OVERLAY")
-                        cVal:SetFont(fontPath, 12, "")
+                        cVal:SetFont(fontFile, 12, "")
                         cVal:SetTextColor(1, 1, 1, 0.9)
                         cVal:SetPoint("RIGHT", cAr, "LEFT", -6, 0)
                         local cIc = cR:CreateTexture(nil, "ARTWORK")
@@ -2079,12 +2080,12 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                         -- versions, so an out-of-range stored value falls back rather
                         -- than indexing the coord table with nil.
                         local function RefChoice()
-                            local v = GetDB()[xc.key]
-                            if not FOCUS_MARK_COORDS[v] then
-                                v = xc.default
+                            local val = GetDB()[xc.key]
+                            if not FOCUS_MARK_COORDS[val] then
+                                val = xc.default
                             end
-                            cIc:SetTexCoord(unpack(FOCUS_MARK_COORDS[v]))
-                            cVal:SetText(_G["RAID_TARGET_" .. v] or tostring(v))
+                            cIc:SetTexCoord(unpack(FOCUS_MARK_COORDS[val]))
+                            cVal:SetText(_G["RAID_TARGET_" .. val] or tostring(val))
                         end
                         RefChoice()
                         cR:SetScript("OnEnter", function()
@@ -2096,32 +2097,32 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                             cHL:SetColorTexture(1, 1, 1, 0)
                         end)
 
-                        local list
+                        local entries
                         local function BuildList()
-                            if list then
+                            if entries then
                                 return
                             end
                             local LRH = 24
                             -- Inherits the menu's strata; a higher level is enough to
                             -- draw over the rows it covers, and staying out of the
                             -- TOOLTIP strata keeps it from sitting over real tooltips.
-                            list = CreateFrame("Frame", nil, menuFrame)
-                            list:SetFrameLevel(menuFrame:GetFrameLevel() + 20)
-                            list:SetClampedToScreen(true)
-                            list:EnableMouse(true)
-                            list:SetSize(MW - 24, (8 * LRH) + 4)
-                            list:Hide()
-                            local lBg = list:CreateTexture(nil, "BACKGROUND")
+                            entries = CreateFrame("Frame", nil, menuFrame)
+                            entries:SetFrameLevel(menuFrame:GetFrameLevel() + 20)
+                            entries:SetClampedToScreen(true)
+                            entries:EnableMouse(true)
+                            entries:SetSize(MW - 24, (8 * LRH) + 4)
+                            entries:Hide()
+                            local lBg = entries:CreateTexture(nil, "BACKGROUND")
                             lBg:SetAllPoints()
                             lBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
-                            CludesUI.MakeRoundedBorder(list, 1, 1, 1, CludesUI.DD_BRD_A, lBg, nil, true)
+                            CludesUI.MakeRoundedBorder(entries, 1, 1, 1, CludesUI.DD_BRD_A, lBg, nil, true)
                             for oi = 1, 8 do
                                 local oY = -2 - (oi - 1) * LRH
-                                local oR = CreateFrame("Button", nil, list)
+                                local oR = CreateFrame("Button", nil, entries)
                                 oR:SetHeight(LRH)
-                                oR:SetFrameLevel(list:GetFrameLevel() + 2)
-                                oR:SetPoint("TOPLEFT", list, "TOPLEFT", 1, oY)
-                                oR:SetPoint("TOPRIGHT", list, "TOPRIGHT", -1, oY)
+                                oR:SetFrameLevel(entries:GetFrameLevel() + 2)
+                                oR:SetPoint("TOPLEFT", entries, "TOPLEFT", 1, oY)
+                                oR:SetPoint("TOPRIGHT", entries, "TOPRIGHT", -1, oY)
                                 local oHL = oR:CreateTexture(nil, "ARTWORK")
                                 oHL:SetAllPoints()
                                 oHL:SetColorTexture(1, 1, 1, 0)
@@ -2131,7 +2132,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                                 oIc:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
                                 oIc:SetTexCoord(unpack(FOCUS_MARK_COORDS[oi]))
                                 local oFs = oR:CreateFontString(nil, "OVERLAY")
-                                oFs:SetFont(fontPath, 12, "")
+                                oFs:SetFont(fontFile, 12, "")
                                 oFs:SetTextColor(0.8, 0.8, 0.8, 1)
                                 oFs:SetPoint("LEFT", oIc, "RIGHT", 8, 0)
                                 oFs:SetText(_G["RAID_TARGET_" .. oi] or tostring(oi))
@@ -2144,25 +2145,25 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                                     oHL:SetColorTexture(1, 1, 1, 0)
                                 end)
                                 oR:SetScript("OnClick", function()
-                                    local db = GetDB()
-                                    db[xc.key] = oi
+                                    local saved = GetDB()
+                                    saved[xc.key] = oi
                                     RefChoice()
-                                    list:Hide()
-                                    UpdateMacro(def, db)
+                                    entries:Hide()
+                                    UpdateMacro(spec_def, saved)
                                 end)
                             end
-                            menuChildren[#menuChildren + 1] = list
+                            menuChildren[#menuChildren + 1] = entries
                         end
 
                         cR:SetScript("OnClick", function()
                             BuildList()
-                            if list:IsShown() then
-                                list:Hide()
+                            if entries:IsShown() then
+                                entries:Hide()
                                 return
                             end
-                            list:ClearAllPoints()
-                            list:SetPoint("TOPRIGHT", cR, "BOTTOMRIGHT", -10, 2)
-                            list:Show()
+                            entries:ClearAllPoints()
+                            entries:SetPoint("TOPRIGHT", cR, "BOTTOMRIGHT", -10, 2)
+                            entries:Show()
                         end)
                         mY = mY - MH
                     end
@@ -2188,7 +2189,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                     ht:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
                     ht:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
                     local hfs = ht:CreateFontString(nil, "OVERLAY")
-                    hfs:SetFont(fontPath, 10, "")
+                    hfs:SetFont(fontFile, 10, "")
                     hfs:SetTextColor(1, 1, 1, 0.25)
                     hfs:SetPoint("CENTER")
                     hfs:SetText(CludesUI.L("Drag to Reorder"))
@@ -2200,95 +2201,95 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                     local isDragging = false
                     local insLine = menuFrame:CreateTexture(nil, "OVERLAY", nil, 7)
                     insLine:SetHeight(2)
-                    insLine:SetColorTexture(EG.r, EG.g, EG.b, 0.9)
+                    insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
                     insLine:Hide()
 
                     for ci, cb in ipairs(cbItems) do
-                        local row = CreateFrame("Button", nil, menuFrame)
-                        row:SetHeight(MH)
-                        row._baseY = mY
-                        row._cbIndex = ci
-                        row._cb = cb
-                        row:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
-                        row:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
-                        row:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
+                        local rowFrame = CreateFrame("Button", nil, menuFrame)
+                        rowFrame:SetHeight(MH)
+                        rowFrame._baseY = mY
+                        rowFrame._cbIndex = ci
+                        rowFrame._cb = cb
+                        rowFrame:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
+                        rowFrame:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
+                        rowFrame:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
 
-                        local rl = row:CreateFontString(nil, "OVERLAY")
-                        rl:SetFont(fontPath, 13, "")
+                        local rl = rowFrame:CreateFontString(nil, "OVERLAY")
+                        rl:SetFont(fontFile, 13, "")
                         rl:SetTextColor(0.75, 0.75, 0.75, 1)
-                        rl:SetPoint("LEFT", row, "LEFT", 12, 0)
+                        rl:SetPoint("LEFT", rowFrame, "LEFT", 12, 0)
                         rl:SetText(OptionDisplayName(cb))
-                        local rb = CreateFrame("Frame", nil, row)
+                        local rb = CreateFrame("Frame", nil, rowFrame)
                         rb:SetSize(16, 16)
-                        rb:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+                        rb:SetPoint("RIGHT", rowFrame, "RIGHT", -10, 0)
                         local rBg = rb:CreateTexture(nil, "BACKGROUND")
                         rBg:SetAllPoints()
                         rBg:SetColorTexture(0.114, 0.106, 0.099, 1)
                         local rBrd = CludesUI.MakeRoundedBorder(rb, 0.4, 0.4, 0.4, 0.6, rBg)
                         local rCk = rb:CreateTexture(nil, "ARTWORK")
-                        PP.SetInside(rCk, rb, 2, 2)
-                        rCk:SetColorTexture(EG.r, EG.g, EG.b, 1)
+                        Pix.SetInside(rCk, rb, 2, 2)
+                        rCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                         rCk:SetSnapToPixelGrid(false)
                         CludesUI.RoundBody(rb, rCk, 2)
-                        local rHL = row:CreateTexture(nil, "ARTWORK")
+                        local rHL = rowFrame:CreateTexture(nil, "ARTWORK")
                         rHL:SetAllPoints()
                         rHL:SetColorTexture(1, 1, 1, 0)
 
                         local function UC()
-                            local db = GetDB()
-                            local key = row._cb.key
-                            if db[key] ~= false then
+                            local saved = GetDB()
+                            local key = rowFrame._cb.key
+                            if saved[key] ~= false then
                                 rCk:Show()
-                                rBrd:SetColor(EG.r, EG.g, EG.b, 0.8)
+                                rBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                             else
                                 rCk:Hide()
                                 rBrd:SetColor(0.4, 0.4, 0.4, 0.6)
                             end
                         end
                         UC()
-                        row._updateCheck = UC
-                        row._lbl = rl
+                        rowFrame._updateCheck = UC
+                        rowFrame._lbl = rl
 
-                        row:SetScript("OnEnter", function()
+                        rowFrame:SetScript("OnEnter", function()
                             if isDragging then
                                 return
                             end
                             rl:SetTextColor(1, 1, 1, 1)
                             rHL:SetColorTexture(1, 1, 1, 0.04)
                         end)
-                        row:SetScript("OnLeave", function()
+                        rowFrame:SetScript("OnLeave", function()
                             if isDragging then
                                 return
                             end
                             rl:SetTextColor(0.75, 0.75, 0.75, 1)
                             rHL:SetColorTexture(1, 1, 1, 0)
                         end)
-                        row:SetScript("OnClick", function()
+                        rowFrame:SetScript("OnClick", function()
                             if isDragging then
                                 return
                             end
-                            local db = GetDB()
-                            local key = row._cb.key
-                            if db[key] ~= false then
-                                db[key] = false
+                            local saved = GetDB()
+                            local key = rowFrame._cb.key
+                            if saved[key] ~= false then
+                                saved[key] = false
                             else
-                                db[key] = true
+                                saved[key] = true
                             end
                             UC()
-                            UpdateMacro(def, db)
+                            UpdateMacro(spec_def, saved)
                             RefreshIcon()
                         end)
 
                         -- Drag (3px threshold via OnMouseDown/Up/Update)
                         local dsY, dgO
-                        row:SetScript("OnMouseDown", function(_, b)
+                        rowFrame:SetScript("OnMouseDown", function(_, b)
                             if b ~= "LeftButton" then
                                 return
                             end
                             local _, cy = GetCursorPosition()
                             dsY = cy
                         end)
-                        row:SetScript("OnMouseUp", function(self, b)
+                        rowFrame:SetScript("OnMouseUp", function(self, b)
                             if b ~= "LeftButton" then
                                 return
                             end
@@ -2324,16 +2325,16 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                             end
                             local to = math.max(1, math.min(iI, #cbItems))
                             if from ~= to then
-                                local db = GetDB()
-                                EnsureOrder(db, #cbItems)
-                                local mv = table.remove(db.order, from)
-                                table.insert(db.order, to, mv)
+                                local saved = GetDB()
+                                EnsureOrder(saved, #cbItems)
+                                local mv = table.remove(saved.order, from)
+                                table.insert(saved.order, to, mv)
                             end
-                            local db = GetDB()
-                            EnsureOrder(db, #cbItems)
+                            local saved = GetDB()
+                            EnsureOrder(saved, #cbItems)
                             for ri = 1, #rowFrames do
                                 local rf = rowFrames[ri]
-                                local oi = db.order[ri]
+                                local oi = saved.order[ri]
                                 local it = cbItems[oi]
                                 rf._cbIndex = ri
                                 rf._cb = it
@@ -2345,10 +2346,10 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                                 rf:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, ry)
                                 rf._updateCheck()
                             end
-                            UpdateMacro(def, db)
+                            UpdateMacro(spec_def, saved)
                             RefreshIcon()
                         end)
-                        row:SetScript("OnUpdate", function(self)
+                        rowFrame:SetScript("OnUpdate", function(self)
                             if not dsY then
                                 return
                             end
@@ -2395,7 +2396,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                             insLine:Show()
                         end)
 
-                        rowFrames[ci] = row
+                        rowFrames[ci] = rowFrame
                         mY = mY - MH
                     end
 
@@ -2423,8 +2424,8 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                     if self:IsMouseOver() or btn:IsMouseOver() or not IsMouseButtonDown("LeftButton") then
                         return
                     end
-                    for _, child in ipairs(menuChildren) do
-                        if child:IsShown() and child:IsMouseOver() then
+                    for _, childFrame in ipairs(menuChildren) do
+                        if childFrame:IsShown() and childFrame:IsMouseOver() then
                             return
                         end
                     end
@@ -2461,13 +2462,13 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
             btn:SetScript("OnEnter", function(self)
                 self._hoverBdr:Show()
-                local fullName = CludesUI.L(def.label):gsub("\n", " ")
-                if def.tooltip then
+                local fullName = CludesUI.L(spec_def.label):gsub("\n", " ")
+                if spec_def.tooltip then
                     local status = self._isGray and CludesUI.L("|cff888888Created|r")
                         or CludesUI.L("|cff888888Click to create|r")
                     CludesUI.ShowWidgetTooltip(
                         self,
-                        fullName .. "\n" .. CludesUI.L(def.tooltip) .. "\n" .. status
+                        fullName .. "\n" .. CludesUI.L(spec_def.tooltip) .. "\n" .. status
                     )
                 elseif self._isGray then
                     CludesUI.ShowWidgetTooltip(
@@ -2487,8 +2488,8 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                 self._hoverBdr:Hide()
                 CludesUI.HideWidgetTooltip()
             end)
-            btn:SetScript("OnClick", function(self, button)
-                if button == "RightButton" then
+            btn:SetScript("OnClick", function(self, btnFrame)
+                if btnFrame == "RightButton" then
                     self._showMenu()
                     return
                 end
@@ -2498,14 +2499,14 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
                 if InCombatLockdown() then
                     return
                 end
-                local db = GetDB()
-                local body = BuildMacroBody(def, db)
+                local saved = GetDB()
+                local body = BuildMacroBody(spec_def, saved)
                 if body == nil then
                     return
                 end -- spell data not cached yet
-                CreateMacro(def.name, ResolveMacroIcon(def), body, nil)
-                lastAvailableItems[def.name] = GetMacroInventoryKey(def, db)
-                if def.checkboxes then
+                CreateMacro(spec_def.name, ResolveMacroIcon(spec_def), body, nil)
+                lastAvailableItems[spec_def.name] = GetMacroInventoryKey(spec_def, saved)
+                if spec_def.checkboxes then
                     ArmItemUpkeep()
                 end
                 self._playFlash()
@@ -2517,7 +2518,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             end)
 
             RefreshState()
-            btn._def = def
+            btn._def = spec_def
             allMacroButtons[#allMacroButtons + 1] = btn
         end -- for gi
     end -- BuildMacroGroup
@@ -2540,10 +2541,10 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             MAX_SPEC_VISIBLE_ROWS
         )
     else
-        local emptyFS = container:CreateFontString(nil, "OVERLAY")
-        emptyFS:SetFont(fontPath, 16, "")
+        local emptyFS = boxHolder:CreateFontString(nil, "OVERLAY")
+        emptyFS:SetFont(fontFile, 16, "")
         emptyFS:SetTextColor(1, 1, 1, 0.25)
-        emptyFS:SetPoint("CENTER", container, "TOPLEFT", halfW + halfW / 2, -SECTION_H / 2)
+        emptyFS:SetPoint("CENTER", boxHolder, "TOPLEFT", halfW + halfW / 2, -SECTION_H / 2)
         emptyFS:SetText(CludesUI.L("No spec macros for ") .. (activeSpecName or CludesUI.L("this spec")))
         emptyFS:SetJustifyH("CENTER")
     end
@@ -2572,7 +2573,7 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
             end
         end
     end
-    local macroWatch = CreateFrame("Frame", nil, container)
+    local macroWatch = CreateFrame("Frame", nil, boxHolder)
     local syncPending, syncGen
     local function SyncNow()
         syncPending = nil
@@ -2617,8 +2618,8 @@ function CludesUI.BuildMacroFactory(parent, startY, PP)
         mf = {}
         CludesUI._macroFactory = mf
     end
-    mf.parent, mf.startY, mf.PP = parent, startY, PP
-    mf.container = container
+    mf.parent, mf.startY, mf.PP = hostFrame, startY, Pix
+    mf.container = boxHolder
     mf.builtSpecID = activeSpecID
 
     return SECTION_H
@@ -2638,8 +2639,8 @@ function CludesUI.RefreshMacroFactory()
     end
     -- PLAYER_SPECIALIZATION_CHANGED can fire several times for one switch; skip
     -- the rebuild if the spec that's already built hasn't actually changed.
-    local idx = C_SpecializationInfo.GetSpecialization()
-    local curSpecID = idx and C_SpecializationInfo.GetSpecializationInfo(idx) or nil
+    local position = C_SpecializationInfo.GetSpecialization()
+    local curSpecID = position and C_SpecializationInfo.GetSpecializationInfo(position) or nil
     if curSpecID == mf.builtSpecID then
         return
     end
@@ -2692,8 +2693,8 @@ do
     local watcher = CludesUI._macroSpecWatcher
     local seenSpecID
     local function CurrentSpecID()
-        local idx = C_SpecializationInfo.GetSpecialization()
-        return idx and C_SpecializationInfo.GetSpecializationInfo(idx) or nil
+        local position = C_SpecializationInfo.GetSpecialization()
+        return position and C_SpecializationInfo.GetSpecializationInfo(position) or nil
     end
     local function OnSpecChanged()
         seenSpecID = CurrentSpecID()

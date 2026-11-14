@@ -59,11 +59,11 @@ local TRIGGER_DEFAULTS = {
 }
 
 local function GetTrigger(c, key)
-    local v = c[key]
-    if v == nil then
+    local val = c[key]
+    if val == nil then
         return TRIGGER_DEFAULTS[key]
     end
-    return v
+    return val
 end
 
 local function Cfg()
@@ -231,13 +231,13 @@ end
 local logFrame = CreateFrame("Frame")
 local _eventsRegistered = false
 local function SyncEventRegistration()
-    local want = Cfg().enabled and true or false
-    if want == _eventsRegistered then
+    local wanted = Cfg().enabled and true or false
+    if wanted == _eventsRegistered then
         return
     end
-    _eventsRegistered = want
+    _eventsRegistered = wanted
     for ev in pairs(events) do
-        if want then
+        if wanted then
             logFrame:RegisterEvent(ev)
         else
             logFrame:UnregisterEvent(ev)
@@ -251,12 +251,12 @@ _G._CUI_AutoLogging_Check = function()
 end
 
 logFrame:RegisterEvent("PLAYER_LOGIN")
-logFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_LOGIN" then
+logFrame:SetScript("OnEvent", function(self, evt)
+    if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
         SyncEventRegistration()
         C_Timer.After(2, ApplyLoggingState)
-    elseif events[event] then
-        events[event]()
+    elseif events[evt] then
+        events[evt]()
     end
 end)

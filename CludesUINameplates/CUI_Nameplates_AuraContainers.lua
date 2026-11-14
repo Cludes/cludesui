@@ -20,11 +20,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- offset interplay with the CC row (lockout renders independently), target
 -- arrows relative to aura rows, per-slot Raise Strata on containers.
 
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 
-ns.NPC_OwnsAuras = true
+mod.NPC_OwnsAuras = true
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
 local AKWorker = CludesUI.AuraKit.NewBuildWorker()
@@ -45,7 +45,7 @@ local queuedBundles = 0 -- total trios ever queued (login + growth + pre-warm)
 local QueueBundleBuild -- forward-declared: the attach path below grows the pool on demand
 
 local pool = {} -- free bundles (stack)
-local active = {} -- [plate] = bundle
+local isActive = {} -- [plate] = bundle
 local KINDS = { "debuffs", "buffs", "cc" }
 
 -- Layout generation: bumped whenever the geometry fingerprint changes. Containers stamp
@@ -58,27 +58,27 @@ local lastTargetPlate
 
 local FP_JOIN = {}
 local function FP(...)
-    local n = select("#", ...)
-    for i = 1, n do
-        local v = select(i, ...)
-        if type(v) == "number" then
-            FP_JOIN[i] = string.format("%.2f", v)
+    local num = select("#", ...)
+    for i = 1, num do
+        local val = select(i, ...)
+        if type(val) == "number" then
+            FP_JOIN[i] = string.format("%.2f", val)
         else
-            FP_JOIN[i] = tostring(v)
+            FP_JOIN[i] = tostring(val)
         end
     end
-    for i = n + 1, #FP_JOIN do
+    for i = num + 1, #FP_JOIN do
         FP_JOIN[i] = nil
     end
     return table.concat(FP_JOIN, "|")
 end
 
 local function PVal(key)
-    local p = ns.NP_GetProfile and ns.NP_GetProfile()
+    local p = mod.NP_GetProfile and mod.NP_GetProfile()
     if p and p[key] ~= nil then
         return p[key]
     end
-    local d = ns.NP_GetDefaults and ns.NP_GetDefaults()
+    local d = mod.NP_GetDefaults and mod.NP_GetDefaults()
     return d and d[key]
 end
 
@@ -107,25 +107,25 @@ local function CropCoords(cropped, zoom)
     return { z, 1 - z, z, 1 - z }
 end
 
-local function NPSize(kind)
-    if kind == "debuffs" then
-        return (ns.GetDebuffIconSize and ns.GetDebuffIconSize()) or 26
+local function NPSize(kindOf)
+    if kindOf == "debuffs" then
+        return (mod.GetDebuffIconSize and mod.GetDebuffIconSize()) or 26
     end
-    if kind == "buffs" then
-        return (ns.GetBuffIconSize and ns.GetBuffIconSize()) or 24
+    if kindOf == "buffs" then
+        return (mod.GetBuffIconSize and mod.GetBuffIconSize()) or 24
     end
-    return (ns.GetCCIconSize and ns.GetCCIconSize()) or 24
+    return (mod.GetCCIconSize and mod.GetCCIconSize()) or 24
 end
 
-local function NPHeight(kind, size)
-    local cropped = ns.GetAuraCrop and ns.GetAuraCrop(kind == "cc" and "ccs" or kind)
-    if cropped and ns.GetAuraCropHeight then
+local function NPHeight(kindOf, dim)
+    local cropped = mod.GetAuraCrop and mod.GetAuraCrop(kindOf == "cc" and "ccs" or kindOf)
+    if cropped and mod.GetAuraCropHeight then
         -- Second return is GetAuraCrop's value itself (the height factor,
         -- truthy) so CropCoords can derive matching texcoords; truth-testing
         -- callers behave exactly as with the old literal `true`.
-        return ns.GetAuraCropHeight(cropped, size), cropped
+        return mod.GetAuraCropHeight(cropped, dim), cropped
     end
-    return size, false
+    return dim, false
 end
 
 -- Legacy settings resolution for aura text -- the EXACT fallback chains
@@ -133,11 +133,11 @@ end
 -- so 12.0 and 12.1 render identical text for any profile state.
 -- kindKey = "debuff" | "buff" | "cc".
 local function ProfOnly(key)
-    local prof = ns.NP_GetProfile and ns.NP_GetProfile()
+    local prof = mod.NP_GetProfile and mod.NP_GetProfile()
     return prof and prof[key]
 end
 local function Dflt(key)
-    local d = ns.NP_GetDefaults and ns.NP_GetDefaults()
+    local d = mod.NP_GetDefaults and mod.NP_GetDefaults()
     return d and d[key]
 end
 local function AuraDurCfg(kindKey)
@@ -180,66 +180,62 @@ local TEXT_POS = {
 }
 
 -- Text pass shared by the three styles; anchors/sizes carried per style.
-local function ApplyNPText(button, d, style)
-    if button.SetMouseMotionEnabled then
-        local motion = not style.noTooltips
+local function ApplyNPText(btnFrame, d, look)
+    if btnFrame.SetMouseMotionEnabled then
+        local motion = not look.noTooltips
         if d.npMotion ~= motion then
             d.npMotion = motion
-            button:SetMouseMotionEnabled(motion)
+            btnFrame:SetMouseMotionEnabled(motion)
         end
     end
-    local path = (CludesUI.GetFontPath("nameplates")) or "Fonts\\FRIZQT__.TTF"
+    local filePath = (CludesUI.GetFontPath("nameplates")) or "Fonts\\FRIZQT__.TTF"
     if d.duration then
-        local fontKey = path .. "|" .. (style.durSize or 11)
+        local fontKey = filePath .. "|" .. (look.durSize or 11)
         if d.npDurFont ~= fontKey then
             d.npDurFont = fontKey
-            CludesUI.ApplyIconTextFont(d.duration, path, style.durSize or 11, "nameplates")
+            CludesUI.ApplyIconTextFont(d.duration, filePath, look.durSize or 11, "nameplates")
         end
-        local c = style.durColor
+        local c = look.durColor
         d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
-        local m = TEXT_POS[style.durPos] or TEXT_POS.topleft
+        local m = TEXT_POS[look.durPos] or TEXT_POS.topleft
         -- Anchor change-guarded (stamp AFTER the calls): SetPoint with the
         -- button as the relative frame is policed by the 12.1 button access
         -- restriction while auras are secret; unchanged anchors must make
         -- zero button-involving calls so restyles stay live in-instance.
-        local aKey = m.point .. "|" .. (m.nx + (style.durOffX or 0)) .. "|" .. (m.ny + (style.durOffY or 0))
+        local aKey = m.point .. "|" .. (m.nx + (look.durOffX or 0)) .. "|" .. (m.ny + (look.durOffY or 0))
         if d.npDurAnchor ~= aKey then
             d.duration:ClearAllPoints()
             d.duration:SetPoint(
                 m.point,
-                button,
+                btnFrame,
                 m.point,
-                m.nx + (style.durOffX or 0),
-                m.ny + (style.durOffY or 0)
+                m.nx + (look.durOffX or 0),
+                m.ny + (look.durOffY or 0)
             )
             d.npDurAnchor = aKey
         end
         d.duration:SetJustifyH(m.justify)
-        d.duration:SetShown(not style.hideDurationText)
+        d.duration:SetShown(not look.hideDurationText)
     end
     if d.stack then
-        d.stack:SetShown(style.showStacks ~= false)
-        local fontKey = path .. "|" .. (style.stackSize or 11)
+        d.stack:SetShown(look.showStacks ~= false)
+        local fontKey = filePath .. "|" .. (look.stackSize or 11)
         if d.npStackFont ~= fontKey then
             d.npStackFont = fontKey
-            CludesUI.ApplyIconTextFont(d.stack, path, style.stackSize or 11, "nameplates")
+            CludesUI.ApplyIconTextFont(d.stack, filePath, look.stackSize or 11, "nameplates")
         end
-        local sc = style.stackColor
+        local sc = look.stackColor
         d.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
-        local m = TEXT_POS[style.stackPos] or TEXT_POS.bottomright
-        local sKey = m.point
-            .. "|"
-            .. (m.nx + (style.stackOffX or 0))
-            .. "|"
-            .. (m.ny + (style.stackOffY or 0))
+        local m = TEXT_POS[look.stackPos] or TEXT_POS.bottomright
+        local sKey = m.point .. "|" .. (m.nx + (look.stackOffX or 0)) .. "|" .. (m.ny + (look.stackOffY or 0))
         if d.npStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
             d.stack:SetPoint(
                 m.point,
-                button,
+                btnFrame,
                 m.point,
-                m.nx + (style.stackOffX or 0),
-                m.ny + (style.stackOffY or 0)
+                m.nx + (look.stackOffX or 0),
+                m.ny + (look.stackOffY or 0)
             )
             d.npStackAnchor = sKey
         end
@@ -276,15 +272,15 @@ local RAID_DISPELLABLE = AuraUtil and AuraUtil.AuraFilters and AuraUtil.AuraFilt
 -- it. A character with no offensive dispel gets no glow; without the
 -- DISPELLABLE token nothing can be claimed dispellable by anyone.
 local function PurgeGlowActive()
-    if not (ns.GetDispelGlow and ns.GetDispelGlow()) then
+    if not (mod.GetDispelGlow and mod.GetDispelGlow()) then
         return false
     end
     if not DISPELLABLE then
         return false
     end
     local magic, enrage = false, false
-    if ns.GetOffensiveDispelTypes then
-        magic, enrage = ns.GetOffensiveDispelTypes()
+    if mod.GetOffensiveDispelTypes then
+        magic, enrage = mod.GetOffensiveDispelTypes()
     end
     return magic or enrage
 end
@@ -318,28 +314,28 @@ function NPB.Split()
     if AK and AK.AurasRestricted and AK.AurasRestricted() then
         return false
     end
-    local magic, enrage = ns.GetOffensiveDispelTypes()
+    local magic, enrage = mod.GetOffensiveDispelTypes()
     if magic ~= enrage then
         return true
     end
-    if ns.GetDispelGlowStyle() == CludesUI.Glows.PANDEMIC_BORDER then
+    if mod.GetDispelGlowStyle() == CludesUI.Glows.PANDEMIC_BORDER then
         return false
     end
-    return (ns.GetDispelGlowUseTypeColor and ns.GetDispelGlowUseTypeColor()) or false
+    return (mod.GetDispelGlowUseTypeColor and mod.GetDispelGlowUseTypeColor()) or false
 end
 
 -- Glow state and dispel type for glow group idx (1 = Magic, or the whole row
 -- while unsplit; 2 = non-Magic). The type passes on unconditionally --
 -- GetDispelGlowColor ignores it unless per-type colors are on.
-function NPB.GroupGlow(idx)
+function NPB.GroupGlow(position)
     if not PurgeGlowActive() then
         return false, nil
     end
     if not NPB.Split() then
-        return idx ~= 2, nil
+        return position ~= 2, nil
     end
-    local magic, enrage = ns.GetOffensiveDispelTypes()
-    if idx == 2 then
+    local magic, enrage = mod.GetOffensiveDispelTypes()
+    if position == 2 then
         return enrage == true, "enrage"
     end
     return magic == true, "magic"
@@ -358,26 +354,26 @@ end
 -- StartSpecGlow makes the regions of the style it draws, so a default host
 -- holds just the static border, and a later style makes its own. Made only on
 -- buttons that can ever show an aura (NPGlowable).
-local function NPGlowHost(button, d, key)
-    local host = d[key]
-    if host then
-        return host
+local function NPGlowHost(btnFrame, d, key)
+    local hostRegion = d[key]
+    if hostRegion then
+        return hostRegion
     end
-    host = CreateFrame("Frame", nil, button)
-    host:SetAllPoints(button)
+    hostRegion = CreateFrame("Frame", nil, btnFrame)
+    hostRegion:SetAllPoints(btnFrame)
     if d.stackCarrier then
-        host:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
+        hostRegion:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
     else
-        host:SetFrameLevel(button:GetFrameLevel() + 1)
+        hostRegion:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
     end
-    host:EnableMouse(false)
-    d[key] = host
+    hostRegion:EnableMouse(false)
+    d[key] = hostRegion
     -- NPB.bound: some button plays a glow itself, so a pooled bundle's
     -- buttons are worth releasing (NPB.ReleaseGlowButtons).
-    if CludesUI.Glows.BindEngineHost(host, button, d) then
+    if CludesUI.Glows.BindEngineHost(hostRegion, btnFrame, d) then
         NPB.bound = true
     end
-    return host
+    return hostRegion
 end
 
 -- Whether a button gets a glow at all: only the buttons that can ever show an
@@ -387,17 +383,17 @@ end
 -- others are dressed again when their group's cap grows (AuraKit re-runs the
 -- style on them), the path an unbound host (a client whose buttons cannot run
 -- animations themselves) has always taken.
-local function NPGlowable(button)
-    return CludesUI.AuraKit.ButtonCanShow(button)
+local function NPGlowable(btnFrame)
+    return CludesUI.AuraKit.ButtonCanShow(btnFrame)
 end
 
 -- Draws spec on the glow host, sized to the icon (the height follows cropped
 -- icons); unchanged, StartSpecGlow returns at once. Callers pass only glowable
 -- buttons; a bound host's button decides when the animations play.
-local function NPStartGlow(host, spec, style)
-    host:SetAlpha(1)
-    local sz = style.width or 24
-    CludesUI.Glows.StartSpecGlow(host, spec, sz, style.height or sz, "engine")
+local function NPStartGlow(hostRegion, specInfo, look)
+    hostRegion:SetAlpha(1)
+    local sz = look.width or 24
+    CludesUI.Glows.StartSpecGlow(hostRegion, specInfo, sz, look.height or sz, "engine")
 end
 
 -- Dispel Glow on the buff row: every buff in the glow group is dispellable (the
@@ -405,16 +401,16 @@ end
 -- readback of per-aura state. purgeSpec is the dispel glow's full spec
 -- (ns.GetDispelGlowSpec), built once per style pass. The static Blizzard
 -- Border and Blizzard Pandemic Border render through the same call.
-local function ApplyNPBuffExtra(button, d, style)
-    ApplyNPText(button, d, style)
-    if style.purgeGlow and style.purgeSpec and NPGlowable(button) then
-        NPStartGlow(NPGlowHost(button, d, "npGlowHost"), style.purgeSpec, style)
+local function ApplyNPBuffExtra(btnFrame, d, look)
+    ApplyNPText(btnFrame, d, look)
+    if look.purgeGlow and look.purgeSpec and NPGlowable(btnFrame) then
+        NPStartGlow(NPGlowHost(btnFrame, d, "npGlowHost"), look.purgeSpec, look)
     elseif d.npGlowHost then
-        local host = d.npGlowHost
-        if host._cuiGlowActive then
-            CludesUI.Glows.StopGlow(host)
+        local hostRegion = d.npGlowHost
+        if hostRegion._cuiGlowActive then
+            CludesUI.Glows.StopGlow(hostRegion)
         end
-        host:SetAlpha(0)
+        hostRegion:SetAlpha(0)
     end
 end
 
@@ -426,25 +422,25 @@ end
 -- cleared, so the button no longer checks the window. Blizzard's aura code
 -- runs in its own environment (no global mixin to test), so the button's own
 -- method is the one capability check.
-local function ApplyNPDebuffExtra(button, d, style)
-    ApplyNPText(button, d, style)
-    local host = d.npPanHost
-    if style.pandemicGlow and style.pandemicSpec and button.AddPandemicRegion and NPGlowable(button) then
-        host = NPGlowHost(button, d, "npPanHost")
+local function ApplyNPDebuffExtra(btnFrame, d, look)
+    ApplyNPText(btnFrame, d, look)
+    local hostRegion = d.npPanHost
+    if look.pandemicGlow and look.pandemicSpec and btnFrame.AddPandemicRegion and NPGlowable(btnFrame) then
+        hostRegion = NPGlowHost(btnFrame, d, "npPanHost")
         if not d.npPanRegion then
-            button:AddPandemicRegion(host)
+            btnFrame:AddPandemicRegion(hostRegion)
             d.npPanRegion = true
         end
-        NPStartGlow(host, style.pandemicSpec, style)
-    elseif host then
+        NPStartGlow(hostRegion, look.pandemicSpec, look)
+    elseif hostRegion then
         if d.npPanRegion then
-            button:ClearPandemicRegions()
+            btnFrame:ClearPandemicRegions()
             d.npPanRegion = nil
         end
-        if host._cuiGlowActive then
-            CludesUI.Glows.StopGlow(host)
+        if hostRegion._cuiGlowActive then
+            CludesUI.Glows.StopGlow(hostRegion)
         end
-        host:SetAlpha(0)
+        hostRegion:SetAlpha(0)
     end
 end
 
@@ -452,7 +448,7 @@ end
 -- aura icons wear the plate's custom border. The toggle is read first, so off it costs
 -- one field read.
 local function NPIconCustomBorderOn()
-    return PVal("auraIconCustomBorder") == true and ns.IsCustomBorderEnabled()
+    return PVal("auraIconCustomBorder") == true and mod.IsCustomBorderEnabled()
 end
 
 -- The plate's custom border as an AuraKit border table. Solid sets no texture key, so
@@ -462,11 +458,11 @@ end
 local function NPCustomIconBorder()
     local tex = PVal("customBorderTexture")
     local sz = PVal("customBorderSize") or 1
-    local col = PVal("customBorderColor")
+    local column = PVal("customBorderColor")
     local t = {
-        col.r,
-        col.g,
-        col.b,
+        column.r,
+        column.g,
+        column.b,
         PVal("customBorderAlpha") or 1,
         size = sz,
         edgePx = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, tex),
@@ -479,13 +475,13 @@ local function NPCustomIconBorder()
     return t
 end
 
-local function BuildNPStyle(kind, variant)
-    local size = NPSize(kind)
-    local height, cropped = NPHeight(kind, size)
+local function BuildNPStyle(kindOf, variant)
+    local dim = NPSize(kindOf)
+    local height, cropped = NPHeight(kindOf, dim)
     -- User text settings, resolved through the legacy fallback chains, so
     -- every Duration/Stacks option (size, color, position, X/Y) renders
     -- exactly like the 12.0 aura pools.
-    local kindKey = (kind == "debuffs" and "debuff") or (kind == "buffs" and "buff") or "cc"
+    local kindKey = (kindOf == "debuffs" and "debuff") or (kindOf == "buffs" and "buff") or "cc"
     local dur = AuraDurCfg(kindKey)
     local stk = StackCfg()
     -- Stock styles: the whole icon (zoom 0), no CUI border (GetIconBorderEnabled
@@ -494,22 +490,22 @@ local function BuildNPStyle(kind, variant)
     -- blizzRoundArt). Classic WoW UI: square icons, buffs borderless, debuffs
     -- and crowd control on the engine-stamped stock dispel-type border (AuraKit
     -- blizzBorder). Text, stacks, sizes and the dispel glow all stay the user's.
-    local blizz = ns.NP_Blizz()
-    local classic = blizz and ns.NP_Classic()
-    local harmfulClassic = (classic and kind ~= "buffs") or nil
-    local style = {
-        width = size,
+    local blizz = mod.NP_Blizz()
+    local classic = blizz and mod.NP_Classic()
+    local harmfulClassic = (classic and kindOf ~= "buffs") or nil
+    local look = {
+        width = dim,
         height = height,
         texCoord = CropCoords(cropped, blizz and 0 or nil),
         -- Off: the plain 1px black edge (plain lane); a per-kind Hide
         -- Border still wins over the custom border.
-        border = (not ns.GetIconBorderEnabled or ns.GetIconBorderEnabled(kind))
+        border = (not mod.GetIconBorderEnabled or mod.GetIconBorderEnabled(kindOf))
                 and (NPIconCustomBorderOn() and NPCustomIconBorder() or { 0, 0, 0, 1, size = 1 })
             or false,
         blizzRoundArt = (blizz and not classic) or nil,
         -- The WoW Forever variant keeps that client's own ring (AuraKit
         -- paints the retail one through CludesUI.StockAtlas otherwise).
-        blizzRoundNative = ns.NP_Forever() or nil,
+        blizzRoundNative = mod.NP_Forever() or nil,
         dispelBorder = harmfulClassic,
         blizzBorder = harmfulClassic,
         cooldownReverse = true,
@@ -526,7 +522,7 @@ local function BuildNPStyle(kind, variant)
         hideDurationText = (dur.pos == "none"),
         -- CC icons never render stacks (legacy parity); the shared Aura
         -- Stacks position "None" hides them everywhere else.
-        showStacks = (kind ~= "cc") and (stk.pos ~= "none"),
+        showStacks = (kindOf ~= "cc") and (stk.pos ~= "none"),
         stackSize = stk.size,
         stackColor = stk.color,
         stackPos = stk.pos,
@@ -538,18 +534,18 @@ local function BuildNPStyle(kind, variant)
     -- npnb remainder: identical text styling, NEVER the glow. Per-aura
     -- dispel type is unreadable under 12.1 secrecy, so the type is a
     -- property of the GROUP and resolves once, here, at style-build time.
-    if kind == "buffs" and variant ~= "plain" then
+    if kindOf == "buffs" and variant ~= "plain" then
         local glow, dispelType = NPB.GroupGlow(variant == 2 and 2 or 1)
-        style.purgeGlow = glow
-        style.purgeSpec = ns.GetDispelGlowSpec and ns.GetDispelGlowSpec(dispelType) or nil
-        style.applyExtra = ApplyNPBuffExtra
-    elseif kind == "debuffs" then
+        look.purgeGlow = glow
+        look.purgeSpec = mod.GetDispelGlowSpec and mod.GetDispelGlowSpec(dispelType) or nil
+        look.applyExtra = ApplyNPBuffExtra
+    elseif kindOf == "debuffs" then
         -- Your debuffs only: the pandemic window is the time a recast keeps.
-        style.pandemicGlow = ns.GetPandemicGlow()
-        style.pandemicSpec = style.pandemicGlow and ns.GetPandemicGlowSpec() or nil
-        style.applyExtra = ApplyNPDebuffExtra
+        look.pandemicGlow = mod.GetPandemicGlow()
+        look.pandemicSpec = look.pandemicGlow and mod.GetPandemicGlowSpec() or nil
+        look.applyExtra = ApplyNPDebuffExtra
     end
-    return style
+    return look
 end
 
 ------------------------------------------------------------------------------
@@ -591,8 +587,8 @@ local NPF_VIEW = {
     cc = { all = false, f = { cc = true } },
 }
 
-function ns.NPF_Root()
-    local p = ns.NP_GetProfile and ns.NP_GetProfile()
+function mod.NPF_Root()
+    local p = mod.NP_GetProfile and mod.NP_GetProfile()
     if not p then
         return nil
     end
@@ -619,14 +615,14 @@ end
 -- frames. Show All writes go through ns.NPF_Root().debuffs.all -- only
 -- the debuffs kind has that mode, so the view pins all = false for
 -- dcc/cc.
-function ns.NPF_Config(kind)
-    local t = ns.NPF_Root()
-    local v = t and NPF_VIEW[kind]
-    if not v then
+function mod.NPF_Config(kindOf)
+    local t = mod.NPF_Root()
+    local val = t and NPF_VIEW[kindOf]
+    if not val then
         return nil
     end
-    v.all = (kind == "debuffs") and (t.debuffs and t.debuffs.all == true) or false
-    return v
+    val.all = (kindOf == "debuffs") and (t.debuffs and t.debuffs.all == true) or false
+    return val
 end
 
 -- Record synthesis for one kind config: token categories own overlaps in NPF_ORDER
@@ -635,30 +631,30 @@ end
 -- records: the plain "np" group is the whole display then. Booleans can never be
 -- negated (engine positive-only history); a boolean x boolean overlap double-renders
 -- -- accepted, DM precedent.
-local function NPF_Records(cfg)
+local function NPF_Records(conf)
     local recs = {}
-    if not cfg or cfg.all then
+    if not conf or conf.all then
         return recs
     end
-    local f = cfg.f or {}
+    local f = conf.f or {}
     for i = 1, #NPF_ORDER do
-        local cat = NPF_ORDER[i]
-        if f[cat] then
+        local category = NPF_ORDER[i]
+        if f[category] then
             local toks = {}
-            for k = 1, #NPF_TOKENS[cat] do
-                toks[#toks + 1] = NPF_TOKENS[cat][k]
+            for k = 1, #NPF_TOKENS[category] do
+                toks[#toks + 1] = NPF_TOKENS[category][k]
             end
-            for j = 1, i - 1 do
-                local hc = NPF_ORDER[j]
+            for jdx = 1, i - 1 do
+                local hc = NPF_ORDER[jdx]
                 if f[hc] then
                     toks[#toks + 1] = NPF_NEG[hc]
                 end
             end
-            recs[#recs + 1] = { cat = cat, tokens = toks }
+            recs[#recs + 1] = { cat = category, tokens = toks }
         end
     end
-    for cat, boolField in pairs(NPF_BOOL) do
-        if f[cat] then
+    for category, boolField in pairs(NPF_BOOL) do
+        if f[category] then
             local toks = { "HARMFUL", "PLAYER", "INCLUDE_NAME_PLATE_ONLY", "!CROWD_CONTROL" }
             for i = 2, #NPF_ORDER do
                 local tc = NPF_ORDER[i]
@@ -666,7 +662,7 @@ local function NPF_Records(cfg)
                     toks[#toks + 1] = NPF_NEG[tc]
                 end
             end
-            recs[#recs + 1] = { cat = cat, tokens = toks, cand = { [boolField] = true } }
+            recs[#recs + 1] = { cat = category, tokens = toks, cand = { [boolField] = true } }
         end
     end
     return recs
@@ -675,38 +671,38 @@ end
 -- Stable per-record group key: category + a hash of the negation-relevant
 -- enabled set. A filter edit that changes the chain declares the NEW
 -- variant and parks the old one at 0 (group filter strings are fixed).
-local function NPF_GKey(cat, cfg)
-    local f = cfg.f or {}
-    return "npf:" .. cat .. "|" .. (f.cc and 1 or 0)
+local function NPF_GKey(category, conf)
+    local f = conf.f or {}
+    return "npf:" .. category .. "|" .. (f.cc and 1 or 0)
 end
 
 -- Filter-state fingerprint for the reload cfg pass. The per-kind compositions are
 -- internal constants now, so the ONLY inputs are the debuffs slot's Show All flag and
 -- the four spell lists (list edits must re-drive every group's candidates).
-function ns.NPF_FP()
-    local t = ns.NPF_Root()
+function mod.NPF_FP()
+    local t = mod.NPF_Root()
     local parts = {}
     parts[1] = (t and t.debuffs and t.debuffs.all == true) and "A" or "-"
-    local function ListPart(prefix, list)
-        if list and next(list) ~= nil then
+    local function ListPart(prefixText, entries)
+        if entries and next(entries) ~= nil then
             local o = {}
-            for id, v in pairs(list) do
+            for ident, val in pairs(entries) do
                 -- Disabled entries prefix "-" (all strings: mixed-type sort errors)
-                o[#o + 1] = (v and "" or "-") .. id
+                o[#o + 1] = (val and "" or "-") .. ident
             end
             table.sort(o)
-            parts[#parts + 1] = prefix .. table.concat(o, ",")
+            parts[#parts + 1] = prefixText .. table.concat(o, ",")
         end
     end
-    ListPart("x", ns.NPF_Exclude("debuff"))
-    ListPart("n", ns.NPF_Include("debuff"))
-    ListPart("cx", ns.NPF_Exclude("cc"))
-    ListPart("cn", ns.NPF_Include("cc"))
+    ListPart("x", mod.NPF_Exclude("debuff"))
+    ListPart("n", mod.NPF_Include("debuff"))
+    ListPart("cx", mod.NPF_Exclude("cc"))
+    ListPart("cn", mod.NPF_Include("cc"))
     -- Any-caster opt-outs are re-drive inputs too: they move ids between
     -- the npinc and npincmine groups (a memo missing an input is a
     -- correctness bug -- toggling MINE must not no-op the reload).
-    ListPart("na", ns.NPF_IncludeAny("debuff"))
-    ListPart("cna", ns.NPF_IncludeAny("cc"))
+    ListPart("na", mod.NPF_IncludeAny("debuff"))
+    ListPart("cna", mod.NPF_IncludeAny("cc"))
     return table.concat(parts, ";")
 end
 
@@ -717,7 +713,7 @@ local function NPF_DebuffKind()
 end
 
 local function DebuffSort()
-    local c = ns.NPF_Config(NPF_DebuffKind())
+    local c = mod.NPF_Config(NPF_DebuffKind())
     local all = c and c.all
     if all == nil then
         all = PVal("showAllDebuffs")
@@ -741,12 +737,12 @@ end
 -- keeps its exclusions) and the cc slot's own. spellID excludes are
 -- identity-legal on hostile units (harmful-on-attackable passes the
 -- gate), so these are real engine filters, not Lua scans.
-function ns.NPF_Exclude(side)
-    local t = ns.NPF_Root()
+function mod.NPF_Exclude(sideName)
+    local t = mod.NPF_Root()
     if not t then
         return nil
     end
-    local key = (side == "cc") and "ccExclude" or "exclude"
+    local key = (sideName == "cc") and "ccExclude" or "exclude"
     if not t[key] then
         t[key] = {}
     end
@@ -760,12 +756,12 @@ end
 -- entries flagged Only My Casts; NPF_ApplyContainer) and are excluded from
 -- every other group's candidates on that container, so a spell that also matches the
 -- slot's composition (or Show All) can never double-render.
-function ns.NPF_Include(side)
-    local t = ns.NPF_Root()
+function mod.NPF_Include(sideName)
+    local t = mod.NPF_Root()
     if not t then
         return nil
     end
-    local key = (side == "cc") and "ccInclude" or "include"
+    local key = (sideName == "cc") and "ccInclude" or "include"
     if not t[key] then
         t[key] = {}
     end
@@ -776,12 +772,12 @@ end
 -- SIBLING map keyed by spell id, not a fourth tri-state value -- every
 -- `v == true` reader of the include list stays valid, and the flag
 -- survives disable/re-enable cycles.
-function ns.NPF_IncludeAny(side)
-    local t = ns.NPF_Root()
+function mod.NPF_IncludeAny(sideName)
+    local t = mod.NPF_Root()
     if not t then
         return nil
     end
-    local key = (side == "cc") and "ccIncludeAnyCaster" or "includeAnyCaster"
+    local key = (sideName == "cc") and "ccIncludeAnyCaster" or "includeAnyCaster"
     if not t[key] then
         t[key] = {}
     end
@@ -818,21 +814,21 @@ end
 -- opt-outs feed the npinc group, everything else (the default) feeds
 -- npincmine (its filter string carries the PLAYER token -- the caster
 -- restriction lives in the token vocabulary, not in candidate booleans).
-local function NPF_ActiveIncludes(side)
-    local inc = ns.NPF_Include(side)
+local function NPF_ActiveIncludes(sideName)
+    local inc = mod.NPF_Include(sideName)
     if not inc then
         return nil, nil
     end
-    local anym = ns.NPF_IncludeAny(side)
+    local anym = mod.NPF_IncludeAny(sideName)
     local m, mm
-    for id, v in pairs(inc) do
-        if v then
-            if anym and anym[id] then
+    for ident, val in pairs(inc) do
+        if val then
+            if anym and anym[ident] then
                 m = m or {}
-                m[id] = true
+                m[ident] = true
             else
                 mm = mm or {}
-                mm[id] = true
+                mm[ident] = true
             end
         end
     end
@@ -845,52 +841,52 @@ end
 -- Exclude entries are tri-state now (true = active, false = kept but
 -- disabled via the popup checkbox, nil = deleted): the engine map gets an
 -- ACTIVE-ONLY copy -- a false value must not reach the C validator.
-local function NPF_Cand(extra, side)
+local function NPF_Cand(extra, sideName)
     local cand = {}
     if extra then
-        for k, v in pairs(extra) do
-            cand[k] = v
+        for k, val in pairs(extra) do
+            cand[k] = val
         end
     end
     local m
-    local ex = ns.NPF_Exclude(side)
+    local ex = mod.NPF_Exclude(sideName)
     if ex then
-        for id, v in pairs(ex) do
-            if v then
+        for ident, val in pairs(ex) do
+            if val then
                 m = m or {}
-                m[id] = true
+                m[ident] = true
             end
         end
     end
     -- Active INCLUDES are excluded here too: the npinc/npincmine groups own
     -- their display (active in every mode), so every category / Show All
     -- group must not render its own copy.
-    local incm, incmm = NPF_ActiveIncludes(side)
+    local incm, incmm = NPF_ActiveIncludes(sideName)
     if incm then
         m = m or {}
-        for id in pairs(incm) do
-            m[id] = true
+        for ident in pairs(incm) do
+            m[ident] = true
         end
     end
     if incmm then
         m = m or {}
-        for id in pairs(incmm) do
-            m[id] = true
+        for ident in pairs(incmm) do
+            m[ident] = true
         end
     end
     -- Show-once exceptions render through their own single-frame groups
     -- (debuff side only, while the option is on), so no other group may
     -- render a copy. Option off = the id is an ordinary debuff again.
-    if side ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
-        for id in pairs(NPF_ONCE_DEBUFFS) do
+    if sideName ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
+        for ident in pairs(NPF_ONCE_DEBUFFS) do
             m = m or {}
-            m[id] = true
+            m[ident] = true
         end
     end
-    if side ~= "cc" and NPF_SunderOn() then
-        for id in pairs(NPF_SUNDER_IDS) do
+    if sideName ~= "cc" and NPF_SunderOn() then
+        for ident in pairs(NPF_SUNDER_IDS) do
             m = m or {}
-            m[id] = true
+            m[ident] = true
         end
     end
     if m then
@@ -913,22 +909,22 @@ end
 -- cheap state). On the CC container the cc CATEGORY rides the existing
 -- "np" group -- its filter string (HARMFUL|CROWD_CONTROL) is identical,
 -- so the default config costs zero extra groups.
-local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
-    if not container then
+local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
+    if not boxHolder then
         return
     end
-    local cfg = ns.NPF_Config(kindKey)
-    if not cfg then
+    local conf = mod.NPF_Config(kindKey)
+    if not conf then
         return
     end
-    local f = cfg.f or {}
+    local f = conf.f or {}
     -- List side: the cc container has its own lists; the debuff
     -- container (kinds debuffs/dcc) shares the debuff-side pair.
-    local side = (kindKey == "cc") and "cc" or "debuff"
-    local declared = container._npfGroups
+    local sideName = (kindKey == "cc") and "cc" or "debuff"
+    local declared = boxHolder._npfGroups
     if not declared then
         declared = {}
-        container._npfGroups = declared
+        boxHolder._npfGroups = declared
     end
     -- Mid-session declares on a container already bound to a live unit need an
     -- explicit parse request at the end: FinishContainer's UpdateAllAuras ran
@@ -936,19 +932,19 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
     -- SetUnit (pooled re-attach) otherwise.
     local declaredNew = false
     local wanted = {}
-    if not cfg.all then
-        local recs = NPF_Records(cfg)
+    if not conf.all then
+        local recs = NPF_Records(conf)
         for i = 1, #recs do
-            local rec = recs[i]
-            if not (kindKey == "cc" and rec.cat == "cc") then
-                local gkey = NPF_GKey(rec.cat, cfg)
+            local recd = recs[i]
+            if not (kindKey == "cc" and recd.cat == "cc") then
+                local gkey = NPF_GKey(recd.cat, conf)
                 wanted[gkey] = true
                 if not declared[gkey] then
-                    AK.AddGroupToContainer(container, {
+                    AK.AddGroupToContainer(boxHolder, {
                         key = gkey,
-                        filter = rec.tokens,
+                        filter = recd.tokens,
                         maxFrameCount = cap,
-                        candidateFilters = NPF_Cand(rec.cand, side),
+                        candidateFilters = NPF_Cand(recd.cand, sideName),
                         sortMethod = SORT_IMPORTANT,
                         style = styleKey,
                         layout = {
@@ -961,8 +957,8 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
                     declared[gkey] = true
                     declaredNew = true
                 else
-                    CludesUI.AuraKit.SetGroupCap(container, gkey, cap)
-                    container:SetAuraGroupCandidateFilters(gkey, NPF_Cand(rec.cand, side))
+                    CludesUI.AuraKit.SetGroupCap(boxHolder, gkey, cap)
+                    boxHolder:SetAuraGroupCandidateFilters(gkey, NPF_Cand(recd.cand, sideName))
                 end
             end
         end
@@ -975,18 +971,18 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
     -- is simply not wanted (an existing one parks to 0 in the loop below; a
     -- never-declared one costs nothing). Every other debuff-side group
     -- excludes these ids while on (NPF_Cand), so this group is the sole renderer.
-    if side ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
-        local ex = ns.NPF_Exclude(side)
-        for id in pairs(NPF_ONCE_DEBUFFS) do
-            if not (ex and ex[id]) then
-                local gkey = "nponce:" .. id
+    if sideName ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
+        local ex = mod.NPF_Exclude(sideName)
+        for ident in pairs(NPF_ONCE_DEBUFFS) do
+            if not (ex and ex[ident]) then
+                local gkey = "nponce:" .. ident
                 wanted[gkey] = true
                 if not declared[gkey] then
-                    AK.AddGroupToContainer(container, {
+                    AK.AddGroupToContainer(boxHolder, {
                         key = gkey,
                         filter = { "HARMFUL", "PLAYER", "INCLUDE_NAME_PLATE_ONLY" },
                         maxFrameCount = 1,
-                        candidateFilters = { includeSpellIDs = { [id] = true } },
+                        candidateFilters = { includeSpellIDs = { [ident] = true } },
                         sortMethod = SORT_IMPORTANT,
                         style = styleKey,
                         layout = {
@@ -999,26 +995,26 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
                     declared[gkey] = true
                     declaredNew = true
                 else
-                    CludesUI.AuraKit.SetGroupCap(container, gkey, 1)
+                    CludesUI.AuraKit.SetGroupCap(boxHolder, gkey, 1)
                 end
             end
         end
     end
     -- Sunder Armor (Forever warriors, opt-in): any caster, one icon. Ids the
     -- user already lists in Tracked Auras keep going through those lists.
-    if side ~= "cc" and NPF_SunderOn() then
-        local ex, inc = ns.NPF_Exclude(side), ns.NPF_Include(side)
+    if sideName ~= "cc" and NPF_SunderOn() then
+        local ex, inc = mod.NPF_Exclude(sideName), mod.NPF_Include(sideName)
         local ids
-        for id in pairs(NPF_SUNDER_IDS) do
-            if not (ex and ex[id]) and not (inc and inc[id]) then
+        for ident in pairs(NPF_SUNDER_IDS) do
+            if not (ex and ex[ident]) and not (inc and inc[ident]) then
                 ids = ids or {}
-                ids[id] = true
+                ids[ident] = true
             end
         end
         if ids then
             wanted.npsunder = true
             if not declared.npsunder then
-                AK.AddGroupToContainer(container, {
+                AK.AddGroupToContainer(boxHolder, {
                     key = "npsunder",
                     filter = { "HARMFUL", "INCLUDE_NAME_PLATE_ONLY" },
                     maxFrameCount = 1,
@@ -1035,26 +1031,26 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
                 declared.npsunder = true
                 declaredNew = true
             else
-                container:SetAuraGroupCandidateFilters("npsunder", { includeSpellIDs = ids })
-                CludesUI.AuraKit.SetGroupCap(container, "npsunder", 1)
+                boxHolder:SetAuraGroupCandidateFilters("npsunder", { includeSpellIDs = ids })
+                CludesUI.AuraKit.SetGroupCap(boxHolder, "npsunder", 1)
             end
         end
     end
     for gkey in pairs(declared) do
         if gkey ~= "npinc" and gkey ~= "npincmine" and not wanted[gkey] then
-            CludesUI.AuraKit.SetGroupCap(container, gkey, 0)
+            CludesUI.AuraKit.SetGroupCap(boxHolder, gkey, 0)
         end
     end
     local npOn
     if kindKey == "cc" then
-        npOn = cfg.all or f.cc or false
+        npOn = conf.all or f.cc or false
     else
-        npOn = cfg.all or false
+        npOn = conf.all or false
     end
     -- Blacklist on the np group too (both containers; the debuff cfg pass
     -- also re-drives this -- same values, dirty-mark cheap).
-    container:SetAuraGroupCandidateFilters("np", NPF_Cand(nil, side))
-    CludesUI.AuraKit.SetGroupCap(container, "np", npOn and cap or 0)
+    boxHolder:SetAuraGroupCandidateFilters("np", NPF_Cand(nil, sideName))
+    CludesUI.AuraKit.SetGroupCap(boxHolder, "np", npOn and cap or 0)
     -- Include list (Tracked Auras popup): the side's own groups on this
     -- container. They stay ACTIVE in every mode, Show All included -- the
     -- np group's fixed filter string is PLAYER-cast (and !CROWD_CONTROL on
@@ -1064,9 +1060,9 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
     -- whether any entry is active. Two groups because caster scope lives
     -- in the filter STRING (fixed at declaration): npinc = any caster,
     -- npincmine = PLAYER token for entries flagged Only My Casts.
-    local incm, incmm = NPF_ActiveIncludes(side)
+    local incm, incmm = NPF_ActiveIncludes(sideName)
     if incm and not declared.npinc then
-        AK.AddGroupToContainer(container, {
+        AK.AddGroupToContainer(boxHolder, {
             key = "npinc",
             filter = { "HARMFUL", "INCLUDE_NAME_PLATE_ONLY" },
             maxFrameCount = cap,
@@ -1084,12 +1080,12 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
         declaredNew = true
     elseif declared.npinc then
         if incm then
-            container:SetAuraGroupCandidateFilters("npinc", { includeSpellIDs = incm })
+            boxHolder:SetAuraGroupCandidateFilters("npinc", { includeSpellIDs = incm })
         end
-        CludesUI.AuraKit.SetGroupCap(container, "npinc", incm and cap or 0)
+        CludesUI.AuraKit.SetGroupCap(boxHolder, "npinc", incm and cap or 0)
     end
     if incmm and not declared.npincmine then
-        AK.AddGroupToContainer(container, {
+        AK.AddGroupToContainer(boxHolder, {
             key = "npincmine",
             filter = { "HARMFUL", "PLAYER", "INCLUDE_NAME_PLATE_ONLY" },
             maxFrameCount = cap,
@@ -1107,15 +1103,15 @@ local function NPF_ApplyContainer(container, kindKey, styleKey, cap)
         declaredNew = true
     elseif declared.npincmine then
         if incmm then
-            container:SetAuraGroupCandidateFilters("npincmine", { includeSpellIDs = incmm })
+            boxHolder:SetAuraGroupCandidateFilters("npincmine", { includeSpellIDs = incmm })
         end
-        CludesUI.AuraKit.SetGroupCap(container, "npincmine", incmm and cap or 0)
+        CludesUI.AuraKit.SetGroupCap(boxHolder, "npincmine", incmm and cap or 0)
     end
     -- One parse covers every group declared this pass. Only for containers
     -- bound to a live unit (BindContainer's stamp): at pool build the unit
     -- is "none" and the attach-time SetUnit/UpdateAllAuras pair owns it.
-    if declaredNew and container._npcBoundUnit then
-        container:UpdateAllAuras()
+    if declaredNew and boxHolder._npcBoundUnit then
+        boxHolder:UpdateAllAuras()
     end
 end
 
@@ -1128,23 +1124,23 @@ end
 -- scheduler: each container's group is a 10-button engine batch (~4-6ms), and a whole
 -- bundle in one gulp was a per-frame spike during the post-login pool build.
 local function CreateBundleShell()
-    local holder = CreateFrame("Frame", nil, UIParent)
-    holder:Hide()
-    holder:SetSize(1, 1)
-    holder:SetPoint("CENTER", UIParent, "BOTTOMLEFT", -200, -200)
+    local holderFrame = CreateFrame("Frame", nil, UIParent)
+    holderFrame:Hide()
+    holderFrame:SetSize(1, 1)
+    holderFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", -200, -200)
 
-    return { holder = holder, containers = {} }
+    return { holder = holderFrame, containers = {} }
 end
 
 -- Builds one bundle container from a pre-born shell when available (group add + finish
 -- are combat-legal -- probe T1/T1b), else creates fresh (OOC only; the callers guard).
-local function BundleContainer(b, kind, groupSpec)
+local function BundleContainer(b, kindOf, groupSpec)
     -- Single spec (has .key) or an ARRAY of specs (the buffs container's
     -- glow/plain group pair).
     local specs = groupSpec[1] and groupSpec or { groupSpec }
-    local shell = b.shells and b.shells[kind]
+    local shell = b.shells and b.shells[kindOf]
     if shell then
-        b.shells[kind] = nil
+        b.shells[kindOf] = nil
         for i = 1, #specs do
             AK.AddGroupToContainer(shell, specs[i])
         end
@@ -1203,10 +1199,10 @@ end
 -- Important or Only Dispellable with "Dispellable By Me" on (retail only;
 -- Show All never reads it).
 local function BuffDispelByMe()
-    local mode = BuffMode()
+    local modeName = BuffMode()
     return not CludesUI.IS_FOREVER
         and RAID_DISPELLABLE ~= nil
-        and mode ~= "showall"
+        and modeName ~= "showall"
         and PVal("npEnemyBuffDispelByMe") == true
 end
 
@@ -1227,12 +1223,12 @@ end
 -- without the DISPELLABLE token, where no complement can be expressed).
 -- Important narrows the remainder to IMPORTANT; Show All keeps all of it.
 local function BuffFilterPlain()
-    local mode = BuffMode()
-    if mode == "dispellable" or not DISPELLABLE then
+    local modeName = BuffMode()
+    if modeName == "dispellable" or not DISPELLABLE then
         return nil
     end
     local t = { "HELPFUL", "INCLUDE_NAME_PLATE_ONLY" }
-    if mode == "important" and IMPORTANT then
+    if modeName == "important" and IMPORTANT then
         t[#t + 1] = IMPORTANT
     end
     -- The same token the glow group uses, so the two stay exact complements.
@@ -1266,16 +1262,16 @@ end
 -- only while the split is on (it parks at 0 frames afterwards -- groups are
 -- never removed). Both halves share the mode's filter STRING; only the
 -- candidate differs.
-function NPB.GlowSpec(idx)
-    local styleKey = (idx == 2) and "np:buffs2" or "np:buffs"
+function NPB.GlowSpec(position)
+    local styleKey = (position == 2) and "np:buffs2" or "np:buffs"
     local cand
     if NPB.Split() then
-        cand = (idx == 2) and NPB.NONMAGIC or NPB.MAGIC
+        cand = (position == 2) and NPB.NONMAGIC or NPB.MAGIC
     else
         cand = BuffCand()
     end
     return {
-        key = (idx == 2) and "np2" or "np",
+        key = (position == 2) and "np2" or "np",
         filter = BuffFilterGlow(),
         maxFrameCount = 4,
         sortMethod = SORT_IMPORTANT,
@@ -1283,10 +1279,10 @@ function NPB.GlowSpec(idx)
         style = styleKey,
         -- Purge glow: built on first paint so a button born while the glow
         -- is already on does not wait for the next style pass.
-        extraInit = function(btn, dd)
-            local style = AK.styles[styleKey]
-            if style and style.purgeGlow then
-                ApplyNPBuffExtra(btn, dd, style)
+        extraInit = function(btn, dropdown)
+            local look = AK.styles[styleKey]
+            if look and look.purgeGlow then
+                ApplyNPBuffExtra(btn, dropdown, look)
             end
         end,
         layout = { elementWidth = 24, elementHeight = 24, elementSpacing = 4, lineSpacing = 4 },
@@ -1296,25 +1292,25 @@ end
 -- Declares or parks the non-Magic glow group to match the current split, on
 -- containers that already existed when capability / restriction / the type
 -- color option / the dispel glow style changed.
-function NPB.Apply(container)
-    if not container then
+function NPB.Apply(boxHolder)
+    if not boxHolder then
         return
     end
     local split = NPB.Split()
-    if split and not container._npbSplit then
-        AK.AddGroupToContainer(container, NPB.GlowSpec(2))
-        container._npbSplit = true
+    if split and not boxHolder._npbSplit then
+        AK.AddGroupToContainer(boxHolder, NPB.GlowSpec(2))
+        boxHolder._npbSplit = true
         -- The new group carries the declaration's placeholder sizing until an
         -- anchor pass reaches it, and that pass skips containers whose layout
         -- stamp is current -- so drop the stamp.
-        container._npcGeoGen = nil
+        boxHolder._npcGeoGen = nil
         -- A group added after FinishContainer's parse renders nothing until
         -- the next SetUnit unless this container is asked to re-parse now.
-        if container._npcBoundUnit then
-            container:UpdateAllAuras()
+        if boxHolder._npcBoundUnit then
+            boxHolder:UpdateAllAuras()
         end
-    elseif container._npbSplit then
-        CludesUI.AuraKit.SetGroupCap(container, "np2", split and 4 or 0)
+    elseif boxHolder._npbSplit then
+        CludesUI.AuraKit.SetGroupCap(boxHolder, "np2", split and 4 or 0)
     end
 end
 
@@ -1378,9 +1374,9 @@ local function CreateBundleSkeleton()
 end
 local skeletons = {}
 
-local function SafeClearUnit(container)
-    if not pcall(container.SetUnit, container, "none") then
-        pcall(container.SetUnit, container, nil)
+local function SafeClearUnit(boxHolder)
+    if not pcall(boxHolder.SetUnit, boxHolder, "none") then
+        pcall(boxHolder.SetUnit, boxHolder, nil)
     end
 end
 
@@ -1390,14 +1386,14 @@ end
 -- three containers unconditionally charged the full parse three times per spawn
 -- regardless of how many rows are actually displayed. Detach clears the flag, so a
 -- pooled bundle always re-binds fresh at its next attach.
-local function BindContainer(c, unit, slotVal)
+local function BindContainer(c, unitToken, slotVal)
     if not c then
         return
     end -- conditional bundles: row disabled at build time
     if slotVal and slotVal ~= "none" then
         if not c._npcBoundUnit then
             c._npcBoundUnit = true
-            c:SetUnit(unit)
+            c:SetUnit(unitToken)
             c:UpdateAllAuras()
         end
     elseif c._npcBoundUnit then
@@ -1426,59 +1422,60 @@ local function FlowDir(token)
     return FD.Right
 end
 
-local function TopAnchorFor(plate)
-    local topElement = (ns.GetTextSlot and ns.GetTextSlot("textSlotTop")) or "none"
-    if ns.IsNameElement and ns.IsNameElement(topElement) then
-        return plate.name or plate.health
+local function TopAnchorFor(backing)
+    local topElement = (mod.GetTextSlot and mod.GetTextSlot("textSlotTop")) or "none"
+    if mod.IsNameElement and mod.IsNameElement(topElement) then
+        return backing.name or backing.health
     end
     if topElement == "healthNumber" then
-        return plate.hpNumber or plate.health
+        return backing.hpNumber or backing.health
     end
     if topElement == "level" then
-        return plate.levelText or plate.health
+        return backing.levelText or backing.health
     end
     if topElement == "targetOfTarget" then
-        return plate.totText or plate.health
+        return backing.totText or backing.health
     end
     if topElement == "custom" then
-        return plate.customTop or plate.health
+        return backing.customTop or backing.health
     end
     if topElement ~= "none" then
-        return plate.hpText or plate.health
+        return backing.hpText or backing.health
     end
-    return plate.health, true -- health-anchored: add class power push
+    return backing.health, true -- health-anchored: add class power push
 end
 
-local function AnchorNPContainer(container, kind, plate, slotVal)
-    if not container then
+local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
+    if not boxHolder then
         return
     end
-    container:ClearAllPoints()
+    boxHolder:ClearAllPoints()
     if not slotVal or slotVal == "none" then
-        container:SetShown(false)
+        boxHolder:SetShown(false)
         return
     end
-    container:SetShown(kind ~= "buffs" or container._npcAttackable ~= false)
+    boxHolder:SetShown(kindOf ~= "buffs" or boxHolder._npcAttackable ~= false)
 
-    local size = NPSize(kind)
-    local height = NPHeight(kind, size)
-    local spacing = (ns.GetAuraSpacing and ns.GetAuraSpacing(kind == "cc" and "ccs" or kind)) or 4
+    local dim = NPSize(kindOf)
+    local height = NPHeight(kindOf, dim)
+    local spacing = (mod.GetAuraSpacing and mod.GetAuraSpacing(kindOf == "cc" and "ccs" or kindOf)) or 4
     local xOff, yOff = 0, 0
-    if ns.GetAuraSlotOffsets then
-        xOff, yOff = ns.GetAuraSlotOffsets(
-            kind == "debuffs" and "debuffSlot" or kind == "buffs" and "buffSlot" or "ccSlot"
+    if mod.GetAuraSlotOffsets then
+        xOff, yOff = mod.GetAuraSlotOffsets(
+            kindOf == "debuffs" and "debuffSlot" or kindOf == "buffs" and "buffSlot" or "ccSlot"
         )
     end
 
     local anchorPoint, gH, gV, rowWidth
     if slotVal == "top" then
-        local anchor, healthAnchored = TopAnchorFor(plate)
-        local debuffY = (ns.GetDebuffYOffset and ns.GetDebuffYOffset()) or 2
-        local cpPush = (healthAnchored and ns.NP_ClassPowerTopPush) and ns.NP_ClassPowerTopPush(plate) or 0
-        container:SetPoint("BOTTOM", anchor, "TOP", xOff, debuffY + cpPush + yOff)
+        local anchorFrame, healthAnchored = TopAnchorFor(backing)
+        local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
+        local cpPush = (healthAnchored and mod.NP_ClassPowerTopPush) and mod.NP_ClassPowerTopPush(backing)
+            or 0
+        boxHolder:SetPoint("BOTTOM", anchorFrame, "TOP", xOff, debuffY + cpPush + yOff)
         anchorPoint, gH, gV = "BOTTOMLEFT", "RIGHT", "UP"
     elseif slotVal == "bottom" then
-        container:SetPoint("TOP", plate.cast or plate.health, "BOTTOM", xOff, -2 + yOff)
+        boxHolder:SetPoint("TOP", backing.cast or backing.health, "BOTTOM", xOff, -2 + yOff)
         anchorPoint, gH, gV = "TOPLEFT", "RIGHT", "DOWN"
     elseif slotVal == "left" or slotVal == "right" then
         -- Classic WoW UI: gap off the border art, not the bare bar edge; WoW
@@ -1486,67 +1483,67 @@ local function AnchorNPContainer(container, kind, plate, slotVal)
         -- style). During a cast the full-size spell icon pushes the row out past
         -- it where the two meet (the row spans its Y offset up by one icon);
         -- the push is kept for NPC_PlaceSideRows.
-        local push = ns.NP_FullIconPush(plate, slotVal, yOff, yOff + height)
-        container._npcPush = push
-        local sideOff = ((ns.GetSideAuraXOffset and ns.GetSideAuraXOffset()) or 2)
-            + ((ns.NP_ClassicSide and ns.NP_ClassicSide(slotVal)) or 0)
+        local push = mod.NP_FullIconPush(backing, slotVal, yOff, yOff + height)
+        boxHolder._npcPush = push
+        local sideOff = ((mod.GetSideAuraXOffset and mod.GetSideAuraXOffset()) or 2)
+            + ((mod.NP_ClassicSide and mod.NP_ClassicSide(slotVal)) or 0)
             + push
         if slotVal == "left" then
-            container:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMLEFT", -sideOff + xOff, yOff)
+            boxHolder:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMLEFT", -sideOff + xOff, yOff)
             anchorPoint, gH, gV = "BOTTOMRIGHT", "LEFT", "UP"
         else
-            container:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMRIGHT", sideOff + xOff, yOff)
+            boxHolder:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMRIGHT", sideOff + xOff, yOff)
             anchorPoint, gH, gV = "BOTTOMLEFT", "RIGHT", "UP"
         end
     elseif slotVal == "topleft" or slotVal == "topright" then
-        local debuffY = (ns.GetDebuffYOffset and ns.GetDebuffYOffset()) or 2
-        local cpPush = ns.NP_ClassPowerTopPush and ns.NP_ClassPowerTopPush(plate) or 0
+        local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
+        local cpPush = mod.NP_ClassPowerTopPush and mod.NP_ClassPowerTopPush(backing) or 0
         local growth = PVal(slotVal .. "SlotGrowth") or (slotVal == "topleft" and "left" or "right")
         local corner = (slotVal == "topleft") and "BOTTOMLEFT" or "BOTTOMRIGHT"
         local healthCorner = (slotVal == "topleft") and "TOPLEFT" or "TOPRIGHT"
         -- Above the corner's Top Left / Top Right text while it shows one.
-        container:SetPoint(
+        boxHolder:SetPoint(
             corner,
-            plate.health,
+            backing.health,
             healthCorner,
             xOff,
-            debuffY + cpPush + ns.NP_TopCornerLift(slotVal) + yOff
+            debuffY + cpPush + mod.NP_TopCornerLift(slotVal) + yOff
         )
         anchorPoint = corner
         if growth == "up" then
             gH = (slotVal == "topleft") and "RIGHT" or "LEFT"
             gV = "UP"
-            rowWidth = size + 0.4
+            rowWidth = dim + 0.4
         else
             gH = (growth == "left") and "LEFT" or "RIGHT"
             gV = "UP"
         end
     else
-        container:SetShown(false)
+        boxHolder:SetShown(false)
         return
     end
 
     -- Active cast lockout: the lockout icon holds the CC row's first position, so the
     -- CC container chains off its far edge instead of the health anchor (top/bottom
     -- rows trade their centering for the lockout's few seconds -- accepted).
-    if kind == "cc" then
-        local lk = plate.npcLockout
+    if kindOf == "cc" then
+        local lk = backing.npcLockout
         if lk and lk:IsShown() then
-            container:ClearAllPoints()
+            boxHolder:ClearAllPoints()
             if slotVal == "left" then
-                container:SetPoint("BOTTOMRIGHT", lk, "BOTTOMLEFT", -spacing, 0)
+                boxHolder:SetPoint("BOTTOMRIGHT", lk, "BOTTOMLEFT", -spacing, 0)
             elseif slotVal == "topleft" or slotVal == "topright" then
                 local growth = PVal(slotVal .. "SlotGrowth") or (slotVal == "topleft" and "left" or "right")
                 if growth == "up" then
-                    local side = (slotVal == "topleft") and "LEFT" or "RIGHT"
-                    container:SetPoint("BOTTOM" .. side, lk, "TOP" .. side, 0, spacing)
+                    local sideName = (slotVal == "topleft") and "LEFT" or "RIGHT"
+                    boxHolder:SetPoint("BOTTOM" .. sideName, lk, "TOP" .. sideName, 0, spacing)
                 elseif growth == "left" then
-                    container:SetPoint("BOTTOMRIGHT", lk, "BOTTOMLEFT", -spacing, 0)
+                    boxHolder:SetPoint("BOTTOMRIGHT", lk, "BOTTOMLEFT", -spacing, 0)
                 else
-                    container:SetPoint("BOTTOMLEFT", lk, "BOTTOMRIGHT", spacing, 0)
+                    boxHolder:SetPoint("BOTTOMLEFT", lk, "BOTTOMRIGHT", spacing, 0)
                 end
             else -- top, bottom, right: chain rightward
-                container:SetPoint("BOTTOMLEFT", lk, "BOTTOMRIGHT", spacing, 0)
+                boxHolder:SetPoint("BOTTOMLEFT", lk, "BOTTOMRIGHT", spacing, 0)
             end
         end
     end
@@ -1556,75 +1553,76 @@ local function AnchorNPContainer(container, kind, plate, slotVal)
     -- generation already carries this exact engine state from its last
     -- attach -- skip the setters (plate churn re-attaches bundles
     -- constantly; unconditional re-drives were per-spawn dirty marks).
-    if container._npcGeoGen ~= geoGen or container._npcSlotVal ~= slotVal then
-        container._npcGeoGen = geoGen
-        container._npcSlotVal = slotVal
+    if boxHolder._npcGeoGen ~= geoGen or boxHolder._npcSlotVal ~= slotVal then
+        boxHolder._npcGeoGen = geoGen
+        boxHolder._npcSlotVal = slotVal
 
-        AK.SetContainerAnchor(container, anchorPoint)
-        AK.SetContainerGrowth(container, FlowDir(gH), FlowDir(gV))
-        AK.SetContainerRowWidth(container, rowWidth)
+        AK.SetContainerAnchor(boxHolder, anchorPoint)
+        AK.SetContainerGrowth(boxHolder, FlowDir(gH), FlowDir(gV))
+        AK.SetContainerRowWidth(boxHolder, rowWidth)
         local gLayout = {
-            elementWidth = size,
+            elementWidth = dim,
             elementHeight = height,
             elementSpacing = spacing,
             lineSpacing = spacing,
         }
-        container:SetAuraGroupLayout("np", gLayout)
+        boxHolder:SetAuraGroupLayout("np", gLayout)
         -- The buff row's non-Magic glow group shares the row's element sizing.
-        if container._npbSplit then
-            container:SetAuraGroupLayout("np2", gLayout)
+        if boxHolder._npbSplit then
+            boxHolder:SetAuraGroupLayout("np2", gLayout)
         end
         -- NPF record groups share the row's element sizing.
-        if container._npfGroups then
-            for gkey in pairs(container._npfGroups) do
-                container:SetAuraGroupLayout(gkey, gLayout)
+        if boxHolder._npfGroups then
+            for gkey in pairs(boxHolder._npfGroups) do
+                boxHolder:SetAuraGroupLayout(gkey, gLayout)
             end
         end
 
         -- Aura tier of the flattened plate render order (text 900 > auras 800),
         -- honoring the per-slot Raise Strata toggle like the legacy pools.
-        local raise = ns.GetSlotRaiseStrata and ns.GetSlotRaiseStrata(slotVal)
-        container:SetFrameStrata(raise and "HIGH" or "MEDIUM")
-        container:SetFrameLevel(800)
+        local raise = mod.GetSlotRaiseStrata and mod.GetSlotRaiseStrata(slotVal)
+        boxHolder:SetFrameStrata(raise and "HIGH" or "MEDIUM")
+        boxHolder:SetFrameLevel(800)
     end
 
     -- Elements sharing the slot: with the row at its own spot, the chain places them (and
     -- the row itself, unless it is the slot's first shown element). One count for a slot
     -- that holds nothing else.
-    ns.NP_CoreChain(plate, slotVal)
+    mod.NP_CoreChain(backing, slotVal)
 end
 
 -- Cast-lockout pseudo-aura (kick lockout displayed as a CC icon): armed by
 -- the core's cast machinery (ShowCastLockout -- readable, cast-driven, no
 -- aura reads), rendered here since the legacy CC row is gone. The frame is
 -- OUR child of OUR plate object; positioned exactly at the CC slot pin.
-local function PositionLockout(plate, f, slotVal)
+local function PositionLockout(backing, f, slotVal)
     f:ClearAllPoints()
-    local xOff, yOff = ns.GetAuraSlotOffsets("ccSlot")
+    local xOff, yOff = mod.GetAuraSlotOffsets("ccSlot")
     if slotVal == "top" then
-        local anchor, healthAnchored = TopAnchorFor(plate)
-        local debuffY = (ns.GetDebuffYOffset and ns.GetDebuffYOffset()) or 2
-        local cpPush = (healthAnchored and ns.NP_ClassPowerTopPush) and ns.NP_ClassPowerTopPush(plate) or 0
-        f:SetPoint("BOTTOM", anchor, "TOP", xOff, debuffY + cpPush + yOff)
+        local anchorFrame, healthAnchored = TopAnchorFor(backing)
+        local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
+        local cpPush = (healthAnchored and mod.NP_ClassPowerTopPush) and mod.NP_ClassPowerTopPush(backing)
+            or 0
+        f:SetPoint("BOTTOM", anchorFrame, "TOP", xOff, debuffY + cpPush + yOff)
     elseif slotVal == "bottom" then
-        f:SetPoint("TOP", plate.cast or plate.health, "BOTTOM", xOff, -2 + yOff)
+        f:SetPoint("TOP", backing.cast or backing.health, "BOTTOM", xOff, -2 + yOff)
     elseif slotVal == "left" or slotVal == "right" then
         -- Classic WoW UI's border and the full-size spell icon push it out, as
         -- the containers above.
-        local sideOff = ((ns.GetSideAuraXOffset and ns.GetSideAuraXOffset()) or 2)
-            + ((ns.NP_ClassicSide and ns.NP_ClassicSide(slotVal)) or 0)
-            + ns.NP_FullIconPush(plate, slotVal, yOff, yOff + (NPHeight("cc", NPSize("cc"))))
+        local sideOff = ((mod.GetSideAuraXOffset and mod.GetSideAuraXOffset()) or 2)
+            + ((mod.NP_ClassicSide and mod.NP_ClassicSide(slotVal)) or 0)
+            + mod.NP_FullIconPush(backing, slotVal, yOff, yOff + (NPHeight("cc", NPSize("cc"))))
         if slotVal == "left" then
-            f:SetPoint("BOTTOMRIGHT", plate.health, "BOTTOMLEFT", -sideOff + xOff, yOff)
+            f:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMLEFT", -sideOff + xOff, yOff)
         else
-            f:SetPoint("BOTTOMLEFT", plate.health, "BOTTOMRIGHT", sideOff + xOff, yOff)
+            f:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMRIGHT", sideOff + xOff, yOff)
         end
     else -- topleft / topright (above the corner's text while it shows one)
-        local debuffY = (ns.GetDebuffYOffset and ns.GetDebuffYOffset()) or 2
-        local cpPush = ns.NP_ClassPowerTopPush and ns.NP_ClassPowerTopPush(plate) or 0
+        local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
+        local cpPush = mod.NP_ClassPowerTopPush and mod.NP_ClassPowerTopPush(backing) or 0
         local corner = (slotVal == "topleft") and "BOTTOMLEFT" or "BOTTOMRIGHT"
         local hc = (slotVal == "topleft") and "TOPLEFT" or "TOPRIGHT"
-        f:SetPoint(corner, plate.health, hc, xOff, debuffY + cpPush + ns.NP_TopCornerLift(slotVal) + yOff)
+        f:SetPoint(corner, backing.health, hc, xOff, debuffY + cpPush + mod.NP_TopCornerLift(slotVal) + yOff)
     end
 end
 
@@ -1679,12 +1677,15 @@ local Chain = {
     busy = false,
 }
 
-local function ChainKeys(pos)
-    local k = Chain.keys[pos]
+local function ChainKeys(place)
+    local k = Chain.keys[place]
     if not k then
-        k =
-            { order = pos .. "SlotOrder", spacing = pos .. "SlotElementSpacing", growth = pos .. "SlotGrowth" }
-        Chain.keys[pos] = k
+        k = {
+            order = place .. "SlotOrder",
+            spacing = place .. "SlotElementSpacing",
+            growth = place .. "SlotGrowth",
+        }
+        Chain.keys[place] = k
     end
     return k
 end
@@ -1692,20 +1693,20 @@ end
 -- The slot's order: its saved string parsed once per value; members a saved order lacks
 -- follow in the default order, except the Quest Objective Text, which a saved order that
 -- holds the Quest Indicator but not it reads right after the Quest Indicator.
-local function ChainOrder(pos)
-    local src = PVal(ChainKeys(pos).order)
-    if type(src) ~= "string" then
-        src = Chain.DEFAULT
+local function ChainOrder(place)
+    local source = PVal(ChainKeys(place).order)
+    if type(source) ~= "string" then
+        source = Chain.DEFAULT
     end
-    local memo = Chain.orderMemo[pos]
-    if memo and memo.src == src then
+    local memo = Chain.orderMemo[place]
+    if memo and memo.src == source then
         return memo.list
     end
-    local list, seen = {}, {}
-    local function add(id)
-        if id and not seen[id] then
-            seen[id] = true
-            list[#list + 1] = id
+    local entries, seen = {}, {}
+    local function add(ident)
+        if ident and not seen[ident] then
+            seen[ident] = true
+            entries[#entries + 1] = ident
         end
     end
     local function take(s, textAfterQuest)
@@ -1717,118 +1718,118 @@ local function ChainOrder(pos)
         end
     end
     local hasText = false
-    for key in string.gmatch(src, "[^,]+") do
+    for key in string.gmatch(source, "[^,]+") do
         if key == "questtext" then
             hasText = true
             break
         end
     end
-    take(src, not hasText)
+    take(source, not hasText)
     take(Chain.DEFAULT)
-    Chain.orderMemo[pos] = { src = src, list = list }
-    return list
+    Chain.orderMemo[place] = { src = source, list = entries }
+    return entries
 end
 
 -- The members the slot holds, in its order, into Chain.m; returns their count. A member
 -- counts while its own position key names the slot: the badge riding the Rare/Quest
 -- indicator is part of that member, Crowd Control inside the debuff row is the debuff row's.
 -- The Rare/Quest member counts only while one of its halves is on or the badge rides it.
-local function ChainMembers(pos)
+local function ChainMembers(place)
     local m = Chain.m
-    local n = 0
-    local ds, bs, cs = ns.GetAuraSlots()
-    local raid, class = ns.GetRaidMarkerPos(), ns.GetClassificationSlot()
+    local num = 0
+    local ds, bs, cs = mod.GetAuraSlots()
+    local raid, classFile = mod.GetRaidMarkerPos(), mod.GetClassificationSlot()
     if
         PVal("classificationHideRare")
-        and not ns.NP_QuestIconOn()
+        and not mod.NP_QuestIconOn()
         and PVal("classificationIncludeFaction") ~= true
     then
-        class = "none"
+        classFile = "none"
     end
-    local fac = (PVal("classificationIncludeFaction") ~= true) and ns.NP_GetFactionSlot() or "none"
-    local qtext = ns.NP_GetQuestTextSlot()
-    local order = ChainOrder(pos)
-    for i = 1, #order do
-        local id = order[i]
+    local fac = (PVal("classificationIncludeFaction") ~= true) and mod.NP_GetFactionSlot() or "none"
+    local qtext = mod.NP_GetQuestTextSlot()
+    local sequence = ChainOrder(place)
+    for i = 1, #sequence do
+        local ident = sequence[i]
         local at
-        if id == "debuffs" then
+        if ident == "debuffs" then
             at = ds
-        elseif id == "buffs" then
+        elseif ident == "buffs" then
             at = bs
-        elseif id == "cc" then
+        elseif ident == "cc" then
             at = cs
-        elseif id == "raid" then
+        elseif ident == "raid" then
             at = raid
-        elseif id == "class" then
-            at = class
-        elseif id == "qtext" then
+        elseif ident == "class" then
+            at = classFile
+        elseif ident == "qtext" then
             at = qtext
         else
             at = fac
         end
-        if at == pos then
-            n = n + 1
-            m[n] = id
+        if at == place then
+            num = num + 1
+            m[num] = ident
         end
     end
-    for i = n + 1, #m do
+    for i = num + 1, #m do
         m[i] = nil
     end
-    return n
+    return num
 end
 
 -- Whether the slot holds two or more members (the chain places its elements).
-function ns.NP_CoreChained(pos)
-    return pos ~= nil and pos ~= "none" and ChainMembers(pos) >= 2
+function mod.NP_CoreChained(place)
+    return place ~= nil and place ~= "none" and ChainMembers(place) >= 2
 end
 -- The slot's member count (the options show Element Spacing from two).
-function ns.NP_CoreMemberCount(pos)
-    if not pos or pos == "none" then
+function mod.NP_CoreMemberCount(place)
+    if not place or place == "none" then
         return 0
     end
-    return ChainMembers(pos)
+    return ChainMembers(place)
 end
 
 -- The spacing between the slot's elements: its own, else the first aura row's Spacing in
 -- the slot's order, else the global aura spacing. ChainMembers has filled Chain.m.
-local function ChainSpacing(pos)
-    local v = PVal(ChainKeys(pos).spacing)
-    if type(v) == "number" then
-        return v
+local function ChainSpacing(place)
+    local val = PVal(ChainKeys(place).spacing)
+    if type(val) == "number" then
+        return val
     end
     local m = Chain.m
     for i = 1, #m do
-        local id = m[i]
-        if id == "debuffs" or id == "buffs" or id == "cc" then
-            return ns.GetAuraSpacing((id == "cc") and "ccs" or id) or 4
+        local ident = m[i]
+        if ident == "debuffs" or ident == "buffs" or ident == "cc" then
+            return mod.GetAuraSpacing((ident == "cc") and "ccs" or ident) or 4
         end
     end
-    return ns.GetAuraSpacing() or 4
+    return mod.GetAuraSpacing() or 4
 end
 -- The options' Element Spacing row reads the same rule.
-function ns.NP_CoreElementSpacing(pos)
-    if not pos or pos == "none" then
+function mod.NP_CoreElementSpacing(place)
+    if not place or place == "none" then
         return 0
     end
-    ChainMembers(pos)
-    return ChainSpacing(pos)
+    ChainMembers(place)
+    return ChainSpacing(place)
 end
 
 -- A member's bottom edge over the slot's reference, as its own placement puts it: a row's
 -- Y offset, an icon's centred on the bar at Left and Right; at the corners the row sits a
 -- Debuff Y Offset up, the raid marker on the corner, the indicators 2 up (the class power
 -- push, shared, cancels). Top and Bottom align every member to the one before it.
-local function ChainBase(pos, id, isRow, sz, yOff, barH)
-    if pos == "left" or pos == "right" then
+local function ChainBase(place, ident, isRow, sz, yOff, barH)
+    if place == "left" or place == "right" then
         if isRow then
             return yOff
         end
         return yOff + barH / 2 - sz / 2
-    elseif pos == "topleft" or pos == "topright" then
+    elseif place == "topleft" or place == "topright" then
         if isRow then
-            return ns.GetDebuffYOffset() + yOff
+            return mod.GetDebuffYOffset() + yOff
         end
-        if id == "raid" then
+        if ident == "raid" then
             return yOff
         end
         return 2 + yOff
@@ -1840,32 +1841,32 @@ end
 -- id / sz; returns their count. A row counts only while shown and last placed in this very
 -- slot (IsSideRow); the Crowd Control row behind its lockout icon is led by the icon. An
 -- icon's height is the one its update gave it (_npSz), else the slot's size.
-local function ChainShown(plate, pos, n)
-    local b = active[plate]
-    local _, yOff = ns.GetSlotOffsets(pos)
-    local barH = ns.GetHealthBarHeight()
+local function ChainShown(backing, place, num)
+    local b = isActive[backing]
+    local _, yOff = mod.GetSlotOffsets(place)
+    local barH = mod.GetHealthBarHeight()
     local k = 0
-    for i = 1, n do
-        local id = Chain.m[i]
+    for i = 1, num do
+        local ident = Chain.m[i]
         local lead, trail, isRow
-        if id == "raid" then
-            lead = plate.raidFrame
-        elseif id == "class" then
-            lead = plate.classFrame
+        if ident == "raid" then
+            lead = backing.raidFrame
+        elseif ident == "class" then
+            lead = backing.classFrame
             -- Rare/Quest + Faction with no mark: the badge stands in for the pair.
             if not (lead and lead:IsShown()) and PVal("classificationIncludeFaction") == true then
-                lead = plate.factionFrame
+                lead = backing.factionFrame
             end
-        elseif id == "qtext" then
-            lead = plate.questTextFrame
-        elseif id == "faction" then
-            lead = plate.factionFrame
+        elseif ident == "qtext" then
+            lead = backing.questTextFrame
+        elseif ident == "faction" then
+            lead = backing.factionFrame
         else
-            local c = b and b.containers[id]
-            if c and c._npcSlotVal == pos then
+            local c = b and b.containers[ident]
+            if c and c._npcSlotVal == place then
                 lead, isRow = c, true
-                if id == "cc" then
-                    local lk = plate.npcLockout
+                if ident == "cc" then
+                    local lk = backing.npcLockout
                     if lk and lk:IsShown() then
                         trail = c
                         lead = lk
@@ -1877,11 +1878,12 @@ local function ChainShown(plate, pos, n)
             k = k + 1
             local sz = 0
             if not isRow then
-                sz = lead._npSz or ns.GetSlotSize(pos)
+                sz = lead._npSz or mod.GetSlotSize(place)
             end
-            Chain.lead[k], Chain.trail[k], Chain.row[k], Chain.id[k] = lead, trail or lead, isRow or false, id
+            Chain.lead[k], Chain.trail[k], Chain.row[k], Chain.id[k] =
+                lead, trail or lead, isRow or false, ident
             Chain.sz[k] = sz
-            Chain.base[k] = ChainBase(pos, id, isRow, sz, yOff, barH)
+            Chain.base[k] = ChainBase(place, ident, isRow, sz, yOff, barH)
         end
     end
     for i = k + 1, #Chain.lead do
@@ -1894,12 +1896,12 @@ end
 -- The chain's direction at the slot: outward from the bar at Left and Right, the slot's
 -- Grow at the corners, rightward from the pivot at Top and Bottom (the members before the
 -- pivot run leftward).
-local function ChainDir(pos)
-    if pos == "left" then
+local function ChainDir(place)
+    if place == "left" then
         return "left"
     end
-    if pos == "topleft" or pos == "topright" then
-        local g = PVal(ChainKeys(pos).growth) or ((pos == "topleft") and "left" or "right")
+    if place == "topleft" or place == "topright" then
+        local g = PVal(ChainKeys(place).growth) or ((place == "topleft") and "left" or "right")
         if g == "up" or g == "left" then
             return g
         end
@@ -1909,27 +1911,27 @@ end
 
 -- Places member i by its own rule: an icon by the slot icon placer (Name.lua), a row by
 -- AnchorNPContainer, behind its lockout icon where one shows (PositionLockout).
-local function ChainPlaceOwn(plate, pos, i)
-    local id, lead = Chain.id[i], Chain.lead[i]
+local function ChainPlaceOwn(backing, place, i)
+    local ident, lead = Chain.id[i], Chain.lead[i]
     if Chain.row[i] then
         local c = Chain.trail[i]
         if lead ~= c then
-            PositionLockout(plate, lead, pos)
+            PositionLockout(backing, lead, place)
         end
-        AnchorNPContainer(c, id, plate, pos)
+        AnchorNPContainer(c, ident, backing, place)
     else
-        local xOff, yOff = ns.GetSlotOffsets(pos)
-        ns.NP_PlaceSlotIcon(plate, lead, pos, xOff, yOff, (id == "raid") and 0 or 2, Chain.sz[i])
+        local xOff, yOff = mod.GetSlotOffsets(place)
+        mod.NP_PlaceSlotIcon(backing, lead, place, xOff, yOff, (ident == "raid") and 0 or 2, Chain.sz[i])
     end
 end
 
 -- An icon keeps its own placement's units (PP.Point); a row or the lockout icon the
 -- containers' plain ones.
-local function ChainPoint(f, raw, point, rel, relPoint, x, y)
+local function ChainPoint(f, raw, point, rel, relPoint, posX, posY)
     if raw then
-        f:SetPoint(point, rel, relPoint, x, y)
+        f:SetPoint(point, rel, relPoint, posX, posY)
     else
-        PP.Point(f, point, rel, relPoint, x, y)
+        Pix.Point(f, point, rel, relPoint, posX, posY)
     end
 end
 
@@ -1938,19 +1940,19 @@ end
 -- Top and Bottom the two sharing their bottom (top) edge. A plain icon after a row keeps
 -- its own spot (no aspect host). The Crowd Control row then chains off its lockout icon,
 -- sp apart, in the same direction.
-local function ChainPlaceAfter(plate, pos, i, j, prev, s, dir, sp)
+local function ChainPlaceAfter(backing, place, i, jdx, prev, s, dir, sp)
     local lead, c = Chain.lead[i], Chain.trail[i]
     local raw = Chain.row[i] or lead ~= c
-    if Chain.row[j] and not plate.coreHost and (lead ~= c or not Chain.row[i]) then
-        ChainPlaceOwn(plate, pos, i)
+    if Chain.row[jdx] and not backing.coreHost and (lead ~= c or not Chain.row[i]) then
+        ChainPlaceOwn(backing, place, i)
         return
     end
-    local dy = Chain.base[i] - Chain.base[j]
+    local dy = Chain.base[i] - Chain.base[jdx]
     lead:ClearAllPoints()
     if dir == "up" then
-        local side = (pos == "topleft") and "LEFT" or "RIGHT"
-        ChainPoint(lead, raw, "BOTTOM" .. side, prev, "TOP" .. side, 0, s)
-    elseif pos == "bottom" then
+        local sideName = (place == "topleft") and "LEFT" or "RIGHT"
+        ChainPoint(lead, raw, "BOTTOM" .. sideName, prev, "TOP" .. sideName, 0, s)
+    elseif place == "bottom" then
         if dir == "left" then
             ChainPoint(lead, raw, "TOPRIGHT", prev, "TOPLEFT", -s, 0)
         else
@@ -1964,8 +1966,8 @@ local function ChainPlaceAfter(plate, pos, i, j, prev, s, dir, sp)
     if Chain.row[i] and c ~= lead then
         c:ClearAllPoints()
         if dir == "up" then
-            local side = (pos == "topleft") and "LEFT" or "RIGHT"
-            c:SetPoint("BOTTOM" .. side, lead, "TOP" .. side, 0, sp)
+            local sideName = (place == "topleft") and "LEFT" or "RIGHT"
+            c:SetPoint("BOTTOM" .. sideName, lead, "TOP" .. sideName, 0, sp)
         elseif dir == "left" then
             c:SetPoint("BOTTOMRIGHT", lead, "BOTTOMLEFT", -sp, 0)
         else
@@ -1976,8 +1978,8 @@ end
 
 -- One pass over the plate's shown members of the slot (Chain.busy set: the passes it
 -- runs end in ns.NP_CoreChain again).
-local function ChainRun(plate, pos, k)
-    local centred = (pos == "top" or pos == "bottom")
+local function ChainRun(backing, place, k)
+    local centred = (place == "top" or place == "bottom")
     local pivot = 1
     if centred then
         for i = 1, k do
@@ -1987,44 +1989,44 @@ local function ChainRun(plate, pos, k)
             end
         end
     end
-    local s = ChainSpacing(pos)
-    local sp = ns.GetAuraSpacing("ccs") or 4
-    local dir = ChainDir(pos)
-    ChainPlaceOwn(plate, pos, pivot)
+    local s = ChainSpacing(place)
+    local sp = mod.GetAuraSpacing("ccs") or 4
+    local dir = ChainDir(place)
+    ChainPlaceOwn(backing, place, pivot)
     for i = pivot + 1, k do
-        ChainPlaceAfter(plate, pos, i, i - 1, Chain.trail[i - 1], s, dir, sp)
+        ChainPlaceAfter(backing, place, i, i - 1, Chain.trail[i - 1], s, dir, sp)
     end
     if centred then
         -- Leftward from the pivot, whose left edge is its lead (its lockout icon, where the
         -- Crowd Control row is the pivot: the row chains rightward off it).
         for i = pivot - 1, 1, -1 do
             local prev = (i + 1 == pivot) and Chain.lead[i + 1] or Chain.trail[i + 1]
-            ChainPlaceAfter(plate, pos, i, i + 1, prev, s, "left", sp)
+            ChainPlaceAfter(backing, place, i, i + 1, prev, s, "left", sp)
         end
     end
 end
 
-function ns.NP_CoreChain(plate, pos)
-    if Chain.busy or not pos or pos == "none" then
+function mod.NP_CoreChain(backing, place)
+    if Chain.busy or not place or place == "none" then
         return
     end
-    local n = ChainMembers(pos)
-    if n < 2 then
+    local num = ChainMembers(place)
+    if num < 2 then
         return
     end
-    local k = ChainShown(plate, pos, n)
+    local k = ChainShown(backing, place, num)
     if k == 0 then
         return
     end
     Chain.busy = true
-    local ok, err = pcall(ChainRun, plate, pos, k)
+    local success, err = pcall(ChainRun, backing, place, k)
     Chain.busy = false
-    if not ok then
+    if not success then
         error(err, 0)
     end
     -- A side chain's outermost element is what the target arrows hug.
-    if pos == "left" or pos == "right" then
-        ns.PositionArrowsOutsideAuras(plate)
+    if place == "left" or place == "right" then
+        mod.PositionArrowsOutsideAuras(backing)
     end
 end
 
@@ -2035,9 +2037,9 @@ end
 -- alpha, offsets, shifts) are unchanged; the child turns off through
 -- ApplyBorderStyle(frame, 0) so the UI scale re-apply cannot bring it back.
 local function NPLockoutBorder(f)
-    local on = ns.GetIconBorderEnabled("ccs")
+    local enabled = mod.GetIconBorderEnabled("ccs")
     local cb = f._npCB
-    if on and NPIconCustomBorderOn() then
+    if enabled and NPIconCustomBorderOn() then
         if not cb then
             cb = CreateFrame("Frame", nil, f)
             cb:SetAllPoints(f)
@@ -2047,7 +2049,7 @@ local function NPLockoutBorder(f)
         local tex = PVal("customBorderTexture")
         local sz = PVal("customBorderSize") or 1
         local px = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, tex)
-        local col = PVal("customBorderColor")
+        local column = PVal("customBorderColor")
         local a = PVal("customBorderAlpha") or 1
         local ox, oy = PVal("customBorderOffset"), PVal("customBorderOffsetY")
         local sx, sy = PVal("customBorderShiftX"), PVal("customBorderShiftY")
@@ -2059,9 +2061,9 @@ local function NPLockoutBorder(f)
             or cb._sTex ~= tex
             or cb._sSz ~= sz
             or cb._sPx ~= px
-            or cb._sR ~= col.r
-            or cb._sG ~= col.g
-            or cb._sB ~= col.b
+            or cb._sR ~= column.r
+            or cb._sG ~= column.g
+            or cb._sB ~= column.b
             or cb._sA ~= a
             or cb._sOX ~= ox
             or cb._sOY ~= oy
@@ -2072,9 +2074,9 @@ local function NPLockoutBorder(f)
             CludesUI.ApplyBorderStyle(
                 cb,
                 sz,
-                col.r,
-                col.g,
-                col.b,
+                column.r,
+                column.g,
+                column.b,
                 a,
                 tex,
                 ox,
@@ -2086,12 +2088,12 @@ local function NPLockoutBorder(f)
                 nil,
                 px
             )
-            local PP = CludesUI.PP
-            if PP.GetBorders(cb) then
-                PP.CreateBorder(cb, nil, nil, nil, nil, nil, nil, nil, true)
+            local Pix = CludesUI.PP
+            if Pix.GetBorders(cb) then
+                Pix.CreateBorder(cb, nil, nil, nil, nil, nil, nil, nil, true)
             end
             cb._sTex, cb._sSz, cb._sPx = tex, sz, px
-            cb._sR, cb._sG, cb._sB, cb._sA = col.r, col.g, col.b, a
+            cb._sR, cb._sG, cb._sB, cb._sA = column.r, column.g, column.b, a
             cb._sOX, cb._sOY, cb._sSX, cb._sSY = ox, oy, sx, sy
         end
         if not f._npCBInset0 then
@@ -2100,7 +2102,7 @@ local function NPLockoutBorder(f)
             f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
             f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
         end
-        ns.ApplyFrameIconBorder(f, false)
+        mod.ApplyFrameIconBorder(f, false)
         return
     end
     if cb and cb:IsShown() then
@@ -2110,33 +2112,33 @@ local function NPLockoutBorder(f)
     if f._npCBInset0 then
         -- Back to the creation inset (0 under the stock styles, else 1).
         f._npCBInset0 = nil
-        local px = ns.NP_Blizz() and 0 or 1
+        local px = mod.NP_Blizz() and 0 or 1
         f.icon:ClearAllPoints()
         f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", px, -px)
         f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -px, px)
     end
-    ns.ApplyFrameIconBorder(f, on)
+    mod.ApplyFrameIconBorder(f, enabled)
 end
 
-function ns.NPC_UpdateLockout(plate)
-    if not plate then
+function mod.NPC_UpdateLockout(backing)
+    if not backing then
         return
     end
-    local _, _, cs = ns.GetAuraSlots()
-    local lockout = (cs and cs ~= "none") and ns.GetActiveCastLockout and ns.GetActiveCastLockout(plate)
-    local f = plate.npcLockout
-    if lockout and plate.health then
+    local _, _, cs = mod.GetAuraSlots()
+    local lockout = (cs and cs ~= "none") and mod.GetActiveCastLockout and mod.GetActiveCastLockout(backing)
+    local f = backing.npcLockout
+    if lockout and backing.health then
         if not f then
             -- Born in the plate's aspect holder like the slot icons (PlatePool, coreHost),
             -- so a Core Positions chain can hang it off an aura row.
-            f = CreateFrame("Frame", nil, plate.coreHost or plate)
+            f = CreateFrame("Frame", nil, backing.coreHost or backing)
             f:SetFrameStrata("MEDIUM")
             f:SetFrameLevel(800)
             f.icon = f:CreateTexture(nil, "ARTWORK")
             -- Stock styles: no border, so the icon fills the cell; Blizzard
             -- Style also takes the stock rounded swipe under its ring (the
             -- classic square icon keeps the default swipe).
-            local px = ns.NP_Blizz() and 0 or 1
+            local px = mod.NP_Blizz() and 0 or 1
             f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", px, -px)
             f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -px, px)
             f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
@@ -2144,19 +2146,19 @@ function ns.NPC_UpdateLockout(plate)
             f.cd:SetReverse(true)
             f.cd:SetDrawEdge(false)
             local kit = AK or CludesUI.AuraKit
-            local swipe = px == 0 and not ns.NP_Classic() and kit and kit.BLIZZ_ROUND_SWIPE
+            local swipe = px == 0 and not mod.NP_Classic() and kit and kit.BLIZZ_ROUND_SWIPE
             if swipe and f.cd.SetSwipeTexture then
                 f.cd:SetSwipeTexture(swipe)
             end
             -- scaleGuard: a plate child, as every Basic nameplate border
             CludesUI.PP.CreateBorder(f, 0, 0, 0, 1, 1, nil, nil, true)
             NPLockoutBorder(f)
-            plate.npcLockout = f
+            backing.npcLockout = f
         end
-        local size = NPSize("cc")
-        local height, cropped = NPHeight("cc", size)
-        f:SetSize(size, height)
-        local blizz = ns.NP_Blizz()
+        local dim = NPSize("cc")
+        local height, cropped = NPHeight("cc", dim)
+        f:SetSize(dim, height)
+        local blizz = mod.NP_Blizz()
         local tc = CropCoords(cropped, blizz and 0 or nil)
         f.icon:SetTexture(lockout.icon)
         f.icon:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
@@ -2164,24 +2166,24 @@ function ns.NPC_UpdateLockout(plate)
         -- Blizzard Style: the stock rounded mask and ring, sized with the cell.
         -- Classic WoW UI: the stock debuff border round the square icon.
         if blizz then
-            if ns.NP_Classic() then
-                if ns.NP_ApplyClassicIconArt then
-                    ns.NP_ApplyClassicIconArt(f, size, height)
+            if mod.NP_Classic() then
+                if mod.NP_ApplyClassicIconArt then
+                    mod.NP_ApplyClassicIconArt(f, dim, height)
                 end
-            elseif ns.NP_ApplyBlizzIconArt then
-                ns.NP_ApplyBlizzIconArt(f, f.icon, size, height)
+            elseif mod.NP_ApplyBlizzIconArt then
+                mod.NP_ApplyBlizzIconArt(f, f.icon, dim, height)
             end
         end
-        PositionLockout(plate, f, cs)
+        PositionLockout(backing, f, cs)
         NPLockoutBorder(f)
         f:Show()
     elseif f then
         f:Hide()
     end
     -- Re-anchor the CC container: chains off the lockout while shown.
-    local b = active[plate]
+    local b = isActive[backing]
     if b then
-        AnchorNPContainer(b.containers.cc, "cc", plate, cs)
+        AnchorNPContainer(b.containers.cc, "cc", backing, cs)
     end
 end
 
@@ -2197,9 +2199,9 @@ end
 -- A row counts only while shown and last placed in this very slot: the buff row hides itself
 -- for units you cannot attack but keeps its stale layout, and AnchorNPContainer's
 -- _npcSlotVal stamp lags a slot change until the plate is placed again.
-local function IsSideRow(b, kind, slotVal, side)
-    local c = b.containers[kind]
-    return slotVal == side and c ~= nil and c:IsShown() and c._npcSlotVal == side
+local function IsSideRow(b, kindOf, slotVal, sideName)
+    local c = b.containers[kindOf]
+    return slotVal == sideName and c ~= nil and c:IsShown() and c._npcSlotVal == sideName
 end
 
 -- This plate's aura row on `side` ("left"/"right"): the first shown row in that slot
@@ -2207,72 +2209,73 @@ end
 -- that chains two or more elements answers with the outermost shown one instead (an icon
 -- too: its bottom over the bar's bottom and its size), the outermost that meets the span
 -- a0..a1 over the bar's bottom when one is given (the target arrows' own).
-function ns.NPC_SideRow(plate, side, a0, a1)
-    if not Chain.busy and ns.NP_CoreChained(side) then
-        local k = ChainShown(plate, side, #Chain.m)
+function mod.NPC_SideRow(backing, sideName, a0, a1)
+    if not Chain.busy and mod.NP_CoreChained(sideName) then
+        local k = ChainShown(backing, sideName, #Chain.m)
         for i = k, 1, -1 do
-            local id = Chain.id[i]
-            local y = Chain.base[i]
-            local h = Chain.row[i] and (NPHeight(id, NPSize(id))) or Chain.sz[i]
-            if not a0 or (y < a1 and a0 < y + h) then
-                return Chain.trail[i], y, h
+            local ident = Chain.id[i]
+            local posY = Chain.base[i]
+            local hgt = Chain.row[i] and (NPHeight(ident, NPSize(ident))) or Chain.sz[i]
+            if not a0 or (posY < a1 and a0 < posY + hgt) then
+                return Chain.trail[i], posY, hgt
             end
         end
         return nil
     end
-    local b = active[plate]
+    local b = isActive[backing]
     if not b then
         return nil
     end
-    local ds, bs, cs = ns.GetAuraSlots()
-    local kind, key
-    if IsSideRow(b, "debuffs", ds, side) then
-        kind, key = "debuffs", "debuffSlot"
-    elseif IsSideRow(b, "buffs", bs, side) then
-        kind, key = "buffs", "buffSlot"
-    elseif IsSideRow(b, "cc", cs, side) then
-        kind, key = "cc", "ccSlot"
+    local ds, bs, cs = mod.GetAuraSlots()
+    local kindOf, key
+    if IsSideRow(b, "debuffs", ds, sideName) then
+        kindOf, key = "debuffs", "debuffSlot"
+    elseif IsSideRow(b, "buffs", bs, sideName) then
+        kindOf, key = "buffs", "buffSlot"
+    elseif IsSideRow(b, "cc", cs, sideName) then
+        kindOf, key = "cc", "ccSlot"
     else
         return nil
     end
-    local _, y = ns.GetAuraSlotOffsets(key)
-    return b.containers[kind], y or 0, (NPHeight(kind, NPSize(kind)))
+    local _, posY = mod.GetAuraSlotOffsets(key)
+    return b.containers[kindOf], posY or 0, (NPHeight(kindOf, NPSize(kindOf)))
 end
 
 -- Whether the full-size spell icon's push on a side row moved since AnchorNPContainer last
 -- placed it (container._npcPush).
-local function SidePushMoved(c, kind, key, plate, side)
+local function SidePushMoved(c, kindOf, key, backing, sideName)
     if not c then
         return false
     end
-    local _, yOff = ns.GetAuraSlotOffsets(key)
-    return ns.NP_FullIconPush(plate, side, yOff, yOff + (NPHeight(kind, NPSize(kind)))) ~= c._npcPush
+    local _, yOff = mod.GetAuraSlotOffsets(key)
+    return mod.NP_FullIconPush(backing, sideName, yOff, yOff + (NPHeight(kindOf, NPSize(kindOf))))
+        ~= c._npcPush
 end
 
 -- The full-size spell icon shows only during a cast, and a side row it meets steps out past it
 -- (AnchorNPContainer, PositionLockout): on every cast show and hide, re-place this plate's
 -- rows on the icon's side whose push moved. Called only while the full-size icon is on
 -- (RefreshCastIconSideReserve).
-function ns.NPC_PlaceSideRows(plate)
-    local b = active[plate]
+function mod.NPC_PlaceSideRows(backing)
+    local b = isActive[backing]
     if not b then
         return
     end
-    local side = ns.GetCastIconOnRight() and "right" or "left"
-    local ds, bs, cs = ns.GetAuraSlots()
+    local sideName = mod.GetCastIconOnRight() and "right" or "left"
+    local ds, bs, cs = mod.GetAuraSlots()
     local c = b.containers
-    if ds == side and SidePushMoved(c.debuffs, "debuffs", "debuffSlot", plate, side) then
-        AnchorNPContainer(c.debuffs, "debuffs", plate, ds)
+    if ds == sideName and SidePushMoved(c.debuffs, "debuffs", "debuffSlot", backing, sideName) then
+        AnchorNPContainer(c.debuffs, "debuffs", backing, ds)
     end
-    if bs == side and SidePushMoved(c.buffs, "buffs", "buffSlot", plate, side) then
-        AnchorNPContainer(c.buffs, "buffs", plate, bs)
+    if bs == sideName and SidePushMoved(c.buffs, "buffs", "buffSlot", backing, sideName) then
+        AnchorNPContainer(c.buffs, "buffs", backing, bs)
     end
-    if cs == side and SidePushMoved(c.cc, "cc", "ccSlot", plate, side) then
-        local lk = plate.npcLockout
+    if cs == sideName and SidePushMoved(c.cc, "cc", "ccSlot", backing, sideName) then
+        local lk = backing.npcLockout
         if lk and lk:IsShown() then
-            PositionLockout(plate, lk, cs)
+            PositionLockout(backing, lk, cs)
         end
-        AnchorNPContainer(c.cc, "cc", plate, cs)
+        AnchorNPContainer(c.cc, "cc", backing, cs)
     end
 end
 
@@ -2285,10 +2288,10 @@ end
 local waiting = setmetatable({}, { __mode = "k" })
 
 local function ServiceWaiting()
-    for plate in pairs(waiting) do
-        waiting[plate] = nil
-        if plate.unit and #pool > 0 then
-            ns.NPC_AttachPlate(plate, plate.unit)
+    for backing in pairs(waiting) do
+        waiting[backing] = nil
+        if backing.unit and #pool > 0 then
+            mod.NPC_AttachPlate(backing, backing.unit)
         end
         if #pool == 0 then
             return
@@ -2296,20 +2299,20 @@ local function ServiceWaiting()
     end
 end
 
-function ns.NPC_AttachPlate(plate, unit)
+function mod.NPC_AttachPlate(backing, unitToken)
     AK = AK or CludesUI.AuraKit
     if not AK then
         return
     end
-    if not unit or UnitIsUnit(unit, "player") then
+    if not unitToken or UnitIsUnit(unitToken, "player") then
         return
     end -- personal plate: no aura rows
 
-    local b = active[plate]
+    local b = isActive[backing]
     if not b then
         b = table.remove(pool)
         if not b then
-            waiting[plate] = true -- serviced when a bundle builds or frees
+            waiting[backing] = true -- serviced when a bundle builds or frees
             -- Grow the pool by one bundle per waiting plate (combat-legal
             -- since 68914). A plate that detaches before service just
             -- leaves its bundle pooled for the next spawn.
@@ -2318,50 +2321,50 @@ function ns.NPC_AttachPlate(plate, unit)
             end
             return
         end
-        waiting[plate] = nil
-        active[plate] = b
+        waiting[backing] = nil
+        isActive[backing] = b
     end
 
-    b.holder:SetParent(plate)
+    b.holder:SetParent(backing)
     b.holder:ClearAllPoints()
-    b.holder:SetPoint("CENTER", plate, "CENTER")
+    b.holder:SetPoint("CENTER", backing, "CENTER")
     b.holder:Show()
 
-    local ds, bs, cs = ns.GetAuraSlots()
+    local ds, bs, cs = mod.GetAuraSlots()
     if b.containers.buffs then
-        b.containers.buffs._npcAttackable = not not UnitCanAttack("player", unit)
+        b.containers.buffs._npcAttackable = not not UnitCanAttack("player", unitToken)
     end
     -- A plate spawning for the CURRENT target picks up the class-power push right here,
     -- so it must be tracked as the plate to re-anchor when the target changes away.
-    if UnitIsUnit(unit, "target") then
-        lastTargetPlate = plate
+    if UnitIsUnit(unitToken, "target") then
+        lastTargetPlate = backing
     end
-    AnchorNPContainer(b.containers.debuffs, "debuffs", plate, ds)
-    AnchorNPContainer(b.containers.buffs, "buffs", plate, bs)
-    AnchorNPContainer(b.containers.cc, "cc", plate, cs)
+    AnchorNPContainer(b.containers.debuffs, "debuffs", backing, ds)
+    AnchorNPContainer(b.containers.buffs, "buffs", backing, bs)
+    AnchorNPContainer(b.containers.cc, "cc", backing, cs)
 
-    BindContainer(b.containers.debuffs, unit, ds)
-    BindContainer(b.containers.buffs, unit, bs)
-    BindContainer(b.containers.cc, unit, cs)
-    ns.PositionArrowsOutsideAuras(plate)
+    BindContainer(b.containers.debuffs, unitToken, ds)
+    BindContainer(b.containers.buffs, unitToken, bs)
+    BindContainer(b.containers.cc, unitToken, cs)
+    mod.PositionArrowsOutsideAuras(backing)
 end
 
 -- True while a built glow spec plays animations: everything but the static
 -- Blizzard Pandemic Border and Blizzard Border.
-function NPB.Animated(on, spec)
-    if not (on and spec) then
+function NPB.Animated(enabled, specInfo)
+    if not (enabled and specInfo) then
         return false
     end
     local G = CludesUI.Glows
-    return spec.style ~= G.PANDEMIC_BORDER and spec.style ~= G.STEALABLE_BORDER
+    return specInfo.style ~= G.PANDEMIC_BORDER and specInfo.style ~= G.STEALABLE_BORDER
 end
 
 -- Switches an enabled group off and straight back on: off releases its buttons
 -- at once (each clears its aura and stops the animations it plays), on keeps
 -- the group live for the next attach. A group already off is left alone.
 function NPB.CycleGroup(c, key)
-    local ok, on = pcall(c.IsAuraGroupEnabled, c, key)
-    if ok and on == true and pcall(c.SetAuraGroupEnabled, c, key, false) then
+    local success, enabled = pcall(c.IsAuraGroupEnabled, c, key)
+    if success and enabled == true and pcall(c.SetAuraGroupEnabled, c, key, false) then
         pcall(c.SetAuraGroupEnabled, c, key, true)
     end
 end
@@ -2401,19 +2404,19 @@ function NPB.ReleaseGlowButtons(b, force)
     end
 end
 
-function ns.NPC_DetachPlate(plate)
-    waiting[plate] = nil
-    if lastTargetPlate == plate then
+function mod.NPC_DetachPlate(backing)
+    waiting[backing] = nil
+    if lastTargetPlate == backing then
         lastTargetPlate = nil
     end
-    if plate.npcLockout then
-        plate.npcLockout:Hide()
+    if backing.npcLockout then
+        backing.npcLockout:Hide()
     end
-    local b = active[plate]
+    local b = isActive[backing]
     if not b then
         return
     end
-    active[plate] = nil
+    isActive[backing] = nil
     -- Unbound only: the next attach binds its unit afresh (SetUnit +
     -- UpdateAllAuras). A unit cleared here would change nothing, since the
     -- holder hides next and a hidden container neither listens nor parses.
@@ -2441,24 +2444,24 @@ local npFP = {}
 
 local PURGE_FP_SPEC = {}
 local PAN_FP_SPEC = {}
-local function StyleFPFor(kind, idx)
-    local size = NPSize(kind)
-    local height = NPHeight(kind, size)
+local function StyleFPFor(kindOf, position)
+    local dim = NPSize(kindOf)
+    local height = NPHeight(kindOf, dim)
     -- Text settings feed BuildNPStyle, so every input must flip this
     -- fingerprint or a live change never restyles the engine buttons.
-    local kindKey = (kind == "debuffs" and "debuff") or (kind == "buffs" and "buff") or "cc"
+    local kindKey = (kindOf == "debuffs" and "debuff") or (kindOf == "buffs" and "buff") or "cc"
     local dur = AuraDurCfg(kindKey)
     local stk = StackCfg()
     local purge = "-"
-    if kind == "buffs" and ns.GetDispelGlow then
+    if kindOf == "buffs" and mod.GetDispelGlow then
         -- Capability and the per-type color toggle both feed BuildNPStyle,
         -- so they have to reach this fingerprint or a talent swap / toggle
         -- never restyles the engine buttons.
-        local glow, dispelType = NPB.GroupGlow(idx or 1)
-        local sp = ns.GetDispelGlowSpec and ns.GetDispelGlowSpec(dispelType, PURGE_FP_SPEC)
+        local glow, dispelType = NPB.GroupGlow(position or 1)
+        local sp = mod.GetDispelGlowSpec and mod.GetDispelGlowSpec(dispelType, PURGE_FP_SPEC)
         if sp then
             purge = FP(
-                idx or 1,
+                position or 1,
                 glow,
                 sp.style,
                 sp.r,
@@ -2476,8 +2479,8 @@ local function StyleFPFor(kind, idx)
     end
     -- Pandemic Glow (debuffs): every input of BuildNPStyle's pandemic fields,
     -- a constant "-" while off so a glow edit never restyles default users.
-    if kind == "debuffs" and ns.GetPandemicGlow() then
-        local sp = ns.GetPandemicGlowSpec(PAN_FP_SPEC)
+    if kindOf == "debuffs" and mod.GetPandemicGlow() then
+        local sp = mod.GetPandemicGlowSpec(PAN_FP_SPEC)
         purge = FP(
             "pan",
             sp.style,
@@ -2502,14 +2505,14 @@ local function StyleFPFor(kind, idx)
     -- in as exact strings, not FP's two-decimal numbers.
     local cbFP = "-"
     if NPIconCustomBorderOn() then
-        local col = PVal("customBorderColor")
+        local column = PVal("customBorderColor")
         cbFP = FP(
             PVal("customBorderTexture"),
             PVal("customBorderSize"),
             tostring(PVal("customBorderSizePx")),
-            tostring(col.r),
-            tostring(col.g),
-            tostring(col.b),
+            tostring(column.r),
+            tostring(column.g),
+            tostring(column.b),
             tostring(PVal("customBorderAlpha")),
             PVal("customBorderOffset"),
             PVal("customBorderOffsetY"),
@@ -2518,8 +2521,8 @@ local function StyleFPFor(kind, idx)
         )
     end
     return FP(
-        kind,
-        size,
+        kindOf,
+        dim,
         height,
         durFP,
         stkFP,
@@ -2528,17 +2531,17 @@ local function StyleFPFor(kind, idx)
         -- NOT `fn(kind) or true`: the getter legitimately returns false, and
         -- `false or true` would pin this fingerprint input to a constant so
         -- the toggle never restyles (the ternary-falsy trap).
-        (not ns.GetIconBorderEnabled) or ns.GetIconBorderEnabled(kind),
+        (not mod.GetIconBorderEnabled) or mod.GetIconBorderEnabled(kindOf),
         cbFP,
         PVal("showAuraTooltips") == true
     )
 end
 
 local function GeoFP()
-    local ds, bs, cs = ns.GetAuraSlots()
-    local dx, dy = ns.GetAuraSlotOffsets("debuffSlot")
-    local bx, by = ns.GetAuraSlotOffsets("buffSlot")
-    local cx, cy = ns.GetAuraSlotOffsets("ccSlot")
+    local ds, bs, cs = mod.GetAuraSlots()
+    local dx, dy = mod.GetAuraSlotOffsets("debuffSlot")
+    local bx, by = mod.GetAuraSlotOffsets("buffSlot")
+    local cx, cy = mod.GetAuraSlotOffsets("ccSlot")
     return FP(
         ds,
         bs,
@@ -2552,26 +2555,26 @@ local function GeoFP()
         NPSize("debuffs"),
         NPSize("buffs"),
         NPSize("cc"),
-        ns.GetAuraSpacing and ns.GetAuraSpacing("debuffs") or 0,
-        ns.GetAuraSpacing and ns.GetAuraSpacing("buffs") or 0,
-        ns.GetAuraSpacing and ns.GetAuraSpacing("ccs") or 0,
-        ns.GetAuraCrop and tostring(ns.GetAuraCrop("debuffs")) or "-",
-        ns.GetAuraCrop and tostring(ns.GetAuraCrop("buffs")) or "-",
-        ns.GetAuraCrop and tostring(ns.GetAuraCrop("ccs")) or "-",
-        ns.GetDebuffYOffset and ns.GetDebuffYOffset() or 0,
-        ns.GetSideAuraXOffset and ns.GetSideAuraXOffset() or 0,
+        mod.GetAuraSpacing and mod.GetAuraSpacing("debuffs") or 0,
+        mod.GetAuraSpacing and mod.GetAuraSpacing("buffs") or 0,
+        mod.GetAuraSpacing and mod.GetAuraSpacing("ccs") or 0,
+        mod.GetAuraCrop and tostring(mod.GetAuraCrop("debuffs")) or "-",
+        mod.GetAuraCrop and tostring(mod.GetAuraCrop("buffs")) or "-",
+        mod.GetAuraCrop and tostring(mod.GetAuraCrop("ccs")) or "-",
+        mod.GetDebuffYOffset and mod.GetDebuffYOffset() or 0,
+        mod.GetSideAuraXOffset and mod.GetSideAuraXOffset() or 0,
         PVal("textSlotTop"),
         PVal("topleftSlotGrowth"),
         PVal("toprightSlotGrowth"),
         -- The corner rows rise above a Top Left / Top Right text (its element, Size, Y
         -- offset and the name Y offset, all in the lift).
-        ns.NP_TopCornerLift("topleft"),
-        ns.NP_TopCornerLift("topright"),
+        mod.NP_TopCornerLift("topleft"),
+        mod.NP_TopCornerLift("topright"),
         -- Raise Strata feeds the (generation-guarded) layout pass, so its
         -- toggles must flip the geometry fingerprint like everything else.
-        ns.GetSlotRaiseStrata and ns.GetSlotRaiseStrata(ds) or false,
-        ns.GetSlotRaiseStrata and ns.GetSlotRaiseStrata(bs) or false,
-        ns.GetSlotRaiseStrata and ns.GetSlotRaiseStrata(cs) or false,
+        mod.GetSlotRaiseStrata and mod.GetSlotRaiseStrata(ds) or false,
+        mod.GetSlotRaiseStrata and mod.GetSlotRaiseStrata(bs) or false,
+        mod.GetSlotRaiseStrata and mod.GetSlotRaiseStrata(cs) or false,
         -- The Core Positions chains (order and spacing per slot) and the other members'
         -- slots: ReanchorActive runs every chain again.
         PVal("topSlotOrder"),
@@ -2592,11 +2595,11 @@ local function GeoFP()
         PVal("classificationIncludeFaction"),
         -- The Rare/Quest member's halves decide whether it is a member at all.
         PVal("classificationHideRare") and true or false,
-        ns.NP_QuestIconOn(),
+        mod.NP_QuestIconOn(),
         -- The Quest Objective Text's slot: its own key and, while that is unset, the legacy
         -- view (Replace Quest Icon with Objective, the Quest Indicator box and slot).
         PVal("questTextSlot"),
-        ns.NP_GetQuestTextSlot()
+        mod.NP_GetQuestTextSlot()
     )
 end
 
@@ -2609,7 +2612,7 @@ local function CfgFP()
         BuffMode(),
         NPB.Split(),
         PVal("debuffIncludeCC"),
-        ns.NPF_FP(),
+        mod.NPF_FP(),
         PVal("hideBloodPlagueCopies") ~= false,
         NPF_SunderOn(),
         BuffDispelByMe()
@@ -2617,19 +2620,19 @@ local function CfgFP()
 end
 
 local function ReanchorActive()
-    local ds, bs, cs = ns.GetAuraSlots()
-    for plate, b in pairs(active) do
-        AnchorNPContainer(b.containers.debuffs, "debuffs", plate, ds)
-        AnchorNPContainer(b.containers.buffs, "buffs", plate, bs)
-        AnchorNPContainer(b.containers.cc, "cc", plate, cs)
+    local ds, bs, cs = mod.GetAuraSlots()
+    for backing, b in pairs(isActive) do
+        AnchorNPContainer(b.containers.debuffs, "debuffs", backing, ds)
+        AnchorNPContainer(b.containers.buffs, "buffs", backing, bs)
+        AnchorNPContainer(b.containers.cc, "cc", backing, cs)
         -- Slot settings may have flipped between "none" and displayed;
         -- BindContainer no-ops when the binding already matches.
-        if plate.unit then
-            BindContainer(b.containers.debuffs, plate.unit, ds)
-            BindContainer(b.containers.buffs, plate.unit, bs)
-            BindContainer(b.containers.cc, plate.unit, cs)
+        if backing.unit then
+            BindContainer(b.containers.debuffs, backing.unit, ds)
+            BindContainer(b.containers.buffs, backing.unit, bs)
+            BindContainer(b.containers.cc, backing.unit, cs)
         end
-        ns.PositionArrowsOutsideAuras(plate)
+        mod.PositionArrowsOutsideAuras(backing)
     end
 end
 
@@ -2644,9 +2647,9 @@ local function NpEnsureWireSoon()
     npEnsurePending = true
     C_Timer.After(0.05, function()
         npEnsurePending = false
-        for plate, b in pairs(active) do
-            if plate.unit and b.containers.buffs then
-                b.containers.buffs._npcAttackable = not not UnitCanAttack("player", plate.unit)
+        for backing, b in pairs(isActive) do
+            if backing.unit and b.containers.buffs then
+                b.containers.buffs._npcAttackable = not not UnitCanAttack("player", backing.unit)
             end
         end
         ReanchorActive()
@@ -2664,11 +2667,11 @@ local function QueueBundleEnsure(b)
     end
     b.npcEnsurePending = true
     AKWorker:Queue(function()
-        local ds, bs, cs = ns.GetAuraSlots()
+        local ds, bs, cs = mod.GetAuraSlots()
         -- Combat-legal since 68914: AddBundle* consume a pre-born shell when
         -- one exists and create fresh otherwise, in any combat state.
-        local function ensure(kind, slot, add)
-            if not (slot and slot ~= "none") or b.containers[kind] then
+        local function ensure(kindOf, slotIndex, add)
+            if not (slotIndex and slotIndex ~= "none") or b.containers[kindOf] then
                 return
             end
             add(b)
@@ -2692,20 +2695,24 @@ end
 -- NPC_ReloadAll. Any other state clears it, so later colour edits never reload.
 function NPB.SnapClassColor()
     local PB = CludesUI.Glows.PANDEMIC_BORDER
-    local class = (
+    local classFile = (
         PurgeGlowActive()
         and PVal("dispelGlowColorMode") == "class"
-        and ns.GetDispelGlowStyle() ~= PB
+        and mod.GetDispelGlowStyle() ~= PB
     )
-        or (ns.GetPandemicGlow() and PVal("pandemicGlowMode") == "class" and ns.GetPandemicGlowStyle() ~= PB)
-    if class then
+        or (
+            mod.GetPandemicGlow()
+            and PVal("pandemicGlowMode") == "class"
+            and mod.GetPandemicGlowStyle() ~= PB
+        )
+    if classFile then
         NPB.ccR, NPB.ccG, NPB.ccB = CludesUI.Glows.ResolveColor("class")
     else
         NPB.ccR = nil
     end
 end
 
-function ns.NPC_ReloadAll()
+function mod.NPC_ReloadAll()
     AK = AK or CludesUI.AuraKit
     if not AK then
         return
@@ -2714,7 +2721,7 @@ function ns.NPC_ReloadAll()
     -- Conditional-bundle ensure: rows enabled after the pool was built get
     -- their containers on demand (cheap scan: 3 nil-checks per bundle).
     do
-        local ds, bs, cs = ns.GetAuraSlots()
+        local ds, bs, cs = mod.GetAuraSlots()
         local needD = ds and ds ~= "none"
         local needB = bs and bs ~= "none"
         local needC = cs and cs ~= "none"
@@ -2730,12 +2737,12 @@ function ns.NPC_ReloadAll()
         for i = 1, #pool do
             scan(pool[i])
         end
-        for _, b in pairs(active) do
+        for _, b in pairs(isActive) do
             scan(b)
         end
     end
 
-    local v = StyleFPFor("debuffs")
+    local val = StyleFPFor("debuffs")
         .. ";"
         .. StyleFPFor("buffs")
         .. ";"
@@ -2743,12 +2750,12 @@ function ns.NPC_ReloadAll()
         .. ";"
         .. StyleFPFor("cc")
     NPB.SnapClassColor()
-    if npFP.style ~= v then
-        npFP.style = v
+    if npFP.style ~= val then
+        npFP.style = val
         for i = 1, #KINDS do
-            local kind = KINDS[i]
-            AK.styles["np:" .. kind] = BuildNPStyle(kind)
-            AK.RestyleSoon("np:" .. kind)
+            local kindOf = KINDS[i]
+            AK.styles["np:" .. kindOf] = BuildNPStyle(kindOf)
+            AK.RestyleSoon("np:" .. kindOf)
         end
         -- The buffs row's style twins restyle in lockstep: the non-Magic
         -- glow half and the plain (non-glow) remainder.
@@ -2764,9 +2771,9 @@ function ns.NPC_ReloadAll()
         end
     end
 
-    v = CfgFP()
-    if npFP.cfg ~= v then
-        npFP.cfg = v
+    val = CfgFP()
+    if npFP.cfg ~= val then
+        npFP.cfg = val
         local maxDbf = PVal("maxDebuffs") or 5
         local sort = DebuffSort()
         local dbfCand = DebuffCand()
@@ -2813,7 +2820,7 @@ function ns.NPC_ReloadAll()
             -- budgeted ensure path (npcEnsurePending dedupes).
             QueueBundleEnsure(b)
         end
-        for _, b in pairs(active) do
+        for _, b in pairs(isActive) do
             apply(b)
         end
         for i = 1, #pool do
@@ -2821,9 +2828,9 @@ function ns.NPC_ReloadAll()
         end
     end
 
-    v = GeoFP()
-    if npFP.geo ~= v then
-        npFP.geo = v
+    val = GeoFP()
+    if npFP.geo ~= val then
+        npFP.geo = val
         -- Invalidate every bundle's layout stamp (pooled ones re-drive at
         -- their next attach; active ones right now).
         geoGen = geoGen + 1
@@ -2832,9 +2839,9 @@ function ns.NPC_ReloadAll()
     -- Cast-lockout is a hand-built CC icon, not an AuraKit style, so it
     -- has to pick up Show Border (and the custom icon border) here rather
     -- than through RestyleSoon.
-    for plate in pairs(active) do
-        if plate.npcLockout then
-            NPLockoutBorder(plate.npcLockout)
+    for backing in pairs(isActive) do
+        if backing.npcLockout then
+            NPLockoutBorder(backing.npcLockout)
         end
     end
 end
@@ -2856,7 +2863,7 @@ do
         end
         local r, g, b = CludesUI.Glows.ResolveColor("class")
         if r ~= r0 or g ~= NPB.ccG or b ~= NPB.ccB then
-            ns.NPC_ReloadAll()
+            mod.NPC_ReloadAll()
         end
     end)
     hooksecurefunc(CludesUI, "ApplyColorsToOUF", function()
@@ -2893,7 +2900,7 @@ function QueueBundleBuild() -- forward-declared local (pool growth + login build
             if not nb then
                 nb = CreateBundleSkeleton()
             end
-            local ds = ns.GetAuraSlots()
+            local ds = mod.GetAuraSlots()
             if ds and ds ~= "none" then
                 AddBundleDebuffs(nb)
             end
@@ -2902,7 +2909,7 @@ function QueueBundleBuild() -- forward-declared local (pool growth + login build
             if not nb then
                 return
             end -- bundle lost to a hard error upstream
-            local _, bs = ns.GetAuraSlots()
+            local _, bs = mod.GetAuraSlots()
             if bs and bs ~= "none" then
                 AddBundleBuffs(nb)
             end
@@ -2917,7 +2924,7 @@ function QueueBundleBuild() -- forward-declared local (pool growth + login build
                 return
             end -- bundle lost to a hard error upstream
             if not pooled then
-                local _, _, cs = ns.GetAuraSlots()
+                local _, _, cs = mod.GetAuraSlots()
                 if cs and cs ~= "none" then
                     AddBundleCC(nb)
                 end
@@ -2934,7 +2941,7 @@ function QueueBundleBuild() -- forward-declared local (pool growth + login build
             end
             ServiceWaiting()
             if built == POOL_SIZE then
-                ns.NPC_ReloadAll()
+                mod.NPC_ReloadAll()
             end
         end, "np:cc+pool")
     end
@@ -2950,8 +2957,8 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:RegisterEvent("PLAYER_ENTERING_WORLD")
 boot:RegisterEvent("PLAYER_TARGET_CHANGED")
-boot:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_LOGIN" then
+boot:SetScript("OnEvent", function(self, evt)
+    if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
         AK = AK or CludesUI.AuraKit
         if not AK then
@@ -2973,15 +2980,15 @@ boot:SetScript("OnEvent", function(self, event)
         -- birth their skeletons inline whenever they run. Plates that spawn before the
         -- first bundles land wait in `waiting` and are serviced as bundles complete.
         QueuePoolBuild()
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         -- Capability-split restriction edge: NPB.Split reads AurasRestricted,
         -- which flips on zone edges -- a changed answer re-drives the split
         -- (CfgFP carries it) and the affected styles.
         local nowRestricted = (AK and AK.AurasRestricted and AK.AurasRestricted()) and true or false
         if NPB.lastRestricted ~= nowRestricted then
             NPB.lastRestricted = nowRestricted
-            if ns.NPC_ReloadAll then
-                ns.NPC_ReloadAll()
+            if mod.NPC_ReloadAll then
+                mod.NPC_ReloadAll()
             end
         end
         -- Content-aware pre-warm (idempotent: queuedBundles only grows, so
@@ -2994,24 +3001,24 @@ boot:SetScript("OnEvent", function(self, event)
                 QueueBundleBuild()
             end
         end
-    elseif event == "PLAYER_TARGET_CHANGED" then
+    elseif evt == "PLAYER_TARGET_CHANGED" then
         -- Class power on the target plate pushes top-anchored rows up. Only the
         -- outgoing and incoming target plates can change, so re-anchor exactly those
         -- two -- a full-pool ReanchorActive here re-drove the layout setters on every
         -- plate on every target swap (target churn is constant in combat).
-        local ds, bs, cs = ns.GetAuraSlots()
+        local ds, bs, cs = mod.GetAuraSlots()
         local prev = lastTargetPlate
         lastTargetPlate = nil
-        for plate, b in pairs(active) do
-            local isNew = plate.unit and UnitIsUnit(plate.unit, "target")
+        for backing, b in pairs(isActive) do
+            local isNew = backing.unit and UnitIsUnit(backing.unit, "target")
             if isNew then
-                lastTargetPlate = plate
+                lastTargetPlate = backing
             end
-            if isNew or plate == prev then
-                AnchorNPContainer(b.containers.debuffs, "debuffs", plate, ds)
-                AnchorNPContainer(b.containers.buffs, "buffs", plate, bs)
-                AnchorNPContainer(b.containers.cc, "cc", plate, cs)
-                ns.PositionArrowsOutsideAuras(plate)
+            if isNew or backing == prev then
+                AnchorNPContainer(b.containers.debuffs, "debuffs", backing, ds)
+                AnchorNPContainer(b.containers.buffs, "buffs", backing, bs)
+                AnchorNPContainer(b.containers.cc, "cc", backing, cs)
+                mod.PositionArrowsOutsideAuras(backing)
             end
         end
     end

@@ -11,9 +11,9 @@ end -- retail only
 --  from their phase's start), and timed encounter alerts per difficulty ID
 --  (15 Heroic, 16 Mythic).
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
-function ns.BossData()
+function mod.BossData()
     local D = {}
     D.names = {
         [3159] = "Rotmire",

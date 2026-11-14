@@ -8,25 +8,25 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  AdvanceArc and SteerUnchanged.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local floor, max, abs = math.floor, math.max, math.abs
+local floor, upper, abs = math.floor, math.max, math.abs
 local sin, cos, atan2, sqrt, pi = math.sin, math.cos, math.atan2, math.sqrt, math.pi
 local GetCursorPosition = GetCursorPosition
 local GetTime = GetTime
 
-local SelectColor, TWO_PI, PaletteView = I.SelectColor, I.TWO_PI, I.PaletteView
-local SelectedZoom, FalloffK, FalloffRatios = I.SelectedZoom, I.FalloffK, I.FalloffRatios
+local SelectColor, TWO_PI, PaletteView = Inner.SelectColor, Inner.TWO_PI, Inner.PaletteView
+local SelectedZoom, FalloffK, FalloffRatios = Inner.SelectedZoom, Inner.FalloffK, Inner.FalloffRatios
 
 local scrollCatcher
-I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v)
-    scrollCatcher = v
+Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val)
+    scrollCatcher = val
 end
 
 -------------------------------------------------------------------------------
@@ -50,13 +50,13 @@ function PaletteView:EnsureNeedle()
     if hub.needle then
         return
     end
-    local line = self.frame:CreateLine(nil, "ARTWORK", nil, 1)
-    line:SetThickness(3)
-    line:SetSnapToPixelGrid(false)
-    line:SetTexelSnappingBias(0)
-    line:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
-    line:Hide()
-    hub.needle = line
+    local lineTex = self.frame:CreateLine(nil, "ARTWORK", nil, 1)
+    lineTex:SetThickness(3)
+    lineTex:SetSnapToPixelGrid(false)
+    lineTex:SetTexelSnappingBias(0)
+    lineTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
+    lineTex:Hide()
+    hub.needle = lineTex
 
     local pulse = self.frame:CreateLine(nil, "ARTWORK", nil, 2)
     pulse:SetThickness(3)
@@ -67,7 +67,7 @@ function PaletteView:EnsureNeedle()
     hub.pulse = pulse
 end
 
-function PaletteView:ShowNeedle(index)
+function PaletteView:ShowNeedle(slotPos)
     self:EnsureNeedle()
     -- The line stands off both of its ends: 2/3 of the hub logo's height at
     -- the hub, 1/3 of it at the entry. Measured at this view's own geometry
@@ -78,15 +78,15 @@ function PaletteView:ShowNeedle(index)
     -- reselect that follows lands back here.
     local p = self:P()
     local _, viewIcon = self:Geom()
-    local base = (p and p.iconSize) or 40
-    local k = (base > 0) and (viewIcon / base) or 1
-    local logo = max(8, 40 * k) -- the hub logo's hardcoded height
+    local baseValue = (p and p.iconSize) or 40
+    local key = (baseValue > 0) and (viewIcon / baseValue) or 1
+    local logo = upper(8, 40 * key) -- the hub logo's hardcoded height
     self._needleTrimS = logo * (2 / 3)
     self._needleTrimE = logo * (1 / 3)
     -- A NEW target grows in from the hub again; the same target keeps its
     -- animation state across repaints.
-    if self._needleTarget ~= index then
-        self._needleTarget = index
+    if self._needleTarget ~= slotPos then
+        self._needleTarget = slotPos
         self._needleT0 = GetTime()
     end
     if not self.opts.live then
@@ -120,22 +120,22 @@ end
 -- One animation step. The live view calls this from its open-palette
 -- OnUpdate OUTSIDE the steer skip: the grow-in and the sweep both keep
 -- moving under a cursor that is holding still.
-function PaletteView:AdvanceNeedle(now)
-    local index = self._needleTarget
+function PaletteView:AdvanceNeedle(nowTime)
+    local slotPos = self._needleTarget
     local hub = self.hub
-    local line = index and hub.needle
-    if not line then
+    local lineTex = slotPos and hub.needle
+    if not lineTex then
         return
     end
 
-    local w = self.widgets[index]
+    local wid = self.widgets[slotPos]
     local fx, fy = self.frame:GetCenter()
     local wx, wy
-    if w and w:IsShown() then
-        wx, wy = w:GetCenter()
+    if wid and wid:IsShown() then
+        wx, wy = wid:GetCenter()
     end
     if not fx or not wx then
-        line:Hide()
+        lineTex:Hide()
         hub.pulse:Hide()
         return
     end
@@ -147,7 +147,7 @@ function PaletteView:AdvanceNeedle(now)
     local trimS = self._needleTrimS or 0
     local trimE = self._needleTrimE or 0
     if dist <= trimS + trimE + 1 then
-        line:Hide()
+        lineTex:Hide()
         hub.pulse:Hide()
         return
     end
@@ -159,22 +159,22 @@ function PaletteView:AdvanceNeedle(now)
     -- selection color -- lifted toward white for the streak, the same lift
     -- the armed border uses -- so the line and the entry it lands on agree.
     local r, g, b = SelectColor(self:P())
-    local t = (now - (self._needleT0 or now)) / 0.25
+    local t = (nowTime - (self._needleT0 or nowTime)) / 0.25
     if t > 1 then
         t = 1
     end
     local ease = 1 - (1 - t) * (1 - t)
-    line:SetStartPoint("CENTER", self.frame, sx, sy)
-    line:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
-    line:SetVertexColor(r, g, b, 0.75 * ease)
-    line:Show()
+    lineTex:SetStartPoint("CENTER", self.frame, sx, sy)
+    lineTex:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
+    lineTex:SetVertexColor(r, g, b, 0.75 * ease)
+    lineTex:Show()
 
     local pulse = hub.pulse
     if ease >= 1 then
         -- Streak: a 1.5s cycle, the first 56% of it sweeping (the rest is
         -- pause), smooth ease-in-out motion overshooting to twice the line so
         -- the tail chases the head off the far end.
-        local pulseAge = now - self._needleT0 - 0.3
+        local pulseAge = nowTime - self._needleT0 - 0.3
         local cycleT = (pulseAge % 1.5) / 1.5
         if cycleT <= 0.56 then
             local st = cycleT / 0.56
@@ -231,12 +231,12 @@ end
 --  selection and the connector line all run live throughout -- the line even
 --  tracks the moving icons, since it reads their centres per frame.
 -------------------------------------------------------------------------------
-function PaletteView:AdvanceSlam(now)
+function PaletteView:AdvanceSlam(nowTime)
     local t0 = self._slamT0
     if not t0 then
         return
     end
-    local t = (now - t0) / 0.12
+    local t = (nowTime - t0) / 0.12
     if t >= 1 then
         self._slamT0 = nil
         t = 1
@@ -247,13 +247,13 @@ function PaletteView:AdvanceSlam(now)
 
     local radius = self:Geom()
     local step, arcStart = self:ArcGeom(self.shownCount)
-    local frame = self.frame
+    local widget = self.frame
     for i = 1, self.shownCount do
-        local w = self.widgets[i]
+        local wid = self.widgets[i]
         local a = arcStart + (i - 1) * step
-        w:ClearAllPoints()
-        w:SetPoint("CENTER", frame, "CENTER", radius * travel * sin(a), radius * travel * cos(a))
-        w:SetAlpha(alpha)
+        wid:ClearAllPoints()
+        wid:SetPoint("CENTER", widget, "CENTER", radius * travel * sin(a), radius * travel * cos(a))
+        wid:SetAlpha(alpha)
     end
 
     local hub = self.hub
@@ -271,8 +271,8 @@ end
 -- the scale used here is the one the hit test will use.
 function PaletteView:ArmMovementGate()
     local es = self.frame:GetEffectiveScale()
-    local x, y = GetCursorPosition()
-    self._gateX, self._gateY = x / es, y / es
+    local posX, posY = GetCursorPosition()
+    self._gateX, self._gateY = posX / es, posY / es
     self._steered = false
 end
 
@@ -283,8 +283,8 @@ end
 -- One copy, read by the hit test and by the falloff alike, so what the arc DRAWS
 -- as nearest and what a release actually FIRES cannot part company.
 function PaletteView:PointerPolar()
-    local frame = self.frame
-    local es = frame:GetEffectiveScale()
+    local widget = self.frame
+    local es = widget:GetEffectiveScale()
     local mx, my = GetCursorPosition()
     mx, my = mx / es, my / es
 
@@ -295,7 +295,7 @@ function PaletteView:PointerPolar()
         self._steered = true
     end
 
-    local cx, cy = frame:GetCenter()
+    local cx, cy = widget:GetCenter()
     if not cx then
         return nil
     end
@@ -320,8 +320,8 @@ end
 -- the same frame; without them the cursor is read here, so this stays callable
 -- on its own.
 function PaletteView:HitTest(theta, dist)
-    local shown = self.shownCount
-    if shown < 1 then
+    local isShown = self.shownCount
+    if isShown < 1 then
         return nil
     end
     local _, _, deadZone = self:Geom()
@@ -350,12 +350,12 @@ function PaletteView:HitTest(theta, dist)
         -- falls out of the claim entirely rather than trying another
         -- ring: the rings partition the RADIUS, not the angle.
         for r = 1, #c.rows do
-            local row = c.rows[r]
-            if dist >= row.lo and (not row.hi or dist < row.hi) then
-                if row.step > 0 then
-                    local rel = (theta - row.start + row.step * 0.5) % TWO_PI
-                    if rel < row.n * row.step then
-                        return c.base + row.base + floor(rel / row.step) + 1
+            local rowFrame = c.rows[r]
+            if dist >= rowFrame.lo and (not rowFrame.hi or dist < rowFrame.hi) then
+                if rowFrame.step > 0 then
+                    local rel = (theta - rowFrame.start + rowFrame.step * 0.5) % TWO_PI
+                    if rel < rowFrame.n * rowFrame.step then
+                        return c.base + rowFrame.base + floor(rel / rowFrame.step) + 1
                     end
                 end
                 break
@@ -367,14 +367,14 @@ function PaletteView:HitTest(theta, dist)
         return nil
     end
 
-    local step, arcStart, full = self:ArcGeom(shown)
+    local step, arcStart, full = self:ArcGeom(isShown)
     if step == 0 then
         return 1
     end
 
     local rel = theta - arcStart
     if full then
-        return (floor(rel / step + 0.5) % shown) + 1
+        return (floor(rel / step + 0.5) % isShown) + 1
     end
 
     -- Resolved into [0, TWO_PI) from the arc's start, NOT into (-pi, pi]: an arc
@@ -386,15 +386,15 @@ function PaletteView:HitTest(theta, dist)
     -- The arc owns half a step past its last entry, the same width every
     -- interior entry gets. Beyond that is a miss, not a clamp: outside the arc
     -- is the only place its cancel can live once the dead zone has been left.
-    if rel > (shown - 1) * step + step * 0.5 then
+    if rel > (isShown - 1) * step + step * 0.5 then
         return nil
     end
 
-    local idx = floor(rel / step + 0.5) + 1
-    if idx < 1 or idx > shown then
+    local position = floor(rel / step + 0.5) + 1
+    if position < 1 or position > isShown then
         return nil
     end
-    return idx
+    return position
 end
 
 -- Lay the falloff over the ring and select the entry the cursor points at. The
@@ -412,8 +412,8 @@ end
 -- cursor that had just reached it.
 function PaletteView:AdvanceArc()
     local p = self:P()
-    local shown = self.shownCount
-    if not p or shown < 1 then
+    local isShown = self.shownCount
+    if not p or isShown < 1 then
         self:SetSelection(nil)
         return
     end
@@ -429,7 +429,7 @@ function PaletteView:AdvanceArc()
     local minS = p.fanMinScale or 0.30
     local minA = p.fanMinAlpha or 0.12
 
-    local step, arcStart = self:ArcGeom(shown)
+    local step, arcStart = self:ArcGeom(isShown)
     -- Inside the dead zone the cursor is not pointing anywhere yet: an angle
     -- read a pixel from the centre swings wildly on the smallest movement, and
     -- the ring would strobe under a hand that had barely left the middle. The
@@ -437,8 +437,8 @@ function PaletteView:AdvanceArc()
     local steer = theta and step > 0 and dist >= deadZone
 
     local zoom = SelectedZoom()
-    for i = 1, shown do
-        local w = self.widgets[i]
+    for i = 1, isShown do
+        local wid = self.widgets[i]
         local s, a = 1, 1
         if steer then
             -- Shortest way round, so an entry just anticlockwise of slot 1 is
@@ -449,18 +449,18 @@ function PaletteView:AdvanceArc()
             if d > pi then
                 d = TWO_PI - d
             end
-            local k = FalloffK(d / step)
-            s = max(minS, decay ^ k)
-            a = max(minA, aDecay ^ k)
+            local key = FalloffK(d / step)
+            s = upper(minS, decay ^ key)
+            a = upper(minA, aDecay ^ key)
         end
 
         -- Magnified here rather than left to the selection paint: these sizes
         -- are rewritten every frame and would erase a zoom applied only where
         -- the selection changed. Same reason the strip and the grid do it.
         local z = (i == best) and zoom or 1
-        w:SetAlpha(a)
-        w.baseSize = iconSize * s
-        w:SetSize(iconSize * s * z, iconSize * s * z)
+        wid:SetAlpha(a)
+        wid.baseSize = iconSize * s
+        wid:SetSize(iconSize * s * z, iconSize * s * z)
     end
 
     self:SetSelection(best)
@@ -483,7 +483,7 @@ end
 -- The snapshot is cleared by Layout, the one place the geometry underneath it
 -- can change while the palette is open.
 function PaletteView:SteerUnchanged()
-    local x, y = GetCursorPosition()
+    local posX, posY = GetCursorPosition()
     local armed = self:ArmedClaim()
     -- Read the same way AdvanceFan reads it, so a wheel tick the pass has not
     -- picked up yet still counts as a change.
@@ -494,13 +494,13 @@ function PaletteView:SteerUnchanged()
     local settling = self.fanVisual ~= self.fanTarget
 
     local same = not settling
-        and x == self._steerX
-        and y == self._steerY
+        and posX == self._steerX
+        and posY == self._steerY
         and armed == self._steerArmed
         and wheel == self._steerWheel
-    self._steerX, self._steerY = x, y
+    self._steerX, self._steerY = posX, posY
     self._steerArmed, self._steerWheel = armed, wheel
     return same
 end
 
-I.broken = false
+Inner.broken = false

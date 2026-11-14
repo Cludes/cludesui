@@ -17,9 +17,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  leader or an assistant, so both are checked first and a sort stops when
 --  combat starts. Nothing here runs until a command is typed.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local Planner = ns.Planner
-CludesUI._ModuleNS["CludesUIRaidLead"] = ns
+local _, mod = ...
+local Planner = mod.Planner
+CludesUI._ModuleNS["CludesUIRaidLead"] = mod
 local CludesUI = _G.CludesUI
 
 local MAX_MOVES = 120 -- a 40-player raid needs under 40; this is the runaway stop
@@ -27,14 +27,14 @@ local STEP_WAIT = 0.6 -- seconds to wait for a roster update before trying again
 
 local job -- { target, moves, label } while a sort is under way
 local lastLayout -- target[name] = group from before the last sort
-local frame = CreateFrame("Frame")
+local widget = CreateFrame("Frame")
 
-local function Say(text)
-    local line = "|cff4cc9f0Raid Lead:|r " .. text
+local function Say(textValue)
+    local lineTex = "|cff4cc9f0Raid Lead:|r " .. textValue
     if CludesUI and CludesUI.Print then
-        CludesUI.Print(line)
+        CludesUI.Print(lineTex)
     else
-        print(line)
+        print(lineTex)
     end
 end
 
@@ -43,13 +43,13 @@ end
 -- they simply stay where they are.
 local function Roster()
     local members = {}
-    for i = 1, GetNumGroupMembers() do
-        local name, _, subgroup, _, _, classFile, _, _, _, _, _, combatRole = GetRaidRosterInfo(i)
+    for idx = 1, GetNumGroupMembers() do
+        local name, _, subgroup, _, _, classFile, _, _, _, _, _, combatRole = GetRaidRosterInfo(idx)
         local hidden = issecretvalue
             and (issecretvalue(name) or issecretvalue(subgroup) or issecretvalue(classFile))
         if name and not hidden then
             members[#members + 1] = {
-                index = i,
+                index = idx,
                 name = name,
                 group = subgroup,
                 role = combatRole or "NONE",
@@ -73,12 +73,12 @@ local function CanSort()
     return true
 end
 
-local function Finish(text)
+local function Finish(textValue)
     job = nil
-    frame:UnregisterEvent("GROUP_ROSTER_UPDATE")
-    frame:UnregisterEvent("PLAYER_REGEN_DISABLED")
-    if text then
-        Say(text)
+    widget:UnregisterEvent("GROUP_ROSTER_UPDATE")
+    widget:UnregisterEvent("PLAYER_REGEN_DISABLED")
+    if textValue then
+        Say(textValue)
     end
 end
 
@@ -86,8 +86,8 @@ local function Step()
     if not job then
         return
     end
-    local ok, why = CanSort()
-    if not ok then
+    local success, why = CanSort()
+    if not success then
         return Finish("stopped: " .. why)
     end
     local move = Planner.NextMove(Roster(), job.target)
@@ -117,11 +117,11 @@ local function Step()
     end)
 end
 
-frame:SetScript("OnEvent", function(_, event)
+widget:SetScript("OnEvent", function(_, evt)
     if not job then
         return
     end
-    if event == "PLAYER_REGEN_DISABLED" then
+    if evt == "PLAYER_REGEN_DISABLED" then
         Finish("stopped: combat started. Type the command again afterwards.")
     else
         job.seen = job.moves
@@ -146,19 +146,19 @@ local function KindLine(c)
     return table.concat(parts, ", ")
 end
 
-local function Start(label, target, members, keepUndo)
+local function Start(labelText, targetUnit, members, keepUndo)
     if not keepUndo then
         lastLayout = Planner.Snapshot(members)
     end
-    local summary = Planner.Summary(members, target)
+    local summary = Planner.Summary(members, targetUnit)
     for g = 1, 8 do
         if summary[g] then
             Say("group " .. g .. ": " .. KindLine(summary[g]))
         end
     end
-    job = { target = target, moves = 0, seen = 0, label = label }
-    frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-    frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    job = { target = targetUnit, moves = 0, seen = 0, label = labelText }
+    widget:RegisterEvent("GROUP_ROSTER_UPDATE")
+    widget:RegisterEvent("PLAYER_REGEN_DISABLED")
     Step()
 end
 
@@ -173,7 +173,7 @@ local function Command(msg)
         return
     end
     if cmd == "break" then
-        return ns.StartBreak((msg or ""):match("^%s*%S+%s+(%S+)") or "")
+        return mod.StartBreak((msg or ""):match("^%s*%S+%s+(%S+)") or "")
     end
     if cmd == "" then
         if InCombatLockdown() then
@@ -202,8 +202,8 @@ local function Command(msg)
     if job then
         return Say("a sort is already under way. Type /raidlead stop first.")
     end
-    local ok, why = CanSort()
-    if not ok then
+    local success, why = CanSort()
+    if not success then
         return Say("cannot sort: " .. why)
     end
     local members = Roster()
@@ -211,13 +211,13 @@ local function Command(msg)
         if not lastLayout then
             return Say("there is no earlier layout to go back to.")
         end
-        local target = lastLayout
+        local targetUnit = lastLayout
         lastLayout = nil
-        Start("Undo", target, members, true)
+        Start("Undo", targetUnit, members, true)
     elseif cmd == "roles" then
         Start("Sort by role", Planner.ByRole(members), members)
     else
-        local target, perSide = Planner.Split(members)
+        local targetUnit, perSide = Planner.Split(members)
         Say(
             "side one is groups 1 to "
                 .. perSide
@@ -227,11 +227,11 @@ local function Command(msg)
                 .. (perSide * 2)
                 .. "."
         )
-        Start("Split", target, members)
+        Start("Split", targetUnit, members)
     end
 end
 
-ns.Command = Command
+mod.Command = Command
 
 SLASH_CUIRAIDLEAD1 = "/raidlead"
 SLASH_CUIRAIDLEAD2 = "/crl"

@@ -23,13 +23,13 @@ if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
     return
 end -- module disabled: no options page
 
-local floor, max, min = math.floor, math.max, math.min
-local PP = CludesUI.PanelPP
+local floor, upper, min = math.floor, math.max, math.min
+local Pix = CludesUI.PanelPP
 local SolidTex = CludesUI.SolidTex
 local MakeFont = CludesUI.MakeFont
 local MakeBorder = CludesUI.MakeBorder
 local MODEL = CludesUI._ModuleNS["CludesUIForeverEssentials"]._MacroModel
-local B, S, MM = MODEL.B, MODEL.S, MODEL.MM
+local B, Stl, MM = MODEL.B, MODEL.S, MODEL.MM
 -- Page reuse: the frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
 -- kept page its previous build's frames back reset to new; on any other
@@ -52,7 +52,7 @@ local LIST_ORDER = { "account", "char" }
 local TIP_LEFT = { justify = "LEFT" } -- tooltips that show macro text
 
 local cur -- the macro being edited (survives rebuilds)
-local mode = "account" -- the list in the header: account | char
+local modeName = "account" -- the list in the header: account | char
 local edCtx = { headers = {} }
 local macroGrid, gridList = {}, {} -- the pooled icon grid and the list it shows
 local D = {} -- widgets of the page on screen
@@ -61,7 +61,7 @@ local statusText, statusBad -- the status line, kept across rebuilds
 local builtFor, builtHadRef -- the editor state the page body was built for
 local hdrFrame, hdrDD, hdrValues, hdrY, hdrW -- the header on screen, painted in place
 local snap = { n = {}, i = {}, b = {} } -- both macro lists as the page last showed them
-local evf, pendingEvent, pendingRebuild, textDirty, shown, hiddenAt
+local evf, pendingEvent, pendingRebuild, textDirty, isShown, hiddenAt
 local HeaderBuilder, CellClick, CellDrag
 
 local function Rebuild()
@@ -75,21 +75,21 @@ local function Accent()
     return CludesUI.CLUDES_GREEN
 end
 
-local function IconPath(icon)
-    if type(icon) == "string" and not icon:find("\\", 1, true) then
-        return "Interface\\Icons\\" .. icon
+local function IconPath(glyph)
+    if type(glyph) == "string" and not glyph:find("\\", 1, true) then
+        return "Interface\\Icons\\" .. glyph
     end
-    return icon or MM.QUESTION
+    return glyph or MM.QUESTION
 end
 
 -------------------------------------------------------------------------------
 --  Shared parts
 -------------------------------------------------------------------------------
 -- Small icon button (row move / remove glyphs).
-local function Glyph(parent, size, file, onClick, tip)
-    local b = CreateFrame("Button", nil, parent)
-    b:SetSize(size, size)
-    b:SetFrameLevel(parent:GetFrameLevel() + 6)
+local function Glyph(hostFrame, dim, file, onClick, tipText)
+    local b = CreateFrame("Button", nil, hostFrame)
+    b:SetSize(dim, dim)
+    b:SetFrameLevel(hostFrame:GetFrameLevel() + 6)
     local t = b:CreateTexture(nil, "OVERLAY")
     t:SetAllPoints()
     if file then
@@ -101,13 +101,13 @@ local function Glyph(parent, size, file, onClick, tip)
         if self:IsEnabled() then
             self:SetAlpha(0.9)
         end
-        if tip then
-            CludesUI.ShowWidgetTooltip(self, tip)
+        if tipText then
+            CludesUI.ShowWidgetTooltip(self, tipText)
         end
     end)
     b:SetScript("OnLeave", function(self)
         self:SetAlpha(self:IsEnabled() and 0.5 or 0.15)
-        if tip then
+        if tipText then
             CludesUI.HideWidgetTooltip()
         end
     end)
@@ -123,7 +123,7 @@ end
 
 -- A scroll inside the page: Shift + wheel scales the panel, and the wheel goes
 -- on to the page while there is nothing to scroll.
-local function AttachScroll(scroll, child)
+local function AttachScroll(scroll, childFrame)
     return CludesUI.AttachSmoothScrollbar(scroll, {
         step = 60,
         thumbMin = 20,
@@ -132,63 +132,63 @@ local function AttachScroll(scroll, child)
         level = 5,
         trackAlpha = 0.05,
         thumbAlpha = 0.22,
-        child = child,
+        child = childFrame,
         panelWheel = true,
         passWheel = true,
     })
 end
 
-local function PaintCounter(fs, n)
-    fs:SetText(n .. " / " .. MM.MAX_LETTERS)
-    if n > MM.MAX_LETTERS then
-        fs:SetTextColor(1, 0.35, 0.35, 1)
-    elseif n > MM.MAX_LETTERS - 25 then
+local function PaintCounter(fontStr, num)
+    fontStr:SetText(num .. " / " .. MM.MAX_LETTERS)
+    if num > MM.MAX_LETTERS then
+        fontStr:SetTextColor(1, 0.35, 0.35, 1)
+    elseif num > MM.MAX_LETTERS - 25 then
         local ac = Accent()
-        fs:SetTextColor(ac.r, ac.g, ac.b, 1)
+        fontStr:SetTextColor(ac.r, ac.g, ac.b, 1)
     else
-        fs:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+        fontStr:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
     end
 end
 
 -- Multi-line macro text box (input popup look). box.onChange(text, user),
 -- box.onBlur().
-local function TextBox(parent, w, h)
-    local box = CreateFrame("Frame", nil, parent)
-    box:SetSize(w, h)
-    local boxBg = SolidTex(box, "BACKGROUND", 0, 0, 0, 0.5)
+local function TextBox(hostFrame, wid, hgt)
+    local boxFrame = CreateFrame("Frame", nil, hostFrame)
+    boxFrame:SetSize(wid, hgt)
+    local boxBg = SolidTex(boxFrame, "BACKGROUND", 0, 0, 0, 0.5)
     boxBg:SetAllPoints()
-    local brd = CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.2, boxBg)
-    local sf = CreateFrame("ScrollFrame", nil, box)
-    sf:SetPoint("TOPLEFT", 10, -8)
-    sf:SetSize(w - 22, h - 16)
-    sf:SetClipsChildren(true)
-    local e = CreateFrame("EditBox", nil, sf)
+    local brd = CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.2, boxBg)
+    local scrollFrame = CreateFrame("ScrollFrame", nil, boxFrame)
+    scrollFrame:SetPoint("TOPLEFT", 10, -8)
+    scrollFrame:SetSize(wid - 22, hgt - 16)
+    scrollFrame:SetClipsChildren(true)
+    local e = CreateFrame("EditBox", nil, scrollFrame)
     boxes[e] = true
     e:SetMultiLine(true)
     e:SetAutoFocus(false)
     e:SetFont(CludesUI.EXPRESSWAY, 12, "")
     e:SetTextColor(1, 1, 1, 0.9)
     e:SetSpacing(3)
-    e:SetSize(w - 26, 20)
-    sf:SetScrollChild(e)
-    local update = AttachScroll(sf, e)
+    e:SetSize(wid - 26, 20)
+    scrollFrame:SetScrollChild(e)
+    local update = AttachScroll(scrollFrame, e)
     e:SetScript("OnSizeChanged", function()
         update()
     end)
     e:SetScript("OnEscapePressed", e.ClearFocus)
-    e:SetScript("OnCursorChanged", function(_, _, y, _, ch)
-        y = -y
-        local top, vh = sf:GetVerticalScroll(), sf:GetHeight()
-        if y < top then
-            sf:SetVerticalScroll(y)
-        elseif y + ch > top + vh then
-            sf:SetVerticalScroll(y + ch - vh)
+    e:SetScript("OnCursorChanged", function(_, _, posY, _, ch)
+        posY = -posY
+        local topY, vh = scrollFrame:GetVerticalScroll(), scrollFrame:GetHeight()
+        if posY < topY then
+            scrollFrame:SetVerticalScroll(posY)
+        elseif posY + ch > topY + vh then
+            scrollFrame:SetVerticalScroll(posY + ch - vh)
         end
         update()
     end)
     e:SetScript("OnTextChanged", function(self, user)
-        if box.onChange then
-            box.onChange(self:GetText(), user)
+        if boxFrame.onChange then
+            boxFrame.onChange(self:GetText(), user)
         end
     end)
     e:SetScript("OnEditFocusGained", function()
@@ -197,46 +197,46 @@ local function TextBox(parent, w, h)
     end)
     e:SetScript("OnEditFocusLost", function()
         brd:SetColor(1, 1, 1, 0.2)
-        if box.onBlur then
-            box.onBlur()
+        if boxFrame.onBlur then
+            boxFrame.onBlur()
         end
     end)
-    box:EnableMouse(true)
-    box:SetScript("OnMouseDown", function()
+    boxFrame:EnableMouse(true)
+    boxFrame:SetScript("OnMouseDown", function()
         e:SetFocus()
         e:SetCursorPosition(#(e:GetText() or ""))
     end)
-    function box.SetText(_, t)
+    function boxFrame.SetText(_, t)
         e:SetText(t or "")
     end
-    return box
+    return boxFrame
 end
 
 -- Info line, counter and text box as one block of the page.
-local function TextBlock(parent, y)
+local function TextBlock(hostFrame, posY)
     local pad = CludesUI.CONTENT_PAD
-    local w = parent:GetWidth() - pad * 2
-    local f = CreateFrame("Frame", nil, parent)
-    f:SetSize(w, TEXT_H)
-    f:SetPoint("TOPLEFT", parent, "TOPLEFT", pad, y)
-    local info = MakeFont(f, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
-    info:SetPoint("TOPLEFT", 0, -8)
-    local count = MakeFont(f, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
-    count:SetPoint("TOPRIGHT", 0, -8)
-    info:SetPoint("RIGHT", count, "LEFT", -12, 0)
-    info:SetJustifyH("LEFT")
-    info:SetWordWrap(false)
-    local box = TextBox(f, w, TEXT_H - 30)
-    box:SetPoint("TOPLEFT", 0, -26)
-    return box, count, info
+    local wid = hostFrame:GetWidth() - pad * 2
+    local f = CreateFrame("Frame", nil, hostFrame)
+    f:SetSize(wid, TEXT_H)
+    f:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", pad, posY)
+    local details = MakeFont(f, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
+    details:SetPoint("TOPLEFT", 0, -8)
+    local total = MakeFont(f, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
+    total:SetPoint("TOPRIGHT", 0, -8)
+    details:SetPoint("RIGHT", total, "LEFT", -12, 0)
+    details:SetJustifyH("LEFT")
+    details:SetWordWrap(false)
+    local boxFrame = TextBox(f, wid, TEXT_H - 30)
+    boxFrame:SetPoint("TOPLEFT", 0, -26)
+    return boxFrame, total, details
 end
 
 -- Icon cell of the macro grid. Its scripts read the cell when they run: c.m
 -- (the macro it shows) or c.newCell (the "+" cell).
-local function NewCell(parent)
-    local c = CreateFrame("Button", nil, parent)
+local function NewCell(hostFrame)
+    local c = CreateFrame("Button", nil, hostFrame)
     c:SetSize(CELL - 4, CELL - 4)
-    c:SetFrameLevel(parent:GetFrameLevel() + 1)
+    c:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
     c:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     c:RegisterForDrag("LeftButton")
     SolidTex(c, "BACKGROUND", 0, 0, 0, 0.5):SetAllPoints()
@@ -253,7 +253,7 @@ local function NewCell(parent)
     c.name:SetPoint("BOTTOMRIGHT", -2, 3)
     c.name:SetJustifyH("CENTER")
     c.name:SetWordWrap(false)
-    c.brd = MakeBorder(c, 0, 0, 0, 1, PP)
+    c.brd = MakeBorder(c, 0, 0, 0, 1, Pix)
     function c.Paint(hover)
         if c.selected then
             local ac = Accent()
@@ -267,9 +267,9 @@ local function NewCell(parent)
     c:SetScript("OnEnter", function(self)
         self.Paint(true)
         local m = self.m
-        local tip = m and (m.name .. "\n\n" .. m.body) or (self.newCell and CludesUI.L("New Macro"))
-        if tip then
-            CludesUI.ShowWidgetTooltip(self, tip, TIP_LEFT)
+        local tipText = m and (m.name .. "\n\n" .. m.body) or (self.newCell and CludesUI.L("New Macro"))
+        if tipText then
+            CludesUI.ShowWidgetTooltip(self, tipText, TIP_LEFT)
         end
     end)
     c:SetScript("OnLeave", function(self)
@@ -291,8 +291,8 @@ local SUGGEST_OPTS = { below = true, scaleToAnchor = true, pickOnDown = true, no
 local suggestPool, suggestShown = {}, {} -- pooled items; the ones on screen
 local suggestPick, suggestOwner
 
-local function SuggestItem(i)
-    local it = suggestPool[i]
+local function SuggestItem(idx)
+    local it = suggestPool[idx]
     if not it then
         it = { noLoc = true }
         it.onClick = function()
@@ -300,7 +300,7 @@ local function SuggestItem(i)
                 suggestPick(it.text)
             end
         end
-        suggestPool[i] = it
+        suggestPool[idx] = it
     end
     return it
 end
@@ -312,26 +312,26 @@ local function HideSuggest()
     suggestOwner = nil
 end
 
-local function AttachSuggest(box, onPick, list)
+local function AttachSuggest(boxFrame, onPick, entries)
     local function Pick(name)
         HideSuggest()
         local t = name
-        if list then
-            local head = (box:GetText() or ""):match("^(.*,)") or ""
+        if entries then
+            local head = (boxFrame:GetText() or ""):match("^(.*,)") or ""
             t = (head ~= "" and (head .. " ") or "") .. name
         end
-        box:SetText(t)
+        boxFrame:SetText(t)
         onPick(t)
-        box:ClearFocus()
+        boxFrame:ClearFocus()
     end
     local function Show()
-        local q = box:GetText() or ""
-        if list then
+        local q = boxFrame:GetText() or ""
+        if entries then
             q = q:match("([^,]*)$") or ""
         end
         q = strtrim(q):lower()
         wipe(suggestShown)
-        for _, s in ipairs(S.Sorted()) do
+        for _, s in ipairs(Stl.Sorted()) do
             if q == "" or s.lname:find(q, 1, true) then
                 local it = SuggestItem(#suggestShown + 1)
                 it.text, it.icon = s.name, s.icon or MM.QUESTION
@@ -345,38 +345,38 @@ local function AttachSuggest(box, onPick, list)
             HideSuggest()
             return
         end
-        suggestPick, suggestOwner = Pick, box
-        SUGGEST_OPTS.minWidth = max(box:GetWidth(), 220)
+        suggestPick, suggestOwner = Pick, boxFrame
+        SUGGEST_OPTS.minWidth = upper(boxFrame:GetWidth(), 220)
         CludesUI.CloseContextMenu() -- a second call from the same anchor would close it
-        CludesUI.ShowContextMenu(box, suggestShown, SUGGEST_OPTS)
+        CludesUI.ShowContextMenu(boxFrame, suggestShown, SUGGEST_OPTS)
     end
-    box:HookScript("OnTextChanged", function(_, user)
+    boxFrame:HookScript("OnTextChanged", function(_, user)
         if user then
             Show()
         end
     end)
-    box:HookScript("OnEditFocusGained", Show)
+    boxFrame:HookScript("OnEditFocusGained", Show)
     -- A plain mouse down drops the box's focus before a row of the list gets
     -- that press (a modified click keeps the focus), so the list closes a frame
     -- later: a pick on it still lands, a press anywhere else still closes it.
     -- A page rebuild in between may dress the box again: the close then
     -- belongs to the old dress and does nothing.
-    local dressGen = PoolGen(box)
+    local dressGen = PoolGen(boxFrame)
     local function CloseIfUnfocused()
-        if PoolGen(box) ~= dressGen then
+        if PoolGen(boxFrame) ~= dressGen then
             return
         end
-        if suggestOwner == box and not box:HasFocus() then
+        if suggestOwner == boxFrame and not boxFrame:HasFocus() then
             HideSuggest()
         end
     end
-    box:HookScript("OnEditFocusLost", function()
-        if CludesUI.ContextMenuOwner() == box then
+    boxFrame:HookScript("OnEditFocusLost", function()
+        if CludesUI.ContextMenuOwner() == boxFrame then
             C_Timer.After(0, CloseIfUnfocused)
         end
     end)
-    box:HookScript("OnTabPressed", function()
-        if CludesUI.ContextMenuOwner() == box and suggestShown[1] then
+    boxFrame:HookScript("OnTabPressed", function()
+        if CludesUI.ContextMenuOwner() == boxFrame and suggestShown[1] then
             Pick(suggestShown[1].text)
         end
     end)
@@ -391,15 +391,15 @@ end
 -------------------------------------------------------------------------------
 local picker, baseIcons
 
-local function PickerIcon(i)
-    if i == 1 then
+local function PickerIcon(idx)
+    if idx == 1 then
         return MM.QUESTION
     end
     local spells = picker.spells
-    if i - 1 <= #spells then
-        return spells[i - 1]
+    if idx - 1 <= #spells then
+        return spells[idx - 1]
     end
-    return baseIcons[i - 1 - #spells]
+    return baseIcons[idx - 1 - #spells]
 end
 
 local function PickerClick(self)
@@ -425,41 +425,41 @@ local function OpenPicker(onPick)
             onEscape = p.Close,
             onDimmerDown = p.Close,
         })
-        local popup = p.popup
-        local title = MakeFont(popup, 16, "", 1, 1, 1)
-        title:SetPoint("TOP", popup, "TOP", 0, -20)
-        title:SetText(CludesUI.L("Choose Icon"))
-        local sub = MakeFont(popup, 12, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
-        sub:SetPoint("TOP", title, "BOTTOM", 0, -8)
-        sub:SetText(CludesUI.L("The question mark shows the spell's icon (with #showtooltip)."))
+        local dialog = p.popup
+        local titleText = MakeFont(dialog, 16, "", 1, 1, 1)
+        titleText:SetPoint("TOP", dialog, "TOP", 0, -20)
+        titleText:SetText(CludesUI.L("Choose Icon"))
+        local subFrame = MakeFont(dialog, 12, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
+        subFrame:SetPoint("TOP", titleText, "BOTTOM", 0, -8)
+        subFrame:SetText(CludesUI.L("The question mark shows the spell's icon (with #showtooltip)."))
         p.buttons = {}
-        for i = 1, COLS * ROWS do
-            local b = NewCell(popup)
+        for idx = 1, COLS * ROWS do
+            local b = NewCell(dialog)
             b:SetSize(SIZE - 4, SIZE - 4)
-            b:SetFrameLevel(popup:GetFrameLevel() + 2) -- above the scroll frame below
-            b:SetPoint("TOPLEFT", 20 + ((i - 1) % COLS) * SIZE, -70 - floor((i - 1) / COLS) * SIZE)
+            b:SetFrameLevel(dialog:GetFrameLevel() + 2) -- above the scroll frame below
+            b:SetPoint("TOPLEFT", 20 + ((idx - 1) % COLS) * SIZE, -70 - floor((idx - 1) / COLS) * SIZE)
             -- Left clicks only, and no drag: a drag would swallow the click.
             b:RegisterForClicks("LeftButtonUp")
             b:RegisterForDrag()
             b.plus:Hide()
             b:SetScript("OnClick", PickerClick)
-            p.buttons[i] = b
+            p.buttons[idx] = b
         end
         -- The shared scroll bar on an empty scroll frame under the grid: its
         -- child is as tall as every icon row, and the scroll value picks the
         -- first row the grid shows (the grid itself stays put).
-        local sf = CreateFrame("ScrollFrame", nil, popup)
-        sf:SetFrameLevel(popup:GetFrameLevel() + 1)
-        sf:SetPoint("TOPLEFT", popup, "TOPLEFT", 20, -70)
-        sf:SetSize(COLS * SIZE + 12, ROWS * SIZE)
-        p.child = CreateFrame("Frame", nil, sf)
+        local scrollFrame = CreateFrame("ScrollFrame", nil, dialog)
+        scrollFrame:SetFrameLevel(dialog:GetFrameLevel() + 1)
+        scrollFrame:SetPoint("TOPLEFT", dialog, "TOPLEFT", 20, -70)
+        scrollFrame:SetSize(COLS * SIZE + 12, ROWS * SIZE)
+        p.child = CreateFrame("Frame", nil, scrollFrame)
         p.child:SetSize(COLS * SIZE, ROWS * SIZE)
-        sf:SetScrollChild(p.child)
-        p.updateThumb, p.scrollTo = CludesUI.AttachSmoothScrollbar(sf, {
+        scrollFrame:SetScrollChild(p.child)
+        p.updateThumb, p.scrollTo = CludesUI.AttachSmoothScrollbar(scrollFrame, {
             step = SIZE,
             child = p.child,
-            onScroll = function(v)
-                local off = floor(v / SIZE + 0.5) * COLS
+            onScroll = function(val)
+                local off = floor(val / SIZE + 0.5) * COLS
                 if off ~= p.offset then
                     p.offset = off
                     p.Update()
@@ -467,12 +467,12 @@ local function OpenPicker(onPick)
             end,
         })
         function p.Update()
-            for i, b in ipairs(p.buttons) do
-                local icon = PickerIcon(p.offset + i)
-                b.value = icon
-                if icon then
-                    b.icon:SetTexture(IconPath(icon))
-                    b.selected = icon == p.current
+            for idx, b in ipairs(p.buttons) do
+                local glyph = PickerIcon(p.offset + idx)
+                b.value = glyph
+                if glyph then
+                    b.icon:SetTexture(IconPath(glyph))
+                    b.selected = glyph == p.current
                     b.Paint(false)
                     b:Show()
                 else
@@ -481,9 +481,9 @@ local function OpenPicker(onPick)
             end
         end
         p.cancel = CludesUI.MakePopupButton(
-            popup,
+            dialog,
             "BOTTOM",
-            popup,
+            dialog,
             "BOTTOM",
             0,
             18,
@@ -516,7 +516,7 @@ local function OpenPicker(onPick)
         GetMacroItemIcons(baseIcons)
     end
     local spells, seen = {}, {}
-    for _, s in ipairs(S.List()) do
+    for _, s in ipairs(Stl.List()) do
         if s.icon and not seen[s.icon] then
             seen[s.icon] = true
             spells[#spells + 1] = s.icon
@@ -556,24 +556,24 @@ local function KindValues(onSelect)
             end
         end
     end
-    local values, order = { __pick = "Choose a type" }, {}
-    for i, g in ipairs(kindGroups) do
+    local values, sequence = { __pick = "Choose a type" }, {}
+    for idx, g in ipairs(kindGroups) do
         values[g.key] =
             { text = g.text, subnav = { values = g.values, order = g.order, onSelect = onSelect } }
-        order[i] = g.key
+        sequence[idx] = g.key
     end
-    return values, order
+    return values, sequence
 end
 
 -- { { value, label } } -> values, order; sentinel stands in for an empty value.
-local function ListValues(list, sentinel)
-    local values, order = {}, {}
-    for _, it in ipairs(list) do
+local function ListValues(entries, sentinel)
+    local values, sequence = {}, {}
+    for _, it in ipairs(entries) do
         local k = it.value == "" and sentinel or it.value
         values[k] = it.label
-        order[#order + 1] = k
+        sequence[#sequence + 1] = k
     end
-    return values, order
+    return values, sequence
 end
 
 -- Channel and target lists once; stances once per page build.
@@ -610,10 +610,10 @@ local function CondItems()
     return COND_ITEMS
 end
 
-local function FindParam(v, key)
-    for j, prm in ipairs(v.params) do
+local function FindParam(val, key)
+    for jdx, prm in ipairs(val.params) do
         if prm.key == key then
-            return prm, j
+            return prm, jdx
         end
     end
 end
@@ -627,123 +627,123 @@ local function HasValue(value, opt)
     end
 end
 
-local function LineCode(i, l)
+local function LineCode(idx, l)
     local code = B.LineText(l)
     if code == "" then
         code = CludesUI.L("(empty line)")
     end
-    return i .. ".  " .. code
+    return idx .. ".  " .. code
 end
 
-local function SetKind(l, kind)
-    local K = B.KIND[kind]
-    l.kind = kind
-    if not K.multi then
+local function SetKind(l, kindOf)
+    local Keys = B.KIND[kindOf]
+    l.kind = kindOf
+    if not Keys.multi then
         while #l.variants > 1 do
             table.remove(l.variants)
         end
     end
-    if not K.arg then
-        for _, v in ipairs(l.variants) do
-            v.arg = ""
+    if not Keys.arg then
+        for _, val in ipairs(l.variants) do
+            val.arg = ""
         end
     end
-    if kind == "targetmarker" and not (l.variants[1].arg or ""):match("^[0-8]$") then
+    if kindOf == "targetmarker" and not (l.variants[1].arg or ""):match("^[0-8]$") then
         l.variants[1].arg = "8"
     end
 end
 
 -- A line as one row: its code, then move and remove; a click opens it.
-local function LineHeader(body, y, ctx, i, l)
+local function LineHeader(body, posY, context, idx, l)
     local W = CludesUI.Widgets
-    local lines = ctx.model.lines
-    local open = ctx.open == l
-    local row, h = W:DualRow(body, y, { type = "label", text = LineCode(i, l) })
-    local rgn = row._leftRegion
-    local label = rgn._label
-    label:SetFont(CludesUI.EXPRESSWAY, 13, "")
-    ctx.headers[#ctx.headers + 1] = { fs = label, i = i, l = l }
+    local lines = context.model.lines
+    local open = context.open == l
+    local rowFrame, hgt = W:DualRow(body, posY, { type = "label", text = LineCode(idx, l) })
+    local region = rowFrame._leftRegion
+    local labelText = region._label
+    labelText:SetFont(CludesUI.EXPRESSWAY, 13, "")
+    context.headers[#context.headers + 1] = { fs = labelText, i = idx, l = l }
     if open then
         local ac = Accent()
-        local bar = row:CreateTexture(nil, "ARTWORK", nil, 2)
-        bar:SetColorTexture(ac.r, ac.g, ac.b, 1)
-        bar:SetPoint("TOPLEFT")
-        bar:SetPoint("BOTTOMLEFT")
-        bar:SetWidth(2)
+        local barFrame = rowFrame:CreateTexture(nil, "ARTWORK", nil, 2)
+        barFrame:SetColorTexture(ac.r, ac.g, ac.b, 1)
+        barFrame:SetPoint("TOPLEFT")
+        barFrame:SetPoint("BOTTOMLEFT")
+        barFrame:SetWidth(2)
     end
 
-    local del = Glyph(rgn, 16, nil, function()
-        table.remove(lines, i)
+    local del = Glyph(region, 16, nil, function()
+        table.remove(lines, idx)
         if open then
-            ctx.open = nil
+            context.open = nil
         end
-        ctx.onChange(true)
+        context.onChange(true)
     end, CludesUI.L("Remove line"))
     CludesUI.SetDeleteIcon(del.tex)
-    del:SetPoint("RIGHT", rgn, "RIGHT", -20, 0)
+    del:SetPoint("RIGHT", region, "RIGHT", -20, 0)
     local function Move(d)
-        local j = i + d
-        lines[i], lines[j] = lines[j], lines[i]
-        ctx.onChange(true)
+        local jdx = idx + d
+        lines[idx], lines[jdx] = lines[jdx], lines[idx]
+        context.onChange(true)
     end
-    local down = Glyph(rgn, 18, "cui-arrow-down3.png", function()
+    local down = Glyph(region, 18, "cui-arrow-down3.png", function()
         Move(1)
     end, CludesUI.L("Move down"))
     down:SetPoint("RIGHT", del, "LEFT", -14, 0)
-    down:SetEnabled(i < #lines)
-    local up = Glyph(rgn, 18, "cui-arrow-up3.png", function()
+    down:SetEnabled(idx < #lines)
+    local up = Glyph(region, 18, "cui-arrow-up3.png", function()
         Move(-1)
     end, CludesUI.L("Move up"))
     up:SetPoint("RIGHT", down, "LEFT", -2, 0)
-    up:SetEnabled(i > 1)
-    label:SetPoint("RIGHT", up, "LEFT", -12, 0)
+    up:SetEnabled(idx > 1)
+    labelText:SetPoint("RIGHT", up, "LEFT", -12, 0)
 
-    local hit = CreateFrame("Button", nil, row)
-    hit:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    hit:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -100, 0)
-    hit:SetFrameLevel(rgn:GetFrameLevel() + 3)
-    local hl = SolidTex(hit, "BACKGROUND", 1, 1, 1, 0)
-    hl:SetAllPoints(row)
-    local K = B.KIND[l.kind] or B.KIND.raw
+    local hit = CreateFrame("Button", nil, rowFrame)
+    hit:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", 0, 0)
+    hit:SetPoint("BOTTOMRIGHT", rowFrame, "BOTTOMRIGHT", -100, 0)
+    hit:SetFrameLevel(region:GetFrameLevel() + 3)
+    local highlight = SolidTex(hit, "BACKGROUND", 1, 1, 1, 0)
+    highlight:SetAllPoints(rowFrame)
+    local Keys = B.KIND[l.kind] or B.KIND.raw
     hit:SetScript("OnEnter", function(self)
-        hl:SetColorTexture(1, 1, 1, 0.03)
+        highlight:SetColorTexture(1, 1, 1, 0.03)
         CludesUI.ShowWidgetTooltip(
             self,
-            L(K.label)
+            L(Keys.label)
                 .. "\n"
-                .. L(K.desc)
+                .. L(Keys.desc)
                 .. "\n\n"
                 .. (open and CludesUI.L("Click to close.") or CludesUI.L("Click to edit."))
         )
     end)
     hit:SetScript("OnLeave", function()
-        hl:SetColorTexture(1, 1, 1, 0)
+        highlight:SetColorTexture(1, 1, 1, 0)
         CludesUI.HideWidgetTooltip()
     end)
     hit:SetScript("OnClick", function()
-        ctx.open = (not open) and l or nil
-        ctx.onChange(true, true)
+        context.open = (not open) and l or nil
+        context.onChange(true, true)
     end)
-    return y - h
+    return posY - hgt
 end
 
 -- What a DualRow cannot build itself: checkbox dropdowns, suggestions, inline buttons.
-local function PostCell(rgn, cfg)
-    if not cfg then
+local function PostCell(region, conf)
+    if not conf then
         return
     end
-    if cfg.type == "input" and rgn._control then
-        boxes[rgn._control] = true
+    if conf.type == "input" and region._control then
+        boxes[region._control] = true
     end
-    if cfg._cb then
-        if rgn._control then
-            rgn._control:Hide()
+    if conf._cb then
+        if region._control then
+            region._control:Hide()
         end
-        local cb = cfg._cb
-        local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+        local cb = conf._cb
+        local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
+            region,
             170,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             cb.items,
             cb.get,
             cb.set,
@@ -754,49 +754,49 @@ local function PostCell(rgn, cfg)
             cb.onClosed,
             { noAllLabel = true }
         )
-        PP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = dd
+        Pix.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = dropdown
         CludesUI.RegisterWidgetRefresh(refresh)
     end
-    if cfg._suggest and rgn._control then
-        AttachSuggest(rgn._control, cfg.setValue, cfg._suggest == "list")
+    if conf._suggest and region._control then
+        AttachSuggest(region._control, conf.setValue, conf._suggest == "list")
     end
-    if cfg._maxLetters and rgn._control then
-        rgn._control:SetMaxLetters(cfg._maxLetters)
+    if conf._maxLetters and region._control then
+        region._control:SetMaxLetters(conf._maxLetters)
     end
-    if cfg._remove then
-        CludesUI.BuildInlineButton(rgn, CludesUI.L("Remove"), cfg._remove, { width = 80 })
+    if conf._remove then
+        CludesUI.BuildInlineButton(region, CludesUI.L("Remove"), conf._remove, { width = 80 })
     end
-    if cfg._icon and rgn._control then
-        local tex = rgn:CreateTexture(nil, "ARTWORK")
-        tex:SetSize(28, 28)
-        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        PP.Point(tex, "RIGHT", rgn._control, "LEFT", -10, 0)
-        tex:SetTexture(IconPath(cfg._icon()))
+    if conf._icon and region._control then
+        local texture = region:CreateTexture(nil, "ARTWORK")
+        texture:SetSize(28, 28)
+        texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        Pix.Point(texture, "RIGHT", region._control, "LEFT", -10, 0)
+        texture:SetTexture(IconPath(conf._icon()))
         CludesUI.RegisterWidgetRefresh(function()
-            tex:SetTexture(IconPath(cfg._icon()))
+            texture:SetTexture(IconPath(conf._icon()))
         end)
     end
 end
 
 -- Cells two per row, filled left to right.
-local function EmitCells(body, y, cells)
+local function EmitCells(body, posY, cells)
     local W = CludesUI.Widgets
-    for i = 1, #cells, 2 do
-        local a, b = cells[i], cells[i + 1]
-        local row, h = W:DualRow(body, y, a, b or CludesUI.BlankRowCfg())
-        PostCell(row._leftRegion, a)
-        PostCell(row._rightRegion, b)
-        y = y - h
+    for idx = 1, #cells, 2 do
+        local a, b = cells[idx], cells[idx + 1]
+        local rowFrame, hgt = W:DualRow(body, posY, a, b or CludesUI.BlankRowCfg())
+        PostCell(rowFrame._leftRegion, a)
+        PostCell(rowFrame._rightRegion, b)
+        posY = posY - hgt
     end
-    return y
+    return posY
 end
 
-local function Input(text, get, set, opts)
+local function Input(textValue, get, set, opts)
     opts = opts or {}
     return {
         type = "input",
-        text = text,
+        text = textValue,
         inputStyle = "popup",
         inputWidth = opts.width or 200,
         placeholder = opts.ph,
@@ -815,15 +815,15 @@ local function Input(text, get, set, opts)
     }
 end
 
-local function Dropdown(text, values, order, get, set, tip)
+local function Dropdown(textValue, values, sequence, get, set, tipText)
     return {
         type = "dropdown",
-        text = text,
+        text = textValue,
         values = values,
-        order = order,
+        order = sequence,
         getValue = get,
         setValue = set,
-        tooltip = tip,
+        tooltip = tipText,
     }
 end
 
@@ -834,16 +834,16 @@ local markerValues
 local function MarkerValues()
     if not markerValues then
         markerValues = { _noLoc = true, ["0"] = CludesUI.L("Clear Marker") }
-        for i = 1, 8 do
-            markerValues[tostring(i)] = _G["RAID_TARGET_" .. i]
+        for idx = 1, 8 do
+            markerValues[tostring(idx)] = _G["RAID_TARGET_" .. idx]
         end
         markerValues._menuOpts = {
             icon = function(key)
-                local i = tonumber(key)
-                if not i or i < 1 then
+                local idx = tonumber(key)
+                if not idx or idx < 1 then
                     return nil
                 end
-                local l, t = ((i - 1) % 4) * 0.25, floor((i - 1) / 4) * 0.25
+                local l, t = ((idx - 1) % 4) * 0.25, floor((idx - 1) / 4) * 0.25
                 return MARKER_ICONS, l, l + 0.25, t, t + 0.25
             end,
         }
@@ -852,32 +852,32 @@ local function MarkerValues()
 end
 
 -- The settings of one line (and of each of its variants).
-local function LineRows(body, y, ctx, l)
-    local K = B.KIND[l.kind] or B.KIND.raw
+local function LineRows(body, posY, context, l)
+    local Keys = B.KIND[l.kind] or B.KIND.raw
     local cells = {}
     local function Add(c)
         cells[#cells + 1] = c
     end
     local function Changed()
-        ctx.onChange(false)
+        context.onChange(false)
     end
     local v1 = l.variants[1]
 
     local kv, ko = KindValues(function(k)
         SetKind(l, k)
-        ctx.onChange(true)
+        context.onChange(true)
     end)
     Add(Dropdown("Type", kv, ko, function()
         return l.kind
-    end, function() end, K.desc))
+    end, function() end, Keys.desc))
 
-    if K.key == "chat" then
+    if Keys.key == "chat" then
         Add(Input("Message", function()
             return v1.arg
         end, function(t)
             v1.arg = t
             Changed()
-        end, { ph = K.ph }))
+        end, { ph = Keys.ph }))
         if not chanV then
             chanV, chanO = ListValues(B.CHANNELS)
         end
@@ -887,14 +887,14 @@ local function LineRows(body, y, ctx, l)
             l.chan = c
             Changed()
         end))
-    elseif K.arg == "spells" then
+    elseif Keys.arg == "spells" then
         Add(Input("Spells", function()
             return v1.arg
         end, function(t)
             v1.arg = t
             Changed()
-        end, { ph = K.ph or "Spell1, Spell2, Spell3", suggest = "list" }))
-        if K.reset then
+        end, { ph = Keys.ph or "Spell1, Spell2, Spell3", suggest = "list" }))
+        if Keys.reset then
             Add(Input("Reset", function()
                 return l.reset
             end, function(t)
@@ -907,10 +907,10 @@ local function LineRows(body, y, ctx, l)
         end
     end
 
-    local count = K.conds and (K.multi and #l.variants or 1)
-        or ((K.arg and K.arg ~= "spells" and K.key ~= "chat") and 1 or 0)
-    for k = 1, count do
-        local v = l.variants[k]
+    local total = Keys.conds and (Keys.multi and #l.variants or 1)
+        or ((Keys.arg and Keys.arg ~= "spells" and Keys.key ~= "chat") and 1 or 0)
+    for k = 1, total do
+        local val = l.variants[k]
         if k > 1 then
             Add({
                 type = "label",
@@ -918,43 +918,44 @@ local function LineRows(body, y, ctx, l)
                 tooltip = "Variants are checked top to bottom: the first one whose conditions match is used. A variant without conditions is the fallback.",
                 _remove = function()
                     table.remove(l.variants, k)
-                    ctx.onChange(true)
+                    context.onChange(true)
                 end,
             })
         end
-        if K.key == "targetmarker" then
+        if Keys.key == "targetmarker" then
             Add(Dropdown("Marker", MarkerValues(), MARKER_ORDER, function()
-                return v.arg
+                return val.arg
             end, function(m)
-                v.arg = m
+                val.arg = m
                 Changed()
             end))
-        elseif K.arg and K.arg ~= "spells" and K.key ~= "chat" then
-            local text = K.arg == "spell" and "Spell" or (K.arg == "unit" and "Unit or Name" or "Text")
-            Add(Input(text, function()
-                return v.arg
+        elseif Keys.arg and Keys.arg ~= "spells" and Keys.key ~= "chat" then
+            local textValue = Keys.arg == "spell" and "Spell"
+                or (Keys.arg == "unit" and "Unit or Name" or "Text")
+            Add(Input(textValue, function()
+                return val.arg
             end, function(t)
-                v.arg = t
+                val.arg = t
                 Changed()
-            end, { ph = K.ph, suggest = K.arg == "spell" or nil }))
+            end, { ph = Keys.ph, suggest = Keys.arg == "spell" or nil }))
         end
-        if K.conds then
+        if Keys.conds then
             if not targV then
                 targV, targO = ListValues(B.TARGETS, "none")
             end
             Add(Dropdown("Target", targV, targO, function()
-                return v.target ~= "" and v.target or "none"
+                return val.target ~= "" and val.target or "none"
             end, function(t)
-                v.target = t == "none" and "" or t
+                val.target = t == "none" and "" or t
                 Changed()
             end))
             if not stanceV then
                 stanceV, stanceO = ListValues(B.Stances(), "any")
             end
             Add(Dropdown("Stance", stanceV, stanceO, function()
-                return v.stance ~= "" and v.stance or "any"
+                return val.stance ~= "" and val.stance or "any"
             end, function(s)
-                v.stance = s == "any" and "" or s
+                val.stance = s == "any" and "" or s
                 Changed()
             end, "Numbers follow your stance bar; 0 = no stance or normal form."))
             -- Checking a condition with a value adds its value row, and Not
@@ -975,19 +976,19 @@ local function LineRows(body, y, ctx, l)
                 get = function(key, neg)
                     local pk = key:match("^p:(.+)$")
                     if pk then
-                        local prm = FindParam(v, pk)
+                        local prm = FindParam(val, pk)
                         return prm ~= nil and (prm.no == true) == (neg == true)
                     end
-                    return v.conds[key] == (neg and 2 or 1)
+                    return val.conds[key] == (neg and 2 or 1)
                 end,
                 set = function(key, on, neg)
                     local pk = key:match("^p:(.+)$")
                     if pk then
-                        local prm, j = FindParam(v, pk)
+                        local prm, jdx = FindParam(val, pk)
                         if on then
                             if not prm then
                                 prm = B.NewParam(pk)
-                                v.params[#v.params + 1] = prm
+                                val.params[#val.params + 1] = prm
                                 addedRows = true
                             end
                             if (prm.no == true) ~= (neg == true) then
@@ -995,15 +996,15 @@ local function LineRows(body, y, ctx, l)
                             end
                             prm.no = neg == true
                         elseif prm and (prm.no == true) == (neg == true) then
-                            table.remove(v.params, j)
+                            table.remove(val.params, jdx)
                             addedRows = true
                         end
                     else
                         local mark = neg and 2 or 1
                         if on then
-                            v.conds[key] = mark
-                        elseif v.conds[key] == mark then
-                            v.conds[key] = nil
+                            val.conds[key] = mark
+                        elseif val.conds[key] == mark then
+                            val.conds[key] = nil
                         end
                     end
                     Changed()
@@ -1011,66 +1012,69 @@ local function LineRows(body, y, ctx, l)
                 onClosed = function()
                     if addedRows then
                         addedRows = nil
-                        ctx.onChange(true)
+                        context.onChange(true)
                     end
                 end,
             }
             Add(cond)
 
             -- One value row per condition with a value.
-            for _, prm in ipairs(v.params) do
-                local P = B.PARAM[prm.key] or {}
-                local text = (prm.no and (L("not") .. " ") or "") .. L(P.label or prm.key)
+            for _, prm in ipairs(val.params) do
+                local Prm = B.PARAM[prm.key] or {}
+                local textValue = (prm.no and (L("not") .. " ") or "") .. L(Prm.label or prm.key)
                 local function SetVal(t)
                     prm.value = t
                     Changed()
                 end
-                if P.options then
-                    local opts = P.options()
-                    local items = {}
-                    for i, o in ipairs(opts) do
-                        items[i] = { key = o.value, label = o.label }
+                if Prm.options then
+                    local opts = Prm.options()
+                    local itemList = {}
+                    for idx, o in ipairs(opts) do
+                        itemList[idx] = { key = o.value, label = o.label }
                     end
-                    local cell = Dropdown(text, { _p = "" }, { "_p" }, function()
+                    local cellFrame = Dropdown(textValue, { _p = "" }, { "_p" }, function()
                         return "_p"
-                    end, function() end, P.tip)
-                    cell._cb = {
-                        items = items,
+                    end, function() end, Prm.tip)
+                    cellFrame._cb = {
+                        items = itemList,
                         get = function(key)
                             return HasValue(prm.value, key)
                         end,
                         set = function(key, on)
-                            local out = {}
+                            local result = {}
                             for _, o in ipairs(opts) do
                                 local keep = o.value == key and on
                                     or (o.value ~= key and HasValue(prm.value, o.value))
                                 if keep then
-                                    out[#out + 1] = o.value
+                                    result[#result + 1] = o.value
                                 end
                             end
-                            SetVal(table.concat(out, "/"))
+                            SetVal(table.concat(result, "/"))
                         end,
                     }
-                    Add(cell)
-                elseif P.spell then
-                    Add(
-                        Input(text, function()
+                    Add(cellFrame)
+                elseif Prm.spell then
+                    Add(Input(
+                        textValue,
+                        function()
                             return prm.value
-                        end, SetVal, {
+                        end,
+                        SetVal,
+                        {
                             suggest = true,
-                            tip = P.tip,
+                            tip = Prm.tip,
                             ph = "Spell (several: Spell1/Spell2)",
-                        })
-                    )
+                        }
+                    ))
                 else
-                    Add(Input(text, function()
+                    Add(Input(textValue, function()
                         return prm.value
-                    end, SetVal, { ph = P.text, tip = P.tip }))
+                    end, SetVal, { ph = Prm.text, tip = Prm.tip }))
                 end
             end
         end
     end
-    if K.multi then
+    if Keys.multi then
         Add({
             type = "button",
             text = "+ Add Else Variant",
@@ -1078,50 +1082,50 @@ local function LineRows(body, y, ctx, l)
             onClick = function()
                 local last = l.variants[#l.variants]
                 l.variants[#l.variants + 1] = B.NewVariant(last and last.arg or "")
-                ctx.onChange(true)
+                context.onChange(true)
             end,
         })
     end
-    return EmitCells(body, y, cells)
+    return EmitCells(body, posY, cells)
 end
 
-local function BuildLines(body, y, ctx)
+local function BuildLines(body, posY, context)
     local W = CludesUI.Widgets
-    local _, h = W:SectionHeader(body, "LINES", y)
-    y = y - h
+    local _, hgt = W:SectionHeader(body, "LINES", posY)
+    posY = posY - hgt
     local kv, ko = KindValues(function(k)
         local l = B.NewLine(k)
-        table.insert(ctx.model.lines, l)
-        ctx.open = l
-        ctx.onChange(true)
+        table.insert(context.model.lines, l)
+        context.open = l
+        context.onChange(true)
     end)
-    _, h = W:DualRow(
+    _, hgt = W:DualRow(
         body,
-        y,
+        posY,
         Dropdown("Add Line", kv, ko, function()
             return "__pick"
         end, function() end, "Adds a line to the macro. Lines run top to bottom."),
         CludesUI.BlankRowCfg()
     )
-    y = y - h
-    wipe(ctx.headers)
+    posY = posY - hgt
+    wipe(context.headers)
     local found = false
-    for i, l in ipairs(ctx.model.lines) do
-        y = LineHeader(body, y, ctx, i, l)
-        if ctx.open == l then
+    for idx, l in ipairs(context.model.lines) do
+        posY = LineHeader(body, posY, context, idx, l)
+        if context.open == l then
             found = true
-            y = LineRows(body, y, ctx, l)
+            posY = LineRows(body, posY, context, l)
         end
     end
     if not found then
-        ctx.open = nil
+        context.open = nil
     end
-    return y
+    return posY
 end
 
 -- Header code labels follow value edits without a rebuild.
-local function UpdateHeaders(ctx)
-    for _, hd in ipairs(ctx.headers) do
+local function UpdateHeaders(context)
+    for _, hd in ipairs(context.headers) do
         hd.fs:SetText(LineCode(hd.i, hd.l))
     end
 end
@@ -1161,7 +1165,7 @@ end
 -- is on screen (a rebuild under way commits nothing), and only the page's own
 -- fields: a focused frame of the game or another addon is never touched.
 local function FlushField()
-    if not shown then
+    if not isShown then
         return
     end
     local f = GetCurrentKeyBoardFocus()
@@ -1172,27 +1176,27 @@ end
 
 -- Another macro in the editor: a value typed for the last one commits to it
 -- first; then no open line, no status and no unread typed text remain.
-local function SetCur(state)
+local function SetCur(status)
     FlushField()
-    cur, statusText, statusBad, edCtx.open, textDirty = state, nil, nil, nil, nil
+    cur, statusText, statusBad, edCtx.open, textDirty = status, nil, nil, nil, nil
 end
 
-local function Guard(fn)
+local function Guard(func)
     if cur and cur.dirty then
         CludesUI:ShowConfirmPopup({
             title = CludesUI.L("Unsaved Changes"),
             message = CludesUI.L("Discard your unsaved changes to this macro?"),
             confirmText = CludesUI.L("Discard"),
             cancelText = CludesUI.L("Cancel"),
-            onConfirm = fn,
+            onConfirm = func,
         })
     else
-        fn()
+        func()
     end
 end
 
-local function SetStatus(text, bad)
-    statusText, statusBad = text, bad
+local function SetStatus(textValue, bad)
+    statusText, statusBad = textValue, bad
     if not D.info then
         return
     end
@@ -1202,7 +1206,7 @@ local function SetStatus(text, bad)
         local ac = Accent()
         D.info:SetTextColor(ac.r, ac.g, ac.b, 1)
     end
-    D.info:SetText(text or "")
+    D.info:SetText(textValue or "")
 end
 
 local function UpdateMacroText()
@@ -1221,7 +1225,7 @@ local function Dirty()
 end
 
 local function RebuildIfPending()
-    if shown and pendingRebuild then
+    if isShown and pendingRebuild then
         pendingRebuild = nil
         Rebuild()
     end
@@ -1295,55 +1299,55 @@ end
 -------------------------------------------------------------------------------
 -- Places count cells centered in rows of w; bind(cell, i) fills each one.
 -- Returns the grid's height.
-local function LayoutGrid(g, hdr, y, w, count, bind)
+local function LayoutGrid(g, heading, posY, wid, total, bind)
     if not g.frame then
         -- Kept for the session and never pooled (the global CreateFrame): the
         -- panel detaches it before each header build (a kept header root's
         -- CUI_NS.DropRootForeign, the plain header's clear) and it is
         -- re-parented below.
-        local f = _G.CreateFrame("Frame", nil, hdr)
+        local f = _G.CreateFrame("Frame", nil, heading)
         local scroll = CreateFrame("ScrollFrame", nil, f)
         scroll:SetAllPoints()
         scroll:SetClipsChildren(true)
-        local child = CreateFrame("Frame", nil, scroll)
-        child:SetSize(10, 10)
-        scroll:SetScrollChild(child)
-        g.frame, g.child, g.cells = f, child, {}
-        g.update = AttachScroll(scroll, child)
+        local childFrame = CreateFrame("Frame", nil, scroll)
+        childFrame:SetSize(10, 10)
+        scroll:SetScrollChild(childFrame)
+        g.frame, g.child, g.cells = f, childFrame, {}
+        g.update = AttachScroll(scroll, childFrame)
     end
-    g.frame:SetParent(hdr)
-    local perRow = max(1, floor((w + 4) / CELL))
-    local rows = math.ceil(count / perRow)
-    local h = max(1, min(rows, GRID_ROWS)) * CELL
+    g.frame:SetParent(heading)
+    local perRow = upper(1, floor((wid + 4) / CELL))
+    local rowList = math.ceil(total / perRow)
+    local hgt = upper(1, min(rowList, GRID_ROWS)) * CELL
     g.frame:ClearAllPoints()
-    g.frame:SetPoint("TOP", hdr, "TOP", 0, y)
-    g.frame:SetSize(w, h)
-    g.child:SetSize(w, rows * CELL)
-    for i = 1, count do
-        local cell = g.cells[i]
-        if not cell then
-            cell = NewCell(g.child)
-            g.cells[i] = cell
+    g.frame:SetPoint("TOP", heading, "TOP", 0, posY)
+    g.frame:SetSize(wid, hgt)
+    g.child:SetSize(wid, rowList * CELL)
+    for idx = 1, total do
+        local cellFrame = g.cells[idx]
+        if not cellFrame then
+            cellFrame = NewCell(g.child)
+            g.cells[idx] = cellFrame
         end
-        local row = floor((i - 1) / perRow)
-        local inRow = min(perRow, count - row * perRow)
-        local x = floor((w - inRow * CELL) / 2) + ((i - 1) % perRow) * CELL + 2
-        cell:ClearAllPoints()
-        cell:SetPoint("TOPLEFT", g.child, "TOPLEFT", x, -row * CELL - 2)
-        bind(cell, i)
-        cell:Show()
+        local rowFrame = floor((idx - 1) / perRow)
+        local inRow = min(perRow, total - rowFrame * perRow)
+        local posX = floor((wid - inRow * CELL) / 2) + ((idx - 1) % perRow) * CELL + 2
+        cellFrame:ClearAllPoints()
+        cellFrame:SetPoint("TOPLEFT", g.child, "TOPLEFT", posX, -rowFrame * CELL - 2)
+        bind(cellFrame, idx)
+        cellFrame:Show()
     end
-    for i = count + 1, #g.cells do
-        g.cells[i]:Hide()
+    for idx = total + 1, #g.cells do
+        g.cells[idx]:Hide()
     end
     g.frame:Show()
     g.update()
-    return h
+    return hgt
 end
 
 -- Fills cell i of the macro grid from gridList; past the list is the "+" cell.
-local function BindMacroCell(c, i)
-    local m = gridList[i]
+local function BindMacroCell(c, idx)
+    local m = gridList[idx]
     c.m, c.newCell = m, m == nil
     c.icon:SetShown(m ~= nil)
     c.plus:SetShown(m == nil)
@@ -1352,7 +1356,7 @@ local function BindMacroCell(c, i)
         c.icon:SetTexture(IconPath(m.icon))
         c.selected = cur.ref ~= nil and cur.ref.index == m.index
     else
-        c.selected = not cur.ref and cur.perChar == (mode == "char")
+        c.selected = not cur.ref and cur.perChar == (modeName == "char")
     end
     c.Paint(false)
 end
@@ -1364,10 +1368,10 @@ local function PaintHeader()
     hdrValues.account = CludesUI.L("Account Macros") .. "  (" .. a .. "/" .. MM.MAX_ACCOUNT .. ")"
     hdrValues.char = CludesUI.L("Character Macros") .. "  (" .. c .. "/" .. MM.MAX_CHAR .. ")"
     hdrDD._invalidateMenu() -- the menu is built again from the new labels on its next open
-    local perChar = mode == "char"
+    local perChar = modeName == "char"
     gridList = MM.List(perChar)
-    local count = #gridList + (MM.Free(perChar) > 0 and 1 or 0)
-    local gh = LayoutGrid(macroGrid, hdrFrame, hdrY, hdrW, count, BindMacroCell)
+    local total = #gridList + (MM.Free(perChar) > 0 and 1 or 0)
+    local gh = LayoutGrid(macroGrid, hdrFrame, hdrY, hdrW, total, BindMacroCell)
     MM.Diff(snap, true)
     return math.abs(hdrY - gh - 14)
 end
@@ -1384,12 +1388,12 @@ local function Follow()
     if not ref then
         return
     end
-    local i = MM.Resolve(ref)
+    local idx = MM.Resolve(ref)
     if cur.dirty then
         return
     end
-    if i then
-        cur.icon = MM.StoredIcon(i)
+    if idx then
+        cur.icon = MM.StoredIcon(idx)
         return
     end
     -- A value typed but not committed yet belongs to this macro: it lands
@@ -1398,8 +1402,8 @@ local function Follow()
     if cur.dirty then
         return
     end
-    i = MM.Resolve(ref, true)
-    SetCur(i and StateOf(MM.Entry(i)) or NewState(cur.perChar))
+    idx = MM.Resolve(ref, true)
+    SetCur(idx and StateOf(MM.Entry(idx)) or NewState(cur.perChar))
 end
 
 -- A macro change while shown: the header repaints in place; the body is built
@@ -1418,7 +1422,7 @@ end
 
 local function ResyncNow()
     pendingEvent = nil
-    if shown then
+    if isShown then
         OnMacrosChanged()
     end
 end
@@ -1437,13 +1441,13 @@ end
 -------------------------------------------------------------------------------
 -- Whether m is the macro the editor holds.
 local function IsCur(m)
-    local i = MM.Resolve(m)
-    return i ~= nil and cur.ref ~= nil and MM.Resolve(cur.ref) == i
+    local idx = MM.Resolve(m)
+    return idx ~= nil and cur.ref ~= nil and MM.Resolve(cur.ref) == idx
 end
 
 local function PickupRef(m)
-    local ok, err = MM.Pickup(m)
-    if not ok then
+    local success, err = MM.Pickup(m)
+    if not success then
         SetStatus(err, true)
     end
 end
@@ -1463,13 +1467,13 @@ local function Save()
     local function Commit()
         -- A saved macro keeps the icon it has unless one was picked here: it
         -- may have been changed elsewhere since the editor read it.
-        local icon = (cur.iconSet or not cur.ref) and cur.icon or nil
-        local m, err = MM.Save(cur.ref, name, icon, cur.text, cur.perChar)
+        local glyph = (cur.iconSet or not cur.ref) and cur.icon or nil
+        local m, err = MM.Save(cur.ref, name, glyph, cur.text, cur.perChar)
         if not m then
             SetStatus(err, true)
             return
         end
-        mode = m.perChar and "char" or "account" -- a saved macro shows in its list
+        modeName = m.perChar and "char" or "account" -- a saved macro shows in its list
         if m.body == cur.text then
             cur.ref, cur.perChar, cur.name, cur.dirty, cur.iconSet = m, m.perChar, m.name, false, nil
             SetStatus(CludesUI.L("Saved."))
@@ -1501,8 +1505,8 @@ local function DeleteMacro(m)
         cancelText = CludesUI.L("Cancel"),
         onConfirm = function()
             local isCur = IsCur(m)
-            local ok, err = MM.Delete(m)
-            if not ok then
+            local success, err = MM.Delete(m)
+            if not success then
                 SetStatus(err, true)
                 return
             end
@@ -1541,7 +1545,7 @@ local function MoveScope(m)
             end
             if isCur then
                 cur.ref, cur.perChar = moved, moved.perChar
-                mode = toChar and "char" or "account" -- the editor's macro shows in its list
+                modeName = toChar and "char" or "account" -- the editor's macro shows in its list
             end
             RequestResync()
         end,
@@ -1550,9 +1554,9 @@ end
 
 local menuOwner -- the cell whose right-click menu opened last
 
-local function MacroMenu(anchor, m)
-    menuOwner = anchor
-    CludesUI.ShowContextMenu(anchor, {
+local function MacroMenu(anchorFrame, m)
+    menuOwner = anchorFrame
+    CludesUI.ShowContextMenu(anchorFrame, {
         {
             text = m.perChar and "Move to Account" or "Move to Character",
             onClick = function()
@@ -1575,15 +1579,15 @@ local function MacroMenu(anchor, m)
     })
 end
 
-CellClick = function(self, btn)
+CellClick = function(self, button)
     local m = self.m
-    if btn == "RightButton" then
+    if button == "RightButton" then
         if m then
             MacroMenu(self, m)
         end
         return
     end
-    local perChar = mode == "char"
+    local perChar = modeName == "char"
     if m and cur.ref and cur.ref.index == m.index then
         return
     end -- open already
@@ -1606,24 +1610,32 @@ CellDrag = function(self)
 end
 
 -- Centered list dropdown over the centered icons (the Action Bars header).
-HeaderBuilder = function(hdr, width)
-    hdrFrame, hdrY, hdrW = hdr, -20 - 34 - 12, width - CludesUI.CONTENT_PAD * 2
+HeaderBuilder = function(heading, width)
+    hdrFrame, hdrY, hdrW = heading, -20 - 34 - 12, width - CludesUI.CONTENT_PAD * 2
     hdrValues = { _noLoc = true }
-    hdrDD = CludesUI.BuildDropdownControl(hdr, 350, hdr:GetFrameLevel() + 5, hdrValues, LIST_ORDER, function()
-        return mode
-    end, function(v)
-        if v == mode then
-            return
+    hdrDD = CludesUI.BuildDropdownControl(
+        heading,
+        350,
+        heading:GetFrameLevel() + 5,
+        hdrValues,
+        LIST_ORDER,
+        function()
+            return modeName
+        end,
+        function(val)
+            if val == modeName then
+                return
+            end
+            FlushField() -- a value typed but not committed lands first: the editor may be dirty then
+            modeName = val
+            -- Another list starts a new macro unless one is being edited.
+            if not cur.dirty and cur.perChar ~= (val == "char") then
+                SetCur(NewState(val == "char"))
+            end
+            Rebuild()
         end
-        FlushField() -- a value typed but not committed lands first: the editor may be dirty then
-        mode = v
-        -- Another list starts a new macro unless one is being edited.
-        if not cur.dirty and cur.perChar ~= (v == "char") then
-            SetCur(NewState(v == "char"))
-        end
-        Rebuild()
-    end)
-    PP.Point(hdrDD, "TOP", hdr, "TOP", 0, -20)
+    )
+    Pix.Point(hdrDD, "TOP", heading, "TOP", 0, -20)
     hdrDD:SetHeight(34)
     return PaintHeader()
 end
@@ -1632,12 +1644,12 @@ _G._CUI_MacrosHeaderBuilder = HeaderBuilder
 -------------------------------------------------------------------------------
 --  Events: while the page is shown
 -------------------------------------------------------------------------------
-local function OnEvent(self, event)
-    if event == "GLOBAL_MOUSE_UP" then
+local function OnEvent(self, evt)
+    if evt == "GLOBAL_MOUSE_UP" then
         self:UnregisterEvent("GLOBAL_MOUSE_UP")
         C_Timer.After(0, RebuildIfPending) -- next frame: after the click that ended the text edit
-    elseif event == "SPELLS_CHANGED" then
-        S.Invalidate() -- read again where it is next used
+    elseif evt == "SPELLS_CHANGED" then
+        Stl.Invalidate() -- read again where it is next used
     else
         RequestResync() -- UPDATE_MACROS
     end
@@ -1647,7 +1659,7 @@ end
 -- stays hidden: a rebuild hides and shows it again at once, so a popup the
 -- click under way opened stays.
 local function ClosePopupsIfHidden()
-    if shown then
+    if isShown then
         return
     end
     if picker then
@@ -1662,13 +1674,13 @@ end
 -- are the page's, so the events are registered only while the page is shown.
 -- Made under the page and kept out of its pool (Pool.Keep): a later build of
 -- the page hides it with the page instead of handing it out again.
-local function WatchEvents(parent)
+local function WatchEvents(hostFrame)
     if not evf then
-        evf = PoolKeep(CreateFrame("Frame", nil, parent))
+        evf = PoolKeep(CreateFrame("Frame", nil, hostFrame))
         evf._searchIgnore = true -- the inline search never hides it
         evf:SetScript("OnEvent", OnEvent)
         evf:SetScript("OnShow", function(self)
-            shown = true
+            isShown = true
             self:RegisterEvent("UPDATE_MACROS")
             self:RegisterEvent("SPELLS_CHANGED")
             -- Hidden in this same frame: a rebuild, which has just read both.
@@ -1676,7 +1688,7 @@ local function WatchEvents(parent)
                 return
             end
             -- Shown again: spells and macros may have changed while hidden.
-            S.Invalidate()
+            Stl.Invalidate()
             if pendingRebuild then
                 C_Timer.After(0, RebuildIfPending)
             elseif MM.Diff(snap) then
@@ -1684,7 +1696,7 @@ local function WatchEvents(parent)
             end
         end)
         evf:SetScript("OnHide", function(self)
-            shown, hiddenAt = nil, GetTime()
+            isShown, hiddenAt = nil, GetTime()
             -- Text typed but not read into lines yet: read it now; the lines are
             -- built on the next show.
             ReadText()
@@ -1699,18 +1711,18 @@ local function WatchEvents(parent)
         end)
     end
     evf:Hide()
-    evf:SetParent(parent)
+    evf:SetParent(hostFrame)
     evf:Show()
 end
 
 -------------------------------------------------------------------------------
 --  Page body
 -------------------------------------------------------------------------------
-local function BuildMacroBody(parent, y, enable)
+local function BuildMacroBody(hostFrame, posY, enable)
     local W = CludesUI.Widgets
-    local _, h
+    local _, hgt
     edCtx.model = cur.model
-    y = EmitCells(parent, y, {
+    posY = EmitCells(hostFrame, posY, {
         enable,
         Input("Name", function()
             return cur.name
@@ -1731,8 +1743,8 @@ local function BuildMacroBody(parent, y, enable)
             getValue = function()
                 return cur.perChar and "char" or "account"
             end,
-            setValue = function(v)
-                cur.perChar = v == "char"
+            setValue = function(val)
+                cur.perChar = val == "char"
                 Dirty()
             end,
             -- A saved macro moves through Move, which warns that its bar buttons go.
@@ -1748,8 +1760,8 @@ local function BuildMacroBody(parent, y, enable)
             buttonText = "Choose Icon",
             width = 130,
             onClick = function()
-                OpenPicker(function(icon)
-                    cur.icon, cur.iconSet = icon or MM.QUESTION, true
+                OpenPicker(function(glyph)
+                    cur.icon, cur.iconSet = glyph or MM.QUESTION, true
                     Dirty()
                     Refresh()
                 end)
@@ -1765,8 +1777,8 @@ local function BuildMacroBody(parent, y, enable)
             getValue = function()
                 return cur.model.tooltip
             end,
-            setValue = function(v)
-                cur.model.tooltip = v
+            setValue = function(val)
+                cur.model.tooltip = val
                 ApplyEdit(false)
             end,
         },
@@ -1785,43 +1797,43 @@ local function BuildMacroBody(parent, y, enable)
         }),
     })
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
     -- The LINES rows show live macro text: kept out of the search index (the
     -- flag is restored even when a row errors).
     local prev = CludesUI._searchIndexSuppress
     CludesUI._searchIndexSuppress = true
-    local ok, ny = pcall(BuildLines, parent, y, edCtx)
+    local success, ny = pcall(BuildLines, hostFrame, posY, edCtx)
     CludesUI._searchIndexSuppress = prev
-    if not ok then
+    if not success then
         error(ny, 0)
     end
-    y = ny
+    posY = ny
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
-    _, h = W:SectionHeader(parent, "MACRO TEXT", y)
-    y = y - h
-    local box, count, info = TextBlock(parent, y)
-    y = y - TEXT_H
-    D.text, D.count, D.info = box, count, info
-    box:SetText(cur.text)
-    PaintCounter(count, strlenutf8(cur.text))
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
+    _, hgt = W:SectionHeader(hostFrame, "MACRO TEXT", posY)
+    posY = posY - hgt
+    local boxFrame, total, details = TextBlock(hostFrame, posY)
+    posY = posY - TEXT_H
+    D.text, D.count, D.info = boxFrame, total, details
+    boxFrame:SetText(cur.text)
+    PaintCounter(total, strlenutf8(cur.text))
     SetStatus(statusText, statusBad)
     -- Typing is read into lines on blur (and at Save), not per keystroke.
-    box.onChange = function(text, user)
+    boxFrame.onChange = function(textValue, user)
         if not user then
             return
         end
-        cur.text, textDirty = text, true
+        cur.text, textDirty = textValue, true
         Dirty()
-        PaintCounter(count, strlenutf8(text))
+        PaintCounter(total, strlenutf8(textValue))
     end
-    box.onBlur = ReadText
+    boxFrame.onBlur = ReadText
 
     local notSaved = { disabled = true, tooltip = CludesUI.L("Save the macro first.") }
     -- Deleting the open macro leaves no ref until the body is built again.
-    _, h = W:WideTripleButton(parent, "Save", "Pick Up", "Delete", y, Save, function()
+    _, hgt = W:WideTripleButton(hostFrame, "Save", "Pick Up", "Delete", posY, Save, function()
         if cur.ref then
             PickupRef(cur.ref)
         end
@@ -1830,30 +1842,30 @@ local function BuildMacroBody(parent, y, enable)
             DeleteMacro(cur.ref)
         end
     end, nil, not cur.ref and { [2] = notSaved, [3] = notSaved } or nil)
-    y = y - h
+    posY = posY - hgt
     builtFor, builtHadRef = cur, cur.ref ~= nil
-    return y
+    return posY
 end
 
 -------------------------------------------------------------------------------
 --  Page entry point
 -------------------------------------------------------------------------------
-_G._CUI_BuildForeverMacrosPage = function(pageName, parent, yOffset)
+_G._CUI_BuildForeverMacrosPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local KIT = CludesUI._MacroManager
-    local y = yOffset
-    local _, h
-    parent._showRowDivider = true
-    _, h = W:SectionHeader(parent, "MACRO", y)
-    y = y - h
+    local posY = yOffset
+    local _, hgt
+    hostFrame._showRowDivider = true
+    _, hgt = W:SectionHeader(hostFrame, "MACRO", posY)
+    posY = posY - hgt
     local enable = {
         type = "toggle",
         text = "Enable Macro Manager",
         tooltip = "Edit your macros by click: a line editor with every option and the live macro text. /cuimacros opens this page.",
         getValue = KIT.Enabled,
-        setValue = function(v)
-            KIT.Cfg().enabled = v
-            if v then
+        setValue = function(val)
+            KIT.Cfg().enabled = val
+            if val then
                 KIT.Apply()
             else
                 -- The header cached while it was on must not come back over the bare page.
@@ -1864,12 +1876,12 @@ _G._CUI_BuildForeverMacrosPage = function(pageName, parent, yOffset)
     }
     -- Off, and in the search pre-build: the switch alone.
     if CludesUI._prebuilding or not KIT.Enabled() then
-        _, h = W:DualRow(parent, y, enable, CludesUI.BlankRowCfg())
-        y = y - h
-        return math.abs(y)
+        _, hgt = W:DualRow(hostFrame, posY, enable, CludesUI.BlankRowCfg())
+        posY = posY - hgt
+        return math.abs(posY)
     end
     if not cur then
-        cur = NewState(mode == "char")
+        cur = NewState(modeName == "char")
     end
     Follow()
     pendingRebuild = nil -- this build is the one a text edit asked for
@@ -1877,7 +1889,7 @@ _G._CUI_BuildForeverMacrosPage = function(pageName, parent, yOffset)
     wipe(D)
     stanceV, stanceO = nil, nil -- forms can be learned between builds
     CludesUI:SetContentHeader(HeaderBuilder)
-    y = BuildMacroBody(parent, y, enable)
-    WatchEvents(parent) -- after the header: a re-show compares with what it painted
-    return math.abs(y)
+    posY = BuildMacroBody(hostFrame, posY, enable)
+    WatchEvents(hostFrame) -- after the header: a re-show compares with what it painted
+    return math.abs(posY)
 end

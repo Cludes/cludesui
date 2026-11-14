@@ -1,5 +1,5 @@
-local addonName, ns = ...
-if ns.standalone then
+local addonName, mod = ...
+if mod.standalone then
     return
 end
 -- Core.lua is loaded before this file (see TOC), so ns.K and ns.DB exist.
@@ -13,51 +13,51 @@ local function GetLSM()
     if not LibStub then
         return nil
     end
-    local ok, LSM = pcall(LibStub, "LibSharedMedia-3.0", true)
-    if ok and LSM and LSM.Fetch then
+    local success, LSM = pcall(LibStub, "LibSharedMedia-3.0", true)
+    if success and LSM and LSM.Fetch then
         return LSM
     end
     return nil
 end
 
 -- {id = <name or path>, label = <display>} for every font that can be chosen.
-function ns.FontList()
-    local list = {}
+function mod.FontList()
+    local entries = {}
     local seen = {}
-    for _, f in ipairs(ns.K.FONT_FACES) do
-        list[#list + 1] = { id = f.id, label = f.label }
+    for _, f in ipairs(mod.K.FONT_FACES) do
+        entries[#entries + 1] = { id = f.id, label = f.label }
         seen[f.label:lower()] = true
     end
 
     local LSM = GetLSM()
     if LSM and LSM.List then
-        local ok, names = pcall(LSM.List, LSM, "font")
-        if ok and type(names) == "table" then
-            for _, name in ipairs(names) do
+        local success, nameList = pcall(LSM.List, LSM, "font")
+        if success and type(nameList) == "table" then
+            for _, name in ipairs(nameList) do
                 if type(name) == "string" and not seen[name:lower()] then
                     seen[name:lower()] = true
-                    list[#list + 1] = { id = name, label = name }
+                    entries[#entries + 1] = { id = name, label = name }
                 end
             end
         end
     end
-    return list
+    return entries
 end
 
 -- Resolves the stored setting to a usable font file path. Older configs store
 -- a path directly, newer ones store a LibSharedMedia name.
-function ns.FontPath()
-    local value = ns.DB().fontFace
+function mod.FontPath()
+    local value = mod.DB().fontFace
     if value == nil then
         -- No font chosen: follow the CludesUI global font.
-        local path = CludesUI and CludesUI.GetFontPath and CludesUI.GetFontPath()
-        if type(path) == "string" and path ~= "" then
-            return path
+        local filePath = CludesUI and CludesUI.GetFontPath and CludesUI.GetFontPath()
+        if type(filePath) == "string" and filePath ~= "" then
+            return filePath
         end
-        value = ns.K.DEFAULT_FONT_FACE
+        value = mod.K.DEFAULT_FONT_FACE
     end
     if type(value) ~= "string" or value == "" then
-        return ns.K.DEFAULT_FONT_FACE
+        return mod.K.DEFAULT_FONT_FACE
     end
     if value:find("\\", 1, true) or value:find("/", 1, true) then
         return value
@@ -65,17 +65,17 @@ function ns.FontPath()
 
     local LSM = GetLSM()
     if LSM then
-        local ok, path = pcall(LSM.Fetch, LSM, "font", value, true)
-        if ok and type(path) == "string" and path ~= "" then
-            return path
+        local success, filePath = pcall(LSM.Fetch, LSM, "font", value, true)
+        if success and type(filePath) == "string" and filePath ~= "" then
+            return filePath
         end
     end
-    return ns.K.DEFAULT_FONT_FACE
+    return mod.K.DEFAULT_FONT_FACE
 end
 
-function ns.FontFlags()
-    local flags = ns.DB().fontFlags
-    for _, f in ipairs(ns.K.FONT_FLAGS) do
+function mod.FontFlags()
+    local flags = mod.DB().fontFlags
+    for _, f in ipairs(mod.K.FONT_FLAGS) do
         if f.id == flags then
             return f.flags
         end
@@ -84,9 +84,9 @@ function ns.FontFlags()
 end
 
 -- Per-element text colour, stored as {r, g, b}.
-function ns.FontColor(key)
-    local stored = ns.DB()[key]
-    local default = ns.K.FONT_COLOR_DEFAULTS[key] or { 1, 1, 1 }
+function mod.FontColor(key)
+    local stored = mod.DB()[key]
+    local default = mod.K.FONT_COLOR_DEFAULTS[key] or { 1, 1, 1 }
     if type(stored) ~= "table" then
         return default[1], default[2], default[3]
     end
@@ -95,6 +95,6 @@ function ns.FontColor(key)
         tonumber(stored[3]) or default[3]
 end
 
-function ns.SetFontColor(key, r, g, b)
-    ns.DB()[key] = { r, g, b }
+function mod.SetFontColor(key, r, g, b)
+    mod.DB()[key] = { r, g, b }
 end

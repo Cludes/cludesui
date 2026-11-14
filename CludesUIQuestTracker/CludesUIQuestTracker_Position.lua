@@ -6,8 +6,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- layout, so Blizzard's own layout apply places it and lifts it out of the
 -- right-side managed container. Edit Mode applies a saved layout only on
 -- reload, so leaving the default spot or changing the height asks for one.
-local _, ns = ...
-local EQT = ns.EQT
+local _, mod = ...
+local EQT = mod.EQT
 
 -- Edit Mode's Height slider: the stored value is (height - min) / step.
 local HEIGHT_MIN, HEIGHT_MAX, HEIGHT_STEP = 400, 1000, 10
@@ -31,13 +31,13 @@ local function UnlockFrame()
     end
     if not standInPlaced then
         standInPlaced = true
-        local cfg = EQT.DB()
+        local conf = EQT.DB()
         standIn = standIn or CreateFrame("Frame", nil, UIParent)
-        standIn:SetSize(f:GetWidth(), cfg.height or f.editModeHeight or 800)
+        standIn:SetSize(f:GetWidth(), conf.height or f.editModeHeight or 800)
         standIn:ClearAllPoints()
-        local pos = cfg.position
-        if pos then
-            standIn:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+        local place = conf.position
+        if place then
+            standIn:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x, place.y)
         elseif f:GetLeft() then
             standIn:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", f:GetLeft(), f:GetTop())
         end
@@ -57,21 +57,21 @@ local function ResolveLayout()
     if not blob or type(blob.activeLayout) ~= "number" then
         return nil
     end
-    local entry = blob.layouts[blob.activeLayout]
-    if type(entry) ~= "table" or type(entry.systems) ~= "table" then
+    local record = blob.layouts[blob.activeLayout]
+    if type(record) ~= "table" or type(record.systems) ~= "table" then
         return nil
     end
-    for _, sys in ipairs(entry.systems) do
+    for _, sys in ipairs(record.systems) do
         if sys.system == Enum.EditModeSystem.ObjectiveTracker then
-            return blob, entry, sys, blob.activeLayout <= numPresets
+            return blob, record, sys, blob.activeLayout <= numPresets
         end
     end
 end
 
 local function HeightRow(sys)
-    for _, row in ipairs(sys.settings) do
-        if row.setting == Enum.EditModeObjectiveTrackerSetting.Height then
-            return row
+    for _, rowFrame in ipairs(sys.settings) do
+        if rowFrame.setting == Enum.EditModeObjectiveTrackerSetting.Height then
+            return rowFrame
         end
     end
 end
@@ -90,19 +90,19 @@ end
 
 -- Writes the saved spot and height into the active layout where it holds
 -- anything else. "preset" when that layout cannot be saved.
-local function WriteLayout(cfg)
-    local blob, entry, sys, isPreset = ResolveLayout()
+local function WriteLayout(conf)
+    local blob, record, sys, isPreset = ResolveLayout()
     if not sys then
         return
     end
-    local pos = cfg.position
+    local place = conf.position
     local scale = _G.ObjectiveTrackerFrame:GetScale()
-    emAnchor.point, emAnchor.relativePoint = pos.point, pos.relPoint or pos.point
-    emAnchor.offsetX, emAnchor.offsetY = pos.x * scale, pos.y * scale
-    local row = HeightRow(sys)
-    local value = cfg.height and (cfg.height - HEIGHT_MIN) / HEIGHT_STEP
+    emAnchor.point, emAnchor.relativePoint = place.point, place.relPoint or place.point
+    emAnchor.offsetX, emAnchor.offsetY = place.x * scale, place.y * scale
+    local rowFrame = HeightRow(sys)
+    local value = conf.height and (conf.height - HEIGHT_MIN) / HEIGHT_STEP
     local anchorOK = AnchorAgrees(sys)
-    local heightOK = not value or (row and row.value == value)
+    local heightOK = not value or (rowFrame and rowFrame.value == value)
     if anchorOK and heightOK then
         return
     end
@@ -110,7 +110,7 @@ local function WriteLayout(cfg)
         return "preset"
     end
     if not anchorOK then
-        CludesUI.NoteEditModeAnchor(entry, sys, emAnchor)
+        CludesUI.NoteEditModeAnchor(record, sys, emAnchor)
         sys.anchorInfo = {
             point = emAnchor.point,
             relativeTo = emAnchor.relativeTo,
@@ -122,9 +122,9 @@ local function WriteLayout(cfg)
         sys.isInDefaultPosition = false
     end
     if not heightOK then
-        if row then
-            CludesUI.NoteEditModeSetting(entry, sys, row.setting, row.value, value)
-            row.value = value
+        if rowFrame then
+            CludesUI.NoteEditModeSetting(record, sys, rowFrame.setting, rowFrame.value, value)
+            rowFrame.value = value
         else
             sys.settings[#sys.settings + 1] =
                 { setting = Enum.EditModeObjectiveTrackerSetting.Height, value = value }
@@ -136,13 +136,14 @@ end
 
 -- Back to Edit Mode's default spot, as its own Reset To Default Position.
 local function ResetLayout()
-    local blob, entry, sys, isPreset = ResolveLayout()
+    local blob, record, sys, isPreset = ResolveLayout()
     if not sys or isPreset or sys.isInDefaultPosition then
         return false
     end
-    local def = EditModePresetLayoutManager:GetDefaultSystemAnchorInfo(Enum.EditModeSystem.ObjectiveTracker)
-    CludesUI.NoteEditModeAnchor(entry, sys, def)
-    sys.anchorInfo = def
+    local spec_def =
+        EditModePresetLayoutManager:GetDefaultSystemAnchorInfo(Enum.EditModeSystem.ObjectiveTracker)
+    CludesUI.NoteEditModeAnchor(record, sys, spec_def)
+    sys.anchorInfo = spec_def
     sys.anchorInfo2 = nil
     sys.isInDefaultPosition = true
     C_EditMode.SaveLayouts(blob)
@@ -152,12 +153,12 @@ end
 -- While we own the spot, Edit Mode's selection box cannot pick the tracker
 -- up: a drag there would be overwritten by the next sync. Only a selection
 -- turned off here is turned back on.
-local function SetEditModeSelectable(on)
-    if on and not selectionOff then
+local function SetEditModeSelectable(enabled)
+    if enabled and not selectionOff then
         return
     end
-    selectionOff = not on
-    CludesUI.SetEditModeChildInert(_G.ObjectiveTrackerFrame.Selection, not on)
+    selectionOff = not enabled
+    CludesUI.SetEditModeChildInert(_G.ObjectiveTrackerFrame.Selection, not enabled)
 end
 
 local function OfferReload()
@@ -185,17 +186,17 @@ end
 
 function EQT.SyncPosition()
     syncQueued = nil
-    local cfg = EQT.DB()
+    local conf = EQT.DB()
     if CludesUI._unlockActive then
         return
     end
     -- A profile with no spot of ours hands the selection back to Edit Mode.
-    if not cfg.position then
+    if not conf.position then
         SetEditModeSelectable(true)
         return
     end
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("QTPosition", EQT.SyncPosition)
+        mod.CombatQueue.Defer("QTPosition", EQT.SyncPosition)
         return
     end
     if not hooked then
@@ -216,7 +217,7 @@ function EQT.SyncPosition()
     end
     local userChange = changed
     changed = nil
-    if WriteLayout(cfg) == "preset" then
+    if WriteLayout(conf) == "preset" then
         if userChange then
             WarnPreset()
         end
@@ -228,13 +229,13 @@ function EQT.SyncPosition()
     end
     SetEditModeSelectable(false)
     -- Edit Mode has not applied the written spot or height yet.
-    if f:IsInDefaultPosition() or (cfg.height and f.editModeHeight ~= cfg.height) then
+    if f:IsInDefaultPosition() or (conf.height and f.editModeHeight ~= conf.height) then
         OfferReload()
         return
     end
-    local pos = cfg.position
+    local place = conf.position
     CludesUI.ClearFramePoints(f)
-    CludesUI.SetFramePoint(f, pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+    CludesUI.SetFramePoint(f, place.point, UIParent, place.relPoint or place.point, place.x, place.y)
     -- The login anchor pass may have run while the tracker was still held.
     CludesUI.ReapplyUnlockAnchor("EQT_Tracker")
 end
@@ -242,7 +243,7 @@ end
 local function ApplyReset()
     resetPending = nil
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("QTPositionReset", ApplyReset)
+        mod.CombatQueue.Defer("QTPositionReset", ApplyReset)
         return
     end
     if EQT.DB().position then
@@ -273,12 +274,12 @@ function EQT.InitPosition()
             -- The shared Edit Mode layout holds the spot, and a change takes a
             -- reload: one spot for every spec.
             noSpecLayout = true,
-            setHeight = function(_, h)
-                h = math.floor(h / HEIGHT_STEP + 0.5) * HEIGHT_STEP
-                h = math.max(HEIGHT_MIN, math.min(HEIGHT_MAX, h))
-                EQT.Set("height", h)
+            setHeight = function(_, hgt)
+                hgt = math.floor(hgt / HEIGHT_STEP + 0.5) * HEIGHT_STEP
+                hgt = math.max(HEIGHT_MIN, math.min(HEIGHT_MAX, hgt))
+                EQT.Set("height", hgt)
                 if standInPlaced then
-                    standIn:SetHeight(h)
+                    standIn:SetHeight(hgt)
                 end
                 if CludesUI._unlockActive then
                     changed = true
@@ -288,11 +289,14 @@ function EQT.InitPosition()
             end,
             -- Saved by its top edge: the tracker grows down, and a moved
             -- tracker takes its Height setting.
-            savePos = function(_, point, relPoint, x, y)
-                if point == "CENTER" then
-                    point, relPoint, y = "TOP", "CENTER", y + UnlockFrame():GetHeight() / 2
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                if anchorPoint == "CENTER" then
+                    anchorPoint, relPoint, posY = "TOP", "CENTER", posY + UnlockFrame():GetHeight() / 2
                 end
-                EQT.Set("position", { point = point, relPoint = relPoint or point, x = x, y = y })
+                EQT.Set(
+                    "position",
+                    { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+                )
                 if CludesUI._unlockActive then
                     changed = true
                 else
@@ -318,8 +322,8 @@ function EQT.InitPosition()
     }, "CludesUIQuestTracker")
 
     -- Layout writes and reload prompts wait for the session to close.
-    CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(active, closeAction)
-        if active then
+    CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive, closeAction)
+        if isActive then
             sessionHeight = EQT.DB().height
             return
         end

@@ -29,7 +29,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  full CDM rebuild, which re-runs the filter, so no events of our own are
 --  registered.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local wipe = wipe
 local tremove = table.remove
@@ -37,25 +37,25 @@ local tremove = table.remove
 local Hold = CludesUI.TalentConditionsHold
 
 -- Talent edit landed (TRAIT_CONFIG_UPDATED and friends): forget every node.
-ns.TalentCondInvalidate = CludesUI.TalentCondInvalidate
+mod.TalentCondInvalidate = CludesUI.TalentCondInvalidate
 
 -- True when the node (or, for a choice node, that side of it) is taken right now.
-ns.TalentCondIsTaken = CludesUI.TalentCondIsTaken
+mod.TalentCondIsTaken = CludesUI.TalentCondIsTaken
 
 -- True when every condition in the list holds (an empty or missing list holds).
-function ns.TalentConditionsHold(conds)
+function mod.TalentConditionsHold(conds)
     return Hold(conds)
 end
 
 -- Empty Slots are injected after TalentCondFilterPass, with no spell resolver.
-function ns.EmptySlotTalentConditionsHold(barKey, marker)
-    if not ns._cdmAnyTalentCond then
+function mod.EmptySlotTalentConditionsHold(barId, marker)
+    if not mod._cdmAnyTalentCond then
         return true
     end
-    local store = ns.GetSpellSettingsStore(barKey)
-    local entry = store and store[marker]
-    local conds = type(entry) == "table" and rawget(entry, "talentConditions")
-    return not conds or ns.TalentConditionsHold(conds)
+    local storage = mod.GetSpellSettingsStore(barId)
+    local record = storage and storage[marker]
+    local conds = type(record) == "table" and rawget(record, "talentConditions")
+    return not conds or mod.TalentConditionsHold(conds)
 end
 
 -------------------------------------------------------------------------------
@@ -64,27 +64,27 @@ end
 --  keeps its preview slot and its conditions stay reachable. The records are
 --  reused tables, wiped per pass and read-only for callers.
 -------------------------------------------------------------------------------
-local _ecmeFC = ns._ecmeFC
-local _hookFrameData = ns._hookFrameData
+local _ecmeFC = mod._ecmeFC
+local _hookFrameData = mod._hookFrameData
 local _hiddenSets = {} -- barKey -> { [spellID] = true }
 local _hiddenFrames = {} -- barKey -> { frame, ... }
 local _anyHidden = false
 local _empty = {}
 
 -- Spells the filter dropped from this bar in the last pass (shared empty table when none).
-function ns.TalentCondHiddenSet(barKey)
-    return (barKey and _hiddenSets[barKey]) or _empty
+function mod.TalentCondHiddenSet(barId)
+    return (barId and _hiddenSets[barId]) or _empty
 end
 
 -- The dropped frames themselves, same lifetime (shared empty list when none).
-function ns.TalentCondHiddenFrames(barKey)
-    return (barKey and _hiddenFrames[barKey]) or _empty
+function mod.TalentCondHiddenFrames(barId)
+    return (barId and _hiddenFrames[barId]) or _empty
 end
 
 -- cdFrames: CollectAndReanchor's per-bar frame lists (edited in place). Called only
 -- while ns._cdmAnyTalentCond is set, which never clears in a session, so every
 -- claimed frame passes through here and a stale tcHidden tag always gets cleared.
-function ns.TalentCondFilterPass(cdFrames)
+function mod.TalentCondFilterPass(cdFrames)
     if _anyHidden then
         for _, s in pairs(_hiddenSets) do
             wipe(s)
@@ -95,10 +95,10 @@ function ns.TalentCondFilterPass(cdFrames)
         _anyHidden = false
     end
     local configID -- read once, on the first frame that carries conditions (false = none)
-    for bk, frames in pairs(cdFrames) do
-        for i = #frames, 1, -1 do
-            local frame = frames[i]
-            local fc = _ecmeFC[frame]
+    for bk, frameList in pairs(cdFrames) do
+        for idx = #frameList, 1, -1 do
+            local widget = frameList[idx]
+            local fc = _ecmeFC[widget]
             if fc then
                 local conds
                 local cdSid = fc.replacesCd
@@ -106,14 +106,14 @@ function ns.TalentCondFilterPass(cdFrames)
                     -- Replace-with-Buff frame: follows its cooldown's own CD-family
                     -- entry. The resolver would read the buff store for this
                     -- buff-viewer frame on any bar that has ever hosted a buff.
-                    local store = ns.GetSpellSettingsStore(bk)
-                    local e = store and store[cdSid]
+                    local storage = mod.GetSpellSettingsStore(bk)
+                    local e = storage and storage[cdSid]
                     conds = type(e) == "table" and rawget(e, "talentConditions") or nil
                 elseif not fc.isHostedBuff then
                     -- Hosted buffs are buff-family and never carry the setting.
-                    local sid = fc.spellID
-                    if sid and sid > 0 then
-                        local ss = ns.ResolveSpellSettings(frame, sid, false, bk)
+                    local spellRef = fc.spellID
+                    if spellRef and spellRef > 0 then
+                        local ss = mod.ResolveSpellSettings(widget, spellRef, false, bk)
                         conds = ss and rawget(ss, "talentConditions")
                     end
                 end
@@ -125,26 +125,26 @@ function ns.TalentCondFilterPass(cdFrames)
                     hide = not Hold(conds, configID)
                 end
                 if hide then
-                    tremove(frames, i)
-                    local sid = fc.spellID
-                    if sid then
-                        local set = _hiddenSets[bk]
-                        if not set then
-                            set = {}
-                            _hiddenSets[bk] = set
+                    tremove(frameList, idx)
+                    local spellRef = fc.spellID
+                    if spellRef then
+                        local group = _hiddenSets[bk]
+                        if not group then
+                            group = {}
+                            _hiddenSets[bk] = group
                             _hiddenFrames[bk] = {}
                         end
-                        set[sid] = true
-                        local list = _hiddenFrames[bk]
-                        list[#list + 1] = frame
+                        group[spellRef] = true
+                        local entries = _hiddenFrames[bk]
+                        entries[#entries + 1] = widget
                         _anyHidden = true
                     end
                     -- A hidden icon stays silent: out of the CD Ready Sound watch and
                     -- disarmed; the tag (our FC entry, never the frame) also mutes the
                     -- available-alert hook until a pass lets the frame back in.
                     fc.tcHidden = true
-                    ns._cdReadySoundWatch[frame] = nil
-                    local fd = _hookFrameData[frame]
+                    mod._cdReadySoundWatch[widget] = nil
+                    local fd = _hookFrameData[widget]
                     if fd then
                         fd._cdReadyArmed = false
                     end
@@ -156,14 +156,14 @@ function ns.TalentCondFilterPass(cdFrames)
                         if fd then
                             fd._cdmAnchor = nil
                         end
-                        frame:SetAlpha(0)
+                        widget:SetAlpha(0)
                         -- Alpha does not stop hit-testing: drop the tooltip motion the bar
                         -- gave it, or it keeps catching hover and [@mouseover] over that
                         -- slot. Every pass (Blizzard's re-acquire turns it back on); a
                         -- re-claim re-applies the bar's tooltip setting. Mouse calls are
                         -- blocked in combat, where it keeps its motion until the next pass.
-                        if frame.EnableMouseMotion and not InCombatLockdown() then
-                            frame:EnableMouseMotion(false)
+                        if widget.EnableMouseMotion and not InCombatLockdown() then
+                            widget:EnableMouseMotion(false)
                         end
                     end
                 elseif fc.tcHidden then
@@ -177,18 +177,18 @@ end
 -- Talent Conditions gate: set ns._cdmAnyTalentCond once if any saved spell (any spec)
 -- has a condition. Skips the reanchor filter for non-users. Same monotonic, scanned-once
 -- contract as the other per-spell gates; talentConditions is never written to bar tiers.
-function ns.RescanTalentCondFlag()
-    if ns._cdmAnyTalentCond or ns._talentCondFlagScanned then
+function mod.RescanTalentCondFlag()
+    if mod._cdmAnyTalentCond or mod._talentCondFlagScanned then
         return
     end
     if not CludesUIDB then
         return
     end
-    ns._talentCondFlagScanned = true
-    ns.ForEachSavedSettingsBlock(function(ss)
+    mod._talentCondFlagScanned = true
+    mod.ForEachSavedSettingsBlock(function(ss)
         local conds = rawget(ss, "talentConditions")
         if type(conds) == "table" and #conds > 0 then
-            ns._cdmAnyTalentCond = true
+            mod._cdmAnyTalentCond = true
             return true
         end
     end)

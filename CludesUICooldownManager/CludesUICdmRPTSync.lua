@@ -19,7 +19,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  (extracted from the retired spell-layout experiment; the data layer here is
 --  the only part kept, re-pointed at the per-profile model.)
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local DeepCopy = CludesUI.Lite.DeepCopy
 
@@ -44,22 +44,22 @@ local function GetActiveBucket()
     if not sa then
         return nil
     end
-    if ns.GetActiveSpecProfiles then
-        ns.GetActiveSpecProfiles()
+    if mod.GetActiveSpecProfiles then
+        mod.GetActiveSpecProfiles()
     end
-    local name = ns.GetActiveProfileName and ns.GetActiveProfileName()
+    local name = mod.GetActiveProfileName and mod.GetActiveProfileName()
     return name and sa.profiles[name] or nil
 end
 
 -- Player's specs + whether each has CDM data, for the sync spec pickers. (Shared
 -- helper that used to live in the retired layouts file; the RPT UI needs it.)
-function ns.GetCDMSpecInfo()
-    local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
+function mod.GetCDMSpecInfo()
+    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local result = {}
     -- WoW Forever: one row for the player's class, keyed by the store key the
     -- Cooldown Manager runs on.
     if CludesUI.IS_FOREVER then
-        local key = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
+        local key = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
         if not key then
             return result
         end
@@ -82,8 +82,8 @@ function ns.GetCDMSpecInfo()
         return result
     end
     local numSpecs = GetNumSpecializations and GetNumSpecializations() or 0
-    for i = 1, numSpecs do
-        local specID, sName, _, sIcon = C_SpecializationInfo.GetSpecializationInfo(i)
+    for idx = 1, numSpecs do
+        local specID, sName, _, sIcon = C_SpecializationInfo.GetSpecializationInfo(idx)
         if specID then
             local key = tostring(specID)
             local prof = sp and sp[key]
@@ -117,8 +117,8 @@ end
 -- that picker has no scroll), the current class's specs are always listed, and
 -- every OTHER class's specs are listed only when this profile actually holds CDM
 -- data for them (an empty other-class spec is useless as a source).
-function ns.GetAllCDMSpecInfo()
-    local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
+function mod.GetAllCDMSpecInfo()
+    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local _, curClassFile = UnitClass("player")
     local result = {}
 
@@ -142,7 +142,7 @@ function ns.GetAllCDMSpecInfo()
         for c = 1, #classes do
             local token = classes[c]
             local isCurrentClass = (token == curClassFile)
-            local key = isCurrentClass and ns.GetActiveSpecKey and ns.GetActiveSpecKey() or nil
+            local key = isCurrentClass and mod.GetActiveSpecKey and mod.GetActiveSpecKey() or nil
             if not key then
                 key = tostring(CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, sp, true))
             end
@@ -189,11 +189,11 @@ function ns.GetAllCDMSpecInfo()
     return result
 end
 
-local function IsRPTId(id)
-    if type(id) ~= "number" then
+local function IsRPTId(ident)
+    if type(ident) ~= "number" then
         return false
     end
-    if id < 0 then
+    if ident < 0 then
         -- The negative space is SHARED: trinket slots (-13/-14) and item
         -- presets (-itemID) are sync material, but Empty Slot markers, hosted-buff
         -- markers, and cd-claim markers (at/below -EMPTY_SLOT_MARKER_BASE, which
@@ -203,7 +203,7 @@ local function IsRPTId(id)
         -- icons onto every synced spec's bars (cross-class field report,
         -- 2026-08-16), with step 2's additive re-add resurrecting them after
         -- manual removal.
-        if ns.EMPTY_SLOT_MARKER_BASE and id <= -ns.EMPTY_SLOT_MARKER_BASE then
+        if mod.EMPTY_SLOT_MARKER_BASE and ident <= -mod.EMPTY_SLOT_MARKER_BASE then
             return false
         end
         return true
@@ -214,12 +214,12 @@ local function IsRPTId(id)
     -- recognize, collect, and strip the racial slot regardless of which race's ID
     -- is stored. NormalizeRacialAssignments remaps it to each character's own
     -- racial when that spec is built.
-    if id > 0 and ns.ALL_RACIAL_SPELLS and ns.ALL_RACIAL_SPELLS[id] then
+    if ident > 0 and mod.ALL_RACIAL_SPELLS and mod.ALL_RACIAL_SPELLS[ident] then
         return true
     end -- racial (any race)
     return false
 end
-ns.IsRPTSyncId = IsRPTId
+mod.IsRPTSyncId = IsRPTId
 
 -- Buff-bar PRESET ids (Bloodlust/Heroism, Time Spiral, Light's Potential, the buff
 -- potions), derived from ns.BUFF_BAR_PRESETS. Built lazily so it picks up the
@@ -229,12 +229,12 @@ local _buffPresetIds
 local function BuffPresetIds()
     if not _buffPresetIds then
         _buffPresetIds = {}
-        local presets = ns.BUFF_BAR_PRESETS
+        local presets = mod.BUFF_BAR_PRESETS
         if type(presets) == "table" then
             for _, preset in ipairs(presets) do
                 if type(preset.spellIDs) == "table" then
-                    for _, sid in ipairs(preset.spellIDs) do
-                        _buffPresetIds[sid] = true
+                    for _, spellRef in ipairs(preset.spellIDs) do
+                        _buffPresetIds[spellRef] = true
                     end
                 end
             end
@@ -250,41 +250,41 @@ end
 -- sync can never remove or duration-orphan a buff preset (additive-only). The
 -- duration requirement keeps it to buffs bars (CD/utility presets use
 -- customSpellDurations, never spellDurations).
-local function IsBuffSyncId(sd, id)
-    return BuffPresetIds()[id]
+local function IsBuffSyncId(sd, ident)
+    return BuffPresetIds()[ident]
         and type(sd) == "table"
         and type(sd.spellDurations) == "table"
-        and (sd.spellDurations[id] or 0) > 0
+        and (sd.spellDurations[ident] or 0) > 0
 end
 
 -- Set of buff-preset ids already present anywhere in a spec's bars, so additive
 -- sync never seeds a buff preset onto a second bar (cross-bar duplication guard).
 local function BuffIdsPresentOnTarget(tgtProf)
-    local set = {}
+    local group = {}
     if type(tgtProf) ~= "table" or type(tgtProf.barSpells) ~= "table" then
-        return set
+        return group
     end
     local presetIds = BuffPresetIds()
-    for barKey, sd in pairs(tgtProf.barSpells) do
-        if barKey ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
-            for _, id in ipairs(sd.assignedSpells) do
-                if presetIds[id] then
-                    set[id] = true
+    for barId, sd in pairs(tgtProf.barSpells) do
+        if barId ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
+            for _, ident in ipairs(sd.assignedSpells) do
+                if presetIds[ident] then
+                    group[ident] = true
                 end
             end
         end
     end
-    return set
+    return group
 end
 
 -- Active profile's synced-spec set, or nil. Read-only.
-function ns.GetRPTSyncSpecs()
+function mod.GetRPTSyncSpecs()
     local b = GetActiveBucket()
     return b and b.rptSyncSpecs or nil
 end
 
-function ns.HasRPTSync()
-    local s = ns.GetRPTSyncSpecs()
+function mod.HasRPTSync()
+    local s = mod.GetRPTSyncSpecs()
     return s ~= nil and next(s) ~= nil
 end
 
@@ -303,32 +303,32 @@ local function CollectRPT(specProf)
     local stCD = specProf.spellSettingsCD
     local stBuff = specProf.spellSettingsBuff
     local settingsCD, settingsBuff
-    for barKey, sd in pairs(specProf.barSpells) do
-        if barKey ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
+    for barId, sd in pairs(specProf.barSpells) do
+        if barId ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
             local ids, durations
-            for _, id in ipairs(sd.assignedSpells) do
-                if IsRPTId(id) then
+            for _, ident in ipairs(sd.assignedSpells) do
+                if IsRPTId(ident) then
                     ids = ids or {}
-                    ids[#ids + 1] = id
-                    local s = stCD and stCD[id]
+                    ids[#ids + 1] = ident
+                    local s = stCD and stCD[ident]
                     if type(s) == "table" then
                         settingsCD = settingsCD or {}
-                        settingsCD[id] = DeepCopy(s)
+                        settingsCD[ident] = DeepCopy(s)
                     end
-                elseif IsBuffSyncId(sd, id) then
+                elseif IsBuffSyncId(sd, ident) then
                     ids = ids or {}
-                    ids[#ids + 1] = id
+                    ids[#ids + 1] = ident
                     durations = durations or {}
-                    durations[id] = sd.spellDurations[id]
-                    local s = stBuff and stBuff[id]
+                    durations[ident] = sd.spellDurations[ident]
+                    local s = stBuff and stBuff[ident]
                     if type(s) == "table" then
                         settingsBuff = settingsBuff or {}
-                        settingsBuff[id] = DeepCopy(s)
+                        settingsBuff[ident] = DeepCopy(s)
                     end
                 end
             end
             if ids then
-                out[barKey] = { ids = ids, durations = durations }
+                out[barId] = { ids = ids, durations = durations }
             end
         end
     end
@@ -382,9 +382,9 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
     -- back to default. Preserving existing slots also makes this pass idempotent, so
     -- re-propagation on spec change / logout no longer resets positions.
     local srcBarOf = {}
-    for barKey, data in pairs(srcRPT) do
-        for _, id in ipairs(data.ids) do
-            srcBarOf[id] = barKey
+    for barId, payload in pairs(srcRPT) do
+        for _, ident in ipairs(payload.ids) do
+            srcBarOf[ident] = barId
         end
     end
 
@@ -395,21 +395,21 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
     --    may simply be unconfigured -- so we never strip a configured target down
     --    to match an empty/partial source (that wiped Bloodlust/pots/trinkets off
     --    synced specs). RPT ids that stay on the same bar keep their slot position.
-    for barKey, sd in pairs(tgtProf.barSpells) do
-        if barKey ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
-            local w = 1
+    for barId, sd in pairs(tgtProf.barSpells) do
+        if barId ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
+            local wid = 1
             for r = 1, #sd.assignedSpells do
-                local id = sd.assignedSpells[r]
-                if IsRPTId(id) and srcBarOf[id] and srcBarOf[id] ~= barKey then
+                local ident = sd.assignedSpells[r]
+                if IsRPTId(ident) and srcBarOf[ident] and srcBarOf[ident] ~= barId then
                     -- Bar move only: per-spell settings live in the family
                     -- stores now and travel with the id -- nothing to clear.
                 else
-                    sd.assignedSpells[w] = id
-                    w = w + 1
+                    sd.assignedSpells[wid] = ident
+                    wid = wid + 1
                 end
             end
-            for i = w, #sd.assignedSpells do
-                sd.assignedSpells[i] = nil
+            for idx = wid, #sd.assignedSpells do
+                sd.assignedSpells[idx] = nil
             end
         end
     end
@@ -423,34 +423,34 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
     --    so a spec's own per-icon buff styling is never reset by re-propagation.
     --    Ids already present keep their current slot.
     local tgtBuffPresent = BuffIdsPresentOnTarget(tgtProf)
-    for barKey, data in pairs(srcRPT) do
-        local sd = tgtProf.barSpells[barKey]
+    for barId, payload in pairs(srcRPT) do
+        local sd = tgtProf.barSpells[barId]
         if not sd then
             sd = { assignedSpells = {} }
-            tgtProf.barSpells[barKey] = sd
+            tgtProf.barSpells[barId] = sd
         end
         if not sd.assignedSpells then
             sd.assignedSpells = {}
         end
         local present = {}
-        for _, id in ipairs(sd.assignedSpells) do
-            present[id] = true
+        for _, ident in ipairs(sd.assignedSpells) do
+            present[ident] = true
         end
-        local durs = data.durations
-        for _, id in ipairs(data.ids) do
-            if durs and durs[id] ~= nil then
+        local durs = payload.durations
+        for _, ident in ipairs(payload.ids) do
+            if durs and durs[ident] ~= nil then
                 -- Buff preset: add only if absent from EVERY buffs-family bar of the
                 -- target, and always pair the duration so it renders.
-                if not present[id] and not tgtBuffPresent[id] then
-                    sd.assignedSpells[#sd.assignedSpells + 1] = id
-                    present[id] = true
-                    tgtBuffPresent[id] = true
+                if not present[ident] and not tgtBuffPresent[ident] then
+                    sd.assignedSpells[#sd.assignedSpells + 1] = ident
+                    present[ident] = true
+                    tgtBuffPresent[ident] = true
                     sd.spellDurations = sd.spellDurations or {}
-                    sd.spellDurations[id] = sd.spellDurations[id] or durs[id]
+                    sd.spellDurations[ident] = sd.spellDurations[ident] or durs[ident]
                 end
-            elseif not present[id] then
-                sd.assignedSpells[#sd.assignedSpells + 1] = id
-                present[id] = true
+            elseif not present[ident] then
+                sd.assignedSpells[#sd.assignedSpells + 1] = ident
+                present[ident] = true
             end
         end
     end
@@ -465,8 +465,8 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
                 tgt = {}
                 tgtProf.spellSettingsCD = tgt
             end
-            for id, s in pairs(srcSettings.cd) do
-                tgt[id] = DeepCopy(s)
+            for ident, s in pairs(srcSettings.cd) do
+                tgt[ident] = DeepCopy(s)
             end
         end
         if srcSettings.buff then
@@ -475,21 +475,21 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
                 tgt = {}
                 tgtProf.spellSettingsBuff = tgt
             end
-            for id, s in pairs(srcSettings.buff) do
-                if tgt[id] == nil then
-                    tgt[id] = DeepCopy(s)
+            for ident, s in pairs(srcSettings.buff) do
+                if tgt[ident] == nil then
+                    tgt[ident] = DeepCopy(s)
                 end
             end
         end
         -- Sync REPLACES entry tables (fresh copies): retire memoized
         -- resolution results. Targets are non-active specs by contract, but
         -- the bump is one integer on a rare user-triggered sync.
-        ns._cdmResGen = (ns._cdmResGen or 0) + 1
+        mod._cdmResGen = (mod._cdmResGen or 0) + 1
     end
 end
 
 -- Propagate RPT from sourceSpecKey to all OTHER synced specs in the active profile.
-function ns.PropagateRPTFrom(sourceSpecKey)
+function mod.PropagateRPTFrom(sourceSpecKey)
     if not sourceSpecKey then
         return
     end
@@ -522,19 +522,19 @@ end
 -- Called after an RPT-affecting edit: if the ACTIVE spec is synced, push its RPT
 -- to the other synced specs. The active spec (the one shown) is the source, so
 -- no rebuild is needed -- only the off-screen synced specs' data changes.
-function ns.MaybePropagateRPT()
-    if not ns.HasRPTSync() then
+function mod.MaybePropagateRPT()
+    if not mod.HasRPTSync() then
         return
     end
-    local active = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
-    if not active or active == "0" then
+    local isActive = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
+    if not isActive or isActive == "0" then
         return
     end
-    ns.PropagateRPTFrom(active)
+    mod.PropagateRPTFrom(isActive)
 end
 
 -- First-time setup: set the synced-spec set + align ALL of them to sourceSpecKey.
-function ns.SetupRPTSync(specsSet, sourceSpecKey)
+function mod.SetupRPTSync(specsSet, sourceSpecKey)
     local b = GetActiveBucket()
     if not b then
         return false
@@ -543,8 +543,8 @@ function ns.SetupRPTSync(specsSet, sourceSpecKey)
         b.specProfiles = {}
     end
     b.rptSyncSpecs = {}
-    for k, v in pairs(specsSet) do
-        if v then
+    for k, val in pairs(specsSet) do
+        if val then
             b.rptSyncSpecs[k] = true
         end
     end
@@ -560,7 +560,7 @@ end
 
 -- Update an existing sync's spec set: align only NEWLY-added specs (from a still-
 -- synced source, preferring the active spec); removed specs simply stop syncing.
-function ns.UpdateRPTSyncSpecs(specsSet)
+function mod.UpdateRPTSyncSpecs(specsSet)
     local b = GetActiveBucket()
     if not b then
         return false
@@ -569,10 +569,10 @@ function ns.UpdateRPTSyncSpecs(specsSet)
         b.specProfiles = {}
     end
     local old = b.rptSyncSpecs or {}
-    local active = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
+    local isActive = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local source
-    if active and specsSet[active] and old[active] then
-        source = active
+    if isActive and specsSet[isActive] and old[isActive] then
+        source = isActive
     else
         for k in pairs(old) do
             if specsSet[k] then
@@ -582,8 +582,8 @@ function ns.UpdateRPTSyncSpecs(specsSet)
         end
     end
     local newSet = {}
-    for k, v in pairs(specsSet) do
-        if v then
+    for k, val in pairs(specsSet) do
+        if val then
             newSet[k] = true
         end
     end
@@ -598,7 +598,7 @@ function ns.UpdateRPTSyncSpecs(specsSet)
     return true
 end
 
-function ns.ClearRPTSync()
+function mod.ClearRPTSync()
     local b = GetActiveBucket()
     if b then
         b.rptSyncSpecs = nil
@@ -610,13 +610,13 @@ end
 -- changes are covered by a spell-picker close hook in the options file.
 do
     local function Wrap(fnName)
-        local orig = ns[fnName]
+        local orig = mod[fnName]
         if type(orig) ~= "function" then
             return
         end
-        ns[fnName] = function(...)
+        mod[fnName] = function(...)
             local a, b = orig(...)
-            ns.MaybePropagateRPT()
+            mod.MaybePropagateRPT()
             return a, b
         end
     end

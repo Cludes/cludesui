@@ -8,27 +8,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  ApplyGroupConfig.
 --  Reads the earlier Player Aura Bars files through ns and ns._pabInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._pabInternals
+local _, mod = ...
+local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local BuildChain, ClassByKey, ClassEnabled = I.BuildChain, I.ClassByKey, I.ClassEnabled
-local DEBUFF_FILTER_ORDER, DebuffSubtractFn = I.DEBUFF_FILTER_ORDER, I.DebuffSubtractFn
-local MergeTypes, PAB_ApplyDmFx = I.MergeTypes, I.PAB_ApplyDmFx
-local PAB_FxEntryActive, PAB_FxSafeToForce = I.PAB_FxEntryActive, I.PAB_FxSafeToForce
-local PAB_FxSizeFor, PAB_FxWantsCategory = I.PAB_FxSizeFor, I.PAB_FxWantsCategory
-local PabShapedSize, PabSnap = I.PabShapedSize, I.PabSnap
-local VisibleCandidateClasses = I.VisibleCandidateClasses
-local VisibleTokenClasses, DebuffCatchAllOn = I.VisibleTokenClasses, I.DebuffCatchAllOn
-local ResolveSortDirection, ResolveSortMethod = I.ResolveSortDirection, I.ResolveSortMethod
+local BuildChain, ClassByKey, ClassEnabled = Inner.BuildChain, Inner.ClassByKey, Inner.ClassEnabled
+local DEBUFF_FILTER_ORDER, DebuffSubtractFn = Inner.DEBUFF_FILTER_ORDER, Inner.DebuffSubtractFn
+local MergeTypes, PAB_ApplyDmFx = Inner.MergeTypes, Inner.PAB_ApplyDmFx
+local PAB_FxEntryActive, PAB_FxSafeToForce = Inner.PAB_FxEntryActive, Inner.PAB_FxSafeToForce
+local PAB_FxSizeFor, PAB_FxWantsCategory = Inner.PAB_FxSizeFor, Inner.PAB_FxWantsCategory
+local PabShapedSize, PabSnap = Inner.PabShapedSize, Inner.PabSnap
+local VisibleCandidateClasses = Inner.VisibleCandidateClasses
+local VisibleTokenClasses, DebuffCatchAllOn = Inner.VisibleTokenClasses, Inner.DebuffCatchAllOn
+local ResolveSortDirection, ResolveSortMethod = Inner.ResolveSortDirection, Inner.ResolveSortMethod
 
 local AK -- CludesUI.AuraKit, resolved at first use (see SetAK)
-I.AKSetters[#I.AKSetters + 1] = function(v)
+Inner.AKSetters[#Inner.AKSetters + 1] = function(v)
     AK = v
 end
 
@@ -56,36 +56,36 @@ end
 local DebuffChainFor
 do
     local LISTED = {}
-    for i = 1, #DEBUFF_FILTER_ORDER do
-        LISTED[DEBUFF_FILTER_ORDER[i]] = true
+    for idx = 1, #DEBUFF_FILTER_ORDER do
+        LISTED[DEBUFF_FILTER_ORDER[idx]] = true
     end
 
     -- Types of `a` also in / not in `b`, as a fresh set; nil when none are left.
     local function TypesAnd(a, b)
-        local out
+        local result
         for k in pairs(a) do
             if b[k] then
-                out = out or {}
-                out[k] = true
+                result = result or {}
+                result[k] = true
             end
         end
-        return out
+        return result
     end
     local function TypesMinus(a, b)
-        local out
+        local result
         for k in pairs(a) do
             if not (b and b[k]) then
-                out = out or {}
-                out[k] = true
+                result = result or {}
+                result[k] = true
             end
         end
-        return out
+        return result
     end
 
     local function CopyPart(p)
         local t, c = {}, {}
-        for i = 1, #p.tokens do
-            t[i] = p.tokens[i]
+        for idx = 1, #p.tokens do
+            t[idx] = p.tokens[idx]
         end
         for k, v in pairs(p.cand) do
             c[k] = v
@@ -94,8 +94,8 @@ do
     end
 
     local function HasToken(p, tok)
-        for i = 1, #p.tokens do
-            if p.tokens[i] == tok then
+        for idx = 1, #p.tokens do
+            if p.tokens[idx] == tok then
                 return true
             end
         end
@@ -106,48 +106,48 @@ do
     -- together (Non-Player with Cast By You, Cast By You with From Any Player hidden,
     -- a dispel type with Dispels hidden); else the part and the categories every
     -- member belongs to.
-    local function MatchBase(cfg)
-        if cfg.debuffMatch ~= "all" or cfg.showAllDebuffs ~= false then
+    local function MatchBase(conf)
+        if conf.debuffMatch ~= "all" or conf.showAllDebuffs ~= false then
             return nil
         end
         local tokenClasses, candidateClasses = VisibleTokenClasses(), VisibleCandidateClasses()
         if not (tokenClasses and candidateClasses) then
             return nil
         end
-        local neg = cfg.negClassFilters
+        local neg = conf.negClassFilters
         local tokens, cand, cats = { "HARMFUL" }, {}, {}
         local picks, nTypes, clash = 0, 0, false
         local inc, anyType, exc, typeKey, playerTok, hideBool, dispTok
-        for i = 1, #tokenClasses do
-            local class = tokenClasses[i]
-            if LISTED[class.key] then
-                if ClassEnabled(class, false, cfg) then
+        for idx = 1, #tokenClasses do
+            local classFile = tokenClasses[idx]
+            if LISTED[classFile.key] then
+                if ClassEnabled(classFile, false, conf) then
                     picks = picks + 1
-                    tokens[#tokens + 1] = class.token
-                    cats[#cats + 1] = class.key
-                    if class.key == "castbyme" then
+                    tokens[#tokens + 1] = classFile.token
+                    cats[#cats + 1] = classFile.key
+                    if classFile.key == "castbyme" then
                         playerTok = true
                     end
-                    if class.key == "dispellable" then
+                    if classFile.key == "dispellable" then
                         dispTok = true
                     end
-                elseif neg and neg[class.skey] == true then
-                    tokens[#tokens + 1] = class.neg or ("!" .. class.token)
+                elseif neg and neg[classFile.skey] == true then
+                    tokens[#tokens + 1] = classFile.neg or ("!" .. classFile.token)
                 end
             end
         end
-        for i = 1, #candidateClasses do
-            local class = candidateClasses[i]
-            local cc = class.cand
-            if cc and LISTED[class.key] then
-                if ClassEnabled(class, false, cfg) then
+        for idx = 1, #candidateClasses do
+            local classFile = candidateClasses[idx]
+            local cc = classFile.cand
+            if cc and LISTED[classFile.key] then
+                if ClassEnabled(classFile, false, conf) then
                     picks = picks + 1
-                    if class.key == "dispeltyped" then
+                    if classFile.key == "dispeltyped" then
                         anyType = cc.includeDispelTypes
-                        cats[#cats + 1] = class.key
+                        cats[#cats + 1] = classFile.key
                     elseif cc.includeDispelTypes then
                         inc = MergeTypes(inc, cc.includeDispelTypes)
-                        nTypes, typeKey = nTypes + 1, class.key
+                        nTypes, typeKey = nTypes + 1, classFile.key
                     else
                         for k, v in pairs(cc) do
                             -- Two picks on one field (stale data only: the setters keep
@@ -157,9 +157,9 @@ do
                             end
                             cand[k] = v
                         end
-                        cats[#cats + 1] = class.key
+                        cats[#cats + 1] = classFile.key
                     end
-                elseif neg and neg[class.skey] == true then
+                elseif neg and neg[classFile.skey] == true then
                     if cc.includeDispelTypes then
                         exc = MergeTypes(exc, cc.includeDispelTypes)
                     else
@@ -219,12 +219,12 @@ do
     -- How category `class` relates to part p: "in" when every member belongs to it;
     -- nil when no member can; else "split" under `probe`, or the (p AND class,
     -- p AND NOT class) parts.
-    local function Relate(p, class, probe)
-        if class.token then
-            if HasToken(p, class.token) then
+    local function Relate(p, classFile, probe)
+        if classFile.token then
+            if HasToken(p, classFile.token) then
                 return "in"
             end
-            local negTok = class.neg or ("!" .. class.token)
+            local negTok = classFile.neg or ("!" .. classFile.token)
             if HasToken(p, negTok) then
                 return nil
             end
@@ -232,42 +232,42 @@ do
                 return "split"
             end
             local a, b = CopyPart(p), CopyPart(p)
-            a.tokens[#a.tokens + 1] = class.token
+            a.tokens[#a.tokens + 1] = classFile.token
             b.tokens[#b.tokens + 1] = negTok
             return a, b
         end
-        local cc = class.cand
+        local cc = classFile.cand
         if not cc then
             return nil
         end
-        local set = cc.includeDispelTypes
-        if set then
+        local group = cc.includeDispelTypes
+        if group then
             local inc, exc = p.cand.includeDispelTypes, p.cand.excludeDispelTypes
-            if inc and not TypesMinus(inc, set) then
+            if inc and not TypesMinus(inc, group) then
                 return "in"
             end
-            local pos
+            local place
             if inc then
-                pos = TypesAnd(inc, set)
+                place = TypesAnd(inc, group)
             else
-                pos = set
+                place = group
             end
-            if pos then
-                pos = TypesMinus(pos, exc)
+            if place then
+                place = TypesMinus(place, exc)
             end
-            if not pos then
+            if not place then
                 return nil
             end
             if probe then
                 return "split"
             end
             local a, b = CopyPart(p), CopyPart(p)
-            a.cand.includeDispelTypes = pos
+            a.cand.includeDispelTypes = place
             a.cand.excludeDispelTypes = nil
             if inc then
-                b.cand.includeDispelTypes = TypesMinus(inc, set)
+                b.cand.includeDispelTypes = TypesMinus(inc, group)
             else
-                b.cand.excludeDispelTypes = MergeTypes(exc, set)
+                b.cand.excludeDispelTypes = MergeTypes(exc, group)
             end
             return a, b
         end
@@ -289,8 +289,8 @@ do
 
     local function MatchLink(p, cats)
         local sorted = {}
-        for i = 1, #cats do
-            sorted[i] = cats[i]
+        for idx = 1, #cats do
+            sorted[idx] = cats[idx]
         end
         table.sort(sorted)
         return {
@@ -303,8 +303,8 @@ do
 
     -- nil when Match All does not apply; empty when its picks can never match; else
     -- the painted splits (block order) followed by the rest of the group.
-    local function MatchAllChain(cfg)
-        local rest, cats = MatchBase(cfg)
+    local function MatchAllChain(conf)
+        local rest, cats = MatchBase(conf)
         if rest == nil then
             return nil
         end
@@ -312,27 +312,27 @@ do
             return {}
         end
         local chain = {}
-        local list = cfg.fxList
-        if list then
+        local entries = conf.fxList
+        if entries then
             local inSet, seen = {}, {}
-            for i = 1, #cats do
-                inSet[cats[i]] = true
+            for idx = 1, #cats do
+                inSet[cats[idx]] = true
             end
-            for i = 1, #list do
-                local e = list[i]
+            for idx = 1, #entries do
+                local e = entries[idx]
                 local f = e.filters
                 if f and PAB_FxEntryActive(e) then
                     -- First block wins: one naming a category the rest already
                     -- belongs to paints all of it, and no later block reaches it.
                     local hit = false
-                    for j = 1, #DEBUFF_FILTER_ORDER do
-                        local key = DEBUFF_FILTER_ORDER[j]
+                    for jdx = 1, #DEBUFF_FILTER_ORDER do
+                        local key = DEBUFF_FILTER_ORDER[jdx]
                         if f[key] then
                             if inSet[key] then
                                 hit = true
                             else
-                                local class = ClassByKey(key)
-                                if class and Relate(rest, class, true) == "in" then
+                                local classFile = ClassByKey(key)
+                                if classFile and Relate(rest, classFile, true) == "in" then
                                     inSet[key] = true
                                     cats[#cats + 1] = key
                                     hit = true
@@ -343,19 +343,19 @@ do
                     if hit then
                         break
                     end
-                    for j = 1, #DEBUFF_FILTER_ORDER do
-                        local key = DEBUFF_FILTER_ORDER[j]
+                    for jdx = 1, #DEBUFF_FILTER_ORDER do
+                        local key = DEBUFF_FILTER_ORDER[jdx]
                         if f[key] and not seen[key] then
                             seen[key] = true
-                            local class = ClassByKey(key)
+                            local classFile = ClassByKey(key)
                             local a, b
-                            if class then
-                                a, b = Relate(rest, class)
+                            if classFile then
+                                a, b = Relate(rest, classFile)
                             end
                             if type(a) == "table" then
                                 local pc = {}
-                                for n = 1, #cats do
-                                    pc[n] = cats[n]
+                                for num = 1, #cats do
+                                    pc[num] = cats[num]
                                 end
                                 pc[#pc + 1] = key
                                 chain[#chain + 1] = MatchLink(a, pc)
@@ -371,22 +371,22 @@ do
     end
 
     -- The debuff chain for a bar: Match All when it applies, else the union.
-    DebuffChainFor = function(cfg)
-        local chain = MatchAllChain(cfg)
+    DebuffChainFor = function(conf)
+        local chain = MatchAllChain(conf)
         if chain then
             return chain
         end
-        return BuildChain("HARMFUL", function(class)
-            return ClassEnabled(class, false, cfg)
-                or (PAB_FxSafeToForce(class) and PAB_FxWantsCategory(cfg.fxList, class.key))
-        end, DebuffCatchAllOn(cfg), DebuffSubtractFn(cfg))
+        return BuildChain("HARMFUL", function(classFile)
+            return ClassEnabled(classFile, false, conf)
+                or (PAB_FxSafeToForce(classFile) and PAB_FxWantsCategory(conf.fxList, classFile.key))
+        end, DebuffCatchAllOn(conf), DebuffSubtractFn(conf))
     end
 
     -- Options-page empty warning: Match All picks that can never match together.
     -- The builder's own test, so the two never disagree. ns.PAB_DebuffBarHasContent
     -- stays as it is (the one-shot EnsureBarEnable migration reads it).
-    function ns.PAB_DebuffMatchEmpty(cfg)
-        return cfg ~= nil and MatchBase(cfg) == false
+    function mod.PAB_DebuffMatchEmpty(conf)
+        return conf ~= nil and MatchBase(conf) == false
     end
 end
 
@@ -399,35 +399,35 @@ end
 -- group does not retake), so any payload change must declare a fresh variant group
 -- key. Number-keyed sets (spell ids) fingerprint as count:sum; string-keyed sets
 -- (dispel names) join.
-local function CandFP(cf)
-    if not cf then
+local function CandFP(castFrame)
+    if not castFrame then
         return "-"
     end
-    local keys = {}
-    for k in pairs(cf) do
-        keys[#keys + 1] = k
+    local keyList = {}
+    for k in pairs(castFrame) do
+        keyList[#keyList + 1] = k
     end
-    table.sort(keys)
+    table.sort(keyList)
     local parts = {}
-    for i = 1, #keys do
-        local k = keys[i]
-        local v = cf[k]
+    for idx = 1, #keyList do
+        local k = keyList[idx]
+        local v = castFrame[k]
         if type(v) == "table" then
             local first = next(v)
             if type(first) == "number" then
-                local n, sum = 0, 0
-                for id in pairs(v) do
-                    n = n + 1
-                    sum = (sum + id) % 2147483647
+                local num, sum = 0, 0
+                for ident in pairs(v) do
+                    num = num + 1
+                    sum = (sum + ident) % 2147483647
                 end
-                parts[#parts + 1] = k .. "=" .. n .. ":" .. sum
+                parts[#parts + 1] = k .. "=" .. num .. ":" .. sum
             else
-                local names = {}
+                local nameList = {}
                 for name in pairs(v) do
-                    names[#names + 1] = tostring(name)
+                    nameList[#nameList + 1] = tostring(name)
                 end
-                table.sort(names)
-                parts[#parts + 1] = k .. "=" .. table.concat(names, "+")
+                table.sort(nameList)
+                parts[#parts + 1] = k .. "=" .. table.concat(nameList, "+")
             end
         else
             parts[#parts + 1] = k .. "=" .. tostring(v)
@@ -436,34 +436,34 @@ local function CandFP(cf)
     return table.concat(parts, ",")
 end
 
-local function MergeCandidateFilters(base, extra)
+local function MergeCandidateFilters(baseValue, extra)
     if not extra then
-        return base
+        return baseValue
     end
-    if not base then
+    if not baseValue then
         return extra
     end
-    local out = {}
-    for k, v in pairs(base) do
-        out[k] = v
+    local result = {}
+    for k, v in pairs(baseValue) do
+        result[k] = v
     end
     for k, v in pairs(extra) do
-        if k == "excludeSpellIDs" and out[k] then
+        if k == "excludeSpellIDs" and result[k] then
             -- Exclude maps UNION (never overwrite): the catch-all's subtract set
             -- and the extras' blacklist both survive.
             local m = {}
-            for id in pairs(out[k]) do
-                m[id] = true
+            for ident in pairs(result[k]) do
+                m[ident] = true
             end
-            for id in pairs(v) do
-                m[id] = true
+            for ident in pairs(v) do
+                m[ident] = true
             end
-            out[k] = m
+            result[k] = m
         else
-            out[k] = v
+            result[k] = v
         end
     end
-    return out
+    return result
 end
 
 -- ApplyGroupConfig parameters: declaredSet is a per-container registry of every group
@@ -486,14 +486,14 @@ end
 -- same size share one variant, everything else riding along via the shallow copy.
 -- Rebuilt unconditionally every pass (settings-apply frequency) rather than
 -- fingerprint-cached.
-local function EnsurePabSizedStyle(baseKey, size, shape)
-    local base = AK.styles[baseKey]
-    if not base then
+local function EnsurePabSizedStyle(baseKey, dim, shape)
+    local baseValue = AK.styles[baseKey]
+    if not baseValue then
         return baseKey
     end
-    local variantKey = baseKey .. ":sz" .. tostring(size)
+    local variantKey = baseKey .. ":sz" .. tostring(dim)
     local v = {}
-    for k, val in pairs(base) do
+    for k, val in pairs(baseValue) do
         v[k] = val
     end
     -- Snapped like BuildStyle's own width/height (same button SetSize path, so a raw
@@ -501,22 +501,22 @@ local function EnsurePabSizedStyle(baseKey, size, shape)
     -- keyed by the raw size. Shape-expand applies the same as BuildStyle's own
     -- iconSize -- base already carries iconShape/shapeMaskPath/etc via the shallow
     -- copy above, only width/height need recomputing for this variant's own size.
-    v.width = PabSnap(PabShapedSize(size, shape))
-    v.height = shape == "cropped" and PabSnap(ns.PAB_CroppedHeight(size, base)) or v.width
+    v.width = PabSnap(PabShapedSize(dim, shape))
+    v.height = shape == "cropped" and PabSnap(mod.PAB_CroppedHeight(dim, baseValue)) or v.width
     AK.styles[variantKey] = v
     AK.RestyleSoon(variantKey)
     return variantKey
 end
 
-local function BuildGroupLayout(cfg, gap, rowGap, size)
+local function BuildGroupLayout(conf, gap, rowGap, dim)
     rowGap = rowGap or gap
-    local rawSize = size or cfg.iconSize or 32
-    size = PabSnap(PabShapedSize(rawSize, cfg.iconShape))
+    local rawSize = dim or conf.iconSize or 32
+    dim = PabSnap(PabShapedSize(rawSize, conf.iconShape))
     gap = PabSnap(gap)
     rowGap = PabSnap(rowGap)
     return {
-        elementWidth = size,
-        elementHeight = cfg.iconShape == "cropped" and PabSnap(ns.PAB_CroppedHeight(rawSize, cfg)) or size,
+        elementWidth = dim,
+        elementHeight = conf.iconShape == "cropped" and PabSnap(mod.PAB_CroppedHeight(rawSize, conf)) or dim,
         elementSpacing = gap,
         lineSpacing = rowGap,
         -- ZERO on purpose: the engine's flow layout advances the cursor by
@@ -531,18 +531,18 @@ local function BuildGroupLayout(cfg, gap, rowGap, size)
 end
 
 local function ApplyGroupConfig(
-    container,
+    boxHolder,
     chain,
     declaredSet,
     styleKey,
     effectiveMax,
     gap,
     rowGap,
-    cfg,
+    conf,
     extraCand
 )
-    local sortMethod = ResolveSortMethod(cfg)
-    local sortDirection = ResolveSortDirection(cfg)
+    local sortMethod = ResolveSortMethod(conf)
+    local sortDirection = ResolveSortDirection(conf)
     -- elementSpacing = icon-to-icon gap in a row, and it also separates two
     -- groups on one line (see BuildGroupLayout's zero groupSpacing);
     -- lineSpacing = gap between wrapped rows within a group, tied to `rowGap`
@@ -550,33 +550,33 @@ local function ApplyGroupConfig(
     -- icon-to-icon spacing (cfg.rowSpacing in the Settings Schema comment).
     -- Container-level padding is a THIRD, unrelated concept: the OUTER edge inset,
     -- fixed at 0 elsewhere and never affected by either.
-    local active = {}
-    for i = 1, #chain do
-        local link = chain[i]
+    local isActive = {}
+    for idx = 1, #chain do
+        local itemLink = chain[idx]
         -- Size override, debuffs only: cfg.fxList is nil for buffs, so szOv is always
         -- nil there.
-        local szOv = PAB_FxSizeFor(cfg.fxList, link.cats or link.key)
-        local layout = BuildGroupLayout(cfg, gap, rowGap, szOv)
+        local szOv = PAB_FxSizeFor(conf.fxList, itemLink.cats or itemLink.key)
+        local layout = BuildGroupLayout(conf, gap, rowGap, szOv)
         -- Token strings are declaration-fixed too, so the effective key embeds the
         -- link's token set: a changed negation shape (subtract flips, class-set edits)
         -- declares a fresh variant instead of leaving a stale filter on the old group.
         -- link.key alone stays the fx CATEGORY identity (d.dmCat / PAB_FxSizeFor);
         -- a Match All link carries a category list instead (link.cats, named by its key).
-        local effKey = link.key .. "|" .. table.concat(link.tokens, "")
+        local effKey = itemLink.key .. "|" .. table.concat(itemLink.tokens, "")
         if szOv then
             effKey = effKey .. "|sz"
         end
-        local linkStyleKey = szOv and EnsurePabSizedStyle(styleKey, szOv, cfg.iconShape) or styleKey
+        local linkStyleKey = szOv and EnsurePabSizedStyle(styleKey, szOv, conf.iconShape) or styleKey
         local candidateFilters
-        if link.cand then
+        if itemLink.cand then
             -- link.cand is from the shared class vocabulary -- copy it so the merges
             -- below never mutate it.
             candidateFilters = {}
-            for k, v in pairs(link.cand) do
+            for k, v in pairs(itemLink.cand) do
                 candidateFilters[k] = v
             end
         end
-        candidateFilters = MergeCandidateFilters(candidateFilters, link.excludeCand)
+        candidateFilters = MergeCandidateFilters(candidateFilters, itemLink.excludeCand)
         candidateFilters = MergeCandidateFilters(candidateFilters, extraCand)
         -- Candidate payloads are declaration-fixed (see CandFP): when a link's payload
         -- changes on a live container (catch-all subtracts, buff filter subtract sets,
@@ -600,12 +600,12 @@ local function ApplyGroupConfig(
         if variant > 0 then
             effKey = effKey .. "#" .. variant
         end
-        active[effKey] = true
+        isActive[effKey] = true
         if not declaredSet[effKey] then
-            local catKey = link.cats or link.key
-            AK.AddGroupToContainer(container, {
+            local catKey = itemLink.cats or itemLink.key
+            AK.AddGroupToContainer(boxHolder, {
                 key = effKey,
-                filter = link.tokens,
+                filter = itemLink.tokens,
                 style = linkStyleKey,
                 maxFrameCount = 0, -- real count applied right below, matches the sibling module's declare-then-set order
                 candidateFilters = candidateFilters,
@@ -618,20 +618,20 @@ local function ApplyGroupConfig(
                 -- BEFORE extraInit at creation (CludesUI_AuraKit.lua's
                 -- MakeInitializer), so the first applyExtra pass sees d.dmCat == nil
                 -- harmlessly and this re-arms it right after.
-                extraInit = function(button, d, style)
+                extraInit = function(btnFrame, d, look)
                     d.dmCat = catKey
-                    PAB_ApplyDmFx(button, d, style, true)
+                    PAB_ApplyDmFx(btnFrame, d, look, true)
                 end,
             })
             declaredSet[effKey] = true
         end
         -- Hidden links (subtracted classes) stay declared so their chain negations
         -- keep excluding them from the catch-all, but render nothing themselves.
-        CludesUI.AuraKit.SetGroupCap(container, effKey, link.hidden and 0 or effectiveMax)
-        container:SetAuraGroupLayout(effKey, layout)
-        container:SetAuraGroupCandidateFilters(effKey, candidateFilters)
+        CludesUI.AuraKit.SetGroupCap(boxHolder, effKey, itemLink.hidden and 0 or effectiveMax)
+        boxHolder:SetAuraGroupLayout(effKey, layout)
+        boxHolder:SetAuraGroupCandidateFilters(effKey, candidateFilters)
         if sortMethod ~= nil and sortDirection ~= nil then
-            container:SetAuraGroupSortMethod(effKey, sortMethod, sortDirection)
+            boxHolder:SetAuraGroupSortMethod(effKey, sortMethod, sortDirection)
         end
     end
 
@@ -640,8 +640,8 @@ local function ApplyGroupConfig(
     -- just hidden: it cannot be un-declared. "__cand|" entries are generation
     -- metadata, not group keys.
     for key in pairs(declaredSet) do
-        if not active[key] and key:sub(1, 7) ~= "__cand|" then
-            CludesUI.AuraKit.SetGroupCap(container, key, 0)
+        if not isActive[key] and key:sub(1, 7) ~= "__cand|" then
+            CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
         end
     end
 end
@@ -653,22 +653,22 @@ end
 -- content. Zero what we know about while we still hold the declared set; "spells"
 -- is declared outside the chain, so it goes by name. pcall: zeroing a key this
 -- container never declared is not worth an error.
-local function RetireContainer(container, declaredSet)
-    if not container then
+local function RetireContainer(boxHolder, declaredSet)
+    if not boxHolder then
         return
     end
     if declaredSet then
         for key in pairs(declaredSet) do
             if key:sub(1, 7) ~= "__cand|" then
-                pcall(CludesUI.AuraKit.SetGroupCap, container, key, 0)
+                pcall(CludesUI.AuraKit.SetGroupCap, boxHolder, key, 0)
             end
         end
     end
-    pcall(CludesUI.AuraKit.SetGroupCap, container, "spells", 0)
-    AK.ReleaseContainer(container)
+    pcall(CludesUI.AuraKit.SetGroupCap, boxHolder, "spells", 0)
+    AK.ReleaseContainer(boxHolder)
 end
 
-I.ApplyGroupConfig, I.BuildGroupLayout = ApplyGroupConfig, BuildGroupLayout
-I.DebuffChainFor, I.MergeCandidateFilters = DebuffChainFor, MergeCandidateFilters
-I.RetireContainer = RetireContainer
-I.broken = false
+Inner.ApplyGroupConfig, Inner.BuildGroupLayout = ApplyGroupConfig, BuildGroupLayout
+Inner.DebuffChainFor, Inner.MergeCandidateFilters = DebuffChainFor, MergeCandidateFilters
+Inner.RetireContainer = RetireContainer
+Inner.broken = false

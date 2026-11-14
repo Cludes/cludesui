@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Does NOT touch cursor tracking logic.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIQoL"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -36,26 +36,26 @@ initFrame:SetScript("OnEvent", function(self)
     if not CludesUI or not CludesUI.RegisterModule then
         return
     end
-    local PP = CludesUI.PP
+    local Pix = CludesUI.PP
 
     ---------------------------------------------------------------------------
     --  DB helpers
     ---------------------------------------------------------------------------
-    local db
+    local saved
 
     C_Timer.After(0, function()
-        db = _G._CUCL_AceDB
+        saved = _G._CUCL_AceDB
     end)
 
-    local function DB()
-        if not db then
-            db = _G._CUCL_AceDB
+    local function SavedDB()
+        if not saved then
+            saved = _G._CUCL_AceDB
         end
-        return db and db.profile
+        return saved and saved.profile
     end
 
     local function GCD_DB()
-        local p = DB()
+        local p = SavedDB()
         if not p then
             return {}
         end
@@ -66,7 +66,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function Cast_DB()
-        local p = DB()
+        local p = SavedDB()
         if not p then
             return {}
         end
@@ -135,155 +135,150 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  Cursor Circle page  (Appearance + GCD + Cast Bar sections)
     ---------------------------------------------------------------------------
-    local function BuildCursorPage(pageName, parent, yOffset)
+    local function BuildCursorPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h, row, hdr
+        local posY = yOffset
+        local _, hgt, rowFrame, heading
 
         CludesUI:ClearContentHeader()
 
         -----------------------------------------------------------------------
         --  APPEARANCE
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_APPEARANCE, y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, SECTION_APPEARANCE, posY)
+        posY = posY - hgt
 
         -- Enable Cursor Circle ---- Color (multiSwatch: custom left, class colored right)
-        row, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "toggle",
-                text = "Enable Cursor Circle",
-                getValue = function()
-                    local p = DB()
-                    return p and (p.enabled ~= false)
-                end,
-                -- DependentSetValue: the rows below Row 1 are hidden while the
-                -- circle is off; the flip forces the full rebuild.
-                setValue = CludesUI.DependentSetValue(function()
-                    local p = DB()
-                    return p and (p.enabled ~= false)
-                end, function(v)
-                    local p = DB()
-                    if not p then
-                        return
-                    end
-                    p.enabled = v
-                    RefreshAddon()
-                    CludesUI:RefreshPage()
-                end),
-            },
-            {
-                type = "multiSwatch",
-                text = "Color",
-                swatches = {
-                    {
-                        tooltip = "Custom Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local p = DB()
-                            if not p then
-                                return 76 / 255, 201 / 255, 240 / 255
-                            end
-                            local r, g, b = HexToRGB(p.hex)
-                            return r, g, b
-                        end,
-                        setValue = function(r, g, b)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.hex = RGBToHex(r, g, b)
-                            RefreshAddon()
-                        end,
-                        onClick = function(self)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            if p.useClassColor or p.useAccentColor then
-                                p.useClassColor = false
-                                p.useAccentColor = false
-                                RefreshAddon()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            local p = DB()
-                            if not p or p.enabled == false then
-                                return 0.15
-                            end
-                            return (p.useClassColor or p.useAccentColor) and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Class Colored",
-                        hasAlpha = false,
-                        getValue = function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                            if cc then
-                                return cc.r, cc.g, cc.b
-                            end
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+            type = "toggle",
+            text = "Enable Cursor Circle",
+            getValue = function()
+                local p = SavedDB()
+                return p and (p.enabled ~= false)
+            end,
+            -- DependentSetValue: the rows below Row 1 are hidden while the
+            -- circle is off; the flip forces the full rebuild.
+            setValue = CludesUI.DependentSetValue(function()
+                local p = SavedDB()
+                return p and (p.enabled ~= false)
+            end, function(val)
+                local p = SavedDB()
+                if not p then
+                    return
+                end
+                p.enabled = val
+                RefreshAddon()
+                CludesUI:RefreshPage()
+            end),
+        }, {
+            type = "multiSwatch",
+            text = "Color",
+            swatches = {
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local p = SavedDB()
+                        if not p then
                             return 76 / 255, 201 / 255, 240 / 255
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.useClassColor = true
+                        end
+                        local r, g, b = HexToRGB(p.hex)
+                        return r, g, b
+                    end,
+                    setValue = function(r, g, b)
+                        local p = SavedDB()
+                        if not p then
+                            return
+                        end
+                        p.hex = RGBToHex(r, g, b)
+                        RefreshAddon()
+                    end,
+                    onClick = function(self)
+                        local p = SavedDB()
+                        if not p then
+                            return
+                        end
+                        if p.useClassColor or p.useAccentColor then
+                            p.useClassColor = false
                             p.useAccentColor = false
                             RefreshAddon()
                             CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local p = DB()
-                            if not p or p.enabled == false then
-                                return 0.15
-                            end
-                            return p.useClassColor and 1 or 0.3
-                        end,
-                    },
-                    {
-                        tooltip = "Accent Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local ar, ag, ab = CludesUI.GetAccentColor()
-                            return ar, ag, ab
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.useAccentColor = true
-                            p.useClassColor = false
-                            RefreshAddon()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local p = DB()
-                            if not p or p.enabled == false then
-                                return 0.15
-                            end
-                            return p.useAccentColor and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        local p = SavedDB()
+                        if not p or p.enabled == false then
+                            return 0.15
+                        end
+                        return (p.useClassColor or p.useAccentColor) and 0.3 or 1
+                    end,
                 },
-            }
-        )
-        y = y - h
+                {
+                    tooltip = "Class Colored",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 76 / 255, 201 / 255, 240 / 255
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local p = SavedDB()
+                        if not p then
+                            return
+                        end
+                        p.useClassColor = true
+                        p.useAccentColor = false
+                        RefreshAddon()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local p = SavedDB()
+                        if not p or p.enabled == false then
+                            return 0.15
+                        end
+                        return p.useClassColor and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Accent Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local ar, ag, ab = CludesUI.GetAccentColor()
+                        return ar, ag, ab
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local p = SavedDB()
+                        if not p then
+                            return
+                        end
+                        p.useAccentColor = true
+                        p.useClassColor = false
+                        RefreshAddon()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local p = SavedDB()
+                        if not p or p.enabled == false then
+                            return 0.15
+                        end
+                        return p.useAccentColor and 1 or 0.3
+                    end,
+                },
+            },
+        })
+        posY = posY - hgt
         -- Block overlay on the right region when Cursor Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = row._rightRegion
+            local rightRgn = rowFrame._rightRegion
             local circleBlock = CreateFrame("Frame", nil, rightRgn)
             circleBlock:SetAllPoints()
             circleBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
@@ -295,12 +290,12 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateCircleBlock()
-                local p = DB()
-                local off = not p or p.enabled == false
-                circleBlock:SetShown(off)
+                local p = SavedDB()
+                local offset = not p or p.enabled == false
+                circleBlock:SetShown(offset)
                 -- Dim the "Color" label with its swatches
                 if rightRgn._label then
-                    rightRgn._label:SetAlpha(off and 0.3 or 1)
+                    rightRgn._label:SetAlpha(offset and 0.3 or 1)
                 end
             end
             UpdateCircleBlock()
@@ -309,9 +304,9 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Rows below are HIDDEN entirely while the Cursor Circle is off (the
         -- toggle's DependentSetValue forces the rebuild on flips).
-        if DB() and DB().enabled ~= false then
+        if SavedDB() and SavedDB().enabled ~= false then
             -- Texture ---- Scale
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Texture",
                 values = {
@@ -332,15 +327,15 @@ initFrame:SetScript("OnEvent", function(self)
                     "ring_thick",
                 },
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.texture or "ring_normal"
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.texture = v
+                    p.texture = val
                     RefreshAddon()
                 end,
             }, {
@@ -350,73 +345,73 @@ initFrame:SetScript("OnEvent", function(self)
                 max = 2.0,
                 step = 0.1,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.scale or 1
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.scale = v
+                    p.scale = val
                     RefreshAddon()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Circle Opacity ---- Cursor Trail
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,
                 max = 100,
                 step = 1,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and (p.alpha or 100)
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.alpha = v
+                    p.alpha = val
                     RefreshAddon()
                 end,
             }, {
                 type = "toggle",
                 text = "Cursor Trail",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.trail or false
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.trail = v
+                    p.trail = val
                     if _G._CUCL_ApplyTrail then
                         _G._CUCL_ApplyTrail()
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Only Show in Instances ---- Only Show When Hidden
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.instanceOnly
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.instanceOnly = v
+                    p.instanceOnly = val
                     if _G._CUCL_UpdateVisibility then
                         _G._CUCL_UpdateVisibility()
                     end
@@ -426,37 +421,37 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Only Show When Hidden",
                 tooltip = "Only shows the cursor circle while the mouse is hidden -- that is, while you hold the left and/or right mouse button to pan the camera or move your character.",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.onlyWhenHidden or false
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.onlyWhenHidden = v
+                    p.onlyWhenHidden = val
                     if _G._CUCL_ApplyOnlyWhenHidden then
                         _G._CUCL_ApplyOnlyWhenHidden()
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Combat Only ---- Center Reticle
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Combat Only",
                 tooltip = "Only shows the cursor circle while you are in combat.",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.combatOnly or false
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.combatOnly = v
+                    p.combatOnly = val
                     if _G._CUCL_ApplyCombatOnlyEvents then
                         _G._CUCL_ApplyCombatOnlyEvents()
                     end
@@ -469,32 +464,32 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Center Reticle",
                 tooltip = "Adds a small filled dot at the center of the cursor circle. Uses the same color and opacity as the circle.",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.reticle or false
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.reticle = v
+                    p.reticle = val
                     RefreshAddon()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end -- close Cursor Circle hidden-while-disabled gate
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
 
         -----------------------------------------------------------------------
         --  GLOBAL COOLDOWN
         -----------------------------------------------------------------------
-        hdr, h = W:SectionHeader(parent, SECTION_GCD, y)
-        y = y - h
+        heading, hgt = W:SectionHeader(hostFrame, SECTION_GCD, posY)
+        posY = posY - hgt
         -- The circle has a mover only while enabled and detached from the
         -- cursor, so the button names whichever of the two it still needs.
-        CludesUI.BuildSectionUnlockJump(hdr, {
+        CludesUI.BuildSectionUnlockJump(heading, {
             key = "ECL_GCD",
             disabled = function()
                 local g = GCD_DB()
@@ -509,120 +504,115 @@ initFrame:SetScript("OnEvent", function(self)
         })
 
         -- Enable GCD Circle ---- Color (multiSwatch: custom left, class colored right)
-        row, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "toggle",
-                text = "Enable GCD Circle",
-                getValue = function()
-                    return GCD_DB().enabled or false
-                end,
-                -- DependentSetValue: the rows below Row 1 are hidden while the
-                -- circle is off; the flip forces the full rebuild.
-                setValue = CludesUI.DependentSetValue(function()
-                    return GCD_DB().enabled or false
-                end, function(v)
-                    GCD_DB().enabled = v
-                    RefreshGCD()
-                    CludesUI:RefreshPage()
-                end),
-            },
-            {
-                type = "multiSwatch",
-                text = "Color",
-                swatches = {
-                    {
-                        tooltip = "Custom Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local g = GCD_DB()
-                            local r, ng, b = HexToRGB(g.hex)
-                            return r, ng, b
-                        end,
-                        setValue = function(r, g, b)
-                            local gd = GCD_DB()
-                            gd.hex = RGBToHex(r, g, b)
-                            RefreshGCD()
-                        end,
-                        onClick = function(self)
-                            local g = GCD_DB()
-                            if g.useClassColor or g.useAccentColor then
-                                g.useClassColor = false
-                                g.useAccentColor = false
-                                RefreshGCD()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            local g = GCD_DB()
-                            if not g.enabled then
-                                return 0.15
-                            end
-                            return (g.useClassColor or g.useAccentColor) and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Class Colored",
-                        hasAlpha = false,
-                        getValue = function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                            if cc then
-                                return cc.r, cc.g, cc.b
-                            end
-                            return 76 / 255, 201 / 255, 240 / 255
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local g = GCD_DB()
-                            g.useClassColor = true
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+            type = "toggle",
+            text = "Enable GCD Circle",
+            getValue = function()
+                return GCD_DB().enabled or false
+            end,
+            -- DependentSetValue: the rows below Row 1 are hidden while the
+            -- circle is off; the flip forces the full rebuild.
+            setValue = CludesUI.DependentSetValue(function()
+                return GCD_DB().enabled or false
+            end, function(val)
+                GCD_DB().enabled = val
+                RefreshGCD()
+                CludesUI:RefreshPage()
+            end),
+        }, {
+            type = "multiSwatch",
+            text = "Color",
+            swatches = {
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local g = GCD_DB()
+                        local r, ng, b = HexToRGB(g.hex)
+                        return r, ng, b
+                    end,
+                    setValue = function(r, g, b)
+                        local gd = GCD_DB()
+                        gd.hex = RGBToHex(r, g, b)
+                        RefreshGCD()
+                    end,
+                    onClick = function(self)
+                        local g = GCD_DB()
+                        if g.useClassColor or g.useAccentColor then
+                            g.useClassColor = false
                             g.useAccentColor = false
                             RefreshGCD()
                             CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local g = GCD_DB()
-                            if not g.enabled then
-                                return 0.15
-                            end
-                            return g.useClassColor and 1 or 0.3
-                        end,
-                    },
-                    {
-                        tooltip = "Accent Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local ar, ag, ab = CludesUI.GetAccentColor()
-                            return ar, ag, ab
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local g = GCD_DB()
-                            g.useAccentColor = true
-                            g.useClassColor = false
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local g = GCD_DB()
-                            if not g.enabled then
-                                return 0.15
-                            end
-                            return g.useAccentColor and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        local g = GCD_DB()
+                        if not g.enabled then
+                            return 0.15
+                        end
+                        return (g.useClassColor or g.useAccentColor) and 0.3 or 1
+                    end,
                 },
-            }
-        )
-        y = y - h
+                {
+                    tooltip = "Class Colored",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 76 / 255, 201 / 255, 240 / 255
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local g = GCD_DB()
+                        g.useClassColor = true
+                        g.useAccentColor = false
+                        RefreshGCD()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local g = GCD_DB()
+                        if not g.enabled then
+                            return 0.15
+                        end
+                        return g.useClassColor and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Accent Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local ar, ag, ab = CludesUI.GetAccentColor()
+                        return ar, ag, ab
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local g = GCD_DB()
+                        g.useAccentColor = true
+                        g.useClassColor = false
+                        RefreshGCD()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local g = GCD_DB()
+                        if not g.enabled then
+                            return 0.15
+                        end
+                        return g.useAccentColor and 1 or 0.3
+                    end,
+                },
+            },
+        })
+        posY = posY - hgt
         -- Block overlay on the right region when GCD Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = row._rightRegion
+            local rightRgn = rowFrame._rightRegion
             local gcdBlock = CreateFrame("Frame", nil, rightRgn)
             gcdBlock:SetAllPoints()
             gcdBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
@@ -634,11 +624,11 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateGCDBlock()
-                local off = not GCD_DB().enabled
-                gcdBlock:SetShown(off)
+                local offset = not GCD_DB().enabled
+                gcdBlock:SetShown(offset)
                 -- Dim the "Color" label with its swatches
                 if rightRgn._label then
-                    rightRgn._label:SetAlpha(off and 0.3 or 1)
+                    rightRgn._label:SetAlpha(offset and 0.3 or 1)
                 end
             end
             UpdateGCDBlock()
@@ -649,7 +639,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- toggle's DependentSetValue forces the rebuild on flips).
         if GCD_DB().enabled then
             -- Ring Texture ---- Scale
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Ring Texture",
                 values = ringTexValues,
@@ -657,8 +647,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return GCD_DB().ringTex or "light"
                 end,
-                setValue = function(v)
-                    GCD_DB().ringTex = v
+                setValue = function(val)
+                    GCD_DB().ringTex = val
                     RefreshGCD()
                 end,
             }, {
@@ -670,15 +660,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return GCD_DB().radius or 21
                 end,
-                setValue = function(v)
-                    GCD_DB().radius = v
+                setValue = function(val)
+                    GCD_DB().radius = val
                     RefreshGCD()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Circle Opacity ---- Attach to Cursor
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,
@@ -687,8 +677,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return GCD_DB().alpha or 80
                 end,
-                setValue = function(v)
-                    GCD_DB().alpha = v
+                setValue = function(val)
+                    GCD_DB().alpha = val
                     RefreshGCD()
                 end,
             }, {
@@ -697,23 +687,23 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return GCD_DB().attached ~= false
                 end,
-                setValue = function(v)
-                    GCD_DB().attached = v
+                setValue = function(val)
+                    GCD_DB().attached = val
                     RefreshGCD()
                     CludesUI:RefreshPage()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Only Show in Instances ---- Combat Only
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
                     return GCD_DB().instanceOnly or false
                 end,
-                setValue = function(v)
-                    GCD_DB().instanceOnly = v
+                setValue = function(val)
+                    GCD_DB().instanceOnly = val
                     if _G._CUCL_UpdateVisibility then
                         _G._CUCL_UpdateVisibility()
                     end
@@ -725,8 +715,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return GCD_DB().combatOnly or false
                 end,
-                setValue = function(v)
-                    GCD_DB().combatOnly = v
+                setValue = function(val)
+                    GCD_DB().combatOnly = val
                     if _G._CUCL_ApplyCombatOnlyEvents then
                         _G._CUCL_ApplyCombatOnlyEvents()
                     end
@@ -735,19 +725,19 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end -- close GCD Circle hidden-while-disabled gate
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
 
         -----------------------------------------------------------------------
         --  CAST BAR
         -----------------------------------------------------------------------
-        hdr, h = W:SectionHeader(parent, SECTION_CAST, y)
-        y = y - h
+        heading, hgt = W:SectionHeader(hostFrame, SECTION_CAST, posY)
+        posY = posY - hgt
         -- As the GCD circle: a mover only while enabled and detached.
-        CludesUI.BuildSectionUnlockJump(hdr, {
+        CludesUI.BuildSectionUnlockJump(heading, {
             key = "ECL_Cast",
             disabled = function()
                 local c = Cast_DB()
@@ -762,120 +752,115 @@ initFrame:SetScript("OnEvent", function(self)
         })
 
         -- Enable Cast Bar Circle ---- Color (multiSwatch: custom left, class colored right)
-        row, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "toggle",
-                text = "Enable Cast Bar Circle",
-                getValue = function()
-                    return Cast_DB().enabled or false
-                end,
-                -- DependentSetValue: the rows below Row 1 are hidden while the
-                -- circle is off; the flip forces the full rebuild.
-                setValue = CludesUI.DependentSetValue(function()
-                    return Cast_DB().enabled or false
-                end, function(v)
-                    Cast_DB().enabled = v
-                    RefreshCast()
-                    CludesUI:RefreshPage()
-                end),
-            },
-            {
-                type = "multiSwatch",
-                text = "Color",
-                swatches = {
-                    {
-                        tooltip = "Custom Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local c = Cast_DB()
-                            local r, ng, b = HexToRGB(c.hex)
-                            return r, ng, b
-                        end,
-                        setValue = function(r, g, b)
-                            local cd = Cast_DB()
-                            cd.hex = RGBToHex(r, g, b)
-                            RefreshCast()
-                        end,
-                        onClick = function(self)
-                            local c = Cast_DB()
-                            if c.useClassColor or c.useAccentColor then
-                                c.useClassColor = false
-                                c.useAccentColor = false
-                                RefreshCast()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            local c = Cast_DB()
-                            if not c.enabled then
-                                return 0.15
-                            end
-                            return (c.useClassColor or c.useAccentColor) and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Class Colored",
-                        hasAlpha = false,
-                        getValue = function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                            if cc then
-                                return cc.r, cc.g, cc.b
-                            end
-                            return 76 / 255, 201 / 255, 240 / 255
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local c = Cast_DB()
-                            c.useClassColor = true
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+            type = "toggle",
+            text = "Enable Cast Bar Circle",
+            getValue = function()
+                return Cast_DB().enabled or false
+            end,
+            -- DependentSetValue: the rows below Row 1 are hidden while the
+            -- circle is off; the flip forces the full rebuild.
+            setValue = CludesUI.DependentSetValue(function()
+                return Cast_DB().enabled or false
+            end, function(val)
+                Cast_DB().enabled = val
+                RefreshCast()
+                CludesUI:RefreshPage()
+            end),
+        }, {
+            type = "multiSwatch",
+            text = "Color",
+            swatches = {
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = Cast_DB()
+                        local r, ng, b = HexToRGB(c.hex)
+                        return r, ng, b
+                    end,
+                    setValue = function(r, g, b)
+                        local cd = Cast_DB()
+                        cd.hex = RGBToHex(r, g, b)
+                        RefreshCast()
+                    end,
+                    onClick = function(self)
+                        local c = Cast_DB()
+                        if c.useClassColor or c.useAccentColor then
+                            c.useClassColor = false
                             c.useAccentColor = false
                             RefreshCast()
                             CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local c = Cast_DB()
-                            if not c.enabled then
-                                return 0.15
-                            end
-                            return c.useClassColor and 1 or 0.3
-                        end,
-                    },
-                    {
-                        tooltip = "Accent Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local ar, ag, ab = CludesUI.GetAccentColor()
-                            return ar, ag, ab
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local c = Cast_DB()
-                            c.useAccentColor = true
-                            c.useClassColor = false
-                            RefreshCast()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local c = Cast_DB()
-                            if not c.enabled then
-                                return 0.15
-                            end
-                            return c.useAccentColor and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        local c = Cast_DB()
+                        if not c.enabled then
+                            return 0.15
+                        end
+                        return (c.useClassColor or c.useAccentColor) and 0.3 or 1
+                    end,
                 },
-            }
-        )
-        y = y - h
+                {
+                    tooltip = "Class Colored",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 76 / 255, 201 / 255, 240 / 255
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local c = Cast_DB()
+                        c.useClassColor = true
+                        c.useAccentColor = false
+                        RefreshCast()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local c = Cast_DB()
+                        if not c.enabled then
+                            return 0.15
+                        end
+                        return c.useClassColor and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Accent Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local ar, ag, ab = CludesUI.GetAccentColor()
+                        return ar, ag, ab
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local c = Cast_DB()
+                        c.useAccentColor = true
+                        c.useClassColor = false
+                        RefreshCast()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local c = Cast_DB()
+                        if not c.enabled then
+                            return 0.15
+                        end
+                        return c.useAccentColor and 1 or 0.3
+                    end,
+                },
+            },
+        })
+        posY = posY - hgt
         -- Block overlay on the right region when Cast Bar Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = row._rightRegion
+            local rightRgn = rowFrame._rightRegion
             local castBlock = CreateFrame("Frame", nil, rightRgn)
             castBlock:SetAllPoints()
             castBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
@@ -887,11 +872,11 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateCastBlock()
-                local off = not Cast_DB().enabled
-                castBlock:SetShown(off)
+                local offset = not Cast_DB().enabled
+                castBlock:SetShown(offset)
                 -- Dim the "Color" label with its swatches
                 if rightRgn._label then
-                    rightRgn._label:SetAlpha(off and 0.3 or 1)
+                    rightRgn._label:SetAlpha(offset and 0.3 or 1)
                 end
             end
             UpdateCastBlock()
@@ -899,7 +884,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Inline cog on Enable Cast Bar Circle for "Show Spark"
-        CludesUI.BuildInlineCog(row._leftRegion, {
+        CludesUI.BuildInlineCog(rowFrame._leftRegion, {
             title = "Cast Bar Settings",
             disabled = function()
                 return not Cast_DB().enabled
@@ -913,8 +898,8 @@ initFrame:SetScript("OnEvent", function(self)
                         local c = Cast_DB()
                         return c.sparkEnabled ~= false
                     end,
-                    set = function(v)
-                        Cast_DB().sparkEnabled = v
+                    set = function(val)
+                        Cast_DB().sparkEnabled = val
                         RefreshCast()
                     end,
                 },
@@ -925,7 +910,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- (the toggle's DependentSetValue forces the rebuild on flips).
         if Cast_DB().enabled then
             -- Ring Texture ---- Scale
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Ring Texture",
                 values = ringTexValues,
@@ -933,8 +918,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cast_DB().ringTex or "normal"
                 end,
-                setValue = function(v)
-                    Cast_DB().ringTex = v
+                setValue = function(val)
+                    Cast_DB().ringTex = val
                     RefreshCast()
                 end,
             }, {
@@ -946,15 +931,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cast_DB().radius or 30
                 end,
-                setValue = function(v)
-                    Cast_DB().radius = v
+                setValue = function(val)
+                    Cast_DB().radius = val
                     RefreshCast()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Circle Opacity ---- Attach to Cursor
-            row, h = W:DualRow(parent, y, {
+            rowFrame, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,
@@ -963,8 +948,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cast_DB().alpha or 80
                 end,
-                setValue = function(v)
-                    Cast_DB().alpha = v
+                setValue = function(val)
+                    Cast_DB().alpha = val
                     RefreshCast()
                 end,
             }, {
@@ -973,23 +958,23 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cast_DB().attached ~= false
                 end,
-                setValue = function(v)
-                    Cast_DB().attached = v
+                setValue = function(val)
+                    Cast_DB().attached = val
                     RefreshCast()
                     CludesUI:RefreshPage()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Only Show in Instances ---- Combat Only
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
                     return Cast_DB().instanceOnly or false
                 end,
-                setValue = function(v)
-                    Cast_DB().instanceOnly = v
+                setValue = function(val)
+                    Cast_DB().instanceOnly = val
                     if _G._CUCL_UpdateVisibility then
                         _G._CUCL_UpdateVisibility()
                     end
@@ -1001,8 +986,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cast_DB().combatOnly or false
                 end,
-                setValue = function(v)
-                    Cast_DB().combatOnly = v
+                setValue = function(val)
+                    Cast_DB().combatOnly = val
                     if _G._CUCL_ApplyCombatOnlyEvents then
                         _G._CUCL_ApplyCombatOnlyEvents()
                     end
@@ -1011,10 +996,10 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end -- close Cast Bar Circle hidden-while-disabled gate
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------

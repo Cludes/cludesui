@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and a button that opens the graph.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUITitleLine"
-local ns = CludesUI._ModuleNS[ADDON_NAME]
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME]
+if not mod then
     return
 end
 
@@ -23,24 +23,24 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function DB()
+    local function SavedDB()
         return _G.CludesUITitleLineDB or {}
     end
 
-    local function Toggle(text, key, tooltip, default)
+    local function Toggle(textValue, key, tooltip, default)
         return {
             type = "toggle",
-            text = text,
+            text = textValue,
             tooltip = tooltip,
             getValue = function()
-                local v = DB()[key]
-                if v == nil then
+                local val = SavedDB()[key]
+                if val == nil then
                     return default and true or false
                 end
-                return v and true or false
+                return val and true or false
             end,
-            setValue = function(v)
-                DB()[key] = v and true or false
+            setValue = function(val)
+                SavedDB()[key] = val and true or false
             end,
         }
     end
@@ -51,39 +51,39 @@ initFrame:SetScript("OnEvent", function(self)
             type = "toggle",
             text = "Show the " .. tier.label .. " Line",
             getValue = function()
-                local hidden = DB().hidden
+                local hidden = SavedDB().hidden
                 return not (hidden and hidden[tier.key])
             end,
-            setValue = function(v)
-                local db = DB()
-                db.hidden = db.hidden or {}
-                db.hidden[tier.key] = (not v) or nil
-                if ns.Graph and ns.Graph.Refresh then
-                    ns.Graph:Refresh()
+            setValue = function(val)
+                local saved = SavedDB()
+                saved.hidden = saved.hidden or {}
+                saved.hidden[tier.key] = (not val) or nil
+                if mod.Graph and mod.Graph.Refresh then
+                    mod.Graph:Refresh()
                 end
             end,
         }
     end
 
-    local function BuildPage(_, parent, yOffset)
+    local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "GRAPH", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "GRAPH", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "Season Graph",
             buttonText = "Open",
             width = 90,
             tooltip = "Your Mythic+ rating through the season against the title lines. /titleline does the same.",
             onClick = function()
-                if ns.Graph and ns.Graph.Toggle then
-                    ns.Graph:Toggle()
+                if mod.Graph and mod.Graph.Toggle then
+                    mod.Graph:Toggle()
                 end
             end,
         }, {
@@ -94,34 +94,34 @@ initFrame:SetScript("OnEvent", function(self)
             step = 5,
             tooltip = "The size of the graph window, in percent.",
             getValue = function()
-                return math.floor((DB().scale or 1.15) * 100 + 0.5)
+                return math.floor((SavedDB().scale or 1.15) * 100 + 0.5)
             end,
-            setValue = function(v)
-                DB().scale = math.floor(v + 0.5) / 100
-                if ns.Graph and ns.Graph.ApplyScale then
-                    ns.Graph:ApplyScale()
+            setValue = function(val)
+                SavedDB().scale = math.floor(val + 0.5) / 100
+                if mod.Graph and mod.Graph.ApplyScale then
+                    mod.Graph:ApplyScale()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        local tiers = ns.TIERS or {}
+        local tiers = mod.TIERS or {}
         if #tiers > 0 then
-            _, h = W:DualRow(
-                parent,
-                y,
+            _, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 LineToggle(tiers[1]),
                 tiers[2] and LineToggle(tiers[2]) or { type = "label", text = "" }
             )
-            y = y - h
+            posY = posY - hgt
         end
 
-        _, h = W:SectionHeader(parent, "MESSAGES", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "MESSAGES", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Toggle(
                 "Distance to the Lines After a Key",
                 "chat",
@@ -135,18 +135,18 @@ initFrame:SetScript("OnEvent", function(self)
                 true
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     CludesUI:RegisterModule(ADDON_NAME, {
         title = "Title Line",
         description = "Your Mythic+ rating against the 0.1% and 1% title lines.",
         pages = { PAGE },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == PAGE then
-                return BuildPage(pageName, parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            if page == PAGE then
+                return BuildPage(page, hostFrame, yOffset)
             end
         end,
     })

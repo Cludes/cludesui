@@ -1,9 +1,9 @@
-local addonName, ns = ...
-if ns.standalone then
+local addonName, mod = ...
+if mod.standalone then
     return
 end
 
-ns.Alert = {}
+mod.Alert = {}
 
 local REPEAT_COOLDOWN = 4
 local DISPLAY_TIME = 3.0
@@ -26,10 +26,10 @@ local pendingUnit = nil
 -- coming back from the engine are secret during encounters, so the alert text
 -- is built from this table instead of from the aura.
 local spellNames = nil
-local function SpellName(spellID)
+local function SpellName(spellId)
     if not spellNames then
         spellNames = {}
-        for _, raid in ipairs(ns.SpellData and ns.SpellData.raids or {}) do
+        for _, raid in ipairs(mod.SpellData and mod.SpellData.raids or {}) do
             for _, boss in ipairs(raid.bosses) do
                 for _, spell in ipairs(boss.spells) do
                     spellNames[spell.id] = spell.name
@@ -38,9 +38,9 @@ local function SpellName(spellID)
         end
     end
     -- Custom alerts are not in the preset data, so ask the game for those.
-    return spellNames[spellID] or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellID))
+    return spellNames[spellId] or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellId))
 end
-ns.Alert.SpellName = SpellName
+mod.Alert.SpellName = SpellName
 
 -- ── Flash frame (fullscreen red tint) ─────────────────────────────────────
 local function CreateFlashFrame()
@@ -49,9 +49,9 @@ local function CreateFlashFrame()
     flashFrame:SetFrameStrata("FULLSCREEN_DIALOG")
     flashFrame:SetAlpha(0)
 
-    local tex = flashFrame:CreateTexture(nil, "BACKGROUND")
-    tex:SetAllPoints()
-    tex:SetColorTexture(1, 0.1, 0.1, 0.35)
+    local texture = flashFrame:CreateTexture(nil, "BACKGROUND")
+    texture:SetAllPoints()
+    texture:SetColorTexture(1, 0.1, 0.1, 0.35)
 
     local ag = flashFrame:CreateAnimationGroup()
     local fade = ag:CreateAnimation("Alpha")
@@ -73,30 +73,30 @@ local function CreateAlertFrame()
     alertFrame:SetFrameStrata("HIGH")
     alertFrame:SetClampedToScreen(true)
 
-    local text = alertFrame:CreateFontString(nil, "OVERLAY")
-    local sz = (ns.DB and ns.DB().alertTextSize) or 22
-    text:SetFont(ns.FontPath(), sz, ns.FontFlags())
-    text:SetPoint("CENTER")
-    text:SetTextColor(1, 0.3, 0.3)
-    text:SetShadowOffset(2, -2)
-    text:SetShadowColor(0, 0, 0, 0.8)
-    alertFrame.text = text
+    local textValue = alertFrame:CreateFontString(nil, "OVERLAY")
+    local sz = (mod.DB and mod.DB().alertTextSize) or 22
+    textValue:SetFont(mod.FontPath(), sz, mod.FontFlags())
+    textValue:SetPoint("CENTER")
+    textValue:SetTextColor(1, 0.3, 0.3)
+    textValue:SetShadowOffset(2, -2)
+    textValue:SetShadowColor(0, 0, 0, 0.8)
+    alertFrame.text = textValue
     alertFrame:Hide()
 
-    local db = ns.DB and ns.DB() or {}
+    local saved = mod.DB and mod.DB() or {}
     alertFrame:SetPoint(
-        db.alertPoint or "CENTER",
+        saved.alertPoint or "CENTER",
         UIParent,
-        db.alertRelPoint or "CENTER",
-        db.alertX or 0,
-        db.alertY or 200
+        saved.alertRelPoint or "CENTER",
+        saved.alertX or 0,
+        saved.alertY or 200
     )
 end
 
 -- ── Internal fire ─────────────────────────────────────────────────────────
 local function FireAlert(spellName, stacks)
-    local db = ns.DB and ns.DB() or {}
-    local alertText = db.alertText or "TAUNT"
+    local saved = mod.DB and mod.DB() or {}
+    local alertText = saved.alertText or "TAUNT"
     local msg = alertText .. " - " .. (spellName or "Debuff") .. " (" .. stacks .. " stacks)"
 
     if flashFrame then
@@ -125,11 +125,11 @@ local function FireAlert(spellName, stacks)
         end)
     end
 
-    ns.Print("|cffff4040" .. msg .. "|r")
+    mod.Print("|cffff4040" .. msg .. "|r")
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────
-function ns.Alert:Initialize()
+function mod.Alert:Initialize()
     if not flashFrame then
         CreateFlashFrame()
     end
@@ -140,29 +140,29 @@ end
 
 -- The frame the on-screen alert sits on. The aura buttons anchor their own
 -- alert text to it, and they are built before Initialize runs.
-function ns.Alert:Anchor()
+function mod.Alert:Anchor()
     if not alertFrame then
         CreateAlertFrame()
     end
     return alertFrame
 end
 
-function ns.Alert:BannerText()
-    local text = (ns.DB and ns.DB() or {}).alertText
-    if type(text) ~= "string" or text == "" then
+function mod.Alert:BannerText()
+    local textValue = (mod.DB and mod.DB() or {}).alertText
+    if type(textValue) ~= "string" or textValue == "" then
         return "TAUNT"
     end
-    return text
+    return textValue
 end
 
-function ns.Alert:SetText(text)
-    ns.DB().alertText = text
-    ns.RestyleAuraButtons()
+function mod.Alert:SetText(textValue)
+    mod.DB().alertText = textValue
+    mod.RestyleAuraButtons()
 end
 
 -- Test mode stand-in for the engine-driven alert text.
 local previewing = false
-function ns.Alert:PreviewBanner(on)
+function mod.Alert:PreviewBanner(on)
     if not alertFrame then
         return
     end
@@ -197,8 +197,8 @@ local function GetLSM()
     if not LibStub then
         return nil
     end
-    local ok, LSM = pcall(LibStub, "LibSharedMedia-3.0", true)
-    if ok and LSM and LSM.Fetch then
+    local success, LSM = pcall(LibStub, "LibSharedMedia-3.0", true)
+    if success and LSM and LSM.Fetch then
         return LSM
     end
     return nil
@@ -207,70 +207,70 @@ end
 -- Registered keys often carry UI escape codes (Northern Sky prefixes all of
 -- its sounds with a colour), so "Interrupt" would never match the actual key
 -- "|cFF4BAAC8Interrupt|r". Compare on the stripped, lowercased name instead.
-local function StripEscapes(text)
-    if type(text) ~= "string" then
+local function StripEscapes(textValue)
+    if type(textValue) ~= "string" then
         return ""
     end
-    return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("^%s+", ""):gsub("%s+$", ""))
+    return (textValue:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
 -- Returns a lowercased-name -> registered-key lookup, plus the display names
 -- in their original casing.
 local function BuildSoundIndex(LSM)
-    local index, display = {}, {}
+    local slotPos, display = {}, {}
     if not LSM.List then
-        return index, display
+        return slotPos, display
     end
-    local ok, list = pcall(LSM.List, LSM, "sound")
-    if not ok or type(list) ~= "table" then
-        return index, display
+    local success, entries = pcall(LSM.List, LSM, "sound")
+    if not success or type(entries) ~= "table" then
+        return slotPos, display
     end
-    for _, key in ipairs(list) do
+    for _, key in ipairs(entries) do
         local plain = StripEscapes(key)
-        if plain ~= "" and not index[plain:lower()] then
-            index[plain:lower()] = key
+        if plain ~= "" and not slotPos[plain:lower()] then
+            slotPos[plain:lower()] = key
             display[#display + 1] = plain
         end
     end
-    return index, display
+    return slotPos, display
 end
 
 -- Sorted, escape-free list of every sound name that can be used.
-function ns.Alert:ListSoundNames()
+function mod.Alert:ListSoundNames()
     local LSM = GetLSM()
     if not LSM then
         return nil
     end
-    local _, names = BuildSoundIndex(LSM)
-    table.sort(names, function(a, b)
+    local _, nameList = BuildSoundIndex(LSM)
+    table.sort(nameList, function(a, b)
         return a:lower() < b:lower()
     end)
-    return names
+    return nameList
 end
 
 -- True for a value that can actually be handed to the engine as a sound file.
 -- LibSharedMedia stores the number 1 for its "None" entry, and a name that
 -- matched nothing comes back as a bare name rather than a path.
-local function IsUsableSoundPath(path)
-    return type(path) == "string"
-        and path ~= ""
-        and (path:find("\\", 1, true) or path:find("/", 1, true)) ~= nil
+local function IsUsableSoundPath(filePath)
+    return type(filePath) == "string"
+        and filePath ~= ""
+        and (filePath:find("\\", 1, true) or filePath:find("/", 1, true)) ~= nil
 end
 
 -- Resolves the configured alert sound to a file path: an LSM sound name if it
 -- matches one, otherwise the setting treated as a literal path.
-function ns.Alert:ResolveSoundPath()
-    local name = (ns.DB and ns.DB() or {}).alertSoundFile or DEFAULT_ALERT_SOUND
+function mod.Alert:ResolveSoundPath()
+    local name = (mod.DB and mod.DB() or {}).alertSoundFile or DEFAULT_ALERT_SOUND
     local LSM = GetLSM()
     if not LSM then
         return name
     end
 
     local function fetch(key)
-        local ok, path = pcall(LSM.Fetch, LSM, "sound", key, true)
+        local success, filePath = pcall(LSM.Fetch, LSM, "sound", key, true)
         -- LSM stores the number 1 for its "None" entry; that is not a path.
-        if ok and type(path) == "string" and path ~= "" then
-            return path
+        if success and type(filePath) == "string" and filePath ~= "" then
+            return filePath
         end
     end
 
@@ -281,9 +281,9 @@ function ns.Alert:ResolveSoundPath()
 
     local key = BuildSoundIndex(LSM)[StripEscapes(name):lower()]
     if key then
-        local path = fetch(key)
-        if path then
-            return path
+        local filePath = fetch(key)
+        if filePath then
+            return filePath
         end
     end
 
@@ -291,11 +291,11 @@ function ns.Alert:ResolveSoundPath()
 end
 
 -- Called when combat drops, to run any rebuild that was blocked by secrecy.
-function ns.Alert:FlushPendingAuraSounds()
+function mod.Alert:FlushPendingAuraSounds()
     if not pendingRegister then
         return
     end
-    if ns.AurasAreSecret() then
+    if mod.AurasAreSecret() then
         return
     end
     local unit = pendingUnit
@@ -304,16 +304,16 @@ function ns.Alert:FlushPendingAuraSounds()
     self:RegisterAuraSounds(unit or (CoTankAuras and CoTankAuras:GetAttribute("unit")))
 end
 
-function ns.Alert:ClearAuraSounds()
+function mod.Alert:ClearAuraSounds()
     if C_UnitAuras and C_UnitAuras.RemoveAuraSound then
-        for _, id in ipairs(auraSoundIDs) do
-            pcall(C_UnitAuras.RemoveAuraSound, id)
+        for _, ident in ipairs(auraSoundIDs) do
+            pcall(C_UnitAuras.RemoveAuraSound, ident)
         end
     end
     wipe(auraSoundIDs)
 end
 
-function ns.Alert:RegisterAuraSounds(unit)
+function mod.Alert:RegisterAuraSounds(unit)
     if not (C_UnitAuras and C_UnitAuras.AddAuraSound and Enum and Enum.UnitAuraSoundTrigger) then
         return 0, 0
     end
@@ -323,7 +323,7 @@ function ns.Alert:RegisterAuraSounds(unit)
     -- existing registrations and failing to replace them would silence alerts
     -- for the rest of the pull, so defer the whole rebuild to the next time
     -- combat drops (see the pending flush in Core.lua).
-    if ns.AurasAreSecret() then
+    if mod.AurasAreSecret() then
         pendingUnit = unit
         pendingRegister = true
         return 0, 0
@@ -337,16 +337,16 @@ function ns.Alert:RegisterAuraSounds(unit)
         return 0, 0
     end
 
-    local db = ns.DB and ns.DB() or {}
-    local soundPath = not db.alertSoundFileID and self:ResolveSoundPath() or nil
-    local channel = db.alertSoundChannel or "Master"
+    local saved = mod.DB and mod.DB() or {}
+    local soundPath = not saved.alertSoundFileID and self:ResolveSoundPath() or nil
+    local channel = saved.alertSoundChannel or "Master"
 
     -- Registering a name that resolved to nothing just produces silent alerts,
     -- so refuse it up front and say which setting to fix.
-    if not db.alertSoundFileID and not IsUsableSoundPath(soundPath) then
+    if not saved.alertSoundFileID and not IsUsableSoundPath(soundPath) then
         if not soundWarned then
             soundWarned = true
-            ns.Print(
+            mod.Print(
                 "|cffff4040Alert sound '"
                     .. tostring(soundPath)
                     .. "' is not a known sound.|r Pick one with "
@@ -362,22 +362,22 @@ function ns.Alert:RegisterAuraSounds(unit)
     }
 
     local attempted = 0
-    for spellID, sa in pairs(db.spellAlerts or {}) do
-        local id = tonumber(spellID)
-        if id and sa and sa.enabled then
+    for spellId, sa in pairs(saved.spellAlerts or {}) do
+        local ident = tonumber(spellId)
+        if ident and sa and sa.enabled then
             for _, trigger in ipairs(triggers) do
                 -- A fresh table each call; the engine keeps what it is given.
                 local sound = {
                     unitToken = unit,
-                    spellID = id,
+                    spellID = ident,
                     outputChannel = channel,
-                    soundFileID = db.alertSoundFileID,
+                    soundFileID = saved.alertSoundFileID,
                     soundFileName = soundPath,
                 }
 
                 attempted = attempted + 1
-                local ok, soundID = pcall(C_UnitAuras.AddAuraSound, trigger, sound)
-                if ok and soundID then
+                local success, soundID = pcall(C_UnitAuras.AddAuraSound, trigger, sound)
+                if success and soundID then
                     table.insert(auraSoundIDs, soundID)
                 end
             end
@@ -389,7 +389,7 @@ function ns.Alert:RegisterAuraSounds(unit)
     -- than leaving the user with silent alerts.
     if attempted > 0 and #auraSoundIDs == 0 and not soundWarned then
         soundWarned = true
-        ns.Print(
+        mod.Print(
             "|cffff4040Alert sounds were rejected by the game.|r "
                 .. "Pick another one with /ctank sounds and /ctank sound set <name>, "
                 .. "or check the sound file still exists, "
@@ -403,21 +403,21 @@ end
 -- Reports whether the engine accepted the configured alert sound. The sound
 -- file cannot be validated any other way: AddAuraSound returning a handle is
 -- the only confirmation available.
-function ns.Alert:ReportAuraSounds()
+function mod.Alert:ReportAuraSounds()
     local unit = CoTankAuras and CoTankAuras:GetAttribute("unit")
     if not unit then
-        ns.Print("No co-tank assigned, so there is nothing to register sounds on.")
+        mod.Print("No co-tank assigned, so there is nothing to register sounds on.")
         return
     end
 
     soundWarned = false
     local registered, attempted = self:RegisterAuraSounds(unit)
-    local db = ns.DB and ns.DB() or {}
-    local using = db.alertSoundFileID and ("file ID " .. tostring(db.alertSoundFileID))
+    local saved = mod.DB and mod.DB() or {}
+    local using = saved.alertSoundFileID and ("file ID " .. tostring(saved.alertSoundFileID))
         or self:ResolveSoundPath()
 
-    if ns.AurasAreSecret() then
-        ns.Print(
+    if mod.AurasAreSecret() then
+        mod.Print(
             "Auras are secret right now (combat, encounter, M+ or PvP), "
                 .. "so sounds cannot be registered. Retry out of combat - the "
                 .. "addon also retries by itself when combat drops."
@@ -426,9 +426,9 @@ function ns.Alert:ReportAuraSounds()
     end
 
     if attempted == 0 then
-        ns.Print("No alert spells are enabled - turn some on under |cffffff00/ctank|r > Alerts.")
+        mod.Print("No alert spells are enabled - turn some on under |cffffff00/ctank|r > Alerts.")
     elseif registered == 0 then
-        ns.Print(
+        mod.Print(
             "Alert sounds registered: |cffff66660/"
                 .. attempted
                 .. "|r - the game rejected "
@@ -436,11 +436,11 @@ function ns.Alert:ReportAuraSounds()
                 .. ". Use |cffffff00/ctank sounds|r to list valid names."
         )
     elseif registered == attempted then
-        ns.Print(
+        mod.Print(
             "Alert sounds registered: |cff44ff88" .. registered .. "/" .. attempted .. "|r using " .. using
         )
     else
-        ns.Print(
+        mod.Print(
             "Alert sounds registered: |cffff6666" .. registered .. "/" .. attempted .. "|r using " .. using
         )
     end
@@ -451,7 +451,7 @@ end
 -- is one of the few aura APIs still callable by tainted code; it returns
 -- nothing (and does not error) for auras the client is keeping secret, so this
 -- fires in the open world and on non-secret spells and stays quiet otherwise.
-function ns.Alert:Check(unit)
+function mod.Alert:Check(unit)
     if not unit then
         return
     end
@@ -460,24 +460,24 @@ function ns.Alert:Check(unit)
         return
     end
 
-    local db = ns.DB and ns.DB() or {}
-    local now = GetTime()
+    local saved = mod.DB and mod.DB() or {}
+    local nowTime = GetTime()
 
-    for spellID, sa in pairs(db.spellAlerts or {}) do
-        local id = tonumber(spellID)
-        if id and sa and sa.enabled and sa.threshold then
-            local ok, aura = pcall(getBySpellID, unit, id)
+    for spellId, sa in pairs(saved.spellAlerts or {}) do
+        local ident = tonumber(spellId)
+        if ident and sa and sa.enabled and sa.threshold then
+            local success, aura = pcall(getBySpellID, unit, ident)
             -- A boolean test on a non-boolean secret is permitted, so this is
             -- safe even when the engine hands back a secret table.
-            if ok and aura and ns.CanRead(aura) then
+            if success and aura and mod.CanRead(aura) then
                 local apps = aura.applications
-                if not ns.IsSecret(apps) then
+                if not mod.IsSecret(apps) then
                     local stacks = tonumber(apps) or 1
                     if stacks >= sa.threshold then
-                        local last = lastAlerted[id] or 0
-                        if (now - last) >= REPEAT_COOLDOWN then
-                            lastAlerted[id] = now
-                            FireAlert(SpellName(id), stacks)
+                        local last = lastAlerted[ident] or 0
+                        if (nowTime - last) >= REPEAT_COOLDOWN then
+                            lastAlerted[ident] = nowTime
+                            FireAlert(SpellName(ident), stacks)
                             return
                         end
                     end
@@ -487,15 +487,15 @@ function ns.Alert:Check(unit)
     end
 end
 
-function ns.Alert:Test()
+function mod.Alert:Test()
     FireAlert("Test Spell", 3)
 end
 
 -- Lists the sound names available through LibSharedMedia, optionally filtered.
-function ns.Alert:PrintSoundNames(filter)
-    local names = self:ListSoundNames()
-    if not names then
-        ns.Print(
+function mod.Alert:PrintSoundNames(filter)
+    local nameList = self:ListSoundNames()
+    if not nameList then
+        mod.Print(
             "LibSharedMedia is not loaded, so there are no shared sound "
                 .. "names, so only the built-in alert sound is available."
         )
@@ -503,46 +503,46 @@ function ns.Alert:PrintSoundNames(filter)
     end
 
     filter = filter and filter ~= "" and filter:lower() or nil
-    local shown, total = {}, 0
-    for _, name in ipairs(names) do
+    local isShown, sum = {}, 0
+    for _, name in ipairs(nameList) do
         if not filter or name:lower():find(filter, 1, true) then
-            total = total + 1
-            if #shown < 40 then
-                shown[#shown + 1] = name
+            sum = sum + 1
+            if #isShown < 40 then
+                isShown[#isShown + 1] = name
             end
         end
     end
 
-    if total == 0 then
-        ns.Print("No sound names match |cffffff00" .. (filter or "") .. "|r.")
+    if sum == 0 then
+        mod.Print("No sound names match |cffffff00" .. (filter or "") .. "|r.")
         return
     end
 
-    ns.Print("Sound names (" .. total .. (filter and (" matching '" .. filter .. "'") or "") .. "):")
-    DEFAULT_CHAT_FRAME:AddMessage("  " .. table.concat(shown, ", "))
-    if total > #shown then
+    mod.Print("Sound names (" .. sum .. (filter and (" matching '" .. filter .. "'") or "") .. "):")
+    DEFAULT_CHAT_FRAME:AddMessage("  " .. table.concat(isShown, ", "))
+    if sum > #isShown then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "  ...and " .. (total - #shown) .. " more. Narrow it with |cffffff00/ctank sounds <text>|r."
+            "  ...and " .. (sum - #isShown) .. " more. Narrow it with |cffffff00/ctank sounds <text>|r."
         )
     end
     DEFAULT_CHAT_FRAME:AddMessage("  Pick one with |cffffff00/ctank sound set <name>|r.")
 end
 
 -- Sets the alert sound by name (or literal path) and re-registers.
-function ns.Alert:SetSound(name)
+function mod.Alert:SetSound(name)
     name = name and name:match("^%s*(.-)%s*$") or ""
     if name == "" then
         return
     end
 
-    local db = ns.DB()
-    db.alertSoundFile = name
-    db.alertSoundFileID = nil
+    local saved = mod.DB()
+    saved.alertSoundFile = name
+    saved.alertSoundFileID = nil
     soundWarned = false
 
     local resolved = self:ResolveSoundPath()
     if resolved == name and not name:find("\\") then
-        ns.Print(
+        mod.Print(
             "|cffff4040No sound named '"
                 .. name
                 .. "' is registered.|r "
@@ -551,39 +551,39 @@ function ns.Alert:SetSound(name)
         return
     end
 
-    ns.Print("Alert sound set to |cff5ab4ff" .. name .. "|r")
+    mod.Print("Alert sound set to |cff5ab4ff" .. name .. "|r")
     self:ReportAuraSounds()
 end
 
 -- Re-applies the global font choice to the alert banner.
-function ns.Alert:RefreshFont()
+function mod.Alert:RefreshFont()
     if not alertFrame then
         return
     end
-    local db = ns.DB and ns.DB() or {}
-    alertFrame.text:SetFont(ns.FontPath(), db.alertTextSize or 22, ns.FontFlags())
+    local saved = mod.DB and mod.DB() or {}
+    alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize or 22, mod.FontFlags())
 end
 
-function ns.Alert:SetTextSize(size)
-    local db = ns.DB and ns.DB() or {}
-    db.alertTextSize = math.max(12, math.min(48, tonumber(size) or 22))
+function mod.Alert:SetTextSize(dim)
+    local saved = mod.DB and mod.DB() or {}
+    saved.alertTextSize = math.max(12, math.min(48, tonumber(dim) or 22))
     if alertFrame then
-        alertFrame.text:SetFont(ns.FontPath(), db.alertTextSize, ns.FontFlags())
+        alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize, mod.FontFlags())
     end
-    ns.RestyleAuraButtons()
+    mod.RestyleAuraButtons()
 end
 
-function ns.Alert:ApplyPosition()
+function mod.Alert:ApplyPosition()
     if not alertFrame then
         return
     end
-    local db = ns.DB and ns.DB() or {}
+    local saved = mod.DB and mod.DB() or {}
     alertFrame:ClearAllPoints()
     alertFrame:SetPoint(
-        db.alertPoint or "CENTER",
+        saved.alertPoint or "CENTER",
         UIParent,
-        db.alertRelPoint or "CENTER",
-        db.alertX or 0,
-        db.alertY or 200
+        saved.alertRelPoint or "CENTER",
+        saved.alertX or 0,
+        saved.alertY or 200
     )
 end

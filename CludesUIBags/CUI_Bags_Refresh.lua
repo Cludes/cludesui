@@ -8,52 +8,52 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  RefreshInventory for the bags and the reagent bag.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemQualityColor = C_Item.GetItemQualityColor
 local CUI = CludesUI
 local GetUpgradeTrack = CUI.GetUpgradeTrack
 
-local AbbrevDungeon, BP, GetColumns = I.AbbrevDungeon, I.BP, I.GetColumns
-local GetItemLevelAtLocation, IsGearItem = I.GetItemLevelAtLocation, I.IsGearItem
-local IsItemPinned, SetBagFont, SLOT_SIZE = I.IsItemPinned, I.SetBagFont, I.SLOT_SIZE
-local SPACING, _pendingResortCats = I.SPACING, I._pendingResortCats
-ns.OnSlotMetrics(function(m)
+local AbbrevDungeon, BP, GetColumns = Inner.AbbrevDungeon, Inner.BP, Inner.GetColumns
+local GetItemLevelAtLocation, IsGearItem = Inner.GetItemLevelAtLocation, Inner.IsGearItem
+local IsItemPinned, SetBagFont, SLOT_SIZE = Inner.IsItemPinned, Inner.SetBagFont, Inner.SLOT_SIZE
+local SPACING, _pendingResortCats = Inner.SPACING, Inner._pendingResortCats
+mod.OnSlotMetrics(function(m)
     SLOT_SIZE, SPACING = m[1], m[2]
 end)
-local _pendingResortGroups, _slotCategories = I._pendingResortGroups, I._slotCategories
-local AcquireSlotTable, bagSlots = I.AcquireSlotTable, I.bagSlots
-local DetectAndApplySwaps, FOOTER_H = I.DetectAndApplySwaps, I.FOOTER_H
-local PreCacheSortFields, reagentSlots = I.PreCacheSortFields, I.reagentSlots
-local ReleaseAllSlotTables, SaveCategoryOrder = I.ReleaseAllSlotTables, I.SaveCategoryOrder
-local TakeBagSnapshot, UpdatePawnArrow = I.TakeBagSnapshot, I.UpdatePawnArrow
-local VisualSortCompare, UpdateBagMoneyDisplay = I.VisualSortCompare, I.UpdateBagMoneyDisplay
-local UpdateCurrencyDisplays, SCROLLBAR_HIT_W = I.UpdateCurrencyDisplays, I.SCROLLBAR_HIT_W
-local SetInsetBorderColor, GetOrCreateBagSlot = I.SetInsetBorderColor, I.GetOrCreateBagSlot
-local GetOrCreateReagentSlot, PinnedItems = I.GetOrCreateReagentSlot, I.PinnedItems
-local BuildSidebarButtons, GetSidebarWidth = I.BuildSidebarButtons, I.GetSidebarWidth
-local SetGearCatSet, SetPaintedPanelOpen = I.SetGearCatSet, I.SetPaintedPanelOpen
+local _pendingResortGroups, _slotCategories = Inner._pendingResortGroups, Inner._slotCategories
+local AcquireSlotTable, bagSlots = Inner.AcquireSlotTable, Inner.bagSlots
+local DetectAndApplySwaps, FOOTER_H = Inner.DetectAndApplySwaps, Inner.FOOTER_H
+local PreCacheSortFields, reagentSlots = Inner.PreCacheSortFields, Inner.reagentSlots
+local ReleaseAllSlotTables, SaveCategoryOrder = Inner.ReleaseAllSlotTables, Inner.SaveCategoryOrder
+local TakeBagSnapshot, UpdatePawnArrow = Inner.TakeBagSnapshot, Inner.UpdatePawnArrow
+local VisualSortCompare, UpdateBagMoneyDisplay = Inner.VisualSortCompare, Inner.UpdateBagMoneyDisplay
+local UpdateCurrencyDisplays, SCROLLBAR_HIT_W = Inner.UpdateCurrencyDisplays, Inner.SCROLLBAR_HIT_W
+local SetInsetBorderColor, GetOrCreateBagSlot = Inner.SetInsetBorderColor, Inner.GetOrCreateBagSlot
+local GetOrCreateReagentSlot, PinnedItems = Inner.GetOrCreateReagentSlot, Inner.PinnedItems
+local BuildSidebarButtons, GetSidebarWidth = Inner.BuildSidebarButtons, Inner.GetSidebarWidth
+local SetGearCatSet, SetPaintedPanelOpen = Inner.SetGearCatSet, Inner.SetPaintedPanelOpen
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._bagsInternals, which hands the value to every copy.
-local selectedCategoryIndex = I.selectedCategoryIndex
-I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v)
-    selectedCategoryIndex = v
+local selectedCategoryIndex = Inner.selectedCategoryIndex
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
+    selectedCategoryIndex = val
 end
 local selectedGroupName
-I.groupNameSetters[#I.groupNameSetters + 1] = function(v)
-    selectedGroupName = v
+Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val)
+    selectedGroupName = val
 end
-local _anyItemPanelOpen = I._anyItemPanelOpen
-I.anyItemPanelOpenSetters[#I.anyItemPanelOpenSetters + 1] = function(v)
-    _anyItemPanelOpen = v
+local _anyItemPanelOpen = Inner._anyItemPanelOpen
+Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val)
+    _anyItemPanelOpen = val
 end
 
 local _lastCatCounts = {} -- category counts from last full refresh
@@ -73,9 +73,9 @@ local _linkFacts, _linkFactsN = {}, 0
 -------------------------------------------------------------------------------
 local _catHeaders = {} -- pool of header frames
 
-local function GetOrCreateCatHeader(idx)
-    if _catHeaders[idx] then
-        return _catHeaders[idx]
+local function GetOrCreateCatHeader(position)
+    if _catHeaders[position] then
+        return _catHeaders[position]
     end
     local f = CreateFrame("Frame", nil, CUI_Bags)
     f:SetHeight(20)
@@ -90,17 +90,17 @@ local function GetOrCreateCatHeader(idx)
     f._hint:SetTextColor(0.7, 0.7, 0.7, 0.9)
     f._hint:SetJustifyH("LEFT")
     f._hint:SetText("")
-    local PP = CUI and CUI.PP
-    local px = (PP and PP.mult) or 1
+    local Pix = CUI and CUI.PP
+    local px = (Pix and Pix.mult) or 1
     f._line = f:CreateTexture(nil, "ARTWORK")
     f._line:SetHeight(px)
     f._line:SetPoint("LEFT", f._hint, "RIGHT", 6, 0)
     f._line:SetPoint("RIGHT", f, "RIGHT", -SPACING, 0)
     f._line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
-    if ns.BagsForever() then
-        ns.SetForeverBagSectionColors(f._label, f._line)
+    if mod.BagsForever() then
+        mod.SetForeverBagSectionColors(f._label, f._line)
     end
-    _catHeaders[idx] = f
+    _catHeaders[position] = f
     return f
 end
 
@@ -110,7 +110,7 @@ end
 -- protected (out of combat only): a frame made in combat takes no mouse until
 -- a later paint out of combat turns them on. Returns whether the frame passes
 -- clicks on. Shared with the Compact display's labels.
-function ns.PassClicks(f)
+function mod.PassClicks(f)
     if f._passClicks or not f.SetPropagateMouseClicks then
         return true
     end
@@ -134,23 +134,23 @@ do
             CUI.ShowWidgetTooltip(self, hint)
         end
     end
-    function ns.SetHeaderHint(hdr, text)
-        hdr._hintText = text
-        local hit = hdr._hintHit
+    function mod.SetHeaderHint(heading, textValue)
+        heading._hintText = textValue
+        local hit = heading._hintHit
         if not hit then
-            if not text then
+            if not textValue then
                 return
             end
-            hit = CreateFrame("Frame", nil, hdr)
-            hit:SetPoint("TOPLEFT", hdr._label, "TOPLEFT", 0, 2)
-            hit:SetPoint("BOTTOMRIGHT", hdr._label, "BOTTOMRIGHT", 0, -2)
+            hit = CreateFrame("Frame", nil, heading)
+            hit:SetPoint("TOPLEFT", heading._label, "TOPLEFT", 0, 2)
+            hit:SetPoint("BOTTOMRIGHT", heading._label, "BOTTOMRIGHT", 0, -2)
             hit:SetScript("OnEnter", HeaderHintOnEnter)
             hit:SetScript("OnLeave", CUI.HideWidgetTooltip)
             -- After the scripts: motion only, never clicks
             hit:SetMouseClickEnabled(false)
-            hdr._hintHit = hit
+            heading._hintHit = hit
         end
-        hit:SetMouseMotionEnabled(text ~= nil and ns.PassClicks(hit))
+        hit:SetMouseMotionEnabled(textValue ~= nil and mod.PassClicks(hit))
     end
 end
 
@@ -159,9 +159,9 @@ end
 -- Opt-in (bagShowRecentClear, default off): callers gate on the setting, so a
 -- user who never enables it never has the button built. Pooled on the header
 -- like _hideBtn; hidden by the per-refresh header reset.
-local function ShowRecentClearButton(hdr, hideBtn)
-    if not hdr._clearBtn then
-        local cb = CreateFrame("Button", nil, hdr)
+local function ShowRecentClearButton(heading, hideBtn)
+    if not heading._clearBtn then
+        local cb = CreateFrame("Button", nil, heading)
         cb:SetSize(34, 16)
         cb._fs = cb:CreateFontString(nil, "OVERLAY")
         SetBagFont(cb._fs, 9)
@@ -181,24 +181,24 @@ local function ShowRecentClearButton(hdr, hideBtn)
                 CUI_Bags:ClearRecentItems()
             end
         end)
-        hdr._clearBtn = cb
+        heading._clearBtn = cb
     end
-    hdr._clearBtn:ClearAllPoints()
+    heading._clearBtn:ClearAllPoints()
     if hideBtn then
-        hdr._clearBtn:SetPoint("RIGHT", hideBtn, "LEFT", -6, 0)
+        heading._clearBtn:SetPoint("RIGHT", hideBtn, "LEFT", -6, 0)
     else
-        hdr._clearBtn:SetPoint("RIGHT", hdr, "RIGHT", 0, 0)
+        heading._clearBtn:SetPoint("RIGHT", heading, "RIGHT", 0, 0)
     end
-    hdr._clearBtn:Show()
-    return hdr._clearBtn
+    heading._clearBtn:Show()
+    return heading._clearBtn
 end
 
 -- Indented subheaders under a category (expansion names) for All Items nesting
 local _expSubHeaders = {}
 
-local function GetOrCreateExpSubHeader(idx)
-    if _expSubHeaders[idx] then
-        return _expSubHeaders[idx]
+local function GetOrCreateExpSubHeader(position)
+    if _expSubHeaders[position] then
+        return _expSubHeaders[position]
     end
     local f = CreateFrame("Frame", nil, CUI_Bags)
     f:SetHeight(16)
@@ -207,7 +207,7 @@ local function GetOrCreateExpSubHeader(idx)
     f._label:SetPoint("LEFT", f, "LEFT", 0, 0)
     f._label:SetTextColor(0.55, 0.55, 0.55)
     f._label:SetJustifyH("LEFT")
-    _expSubHeaders[idx] = f
+    _expSubHeaders[position] = f
     return f
 end
 
@@ -221,29 +221,29 @@ local function CreateBagScrollFrame()
 
     local sidebarW = GetSidebarWidth()
     local headerH = CUI_Bags.Header:GetHeight()
-    local rightInset = ns.BagsForever() and -7 or -1
+    local rightInset = mod.BagsForever() and -7 or -1
     CUI_Bags._scrollRightInset = rightInset
 
     -- ScrollFrame: fills between header, footer, and sidebar
-    local sf = CreateFrame("ScrollFrame", nil, CUI_Bags)
-    sf:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1))
-    sf:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", rightInset, 0)
-    sf:EnableMouseWheel(true)
+    local scrollFrame = CreateFrame("ScrollFrame", nil, CUI_Bags)
+    scrollFrame:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1))
+    scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", rightInset, 0)
+    scrollFrame:EnableMouseWheel(true)
 
     -- Scroll child: tall frame that holds all items
-    local child = CreateFrame("Frame", nil, sf)
-    child:SetWidth(sf:GetWidth())
-    child:SetHeight(1) -- updated by RefreshInventory
-    child:EnableMouse(false) -- let clicks pass through to item buttons
-    sf:SetScrollChild(child)
+    local childFrame = CreateFrame("Frame", nil, scrollFrame)
+    childFrame:SetWidth(scrollFrame:GetWidth())
+    childFrame:SetHeight(1) -- updated by RefreshInventory
+    childFrame:EnableMouse(false) -- let clicks pass through to item buttons
+    scrollFrame:SetScrollChild(childFrame)
 
     -- Track (always visible)
-    local track, thumb, UpdateThumb = ns.AttachGridScrollbar(CUI_Bags, sf, true, false)
+    local track, thumb, UpdateThumb = mod.AttachGridScrollbar(CUI_Bags, scrollFrame, true, false)
     track:SetPoint("TOPRIGHT", CUI_Bags, "TOPRIGHT", rightInset, -(headerH + 1))
     track:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", rightInset, 0)
 
-    CUI_Bags._scrollFrame = sf
-    CUI_Bags._scrollChild = child
+    CUI_Bags._scrollFrame = scrollFrame
+    CUI_Bags._scrollChild = childFrame
     CUI_Bags._scrollTrack = track
     CUI_Bags._scrollThumb = thumb
     CUI_Bags._updateThumb = UpdateThumb
@@ -299,59 +299,60 @@ do
             GripStop(grip)
             return
         end
-        local d, cfg = grip._drag, grip._cfg
+        local d, conf = grip._drag, grip._cfg
         local cx, cy = GetCursorPosition()
         local es = grip:GetParent():GetEffectiveScale()
-        local step = cfg.step
+        local step = conf.step
         local dx = math.floor(cx / es - d.x + 0.5)
-        dx = math.max((cfg.minCols - d.cols) * step, math.min((d.maxCols - d.cols) * step, dx))
+        dx = math.max((conf.minCols - d.cols) * step, math.min((d.maxCols - d.cols) * step, dx))
         local cols = d.cols + math.floor(dx / step)
-        local bucket = math.floor(dx / (cfg.relayoutStep or step))
-        local h = math.floor(d.h + (d.y - cy / es) + 0.5)
-        h = math.max(cfg.minH, math.min(d.maxH, h))
-        if dx == d.lastDX and h == d.lastH then
+        local bucket = math.floor(dx / (conf.relayoutStep or step))
+        local hgt = math.floor(d.h + (d.y - cy / es) + 0.5)
+        hgt = math.max(conf.minH, math.min(d.maxH, hgt))
+        if dx == d.lastDX and hgt == d.lastH then
             return
         end
         local relayout = bucket ~= d.lastBucket
-        d.lastDX, d.lastBucket, d.lastH = dx, bucket, h
-        cfg.save(cols, h)
+        d.lastDX, d.lastBucket, d.lastH = dx, bucket, hgt
+        conf.save(cols, hgt)
         if relayout then
-            cfg.finish()
+            conf.finish()
         end
         -- After the refresh, which sets the snapped size
-        grip:GetParent():SetSize(d.frameW + dx, h)
+        grip:GetParent():SetSize(d.frameW + dx, hgt)
     end
 
-    local function GripOnMouseDown(grip, button)
-        if button ~= "LeftButton" then
+    local function GripOnMouseDown(grip, btnFrame)
+        if btnFrame ~= "LeftButton" then
             return
         end
-        local frame, cfg = grip:GetParent(), grip._cfg
-        local left, top, right, bottom = frame:GetLeft(), frame:GetTop(), frame:GetRight(), frame:GetBottom()
+        local widget, conf = grip:GetParent(), grip._cfg
+        local left, top, right, bottom =
+            widget:GetLeft(), widget:GetTop(), widget:GetRight(), widget:GetBottom()
         if not left then
             return
         end
         -- Pin the top-left corner so only the right and bottom edges move
-        frame:ClearAllPoints()
-        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
-        cfg.savePos(left, top)
+        widget:ClearAllPoints()
+        widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+        conf.savePos(left, top)
         local cx, cy = GetCursorPosition()
-        local es = frame:GetEffectiveScale()
+        local es = widget:GetEffectiveScale()
         local screenW = UIParent:GetRight() * UIParent:GetEffectiveScale() / es
-        local cols, h = cfg.getCols(), cfg.getHeight()
+        local cols, hgt = conf.getCols(), conf.getHeight()
         grip._drag = {
             x = cx / es,
             y = cy / es,
             cols = cols,
-            h = h,
+            h = hgt,
             lastBucket = 0,
             lastDX = 0,
-            lastH = h,
-            frameW = frame:GetWidth(),
-            maxCols = math.max(cols, cols + math.floor((screenW - right) / cfg.step)),
-            maxH = math.max(h, h + math.floor(bottom)),
+            lastH = hgt,
+            frameW = widget:GetWidth(),
+            maxCols = math.max(cols, cols + math.floor((screenW - right) / conf.step)),
+            maxH = math.max(hgt, hgt + math.floor(bottom)),
         }
-        frame._resizing = true
+        widget._resizing = true
         -- Keep the hover look while the cursor runs ahead of the snapped edge
         grip:SetAlpha(GR.HOVER)
         grip:SetScript("OnUpdate", GripOnUpdate)
@@ -389,21 +390,21 @@ do
     end
 
     function GR.LockOnClick(lock)
-        local cfg = lock._cfg
-        cfg.setLocked(not cfg.isLocked())
-        ns.UpdateResizeGrip(lock:GetParent(), cfg)
+        local conf = lock._cfg
+        conf.setLocked(not conf.isLocked())
+        mod.UpdateResizeGrip(lock:GetParent(), conf)
         GR.LockTooltip(lock)
     end
 
-    function GR.IconButton(frame, w, h, path)
-        local b = CreateFrame("Button", nil, frame)
-        b:SetSize(w, h)
-        b:SetFrameLevel(frame:GetFrameLevel() + 50)
+    function GR.IconButton(widget, wid, hgt, filePath)
+        local b = CreateFrame("Button", nil, widget)
+        b:SetSize(wid, hgt)
+        b:SetFrameLevel(widget:GetFrameLevel() + 50)
         local tex = b:CreateTexture(nil, "ARTWORK")
         tex:SetAllPoints()
         tex:SetDesaturated(true)
-        if path then
-            tex:SetTexture(path)
+        if filePath then
+            tex:SetTexture(filePath)
         end
         b._icon = tex
         b:SetAlpha(GR.A)
@@ -413,22 +414,27 @@ do
     -- The lock always shows (it also holds the window in place); the grip only
     -- while unlocked and the window does not size itself. Runs on every refresh,
     -- so it repaints only when that state changes.
-    function ns.UpdateResizeGrip(frame, cfg)
-        local grip, lock = frame._resizeGrip, frame._lockBtn
-        local locked = cfg.isLocked()
-        local noGrip = locked or (cfg.hidden and cfg.hidden()) or false
-        if lock and frame._gripCfg == cfg and frame._gripLocked == locked and frame._gripNoGrip == noGrip then
+    function mod.UpdateResizeGrip(widget, conf)
+        local grip, lock = widget._resizeGrip, widget._lockBtn
+        local locked = conf.isLocked()
+        local noGrip = locked or (conf.hidden and conf.hidden()) or false
+        if
+            lock
+            and widget._gripCfg == conf
+            and widget._gripLocked == locked
+            and widget._gripNoGrip == noGrip
+        then
             return
         end
-        frame._gripCfg, frame._gripLocked, frame._gripNoGrip = cfg, locked, noGrip
+        widget._gripCfg, widget._gripLocked, widget._gripNoGrip = conf, locked, noGrip
         if not lock then
-            lock = GR.IconButton(frame, 13, 17)
+            lock = GR.IconButton(widget, 13, 17)
             lock:SetScript("OnEnter", GR.LockOnEnter)
             lock:SetScript("OnLeave", GR.LockOnLeave)
             lock:SetScript("OnClick", GR.LockOnClick)
-            frame._lockBtn = lock
+            widget._lockBtn = lock
         end
-        lock._cfg = cfg
+        lock._cfg = conf
         lock._icon:SetTexture(locked and GR.LOCKED or GR.UNLOCKED)
         lock:ClearAllPoints()
         local inset = GR.LOCK_INSET
@@ -436,11 +442,11 @@ do
             if grip then
                 grip:Hide()
             end
-            lock:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 4)
+            lock:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -4, 4)
         else
             if not grip then
-                grip = GR.IconButton(frame, 18, 18, GR.RESIZE)
-                grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+                grip = GR.IconButton(widget, 18, 18, GR.RESIZE)
+                grip:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, 2)
                 grip:SetScript("OnMouseDown", GripOnMouseDown)
                 grip:SetScript("OnMouseUp", GripStop)
                 grip:SetScript("OnDoubleClick", GripReset)
@@ -448,19 +454,19 @@ do
                 grip:SetScript("OnLeave", GR.GripOnLeave)
                 -- Window closed mid-drag: end the drag instead of resuming on reopen
                 grip:SetScript("OnHide", GripStop)
-                frame._resizeGrip = grip
+                widget._resizeGrip = grip
             end
             if not grip._drag then
-                grip._cfg = cfg
+                grip._cfg = conf
             end
             grip:Show()
             lock:SetPoint("RIGHT", grip, "LEFT", -2, 0)
             inset = GR.GRIP_INSET
         end
         lock:Show()
-        if frame._gripInset ~= inset then
-            frame._gripInset = inset
-            cfg.inset(inset)
+        if widget._gripInset ~= inset then
+            widget._gripInset = inset
+            conf.inset(inset)
         end
     end
 end -- resize grip
@@ -475,8 +481,8 @@ local _bagGripCfg = {
     getHeight = function()
         return math.floor(CUI_Bags:GetHeight() + 0.5)
     end,
-    save = function(cols, h)
-        BP().bagColumns, BP().bagHeight = cols, h
+    save = function(cols, hgt)
+        BP().bagColumns, BP().bagHeight = cols, hgt
         if CUI_Bags._updateThumb then
             CUI_Bags._updateThumb()
         end
@@ -493,12 +499,12 @@ local _bagGripCfg = {
         CUI_Bags:RefreshInventory()
     end,
     -- The gold display sits in the footer's bottom-right corner
-    inset = I.PositionBagMoney,
+    inset = Inner.PositionBagMoney,
     isLocked = function()
         return BP().bagWindowLocked == true
     end,
-    setLocked = function(v)
-        BP().bagWindowLocked = v and true or false
+    setLocked = function(val)
+        BP().bagWindowLocked = val and true or false
     end,
     -- Auto-Size owns the window size
     hidden = function()
@@ -516,8 +522,8 @@ local _bagListGripCfg = setmetatable({
     getCols = function()
         return BP().bagListWidth or GetColumns() * LIST_PITCH
     end,
-    save = function(w, h)
-        BP().bagListWidth, BP().bagHeight = w, h
+    save = function(wid, hgt)
+        BP().bagListWidth, BP().bagHeight = wid, hgt
         if CUI_Bags._updateThumb then
             CUI_Bags._updateThumb()
         end
@@ -525,7 +531,7 @@ local _bagListGripCfg = setmetatable({
 }, { __index = _bagGripCfg })
 -- a new slot size: grow-only widths start over, and the detached reagent
 -- window and bag bar lay out again (the main refresh does the rest)
-ns.OnSlotMetrics(function(m)
+mod.OnSlotMetrics(function(m)
     _bagGripCfg.step = m[1] + m[2]
     _bagGripCfg.minCols = math.max(1, math.ceil(8 * 38 / (m[1] + m[2])))
     CUI_Bags._compactCols, CUI_Bags._compactW = nil, nil
@@ -538,22 +544,22 @@ ns.OnSlotMetrics(function(m)
     end
 end)
 
-local function FormatSlots(used, total, reagent, format)
+local function FormatSlots(used, sum, reagent, format)
     if format == "free" then
         if reagent then
-            return CludesUI.Lf("%d Reagent slots free", total - used)
+            return CludesUI.Lf("%d Reagent slots free", sum - used)
         end
-        return CludesUI.Lf("%d Slots free", total - used)
+        return CludesUI.Lf("%d Slots free", sum - used)
     elseif format == "free_total" then
         if reagent then
-            return CludesUI.Lf("%d / %d Reagent slots free", total - used, total)
+            return CludesUI.Lf("%d / %d Reagent slots free", sum - used, sum)
         end
-        return CludesUI.Lf("%d / %d Slots free", total - used, total)
+        return CludesUI.Lf("%d / %d Slots free", sum - used, sum)
     end
     if reagent then
-        return CludesUI.Lf("%d / %d Reagent slots", used, total)
+        return CludesUI.Lf("%d / %d Reagent slots", used, sum)
     end
-    return CludesUI.Lf("%d / %d Slots", used, total)
+    return CludesUI.Lf("%d / %d Slots", used, sum)
 end
 
 local function FinishRefresh(
@@ -570,16 +576,18 @@ local function FinishRefresh(
     if InCombatLockdown() and CUI_Bags._applySortEnabled then
         CUI_Bags._applySortEnabled()
     end
-    local sf, child = CUI_Bags._scrollFrame, CUI_Bags._scrollChild
+    local scrollFrame, childFrame = CUI_Bags._scrollFrame, CUI_Bags._scrollChild
     local headerH = CUI_Bags.Header:GetHeight()
     local contentH = math.abs(curY) + 10
-    if child then
-        child:SetHeight(contentH)
+    if childFrame then
+        childFrame:SetHeight(contentH)
     end
 
     -- Update scroll frame position + thumb (deferred one frame so layout updates scrollRange)
-    if sf then
-        sf:SetVerticalScroll(math.min(sf:GetVerticalScroll(), sf:GetVerticalScrollRange()))
+    if scrollFrame then
+        scrollFrame:SetVerticalScroll(
+            math.min(scrollFrame:GetVerticalScroll(), scrollFrame:GetVerticalScrollRange())
+        )
     end
     C_Timer.After(0, function()
         if CUI_Bags._updateThumb then
@@ -674,15 +682,15 @@ local function FinishRefresh(
     end
 
     UpdateBagMoneyDisplay()
-    ns.ApplyWindowBackground(CUI_Bags.bg, CUI_Bags.bgOverlay)
+    mod.ApplyWindowBackground(CUI_Bags.bg, CUI_Bags.bgOverlay)
     -- View may have changed under a held item (catch layer on / off)
     if CUI_Bags._syncDropTarget and GetCursorInfo() == "item" then
         CUI_Bags._syncDropTarget()
     end
-    ns.UpdateResizeGrip(CUI_Bags, CUI_Bags.IsListMode() and _bagListGripCfg or _bagGripCfg)
+    mod.UpdateResizeGrip(CUI_Bags, CUI_Bags.IsListMode() and _bagListGripCfg or _bagGripCfg)
     -- the offline bank panel goes over the items (bank picked, or an alt)
-    if ns.OfflinePanel then
-        ns.OfflinePanel(sidebarW)
+    if mod.OfflinePanel then
+        mod.OfflinePanel(sidebarW)
     end
 end
 
@@ -690,7 +698,7 @@ function CUI_Bags:RefreshInventory()
     if not CUI_Bags:IsVisible() then
         return
     end
-    ns.ApplySlotMetrics()
+    mod.ApplySlotMetrics()
 
     -- A select mode's hover box sits on a button this refresh may refill: put
     -- that button's border back now and re-test the hover after
@@ -724,7 +732,7 @@ function CUI_Bags:RefreshInventory()
     local emptySlots = {}
     local regularUsed, regularTotal = 0, 0
     local reagentUsed, reagentTotal = 0, 0
-    local special = ns.SpecialBags()
+    local special = mod.SpecialBags()
 
     for bag = 0, 5 do
         local numSlots = C_Container.GetContainerNumSlots(bag)
@@ -734,21 +742,21 @@ function CUI_Bags:RefreshInventory()
         elseif not restricted then
             regularTotal = regularTotal + numSlots
         end
-        for slot = 1, numSlots do
-            local info = C_Container.GetContainerItemInfo(bag, slot)
-            if info then
+        for slotIndex = 1, numSlots do
+            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+            if details then
                 if bag == 5 then
                     reagentUsed = reagentUsed + 1
                 elseif not restricted then
                     regularUsed = regularUsed + 1
                 end
-                local itemLink = C_Container.GetContainerItemLink(bag, slot)
+                local itemLink = C_Container.GetContainerItemLink(bag, slotIndex)
                 local d = AcquireSlotTable()
                 d.bag = bag
-                d.slot = slot
-                d.info = info
+                d.slot = slotIndex
+                d.info = details
                 d.itemLink = itemLink
-                CUI_Bags.ApplyBindKeyword(info, bag, slot)
+                CUI_Bags.ApplyBindKeyword(details, bag, slotIndex)
                 -- Pre-cache per-item data for RenderButton (zero API calls at render time)
                 if itemLink then
                     local facts = _linkFacts[itemLink]
@@ -769,7 +777,7 @@ function CUI_Bags:RefreshInventory()
                             _linkFactsN = _linkFactsN + 1
                         end
                     end
-                    _slotLoc:SetBagAndSlot(bag, slot)
+                    _slotLoc:SetBagAndSlot(bag, slotIndex)
                     local loc = _slotLoc
                     -- Slot-grouping fields (_equipSlot/_classID/_subclassID) are NOT
                     -- pre-cached here: GetArmorySlotBucket fetches them lazily, only
@@ -789,7 +797,7 @@ function CUI_Bags:RefreshInventory()
                     if
                         isGear
                         and GetUpgradeTrack
-                        and (not CUI_Bags.IsListMode() or ns.ListUsesColumn("track"))
+                        and (not CUI_Bags.IsListMode() or mod.ListUsesColumn("track"))
                     then
                         local rankText, trackColor
                         if facts and facts.trackText then
@@ -814,19 +822,19 @@ function CUI_Bags:RefreshInventory()
                         if C_Bank and C_Bank.IsItemAllowedInBankType then
                             d._isWarbound = C_Bank.IsItemAllowedInBankType(Enum.BankType.Account, loc)
                         end
-                        if isGear and not info.isBound and BP().bagDisplayBindType then
+                        if isGear and not details.isBound and BP().bagDisplayBindType then
                             d._isWuE = C_Item.IsBoundToAccountUntilEquip(loc)
                         end
                     end
                     -- Keystone data (rare, fast string match gates the API calls)
-                    if info.itemID == 180653 or itemLink:find("keystone:", 1, true) then
+                    if details.itemID == 180653 or itemLink:find("keystone:", 1, true) then
                         local ksMap, ksLvl = itemLink:match("keystone:[^:]*:(%d+):(%d+)")
                         if ksLvl then
                             d._ksLevel = ksLvl
                             d._ksAbbrev = AbbrevDungeon(tonumber(ksMap))
-                            local ok, color =
+                            local success, color =
                                 pcall(C_ChallengeMode.GetKeystoneLevelRarityColor, tonumber(ksLvl))
-                            if ok and color then
+                            if success and color then
                                 d._ksR = color.r
                                 d._ksG = color.g
                                 d._ksB = color.b
@@ -834,20 +842,20 @@ function CUI_Bags:RefreshInventory()
                         end
                     end
                     -- Cooldown (any item can have a cooldown: trinkets, consumables, toys, etc.)
-                    local cdStart, cdDur, cdEnable = C_Container.GetContainerItemCooldown(bag, slot)
+                    local cdStart, cdDur, cdEnable = C_Container.GetContainerItemCooldown(bag, slotIndex)
                     if cdEnable and cdEnable ~= 0 and cdStart > 0 and cdDur > 0 then
                         d._cdStart = cdStart
                         d._cdDuration = cdDur
                     end
                     -- _isQuest (any quest item, incl. active objectives + starters) drives the gold
                     -- border; _isQuestStarter (questID set but inactive) is Blizzard's "!" and drives the corner marker.
-                    d._isQuest, d._isQuestStarter = ns.GetSlotQuestFlags(bag, slot)
+                    d._isQuest, d._isQuestStarter = mod.GetSlotQuestFlags(bag, slotIndex)
                 end
                 tempItems[#tempItems + 1] = d
             else
                 local d = AcquireSlotTable()
                 d.bag = bag
-                d.slot = slot
+                d.slot = slotIndex
                 emptySlots[#emptySlots + 1] = d
             end
         end
@@ -878,9 +886,9 @@ function CUI_Bags:RefreshInventory()
 
     -- 2a. Snapshot slot->category mapping for partial refresh
     wipe(_slotCategories)
-    for _, data in ipairs(tempItems) do
-        if data.categoryIndex and data.bag and data.slot then
-            _slotCategories[data.bag * 1000 + data.slot] = data.categoryIndex
+    for _, payload in ipairs(tempItems) do
+        if payload.categoryIndex and payload.bag and payload.slot then
+            _slotCategories[payload.bag * 1000 + payload.slot] = payload.categoryIndex
         end
     end
 
@@ -888,11 +896,11 @@ function CUI_Bags:RefreshInventory()
     local recentCatIdx, pinnedCatIdx
     do
         local cats = CUI_CategoryManager:GetCategories()
-        for i, cat in ipairs(cats) do
-            if cat.isRecent then
+        for i, category in ipairs(cats) do
+            if category.isRecent then
                 recentCatIdx = i
             end
-            if cat.isPinned then
+            if category.isPinned then
                 pinnedCatIdx = i
             end
         end
@@ -908,20 +916,20 @@ function CUI_Bags:RefreshInventory()
         and BP().bagDimPinnedInOneBag == true
     if pinnedCatIdx and pinnedSet and showPinned then
         local pinnedCount = 0
-        for _, data in ipairs(tempItems) do
+        for _, payload in ipairs(tempItems) do
             if
-                data.info
-                and data.info.itemID
-                and IsItemPinned(pinnedSet, data.itemLink, data.info.itemID)
+                payload.info
+                and payload.info.itemID
+                and IsItemPinned(pinnedSet, payload.itemLink, payload.info.itemID)
             then
                 pinnedCount = pinnedCount + 1
                 if dimPinned then
-                    data._pinDim = true
+                    payload._pinDim = true
                 end
                 if hidePinned then
                     -- Keep the category for sorting and gear/stack handling.
-                    data._pinnedOnly = true
-                    local ci = data.categoryIndex
+                    payload._pinnedOnly = true
+                    local ci = payload.categoryIndex
                     if ci then
                         categoryCounts[ci] = categoryCounts[ci] - 1
                     end
@@ -933,12 +941,12 @@ function CUI_Bags:RefreshInventory()
     local recentCount = 0
     local showRecent = BP().bagShowRecentItems ~= false
     if recentCatIdx and CUI_Bags._recentItems and showRecent then
-        for _, data in ipairs(tempItems) do
+        for _, payload in ipairs(tempItems) do
             if
-                not data._pinnedOnly
-                and data.info
-                and data.info.itemID
-                and CUI_Bags._recentItems[data.info.itemID]
+                not payload._pinnedOnly
+                and payload.info
+                and payload.info.itemID
+                and CUI_Bags._recentItems[payload.info.itemID]
             then
                 recentCount = recentCount + 1
             end
@@ -947,13 +955,13 @@ function CUI_Bags:RefreshInventory()
     end
 
     -- 2c. viewing an alt: the sidebar counts their bags instead
-    local altView = ns.OfflineAlt and ns.OfflineAlt()
+    local altView = mod.OfflineAlt and mod.OfflineAlt()
     if altView then
-        categoryCounts, totalCount = ns.OfflineCounts()
+        categoryCounts, totalCount = mod.OfflineCounts()
     end
     -- an alt or the offline bank view: its panel takes the item area
     local offlineUp = altView
-        or (ns.Offline and ns.Offline.Enabled() and selectedCategoryIndex == ns.OFFLINE_BANK_VIEW)
+        or (mod.Offline and mod.Offline.Enabled() and selectedCategoryIndex == mod.OFFLINE_BANK_VIEW)
 
     -- 3. Update sidebar
     BuildSidebarButtons(categoryCounts, totalCount)
@@ -997,31 +1005,31 @@ function CUI_Bags:RefreshInventory()
     end
 
     local displayItems = {}
-    for _, data in ipairs(tempItems) do
+    for _, payload in ipairs(tempItems) do
         local show = true
         if offlineUp then
             show = false -- the offline panel covers these
         elseif isRecentView then
-            show = data.info
-                and data.info.itemID
+            show = payload.info
+                and payload.info.itemID
                 and CUI_Bags._recentItems
-                and CUI_Bags._recentItems[data.info.itemID]
+                and CUI_Bags._recentItems[payload.info.itemID]
         elseif isPinnedView then
-            show = data.info
-                and data.info.itemID
+            show = payload.info
+                and payload.info.itemID
                 and pinnedSet
-                and IsItemPinned(pinnedSet, data.itemLink, data.info.itemID)
+                and IsItemPinned(pinnedSet, payload.itemLink, payload.info.itemID)
         elseif filterSet then
-            show = data.categoryIndex and filterSet[data.categoryIndex]
+            show = payload.categoryIndex and filterSet[payload.categoryIndex]
         end
-        if data._pinnedOnly and (isRecentView or filterSet) then
+        if payload._pinnedOnly and (isRecentView or filterSet) then
             show = false
         end
-        if show and data.info and data.info.isFiltered then
+        if show and payload.info and payload.info.isFiltered then
             show = false
         end
         if show then
-            displayItems[#displayItems + 1] = data
+            displayItems[#displayItems + 1] = payload
         end
     end
 
@@ -1029,30 +1037,30 @@ function CUI_Bags:RefreshInventory()
     if next(_pendingResortCats) or next(_pendingResortGroups) then
         local cats = CUI_CategoryManager:GetCategories()
         local itemsByCat = {}
-        for _, data in ipairs(tempItems) do
-            local ci = data.categoryIndex
+        for _, payload in ipairs(tempItems) do
+            local ci = payload.categoryIndex
             if ci then
                 if not itemsByCat[ci] then
                     itemsByCat[ci] = {}
                 end
-                itemsByCat[ci][#itemsByCat[ci] + 1] = data
+                itemsByCat[ci][#itemsByCat[ci] + 1] = payload
             end
         end
         for ci in pairs(_pendingResortCats) do
-            local items = itemsByCat[ci] or {}
-            if #items > 1 then
-                PreCacheSortFields(items)
-                table.sort(items, VisualSortCompare)
+            local itemList = itemsByCat[ci] or {}
+            if #itemList > 1 then
+                PreCacheSortFields(itemList)
+                table.sort(itemList, VisualSortCompare)
             end
-            SaveCategoryOrder(ci, items)
+            SaveCategoryOrder(ci, itemList)
         end
         for gn in pairs(_pendingResortGroups) do
             local members = CUI_CategoryManager:GetGroupMembers(gn)
             if members and #members > 0 then
                 local merged = {}
                 for _, mi in ipairs(members) do
-                    for _, data in ipairs(itemsByCat[mi] or {}) do
-                        merged[#merged + 1] = data
+                    for _, payload in ipairs(itemsByCat[mi] or {}) do
+                        merged[#merged + 1] = payload
                     end
                 end
                 if #merged > 1 then
@@ -1085,9 +1093,9 @@ function CUI_Bags:RefreshInventory()
         local HDR = 0.74 * 38 / pitch -- section-header height in slot-row units (~28/38)
         -- Slot count (n) + section-header count (S) for the active tab. Headers add HEIGHT
         -- but not WIDTH, so they MUST fold into the estimate or a header-heavy tab (All Items with many categories) grows taller than wide.
-        local n, S
+        local num, Stl
         if selectedCategoryIndex > 0 and not selectedGroupName then
-            n = (categoryCounts and categoryCounts[selectedCategoryIndex]) or #tempItems
+            num = (categoryCounts and categoryCounts[selectedCategoryIndex]) or #tempItems
             -- The anchor view folds in its set children's items; count them too
             if BP().bagSplitSetGearBySet then
                 local szCats = CUI_CategoryManager:GetCategories()
@@ -1095,16 +1103,16 @@ function CUI_Bags:RefreshInventory()
                 if selCat and selCat.isSetGear and not selCat.isEquipSet and categoryCounts then
                     for i, c in ipairs(szCats) do
                         if c.isEquipSet then
-                            n = n + (categoryCounts[i] or 0)
+                            num = num + (categoryCounts[i] or 0)
                         end
                     end
                 end
             end
-            S = 1
+            Stl = 1
         elseif selectedCategoryIndex == 0 and not selectedGroupName then
             -- All Items: one section per non-empty category
-            n = #tempItems + #emptySlots
-            S = 0
+            num = #tempItems + #emptySlots
+            Stl = 0
             if categoryCounts then
                 -- Set children fold into their anchor's section: count them as one
                 local sizeCats = BP().bagSplitSetGearBySet and CUI_CategoryManager:GetCategories() or nil
@@ -1114,51 +1122,51 @@ function CUI_Bags:RefreshInventory()
                         if sizeCats and sizeCats[i] and sizeCats[i].isEquipSet then
                             hasSetChild = true
                         else
-                            S = S + 1
+                            Stl = Stl + 1
                         end
                     end
                 end
                 if hasSetChild then
-                    S = S + 1
+                    Stl = Stl + 1
                 end
             end
-            if S < 1 then
-                S = 1
+            if Stl < 1 then
+                Stl = 1
             end
         elseif selectedCategoryIndex == -2 then
             -- MultiBag: one section per bag that has slots (+ reagent)
-            n = #tempItems + #emptySlots
-            S = 0
+            num = #tempItems + #emptySlots
+            Stl = 0
             for bag = 0, 5 do
                 if C_Container.GetContainerNumSlots(bag) > 0 then
-                    S = S + 1
+                    Stl = Stl + 1
                 end
             end
-            if S < 1 then
-                S = 1
+            if Stl < 1 then
+                Stl = 1
             end
         else
             -- OneBag / group view: a few sections (pinned/recent/main/reagent,
             -- plus OneBag's special bags)
-            n = #tempItems + #emptySlots
-            S = 3 + (selectedCategoryIndex == -1 and spBags or 0)
+            num = #tempItems + #emptySlots
+            Stl = 3 + (selectedCategoryIndex == -1 and spBags or 0)
         end
-        n = math.max(n, 1)
+        num = math.max(num, 1)
         -- Compact: no header rows; each block's gap and part-filled last row
         -- (about a cell) and the label bands are folded into the cell count
         -- as an estimate
         if CUI_Bags.IsCompactMode() then
-            n = (n + S - 1) * (1 + ns.CompactBandHeight() / (SLOT_SIZE + SPACING))
-            S = 0
+            num = (num + Stl - 1) * (1 + mod.CompactBandHeight() / (SLOT_SIZE + SPACING))
+            Stl = 0
         end
         local ideal = baseCols
         -- Only grow when the tab won't fit at the base column count.
-        if math.ceil(n / baseCols) + math.ceil(HDR * S) > BASE_ROWS then
+        if math.ceil(num / baseCols) + math.ceil(HDR * Stl) > BASE_ROWS then
             -- Cols such that item+header rows keep the base rows:cols slope (grow together):
             -- solve A*cols^2 - HDR*S*cols - n = 0, where A = BASE_ROWS/baseCols.
             local A = BASE_ROWS / baseCols
-            local hs = HDR * S
-            ideal = math.ceil((hs + math.sqrt(hs * hs + 4 * A * n)) / (2 * A))
+            local hs = HDR * Stl
+            ideal = math.ceil((hs + math.sqrt(hs * hs + 4 * A * num)) / (2 * A))
         end
         local sbW = GetSidebarWidth()
         local sc = CUI_Bags:GetScale()
@@ -1188,15 +1196,15 @@ function CUI_Bags:RefreshInventory()
     local scrollbarPad = SCROLLBAR_HIT_W + 2
 
     -- Update scroll frame left edge to track sidebar width
-    local sf = CUI_Bags._scrollFrame
-    local child = CUI_Bags._scrollChild
-    if sf then
-        sf:ClearAllPoints()
-        sf:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1))
-        sf:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", CUI_Bags._scrollRightInset, 0)
+    local scrollFrame = CUI_Bags._scrollFrame
+    local childFrame = CUI_Bags._scrollChild
+    if scrollFrame then
+        scrollFrame:ClearAllPoints()
+        scrollFrame:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1))
+        scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", CUI_Bags._scrollRightInset, 0)
     end
-    if child then
-        child:SetWidth(gridW + gridPadX * 2 + scrollbarPad)
+    if childFrame then
+        childFrame:SetWidth(gridW + gridPadX * 2 + scrollbarPad)
     end
 
     -- Both views below paint with the current panel state, merging or not
@@ -1211,8 +1219,8 @@ function CUI_Bags:RefreshInventory()
 
     -- List display (latched per session): rows replace the grid; the column
     -- header bar takes the top of the scroll area
-    if CUI_Bags.IsListMode() and sf then
-        local listH, colHdrH = ns.RenderListView(displayItems, {
+    if CUI_Bags.IsListMode() and scrollFrame then
+        local listH, colHdrH = mod.RenderListView(displayItems, {
             -- Left / Right Gap: space between the list area edges and the rows
             rowW = math.max(
                 100,
@@ -1237,12 +1245,13 @@ function CUI_Bags:RefreshInventory()
             emptySlots = (#displayItems == #liveItems) and liveEmpty or nil,
             -- Same rule as the grid's Pinned Items section
             pinned = (
-                showPinned and (isAllItems or (selectedCategoryIndex < 0 and BP().bagPinnedInOneBag ~= false))
+                showPinned
+                and (isAllItems or (selectedCategoryIndex < 0 and BP().bagPinnedInOneBag ~= false))
             )
                     and pinnedSet
                 or nil,
         })
-        sf:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1 + colHdrH))
+        scrollFrame:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1 + colHdrH))
         FinishRefresh(
             -(listH + colHdrH),
             gridW + gridPadX * 2 + scrollbarPad + 2,
@@ -1256,11 +1265,11 @@ function CUI_Bags:RefreshInventory()
         return
     end
 
-    local curY = ns.RenderGridView(
+    local curY = mod.RenderGridView(
         liveItems,
         displayItems,
         liveEmpty,
-        child,
+        childFrame,
         columns,
         gridW,
         gridPadX,
@@ -1273,19 +1282,19 @@ function CUI_Bags:RefreshInventory()
     -- only grows back, so a refresh never pulls the edge in under the cursor;
     -- a new column count, or a close, starts over.
     if CUI_Bags.IsCompactMode() then
-        local w = ns.CompactBagsContentW()
-        if w and w < gridW then
+        local wid = mod.CompactBagsContentW()
+        if wid and wid < gridW then
             if CUI_Bags._compactCols ~= columns then
-                CUI_Bags._compactCols, CUI_Bags._compactW = columns, w
-            elseif w > (CUI_Bags._compactW or 0) then
-                CUI_Bags._compactW = w
+                CUI_Bags._compactCols, CUI_Bags._compactW = columns, wid
+            elseif wid > (CUI_Bags._compactW or 0) then
+                CUI_Bags._compactW = wid
             end
             gridW = CUI_Bags._compactW
         else
             CUI_Bags._compactCols, CUI_Bags._compactW = columns, gridW
         end
-        if child then
-            child:SetWidth(gridW + gridPadX * 2 + scrollbarPad)
+        if childFrame then
+            childFrame:SetWidth(gridW + gridPadX * 2 + scrollbarPad)
         end
     end
 
@@ -1315,9 +1324,9 @@ function CUI_BagsReagent:RefreshInventory()
     local tempItems = {}
     local numSlots = C_Container.GetContainerNumSlots(5)
     if numSlots > 0 then
-        for slot = 1, numSlots do
-            local info = C_Container.GetContainerItemInfo(5, slot)
-            tempItems[#tempItems + 1] = { bag = 5, slot = slot, info = info }
+        for slotIndex = 1, numSlots do
+            local details = C_Container.GetContainerItemInfo(5, slotIndex)
+            tempItems[#tempItems + 1] = { bag = 5, slot = slotIndex, info = details }
         end
     end
 
@@ -1327,18 +1336,18 @@ function CUI_BagsReagent:RefreshInventory()
 
     local startX, startY = 15, -45
     local REAGENT_COLUMNS = 4
-    for i, data in ipairs(tempItems) do
+    for i, payload in ipairs(tempItems) do
         local btn = GetOrCreateReagentSlot(i)
         if btn then -- nil during combat (avoids minting tainted secure buttons)
-            local parent = btn:GetParent()
-            parent:ClearAllPoints()
-            parent:Show()
+            local hostFrame = btn:GetParent()
+            hostFrame:ClearAllPoints()
+            hostFrame:Show()
             btn:Show()
-            btn:SetID(data.slot)
-            parent:SetID(data.bag)
-            local itemLink = data.info and C_Container.GetContainerItemLink(data.bag, data.slot)
+            btn:SetID(payload.slot)
+            hostFrame:SetID(payload.bag)
+            local itemLink = payload.info and C_Container.GetContainerItemLink(payload.bag, payload.slot)
 
-            if not data.info then
+            if not payload.info then
                 btn:SetItemButtonTexture(nil)
                 btn:SetItemButtonCount(0)
                 SetItemButtonDesaturated(btn, false)
@@ -1350,33 +1359,33 @@ function CUI_BagsReagent:RefreshInventory()
                 end
                 SetInsetBorderColor(btn, 0.25, 0.25, 0.25, 1)
                 if btn._fvSlotBorder then
-                    ns.SetForeverSlotQuestBorder(btn, false)
+                    mod.SetForeverSlotQuestBorder(btn, false)
                 end
             else
                 if btn.icon then
                     btn.icon:Show()
                 end
-                ns.SetSlotIcon(btn, data.info.iconFileID)
-                btn:SetItemButtonCount(data.info.stackCount)
-                SetItemButtonDesaturated(btn, data.info.isLocked)
-                local filtered = data.info.isFiltered
+                mod.SetSlotIcon(btn, payload.info.iconFileID)
+                btn:SetItemButtonCount(payload.info.stackCount)
+                SetItemButtonDesaturated(btn, payload.info.isLocked)
+                local filtered = payload.info.isFiltered
                 btn:SetAlpha(filtered and 0.2 or 1)
                 if btn._textOverlay then
                     btn._textOverlay:SetAlpha(filtered and 0.2 or 1)
                 end
 
-                if btn.ItemLevelText and data.info.itemID then
+                if btn.ItemLevelText and payload.info.itemID then
                     local showItemlevel = BP().showItemlevelInBags ~= false
                     if showItemlevel then
                         if itemLink then
                             local _, _, quality = GetItemInfo(itemLink)
                             if IsGearItem(itemLink) then
-                                local loc = ItemLocation:CreateFromBagAndSlot(data.bag, data.slot)
+                                local loc = ItemLocation:CreateFromBagAndSlot(payload.bag, payload.slot)
                                 local level = GetItemLevelAtLocation(loc, itemLink)
-                                local fs = BP().itemlevelFontSize or 12
+                                local fontStr = BP().itemlevelFontSize or 12
                                 btn.ItemLevelText:SetFont(
                                     STANDARD_TEXT_FONT,
-                                    fs,
+                                    fontStr,
                                     (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                                 )
                                 btn.ItemLevelText:SetText(level or "")
@@ -1401,32 +1410,32 @@ function CUI_BagsReagent:RefreshInventory()
                     end
                 end
 
-                local r, g, b = ns.QualityBorderColor(data.info.quality or 1)
+                local r, g, b = mod.QualityBorderColor(payload.info.quality or 1)
                 SetInsetBorderColor(btn, r, g, b, 1)
                 if btn._fvSlotBorder then
-                    ns.SetForeverSlotQuestBorder(btn, ns.GetSlotQuestFlags(data.bag, data.slot))
+                    mod.SetForeverSlotQuestBorder(btn, mod.GetSlotQuestFlags(payload.bag, payload.slot))
                 end
             end
             UpdatePawnArrow(btn, itemLink)
             if next(CUI_Bags.itemOverlayIcons) ~= nil then
-                data.itemLink = itemLink
-                CUI_Bags.RunItemOverlays(btn, data)
+                payload.itemLink = itemLink
+                CUI_Bags.RunItemOverlays(btn, payload)
             end
             -- Tooltip requery after the slot re-assignment (see RenderButton).
             if GameTooltip:IsOwned(btn) then
-                if data.info and btn.UpdateTooltip then
+                if payload.info and btn.UpdateTooltip then
                     btn:UpdateTooltip()
                 else
                     GameTooltip:Hide()
                 end
             end
 
-            local col = (i - 1) % REAGENT_COLUMNS
-            local row = math.floor((i - 1) / REAGENT_COLUMNS)
-            parent:SetPoint(
+            local column = (i - 1) % REAGENT_COLUMNS
+            local rowFrame = math.floor((i - 1) / REAGENT_COLUMNS)
+            hostFrame:SetPoint(
                 "TOPLEFT",
-                startX + (col * (SLOT_SIZE + SPACING)),
-                startY - (row * (SLOT_SIZE + SPACING))
+                startX + (column * (SLOT_SIZE + SPACING)),
+                startY - (rowFrame * (SLOT_SIZE + SPACING))
             )
         end
     end
@@ -1449,14 +1458,14 @@ function CUI_BagsWindow:RefreshBags()
     for i = 0, 5 do
         local displayIdx = i + 1
         local btn = GetOrCreateBagSlot(displayIdx)
-        local parent = btn:GetParent()
+        local hostFrame = btn:GetParent()
         btn:SetID(i)
-        parent:Show()
+        hostFrame:Show()
         local invID = C_Container.ContainerIDToInventoryID(i)
         local texture = GetInventoryItemTexture("player", invID)
         local quality = GetInventoryItemQuality("player", invID) or 0
         local free = C_Container.GetContainerNumFreeSlots(i)
-        local total = C_Container.GetContainerNumSlots(i)
+        local sum = C_Container.GetContainerNumSlots(i)
         if i == 0 then
             btn.icon:SetTexture(133633)
         elseif texture then
@@ -1464,7 +1473,7 @@ function CUI_BagsWindow:RefreshBags()
         else
             btn.icon:SetTexture("Interface\\PaperDoll\\UI-PaperDoll-Slot-Bag")
         end
-        if total > 0 then
+        if sum > 0 then
             btn.Count:SetText(free)
             btn.Count:Show()
         else
@@ -1472,14 +1481,14 @@ function CUI_BagsWindow:RefreshBags()
         end
         local bdrR, bdrG, bdrB = 0.25, 0.25, 0.25
         if quality > 0 then
-            bdrR, bdrG, bdrB = ns.QualityBorderColor(quality)
+            bdrR, bdrG, bdrB = mod.QualityBorderColor(quality)
         end
         SetInsetBorderColor(btn, bdrR, bdrG, bdrB, 1)
         btn._bdrR, btn._bdrG, btn._bdrB = bdrR, bdrG, bdrB
 
         -- Blizzard's bag bar order: backpack on the right, reagent bag on the left
-        parent:ClearAllPoints()
-        parent:SetPoint(
+        hostFrame:ClearAllPoints()
+        hostFrame:SetPoint(
             "TOPLEFT",
             CUI_BagsWindow,
             "TOPLEFT",
@@ -1490,8 +1499,8 @@ function CUI_BagsWindow:RefreshBags()
     CUI_BagsWindow:SetSize((BAG_COLUMNS * (SLOT_SIZE + SPACING)) + 15, SLOT_SIZE + 20)
 end
 
-I._catHeaders, I._expSubHeaders = _catHeaders, _expSubHeaders
-I.CreateBagScrollFrame, I.GetOrCreateCatHeader = CreateBagScrollFrame, GetOrCreateCatHeader
-I.GetOrCreateExpSubHeader = GetOrCreateExpSubHeader
-I.ShowRecentClearButton = ShowRecentClearButton
-I.broken = false
+Inner._catHeaders, Inner._expSubHeaders = _catHeaders, _expSubHeaders
+Inner.CreateBagScrollFrame, Inner.GetOrCreateCatHeader = CreateBagScrollFrame, GetOrCreateCatHeader
+Inner.GetOrCreateExpSubHeader = GetOrCreateExpSubHeader
+Inner.ShowRecentClearButton = ShowRecentClearButton
+Inner.broken = false

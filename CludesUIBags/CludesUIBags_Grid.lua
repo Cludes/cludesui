@@ -10,8 +10,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Mode is latched per session (CUI_Bags.IsListMode / IsCompactMode): in
 --  list mode nothing here is ever built.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-if not (ns and ns.GetSelection) then
+local mod = select(2, ...)
+if not (mod and mod.GetSelection) then
     return
 end
 
@@ -23,39 +23,39 @@ end
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemQualityColor = C_Item.GetItemQualityColor
 
-local SLOT_SIZE, SPACING = ns.SLOT_SIZE, ns.SPACING
-ns.OnSlotMetrics(function(m)
+local SLOT_SIZE, SPACING = mod.SLOT_SIZE, mod.SPACING
+mod.OnSlotMetrics(function(m)
     SLOT_SIZE, SPACING = m[1], m[2]
 end)
-local itemSlots = ns.itemSlots
-local _itemDragFrame = ns.itemDragFrame
-local _catHeaders = ns.catHeaders
-local _expSubHeaders = ns.expSubHeaders
-local QUEST_BORDER_COLOR = ns.QUEST_BORDER_COLOR
-local QualityBorderColor = ns.QualityBorderColor
-local BagsItemUnusable = ns.BagsItemUnusable
-local GetFont = ns.GetFont
-local GetCatTitleSize = ns.GetCatTitleSize
-local SetBagFont = ns.SetBagFont
-local CreateInsetBorder = ns.CreateInsetBorder
-local SetInsetBorderColor = ns.SetInsetBorderColor
-local SetInsetBorderThickness = ns.SetInsetBorderThickness
-local SlotMiddleClick = ns.SlotMiddleClick
-local UpdatePawnArrow = ns.UpdatePawnArrow
-local IsItemPinned = ns.IsItemPinned
-local PreCacheSortFields = ns.PreCacheSortFields
-local VisualSortCompare = ns.VisualSortCompare
-local RecentCompare = ns.RecentCompare
-local MergeDuplicates = ns.MergeDuplicates
-local ApplySavedOrder = ns.ApplySavedOrder
+local itemSlots = mod.itemSlots
+local _itemDragFrame = mod.itemDragFrame
+local _catHeaders = mod.catHeaders
+local _expSubHeaders = mod.expSubHeaders
+local QUEST_BORDER_COLOR = mod.QUEST_BORDER_COLOR
+local QualityBorderColor = mod.QualityBorderColor
+local BagsItemUnusable = mod.BagsItemUnusable
+local GetFont = mod.GetFont
+local GetCatTitleSize = mod.GetCatTitleSize
+local SetBagFont = mod.SetBagFont
+local CreateInsetBorder = mod.CreateInsetBorder
+local SetInsetBorderColor = mod.SetInsetBorderColor
+local SetInsetBorderThickness = mod.SetInsetBorderThickness
+local SlotMiddleClick = mod.SlotMiddleClick
+local UpdatePawnArrow = mod.UpdatePawnArrow
+local IsItemPinned = mod.IsItemPinned
+local PreCacheSortFields = mod.PreCacheSortFields
+local VisualSortCompare = mod.VisualSortCompare
+local RecentCompare = mod.RecentCompare
+local MergeDuplicates = mod.MergeDuplicates
+local ApplySavedOrder = mod.ApplySavedOrder
 -- Junk Marker state, read once per RenderGridView pass for every RenderButton
 local junkOn = false
 -- Compact display state, read once per RenderGridView pass
 local compactOn = false
-local BuildExpansionBuckets = ns.BuildExpansionBuckets
-local BuildSlotBuckets = ns.BuildSlotBuckets
+local BuildExpansionBuckets = mod.BuildExpansionBuckets
+local BuildSlotBuckets = mod.BuildSlotBuckets
 -- Section label for a bag ID (MultiBag grid and list)
-function ns.BagDisplayName(bag)
+function mod.BagDisplayName(bag)
     if bag == 0 then
         return CludesUI.L("Backpack")
     end
@@ -67,22 +67,22 @@ function ns.BagDisplayName(bag)
     return (link and GetItemInfo(link)) or CludesUI.Lf("Bag %d", bag)
 end
 
-local ArmorySlotGroupingEnabled = ns.ArmorySlotGroupingEnabled
-local IsArmoryGearCategory = ns.IsArmoryGearCategory
-local IsGearOnlyGroup = ns.IsGearOnlyGroup
-local GetOrCreateCatHeader = ns.GetOrCreateCatHeader
-local GetOrCreateExpSubHeader = ns.GetOrCreateExpSubHeader
-local ShowRecentClearButton = ns.ShowRecentClearButton
-local GetOrCreatePinOverlay = ns.GetOrCreatePinOverlay
-local GetOrCreateAssignOverlay = ns.GetOrCreateAssignOverlay
-local ResetAssignOverlays = ns.ResetAssignOverlays
+local ArmorySlotGroupingEnabled = mod.ArmorySlotGroupingEnabled
+local IsArmoryGearCategory = mod.IsArmoryGearCategory
+local IsGearOnlyGroup = mod.IsGearOnlyGroup
+local GetOrCreateCatHeader = mod.GetOrCreateCatHeader
+local GetOrCreateExpSubHeader = mod.GetOrCreateExpSubHeader
+local ShowRecentClearButton = mod.ShowRecentClearButton
+local GetOrCreatePinOverlay = mod.GetOrCreatePinOverlay
+local GetOrCreateAssignOverlay = mod.GetOrCreateAssignOverlay
+local ResetAssignOverlays = mod.ResetAssignOverlays
 
 -------------------------------------------------------------------------------
 --  Slot Factory
 -------------------------------------------------------------------------------
-local function GetOrCreateSlot(idx)
-    if itemSlots[idx] then
-        return itemSlots[idx]
+local function GetOrCreateSlot(position)
+    if itemSlots[position] then
+        return itemSlots[position]
     end
     -- NEVER CreateFrame a secure ContainerFrameItemButtonTemplate in combat -- a button
     -- born in combat is tainted (UseContainerItem() -> ADDON_ACTION_FORBIDDEN in M+/Delves).
@@ -94,232 +94,236 @@ local function GetOrCreateSlot(idx)
     end
 
     local slotParent = CreateFrame("Frame", nil, CUI_Bags)
-    ns.SizeSlot(slotParent)
-    local btn = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
-    ns.PinItemButton(btn, CUI_Bags)
-    btn:SetAllPoints(slotParent)
-    btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    btn:RegisterForDrag("LeftButton")
-    btn:HookScript("OnDragStart", function()
+    mod.SizeSlot(slotParent)
+    local button = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
+    mod.PinItemButton(button, CUI_Bags)
+    button:SetAllPoints(slotParent)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
+    button:HookScript("OnDragStart", function()
         _itemDragFrame:Show()
     end)
 
     -- Right-click deposit routing to the selected bank tab (see BankRoutePreClick)
-    btn:HookScript("PreClick", ns.BankRoutePreClick)
-    btn:HookScript("OnClick", ns.BankRouteOnClick)
+    button:HookScript("PreClick", mod.BankRoutePreClick)
+    button:HookScript("OnClick", mod.BankRouteOnClick)
 
-    btn:HookScript("OnMouseUp", SlotMiddleClick)
+    button:HookScript("OnMouseUp", SlotMiddleClick)
 
     -- Shift-click on a stack: the split dialog. Always on in the All Items and
     -- category views (they draw no empty slots, so Blizzard's cursor split has
     -- nowhere to land there); the Stack Splitter setting extends it to the rest.
-    btn:HookScript("PostClick", function(self)
-        CUI_Bags.ShowStackSplitter(self, ns.SplitTargetBags(self:GetParent():GetID()), CUI_Bags)
+    button:HookScript("PostClick", function(self)
+        CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(self:GetParent():GetID()), CUI_Bags)
     end)
 
-    local textOverlay = ns.SkinItemButton(btn, { anchorIcon = true, cooldownFont = true })
+    local textOverlay = mod.SkinItemButton(button, { anchorIcon = true, cooldownFont = true })
     local countSize = BP().bagCountFontSize or 11
-    local fontPath = GetFont()
+    local fontFile = GetFont()
 
     -- Keystone level text (top-left, same as item level)
-    if not btn.KeystoneText then
-        btn.KeystoneText = textOverlay:CreateFontString(nil, "OVERLAY", nil, 7)
-        btn.KeystoneText:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1)
-        btn.KeystoneText:SetTextColor(1, 1, 1, 1)
+    if not button.KeystoneText then
+        button.KeystoneText = textOverlay:CreateFontString(nil, "OVERLAY", nil, 7)
+        button.KeystoneText:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+        button.KeystoneText:SetTextColor(1, 1, 1, 1)
     end
-    btn.KeystoneText:SetFont(fontPath, countSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
-    btn.KeystoneText:SetText("")
+    button.KeystoneText:SetFont(fontFile, countSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+    button.KeystoneText:SetText("")
     -- Keystone dungeon abbreviation (bottom-right, same position as stack count)
-    if not btn.KeystoneDungeonText then
-        btn.KeystoneDungeonText = textOverlay:CreateFontString(nil, "OVERLAY", nil, 7)
-        btn.KeystoneDungeonText:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 2)
-        btn.KeystoneDungeonText:SetTextColor(1, 1, 1, 1)
-        btn.KeystoneDungeonText:SetJustifyH("RIGHT")
+    if not button.KeystoneDungeonText then
+        button.KeystoneDungeonText = textOverlay:CreateFontString(nil, "OVERLAY", nil, 7)
+        button.KeystoneDungeonText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 2)
+        button.KeystoneDungeonText:SetTextColor(1, 1, 1, 1)
+        button.KeystoneDungeonText:SetJustifyH("RIGHT")
     end
-    btn.KeystoneDungeonText:SetFont(
-        fontPath,
+    button.KeystoneDungeonText:SetFont(
+        fontFile,
         math.max(countSize - 2, 7),
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
-    btn.KeystoneDungeonText:SetText("")
+    button.KeystoneDungeonText:SetText("")
 
     -- Equipment set name FontString is lazy-created in RenderButton: never
     -- built while Show Set Name on Gear is off (zero cost disabled).
 
-    itemSlots[idx] = btn
-    return btn
+    itemSlots[position] = button
+    return button
 end
-ns.GetOrCreateSlot = GetOrCreateSlot
+mod.GetOrCreateSlot = GetOrCreateSlot
 
 -- A slot's desaturation (locked; grey items and Junk Marker junk while Junk
 -- Item Visuals' Desaturate is on) and its Junk Marker coin badge (its Show Coin
 -- Icon): the game's coin, cropped round, lifted past the bottom-left corner.
-local function PaintJunkState(btn, info, markerJunk)
+local function PaintJunkState(button, details, markerJunk)
     local p = BP()
-    local quality = info.quality or 1
+    local quality = details.quality or 1
     SetItemButtonDesaturated(
-        btn,
-        info.isLocked or (p.bagDesaturateJunkItems == true and (quality == 0 or markerJunk)) or false
+        button,
+        details.isLocked or (p.bagDesaturateJunkItems == true and (quality == 0 or markerJunk)) or false
     )
     if markerJunk and p.bagShowJunkCoin == true then
-        local coin = btn._junkCoin
+        local coin = button._junkCoin
         if not coin then
-            coin = btn:CreateTexture(nil, "OVERLAY", nil, 6)
-            coin:SetTexture(ns.JUNK_COIN)
+            coin = button:CreateTexture(nil, "OVERLAY", nil, 6)
+            coin:SetTexture(mod.JUNK_COIN)
             coin:SetTexCoord(0.12, 0.88, 0.12, 0.88)
-            local mask = btn:CreateMaskTexture()
-            mask:SetTexture(
+            local maskTex = button:CreateMaskTexture()
+            maskTex:SetTexture(
                 "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask",
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE"
             )
-            mask:SetAllPoints(coin)
-            coin:AddMaskTexture(mask)
+            maskTex:SetAllPoints(coin)
+            coin:AddMaskTexture(maskTex)
             coin:SetSize(12, 12)
-            coin:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", -3, -3)
-            btn._junkCoin = coin
+            coin:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", -3, -3)
+            button._junkCoin = coin
         end
         coin:Show()
-    elseif btn._junkCoin then
-        btn._junkCoin:Hide()
+    elseif button._junkCoin then
+        button._junkCoin:Hide()
     end
 end
 
 -- Mark mode repaints the one slot it toggled
-function ns.GridPaintJunk(btn, info)
-    PaintJunkState(btn, info, CUI_CategoryManager:IsJunk(info.itemID, info.quality or 1))
+function mod.GridPaintJunk(button, details)
+    PaintJunkState(button, details, CUI_CategoryManager:IsJunk(details.itemID, details.quality or 1))
 end
 
 -------------------------------------------------------------------------------
 --  RenderButton
 -------------------------------------------------------------------------------
-local function RenderButton(btn, data, _, col, row, startX, currentY, _, interactiveEmpties)
-    local parent = btn:GetParent()
-    parent:ClearAllPoints()
-    parent:SetPoint(
+local function RenderButton(button, payload, _, column, rowFrame, startX, currentY, _, interactiveEmpties)
+    local hostFrame = button:GetParent()
+    hostFrame:ClearAllPoints()
+    hostFrame:SetPoint(
         "TOPLEFT",
-        startX + (col * (SLOT_SIZE + SPACING)),
-        currentY - (row * (SLOT_SIZE + SPACING))
+        startX + (column * (SLOT_SIZE + SPACING)),
+        currentY - (rowFrame * (SLOT_SIZE + SPACING))
     )
-    parent:Show()
-    btn:Show()
+    hostFrame:Show()
+    button:Show()
 
-    btn:SetID(data.slot or 0)
-    parent:SetID(data.bag or 0)
+    button:SetID(payload.slot or 0)
+    hostFrame:SetID(payload.bag or 0)
 
     -- Always clear overlays upfront (pooled buttons carry stale state from prior items)
-    if btn.ProfessionQualityOverlay then
-        btn.ProfessionQualityOverlay:SetAlpha(0)
+    if button.ProfessionQualityOverlay then
+        button.ProfessionQualityOverlay:SetAlpha(0)
     end
-    if btn.IconOverlay then
-        btn.IconOverlay:SetAlpha(0)
-        btn.IconOverlay:Hide()
+    if button.IconOverlay then
+        button.IconOverlay:SetAlpha(0)
+        button.IconOverlay:Hide()
     end
-    if btn.IconOverlay2 then
-        btn.IconOverlay2:SetAlpha(0)
-        btn.IconOverlay2:Hide()
+    if button.IconOverlay2 then
+        button.IconOverlay2:SetAlpha(0)
+        button.IconOverlay2:Hide()
     end
 
     -- Empty slot background (created once, reused)
-    if not btn._emptyBg then
-        btn._emptyBg = btn:CreateTexture(nil, "BACKGROUND", nil, 1)
-        btn._emptyBg:SetAllPoints()
-        ns.SetSlotBackgroundTexture(btn._emptyBg, true)
+    if not button._emptyBg then
+        button._emptyBg = button:CreateTexture(nil, "BACKGROUND", nil, 1)
+        button._emptyBg:SetAllPoints()
+        mod.SetSlotBackgroundTexture(button._emptyBg, true)
     end
 
-    if not data.info then
-        btn:SetItemButtonTexture(nil)
-        btn:SetItemButtonCount(0)
-        SetItemButtonDesaturated(btn, false)
-        if btn.icon then
-            btn.icon:Hide()
+    if not payload.info then
+        button:SetItemButtonTexture(nil)
+        button:SetItemButtonCount(0)
+        SetItemButtonDesaturated(button, false)
+        if button.icon then
+            button.icon:Hide()
         end
-        btn._emptyBg:Show()
+        button._emptyBg:Show()
         if interactiveEmpties then
-            btn:EnableMouse(true)
-            ns.PaintSlotBackground(btn._emptyBg, 0.6)
-            SetInsetBorderColor(btn, 0.15, 0.15, 0.15, 0.5)
+            button:EnableMouse(true)
+            mod.PaintSlotBackground(button._emptyBg, 0.6)
+            SetInsetBorderColor(button, 0.15, 0.15, 0.15, 0.5)
         else
-            btn:EnableMouse(false)
-            ns.PaintSlotBackground(btn._emptyBg, 0.35)
-            SetInsetBorderColor(btn, 0, 0, 0, 0.3)
+            button:EnableMouse(false)
+            mod.PaintSlotBackground(button._emptyBg, 0.35)
+            SetInsetBorderColor(button, 0, 0, 0, 0.3)
         end
         -- Reset to 1px and drop the marker, or a pooled slot vacated by a quest item keeps the 2px gold border + atlas.
-        SetInsetBorderThickness(btn, (CUI and CUI.PP and CUI.PP.mult) or 1)
-        if btn._fvQuestBorder then
-            btn._fvQuestBorder:Hide()
+        SetInsetBorderThickness(button, (CUI and CUI.PP and CUI.PP.mult) or 1)
+        if button._fvQuestBorder then
+            button._fvQuestBorder:Hide()
         end
-        if btn._questMarker then
-            btn._questMarker:Hide()
+        if button._questMarker then
+            button._questMarker:Hide()
         end
-        if btn._junkCoin then
-            btn._junkCoin:Hide()
+        if button._junkCoin then
+            button._junkCoin:Hide()
         end
-        if btn.Cooldown then
-            btn.Cooldown:Clear()
+        if button.Cooldown then
+            button.Cooldown:Clear()
         end
-        if btn.ItemLevelText then
-            btn.ItemLevelText:SetText("")
+        if button.ItemLevelText then
+            button.ItemLevelText:SetText("")
         end
-        if btn.KeystoneText then
-            btn.KeystoneText:SetText("")
+        if button.KeystoneText then
+            button.KeystoneText:SetText("")
         end
-        if btn.KeystoneDungeonText then
-            btn.KeystoneDungeonText:SetText("")
+        if button.KeystoneDungeonText then
+            button.KeystoneDungeonText:SetText("")
         end
-        if btn.BindTypeText then
-            btn.BindTypeText:SetText("")
+        if button.BindTypeText then
+            button.BindTypeText:SetText("")
         end
-        if btn.SetNameText then
-            btn.SetNameText:SetText("")
+        if button.SetNameText then
+            button.SetNameText:SetText("")
         end
-        if btn.ProfessionQualityOverlay then
-            btn.ProfessionQualityOverlay:Hide()
+        if button.ProfessionQualityOverlay then
+            button.ProfessionQualityOverlay:Hide()
         end
-        if btn.IconBorder then
-            btn.IconBorder:Hide()
+        if button.IconBorder then
+            button.IconBorder:Hide()
         end
-        if btn.NormalTexture then
-            btn.NormalTexture:SetAlpha(0)
+        if button.NormalTexture then
+            button.NormalTexture:SetAlpha(0)
         end
-        if btn._warbankDim then
-            btn._warbankDim:Hide()
+        if button._warbankDim then
+            button._warbankDim:Hide()
         end
-        btn:SetAlpha(1)
+        button:SetAlpha(1)
     else
-        btn:EnableMouse(true)
-        btn._emptyBg:Hide()
-        if btn.icon then
-            btn.icon:Show()
+        button:EnableMouse(true)
+        button._emptyBg:Hide()
+        if button.icon then
+            button.icon:Show()
         end
-        ns.SetSlotIcon(btn, data.info.iconFileID)
-        btn:SetItemButtonCount(data._mergedCount or data.info.stackCount)
-        btn._isMerged = data._mergedCount and true or nil
+        mod.SetSlotIcon(button, payload.info.iconFileID)
+        button:SetItemButtonCount(payload._mergedCount or payload.info.stackCount)
+        button._isMerged = payload._mergedCount and true or nil
 
-        local quality = data.info.quality or 1
-        PaintJunkState(btn, data.info, junkOn and CUI_CategoryManager:IsJunk(data.info.itemID, quality))
+        local quality = payload.info.quality or 1
+        PaintJunkState(
+            button,
+            payload.info,
+            junkOn and CUI_CategoryManager:IsJunk(payload.info.itemID, quality)
+        )
 
         -- Search misses, and a pinned item in a OneBag / MultiBag bag section
         -- (the interactive slot sections) while Dim Items in OneBag/MultiBag
         -- is on: its bright copy sits in the Pinned Items section.
-        local filtered = data.info.isFiltered or (interactiveEmpties and data._pinDim) or false
-        btn:SetAlpha(filtered and 0.2 or 1)
-        if btn._textOverlay then
-            btn._textOverlay:SetAlpha(filtered and 0.2 or 1)
+        local filtered = payload.info.isFiltered or (interactiveEmpties and payload._pinDim) or false
+        button:SetAlpha(filtered and 0.2 or 1)
+        if button._textOverlay then
+            button._textOverlay:SetAlpha(filtered and 0.2 or 1)
         end
 
-        local iType = data._giType
+        local iType = payload._giType
 
         -- Item Level + Upgrade Rank (gear only)
-        if btn.ItemLevelText then
-            if data._isGear then
+        if button.ItemLevelText then
+            if payload._isGear then
                 local showIlvl = BP().showItemlevelInBags ~= false
                 if showIlvl then
-                    btn.ItemLevelText:SetText(data._giIlvl or "")
+                    button.ItemLevelText:SetText(payload._giIlvl or "")
                     -- Track color + rank (pre-cached on data table)
                     local r, g, b
-                    local rankText = data._giTrackRank or ""
-                    local trackColor = data._giTrackColor
+                    local rankText = payload._giTrackRank or ""
+                    local trackColor = payload._giTrackColor
                     if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
                         r, g, b =
                             BP().itemlevelCustomColor.r,
@@ -328,51 +332,51 @@ local function RenderButton(btn, data, _, col, row, startX, currentY, _, interac
                     elseif trackColor then
                         r, g, b = trackColor.r, trackColor.g, trackColor.b
                     else
-                        r, g, b = GetItemQualityColor(data._giQuality or 1)
+                        r, g, b = GetItemQualityColor(payload._giQuality or 1)
                     end
-                    btn.ItemLevelText:SetTextColor(r, g, b, 1)
-                    local countFS = btn.Count
+                    button.ItemLevelText:SetTextColor(r, g, b, 1)
+                    local countFS = button.Count
                     if countFS and BP().bagShowTrackRank and rankText ~= "" then
                         countFS:SetText(rankText:match("^(%d+)/") or rankText)
                         countFS:SetTextColor(r, g, b, 1)
                         countFS:Show()
                     end
                 else
-                    btn.ItemLevelText:SetText("")
+                    button.ItemLevelText:SetText("")
                 end
             else
-                btn.ItemLevelText:SetText("")
+                button.ItemLevelText:SetText("")
             end
         end
 
         -- Keystone: level top-left, abbreviated dungeon name bottom-right
-        if btn.KeystoneText then
-            if data._ksLevel then
-                btn.KeystoneText:SetText(data._ksLevel)
-                btn.KeystoneText:SetTextColor(data._ksR or 1, data._ksG or 1, data._ksB or 1, 1)
-                if btn.KeystoneDungeonText then
-                    btn.KeystoneDungeonText:SetText(data._ksAbbrev or "")
-                    btn.KeystoneDungeonText:SetTextColor(1, 1, 1, 1)
+        if button.KeystoneText then
+            if payload._ksLevel then
+                button.KeystoneText:SetText(payload._ksLevel)
+                button.KeystoneText:SetTextColor(payload._ksR or 1, payload._ksG or 1, payload._ksB or 1, 1)
+                if button.KeystoneDungeonText then
+                    button.KeystoneDungeonText:SetText(payload._ksAbbrev or "")
+                    button.KeystoneDungeonText:SetTextColor(1, 1, 1, 1)
                 end
             else
-                btn.KeystoneText:SetText("")
-                if btn.KeystoneDungeonText then
-                    btn.KeystoneDungeonText:SetText("")
+                button.KeystoneText:SetText("")
+                if button.KeystoneDungeonText then
+                    button.KeystoneDungeonText:SetText("")
                 end
             end
         end
 
         -- BoE/WuE bottom-left (gear only); skipped for quest starters, which use that corner for the quest marker.
-        if btn.BindTypeText then
+        if button.BindTypeText then
             if
-                data._isGear
-                and not data.info.isBound
-                and not data._isQuestStarter
+                payload._isGear
+                and not payload.info.isBound
+                and not payload._isQuestStarter
                 and BP().bagDisplayBindType
             then
-                CUI_Bags.SetBindTypeText(btn.BindTypeText, data._isWuE, data._giBindType, quality)
+                CUI_Bags.SetBindTypeText(button.BindTypeText, payload._isWuE, payload._giBindType, quality)
             else
-                btn.BindTypeText:SetText("")
+                button.BindTypeText:SetText("")
             end
         end
 
@@ -380,183 +384,183 @@ local function RenderButton(btn, data, _, col, row, startX, currentY, _, interac
         -- stamping is gated on the toggle, so _setName is nil while it's off).
         -- FontString is lazy: never built while off; once built it is cleared on
         -- every render because buttons are pooled.
-        if data._setName then
+        if payload._setName then
             -- Yields when the upgrade-track rank occupies Count in the same row
             -- (mirrors the rank-display condition in the ItemLevelText block above)
-            local rankShown = data._isGear
+            local rankShown = payload._isGear
                 and BP().bagShowTrackRank
                 and BP().showItemlevelInBags ~= false
-                and (data._giTrackRank or "") ~= ""
+                and (payload._giTrackRank or "") ~= ""
             if not rankShown then
-                if not btn.SetNameText then
-                    local overlay = btn._textOverlay or btn
-                    btn.SetNameText = overlay:CreateFontString(nil, "OVERLAY", nil, 7)
-                    btn.SetNameText:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 2, 2)
-                    btn.SetNameText:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
-                    btn.SetNameText:SetTextColor(1, 1, 1, 1)
-                    btn.SetNameText:SetJustifyH("CENTER")
-                    btn.SetNameText:SetWordWrap(false)
-                    btn.SetNameText:SetMaxLines(1)
-                    btn.SetNameText:SetFont(
+                if not button.SetNameText then
+                    local overlayFrame = button._textOverlay or button
+                    button.SetNameText = overlayFrame:CreateFontString(nil, "OVERLAY", nil, 7)
+                    button.SetNameText:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 2, 2)
+                    button.SetNameText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
+                    button.SetNameText:SetTextColor(1, 1, 1, 1)
+                    button.SetNameText:SetJustifyH("CENTER")
+                    button.SetNameText:SetWordWrap(false)
+                    button.SetNameText:SetMaxLines(1)
+                    button.SetNameText:SetFont(
                         GetFont(),
                         BP().bagSetNameFontSize or 9,
                         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                     )
                 end
-                btn.SetNameText:SetText(data._setName)
-            elseif btn.SetNameText then
-                btn.SetNameText:SetText("")
+                button.SetNameText:SetText(payload._setName)
+            elseif button.SetNameText then
+                button.SetNameText:SetText("")
             end
-        elseif btn.SetNameText then
-            btn.SetNameText:SetText("")
+        elseif button.SetNameText then
+            button.SetNameText:SetText("")
         end
 
         -- Profession quality overlay: let SetItemButtonQuality decide so every item type is covered, not just guessed "profession" ones.
-        if data.itemLink then
-            btn:SetItemButtonQuality(quality, data.itemLink, false, false)
+        if payload.itemLink then
+            button:SetItemButtonQuality(quality, payload.itemLink, false, false)
         end
         -- Visibility via alpha 0/1 only (immune to parent inheritance), even though SetItemButtonQuality may have called Show() internally.
-        if btn.ProfessionQualityOverlay then
-            if btn.ProfessionQualityOverlay:IsShown() then
-                btn.ProfessionQualityOverlay:SetAlpha(1)
-                if btn._textOverlay then
-                    btn.ProfessionQualityOverlay:SetParent(btn._textOverlay)
+        if button.ProfessionQualityOverlay then
+            if button.ProfessionQualityOverlay:IsShown() then
+                button.ProfessionQualityOverlay:SetAlpha(1)
+                if button._textOverlay then
+                    button.ProfessionQualityOverlay:SetParent(button._textOverlay)
                 end
             else
-                btn.ProfessionQualityOverlay:SetAlpha(0)
+                button.ProfessionQualityOverlay:SetAlpha(0)
             end
         end
         -- Cosmetic/warbound overlays: SetItemButtonQuality re-shows these, so handle AFTER it; reparent to textOverlay to render above inset borders.
-        if btn.IconOverlay then
-            if btn.IconOverlay:IsShown() then
-                btn.IconOverlay:SetAlpha(1)
-                if btn._textOverlay then
-                    btn.IconOverlay:SetParent(btn._textOverlay)
+        if button.IconOverlay then
+            if button.IconOverlay:IsShown() then
+                button.IconOverlay:SetAlpha(1)
+                if button._textOverlay then
+                    button.IconOverlay:SetParent(button._textOverlay)
                 end
             else
-                btn.IconOverlay:SetAlpha(0)
+                button.IconOverlay:SetAlpha(0)
             end
         end
-        if btn.icon and data.info and data.info.itemID then
-            if BagsItemUnusable(data.bag, data.slot, data.itemLink, data.info.itemID) then
-                btn.icon:SetVertexColor(1, 0.1, 0.1)
+        if button.icon and payload.info and payload.info.itemID then
+            if BagsItemUnusable(payload.bag, payload.slot, payload.itemLink, payload.info.itemID) then
+                button.icon:SetVertexColor(1, 0.1, 0.1)
             else
-                btn.icon:SetVertexColor(1, 1, 1)
+                button.icon:SetVertexColor(1, 1, 1)
             end
         end
-        if btn.IconOverlay2 then
-            if btn.IconOverlay2:IsShown() then
-                btn.IconOverlay2:SetAlpha(1)
-                if btn._textOverlay then
-                    btn.IconOverlay2:SetParent(btn._textOverlay)
+        if button.IconOverlay2 then
+            if button.IconOverlay2:IsShown() then
+                button.IconOverlay2:SetAlpha(1)
+                if button._textOverlay then
+                    button.IconOverlay2:SetParent(button._textOverlay)
                 end
             else
-                btn.IconOverlay2:SetAlpha(0)
+                button.IconOverlay2:SetAlpha(0)
             end
         end
-        if btn.IconBorder then
-            btn.IconBorder:Hide()
+        if button.IconBorder then
+            button.IconBorder:Hide()
         end
-        if btn.NormalTexture then
-            btn.NormalTexture:SetAlpha(0)
+        if button.NormalTexture then
+            button.NormalTexture:SetAlpha(0)
         end
 
         -- Quest items get a gold 2px border overriding the 1px quality border;
         -- thickness is re-set every render because buttons are pooled.
         local _bpx = (CUI and CUI.PP and CUI.PP.mult) or 1
-        if btn._fvSlotBorder then
+        if button._fvSlotBorder then
             local r, g, b = QualityBorderColor(quality)
-            SetInsetBorderColor(btn, r, g, b, 1)
-            ns.SetForeverSlotQuestBorder(btn, data._isQuest, data._isQuestStarter)
-        elseif data._isQuest then
-            SetInsetBorderThickness(btn, _bpx * 2)
+            SetInsetBorderColor(button, r, g, b, 1)
+            mod.SetForeverSlotQuestBorder(button, payload._isQuest, payload._isQuestStarter)
+        elseif payload._isQuest then
+            SetInsetBorderThickness(button, _bpx * 2)
             SetInsetBorderColor(
-                btn,
+                button,
                 QUEST_BORDER_COLOR.r,
                 QUEST_BORDER_COLOR.g,
                 QUEST_BORDER_COLOR.b,
                 filtered and 0.2 or 1
             )
         else
-            SetInsetBorderThickness(btn, _bpx)
+            SetInsetBorderThickness(button, _bpx)
             local r, g, b = QualityBorderColor(quality)
-            SetInsetBorderColor(btn, r, g, b, filtered and 0.2 or 1)
+            SetInsetBorderColor(button, r, g, b, filtered and 0.2 or 1)
         end
         -- Quest marker atlas (lazy, reused). Only for items that START a quest you
         -- have not accepted; active-quest objective items get the border, no marker.
-        if data._isQuestStarter and not btn._fvSlotBorder then
-            if not btn._questMarker then
-                local qm = (btn._textOverlay or btn):CreateTexture(nil, "OVERLAY", nil, 6)
+        if payload._isQuestStarter and not button._fvSlotBorder then
+            if not button._questMarker then
+                local qm = (button._textOverlay or button):CreateTexture(nil, "OVERLAY", nil, 6)
                 qm:SetAtlas("Crosshair_Quest_64")
                 qm:SetSize(22, 22)
-                qm:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", -3, 2)
-                btn._questMarker = qm
+                qm:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", -3, 2)
+                button._questMarker = qm
             end
-            btn._questMarker:Show()
-        elseif btn._questMarker then
-            btn._questMarker:Hide()
+            button._questMarker:Show()
+        elseif button._questMarker then
+            button._questMarker:Hide()
         end
 
         -- Warbank dim overlay: dim non-warbound items while a warband tab is open.
-        if not btn._warbankDim then
-            local dimFrame = CreateFrame("Frame", nil, btn)
+        if not button._warbankDim then
+            local dimFrame = CreateFrame("Frame", nil, button)
             dimFrame:SetAllPoints()
             -- Above the text overlay (+3); ns.PinItemButton moves it with the button
-            dimFrame:SetFrameLevel(btn:GetFrameLevel() + 6)
+            dimFrame:SetFrameLevel(button:GetFrameLevel() + 6)
             local dim = dimFrame:CreateTexture(nil, "OVERLAY")
             dim:SetAllPoints()
             dim:SetColorTexture(0, 0, 0, 0.75)
             dimFrame:Hide()
-            btn._warbankDim = dimFrame
+            button._warbankDim = dimFrame
         end
         local bank = _G.CUI_BankFrame
         local showDim = bank
             and bank:IsVisible()
             and bank.IsWarbandView
             and bank:IsWarbandView()
-            and not data._isWarbound
+            and not payload._isWarbound
         if showDim then
-            btn._warbankDim:Show()
+            button._warbankDim:Show()
         else
-            btn._warbankDim:Hide()
+            button._warbankDim:Hide()
         end
 
-        if btn.Cooldown then
-            if data._cdStart then
-                btn.Cooldown:SetDrawEdge(true)
-                btn.Cooldown:SetCooldown(data._cdStart, data._cdDuration)
+        if button.Cooldown then
+            if payload._cdStart then
+                button.Cooldown:SetDrawEdge(true)
+                button.Cooldown:SetCooldown(payload._cdStart, payload._cdDuration)
             else
-                btn.Cooldown:Clear()
+                button.Cooldown:Clear()
             end
         end
     end
-    UpdatePawnArrow(btn, data.itemLink)
-    CUI_Bags.RunItemOverlays(btn, data)
+    UpdatePawnArrow(button, payload.itemLink)
+    CUI_Bags.RunItemOverlays(button, payload)
 
     -- Same requery the native container update does after re-assigning a slot: the
     -- cursor can be resting on this button while the repaint moves another item under
     -- it, and nothing re-reads the tooltip until the mouse moves (it kept showing the
     -- sold item, or stayed hidden for the one that slid in). Presence comes from our
     -- own render data: the template's HasItem() reads a field only its own update writes.
-    if GameTooltip:IsOwned(btn) then
-        if data.info and btn.UpdateTooltip then
-            btn:UpdateTooltip()
+    if GameTooltip:IsOwned(button) then
+        if payload.info and button.UpdateTooltip then
+            button:UpdateTooltip()
         else
             GameTooltip:Hide()
         end
     end
 end
-ns.RenderButton = RenderButton -- shared with CludesUIBags_Compact.lua
+mod.RenderButton = RenderButton -- shared with CludesUIBags_Compact.lua
 
 -- "Hide" link on a Pinned / Recent header. Headers are pooled across views, so
 -- the link reads the setting it turns off (_dbKey) and its tooltip (_tooltip)
 -- from fields that every pass showing it sets.
-local function GetHeaderHideButton(hdr)
-    local hb = hdr._hideBtn
+local function GetHeaderHideButton(heading)
+    local hb = heading._hideBtn
     if hb then
         return hb
     end
-    hb = CreateFrame("Button", nil, hdr)
+    hb = CreateFrame("Button", nil, heading)
     hb:SetSize(30, 16)
     hb._fs = hb:CreateFontString(nil, "OVERLAY")
     SetBagFont(hb._fs, 9)
@@ -575,7 +579,7 @@ local function GetHeaderHideButton(hdr)
         BP()[self._dbKey] = false
         CUI_Bags:RefreshInventory()
     end)
-    hdr._hideBtn = hb
+    heading._hideBtn = hb
     return hb
 end
 
@@ -583,33 +587,33 @@ end
 --  Grid layout pass. Called by RefreshInventory after the shared scan,
 --  classify, filter and scroll setup; returns the content bottom (curY).
 -------------------------------------------------------------------------------
-function ns.RenderGridView(
+function mod.RenderGridView(
     tempItems,
     displayItems,
     emptySlots,
-    child,
+    childFrame,
     columns,
     gridW,
     gridPadX,
     showPinned,
     pinnedSet
 )
-    local selectedCategoryIndex, selectedGroupName = ns.GetSelection()
+    local selectedCategoryIndex, selectedGroupName = mod.GetSelection()
     junkOn = CUI_CategoryManager:IsJunkMarkerEnabled()
     compactOn = CUI_Bags.IsCompactMode() == true
 
     -- 5. Render grid into scroll child
-    for _, btn in pairs(itemSlots) do
-        if btn.ProfessionQualityOverlay then
-            btn.ProfessionQualityOverlay:SetAlpha(0)
+    for _, button in pairs(itemSlots) do
+        if button.ProfessionQualityOverlay then
+            button.ProfessionQualityOverlay:SetAlpha(0)
         end
-        if btn.IconOverlay then
-            btn.IconOverlay:SetAlpha(0)
-            btn.IconOverlay:Hide()
+        if button.IconOverlay then
+            button.IconOverlay:SetAlpha(0)
+            button.IconOverlay:Hide()
         end
-        if btn.IconOverlay2 then
-            btn.IconOverlay2:SetAlpha(0)
-            btn.IconOverlay2:Hide()
+        if button.IconOverlay2 then
+            button.IconOverlay2:SetAlpha(0)
+            button.IconOverlay2:Hide()
         end
     end
     if CUI_Bags._emptyPads then
@@ -618,23 +622,23 @@ function ns.RenderGridView(
         end
     end
     local catTitleSize = GetCatTitleSize()
-    for _, hdr in pairs(_catHeaders) do
-        hdr:Hide()
-        hdr._hint:SetText("")
-        if hdr._hintText then
-            ns.SetHeaderHint(hdr, nil)
+    for _, heading in pairs(_catHeaders) do
+        heading:Hide()
+        heading._hint:SetText("")
+        if heading._hintText then
+            mod.SetHeaderHint(heading, nil)
         end
-        if hdr._hideBtn then
-            hdr._hideBtn:Hide()
+        if heading._hideBtn then
+            heading._hideBtn:Hide()
         end
-        if hdr._clearBtn then
-            hdr._clearBtn:Hide()
+        if heading._clearBtn then
+            heading._clearBtn:Hide()
         end
-        hdr._line:ClearAllPoints()
-        hdr._line:SetPoint("LEFT", hdr._hint, "RIGHT", 6, 0)
-        hdr._line:SetPoint("RIGHT", hdr, "RIGHT", -SPACING, 0)
-        SetBagFont(hdr._label, catTitleSize)
-        SetBagFont(hdr._hint, catTitleSize - 1)
+        heading._line:ClearAllPoints()
+        heading._line:SetPoint("LEFT", heading._hint, "RIGHT", 6, 0)
+        heading._line:SetPoint("RIGHT", heading, "RIGHT", -SPACING, 0)
+        SetBagFont(heading._label, catTitleSize)
+        SetBagFont(heading._hint, catTitleSize - 1)
     end
     -- The user category's Edit | Delete row sits on the scroll child, outside
     -- its header; the single category view shows it again when needed
@@ -657,7 +661,7 @@ function ns.RenderGridView(
     local curY = -6
     local slotIdx = 0
     if compactOn then
-        ns.CompactBagsBegin()
+        mod.CompactBagsBegin()
     end
 
     -- Lightweight empty pad pool (no ItemButton template, just bg + border)
@@ -667,20 +671,20 @@ function ns.RenderGridView(
     local _emptyPads = CUI_Bags._emptyPads
     local _emptyPadIdx = 0
 
-    local function GetOrCreateEmptyPad(idx)
-        if _emptyPads[idx] then
-            return _emptyPads[idx]
+    local function GetOrCreateEmptyPad(position)
+        if _emptyPads[position] then
+            return _emptyPads[position]
         end
         local f = CreateFrame("Frame", nil, CUI_Bags)
-        ns.SizeSlot(f)
+        mod.SizeSlot(f)
         f:EnableMouse(false)
         f._bg = f:CreateTexture(nil, "BACKGROUND", nil, 1)
         f._bg:SetAllPoints()
-        ns.SetSlotBackgroundTexture(f._bg, false)
+        mod.SetSlotBackgroundTexture(f._bg, false)
         f._bg:SetAlpha(0.35)
         CreateInsetBorder(f, true)
         SetInsetBorderColor(f, 0, 0, 0, 0.3)
-        _emptyPads[idx] = f
+        _emptyPads[position] = f
         return f
     end
 
@@ -688,36 +692,36 @@ function ns.RenderGridView(
         for p = 1, padCount do
             _emptyPadIdx = _emptyPadIdx + 1
             local pad = GetOrCreateEmptyPad(_emptyPadIdx)
-            pad:SetParent(child)
+            pad:SetParent(childFrame)
             pad:ClearAllPoints()
             local totalIdx = itemCount + p
-            local col = (totalIdx - 1) % columns
-            local row = math.floor((totalIdx - 1) / columns)
+            local column = (totalIdx - 1) % columns
+            local rowFrame = math.floor((totalIdx - 1) / columns)
             pad:SetPoint(
                 "TOPLEFT",
-                startX + (col * (SLOT_SIZE + SPACING)),
-                curY - (row * (SLOT_SIZE + SPACING))
+                startX + (column * (SLOT_SIZE + SPACING)),
+                curY - (rowFrame * (SLOT_SIZE + SPACING))
             )
-            ns.PaintSlotBackground(pad._bg, 0.35)
+            mod.PaintSlotBackground(pad._bg, 0.35)
             pad:Show()
         end
     end
 
     local function RenderItemBlock(blockItems)
-        local n = #blockItems
-        for j, data in ipairs(blockItems) do
+        local num = #blockItems
+        for jdx, payload in ipairs(blockItems) do
             slotIdx = slotIdx + 1
-            local btn = GetOrCreateSlot(slotIdx)
-            if btn then -- nil during combat (avoids minting tainted secure buttons)
-                btn:GetParent():SetParent(child)
-                local col = (j - 1) % columns
-                local row = math.floor((j - 1) / columns)
-                RenderButton(btn, data, slotIdx, col, row, startX, curY, columns)
+            local button = GetOrCreateSlot(slotIdx)
+            if button then -- nil during combat (avoids minting tainted secure buttons)
+                button:GetParent():SetParent(childFrame)
+                local column = (jdx - 1) % columns
+                local rowFrame = math.floor((jdx - 1) / columns)
+                RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
             end
         end
-        local remainder = n % columns
+        local remainder = num % columns
         local padCount
-        if n == 0 then
+        if num == 0 then
             padCount = columns
         elseif remainder == 0 then
             padCount = 0
@@ -726,9 +730,9 @@ function ns.RenderGridView(
         end
         -- Filler pads are cosmetic row-fillers (the "+" button is the only real slot); NEVER clamp to #emptySlots or they vanish when bags are full.
         if padCount > 0 then
-            RenderEmptyPad(n, padCount)
+            RenderEmptyPad(num, padCount)
         end
-        local totalInBlock = n + math.max(padCount, 0)
+        local totalInBlock = num + math.max(padCount, 0)
         local blockRows = math.ceil(totalInBlock / columns)
         curY = curY - (blockRows * (SLOT_SIZE + SPACING))
     end
@@ -748,17 +752,17 @@ function ns.RenderGridView(
 
             -- Prepare the headers first so their text widths can reserve enough
             -- horizontal space before the buckets are packed into rows.
-            for index, bucket in ipairs(buckets) do
+            for slotPos, bucket in ipairs(buckets) do
                 subHeaderIdx = subHeaderIdx + 1
-                local header = GetOrCreateExpSubHeader(subHeaderIdx)
-                header:SetParent(child)
-                header._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
-                SetBagFont(header._label, math.max(8, catTitleSize - 2))
+                local headerFrame = GetOrCreateExpSubHeader(subHeaderIdx)
+                headerFrame:SetParent(childFrame)
+                headerFrame._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
+                SetBagFont(headerFrame._label, math.max(8, catTitleSize - 2))
 
-                local itemCount = #bucket.items + ((index == assignBucket) and 1 or 0)
+                local itemCount = #bucket.items + ((slotPos == assignBucket) and 1 or 0)
                 local span = math.min(columns, itemCount)
                 local bucketWidth = span * stride - SPACING
-                bucket._compactHeader = header
+                bucket._compactHeader = headerFrame
                 bucket._compactItemCount = itemCount
                 bucket._compactSpan = span
                 bucket._compactRows = math.ceil(itemCount / span)
@@ -766,25 +770,25 @@ function ns.RenderGridView(
 
                 if itemCount <= columns then
                     categoryGap =
-                        math.max(categoryGap, (header._label:GetStringWidth() or 0) + 6 - bucketWidth)
+                        math.max(categoryGap, (headerFrame._label:GetStringWidth() or 0) + 6 - bucketWidth)
                 end
             end
 
             local function RenderPadsAt(itemTop, usedWidth)
                 local padCount = math.floor((usableWidth - usedWidth + epsilon) / stride)
-                for index = 1, padCount do
+                for slotPos = 1, padCount do
                     _emptyPadIdx = _emptyPadIdx + 1
                     local pad = GetOrCreateEmptyPad(_emptyPadIdx)
-                    pad:SetParent(child)
+                    pad:SetParent(childFrame)
                     pad:ClearAllPoints()
                     pad:SetPoint(
                         "TOPLEFT",
-                        child,
+                        childFrame,
                         "TOPLEFT",
-                        startX + usedWidth + SPACING + (index - 1) * stride,
+                        startX + usedWidth + SPACING + (slotPos - 1) * stride,
                         itemTop
                     )
-                    ns.PaintSlotBackground(pad._bg, 0.35)
+                    mod.PaintSlotBackground(pad._bg, 0.35)
                     pad:Show()
                 end
             end
@@ -793,7 +797,7 @@ function ns.RenderGridView(
             local usedWidth = 0
             local rowItemRows = 0
 
-            for index, bucket in ipairs(buckets) do
+            for slotPos, bucket in ipairs(buckets) do
                 local span = bucket._compactSpan
                 local itemRows = bucket._compactRows
                 local bucketWidth = bucket._compactWidth
@@ -809,25 +813,25 @@ function ns.RenderGridView(
                     startOffset = 0
                 end
 
-                local header = bucket._compactHeader
-                header:ClearAllPoints()
-                header:SetPoint("TOPLEFT", child, "TOPLEFT", startX + startOffset, rowTop)
-                header:SetWidth(math.max(1, bucketWidth))
-                header:Show()
+                local headerFrame = bucket._compactHeader
+                headerFrame:ClearAllPoints()
+                headerFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX + startOffset, rowTop)
+                headerFrame:SetWidth(math.max(1, bucketWidth))
+                headerFrame:Show()
 
-                for itemIndex, data in ipairs(bucket.items) do
+                for itemIndex, payload in ipairs(bucket.items) do
                     slotIdx = slotIdx + 1
-                    local btn = GetOrCreateSlot(slotIdx)
-                    if btn then
-                        btn:GetParent():SetParent(child)
-                        local col = (itemIndex - 1) % span
-                        local row = math.floor((itemIndex - 1) / span)
+                    local button = GetOrCreateSlot(slotIdx)
+                    if button then
+                        button:GetParent():SetParent(childFrame)
+                        local column = (itemIndex - 1) % span
+                        local rowFrame = math.floor((itemIndex - 1) / span)
                         RenderButton(
-                            btn,
-                            data,
+                            button,
+                            payload,
                             slotIdx,
-                            col,
-                            row,
+                            column,
+                            rowFrame,
                             startX + startOffset,
                             rowTop - headerGap,
                             columns
@@ -835,30 +839,30 @@ function ns.RenderGridView(
                     end
                 end
 
-                if index == assignBucket then
+                if slotPos == assignBucket then
                     slotIdx = slotIdx + 1
                     local assignSlot = GetOrCreateSlot(slotIdx)
                     if assignSlot then
-                        assignSlot:GetParent():SetParent(child)
+                        assignSlot:GetParent():SetParent(childFrame)
                         local itemIndex = #bucket.items + 1
-                        local col = (itemIndex - 1) % span
-                        local row = math.floor((itemIndex - 1) / span)
+                        local column = (itemIndex - 1) % span
+                        local rowFrame = math.floor((itemIndex - 1) / span)
                         RenderButton(
                             assignSlot,
                             { bag = 0, slot = 0 },
                             slotIdx,
-                            col,
-                            row,
+                            column,
+                            rowFrame,
                             startX + startOffset,
                             rowTop - headerGap,
                             columns
                         )
-                        local overlay = GetOrCreateAssignOverlay()
-                        overlay._assignCatKey = assignCatKey
-                        overlay:SetParent(child)
-                        overlay:ClearAllPoints()
-                        overlay:SetAllPoints(assignSlot)
-                        overlay:Show()
+                        local overlayFrame = GetOrCreateAssignOverlay()
+                        overlayFrame._assignCatKey = assignCatKey
+                        overlayFrame:SetParent(childFrame)
+                        overlayFrame:ClearAllPoints()
+                        overlayFrame:SetAllPoints(assignSlot)
+                        overlayFrame:Show()
                     end
                 end
 
@@ -898,14 +902,14 @@ function ns.RenderGridView(
             for _, bucket in ipairs(buckets) do
                 if #bucket.items > 0 then
                     subHeaderIdx = subHeaderIdx + 1
-                    local header = GetOrCreateExpSubHeader(subHeaderIdx)
-                    header:SetParent(child)
-                    header:ClearAllPoints()
-                    header:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
-                    header:SetWidth(gridW)
-                    header._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
-                    SetBagFont(header._label, math.max(8, catTitleSize - 2))
-                    header:Show()
+                    local headerFrame = GetOrCreateExpSubHeader(subHeaderIdx)
+                    headerFrame:SetParent(childFrame)
+                    headerFrame:ClearAllPoints()
+                    headerFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
+                    headerFrame:SetWidth(gridW)
+                    headerFrame._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
+                    SetBagFont(headerFrame._label, math.max(8, catTitleSize - 2))
+                    headerFrame:Show()
                     curY = curY - 18
                     RenderItemBlock(bucket.items)
 
@@ -918,7 +922,7 @@ function ns.RenderGridView(
                         slotIdx = slotIdx + 1
                         local assignSlot = GetOrCreateSlot(slotIdx)
                         if assignSlot then
-                            assignSlot:GetParent():SetParent(child)
+                            assignSlot:GetParent():SetParent(childFrame)
                             RenderButton(
                                 assignSlot,
                                 { bag = 0, slot = 0 },
@@ -929,12 +933,12 @@ function ns.RenderGridView(
                                 curY,
                                 columns
                             )
-                            local overlay = GetOrCreateAssignOverlay()
-                            overlay._assignCatKey = assignCatKey
-                            overlay:SetParent(child)
-                            overlay:ClearAllPoints()
-                            overlay:SetAllPoints(assignSlot)
-                            overlay:Show()
+                            local overlayFrame = GetOrCreateAssignOverlay()
+                            overlayFrame._assignCatKey = assignCatKey
+                            overlayFrame:SetParent(childFrame)
+                            overlayFrame:ClearAllPoints()
+                            overlayFrame:SetAllPoints(assignSlot)
+                            overlayFrame:Show()
                         end
                         curY = curY - (SLOT_SIZE + SPACING)
                     end
@@ -966,16 +970,16 @@ function ns.RenderGridView(
                 pinItems = MergeDuplicates(pinItems)
             end
             if compactOn then
-                ns.CompactBagsSection(CludesUI.L("Pinned Items"), pinItems, "pinned")
+                mod.CompactBagsSection(CludesUI.L("Pinned Items"), pinItems, "pinned")
             else
                 headerIdx = headerIdx + 1
                 local pinHdr = GetOrCreateCatHeader(headerIdx)
-                pinHdr:SetParent(child)
+                pinHdr:SetParent(childFrame)
                 pinHdr:ClearAllPoints()
-                pinHdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
+                pinHdr:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
                 pinHdr:SetWidth(columns * (SLOT_SIZE + SPACING))
                 pinHdr._label:SetText(CludesUI.L("Pinned Items"))
-                ns.SetHeaderHint(pinHdr, CludesUI.L("Middle Click to Add or Remove"))
+                mod.SetHeaderHint(pinHdr, CludesUI.L("Middle Click to Add or Remove"))
                 local pinHide = GetHeaderHideButton(pinHdr)
                 pinHide._dbKey = "bagPinnedInOneBag"
                 pinHide._tooltip = "Hides Pinned Items. Re-show in settings."
@@ -988,14 +992,14 @@ function ns.RenderGridView(
                 pinHdr:Show()
                 curY = curY - 22
 
-                for j, data in ipairs(pinItems) do
+                for jdx, payload in ipairs(pinItems) do
                     slotIdx = slotIdx + 1
-                    local btn = GetOrCreateSlot(slotIdx)
-                    if btn then -- nil during combat (avoids minting tainted secure buttons)
-                        btn:GetParent():SetParent(child)
-                        local col = (j - 1) % columns
-                        local row = math.floor((j - 1) / columns)
-                        RenderButton(btn, data, slotIdx, col, row, startX, curY, columns)
+                    local button = GetOrCreateSlot(slotIdx)
+                    if button then -- nil during combat (avoids minting tainted secure buttons)
+                        button:GetParent():SetParent(childFrame)
+                        local column = (jdx - 1) % columns
+                        local rowFrame = math.floor((jdx - 1) / columns)
+                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
                     end
                 end
                 local pinItemCount = #pinItems
@@ -1004,15 +1008,24 @@ function ns.RenderGridView(
                     slotIdx = slotIdx + 1
                     local pinSlot = GetOrCreateSlot(slotIdx)
                     if pinSlot then -- nil during combat (avoids minting tainted secure buttons)
-                        pinSlot:GetParent():SetParent(child)
-                        local col = (pinIdx - 1) % columns
-                        local row = math.floor((pinIdx - 1) / columns)
-                        RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
-                        local ov = GetOrCreatePinOverlay()
-                        ov:SetParent(child)
-                        ov:ClearAllPoints()
-                        ov:SetAllPoints(pinSlot)
-                        ov:Show()
+                        pinSlot:GetParent():SetParent(childFrame)
+                        local column = (pinIdx - 1) % columns
+                        local rowFrame = math.floor((pinIdx - 1) / columns)
+                        RenderButton(
+                            pinSlot,
+                            { bag = 0, slot = 0 },
+                            slotIdx,
+                            column,
+                            rowFrame,
+                            startX,
+                            curY,
+                            columns
+                        )
+                        local shade = GetOrCreatePinOverlay()
+                        shade:SetParent(childFrame)
+                        shade:ClearAllPoints()
+                        shade:SetAllPoints(pinSlot)
+                        shade:Show()
                         pinItemCount = pinItemCount + 1
                     end
                 end
@@ -1053,16 +1066,16 @@ function ns.RenderGridView(
                 table.sort(recentItems, RecentCompare)
             end
             if compactOn then
-                ns.CompactBagsSection(CludesUI.L("Recent Items"), recentItems, "recent")
+                mod.CompactBagsSection(CludesUI.L("Recent Items"), recentItems, "recent")
             else
                 headerIdx = headerIdx + 1
                 local recHdr = GetOrCreateCatHeader(headerIdx)
-                recHdr:SetParent(child)
+                recHdr:SetParent(childFrame)
                 recHdr:ClearAllPoints()
-                recHdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
+                recHdr:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
                 recHdr:SetWidth(columns * (SLOT_SIZE + SPACING))
                 recHdr._label:SetText(CludesUI.L("Recent Items"))
-                ns.SetHeaderHint(
+                mod.SetHeaderHint(
                     recHdr,
                     CludesUI.L("Extra quickview display, your items are also in their category")
                 )
@@ -1086,14 +1099,14 @@ function ns.RenderGridView(
                 recHdr:Show()
                 curY = curY - 22
 
-                for j, data in ipairs(recentItems) do
+                for jdx, payload in ipairs(recentItems) do
                     slotIdx = slotIdx + 1
-                    local btn = GetOrCreateSlot(slotIdx)
-                    if btn then -- nil during combat (avoids minting tainted secure buttons)
-                        btn:GetParent():SetParent(child)
-                        local col = (j - 1) % columns
-                        local row = math.floor((j - 1) / columns)
-                        RenderButton(btn, data, slotIdx, col, row, startX, curY, columns)
+                    local button = GetOrCreateSlot(slotIdx)
+                    if button then -- nil during combat (avoids minting tainted secure buttons)
+                        button:GetParent():SetParent(childFrame)
+                        local column = (jdx - 1) % columns
+                        local rowFrame = math.floor((jdx - 1) / columns)
+                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
                     end
                 end
                 local recItemCount = #recentItems
@@ -1113,40 +1126,40 @@ function ns.RenderGridView(
 
         -- One section header + item grid for a slot list, advancing the shared
         -- curY/slotIdx/headerIdx upvalues (used by OneBag's "Main Bags" and MultiBag's per-bag sections).
-        local function RenderBagGrid(label, slotList)
+        local function RenderBagGrid(labelText, slotList)
             if #slotList == 0 then
                 return
             end
             if compactOn then
-                ns.CompactBagsSlots(label, slotList)
+                mod.CompactBagsSlots(labelText, slotList)
                 return
             end
             headerIdx = headerIdx + 1
-            local hdr = GetOrCreateCatHeader(headerIdx)
-            hdr:SetParent(child)
-            hdr:ClearAllPoints()
-            hdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
-            hdr:SetWidth(columns * (SLOT_SIZE + SPACING))
-            hdr._label:SetText(label)
-            hdr:Show()
+            local heading = GetOrCreateCatHeader(headerIdx)
+            heading:SetParent(childFrame)
+            heading:ClearAllPoints()
+            heading:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
+            heading:SetWidth(columns * (SLOT_SIZE + SPACING))
+            heading._label:SetText(labelText)
+            heading:Show()
             curY = curY - 22
-            for i, data in ipairs(slotList) do
+            for i, payload in ipairs(slotList) do
                 slotIdx = slotIdx + 1
-                local btn = GetOrCreateSlot(slotIdx)
-                if btn then -- nil during combat (avoids minting tainted secure buttons)
-                    btn:GetParent():SetParent(child)
-                    local col = (i - 1) % columns
-                    local row = math.floor((i - 1) / columns)
-                    RenderButton(btn, data, slotIdx, col, row, startX, curY, columns, true)
+                local button = GetOrCreateSlot(slotIdx)
+                if button then -- nil during combat (avoids minting tainted secure buttons)
+                    button:GetParent():SetParent(childFrame)
+                    local column = (i - 1) % columns
+                    local rowFrame = math.floor((i - 1) / columns)
+                    RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns, true)
                 end
             end
-            local rows = math.ceil(#slotList / columns)
-            curY = curY - (rows * (SLOT_SIZE + SPACING)) - 6
+            local rowList = math.ceil(#slotList / columns)
+            curY = curY - (rowList * (SLOT_SIZE + SPACING)) - 6
         end
 
         -- One bag's items + empties as a section titled with the bag's name, in
         -- slot order (MultiBag's bags, OneBag's special bags).
-        local BagDisplayName = ns.BagDisplayName
+        local BagDisplayName = mod.BagDisplayName
         local function RenderOneBag(bag)
             local bagList = {}
             local bagFilled = 0
@@ -1172,7 +1185,7 @@ function ns.RenderGridView(
         if not isMulti then
             -- OneBag: Main Bags (0-4) merged, in bag:slot order; a WoW Forever
             -- special bag (ns.SpecialBags) gets its own section after it.
-            local special = ns.SpecialBags()
+            local special = mod.SpecialBags()
             local mainSlots = {}
             local mainFilled = 0
             for _, d in ipairs(tempItems) do
@@ -1232,26 +1245,26 @@ function ns.RenderGridView(
             end
             local reagLabel = CludesUI.Lf("Reagent Bag (%d / %d)", reagFilled, #reagentSlotList)
             if compactOn then
-                ns.CompactBagsSlots(reagLabel, reagentSlotList)
+                mod.CompactBagsSlots(reagLabel, reagentSlotList)
             else
                 headerIdx = headerIdx + 1
                 local reagHdr = GetOrCreateCatHeader(headerIdx)
-                reagHdr:SetParent(child)
+                reagHdr:SetParent(childFrame)
                 reagHdr:ClearAllPoints()
-                reagHdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
+                reagHdr:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
                 reagHdr:SetWidth(columns * (SLOT_SIZE + SPACING))
                 reagHdr._label:SetText(reagLabel)
                 reagHdr:Show()
                 curY = curY - 22
 
-                for i, data in ipairs(reagentSlotList) do
+                for i, payload in ipairs(reagentSlotList) do
                     slotIdx = slotIdx + 1
-                    local btn = GetOrCreateSlot(slotIdx)
-                    if btn then -- nil during combat (avoids minting tainted secure buttons)
-                        btn:GetParent():SetParent(child)
-                        local col = (i - 1) % columns
-                        local row = math.floor((i - 1) / columns)
-                        RenderButton(btn, data, slotIdx, col, row, startX, curY, columns, true)
+                    local button = GetOrCreateSlot(slotIdx)
+                    if button then -- nil during combat (avoids minting tainted secure buttons)
+                        button:GetParent():SetParent(childFrame)
+                        local column = (i - 1) % columns
+                        local rowFrame = math.floor((i - 1) / columns)
+                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns, true)
                     end
                 end
                 local reagRows = math.ceil(#reagentSlotList / columns)
@@ -1265,10 +1278,10 @@ function ns.RenderGridView(
         for i = 1, #cats do
             itemsByCat[i] = {}
         end
-        for _, data in ipairs(displayItems) do
-            local ci = data.categoryIndex
-            if ci and itemsByCat[ci] and not data._pinnedOnly then
-                itemsByCat[ci][#itemsByCat[ci] + 1] = data
+        for _, payload in ipairs(displayItems) do
+            local ci = payload.categoryIndex
+            if ci and itemsByCat[ci] and not payload._pinnedOnly then
+                itemsByCat[ci][#itemsByCat[ci] + 1] = payload
             end
         end
         for i = 1, #cats do
@@ -1316,7 +1329,7 @@ function ns.RenderGridView(
                 and not alwaysShow
 
             -- sectionName is the group's key; this is what the label shows
-            local label = CUI_CategoryManager:GroupDisplayName(sectionName)
+            local labelText = CUI_CategoryManager:GroupDisplayName(sectionName)
 
             -- Compact: the collector draws this section (CludesUIBags_Compact.lua)
             if compactOn then
@@ -1325,43 +1338,43 @@ function ns.RenderGridView(
                     local aCat = CUI_CategoryManager:GetCategories()[assignCatIdx]
                     assignKey = aCat and aCat._defaultName
                 end
-                local kind = (showPinAdd and "pinned")
+                local kindOf = (showPinAdd and "pinned")
                     or (alwaysShow and "recent")
                     or (useSlotNest and "slot")
                     or (useExpNest and "exp")
                     or "flat"
-                ns.CompactBagsSection(label, sectionItems, kind, assignKey)
+                mod.CompactBagsSection(labelText, sectionItems, kindOf, assignKey)
                 return
             end
 
             headerIdx = headerIdx + 1
-            local hdr = GetOrCreateCatHeader(headerIdx)
-            hdr:SetParent(child)
-            hdr:ClearAllPoints()
-            hdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
-            hdr:SetWidth(gridW)
-            hdr._label:SetText(label .. " (" .. itemCount .. ")")
+            local heading = GetOrCreateCatHeader(headerIdx)
+            heading:SetParent(childFrame)
+            heading:ClearAllPoints()
+            heading:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
+            heading:SetWidth(gridW)
+            heading._label:SetText(labelText .. " (" .. itemCount .. ")")
             -- Pinned / Recent: their hint shows while the label is hovered
             if showPinAdd then
-                ns.SetHeaderHint(hdr, CludesUI.L("Middle Click to Add or Remove"))
+                mod.SetHeaderHint(heading, CludesUI.L("Middle Click to Add or Remove"))
             elseif alwaysShow then
-                ns.SetHeaderHint(
-                    hdr,
+                mod.SetHeaderHint(
+                    heading,
                     CludesUI.L("Extra quickview display, your items are also in their category")
                 )
             end
             -- Hide button for Pinned / Recent sections
             if showPinAdd or alwaysShow then
-                GetHeaderHideButton(hdr)
-                hdr._hideBtn._dbKey = showPinAdd and "bagShowPinnedItems" or "bagShowRecentItems"
-                hdr._hideBtn._tooltip = showPinAdd and "Hides Pinned Items. Re-show in settings."
+                GetHeaderHideButton(heading)
+                heading._hideBtn._dbKey = showPinAdd and "bagShowPinnedItems" or "bagShowRecentItems"
+                heading._hideBtn._tooltip = showPinAdd and "Hides Pinned Items. Re-show in settings."
                     or "Hides Recent Items. Re-show in settings."
-                hdr._hideBtn:ClearAllPoints()
-                hdr._hideBtn:SetPoint("RIGHT", hdr, "RIGHT", 0, 0)
-                hdr._hideBtn:Show()
+                heading._hideBtn:ClearAllPoints()
+                heading._hideBtn:SetPoint("RIGHT", heading, "RIGHT", 0, 0)
+                heading._hideBtn:Show()
                 -- Recent Items only, opt-in: "Clear" left of "Hide", and only when
                 -- there is something to clear.
-                local lineAnchor = hdr._hideBtn
+                local lineAnchor = heading._hideBtn
                 if
                     alwaysShow
                     and not showPinAdd
@@ -1369,13 +1382,13 @@ function ns.RenderGridView(
                     and CUI_Bags._recentItems
                     and next(CUI_Bags._recentItems)
                 then
-                    lineAnchor = ShowRecentClearButton(hdr, hdr._hideBtn)
+                    lineAnchor = ShowRecentClearButton(heading, heading._hideBtn)
                 end
-                hdr._line:ClearAllPoints()
-                hdr._line:SetPoint("LEFT", hdr._hint, "RIGHT", 6, 0)
-                hdr._line:SetPoint("RIGHT", lineAnchor, "LEFT", -6, 0)
+                heading._line:ClearAllPoints()
+                heading._line:SetPoint("LEFT", heading._hint, "RIGHT", 6, 0)
+                heading._line:SetPoint("RIGHT", lineAnchor, "LEFT", -6, 0)
             end
-            hdr:Show()
+            heading:Show()
             curY = curY - 22
 
             if useSlotNest then
@@ -1402,9 +1415,9 @@ function ns.RenderGridView(
                         if #buck.items > 0 then
                             expSubIdx = expSubIdx + 1
                             local sh = GetOrCreateExpSubHeader(expSubIdx)
-                            sh:SetParent(child)
+                            sh:SetParent(childFrame)
                             sh:ClearAllPoints()
-                            sh:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
+                            sh:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
                             sh:SetWidth(gridW)
                             sh._label:SetText(buck.label .. " (" .. #buck.items .. ")")
                             SetBagFont(sh._label, math.max(8, catTitleSize - 2))
@@ -1418,8 +1431,8 @@ function ns.RenderGridView(
                                 local aCat = cats[assignCatIdx]
                                 if aCat then
                                     -- RenderItemBlock already advanced curY; back up to place at the next slot after the items.
-                                    local n = #buck.items
-                                    local remainder = n % columns
+                                    local num = #buck.items
+                                    local remainder = num % columns
                                     if remainder == 0 then
                                         -- Last row filled exactly: curY already sits on the new row the button needs.
                                     else
@@ -1429,13 +1442,13 @@ function ns.RenderGridView(
                                     slotIdx = slotIdx + 1
                                     local aSlot = GetOrCreateSlot(slotIdx)
                                     if aSlot then
-                                        aSlot:GetParent():SetParent(child)
-                                        local col = remainder
+                                        aSlot:GetParent():SetParent(childFrame)
+                                        local column = remainder
                                         RenderButton(
                                             aSlot,
                                             { bag = 0, slot = 0 },
                                             slotIdx,
-                                            col,
+                                            column,
                                             0,
                                             startX,
                                             curY,
@@ -1443,7 +1456,7 @@ function ns.RenderGridView(
                                         )
                                         local aOv = GetOrCreateAssignOverlay()
                                         aOv._assignCatKey = aCat._defaultName
-                                        aOv:SetParent(child)
+                                        aOv:SetParent(childFrame)
                                         aOv:ClearAllPoints()
                                         aOv:SetAllPoints(aSlot)
                                         aOv:Show()
@@ -1459,14 +1472,14 @@ function ns.RenderGridView(
                 end
             end
 
-            for j, data in ipairs(sectionItems) do
+            for jdx, payload in ipairs(sectionItems) do
                 slotIdx = slotIdx + 1
-                local btn = GetOrCreateSlot(slotIdx)
-                if btn then
-                    btn:GetParent():SetParent(child)
-                    local col = (j - 1) % columns
-                    local row = math.floor((j - 1) / columns)
-                    RenderButton(btn, data, slotIdx, col, row, startX, curY, columns)
+                local button = GetOrCreateSlot(slotIdx)
+                if button then
+                    button:GetParent():SetParent(childFrame)
+                    local column = (jdx - 1) % columns
+                    local rowFrame = math.floor((jdx - 1) / columns)
+                    RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
                 end
             end
 
@@ -1476,15 +1489,24 @@ function ns.RenderGridView(
                 slotIdx = slotIdx + 1
                 local pinSlot = GetOrCreateSlot(slotIdx)
                 if pinSlot then
-                    pinSlot:GetParent():SetParent(child)
-                    local col = (pinIdx - 1) % columns
-                    local row = math.floor((pinIdx - 1) / columns)
-                    RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
-                    local ov = GetOrCreatePinOverlay()
-                    ov:SetParent(child)
-                    ov:ClearAllPoints()
-                    ov:SetAllPoints(pinSlot)
-                    ov:Show()
+                    pinSlot:GetParent():SetParent(childFrame)
+                    local column = (pinIdx - 1) % columns
+                    local rowFrame = math.floor((pinIdx - 1) / columns)
+                    RenderButton(
+                        pinSlot,
+                        { bag = 0, slot = 0 },
+                        slotIdx,
+                        column,
+                        rowFrame,
+                        startX,
+                        curY,
+                        columns
+                    )
+                    local shade = GetOrCreatePinOverlay()
+                    shade:SetParent(childFrame)
+                    shade:ClearAllPoints()
+                    shade:SetAllPoints(pinSlot)
+                    shade:Show()
                     itemCount = itemCount + 1
                 end
             end
@@ -1503,13 +1525,22 @@ function ns.RenderGridView(
                     -- GetOrCreateSlot returns nil in combat lockdown (a slot born in combat is tainted); skip, PLAYER_REGEN_ENABLED replays the refresh.
                     local aSlot = GetOrCreateSlot(slotIdx)
                     if aSlot then
-                        aSlot:GetParent():SetParent(child)
-                        local col = (aIdx - 1) % columns
-                        local row = math.floor((aIdx - 1) / columns)
-                        RenderButton(aSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
+                        aSlot:GetParent():SetParent(childFrame)
+                        local column = (aIdx - 1) % columns
+                        local rowFrame = math.floor((aIdx - 1) / columns)
+                        RenderButton(
+                            aSlot,
+                            { bag = 0, slot = 0 },
+                            slotIdx,
+                            column,
+                            rowFrame,
+                            startX,
+                            curY,
+                            columns
+                        )
                         local aOv = GetOrCreateAssignOverlay()
                         aOv._assignCatKey = aCat._defaultName
-                        aOv:SetParent(child)
+                        aOv:SetParent(childFrame)
                         aOv:ClearAllPoints()
                         aOv:SetAllPoints(aSlot)
                         aOv:Show()
@@ -1538,37 +1569,37 @@ function ns.RenderGridView(
         end
 
         local hiddenSet = BP().bagHiddenInAllItems or {}
-        for ci, cat in ipairs(cats) do
-            if cat.isPinned then
+        for ci, category in ipairs(cats) do
+            if category.isPinned then
                 -- Pinned Items quickview
                 if pinnedSet and showPinned then
                     local pinItems = {}
-                    for _, data in ipairs(displayItems) do
+                    for _, payload in ipairs(displayItems) do
                         if
-                            data.info
-                            and data.info.itemID
-                            and IsItemPinned(pinnedSet, data.itemLink, data.info.itemID)
+                            payload.info
+                            and payload.info.itemID
+                            and IsItemPinned(pinnedSet, payload.itemLink, payload.info.itemID)
                         then
-                            pinItems[#pinItems + 1] = data
+                            pinItems[#pinItems + 1] = payload
                         end
                     end
                     if #pinItems > 0 then
                         pinItems = MergeDuplicates(pinItems)
                     end
-                    RenderSection(cat.name, pinItems, false, true)
+                    RenderSection(category.name, pinItems, false, true)
                 end
-            elseif cat.isRecent then
+            elseif category.isRecent then
                 -- Recent Items: display-only duplicate (items also appear in their normal category)
                 if CUI_Bags._recentItems and (BP().bagShowRecentItems ~= false) then
                     local recentItems = {}
-                    for _, data in ipairs(displayItems) do
+                    for _, payload in ipairs(displayItems) do
                         if
-                            not data._pinnedOnly
-                            and data.info
-                            and data.info.itemID
-                            and CUI_Bags._recentItems[data.info.itemID]
+                            not payload._pinnedOnly
+                            and payload.info
+                            and payload.info.itemID
+                            and CUI_Bags._recentItems[payload.info.itemID]
                         then
-                            recentItems[#recentItems + 1] = data
+                            recentItems[#recentItems + 1] = payload
                         end
                     end
                     if #recentItems > 0 then
@@ -1577,16 +1608,16 @@ function ns.RenderGridView(
                     end
                     RenderSection(CludesUI.L("Recent Items"), recentItems, false, false, true)
                 end
-            elseif cat.groupName then
-                if not renderedGroups[cat.groupName] then
-                    renderedGroups[cat.groupName] = true
-                    if not hiddenSet[cat.groupName] then
-                        local members = CUI_CategoryManager:GetGroupMembers(cat.groupName)
+            elseif category.groupName then
+                if not renderedGroups[category.groupName] then
+                    renderedGroups[category.groupName] = true
+                    if not hiddenSet[category.groupName] then
+                        local members = CUI_CategoryManager:GetGroupMembers(category.groupName)
                         local merged = {}
                         for _, mi in ipairs(members) do
                             if itemsByCat[mi] then
-                                for _, data in ipairs(itemsByCat[mi]) do
-                                    merged[#merged + 1] = data
+                                for _, payload in ipairs(itemsByCat[mi]) do
+                                    merged[#merged + 1] = payload
                                 end
                             end
                             -- The Item Set Gear anchor folds in its set children's items
@@ -1598,44 +1629,52 @@ function ns.RenderGridView(
                             then
                                 for i, c in ipairs(cats) do
                                     if c.isEquipSet and itemsByCat[i] then
-                                        for _, data in ipairs(itemsByCat[i]) do
-                                            merged[#merged + 1] = data
+                                        for _, payload in ipairs(itemsByCat[i]) do
+                                            merged[#merged + 1] = payload
                                         end
                                     end
                                 end
                             end
                         end
                         if #merged > 0 then
-                            ApplySavedOrder(cat.groupName, merged)
+                            ApplySavedOrder(category.groupName, merged)
                         end
-                        RenderSection(cat.groupName, merged, false, nil, nil, members[1], true)
+                        RenderSection(category.groupName, merged, false, nil, nil, members[1], true)
                     end
                 end
-            elseif cat.isEquipSet then
+            elseif category.isEquipSet then
                 -- Set children render inside their anchor's section
             else
-                if not hiddenSet[cat._defaultName] then
+                if not hiddenSet[category._defaultName] then
                     local catItems = itemsByCat[ci] or {}
                     -- The Item Set Gear anchor folds in its set children's items
-                    if cat.isSetGear and BP().bagSplitSetGearBySet then
+                    if category.isSetGear and BP().bagSplitSetGearBySet then
                         local folded = nil
                         for i, c in ipairs(cats) do
                             if c.isEquipSet and itemsByCat[i] then
                                 if not folded then
                                     folded = {}
-                                    for _, data in ipairs(catItems) do
-                                        folded[#folded + 1] = data
+                                    for _, payload in ipairs(catItems) do
+                                        folded[#folded + 1] = payload
                                     end
                                 end
-                                for _, data in ipairs(itemsByCat[i]) do
-                                    folded[#folded + 1] = data
+                                for _, payload in ipairs(itemsByCat[i]) do
+                                    folded[#folded + 1] = payload
                                 end
                             end
                         end
                         catItems = folded or catItems
                     end
-                    local isUserCreated = cat.isUserCreated
-                    RenderSection(cat.name, catItems, isUserCreated, cat.isPinned, cat.isRecent, ci, true)
+                    local isUserCreated = category.isUserCreated
+                    RenderSection(
+                        category.name,
+                        catItems,
+                        isUserCreated,
+                        category.isPinned,
+                        category.isRecent,
+                        ci,
+                        true
+                    )
                 end
             end
         end
@@ -1670,12 +1709,12 @@ function ns.RenderGridView(
                     end
                 end
             end
-            for _, data in ipairs(displayItems) do
-                local ci = data.categoryIndex
+            for _, payload in ipairs(displayItems) do
+                local ci = payload.categoryIndex
                 if ci and itemsByMember[ci] then
-                    itemsByMember[ci][#itemsByMember[ci] + 1] = data
+                    itemsByMember[ci][#itemsByMember[ci] + 1] = payload
                 elseif ci and childSet and childSet[ci] then
-                    itemsByMember[anchorMi][#itemsByMember[anchorMi] + 1] = data
+                    itemsByMember[anchorMi][#itemsByMember[anchorMi] + 1] = payload
                 end
             end
 
@@ -1695,7 +1734,7 @@ function ns.RenderGridView(
                                 and memberCat
                                 and memberCat._defaultName
                             or nil
-                        ns.CompactBagsSection(
+                        mod.CompactBagsSection(
                             memberCat and memberCat.name or "?",
                             memberItems,
                             useSlotNest and "slot" or "flat",
@@ -1703,15 +1742,15 @@ function ns.RenderGridView(
                         )
                     else
                         headerIdx = headerIdx + 1
-                        local hdr = GetOrCreateCatHeader(headerIdx)
-                        hdr:SetParent(child)
-                        hdr:ClearAllPoints()
-                        hdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
-                        hdr:SetWidth(gridW)
-                        hdr._label:SetText(
+                        local heading = GetOrCreateCatHeader(headerIdx)
+                        heading:SetParent(childFrame)
+                        heading:ClearAllPoints()
+                        heading:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
+                        heading:SetWidth(gridW)
+                        heading._label:SetText(
                             (memberCat and memberCat.name or "?") .. " (" .. #memberItems .. ")"
                         )
-                        hdr:Show()
+                        heading:Show()
                         curY = curY - 22
 
                         if useSlotNest and #memberItems > 0 then
@@ -1724,14 +1763,23 @@ function ns.RenderGridView(
                                 showAssign and memberCat and memberCat._defaultName
                             )
                         else
-                            for j, data in ipairs(memberItems) do
+                            for jdx, payload in ipairs(memberItems) do
                                 slotIdx = slotIdx + 1
-                                local btn = GetOrCreateSlot(slotIdx)
-                                if btn then
-                                    btn:GetParent():SetParent(child)
-                                    local col = (j - 1) % columns
-                                    local row = math.floor((j - 1) / columns)
-                                    RenderButton(btn, data, slotIdx, col, row, startX, curY, columns)
+                                local button = GetOrCreateSlot(slotIdx)
+                                if button then
+                                    button:GetParent():SetParent(childFrame)
+                                    local column = (jdx - 1) % columns
+                                    local rowFrame = math.floor((jdx - 1) / columns)
+                                    RenderButton(
+                                        button,
+                                        payload,
+                                        slotIdx,
+                                        column,
+                                        rowFrame,
+                                        startX,
+                                        curY,
+                                        columns
+                                    )
                                 end
                             end
 
@@ -1742,22 +1790,22 @@ function ns.RenderGridView(
                                 slotIdx = slotIdx + 1
                                 local aSlot = GetOrCreateSlot(slotIdx)
                                 if aSlot then -- nil during combat (avoids minting tainted secure buttons)
-                                    aSlot:GetParent():SetParent(child)
-                                    local col = (aIdx - 1) % columns
-                                    local row = math.floor((aIdx - 1) / columns)
+                                    aSlot:GetParent():SetParent(childFrame)
+                                    local column = (aIdx - 1) % columns
+                                    local rowFrame = math.floor((aIdx - 1) / columns)
                                     RenderButton(
                                         aSlot,
                                         { bag = 0, slot = 0 },
                                         slotIdx,
-                                        col,
-                                        row,
+                                        column,
+                                        rowFrame,
                                         startX,
                                         curY,
                                         columns
                                     )
                                     local aOv = GetOrCreateAssignOverlay()
                                     aOv._assignCatKey = memberCat._defaultName
-                                    aOv:SetParent(child)
+                                    aOv:SetParent(childFrame)
                                     aOv:ClearAllPoints()
                                     aOv:SetAllPoints(aSlot)
                                     aOv:Show()
@@ -1803,13 +1851,13 @@ function ns.RenderGridView(
             local headerName = selCat and selCat.name
             if headerName then
                 local headerIdx = 1
-                local hdr = GetOrCreateCatHeader(headerIdx)
+                local heading = GetOrCreateCatHeader(headerIdx)
 
                 -- "Edit | Delete" links for user-created categories
-                if not hdr._editDeleteFrame then
-                    local ef = CreateFrame("Frame", nil, child)
+                if not heading._editDeleteFrame then
+                    local ef = CreateFrame("Frame", nil, childFrame)
                     ef:SetHeight(16)
-                    ef:SetFrameLevel((hdr:GetFrameLevel() or 1) + 1)
+                    ef:SetFrameLevel((heading:GetFrameLevel() or 1) + 1)
 
                     local delBtn = CreateFrame("Button", nil, ef)
                     delBtn:SetHeight(20)
@@ -1827,7 +1875,7 @@ function ns.RenderGridView(
                         s._fs:SetTextColor(0.5, 0.5, 0.5, 0.7)
                     end)
                     delBtn:SetScript("OnClick", function()
-                        local ci = ns.GetSelection()
+                        local ci = mod.GetSelection()
                         if ci and ci > 0 and CUI_CategoryManager then
                             CUI:ShowConfirmPopup({
                                 title = "Delete Category",
@@ -1838,7 +1886,7 @@ function ns.RenderGridView(
                                 cancelText = "Cancel",
                                 onConfirm = function()
                                     CUI_CategoryManager:RemoveCustomCategory(ci)
-                                    ns.SetSelection(0, nil)
+                                    mod.SetSelection(0, nil)
                                     CUI_Bags:RefreshInventory()
                                 end,
                             })
@@ -1869,7 +1917,7 @@ function ns.RenderGridView(
                         s._fs:SetTextColor(0.5, 0.5, 0.5, 0.7)
                     end)
                     editBtn:SetScript("OnClick", function()
-                        local ci = ns.GetSelection()
+                        local ci = mod.GetSelection()
                         if ci and ci > 0 and CUI_CategoryManager and CUI then
                             local cats2 = CUI_CategoryManager:GetCategories()
                             local cat2 = cats2[ci]
@@ -1882,9 +1930,9 @@ function ns.RenderGridView(
                                 placeholder = cat2.name,
                                 confirmText = "Rename",
                                 cancelText = "Cancel",
-                                onConfirm = function(text)
-                                    if text and text ~= "" then
-                                        CUI_CategoryManager:RenameCategory(ci, text)
+                                onConfirm = function(textValue)
+                                    if textValue and textValue ~= "" then
+                                        CUI_CategoryManager:RenameCategory(ci, textValue)
                                         CUI_Bags:RefreshInventory()
                                     end
                                 end,
@@ -1894,39 +1942,39 @@ function ns.RenderGridView(
                     ef._editBtn = editBtn
 
                     ef:SetWidth(60)
-                    hdr._editDeleteFrame = ef
+                    heading._editDeleteFrame = ef
                 end
 
                 -- Position Edit | Delete above the header, then the header below
                 if selCat and selCat.isUserCreated then
-                    local ef = hdr._editDeleteFrame
-                    ef:SetParent(child)
+                    local ef = heading._editDeleteFrame
+                    ef:SetParent(childFrame)
                     ef:ClearAllPoints()
-                    ef:SetPoint("TOPRIGHT", child, "TOPLEFT", startX + gridW, curY)
+                    ef:SetPoint("TOPRIGHT", childFrame, "TOPLEFT", startX + gridW, curY)
                     ef:SetWidth(gridW)
                     ef:Show()
                     curY = curY - 18
-                elseif hdr._editDeleteFrame then
-                    hdr._editDeleteFrame:Hide()
+                elseif heading._editDeleteFrame then
+                    heading._editDeleteFrame:Hide()
                 end
 
                 -- Compact draws the name as the group's label instead
                 if not compactOn then
-                    hdr:SetParent(child)
-                    hdr:ClearAllPoints()
-                    hdr:SetPoint("TOPLEFT", child, "TOPLEFT", startX, curY)
-                    hdr:SetWidth(gridW)
-                    hdr._label:SetText(headerName .. " (" .. #displayItems .. ")")
+                    heading:SetParent(childFrame)
+                    heading:ClearAllPoints()
+                    heading:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
+                    heading:SetWidth(gridW)
+                    heading._label:SetText(headerName .. " (" .. #displayItems .. ")")
                     -- Pinned / Recent: their hint shows while the label is hovered
                     if selCat and selCat.isPinned then
-                        ns.SetHeaderHint(hdr, CludesUI.L("Middle Click to Add or Remove"))
+                        mod.SetHeaderHint(heading, CludesUI.L("Middle Click to Add or Remove"))
                     elseif selCat and selCat.isRecent then
-                        ns.SetHeaderHint(
-                            hdr,
+                        mod.SetHeaderHint(
+                            heading,
                             CludesUI.L("Extra quickview display, your items are also in their category")
                         )
                     end
-                    hdr:Show()
+                    heading:Show()
                     curY = curY - 22
                 end -- grid header
             end
@@ -1953,7 +2001,7 @@ function ns.RenderGridView(
                 elseif selCat and selCat.isRecent then
                     hint = CludesUI.L("Extra quickview display, your items are also in their category")
                 end
-                ns.CompactBagsSection(
+                mod.CompactBagsSection(
                     headerName or "",
                     displayItems,
                     useSlotNest and "slot" or "flat",
@@ -1970,14 +2018,14 @@ function ns.RenderGridView(
                 expSubIdx =
                     RenderSlotBuckets(buckets, expSubIdx, showAssign and selCat and selCat._defaultName)
             else
-                for i, data in ipairs(displayItems) do
+                for i, payload in ipairs(displayItems) do
                     slotIdx = slotIdx + 1
-                    local btn = GetOrCreateSlot(slotIdx)
-                    if btn then
-                        btn:GetParent():SetParent(child)
-                        local col = (i - 1) % columns
-                        local row = math.floor((i - 1) / columns)
-                        RenderButton(btn, data, slotIdx, col, row, startX, curY, columns)
+                    local button = GetOrCreateSlot(slotIdx)
+                    if button then
+                        button:GetParent():SetParent(childFrame)
+                        local column = (i - 1) % columns
+                        local rowFrame = math.floor((i - 1) / columns)
+                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
                     end
                 end
 
@@ -2004,14 +2052,14 @@ function ns.RenderGridView(
 
     -- Compact: pack and draw the groups this pass collected
     if compactOn then
-        slotIdx, curY = ns.CompactBagsPlace(child, startX, curY, columns, slotIdx)
+        slotIdx, curY = mod.CompactBagsPlace(childFrame, startX, curY, columns, slotIdx)
     end
 
     -- Hide slots that were not rendered this pass
     for i = slotIdx + 1, #itemSlots do
-        local btn = itemSlots[i]
-        if btn then
-            btn:GetParent():Hide()
+        local button = itemSlots[i]
+        if button then
+            button:GetParent():Hide()
         end
     end
     return curY

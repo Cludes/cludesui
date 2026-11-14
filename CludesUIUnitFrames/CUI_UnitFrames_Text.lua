@@ -8,19 +8,19 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  tags, nicknames and zone formatters. Publishes through I; loads before
 --  Layout and Power, which re-import from it. db is set through I.dbSetters.
 -------------------------------------------------------------------------------
-local addonName, ns = ...
+local addonName, mod = ...
 
 local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)
     or GetSpecialization
 local string_format = string.format
 local issecretvalue = issecretvalue
 
-local I = ns._internals
-local frames, AbbreviateNumbers = I.frames, I.AbbreviateNumbers
-local UF_SecretSafeHealthColor = I.UF_SecretSafeHealthColor
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local Inner = mod._internals
+local frameList, AbbreviateNumbers = Inner.frames, Inner.AbbreviateNumbers
+local UF_SecretSafeHealthColor = Inner.UF_SecretSafeHealthColor
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -46,8 +46,8 @@ do
     for token, c in pairs(RAID_CLASS_COLORS) do
         colors.class[token] = CreateColor(c.r, c.g, c.b)
     end
-    for idx, c in pairs(FACTION_BAR_COLORS) do
-        colors.reaction[idx] = CreateColor(c.r, c.g, c.b)
+    for position, c in pairs(FACTION_BAR_COLORS) do
+        colors.reaction[position] = CreateColor(c.r, c.g, c.b)
     end
     for i = 0, 3 do
         colors.threat[i] = CreateColor(GetThreatStatusColor(i))
@@ -71,33 +71,33 @@ do
         [9] = CreateColor(243 / 255, 95 / 255, 245 / 255),
         [11] = _G.DEBUFF_TYPE_BLEED_COLOR,
     }
-    ns.Colors = colors
+    mod.Colors = colors
     CludesUI._UFColors = colors
 
     -- Health value pass: min/max plus current (offline paints a full bar, the
     -- behavior users already see), native interpolation via the bar's own
     -- .smoothing, then the shared secret-safe color chain.
-    local function PaintHealth(frame, unit, event)
-        local element = frame.Health
-        if not element or not unit then
+    local function PaintHealth(widget, unitToken, evt)
+        local element = widget.Health
+        if not element or not unitToken then
             return
         end
         -- A UNIT_HEALTH delivery for this token proves the unit exists (the
         -- tracker only routes real unit events under that name); the identity
         -- and forced paths still pay the probe.
-        if event ~= "UNIT_HEALTH" and not UnitExists(unit) then
+        if evt ~= "UNIT_HEALTH" and not UnitExists(unitToken) then
             return
         end
         -- Engine.ElementOn, inlined on this per-tick path.
-        local off = frame._cuiElementsOff
-        if off and off.Health then
+        local offset = widget._cuiElementsOff
+        if offset and offset.Health then
             return
         end
         -- Bar bounds ride the max-health/identity events (Blizzard's own
         -- contract); a pure UNIT_HEALTH value tick pushes only the value.
-        if event ~= "UNIT_HEALTH" or not element._maxSet then
+        if evt ~= "UNIT_HEALTH" or not element._maxSet then
             element._maxSet = true
-            element:SetMinMaxValues(0, UnitHealthMax(unit))
+            element:SetMinMaxValues(0, UnitHealthMax(unitToken))
         end
         -- A corpse fires no further UNIT_HEALTH, so the death tick's paint is the
         -- last one the bar gets: zero it from the dead flag (a plain boolean in
@@ -106,12 +106,12 @@ do
         -- leaves a sliver standing on a bar that gets no further ticks.
         -- UnitIsDead, not UnitIsDeadOrGhost: a ghost is at full health, and
         -- Blizzard's own bar reads it the same way (CompactUnitFrame_UpdateHealthColor).
-        if not UnitIsConnected(unit) then
-            element:SetValue(UnitHealthMax(unit), element.smoothing)
-        elseif UnitIsDead(unit) then
+        if not UnitIsConnected(unitToken) then
+            element:SetValue(UnitHealthMax(unitToken), element.smoothing)
+        elseif UnitIsDead(unitToken) then
             element:SetValue(0)
         else
-            element:SetValue(UnitHealth(unit), element.smoothing)
+            element:SetValue(UnitHealth(unitToken), element.smoothing)
         end
         -- Color inputs (class/reaction/dark/disconnect/tap) change via their
         -- own events or identity repaints -- a pure health tick re-runs the
@@ -121,42 +121,42 @@ do
         -- (ns.UF_DynamicHealthColor) behind the unit's healthColorMode, so that
         -- setting is the gate that keeps a dynamic bar tracking every tick.
         local unitKey = element._cuiUnitKey
-        local unitColorMode = unitKey and db.profile[unitKey]
+        local unitColorMode = unitKey and saved.profile[unitKey]
         unitColorMode = unitColorMode and unitColorMode.healthColorMode
         if
-            event ~= "UNIT_HEALTH"
+            evt ~= "UNIT_HEALTH"
             or element.colorSmooth
             or element.colorThreat
             or (unitColorMode and unitColorMode ~= "none")
         then
-            UF_SecretSafeHealthColor(frame, event, unit)
+            UF_SecretSafeHealthColor(widget, evt, unitToken)
         end
     end
-    ns.Engine.SetPainter("health", PaintHealth)
+    mod.Engine.SetPainter("health", PaintHealth)
 
     -- Power value pass: display-power resolution first (the player bar's
     -- spec-override hook publishes the resolved type for the text formatters),
     -- then min/max/value with offline painting full, then the base power-type
     -- color with the bar's own PostUpdateColor/PostUpdate layered on top in
     -- the same order as before.
-    local function PaintPower(frame, unit, event)
-        local element = frame.Power
-        if not element or not unit or not UnitExists(unit) then
+    local function PaintPower(widget, unitToken, evt)
+        local element = widget.Power
+        if not element or not unitToken or not UnitExists(unitToken) then
             return
         end
-        if not ns.Engine.ElementOn(frame, "Power") then
+        if not mod.Engine.ElementOn(widget, "Power") then
             return
         end
         local ptype
         if element.displayAltPower and element.GetDisplayPower then
-            ptype = element:GetDisplayPower(unit)
+            ptype = element:GetDisplayPower(unitToken)
         end
         element.displayType = ptype
         local pnum, ptoken
         if ptype then
             pnum = ptype
         else
-            pnum, ptoken = UnitPowerType(unit)
+            pnum, ptoken = UnitPowerType(unitToken)
         end
         -- The resolved type for the value pass below, and its token in the
         -- power events' payload form for the engine's event filter. A secret
@@ -170,30 +170,30 @@ do
         if element._manaRegenSpark then
             CludesUI.ManaRegenSpark.SetMana("uf", not issecretvalue(pnum) and pnum == Enum.PowerType.Mana)
         end
-        local max = UnitPowerMax(unit, pnum)
-        element:SetMinMaxValues(0, max)
-        local cur
-        if UnitIsConnected(unit) then
-            cur = UnitPower(unit, pnum)
-            element:SetValue(cur, element.smoothing)
+        local upper = UnitPowerMax(unitToken, pnum)
+        element:SetMinMaxValues(0, upper)
+        local current
+        if UnitIsConnected(unitToken) then
+            current = UnitPower(unitToken, pnum)
+            element:SetValue(current, element.smoothing)
         else
-            cur = max
-            element:SetValue(max, element.smoothing)
+            current = upper
+            element:SetValue(upper, element.smoothing)
         end
         if element.colorPower then
-            local color = ns.Colors.power[pnum] or (ptoken and ns.Colors.power[ptoken])
+            local color = mod.Colors.power[pnum] or (ptoken and mod.Colors.power[ptoken])
             if color then
                 element:SetStatusBarColor(color:GetRGB())
             end
         end
         if element.PostUpdateColor then
-            element:PostUpdateColor(unit)
+            element:PostUpdateColor(unitToken)
         end
         if element.PostUpdate then
-            element:PostUpdate(unit, cur, 0, max)
+            element:PostUpdate(unitToken, current, 0, upper)
         end
     end
-    ns.Engine.SetPainter("power", PaintPower)
+    mod.Engine.SetPainter("power", PaintPower)
 
     -- Power value pass (the player's powerval channel, UNIT_POWER_FREQUENT):
     -- the bar value and the text zones that read power, nothing else. Bounds,
@@ -204,37 +204,37 @@ do
     -- stashed type. The cost prediction segment is anchored to the fill edge
     -- and moves with SetValue. With no readable stashed type the full pass
     -- runs instead.
-    ns.Engine.SetValuePainter(function(frame, unit)
-        local element = frame.Power
-        if not element or not unit or not UnitExists(unit) then
+    mod.Engine.SetValuePainter(function(widget, unitToken)
+        local element = widget.Power
+        if not element or not unitToken or not UnitExists(unitToken) then
             return
         end
-        if not ns.Engine.ElementOn(frame, "Power") then
+        if not mod.Engine.ElementOn(widget, "Power") then
             return
         end
         local pnum = element._cuiPNum
         if pnum == nil then
-            PaintPower(frame, unit, "UNIT_POWER_FREQUENT")
-        elseif UnitIsConnected(unit) then
-            element:SetValue(UnitPower(unit, pnum), element.smoothing)
+            PaintPower(widget, unitToken, "UNIT_POWER_FREQUENT")
+        elseif UnitIsConnected(unitToken) then
+            element:SetValue(UnitPower(unitToken, pnum), element.smoothing)
         end
-        ns.UF_PaintPowerText(frame, unit)
+        mod.UF_PaintPowerText(widget, unitToken)
     end)
 
     -- Absorbs: the HealthPrediction Override was always our own complete
     -- painter (bars, clips, text gates); the engine simply becomes its event
     -- source. Identity repaints arrive as pseudo-events, which the Override
     -- already treats as gate-refresh triggers.
-    local function PaintAbsorb(frame, unit, event)
-        if not ns.Engine.ElementOn(frame, "HealthPrediction") then
+    local function PaintAbsorb(widget, unitToken, evt)
+        if not mod.Engine.ElementOn(widget, "HealthPrediction") then
             return
         end
-        local hp = frame.HealthPrediction
+        local hp = widget.HealthPrediction
         if hp and hp.Override then
-            hp.Override(frame, event or "ForceUpdate", unit)
+            hp.Override(widget, evt or "ForceUpdate", unitToken)
         end
     end
-    ns.Engine.SetPainter("absorb", PaintAbsorb)
+    mod.Engine.SetPainter("absorb", PaintAbsorb)
 end
 
 -- The global master reads and sets every frame's effective Dark Mode choice.
@@ -243,29 +243,29 @@ do
     CludesUI.RegisterDarkModeToggle({
         id = "unitFrames",
         isOn = function()
-            if not (db and db.profile) then
+            if not (saved and saved.profile) then
                 return false
             end
             for _, key in ipairs(UNITS) do
-                if not ns.UF_DarkThemeOn(db.profile[key]) then
+                if not mod.UF_DarkThemeOn(saved.profile[key]) then
                     return false
                 end
             end
             return true
         end,
         setOn = function(on)
-            if not (db and db.profile) then
+            if not (saved and saved.profile) then
                 return
             end
-            db.profile.darkTheme = on
+            saved.profile.darkTheme = on
             for _, key in ipairs(UNITS) do
-                local s = db.profile[key]
+                local s = saved.profile[key]
                 if s then
                     s.darkTheme = on
                 end
             end
-            if ns.ReloadFrames then
-                ns.ReloadFrames()
+            if mod.ReloadFrames then
+                mod.ReloadFrames()
             end
         end,
     })
@@ -300,22 +300,22 @@ local function CUI_IsSmartPowerPercent(displayedPowerType)
     end
     -- Paladin: Holy and Protection (mana-based specs).
     if cls == "PALADIN" then
-        local spec = GetSpecialization()
-        return spec == 1 or spec == 2 -- Holy, Protection
+        local specInfo = GetSpecialization()
+        return specInfo == 1 or specInfo == 2 -- Holy, Protection
     end
     -- Mage: only Arcane
     if cls == "MAGE" then
-        local spec = GetSpecialization()
-        return spec == 1 -- Arcane
+        local specInfo = GetSpecialization()
+        return specInfo == 1 -- Arcane
     end
     -- Evoker: only Preservation
     if cls == "EVOKER" then
-        local spec = GetSpecialization()
-        return spec == 2 -- Preservation
+        local specInfo = GetSpecialization()
+        return specInfo == 2 -- Preservation
     end
     return false
 end
-ns.CUI_IsSmartPowerPercent = CUI_IsSmartPowerPercent
+mod.CUI_IsSmartPowerPercent = CUI_IsSmartPowerPercent
 CludesUI.IsSmartPowerPercent = CUI_IsSmartPowerPercent
 
 -- Show Decimal on Text (global): AbbreviateNumbers config emitting one decimal per
@@ -389,27 +389,27 @@ end
 if CludesUI.IS_FOREVER then
     local bands = DecimalAbbrevConfig
     DecimalAbbrevConfig = function(d, shortHealth)
-        local cfg = bands(d, shortHealth)
+        local conf = bands(d, shortHealth)
         if not shortHealth then
-            cfg.breakpointData = CludesUI.ForeverAbbrevTiers(cfg.breakpointData)
+            conf.breakpointData = CludesUI.ForeverAbbrevTiers(conf.breakpointData)
         end
-        return cfg
+        return conf
     end
 end
 
 -- Health, max health and absorb values without a decimal config: the global
 -- Number Format for valueType (CludesUI_NumberFormat.lua).
-ns.AbbreviateValue = CludesUI.AbbreviateValue
+mod.AbbreviateValue = CludesUI.AbbreviateValue
 CludesUI.RegisterNumberFormatCallback(function()
-    ns.RefreshAllUnitNames()
+    mod.RefreshAllUnitNames()
 end)
 
 -- Health Short always abbreviates from 1,000 with one decimal.
-function ns.AbbreviateShortHealth(hp)
-    if not ns._shortHealthAbbrevConfig then
-        ns._shortHealthAbbrevConfig = DecimalAbbrevConfig(10, true)
+function mod.AbbreviateShortHealth(hp)
+    if not mod._shortHealthAbbrevConfig then
+        mod._shortHealthAbbrevConfig = DecimalAbbrevConfig(10, true)
     end
-    return AbbreviateNumbers(hp, ns._shortHealthAbbrevConfig)
+    return AbbreviateNumbers(hp, mod._shortHealthAbbrevConfig)
 end
 -- "Hide Trailing Zeros": AbbreviateNumbers drops a zero fraction ("100") but keeps a
 -- real one ("99.5"), which "%.1f" cannot do and a SECRET percent forbids doing with
@@ -436,38 +436,38 @@ local function MakePctTrim(scale, fractionDivisor)
         },
     }
 end
-ns._pctTrim = MakePctTrim(1000, 10)
-ns._pctTrim2 = MakePctTrim(10000, 100)
-function ns.ApplyTextDecimalGlobals()
-    if db and db.profile and db.profile.showDecimalOnText then
+mod._pctTrim = MakePctTrim(1000, 10)
+mod._pctTrim2 = MakePctTrim(10000, 100)
+function mod.ApplyTextDecimalGlobals()
+    if saved and saved.profile and saved.profile.showDecimalOnText then
         -- Built on first use, not at file load: a standalone build reads the Language
         -- override at its own ADDON_LOADED, after this file. The locale is fixed per session.
-        if not ns._decimalAbbrevConfig then
-            ns._decimalAbbrevConfig = DecimalAbbrevConfig(10)
+        if not mod._decimalAbbrevConfig then
+            mod._decimalAbbrevConfig = DecimalAbbrevConfig(10)
             -- Two-decimal variant for boss frames ("Show 2 for Boss"): 240.55k / 2.45m.
-            ns._decimalAbbrevConfig2 = DecimalAbbrevConfig(100)
+            mod._decimalAbbrevConfig2 = DecimalAbbrevConfig(100)
         end
         _G._CUI_TextDecimals = true
         -- "Only Show for % Health": decimal on PERCENT, health/absorb VALUES whole --
         -- withhold the abbreviate configs (values follow the Number Format, ns.AbbreviateValue)
         -- while _CUI_TextDecimals stays true for percents.
-        local percentOnly = db.profile.showDecimalPercentOnly
-        _G._CUI_AbbrevDecimalCfg = ns._decimalAbbrevConfig
+        local percentOnly = saved.profile.showDecimalPercentOnly
+        _G._CUI_AbbrevDecimalCfg = mod._decimalAbbrevConfig
         if percentOnly then
             _G._CUI_AbbrevDecimalCfg = nil
         end
         -- Percent-only, so "Only Show for % Health" never withholds these.
-        local trimZeros = db.profile.showDecimalTrimZeros
-        _G._CUI_PctTrim = trimZeros and ns._pctTrim or nil
+        local trimZeros = saved.profile.showDecimalTrimZeros
+        _G._CUI_PctTrim = trimZeros and mod._pctTrim or nil
         -- Boss frames get a second decimal place. Tags use the 1-decimal path
         -- for non-boss units when the flag is set, and ignore it when nil.
-        if db.profile.showDecimalBoss2 ~= false then
+        if saved.profile.showDecimalBoss2 ~= false then
             _G._CUI_BossExtraDecimal = true
-            _G._CUI_AbbrevDecimalCfg2 = ns._decimalAbbrevConfig2
+            _G._CUI_AbbrevDecimalCfg2 = mod._decimalAbbrevConfig2
             if percentOnly then
                 _G._CUI_AbbrevDecimalCfg2 = nil
             end
-            _G._CUI_PctTrim2 = trimZeros and ns._pctTrim2 or nil
+            _G._CUI_PctTrim2 = trimZeros and mod._pctTrim2 or nil
         else
             _G._CUI_BossExtraDecimal = false
             _G._CUI_AbbrevDecimalCfg2 = nil
@@ -489,10 +489,10 @@ local TagFns = {}
 -- unit token -> is a boss token, filled on first sight (the frames use a handful
 -- of fixed tokens), so the text pieces never slice the token per paint.
 local IS_BOSS_UNIT = setmetatable({}, {
-    __index = function(t, unit)
-        local v = string.sub(unit, 1, 4) == "boss"
-        t[unit] = v
-        return v
+    __index = function(t, unitToken)
+        local val = string.sub(unitToken, 1, 4) == "boss"
+        t[unitToken] = val
+        return val
     end,
 })
 
@@ -505,32 +505,32 @@ do
     -- valueType: the Number Format type without a decimal config; boss frames
     -- read "bossHealth" instead.
     local function MakeAbbrevHP(getHP, status, shortHealth, valueType)
-        return function(unit)
-            if not unit or not UnitExists(unit) then
+        return function(unitToken)
+            if not unitToken or not UnitExists(unitToken) then
                 return ""
             end
             if status then
-                if not UnitIsConnected(unit) then
+                if not UnitIsConnected(unitToken) then
                     return CludesUI.L("OFFLINE")
                 end
-                if UnitIsDeadOrGhost(unit) then
+                if UnitIsDeadOrGhost(unitToken) then
                     return CludesUI.L("DEAD")
                 end
             end
-            local hp = getHP(unit) or 0
+            local hp = getHP(unitToken) or 0
             if shortHealth then
-                return ns.AbbreviateShortHealth(hp)
+                return mod.AbbreviateShortHealth(hp)
             end
-            local cfg = _G._CUI_AbbrevDecimalCfg
-            local boss = IS_BOSS_UNIT[unit]
+            local conf = _G._CUI_AbbrevDecimalCfg
+            local boss = IS_BOSS_UNIT[unitToken]
             -- Boss frames use the 2-decimal config when "Show 2 for Boss" is on.
             if _G._CUI_BossExtraDecimal and boss then
-                cfg = _G._CUI_AbbrevDecimalCfg2
+                conf = _G._CUI_AbbrevDecimalCfg2
             end
-            if cfg then
-                return AbbreviateNumbers(hp, cfg)
+            if conf then
+                return AbbreviateNumbers(hp, conf)
             end
-            return ns.AbbreviateValue(hp, boss and "bossHealth" or valueType)
+            return mod.AbbreviateValue(hp, boss and "bossHealth" or valueType)
         end
     end
 
@@ -542,27 +542,27 @@ end
 do
     -- Health percent under the decimal options. "Hide Trailing Zeros" reads the percent
     -- through a scaling curve so AbbreviateNumbers can drop the zero "%.1f" would pad.
-    local function PercentHP(unit)
+    local function PercentHP(unitToken)
         -- Predicted percent (incoming heals) can outlive the unit: a corpse fires no
         -- further UNIT_HEALTH and the text channel never hears UNIT_HEAL_PREDICTION.
         -- Corpses only, like Blizzard's health paths: a ghost is at full health, and
         -- the neighbouring DEAD zone is the piece that speaks for dead-or-ghost.
-        if UnitIsDead(unit) then
+        if UnitIsDead(unitToken) then
             return "0"
         end
-        local boss = _G._CUI_BossExtraDecimal and IS_BOSS_UNIT[unit]
+        local boss = _G._CUI_BossExtraDecimal and IS_BOSS_UNIT[unitToken]
         local trim = _G._CUI_PctTrim
         if boss then
             trim = _G._CUI_PctTrim2
         end
         if trim then
-            local scaled = UnitHealthPercent(unit, true, trim.curve)
+            local scaled = UnitHealthPercent(unitToken, true, trim.curve)
             if not scaled then
                 return "0"
             end
             return AbbreviateNumbers(scaled, trim.cfg)
         end
-        local pct = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+        local pct = UnitHealthPercent(unitToken, true, CurveConstants.ScaleTo100)
         if not pct then
             return "0"
         end
@@ -573,17 +573,17 @@ do
     end
 
     TagFns.perhp = PercentHP
-    TagFns.perhpnosign = function(unit)
-        if not unit or not UnitExists(unit) then
+    TagFns.perhpnosign = function(unitToken)
+        if not unitToken or not UnitExists(unitToken) then
             return ""
         end
-        if not UnitIsConnected(unit) then
+        if not UnitIsConnected(unitToken) then
             return CludesUI.L("OFFLINE")
         end
-        if UnitIsDeadOrGhost(unit) then
+        if UnitIsDeadOrGhost(unitToken) then
             return CludesUI.L("DEAD")
         end
-        return PercentHP(unit)
+        return PercentHP(unitToken)
     end
 end
 
@@ -606,7 +606,7 @@ local PLAYER_POWER_ALT = {
 -- UnitPowerType decides). Shared by the bar's GetDisplayPower, the color
 -- resolver and the options preview so all three agree.
 function CludesUI.GetPlayerPowerOverride()
-    if not (db and db.profile) then
+    if not (saved and saved.profile) then
         return nil
     end
     local _, classFile = UnitClass("player")
@@ -616,16 +616,16 @@ function CludesUI.GetPlayerPowerOverride()
         if classFile ~= "DRUID" then
             return nil
         end
-        local ov = db.profile.player and db.profile.player.powerTypeOverride
-        return (ov and ov.foreverDruid) and 0 or nil
+        local shade = saved.profile.player and saved.profile.player.powerTypeOverride
+        return (shade and shade.foreverDruid) and 0 or nil
     end
     local classDef = PLAYER_POWER_DEFAULT[classFile]
     local classAlt = PLAYER_POWER_ALT[classFile]
     if not (classDef or classAlt) then
         return nil
     end
-    local spec = GetSpecialization and GetSpecialization()
-    if not spec then
+    local specInfo = GetSpecialization and GetSpecialization()
+    if not specInfo then
         return nil
     end
     -- powerTypeOverride is keyed by SPEC ID, never the GetSpecialization() index:
@@ -633,11 +633,11 @@ function CludesUI.GetPlayerPowerOverride()
     -- Guardian, Shadow AND Augmentation). classAlt/classDef stay index-keyed --
     -- they are nested per class already, so they cannot collide. Resource Bars may
     -- be disabled, hence the direct fallback.
-    local sid = (_G._CURB_ResolveSpecIDCached and _G._CURB_ResolveSpecIDCached())
-        or (C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(spec))
+    local spellRef = (_G._CURB_ResolveSpecIDCached and _G._CURB_ResolveSpecIDCached())
+        or (C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo))
         or nil
-    local ov = db.profile.player and db.profile.player.powerTypeOverride
-    local choice = sid and ov and ov[sid]
+    local shade = saved.profile.player and saved.profile.player.powerTypeOverride
+    local choice = spellRef and shade and shade[spellRef]
     if choice == "astral" then
         -- Balance "Astral Power", saved only under its spec
         -- ID: Cat and Bear Form (form IDs 1 and 5) keep their own power, every
@@ -648,9 +648,9 @@ function CludesUI.GetPlayerPowerOverride()
         end
         return nil
     elseif choice and classAlt then
-        return classAlt[spec]
-    elseif classDef and classDef[spec] ~= nil then
-        return classDef[spec]
+        return classAlt[specInfo]
+    elseif classDef and classDef[specInfo] ~= nil then
+        return classDef[specInfo]
     end
     return nil
 end
@@ -685,12 +685,12 @@ end
 -- Returns r,g,b (0-1) or nil (caller's own default); secret-safe for uninspectable units.
 -- On ns for the local cap; shared by ApplyClassColor and cui-tgtname so "Name > Target"
 -- colors like the unit frame name.
-ns.ResolveUnitNameColor = function(unit)
-    if not unit then
+mod.ResolveUnitNameColor = function(unitToken)
+    if not unitToken then
         return nil
     end
-    if UnitIsPlayer(unit) or (UnitInPartyIsAI and UnitInPartyIsAI(unit)) then
-        local _, class = UnitClass(unit)
+    if UnitIsPlayer(unitToken) or (UnitInPartyIsAI and UnitInPartyIsAI(unitToken)) then
+        local _, class = UnitClass(unitToken)
         if not issecretvalue(class) and class then
             -- The suite's Class Colors (custom colors, Class Color Darken), as the health bar.
             local c = CludesUI.GetClassColor(class)
@@ -700,13 +700,13 @@ ns.ResolveUnitNameColor = function(unit)
         end
         return nil
     end
-    if UnitExists(unit) then
-        if UnitIsTapDenied and UnitIsTapDenied(unit) then
+    if UnitExists(unitToken) then
+        if UnitIsTapDenied and UnitIsTapDenied(unitToken) then
             return 0.6, 0.6, 0.6
         end
-        local reaction = UnitReaction(unit, "player")
+        local reaction = UnitReaction(unitToken, "player")
         if reaction and not issecretvalue(reaction) then
-            local c = (ns.Colors and ns.Colors.reaction and ns.Colors.reaction[reaction])
+            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
                 or FACTION_BAR_COLORS[reaction]
             if c then
                 return c.r, c.g, c.b
@@ -723,9 +723,9 @@ end
 -- channels itself (that tag takes a secret hex from GenerateHexColor on its own and
 -- hands it to SetFormattedText untouched).
 -- Returns ok, r, g, b -- ok is a PLAIN boolean, r/g/b may be SECRET, only safe as setter args.
-local function ResolveRestrictedClassColor(unit, class)
-    local ok, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unit, class)
-    if ok then
+local function ResolveRestrictedClassColor(unitToken, class)
+    local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
+    if success then
         return true, r, g, b
     end
     if C_ClassColor and C_ClassColor.GetClassColor then
@@ -745,7 +745,7 @@ end
 -- Returns ok, r, g, b -- ok is a PLAIN boolean, r/g/b may be SECRET numbers on an
 -- identity-restricted unit (ToT/focus-target): callers must branch on ok, never on
 -- the truthiness of r, and may only ever hand r/g/b to a setter like SetColorTexture.
-ns.ResolveBgClassColor = function(classUnit)
+mod.ResolveBgClassColor = function(classUnit)
     if not classUnit then
         return false
     end
@@ -760,7 +760,7 @@ ns.ResolveBgClassColor = function(classUnit)
         end
         return false
     end
-    local r, g, b = ns.ResolveUnitNameColor(classUnit)
+    local r, g, b = mod.ResolveUnitNameColor(classUnit)
     return r ~= nil, r, g, b
 end
 
@@ -768,8 +768,8 @@ end
 -- registered brand) so one provider checkbox controls every CUI module; standalone =
 -- our renamed folder name, which always contains "Standalone" (rename-immune token).
 -- On ns for the Lua 5.1 200-local ceiling.
-ns.EXT_NICK = CludesUI.EXT_NICK
-ns.NICK_ADDON = addonName:find("Standalone") and addonName or ns.EXT_NICK.addon
+mod.EXT_NICK = CludesUI.EXT_NICK
+mod.NICK_ADDON = addonName:find("Standalone") and addonName or mod.EXT_NICK.addon
 
 -- Resolve a unit's display name through MethodInternal's authoritative surface
 -- choice for known Method players, then the normal provider order: NSAPI ->
@@ -783,13 +783,13 @@ ns.NICK_ADDON = addonName:find("Standalone") and addonName or ns.EXT_NICK.addon
 -- consult regardless (result still re-validated as a clean string). The final return
 -- may be the raw (possibly secret) name -- display-safe since oUF feeds tag returns to
 -- SetFormattedText as a %s arg without inspecting them.
-function ns.ResolveUnitNickname(unit)
-    local name, surname = UnitName(unit)
+function mod.ResolveUnitNickname(unitToken)
+    local name, surname = UnitName(unitToken)
     if not name then
         return ""
     end
     -- Nicknames are player-only; NPCs (bosses, etc.) keep their name.
-    if not UnitIsPlayer(unit) then
+    if not UnitIsPlayer(unitToken) then
         return name
     end
     local nameSecret = issecretvalue and issecretvalue(name)
@@ -799,8 +799,9 @@ function ns.ResolveUnitNickname(unit)
     -- ahead of the CUI master toggle so the MethodInternal-owned setting works on
     -- its selected surface; unknown players continue through CUI's normal chain.
     if EasyNicknameAPI and EasyNicknameAPI.GetNicknameForUnitForSurface then
-        local ok, dn, handled = pcall(EasyNicknameAPI.GetNicknameForUnitForSurface, unit, "unitFrames")
-        if ok and handled == true then
+        local success, dn, handled =
+            pcall(EasyNicknameAPI.GetNicknameForUnitForSurface, unitToken, "unitFrames")
+        if success and handled == true then
             if type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
                 return dn
             end
@@ -810,7 +811,7 @@ function ns.ResolveUnitNickname(unit)
     -- Master toggle (Unit Frames > main frames > Display, default OFF): when off,
     -- skip the remaining provider lookups and show the raw unit name (display-safe;
     -- with the surname on WoW Forever).
-    if not (db and db.profile and db.profile.showNicknames) then
+    if not (saved and saved.profile and saved.profile.showNicknames) then
         return CludesUI.WithSurname(name, surname)
     end
     -- CludesUI's own nicknames (Raid Lead > Nicknames), set and synced with the guild.
@@ -821,9 +822,9 @@ function ns.ResolveUnitNickname(unit)
         end
     end
     if not nameSecret and NSAPI and NSAPI.GetName then
-        local ok, dn = pcall(NSAPI.GetName, NSAPI, name, ns.EXT_NICK.nsKey)
+        local success, dn = pcall(NSAPI.GetName, NSAPI, name, mod.EXT_NICK.nsKey)
         if
-            ok
+            success
             and type(dn) == "string"
             and not (issecretvalue and issecretvalue(dn))
             and dn ~= ""
@@ -835,13 +836,13 @@ function ns.ResolveUnitNickname(unit)
     if not display then
         local TR = TimelineReminders
         if TR and TR.GetNickname and TR.HasNickname and TR.NicknamesEnabledForAddOn then
-            local okGate, enabled = pcall(TR.NicknamesEnabledForAddOn, TR, ns.NICK_ADDON)
+            local okGate, enabled = pcall(TR.NicknamesEnabledForAddOn, TR, mod.NICK_ADDON)
             if okGate and enabled then
-                local okHas, has = pcall(TR.HasNickname, TR, unit)
+                local okHas, has = pcall(TR.HasNickname, TR, unitToken)
                 if okHas and has then
-                    local ok, dn = pcall(TR.GetNickname, TR, unit)
+                    local success, dn = pcall(TR.GetNickname, TR, unitToken)
                     if
-                        ok
+                        success
                         and type(dn) == "string"
                         and not (issecretvalue and issecretvalue(dn))
                         and dn ~= ""
@@ -852,19 +853,19 @@ function ns.ResolveUnitNickname(unit)
             end
         end
     end
-    local liquidFn = not display and not nameSecret and LiquidAPI and LiquidAPI[ns.EXT_NICK.liquidFn]
+    local liquidFn = not display and not nameSecret and LiquidAPI and LiquidAPI[mod.EXT_NICK.liquidFn]
     if liquidFn then
-        local ok, dn = pcall(liquidFn, name)
-        if ok and type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
+        local success, dn = pcall(liquidFn, name)
+        if success and type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
             display = dn
         end
     end
     -- CustomNames (LibStub library): UnitName returns the custom name, or the raw
     -- name when none is set, so dn ~= name keeps the WithSurname path.
-    if not display and not nameSecret and ns._customNames then
-        local ok, dn = pcall(ns._customNames.UnitName, unit)
+    if not display and not nameSecret and mod._customNames then
+        local success, dn = pcall(mod._customNames.UnitName, unitToken)
         if
-            ok
+            success
             and type(dn) == "string"
             and not (issecretvalue and issecretvalue(dn))
             and dn ~= ""
@@ -881,26 +882,26 @@ end
 
 -- Nickname-aware replacement for the stock [name] tag (see ContentToTag). Returns
 -- the nickname when one applies, else the raw unit name.
-TagFns.name = function(unit)
+TagFns.name = function(unitToken)
     -- Truncation is width-based (per-slot Width % clamp), never character-based:
     -- FontString width boxes ellipsize in the renderer, which also works on SECRET
     -- enemy names Lua cannot measure or substring.
-    return ns.ResolveUnitNickname(unit)
+    return mod.ResolveUnitNickname(unitToken)
 end
 
 -- Live name refresh: repaint every frame's text zones so added/removed
 -- nicknames (or a flipped provider checkbox) apply without a /reload. Fired by
 -- the provider callbacks below; cheap (a handful of frames).
-function ns.RefreshAllUnitNames()
-    for _, f in pairs(frames) do
+function mod.RefreshAllUnitNames()
+    for _, f in pairs(frameList) do
         if type(f) == "table" and f._cuiTextZones then
-            ns.UF_PaintText(f, f._cuiUnit)
+            mod.UF_PaintText(f, f._cuiUnit)
         end
     end
 end
 -- Name text only re-renders on name events or via the refresh above, so a raw
 -- db restore (Spec Overrides apply, profile swap) needs this exported.
-_G._CUUF_RefreshUnitNames = ns.RefreshAllUnitNames
+_G._CUUF_RefreshUnitNames = mod.RefreshAllUnitNames
 
 -- Cold-login text repaint: on a first (uncached) login a fontstring can hold the
 -- correct string yet render blank until /reload, since it only repaints on a text
@@ -909,19 +910,19 @@ _G._CUUF_RefreshUnitNames = ns.RefreshAllUnitNames
 -- varies; the zone repaint restores the real strings synchronously, no flicker.
 do
     local function ForceTextRepaint()
-        for _, f in pairs(frames) do
+        for _, f in pairs(frameList) do
             -- The painter refuses an empty token, so a frame between units must
             -- not be blanked here either -- it would never get the value back.
             if type(f) == "table" and f._cuiTextZones and f._cuiUnit and UnitExists(f._cuiUnit) then
                 local zones = f._cuiTextZones
                 for i = 1, #zones do
-                    local fs = zones[i].fs
-                    if fs and fs.SetText then
-                        fs:SetText("")
+                    local fontStr = zones[i].fs
+                    if fontStr and fontStr.SetText then
+                        fontStr:SetText("")
                     end
                 end
                 if #zones > 0 then
-                    ns.UF_PaintText(f, f._cuiUnit)
+                    mod.UF_PaintText(f, f._cuiUnit)
                 end
             end
         end
@@ -944,33 +945,33 @@ end
 -- provider CHECKBOX key stays shared (ns.NICK_ADDON/"CUI") so one toggle drives raid AND unit frames.
 do
     local function RefreshNames()
-        if ns.RefreshAllUnitNames then
-            ns.RefreshAllUnitNames()
+        if mod.RefreshAllUnitNames then
+            mod.RefreshAllUnitNames()
         end
     end
     local function RegisterMethodInternal()
-        if ns._methodInternalSurfaceNickHooked then
+        if mod._methodInternalSurfaceNickHooked then
             return
         end
         if EasyNicknameAPI and EasyNicknameAPI.RegisterCallback then
             EasyNicknameAPI.RegisterCallback("SurfaceNicknamesChanged", RefreshNames, "CludesUIUnitFrames")
-            ns._methodInternalSurfaceNickHooked = true
+            mod._methodInternalSurfaceNickHooked = true
         end
     end
     local function RegisterNSRT()
-        if ns._nsrtNickHooked then
+        if mod._nsrtNickHooked then
             return true
         end
         if NSAPI and NSAPI.RegisterCallback then
             NSAPI.RegisterCallback("CludesUIUnitFrames", "NSRT_NICKNAME_UPDATED", RefreshNames)
-            NSAPI.RegisterCallback("CludesUIUnitFrames", ns.EXT_NICK.nsToggle, RefreshNames)
-            ns._nsrtNickHooked = true
+            NSAPI.RegisterCallback("CludesUIUnitFrames", mod.EXT_NICK.nsToggle, RefreshNames)
+            mod._nsrtNickHooked = true
             return true
         end
         return false
     end
     local function RegisterTR()
-        if ns._trNickHooked then
+        if mod._trNickHooked then
             return true
         end
         local TR = TimelineReminders
@@ -979,7 +980,7 @@ do
                 "CludesUIUnitFrames",
                 "TimelineReminders_NicknameToggle",
                 function(_, _, addOnName)
-                    if addOnName == ns.NICK_ADDON then
+                    if addOnName == mod.NICK_ADDON then
                         RefreshNames()
                     end
                 end
@@ -987,7 +988,7 @@ do
             TR.RegisterCallback("CludesUIUnitFrames", "TimelineReminders_NicknameUpdate", function()
                 RefreshNames()
             end)
-            ns._trNickHooked = true
+            mod._trNickHooked = true
             return true
         end
         return false
@@ -996,10 +997,10 @@ do
         local nf = CreateFrame("Frame")
         nf:RegisterEvent("PLAYER_LOGIN")
         nf:RegisterEvent("PLAYER_ENTERING_WORLD")
-        nf:SetScript("OnEvent", function(self, event)
+        nf:SetScript("OnEvent", function(self, evt)
             local a = RegisterNSRT()
             local b = RegisterTR()
-            if (a and b) or event == "PLAYER_ENTERING_WORLD" then
+            if (a and b) or evt == "PLAYER_ENTERING_WORLD" then
                 self:UnregisterAllEvents()
             end
         end)
@@ -1011,10 +1012,10 @@ do
     if C_AddOns.IsAddOnLoaded("CustomNames") or C_AddOns.IsAddOnLoadable("CustomNames") then
         EventUtil.ContinueOnAddOnLoaded("CustomNames", function()
             local CN = LibStub("CustomNames", true)
-            if not (CN and CN.UnitName and CN.RegisterCallback) or ns._customNames then
+            if not (CN and CN.UnitName and CN.RegisterCallback) or mod._customNames then
                 return
             end
-            ns._customNames = CN
+            mod._customNames = CN
             local pending
             local function Flush()
                 pending = nil
@@ -1064,12 +1065,12 @@ end
 -- The target's class/reaction colour escape (e.g. "|cffc41f3b"), or "". Uses
 -- ns.ResolveUnitNameColor, the SAME resolver ApplyClassColor uses for the Target
 -- of Target name. No unit NAME is touched, so it is fully secret-safe.
-TagFns.tgtcol = function(unit)
-    local tunit = unit and (unit .. "target")
+TagFns.tgtcol = function(unitToken)
+    local tunit = unitToken and (unitToken .. "target")
     if not tunit or not UnitExists(tunit) then
         return ""
     end
-    local r, g, b = ns.ResolveUnitNameColor(tunit)
+    local r, g, b = mod.ResolveUnitNameColor(tunit)
     if not r then
         -- Secret class token (identity-restricted target, e.g. a boss's own
         -- target): GenerateHexColor's result may itself be secret, but still
@@ -1079,8 +1080,8 @@ TagFns.tgtcol = function(unit)
             if issecretvalue(class) then
                 local cc = C_ClassColor.GetClassColor(class)
                 if cc and cc.GenerateHexColor then
-                    local ok, hex = pcall(cc.GenerateHexColor, cc)
-                    if ok and type(hex) == "string" then
+                    local success, hex = pcall(cc.GenerateHexColor, cc)
+                    if success and type(hex) == "string" then
                         return "|c" .. hex
                     end
                 end
@@ -1089,7 +1090,7 @@ TagFns.tgtcol = function(unit)
         -- Still nothing usable: the plain reaction colour instead of "".
         local reaction = UnitReaction(tunit, "player")
         if reaction and not issecretvalue(reaction) then
-            local c = (ns.Colors and ns.Colors.reaction and ns.Colors.reaction[reaction])
+            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
                 or FACTION_BAR_COLORS[reaction]
             if c then
                 r, g, b = c.r, c.g, c.b
@@ -1110,12 +1111,12 @@ end
 -- The unit's target NAME (nickname-aware via ResolveUnitNickname; otherwise the
 -- raw, possibly secret name -- display-safe via SetFormattedText, never
 -- inspected). Colour comes from [cui-tgtcol] in front of it.
-TagFns.tgtname = function(unit)
-    local tunit = unit and (unit .. "target")
+TagFns.tgtname = function(unitToken)
+    local tunit = unitToken and (unitToken .. "target")
     if not tunit or not UnitExists(tunit) then
         return ""
     end
-    return ns.ResolveUnitNickname(tunit)
+    return mod.ResolveUnitNickname(tunit)
 end
 
 -------------------------------------------------------------------------------
@@ -1128,20 +1129,20 @@ end
 --  so restricted-content rendering is unchanged.
 -------------------------------------------------------------------------------
 do
-    local sf = string.format
-    local P = {}
-    ns.TextPieces = P
+    local scrollFrame = string.format
+    local Prm = {}
+    mod.TextPieces = Prm
 
     -- Function-registered tag methods are shared directly: one body, no drift.
-    P.curhpshort = TagFns.curhpshort
-    P.healthshort = TagFns.healthshort
-    P.maxhpshort = TagFns.maxhpshort
-    P.perhp = TagFns.perhp
-    P.perhpnosign = TagFns.perhpnosign
-    P.level = TagFns.level
+    Prm.curhpshort = TagFns.curhpshort
+    Prm.healthshort = TagFns.healthshort
+    Prm.maxhpshort = TagFns.maxhpshort
+    Prm.perhp = TagFns.perhp
+    Prm.perhpnosign = TagFns.perhpnosign
+    Prm.level = TagFns.level
     -- Level in Blizzard's difficulty colors (Level Difficulty Color). A secret
     -- level passes through raw and uncolored, same rule as P.level.
-    P.levelcol = function(u)
+    Prm.levelcol = function(u)
         local l = TagFns.level(u)
         if issecretvalue(l) or l == "" then
             return l
@@ -1150,7 +1151,7 @@ do
         return CludesUI.ColorText(l, r, g, b)
     end
     -- Same, with friendly units in their difficulty color too (Include Friendly).
-    P.levelcolall = function(u)
+    Prm.levelcolall = function(u)
         local l = TagFns.level(u)
         if issecretvalue(l) or l == "" then
             return l
@@ -1158,29 +1159,29 @@ do
         local r, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
         return CludesUI.ColorText(l, r, g, b)
     end
-    P.name = TagFns.name
-    P.tgtcol = TagFns.tgtcol
-    P.tgtname = TagFns.tgtname
+    Prm.name = TagFns.name
+    Prm.tgtcol = TagFns.tgtcol
+    Prm.tgtname = TagFns.tgtname
 
     -- String-compiled tag methods get real equivalents (same logic, same
     -- _CUI_ globals; the compiled strings stay registered only while the tag
     -- engine still runs).
-    P.perpp = function(u)
+    Prm.perpp = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return sf("%d", UnitPowerPercent(u, pType, true, CurveConstants.ScaleTo100))
+        return scrollFrame("%d", UnitPowerPercent(u, pType, true, CurveConstants.ScaleTo100))
     end
-    P.curpp = function(u)
+    Prm.curpp = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return AbbreviateNumbers(UnitPower(u, pType))
     end
-    P.maxpp = function(u)
+    Prm.maxpp = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return AbbreviateNumbers(UnitPowerMax(u, pType))
     end
     -- Full numbers for the custom text tags ([hp], [hp:max], [pp], [pp:max]).
     -- %d formats a secret value like P.perpp does; [hp] names the status as
     -- curhpshort does.
-    P.curhp = function(u)
+    Prm.curhp = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
@@ -1190,47 +1191,47 @@ do
         if UnitIsDeadOrGhost(u) then
             return CludesUI.L("DEAD")
         end
-        return sf("%d", UnitHealth(u) or 0)
+        return scrollFrame("%d", UnitHealth(u) or 0)
     end
-    P.maxhp = function(u)
+    Prm.maxhp = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
-        return sf("%d", UnitHealthMax(u) or 0)
+        return scrollFrame("%d", UnitHealthMax(u) or 0)
     end
-    P.curppfull = function(u)
+    Prm.curppfull = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return sf("%d", UnitPower(u, pType))
+        return scrollFrame("%d", UnitPower(u, pType))
     end
-    P.maxppfull = function(u)
+    Prm.maxppfull = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return sf("%d", UnitPowerMax(u, pType))
+        return scrollFrame("%d", UnitPowerMax(u, pType))
     end
-    P.absorb = function(u)
+    Prm.absorb = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
-        return sf("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(u) or 0))
+        return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(u) or 0))
     end
     -- An absorb amount abbreviated: Show Decimal on Health Text's table while it
     -- is on, else the Number Format.
-    local function AbbrevAbsorb(v)
-        local cfg = _G._CUI_AbbrevDecimalCfg
-        return cfg and AbbreviateNumbers(v, cfg) or ns.AbbreviateValue(v, "absorb")
+    local function AbbrevAbsorb(val)
+        local conf = _G._CUI_AbbrevDecimalCfg
+        return conf and AbbreviateNumbers(val, conf) or mod.AbbreviateValue(val, "absorb")
     end
-    P.absorbshort = function(u)
+    Prm.absorbshort = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
         return AbbrevAbsorb(UnitGetTotalAbsorbs(u) or 0)
     end
-    P.healabsorb = function(u)
+    Prm.healabsorb = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
-        return sf("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalHealAbsorbs(u) or 0))
+        return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalHealAbsorbs(u) or 0))
     end
-    P.healabsorbshort = function(u)
+    Prm.healabsorbshort = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
@@ -1244,22 +1245,22 @@ do
             if not u or not UnitExists(u) then
                 return ""
             end
-            local v = get(u) or 0
-            if IsZeroValue(v) then
+            local val = get(u) or 0
+            if IsZeroValue(val) then
                 return ""
             end
-            return AbbrevAbsorb(v)
+            return AbbrevAbsorb(val)
         end
     end
-    P.absorbshorttag = AbsorbShortTag(UnitGetTotalAbsorbs)
-    P.healabsorbshorttag = AbsorbShortTag(UnitGetTotalHealAbsorbs)
-    P.group = function(u)
+    Prm.absorbshorttag = AbsorbShortTag(UnitGetTotalAbsorbs)
+    Prm.healabsorbshorttag = AbsorbShortTag(UnitGetTotalHealAbsorbs)
+    Prm.group = function(u)
         if not IsInRaid() then
             return ""
         end
-        local idx = UnitInRaid(u)
-        if idx then
-            local _, _, subgroup = GetRaidRosterInfo(idx)
+        local position = UnitInRaid(u)
+        if position then
+            local _, _, subgroup = GetRaidRosterInfo(position)
             return subgroup or ""
         end
         return ""
@@ -1271,23 +1272,23 @@ do
     -- mode recolors per call so the indicator tracks the target's reaction.
     -- literal (optional): an already padded string drawn in place of the
     -- separator in the same Indicator Color (the Target content's prefix).
-    function ns.MakeTgtSepPiece(prefix, settings, literal)
+    function mod.MakeTgtSepPiece(prefixText, prefs, literal)
         local sep = literal
         if not sep then
-            sep = settings[prefix .. "TargetSep"]
+            sep = prefs[prefixText .. "TargetSep"]
             if type(sep) ~= "string" or sep == "" then
                 sep = ">"
             end
             sep = " " .. sep .. " "
         end
-        if settings[prefix .. "TargetSepClassColor"] then
+        if prefs[prefixText .. "TargetSepClassColor"] then
             return function(u)
                 if not (u and UnitExists(u .. "target")) then
                     return ""
                 end
-                local r, g, b = ns.ResolveUnitNameColor(u .. "target")
+                local r, g, b = mod.ResolveUnitNameColor(u .. "target")
                 if r then
-                    return sf(
+                    return scrollFrame(
                         "|cff%02x%02x%02x%s|r",
                         math.floor(r * 255 + 0.5),
                         math.floor(g * 255 + 0.5),
@@ -1298,7 +1299,7 @@ do
                 return sep
             end
         end
-        local c = settings[prefix .. "TargetSepColor"]
+        local c = prefs[prefixText .. "TargetSepColor"]
         local esc
         if type(c) == "table" then
             esc = CludesUI.HexColor(c.r or 1, c.g or 1, c.b or 1)
@@ -1372,99 +1373,98 @@ do
     -- listed (the target pieces and separators, the Name Format twins) makes
     -- its zone repaint on every value event.
     local PIECE_READS = {
-        [P.perhp] = "hp",
-        [P.perhpnosign] = "hp",
-        [P.curhpshort] = "hp",
-        [P.healthshort] = "hp",
-        [P.maxhpshort] = "hp",
-        [P.curhp] = "hp",
-        [P.maxhp] = "hp",
-        [P.perpp] = "pp",
-        [P.curpp] = "pp",
-        [P.maxpp] = "pp",
-        [P.curppfull] = "pp",
-        [P.maxppfull] = "pp",
-        [P.absorb] = "abs",
-        [P.absorbshort] = "abs",
-        [P.healabsorb] = "habs",
-        [P.healabsorbshort] = "habs",
-        [P.absorbshorttag] = "abs",
-        [P.healabsorbshorttag] = "habs",
-        [P.name] = "id",
-        [P.level] = "id",
-        [P.levelcol] = "id",
-        [P.levelcolall] = "id",
-        [P.group] = "roster",
+        [Prm.perhp] = "hp",
+        [Prm.perhpnosign] = "hp",
+        [Prm.curhpshort] = "hp",
+        [Prm.healthshort] = "hp",
+        [Prm.maxhpshort] = "hp",
+        [Prm.curhp] = "hp",
+        [Prm.maxhp] = "hp",
+        [Prm.perpp] = "pp",
+        [Prm.curpp] = "pp",
+        [Prm.maxpp] = "pp",
+        [Prm.curppfull] = "pp",
+        [Prm.maxppfull] = "pp",
+        [Prm.absorb] = "abs",
+        [Prm.absorbshort] = "abs",
+        [Prm.healabsorb] = "habs",
+        [Prm.healabsorbshort] = "habs",
+        [Prm.absorbshorttag] = "abs",
+        [Prm.healabsorbshorttag] = "habs",
+        [Prm.name] = "id",
+        [Prm.level] = "id",
+        [Prm.levelcol] = "id",
+        [Prm.levelcolall] = "id",
+        [Prm.group] = "roster",
     }
     -- The tags' Name Format modifiers ([name:abbr]): they shape the plain name,
     -- whatever the slot's own Name Format says. [name:last] and [target:last]
     -- show nothing for your own unit while your name is your first name alone
     -- (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
-    local function Shaped(piece, mode, ofTarget)
-        if mode ~= "last" then
-            return function(unit)
-                return CludesUI.ShortName(piece(unit), mode)
+    local function Shaped(piece, modeName, ofTarget)
+        if modeName ~= "last" then
+            return function(unitToken)
+                return CludesUI.ShortName(piece(unitToken), modeName)
             end
         end
-        return function(unit)
-            if CludesUI.OwnSurnameHidden(ofTarget and unit and (unit .. "target") or unit) then
+        return function(unitToken)
+            if CludesUI.OwnSurnameHidden(ofTarget and unitToken and (unitToken .. "target") or unitToken) then
                 return ""
             end
-            return CludesUI.ShortName(piece(unit), mode)
+            return CludesUI.ShortName(piece(unitToken), modeName)
         end
     end
-    for _, mode in ipairs({ "first", "last", "abbr" }) do
-        P["name" .. mode] = Shaped(P.name, mode)
-        P["tgt" .. mode] = Shaped(P.tgtname, mode, true)
-        PIECE_READS[P["name" .. mode]] = "id"
+    for _, modeName in ipairs({ "first", "last", "abbr" }) do
+        Prm["name" .. modeName] = Shaped(Prm.name, modeName)
+        Prm["tgt" .. modeName] = Shaped(Prm.tgtname, modeName, true)
+        PIECE_READS[Prm["name" .. modeName]] = "id"
     end
 
     -- Custom content: the slot's own format string (<prefix>CustomFormat),
     -- parsed by CludesUI.TextTags against this binding of the unit schema.
     -- Options, preview and the width estimate read the same catalog.
     local TAG_CATALOG = CludesUI.TextTags.Bind(CludesUI.TextTags.UNIT, {
-        ["hp"] = P.curhp,
-        ["hp:abr"] = P.curhpshort,
-        ["hp:max"] = P.maxhp,
-        ["hp:max:abr"] = P.maxhpshort,
-        ["hp:pct"] = P.perhp,
-        ["pp"] = P.curppfull,
-        ["pp:abr"] = P.curpp,
-        ["pp:max"] = P.maxppfull,
-        ["pp:max:abr"] = P.maxpp,
-        ["pp:pct"] = P.perpp,
-        ["absorb"] = P.absorb,
-        ["absorb:abr"] = P.absorbshorttag,
-        ["healabsorb"] = P.healabsorb,
-        ["healabsorb:abr"] = P.healabsorbshorttag,
-        ["name"] = P.name,
-        ["name:first"] = P.namefirst,
-        ["name:last"] = P.namelast,
-        ["name:abbr"] = P.nameabbr,
-        ["target"] = P.tgtname,
-        ["target:first"] = P.tgtfirst,
-        ["target:last"] = P.tgtlast,
-        ["target:abbr"] = P.tgtabbr,
-        ["level"] = P.level,
-        ["group"] = P.group,
+        ["hp"] = Prm.curhp,
+        ["hp:abr"] = Prm.curhpshort,
+        ["hp:max"] = Prm.maxhp,
+        ["hp:max:abr"] = Prm.maxhpshort,
+        ["hp:pct"] = Prm.perhp,
+        ["pp"] = Prm.curppfull,
+        ["pp:abr"] = Prm.curpp,
+        ["pp:max"] = Prm.maxppfull,
+        ["pp:max:abr"] = Prm.maxpp,
+        ["pp:pct"] = Prm.perpp,
+        ["absorb"] = Prm.absorb,
+        ["absorb:abr"] = Prm.absorbshorttag,
+        ["healabsorb"] = Prm.healabsorb,
+        ["healabsorb:abr"] = Prm.healabsorbshorttag,
+        ["name"] = Prm.name,
+        ["name:first"] = Prm.namefirst,
+        ["name:last"] = Prm.namelast,
+        ["name:abbr"] = Prm.nameabbr,
+        ["target"] = Prm.tgtname,
+        ["target:first"] = Prm.tgtfirst,
+        ["target:last"] = Prm.tgtlast,
+        ["target:abbr"] = Prm.tgtabbr,
+        ["level"] = Prm.level,
+        ["group"] = Prm.group,
     })
-    ns.UF_TextTags = TAG_CATALOG
+    mod.UF_TextTags = TAG_CATALOG
 
     --- Resolves a content key to (fmt, piecesArray, static) for a zone, or nil
     --- for "none"/unknown. nametotarget builds its settings-closure separator.
-    function ns.ContentToZone(content, prefix, settings)
-        if content == "custom" then
-            local parsed =
-                CludesUI.TextTags.Parse(TAG_CATALOG, settings and settings[prefix .. "CustomFormat"])
+    function mod.ContentToZone(contentFrame, prefixText, prefs)
+        if contentFrame == "custom" then
+            local parsed = CludesUI.TextTags.Parse(TAG_CATALOG, prefs and prefs[prefixText .. "CustomFormat"])
             if not parsed then
                 return nil
             end
-            local keys, map, pieces = parsed.keys, TAG_CATALOG.map, {}
-            local lvlCol = settings.levelDifficultyColor
-            for i = 1, #keys do
-                local key = keys[i]
+            local keyList, map, pieces = parsed.keys, TAG_CATALOG.map, {}
+            local lvlCol = prefs.levelDifficultyColor
+            for i = 1, #keyList do
+                local key = keyList[i]
                 if key == "level" and lvlCol then
-                    pieces[i] = settings.levelDifficultyColorFriendly and P.levelcolall or P.levelcol
+                    pieces[i] = prefs.levelDifficultyColorFriendly and Prm.levelcolall or Prm.levelcol
                 else
                     pieces[i] = map[key]
                 end
@@ -1479,42 +1479,42 @@ do
             end
             return parsed.fmt, pieces, static
         end
-        if content == "nametotarget" then
-            return "%s%s%s%s", { P.name, ns.MakeTgtSepPiece(prefix, settings), P.tgtcol, P.tgtname }
+        if contentFrame == "nametotarget" then
+            return "%s%s%s%s", { Prm.name, mod.MakeTgtSepPiece(prefixText, prefs), Prm.tgtcol, Prm.tgtname }
         end
         -- Target: the unit's target name alone, after the slot's Prefix
         -- (nil = "T:", "" = none) in the Indicator Color. The target's colour
         -- escape rides only while the slot is Class Colored; otherwise the
         -- name keeps the slot colour. Every piece is "" without a target.
-        if content == "targetname" then
+        if contentFrame == "targetname" then
             local pieces = {}
-            local pre = settings[prefix .. "TargetPrefix"]
+            local pre = prefs[prefixText .. "TargetPrefix"]
             if type(pre) ~= "string" then
                 pre = "T:"
             end
             if pre ~= "" then
-                pieces[1] = ns.MakeTgtSepPiece(prefix, settings, pre .. " ")
+                pieces[1] = mod.MakeTgtSepPiece(prefixText, prefs, pre .. " ")
             end
-            if settings[prefix .. "ClassColor"] then
-                pieces[#pieces + 1] = P.tgtcol
+            if prefs[prefixText .. "ClassColor"] then
+                pieces[#pieces + 1] = Prm.tgtcol
             end
-            pieces[#pieces + 1] = P.tgtname
+            pieces[#pieces + 1] = Prm.tgtname
             return string.rep("%s", #pieces), pieces
         end
-        local def = ZONE_STATIC[content]
-        if not def then
+        local spec_def = ZONE_STATIC[contentFrame]
+        if not spec_def then
             return nil
         end
         local pieces = {}
-        local lvlCol = settings and settings.levelDifficultyColor
-        for i = 2, #def do
-            local key = def[i]
+        local lvlCol = prefs and prefs.levelDifficultyColor
+        for i = 2, #spec_def do
+            local key = spec_def[i]
             if key == "level" and lvlCol then
-                key = settings.levelDifficultyColorFriendly and "levelcolall" or "levelcol"
+                key = prefs.levelDifficultyColorFriendly and "levelcolall" or "levelcol"
             end
-            pieces[#pieces + 1] = P[key]
+            pieces[#pieces + 1] = Prm[key]
         end
-        return def[1], pieces, ZONE_IDENTITY[content] or nil
+        return spec_def[1], pieces, ZONE_IDENTITY[contentFrame] or nil
     end
 
     -- Name Format: a slot set to one (<prefix>NameFormat) gets short-name twins
@@ -1527,24 +1527,24 @@ do
     -- shows (WoW Forever: First / Last Name leave a non-player's name whole).
     do
         local short, unitMode = CludesUI.ShortName, CludesUI.UnitNameFormat
-        local nameFn, tgtFn = P.name, P.tgtname
+        local nameFn, tgtFn = Prm.name, Prm.tgtname
         local twinsByMode = {}
-        local base = ns.ContentToZone
-        function ns.ContentToZone(content, prefix, settings)
-            local fmt, pieces, static = base(content, prefix, settings)
-            local mode = fmt and settings and settings[prefix .. "NameFormat"]
-            if mode and CludesUI.IsNameFormat(mode) then
-                local twins = twinsByMode[mode]
+        local baseValue = mod.ContentToZone
+        function mod.ContentToZone(contentFrame, prefixText, prefs)
+            local fmt, pieces, static = baseValue(contentFrame, prefixText, prefs)
+            local modeName = fmt and prefs and prefs[prefixText .. "NameFormat"]
+            if modeName and CludesUI.IsNameFormat(modeName) then
+                local twins = twinsByMode[modeName]
                 if not twins then
                     twins = {
                         [nameFn] = function(u)
-                            return short(nameFn(u), unitMode(mode, u))
+                            return short(nameFn(u), unitMode(modeName, u))
                         end,
                         [tgtFn] = function(u)
-                            return short(tgtFn(u), unitMode(mode, u and (u .. "target")))
+                            return short(tgtFn(u), unitMode(modeName, u and (u .. "target")))
                         end,
                     }
-                    twinsByMode[mode] = twins
+                    twinsByMode[modeName] = twins
                 end
                 for i = 1, #pieces do
                     pieces[i] = twins[pieces[i]] or pieces[i]
@@ -1562,45 +1562,45 @@ do
     -- a health paint must not swallow a power repaint landing in the same frame.
     local scratch = {}
     local GetTime = GetTime
-    local function PaintText(frame, unit, event)
-        local zones = frame._cuiTextZones
+    local function PaintText(widget, unitToken, evt)
+        local zones = widget._cuiTextZones
         if not zones then
             return
         end
         -- An empty token renders every zone blank, and a boss frame outlives the
         -- gap: the unit watch is a 0.2s poll, so the frame is still shown while
         -- its slot sits between units. Same probe the health painter pays.
-        if not (unit and UnitExists(unit)) then
+        if not (unitToken and UnitExists(unitToken)) then
             return
         end
         -- Faction flip: slot colour is set by ApplyClassColor, never by the
         -- pieces below, so recolour first (the health bar recolours on this
         -- same event); the render then refreshes any target-colour piece.
-        if event == "UNIT_FACTION" and ns.UF_RecolorTexts then
-            ns.UF_RecolorTexts(frame, unit)
+        if evt == "UNIT_FACTION" and mod.UF_RecolorTexts then
+            mod.UF_RecolorTexts(widget, unitToken)
         end
-        local cls = event ~= nil and VALUE_CLASS[event]
-        local now = GetTime()
+        local cls = evt ~= nil and VALUE_CLASS[evt]
+        local nowTime = GetTime()
         for i = 1, #zones do
             local z = zones[i]
-            if not cls or (not z.static and (z.any or z[cls]) and z.at ~= now) then
-                z.at = now
+            if not cls or (not z.static and (z.any or z[cls]) and z.at ~= nowTime) then
+                z.at = nowTime
                 local pieces = z.pieces
-                local n = #pieces
-                for k = 1, n do
-                    scratch[k] = pieces[k](unit)
+                local num = #pieces
+                for k = 1, num do
+                    scratch[k] = pieces[k](unitToken)
                 end
-                z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, n))
+                z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, num))
             end
         end
     end
-    ns.UF_PaintText = PaintText
-    ns.Engine.SetPainter("text", PaintText)
+    mod.UF_PaintText = PaintText
+    mod.Engine.SetPainter("text", PaintText)
 
     -- Power-only text repaint for the power value pass: renders just the
     -- zones whose pieces read the unit's power (flagged when the zone is set).
-    function ns.UF_PaintPowerText(frame, unit)
-        local zones = frame._cuiTextZones
+    function mod.UF_PaintPowerText(widget, unitToken)
+        local zones = widget._cuiTextZones
         if not zones then
             return
         end
@@ -1608,11 +1608,11 @@ do
             local z = zones[i]
             if z.power then
                 local pieces = z.pieces
-                local n = #pieces
-                for k = 1, n do
-                    scratch[k] = pieces[k](unit)
+                local num = #pieces
+                for k = 1, num do
+                    scratch[k] = pieces[k](unitToken)
                 end
-                z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, n))
+                z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, num))
             end
         end
     end
@@ -1649,50 +1649,50 @@ do
     --- and stores the def the text painter renders. nil/none content removes
     --- the zone (the position code hides the fontstring separately, as
     --- before). Zones are keyed by fontstring; re-apply replaces in place.
-    function ns.SetTextZone(frame, fs, content, prefix, settings)
-        local zones = frame._cuiTextZones
+    function mod.SetTextZone(widget, fontStr, contentFrame, prefixText, prefs)
+        local zones = widget._cuiTextZones
         if not zones then
             zones = {}
-            frame._cuiTextZones = zones
+            widget._cuiTextZones = zones
         end
         local fmt, pieces, static
-        if content then
-            fmt, pieces, static = ns.ContentToZone(content, prefix, settings)
+        if contentFrame then
+            fmt, pieces, static = mod.ContentToZone(contentFrame, prefixText, prefs)
         end
         for i = #zones, 1, -1 do
-            if zones[i].fs == fs then
+            if zones[i].fs == fontStr then
                 table.remove(zones, i)
             end
         end
         if fmt then
-            zones[#zones + 1] = MarkReads({ fs = fs, fmt = fmt, pieces = pieces, static = static })
+            zones[#zones + 1] = MarkReads({ fs = fontStr, fmt = fmt, pieces = pieces, static = static })
         else
-            fs:SetText("")
+            fontStr:SetText("")
         end
         -- A power text zone added or removed can switch the player's power
         -- value channel, and a hidden power bar's element (UF_PowerElementSync).
-        ns.UF_PowerElementSync(frame)
+        mod.UF_PowerElementSync(widget)
     end
 
     --- Raw-zone variant for callers that assemble their own format (the power
     --- percent text's curpp/perpp/smart combinations). nil fmt removes.
-    function ns.SetTextZoneRaw(frame, fs, fmt, pieces)
-        local zones = frame._cuiTextZones
+    function mod.SetTextZoneRaw(widget, fontStr, fmt, pieces)
+        local zones = widget._cuiTextZones
         if not zones then
             zones = {}
-            frame._cuiTextZones = zones
+            widget._cuiTextZones = zones
         end
         for i = #zones, 1, -1 do
-            if zones[i].fs == fs then
+            if zones[i].fs == fontStr then
                 table.remove(zones, i)
             end
         end
         if fmt then
-            zones[#zones + 1] = MarkReads({ fs = fs, fmt = fmt, pieces = pieces })
+            zones[#zones + 1] = MarkReads({ fs = fontStr, fmt = fmt, pieces = pieces })
         else
-            fs:SetText("")
+            fontStr:SetText("")
         end
-        ns.UF_PowerElementSync(frame)
+        mod.UF_PowerElementSync(widget)
     end
 
     -- A raid subgroup move fires only GROUP_ROSTER_UPDATE: no unit event and
@@ -1706,22 +1706,22 @@ do
     rosterEv:SetScript("OnUpdate", function(self)
         self:Hide()
         local kept = false
-        for _, f in pairs(frames) do
+        for _, f in pairs(frameList) do
             local zones = type(f) == "table" and f._cuiTextZones
             if zones then
-                local unit = f._cuiUnit
-                local live = unit and UnitExists(unit)
+                local unitToken = f._cuiUnit
+                local live = unitToken and UnitExists(unitToken)
                 for i = 1, #zones do
                     local z = zones[i]
                     if z.roster then
                         kept = true
                         if live then
                             local pieces = z.pieces
-                            local n = #pieces
-                            for k = 1, n do
-                                scratch[k] = pieces[k](unit)
+                            local num = #pieces
+                            for k = 1, num do
+                                scratch[k] = pieces[k](unitToken)
                             end
-                            z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, n))
+                            z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, num))
                         end
                     end
                 end
@@ -1733,6 +1733,6 @@ do
     end)
 end
 
-I.CUI_IsSmartPowerPercent, I.ResolveRestrictedClassColor =
+Inner.CUI_IsSmartPowerPercent, Inner.ResolveRestrictedClassColor =
     CUI_IsSmartPowerPercent, ResolveRestrictedClassColor
-I.PLAYER_POWER_DEFAULT, I.PLAYER_POWER_ALT = PLAYER_POWER_DEFAULT, PLAYER_POWER_ALT
+Inner.PLAYER_POWER_DEFAULT, Inner.PLAYER_POWER_ALT = PLAYER_POWER_DEFAULT, PLAYER_POWER_ALT

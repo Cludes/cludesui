@@ -6,64 +6,64 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Reskins Blizzard's native SpellFlyout buttons to match the parent bar's
 --  shape, borders, and zoom. Purely visual -- no secure state is touched.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 
-local SHAPE_MASKS = ns.SHAPE_MASKS
-local SHAPE_BORDERS = ns.SHAPE_BORDERS
-local SHAPE_ZOOM_DEFAULTS = ns.SHAPE_ZOOM_DEFAULTS
-local SHAPE_ICON_EXPAND = ns.SHAPE_ICON_EXPAND
-local SHAPE_ICON_EXPAND_OFFSETS = ns.SHAPE_ICON_EXPAND_OFFSETS
-local SHAPE_INSETS = ns.SHAPE_INSETS
-local ResolveBorderThickness = ns.ResolveBorderThickness
-local EAB = ns.EAB
-local EFD = ns.EFD
+local SHAPE_MASKS = mod.SHAPE_MASKS
+local SHAPE_BORDERS = mod.SHAPE_BORDERS
+local SHAPE_ZOOM_DEFAULTS = mod.SHAPE_ZOOM_DEFAULTS
+local SHAPE_ICON_EXPAND = mod.SHAPE_ICON_EXPAND
+local SHAPE_ICON_EXPAND_OFFSETS = mod.SHAPE_ICON_EXPAND_OFFSETS
+local SHAPE_INSETS = mod.SHAPE_INSETS
+local ResolveBorderThickness = mod.ResolveBorderThickness
+local ABAR = mod.EAB
+local EFD = mod.EFD
 
 -------------------------------------------------------------------------------
 --  SkinBlizzardFlyoutButton
 --  Apply shape/border/zoom to a single SpellFlyout button.
 -------------------------------------------------------------------------------
-local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca, sbR, sbG, sbB, sbA, brdSz)
+local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, ca, sbR, sbG, sbB, sbA, brdSz)
     -- Strip default Blizzard art (one-time)
-    local fd = EFD(btn)
+    local fd = EFD(button)
     if not fd.blizzStripped then
         fd.blizzStripped = true
-        local nt = btn.NormalTexture or btn:GetNormalTexture()
+        local nt = button.NormalTexture or button:GetNormalTexture()
         if nt then
             nt:SetAlpha(0)
         end
-        if btn.IconMask and CludesUI and CludesUI._hiddenParent then
-            btn.IconMask:SetParent(CludesUI._hiddenParent)
+        if button.IconMask and CludesUI and CludesUI._hiddenParent then
+            button.IconMask:SetParent(CludesUI._hiddenParent)
         end
     end
 
-    local icon = btn.icon or btn.Icon
-    if not icon then
+    local glyph = button.icon or button.Icon
+    if not glyph then
         return
     end
 
     if shape ~= "none" and shape ~= "cropped" and SHAPE_MASKS and SHAPE_MASKS[shape] then
         local maskTex = SHAPE_MASKS[shape]
         if not fd.shapeMask then
-            fd.shapeMask = btn:CreateMaskTexture()
+            fd.shapeMask = button:CreateMaskTexture()
         end
         local mask = fd.shapeMask
         mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         mask:ClearAllPoints()
         if brdSz and brdSz >= 1 then
-            local PP = CludesUI and CludesUI.PP
-            if PP then
-                PP.Point(mask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
-                PP.Point(mask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+            local Pix = CludesUI and CludesUI.PP
+            if Pix then
+                Pix.Point(mask, "TOPLEFT", button, "TOPLEFT", 1, -1)
+                Pix.Point(mask, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
             else
-                mask:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1)
-                mask:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+                mask:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+                mask:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
             end
         else
-            mask:SetAllPoints(btn)
+            mask:SetAllPoints(button)
         end
         mask:Show()
-        pcall(icon.RemoveMaskTexture, icon, mask)
-        icon:AddMaskTexture(mask)
+        pcall(glyph.RemoveMaskTexture, glyph, mask)
+        glyph:AddMaskTexture(mask)
 
         -- Expand icon for shape inset
         local shapeOffset = SHAPE_ICON_EXPAND_OFFSETS and SHAPE_ICON_EXPAND_OFFSETS[shape] or 0
@@ -73,39 +73,39 @@ local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca,
             iconExp = 0
         end
         local halfIE = iconExp / 2
-        local PP = CludesUI and CludesUI.PP
-        if PP then
-            icon:ClearAllPoints()
-            PP.Point(icon, "TOPLEFT", btn, "TOPLEFT", -halfIE, halfIE)
-            PP.Point(icon, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", halfIE, -halfIE)
+        local Pix = CludesUI and CludesUI.PP
+        if Pix then
+            glyph:ClearAllPoints()
+            Pix.Point(glyph, "TOPLEFT", button, "TOPLEFT", -halfIE, halfIE)
+            Pix.Point(glyph, "BOTTOMRIGHT", button, "BOTTOMRIGHT", halfIE, -halfIE)
         end
 
         -- Shape texcoord expand
         local insetPx = SHAPE_INSETS and SHAPE_INSETS[shape] or 17
         local visRatio = (128 - 2 * insetPx) / 128
         local expand = ((1 / visRatio) - 1) * 0.5
-        icon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+        glyph:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
 
         -- Mask cooldown
-        if btn.cooldown and not btn.cooldown:IsForbidden() then
-            pcall(btn.cooldown.RemoveMaskTexture, btn.cooldown, mask)
-            pcall(btn.cooldown.AddMaskTexture, btn.cooldown, mask)
-            if btn.cooldown.SetSwipeTexture then
-                pcall(btn.cooldown.SetSwipeTexture, btn.cooldown, maskTex)
+        if button.cooldown and not button.cooldown:IsForbidden() then
+            pcall(button.cooldown.RemoveMaskTexture, button.cooldown, mask)
+            pcall(button.cooldown.AddMaskTexture, button.cooldown, mask)
+            if button.cooldown.SetSwipeTexture then
+                pcall(button.cooldown.SetSwipeTexture, button.cooldown, maskTex)
             end
-            if btn.cooldown.SetUseCircularEdge then
-                pcall(btn.cooldown.SetUseCircularEdge, btn.cooldown, true)
+            if button.cooldown.SetUseCircularEdge then
+                pcall(button.cooldown.SetUseCircularEdge, button.cooldown, true)
             end
         end
 
         -- Shape border
         if not fd.shapeBorder then
-            fd.shapeBorder = btn:CreateTexture(nil, "OVERLAY", nil, 6)
+            fd.shapeBorder = button:CreateTexture(nil, "OVERLAY", nil, 6)
         end
         local borderTex = fd.shapeBorder
         pcall(borderTex.RemoveMaskTexture, borderTex, mask)
         borderTex:ClearAllPoints()
-        borderTex:SetAllPoints(btn)
+        borderTex:SetAllPoints(button)
         if brdOn and SHAPE_BORDERS and SHAPE_BORDERS[shape] then
             borderTex:SetTexture(SHAPE_BORDERS[shape])
             borderTex:SetVertexColor(sbR, sbG, sbB, sbA)
@@ -115,15 +115,15 @@ local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca,
         end
 
         if fd.borders and CludesUI and CludesUI.PP then
-            CludesUI.PP.HideBorder(btn)
+            CludesUI.PP.HideBorder(button)
         end
     else
         -- Square / cropped / none
         if fd.shapeMask then
-            pcall(icon.RemoveMaskTexture, icon, fd.shapeMask)
-            if btn.cooldown and not btn.cooldown:IsForbidden() then
-                pcall(btn.cooldown.RemoveMaskTexture, btn.cooldown, fd.shapeMask)
-                pcall(btn.cooldown.SetSwipeTexture, btn.cooldown, "")
+            pcall(glyph.RemoveMaskTexture, glyph, fd.shapeMask)
+            if button.cooldown and not button.cooldown:IsForbidden() then
+                pcall(button.cooldown.RemoveMaskTexture, button.cooldown, fd.shapeMask)
+                pcall(button.cooldown.SetSwipeTexture, button.cooldown, "")
             end
             fd.shapeMask:Hide()
         end
@@ -131,28 +131,28 @@ local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca,
             fd.shapeBorder:Hide()
         end
 
-        icon:ClearAllPoints()
-        icon:SetAllPoints(btn)
+        glyph:ClearAllPoints()
+        glyph:SetAllPoints(button)
         if shape == "cropped" then
             local z = zoom or 0
-            icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+            glyph:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif zoom and zoom > 0 then
-            icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+            glyph:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         else
-            icon:SetTexCoord(0, 1, 0, 1)
+            glyph:SetTexCoord(0, 1, 0, 1)
         end
 
-        local PP = CludesUI and CludesUI.PP
-        if PP then
+        local Pix = CludesUI and CludesUI.PP
+        if Pix then
             if brdOn then
                 if not fd.borders then
-                    PP.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", -1)
-                    fd.borders = PP.GetBorders(btn)
+                    Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", -1)
+                    fd.borders = Pix.GetBorders(button)
                 end
-                PP.UpdateBorder(btn, brdSz, cr, cg, cb, ca)
-                PP.ShowBorder(btn)
+                Pix.UpdateBorder(button, brdSz, cr, cg, cb, ca)
+                Pix.ShowBorder(button)
             elseif fd.borders then
-                PP.HideBorder(btn)
+                Pix.HideBorder(button)
             end
         end
     end
@@ -169,16 +169,16 @@ local function OnBlizzardFlyoutShow(flyout)
         return
     end
 
-    local barKey = EFD(caller).barKey
-    if not barKey then
+    local barId = EFD(caller).barKey
+    if not barId then
         return
     end
 
-    local prof = EAB and EAB.db and EAB.db.profile
+    local prof = ABAR and ABAR.db and ABAR.db.profile
     if not prof then
         return
     end
-    local s = prof.bars and prof.bars[barKey]
+    local s = prof.bars and prof.bars[barId]
     if not s then
         return
     end
@@ -236,17 +236,31 @@ local function OnBlizzardFlyoutShow(flyout)
     -- flyout button's own size in place of the CUI shape/border skin, painted
     -- once per button (its size never changes; the paint stamps classicArt
     -- in the button's record).
-    local classic = ns.AB_Style() == "classic"
+    local classic = mod.AB_Style() == "classic"
     local children = { flyout:GetChildren() }
-    for i = 1, #children do
-        local child = children[i]
-        if child and child:IsShown() and child.icon then
+    for idx = 1, #children do
+        local childFrame = children[idx]
+        if childFrame and childFrame:IsShown() and childFrame.icon then
             if classic then
-                if not ns.EFD(child).classicArt then
-                    ns.AB_PaintClassicButton(child)
+                if not mod.EFD(childFrame).classicArt then
+                    mod.AB_PaintClassicButton(childFrame)
                 end
             else
-                SkinBlizzardFlyoutButton(child, shape, zoom, brdOn, cr, cg, cb, ca, sbR, sbG, sbB, sbA, brdSz)
+                SkinBlizzardFlyoutButton(
+                    childFrame,
+                    shape,
+                    zoom,
+                    brdOn,
+                    cr,
+                    cg,
+                    cb,
+                    ca,
+                    sbR,
+                    sbG,
+                    sbB,
+                    sbA,
+                    brdSz
+                )
             end
         end
     end
@@ -257,21 +271,21 @@ end
 --  SpellFlyout is not there yet).
 -------------------------------------------------------------------------------
 local function InstallBlizzFlyoutHook()
-    local sf = _G.SpellFlyout
-    if not sf or not EFD then
+    local scrollFrame = _G.SpellFlyout
+    if not scrollFrame or not EFD then
         return false
     end
-    if EFD(sf).hooked then
+    if EFD(scrollFrame).hooked then
         return true
     end
-    EFD(sf).hooked = true
-    sf:HookScript("OnShow", OnBlizzardFlyoutShow)
+    EFD(scrollFrame).hooked = true
+    scrollFrame:HookScript("OnShow", OnBlizzardFlyoutShow)
     return true
 end
 do
     -- Shell from the main file's pool: born at ActionBars' file scope so the
     -- handler work bills this addon (see the pool note there).
-    local hookFrame = ns.TakeShell()
+    local hookFrame = mod.TakeShell()
     hookFrame:RegisterEvent("PLAYER_LOGIN")
     hookFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     hookFrame:SetScript("OnEvent", function(self)
@@ -293,13 +307,13 @@ local EABFlyout = {}
 function EABFlyout:RegisterButton() end
 
 function EABFlyout:IsVisible()
-    local sf = _G.SpellFlyout
-    return sf and sf:IsVisible()
+    local scrollFrame = _G.SpellFlyout
+    return scrollFrame and scrollFrame:IsVisible()
 end
 
 function EABFlyout:IsMouseOver(...)
-    local sf = _G.SpellFlyout
-    return sf and sf:IsMouseOver(...)
+    local scrollFrame = _G.SpellFlyout
+    return scrollFrame and scrollFrame:IsMouseOver(...)
 end
 
 function EABFlyout:GetFrame()
@@ -307,8 +321,8 @@ function EABFlyout:GetFrame()
 end
 
 function EABFlyout:GetParent()
-    local sf = _G.SpellFlyout
-    return sf and sf:GetParent()
+    local scrollFrame = _G.SpellFlyout
+    return scrollFrame and scrollFrame:GetParent()
 end
 
-ns.EABFlyout = EABFlyout
+mod.EABFlyout = EABFlyout

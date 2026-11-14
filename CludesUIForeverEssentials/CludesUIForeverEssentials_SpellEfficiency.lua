@@ -15,20 +15,17 @@ end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local F = module.Feature(
-    "spellEfficiency",
-    {
-        enabled = false,
-        perMana = true,
-        perSecond = true,
-        perManaSecond = false,
-        style = "long",
-        decimals = 2,
-        bonus = true,
-        talents = true,
-        show = "all",
-    }
-)
+local F = module.Feature("spellEfficiency", {
+    enabled = false,
+    perMana = true,
+    perSecond = true,
+    perManaSecond = false,
+    style = "long",
+    decimals = 2,
+    bonus = true,
+    talents = true,
+    show = "all",
+})
 local Get, Enabled = F.Get, F.Enabled
 
 local Data = module.SpellEfficiencyData or {}
@@ -51,44 +48,44 @@ local SHORT_LABELS = { [HEAL] = { "HPM", "HPS", "HPM/s" }, [DAMAGE] = { "DPM", "
 local KIND_WORDS = { [HEAL] = "healing", [DAMAGE] = "damage" }
 local PER_MANA, PER_SECOND, PER_MANA_SECOND = 1, 2, 3
 
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
-local function Readable(v)
-    return not Secret(v) and (not canaccessvalue or canaccessvalue(v))
+local function Readable(val)
+    return not Secret(val) and (not canaccessvalue or canaccessvalue(val))
 end
-local function ReadableTable(v)
-    return Readable(v) and not (issecrettable and issecrettable(v)) and type(v) == "table"
+local function ReadableTable(val)
+    return Readable(val) and not (issecrettable and issecrettable(val)) and type(val) == "table"
 end
 local function StatsSecret()
     return C_Secrets and C_Secrets.ShouldUnitStatsBeSecret and C_Secrets.ShouldUnitStatsBeSecret()
 end
 
 -- "a,b,c" text to numbers; false when malformed.
-local function Numbers(text, sep)
-    local out, at = {}, 1
+local function Numbers(textValue, sep)
+    local result, at = {}, 1
     repeat
-        local stop = text:find(sep, at, true)
-        local field = text:sub(at, (stop or 0) - 1)
+        local stop = textValue:find(sep, at, true)
+        local field = textValue:sub(at, (stop or 0) - 1)
         if not field:find("^%-?%d+%.?%d*$") then
             return false
         end
-        out[#out + 1] = tonumber(field)
+        result[#result + 1] = tonumber(field)
         at = stop and stop + 1
     until not at
-    return out
+    return result
 end
 
 local decoded, decodedMods = {}, {}
 
-local function Entry(spellID)
-    local e = decoded[spellID]
+local function Entry(spellId)
+    local e = decoded[spellId]
     if e == nil then
-        local text = Data[spellID]
-        if type(text) ~= "string" then
+        local textValue = Data[spellId]
+        if type(textValue) ~= "string" then
             return nil
         end
-        e = Numbers(text, ",")
+        e = Numbers(textValue, ",")
         if e and (#e < PART_START or (#e - AREA) % PART_SIZE ~= 0) then
             e = false
         end
@@ -100,20 +97,20 @@ local function Entry(spellID)
                 end
             end
         end
-        decoded[spellID] = e
+        decoded[spellId] = e
     end
     return e or nil
 end
 
-local function ModsOf(spellID)
-    local m = decodedMods[spellID]
+local function ModsOf(spellId)
+    local m = decodedMods[spellId]
     if m == nil then
-        local text = TalentData[spellID]
-        if type(text) ~= "string" then
+        local textValue = TalentData[spellId]
+        if type(textValue) ~= "string" then
             return nil
         end
         m = {}
-        for part in (text .. ";"):gmatch("([^;]*);") do
+        for part in (textValue .. ";"):gmatch("([^;]*);") do
             local mod = Numbers(part, ",")
             if not mod or #mod <= MOD_OP then
                 m = false
@@ -121,15 +118,15 @@ local function ModsOf(spellID)
             end
             m[#m + 1] = mod
         end
-        decodedMods[spellID] = m
+        decodedMods[spellId] = m
     end
     return m or nil
 end
 
 local function TalentRank(node)
     local config = C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
-    local info = config and C_Traits.GetNodeInfo(config, node)
-    local rank = ReadableTable(info) and info.activeRank
+    local details = config and C_Traits.GetNodeInfo(config, node)
+    local rank = ReadableTable(details) and details.activeRank
     return type(rank) == "number" and rank or 0
 end
 
@@ -144,9 +141,9 @@ local function CritChance(school)
     return math.min(crit / 100, 1)
 end
 
-local function TalentEffects(spellID, school)
+local function TalentEffects(spellId, school)
     local direct, periodic, cost = 1, 1, 1
-    local mods = Get("talents") and ModsOf(spellID)
+    local mods = Get("talents") and ModsOf(spellId)
     if not mods then
         return direct, periodic, cost
     end
@@ -172,13 +169,13 @@ local function TalentEffects(spellID, school)
     return direct, periodic, cost
 end
 
-local function Shows(kind)
+local function Shows(kindOf)
     local show = Get("show")
     if show == "heal" then
-        return kind == HEAL
+        return kindOf == HEAL
     end
     if show == "damage" then
-        return kind ~= HEAL
+        return kindOf ~= HEAL
     end
     return true
 end
@@ -190,27 +187,27 @@ local function Number(value, whole)
     return ("%." .. math.max(0, math.min(2, Get("decimals"))) .. "f"):format(value)
 end
 
-local function Piece(text, which, kind, value, area)
+local function Piece(textValue, which, kindOf, value, area)
     local number = Number(value, which == PER_SECOND)
     local piece
     if Get("style") == "short" then
-        piece = ("%s %s"):format(SHORT_LABELS[kind][which], number)
-    elseif text then
+        piece = ("%s %s"):format(SHORT_LABELS[kindOf][which], number)
+    elseif textValue then
         piece = LONG_NEXT[which]:format(number)
     else
-        piece = LONG_FIRST[which]:format(number, KIND_WORDS[kind])
+        piece = LONG_FIRST[which]:format(number, KIND_WORDS[kindOf])
     end
     if area then
         piece = piece .. " / target"
     end
-    if not text then
+    if not textValue then
         return piece
     end
-    return text .. SEPARATOR .. piece
+    return textValue .. SEPARATOR .. piece
 end
 
-local function Rate(kind, amount, mana, seconds)
-    local p = { kind = kind, amount = amount, perMana = amount / mana }
+local function Rate(kindOf, amount, mana, seconds)
+    local p = { kind = kindOf, amount = amount, perMana = amount / mana }
     if seconds and seconds > 0 then
         p.perSecond, p.perManaSecond = amount / seconds, p.perMana / seconds
     end
@@ -218,16 +215,16 @@ local function Rate(kind, amount, mana, seconds)
 end
 
 local function Line(part, area)
-    local text = Get("perMana") and Piece(nil, PER_MANA, part.kind, part.perMana, area) or nil
+    local textValue = Get("perMana") and Piece(nil, PER_MANA, part.kind, part.perMana, area) or nil
     if part.perSecond then
         if Get("perSecond") then
-            text = Piece(text, PER_SECOND, part.kind, part.perSecond, area)
+            textValue = Piece(textValue, PER_SECOND, part.kind, part.perSecond, area)
         end
         if Get("perManaSecond") then
-            text = Piece(text, PER_MANA_SECOND, part.kind, part.perManaSecond, area)
+            textValue = Piece(textValue, PER_MANA_SECOND, part.kind, part.perManaSecond, area)
         end
     end
-    return text
+    return textValue
 end
 
 -- Spells learned below level 20 get only part of your spell power.
@@ -257,8 +254,8 @@ local function Amount(e, at, gain, bonus, directMod, periodicMod)
     return direct + tick * e[at + TICKS]
 end
 
-local function ManaCost(spellID)
-    local costs = C_Spell.GetSpellPowerCost(spellID)
+local function ManaCost(spellId)
+    local costs = C_Spell.GetSpellPowerCost(spellId)
     if not ReadableTable(costs) then
         return nil
     end
@@ -272,26 +269,26 @@ local function ManaCost(spellID)
     end
 end
 
-local function CastMs(spellID)
-    local info = C_Spell.GetSpellInfo(spellID)
-    if not ReadableTable(info) then
+local function CastMs(spellId)
+    local details = C_Spell.GetSpellInfo(spellId)
+    if not ReadableTable(details) then
         return nil
     end
-    local ms = info.castTime
+    local ms = details.castTime
     if not Readable(ms) or type(ms) ~= "number" then
         return nil
     end
     return ms
 end
 
-local function Bonus(e, kind)
+local function Bonus(e, kindOf)
     if not Get("bonus") then
         return 0
     end
     if StatsSecret() then
         return nil
     end
-    local b = kind == HEAL and GetSpellBonusHealing() or GetSpellBonusDamage(e[SCHOOL])
+    local b = kindOf == HEAL and GetSpellBonusHealing() or GetSpellBonusDamage(e[SCHOOL])
     if not Readable(b) or type(b) ~= "number" then
         return nil
     end
@@ -299,25 +296,25 @@ local function Bonus(e, kind)
 end
 
 --- { mana, castMs, area, level, count, [i] = { kind, amount, perMana, perSecond, perManaSecond } }
-function module.SpellEfficiencyOf(spellID)
-    local e = Entry(spellID)
+function module.SpellEfficiencyOf(spellId)
+    local e = Entry(spellId)
     if not e then
         return nil
     end
-    local mana = ManaCost(spellID)
-    local castMs = mana and CastMs(spellID)
+    local mana = ManaCost(spellId)
+    local castMs = mana and CastMs(spellId)
     local level = UnitLevel("player")
     if not (mana and castMs and Readable(level)) then
         return nil
     end
     local gain = LevelGain(e, level)
-    local directMod, periodicMod, costMod = TalentEffects(spellID, e[SCHOOL])
+    local directMod, periodicMod, costMod = TalentEffects(spellId, e[SCHOOL])
     mana = mana * costMod
-    local out = { mana = mana, castMs = castMs, area = e[AREA] == 1, level = e[LEVEL], count = 0 }
+    local result = { mana = mana, castMs = castMs, area = e[AREA] == 1, level = e[LEVEL], count = 0 }
     for at = PART_START, #e, PART_SIZE do
-        local kind = e[at + KIND]
-        if Shows(kind) then
-            local bonus = Bonus(e, kind)
+        local kindOf = e[at + KIND]
+        if Shows(kindOf) then
+            local bonus = Bonus(e, kindOf)
             if not bonus then
                 break
             end
@@ -325,41 +322,41 @@ function module.SpellEfficiencyOf(spellID)
             if amount > 0 and mana > 0 then
                 local seconds = castMs > 0 and castMs / 1000
                     or (e[at + SECONDS] > 0 and e[at + SECONDS] or nil)
-                out.count = out.count + 1
-                out[out.count] = Rate(kind, amount, mana, seconds)
+                result.count = result.count + 1
+                result[result.count] = Rate(kindOf, amount, mana, seconds)
             end
         end
     end
-    return out
+    return result
 end
 
 local decoratedAt = setmetatable({}, { __mode = "k" })
 local decoratedText = setmetatable({}, { __mode = "k" })
 
-local function AddLines(tooltip, spellID)
-    local r = module.SpellEfficiencyOf(spellID)
+local function AddLines(tooltip, spellId)
+    local r = module.SpellEfficiencyOf(spellId)
     if not r then
         return
     end
     local first
-    for i = 1, r.count do
-        local text = Line(r[i], r.area)
-        if text then
+    for idx = 1, r.count do
+        local textValue = Line(r[idx], r.area)
+        if textValue then
             if not first then
                 -- The game can call the hook twice for one tooltip: add the line once.
                 local at = decoratedAt[tooltip]
-                if at and at <= tooltip:NumLines() and decoratedText[tooltip] == text then
-                    local left = _G[tooltip:GetName() .. "TextLeft" .. at]
-                    local shown = left and left:GetText()
-                    if Readable(shown) and shown == text then
+                if at and at <= tooltip:NumLines() and decoratedText[tooltip] == textValue then
+                    local leftX = _G[tooltip:GetName() .. "TextLeft" .. at]
+                    local isShown = leftX and leftX:GetText()
+                    if Readable(isShown) and isShown == textValue then
                         return
                     end
                 end
-                first = text
+                first = textValue
             end
-            tooltip:AddLine(text, COLOR[1], COLOR[2], COLOR[3])
-            if first == text then
-                decoratedAt[tooltip], decoratedText[tooltip] = tooltip:NumLines(), text
+            tooltip:AddLine(textValue, COLOR[1], COLOR[2], COLOR[3])
+            if first == textValue then
+                decoratedAt[tooltip], decoratedText[tooltip] = tooltip:NumLines(), textValue
             end
         end
     end
@@ -371,43 +368,43 @@ local function Decorates(tooltip)
         and (tooltip == GameTooltip or tooltip == ItemRefTooltip)
 end
 
-local function ActionSlot(owner)
-    local a = owner.action
+local function ActionSlot(ownerFrame)
+    local a = ownerFrame.action
     if Readable(a) and type(a) == "number" then
         return a
     end
-    a = owner.GetAttribute and owner:GetAttribute("action")
+    a = ownerFrame.GetAttribute and ownerFrame:GetAttribute("action")
     if Readable(a) and type(a) == "number" then
         return a
     end
 end
 
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip, data)
-        if not Decorates(tooltip) or not ReadableTable(data) then
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip, payload)
+        if not Decorates(tooltip) or not ReadableTable(payload) then
             return
         end
-        local id = data.id
-        if Readable(id) and type(id) == "number" then
-            AddLines(tooltip, id)
+        local ident = payload.id
+        if Readable(ident) and type(ident) == "number" then
+            AddLines(tooltip, ident)
         end
     end)
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Macro, function(tooltip)
         if not Decorates(tooltip) then
             return
         end
-        local owner = tooltip:GetOwner()
-        local action = owner and ActionSlot(owner)
+        local ownerFrame = tooltip:GetOwner()
+        local action = ownerFrame and ActionSlot(ownerFrame)
         if not action then
             return
         end
-        local kind, id, subType = GetActionInfo(action)
-        if kind ~= "macro" or not (Readable(id) and type(id) == "number") then
+        local kindOf, ident, subType = GetActionInfo(action)
+        if kindOf ~= "macro" or not (Readable(ident) and type(ident) == "number") then
             return
         end
-        local spellID = subType == "spell" and id or GetMacroSpell(id)
-        if Readable(spellID) and type(spellID) == "number" then
-            AddLines(tooltip, spellID)
+        local spellId = subType == "spell" and ident or GetMacroSpell(ident)
+        if Readable(spellId) and type(spellId) == "number" then
+            AddLines(tooltip, spellId)
         end
     end)
 end

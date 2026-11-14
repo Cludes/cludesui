@@ -7,13 +7,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  ReloadFrames, the raid size tiers and the tier offset.
 --  Reads the earlier Raid Frames files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local floor = math.floor
 local min = math.min
@@ -23,20 +23,20 @@ local type = type
 local UnitExists = UnitExists
 local InCombatLockdown = InCombatLockdown
 
-local allButtons, ApplyFont, eventFrame = I.allButtons, I.ApplyFont, I.eventFrame
-local GetFFD, IsPowerBarEnabled, PixelSnap = I.GetFFD, I.IsPowerBarEnabled, I.PixelSnap
-local ResolveHealthTexture, unitToButton = I.ResolveHealthTexture, I.unitToButton
-local LayoutTopNameBar, StyleButton = I.LayoutTopNameBar, I.StyleButton
-local RebuildUnitMap, UpdateAllButtons = I.RebuildUnitMap, I.UpdateAllButtons
-local LayoutGroups, MOVER_GROUPS = I.LayoutGroups, I.MOVER_GROUPS
+local allButtons, ApplyFont, eventFrame = Inner.allButtons, Inner.ApplyFont, Inner.eventFrame
+local GetFFD, IsPowerBarEnabled, PixelSnap = Inner.GetFFD, Inner.IsPowerBarEnabled, Inner.PixelSnap
+local ResolveHealthTexture, unitToButton = Inner.ResolveHealthTexture, Inner.unitToButton
+local LayoutTopNameBar, StyleButton = Inner.LayoutTopNameBar, Inner.StyleButton
+local RebuildUnitMap, UpdateAllButtons = Inner.RebuildUnitMap, Inner.UpdateAllButtons
+local LayoutGroups, MOVER_GROUPS = Inner.LayoutGroups, Inner.MOVER_GROUPS
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 local containerFrame
-I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v)
-    containerFrame = v
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
+    containerFrame = val
 end
 
 -- Assigned in CUI_RaidFrames_Visibility.lua (see SetRangeUpdate).
@@ -48,78 +48,78 @@ local RangeUpdate
 -- skipButtons (login window only): run the layout/tier/proxy machinery but
 -- skip the per-button restyle loop -- the insecure styling bodies run in the
 -- deferred login pass, which then calls this again in full.
-ns._emptyList = ns._emptyList or {}
+mod._emptyList = mod._emptyList or {}
 local function ReloadFrames(skipButtons)
-    local s = ns._scaledProfile
+    local s = mod._scaledProfile
     -- Keep UNIT_FLAGS registration in lockstep with the combat-icon toggle so a
     -- disabled option listens for nothing (runs no event code).
-    if ns.UpdateCombatEventRegistration then
-        ns.UpdateCombatEventRegistration()
+    if mod.UpdateCombatEventRegistration then
+        mod.UpdateCombatEventRegistration()
     end
     -- Hide Groups 5-8 in Mythic Raid hears difficulty switches only while on.
-    if db.profile.mythicRaidHideGroups then
+    if saved.profile.mythicRaidHideGroups then
         eventFrame:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
     else
         eventFrame:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
     end
     -- Rebuild dispel-color curves so custom-color edits take effect immediately.
-    if ns._RebuildDispelCurves then
-        ns._RebuildDispelCurves()
+    if mod._RebuildDispelCurves then
+        mod._RebuildDispelCurves()
     end
     -- Recalculate active tier from current group size + overrides
-    local numMembers = ns._GetEffectiveRaidSize()
-    local prevW, prevH = ns._activeSizeW, ns._activeSizeH
+    local numMembers = mod._GetEffectiveRaidSize()
+    local prevW, prevH = mod._activeSizeW, mod._activeSizeH
     if numMembers > 0 then
-        ns._activeSizeW, ns._activeSizeH = ns._GetRaidSizeFrameDimensions(numMembers)
+        mod._activeSizeW, mod._activeSizeH = mod._GetRaidSizeFrameDimensions(numMembers)
         -- Active tier override (per-tier growth) via the single cascade authority.
-        local _, activeTierOv = ns._RFResolveTierOverride(numMembers)
-        ns._activeTierOverride = activeTierOv
+        local _, activeTierOv = mod._RFResolveTierOverride(numMembers)
+        mod._activeTierOverride = activeTierOv
     else
-        ns._activeSizeW, ns._activeSizeH = nil, nil
-        ns._activeTierOverride = nil
+        mod._activeSizeW, mod._activeSizeH = nil, nil
+        mod._activeTierOverride = nil
     end
-    local bw = PixelSnap(ns._activeSizeW or s.frameWidth or 72)
-    local bh = PixelSnap(ns._activeSizeH or s.frameHeight or 46)
+    local bw = PixelSnap(mod._activeSizeW or s.frameWidth or 72)
+    local bh = PixelSnap(mod._activeSizeH or s.frameHeight or 46)
 
     -- Auto-resize indicators: scale factor based on active tier vs base 20-man
     -- Read base dimensions from raw db.profile (not proxy, which returns active tier)
     local sizeScale = 1
-    if ns._activeSizeW and ns._activeSizeH then
-        local baseW = db.profile.frameWidth or 72
-        local baseH = db.profile.frameHeight or 46
-        local scale = math.min(ns._activeSizeW / baseW, ns._activeSizeH / baseH)
+    if mod._activeSizeW and mod._activeSizeH then
+        local baseW = saved.profile.frameWidth or 72
+        local baseH = saved.profile.frameHeight or 46
+        local scale = math.min(mod._activeSizeW / baseW, mod._activeSizeH / baseH)
         sizeScale = math.max(math.min(scale, 1.5), 0.7)
     end
     -- Auto Resize Icons (two independent checkboxes): Tracked Buffs gates the
     -- Buff Manager scale; Indicators & Auras gates indicator/aura/text sizes.
     -- Tracked Buffs defaults on (nil treated as on) to preserve the prior
     -- hardcoded always-on behavior.
-    ns._bmScale = (db.profile.autoResizeTrackedBuffs ~= false) and sizeScale or 1
-    ns._indicatorScale = db.profile.autoResizeIndicators and sizeScale or 1
-    if ns._RefreshProxyModes then
-        ns._RefreshProxyModes()
+    mod._bmScale = (saved.profile.autoResizeTrackedBuffs ~= false) and sizeScale or 1
+    mod._indicatorScale = saved.profile.autoResizeIndicators and sizeScale or 1
+    if mod._RefreshProxyModes then
+        mod._RefreshProxyModes()
     end
 
     -- Mode flips (Merge Groups toggle, profile swaps) can need a header set
     -- that was not built at login; materialize it before the restyle loop so
     -- the new buttons take this reload's styling like everything else.
-    ns._BuildHeaderSet((db.profile.mergeGroups and true) or false)
+    mod._BuildHeaderSet((saved.profile.mergeGroups and true) or false)
 
     local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
     local healthH = PixelSnap(bh - powerH)
     local texPath = ResolveHealthTexture()
 
-    for _, btn in ipairs(skipButtons and ns._emptyList or allButtons) do
-        local d = GetFFD(btn)
+    for _, button in ipairs(skipButtons and mod._emptyList or allButtons) do
+        local d = GetFFD(button)
         if not d.styled then
-            ns._StyleButtonSecure(btn)
-            StyleButton(btn)
+            mod._StyleButtonSecure(button)
+            StyleButton(button)
         end
 
         -- Window/initialConfigFunction own sizes in combat; skipping here is
         -- safe (out of combat the resize applies normally).
         if not InCombatLockdown() then
-            btn:SetSize(bw, bh)
+            button:SetSize(bw, bh)
         end
 
         -- Health bar height/anchor + Top Name Bar. The helper reserves the top
@@ -140,9 +140,9 @@ local function ReloadFrames(skipButtons)
         -- SetColorTexture here is never overwritten by the stamped health tick.
         if d.bg then
             d._bgSt, d._bgA = nil, nil
-            local u = btn:GetAttribute("unit")
+            local u = button:GetAttribute("unit")
             if u and UnitExists(u) then
-                ns._ApplyHealthBg(d, d.health, s, u)
+                mod._ApplyHealthBg(d, d.health, s, u)
             end
         end
 
@@ -176,7 +176,7 @@ local function ReloadFrames(skipButtons)
         -- below shows it again; every text restyled and re-anchored (the full paint that
         -- follows fills them).
         if d.AnchorTexts then
-            ns.RF_TextPowerHide(d)
+            mod.RF_TextPowerHide(d)
             d.AnchorTexts()
         end
 
@@ -207,14 +207,14 @@ local function ReloadFrames(skipButtons)
             local liPos = (s.leaderIconPosition or "top"):upper()
             d.leaderIcon:SetPoint(
                 liPos,
-                ns.RF_AnchorHost(d.health, s),
+                mod.RF_AnchorHost(d.health, s),
                 liPos,
                 s.leaderIconOffsetX or 0,
                 s.leaderIconOffsetY or 0
             )
             -- Re-assert the host's strata/level above the border
             if d.leaderHost then
-                ns.ApplyLeaderStrata(d.leaderHost)
+                mod.ApplyLeaderStrata(d.leaderHost)
             end
         end
 
@@ -247,10 +247,10 @@ local function ReloadFrames(skipButtons)
 
         -- Ping marker size + position (overlay exists only after a first ping)
         if d.pingFrame then
-            ns._RFAnchorPing(d)
+            mod._RFAnchorPing(d)
         end
-        if ns.RF_FvMissingAnchor then
-            ns.RF_FvMissingAnchor(btn, d)
+        if mod.RF_FvMissingAnchor then
+            mod.RF_FvMissingAnchor(button, d)
         end
 
         -- Border
@@ -262,8 +262,8 @@ local function ReloadFrames(skipButtons)
     -- Re-layout headers (may switch between flat/grouped)
     LayoutGroups()
     -- Apply tier-based position offset
-    if ns._ApplyTierOffset then
-        ns._ApplyTierOffset()
+    if mod._ApplyTierOffset then
+        mod._ApplyTierOffset()
     end
     RebuildUnitMap()
     UpdateAllButtons()
@@ -273,35 +273,35 @@ local function ReloadFrames(skipButtons)
     -- Friendly Boss Frames and Extra Frames inherit size/growth/spacing/
     -- border/text settings; restyle + re-anchor them with everything else
     -- (growth changes move the anchor points, not just the anchored-to header).
-    if ns.FB_Apply then
-        ns.FB_Apply()
+    if mod.FB_Apply then
+        mod.FB_Apply()
     end
-    if ns.XF_Apply then
-        ns.XF_Apply()
+    if mod.XF_Apply then
+        mod.XF_Apply()
     end
     -- Player Group Label follows the raid frame style.
-    if ns.PG_Apply then
-        ns.PG_Apply()
+    if mod.PG_Apply then
+        mod.PG_Apply()
     end
     -- Pet frames (the ones styled from the raid settings restyle here, the rest in the party
     -- reload): the login window's pass skips them (OnEnable builds them once the party frames
     -- exist, which the Beside Owner pets need).
     if not skipButtons then
-        ns.PF_Apply(true)
+        mod.PF_Apply(true)
     end
 
     -- 12.1 aura containers reload with every real pass (direct call inside
     -- the body -- immune to the Options file's setup-time capture of ns.ReloadFrames).
-    if ns.RFC_ReloadAll then
-        ns.RFC_ReloadAll()
+    if mod.RFC_ReloadAll then
+        mod.RFC_ReloadAll()
     end
 end
 
-ns.ReloadFrames = ReloadFrames
-ns.PixelSnap = PixelSnap
-ns._allButtons = allButtons
+mod.ReloadFrames = ReloadFrames
+mod.PixelSnap = PixelSnap
+mod._allButtons = allButtons
 -- The raid unit map (RebuildUnitMap wipes it in place, so this stays live).
-ns._raidUnitToButton = unitToButton
+mod._raidUnitToButton = unitToButton
 
 -- Global Dark Mode master: RF stores Dark Mode as a fill-color MODE
 -- (healthColorMode == "dark"), not a boolean -- enabling remembers the prior
@@ -312,14 +312,14 @@ ns._raidUnitToButton = unitToButton
 CludesUI.RegisterDarkModeToggle({
     id = "raidFrames",
     isOn = function()
-        return (db and db.profile and db.profile.healthColorMode == "dark") or false
+        return (saved and saved.profile and saved.profile.healthColorMode == "dark") or false
     end,
-    setOn = function(on)
-        if not (db and db.profile) then
+    setOn = function(enabled)
+        if not (saved and saved.profile) then
             return
         end
-        local p = db.profile
-        if on then
+        local p = saved.profile
+        if enabled then
             if p.healthColorMode ~= "dark" then
                 p._darkPrevHealthColorMode = p.healthColorMode or "class"
                 p.healthColorMode = "dark"
@@ -347,40 +347,40 @@ CludesUI.RegisterDarkModeToggle({
             end
             p._darkPrevPartyTargetHealthColorMode = nil
         end
-        if ns.ReloadFrames then
-            ns.ReloadFrames()
+        if mod.ReloadFrames then
+            mod.ReloadFrames()
         end
-        if ns.ReloadPartyFrames then
-            ns.ReloadPartyFrames()
+        if mod.ReloadPartyFrames then
+            mod.ReloadPartyFrames()
         end
     end,
 })
 
 -- Lightweight resize: only changes button/health/power dimensions + layout.
 -- No texture, border, font, or anchor changes. Safe for slider hot path.
-ns._ResizeButtons = function(w, h)
+mod._ResizeButtons = function(wid, hgt)
     if InCombatLockdown() then
         return
     end
-    local bw = PixelSnap(w)
-    local bh = PixelSnap(h)
-    local s = db.profile
+    local bw = PixelSnap(wid)
+    local bh = PixelSnap(hgt)
+    local s = saved.profile
     local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
-    local healthH = PixelSnap(bh - ns.RF_HealthPowerInset(s, powerH))
+    local healthH = PixelSnap(bh - mod.RF_HealthPowerInset(s, powerH))
     local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
     local xfset = s.extraFrames
-    for _, btn in ipairs(allButtons) do
-        local d = GetFFD(btn)
+    for _, button in ipairs(allButtons) do
+        local d = GetFFD(button)
         if d.styled then
             local xbw, xbh, xhealthH = bw, bh, healthH
             -- Extra Frames duplicates carry their size offset through the
             -- live slider path too (XF.Layout re-applies it on full reloads).
             if d._isExtra and xfset then
-                xbw = PixelSnap(math.max(10, w + (xfset.extraWidth or 0)))
-                xbh = PixelSnap(math.max(10, h + (xfset.extraHeight or 0)))
-                xhealthH = PixelSnap(xbh - ns.RF_HealthPowerInset(s, powerH))
+                xbw = PixelSnap(math.max(10, wid + (xfset.extraWidth or 0)))
+                xbh = PixelSnap(math.max(10, hgt + (xfset.extraHeight or 0)))
+                xhealthH = PixelSnap(xbh - mod.RF_HealthPowerInset(s, powerH))
             end
-            btn:SetSize(xbw, xbh)
+            button:SetSize(xbw, xbh)
             -- Full height when the power bar is hidden for this role (mirrors
             -- _ResizePartyButtons; avoids a dark strip on OFF-role units since
             -- d.power always exists). Top Name Bar reserves its height from the
@@ -388,55 +388,55 @@ ns._ResizeButtons = function(w, h)
             if d.health then
                 d.health:SetHeight(((d.power and d.power:IsShown()) and xhealthH or xbh) - topBarH)
             end
-            ns.RF_TextNameWidth(d, xbw)
+            mod.RF_TextNameWidth(d, xbw)
         end
     end
-    ns._activeSizeW = w
-    ns._activeSizeH = h
-    if ns._RefreshProxyModes then
-        ns._RefreshProxyModes()
+    mod._activeSizeW = wid
+    mod._activeSizeH = hgt
+    if mod._RefreshProxyModes then
+        mod._RefreshProxyModes()
     end
     LayoutGroups()
     -- Container footprint may have changed: re-derive the growth-corner anchor
     -- so the pinned corner holds during live slider drags and the unlock
     -- framework's OnSizeChanged can never leave a stale centered position.
-    if ns._ApplyTierOffset then
-        ns._ApplyTierOffset()
+    if mod._ApplyTierOffset then
+        mod._ApplyTierOffset()
     end
 end
 
 -- Lightweight party resize: only changes button/health/power dimensions + container.
 -- No sort/self-first re-chain. Safe for slider hot path.
-ns._ResizePartyButtons = function(w, h)
+mod._ResizePartyButtons = function(wid, hgt)
     if InCombatLockdown() then
         return
     end
-    if not ns._partyAllButtons then
+    if not mod._partyAllButtons then
         return
     end
-    local bw = PixelSnap(w)
-    local bh = PixelSnap(h)
-    local s = db.profile
+    local bw = PixelSnap(wid)
+    local bh = PixelSnap(hgt)
+    local s = saved.profile
     local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
-    local healthH = PixelSnap(bh - ns.RF_HealthPowerInset(s, powerH))
+    local healthH = PixelSnap(bh - mod.RF_HealthPowerInset(s, powerH))
     local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
     -- Auto Resize scale depends on frame size; recompute on this lightweight
     -- width/height slider path (which skips the full reload).
-    if ns._UpdatePartyIndicatorScale then
-        ns._UpdatePartyIndicatorScale()
+    if mod._UpdatePartyIndicatorScale then
+        mod._UpdatePartyIndicatorScale()
     end
     local autoResize = s.partyAutoResizeIndicators
     -- The bars' width: an attached portrait takes its share of the box.
-    local _, _, _, pres = ns.RF_PartyDims(s)
+    local _, _, _, pres = mod.RF_PartyDims(s)
     local barW = bw - ((pres and pres > 0) and PixelSnap(pres) or 0)
-    for _, btn in ipairs(ns._partyAllButtons) do
-        local d = GetFFD(btn)
+    for _, button in ipairs(mod._partyAllButtons) do
+        local d = GetFFD(button)
         if d.styled then
-            btn:SetSize(bw, bh)
+            button:SetSize(bw, bh)
             if d.kit then
                 -- Party Frames kit: its own bar rects, spots and name width
                 -- (Frame Scale drags land here).
-                ns.RF_ApplyPartyKit(btn, d, ns._scaledPartyProxy)
+                mod.RF_ApplyPartyKit(button, d, mod._scaledPartyProxy)
             else
                 -- Use full height if power bar is hidden for this button's role; the
                 -- Top Name Bar always reserves topBarH from the top.
@@ -444,10 +444,10 @@ ns._ResizePartyButtons = function(w, h)
                     local hh = ((d.power and d.power:IsShown()) and healthH or bh) - topBarH
                     d.health:SetHeight(hh)
                 end
-                ns.RF_TextNameWidth(d, barW)
+                mod.RF_TextNameWidth(d, barW)
                 -- Party portrait: the attached square follows the height.
                 if d.pt then
-                    ns.RF_PtApply(btn, d, ns._scaledPartyProxy, bw, bh, nil)
+                    mod.RF_PtApply(button, d, mod._scaledPartyProxy, bw, bh, nil)
                 end
             end
             -- Live-rescale indicators/auras. No-op for hidden buttons / no unit
@@ -455,7 +455,7 @@ ns._ResizePartyButtons = function(w, h)
             if autoResize then
                 -- Scale derives from frame size (recomputed above): re-apply
                 -- the scaled sizes during the drag (same set as the full reload).
-                local pp = ns._scaledPartyProxy
+                local pp = mod._scaledPartyProxy
                 if d.roleIcon then
                     local riSz = PixelSnap(pp.roleIconSize or 14)
                     d.roleIcon:SetSize(riSz, riSz)
@@ -478,7 +478,7 @@ ns._ResizePartyButtons = function(w, h)
                         d.AnchorCombatIcon()
                     end
                 end
-                ns.RF_TextFonts(d, pp)
+                mod.RF_TextFonts(d, pp)
                 if d.statusText then
                     ApplyFont(d.statusText, pp.statusTextSize or 14)
                 end
@@ -490,16 +490,16 @@ ns._ResizePartyButtons = function(w, h)
     -- the header's own size DO follow the live size: keeps the self button
     -- aligned with the stack and the centered child anchors growing from the
     -- correct origin. Pure anchor tracking -- no secure re-process, no blink.
-    if ns._PositionPartySlots then
-        local _, _, pcs = ns.RF_PartyDims(s)
-        ns._PositionPartySlots(bw, bh, PixelSnap(pcs) + ns.PT_AlongPitch(s), ns._PartyGrowth(s))
+    if mod._PositionPartySlots then
+        local _, _, pcs = mod.RF_PartyDims(s)
+        mod._PositionPartySlots(bw, bh, PixelSnap(pcs) + mod.PT_AlongPitch(s), mod._PartyGrowth(s))
     end
 end
 
 -- Convert a saved (point, relPoint, x, y) UIParent anchor to the TOPLEFT
 -- screen coords (UIParent bottom-left space, same space GetLeft/GetTop use)
 -- the frame would occupy at the given size.
-ns._RFPosTopLeft = function(pos, w, h)
+mod._RFPosTopLeft = function(place, wid, hgt)
     local uw, uh = UIParent:GetWidth(), UIParent:GetHeight()
     local function frac(p)
         p = p or "CENTER"
@@ -507,11 +507,11 @@ ns._RFPosTopLeft = function(pos, w, h)
         local fy = (p:find("BOTTOM") and 0) or (p:find("TOP") and 1) or 0.5
         return fx, fy
     end
-    local rfx, rfy = frac(pos.relPoint)
-    local pfx, pfy = frac(pos.point)
-    local ax = uw * rfx + (pos.x or 0)
-    local ay = uh * rfy + (pos.y or 0)
-    return ax - pfx * w, ay + (1 - pfy) * h
+    local rfx, rfy = frac(place.relPoint)
+    local pfx, pfy = frac(place.point)
+    local ax = uw * rfx + (place.x or 0)
+    local ay = uh * rfy + (place.y or 0)
+    return ax - pfx * wid, ay + (1 - pfy) * hgt
 end
 
 -- Groups stacked in one column before the flow steps to the next column, for
@@ -519,7 +519,7 @@ end
 -- top to bottom, G3/G4 the column to its right. Fixed at 2 so a 20-man raid
 -- lands on the classic 2x2 block; a plain direction is the same flow with one
 -- group per column (every other value below).
-ns._RF_GRID_ROWS = 2
+mod._RF_GRID_ROWS = 2
 
 -- Group slot origins (relative to the growth corner, before normalization) for a
 -- group growth direction, plus the origin those slots normalize against (min x,
@@ -532,8 +532,8 @@ ns._RF_GRID_ROWS = 2
 -- same per-slot step instead of rescaling the box in front of it. `out`, when
 -- given, is refilled in place (its slot pairs reused) and returned instead of a
 -- new table.
-ns._RFGroupFlow = function(groupGrowth, groupW, groupH, gs, count, out)
-    local n = count or MOVER_GROUPS
+mod._RFGroupFlow = function(groupGrowth, groupW, groupH, gs, total, result)
+    local num = total or MOVER_GROUPS
     local stepX, stepY = 0, 0
     if groupGrowth == "DOWNRIGHT" then
         -- Column advance is horizontal; the rows inside a column run down.
@@ -547,25 +547,25 @@ ns._RFGroupFlow = function(groupGrowth, groupW, groupH, gs, count, out)
     else
         stepX = -(groupW + gs) -- LEFT
     end
-    local slots, minX, maxY = out or {}, 0, 0
-    for i = 0, n - 1 do
+    local slots, minX, maxY = result or {}, 0, 0
+    for idx = 0, num - 1 do
         local px, py
         if groupGrowth == "DOWNRIGHT" then
-            px = floor(i / ns._RF_GRID_ROWS) * stepX
-            py = (i % ns._RF_GRID_ROWS) * stepY
+            px = floor(idx / mod._RF_GRID_ROWS) * stepX
+            py = (idx % mod._RF_GRID_ROWS) * stepY
         else
-            px, py = i * stepX, i * stepY
+            px, py = idx * stepX, idx * stepY
         end
-        local p = slots[i]
+        local p = slots[idx]
         if p then
             p[1], p[2] = px, py
         else
-            slots[i] = { px, py }
+            slots[idx] = { px, py }
         end
     end
-    local nc = min(MOVER_GROUPS, n)
-    for i = 0, nc - 1 do
-        local px, py = slots[i][1], slots[i][2]
+    local nc = min(MOVER_GROUPS, num)
+    for idx = 0, nc - 1 do
+        local px, py = slots[idx][1], slots[idx][2]
         if px < minX then
             minX = px
         end
@@ -581,7 +581,7 @@ end
 -- must self-heal (ns._RFEffectiveGrowth) BEFORE calling either, so the size and
 -- the corner agree -- this function does not self-heal internally to avoid a
 -- caller healing one but not the other.
-ns._RFFootprint = function(bw, bh, unitGrowth, groupGrowth, cs, gs)
+mod._RFFootprint = function(bw, bh, unitGrowth, groupGrowth, cs, gs)
     bw, bh = PixelSnap(bw), PixelSnap(bh)
     local groupW, groupH
     if unitGrowth == "RIGHT" or unitGrowth == "LEFT" then
@@ -595,9 +595,9 @@ ns._RFFootprint = function(bw, bh, unitGrowth, groupGrowth, cs, gs)
         -- Grid flow: one column of ns._RF_GRID_ROWS groups, then the next
         -- column to its right (see ns._RFGroupFlow). MOVER_GROUPS (4) fills
         -- two columns at any row count that divides it.
-        local rows = ns._RF_GRID_ROWS
-        local cols = floor((MOVER_GROUPS + rows - 1) / rows)
-        return PixelSnap(cols * groupW + (cols - 1) * gs), PixelSnap(rows * groupH + (rows - 1) * gs)
+        local rowList = mod._RF_GRID_ROWS
+        local cols = floor((MOVER_GROUPS + rowList - 1) / rowList)
+        return PixelSnap(cols * groupW + (cols - 1) * gs), PixelSnap(rowList * groupH + (rowList - 1) * gs)
     end
     if groupGrowth == "DOWN" or groupGrowth == "UP" then
         return PixelSnap(groupW), PixelSnap(MOVER_GROUPS * groupH + (MOVER_GROUPS - 1) * gs)
@@ -609,18 +609,18 @@ end
 -- growth origin for every size tier and the previews. Also returns the base footprint's
 -- width/height so corner math never recomputes it (extra return values -- existing
 -- two-value callers are unaffected). Returns nil when no position has been saved yet.
-ns._RFBaseTopLeft = function()
-    local s = db.profile
-    local pos = s.unlockPos
-    if not pos then
+mod._RFBaseTopLeft = function()
+    local s = saved.profile
+    local place = s.unlockPos
+    if not place then
         return nil
     end
-    local cs = ns.RF_CellSpacing(s)
-    local gs = ns.RF_GroupSpacing(s)
-    local ug, gg = ns._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", s.mergeGroups)
-    local w, h = ns._RFFootprint(s.frameWidth or 72, s.frameHeight or 46, ug, gg, cs, gs)
-    local l, t = ns._RFPosTopLeft(pos, w, h)
-    return l, t, w, h
+    local cs = mod.RF_CellSpacing(s)
+    local gs = mod.RF_GroupSpacing(s)
+    local ug, gg = mod._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", s.mergeGroups)
+    local wid, hgt = mod._RFFootprint(s.frameWidth or 72, s.frameHeight or 46, ug, gg, cs, gs)
+    local l, t = mod._RFPosTopLeft(place, wid, hgt)
+    return l, t, wid, hgt
 end
 
 -- Shared growth-direction helpers. A single source of truth for "is this
@@ -628,12 +628,12 @@ end
 -- and columnAnchorPoint from a growth pair -- both _LayoutGroupsImpl and
 -- _BuildHeaderSet's header-creation bootstrap need the identical derivation,
 -- and previously hand-duplicated it.
-ns._RFGrowthIsVertical = function(g)
+mod._RFGrowthIsVertical = function(g)
     return g == "DOWN" or g == "UP"
 end
 
 -- First-button point/xOffset/yOffset for a header growing along unitGrowth.
-ns._RFHeaderPoint = function(unitGrowth, cs)
+mod._RFHeaderPoint = function(unitGrowth, cs)
     if unitGrowth == "DOWN" then
         return "TOP", 0, -cs
     elseif unitGrowth == "UP" then
@@ -648,14 +648,14 @@ end
 -- Blizzard's flat header can only wrap into columns when columnAnchorPoint runs
 -- perpendicular to unitGrowth -- see ns._RFEffectiveGrowth below for why merged
 -- mode never actually reaches a same-axis pair here in practice.
-ns._RFColAnchor = function(unitGrowth, groupGrowth)
+mod._RFColAnchor = function(unitGrowth, groupGrowth)
     if groupGrowth == "DOWN" or groupGrowth == "RIGHT" then
-        if ns._RFGrowthIsVertical(unitGrowth) then
+        if mod._RFGrowthIsVertical(unitGrowth) then
             return "LEFT"
         end
         return "TOP"
     else -- UP or LEFT
-        if ns._RFGrowthIsVertical(unitGrowth) then
+        if mod._RFGrowthIsVertical(unitGrowth) then
             return "RIGHT"
         end
         return "BOTTOM"
@@ -670,7 +670,7 @@ end
 -- Growth dropdown, which deliberately lets Unit Growth win instead. Also maps the
 -- grid flow ("Down and then Right") onto the single column axis the flat header
 -- can render; no-op if not merged.
-ns._RFEffectiveGrowth = function(unitGrowth, groupGrowth, merged)
+mod._RFEffectiveGrowth = function(unitGrowth, groupGrowth, merged)
     if not merged then
         return unitGrowth, groupGrowth
     end
@@ -680,8 +680,8 @@ ns._RFEffectiveGrowth = function(unitGrowth, groupGrowth, merged)
     if groupGrowth == "DOWNRIGHT" then
         groupGrowth = "RIGHT"
     end
-    if ns._RFGrowthIsVertical(unitGrowth) == ns._RFGrowthIsVertical(groupGrowth) then
-        unitGrowth = ns._RFGrowthIsVertical(unitGrowth) and "RIGHT" or "DOWN"
+    if mod._RFGrowthIsVertical(unitGrowth) == mod._RFGrowthIsVertical(groupGrowth) then
+        unitGrowth = mod._RFGrowthIsVertical(unitGrowth) and "RIGHT" or "DOWN"
     end
     return unitGrowth, groupGrowth
 end
@@ -700,25 +700,25 @@ end
 -- With centered (Center Groups), the group axis pins its MIDPOINT instead: the
 -- result is the edge midpoint on the other axis (TOP/BOTTOM for a horizontal
 -- group run, LEFT/RIGHT for a vertical one).
-ns._RFGrowthCorner = function(unitGrowth, groupGrowth, centered)
-    local h = (unitGrowth == "LEFT" or groupGrowth == "LEFT") and "RIGHT" or "LEFT"
-    local v = (unitGrowth == "UP" or groupGrowth == "UP") and "BOTTOM" or "TOP"
+mod._RFGrowthCorner = function(unitGrowth, groupGrowth, centered)
+    local hgt = (unitGrowth == "LEFT" or groupGrowth == "LEFT") and "RIGHT" or "LEFT"
+    local val = (unitGrowth == "UP" or groupGrowth == "UP") and "BOTTOM" or "TOP"
     if centered then
-        return ns._RFGrowthIsVertical(groupGrowth) and h or v
+        return mod._RFGrowthIsVertical(groupGrowth) and hgt or val
     end
-    return v .. h
+    return val .. hgt
 end
 
 -- Whether Center Groups applies for an effective (self-healed) group growth: the
 -- tier override's own value when it has one, else the base key. The grid flow has
 -- two group axes and never centers.
-ns._RFGroupCentered = function(ov, groupGrowth)
+mod._RFGroupCentered = function(shade, groupGrowth)
     if groupGrowth == "DOWNRIGHT" then
         return false
     end
-    local c = db.profile.groupGrowthCentered
-    if ov and ov.groupGrowthCentered ~= nil then
-        c = ov.groupGrowthCentered
+    local c = saved.profile.groupGrowthCentered
+    if shade and shade.groupGrowthCentered ~= nil then
+        c = shade.groupGrowthCentered
     end
     return c == true
 end
@@ -726,8 +726,8 @@ end
 -- Pixel-snapped shift that centers a run of n groups inside the MOVER_GROUPS box,
 -- along the per-slot step of a _RFGroupFlow slot list (needs slots 0 and 1). More
 -- than MOVER_GROUPS groups give a negative shift: the run overflows both sides.
-ns._RFCenterShift = function(slots, n)
-    local f = (MOVER_GROUPS - n) / 2
+mod._RFCenterShift = function(slots, num)
+    local f = (MOVER_GROUPS - num) / 2
     return PixelSnap(f * (slots[1][1] - slots[0][1])), PixelSnap(f * (slots[1][2] - slots[0][2]))
 end
 
@@ -738,8 +738,8 @@ end
 -- (_RFRebaseSavedCenter) all read these two values. Both terms are zero when the
 -- footprints match, so the base tier is exact by arithmetic. A centered axis pins the
 -- midpoint, so it moves by half the size difference.
-ns._RFCornerTerms = function(tw, th, bw, bh, unitGrowth, groupGrowth, centered)
-    local corner = ns._RFGrowthCorner(unitGrowth, groupGrowth, centered)
+mod._RFCornerTerms = function(tw, th, bw, bh, unitGrowth, groupGrowth, centered)
+    local corner = mod._RFGrowthCorner(unitGrowth, groupGrowth, centered)
     local fx = (corner:find("RIGHT") and 1) or (corner:find("LEFT") and 0) or 0.5
     local fy = (corner:find("BOTTOM") and 1) or (corner:find("TOP") and 0) or 0.5
     return fx * (bw - tw), -fy * (bh - th)
@@ -752,12 +752,12 @@ end
 -- exactly where live frames land. Base footprint / zero offsets: every corner term
 -- cancels, plain base top-left -- profiles without raidSizeOverrides unaffected. Returns
 -- nil with no saved unlock position.
-ns._RFTierTopLeft = function(tw, th, unitGrowth, groupGrowth, ox, oy, centered)
-    local bl, bt, bw, bh = ns._RFBaseTopLeft()
+mod._RFTierTopLeft = function(tw, th, unitGrowth, groupGrowth, ox, oy, centered)
+    local bl, bt, bw, bh = mod._RFBaseTopLeft()
     if not bl then
         return nil
     end
-    local kx, ky = ns._RFCornerTerms(tw, th, bw, bh, unitGrowth, groupGrowth, centered)
+    local kx, ky = mod._RFCornerTerms(tw, th, bw, bh, unitGrowth, groupGrowth, centered)
     return bl + (ox or 0) + kx, bt + (oy or 0) + ky
 end
 
@@ -766,8 +766,8 @@ end
 -- the cascade -- _GetRaidSizeFrameDimensions, ReloadFrames and
 -- _ApplyTierOffset all route through here. Returns tier, override; the
 -- override is nil for the base 20 tier or when none is defined.
-ns._RFResolveTierOverride = function(numMembers)
-    local overrides = db.profile.raidSizeOverrides
+mod._RFResolveTierOverride = function(numMembers)
+    local overrides = saved.profile.raidSizeOverrides
     if not overrides or not numMembers or numMembers <= 0 then
         return 20, nil
     end
@@ -799,19 +799,19 @@ ns._RFResolveTierOverride = function(numMembers)
     if tier == 20 then
         return 20, nil
     end
-    local ov
+    local shade
     if tier < 20 then
-        ov = overrides[tier] or (tier == 10 and overrides[15]) or nil
+        shade = overrides[tier] or (tier == 10 and overrides[15]) or nil
     else
-        ov = overrides[tier]
-        if not ov and tier == 30 then
-            ov = overrides[25]
+        shade = overrides[tier]
+        if not shade and tier == 30 then
+            shade = overrides[25]
         end
-        if not ov and tier == 40 then
-            ov = overrides[30] or overrides[25]
+        if not shade and tier == 40 then
+            shade = overrides[30] or overrides[25]
         end
     end
-    return tier, ov or nil
+    return tier, shade or nil
 end
 
 -- Inverse of the corner scheme, for the unlock mover SAVE path only. The framework
@@ -821,39 +821,45 @@ end
 -- _ApplyTierOffset reproduces the drop position (within one physical pixel of
 -- snapping). With the base tier active, or no overrides defined, every term cancels and
 -- the center passes through unchanged -- zero behavior change for base saves.
-ns._RFRebaseSavedCenter = function(cx, cy)
-    local s = db.profile
-    local _, ov = ns._RFResolveTierOverride(ns._GetEffectiveRaidSize())
-    if not ov then
+mod._RFRebaseSavedCenter = function(cx, cy)
+    local s = saved.profile
+    local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
+    if not shade then
         return cx, cy
     end
-    local cs = ns.RF_CellSpacing(s)
-    local gs = ns.RF_GroupSpacing(s)
-    local bug, bgg = ns._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", s.mergeGroups)
-    local bw, bh = ns._RFFootprint(s.frameWidth or 72, s.frameHeight or 46, bug, bgg, cs, gs)
-    local ug, gg = ns._RFEffectiveGrowth(
-        ov.unitGrowth or s.unitGrowth or "DOWN",
-        ov.groupGrowth or s.groupGrowth or "RIGHT",
+    local cs = mod.RF_CellSpacing(s)
+    local gs = mod.RF_GroupSpacing(s)
+    local bug, bgg = mod._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", s.mergeGroups)
+    local bw, bh = mod._RFFootprint(s.frameWidth or 72, s.frameHeight or 46, bug, bgg, cs, gs)
+    local ug, gg = mod._RFEffectiveGrowth(
+        shade.unitGrowth or s.unitGrowth or "DOWN",
+        shade.groupGrowth or s.groupGrowth or "RIGHT",
         s.mergeGroups
     )
-    local tw, th =
-        ns._RFFootprint(ov.width or s.frameWidth or 72, ov.height or s.frameHeight or 46, ug, gg, cs, gs)
-    local kx, ky = ns._RFCornerTerms(tw, th, bw, bh, ug, gg, ns._RFGroupCentered(ov, gg))
-    return cx - (ov.offsetX or 0) - kx - (tw - bw) / 2, cy - (ov.offsetY or 0) - ky - (bh - th) / 2
+    local tw, th = mod._RFFootprint(
+        shade.width or s.frameWidth or 72,
+        shade.height or s.frameHeight or 46,
+        ug,
+        gg,
+        cs,
+        gs
+    )
+    local kx, ky = mod._RFCornerTerms(tw, th, bw, bh, ug, gg, mod._RFGroupCentered(shade, gg))
+    return cx - (shade.offsetX or 0) - kx - (tw - bw) / 2, cy - (shade.offsetY or 0) - ky - (bh - th) / 2
 end
 
 -- Owned creation point for raidSizeOverrides: fresh tables are ALREADY in
 -- the current offset scheme, so both one-time conversion markers are
 -- stamped at birth -- otherwise the next _NormalizeTierOffsetAnchors pass
 -- would "convert" (and silently shift) offsets that were never old-scheme.
-ns._EnsureRaidSizeOverrides = function()
-    local s = db.profile
+mod._EnsureRaidSizeOverrides = function()
+    local s = saved.profile
     if not s.raidSizeOverrides then
         s.raidSizeOverrides = { _topLeftAnchored = true, _cornerAnchored = true }
     else
         -- Existing table: run any pending conversion now so edits that
         -- follow operate on post-conversion values.
-        ns._NormalizeTierOffsetAnchors()
+        mod._NormalizeTierOffsetAnchors()
     end
     return s.raidSizeOverrides
 end
@@ -867,13 +873,13 @@ end
 --   #2 (_cornerAnchored): TOPLEFT-relative offsets -> offsets relative to the
 --      growth-derived pinned corner (ns._RFGrowthCorner). Only tiers whose effective
 --      growth pins RIGHT and/or BOTTOM change; DOWN+RIGHT tiers keep identical offsets.
-ns._NormalizeTierOffsetAnchors = function()
-    local s = db and db.profile
+mod._NormalizeTierOffsetAnchors = function()
+    local s = saved and saved.profile
     if not s then
         return
     end
-    local ov = s.raidSizeOverrides
-    if not ov then
+    local shade = s.raidSizeOverrides
+    if not shade then
         return
     end
     -- Heal string-keyed numeric tiers ("25" beside 25): planted by the spec
@@ -885,40 +891,40 @@ ns._NormalizeTierOffsetAnchors = function()
     -- tier it was meant to be. Must run BEFORE the markers early-return below:
     -- converted profiles are the common carriers.
     local phantoms
-    for k, v in pairs(ov) do
-        if type(k) == "string" and tonumber(k) ~= nil and type(v) == "table" then
+    for key, val in pairs(shade) do
+        if type(key) == "string" and tonumber(key) ~= nil and type(val) == "table" then
             phantoms = phantoms or {}
-            phantoms[#phantoms + 1] = k
+            phantoms[#phantoms + 1] = key
         end
     end
     if phantoms then
-        for i = 1, #phantoms do
-            local k = phantoms[i]
-            local n = tonumber(k)
-            if ov[n] == nil then
-                ov[n] = ov[k]
+        for idx = 1, #phantoms do
+            local key = phantoms[idx]
+            local num = tonumber(key)
+            if shade[num] == nil then
+                shade[num] = shade[key]
             end
-            ov[k] = nil
+            shade[key] = nil
         end
     end
-    if ov._topLeftAnchored and ov._cornerAnchored then
+    if shade._topLeftAnchored and shade._cornerAnchored then
         return
     end
-    local cs = ns.RF_CellSpacing(s)
-    local gs = ns.RF_GroupSpacing(s)
-    local pos = s.unlockPos
-    local bl, bt, bw, bh = ns._RFBaseTopLeft()
-    if not ov._topLeftAnchored then
-        ov._topLeftAnchored = true
-        if pos and bl then
-            for _, o in pairs(ov) do
+    local cs = mod.RF_CellSpacing(s)
+    local gs = mod.RF_GroupSpacing(s)
+    local place = s.unlockPos
+    local bl, bt, bw, bh = mod._RFBaseTopLeft()
+    if not shade._topLeftAnchored then
+        shade._topLeftAnchored = true
+        if place and bl then
+            for _, o in pairs(shade) do
                 if type(o) == "table" then
-                    local ug, gg = ns._RFEffectiveGrowth(
+                    local ug, gg = mod._RFEffectiveGrowth(
                         o.unitGrowth or s.unitGrowth or "DOWN",
                         o.groupGrowth or s.groupGrowth or "RIGHT",
                         s.mergeGroups
                     )
-                    local tw, th = ns._RFFootprint(
+                    local tw, th = mod._RFFootprint(
                         o.width or s.frameWidth or 72,
                         o.height or s.frameHeight or 46,
                         ug,
@@ -926,24 +932,24 @@ ns._NormalizeTierOffsetAnchors = function()
                         cs,
                         gs
                     )
-                    local tl, tt = ns._RFPosTopLeft(pos, tw, th)
+                    local tl, tt = mod._RFPosTopLeft(place, tw, th)
                     o.offsetX = math.floor((o.offsetX or 0) + (tl - bl) + 0.5)
                     o.offsetY = math.floor((o.offsetY or 0) + (tt - bt) + 0.5)
                 end
             end
         end
     end
-    if not ov._cornerAnchored then
-        ov._cornerAnchored = true
-        if pos and bl then
-            for _, o in pairs(ov) do
+    if not shade._cornerAnchored then
+        shade._cornerAnchored = true
+        if place and bl then
+            for _, o in pairs(shade) do
                 if type(o) == "table" then
-                    local ug, gg = ns._RFEffectiveGrowth(
+                    local ug, gg = mod._RFEffectiveGrowth(
                         o.unitGrowth or s.unitGrowth or "DOWN",
                         o.groupGrowth or s.groupGrowth or "RIGHT",
                         s.mergeGroups
                     )
-                    local tw, th = ns._RFFootprint(
+                    local tw, th = mod._RFFootprint(
                         o.width or s.frameWidth or 72,
                         o.height or s.frameHeight or 46,
                         ug,
@@ -951,7 +957,7 @@ ns._NormalizeTierOffsetAnchors = function()
                         cs,
                         gs
                     )
-                    local kx, ky = ns._RFCornerTerms(tw, th, bw, bh, ug, gg)
+                    local kx, ky = mod._RFCornerTerms(tw, th, bw, bh, ug, gg)
                     if kx ~= 0 then
                         o.offsetX = math.floor((o.offsetX or 0) - kx + 0.5)
                     end
@@ -978,11 +984,11 @@ end
 -- applying it after would sit outside the anchor's idempotent guard and reposition every pass forever.
 CludesUI._anchorExtraOffset = CludesUI._anchorExtraOffset or {}
 CludesUI._anchorExtraOffset["RF_RaidFrames"] = function()
-    local _, ov = ns._RFResolveTierOverride(ns._GetEffectiveRaidSize())
-    return (ov and ov.offsetX) or 0, (ov and ov.offsetY) or 0
+    local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
+    return (shade and shade.offsetX) or 0, (shade and shade.offsetY) or 0
 end
 
-ns._ApplyTierOffset = function()
+mod._ApplyTierOffset = function()
     if not containerFrame or InCombatLockdown() then
         return
     end
@@ -1003,35 +1009,35 @@ ns._ApplyTierOffset = function()
         end
         return
     end
-    local s = db.profile
+    local s = saved.profile
     if not s.unlockPos then
         return
     end
-    local _, ov = ns._RFResolveTierOverride(ns._GetEffectiveRaidSize())
-    local cs = ns.RF_CellSpacing(s)
-    local gs = ns.RF_GroupSpacing(s)
-    local fw = (ov and ov.width) or s.frameWidth or 72
-    local fh = (ov and ov.height) or s.frameHeight or 46
-    local ug, gg = ns._RFEffectiveGrowth(
-        (ov and ov.unitGrowth) or s.unitGrowth or "DOWN",
-        (ov and ov.groupGrowth) or s.groupGrowth or "RIGHT",
+    local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
+    local cs = mod.RF_CellSpacing(s)
+    local gs = mod.RF_GroupSpacing(s)
+    local fw = (shade and shade.width) or s.frameWidth or 72
+    local fh = (shade and shade.height) or s.frameHeight or 46
+    local ug, gg = mod._RFEffectiveGrowth(
+        (shade and shade.unitGrowth) or s.unitGrowth or "DOWN",
+        (shade and shade.groupGrowth) or s.groupGrowth or "RIGHT",
         s.mergeGroups
     )
-    local tw, th = ns._RFFootprint(fw, fh, ug, gg, cs, gs)
-    local x, y = ns._RFTierTopLeft(
+    local tw, th = mod._RFFootprint(fw, fh, ug, gg, cs, gs)
+    local posX, posY = mod._RFTierTopLeft(
         tw,
         th,
         ug,
         gg,
-        (ov and ov.offsetX) or 0,
-        (ov and ov.offsetY) or 0,
-        ns._RFGroupCentered(ov, gg)
+        (shade and shade.offsetX) or 0,
+        (shade and shade.offsetY) or 0,
+        mod._RFGroupCentered(shade, gg)
     )
-    if not x then
+    if not posX then
         return
     end
     containerFrame:ClearAllPoints()
-    containerFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PixelSnap(x), PixelSnap(y))
+    containerFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PixelSnap(posX), PixelSnap(posY))
     -- Hidden container (frames not shown -- solo, party, or just left the raid):
     -- LayoutGroups no longer runs for it, so re-derive the SIZE here too. Left alone,
     -- the dormant container keeps the LAST raid tier's footprint, and unlock mode's
@@ -1044,8 +1050,8 @@ ns._ApplyTierOffset = function()
     end
 end
 
-I.ReloadFrames = ReloadFrames
-I.SetRangeUpdate = function(f)
+Inner.ReloadFrames = ReloadFrames
+Inner.SetRangeUpdate = function(f)
     RangeUpdate = f
 end
-I.broken = false
+Inner.broken = false

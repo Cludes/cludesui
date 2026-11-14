@@ -25,7 +25,7 @@ local F = module.Feature("gearSets", DEFAULTS, { point = "CENTER", relPoint = "C
 local Get, Enabled = F.Get, F.Enabled
 
 local GAP = 3
-local holder
+local holderFrame
 local buttons = {}
 local queuedSet -- a set to wear once combat ends
 local previous -- the set worn before an automatic swap
@@ -33,23 +33,23 @@ local previous -- the set worn before an automatic swap
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Say(text)
-    CludesUI.Print("|cff4cc9f0Gear Sets:|r " .. text)
+local function Say(textValue)
+    CludesUI.Print("|cff4cc9f0Gear Sets:|r " .. textValue)
 end
 
 --- { {id, name, icon, equipped}, ... } sorted by name.
 function module.GearSetList()
-    local out = {}
-    for _, id in ipairs(C_EquipmentSet.GetEquipmentSetIDs() or {}) do
-        local name, icon, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(id)
+    local result = {}
+    for _, ident in ipairs(C_EquipmentSet.GetEquipmentSetIDs() or {}) do
+        local name, glyph, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(ident)
         if name then
-            out[#out + 1] = { id = id, name = name, icon = icon, equipped = equipped }
+            result[#result + 1] = { id = ident, name = name, icon = glyph, equipped = equipped }
         end
     end
-    table.sort(out, function(a, b)
+    table.sort(result, function(a, b)
         return a.name < b.name
     end)
-    return out
+    return result
 end
 
 local function Wearing()
@@ -67,16 +67,16 @@ local function SetByName(name)
     return C_EquipmentSet.GetEquipmentSetID(name)
 end
 
-local function Wear(id)
-    if not id then
+local function Wear(ident)
+    if not ident then
         return
     end
     if InCombatLockdown() then
-        queuedSet = id
+        queuedSet = ident
         return
     end
     queuedSet = nil
-    C_EquipmentSet.UseEquipmentSet(id)
+    C_EquipmentSet.UseEquipmentSet(ident)
 end
 
 local function Paint()
@@ -89,12 +89,12 @@ local function Paint()
     end
 end
 
-local function Button(i)
-    local b = buttons[i]
+local function Button(idx)
+    local b = buttons[idx]
     if b then
         return b
     end
-    b = CreateFrame("Button", nil, holder)
+    b = CreateFrame("Button", nil, holderFrame)
     b.icon = b:CreateTexture(nil, "ARTWORK")
     b.icon:SetAllPoints()
     b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -129,32 +129,32 @@ local function Button(i)
     b:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[i] = b
+    buttons[idx] = b
     return b
 end
 
 local function Layout()
-    if not holder then
+    if not holderFrame then
         return
     end
-    local size = Get("iconSize")
-    local list = Enabled() and module.GearSetList() or {}
-    for i, s in ipairs(list) do
-        local b = Button(i)
+    local dim = Get("iconSize")
+    local entries = Enabled() and module.GearSetList() or {}
+    for idx, s in ipairs(entries) do
+        local b = Button(idx)
         b.setID, b.setName = s.id, s.name
         b.icon:SetTexture(s.icon)
         b.name:SetText(s.name)
-        b:SetSize(size, size)
+        b:SetSize(dim, dim)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holder, "LEFT", (i - 1) * (size + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
         b:Show()
     end
-    for i = #list + 1, #buttons do
-        buttons[i]:Hide()
-        buttons[i].setID = nil
+    for idx = #entries + 1, #buttons do
+        buttons[idx]:Hide()
+        buttons[idx].setID = nil
     end
-    holder:SetSize(math.max(1, #list) * (size + GAP) - GAP, size)
-    holder:SetShown(Enabled() and (#list > 0 or CludesUI._unlockActive) and true or false)
+    holderFrame:SetSize(math.max(1, #entries) * (dim + GAP) - GAP, dim)
+    holderFrame:SetShown(Enabled() and (#entries > 0 or CludesUI._unlockActive) and true or false)
     Paint()
 end
 
@@ -164,19 +164,19 @@ local function AutoSwap()
     if not Enabled() then
         return
     end
-    local want
+    local wanted
     if IsMounted() then
-        want = SetByName(Get("mountedSet"))
+        wanted = SetByName(Get("mountedSet"))
     end
-    if not want and IsResting() then
-        want = SetByName(Get("restingSet"))
+    if not wanted and IsResting() then
+        wanted = SetByName(Get("restingSet"))
     end
-    if want then
+    if wanted then
         if not previous then
             previous = Wearing() or false
         end
-        if Wearing() ~= want then
-            Wear(want)
+        if Wearing() ~= wanted then
+            Wear(wanted)
         end
     elseif previous ~= nil then
         local back = previous
@@ -188,27 +188,27 @@ local function AutoSwap()
 end
 
 local function Build()
-    if holder then
-        return holder
+    if holderFrame then
+        return holderFrame
     end
-    holder = CreateFrame("Frame", "CludesUIGearSets", UIParent)
-    holder:SetSize(Get("iconSize"), Get("iconSize"))
-    return holder
+    holderFrame = CreateFrame("Frame", "CludesUIGearSets", UIParent)
+    holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
+    return holderFrame
 end
 
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_REGEN_ENABLED" then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_REGEN_ENABLED" then
         if queuedSet then
             Wear(queuedSet)
         end
         return AutoSwap()
-    elseif event == "EQUIPMENT_SETS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "EQUIPMENT_SETS_CHANGED" or evt == "PLAYER_ENTERING_WORLD" then
         Layout()
-        if event == "PLAYER_ENTERING_WORLD" then
+        if evt == "PLAYER_ENTERING_WORLD" then
             AutoSwap()
         end
-    elseif event == "PLAYER_MOUNT_DISPLAY_CHANGED" or event == "PLAYER_UPDATE_RESTING" then
+    elseif evt == "PLAYER_MOUNT_DISPLAY_CHANGED" or evt == "PLAYER_UPDATE_RESTING" then
         AutoSwap()
     else
         Paint()
@@ -230,7 +230,7 @@ local function Apply()
             ev:RegisterEvent(e)
         end
         if not CludesUI._unlockActive then
-            F.Place(holder)
+            F.Place(holderFrame)
         end
     else
         ev:UnregisterAllEvents()
@@ -248,9 +248,9 @@ function module.SaveGearSet(name)
     if InCombatLockdown() then
         return Say("sets cannot be saved in combat.")
     end
-    local id = C_EquipmentSet.GetEquipmentSetID(name)
-    if id then
-        C_EquipmentSet.SaveEquipmentSet(id)
+    local ident = C_EquipmentSet.GetEquipmentSetID(name)
+    if ident then
+        C_EquipmentSet.SaveEquipmentSet(ident)
         Say("saved what you wear over " .. name .. ".")
     else
         C_EquipmentSet.CreateEquipmentSet(name)
@@ -276,11 +276,11 @@ F.Start(Apply, {
             Build()
             Layout()
         end
-        return holder
+        return holderFrame
     end,
     size = function()
-        local size = Get("iconSize")
-        return size * 4 + GAP * 3, size
+        local dim = Get("iconSize")
+        return dim * 4 + GAP * 3, dim
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

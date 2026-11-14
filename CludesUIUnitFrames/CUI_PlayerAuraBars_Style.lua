@@ -8,18 +8,18 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  candidate extras of both polarities.
 --  Reads the earlier Player Aura Bars files through ns and ns._pabInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._pabInternals
+local _, mod = ...
+local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local PAB_ApplyDmFx, PAB_FxListView = I.PAB_ApplyDmFx, I.PAB_FxListView
-local PabShapeActive, PabShapeBorderSize = I.PabShapeActive, I.PabShapeBorderSize
-local PabShapedSize, PabSnap = I.PabShapedSize, I.PabSnap
+local PAB_ApplyDmFx, PAB_FxListView = Inner.PAB_ApplyDmFx, Inner.PAB_FxListView
+local PabShapeActive, PabShapeBorderSize = Inner.PabShapeActive, Inner.PabShapeBorderSize
+local PabShapedSize, PabSnap = Inner.PabShapedSize, Inner.PabSnap
 
 -------------------------------------------------------------------------------
 --  Container spec construction
@@ -108,15 +108,15 @@ local PV_DISPEL_ICON_POINTS = {
 -- Same shape as RaidFrames' ns.RFC_DispelBorderColorMap: a customDispelColorMap
 -- (dispelName -> Color) for AK's engine-driven border, plus a fingerprint so a
 -- palette edit re-registers the border options (style.dispelColorFP).
-local function BuildDispelColorMap(cfg)
+local function BuildDispelColorMap(conf)
     local map, fp = {}, {}
-    for i = 1, #DISPEL_SLOTS do
-        local def = DISPEL_SLOTS[i]
-        local c = cfg[def.colorKey]
-        local r = (c and c.r) or def.fallback[1]
-        local g = (c and c.g) or def.fallback[2]
-        local b = (c and c.b) or def.fallback[3]
-        map[def.token] = CreateColor(r, g, b, 1)
+    for idx = 1, #DISPEL_SLOTS do
+        local spec_def = DISPEL_SLOTS[idx]
+        local c = conf[spec_def.colorKey]
+        local r = (c and c.r) or spec_def.fallback[1]
+        local g = (c and c.g) or spec_def.fallback[2]
+        local b = (c and c.b) or spec_def.fallback[3]
+        map[spec_def.token] = CreateColor(r, g, b, 1)
         fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", r, g, b)
     end
     return map, table.concat(fp, ";")
@@ -149,7 +149,7 @@ end
 -- d.duration/d.stack are the FontStrings AK's own initializer creates. Adds what AK has
 -- no native field for: duration/stack text color and independent stack-text show/hide
 -- (AK's hideDurationText covers duration hide only, no native stack equivalent).
-local function PAB_ApplyExtraText(button, d, style)
+local function PAB_ApplyExtraText(btnFrame, d, look)
     -- Own text pipeline (style.noDefaultFonts): fonts ride the user's global/per-module
     -- Unit Frames font and the house icon-text outline rules, resolved once per style
     -- rebuild into style.fontPath/fontFlag (see BuildStyle). Font/anchor writes are
@@ -157,26 +157,26 @@ local function PAB_ApplyExtraText(button, d, style)
     -- is policed by the 12.1 button access restriction while auras are secret, so
     -- unchanged values must make zero button-involving calls for restyles to stay live
     -- in-instance.
-    local path = style.fontPath or STANDARD_TEXT_FONT
-    local flag = style.fontFlag or "OUTLINE"
+    local filePath = look.fontPath or STANDARD_TEXT_FONT
+    local flag = look.fontFlag or "OUTLINE"
     if d.duration then
-        local fKey = path .. "|" .. (style.durationFontSize or 11) .. "|" .. flag
+        local fKey = filePath .. "|" .. (look.durationFontSize or 11) .. "|" .. flag
         if d.pabDurFont ~= fKey then
             d.pabDurFont = fKey
             -- Prime the shadow FontObject before SetFont; Drop Shadow mode (empty
             -- flag) keeps the text legible instead of flat.
             CludesUI.PrimeFontShadow(d.duration, flag == "")
-            d.duration:SetFont(path, style.durationFontSize or 11, flag)
+            d.duration:SetFont(filePath, look.durationFontSize or 11, flag)
         end
-        local dp = style.durationPoint or "CENTER"
-        local drp = style.durationRelPoint or "CENTER"
-        local aKey = dp .. "|" .. drp .. "|" .. (style.durationX or 0) .. "|" .. (style.durationY or 0)
+        local dp = look.durationPoint or "CENTER"
+        local drp = look.durationRelPoint or "CENTER"
+        local aKey = dp .. "|" .. drp .. "|" .. (look.durationX or 0) .. "|" .. (look.durationY or 0)
         if d.pabDurAnchor ~= aKey then
             d.duration:ClearAllPoints()
-            d.duration:SetPoint(dp, button, drp, style.durationX or 0, style.durationY or 0)
+            d.duration:SetPoint(dp, btnFrame, drp, look.durationX or 0, look.durationY or 0)
             d.pabDurAnchor = aKey
         end
-        local c = style.durationColor
+        local c = look.durationColor
         d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
         -- "Show S for Seconds" rebind: duration opts land once at creation;
         -- re-register when the style's formatter choice changed. The nil
@@ -185,37 +185,37 @@ local function PAB_ApplyExtraText(button, d, style)
         -- BmRebindDurationCurve rule: a denied registration under the
         -- secret-aura button restriction must leave the stamp unchanged so
         -- the next restyle retries.
-        local wantFmt = (style.durationShowSeconds and "s" or "b")
-            .. tostring(style.durationPrecisionThreshold or 0)
+        local wantFmt = (look.durationShowSeconds and "s" or "b")
+            .. tostring(look.durationPrecisionThreshold or 0)
         if d.durationFmtS ~= nil and d.durationFmtS ~= wantFmt then
             local AK = CludesUI.AuraKit
             local durationOpts = AK.BuildDurationTextOpts(
-                AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold),
-                style.durationColorCurve,
-                style.durationUpdateInterval
+                AK.GetDurationFormatter(look.durationShowSeconds, look.durationPrecisionThreshold),
+                look.durationColorCurve,
+                look.durationUpdateInterval
             )
-            local ok, full = AK.SetDurationTextSafe(button, d.duration, durationOpts)
-            if ok and (full or not style.durationColorCurve) then
+            local success, full = AK.SetDurationTextSafe(btnFrame, d.duration, durationOpts)
+            if success and (full or not look.durationColorCurve) then
                 d.durationFmtS = wantFmt
             end
         end
     end
     if d.stack then
-        local fKey = path .. "|" .. (style.stackFontSize or 11) .. "|" .. flag
+        local fKey = filePath .. "|" .. (look.stackFontSize or 11) .. "|" .. flag
         if d.pabStackFont ~= fKey then
             d.pabStackFont = fKey
             CludesUI.PrimeFontShadow(d.stack, flag == "")
-            d.stack:SetFont(path, style.stackFontSize or 11, flag)
+            d.stack:SetFont(filePath, look.stackFontSize or 11, flag)
         end
-        local sp = style.stackPoint or "BOTTOMRIGHT"
-        local sKey = sp .. "|" .. (style.stackX or 0) .. "|" .. (style.stackY or 0)
+        local sp = look.stackPoint or "BOTTOMRIGHT"
+        local sKey = sp .. "|" .. (look.stackX or 0) .. "|" .. (look.stackY or 0)
         if d.pabStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
-            d.stack:SetPoint(sp, button, sp, style.stackX or 0, style.stackY or 0)
+            d.stack:SetPoint(sp, btnFrame, sp, look.stackX or 0, look.stackY or 0)
             d.pabStackAnchor = sKey
         end
-        d.stack:SetShown(style.showStacks ~= false)
-        local c = style.stackColor
+        d.stack:SetShown(look.showStacks ~= false)
+        local c = look.stackColor
         d.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
     end
 
@@ -232,7 +232,7 @@ local function PAB_ApplyExtraText(button, d, style)
     --      engine paths that re-show the frame outside the hooked Lua method
     --      (post-instance-change re-shows do this).
     if d.cooldown then
-        d.pabHideSwipe = style.hideSwipe == true
+        d.pabHideSwipe = look.hideSwipe == true
         -- Install lazily on the first apply that actually hides the swipe. The
         -- hook reads the live flag, so a later toggle back on still works, and a
         -- user who never turns the setting off never gets a closure or a secure
@@ -254,15 +254,15 @@ local function PAB_ApplyExtraText(button, d, style)
 
     -- Icon Effects Per-Filter (debuffs only): flag-gated so buff buttons, which never
     -- carry style.fxList or fx overlay frames, pay zero cost.
-    if style.fxList or d.pabFxGlow or d.pabFxBdr then
-        PAB_ApplyDmFx(button, d, style)
+    if look.fxList or d.pabFxGlow or d.pabFxBdr then
+        PAB_ApplyDmFx(btnFrame, d, look)
     end
 
     -- Centered runs can have an odd content width/height, whose CENTER anchor is a
     -- half pixel. Let textures use Blizzard's normal pixel snapping so
     -- icon art cannot bleed over PP's one-pixel border. Edge-growing bars keep CUI's
     -- usual unsnapped rendering.
-    d.pabCenteredSnap = style.centeredGrowth == true
+    d.pabCenteredSnap = look.centeredGrowth == true
     -- Lazy install on the first centered apply: bars that never use centered
     -- growth never pay the closure. Once installed the hook reads the live
     -- flag, so switching back to edge growth costs one boolean per SetTexture.
@@ -295,31 +295,31 @@ end
 -- rule: crisp "OUTLINE, SLUG" unless Unit Frames is unchecked in Global Settings'
 -- "Outline Icon Text", then the global/per-module choice. A per-bar Font Outline pick
 -- overrides that; every branch stays slug-gated centrally via "Never Show Slug".
-local function ResolveFontFlag(mode)
-    if mode == "none" then
+local function ResolveFontFlag(modeName)
+    if modeName == "none" then
         return ""
     end
-    if mode == "outline" then
+    if modeName == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE"
     end
-    if mode == "thick" then
+    if modeName == "thick" then
         return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE"
     end
     return (CludesUI.GetIconTextOutlineFlag("unitFrames")) or "OUTLINE"
 end
 
-local function BuildStyle(isBuff, cfg)
-    local iconZoom = cfg.iconZoom
+local function BuildStyle(isBuff, conf)
+    local iconZoom = conf.iconZoom
     -- Blizzard Style: zoom 0 -- the stock buff frame draws the whole icon,
     -- and the icon art's own dark edge is the border a stock buff shows.
-    if ns.PAB_Blizz() then
+    if mod.PAB_Blizz() then
         iconZoom = 0
     end
-    local borderSize = cfg.borderSize or 1
-    local borderR = cfg.borderR or 0
-    local borderG = cfg.borderG or 0
-    local borderB = cfg.borderB or 0
-    local borderA = cfg.borderA or 1
+    local borderSize = conf.borderSize or 1
+    local borderR = conf.borderR or 0
+    local borderG = conf.borderG or 0
+    local borderB = conf.borderB or 0
+    local borderA = conf.borderA or 1
 
     -- size 0 = no border; no separate "Hide Border" toggle.
     local border
@@ -332,46 +332,48 @@ local function BuildStyle(isBuff, cfg)
         -- Texture fields ride only on a textured pick: a border table with a
         -- texture key sends AuraKit down its explicit-size eight-slice lane,
         -- and Solid must keep the plain PP path it always had.
-        local texture = cfg.borderTexture
+        local texture = conf.borderTexture
         if texture and texture ~= "" and texture ~= "solid" then
-            local textureSize = cfg.borderTextureSizeOverride or borderSize
+            local textureSize = conf.borderTextureSizeOverride or borderSize
             border.texture = texture
             border.textureSize = textureSize
-            border.offsetX = cfg.borderTextureOffset
-            border.offsetY = cfg.borderTextureOffsetY
-            border.shiftX = cfg.borderTextureShiftX
-            border.shiftY = cfg.borderTextureShiftY
-            border.behind = cfg.borderBehind == true
+            border.offsetX = conf.borderTextureOffset
+            border.offsetY = conf.borderTextureOffsetY
+            border.shiftX = conf.borderTextureShiftX
+            border.shiftY = conf.borderTextureShiftY
+            border.behind = conf.borderBehind == true
             border.addonKey = "unitframes"
             border.sizeKey = textureSize
-            border.edgeScale = cfg.borderTextureScaleOverride
+            border.edgeScale = conf.borderTextureScaleOverride
             -- Exact edge in pixels (CludesUI.BorderPx over the borderSizePx
             -- companion; nil = the legacy EDGE_MAP step). The preview resolves it
             -- against the raw step itself (borderPxOverride) since its borderSize
             -- is scale-compensated and could never pair.
-            border.edgePx = cfg.borderPxOverride or CludesUI.BorderPx(cfg.borderSizePx, textureSize, texture)
+            border.edgePx = conf.borderPxOverride
+                or CludesUI.BorderPx(conf.borderSizePx, textureSize, texture)
         else
-            solidPx = cfg.borderPxOverride or CludesUI.BorderPx(cfg.borderSizePx, borderSize, texture)
+            solidPx = conf.borderPxOverride or CludesUI.BorderPx(conf.borderSizePx, borderSize, texture)
             border.edgePx = solidPx
         end
     end
     -- Blizzard Style: no CUI ring on any bar -- buffs go borderless like the
     -- stock buff frame, debuffs take the engine-stamped stock border below.
-    if ns.PAB_Blizz() then
+    if mod.PAB_Blizz() then
         border = nil
     end
 
     -- Positions may arrive mixed-case ("Bottom") rather than the uppercase anchor
     -- constants SetPoint expects; normalized here so a mismatched-case default or
     -- Options write cannot silently mis-anchor or error.
-    local durSide = string.upper(cfg.durationPosition or "CENTER")
-    local stackSide = string.upper(cfg.stackPosition or "BOTTOMRIGHT")
+    local durSide = string.upper(conf.durationPosition or "CENTER")
+    local stackSide = string.upper(conf.stackPosition or "BOTTOMRIGHT")
 
     -- Snapped to the physical pixel grid (like MaxIconSizeFor and ApplyGroupConfig's
     -- gap snap) so the rendered size agrees with the container's cross-axis extent
     -- math at any UIParent scale.
-    local iconSize = PabSnap(PabShapedSize(cfg.iconSize or 32, cfg.iconShape))
-    local iconHeight = cfg.iconShape == "cropped" and PabSnap(ns.PAB_CroppedHeight(cfg.iconSize or 32, cfg))
+    local iconSize = PabSnap(PabShapedSize(conf.iconSize or 32, conf.iconShape))
+    local iconHeight = conf.iconShape == "cropped"
+            and PabSnap(mod.PAB_CroppedHeight(conf.iconSize or 32, conf))
         or iconSize
 
     -- Negative Spacing / Row Spacing overlap neighbouring icons; AuraKit shrinks
@@ -379,30 +381,30 @@ local function BuildStyle(isBuff, cfg)
     -- tooltip of the one entered (see hitInsetX in CludesUI_AuraKit.lua).
     -- Same defaults and snap as ComputeGrid. In vertical growth the icon-to-icon
     -- gap runs along Y and the row gap along X.
-    local gapOverlap = math.max(0, -PabSnap(cfg.padding or 5))
-    local rowOverlap = math.max(0, -PabSnap(cfg.rowSpacing or 12))
-    local vertical = cfg.growDirection == "UP"
-        or cfg.growDirection == "DOWN"
-        or cfg.growDirection == "CENTER_VERTICAL"
+    local gapOverlap = math.max(0, -PabSnap(conf.padding or 5))
+    local rowOverlap = math.max(0, -PabSnap(conf.rowSpacing or 12))
+    local vertical = conf.growDirection == "UP"
+        or conf.growDirection == "DOWN"
+        or conf.growDirection == "CENTER_VERTICAL"
 
-    local style = {
+    local look = {
         width = iconSize,
         height = iconHeight,
         hitInsetX = (vertical and rowOverlap or gapOverlap) / 2,
         hitInsetY = (vertical and gapOverlap or rowOverlap) / 2,
-        centeredGrowth = cfg.growDirection == "CENTER_HORIZONTAL" or cfg.growDirection == "CENTER_VERTICAL",
+        centeredGrowth = conf.growDirection == "CENTER_HORIZONTAL" or conf.growDirection == "CENTER_VERTICAL",
         iconCrop = true,
         iconZoom = iconZoom or 0.055,
 
         -- Reverse Swipe cog (Show Duration Swipe toggle), default on. AK's
         -- ApplyStyleToRegions passes this straight to SetReverse.
-        cooldownReverse = (cfg.reverseSwipe ~= false),
+        cooldownReverse = (conf.reverseSwipe ~= false),
         -- Duration swipe: the darkening radial overlay CooldownFrameTemplate draws as
         -- remaining time shrinks, distinct from the duration NUMBER text
         -- (hideDurationText), independently controllable. Per-bar "Show Duration
         -- Swipe" toggle, default on; PAB_ApplyExtraText's swipe block handles the
         -- engine re-show problem.
-        hideSwipe = (cfg.showSwipe == false),
+        hideSwipe = (conf.showSwipe == false),
 
         -- Right-click to cancel, mirroring Blizzard's player BuffFrame. PAB is always
         -- the player unit, so only the isBuff half of the sibling module's condition
@@ -429,32 +431,33 @@ local function BuildStyle(isBuff, cfg)
         -- any registered token, so OnClick fires twice and the engine may have
         -- re-assigned this button's aura instance in between, cancelling a DIFFERENT
         -- aura on the up edge.
-        cancelButtons = (isBuff and cfg.rightClickCancel ~= false) and "RightButtonUp" or nil,
+        cancelButtons = (isBuff and conf.rightClickCancel ~= false) and "RightButtonUp" or nil,
 
-        hideDurationText = cfg.durationShow == false,
+        hideDurationText = conf.durationShow == false,
         -- "Show S for Seconds" (Duration cog, default off): sub-minute
         -- readings keep their unit ("10s"); selects AK's s-variant duration
         -- formatter at creation, PAB_ApplyExtraText rebinds live.
-        durationShowSeconds = cfg.durationShowSeconds == true,
-        durationPrecisionThreshold = tonumber(cfg.durationPrecisionThreshold),
+        durationShowSeconds = conf.durationShowSeconds == true,
+        durationPrecisionThreshold = tonumber(conf.durationPrecisionThreshold),
         -- Show Tooltips (per-bar, default on): AK's noTooltips path kills
         -- hover on this style's buttons; the flip-back handles re-enables.
-        noTooltips = (cfg.showTooltips == false) or nil,
-        durationFontSize = cfg.durationTextSize or 11,
+        noTooltips = (conf.showTooltips == false) or nil,
+        durationFontSize = conf.durationTextSize or 11,
         durationPoint = OPPOSITE_POINT[durSide] or "TOP",
         durationRelPoint = durSide,
-        durationX = cfg.durationOffsetX or 0,
-        durationY = cfg.durationOffsetY or 0,
-        durationColor = cfg.durationColorR
-                and { r = cfg.durationColorR, g = cfg.durationColorG, b = cfg.durationColorB }
+        durationX = conf.durationOffsetX or 0,
+        durationY = conf.durationOffsetY or 0,
+        durationColor = conf.durationColorR
+                and { r = conf.durationColorR, g = conf.durationColorG, b = conf.durationColorB }
             or nil,
 
-        stackFontSize = cfg.stackTextSize or 11,
+        stackFontSize = conf.stackTextSize or 11,
         stackPoint = stackSide,
-        stackX = cfg.stackOffsetX or 0,
-        stackY = cfg.stackOffsetY or 0,
-        showStacks = cfg.stackShow ~= false,
-        stackColor = cfg.stackColorR and { r = cfg.stackColorR, g = cfg.stackColorG, b = cfg.stackColorB }
+        stackX = conf.stackOffsetX or 0,
+        stackY = conf.stackOffsetY or 0,
+        showStacks = conf.stackShow ~= false,
+        stackColor = conf.stackColorR
+                and { r = conf.stackColorR, g = conf.stackColorG, b = conf.stackColorB }
             or nil,
 
         -- Own text pipeline: AK's default font/anchor block is skipped; PAB_ApplyExtraText
@@ -462,31 +465,31 @@ local function BuildStyle(isBuff, cfg)
         -- per style rebuild (settings-apply frequency), never per applyExtra call.
         noDefaultFonts = true,
         fontPath = (CludesUI.GetFontPath("unitFrames")) or STANDARD_TEXT_FONT,
-        fontFlag = ResolveFontFlag(cfg.fontOutline),
+        fontFlag = ResolveFontFlag(conf.fontOutline),
 
         applyExtra = PAB_ApplyExtraText,
 
         border = border,
         -- Weapon enchant buttons mirror this style: the stock purple ring.
-        blizzEnchant = ns.PAB_Blizz() or nil,
+        blizzEnchant = mod.PAB_Blizz() or nil,
     }
 
     -- Custom icon shape (Square/Circle/Hexagon/etc, same media set as Action Bars
     -- and Unit Frames' detached portraits). ns.PORTRAIT_MASKS/BORDERS/MASK_INSETS are
     -- exposed by CUI_UnitFrames_Portrait.lua (same addon/ns); AuraKit itself lives in a
     -- separate TOC and never touches ns, so resolved paths travel through style.*.
-    local shape = cfg.iconShape
+    local shape = conf.iconShape
     if PabShapeActive(shape) then
-        style.iconShape = shape
-        style.shapeMaskPath = ns.PORTRAIT_MASKS and ns.PORTRAIT_MASKS[shape]
-        style.shapeBorderPath = ns.PORTRAIT_BORDERS and ns.PORTRAIT_BORDERS[shape]
-        style.shapeInsetPx = ns.MASK_INSETS and ns.MASK_INSETS[shape]
-        style.shapeBorderSize = cfg.shapeBorderSizeOverride or PabShapeBorderSize(borderSize)
+        look.iconShape = shape
+        look.shapeMaskPath = mod.PORTRAIT_MASKS and mod.PORTRAIT_MASKS[shape]
+        look.shapeBorderPath = mod.PORTRAIT_BORDERS and mod.PORTRAIT_BORDERS[shape]
+        look.shapeInsetPx = mod.MASK_INSETS and mod.MASK_INSETS[shape]
+        look.shapeBorderSize = conf.shapeBorderSizeOverride or PabShapeBorderSize(borderSize)
     elseif shape == "cropped" then
-        local zoom = style.iconZoom
-        style.iconCropPercent = ns.PAB_CropPercent(cfg)
-        local trim = style.iconCropPercent / 100
-        style.texCoord = { zoom, 1 - zoom, zoom + trim, 1 - zoom - trim }
+        local zoom = look.iconZoom
+        look.iconCropPercent = mod.PAB_CropPercent(conf)
+        local trim = look.iconCropPercent / 100
+        look.texCoord = { zoom, 1 - zoom, zoom + trim, 1 - zoom - trim }
     end
 
     -- Engine dispel-type border, debuffs only (buffs have no dispel type). AK's gate
@@ -496,46 +499,46 @@ local function BuildStyle(isBuff, cfg)
     -- above) drives BOTH ring widths; a distinct dispel-ring width would need its
     -- own setting split back out.
     if not isBuff then
-        if ns.PAB_Blizz() then
+        if mod.PAB_Blizz() then
             -- Blizzard Style: the engine stamps Blizzard's own per-dispel-type
             -- debuff border art (red for untyped) -- no ring size, no palette.
-            style.dispelBorder = true
-            style.blizzBorder = true
+            look.dispelBorder = true
+            look.blizzBorder = true
         else
-            local dcMap, dcFP = BuildDispelColorMap(cfg)
-            style.dispelBorder = true
-            style.dispelBorderPx = solidPx or borderSize
-            style.dispelColorMap = dcMap
-            style.dispelColorFP = dcFP
+            local dcMap, dcFP = BuildDispelColorMap(conf)
+            look.dispelBorder = true
+            look.dispelBorderPx = solidPx or borderSize
+            look.dispelColorMap = dcMap
+            look.dispelColorFP = dcFP
             -- Textured Dispel Ring (per bar, opt-in): AuraKit draws the ring in
             -- this bar's border art on the geometry its border lane draws that
             -- border with (style.border), tinted by the engine from the palette
             -- above. Solid, shaped or size-0 bars keep the strips/shape ring.
-            if cfg.borderDispelTextured == true and border and border.texture then
-                style.dispelBorderTexture = border.texture
+            if conf.borderDispelTextured == true and border and border.texture then
+                look.dispelBorderTexture = border.texture
             end
         end
 
         -- Dispel-type indicator icon (AK's one-hot engine channel; default off).
         -- Independent of borderSize: the icon renders with or without a ring.
-        local dip = cfg.dispelIconPosition
+        local dip = conf.dispelIconPosition
         if dip and dip ~= "none" then
-            style.dispelTypeIcon = {
+            look.dispelTypeIcon = {
                 pos = dip,
                 -- Scaled like iconSize (button-geometry class); offsets stay raw
                 -- like durationX (fine-tune class).
-                size = PabSnap(cfg.dispelIconSize or 16),
-                offX = cfg.dispelIconOffsetX or 0,
-                offY = cfg.dispelIconOffsetY or 0,
+                size = PabSnap(conf.dispelIconSize or 16),
+                offX = conf.dispelIconOffsetX or 0,
+                offY = conf.dispelIconOffsetY or 0,
             }
         end
 
         -- Icon Effects Per-Filter: debuffs only (buffs never get style.fxList, so
         -- PAB_ApplyDmFx's gate in PAB_ApplyExtraText stays a cheap no-op).
-        style.fxList = PAB_FxListView(cfg.fxList)
+        look.fxList = PAB_FxListView(conf.fxList)
     end
 
-    return style
+    return look
 end
 
 -- ApplyGroupConfig (CUI_PlayerAuraBars_Groups.lua) declares/updates every group in `chain` on an existing
@@ -561,16 +564,16 @@ end
 -- Expiration/Name comparators rank player-cast/canApplyAura FIRST and only then the
 -- named criterion, so a bar sorted "by Expiration" came out as two separately sorted
 -- runs (e.g. 1h 58m 57m ... then 11h 54m 6m). The saved value keeps the dropdown key.
-local function ResolveSortMethod(cfg)
-    local key = cfg.sortMethod or "Default"
+local function ResolveSortMethod(conf)
+    local key = conf.sortMethod or "Default"
     if not AuraContainerSortMethod then
         return nil
     end
     local native = (key == "Expiration" and "ExpirationOnly") or (key == "Name" and "NameOnly") or nil
     return (native and AuraContainerSortMethod[native]) or AuraContainerSortMethod[key]
 end
-local function ResolveSortDirection(cfg)
-    local key = (cfg.sortDirection == "Reverse") and "Reverse" or "Normal"
+local function ResolveSortDirection(conf)
+    local key = (conf.sortDirection == "Reverse") and "Reverse" or "Normal"
     return AuraContainerSortDirection and AuraContainerSortDirection[key]
 end
 
@@ -579,29 +582,29 @@ end
 -- `duration > maxDuration or duration == 0` (max-duration filters implicitly always
 -- filter out permanent auras), so a `math.huge` cap never trips the `>` half and this
 -- ONLY excludes permanent (duration=0) buffs, whatever a timed buff's duration is.
-local function BuffCandidateExtras(cfg)
-    local out
-    if cfg and cfg.hasDuration then
-        out = { maxDuration = math.huge }
+local function BuffCandidateExtras(conf)
+    local result
+    if conf and conf.hasDuration then
+        result = { maxDuration = math.huge }
     end
     -- Blacklist (Edit Blacklist in the Filters dropdown): applied exactly while the
     -- dropdown offers it (All Buffs or Has Duration on) and rides every buff group via
     -- this extras merge -- catch-all AND spells group -- so a blacklisted spell never
     -- displays. Fresh table per call: merged maps must never alias saved vars.
     if
-        cfg
-        and cfg.blacklist
-        and next(cfg.blacklist)
-        and (cfg.showAllBuffs ~= false or cfg.hasDuration == true)
+        conf
+        and conf.blacklist
+        and next(conf.blacklist)
+        and (conf.showAllBuffs ~= false or conf.hasDuration == true)
     then
-        out = out or {}
+        result = result or {}
         local ex = {}
-        for id in pairs(cfg.blacklist) do
-            ex[id] = true
+        for ident in pairs(conf.blacklist) do
+            ex[ident] = true
         end
-        out.excludeSpellIDs = ex
+        result.excludeSpellIDs = ex
     end
-    return out
+    return result
 end
 
 -- Debuff-side twin of BuffCandidateExtras: "Has Duration" narrows every debuff
@@ -611,31 +614,31 @@ end
 -- debuffs. The inverse ("permanents only") is NOT expressible -- maxDuration is
 -- the engine's only duration filter (Blizzard_AuraContainerUtil), so Has
 -- Duration exists as a show-side AND-modifier only, never a hide-lane entry.
-local function DebuffCandidateExtras(cfg)
-    if not cfg then
+local function DebuffCandidateExtras(conf)
+    if not conf then
         return nil
     end
     -- Max Duration (seconds) is the same gate with a real cap and implies Has
     -- Duration; nil = Unlimited = no extras at all (the candidate fingerprint
     -- sees the cap value, so edits re-declare like any payload change).
-    local cap = cfg.maxDurSec or (cfg.hasDuration and math.huge) or nil
-    local out
+    local cap = conf.maxDurSec or (conf.hasDuration and math.huge) or nil
+    local result
     if cap then
-        out = { maxDuration = cap }
+        result = { maxDuration = cap }
     end
     -- Hide Exhaustion (the Filters dropdown, off by default): the Bloodlust
     -- lockouts leave every group of the bar. They are never-secret, so the
     -- exclude works on the player. Fresh table: merged maps never alias the set.
-    local sated = cfg.hideExhaustion == true and ns.UF_SatedDebuffs
+    local sated = conf.hideExhaustion == true and mod.UF_SatedDebuffs
     if sated then
-        out = out or {}
+        result = result or {}
         local ex = {}
-        for id in pairs(sated) do
-            ex[id] = true
+        for ident in pairs(sated) do
+            ex[ident] = true
         end
-        out.excludeSpellIDs = ex
+        result.excludeSpellIDs = ex
     end
-    return out
+    return result
 end
 
 -- Has Duration is an AND-MODIFIER (user directive 2026-08-16), not a broad
@@ -643,17 +646,17 @@ end
 -- filters checked it narrows exactly those. The catch-all only joins when
 -- nothing narrower is selected -- All Debuffs on, or Has Duration checked with
 -- no class filters picked (alone = every timed debuff).
-local function DebuffCatchAllOn(cfg)
-    if cfg.showAllDebuffs ~= false then
+local function DebuffCatchAllOn(conf)
+    if conf.showAllDebuffs ~= false then
         return true
     end
-    if cfg.hasDuration ~= true then
+    if conf.hasDuration ~= true then
         return false
     end
-    local cf = cfg.classFilters
-    if cf then
-        for _, v in pairs(cf) do
-            if v == true then
+    local castFrame = conf.classFilters
+    if castFrame then
+        for _, val in pairs(castFrame) do
+            if val == true then
                 return false
             end
         end
@@ -661,10 +664,10 @@ local function DebuffCatchAllOn(cfg)
     return true
 end
 
-I.BuffCandidateExtras, I.BuildDispelColorMap = BuffCandidateExtras, BuildDispelColorMap
-I.BuildStyle, I.DebuffCandidateExtras = BuildStyle, DebuffCandidateExtras
-I.DebuffCatchAllOn, I.PV_DISPEL_ICON_ATLAS = DebuffCatchAllOn, PV_DISPEL_ICON_ATLAS
-I.PV_DISPEL_ICON_POINTS, I.ResolveSortDirection = PV_DISPEL_ICON_POINTS, ResolveSortDirection
-I.ResolveSortMethod, I.STYLE_BUFFS = ResolveSortMethod, STYLE_BUFFS
-I.STYLE_DEBUFFS = STYLE_DEBUFFS
-I.broken = false
+Inner.BuffCandidateExtras, Inner.BuildDispelColorMap = BuffCandidateExtras, BuildDispelColorMap
+Inner.BuildStyle, Inner.DebuffCandidateExtras = BuildStyle, DebuffCandidateExtras
+Inner.DebuffCatchAllOn, Inner.PV_DISPEL_ICON_ATLAS = DebuffCatchAllOn, PV_DISPEL_ICON_ATLAS
+Inner.PV_DISPEL_ICON_POINTS, Inner.ResolveSortDirection = PV_DISPEL_ICON_POINTS, ResolveSortDirection
+Inner.ResolveSortMethod, Inner.STYLE_BUFFS = ResolveSortMethod, STYLE_BUFFS
+Inner.STYLE_DEBUFFS = STYLE_DEBUFFS
+Inner.broken = false

@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  come from ns._UFO_OptEnv, the page accessors from ctx (both filled by
 --  CUI_UnitFrames_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIUnitFrames"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -19,45 +19,49 @@ end -- module disabled: no options page
 -- plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-function ns.UFO_BuildDisplaySection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
     local AttachFrameSourceCog, BuildBarTexDropdown, BuildInactiveNotice, CLASS_FULL_COORDS =
-        env.AttachFrameSourceCog, env.BuildBarTexDropdown, env.BuildInactiveNotice, env.CLASS_FULL_COORDS
-    local CLASS_FULL_SPRITE_BASE, GROUP_UNIT_ORDER, PP, PromptReloadIfUnspawned =
-        env.CLASS_FULL_SPRITE_BASE, env.GROUP_UNIT_ORDER, env.PP, env.PromptReloadIfUnspawned
+        environ.AttachFrameSourceCog,
+        environ.BuildBarTexDropdown,
+        environ.BuildInactiveNotice,
+        environ.CLASS_FULL_COORDS
+    local CLASS_FULL_SPRITE_BASE, GROUP_UNIT_ORDER, Pix, PromptReloadIfUnspawned =
+        environ.CLASS_FULL_SPRITE_BASE, environ.GROUP_UNIT_ORDER, environ.PP, environ.PromptReloadIfUnspawned
     local ReloadAndUpdate, SHORT_LABELS, UNIT_DB_MAP, UpdatePreview =
-        env.ReloadAndUpdate, env.SHORT_LABELS, env.UNIT_DB_MAP, env.UpdatePreview
-    local db, frames, optState, portraitArtValues = env.db, env.frames, env.optState, env.portraitArtValues
-    local TexBgRowCfg = env.TexBgRowCfg
-    local W, SDB, SGet, SSet = ctx.W, ctx.SDB, ctx.SGet, ctx.SSet
-    local SVal = ctx.SVal
-    local _, h
+        environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview
+    local saved, frameList, optionState, portraitArtValues =
+        environ.db, environ.frames, environ.optState, environ.portraitArtValues
+    local TexBgRowCfg = environ.TexBgRowCfg
+    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local SVal = context.SVal
+    local _, hgt
 
     -------------------------------------------------------------------
     --  DISPLAY
     -------------------------------------------------------------------
     local sharedDisplayHeader
-    sharedDisplayHeader, h = W:SectionHeader(parent, "DISPLAY", y)
-    y = y - h
+    sharedDisplayHeader, hgt = Widgets:SectionHeader(hostFrame, "DISPLAY", posY)
+    posY = posY - hgt
     -- The Move in Unlock Mode button on the unit's first section: the selected
     -- unit's own mover, which exists only for the CludesUI frame source (a
     -- Blizzard or hidden frame has none), so the button explains itself otherwise.
     CludesUI.BuildSectionUnlockJump(sharedDisplayHeader, {
         key = function()
-            return optState.selectedUnit
+            return optionState.selectedUnit
         end,
         disabled = function()
-            return ns.GetUnitFrameSource(optState.selectedUnit) ~= "cui"
+            return mod.GetUnitFrameSource(optionState.selectedUnit) ~= "cui"
         end,
         disabledTooltip = "This option requires the CludesUI Frame Source.",
     })
-    y = CludesUI.BlizzStyle.Note(parent, y, "unitframes")
+    posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "unitframes")
 
     -- Wire class theme subnav callbacks (per-unit context)
     do
         local sn = portraitArtValues["class"].subnav
         sn.onSelect = function(styleKey)
-            local d = UNIT_DB_MAP[optState.selectedUnit]()
+            local d = UNIT_DB_MAP[optionState.selectedUnit]()
             d.portraitMode = "class"
             d.classThemeStyle = styleKey
             d.showPortrait = true
@@ -66,8 +70,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             if d.detachedPortraitShape == "none" then
                 d.detachedPortraitShape = "portrait"
             end
-            local side = d.portraitSide
-            if side == "insideleft" or side == "insideright" or side == "insidecenter" then
+            local sideName = d.portraitSide
+            if sideName == "insideleft" or sideName == "insideright" or sideName == "insidecenter" then
                 d.portraitSide = "left"
             end
             ReloadAndUpdate()
@@ -156,13 +160,13 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         end
     end
     local visRow
-    visRow, h = CludesUI.BuildVisibilityRow(
-        W,
-        parent,
-        y,
+    visRow, hgt = CludesUI.BuildVisibilityRow(
+        Widgets,
+        hostFrame,
+        posY,
         {
             getStore = function()
-                return UNIT_DB_MAP[optState.selectedUnit]()
+                return UNIT_DB_MAP[optionState.selectedUnit]()
             end,
             legacyKey = "barVisibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
@@ -172,14 +176,14 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             -- Spec Override carrying "never" used to leave the frame uncreated for
             -- the session with no way back but a /reload. "never" is hidden by the
             -- visibility pass instead (ns.UpdateFrameVisibility), which reverses.
-            applyScalarFn = function(s, mode)
-                s.barVisibility = mode
+            applyScalarFn = function(s, modeName)
+                s.barVisibility = modeName
             end,
             onChanged = function()
-                local s = UNIT_DB_MAP[optState.selectedUnit]()
+                local s = UNIT_DB_MAP[optionState.selectedUnit]()
                 SyncUnitVisBooleans(s)
-                if ns.UpdateFrameVisibility then
-                    ns.UpdateFrameVisibility()
+                if mod.UpdateFrameVisibility then
+                    mod.UpdateFrameVisibility()
                 end
                 ReloadAndUpdate()
                 -- Un-hiding a frame whose CUI frame isn't spawned this session
@@ -188,12 +192,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 -- of Always on a unit whose shared value is "never" un-hides it too.
                 local visOv = CludesUI.VisOverrideValue(s)
                 if (visOv or s.barVisibility or "always") ~= "never" then
-                    PromptReloadIfUnspawned({ optState.selectedUnit })
+                    PromptReloadIfUnspawned({ optionState.selectedUnit })
                 end
             end,
             onOptionChanged = function()
-                if ns.UpdateFrameVisibility then
-                    ns.UpdateFrameVisibility()
+                if mod.UpdateFrameVisibility then
+                    mod.UpdateFrameVisibility()
                 end
             end,
         },
@@ -207,26 +211,26 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             text = "Show Nicknames",
             tooltip = "Show player nicknames from supported addons instead of character names on your main frames.",
             getValue = function()
-                return db.profile.showNicknames or false
+                return saved.profile.showNicknames or false
             end,
             setValue = function(v)
-                db.profile.showNicknames = v
-                if ns.RefreshAllUnitNames then
-                    ns.RefreshAllUnitNames()
+                saved.profile.showNicknames = v
+                if mod.RefreshAllUnitNames then
+                    mod.RefreshAllUnitNames()
                 end
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Inline cog on Visibility: ONE popup hosting Frame Source (CludesUI /
     -- Blizzard Default) plus Out of Combat fade. Hiding stays on the Visibility
     -- dropdown ("Never Show"). Fade dims the frame via ns.ResolveFrameAlpha in
     -- UpdateFrameVisibility (reacts to the regen path); reuses CDM fade strings
     -- for consistency. Fade rows appear only for the CludesUI source.
-    local _visSrcIsEui = ns.GetUnitFrameSource(optState.selectedUnit) == "cui"
+    local _visSrcIsEui = mod.GetUnitFrameSource(optionState.selectedUnit) == "cui"
     if not CludesUI._prebuilding then
-        AttachFrameSourceCog(visRow._leftRegion, optState.selectedUnit, {
+        AttachFrameSourceCog(visRow._leftRegion, optionState.selectedUnit, {
             title = _visSrcIsEui and "Frame Source & Visibility" or "Frame Source",
             cogTooltip = _visSrcIsEui and "Frame Source & Visibility" or "Frame Source",
             extraRows = _visSrcIsEui
@@ -244,8 +248,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         end,
                         set = function(v)
                             SSet("showWhenHealthMissing", v)
-                            if ns.UpdateFrameVisibility then
-                                ns.UpdateFrameVisibility()
+                            if mod.UpdateFrameVisibility then
+                                mod.UpdateFrameVisibility()
                             end
                         end,
                     },
@@ -258,8 +262,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         end,
                         set = function(v)
                             SSet("oocFadeEnabled", v)
-                            if ns.UpdateFrameVisibility then
-                                ns.UpdateFrameVisibility()
+                            if mod.UpdateFrameVisibility then
+                                mod.UpdateFrameVisibility()
                             end
                         end,
                     },
@@ -279,8 +283,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         end,
                         set = function(v)
                             SSet("oocAlpha", v / 100)
-                            if ns.UpdateFrameVisibility then
-                                ns.UpdateFrameVisibility()
+                            if mod.UpdateFrameVisibility then
+                                mod.UpdateFrameVisibility()
                             end
                         end,
                     },
@@ -292,7 +296,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     -- Visibility row (hosts the Frame Source cog + "Never Show" way back), grey
     -- it for Blizzard source, and show a one-line notice in place of settings.
     if not CludesUI._prebuilding then
-        local srcNow = ns.GetUnitFrameSource(optState.selectedUnit)
+        local srcNow = mod.GetUnitFrameSource(optionState.selectedUnit)
         if srcNow ~= "cui" then
             -- The right slot used to hold this unit's Visibility Options and was hidden
             -- here because it is meaningless for a Blizzard frame. It now holds the
@@ -322,7 +326,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     CludesUI.HideWidgetTooltip()
                 end)
             end
-            return BuildInactiveNotice(parent, y, srcNow), true
+            return BuildInactiveNotice(hostFrame, posY, srcNow), true
         end
     end
 
@@ -332,13 +336,13 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     if not CludesUI._prebuilding then
         local rgn = visRow._leftRegion
         local function CopyVisToUnit(key)
-            local src = UNIT_DB_MAP[optState.selectedUnit]()
+            local source = UNIT_DB_MAP[optionState.selectedUnit]()
             local dst = UNIT_DB_MAP[key]()
-            if dst == src then
+            if dst == source then
                 return
             end
-            CludesUI.VisFullCopy(dst, src, "barVisibility", nil, function(t, mode)
-                t.barVisibility = mode
+            CludesUI.VisFullCopy(dst, source, "barVisibility", nil, function(t, modeName)
+                t.barVisibility = modeName
             end)
             SyncUnitVisBooleans(dst)
         end
@@ -346,10 +350,15 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Visibility to all Frames",
             isSynced = function()
-                local src = UNIT_DB_MAP[optState.selectedUnit]()
+                local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     if
-                        not CludesUI.VisFullEquals(src, "barVisibility", UNIT_DB_MAP[key](), "barVisibility")
+                        not CludesUI.VisFullEquals(
+                            source,
+                            "barVisibility",
+                            UNIT_DB_MAP[key](),
+                            "barVisibility"
+                        )
                     then
                         return false
                     end
@@ -360,12 +369,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     CopyVisToUnit(key)
                 end
-                if ns.UpdateFrameVisibility then
-                    ns.UpdateFrameVisibility()
+                if mod.UpdateFrameVisibility then
+                    mod.UpdateFrameVisibility()
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
-                local v = UNIT_DB_MAP[optState.selectedUnit]().barVisibility or "always"
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().barVisibility or "always"
                 if v ~= "never" then
                     PromptReloadIfUnspawned(GROUP_UNIT_ORDER)
                 end
@@ -377,18 +386,18 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     for _, key in ipairs(checkedKeys) do
                         CopyVisToUnit(key)
                     end
-                    if ns.UpdateFrameVisibility then
-                        ns.UpdateFrameVisibility()
+                    if mod.UpdateFrameVisibility then
+                        mod.UpdateFrameVisibility()
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().barVisibility or "always"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().barVisibility or "always"
                     if v ~= "never" then
                         PromptReloadIfUnspawned(checkedKeys)
                     end
@@ -401,13 +410,13 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     -- per-unit (drives health/power/cast/absorb); db.profile.healthBarTexture is the fallback when unset.
     local barTexRow
     local hbtValues, hbtOrder = BuildBarTexDropdown()
-    barTexRow, h = W:DualRow(parent, y, {
+    barTexRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Bar Texture",
         values = hbtValues,
         order = hbtOrder,
         getValue = function()
-            return SVal("healthBarTexture", db.profile.healthBarTexture or "none")
+            return SVal("healthBarTexture", saved.profile.healthBarTexture or "none")
         end,
         setValue = function(v)
             SSet("healthBarTexture", v)
@@ -419,7 +428,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         text = "Dark Mode",
         tooltip = "Dark Mode for this frame. Global Settings > Colors switches every frame.",
         getValue = function()
-            return ns.UF_DarkThemeOn(SDB())
+            return mod.UF_DarkThemeOn(SDB())
         end,
         setValue = function(v)
             SSet("darkTheme", v)
@@ -429,7 +438,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- This toggle IS the Dark Mode condition's input: lock it while a Dark Mode
     -- conditional is edited, or the override could capture a value flipping its own condition.
     if CludesUI.SpecOverrides_AttachEditLock and not CludesUI._prebuilding then
@@ -442,12 +451,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     -- Sync icon: Bar Texture (left region) -- pushes this unit's texture to frames
     if not CludesUI._prebuilding then
         local rgn = barTexRow._leftRegion
-        local function ApplyTexTo(keys)
-            local src = UNIT_DB_MAP[optState.selectedUnit]()
-            local tex = src.healthBarTexture or db.profile.healthBarTexture or "none"
-            for _, key in ipairs(keys) do
-                if key ~= optState.selectedUnit then
-                    UNIT_DB_MAP[key]().healthBarTexture = tex
+        local function ApplyTexTo(keyList)
+            local source = UNIT_DB_MAP[optionState.selectedUnit]()
+            local texture = source.healthBarTexture or saved.profile.healthBarTexture or "none"
+            for _, key in ipairs(keyList) do
+                if key ~= optionState.selectedUnit then
+                    UNIT_DB_MAP[key]().healthBarTexture = texture
                 end
             end
             ReloadAndUpdate()
@@ -461,8 +470,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 ApplyTexTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local g = db.profile.healthBarTexture or "none"
-                local srcTex = UNIT_DB_MAP[optState.selectedUnit]().healthBarTexture or g
+                local g = saved.profile.healthBarTexture or "none"
+                local srcTex = UNIT_DB_MAP[optionState.selectedUnit]().healthBarTexture or g
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     if (UNIT_DB_MAP[key]().healthBarTexture or g) ~= srcTex then
                         return false
@@ -477,7 +486,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyTexTo(checkedKeys)
@@ -489,7 +498,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             title = "Texture Settings",
             rows = {
                 TexBgRowCfg(function()
-                    return UNIT_DB_MAP[optState.selectedUnit]()
+                    return UNIT_DB_MAP[optionState.selectedUnit]()
                 end, ReloadAndUpdate),
             },
         })
@@ -498,9 +507,9 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     -- Row 3: Border Style (+ cog) | Border (slider + double inline swatches)
     local sharedScaleBorderRow
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
-    sharedScaleBorderRow, h = W:DualRow(
-        parent,
-        y,
+    sharedScaleBorderRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "dropdown",
             text = "Border Style",
@@ -557,7 +566,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             })
         )
     )
-    y = y - h
+    posY = posY - hgt
     -- Width Offset | Height Offset: a textured style's outward offsets (a Solid
     -- border has none). The row shows what is drawn: the stored override, else
     -- the texture's default for this size, which keeps seeding until a real edit.
@@ -592,13 +601,13 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 end,
                 apply = ReloadAndUpdate,
             })
-            _, h = W:DualRow(
-                parent,
-                y,
+            _, hgt = Widgets:DualRow(
+                hostFrame,
+                posY,
                 CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
                 CludesUI.BlizzStyle.Gate("unitframes", ocfgR)
             )
-            y = y - h
+            posY = posY - hgt
         end
     end
     -- Inline cog for border shift / layering (left region)
@@ -618,9 +627,9 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         if v then
                             return v
                         end
-                        local tex = SGet("borderTexture") or "solid"
+                        local texture = SGet("borderTexture") or "solid"
                         local sz = SVal("borderSize", 1)
-                        local _, _, dsx = CludesUI.GetBorderDefaults("unitframes", tex, sz)
+                        local _, _, dsx = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsx
                     end,
                     set = function(v)
@@ -639,9 +648,9 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         if v then
                             return v
                         end
-                        local tex = SGet("borderTexture") or "solid"
+                        local texture = SGet("borderTexture") or "solid"
                         local sz = SVal("borderSize", 1)
-                        local _, _, _, dsy = CludesUI.GetBorderDefaults("unitframes", tex, sz)
+                        local _, _, _, dsy = CludesUI.GetBorderDefaults("unitframes", texture, sz)
                         return dsy
                     end,
                     set = function(v)
@@ -668,11 +677,11 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     label = "Power Bar Seam",
                     tooltip = "Draws the border style's seam art between the health bar and an attached power bar.",
                     disabled = function()
-                        local pos = SVal("powerPosition", "below")
+                        local place = SVal("powerPosition", "below")
                         return not (
                             CludesUI.GetBorderCompanion(SGet("borderTexture") or "solid", "sepH")
                             and SVal("borderSize", 1) > 0
-                            and (pos == "above" or pos == "below")
+                            and (place == "above" or place == "below")
                             and SVal("powerHeight", 6) > 0
                         )
                     end,
@@ -688,8 +697,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             },
         })
         local function UpdateCogVis()
-            local tex = SGet("borderTexture") or "solid"
-            if tex == "solid" or CludesUI.BlizzStyle.Get("unitframes") then
+            local texture = SGet("borderTexture") or "solid"
+            if texture == "solid" or CludesUI.BlizzStyle.Get("unitframes") then
                 cogBtn:Hide()
             else
                 cogBtn:Show()
@@ -715,7 +724,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 local ba = SGet("borderAlpha")
                 local ps = SGet("borderPowerSeam")
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
+                    if key ~= optionState.selectedUnit then
                         UNIT_DB_MAP[key]().borderTexture = bt
                         UNIT_DB_MAP[key]().borderTextureOffset = ox
                         UNIT_DB_MAP[key]().borderTextureOffsetY = oy
@@ -772,7 +781,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     local bt = SGet("borderTexture") or "solid"
@@ -824,7 +833,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 local cr, cm, cj =
                     SVal("cornerRadius", 0), SGet("cornerMask"), SGet("cornerJoinPower") == true
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
+                    if key ~= optionState.selectedUnit then
                         UNIT_DB_MAP[key]().borderSize = bs
                         UNIT_DB_MAP[key]().cornerRadius = cr
                         do
@@ -906,7 +915,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     local bs = SVal("borderSize", 1)
@@ -975,7 +984,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     if not CludesUI._prebuilding then
         local leftRgn = sharedScaleBorderRow._rightRegion
         local ctrl = leftRgn._control
-        local PP = CludesUI.PP
+        local Pix = CludesUI.PP
 
         -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog on the
         -- border size control.
@@ -1016,8 +1025,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         SSet("cornerJoinPower", v)
                     end,
                     function()
-                        local pos = SGet("powerPosition") or "below"
-                        return pos == "detached_top" or pos == "detached_bottom"
+                        local place = SGet("powerPosition") or "below"
+                        return place == "detached_top" or place == "detached_bottom"
                     end,
                     "Detached Power Bar"
                 ),
@@ -1033,14 +1042,14 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 return c.r, c.g, c.b, SVal("borderAlpha", 1)
             end,
             function(r, g, b, a)
-                UNIT_DB_MAP[optState.selectedUnit]().borderColor = { r = r, g = g, b = b }
-                UNIT_DB_MAP[optState.selectedUnit]().borderAlpha = a
+                UNIT_DB_MAP[optionState.selectedUnit]().borderColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().borderAlpha = a
                 ReloadAndUpdate()
             end,
             true,
             20
         )
-        PP.Point(borderSwatch, "RIGHT", leftRgn._lastInline or ctrl, "LEFT", -8, 0)
+        Pix.Point(borderSwatch, "RIGHT", leftRgn._lastInline or ctrl, "LEFT", -8, 0)
         leftRgn._lastInline = borderSwatch
         borderSwatch:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(borderSwatch, "Border")
@@ -1060,7 +1069,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     local ufStrataValues = CludesUI.FRAME_STRATA_LABELS
     local ufStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
     local tipStrataRow
-    tipStrataRow, h = W:DualRow(parent, y, {
+    tipStrataRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Show Tooltip For",
         tooltip = "Choose which tooltips appear on hover. Affects all unit frames, including boss frames.",
@@ -1077,13 +1086,13 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         values = ufStrataValues,
         order = ufStrataOrder,
         getValue = function()
-            return SGet("frameStrata") or db.profile.frameStrata or "MEDIUM"
+            return SGet("frameStrata") or saved.profile.frameStrata or "MEDIUM"
         end,
         setValue = function(v)
             SSet("frameStrata", v)
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Show Tooltip For checkbox-dropdown (left region)
     if not CludesUI._prebuilding then
@@ -1112,7 +1121,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         -- reads per element; they differ only in which units the setter fans to.
         local ALL_UNITS = { "player", "target", "focus", "targettarget", "focustarget", "pet", "boss" }
         local MAIN_UNITS = { "player", "target", "focus", "targettarget", "focustarget", "pet" }
-        local PP = CludesUI.PP
+        local Pix = CludesUI.PP
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             rgn,
             210,
@@ -1169,10 +1178,10 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         type = "toggle",
                         label = "Custom Bar Stratas",
                         get = function()
-                            return db.profile.enableCustomBarStratas or false
+                            return saved.profile.enableCustomBarStratas or false
                         end,
                         set = function(v)
-                            db.profile.enableCustomBarStratas = v
+                            saved.profile.enableCustomBarStratas = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -1182,10 +1191,10 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         values = barStrataValues,
                         order = barStrataOrder,
                         get = function()
-                            return db.profile.detachedPowerStrata or "HIGH"
+                            return saved.profile.detachedPowerStrata or "HIGH"
                         end,
                         set = function(v)
-                            db.profile.detachedPowerStrata = v
+                            saved.profile.detachedPowerStrata = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -1195,10 +1204,10 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         values = barStrataValues,
                         order = barStrataOrder,
                         get = function()
-                            return db.profile.detachedTextBarStrata or "DIALOG"
+                            return saved.profile.detachedTextBarStrata or "DIALOG"
                         end,
                         set = function(v)
-                            db.profile.detachedTextBarStrata = v
+                            saved.profile.detachedTextBarStrata = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -1213,12 +1222,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     if not CludesUI._prebuilding then
         local rgn = tipStrataRow._rightRegion
         local function CurStrata(key)
-            return UNIT_DB_MAP[key]().frameStrata or db.profile.frameStrata or "MEDIUM"
+            return UNIT_DB_MAP[key]().frameStrata or saved.profile.frameStrata or "MEDIUM"
         end
-        local function ApplyStrataTo(keys)
-            local strata = CurStrata(optState.selectedUnit)
-            for _, key in ipairs(keys) do
-                if key ~= optState.selectedUnit then
+        local function ApplyStrataTo(keyList)
+            local strata = CurStrata(optionState.selectedUnit)
+            for _, key in ipairs(keyList) do
+                if key ~= optionState.selectedUnit then
                     UNIT_DB_MAP[key]().frameStrata = strata
                 end
             end
@@ -1232,9 +1241,9 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 ApplyStrataTo(GROUP_UNIT_ORDER)
             end,
             isSynced = function()
-                local cur = CurStrata(optState.selectedUnit)
+                local current = CurStrata(optionState.selectedUnit)
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if CurStrata(key) ~= cur then
+                    if CurStrata(key) ~= current then
                         return false
                     end
                 end
@@ -1247,7 +1256,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
                     ApplyStrataTo(checkedKeys)
@@ -1259,17 +1268,17 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     -- Show Decimal on Health Text (global): one decimal on health value (240.5k)
     -- and health percent (77.3%) for every unit. Default off.
     local decRow
-    decRow, h = W:DualRow(parent, y, {
+    decRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Decimal on Health Text",
         tooltip = "Show one decimal place on health text: health values like 240.5k and health percent like 77.3%. Power text is unaffected. Off by default.",
         getValue = function()
-            return db.profile.showDecimalOnText
+            return saved.profile.showDecimalOnText
         end,
         setValue = function(v)
-            db.profile.showDecimalOnText = v
-            if ns.ApplyTextDecimalGlobals then
-                ns.ApplyTextDecimalGlobals()
+            saved.profile.showDecimalOnText = v
+            if mod.ApplyTextDecimalGlobals then
+                mod.ApplyTextDecimalGlobals()
             end
             ReloadAndUpdate()
             UpdatePreview()
@@ -1285,24 +1294,24 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         end,
         setValue = function() end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Dimmed "(Applies to All Units)" subtitle next to the label (CDM subtitle pattern).
     do
         local suffix = decRow._leftRegion:CreateFontString(nil, "OVERLAY")
         suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
         suffix:SetTextColor(1, 1, 1, 0.35)
         suffix:SetText(CludesUI.L("(Applies to All Units)"))
-        local lbl
+        local labelFS
         local regions = { decRow._leftRegion:GetRegions() }
-        for i = 1, #regions do
-            local reg = regions[i]
+        for idx = 1, #regions do
+            local reg = regions[idx]
             if reg and reg.GetText and CludesUI.EnKey(reg:GetText()) == "Show Decimal on Health Text" then
-                lbl = reg
+                labelFS = reg
                 break
             end
         end
-        if lbl then
-            suffix:SetPoint("LEFT", lbl, "RIGHT", 5, 0)
+        if labelFS then
+            suffix:SetPoint("LEFT", labelFS, "RIGHT", 5, 0)
         else
             suffix:SetPoint("LEFT", decRow._leftRegion, "LEFT", 120, 0)
         end
@@ -1313,7 +1322,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(decRow._leftRegion, {
             disabled = function()
-                return not db.profile.showDecimalOnText
+                return not saved.profile.showDecimalOnText
             end,
             disabledTooltip = "Show Decimal on Health Text",
             title = "Health Text Decimals",
@@ -1322,12 +1331,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     type = "toggle",
                     label = "Only Show for % Health",
                     get = function()
-                        return db.profile.showDecimalPercentOnly == true
+                        return saved.profile.showDecimalPercentOnly == true
                     end,
                     set = function(v)
-                        db.profile.showDecimalPercentOnly = v
-                        if ns.ApplyTextDecimalGlobals then
-                            ns.ApplyTextDecimalGlobals()
+                        saved.profile.showDecimalPercentOnly = v
+                        if mod.ApplyTextDecimalGlobals then
+                            mod.ApplyTextDecimalGlobals()
                         end
                         ReloadAndUpdate()
                         UpdatePreview()
@@ -1337,12 +1346,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     type = "toggle",
                     label = "Show 2 for Boss",
                     get = function()
-                        return db.profile.showDecimalBoss2 ~= false
+                        return saved.profile.showDecimalBoss2 ~= false
                     end,
                     set = function(v)
-                        db.profile.showDecimalBoss2 = v
-                        if ns.ApplyTextDecimalGlobals then
-                            ns.ApplyTextDecimalGlobals()
+                        saved.profile.showDecimalBoss2 = v
+                        if mod.ApplyTextDecimalGlobals then
+                            mod.ApplyTextDecimalGlobals()
                         end
                         ReloadAndUpdate()
                         UpdatePreview()
@@ -1352,12 +1361,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     type = "toggle",
                     label = "Hide Trailing Zeros",
                     get = function()
-                        return db.profile.showDecimalTrimZeros == true
+                        return saved.profile.showDecimalTrimZeros == true
                     end,
                     set = function(v)
-                        db.profile.showDecimalTrimZeros = v
-                        if ns.ApplyTextDecimalGlobals then
-                            ns.ApplyTextDecimalGlobals()
+                        saved.profile.showDecimalTrimZeros = v
+                        if mod.ApplyTextDecimalGlobals then
+                            mod.ApplyTextDecimalGlobals()
                         end
                         ReloadAndUpdate()
                         UpdatePreview()
@@ -1375,7 +1384,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         if rightRgn._control then
             rightRgn._control:Hide()
         end
-        local isPlayer = (optState.selectedUnit == "player")
+        local isPlayer = (optionState.selectedUnit == "player")
         local hbItems = { { key = "highlight", label = "Highlight" } }
         if isPlayer then
             hbItems[#hbItems + 1] = {
@@ -1396,7 +1405,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     return UNIT_DB_MAP.player().highlightEnabled ~= false
                 end
                 if k == "playerThreat" then
-                    return db.profile.playerThreatBorderEnabled or false
+                    return saved.profile.playerThreatBorderEnabled or false
                 end
                 return false
             end,
@@ -1408,9 +1417,9 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                     end
                     ReloadAndUpdate()
                 elseif k == "playerThreat" then
-                    db.profile.playerThreatBorderEnabled = v
-                    if ns.SetPlayerThreatEnabled then
-                        ns.SetPlayerThreatEnabled(v)
+                    saved.profile.playerThreatBorderEnabled = v
+                    if mod.SetPlayerThreatEnabled then
+                        mod.SetPlayerThreatEnabled(v)
                     end
                 end
                 if UpdateHBSwatchVis then
@@ -1449,12 +1458,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         if isPlayer then
             -- Has Aggro swatch (global), left of Highlight.
             hasSwatch, updHas = CludesUI.BuildColorSwatch(rightRgn, lvl, function()
-                local c = db.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 }
+                local c = saved.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 }
                 return c.r, c.g, c.b, 1
             end, function(r, g, b)
-                db.profile.playerThreatHasAggroColor = { r = r, g = g, b = b }
-                if ns.UpdatePlayerThreatBorder then
-                    ns.UpdatePlayerThreatBorder()
+                saved.profile.playerThreatHasAggroColor = { r = r, g = g, b = b }
+                if mod.UpdatePlayerThreatBorder then
+                    mod.UpdatePlayerThreatBorder()
                 end
             end, false, 20)
             hasSwatch:SetPoint("RIGHT", rightRgn._lastInline, "LEFT", -8, 0)
@@ -1468,12 +1477,12 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
 
             -- Close to Aggro swatch (global), left of Has Aggro.
             nearSwatch, updNear = CludesUI.BuildColorSwatch(rightRgn, lvl, function()
-                local c = db.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 }
+                local c = saved.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 }
                 return c.r, c.g, c.b, 1
             end, function(r, g, b)
-                db.profile.playerThreatNearAggroColor = { r = r, g = g, b = b }
-                if ns.UpdatePlayerThreatBorder then
-                    ns.UpdatePlayerThreatBorder()
+                saved.profile.playerThreatNearAggroColor = { r = r, g = g, b = b }
+                if mod.UpdatePlayerThreatBorder then
+                    mod.UpdatePlayerThreatBorder()
                 end
             end, false, 20)
             nearSwatch:SetPoint("RIGHT", rightRgn._lastInline, "LEFT", -8, 0)
@@ -1490,9 +1499,9 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
         UpdateHBSwatchVis = function()
             hlSwatch:SetAlpha(UNIT_DB_MAP.player().highlightEnabled ~= false and 1 or 0.3)
             if hasSwatch then
-                local on = db.profile.playerThreatBorderEnabled
-                hasSwatch:SetAlpha(on and 1 or 0.3)
-                nearSwatch:SetAlpha(on and 1 or 0.3)
+                local enabled = saved.profile.playerThreatBorderEnabled
+                hasSwatch:SetAlpha(enabled and 1 or 0.3)
+                nearSwatch:SetAlpha(enabled and 1 or 0.3)
             end
         end
         CludesUI.RegisterWidgetRefresh(function()
@@ -1511,13 +1520,15 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
     -- Threat % text (WoW Forever only): one profile-wide setting for both
     -- frames, drawn on the CludesUI frames only. Built before the
     -- half-empty Blizz header row so its blank stays the last slot.
-    if CludesUI.IS_FOREVER and (optState.selectedUnit == "target" or optState.selectedUnit == "focus") then
+    if
+        CludesUI.IS_FOREVER and (optionState.selectedUnit == "target" or optionState.selectedUnit == "focus")
+    then
         local NO_FRAMES = "This option requires an CludesUI Target or Focus frame."
         local function noFrames()
-            return not (frames.target or frames.focus)
+            return not (frameList.target or frameList.focus)
         end
         local function pctOff()
-            return noFrames() or not db.profile.threatPctEnabled
+            return noFrames() or not saved.profile.threatPctEnabled
         end
         local function pctOffTip()
             if noFrames() then
@@ -1526,18 +1537,18 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             return "Show Threat % on Target"
         end
         local function PctSet(key, v)
-            db.profile[key] = v
-            ns.RefreshThreatPct()
+            saved.profile[key] = v
+            mod.RefreshThreatPct()
         end
-        local function PctSlider(key, label, lo, hi)
+        local function PctSlider(key, labelText, lo, hi)
             return {
                 type = "slider",
-                label = label,
+                label = labelText,
                 min = lo,
                 max = hi,
                 step = 1,
                 get = function()
-                    return db.profile[key]
+                    return saved.profile[key]
                 end,
                 set = function(v)
                     PctSet(key, v)
@@ -1545,37 +1556,37 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
             }
         end
         local pctRow
-        pctRow, h = W:DualRow(parent, y, {
+        pctRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Threat % on Target",
             tooltip = "Shows your threat percentage on the target frame while you are in combat with it. The cog adds the focus frame.",
             disabled = function()
-                return noFrames() and not db.profile.threatPctEnabled
+                return noFrames() and not saved.profile.threatPctEnabled
             end,
             disabledTooltip = NO_FRAMES,
             getValue = function()
-                return db.profile.threatPctEnabled
+                return saved.profile.threatPctEnabled
             end,
             setValue = function(v)
-                db.profile.threatPctEnabled = v
-                ns.SetThreatPctEnabled(v)
+                saved.profile.threatPctEnabled = v
+                mod.SetThreatPctEnabled(v)
                 CludesUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
             text = "Threat % Position",
-            values = ns._threatPctPositions,
-            order = ns._threatPctPositionOrder,
+            values = mod._threatPctPositions,
+            order = mod._threatPctPositionOrder,
             disabled = pctOff,
             disabledTooltip = pctOffTip,
             getValue = function()
-                return db.profile.threatPctPosition
+                return saved.profile.threatPctPosition
             end,
             setValue = function(v)
                 PctSet("threatPctPosition", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(pctRow._leftRegion, {
                 title = "Threat % Units",
@@ -1586,7 +1597,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         type = "toggle",
                         label = "Show on Focus",
                         get = function()
-                            return db.profile.threatPctFocus
+                            return saved.profile.threatPctFocus
                         end,
                         set = function(v)
                             PctSet("threatPctFocus", v)
@@ -1604,7 +1615,7 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                         label = "Color by Threat",
                         tooltip = "Colors the number by threat status. Off shows it in white.",
                         get = function()
-                            return db.profile.threatPctColorByThreat
+                            return saved.profile.threatPctColorByThreat
                         end,
                         set = function(v)
                             PctSet("threatPctColorByThreat", v)
@@ -1620,8 +1631,8 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
 
     -- Blizzard Style, target frame: the coloured strip behind the name,
     -- or an uncoloured header matching the player frame.
-    if optState.selectedUnit == "target" and CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then
-        _, h = W:DualRow(parent, y, {
+    if optionState.selectedUnit == "target" and CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then
+        _, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Blizz Colored Target Header",
             tooltip = "Colors the strip behind the target's name by its reaction.",
@@ -1638,35 +1649,35 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 UpdatePreview()
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y
+    return posY
 end
 
-function ns.UFO_BuildPortraitSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
     local GROUP_UNIT_ORDER, ReloadAndUpdate, SHORT_LABELS, UNIT_DB_MAP =
-        env.GROUP_UNIT_ORDER, env.ReloadAndUpdate, env.SHORT_LABELS, env.UNIT_DB_MAP
-    local UpdatePreview, db, detPortraitShapeOrder, detPortraitShapeValues =
-        env.UpdatePreview, env.db, env.detPortraitShapeOrder, env.detPortraitShapeValues
-    local optState, portraitArtOrder, portraitArtValues, portraitModeOrder2 =
-        env.optState, env.portraitArtOrder, env.portraitArtValues, env.portraitModeOrder2
+        environ.GROUP_UNIT_ORDER, environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.UNIT_DB_MAP
+    local UpdatePreview, saved, detPortraitShapeOrder, detPortraitShapeValues =
+        environ.UpdatePreview, environ.db, environ.detPortraitShapeOrder, environ.detPortraitShapeValues
+    local optionState, portraitArtOrder, portraitArtValues, portraitModeOrder2 =
+        environ.optState, environ.portraitArtOrder, environ.portraitArtValues, environ.portraitModeOrder2
     local portraitModeValues2, portraitNonPlayerOrder, portraitNonPlayerValues =
-        env.portraitModeValues2, env.portraitNonPlayerOrder, env.portraitNonPlayerValues
-    local W, SDB, SGet, SSet = ctx.W, ctx.SDB, ctx.SGet, ctx.SSet
-    local SVal = ctx.SVal
-    local _, h
+        environ.portraitModeValues2, environ.portraitNonPlayerOrder, environ.portraitNonPlayerValues
+    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local SVal = context.SVal
+    local _, hgt
 
     -------------------------------------------------------------------
     --  PORTRAIT
     -------------------------------------------------------------------
     local sharedPortraitHeader
-    sharedPortraitHeader, h = W:SectionHeader(parent, "PORTRAIT", y)
-    y = y - h
+    sharedPortraitHeader, hgt = Widgets:SectionHeader(hostFrame, "PORTRAIT", posY)
+    posY = posY - hgt
 
     -- Forward declarations for cross-row updates
     local sharedDetShapeRow
@@ -1674,9 +1685,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
 
     -- Row 1: Portrait Mode + Art Style
     local sharedPortraitModeRow
-    sharedPortraitModeRow, h = W:DualRow(
-        parent,
-        y,
+    sharedPortraitModeRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "dropdown",
             text = "Portrait Mode",
@@ -1697,22 +1708,22 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 SSet("portraitStyle", v)
                 -- Auto-set shape to "none" when entering detached + 3D
                 if v == "detached" and SVal("portraitMode", "2d") == "3d" then
-                    UNIT_DB_MAP[optState.selectedUnit]().detachedPortraitShape = "none"
+                    UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape = "none"
                 end
                 -- Reset detached-only settings when leaving detached mode
                 if v ~= "detached" then
-                    UNIT_DB_MAP[optState.selectedUnit]().portraitSize = 0
-                    local side = UNIT_DB_MAP[optState.selectedUnit]().portraitSide
+                    UNIT_DB_MAP[optionState.selectedUnit]().portraitSize = 0
+                    local sideName = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide
                     if
-                        side == "top"
-                        or side == "insideleft"
-                        or side == "insideright"
-                        or side == "insidecenter"
+                        sideName == "top"
+                        or sideName == "insideleft"
+                        or sideName == "insideright"
+                        or sideName == "insidecenter"
                     then
-                        UNIT_DB_MAP[optState.selectedUnit]().portraitSide = "left"
+                        UNIT_DB_MAP[optionState.selectedUnit]().portraitSide = "left"
                     end
                 end
-                UNIT_DB_MAP[optState.selectedUnit]().showPortrait = (v ~= "none")
+                UNIT_DB_MAP[optionState.selectedUnit]().showPortrait = (v ~= "none")
                 UpdatePreview()
                 if v ~= prevStyle then
                     CludesUI:RefreshPage(true)
@@ -1721,8 +1732,8 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 C_Timer.After(0, function()
                     local rl = CludesUI._widgetRefreshList
                     if rl then
-                        for i = 1, #rl do
-                            rl[i]()
+                        for idx = 1, #rl do
+                            rl[idx]()
                         end
                     end
                 end)
@@ -1760,22 +1771,26 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 return v or "2d"
             end,
             setValue = function(v)
-                local settings = SDB()
+                local prefs = SDB()
                 local function ApplyArt()
-                    settings.portraitMode = v
-                    settings.showPortrait = true
+                    prefs.portraitMode = v
+                    prefs.showPortrait = true
                     -- Auto-set shape to "none" when entering 3D + detached
-                    if v == "3d" and settings.portraitStyle == "detached" then
-                        settings.detachedPortraitShape = "none"
+                    if v == "3d" and prefs.portraitStyle == "detached" then
+                        prefs.detachedPortraitShape = "none"
                     end
                     -- 3D-only options: reset when leaving 3D
                     if v ~= "3d" then
-                        if settings.detachedPortraitShape == "none" then
-                            settings.detachedPortraitShape = "portrait"
+                        if prefs.detachedPortraitShape == "none" then
+                            prefs.detachedPortraitShape = "portrait"
                         end
-                        local side = settings.portraitSide
-                        if side == "insideleft" or side == "insideright" or side == "insidecenter" then
-                            settings.portraitSide = "left"
+                        local sideName = prefs.portraitSide
+                        if
+                            sideName == "insideleft"
+                            or sideName == "insideright"
+                            or sideName == "insidecenter"
+                        then
+                            prefs.portraitSide = "left"
                         end
                     end
                     ReloadAndUpdate()
@@ -1785,15 +1800,15 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     ApplyArt()
                     CludesUI:RefreshPage(true)
                 end
-                if v == "3d" and SVal("portraitMode", "2d") ~= "3d" and ns.UF_Ask3DPortraits(ConfirmArt) then
+                if v == "3d" and SVal("portraitMode", "2d") ~= "3d" and mod.UF_Ask3DPortraits(ConfirmArt) then
                     return
                 end
                 if
                     v == "2d"
                     and SVal("portraitMode", "2d") ~= "2d"
-                    and settings.portraitMirror
+                    and prefs.portraitMirror
                     and not CludesUI.BlizzStyle.Get("unitframes")
-                    and ns.UF_Ask2DMirroredPortraits(ConfirmArt)
+                    and mod.UF_Ask2DMirroredPortraits(ConfirmArt)
                 then
                     return
                 end
@@ -1801,7 +1816,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
     -- Sync icon: Portrait Mode (Style)
     if not CludesUI._prebuilding then
         local rgn = sharedPortraitModeRow._leftRegion
@@ -1809,9 +1824,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Portrait Mode to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().portraitStyle or "attached"
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitStyle or "attached"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
+                    if key ~= optionState.selectedUnit then
                         UNIT_DB_MAP[key]().portraitStyle = v
                         UNIT_DB_MAP[key]().showPortrait = (v ~= "none")
                     end
@@ -1820,7 +1835,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().portraitStyle or "attached"
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitStyle or "attached"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     if (UNIT_DB_MAP[key]().portraitStyle or "attached") ~= v then
                         return false
@@ -1835,10 +1850,10 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().portraitStyle or "attached"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitStyle or "attached"
                     for _, key in ipairs(checkedKeys) do
                         UNIT_DB_MAP[key]().portraitStyle = v
                         UNIT_DB_MAP[key]().showPortrait = (v ~= "none")
@@ -1851,7 +1866,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
     end
     -- Portrait settings; the separator is offered only for attached portraits.
     if not CludesUI._prebuilding then
-        local rows = {
+        local rowList = {
             {
                 type = "toggle",
                 label = "Custom Non-Player Portrait",
@@ -1866,7 +1881,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             },
         }
         if SVal("portraitStyle", "attached") == "attached" then
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Vertical Border Separator",
                 tooltip = "Draws the selected border style between the attached portrait and the bars.",
@@ -1885,7 +1900,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             }
         end
         if SVal("portraitStyle", "attached") == "detached" then
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
@@ -1896,7 +1911,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     SSet("detachedPortraitClickable", v or nil)
                 end,
             }
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "colorpicker",
                 label = "Background Color",
                 hasAlpha = true,
@@ -1920,7 +1935,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             }
             -- A 3D model draws over the shape's border; on, it sits inside the
             -- border and under it (ns.UF_PortraitShapeModel).
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "3D Portrait Below Border",
                 tooltip = "Draws a 3D portrait inside the shape's border instead of over it.",
@@ -1954,7 +1969,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 return not CludesUI.BlizzStyle.Get("unitframes")
             end,
             requireState = "disabled",
-            rows = rows,
+            rows = rowList,
         })
     end
     -- Sync icon: Portrait Mode (Art Style)
@@ -1964,9 +1979,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Art Style to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().portraitMode
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitMode
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optState.selectedUnit then
+                    if key ~= optionState.selectedUnit then
                         UNIT_DB_MAP[key]().portraitMode = v
                     end
                 end
@@ -1974,7 +1989,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().portraitMode or "none"
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitMode or "none"
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     if (UNIT_DB_MAP[key]().portraitMode or "none") ~= v then
                         return false
@@ -1989,10 +2004,10 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().portraitMode
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitMode
                     for _, key in ipairs(checkedKeys) do
                         UNIT_DB_MAP[key]().portraitMode = v
                     end
@@ -2008,9 +2023,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
     -- Mode's setValue rebuilds the page on any mode change).
     if SVal("portraitNonPlayerOn", false) and SVal("portraitStyle", "attached") ~= "none" then
         local nonPlayerRow
-        nonPlayerRow, h = W:DualRow(
-            parent,
-            y,
+        nonPlayerRow, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             CludesUI.BlizzStyle.Gate("unitframes", {
                 type = "dropdown",
                 text = "Non-Player Portrait",
@@ -2039,7 +2054,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     if
                         v == "3d"
                         and SVal("portraitNonPlayer", "2d") ~= "3d"
-                        and ns.UF_Ask3DPortraits(function()
+                        and mod.UF_Ask3DPortraits(function()
                             SSet("portraitNonPlayer", "3d")
                             CludesUI:RefreshPage()
                         end)
@@ -2051,15 +2066,15 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             }),
             CludesUI.BlankRowCfg()
         )
-        y = y - h
+        posY = posY - hgt
         -- Sync icon: carries the opt-in with the choice.
         if not CludesUI._prebuilding then
             local rgn = nonPlayerRow._leftRegion
-            local function ApplyNonPlayer(keys)
-                local on, v = SVal("portraitNonPlayerOn", nil), SVal("portraitNonPlayer", "2d")
-                for _, key in ipairs(keys) do
+            local function ApplyNonPlayer(keyList)
+                local enabled, v = SVal("portraitNonPlayerOn", nil), SVal("portraitNonPlayer", "2d")
+                for _, key in ipairs(keyList) do
                     local d = UNIT_DB_MAP[key]()
-                    d.portraitNonPlayerOn = on
+                    d.portraitNonPlayerOn = enabled
                     d.portraitNonPlayer = v
                 end
                 ReloadAndUpdate()
@@ -2072,10 +2087,13 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     ApplyNonPlayer(GROUP_UNIT_ORDER)
                 end,
                 isSynced = function()
-                    local on, v = SVal("portraitNonPlayerOn", false), SVal("portraitNonPlayer", "2d")
+                    local enabled, v = SVal("portraitNonPlayerOn", false), SVal("portraitNonPlayer", "2d")
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
-                        if (d.portraitNonPlayerOn or false) ~= on or (d.portraitNonPlayer or "2d") ~= v then
+                        if
+                            (d.portraitNonPlayerOn or false) ~= enabled
+                            or (d.portraitNonPlayer or "2d") ~= v
+                        then
                             return false
                         end
                     end
@@ -2088,7 +2106,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = ApplyNonPlayer,
                 },
@@ -2110,17 +2128,19 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
         }
         local portraitLocationOrder = { "left", "right", "top", "insideleft", "insideright", "insidecenter" }
         local sharedSizePosRow
-        sharedSizePosRow, h = W:DualRow(parent, y, {
+        sharedSizePosRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Size",
             min = -50,
             max = 100,
             step = 1,
             disabled = function()
-                local style = SVal("portraitStyle", "attached")
-                local side = SVal("portraitSide", "left")
-                local isInside = side == "insideleft" or side == "insideright" or side == "insidecenter"
-                return style ~= "detached" and not isInside
+                local look = SVal("portraitStyle", "attached")
+                local sideName = SVal("portraitSide", "left")
+                local isInside = sideName == "insideleft"
+                    or sideName == "insideright"
+                    or sideName == "insidecenter"
+                return look ~= "detached" and not isInside
             end,
             disabledTooltip = "Only available in Detached or Inside modes",
             rawTooltip = true,
@@ -2170,7 +2190,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 UpdatePreview()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Sync icons: Portrait Size (left) and Portrait Side (right)
         if not CludesUI._prebuilding then
             local rgn = sharedSizePosRow._leftRegion
@@ -2178,9 +2198,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Portrait Size to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().portraitSize or 0
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSize or 0
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optState.selectedUnit then
+                        if key ~= optionState.selectedUnit then
                             UNIT_DB_MAP[key]().portraitSize = v
                         end
                     end
@@ -2188,7 +2208,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().portraitSize or 0
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSize or 0
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().portraitSize or 0) ~= v then
                             return false
@@ -2203,10 +2223,10 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().portraitSize or 0
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSize or 0
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().portraitSize = v
                         end
@@ -2289,17 +2309,17 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                             return SVal("portraitMirror", false)
                         end,
                         set = function(v)
-                            local unitKey, settings = optState.selectedUnit, SDB()
+                            local unitKey, prefs = optionState.selectedUnit, SDB()
                             local function ApplyMirror()
-                                settings.portraitMirror = v
-                                ns.UF_RefreshPortraitMirror(unitKey)
+                                prefs.portraitMirror = v
+                                mod.UF_RefreshPortraitMirror(unitKey)
                                 UpdatePreview()
                             end
                             if
                                 v
-                                and not settings.portraitMirror
+                                and not prefs.portraitMirror
                                 and SVal("portraitMode", "2d") == "2d"
-                                and ns.UF_Ask2DMirroredPortraits(function()
+                                and mod.UF_Ask2DMirroredPortraits(function()
                                     ApplyMirror()
                                     CludesUI:RefreshPage()
                                 end)
@@ -2321,9 +2341,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Portrait Position to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().portraitSide or "left"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide or "left"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optState.selectedUnit then
+                        if key ~= optionState.selectedUnit then
                             UNIT_DB_MAP[key]().portraitSide = v
                         end
                     end
@@ -2331,7 +2351,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().portraitSide or "left"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide or "left"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().portraitSide or "left") ~= v then
                             return false
@@ -2346,10 +2366,10 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().portraitSide or "left"
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide or "left"
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().portraitSide = v
                         end
@@ -2407,90 +2427,85 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
     -- Detached; the mode dropdown's setValue forces the rebuild on any change.
     if SVal("portraitStyle", "attached") == "detached" then
         local sharedShapeBorderRow
-        sharedShapeBorderRow, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "dropdown",
-                text = "Shape",
-                values = detPortraitShapeValues,
-                order = detPortraitShapeOrder,
-                itemDisabled = function(v)
-                    return v == "none" and SVal("portraitMode", "2d") ~= "3d"
-                end,
-                itemDisabledTooltip = function(v)
-                    if v == "none" then
-                        return "None shape requires 3D Art Style"
-                    end
-                end,
-                getValue = function()
-                    return SVal("detachedPortraitShape", "portrait")
-                end,
-                setValue = function(v)
-                    SSet("detachedPortraitShape", v)
-                    UpdatePreview()
-                end,
-            },
-            {
-                type = "multiSwatch",
-                text = "Shape Border",
-                swatches = {
-                    {
-                        tooltip = "Custom Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local c = SGet("detachedPortraitBorderColor")
-                            c = c or { r = 0, g = 0, b = 0 }
-                            return c.r, c.g, c.b
-                        end,
-                        setValue = function(r, g, b)
-                            UNIT_DB_MAP[optState.selectedUnit]().detachedPortraitBorderColor =
-                                { r = r, g = g, b = b }
-                            ReloadAndUpdate()
-                            UpdatePreview()
-                        end,
-                        onClick = function(self)
-                            if SVal("detachedPortraitClassColor", true) then
-                                SSet("detachedPortraitClassColor", false)
-                                ReloadAndUpdate()
-                                UpdatePreview()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            return SVal("detachedPortraitClassColor", true) and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Class Colored",
-                        hasAlpha = false,
-                        getValue = function()
-                            local _, ct = UnitClass("player")
-                            if ct and RAID_CLASS_COLORS[ct] then
-                                local cc = RAID_CLASS_COLORS[ct]
-                                return cc.r, cc.g, cc.b
-                            end
-                            return 1, 1, 1
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            SSet("detachedPortraitClassColor", true)
+        sharedShapeBorderRow, hgt = Widgets:DualRow(hostFrame, posY, {
+            type = "dropdown",
+            text = "Shape",
+            values = detPortraitShapeValues,
+            order = detPortraitShapeOrder,
+            itemDisabled = function(v)
+                return v == "none" and SVal("portraitMode", "2d") ~= "3d"
+            end,
+            itemDisabledTooltip = function(v)
+                if v == "none" then
+                    return "None shape requires 3D Art Style"
+                end
+            end,
+            getValue = function()
+                return SVal("detachedPortraitShape", "portrait")
+            end,
+            setValue = function(v)
+                SSet("detachedPortraitShape", v)
+                UpdatePreview()
+            end,
+        }, {
+            type = "multiSwatch",
+            text = "Shape Border",
+            swatches = {
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = SGet("detachedPortraitBorderColor")
+                        c = c or { r = 0, g = 0, b = 0 }
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function(r, g, b)
+                        UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitBorderColor =
+                            { r = r, g = g, b = b }
+                        ReloadAndUpdate()
+                        UpdatePreview()
+                    end,
+                    onClick = function(self)
+                        if SVal("detachedPortraitClassColor", true) then
+                            SSet("detachedPortraitClassColor", false)
                             ReloadAndUpdate()
                             UpdatePreview()
                             CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            return SVal("detachedPortraitClassColor", true) and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        return SVal("detachedPortraitClassColor", true) and 0.3 or 1
+                    end,
                 },
-            }
-        )
-        y = y - h
+                {
+                    tooltip = "Class Colored",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, ct = UnitClass("player")
+                        if ct and RAID_CLASS_COLORS[ct] then
+                            local cc = RAID_CLASS_COLORS[ct]
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        SSet("detachedPortraitClassColor", true)
+                        ReloadAndUpdate()
+                        UpdatePreview()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        return SVal("detachedPortraitClassColor", true) and 1 or 0.3
+                    end,
+                },
+            },
+        })
+        posY = posY - hgt
         -- Cog on Shape Border for border settings
         if not CludesUI._prebuilding then
             local borderRgn = sharedShapeBorderRow._rightRegion
@@ -2534,7 +2549,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                         label = "Unit Color in Dark Mode",
                         tooltip = "Keeps the unit's class or reaction color on the ring in Dark Mode instead of your own class color.",
                         disabled = function()
-                            return not (SVal("detachedPortraitClassColor", true) and ns.UF_DarkThemeOn(SDB()))
+                            return not (
+                                SVal("detachedPortraitClassColor", true) and mod.UF_DarkThemeOn(SDB())
+                            )
                         end,
                         disabledTooltip = "This option requires the Class Colored Shape Border and Dark Mode.",
                         rawTooltip = true,
@@ -2571,7 +2588,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                         ddWidth = 190,
                         tooltip = "Adds a second ring around a round portrait; Match Frame Border follows your frame border style.",
                         disabled = function()
-                            return not ns.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
+                            return not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
                         end,
                         disabledTooltip = "This option requires a Circle or Pixels Circle Shape.",
                         rawTooltip = true,
@@ -2591,11 +2608,11 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                         step = 1,
                         tooltip = "Size of the outer ring relative to the portrait.",
                         disabled = function()
-                            return not ns.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
+                            return not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
                                 or SVal("detachedPortraitOuterRing", "none") == "none"
                         end,
                         disabledTooltip = function()
-                            if not ns.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")] then
+                            if not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")] then
                                 return "This option requires a Circle or Pixels Circle Shape."
                             end
                             return "This option requires an Outer Ring other than None."
@@ -2615,11 +2632,11 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                         label = "Inner Shadow",
                         tooltip = "Adds a soft shadow inside a round portrait.",
                         disabled = function()
-                            return not ns.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
+                            return not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")]
                                 or SVal("portraitMode", "2d") == "3d"
                         end,
                         disabledTooltip = function()
-                            if not ns.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")] then
+                            if not mod.UF_ROUND_SHAPES[SVal("detachedPortraitShape", "portrait")] then
                                 return "This option requires a Circle or Pixels Circle Shape."
                             end
                             return "This option requires a 2D Portrait or Class Art Style."
@@ -2644,9 +2661,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Portrait Shape to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().detachedPortraitShape or "portrait"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape or "portrait"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optState.selectedUnit then
+                        if key ~= optionState.selectedUnit then
                             UNIT_DB_MAP[key]().detachedPortraitShape = v
                         end
                     end
@@ -2654,7 +2671,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().detachedPortraitShape or "portrait"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape or "portrait"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().detachedPortraitShape or "portrait") ~= v then
                             return false
@@ -2669,10 +2686,10 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().detachedPortraitShape or "portrait"
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape or "portrait"
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().detachedPortraitShape = v
                         end
@@ -2695,13 +2712,13 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Shape Border to all Frames",
                 onClick = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local bc = src.detachedPortraitBorderColor
-                    local bo = src.detachedPortraitBorderOpacity
-                    local bs = src.detachedPortraitBorderSize
-                    local cc = src.detachedPortraitClassColor
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local bc = source.detachedPortraitBorderColor
+                    local bo = source.detachedPortraitBorderOpacity
+                    local bs = source.detachedPortraitBorderSize
+                    local cc = source.detachedPortraitClassColor
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optState.selectedUnit then
+                        if key ~= optionState.selectedUnit then
                             local d = UNIT_DB_MAP[key]()
                             if bc then
                                 d.detachedPortraitBorderColor = { r = bc.r, g = bc.g, b = bc.b }
@@ -2712,7 +2729,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                             d.detachedPortraitBorderSize = bs
                             d.detachedPortraitClassColor = cc
                             for k in pairs(SB_EXTRAS) do
-                                d[k] = src[k]
+                                d[k] = source[k]
                             end
                         end
                     end
@@ -2720,12 +2737,12 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local cc = src.detachedPortraitClassColor
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local cc = source.detachedPortraitClassColor
                     if cc == nil then
                         cc = true
                     end
-                    local bs = src.detachedPortraitBorderSize or 7
+                    local bs = source.detachedPortraitBorderSize or 7
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         local dcc = d.detachedPortraitClassColor
@@ -2738,13 +2755,13 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                         if (d.detachedPortraitBorderSize or 7) ~= bs then
                             return false
                         end
-                        for k, def in pairs(SB_EXTRAS) do
-                            local sv, dv = src[k], d[k]
+                        for k, spec_def in pairs(SB_EXTRAS) do
+                            local sv, dv = source[k], d[k]
                             if sv == nil then
-                                sv = def
+                                sv = spec_def
                             end
                             if dv == nil then
-                                dv = def
+                                dv = spec_def
                             end
                             if sv ~= dv then
                                 return false
@@ -2760,14 +2777,14 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local bc = src.detachedPortraitBorderColor
-                        local bo = src.detachedPortraitBorderOpacity
-                        local bs = src.detachedPortraitBorderSize
-                        local cc = src.detachedPortraitClassColor
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local bc = source.detachedPortraitBorderColor
+                        local bo = source.detachedPortraitBorderOpacity
+                        local bs = source.detachedPortraitBorderSize
+                        local cc = source.detachedPortraitClassColor
                         for _, key in ipairs(checkedKeys) do
                             local d = UNIT_DB_MAP[key]()
                             if bc then
@@ -2779,7 +2796,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                             d.detachedPortraitBorderSize = bs
                             d.detachedPortraitClassColor = cc
                             for k in pairs(SB_EXTRAS) do
-                                d[k] = src[k]
+                                d[k] = source[k]
                             end
                         end
                         ReloadAndUpdate()
@@ -2798,22 +2815,22 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
     -- ns.UF_DragonSettings (the "wingless" Elite/Rare style shows its own
     -- values); every setter pins that view first (ns.UF_PinLegacyDragon).
     if SVal("portraitStyle", "attached") ~= "none" then
-        local playerDragon = optState.selectedUnit == "player"
+        local playerDragon = optionState.selectedUnit == "player"
         local dragonName = playerDragon and "Player Frame Dragon" or "Elite Enemy Dragon"
         local function DVal(k)
-            return ns.UF_DragonSettings(optState.selectedUnit, SDB())[k]
+            return mod.UF_DragonSettings(optionState.selectedUnit, SDB())[k]
         end
         local function DSet(key, v)
-            ns.UF_PinLegacyDragon(SDB())
+            mod.UF_PinLegacyDragon(SDB())
             SSet(key, v)
         end
         local function dragonOff()
             return not DVal("on")
         end
         local dragonRow
-        dragonRow, h = W:DualRow(
-            parent,
-            y,
+        dragonRow, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             CludesUI.BlizzStyle.Gate("unitframes", {
                 type = "toggle",
                 text = playerDragon and "Enable Player Frame Dragon" or "Enable Elite Enemy Dragon",
@@ -2844,9 +2861,9 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 end,
             })
         )
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            local rows = {
+            local rowList = {
                 {
                     type = "slider",
                     label = "X Offset",
@@ -2899,8 +2916,8 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 {
                     type = "dropdown",
                     label = "Dragon Strata",
-                    values = ns._ufDragonStrataValues,
-                    order = ns._ufDragonStrataOrder,
+                    values = mod._ufDragonStrataValues,
+                    order = mod._ufDragonStrataOrder,
                     tooltip = "Match Frame draws the dragon with the portrait. A higher strata draws it over the rest of the frame, border included.",
                     get = function()
                         return DVal("strata")
@@ -2926,7 +2943,7 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
             }
             -- The enemy dragon keeps the Elite/Rare Indicator's instance rule.
             if not playerDragon then
-                rows[#rows + 1] = {
+                rowList[#rowList + 1] = {
                     type = "toggle",
                     label = "Show in Instances",
                     tooltip = "Also show the dragon in dungeons and raids, where most enemies are elite.",
@@ -2942,29 +2959,29 @@ function ns.UFO_BuildPortraitSection(parent, y, ctx)
                 title = dragonName,
                 disabled = dragonOff,
                 disabledTooltip = dragonName,
-                rows = rows,
+                rows = rowList,
             })
         end
     end -- close dragon row hidden-at-None gate
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y, sharedPortraitHeader, sharedPortraitModeRow
+    return posY, sharedPortraitHeader, sharedPortraitModeRow
 end
 
-function ns.UFO_BuildTextBarSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
-    local GROUP_UNIT_ORDER, PP, RegisterWidgetRefresh, ReloadAndUpdate =
-        env.GROUP_UNIT_ORDER, env.PP, env.RegisterWidgetRefresh, env.ReloadAndUpdate
+function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
+    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
+        environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
     local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, btbPositionOrder =
-        env.SHORT_LABELS, env.UNIT_DB_MAP, env.UpdatePreview, env.btbPositionOrder
+        environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.btbPositionOrder
     local btbPositionValues, btbTextOrder, btbTextValues, classIconLocOrder =
-        env.btbPositionValues, env.btbTextOrder, env.btbTextValues, env.classIconLocOrder
-    local classIconLocValues, classIconOrder, classIconValues, optState =
-        env.classIconLocValues, env.classIconOrder, env.classIconValues, env.optState
-    local W, SGet, SSet, SVal = ctx.W, ctx.SGet, ctx.SSet, ctx.SVal
-    local _, h
+        environ.btbPositionValues, environ.btbTextOrder, environ.btbTextValues, environ.classIconLocOrder
+    local classIconLocValues, classIconOrder, classIconValues, optionState =
+        environ.classIconLocValues, environ.classIconOrder, environ.classIconValues, environ.optState
+    local Widgets, SGet, SSet, SVal = context.W, context.SGet, context.SSet, context.SVal
+    local _, hgt
 
     -------------------------------------------------------------------
     --  TEXT BAR
@@ -2975,13 +2992,13 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
     local _sharedBtbWidthRgn
     local sharedBtbToggleRow
     if not CludesUI.BlizzStyle.Get("unitframes") then
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
-        sharedBtbHeader, h = W:SectionHeader(parent, "TEXT BAR", y)
-        y = y - h
+        _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
+        sharedBtbHeader, hgt = Widgets:SectionHeader(hostFrame, "TEXT BAR", posY)
+        posY = posY - hgt
 
         -- Row 1: Enable Text Bar + Position
-        sharedBtbToggleRow, h = W:DualRow(parent, y, {
+        sharedBtbToggleRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Text Bar",
             getValue = function()
@@ -3019,7 +3036,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Sync icon: Enable Text Bar
         if not CludesUI._prebuilding then
             local rgn = sharedBtbToggleRow._leftRegion
@@ -3027,9 +3044,9 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Enable Text Bar to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().bottomTextBar or false
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBar or false
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optState.selectedUnit then
+                        if key ~= optionState.selectedUnit then
                             UNIT_DB_MAP[key]().bottomTextBar = v
                         end
                     end
@@ -3037,7 +3054,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().bottomTextBar or false
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBar or false
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().bottomTextBar or false) ~= v then
                             return false
@@ -3052,10 +3069,10 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().bottomTextBar or false
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBar or false
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().bottomTextBar = v
                         end
@@ -3072,9 +3089,9 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Position to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().btbPosition or "bottom"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbPosition or "bottom"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optState.selectedUnit then
+                        if key ~= optionState.selectedUnit then
                             UNIT_DB_MAP[key]().btbPosition = v
                         end
                     end
@@ -3082,7 +3099,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().btbPosition or "bottom"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbPosition or "bottom"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().btbPosition or "bottom") ~= v then
                             return false
@@ -3097,10 +3114,10 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().btbPosition or "bottom"
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().btbPosition or "bottom"
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().btbPosition = v
                         end
@@ -3119,8 +3136,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 local a = SGet("btbBgOpacity")
                 return c.r, c.g, c.b, a or 1.0
             end, function(r, g, b, a)
-                UNIT_DB_MAP[optState.selectedUnit]().btbBgColor = { r = r, g = g, b = b }
-                UNIT_DB_MAP[optState.selectedUnit]().btbBgOpacity = a
+                UNIT_DB_MAP[optionState.selectedUnit]().btbBgColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().btbBgOpacity = a
                 ReloadAndUpdate()
                 UpdatePreview()
             end, true, 20)
@@ -3155,9 +3172,9 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
             local posRgn = sharedBtbToggleRow._rightRegion
             CludesUI.BuildInlineCog(posRgn, {
                 disabled = function()
-                    local pos = SVal("btbPosition", "bottom")
+                    local place = SVal("btbPosition", "bottom")
                     return not SVal("bottomTextBar", false)
-                        or (pos ~= "detached_top" and pos ~= "detached_bottom")
+                        or (place ~= "detached_top" and place ~= "detached_bottom")
                 end,
                 disabledTooltip = function()
                     return not SVal("bottomTextBar", false) and "Text Bar"
@@ -3205,7 +3222,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
     if SVal("bottomTextBar", false) and not CludesUI.BlizzStyle.Get("unitframes") then
         -- Row 2: Height + Width
         local sharedBtbHeightRow
-        sharedBtbHeightRow, h = W:DualRow(parent, y, {
+        sharedBtbHeightRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Height",
             min = 0,
@@ -3232,8 +3249,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 if not SVal("bottomTextBar", false) then
                     return true
                 end
-                local pos = SVal("btbPosition", "bottom")
-                return pos ~= "detached_top" and pos ~= "detached_bottom"
+                local place = SVal("btbPosition", "bottom")
+                return place ~= "detached_top" and place ~= "detached_bottom"
             end,
             disabledTooltip = function()
                 if not SVal("bottomTextBar", false) then
@@ -3249,11 +3266,11 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 UpdatePreview()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         _sharedBtbWidthRgn = sharedBtbHeightRow._rightRegion
         do
-            local pos = SVal("btbPosition", "bottom")
-            local isDet = (pos == "detached_top" or pos == "detached_bottom")
+            local place = SVal("btbPosition", "bottom")
+            local isDet = (place == "detached_top" or place == "detached_bottom")
             if _sharedBtbWidthRgn._control and _sharedBtbWidthRgn._control.SetEnabled then
                 _sharedBtbWidthRgn._control:SetEnabled(isDet)
             end
@@ -3265,7 +3282,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Height to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().bottomTextBarHeight or 16
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBarHeight or 16
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         UNIT_DB_MAP[key]().bottomTextBarHeight = v
                     end
@@ -3273,7 +3290,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().bottomTextBarHeight or 16
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBarHeight or 16
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().bottomTextBarHeight or 16) ~= v then
                             return false
@@ -3288,10 +3305,10 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().bottomTextBarHeight or 16
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBarHeight or 16
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().bottomTextBarHeight = v
                         end
@@ -3307,7 +3324,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Width to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().btbWidth or 0
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbWidth or 0
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         UNIT_DB_MAP[key]().btbWidth = v
                     end
@@ -3315,7 +3332,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().btbWidth or 0
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbWidth or 0
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().btbWidth or 0) ~= v then
                             return false
@@ -3330,10 +3347,10 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().btbWidth or 0
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().btbWidth or 0
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().btbWidth = v
                         end
@@ -3349,11 +3366,11 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
         -- keeps the page, so all three menus follow it.
         local function RefreshBtbMenus()
             local t, c = sharedBtbTextRow, sharedBtbCenterRow
-            ns.UFO_RefreshMenus(t and t._leftRegion, t and t._rightRegion, c and c._leftRegion)
+            mod.UFO_RefreshMenus(t and t._leftRegion, t and t._rightRegion, c and c._leftRegion)
         end
         local function SetBtbLeft(v)
             SSet("btbLeftContent", v)
-            if ns.UF_IsUniqueContent(v) then
+            if mod.UF_IsUniqueContent(v) then
                 if SGet("btbRightContent") == v then
                     SSet("btbRightContent", "none")
                 end
@@ -3367,7 +3384,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
         end
         local function SetBtbRight(v)
             SSet("btbRightContent", v)
-            if ns.UF_IsUniqueContent(v) then
+            if mod.UF_IsUniqueContent(v) then
                 if SGet("btbLeftContent") == v then
                     SSet("btbLeftContent", "none")
                 end
@@ -3389,18 +3406,18 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
             UpdatePreview()
             RefreshBtbMenus()
         end
-        local function BtbValues(prefix, setValue)
-            return ns.UFO_CustomTextValues(btbTextValues, function()
-                return SVal(prefix .. "Content", "none")
+        local function BtbValues(prefixText, setValue)
+            return mod.UFO_CustomTextValues(btbTextValues, function()
+                return SVal(prefixText .. "Content", "none")
             end, function()
-                ns.UFO_EditCustomText(prefix, ctx.SDB(), optState.selectedUnit, function()
+                mod.UFO_EditCustomText(prefixText, context.SDB(), optionState.selectedUnit, function()
                     setValue("custom")
                 end)
             end)
         end
 
         -- Row 3: Left Text + Right Text
-        sharedBtbTextRow, h = W:DualRow(parent, y, {
+        sharedBtbTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Left Text",
             values = BtbValues("btbLeft", SetBtbLeft),
@@ -3427,26 +3444,26 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
             end,
             setValue = SetBtbRight,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             local apply = function()
                 ReloadAndUpdate()
                 UpdatePreview()
             end
-            ns.UFO_AddCustomFormatAccessor(
+            mod.UFO_AddCustomFormatAccessor(
                 sharedBtbTextRow._leftRegion,
                 "BTB Left Text",
                 "btbLeft",
                 SVal("btbLeftContent", "none"),
-                ctx.SDB,
+                context.SDB,
                 apply
             )
-            ns.UFO_AddCustomFormatAccessor(
+            mod.UFO_AddCustomFormatAccessor(
                 sharedBtbTextRow._rightRegion,
                 "BTB Right Text",
                 "btbRight",
                 SVal("btbRightContent", "none"),
-                ctx.SDB,
+                context.SDB,
                 apply
             )
         end
@@ -3462,7 +3479,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Left Text Settings",
-                rows = ns.UF_NameFormatRows("btbLeft", "none", SVal, SSet, {
+                rows = mod.UF_NameFormatRows("btbLeft", "none", SVal, SSet, {
                     {
                         type = "slider",
                         label = "Size",
@@ -3622,7 +3639,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 nil,
                 20
             )
-            PP.Point(blClassSwatch, "RIGHT", btbLRgn._lastInline or btbLRgn._control, "LEFT", -8, 0)
+            Pix.Point(blClassSwatch, "RIGHT", btbLRgn._lastInline or btbLRgn._control, "LEFT", -8, 0)
             blClassSwatch:SetScript("OnClick", function()
                 if blOff() then
                     return
@@ -3649,7 +3666,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
             end
             local blSwatch, blUpdateSwatch =
                 CludesUI.BuildColorSwatch(btbLRgn, btbLRgn:GetFrameLevel() + 5, blSwGet, blSwSet, nil, 20)
-            PP.Point(blSwatch, "RIGHT", blClassSwatch, "LEFT", -8, 0)
+            Pix.Point(blSwatch, "RIGHT", blClassSwatch, "LEFT", -8, 0)
             btbLRgn._lastInline = blSwatch
             local blOrigClick = blSwatch:GetScript("OnClick")
             blSwatch:SetScript("OnClick", function(self, ...)
@@ -3681,9 +3698,9 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 btbLRgn:GetFrameLevel() + 5,
                 function()
                     local _, pToken = UnitPowerType("player")
-                    local info = CludesUI.GetPowerColor(pToken or "MANA")
-                    if info then
-                        return info.r, info.g, info.b
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    if details then
+                        return details.r, details.g, details.b
                     end
                     return 1, 1, 1
                 end,
@@ -3691,7 +3708,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 nil,
                 20
             )
-            PP.Point(blPowerSwatch, "RIGHT", blSwatch, "LEFT", -8, 0)
+            Pix.Point(blPowerSwatch, "RIGHT", blSwatch, "LEFT", -8, 0)
             btbLRgn._lastInline = blPowerSwatch
             blPowerSwatch:SetScript("OnClick", function()
                 if blOff() then
@@ -3709,12 +3726,12 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBlSwatches()
-                local off = blOff()
+                local offset = blOff()
                 local isClass = SVal("btbLeftClassColor", false)
                 local isPower = SVal("btbLeftPowerColor", false)
-                blSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
-                blClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
-                blPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
+                blSwatch:SetAlpha((isClass or isPower or offset) and 0.3 or 1)
+                blClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
+                blPowerSwatch:SetAlpha((isPower and not offset) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 blUpdateSwatch()
@@ -3736,7 +3753,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Right Text Settings",
-                rows = ns.UF_NameFormatRows("btbRight", "none", SVal, SSet, {
+                rows = mod.UF_NameFormatRows("btbRight", "none", SVal, SSet, {
                     {
                         type = "slider",
                         label = "Size",
@@ -3896,7 +3913,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 nil,
                 20
             )
-            PP.Point(brClassSwatch, "RIGHT", btbRRgn._lastInline or btbRRgn._control, "LEFT", -8, 0)
+            Pix.Point(brClassSwatch, "RIGHT", btbRRgn._lastInline or btbRRgn._control, "LEFT", -8, 0)
             brClassSwatch:SetScript("OnClick", function()
                 if brOff() then
                     return
@@ -3923,7 +3940,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
             end
             local brSwatch, brUpdateSwatch =
                 CludesUI.BuildColorSwatch(btbRRgn, btbRRgn:GetFrameLevel() + 5, brSwGet, brSwSet, nil, 20)
-            PP.Point(brSwatch, "RIGHT", brClassSwatch, "LEFT", -8, 0)
+            Pix.Point(brSwatch, "RIGHT", brClassSwatch, "LEFT", -8, 0)
             btbRRgn._lastInline = brSwatch
             local brOrigClick = brSwatch:GetScript("OnClick")
             brSwatch:SetScript("OnClick", function(self, ...)
@@ -3955,9 +3972,9 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 btbRRgn:GetFrameLevel() + 5,
                 function()
                     local _, pToken = UnitPowerType("player")
-                    local info = CludesUI.GetPowerColor(pToken or "MANA")
-                    if info then
-                        return info.r, info.g, info.b
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    if details then
+                        return details.r, details.g, details.b
                     end
                     return 1, 1, 1
                 end,
@@ -3965,7 +3982,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 nil,
                 20
             )
-            PP.Point(brPowerSwatch, "RIGHT", brSwatch, "LEFT", -8, 0)
+            Pix.Point(brPowerSwatch, "RIGHT", brSwatch, "LEFT", -8, 0)
             btbRRgn._lastInline = brPowerSwatch
             brPowerSwatch:SetScript("OnClick", function()
                 if brOff() then
@@ -3983,12 +4000,12 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBrSwatches()
-                local off = brOff()
+                local offset = brOff()
                 local isClass = SVal("btbRightClassColor", false)
                 local isPower = SVal("btbRightPowerColor", false)
-                brSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
-                brClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
-                brPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
+                brSwatch:SetAlpha((isClass or isPower or offset) and 0.3 or 1)
+                brClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
+                brPowerSwatch:SetAlpha((isPower and not offset) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 brUpdateSwatch()
@@ -4005,8 +4022,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Left Text to all Frames",
                 onClick = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.btbLeftContent or "none", src.btbLeftCustomFormat
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local v, fmt = source.btbLeftContent or "none", source.btbLeftCustomFormat
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         d.btbLeftContent = v
@@ -4018,8 +4035,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.btbLeftContent or "none", src.btbLeftCustomFormat or ""
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local v, fmt = source.btbLeftContent or "none", source.btbLeftCustomFormat or ""
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         if (d.btbLeftContent or "none") ~= v then
@@ -4038,11 +4055,11 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v, fmt = src.btbLeftContent or "none", src.btbLeftCustomFormat
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local v, fmt = source.btbLeftContent or "none", source.btbLeftCustomFormat
                         for _, key in ipairs(checkedKeys) do
                             local d = UNIT_DB_MAP[key]()
                             d.btbLeftContent = v
@@ -4062,8 +4079,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Right Text to all Frames",
                 onClick = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.btbRightContent or "none", src.btbRightCustomFormat
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local v, fmt = source.btbRightContent or "none", source.btbRightCustomFormat
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         d.btbRightContent = v
@@ -4075,8 +4092,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.btbRightContent or "none", src.btbRightCustomFormat or ""
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local v, fmt = source.btbRightContent or "none", source.btbRightCustomFormat or ""
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         if (d.btbRightContent or "none") ~= v then
@@ -4095,11 +4112,11 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v, fmt = src.btbRightContent or "none", src.btbRightCustomFormat
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local v, fmt = source.btbRightContent or "none", source.btbRightCustomFormat
                         for _, key in ipairs(checkedKeys) do
                             local d = UNIT_DB_MAP[key]()
                             d.btbRightContent = v
@@ -4115,7 +4132,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
         end
 
         -- Row 4: Center Text + Class Icon
-        sharedBtbCenterRow, h = W:DualRow(parent, y, {
+        sharedBtbCenterRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Center Text",
             values = BtbValues("btbCenter", SetBtbCenter),
@@ -4145,14 +4162,14 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 UpdatePreview()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            ns.UFO_AddCustomFormatAccessor(
+            mod.UFO_AddCustomFormatAccessor(
                 sharedBtbCenterRow._leftRegion,
                 "BTB Center Text",
                 "btbCenter",
                 SVal("btbCenterContent", "none"),
-                ctx.SDB,
+                context.SDB,
                 function()
                     ReloadAndUpdate()
                     UpdatePreview()
@@ -4171,7 +4188,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                         or "This option requires a text selection other than none."
                 end,
                 title = "BTB Center Text Settings",
-                rows = ns.UF_NameFormatRows("btbCenter", "none", SVal, SSet, {
+                rows = mod.UF_NameFormatRows("btbCenter", "none", SVal, SSet, {
                     {
                         type = "slider",
                         label = "Size",
@@ -4331,7 +4348,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 nil,
                 20
             )
-            PP.Point(bcClassSwatch, "RIGHT", btbCRgn._lastInline or btbCRgn._control, "LEFT", -8, 0)
+            Pix.Point(bcClassSwatch, "RIGHT", btbCRgn._lastInline or btbCRgn._control, "LEFT", -8, 0)
             bcClassSwatch:SetScript("OnClick", function()
                 if bcOff() then
                     return
@@ -4358,7 +4375,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
             end
             local bcSwatch, bcUpdateSwatch =
                 CludesUI.BuildColorSwatch(btbCRgn, btbCRgn:GetFrameLevel() + 5, bcSwGet, bcSwSet, nil, 20)
-            PP.Point(bcSwatch, "RIGHT", bcClassSwatch, "LEFT", -8, 0)
+            Pix.Point(bcSwatch, "RIGHT", bcClassSwatch, "LEFT", -8, 0)
             btbCRgn._lastInline = bcSwatch
             local bcOrigClick = bcSwatch:GetScript("OnClick")
             bcSwatch:SetScript("OnClick", function(self, ...)
@@ -4390,9 +4407,9 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 btbCRgn:GetFrameLevel() + 5,
                 function()
                     local _, pToken = UnitPowerType("player")
-                    local info = CludesUI.GetPowerColor(pToken or "MANA")
-                    if info then
-                        return info.r, info.g, info.b
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    if details then
+                        return details.r, details.g, details.b
                     end
                     return 1, 1, 1
                 end,
@@ -4400,7 +4417,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 nil,
                 20
             )
-            PP.Point(bcPowerSwatch, "RIGHT", bcSwatch, "LEFT", -8, 0)
+            Pix.Point(bcPowerSwatch, "RIGHT", bcSwatch, "LEFT", -8, 0)
             btbCRgn._lastInline = bcPowerSwatch
             bcPowerSwatch:SetScript("OnClick", function()
                 if bcOff() then
@@ -4418,12 +4435,12 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBcSwatches()
-                local off = bcOff()
+                local offset = bcOff()
                 local isClass = SVal("btbCenterClassColor", false)
                 local isPower = SVal("btbCenterPowerColor", false)
-                bcSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
-                bcClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
-                bcPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
+                bcSwatch:SetAlpha((isClass or isPower or offset) and 0.3 or 1)
+                bcClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
+                bcPowerSwatch:SetAlpha((isPower and not offset) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 bcUpdateSwatch()
@@ -4511,8 +4528,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Center Text to all Frames",
                 onClick = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.btbCenterContent or "none", src.btbCenterCustomFormat
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local v, fmt = source.btbCenterContent or "none", source.btbCenterCustomFormat
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         d.btbCenterContent = v
@@ -4524,8 +4541,8 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local src = UNIT_DB_MAP[optState.selectedUnit]()
-                    local v, fmt = src.btbCenterContent or "none", src.btbCenterCustomFormat or ""
+                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                    local v, fmt = source.btbCenterContent or "none", source.btbCenterCustomFormat or ""
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         local d = UNIT_DB_MAP[key]()
                         if (d.btbCenterContent or "none") ~= v then
@@ -4544,11 +4561,11 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local src = UNIT_DB_MAP[optState.selectedUnit]()
-                        local v, fmt = src.btbCenterContent or "none", src.btbCenterCustomFormat
+                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
+                        local v, fmt = source.btbCenterContent or "none", source.btbCenterCustomFormat
                         for _, key in ipairs(checkedKeys) do
                             local d = UNIT_DB_MAP[key]()
                             d.btbCenterContent = v
@@ -4568,7 +4585,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Text Bar Class Icon to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().btbClassIcon or "none"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbClassIcon or "none"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         UNIT_DB_MAP[key]().btbClassIcon = v
                     end
@@ -4576,7 +4593,7 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().btbClassIcon or "none"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbClassIcon or "none"
                     for _, key in ipairs(GROUP_UNIT_ORDER) do
                         if (UNIT_DB_MAP[key]().btbClassIcon or "none") ~= v then
                             return false
@@ -4591,10 +4608,10 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
                     elementKeys = GROUP_UNIT_ORDER,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().btbClassIcon or "none"
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().btbClassIcon or "none"
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().btbClassIcon = v
                         end
@@ -4606,35 +4623,40 @@ function ns.UFO_BuildTextBarSection(parent, y, ctx)
         end
     end -- close Text Bar hidden-while-disabled gate
 
-    return y, sharedBtbHeader, sharedBtbToggleRow, sharedBtbTextRow, sharedBtbCenterRow
+    return posY, sharedBtbHeader, sharedBtbToggleRow, sharedBtbTextRow, sharedBtbCenterRow
 end
 
-function ns.UFO_BuildExtrasSection(parent, y, ctx)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
+    local environ = mod._UFO_OptEnv
     local CLASS_FULL_COORDS, GROUP_UNIT_ORDER, RegisterWidgetRefresh, ReloadAndUpdate =
-        env.CLASS_FULL_COORDS, env.GROUP_UNIT_ORDER, env.RegisterWidgetRefresh, env.ReloadAndUpdate
-    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, db =
-        env.SHORT_LABELS, env.UNIT_DB_MAP, env.UpdatePreview, env.db
-    local optState = env.optState
-    local W, SApplySupport, SDB, SGetSupported = ctx.W, ctx.SApplySupport, ctx.SDB, ctx.SGetSupported
-    local SSetSupported, SValSupported, SVisible = ctx.SSetSupported, ctx.SValSupported, ctx.SVisible
-    local h
+        environ.CLASS_FULL_COORDS,
+        environ.GROUP_UNIT_ORDER,
+        environ.RegisterWidgetRefresh,
+        environ.ReloadAndUpdate
+    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, saved =
+        environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db
+    local optionState = environ.optState
+    local Widgets, SApplySupport, SDB, SGetSupported =
+        context.W, context.SApplySupport, context.SDB, context.SGetSupported
+    local SSetSupported, SValSupported, SVisible =
+        context.SSetSupported, context.SValSupported, context.SVisible
+    local hgt
 
     local sharedAddHeader
     -------------------------------------------------------------------
     --  EXTRAS
     -------------------------------------------------------------------
-    sharedAddHeader, h = W:SectionHeader(parent, "EXTRAS", y)
-    y = y - h
+    sharedAddHeader, hgt = Widgets:SectionHeader(hostFrame, "EXTRAS", posY)
+    posY = posY - hgt
 
     -- Row 1: Combat Indicator (absorb settings live in the ABSORBS section above)
     -- Declared outside the gate: the click-mapping table at the bottom of
     -- this function references it (a block-local would be nil there).
     local sharedAddRow1
     local _showAbsorbsCombat = (
-        optState.selectedUnit == "player"
-        or optState.selectedUnit == "target"
-        or optState.selectedUnit == "focus"
+        optionState.selectedUnit == "player"
+        or optionState.selectedUnit == "target"
+        or optionState.selectedUnit == "focus"
     )
     if _showAbsorbsCombat then
         local COMBAT_MEDIA_P = "Interface\\AddOns\\CludesUI\\media\\combat\\"
@@ -4689,11 +4711,11 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
         -- Enemy Colors helper: custom reaction colors for non-player units.
         -- Global (one set shared by all frames); empty entries fall back to
         -- Blizzard defaults. Consumed by the Enemy Colors multiSwatch in slot 2.
-        local function enemySwatch(key, defIdx, dr, dg, dbb, tip)
+        local function enemySwatch(key, defIdx, dr, dg, dbb, tipText)
             return {
-                tooltip = tip,
+                tooltip = tipText,
                 getValue = function()
-                    local ec = db.profile.enemyColors or {}
+                    local ec = saved.profile.enemyColors or {}
                     local c = ec[key]
                     if c then
                         return c.r, c.g, c.b
@@ -4705,47 +4727,42 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                     return dr, dg, dbb
                 end,
                 setValue = function(r, g, b)
-                    db.profile.enemyColors = db.profile.enemyColors or {}
-                    db.profile.enemyColors[key] = { r = r, g = g, b = b }
-                    if ns.ApplyEnemyColors then
-                        ns.ApplyEnemyColors()
+                    saved.profile.enemyColors = saved.profile.enemyColors or {}
+                    saved.profile.enemyColors[key] = { r = r, g = g, b = b }
+                    if mod.ApplyEnemyColors then
+                        mod.ApplyEnemyColors()
                     end
                 end,
             }
         end
-        sharedAddRow1, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "dropdown",
-                text = "Combat Indicator",
-                values = combatIndValues,
-                order = combatIndOrder,
-                -- Target ships disabled ("none"): opt-in, no change for existing users.
-                getValue = function()
-                    return SValSupported(
-                        "combatIndicatorStyle",
-                        optState.selectedUnit == "player" and "class" or "none"
-                    )
-                end,
-                setValue = function(v)
-                    SSetSupported("combatIndicatorStyle", v)
-                    ReloadAndUpdate()
-                    UpdatePreview()
-                end,
+        sharedAddRow1, hgt = Widgets:DualRow(hostFrame, posY, {
+            type = "dropdown",
+            text = "Combat Indicator",
+            values = combatIndValues,
+            order = combatIndOrder,
+            -- Target ships disabled ("none"): opt-in, no change for existing users.
+            getValue = function()
+                return SValSupported(
+                    "combatIndicatorStyle",
+                    optionState.selectedUnit == "player" and "class" or "none"
+                )
+            end,
+            setValue = function(v)
+                SSetSupported("combatIndicatorStyle", v)
+                ReloadAndUpdate()
+                UpdatePreview()
+            end,
+        }, {
+            type = "multiSwatch",
+            text = "Enemy Colors",
+            swatches = {
+                enemySwatch("hostile", 2, 0.78, 0.25, 0.25, "Hostile"),
+                enemySwatch("neutral", 4, 0.85, 0.77, 0.36, "Neutral"),
+                enemySwatch("friendly", 5, 0.29, 0.68, 0.30, "Friendly NPC"),
+                enemySwatch("tapped", nil, 0.6, 0.6, 0.6, "Tapped"),
             },
-            {
-                type = "multiSwatch",
-                text = "Enemy Colors",
-                swatches = {
-                    enemySwatch("hostile", 2, 0.78, 0.25, 0.25, "Hostile"),
-                    enemySwatch("neutral", 4, 0.85, 0.77, 0.36, "Neutral"),
-                    enemySwatch("friendly", 5, 0.29, 0.68, 0.30, "Friendly NPC"),
-                    enemySwatch("tapped", nil, 0.6, 0.6, 0.6, "Tapped"),
-                },
-            }
-        )
-        y = y - h
+        })
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             SApplySupport(
                 sharedAddRow1._leftRegion,
@@ -4761,7 +4778,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 region = rgn,
                 tooltip = "Apply Combat Indicator Style to all Frames",
                 onClick = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().combatIndicatorStyle or "class"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorStyle or "class"
                     for _, key in ipairs(ciSyncUnits) do
                         UNIT_DB_MAP[key]().combatIndicatorStyle = v
                     end
@@ -4769,7 +4786,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().combatIndicatorStyle or "class"
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorStyle or "class"
                     for _, key in ipairs(ciSyncUnits) do
                         if (UNIT_DB_MAP[key]().combatIndicatorStyle or "class") ~= v then
                             return false
@@ -4784,10 +4801,10 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                     elementKeys = ciSyncUnits,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optState.selectedUnit]().combatIndicatorStyle or "class"
+                        local v = UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorStyle or "class"
                         for _, key in ipairs(checkedKeys) do
                             UNIT_DB_MAP[key]().combatIndicatorStyle = v
                         end
@@ -4813,11 +4830,11 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
             local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             local function RefreshCombatEye()
-                eyeTex:SetTexture(optState.showCombatIndicatorPreview and EYE_INVISIBLE or EYE_VISIBLE)
+                eyeTex:SetTexture(optionState.showCombatIndicatorPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end
             RefreshCombatEye()
             eyeBtn:SetScript("OnClick", function()
-                optState.showCombatIndicatorPreview = not optState.showCombatIndicatorPreview
+                optionState.showCombatIndicatorPreview = not optionState.showCombatIndicatorPreview
                 RefreshCombatEye()
                 UpdatePreview()
             end)
@@ -4825,7 +4842,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 CludesUI.SetGlyphAlpha(self, 0.7)
                 CludesUI.ShowWidgetTooltip(
                     self,
-                    optState.showCombatIndicatorPreview and "Hide combat indicator preview"
+                    optionState.showCombatIndicatorPreview and "Hide combat indicator preview"
                         or "Show combat indicator preview"
                 )
             end)
@@ -4879,11 +4896,11 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                         values = combatPosValues,
                         order = combatPosOrder,
                         get = function()
-                            local pos = SValSupported("combatIndicatorPosition", "healthbar")
-                            if pos == "center" then
-                                pos = "healthbar"
+                            local place = SValSupported("combatIndicatorPosition", "healthbar")
+                            if place == "center" then
+                                place = "healthbar"
                             end
-                            return combatPosValues[pos] and pos or "healthbar"
+                            return combatPosValues[place] and place or "healthbar"
                         end,
                         set = function(v)
                             SSetSupported("combatIndicatorPosition", v)
@@ -4948,7 +4965,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 cc = cc or { r = 1, g = 1, b = 1 }
                 return cc.r, cc.g, cc.b, 1
             end, function(r, g, b)
-                UNIT_DB_MAP[optState.selectedUnit]().combatIndicatorCustomColor = { r = r, g = g, b = b }
+                UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorCustomColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -4961,11 +4978,11 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
             combatSwatchBlock:Hide()
             local function UpdateSwatchVisibility()
                 local colorMode = SValSupported("combatIndicatorColor", "custom")
-                local style = SValSupported("combatIndicatorStyle", "class")
+                local look = SValSupported("combatIndicatorStyle", "class")
                 -- All custom combat icons (combat0..5) are shown as-is, so the custom-
                 -- color swatch doesn't apply to them.
-                local isRawIcon = style:find("^combat%d") and true or false
-                local usable = colorMode == "custom" and style ~= "none" and not isRawIcon
+                local isRawIcon = look:find("^combat%d") and true or false
+                local usable = colorMode == "custom" and look ~= "none" and not isRawIcon
                 combatSwatch:SetAlpha(usable and 1 or 0.3)
                 if usable then
                     combatSwatchBlock:Hide()
@@ -4982,15 +4999,15 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
     -- ns._ufPvEyes[key], which the preview reads. The raid marker picks a
     -- random marker each time it is switched on. (Module-namespace fields,
     -- not locals: this builder is long.)
-    ns._ufPvEyes = ns._ufPvEyes or {}
-    ns._ufAddPvEye = function(rgn, key, what)
+    mod._ufPvEyes = mod._ufPvEyes or {}
+    mod._ufAddPvEye = function(rgn, key, what)
         if CludesUI._prebuilding or not rgn then
             return
         end
-        if optState.selectedUnit ~= "player" and optState.selectedUnit ~= "target" then
+        if optionState.selectedUnit ~= "player" and optionState.selectedUnit ~= "target" then
             return
         end
-        local eyes = ns._ufPvEyes
+        local eyes = mod._ufPvEyes
         local eyeBtn = CreateFrame("Button", nil, rgn)
         eyeBtn:SetSize(26, 26)
         eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
@@ -5026,7 +5043,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
         return SValSupported("raidMarkerEnabled", false) == false
     end
     local sharedAddRow4
-    sharedAddRow4, h = W:DualRow(parent, y, {
+    sharedAddRow4, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Raid Marker",
         getValue = function()
@@ -5051,59 +5068,56 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
             SSetSupported("raidMarkerSize", v)
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         local rgn = sharedAddRow4._rightRegion
         local rmPosValues = { ["left"] = "Left", ["center"] = "Center", ["right"] = "Right" }
         local rmPosOrder = { "left", "center", "right" }
-        CludesUI.BuildInlineCog(
-            rgn,
-            {
-                disabled = raidMarkerOff,
-                disabledTooltip = "Raid Marker",
-                title = "Raid Marker Settings",
-                rows = {
-                    {
-                        type = "dropdown",
-                        label = "Position",
-                        values = rmPosValues,
-                        order = rmPosOrder,
-                        get = function()
-                            return SValSupported("raidMarkerAlign", "right")
-                        end,
-                        set = function(v)
-                            SSetSupported("raidMarkerAlign", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -200,
-                        max = 200,
-                        step = 1,
-                        get = function()
-                            return SValSupported("raidMarkerX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("raidMarkerX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -200,
-                        max = 200,
-                        step = 1,
-                        get = function()
-                            return SValSupported("raidMarkerY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("raidMarkerY", v)
-                        end,
-                    },
+        CludesUI.BuildInlineCog(rgn, {
+            disabled = raidMarkerOff,
+            disabledTooltip = "Raid Marker",
+            title = "Raid Marker Settings",
+            rows = {
+                {
+                    type = "dropdown",
+                    label = "Position",
+                    values = rmPosValues,
+                    order = rmPosOrder,
+                    get = function()
+                        return SValSupported("raidMarkerAlign", "right")
+                    end,
+                    set = function(v)
+                        SSetSupported("raidMarkerAlign", v)
+                    end,
                 },
-            }
-        )
+                {
+                    type = "slider",
+                    label = "X Offset",
+                    min = -200,
+                    max = 200,
+                    step = 1,
+                    get = function()
+                        return SValSupported("raidMarkerX", 0)
+                    end,
+                    set = function(v)
+                        SSetSupported("raidMarkerX", v)
+                    end,
+                },
+                {
+                    type = "slider",
+                    label = "Y Offset",
+                    min = -200,
+                    max = 200,
+                    step = 1,
+                    get = function()
+                        return SValSupported("raidMarkerY", 0)
+                    end,
+                    set = function(v)
+                        SSetSupported("raidMarkerY", v)
+                    end,
+                },
+            },
+        })
     end
     -- Sync icons: Raid Marker (left) and Marker Size (right)
     if not CludesUI._prebuilding then
@@ -5112,7 +5126,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Raid Marker to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().raidMarkerEnabled
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerEnabled
                 if v == nil then
                     v = false
                 end
@@ -5123,16 +5137,16 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().raidMarkerEnabled
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerEnabled
                 if v == nil then
                     v = false
                 end
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local ov = UNIT_DB_MAP[key]().raidMarkerEnabled
-                    if ov == nil then
-                        ov = false
+                    local shade = UNIT_DB_MAP[key]().raidMarkerEnabled
+                    if shade == nil then
+                        shade = false
                     end
-                    if ov ~= v then
+                    if shade ~= v then
                         return false
                     end
                 end
@@ -5145,10 +5159,10 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().raidMarkerEnabled
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerEnabled
                     if v == nil then
                         v = false
                     end
@@ -5167,7 +5181,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Marker Size to all Frames",
             onClick = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().raidMarkerSize or 28
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerSize or 28
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     UNIT_DB_MAP[key]().raidMarkerSize = v
                 end
@@ -5175,7 +5189,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = UNIT_DB_MAP[optState.selectedUnit]().raidMarkerSize or 28
+                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerSize or 28
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
                     if (UNIT_DB_MAP[key]().raidMarkerSize or 28) ~= v then
                         return false
@@ -5190,10 +5204,10 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 elementKeys = GROUP_UNIT_ORDER,
                 elementLabels = SHORT_LABELS,
                 getCurrentKey = function()
-                    return optState.selectedUnit
+                    return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optState.selectedUnit]().raidMarkerSize or 28
+                    local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerSize or 28
                     for _, key in ipairs(checkedKeys) do
                         UNIT_DB_MAP[key]().raidMarkerSize = v
                     end
@@ -5204,7 +5218,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
         })
     end
 
-    ns._ufAddPvEye(sharedAddRow4._leftRegion, "raid", "raid marker")
+    mod._ufAddPvEye(sharedAddRow4._leftRegion, "raid", "raid marker")
 
     -- Row 5: Leader Indicator toggle | Leader Icon Size slider + inline directions cog (X/Y)
     -- Visible for player and target.
@@ -5213,11 +5227,11 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
         return SValSupported("leaderIndicatorEnabled", true) == false
     end
     local function leaderIndSupported()
-        return optState.selectedUnit == "player" or optState.selectedUnit == "target"
+        return optionState.selectedUnit == "player" or optionState.selectedUnit == "target"
     end
     if leaderIndSupported() then
         local leaderSyncUnits = { "player", "target" }
-        sharedAddRow5, h = W:DualRow(parent, y, {
+        sharedAddRow5, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Leader Indicator",
             getValue = function()
@@ -5242,7 +5256,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 SSetSupported("leaderIndicatorSize", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(sharedAddRow5._leftRegion, "leaderIndicatorEnabled")
         SApplySupport(sharedAddRow5._rightRegion, "leaderIndicatorSize")
         if not CludesUI._prebuilding then
@@ -5255,72 +5269,69 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 ["portrait"] = "Portrait",
             }
             local leaderPosOrder = { "topleft", "topright", "bottomleft", "bottomright", "portrait" }
-            CludesUI.BuildInlineCog(
-                rgn,
-                {
-                    disabled = leaderIndOff,
-                    disabledTooltip = "Leader Indicator",
-                    title = "Leader Indicator Settings",
-                    rows = {
-                        {
-                            type = "dropdown",
-                            label = "Icon Style",
-                            tooltip = "Art used for the leader crown and the assistant icon.",
-                            values = { blizzard = "Blizzard", pixels = "Pixels" },
-                            order = { "blizzard", "pixels" },
-                            get = function()
-                                return SValSupported("leaderIndicatorStyle", "blizzard")
-                            end,
-                            set = function(v)
-                                SSetSupported("leaderIndicatorStyle", v)
-                            end,
-                        },
-                        {
-                            type = "dropdown",
-                            label = "Position",
-                            values = leaderPosValues,
-                            order = leaderPosOrder,
-                            get = function()
-                                return SValSupported("leaderIndicatorPosition", "topleft")
-                            end,
-                            set = function(v)
-                                SSetSupported("leaderIndicatorPosition", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -200,
-                            max = 200,
-                            step = 1,
-                            get = function()
-                                return SValSupported("leaderIndicatorX", 0)
-                            end,
-                            set = function(v)
-                                SSetSupported("leaderIndicatorX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -200,
-                            max = 200,
-                            step = 1,
-                            get = function()
-                                return SValSupported("leaderIndicatorY", 0)
-                            end,
-                            set = function(v)
-                                SSetSupported("leaderIndicatorY", v)
-                            end,
-                        },
+            CludesUI.BuildInlineCog(rgn, {
+                disabled = leaderIndOff,
+                disabledTooltip = "Leader Indicator",
+                title = "Leader Indicator Settings",
+                rows = {
+                    {
+                        type = "dropdown",
+                        label = "Icon Style",
+                        tooltip = "Art used for the leader crown and the assistant icon.",
+                        values = { blizzard = "Blizzard", pixels = "Pixels" },
+                        order = { "blizzard", "pixels" },
+                        get = function()
+                            return SValSupported("leaderIndicatorStyle", "blizzard")
+                        end,
+                        set = function(v)
+                            SSetSupported("leaderIndicatorStyle", v)
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "dropdown",
+                        label = "Position",
+                        values = leaderPosValues,
+                        order = leaderPosOrder,
+                        get = function()
+                            return SValSupported("leaderIndicatorPosition", "topleft")
+                        end,
+                        set = function(v)
+                            SSetSupported("leaderIndicatorPosition", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            return SValSupported("leaderIndicatorX", 0)
+                        end,
+                        set = function(v)
+                            SSetSupported("leaderIndicatorX", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            return SValSupported("leaderIndicatorY", 0)
+                        end,
+                        set = function(v)
+                            SSetSupported("leaderIndicatorY", v)
+                        end,
+                    },
+                },
+            })
         end
         -- Player + target sync link; the Faction Indicator row below reuses it.
         BuildLeaderSync = function(rgn, key, default, tooltip)
-            local function GetValue(unit)
-                local v = UNIT_DB_MAP[unit]()[key]
+            local function GetValue(unitToken)
+                local v = UNIT_DB_MAP[unitToken]()[key]
                 if v == nil then
                     return default
                 end
@@ -5330,17 +5341,17 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 region = rgn,
                 tooltip = tooltip,
                 onClick = function()
-                    local v = GetValue(optState.selectedUnit)
-                    for _, unit in ipairs(leaderSyncUnits) do
-                        UNIT_DB_MAP[unit]()[key] = v
+                    local v = GetValue(optionState.selectedUnit)
+                    for _, unitToken in ipairs(leaderSyncUnits) do
+                        UNIT_DB_MAP[unitToken]()[key] = v
                     end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local v = GetValue(optState.selectedUnit)
-                    for _, unit in ipairs(leaderSyncUnits) do
-                        if GetValue(unit) ~= v then
+                    local v = GetValue(optionState.selectedUnit)
+                    for _, unitToken in ipairs(leaderSyncUnits) do
+                        if GetValue(unitToken) ~= v then
                             return false
                         end
                     end
@@ -5353,12 +5364,12 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                     elementKeys = leaderSyncUnits,
                     elementLabels = SHORT_LABELS,
                     getCurrentKey = function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     onApply = function(checkedKeys)
-                        local v = GetValue(optState.selectedUnit)
-                        for _, unit in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[unit]()[key] = v
+                        local v = GetValue(optionState.selectedUnit)
+                        for _, unitToken in ipairs(checkedKeys) do
+                            UNIT_DB_MAP[unitToken]()[key] = v
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage()
@@ -5383,21 +5394,21 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
     end
 
     if sharedAddRow5 then
-        ns._ufAddPvEye(sharedAddRow5._leftRegion, "leader", "leader indicator")
+        mod._ufAddPvEye(sharedAddRow5._leftRegion, "leader", "leader indicator")
     end
 
     -- Row 5b: Elite/Rare Indicator (+ Show-in-Instances cog) | Icon Size (+ X/Y
     -- cog). Target only (classification is a property of the unit being looked at);
     -- same controls as Leader Indicator above, badge atlases match nameplates.
-    if optState.selectedUnit == "target" then
+    if optionState.selectedUnit == "target" then
         -- A table on the "wingless" style belongs to the Portrait Dragon
         -- (ns.UF_DragonLegacy): the indicator reads as off and as Badge, and
         -- every setter pins that view over first.
         local function eliteLegacy()
-            return ns.UF_DragonLegacy(SDB())
+            return mod.UF_DragonLegacy(SDB())
         end
         local function eliteSet(key, v)
-            ns.UF_PinLegacyDragon(SDB())
+            mod.UF_PinLegacyDragon(SDB())
             SSetSupported(key, v)
         end
         local function eliteIndOff()
@@ -5412,7 +5423,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 and not CludesUI.BlizzStyle.Get("unitframes")
         end
         local eliteRow
-        eliteRow, h = W:DualRow(parent, y, {
+        eliteRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Elite/Rare Indicator",
             tooltip = "Marks elite, rare elite and rare targets; the Pixels Dragon style also marks players.",
@@ -5445,31 +5456,28 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 eliteSet("eliteIndicatorSize", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(eliteRow._leftRegion, "eliteIndicatorEnabled")
         SApplySupport(eliteRow._rightRegion, "eliteIndicatorSize")
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(
-                eliteRow._leftRegion,
-                {
-                    disabled = eliteIndOff,
-                    disabledTooltip = "Elite/Rare Indicator",
-                    title = "Elite/Rare Indicator",
-                    rows = {
-                        {
-                            type = "toggle",
-                            label = "Show in Instances",
-                            tooltip = "Also show the badge in dungeons and raids, where most enemies are elite.",
-                            get = function()
-                                return SValSupported("eliteIndicatorShowInInstances", false) == true
-                            end,
-                            set = function(v)
-                                eliteSet("eliteIndicatorShowInInstances", v)
-                            end,
-                        },
+            CludesUI.BuildInlineCog(eliteRow._leftRegion, {
+                disabled = eliteIndOff,
+                disabledTooltip = "Elite/Rare Indicator",
+                title = "Elite/Rare Indicator",
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Show in Instances",
+                        tooltip = "Also show the badge in dungeons and raids, where most enemies are elite.",
+                        get = function()
+                            return SValSupported("eliteIndicatorShowInInstances", false) == true
+                        end,
+                        set = function(v)
+                            eliteSet("eliteIndicatorShowInInstances", v)
+                        end,
                     },
-                }
-            )
+                },
+            })
         end
         if not CludesUI._prebuilding then
             local elitePosValues = {
@@ -5563,16 +5571,16 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 },
             })
         end
-        ns._ufAddPvEye(eliteRow._leftRegion, "elite", "elite/rare indicator")
-        parent._ufEliteRow = eliteRow
+        mod._ufAddPvEye(eliteRow._leftRegion, "elite", "elite/rare indicator")
+        hostFrame._ufEliteRow = eliteRow
     end
 
     -- Row 5c: Faction Indicator (mode + filters cog) | Icon Size (+ position cog).
     -- Player and target. On the player frame it is a PvP-flagged indicator
     -- (PvP Flag defaults to Flagged Only there); Opposite Faction and Players
     -- Only are target-only.
-    if optState.selectedUnit == "player" or optState.selectedUnit == "target" then
-        local isTarget = optState.selectedUnit == "target"
+    if optionState.selectedUnit == "player" or optionState.selectedUnit == "target" then
+        local isTarget = optionState.selectedUnit == "target"
         local function factionIndOff()
             return SValSupported("factionIndicatorMode", "off") == "off"
         end
@@ -5585,7 +5593,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
             modeOrder = { "off", "always" }
         end
         local factionRow
-        factionRow, h = W:DualRow(parent, y, {
+        factionRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Faction Indicator",
             values = modeValues,
@@ -5616,14 +5624,14 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 SSetSupported("factionIndicatorSize", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         SApplySupport(factionRow._leftRegion, "factionIndicatorMode")
         SApplySupport(factionRow._rightRegion, "factionIndicatorSize")
         if not CludesUI._prebuilding then
             local pvpValues = { dim = "Dim Unflagged", only = "Flagged Only", ignore = "Ignore" }
             local pvpOrder = { "dim", "only", "ignore" }
             local pvpDefault = isTarget and "dim" or "only"
-            local rows = {
+            local rowList = {
                 {
                     type = "dropdown",
                     label = "PvP Flag",
@@ -5638,7 +5646,7 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 },
             }
             if isTarget then
-                rows[#rows + 1] = {
+                rowList[#rowList + 1] = {
                     type = "toggle",
                     label = "Players Only",
                     tooltip = "Hide the faction badge on faction NPCs such as guards.",
@@ -5650,15 +5658,12 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                     end,
                 }
             end
-            CludesUI.BuildInlineCog(
-                factionRow._leftRegion,
-                {
-                    disabled = factionIndOff,
-                    disabledTooltip = "Faction Indicator",
-                    title = "Faction Indicator",
-                    rows = rows,
-                }
-            )
+            CludesUI.BuildInlineCog(factionRow._leftRegion, {
+                disabled = factionIndOff,
+                disabledTooltip = "Faction Indicator",
+                title = "Faction Indicator",
+                rows = rowList,
+            })
         end
         if not CludesUI._prebuilding then
             local factionPosValues = {
@@ -5669,66 +5674,63 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 ["portrait"] = "Portrait",
             }
             local factionPosOrder = { "topleft", "topright", "bottomleft", "bottomright", "portrait" }
-            CludesUI.BuildInlineCog(
-                factionRow._rightRegion,
-                {
-                    disabled = factionIndOff,
-                    disabledTooltip = "Faction Indicator",
-                    title = "Faction Indicator Settings",
-                    rows = {
-                        {
-                            type = "dropdown",
-                            label = "Icon Style",
-                            values = CludesUI.FACTION_ART_LABELS,
-                            order = CludesUI.FACTION_ART_ORDER,
-                            get = function()
-                                return SValSupported("factionIndicatorStyle", "pvp")
-                            end,
-                            set = function(v)
-                                SSetSupported("factionIndicatorStyle", v)
-                            end,
-                        },
-                        {
-                            type = "dropdown",
-                            label = "Position",
-                            values = factionPosValues,
-                            order = factionPosOrder,
-                            get = function()
-                                return SValSupported("factionIndicatorPosition", "topright")
-                            end,
-                            set = function(v)
-                                SSetSupported("factionIndicatorPosition", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -200,
-                            max = 200,
-                            step = 1,
-                            get = function()
-                                return SValSupported("factionIndicatorX", 0)
-                            end,
-                            set = function(v)
-                                SSetSupported("factionIndicatorX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -200,
-                            max = 200,
-                            step = 1,
-                            get = function()
-                                return SValSupported("factionIndicatorY", 0)
-                            end,
-                            set = function(v)
-                                SSetSupported("factionIndicatorY", v)
-                            end,
-                        },
+            CludesUI.BuildInlineCog(factionRow._rightRegion, {
+                disabled = factionIndOff,
+                disabledTooltip = "Faction Indicator",
+                title = "Faction Indicator Settings",
+                rows = {
+                    {
+                        type = "dropdown",
+                        label = "Icon Style",
+                        values = CludesUI.FACTION_ART_LABELS,
+                        order = CludesUI.FACTION_ART_ORDER,
+                        get = function()
+                            return SValSupported("factionIndicatorStyle", "pvp")
+                        end,
+                        set = function(v)
+                            SSetSupported("factionIndicatorStyle", v)
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "dropdown",
+                        label = "Position",
+                        values = factionPosValues,
+                        order = factionPosOrder,
+                        get = function()
+                            return SValSupported("factionIndicatorPosition", "topright")
+                        end,
+                        set = function(v)
+                            SSetSupported("factionIndicatorPosition", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            return SValSupported("factionIndicatorX", 0)
+                        end,
+                        set = function(v)
+                            SSetSupported("factionIndicatorX", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            return SValSupported("factionIndicatorY", 0)
+                        end,
+                        set = function(v)
+                            SSetSupported("factionIndicatorY", v)
+                        end,
+                    },
+                },
+            })
         end
         -- Size only: the player's mode list (Off/On) differs from the target's
         -- (with Opposite Faction), so the mode has no clean cross-frame copy.
@@ -5740,43 +5742,43 @@ function ns.UFO_BuildExtrasSection(parent, y, ctx)
                 "Apply Faction Icon Size to all Frames"
             )
         end
-        ns._ufAddPvEye(factionRow._leftRegion, "faction", "faction indicator")
-        parent._ufFactionRow = factionRow
+        mod._ufAddPvEye(factionRow._leftRegion, "faction", "faction indicator")
+        hostFrame._ufFactionRow = factionRow
     end
 
     -- Row 6: Rested Indicator | blank (player only): Quality of Life's EXTRAS
     -- row mirrored, the same account-wide settings (CludesUI.RestedIndicatorCfg).
-    if optState.selectedUnit == "player" then
+    if optionState.selectedUnit == "player" then
         local restRow
-        restRow, h = W:DualRow(parent, y, CludesUI.RestedIndicatorCfg(), CludesUI.BlankRowCfg())
-        y = y - h
+        restRow, hgt = Widgets:DualRow(hostFrame, posY, CludesUI.RestedIndicatorCfg(), CludesUI.BlankRowCfg())
+        posY = posY - hgt
         CludesUI.BuildRestedIndicatorCog(restRow._leftRegion)
     end
 
     -- Row 6: Targeting Sound Effects | blank (target only; one setting for the
     -- profile). Blizzard's own target frame plays them itself, so the row greys
     -- out while the Target frame is on Blizzard Default.
-    if optState.selectedUnit == "target" then
+    if optionState.selectedUnit == "target" then
         local soundRow
-        soundRow, h = W:DualRow(parent, y, {
+        soundRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Targeting Sound Effects",
             tooltip = "Plays the game's sounds when you select or lose a target.",
             disabled = function()
-                return ns.GetUnitFrameSource("target") == "blizzard"
+                return mod.GetUnitFrameSource("target") == "blizzard"
             end,
             disabledTooltip = "Blizzard's target frame plays these sounds itself.",
             rawTooltip = true,
             getValue = function()
-                return db.profile.targetSounds == true
+                return saved.profile.targetSounds == true
             end,
             setValue = function(v)
-                db.profile.targetSounds = v
-                ns.UF_SyncTargetSounds()
+                saved.profile.targetSounds = v
+                mod.UF_SyncTargetSounds()
             end,
         }, CludesUI.BlankRowCfg())
-        y = y - h
+        posY = posY - hgt
     end
 
-    return y, sharedAddHeader, sharedAddRow1, sharedAddRow4, sharedAddRow5
+    return posY, sharedAddHeader, sharedAddRow1, sharedAddRow4, sharedAddRow5
 end

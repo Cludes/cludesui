@@ -21,7 +21,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  like the rest of their Friendly Boss visuals. All paint is event-driven
 --  through the callers' existing edges; nothing here ticks.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
@@ -60,18 +60,18 @@ local CLASSIC_SEL_TC = { 0.0078125, 0.5546875, 0.2890625, 0.5546875 }
 local CLASSIC_AGG_TC = { 0.0078125, 0.5546875, 0.0078125, 0.2734375 }
 local _classicHlOK -- probed once
 
-local function PX(frame)
-    local PP = CludesUI.PP or CludesUI.PanelPP
-    local es = frame:GetEffectiveScale()
+local function PX(widget)
+    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local es = widget:GetEffectiveScale()
     if not es or es <= 0 then
         es = 1
     end
-    return ((PP and PP.perfect) or 1) / es
+    return ((Pix and Pix.perfect) or 1) / es
 end
 
-local function ColorSides(frame, cols)
-    local PP = CludesUI.PP or CludesUI.PanelPP
-    local c = PP and PP.GetBorders(frame)
+local function ColorSides(widget, cols)
+    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local c = Pix and Pix.GetBorders(widget)
     if not c then
         return
     end
@@ -98,34 +98,34 @@ end
 --  Build (once per owner, under a stock style)
 -------------------------------------------------------------------------------
 -- `power`: the owner's power StatusBar (ours), for the Classic divider.
-function ns.RF_StockBuild(owner, st, power)
-    if st.stockEdge or not (ns.RF_Stock and ns.RF_Stock()) then
+function mod.RF_StockBuild(ownerFrame, st, power)
+    if st.stockEdge or not (mod.RF_Stock and mod.RF_Stock()) then
         return
     end
-    local PP = CludesUI.PP or CludesUI.PanelPP
-    if not PP then
+    local Pix = CludesUI.PP or CludesUI.PanelPP
+    if not Pix then
         return
     end
     -- On the Buff / Debuff Manager preview's replica (a frame of the options
     -- page pool, CludesUI_FramePool.lua) these pieces are pooled with it and
     -- handed out again by its next build; on every other owner a plain new frame.
     local CreateFrame = POOL.CreateFrame
-    local classic = ns.RF_Classic()
+    local classic = mod.RF_Classic()
     -- The edge rides the CludesUI base border's level (+8): above the
     -- health, absorbs and dispel overlay, under the raised hover border and
     -- the text. Its own frame, because the stood-down border frame is hidden.
-    local edge = CreateFrame("Frame", nil, owner)
-    edge:SetAllPoints(owner)
-    edge:SetFrameLevel(owner:GetFrameLevel() + 8)
+    local edge = CreateFrame("Frame", nil, ownerFrame)
+    edge:SetAllPoints(ownerFrame)
+    edge:SetFrameLevel(ownerFrame:GetFrameLevel() + 8)
     edge:EnableMouse(false)
     st.stockEdge = edge
     if classic then
-        PP.CreateBorder(edge, 0, 0, 0, 1, 1)
+        Pix.CreateBorder(edge, 0, 0, 0, 1, 1)
         ColorSides(edge, CLASSIC_INNER)
         local outer = CreateFrame("Frame", nil, edge)
         outer:EnableMouse(false)
         st.stockEdgeOuter = outer
-        PP.CreateBorder(outer, 0, 0, 0, 1, 1)
+        Pix.CreateBorder(outer, 0, 0, 0, 1, 1)
         ColorSides(outer, CLASSIC_OUTER)
         if power then
             local grey = power:CreateTexture(nil, "OVERLAY", nil, 6)
@@ -134,9 +134,9 @@ function ns.RF_StockBuild(owner, st, power)
             local black = power:CreateTexture(nil, "OVERLAY", nil, 6)
             black:SetTexture(WHITE)
             black:SetVertexColor(DIV_BLACK[1], DIV_BLACK[2], DIV_BLACK[3], 1)
-            if PP.DisablePixelSnap then
-                PP.DisablePixelSnap(grey)
-                PP.DisablePixelSnap(black)
+            if Pix.DisablePixelSnap then
+                Pix.DisablePixelSnap(grey)
+                Pix.DisablePixelSnap(black)
             end
             grey:Hide()
             black:Hide()
@@ -144,24 +144,24 @@ function ns.RF_StockBuild(owner, st, power)
         end
     else
         local r, g, b = BLIZZ_EDGE_R, BLIZZ_EDGE_G, BLIZZ_EDGE_B
-        local bg = _G.COMPACT_UNIT_FRAME_FRIENDLY_HEALTH_COLOR_BG
-        if type(bg) == "table" and bg.GetRGB then
-            r, g, b = bg:GetRGB()
+        local backdrop = _G.COMPACT_UNIT_FRAME_FRIENDLY_HEALTH_COLOR_BG
+        if type(backdrop) == "table" and backdrop.GetRGB then
+            r, g, b = backdrop:GetRGB()
         end
-        PP.CreateBorder(edge, r, g, b, 1, 1)
+        Pix.CreateBorder(edge, r, g, b, 1, 1)
     end
     -- Highlights: textures made on first need (login budget).
-    local hl = CreateFrame("Frame", nil, owner)
-    hl:SetAllPoints(owner)
-    hl:SetFrameLevel(owner:GetFrameLevel() + (ns.LVL_RAISE or 10))
-    hl:EnableMouse(false)
-    st.stockHl = hl
-    ns.RF_StockSeat(st)
+    local highlight = CreateFrame("Frame", nil, ownerFrame)
+    highlight:SetAllPoints(ownerFrame)
+    highlight:SetFrameLevel(ownerFrame:GetFrameLevel() + (mod.LVL_RAISE or 10))
+    highlight:EnableMouse(false)
+    st.stockHl = highlight
+    mod.RF_StockSeat(st)
 end
 
 -- Re-seat the pieces that are sized in physical pixels (the Classic outer
 -- ring and divider); every border restyle runs it.
-function ns.RF_StockSeat(st)
+function mod.RF_StockSeat(st)
     local edge = st.stockEdge
     if not edge then
         return
@@ -178,7 +178,7 @@ end
 
 -- Classic divider on the power bar's top edge (the caller shows it only
 -- while the power bar is shown; its textures hide with the bar).
-function ns.RF_StockDivider(st)
+function mod.RF_StockDivider(st)
     local div = st.stockDiv
     if not div then
         return false
@@ -209,20 +209,20 @@ local function ClassicHlOK()
 end
 
 local function MakeHl(st, layer, atlas, tc)
-    local tex = st.stockHl:CreateTexture(nil, layer)
-    tex:SetAllPoints(st.stockHl)
-    if ns.RF_Classic() and ClassicHlOK() then
-        tex:SetTexture(CLASSIC_HL)
-        tex:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+    local texture = st.stockHl:CreateTexture(nil, layer)
+    texture:SetAllPoints(st.stockHl)
+    if mod.RF_Classic() and ClassicHlOK() then
+        texture:SetTexture(CLASSIC_HL)
+        texture:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
     else
-        tex:SetAtlas(atlas)
+        texture:SetAtlas(atlas)
     end
-    tex:Hide()
-    return tex
+    texture:Hide()
+    return texture
 end
 
 -- The stock selection ring (the target), memoised on st.
-function ns.RF_StockTarget(st, on)
+function mod.RF_StockTarget(st, on)
     if not st.stockHl then
         return
     end
@@ -231,23 +231,23 @@ function ns.RF_StockTarget(st, on)
         return
     end
     st._stSel = on
-    local tex = st._stSelTex
-    if not tex then
+    local texture = st._stSelTex
+    if not texture then
         if not on then
             return
         end
         -- Follows the frame's alpha (stock ignores it for the range fade,
         -- but this module also hides whole containers with alpha).
-        tex = MakeHl(st, "OVERLAY", SEL_ATLAS, CLASSIC_SEL_TC)
-        st._stSelTex = tex
+        texture = MakeHl(st, "OVERLAY", SEL_ATLAS, CLASSIC_SEL_TC)
+        st._stSelTex = texture
     end
-    tex:SetShown(on)
+    texture:SetShown(on)
 end
 
 -- The stock aggro rim in the stock threat colour; `status` nil hides it.
 -- Memoised on the status. Blizzard Style takes 12.1's own two colours
 -- (gaining / high threat); Classic the pre-10.0 status colours.
-function ns.RF_StockAggro(st, status)
+function mod.RF_StockAggro(st, status)
     if not st.stockHl then
         return
     end
@@ -255,19 +255,19 @@ function ns.RF_StockAggro(st, status)
         return
     end
     st._stAgg = status
-    local tex = st._stAggTex
-    if not tex then
+    local texture = st._stAggTex
+    if not texture then
         if not status then
             return
         end
-        tex = MakeHl(st, "ARTWORK", AGG_ATLAS, CLASSIC_AGG_TC)
-        st._stAggTex = tex
+        texture = MakeHl(st, "ARTWORK", AGG_ATLAS, CLASSIC_AGG_TC)
+        st._stAggTex = texture
     end
     if status then
         local r, g, b
         -- The stock party frame (the Party Frames kit's Flash) colours its
         -- aggro by threat status too.
-        if (ns.RF_Classic() or st.kit) and GetThreatStatusColor then
+        if (mod.RF_Classic() or st.kit) and GetThreatStatusColor then
             r, g, b = GetThreatStatusColor(status)
         else
             local c = (status == 3) and _G.HIGH_THREAT_COLOR or _G.GAINING_THREAT_COLOR
@@ -279,10 +279,10 @@ function ns.RF_StockAggro(st, status)
                 r, g, b = 0.973, 0.710, 0 -- #F8B500
             end
         end
-        tex:SetVertexColor(r, g, b, 1)
-        tex:Show()
+        texture:SetVertexColor(r, g, b, 1)
+        texture:Show()
     else
-        tex:Hide()
+        texture:Hide()
     end
 end
 
@@ -291,12 +291,12 @@ end
 -- hover colour on the stood-down border frame `bf`. Its exact size counts only
 -- while it was set against Solid (the texture drawn here).
 local SOLID_S = { borderTexture = "solid" }
-function ns.RF_StockHighlight(st, bf, s, hover, target)
-    ns.RF_StockTarget(st, target)
+function mod.RF_StockHighlight(st, bf, s, hover, targetUnit)
+    mod.RF_StockTarget(st, targetUnit)
     if hover then
         local c = s.hoverBorderColor
         local hs = s.hoverBorderSize or 1
-        ns.ApplyHighlightBorder(
+        mod.ApplyHighlightBorder(
             bf,
             SOLID_S,
             hs,
@@ -307,7 +307,7 @@ function ns.RF_StockHighlight(st, bf, s, hover, target)
             CludesUI.BorderPx(s.hoverBorderSizePx, hs, "solid")
         )
     else
-        ns.ApplyHighlightBorder(bf, SOLID_S, nil, 0, 0, 0, 0)
+        mod.ApplyHighlightBorder(bf, SOLID_S, nil, 0, 0, 0, 0)
     end
 end
 
@@ -325,7 +325,7 @@ local function SeedBoth(p, key, v)
         p["party_" .. key] = v
     end
 end
-function ns.RF_SeedStock(p, styleKey)
+function mod.RF_SeedStock(p, styleKey)
     if not p or p.stockRaidSeeded then
         return
     end
@@ -358,12 +358,12 @@ end
 -- native key once. Runs at every enable; a no-op once nothing matches.
 local SM_RAID_BAR = "sm:Blizzard Raid Bar"
 local SM_RAID_KEYS = { "healthBarTexture", "absorbStyle", "healAbsorbStyle", "maxHealthStyle" }
-function ns.RF_MigrateSmRaidBar(p)
+function mod.RF_MigrateSmRaidBar(p)
     if not p then
         return
     end
-    for i = 1, #SM_RAID_KEYS do
-        local k = SM_RAID_KEYS[i]
+    for idx = 1, #SM_RAID_KEYS do
+        local k = SM_RAID_KEYS[idx]
         if rawget(p, k) == SM_RAID_BAR then
             p[k] = "blizzardRaid"
         end
@@ -391,7 +391,7 @@ end
 --  Frame Scale. Blizzard Style draws the art under the bars (rounded masks,
 --  bevel strips); Classic draws vanilla's art over them (plain rectangles).
 -------------------------------------------------------------------------------
-ns.RF_KITS = {
+mod.RF_KITS = {
     blizzard = {
         boxW = 120,
         boxH = 53,
@@ -458,18 +458,18 @@ ns.RF_KITS = {
 local KIT_SEL_R, KIT_SEL_G, KIT_SEL_B = 1, 0.973, 0.678 -- #FFF8AD
 -- Defaults (user 2026-09-22): Frame Scale 120% (nil = this), and the gap
 -- between frames (Frame Scale cog's Spacing; nil = this).
-ns.RF_KIT_SCALE = 1.2
-ns.RF_KIT_SPACING = 6
+mod.RF_KIT_SCALE = 1.2
+mod.RF_KIT_SPACING = 6
 
 -- Scaled geometry, one table per (latched kit, scale). Unsnapped: callers and
 -- the seat pass snap live (the kit pass re-seats when the pixel grid moves).
 local _kitGeom = {}
-local function ScaleRect(src, k)
-    if not src then
+local function ScaleRect(source, k)
+    if not source then
         return nil
     end
     local r = {}
-    for key, v in pairs(src) do
+    for key, v in pairs(source) do
         if type(v) == "number" then
             r[key] = v * k
         else
@@ -478,13 +478,13 @@ local function ScaleRect(src, k)
     end
     return r
 end
-function ns.RF_KitGeom(k)
-    local kit = ns.RF_PartyKit()
-    local K = kit and ns.RF_KITS[kit]
-    if not K then
+function mod.RF_KitGeom(k)
+    local kit = mod.RF_PartyKit()
+    local Keys = kit and mod.RF_KITS[kit]
+    if not Keys then
         return nil
     end
-    k = tonumber(k) or ns.RF_KIT_SCALE
+    k = tonumber(k) or mod.RF_KIT_SCALE
     if k < 0.5 then
         k = 0.5
     elseif k > 2 then
@@ -494,14 +494,21 @@ function ns.RF_KitGeom(k)
     if g then
         return g
     end
-    g = { key = kit, k = k, boxW = K.boxW * k, boxH = K.boxH * k, bevel = K.bevel, artAbove = K.artAbove }
+    g = {
+        key = kit,
+        k = k,
+        boxW = Keys.boxW * k,
+        boxH = Keys.boxH * k,
+        bevel = Keys.bevel,
+        artAbove = Keys.artAbove,
+    }
     g.host, g.art, g.flash, g.glow =
-        ScaleRect(K.host, k), ScaleRect(K.art, k), ScaleRect(K.flash, k), ScaleRect(K.glow, k)
-    g.back, g.portrait = ScaleRect(K.back, k), ScaleRect(K.portrait, k)
-    g.health, g.power = ScaleRect(K.health, k), ScaleRect(K.power, k)
+        ScaleRect(Keys.host, k), ScaleRect(Keys.art, k), ScaleRect(Keys.flash, k), ScaleRect(Keys.glow, k)
+    g.back, g.portrait = ScaleRect(Keys.back, k), ScaleRect(Keys.portrait, k)
+    g.health, g.power = ScaleRect(Keys.health, k), ScaleRect(Keys.power, k)
     g.name, g.role, g.lead, g.rc =
-        ScaleRect(K.name, k), ScaleRect(K.role, k), ScaleRect(K.lead, k), ScaleRect(K.rc, k)
-    g.auraRow = ScaleRect(K.auraRow, k)
+        ScaleRect(Keys.name, k), ScaleRect(Keys.role, k), ScaleRect(Keys.lead, k), ScaleRect(Keys.rc, k)
+    g.auraRow = ScaleRect(Keys.auraRow, k)
     _kitGeom[k] = g
     return g
 end
@@ -517,15 +524,15 @@ local KIT_DEBUFF_SIZE, KIT_BUFF_SIZE = 15, 15
 -- the same row) at the kit's Debuff Size and X/Y, which Auto Resize scales
 -- like any other icon. `p` = the profile (or the preview overlay) the view
 -- reads; one table per scaled geometry, its size/offsets refreshed per call.
-function ns.RF_KitViewKeys(p)
-    local g = p and ns.RF_KitGeom(p.partyKitScale)
+function mod.RF_KitViewKeys(p)
+    local g = p and mod.RF_KitGeom(p.partyKitScale)
     if not g then
         return nil
     end
     local v = g.view
     if not v then
         v = {}
-        for key, val in pairs(ns.RF_KIT_NEUTRAL) do
+        for key, val in pairs(mod.RF_KIT_NEUTRAL) do
             v[key] = val
         end
         v.debuffPosition = "topleft"
@@ -534,7 +541,7 @@ function ns.RF_KitViewKeys(p)
         v.dispellableDebuffLocation = "same"
         g.view = v
     end
-    local sc = ns._partyIndicatorScale or 1
+    local sc = mod._partyIndicatorScale or 1
     v.debuffSize = (p.partyKitDebuffSize or KIT_DEBUFF_SIZE) * sc
     v.debuffOffsetX = g.auraRow.x + (p.partyKitDebuffX or 0) * sc
     v.debuffOffsetY = g.auraRow.y + (p.partyKitDebuffY or 0) * sc
@@ -579,14 +586,14 @@ local function KitBmProxy(ind)
 end
 -- The run's position point and growth for `mode` ("RIGHT" | "LEFT" |
 -- "ABOVE") and the indicator kind.
-local function RunSpec(mode, kind)
-    if mode == "ABOVE" then
-        if kind == "icon" then
+local function RunSpec(modeName, kindOf)
+    if modeName == "ABOVE" then
+        if kindOf == "icon" then
             return "TOPLEFT", "RIGHT"
         end
         return "TOPRIGHT", "LEFT"
     end
-    return ((kind == "icon") and "TOP" or "BOTTOM") .. mode, mode
+    return ((kindOf == "icon") and "TOP" or "BOTTOM") .. modeName, modeName
 end
 -- `size` the element size, `lead` the reserved run length before it,
 -- `ox`/`oy` the user's X/Y (all unscaled: the Buff Manager applies its own
@@ -594,26 +601,26 @@ end
 -- one gap outside the frame edge (a chain's first element lands INSIDE its
 -- position corner, so its own size pushes it out); members only continue
 -- the run.
-local function PlaceRun(p, mode, kind, first, size, ox, oy, lead)
-    local point, grow = RunSpec(mode, kind)
-    p.position, p.growDirection = point, grow
+local function PlaceRun(p, modeName, kindOf, first, dim, ox, oy, lead)
+    local anchorPoint, grow = RunSpec(modeName, kindOf)
+    p.position, p.growDirection = anchorPoint, grow
     if not first then
         p.offsetX, p.offsetY = 0, 0
         return
     end
     lead = lead or 0
-    if mode == "ABOVE" then
+    if modeName == "ABOVE" then
         p.offsetX = ((grow == "LEFT") and -lead or lead) + ox
-        p.offsetY = size + KIT_BUFF_GAP + oy
+        p.offsetY = dim + KIT_BUFF_GAP + oy
     else
-        local out = lead + size + KIT_BUFF_GAP
-        p.offsetX = ((mode == "LEFT") and -out or out) + ox
+        local result = lead + dim + KIT_BUFF_GAP
+        p.offsetX = ((modeName == "LEFT") and -result or result) + ox
         p.offsetY = oy
     end
 end
 -- Where the kit's buff runs sit: "RIGHT" | "LEFT" | "ABOVE" (Horizontal
 -- Frames always above: the next frame sits beside each one).
-function ns.RF_KitBuffMode(prof)
+function mod.RF_KitBuffMode(prof)
     if not prof then
         return "RIGHT"
     end
@@ -630,67 +637,67 @@ function ns.RF_KitBuffMode(prof)
     return "RIGHT"
 end
 -- The kit's buff size (Frame Style row), unscaled.
-function ns.RF_KitBuffSize(prof)
+function mod.RF_KitBuffSize(prof)
     return (prof and prof.partyKitBuffSize) or KIT_BUFF_SIZE
 end
 -- Height (unscaled) of the buff lines the kit stacks above a frame: the icon
 -- line at Buff Size, then the squares' line above it, as RF_KitBmView last
 -- saw the Buff Manager (one icon line until it has run).
-function ns.RF_KitAboveUnits(s)
-    local icon = ns._kitAboveIcon
-    if icon == nil then
-        return ns.RF_KitBuffSize(s) + KIT_BUFF_GAP
+function mod.RF_KitAboveUnits(s)
+    local glyph = mod._kitAboveIcon
+    if glyph == nil then
+        return mod.RF_KitBuffSize(s) + KIT_BUFF_GAP
     end
-    local h = icon and (ns.RF_KitBuffSize(s) + KIT_BUFF_GAP) or 0
-    local sq = ns._kitAboveSq or 0
+    local hgt = glyph and (mod.RF_KitBuffSize(s) + KIT_BUFF_GAP) or 0
+    local sq = mod._kitAboveSq or 0
     if sq > 0 then
-        h = h + sq + KIT_BUFF_GAP
+        hgt = hgt + sq + KIT_BUFF_GAP
     end
-    return h
+    return hgt
 end
 -- A change to that height re-spaces the party frames and re-seats the
 -- Friendly Boss group once, after the pass that found it (the view is built
 -- mid-reload and mid-creation); combat leaves it to the regen party pass.
-function ns._KitAboveFlush()
-    ns._kitAbovePending = nil
+function mod._KitAboveFlush()
+    mod._kitAbovePending = nil
     if InCombatLockdown() then
-        ns._partyKitDirtyInCombat = true
-    elseif ns._LayoutPartyFrames then
-        ns._LayoutPartyFrames()
+        mod._partyKitDirtyInCombat = true
+    elseif mod._LayoutPartyFrames then
+        mod._LayoutPartyFrames()
     end
 end
 -- noPublish: the options preview's pass, which must not re-space the live frames.
-function ns.RF_KitBmView(inds, noPublish)
-    local out = {}
-    local chainMode = ns.RFC_BmChainMode
-    local prof = ns.db and ns.db.profile
-    local mode = ns.RF_KitBuffMode(prof)
-    local buffSize = ns.RF_KitBuffSize(prof)
+function mod.RF_KitBmView(inds, noPublish)
+    local result = {}
+    local chainMode = mod.RFC_BmChainMode
+    local prof = mod.db and mod.db.profile
+    local modeName = mod.RF_KitBuffMode(prof)
+    local buffSize = mod.RF_KitBuffSize(prof)
     local ox = (prof and prof.partyKitBuffX) or 0
     local oy = (prof and prof.partyKitBuffY) or 0
     -- Pre-pass: each fixed-slot indicator's lead, and each run's reserve.
     local leadIcon, leadSquare = 0, 0
     local leads
     local anyIcon, maxSq = false, 0
-    for i = 1, #inds do
-        local ind = inds[i]
-        local kind = ind.type or "icon"
+    for idx = 1, #inds do
+        local ind = inds[idx]
+        local kindOf = ind.type or "icon"
         if ind.enabled and ind.spells and #ind.spells > 0 then
-            if kind == "icon" then
+            if kindOf == "icon" then
                 anyIcon = true
-            elseif kind == "square" and (ind.size or 18) > maxSq then
+            elseif kindOf == "square" and (ind.size or 18) > maxSq then
                 maxSq = ind.size or 18
             end
         end
         if
             ind.enabled
-            and (kind == "icon" or kind == "square")
+            and (kindOf == "icon" or kindOf == "square")
             and not (chainMode and chainMode(ind) == "g")
         then
-            local size = (kind == "icon") and buffSize or (ind.size or 18)
-            local len = (ind.spells and #ind.spells or 0) * (size + (ind.spacing or 0))
+            local dim = (kindOf == "icon") and buffSize or (ind.size or 18)
+            local len = (ind.spells and #ind.spells or 0) * (dim + (ind.spacing or 0))
             leads = leads or {}
-            if kind == "icon" then
+            if kindOf == "icon" then
                 leads[ind] = leadIcon
                 leadIcon = leadIcon + len
             else
@@ -701,38 +708,38 @@ function ns.RF_KitBmView(inds, noPublish)
     end
     -- Publish the lines above the frame (the frame spacing and the Friendly
     -- Boss attach reserve them); a change relays once, above only.
-    if not noPublish and (anyIcon ~= ns._kitAboveIcon or maxSq ~= ns._kitAboveSq) then
-        local was = ns.RF_KitAboveUnits(prof)
-        ns._kitAboveIcon, ns._kitAboveSq = anyIcon, maxSq
-        if mode == "ABOVE" and ns.RF_KitAboveUnits(prof) ~= was and not ns._kitAbovePending then
-            ns._kitAbovePending = true
-            C_Timer.After(0, ns._KitAboveFlush)
+    if not noPublish and (anyIcon ~= mod._kitAboveIcon or maxSq ~= mod._kitAboveSq) then
+        local was = mod.RF_KitAboveUnits(prof)
+        mod._kitAboveIcon, mod._kitAboveSq = anyIcon, maxSq
+        if modeName == "ABOVE" and mod.RF_KitAboveUnits(prof) ~= was and not mod._kitAbovePending then
+            mod._kitAbovePending = true
+            C_Timer.After(0, mod._KitAboveFlush)
         end
     end
     -- Above the frame both runs start on one line from opposite ends: the
     -- squares take the next line up so the two can never collide.
     local sqOy = oy
-    if mode == "ABOVE" and anyIcon then
+    if modeName == "ABOVE" and anyIcon then
         sqOy = oy + buffSize + KIT_BUFF_GAP
     end
     local iconRoot, squareRoot
-    for i = 1, #inds do
-        local ind = inds[i]
-        local kind = ind.type or "icon"
-        local entry = ind
-        if ind.enabled and (kind == "icon" or kind == "square") then
+    for idx = 1, #inds do
+        local ind = inds[idx]
+        local kindOf = ind.type or "icon"
+        local record = ind
+        if ind.enabled and (kindOf == "icon" or kindOf == "square") then
             local p = KitBmProxy(ind)
             -- Buff Size sets every buff icon; squares keep their own size.
-            local size
-            if kind == "icon" then
+            local dim
+            if kindOf == "icon" then
                 p.size = buffSize
-                size = buffSize
+                dim = buffSize
             else
                 p.size = nil
-                size = ind.size or 18
+                dim = ind.size or 18
             end
             local reserve, root, runOy
-            if kind == "icon" then
+            if kindOf == "icon" then
                 reserve, root, runOy = leadIcon, iconRoot, oy
             else
                 reserve, root, runOy = leadSquare, squareRoot, sqOy
@@ -741,32 +748,32 @@ function ns.RF_KitBmView(inds, noPublish)
             local hasSpells = ind.spells and #ind.spells > 0
             p._kitAnchor = nil
             -- Above the frame, wrapped lines stack upward, away from it.
-            if mode == "ABOVE" then
+            if modeName == "ABOVE" then
                 p.wrapUp = true
             else
                 p.wrapUp = nil
             end
             if not chain then
                 -- Fixed slots: their own reserved cells at the run's start.
-                PlaceRun(p, mode, kind, true, size, ox, runOy, leads and leads[ind] or 0)
+                PlaceRun(p, modeName, kindOf, true, dim, ox, runOy, leads and leads[ind] or 0)
             elseif hasSpells and root and root.id ~= nil then
-                PlaceRun(p, mode, kind, false)
+                PlaceRun(p, modeName, kindOf, false)
                 p._kitAnchor = root.id
             else
-                PlaceRun(p, mode, kind, true, size, ox, runOy, reserve)
+                PlaceRun(p, modeName, kindOf, true, dim, ox, runOy, reserve)
                 if hasSpells and not root then
-                    if kind == "icon" then
+                    if kindOf == "icon" then
                         iconRoot = ind
                     else
                         squareRoot = ind
                     end
                 end
             end
-            entry = p
+            record = p
         end
-        out[#out + 1] = entry
+        result[#result + 1] = record
     end
-    return out
+    return result
 end
 
 -- Party slot box + spacing, UNSNAPPED (callers snap). The kit's box is the
@@ -774,30 +781,30 @@ end
 -- RF_KIT_SPACING); off the kit this is the Party page's Frame Width/Height/
 -- Spacing, the box widened by an attached portrait. The 4th return is that
 -- portrait's width: the bars' own width is the box width minus it.
-function ns.RF_PartyDims(s)
-    if ns.RF_PartyKit() then
-        local g = ns.RF_KitGeom(s.partyKitScale)
+function mod.RF_PartyDims(s)
+    if mod.RF_PartyKit() then
+        local g = mod.RF_KitGeom(s.partyKitScale)
         if g then
-            local cs = s.partyKitSpacing or ns.RF_KIT_SPACING
+            local cs = s.partyKitSpacing or mod.RF_KIT_SPACING
             -- Buffs above stacked frames: the gap also holds the buff runs'
             -- lines, so they clear the frame above (scaled like the Buff
             -- Manager scales them).
-            if not s.partyHorizontal and ns.RF_KitBuffMode(s) == "ABOVE" then
+            if not s.partyHorizontal and mod.RF_KitBuffMode(s) == "ABOVE" then
                 local bm = (s.partyAutoResizeTrackedBuffs ~= false) and g.k or 1
                 local by = s.partyKitBuffY or 0
-                cs = cs + (ns.RF_KitAboveUnits(s) + ((by > 0) and by or 0)) * bm
+                cs = cs + (mod.RF_KitAboveUnits(s) + ((by > 0) and by or 0)) * bm
             end
             return g.boxW, g.boxH, cs, 0
         end
     end
-    local w = s.partyFrameWidth or s.frameWidth or 125
-    local h = s.partyFrameHeight or s.frameHeight or 60
-    local res = ns.RF_PtReserve and ns.RF_PtReserve(s, h) or 0
+    local wid = s.partyFrameWidth or s.frameWidth or 125
+    local hgt = s.partyFrameHeight or s.frameHeight or 60
+    local res = mod.RF_PtReserve and mod.RF_PtReserve(s, hgt) or 0
     local spacing = s.partyCellSpacing or s.cellSpacing or 2
-    if ns.RF_CompactOn(s, true) then
-        spacing = ns.RF_OnePixel(true)
+    if mod.RF_CompactOn(s, true) then
+        spacing = mod.RF_OnePixel(true)
     end
-    return w + res, h, spacing, res
+    return wid + res, hgt, spacing, res
 end
 
 -- Friendly Boss "Show in Dungeons" beside the party container under the kit:
@@ -806,8 +813,8 @@ end
 -- their buff run beside them, so the boss group takes the other side;
 -- horizontal frames carry the buff run above and the debuff row below, so
 -- the group clears whichever it sits against.
-function ns.RF_KitAttach(s, before)
-    local g = ns.RF_KitGeom(s.partyKitScale)
+function mod.RF_KitAttach(s, before)
+    local g = mod.RF_KitGeom(s.partyKitScale)
     if not g then
         return before, 0
     end
@@ -816,13 +823,13 @@ function ns.RF_KitAttach(s, before)
         if before then
             local bm = (s.partyAutoResizeTrackedBuffs ~= false) and g.k or 1
             local by = s.partyKitBuffY or 0
-            over = (ns.RF_KitAboveUnits(s) + ((by > 0) and by or 0)) * bm - g.host.y
+            over = (mod.RF_KitAboveUnits(s) + ((by > 0) and by or 0)) * bm - g.host.y
         else
             -- Below: the Debuff Manager's lowest seat (base row, then its
             -- grid tiles), else one line of the debuff row.
-            local low = ns._kitDmFloor
+            local low = mod._kitDmFloor
             if not low then
-                local sc = ns._partyIndicatorScale or 1
+                local sc = mod._partyIndicatorScale or 1
                 low = g.auraRow.y
                     + (s.partyKitDebuffY or 0) * sc
                     - (s.partyKitDebuffSize or KIT_DEBUFF_SIZE) * sc
@@ -831,11 +838,11 @@ function ns.RF_KitAttach(s, before)
         end
         return before, (over > 0) and over or 0
     end
-    local mode = ns.RF_KitBuffMode(s)
-    if mode == "RIGHT" and not before then
+    local modeName = mod.RF_KitBuffMode(s)
+    if modeName == "RIGHT" and not before then
         return true, 0
     end
-    if mode == "LEFT" and before then
+    if modeName == "LEFT" and before then
         return false, 0
     end
     return before, 0
@@ -843,13 +850,13 @@ end
 
 -- Profiles: true when a profile under the running style would change the
 -- latched party Frame Style (reload-gated, like the style itself).
-function ns.RF_PartyKitChanged(p)
-    local want = p and (p.useClassicStyle or p.useBlizzardStyle) and p.partyFrameStyle == "party"
-    return (ns.RF_PartyKit() and true or false) ~= (want and true or false)
+function mod.RF_PartyKitChanged(p)
+    local wanted = p and (p.useClassicStyle or p.useBlizzardStyle) and p.partyFrameStyle == "party"
+    return (mod.RF_PartyKit() and true or false) ~= (wanted and true or false)
 end
 
 local function Snap(v)
-    local f = ns.PixelSnap
+    local f = mod.PixelSnap
     if f then
         return f(v)
     end
@@ -857,36 +864,36 @@ local function Snap(v)
 end
 
 -- A kit spot: `spot` = { p, rel, x, y } (scaled), plus the user's offsets.
-function ns.RF_KitSpot(spot, region, rel, ox, oy)
-    region:ClearAllPoints()
-    region:SetPoint(spot.p, rel, spot.rel, spot.x + (ox or 0), spot.y + (oy or 0))
+function mod.RF_KitSpot(spot, regionFrame, rel, ox, oy)
+    regionFrame:ClearAllPoints()
+    regionFrame:SetPoint(spot.p, rel, spot.rel, spot.x + (ox or 0), spot.y + (oy or 0))
 end
 
 -- The leader icon at its stock spot (it has no anchor closure of its own).
-function ns.RF_KitLeader(st, s)
+function mod.RF_KitLeader(st, s)
     local li, g = st.leaderIcon or st._leaderIcon, st.kitG
     if not (li and g and st.kitOwner) then
         return
     end
-    ns.RF_KitSpot(g.lead, li, st.kitOwner, s and s.leaderIconOffsetX, s and s.leaderIconOffsetY)
+    mod.RF_KitSpot(g.lead, li, st.kitOwner, s and s.leaderIconOffsetX, s and s.leaderIconOffsetY)
 end
 
-local function Place(region, owner, r)
-    if not (region and r) then
+local function Place(regionFrame, ownerFrame, r)
+    if not (regionFrame and r) then
         return
     end
-    region:ClearAllPoints()
-    region:SetPoint("TOPLEFT", owner, "TOPLEFT", Snap(r.x), -Snap(r.y))
-    region:SetSize(Snap(r.w), Snap(r.h))
+    regionFrame:ClearAllPoints()
+    regionFrame:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", Snap(r.x), -Snap(r.y))
+    regionFrame:SetSize(Snap(r.w), Snap(r.h))
 end
 
-local function SetArt(tex, a)
+local function SetArt(texture, a)
     if a.atlas then
         -- The retail art on every client (WoW Forever swaps the frame's
         -- atlas); sized by the seat pass, never useAtlasSize.
-        CludesUI.StockAtlas(tex, a.atlas)
+        CludesUI.StockAtlas(texture, a.atlas)
     else
-        tex:SetTexture(a.file)
+        texture:SetTexture(a.file)
     end
 end
 
@@ -897,19 +904,19 @@ local SHADE_CLEAR = CreateColor(0, 0, 0, 0)
 local SHADE_TOP = CreateColor(0, 0, 0, 0.55)
 local SHADE_BOTTOM = CreateColor(0, 0, 0, 0.30)
 local SHADE_END = CreateColor(0, 0, 0, 0.35)
-local function MakeBevel(bar, mask)
+local function MakeBevel(barFrame, maskTex)
     local sh = {}
-    for i = 1, 4 do
-        local t = bar:CreateTexture(nil, "OVERLAY", nil, -3)
+    for idx = 1, 4 do
+        local t = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
         t:SetTexture(WHITE)
-        local PP = CludesUI.PP or CludesUI.PanelPP
-        if PP and PP.DisablePixelSnap then
-            PP.DisablePixelSnap(t)
+        local Pix = CludesUI.PP or CludesUI.PanelPP
+        if Pix and Pix.DisablePixelSnap then
+            Pix.DisablePixelSnap(t)
         end
-        if mask then
-            t:AddMaskTexture(mask)
+        if maskTex then
+            t:AddMaskTexture(maskTex)
         end
-        sh[i] = t
+        sh[idx] = t
     end
     -- VERTICAL runs bottom -> top, HORIZONTAL left -> right.
     sh[1]:SetGradient("VERTICAL", SHADE_CLEAR, SHADE_TOP)
@@ -918,37 +925,39 @@ local function MakeBevel(bar, mask)
     sh[4]:SetGradient("HORIZONTAL", SHADE_CLEAR, SHADE_END)
     return sh
 end
-local function SeatBevel(sh, bar, h)
+local function SeatBevel(sh, barFrame, hgt)
     if not sh then
         return
     end
-    local top, bottom, ends =
-        math.max(2, math.floor(h * 0.2)), math.max(1, math.floor(h * 0.1)), math.max(2, math.floor(h * 0.15))
+    local topY, bottom, ends =
+        math.max(2, math.floor(hgt * 0.2)),
+        math.max(1, math.floor(hgt * 0.1)),
+        math.max(2, math.floor(hgt * 0.15))
     sh[1]:ClearAllPoints()
-    sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-    sh[1]:SetHeight(top)
+    sh[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+    sh[1]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
+    sh[1]:SetHeight(topY)
     sh[2]:ClearAllPoints()
-    sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-    sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[2]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
+    sh[2]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     sh[2]:SetHeight(bottom)
     sh[3]:ClearAllPoints()
-    sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+    sh[3]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+    sh[3]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
     sh[3]:SetWidth(ends)
     sh[4]:ClearAllPoints()
-    sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-    sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[4]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
+    sh[4]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     sh[4]:SetWidth(ends)
 end
 
-local function SeatMask(mask, bar, r)
-    if not mask then
+local function SeatMask(maskTex, barFrame, r)
+    if not maskTex then
         return
     end
-    mask:ClearAllPoints()
-    mask:SetPoint("TOPLEFT", bar, "TOPLEFT", r.mx, r.my)
-    mask:SetSize(r.mw, r.mh)
+    maskTex:ClearAllPoints()
+    maskTex:SetPoint("TOPLEFT", barFrame, "TOPLEFT", r.mx, r.my)
+    maskTex:SetSize(r.mw, r.mh)
 end
 
 -- Masks go on each fill OBJECT once (AddMaskTexture is additive); a texture
@@ -956,33 +965,33 @@ end
 local function SeatFillMasks(st)
     local hm = st.kitHMask
     if hm then
-        local fill = st.kitHealth:GetStatusBarTexture()
-        if fill and st._kitHFill ~= fill then
+        local fillTex = st.kitHealth:GetStatusBarTexture()
+        if fillTex and st._kitHFill ~= fillTex then
             local old = st._kitHFill
             if old then
                 pcall(old.RemoveMaskTexture, old, hm)
             end
-            fill:AddMaskTexture(hm)
-            st._kitHFill = fill
+            fillTex:AddMaskTexture(hm)
+            st._kitHFill = fillTex
         end
     end
     local pm, power = st.kitPMask, st.kitPower
     if pm and power then
-        local fill = power:GetStatusBarTexture()
-        if fill and st._kitPFill ~= fill then
+        local fillTex = power:GetStatusBarTexture()
+        if fillTex and st._kitPFill ~= fillTex then
             local old = st._kitPFill
             if old then
                 pcall(old.RemoveMaskTexture, old, pm)
             end
-            fill:AddMaskTexture(pm)
-            st._kitPFill = fill
+            fillTex:AddMaskTexture(pm)
+            st._kitPFill = fillTex
         end
     end
 end
 
-local function SetLevel(frame, lvl)
-    if frame and frame:GetFrameLevel() ~= lvl then
-        frame:SetFrameLevel(lvl)
+local function SetLevel(widget, lvl)
+    if widget and widget:GetFrameLevel() ~= lvl then
+        widget:SetFrameLevel(lvl)
     end
 end
 
@@ -991,34 +1000,34 @@ end
 -- itself (every refresh re-anchors them first).
 local function PreviewSpots(f, s, g)
     if f._txL then
-        ns.RF_TextLayout(f, f._txS)
+        mod.RF_TextLayout(f, f._txS)
     end
     if f._roleIcon then
-        ns.RF_KitSpot(g.role, f._roleIcon, f, s.roleIconOffsetX, s.roleIconOffsetY)
+        mod.RF_KitSpot(g.role, f._roleIcon, f, s.roleIconOffsetX, s.roleIconOffsetY)
         if f._roleIcon._roleText then
             f._roleIcon._roleText:ClearAllPoints()
             f._roleIcon._roleText:SetPoint(g.role.p, f._roleIcon, g.role.p, 0, 0)
         end
     end
     if f._readyCheck and f.kitPortrait then
-        ns.RF_KitSpot(g.rc, f._readyCheck, f.kitPortrait, s.readyCheckOffsetX, s.readyCheckOffsetY)
+        mod.RF_KitSpot(g.rc, f._readyCheck, f.kitPortrait, s.readyCheckOffsetX, s.readyCheckOffsetY)
     end
 end
 
-local function Seat(owner, st, g)
-    local health, power = st.kitHealth, st.kitPower
-    Place(st.kitHost, owner, g.host)
-    Place(health, owner, g.health)
-    Place(power, owner, g.power)
-    Place(st.kitArt, owner, g.art)
-    Place(st._stAggTex, owner, g.flash)
-    Place(st._kitHov, owner, g.glow)
-    Place(st._kitSel, owner, g.glow)
-    Place(st.kitPortrait, owner, g.portrait)
-    Place(st.kitBack, owner, g.back)
-    SeatMask(st.kitHMask, health, g.health)
+local function Seat(ownerFrame, st, g)
+    local healthBar, power = st.kitHealth, st.kitPower
+    Place(st.kitHost, ownerFrame, g.host)
+    Place(healthBar, ownerFrame, g.health)
+    Place(power, ownerFrame, g.power)
+    Place(st.kitArt, ownerFrame, g.art)
+    Place(st._stAggTex, ownerFrame, g.flash)
+    Place(st._kitHov, ownerFrame, g.glow)
+    Place(st._kitSel, ownerFrame, g.glow)
+    Place(st.kitPortrait, ownerFrame, g.portrait)
+    Place(st.kitBack, ownerFrame, g.back)
+    SeatMask(st.kitHMask, healthBar, g.health)
     SeatMask(st.kitPMask, power, g.power)
-    SeatBevel(st.kitHShade, health, g.health.h)
+    SeatBevel(st.kitHShade, healthBar, g.health.h)
     SeatBevel(st.kitPShade, power, g.power.h)
 end
 
@@ -1026,23 +1035,23 @@ end
 -- every anchor closure and the aura containers; CreatePreviewFrame for the
 -- party preview). `health`/`power` are the owner's bars (ours), `bdr` its
 -- stood-down border frame.
-function ns.RF_KitBuild(owner, st, health, power, bdr)
-    if st.kit or not health then
+function mod.RF_KitBuild(ownerFrame, st, healthBar, power, bdr)
+    if st.kit or not healthBar then
         return
     end
-    local kit = ns.RF_PartyKit()
-    local K = kit and ns.RF_KITS[kit]
-    if not K then
+    local kit = mod.RF_PartyKit()
+    local Keys = kit and mod.RF_KITS[kit]
+    if not Keys then
         return
     end
-    local PP = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CludesUI.PP or CludesUI.PanelPP
     st.kit = kit
-    st.kitOwner, st.kitHealth, st.kitPower = owner, health, power
+    st.kitOwner, st.kitHealth, st.kitPower = ownerFrame, healthBar, power
     -- Unlock mode's settings link for the party mover: the kit's size lives
     -- in Frame Scale (the Frame Width row is hidden). Latched per session.
     local map = CludesUI._ELEMENT_SETTINGS_MAP
-    if map and not ns._kitUnlockLink then
-        ns._kitUnlockLink = true
+    if map and not mod._kitUnlockLink then
+        mod._kitUnlockLink = true
         map.RF_PartyFrames = {
             module = "CludesUIRaidFrames",
             page = "Party",
@@ -1053,20 +1062,20 @@ function ns.RF_KitBuild(owner, st, health, power, bdr)
     -- Host: the visible party frame. Anchored to the owner only (never to a
     -- bar or an art piece): secure aura containers anchored to it make it
     -- protected in combat, and the bars must stay movable out of it.
-    local host = CreateFrame("Frame", nil, owner)
-    host:EnableMouse(false)
-    st.kitHost = host
-    health._cuiKitRef = host
-    host._cuiHealth = health
+    local hostRegion = CreateFrame("Frame", nil, ownerFrame)
+    hostRegion:EnableMouse(false)
+    st.kitHost = hostRegion
+    healthBar._cuiKitRef = hostRegion
+    hostRegion._cuiHealth = healthBar
     -- The stood-down border frame follows the visible frame.
     if bdr then
         bdr:ClearAllPoints()
-        bdr:SetAllPoints(host)
+        bdr:SetAllPoints(hostRegion)
     end
 
     -- Under the bars: portrait (+ the Blizzard art, Flash and glows; the
     -- vanilla plaque, Flash and glows under Classic).
-    local under = CreateFrame("Frame", nil, owner)
+    local under = CreateFrame("Frame", nil, ownerFrame)
     under:EnableMouse(false)
     st.kitUnder = under
     local portrait = under:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -1076,7 +1085,7 @@ function ns.RF_KitBuild(owner, st, health, power, bdr)
     portrait:AddMaskTexture(pmask)
     st.kitPortrait = portrait
     local art, flash, hov, sel
-    if K.artAbove then
+    if Keys.artAbove then
         -- Classic: the Flash glows out from under the whole silhouette.
         flash = under:CreateTexture(nil, "BACKGROUND", nil, -4)
         hov = under:CreateTexture(nil, "BACKGROUND", nil, -3)
@@ -1084,7 +1093,7 @@ function ns.RF_KitBuild(owner, st, health, power, bdr)
         local back = under:CreateTexture(nil, "BACKGROUND", nil, 2)
         back:SetColorTexture(0, 0, 0, 0.5)
         st.kitBack = back
-        local over = CreateFrame("Frame", nil, owner)
+        local over = CreateFrame("Frame", nil, ownerFrame)
         over:EnableMouse(false)
         st.kitOver = over
         art = over:CreateTexture(nil, "ARTWORK")
@@ -1095,20 +1104,20 @@ function ns.RF_KitBuild(owner, st, health, power, bdr)
         hov = under:CreateTexture(nil, "ARTWORK", nil, 2)
         sel = under:CreateTexture(nil, "ARTWORK", nil, 3)
     end
-    SetArt(art, K.art)
-    SetArt(flash, K.flash)
-    SetArt(hov, K.glow)
-    SetArt(sel, K.glow)
+    SetArt(art, Keys.art)
+    SetArt(flash, Keys.flash)
+    SetArt(hov, Keys.glow)
+    SetArt(sel, Keys.glow)
     sel:SetVertexColor(KIT_SEL_R, KIT_SEL_G, KIT_SEL_B, 1)
     flash:Hide()
     hov:Hide()
     sel:Hide()
-    if PP and PP.DisablePixelSnap then
-        PP.DisablePixelSnap(art)
-        PP.DisablePixelSnap(flash)
-        PP.DisablePixelSnap(hov)
-        PP.DisablePixelSnap(sel)
-        PP.DisablePixelSnap(portrait)
+    if Pix and Pix.DisablePixelSnap then
+        Pix.DisablePixelSnap(art)
+        Pix.DisablePixelSnap(flash)
+        Pix.DisablePixelSnap(hov)
+        Pix.DisablePixelSnap(sel)
+        Pix.DisablePixelSnap(portrait)
     end
     st.kitArt = art
     -- The stock aggro path (RF_PaintThreat -> RF_StockAggro) drives the
@@ -1120,27 +1129,27 @@ function ns.RF_KitBuild(owner, st, health, power, bdr)
     -- Blizzard: the stock rounded masks and bevel, on the bars themselves
     -- (the mana mask shapes the bar's own background too). The retail masks
     -- on every client, like the art (WoW Forever redrew these names).
-    if K.health.mask then
-        local hm = health:CreateMaskTexture()
-        CludesUI.StockMask(hm, K.health.mask)
+    if Keys.health.mask then
+        local hm = healthBar:CreateMaskTexture()
+        CludesUI.StockMask(hm, Keys.health.mask)
         st.kitHMask = hm
-        if K.bevel then
-            st.kitHShade = MakeBevel(health, hm)
+        if Keys.bevel then
+            st.kitHShade = MakeBevel(healthBar, hm)
         end
-        if power and K.power.mask then
+        if power and Keys.power.mask then
             local pm = power:CreateMaskTexture()
-            CludesUI.StockMask(pm, K.power.mask)
+            CludesUI.StockMask(pm, Keys.power.mask)
             st.kitPMask = pm
             local pbg = st.powerBg or st._powerBg
             if pbg then
                 pbg:AddMaskTexture(pm)
             end
-            if K.bevel then
+            if Keys.bevel then
                 st.kitPShade = MakeBevel(power, pm)
             end
         end
     end
-    ns.RF_ApplyPartyKit(owner, st, ns._scaledPartyProxy, nil, true)
+    mod.RF_ApplyPartyKit(ownerFrame, st, mod._scaledPartyProxy, nil, true)
 end
 
 -- The kit pass: portrait (when a unit is given), geometry (when the scale
@@ -1148,30 +1157,30 @@ end
 -- would touch a frame made protected in combat is deferred to combat end
 -- (main file flush -> ReloadPartyFrames); the portrait is a plain paint on
 -- our own texture and always runs.
-function ns.RF_ApplyPartyKit(owner, st, s, unit, force)
+function mod.RF_ApplyPartyKit(ownerFrame, st, s, unitToken, force)
     if not st.kit then
         return
     end
-    if unit then
-        ns.RF_KitPortrait(st, unit)
+    if unitToken then
+        mod.RF_KitPortrait(st, unitToken)
     end
-    local g = ns.RF_KitGeom(s and s.partyKitScale)
+    local g = mod.RF_KitGeom(s and s.partyKitScale)
     if not g then
         return
     end
-    local health, power, host = st.kitHealth, st.kitPower, st.kitHost
+    local healthBar, power, hostRegion = st.kitHealth, st.kitPower, st.kitHost
     -- The pixel grid the seat pass snaps to joins the memo (a live UI-scale
     -- change re-seats on the next pass).
-    local P = CludesUI.PP
-    local es = owner:GetEffectiveScale()
-    local px = ((P and P.perfect) or 0) / ((es and es > 0) and es or 1)
+    local Prm = CludesUI.PP
+    local es = ownerFrame:GetEffectiveScale()
+    local px = ((Prm and Prm.perfect) or 0) / ((es and es > 0) and es or 1)
     local locked = InCombatLockdown()
-        and (health:IsProtected() or host:IsProtected() or (power and power:IsProtected()))
+        and (healthBar:IsProtected() or hostRegion:IsProtected() or (power and power:IsProtected()))
     if force or st.kitG ~= g or st.kitPx ~= px then
         if locked then
-            ns._partyKitDirtyInCombat = true
+            mod._partyKitDirtyInCombat = true
         else
-            Seat(owner, st, g)
+            Seat(ownerFrame, st, g)
             st.kitG, st.kitPx = g, px
             -- The spots scale with the frame: re-run what reads them.
             if st.AnchorTexts then
@@ -1183,22 +1192,22 @@ function ns.RF_ApplyPartyKit(owner, st, s, unit, force)
             if st.AnchorReadyCheck then
                 st.AnchorReadyCheck()
             end
-            ns.RF_KitLeader(st, s)
+            mod.RF_KitLeader(st, s)
             -- A preview frame is its own state (RF_KitBuild(f, f, ...)).
-            if owner == st and s then
-                PreviewSpots(owner, s, g)
+            if ownerFrame == st and s then
+                PreviewSpots(ownerFrame, s, g)
             end
         end
     end
     -- Levels follow the owner (a party strata change rebuilds child levels):
     -- the bars at their creation offsets first, so the art keeps its place
     -- under (Blizzard) or over (Classic) them.
-    local L = owner:GetFrameLevel()
-    if health:GetFrameLevel() ~= L + 2 or (power and power:GetFrameLevel() ~= L + 3) then
+    local L = ownerFrame:GetFrameLevel()
+    if healthBar:GetFrameLevel() ~= L + 2 or (power and power:GetFrameLevel() ~= L + 3) then
         if locked then
-            ns._partyKitDirtyInCombat = true
+            mod._partyKitDirtyInCombat = true
         else
-            SetLevel(health, L + 2)
+            SetLevel(healthBar, L + 2)
             SetLevel(power, L + 3)
         end
     end
@@ -1213,53 +1222,53 @@ end
 -- the class art; a model cannot take the socket's round mask), re-
 -- desaturated after every paint (offline state is owned by the health-
 -- background pass).
-function ns.RF_KitPortrait(st, unit)
-    local tex = st.kitPortrait
-    if not tex then
+function mod.RF_KitPortrait(st, unitToken)
+    local texture = st.kitPortrait
+    if not texture then
         return
     end
-    local p = ns._scaledPartyProxy
-    if p and p.partyPortraitMode == "class" and ns.RF_PtClassArt then
-        local _, ct = UnitClass(unit)
+    local p = mod._scaledPartyProxy
+    if p and p.partyPortraitMode == "class" and mod.RF_PtClassArt then
+        local _, ct = UnitClass(unitToken)
         if issecretvalue(ct) then
             ct = nil
         end
-        ns.RF_PtClassArt(tex, ct or "WARRIOR", p.partyPortraitClassStyle or "modern")
+        mod.RF_PtClassArt(texture, ct or "WARRIOR", p.partyPortraitClassStyle or "modern")
     else
-        tex:SetTexCoord(0, 1, 0, 1)
-        SetPortraitTexture(tex, unit)
+        texture:SetTexCoord(0, 1, 0, 1)
+        SetPortraitTexture(texture, unitToken)
     end
-    tex:SetDesaturated(st._kitDesat or false)
+    texture:SetDesaturated(st._kitDesat or false)
 end
 
 -- Options preview: the player's own portrait in the player's slot, the
 -- class crest elsewhere (five copies of one face would read wrong); class
 -- art per slot under that Art Style.
 local CLASS_SHEET = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
-function ns.RF_KitPreviewPortrait(f, classToken, isPlayer, offline)
-    local tex = f.kitPortrait
-    if not tex then
+function mod.RF_KitPreviewPortrait(f, classToken, isPlayer, offline)
+    local texture = f.kitPortrait
+    if not texture then
         return
     end
-    local p = ns._scaledPartyProxy
+    local p = mod._scaledPartyProxy
     local tc = (not isPlayer) and classToken and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classToken]
-    if p and p.partyPortraitMode == "class" and ns.RF_PtClassArt then
+    if p and p.partyPortraitMode == "class" and mod.RF_PtClassArt then
         local _, pct = UnitClass("player")
-        ns.RF_PtClassArt(tex, classToken or pct or "WARRIOR", p.partyPortraitClassStyle or "modern")
+        mod.RF_PtClassArt(texture, classToken or pct or "WARRIOR", p.partyPortraitClassStyle or "modern")
     elseif tc then
-        tex:SetTexture(CLASS_SHEET)
-        tex:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+        texture:SetTexture(CLASS_SHEET)
+        texture:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
     else
-        tex:SetTexCoord(0, 1, 0, 1)
-        SetPortraitTexture(tex, "player")
+        texture:SetTexCoord(0, 1, 0, 1)
+        SetPortraitTexture(texture, "player")
     end
-    tex:SetDesaturated(offline and true or false)
+    texture:SetDesaturated(offline and true or false)
 end
 
 -- Hover and target: the art-tracing glow (stock has neither), hover in the
 -- user's hover colour, target in the stock selection colour; target draws
 -- over hover. The stood-down border frame stays clear.
-function ns.RF_KitHighlight(st, bf, s, hover, target)
+function mod.RF_KitHighlight(st, bf, s, hover, targetUnit)
     local hov, sel = st._kitHov, st._kitSel
     if not hov then
         return
@@ -1269,5 +1278,5 @@ function ns.RF_KitHighlight(st, bf, s, hover, target)
         hov:SetVertexColor(c and c.r or 1, c and c.g or 1, c and c.b or 1, s.hoverBorderAlpha or 1)
     end
     hov:SetShown(hover and true or false)
-    sel:SetShown(target and true or false)
+    sel:SetShown(targetUnit and true or false)
 end

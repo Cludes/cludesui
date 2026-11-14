@@ -18,14 +18,14 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Fights with phases or intermissions do not lose health evenly, so treat it
 --  as a guide, and set the target to a kill time you have had before.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local GREEN = CreateColor(0.38, 0.82, 0.45, 1)
 local RED = CreateColor(0.93, 0.33, 0.25, 1)
 local TICK = 0.25
 
-function ns.PaceSettings()
-    local p = ns.RaidLeadDB()
+function mod.PaceSettings()
+    local p = mod.RaidLeadDB()
     p.pace = p.pace or {}
     local s = p.pace
     if s.enabled == nil then
@@ -36,62 +36,62 @@ function ns.PaceSettings()
 end
 
 --- "m:ss" or "s" to seconds.
-function ns.ParseDuration(text)
-    local m, sec = (text or ""):match("^%s*(%d+):(%d%d)%s*$")
+function mod.ParseDuration(textValue)
+    local m, sec = (textValue or ""):match("^%s*(%d+):(%d%d)%s*$")
     if m then
         return tonumber(m) * 60 + tonumber(sec)
     end
-    local only = (text or ""):match("^%s*(%d+)%s*$")
+    local only = (textValue or ""):match("^%s*(%d+)%s*$")
     return only and tonumber(only) or nil
 end
 
-function ns.FormatDuration(s)
+function mod.FormatDuration(s)
     s = math.max(0, math.floor(s + 0.5))
     return ("%d:%02d"):format(math.floor(s / 60), s % 60)
 end
 
 local function TargetFor(bossName)
     local key = (bossName or ""):lower()
-    for _, t in ipairs(ns.PaceSettings().targets) do
+    for _, t in ipairs(mod.PaceSettings().targets) do
         if (t.boss or ""):lower() == key then
             return t.seconds
         end
     end
 end
 
-local bar, marker, label, curve
+local barFrame, marker, labelText, curve
 local fight -- { start, target, name }
 
 local function Build()
-    if bar then
+    if barFrame then
         return
     end
-    bar = CreateFrame("StatusBar", "CludesUIRaidLeadPace", UIParent)
-    bar:SetSize(260, 22)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    bar:SetMinMaxValues(0, 100)
-    CludesUI.Kit.Panel(bar, 0.85)
-    marker = bar:CreateTexture(nil, "OVERLAY")
+    barFrame = CreateFrame("StatusBar", "CludesUIRaidLeadPace", UIParent)
+    barFrame:SetSize(260, 22)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    barFrame:SetMinMaxValues(0, 100)
+    CludesUI.Kit.Panel(barFrame, 0.85)
+    marker = barFrame:CreateTexture(nil, "OVERLAY")
     marker:SetColorTexture(1, 1, 1, 0.95)
     marker:SetSize(2, 26)
-    label = bar:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(label, 13, nil)
-    label:SetPoint("BOTTOM", bar, "TOP", 0, 3)
+    labelText = barFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(labelText, 13, nil)
+    labelText:SetPoint("BOTTOM", barFrame, "TOP", 0, 3)
     curve = C_CurveUtil.CreateColorCurve()
-    bar:Hide()
-    ns.ApplyPacePosition()
+    barFrame:Hide()
+    mod.ApplyPacePosition()
 end
 
-function ns.ApplyPacePosition()
-    if not bar or InCombatLockdown() then
+function mod.ApplyPacePosition()
+    if not barFrame or InCombatLockdown() then
         return
     end
-    local p = ns.PaceSettings().pos
-    bar:ClearAllPoints()
+    local p = mod.PaceSettings().pos
+    barFrame:ClearAllPoints()
     if p then
-        bar:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        barFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        bar:SetPoint("TOP", UIParent, "TOP", 0, -90)
+        barFrame:SetPoint("TOP", UIParent, "TOP", 0, -90)
     end
 end
 
@@ -109,22 +109,24 @@ local function Update()
     curve:AddPoint(t, RED)
     curve:AddPoint(t + 0.0001, GREEN)
     curve:AddPoint(1, GREEN)
-    local unit = UnitExists("boss1") and "boss1" or nil
-    if unit then
-        bar:SetValue(UnitHealthPercent(unit, true, CurveConstants and CurveConstants.ScaleTo100) or 0)
-        local colour = UnitHealthPercent(unit, true, curve)
+    local unitToken = UnitExists("boss1") and "boss1" or nil
+    if unitToken then
+        barFrame:SetValue(
+            UnitHealthPercent(unitToken, true, CurveConstants and CurveConstants.ScaleTo100) or 0
+        )
+        local colour = UnitHealthPercent(unitToken, true, curve)
         if colour and colour.GetRGB then
-            bar:GetStatusBarTexture():SetVertexColor(colour:GetRGB())
+            barFrame:GetStatusBarTexture():SetVertexColor(colour:GetRGB())
         end
     end
     marker:ClearAllPoints()
-    marker:SetPoint("CENTER", bar, "LEFT", bar:GetWidth() * expected / 100, 0)
-    label:SetText(
+    marker:SetPoint("CENTER", barFrame, "LEFT", barFrame:GetWidth() * expected / 100, 0)
+    labelText:SetText(
         ("%s  |cff9aa6b2pace %d%%  %s / %s|r"):format(
             fight.name,
             math.floor(expected + 0.5),
-            ns.FormatDuration(elapsed),
-            ns.FormatDuration(fight.target)
+            mod.FormatDuration(elapsed),
+            mod.FormatDuration(fight.target)
         )
     )
 end
@@ -137,19 +139,19 @@ local function Stop()
         ticker:Cancel()
         ticker = nil
     end
-    if bar then
-        bar:Hide()
+    if barFrame then
+        barFrame:Hide()
     end
 end
 
 --- Starts the bar for a boss with a target kill time, as at a pull.
-function ns.StartPace(name, seconds)
+function mod.StartPace(name, seconds)
     Build()
-    if not (bar and seconds and seconds > 0) then
+    if not (barFrame and seconds and seconds > 0) then
         return
     end
     fight = { start = GetTime(), target = seconds, name = name }
-    bar:Show()
+    barFrame:Show()
     if ticker then
         ticker:Cancel()
     end
@@ -162,11 +164,11 @@ ev:RegisterEvent("ENCOUNTER_START")
 ev:RegisterEvent("ENCOUNTER_END")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
-ev:SetScript("OnEvent", function(_, event, _, encounterName)
-    if event == "ENCOUNTER_END" then
+ev:SetScript("OnEvent", function(_, evt, _, encounterName)
+    if evt == "ENCOUNTER_END" then
         return Stop()
     end
-    if event == "PLAYER_ENTERING_WORLD" then
+    if evt == "PLAYER_ENTERING_WORLD" then
         if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
             return
         end
@@ -181,36 +183,36 @@ ev:SetScript("OnEvent", function(_, event, _, encounterName)
                 noAnchorTarget = true,
                 noResize = true,
                 isHidden = function()
-                    return not ns.PaceSettings().enabled
+                    return not mod.PaceSettings().enabled
                 end,
                 getFrame = function()
-                    return bar
+                    return barFrame
                 end,
                 getSize = function()
                     return 260, 22
                 end,
-                savePos = function(_, point, relPoint, x, y)
-                    ns.PaceSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
+                savePos = function(_, anchorPoint, relPoint, posX, posY)
+                    mod.PaceSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 end,
                 loadPos = function()
-                    return ns.PaceSettings().pos
+                    return mod.PaceSettings().pos
                 end,
                 clearPos = function()
-                    ns.PaceSettings().pos = nil
+                    mod.PaceSettings().pos = nil
                 end,
-                applyPos = ns.ApplyPacePosition,
+                applyPos = mod.ApplyPacePosition,
             }),
         }, "CludesUIRaidLead")
         return
     end
-    if not ns.PaceSettings().enabled then
+    if not mod.PaceSettings().enabled then
         return
     end
     if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then
         return
     end
-    local target = TargetFor(encounterName)
-    if target then
-        ns.StartPace(encounterName, target)
+    local targetUnit = TargetFor(encounterName)
+    if targetUnit then
+        mod.StartPace(encounterName, targetUnit)
     end
 end)

@@ -32,16 +32,16 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Tracking Bars read the verdict on their own tick. Nothing is registered while
 --  no bar uses the glow, and the aura-edge hooks then return at once.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 -- WoW Forever (ns.CDM_ANTI_CLIP, CludesUICooldownManager.lua).
-if not ns.CDM_ANTI_CLIP then
+if not mod.CDM_ANTI_CLIP then
     return
 end
 
 local GetTime = GetTime
 local UnitCastingInfo, UnitChannelInfo = UnitCastingInfo, UnitChannelInfo
 local PlainString = CludesUI.PlainString
-local ReadExpiration = ns.ReadAuraExpiration
+local ReadExpiration = mod.ReadAuraExpiration
 local GCD_SPELL = 61304
 local HUGE = math.huge
 local EMPTY = {}
@@ -51,57 +51,57 @@ local wantIcons, wantBars = false, false
 local castEnd, gcdEnd = 0, 0 -- GetTime() at which the current cast / GCD ends
 local castName -- the spell being cast or channelled (plain reads)
 local castTimes = {} -- [spellID] = cast time in seconds (plain reads)
-local names = {} -- [spellID] = spell name (plain reads)
-local state = setmetatable({}, { __mode = "k" }) -- [icon item] = its last drawn verdict
+local nameList = {} -- [spellID] = spell name (plain reads)
+local status = setmetatable({}, { __mode = "k" }) -- [icon item] = its last drawn verdict
 local hooked = setmetatable({}, { __mode = "k" })
 local nextWake = HUGE -- the earliest pending idle wake
-local ev = ns.TakeShell()
+local ev = mod.TakeShell()
 
 local function Wake()
-    ns._btDirty = true
-    if ns.ArmBuffTicker then
-        ns.ArmBuffTicker()
+    mod._btDirty = true
+    if mod.ArmBuffTicker then
+        mod.ArmBuffTicker()
     end
 end
 
-local function SpellName(sid)
-    local n = names[sid]
-    if n then
-        return n
+local function SpellName(spellRef)
+    local num = nameList[spellRef]
+    if num then
+        return num
     end
-    n = PlainString(C_Spell.GetSpellName(sid))
-    if n then
-        names[sid] = n
+    num = PlainString(C_Spell.GetSpellName(spellRef))
+    if num then
+        nameList[spellRef] = num
     end
-    return n
+    return num
 end
 
 -- Cast time in seconds of a spell as the client reads it for you now (0 for an
 -- instant). Cached; dropped when spells, talents, gear or haste change.
-local function CastTime(sid)
-    local c = castTimes[sid]
+local function CastTime(spellRef)
+    local c = castTimes[spellRef]
     if c then
         return c
     end
-    local info = C_Spell.GetSpellInfo(sid)
-    local ms = info and info.castTime
+    local details = C_Spell.GetSpellInfo(spellRef)
+    local ms = details and details.castTime
     if type(ms) ~= "number" or issecretvalue(ms) then
         return 0
     end
     c = ms > 0 and ms / 1000 or 0
-    castTimes[sid] = c
+    castTimes[spellRef] = c
     return c
 end
 
 -- When the current cast or channel ends (0 while none) and which spell it is.
 local function ReadCast()
-    local _, _, _, _, e, _, _, _, sid = UnitCastingInfo("player")
+    local _, _, _, _, e, _, _, _, spellRef = UnitCastingInfo("player")
     if type(e) ~= "number" or issecretvalue(e) then
-        _, _, _, _, e, _, _, sid = UnitChannelInfo("player")
+        _, _, _, _, e, _, _, spellRef = UnitChannelInfo("player")
     end
     if type(e) == "number" and not issecretvalue(e) then
         castEnd = e / 1000
-        castName = (type(sid) == "number" and not issecretvalue(sid)) and SpellName(sid) or nil
+        castName = (type(spellRef) == "number" and not issecretvalue(spellRef)) and SpellName(spellRef) or nil
     else
         castEnd, castName = 0, nil
     end
@@ -127,38 +127,38 @@ end
 -- The verdict for one aura item now: true while casting its spell as your next
 -- action would land it at or after the running aura's expiry. A false verdict
 -- also returns the moment an idle wait would turn it on.
-local function Evaluate(frame, now)
-    local exp, rate = ReadExpiration(frame)
+local function Evaluate(widget, nowTime)
+    local exp, rate = ReadExpiration(widget)
     if not exp then
         return false
     end
     -- The tracked spell is the one you cast (an aura's own id can differ: retail
     -- Immolate casts 348 and applies 157736); the aura's id stands in until resolved.
-    local fc = ns._ecmeFC[frame]
-    local sid = fc and fc.resolvedSid
-    if type(sid) ~= "number" or sid <= 0 then
+    local fc = mod._ecmeFC[widget]
+    local spellRef = fc and fc.resolvedSid
+    if type(spellRef) ~= "number" or spellRef <= 0 then
         -- A totem item's expiry came from its totem data, so the cached aura
         -- is unchecked here and may be a secret table (no index on one).
-        local d = frame.auraDataCached
-        sid = nil
+        local d = widget.auraDataCached
+        spellRef = nil
         if not issecretvalue(d) and d then
-            sid = d.spellId
+            spellRef = d.spellId
         end
     end
-    local plain = type(sid) == "number" and not issecretvalue(sid)
+    local plain = type(spellRef) == "number" and not issecretvalue(spellRef)
     -- Casting the spell itself refreshes the aura: nothing to queue.
-    if castName and plain and castName == SpellName(sid) then
+    if castName and plain and castName == SpellName(spellRef) then
         return false
     end
-    local c = plain and CastTime(sid) or 0
-    local free = now
+    local c = plain and CastTime(spellRef) or 0
+    local free = nowTime
     if castEnd > free then
         free = castEnd
     end
     if gcdEnd > free then
         free = gcdEnd
     end
-    if (exp - now) / rate <= (free - now) + c then
+    if (exp - nowTime) / rate <= (free - nowTime) + c then
         return true
     end
     -- Free from `free` on, it turns on once the aura's time left fits the cast.
@@ -180,29 +180,29 @@ local function WakeDue()
     Probe()
 end
 
-local function Schedule(t, now)
+local function Schedule(t, nowTime)
     if t < nextWake then
         nextWake = t
-        C_Timer.After(t - now + 0.02, WakeDue)
+        C_Timer.After(t - nowTime + 0.02, WakeDue)
     end
 end
 
 -- Re-check only the icons the buff ticker last drew; wake it only when one of
 -- them flips (the ticker redraws it and stores the new verdict).
 Probe = function()
-    local now = GetTime()
+    local nowTime = GetTime()
     local flipped = false
-    for frame, was in pairs(state) do
-        if frame:IsShown() then
-            local on, t = Evaluate(frame, now)
+    for widget, was in pairs(status) do
+        if widget:IsShown() then
+            local on, t = Evaluate(widget, nowTime)
             if on ~= was then
                 flipped = true
             end
             if t then
-                Schedule(t, now)
+                Schedule(t, nowTime)
             end
         else
-            state[frame] = nil
+            status[widget] = nil
         end
     end
     if flipped then
@@ -212,11 +212,11 @@ end
 
 -- An item's aura changed: re-check the icons drawn, or let the ticker draw one
 -- it has not drawn yet.
-local function OnAuraEdge(frame)
+local function OnAuraEdge(widget)
     if not armed then
         return
     end
-    if state[frame] == nil then
+    if status[widget] == nil then
         Wake()
     else
         Probe()
@@ -225,7 +225,7 @@ end
 
 -- After every reanchor (icons joined or left the bars, an aura's first
 -- activation among them): let the ticker draw the icons it has not drawn yet.
-function ns.CDM_AntiClipPlaced()
+function mod.CDM_AntiClipPlaced()
     if armed then
         Wake()
     end
@@ -261,13 +261,13 @@ local CAST_TIME_EVENTS = {
     "PLAYER_EQUIPMENT_CHANGED",
 }
 
-ev:SetScript("OnEvent", function(_, event)
+ev:SetScript("OnEvent", function(_, evt)
     if
-        event == "UNIT_SPELL_HASTE"
-        or event == "SPELLS_CHANGED"
-        or event == "TRAIT_CONFIG_UPDATED"
-        or event == "CHARACTER_POINTS_CHANGED"
-        or event == "PLAYER_EQUIPMENT_CHANGED"
+        evt == "UNIT_SPELL_HASTE"
+        or evt == "SPELLS_CHANGED"
+        or evt == "TRAIT_CONFIG_UPDATED"
+        or evt == "CHARACTER_POINTS_CHANGED"
+        or evt == "PLAYER_EQUIPMENT_CHANGED"
     then
         wipe(castTimes)
     else
@@ -276,9 +276,9 @@ ev:SetScript("OnEvent", function(_, event)
         if
             gcdEnd <= GetTime()
             and (
-                event == "UNIT_SPELLCAST_START"
-                or event == "UNIT_SPELLCAST_SUCCEEDED"
-                or event == "UNIT_SPELLCAST_CHANNEL_START"
+                evt == "UNIT_SPELLCAST_START"
+                or evt == "UNIT_SPELLCAST_SUCCEEDED"
+                or evt == "UNIT_SPELLCAST_CHANNEL_START"
             )
         then
             C_Timer.After(0.05, Reread)
@@ -287,17 +287,17 @@ ev:SetScript("OnEvent", function(_, event)
     Probe()
 end)
 
-local function SetArmed(want)
-    if want == armed then
+local function SetArmed(wanted)
+    if wanted == armed then
         return
     end
-    armed = want
-    if want then
-        for i = 1, #CAST_EVENTS do
-            ev:RegisterUnitEvent(CAST_EVENTS[i], "player")
+    armed = wanted
+    if wanted then
+        for idx = 1, #CAST_EVENTS do
+            ev:RegisterUnitEvent(CAST_EVENTS[idx], "player")
         end
-        for i = 1, #CAST_TIME_EVENTS do
-            ev:RegisterEvent(CAST_TIME_EVENTS[i])
+        for idx = 1, #CAST_TIME_EVENTS do
+            ev:RegisterEvent(CAST_TIME_EVENTS[idx])
         end
         ev:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
         ReadCast()
@@ -306,7 +306,7 @@ local function SetArmed(want)
         ev:UnregisterAllEvents()
         castEnd, gcdEnd, castName = 0, 0, nil
         wipe(castTimes)
-        wipe(state)
+        wipe(status)
     end
     -- The next pass lights or takes down the glows under the new state.
     Wake()
@@ -315,18 +315,18 @@ end
 -- End of every full rebuild (options, profile and spec swaps): does any enabled
 -- bar draw the glow? Blizzard Default (-1) has no anti-clip look, so it draws
 -- none. The glows are drawn again under the new settings.
-function ns.CDM_AntiClipSync()
-    local p = ns.ECME and ns.ECME.db and ns.ECME.db.profile
-    local bars = p and p.cdmBars and p.cdmBars.bars
-    local want = false
-    for _, bd in ipairs(bars or EMPTY) do
-        if bd.enabled and bd.pandemicGlow and (bd.pandemicGlowStyle or 1) ~= -1 then
-            want = true
+function mod.CDM_AntiClipSync()
+    local p = mod.ECME and mod.ECME.db and mod.ECME.db.profile
+    local barList = p and p.cdmBars and p.cdmBars.bars
+    local wanted = false
+    for _, edge in ipairs(barList or EMPTY) do
+        if edge.enabled and edge.pandemicGlow and (edge.pandemicGlowStyle or 1) ~= -1 then
+            wanted = true
             break
         end
     end
-    wantIcons = want
-    wipe(state)
+    wantIcons = wanted
+    wipe(status)
     if armed == (wantIcons or wantBars) then
         if armed then
             Wake()
@@ -337,8 +337,8 @@ function ns.CDM_AntiClipSync()
 end
 
 -- The Tracking Bars build: does any enabled Tracking Bar draw the glow?
-function ns.CDM_AntiClipBars(want)
-    wantBars = want and true or false
+function mod.CDM_AntiClipBars(wanted)
+    wantBars = wanted and true or false
     SetArmed(wantIcons or wantBars)
 end
 
@@ -346,20 +346,20 @@ end
 -- ticker's call (icons), which hooks the item's aura edges, stores the verdict
 -- the cast edges re-check and asks for a wake at the moment an idle wait would
 -- turn it on; the Tracking Bars tick needs none of that.
-function ns.CDM_AntiClip(frame, wake)
+function mod.CDM_AntiClip(widget, wake)
     if not armed then
         return false
     end
-    local now = GetTime()
-    local on, t = Evaluate(frame, now)
+    local nowTime = GetTime()
+    local on, t = Evaluate(widget, nowTime)
     if wake then
-        if not hooked[frame] and frame.CheckSetPandemicAlertTriggerTime then
-            hooked[frame] = true
-            hooksecurefunc(frame, "CheckSetPandemicAlertTriggerTime", OnAuraEdge)
+        if not hooked[widget] and widget.CheckSetPandemicAlertTriggerTime then
+            hooked[widget] = true
+            hooksecurefunc(widget, "CheckSetPandemicAlertTriggerTime", OnAuraEdge)
         end
-        state[frame] = on
+        status[widget] = on
         if t then
-            Schedule(t, now)
+            Schedule(t, nowTime)
         end
     end
     return on

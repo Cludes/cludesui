@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  name, the top name bar, power text and level text.
 --  Reads the earlier Raid Frames files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs = pairs
 local wipe = wipe
@@ -32,17 +32,17 @@ local UnitGetTotalHealAbsorbs = UnitGetTotalHealAbsorbs
 local InCombatLockdown = InCombatLockdown
 local issecretvalue = issecretvalue
 
-local AbbreviateNumbers, ApplyFont, defaults = I.AbbreviateNumbers, I.ApplyFont, I.defaults
-local DISPEL_COLORS, GetFFD, PixelSnap = I.DISPEL_COLORS, I.GetFFD, I.PixelSnap
-local unitToButton = I.unitToButton
+local AbbreviateNumbers, ApplyFont, defaultSet = Inner.AbbreviateNumbers, Inner.ApplyFont, Inner.defaults
+local DISPEL_COLORS, GetFFD, PixelSnap = Inner.DISPEL_COLORS, Inner.GetFFD, Inner.PixelSnap
+local unitToButton = Inner.unitToButton
 
 -- Health, max health and absorb text: the global Number Format for valueType
 -- (Power Text keeps the module's default call).
-local AbbreviateValue = ns.CludesUI.AbbreviateValue
+local AbbreviateValue = mod.CludesUI.AbbreviateValue
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -51,11 +51,11 @@ end
 -- Safe health percent: returns 0-100, no secret value arithmetic. inv: the
 -- missing-health percent instead (100-0, the reversed curve), for a bar under
 -- Inverted Fill.
-local function GetSafeHealthPercent(unit, inv)
+local function GetSafeHealthPercent(unitToken, inv)
     if inv then
-        return UnitHealthPercent(unit, true, CurveConstants.ReverseTo100)
+        return UnitHealthPercent(unitToken, true, CurveConstants.ReverseTo100)
     end
-    return UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+    return UnitHealthPercent(unitToken, true, CurveConstants.ScaleTo100)
 end
 
 -- Classic health color curve: red (dead) -> yellow (mid) -> green (full). Built
@@ -84,8 +84,8 @@ do
     local DEF0 = { r = 0xE3 / 255, g = 0x30 / 255, b = 0x30 / 255 }
     local dynCurve
     local r0, g0, b0, r50, g50, b50, r100, g100, b100
-    function ns.GetCustomDynamicCurve(s)
-        s = s or db.profile
+    function mod.GetCustomDynamicCurve(s)
+        s = s or saved.profile
         local c0 = s.dynamicColor0 or DEF0
         local c50 = s.dynamicColor50 or DEF50
         local c100 = s.dynamicColor100 or DEF100
@@ -117,8 +117,8 @@ do
 
     -- Clean-number interpolation matching the curve, for previews where the
     -- percent is a known fake (0-1): linear 0/50 below half, 50/100 above.
-    function ns.ResolveDynamicColor(s, pct01)
-        s = s or db.profile
+    function mod.ResolveDynamicColor(s, pct01)
+        s = s or saved.profile
         local c0 = s.dynamicColor0 or DEF0
         local c50 = s.dynamicColor50 or DEF50
         local c100 = s.dynamicColor100 or DEF100
@@ -143,9 +143,9 @@ do
     local GRAY = { r = 0.5, g = 0.5, b = 0.5 }
     local curves = {} -- classToken -> { curve, r, g, b (class color used) }
     local r0, g0, b0, r50, g50, b50
-    function ns.GetClassReactiveCurve(s, classToken)
-        local CludesUI = ns.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-        s = s or db.profile
+    function mod.GetClassReactiveCurve(s, classToken)
+        local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
+        s = s or saved.profile
         local c0 = s.dynamicColor0 or DEF0
         local c50 = s.dynamicColor50 or DEF50
         if
@@ -184,20 +184,20 @@ do
     -- Clean-number twin for previews (fake 0-1 percents), mirroring the curve
     -- above: reactive 0-stop -> mid-stop below 40% health, front-loaded class
     -- weight above (75% class by 75% health, easing in the rest to 100%).
-    function ns.ResolveClassReactiveColor(s, classToken, pct01)
-        local CludesUI = ns.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-        s = s or db.profile
+    function mod.ResolveClassReactiveColor(s, classToken, pct01)
+        local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
+        s = s or saved.profile
         local cc = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
         local c0 = s.dynamicColor0 or DEF0
         local c50 = s.dynamicColor50 or DEF50
         if pct01 >= 0.4 then
-            local w
+            local wid
             if pct01 >= 0.75 then
-                w = 0.75 + (pct01 - 0.75)
+                wid = 0.75 + (pct01 - 0.75)
             else
-                w = (pct01 - 0.4) / 0.35 * 0.75
+                wid = (pct01 - 0.4) / 0.35 * 0.75
             end
-            return c50.r + (cc.r - c50.r) * w, c50.g + (cc.g - c50.g) * w, c50.b + (cc.b - c50.b) * w
+            return c50.r + (cc.r - c50.r) * wid, c50.g + (cc.g - c50.g) * wid, c50.b + (cc.b - c50.b) * wid
         end
         local t = pct01 / 0.4
         return c0.r + (c50.r - c0.r) * t, c0.g + (c50.g - c0.g) * t, c0.b + (c50.b - c0.b) * t
@@ -220,7 +220,7 @@ do
         self._rfTexBgLayer:SetVertexColor(r, g, b, a)
     end
     -- The background texture path in settings s (nil = flat); the previews share it.
-    function ns.RF_TexBgPath(s)
+    function mod.RF_TexBgPath(s)
         if not (s and s.textureBg) then
             return nil
         end
@@ -228,12 +228,12 @@ do
         if key == "none" then
             return nil
         end
-        return ns.CludesUI.ResolveTexturePath(ns.healthBarTextures, key, nil)
+        return mod.CludesUI.ResolveTexturePath(mod.healthBarTextures, key, nil)
     end
     -- Whether a health fill painted from s is opaque (dark: the Dark Mode Fill).
-    function ns.RF_TexBgOpaque(s, dark)
+    function mod.RF_TexBgOpaque(s, dark)
         if dark then
-            local _, _, _, a = ns.CludesUI.GetDarkModeFill()
+            local _, _, _, a = mod.CludesUI.GetDarkModeFill()
             return a >= 1
         end
         return (s.healthBarOpacity or 100) >= 100
@@ -241,40 +241,40 @@ do
     -- A background that never moves: swapped to the texture at path, tinted by its
     -- paints (vertical: turned with a vertical bar); nil puts the flat colour back at
     -- the next paint.
-    function ns.RF_TexBgTint(bg, path, vertical)
-        if path then
-            SetColor = SetColor or bg.SetColorTexture
-            if bg._rfTexBgPath ~= path then
-                bg:SetTexture(path)
-                bg._rfTexBgPath = path
+    function mod.RF_TexBgTint(backdrop, filePath, vertical)
+        if filePath then
+            SetColor = SetColor or backdrop.SetColorTexture
+            if backdrop._rfTexBgPath ~= filePath then
+                backdrop:SetTexture(filePath)
+                backdrop._rfTexBgPath = filePath
             end
             if vertical then
-                bg:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
+                backdrop:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
             else
-                bg:SetTexCoord(0, 1, 0, 1)
+                backdrop:SetTexCoord(0, 1, 0, 1)
             end
-            bg.SetColorTexture = PaintTinted
-        elseif bg._rfTexBgPath then
-            bg._rfTexBgPath = nil
-            bg.SetColorTexture = nil
-            bg:SetVertexColor(1, 1, 1, 1)
-            bg:SetTexCoord(0, 1, 0, 1)
+            backdrop.SetColorTexture = PaintTinted
+        elseif backdrop._rfTexBgPath then
+            backdrop._rfTexBgPath = nil
+            backdrop.SetColorTexture = nil
+            backdrop:SetVertexColor(1, 1, 1, 1)
+            backdrop:SetTexCoord(0, 1, 0, 1)
         end
     end
     -- The health background's fixed layer (built once, turned as the fill is), shown
     -- while path is set; the next paint of bg tints it.
-    function ns.RF_TexBgLayer(health, bg, path)
-        if path then
-            SetColor = SetColor or bg.SetColorTexture
-            local layer = bg._rfTexBgLayer
+    function mod.RF_TexBgLayer(health, backdrop, filePath)
+        if filePath then
+            SetColor = SetColor or backdrop.SetColorTexture
+            local layer = backdrop._rfTexBgLayer
             if not layer then
                 layer = health:CreateTexture(nil, "BACKGROUND", nil, 2)
                 layer:SetAllPoints(health)
-                bg._rfTexBgLayer = layer
+                backdrop._rfTexBgLayer = layer
             end
-            if layer._rfTexBgPath ~= path then
-                layer:SetTexture(path)
-                layer._rfTexBgPath = path
+            if layer._rfTexBgPath ~= filePath then
+                layer:SetTexture(filePath)
+                layer._rfTexBgPath = filePath
             end
             if health:GetRotatesTexture() then
                 layer:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
@@ -282,41 +282,45 @@ do
                 layer:SetTexCoord(0, 1, 0, 1)
             end
             layer:Show()
-            bg.SetColorTexture = PaintLayer
-        elseif bg.SetColorTexture == PaintLayer then
-            bg.SetColorTexture = nil
-            bg._rfTexBgLayer:Hide()
+            backdrop.SetColorTexture = PaintLayer
+        elseif backdrop.SetColorTexture == PaintLayer then
+            backdrop.SetColorTexture = nil
+            backdrop._rfTexBgLayer:Hide()
         end
     end
     -- Buttons with a health layer, re-checked by every colour push before
     -- ERF:UpdateAllFrames repaints (a Dark Mode Fill edit can cross 100 with no
     -- reload). Nil until the option is first on.
     local watched
-    function ns.RF_TexBgRecheck()
+    function mod.RF_TexBgRecheck()
         if not watched then
             return
         end
-        for button, health in pairs(watched) do
-            local d = GetFFD(button)
-            local s = d._isParty and ns._scaledPartyProxy
-                or (d._isExtra and ns._scaledExtraProxy)
-                or ns._scaledProfile
-            local path = ns.RF_TexBgPath(s)
-            path = path and not d.kit and ns.RF_TexBgOpaque(s, s.healthColorMode == "dark") and path or nil
-            if (path ~= nil) ~= (d.bg.SetColorTexture == PaintLayer) then
-                ns.RF_TexBgLayer(health, d.bg, path)
+        for btnFrame, health in pairs(watched) do
+            local d = GetFFD(btnFrame)
+            local s = d._isParty and mod._scaledPartyProxy
+                or (d._isExtra and mod._scaledExtraProxy)
+                or mod._scaledProfile
+            local filePath = mod.RF_TexBgPath(s)
+            filePath = filePath
+                    and not d.kit
+                    and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark")
+                    and filePath
+                or nil
+            if (filePath ~= nil) ~= (d.bg.SetColorTexture == PaintLayer) then
+                mod.RF_TexBgLayer(health, d.bg, filePath)
                 d._bgSt, d._bgA = nil, nil
-                local u = button:GetAttribute("unit")
+                local u = btnFrame:GetAttribute("unit")
                 if u and UnitExists(u) then
-                    ns._ApplyHealthBg(d, health, s, u)
+                    mod._ApplyHealthBg(d, health, s, u)
                 end
             end
         end
-        if ns._PT_TexBgRecheck then
-            ns._PT_TexBgRecheck()
+        if mod._PT_TexBgRecheck then
+            mod._PT_TexBgRecheck()
         end
     end
-    function ns.RF_TexBgWatch()
+    function mod.RF_TexBgWatch()
         if not watched then
             watched = setmetatable({}, { __mode = "k" })
         end
@@ -324,23 +328,24 @@ do
     end
     -- The raid, party and Extra Frames buttons (ReanchorAbsorbToFill: built, and
     -- every settings reload before both backgrounds repaint). s: the button's view.
-    function ns.RF_TexBgApply(button, d, health, s)
-        local path = ns.RF_TexBgPath(s)
-        if not (path or d._rfTexBg) then
+    function mod.RF_TexBgApply(btnFrame, d, health, s)
+        local filePath = mod.RF_TexBgPath(s)
+        if not (filePath or d._rfTexBg) then
             return
         end
-        d._rfTexBg = path and true or nil
-        local hp = path and not d.kit and ns.RF_TexBgOpaque(s, s.healthColorMode == "dark") and path or nil
+        d._rfTexBg = filePath and true or nil
+        local hp = filePath and not d.kit and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark") and filePath
+            or nil
         if d.bg then
-            ns.RF_TexBgLayer(health, d.bg, hp)
+            mod.RF_TexBgLayer(health, d.bg, hp)
         end
         if d.powerBg then
-            ns.RF_TexBgTint(d.powerBg, path)
+            mod.RF_TexBgTint(d.powerBg, filePath)
         end
         if hp then
-            ns.RF_TexBgWatch()[button] = health
+            mod.RF_TexBgWatch()[btnFrame] = health
         elseif watched then
-            watched[button] = nil
+            watched[btnFrame] = nil
         end
     end
 end
@@ -356,37 +361,38 @@ end
 -- death/resurrect transitions) stay in lockstep -- else a resurrect arriving only via UNIT_HEALTH
 -- strands the tint. Colors overridable via the Status Colors swatch in Extras; inline fallbacks
 -- allocate only when the DB key is missing.
-function ns._ApplyHealthBg(d, health, s, unit, connected, deadOrGhost)
-    local CludesUI = ns.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-    local bg = d.bg
+function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
+    local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
+    local backdrop = d.bg
     if connected == nil then
-        connected = UnitIsConnected(unit)
+        connected = UnitIsConnected(unitToken)
     end
     if deadOrGhost == nil then
-        deadOrGhost = UnitIsDeadOrGhost(unit)
+        deadOrGhost = UnitIsDeadOrGhost(unitToken)
     end
     -- Party Frames kit: the portrait greys out while offline, as stock does
     -- (every connection edge passes through here).
     local kp = d.kitPortrait
     if kp then
-        local off = not connected
-        if d._kitDesat ~= off then
-            d._kitDesat = off
-            kp:SetDesaturated(off)
+        local offset = not connected
+        if d._kitDesat ~= offset then
+            d._kitDesat = offset
+            kp:SetDesaturated(offset)
         end
     end
     -- Party portrait (CUI_RaidFrames_Portrait.lua): the same grey.
     local pt = d.pt
     if pt and pt._on and pt._desat ~= not connected then
-        ns.RF_PtOffline(d, unit, connected)
+        mod.RF_PtOffline(d, unitToken, connected)
     end
     -- Dead/offline: bg covers the FULL bar, fill dims. State+color stamped so
     -- a repeated tick in the same state re-applies nothing; entering either
     -- state clears the alive-path anchor/color stamps AND the fill-color
     -- stamp in _UpdateButtonHealth (the tint here overwrote its work).
     if not connected or deadOrGhost then
-        local c = (not connected) and (s.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66
-            / 255 }) or (s.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 })
+        local c = not connected
+                and (s.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 })
+            or (s.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 })
         local st = (not connected) and 3 or 2
         -- Under Inverted Fill a corpse paints a full missing-health bar (UpdateButton):
         -- its own state, so that fill is hidden and the status colour shows undimmed.
@@ -398,10 +404,10 @@ function ns._ApplyHealthBg(d, health, s, unit, connected, deadOrGhost)
             d._bgSt, d._bgR, d._bgG, d._bgB = st, c.r, c.g, c.b
             d._bgTex, d._bgA = nil, nil
             d._hcR = nil
-            if bg then
-                bg:ClearAllPoints()
-                bg:SetAllPoints(health)
-                bg:SetColorTexture(c.r, c.g, c.b, 1)
+            if backdrop then
+                backdrop:ClearAllPoints()
+                backdrop:SetAllPoints(health)
+                backdrop:SetColorTexture(c.r, c.g, c.b, 1)
             end
             if health then
                 if hideFill then
@@ -415,7 +421,7 @@ function ns._ApplyHealthBg(d, health, s, unit, connected, deadOrGhost)
         end
         return
     end
-    if not bg then
+    if not backdrop then
         return
     end
     -- Alive: the bg covers exactly the half of the bar the fill texture does NOT
@@ -431,25 +437,25 @@ function ns._ApplyHealthBg(d, health, s, unit, connected, deadOrGhost)
         -- bg follows the direction the fill actually paints.
         local vert = health.GetOrientation and health:GetOrientation() == "VERTICAL"
         local invert = health:GetReverseFill()
-        local tex = health:GetStatusBarTexture()
-        d._bgSt, d._bgTex, d._bgVert = 1, tex, vert
+        local texture = health:GetStatusBarTexture()
+        d._bgSt, d._bgTex, d._bgVert = 1, texture, vert
         d._bgA = nil
-        bg:ClearAllPoints()
+        backdrop:ClearAllPoints()
         if vert then
             if invert then
-                bg:SetPoint("TOPLEFT", tex, "BOTTOMLEFT", 0, 0)
-                bg:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+                backdrop:SetPoint("TOPLEFT", texture, "BOTTOMLEFT", 0, 0)
+                backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
             else
-                bg:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                bg:SetPoint("BOTTOMRIGHT", tex, "TOPRIGHT", 0, 0)
+                backdrop:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+                backdrop:SetPoint("BOTTOMRIGHT", texture, "TOPRIGHT", 0, 0)
             end
         else
             if invert then
-                bg:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                bg:SetPoint("BOTTOMRIGHT", tex, "BOTTOMLEFT", 0, 0)
+                backdrop:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+                backdrop:SetPoint("BOTTOMRIGHT", texture, "BOTTOMLEFT", 0, 0)
             else
-                bg:SetPoint("TOPLEFT", tex, "TOPRIGHT", 0, 0)
-                bg:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+                backdrop:SetPoint("TOPLEFT", texture, "TOPRIGHT", 0, 0)
+                backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
             end
         end
     end
@@ -460,53 +466,53 @@ function ns._ApplyHealthBg(d, health, s, unit, connected, deadOrGhost)
         -- Class-colored when bgClassColored, else custom (GetBgColor handles the secret-value
         -- guard + alpha = bgDarkness). MUST match the layout-pass and preview paths or this
         -- refresh clobbers the class-colored bg.
-        br, bgr, bb, ba = ns.GetBgColor(unit, s)
+        br, bgr, bb, ba = mod.GetBgColor(unitToken, s)
     end
     if d._bgR ~= br or d._bgG ~= bgr or d._bgB ~= bb or d._bgA ~= ba then
         d._bgR, d._bgG, d._bgB, d._bgA = br, bgr, bb, ba
-        bg:SetColorTexture(br, bgr, bb, ba)
+        backdrop:SetColorTexture(br, bgr, bb, ba)
     end
 end
 
-local function GetHealthColor(unit, s)
-    local CludesUI = ns.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-    s = s or db.profile
-    local mode = s.healthColorMode or "class"
+local function GetHealthColor(unitToken, s)
+    local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
+    s = s or saved.profile
+    local modeName = s.healthColorMode or "class"
 
-    if mode == "dark" then
+    if modeName == "dark" then
         local dfr, dfg, dfb = CludesUI.GetDarkModeFill()
         return dfr, dfg, dfb
-    elseif mode == "classic" then
+    elseif modeName == "classic" then
         -- Native WoW health gradient via Blizzard's curve system (secret-value safe)
-        local color = UnitHealthPercent(unit, true, GetClassicHealthCurve())
+        local color = UnitHealthPercent(unitToken, true, GetClassicHealthCurve())
         if color and color.GetRGB then
             return color:GetRGB()
         end
         return 0, 1, 0
-    elseif mode == "customDynamic" then
+    elseif modeName == "customDynamic" then
         -- User-customizable gradient via the same secret-safe curve path as Classic
-        local color = UnitHealthPercent(unit, true, ns.GetCustomDynamicCurve(s))
+        local color = UnitHealthPercent(unitToken, true, mod.GetCustomDynamicCurve(s))
         if color and color.GetRGB then
             return color:GetRGB()
         end
         return 0, 1, 0
-    elseif mode == "classReactive" then
+    elseif modeName == "classReactive" then
         -- Class color at full health bleeding into the reactive palette as the
         -- unit takes damage (fully reactive by 40%); engine-evaluated per-class
         -- curve, so secret health never touches Lua.
-        local _, classToken = UnitClass(unit)
+        local _, classToken = UnitClass(unitToken)
         if classToken and not issecretvalue(classToken) then
-            local color = UnitHealthPercent(unit, true, ns.GetClassReactiveCurve(s, classToken))
+            local color = UnitHealthPercent(unitToken, true, mod.GetClassReactiveCurve(s, classToken))
             if color and color.GetRGB then
                 return color:GetRGB()
             end
         end
         return 0.5, 0.5, 0.5
-    elseif mode == "custom" then
+    elseif modeName == "custom" then
         local c = s.customFillColor
         return c.r, c.g, c.b
     else -- "class"
-        local _, classToken = UnitClass(unit)
+        local _, classToken = UnitClass(unitToken)
         -- Secret-safe: a secret classToken would throw on GetClassColor's table index.
         if classToken and not issecretvalue(classToken) then
             local cc = CludesUI.GetClassColor(classToken)
@@ -523,7 +529,7 @@ end
 -- strings entirely (#, string.byte and string.sub all throw on secrets), so a
 -- secret name shows verbatim and uncapped. nameMaxLength 0 = off.
 -- Takes the caller's settings table `s` so a party override applies correctly.
-function ns.CapName(display, s)
+function mod.CapName(display, s)
     if type(display) ~= "string" then
         return display
     end
@@ -533,7 +539,7 @@ function ns.CapName(display, s)
     if display == "" then
         return display
     end
-    s = s or (db and db.profile)
+    s = s or (saved and saved.profile)
     local maxLen = s and s.nameMaxLength or 15
     if not maxLen or maxLen <= 0 then
         return display
@@ -547,21 +553,21 @@ end
 -- unit: whose name it is; the setting asks CludesUI.UnitNameFormat (WoW
 -- Forever: First / Last Name leave a non-player's name whole, a mob a member
 -- targets included). A tag's modifier shapes any name.
-function ns.RF_FormatName(display, s, fmt, unit)
-    local mode = fmt or (s and s.nameFormat)
-    if not mode or mode == "full" then
+function mod.RF_FormatName(display, s, fmt, unitToken)
+    local modeName = fmt or (s and s.nameFormat)
+    if not modeName or modeName == "full" then
         return display
     end
     if not fmt then
-        mode = CludesUI.UnitNameFormat(mode, unit)
+        modeName = CludesUI.UnitNameFormat(modeName, unitToken)
     end
-    return CludesUI.ShortName(display, mode)
+    return CludesUI.ShortName(display, modeName)
 end
 
 -- Fraction of the frame width the NAME text may fill before auto-truncating
 -- (1.0 = full width). Every name-width SetWidth routes through this knob;
 -- health text keeps its own inline budget.
-ns.RF_NAME_WIDTH_FRACTION = 1.0
+mod.RF_NAME_WIDTH_FRACTION = 1.0
 
 -- Display name for a unit. Nickname sources in order: CludesUI's own (Raid Lead nicknames,
 -- CludesUI.GetNickname), then other addons' lists for players with none: Northern Sky Raid Tools (NSAPI), MethodInternal
@@ -572,14 +578,14 @@ ns.RF_NAME_WIDTH_FRACTION = 1.0
 -- name when unset, falling through to the next source. Every source gates itself entirely (no
 -- CUI-side toggle); pcall keeps a misbehaving external API from breaking name rendering.
 -- fmt: a tag's Name Format modifier in place of the setting (ns.RF_FormatName).
-local function ResolveDisplayName(unit, applyCap, s, fmt)
-    local name, surname = UnitName(unit)
+local function ResolveDisplayName(unitToken, applyCap, s, fmt)
+    local name, surname = UnitName(unitToken)
     name = name or ""
     local display = CludesUI.GetNickname and CludesUI.GetNickname(name)
     if not display and NSAPI and NSAPI.GetName then
-        local ok, dn = pcall(NSAPI.GetName, NSAPI, name, ns.EXT_NICK.nsKey)
+        local success, dn = pcall(NSAPI.GetName, NSAPI, name, mod.EXT_NICK.nsKey)
         if
-            ok
+            success
             and type(dn) == "string"
             and not (issecretvalue and issecretvalue(dn))
             and dn ~= ""
@@ -590,12 +596,13 @@ local function ResolveDisplayName(unit, applyCap, s, fmt)
     end
     -- MethodInternal nicknames (EasyNicknameAPI), second source.
     if not display and EasyNicknameAPI and EasyNicknameAPI.GetNicknameForUnitForSurface then
-        local ok, dn, handled = pcall(EasyNicknameAPI.GetNicknameForUnitForSurface, unit, "raidFrames")
-        if ok and handled == true then
+        local success, dn, handled =
+            pcall(EasyNicknameAPI.GetNicknameForUnitForSurface, unitToken, "raidFrames")
+        if success and handled == true then
             if type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
                 display = dn
             else
-                display = ns.RF_FormatName(CludesUI.WithSurname(name, surname), s, fmt, unit)
+                display = mod.RF_FormatName(CludesUI.WithSurname(name, surname), s, fmt, unitToken)
             end
         end
     end
@@ -604,13 +611,13 @@ local function ResolveDisplayName(unit, applyCap, s, fmt)
     if not display then
         local TR = TimelineReminders
         if TR and TR.GetNickname and TR.HasNickname and TR.NicknamesEnabledForAddOn then
-            local okGate, enabled = pcall(TR.NicknamesEnabledForAddOn, TR, ns.NICK_ADDON)
+            local okGate, enabled = pcall(TR.NicknamesEnabledForAddOn, TR, mod.NICK_ADDON)
             if okGate and enabled then
-                local okHas, has = pcall(TR.HasNickname, TR, unit)
+                local okHas, has = pcall(TR.HasNickname, TR, unitToken)
                 if okHas and has then
-                    local ok, dn = pcall(TR.GetNickname, TR, unit)
+                    local success, dn = pcall(TR.GetNickname, TR, unitToken)
                     if
-                        ok
+                        success
                         and type(dn) == "string"
                         and not (issecretvalue and issecretvalue(dn))
                         and dn ~= ""
@@ -624,10 +631,10 @@ local function ResolveDisplayName(unit, applyCap, s, fmt)
     -- The Liquid addon's nickname function (ns.EXT_NICK.liquidFn) takes the raw UnitName string and returns a nickname or
     -- nil (unset / disabled provider-side / secret or empty name) -- it gates itself. pcall-wrapped
     -- (dot call, single arg, not a method); result re-checked as a clean non-empty string.
-    local liquidFn = not display and LiquidAPI and LiquidAPI[ns.EXT_NICK.liquidFn]
+    local liquidFn = not display and LiquidAPI and LiquidAPI[mod.EXT_NICK.liquidFn]
     if liquidFn then
-        local ok, dn = pcall(liquidFn, name)
-        if ok and type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
+        local success, dn = pcall(liquidFn, name)
+        if success and type(dn) == "string" and not (issecretvalue and issecretvalue(dn)) and dn ~= "" then
             display = dn
         end
     end
@@ -635,10 +642,10 @@ local function ResolveDisplayName(unit, applyCap, s, fmt)
     -- RegisterRGALIASNicknames + RGA's module callbacks: true only while RGA is present AND its
     -- module for this suite is enabled), so this hot path costs one flag read and never dereferences
     -- RGA's settings shape. dn ~= name keeps the Ambiguate path for unaliased units.
-    if not display and ns._rgaNick then
-        local ok, dn = pcall(RG_UnitName, unit)
+    if not display and mod._rgaNick then
+        local success, dn = pcall(RG_UnitName, unitToken)
         if
-            ok
+            success
             and type(dn) == "string"
             and not (issecretvalue and issecretvalue(dn))
             and dn ~= ""
@@ -650,10 +657,10 @@ local function ResolveDisplayName(unit, applyCap, s, fmt)
     -- CustomNames (LibStub library), set by RegisterCustomNames once it has loaded.
     -- UnitName returns the raw name when none is set, so dn ~= name keeps the
     -- Ambiguate path; a secret name is never compared.
-    if not display and ns._customNames and not (issecretvalue and issecretvalue(name)) then
-        local ok, dn = pcall(ns._customNames.UnitName, unit)
+    if not display and mod._customNames and not (issecretvalue and issecretvalue(name)) then
+        local success, dn = pcall(mod._customNames.UnitName, unitToken)
         if
-            ok
+            success
             and type(dn) == "string"
             and not (issecretvalue and issecretvalue(dn))
             and dn ~= ""
@@ -666,22 +673,22 @@ local function ResolveDisplayName(unit, applyCap, s, fmt)
         if Ambiguate then
             name = Ambiguate(name, "short")
         end
-        display = ns.RF_FormatName(CludesUI.WithSurname(name, surname), s, fmt, unit)
+        display = mod.RF_FormatName(CludesUI.WithSurname(name, surname), s, fmt, unitToken)
     end
     -- Cap only the in-frame name (applyCap), not the top name bar banner.
     if applyCap then
-        display = ns.CapName(display, s)
+        display = mod.CapName(display, s)
     end
     return display
 end
 
 -- Background color: class color when bgClassColored, else the custom bg color.
 -- Returns r, g, b, a (alpha = bgDarkness). Mirrors the health-fill class option.
-function ns.GetBgColor(unit, s)
-    s = s or db.profile
+function mod.GetBgColor(unitToken, s)
+    s = s or saved.profile
     local a = (s.bgDarkness or 50) / 100
-    if s.bgClassColored and unit and UnitExists(unit) then
-        local _, classToken = UnitClass(unit)
+    if s.bgClassColored and unitToken and UnitExists(unitToken) then
+        local _, classToken = UnitClass(unitToken)
         -- classToken can be secret (out-of-range/uninspectable units) and indexing GetClassColor's
         -- tables with one throws "table index is secret"; fall back to custom bg when secret/nil.
         if classToken and not issecretvalue(classToken) then
@@ -692,18 +699,18 @@ function ns.GetBgColor(unit, s)
         end
     end
     -- Partial/imported profiles can lack the key (field report 2026-08-16).
-    local c = s.customBgColor or defaults.customBgColor
+    local c = s.customBgColor or defaultSet.customBgColor
     return c.r, c.g, c.b, a
 end
 
 -- Class/custom color resolution for the Top Name Bar text (no accent mode).
-local function GetTopNameBarColor(unit, s)
-    s = s or db.profile
+local function GetTopNameBarColor(unitToken, s)
+    s = s or saved.profile
     if (s.topNameBarTextColorMode or "class") == "custom" then
         local c = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
         return c.r, c.g, c.b
     end
-    local _, classToken = UnitClass(unit)
+    local _, classToken = UnitClass(unitToken)
     if classToken and not issecretvalue(classToken) then
         local cc = CludesUI.GetClassColor(classToken)
         if cc then
@@ -715,19 +722,19 @@ end
 
 -- Top Name Bar text placement. With Attach Role Icons the name is bounded clear of a shown
 -- icon's side (tnb._cuiRoleIcon, "..." past it); a centred name keeps equal room both sides.
-function ns.RF_PlaceTopNameText(tnbText, tnb, s)
+function mod.RF_PlaceTopNameText(tnbText, tnb, s)
     local align = s.topNameBarTextAlign or "center"
     local ox = s.topNameBarTextOffsetX or 0
     local oy = s.topNameBarTextOffsetY or 0
     tnbText:ClearAllPoints()
     local padL, padR
     if s.roleIconOnNameBar and tnb._cuiRoleIcon ~= false then
-        local pos = s.roleNameBarPosition or "left"
+        local place = s.roleNameBarPosition or "left"
         local room = (s.roleIconSize or 14) + 4
         local rx = s.roleNameBarOffsetX or 0
-        if pos:find("left") then
+        if place:find("left") then
             padL = room + rx
-        elseif pos:find("right") then
+        elseif place:find("right") then
             padR = room - rx
         end
     end
@@ -764,15 +771,15 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
     local enabled = s.topNameBarEnabled
     local topBarH = enabled and PixelSnap(s.topNameBarHeight or 20) or 0
     local bottomY = (enabled and s.topNameBarBottom == true) and topBarH or 0
-    local parent
+    local hostFrame
     if healthBar then
         -- A party portrait's bars' area (CUI_RaidFrames_Portrait.lua), else the frame.
-        parent = healthBar._cuiBarArea or healthBar:GetParent()
+        hostFrame = healthBar._cuiBarArea or healthBar:GetParent()
         local topY = (bottomY > 0) and 0 or -topBarH
         healthBar:ClearAllPoints()
-        healthBar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, topY)
-        healthBar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, topY)
-        healthBar:SetHeight(PixelSnap(baseH - ns.RF_HealthPowerInset(s, powerH) - topBarH))
+        healthBar:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 0, topY)
+        healthBar:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", 0, topY)
+        healthBar:SetHeight(PixelSnap(baseH - mod.RF_HealthPowerInset(s, powerH) - topBarH))
         if bottomY > 0 or (healthBar._cuiTnbBottomY or 0) > 0 then
             local uref = healthBar._cuiUniformRef
             -- Aura containers protect these once anchored: a combat pass leaves
@@ -786,12 +793,12 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
                 if uref then
                     uref:ClearAllPoints()
                     uref:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-                    uref:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, bottomY)
+                    uref:SetPoint("BOTTOMRIGHT", hostFrame, "BOTTOMRIGHT", 0, bottomY)
                 end
                 if powerBar then
                     powerBar:ClearAllPoints()
-                    powerBar:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 0, bottomY)
-                    powerBar:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, bottomY)
+                    powerBar:SetPoint("BOTTOMLEFT", hostFrame, "BOTTOMLEFT", 0, bottomY)
+                    powerBar:SetPoint("BOTTOMRIGHT", hostFrame, "BOTTOMRIGHT", 0, bottomY)
                 end
                 healthBar._cuiTnbBottomY = bottomY
             end
@@ -802,19 +809,19 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
     end
     if not enabled then
         if tnb._divider then
-            ns.RF_ApplyTopNameDivider(tnb, s, preview)
+            mod.RF_ApplyTopNameDivider(tnb, s, preview)
         end
         tnb:Hide()
         return topBarH
     end
-    if parent and (bottomY > 0 or tnb._cuiTnbBottom) then
+    if hostFrame and (bottomY > 0 or tnb._cuiTnbBottom) then
         tnb:ClearAllPoints()
         if bottomY > 0 then
-            tnb:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 0, 0)
-            tnb:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
+            tnb:SetPoint("BOTTOMLEFT", hostFrame, "BOTTOMLEFT", 0, 0)
+            tnb:SetPoint("BOTTOMRIGHT", hostFrame, "BOTTOMRIGHT", 0, 0)
         else
-            tnb:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
-            tnb:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+            tnb:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 0, 0)
+            tnb:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", 0, 0)
         end
         tnb._cuiTnbBottom = (bottomY > 0) or nil
     end
@@ -830,68 +837,73 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
     end
     if tnbText then
         ApplyFont(tnbText, s.topNameBarTextSize or 11)
-        ns.RF_PlaceTopNameText(tnbText, tnb, s)
+        mod.RF_PlaceTopNameText(tnbText, tnb, s)
         -- Force re-layout on a JustifyH change (WoW doesn't relayout otherwise)
-        local cur = tnbText:GetText()
-        if cur then
+        local current = tnbText:GetText()
+        if current then
             tnbText:SetText("")
-            tnbText:SetText(cur)
+            tnbText:SetText(current)
         end
     end
     tnb:Show()
     if s.topNameBarDivider == true or tnb._divider then
-        ns.RF_ApplyTopNameDivider(tnb, s, preview)
+        mod.RF_ApplyTopNameDivider(tnb, s, preview)
     end
     return topBarH
 end
 
 -- Live name refresh for every raid + party button. Fired by the external
 -- nickname-provider callbacks so changes apply instantly without a /reload.
-function ns.RefreshAllNames()
-    local s = db and db.profile
+function mod.RefreshAllNames()
+    local s = saved and saved.profile
     if not s then
         return
     end
-    local function refresh(unit, btn)
+    local function refresh(unitToken, btn)
         local d = GetFFD(btn)
         -- Party buttons read through the party proxy so a per-party cap applies.
-        local bs = (d and d._isParty) and (ns._scaledPartyProxy or s) or s
+        local bs = (d and d._isParty) and (mod._scaledPartyProxy or s) or s
         if d then
-            ns.RF_TextNames(d, unit)
+            mod.RF_TextNames(d, unitToken)
         end
         -- The Top Name Bar keeps the level in front of the name as the name does.
-        local attach = ns.RF_TextNameAttach(bs)
+        local attach = mod.RF_TextNameAttach(bs)
         if d and d.topNameBarText and bs.topNameBarEnabled then
             if attach then
-                ns._RFNameWithLevel(d.topNameBarText, ResolveDisplayName(unit, false, bs), unit, attach)
+                mod._RFNameWithLevel(
+                    d.topNameBarText,
+                    ResolveDisplayName(unitToken, false, bs),
+                    unitToken,
+                    attach
+                )
             else
-                d.topNameBarText:SetText(ResolveDisplayName(unit, false, bs))
+                d.topNameBarText:SetText(ResolveDisplayName(unitToken, false, bs))
             end
-            local tr, tg, tb = GetTopNameBarColor(unit, bs)
+            local tr, tg, tb = GetTopNameBarColor(unitToken, bs)
             d.topNameBarText:SetTextColor(tr, tg, tb)
         end
     end
-    for unit, btn in pairs(unitToButton) do
-        refresh(unit, btn)
+    for unitToken, btn in pairs(unitToButton) do
+        refresh(unitToken, btn)
     end
-    for unit, btn in pairs(ns._partyUnitToButton) do
-        refresh(unit, btn)
+    for unitToken, btn in pairs(mod._partyUnitToButton) do
+        refresh(unitToken, btn)
     end
 end
 
 -- A preview text's colour for its colour mode: accent, class (classToken: the sample member's
 -- class; none, as for a pet, reads white), power (pToken: the sample member's power type) or
 -- custom (custom: the colour). r, g, b: the colour without one.
-function ns.RF_PreviewTextColor(mode, custom, classToken, r, g, b, pToken)
-    if mode == "accent" then
+function mod.RF_PreviewTextColor(modeName, custom, classToken, r, g, b, pToken)
+    if modeName == "accent" then
         local ar, ag, ab = CludesUI.ResolveActiveAccent()
         if ar then
             return ar, ag, ab
         end
-    elseif mode == "class" then
+    elseif modeName == "class" then
         local cc = CludesUI.GetClassColor(classToken)
         return cc.r, cc.g, cc.b
-    elseif mode == "power" then
+    elseif modeName == "power" then
         local pc = CludesUI.GetPowerColor(pToken or "MANA")
         if pc then
             return pc.r, pc.g, pc.b
@@ -904,58 +916,58 @@ end
 
 -- Anchor a FontString to the health bar using the shared position scheme of the texts.
 -- Optional width clamps long values like health text.
-function ns.AnchorRFText(fs, health, pos, ox, oy, width)
-    if not fs or not health then
+function mod.AnchorRFText(fontStr, health, place, ox, oy, width)
+    if not fontStr or not health then
         return
     end
-    fs:ClearAllPoints()
+    fontStr:ClearAllPoints()
     if width then
-        fs:SetWidth(width)
-        fs:SetHeight(0)
+        fontStr:SetWidth(width)
+        fontStr:SetHeight(0)
     end
     ox = ox or 0
     oy = oy or 0
-    if pos == "topleft" then
-        fs:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
-        fs:SetJustifyH("LEFT")
-        fs:SetJustifyV("TOP")
-    elseif pos == "top" then
-        fs:SetPoint("TOP", health, "TOP", ox, -2 + oy)
-        fs:SetJustifyH("CENTER")
-        fs:SetJustifyV("TOP")
-    elseif pos == "topright" then
-        fs:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
-        fs:SetJustifyH("RIGHT")
-        fs:SetJustifyV("TOP")
-    elseif pos == "left" then
-        fs:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
-        fs:SetJustifyH("LEFT")
-        fs:SetJustifyV("MIDDLE")
-    elseif pos == "right" then
-        fs:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
-        fs:SetJustifyH("RIGHT")
-        fs:SetJustifyV("MIDDLE")
-    elseif pos == "bottomleft" then
-        fs:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
-        fs:SetJustifyH("LEFT")
-        fs:SetJustifyV("BOTTOM")
-    elseif pos == "bottom" then
-        fs:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
-        fs:SetJustifyH("CENTER")
-        fs:SetJustifyV("BOTTOM")
-    elseif pos == "bottomright" then
-        fs:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
-        fs:SetJustifyH("RIGHT")
-        fs:SetJustifyV("BOTTOM")
+    if place == "topleft" then
+        fontStr:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetJustifyV("TOP")
+    elseif place == "top" then
+        fontStr:SetPoint("TOP", health, "TOP", ox, -2 + oy)
+        fontStr:SetJustifyH("CENTER")
+        fontStr:SetJustifyV("TOP")
+    elseif place == "topright" then
+        fontStr:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
+        fontStr:SetJustifyH("RIGHT")
+        fontStr:SetJustifyV("TOP")
+    elseif place == "left" then
+        fontStr:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetJustifyV("MIDDLE")
+    elseif place == "right" then
+        fontStr:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
+        fontStr:SetJustifyH("RIGHT")
+        fontStr:SetJustifyV("MIDDLE")
+    elseif place == "bottomleft" then
+        fontStr:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetJustifyV("BOTTOM")
+    elseif place == "bottom" then
+        fontStr:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
+        fontStr:SetJustifyH("CENTER")
+        fontStr:SetJustifyV("BOTTOM")
+    elseif place == "bottomright" then
+        fontStr:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        fontStr:SetJustifyH("RIGHT")
+        fontStr:SetJustifyV("BOTTOM")
     else -- "center"
-        fs:SetPoint("CENTER", health, "CENTER", ox, oy)
-        fs:SetJustifyH("CENTER")
-        fs:SetJustifyV("MIDDLE")
+        fontStr:SetPoint("CENTER", health, "CENTER", ox, oy)
+        fontStr:SetJustifyH("CENTER")
+        fontStr:SetJustifyV("MIDDLE")
     end
     -- Force re-render after a JustifyH change (mirrors the name/health text fns).
-    local txt = fs:GetText()
-    fs:SetText("")
-    fs:SetText(txt or "")
+    local txt = fontStr:GetText()
+    fontStr:SetText("")
+    fontStr:SetText(txt or "")
 end
 
 -------------------------------------------------------------------------------
@@ -974,12 +986,12 @@ do
     local IsZeroValue = CludesUI.IsZeroValue
 
     -- OFFLINE / DEAD, nil while alive and connected (clean booleans for group units).
-    local function Status(unit, pv)
-        if unit then
-            if not UnitIsConnected(unit) then
+    local function Status(unitToken, pv)
+        if unitToken then
+            if not UnitIsConnected(unitToken) then
                 return CludesUI.L("OFFLINE")
             end
-            if UnitIsDeadOrGhost(unit) then
+            if UnitIsDeadOrGhost(unitToken) then
                 return CludesUI.L("DEAD")
             end
         elseif pv then
@@ -992,69 +1004,69 @@ do
         end
     end
 
-    local function GetHealth(unit, max)
-        if max then
-            return UnitHealthMax(unit) or 0
+    local function GetHealth(unitToken, upper)
+        if upper then
+            return UnitHealthMax(unitToken) or 0
         end
-        return UnitHealth(unit, true) or 0
+        return UnitHealth(unitToken, true) or 0
     end
-    local function GetPower(unit, max)
-        local pType = UnitPowerType(unit)
-        if max then
-            return UnitPowerMax(unit, pType) or 0
+    local function GetPower(unitToken, upper)
+        local pType = UnitPowerType(unitToken)
+        if upper then
+            return UnitPowerMax(unitToken, pType) or 0
         end
-        return UnitPower(unit, pType) or 0
+        return UnitPower(unitToken, pType) or 0
     end
 
     -- [hp], [pp] and their :max / :abr keys. Current health names the status, so
     -- Health / Max names it once ("DEAD / 150 K").
     local function Amount(key)
-        local kind = ssub(key, 1, 2)
-        local get = kind == "hp" and GetHealth or GetPower
-        local max, abr = sfind(key, ":max", 1, true) ~= nil, sfind(key, ":abr", 1, true) ~= nil
-        local status = kind == "hp" and not max
-        local pctKey, perKey, sample = kind .. "Pct", kind .. "Per", SCHEMA[key].sample
-        local valueType = kind == "hp" and (max and "maxHealth" or "health") or nil
-        return function(unit, s, pv)
-            local st = status and Status(unit, pv)
+        local kindOf = ssub(key, 1, 2)
+        local get = kindOf == "hp" and GetHealth or GetPower
+        local upper, abr = sfind(key, ":max", 1, true) ~= nil, sfind(key, ":abr", 1, true) ~= nil
+        local status = kindOf == "hp" and not upper
+        local pctKey, perKey, sample = kindOf .. "Pct", kindOf .. "Per", SCHEMA[key].sample
+        local valueType = kindOf == "hp" and (upper and "maxHealth" or "health") or nil
+        return function(unitToken, s, pv)
+            local st = status and Status(unitToken, pv)
             if st then
                 return st
             end
-            local v
-            if unit then
-                v = get(unit, max)
+            local val
+            if unitToken then
+                val = get(unitToken, upper)
             elseif pv and pv[perKey] then
-                v = max and 100 * pv[perKey] or (pv[pctKey] or 0) * pv[perKey]
+                val = upper and 100 * pv[perKey] or (pv[pctKey] or 0) * pv[perKey]
             else
                 return sample
             end
             if abr then
                 if valueType then
-                    return AbbreviateValue(v, valueType)
+                    return AbbreviateValue(val, valueType)
                 end
-                return AbbreviateNumbers(v)
+                return AbbreviateNumbers(val)
             end
-            return sformat("%d", v)
+            return sformat("%d", val)
         end
     end
 
-    local function HealthPct(unit, s, pv)
-        if unit then
-            if UnitIsDeadOrGhost(unit) then
+    local function HealthPct(unitToken, s, pv)
+        if unitToken then
+            if UnitIsDeadOrGhost(unitToken) then
                 return "0"
             end
-            return sformat("%.0f", GetSafeHealthPercent(unit) or 0)
+            return sformat("%.0f", GetSafeHealthPercent(unitToken) or 0)
         end
         if pv and pv.hpPct then
             return sformat("%.0f", pv.dead and 0 or pv.hpPct)
         end
         return SCHEMA["hp:pct"].sample
     end
-    local function PowerPct(unit, s, pv)
-        if unit then
+    local function PowerPct(unitToken, s, pv)
+        if unitToken then
             return sformat(
                 "%.0f",
-                UnitPowerPercent(unit, UnitPowerType(unit), true, CurveConstants.ScaleTo100) or 0
+                UnitPowerPercent(unitToken, UnitPowerType(unitToken), true, CurveConstants.ScaleTo100) or 0
             )
         end
         if pv and pv.ppPct then
@@ -1066,18 +1078,18 @@ do
     -- Full and abbreviated amounts blank at zero, as the Unit Frames' Absorb Short.
     local function Absorb(key, get)
         local abr, sample = sfind(key, ":abr", 1, true) ~= nil, SCHEMA[key].sample
-        return function(unit)
-            if not unit then
+        return function(unitToken)
+            if not unitToken then
                 return sample
             end
-            local v = get(unit) or 0
+            local val = get(unitToken) or 0
             if abr then
-                if IsZeroValue(v) then
+                if IsZeroValue(val) then
                     return ""
                 end
-                return AbbreviateValue(v, "absorb")
+                return AbbreviateValue(val, "absorb")
             end
-            return C_StringUtil.TruncateWhenZero(v)
+            return C_StringUtil.TruncateWhenZero(val)
         end
     end
 
@@ -1088,16 +1100,16 @@ do
     -- (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
     local function NamePiece(key, fmt)
         local sample = SCHEMA[key].sample
-        return function(unit, s, pv)
-            if unit and fmt == "last" and CludesUI.OwnSurnameHidden(unit) then
+        return function(unitToken, s, pv)
+            if unitToken and fmt == "last" and CludesUI.OwnSurnameHidden(unitToken) then
                 return ""
             end
-            if unit then
-                return ResolveDisplayName(unit, true, s, fmt)
+            if unitToken then
+                return ResolveDisplayName(unitToken, true, s, fmt)
             end
             -- A preview member's name as its name text would show it.
             if fmt and pv and pv.rawName then
-                return ns.CapName(ns.RF_FormatName(pv.rawName, s, fmt), s)
+                return mod.CapName(mod.RF_FormatName(pv.rawName, s, fmt), s)
             end
             return pv and pv.name or sample
         end
@@ -1105,19 +1117,19 @@ do
     -- The target's name through the same resolver, uncapped (Name Max Length is the
     -- unit's own name, and only a clean name could be capped); a secret one passes raw.
     local targetOf = setmetatable({}, {
-        __index = function(t, unit)
-            local v = unit .. "target"
-            t[unit] = v
-            return v
+        __index = function(t, unitToken)
+            local val = unitToken .. "target"
+            t[unitToken] = val
+            return val
         end,
     })
     local function TargetPiece(key, fmt)
         local sample = SCHEMA[key].sample
-        return function(unit, s)
-            if not unit then
+        return function(unitToken, s)
+            if not unitToken then
                 return sample
             end
-            local tunit = targetOf[unit]
+            local tunit = targetOf[unitToken]
             if not UnitExists(tunit) then
                 return ""
             end
@@ -1131,16 +1143,16 @@ do
             return ResolveDisplayName(tunit, false, s, fmt)
         end
     end
-    local function Group(unit)
-        if not unit then
+    local function Group(unitToken)
+        if not unitToken then
             return SCHEMA.group.sample
         end
         if not IsInRaid() then
             return ""
         end
-        local idx = UnitInRaid(unit)
-        if idx and not issecretvalue(idx) then
-            local _, _, subgroup = GetRaidRosterInfo(idx)
+        local position = UnitInRaid(unitToken)
+        if position and not issecretvalue(position) then
+            local _, _, subgroup = GetRaidRosterInfo(position)
             return subgroup or ""
         end
         return ""
@@ -1171,13 +1183,13 @@ do
         ["target:abbr"] = TargetPiece("target:abbr", "abbr"),
         ["group"] = Group,
     })
-    ns.RF_TextTags = CATALOG
+    mod.RF_TextTags = CATALOG
 
     -- Compiled once per parse (the engine caches parses per template): fmt, the
     -- pieces in tag order, each piece's value class (cls), their count and the value
     -- classes the template reads.
     local compiled = setmetatable({}, { __mode = "k" })
-    function ns.RF_CustomCompile(template)
+    function mod.RF_CustomCompile(template)
         local parsed = TextTags.Parse(CATALOG, template)
         if not parsed then
             return nil
@@ -1186,15 +1198,15 @@ do
         if cc then
             return cc
         end
-        local keys, map, pieces, cls = parsed.keys, CATALOG.map, {}, {}
-        for i = 1, #keys do
-            pieces[i], cls[i] = map[keys[i]], SCHEMA[keys[i]].reads
+        local keyList, map, pieces, cls = parsed.keys, CATALOG.map, {}, {}
+        for i = 1, #keyList do
+            pieces[i], cls[i] = map[keyList[i]], SCHEMA[keyList[i]].reads
         end
-        cc = { fmt = parsed.fmt, pieces = pieces, cls = cls, n = #keys, reads = parsed.reads }
+        cc = { fmt = parsed.fmt, pieces = pieces, cls = cls, n = #keyList, reads = parsed.reads }
         compiled[parsed] = cc
         return cc
     end
-    local Compile = ns.RF_CustomCompile
+    local Compile = mod.RF_CustomCompile
 
     -- Paints a template; returns the value classes it reads (TextTags' reads set),
     -- or false (blank) for a missing or empty one. args: a button's values for this
@@ -1202,10 +1214,10 @@ do
     -- read again, the rest keep their values (a nil, a new template or no args:
     -- every piece, as on the previews).
     local scratch = {}
-    local function CustomTextInto(fs, template, unit, s, pv, args, a, b)
+    local function CustomTextInto(fontStr, template, unitToken, s, pv, args, a, b)
         local cc = Compile(template)
         if not cc then
-            fs:SetText("")
+            fontStr:SetText("")
             return false
         end
         if not args then
@@ -1216,64 +1228,64 @@ do
         local pieces, cls, n = cc.pieces, cc.cls, cc.n
         for k = 1, n do
             if not a or cls[k] == a or cls[k] == b then
-                args[k] = pieces[k](unit, s, pv)
+                args[k] = pieces[k](unitToken, s, pv)
             end
         end
-        fs:SetFormattedText(cc.fmt, unpack(args, 1, n))
+        fontStr:SetFormattedText(cc.fmt, unpack(args, 1, n))
         return cc.reads
     end
-    ns.RF_CustomTextInto = CustomTextInto
+    mod.RF_CustomTextInto = CustomTextInto
 end
 
 -- Health text in one of the health text modes (Custom texts paint through RF_CustomTextInto). A
 -- unit's values are read only in the modes that show them; a preview (unit nil) shows made-up
 -- ones, perPct per percent. Returns false for None or an unknown mode, which blank the text;
 -- otherwise true.
-function ns.RF_HealthTextInto(fs, mode, pct, unit, perPct)
-    local v
-    if mode == "percent" then
-        fs:SetFormattedText("%.0f%%", pct)
-    elseif mode == "percentNoSign" then
-        fs:SetFormattedText("%.0f", pct)
-    elseif mode == "number" then
-        if unit then
-            v = UnitHealth(unit, true)
+function mod.RF_HealthTextInto(fontStr, modeName, pct, unitToken, perPct)
+    local val
+    if modeName == "percent" then
+        fontStr:SetFormattedText("%.0f%%", pct)
+    elseif modeName == "percentNoSign" then
+        fontStr:SetFormattedText("%.0f", pct)
+    elseif modeName == "number" then
+        if unitToken then
+            val = UnitHealth(unitToken, true)
         else
-            v = pct * perPct
+            val = pct * perPct
         end
-        if v and AbbreviateNumbers then
-            fs:SetText(AbbreviateValue(v, "health"))
-        elseif v then
-            fs:SetFormattedText("%s", v)
+        if val and AbbreviateNumbers then
+            fontStr:SetText(AbbreviateValue(val, "health"))
+        elseif val then
+            fontStr:SetFormattedText("%s", val)
         end
-    elseif mode == "numberPercent" or mode == "percentNumber" then
-        if unit then
-            v = UnitHealth(unit, true)
+    elseif modeName == "numberPercent" or modeName == "percentNumber" then
+        if unitToken then
+            val = UnitHealth(unitToken, true)
         else
-            v = pct * perPct
+            val = pct * perPct
         end
-        local numStr = (v and AbbreviateNumbers) and AbbreviateValue(v, "health") or tostring(v or 0)
-        if mode == "numberPercent" then
-            fs:SetFormattedText("%s | %.0f%%", numStr, pct)
+        local numStr = (val and AbbreviateNumbers) and AbbreviateValue(val, "health") or tostring(val or 0)
+        if modeName == "numberPercent" then
+            fontStr:SetFormattedText("%s | %.0f%%", numStr, pct)
         else
-            fs:SetFormattedText("%.0f%% | %s", pct, numStr)
+            fontStr:SetFormattedText("%.0f%% | %s", pct, numStr)
         end
-    elseif mode == "missing" then
-        if unit then
-            v = UnitHealthMissing(unit, true)
+    elseif modeName == "missing" then
+        if unitToken then
+            val = UnitHealthMissing(unitToken, true)
         else
-            v = (100 - pct) * perPct
+            val = (100 - pct) * perPct
         end
-        fs:SetText(C_StringUtil.TruncateWhenZero(v))
-        if fs:GetText() then
-            if v and AbbreviateNumbers then
-                fs:SetText(AbbreviateValue(v, "health"))
-            elseif v then
-                fs:SetFormattedText("%s", v)
+        fontStr:SetText(C_StringUtil.TruncateWhenZero(val))
+        if fontStr:GetText() then
+            if val and AbbreviateNumbers then
+                fontStr:SetText(AbbreviateValue(val, "health"))
+            elseif val then
+                fontStr:SetFormattedText("%s", val)
             end
         end
     else
-        fs:SetText("")
+        fontStr:SetText("")
         return false
     end
     return true
@@ -1284,24 +1296,24 @@ end
 -- after) is a SECRET string for a secret absorb, so ONLY feed it to SetText or test truthiness --
 -- never compare it (== "" taints). "short" gates on GetText truthiness alone (non-nil exactly when
 -- non-zero) before abbreviating.
-function ns.FormatHealAbsorbInto(fs, amt, mode)
-    if not fs then
+function mod.FormatHealAbsorbInto(fontStr, amt, modeName)
+    if not fontStr then
         return
     end
-    if not mode or mode == "none" then
-        fs:SetText("")
+    if not modeName or modeName == "none" then
+        fontStr:SetText("")
         return
     end
-    fs:SetText(C_StringUtil.TruncateWhenZero(amt or 0))
-    if mode == "short" and AbbreviateNumbers and fs:GetText() then
-        fs:SetText(AbbreviateValue(amt or 0, "absorb"))
+    fontStr:SetText(C_StringUtil.TruncateWhenZero(amt or 0))
+    if modeName == "short" and AbbreviateNumbers and fontStr:GetText() then
+        fontStr:SetText(AbbreviateValue(amt or 0, "absorb"))
     end
 end
 
 -- Update one button's Heal Absorb Texts. Called from the absorb-only event path
 -- (UNIT_HEAL_ABSORB_AMOUNT_CHANGED), which runs no full button update.
-function ns.UpdateHealAbsorbTextFor(button, unit)
-    ns.RF_TextHealAbsorb(GetFFD(button), unit)
+function mod.UpdateHealAbsorbTextFor(btnFrame, unitToken)
+    mod.RF_TextHealAbsorb(GetFFD(btnFrame), unitToken)
 end
 
 -- Maps a dispel type to its saved-color key. The "" type (Bleed/physical) is
@@ -1317,7 +1329,7 @@ local DISPEL_COLOR_KEYS = {
 -- Resolve a dispel type's color: user value (via the proxy `s`) falling back to the DISPEL_COLORS
 -- default. Returns nil for an unknown/nil type so callers keep their own fallback behavior.
 local function GetDispelColor(dtype, s)
-    s = s or db.profile
+    s = s or saved.profile
     local key = DISPEL_COLOR_KEYS[dtype]
     if key then
         local c = s[key]
@@ -1328,18 +1340,18 @@ local function GetDispelColor(dtype, s)
     return DISPEL_COLORS[dtype]
 end
 
-local function GetPowerColor(unit)
-    local _, pToken = UnitPowerType(unit)
+local function GetPowerColor(unitToken)
+    local _, pToken = UnitPowerType(unitToken)
     if pToken and CludesUI.GetPowerColor then
-        local info = CludesUI.GetPowerColor(pToken)
-        if info then
-            return info.r, info.g, info.b
+        local details = CludesUI.GetPowerColor(pToken)
+        if details then
+            return details.r, details.g, details.b
         end
     end
-    local pType = UnitPowerType(unit) or 0
-    local info = PowerBarColor[pType]
-    if info then
-        return info.r, info.g, info.b
+    local pType = UnitPowerType(unitToken) or 0
+    local details = PowerBarColor[pType]
+    if details then
+        return details.r, details.g, details.b
     end
     return 0.5, 0.5, 0.5
 end
@@ -1351,17 +1363,17 @@ end
 -- the value alone. Stamps d._pwType (nil = not derived for this occupant).
 -- force = full paint: settings may have changed, so the bg re-tints even when
 -- the type/darken stamps still match.
-ns._RFPowerTypeEdge = function(d, unit, force)
-    local pType = UnitPowerType(unit) or 0
-    local pr, pg, pb = GetPowerColor(unit)
+mod._RFPowerTypeEdge = function(d, unitToken, force)
+    local pType = UnitPowerType(unitToken) or 0
+    local pr, pg, pb = GetPowerColor(unitToken)
     d._pwType = pType
     d.power:SetMinMaxValues(0, 100)
     d.power:SetStatusBarColor(pr, pg, pb, 1)
-    local s = d._isParty and ns._scaledPartyProxy
-        or (d._isExtra and ns._scaledExtraProxy)
-        or ns._scaledProfile
+    local s = d._isParty and mod._scaledPartyProxy
+        or (d._isExtra and mod._scaledExtraProxy)
+        or mod._scaledProfile
     if s.powerBgPowerColored and d.powerBg then
-        local f = ns.CludesUI.GetPowerBgDarkenFactor()
+        local f = mod.CludesUI.GetPowerBgDarkenFactor()
         if force or d._pwBgTintType ~= pType or d._pwBgTintF ~= f then
             d.powerBg:SetColorTexture(pr * f, pg * f, pb * f, (s.powerBgDarkness or 70) / 100)
             d._pwBgTintType = pType
@@ -1370,7 +1382,7 @@ ns._RFPowerTypeEdge = function(d, unit, force)
     end
     -- Power Text's colour is identity-class state too (its Power mode is this type's colour).
     if d._pwtOn then
-        ns.RF_TextPowerColor(d, unit, s, pr, pg, pb)
+        mod.RF_TextPowerColor(d, unitToken, s, pr, pg, pb)
     end
 end
 
@@ -1386,31 +1398,31 @@ end
 -- straight through AbbreviateNumbers into the setter, never compared. A preview (unit nil)
 -- shows made-up amounts, perPct per percent. Returns false when it blanks the text (dead,
 -- offline, None or an unknown mode), otherwise true.
-function ns.RF_PowerTextInto(fs, mode, pct, unit, pType, perPct)
-    if unit and (UnitIsDeadOrGhost(unit) or not UnitIsConnected(unit)) then
-        fs:SetText("")
+function mod.RF_PowerTextInto(fontStr, modeName, pct, unitToken, pType, perPct)
+    if unitToken and (UnitIsDeadOrGhost(unitToken) or not UnitIsConnected(unitToken)) then
+        fontStr:SetText("")
         return false
     end
-    if mode == "percent" then
-        fs:SetFormattedText("%.0f%%", pct)
-    elseif mode == "percentNoSign" then
-        fs:SetFormattedText("%.0f", pct)
-    elseif mode == "number" or mode == "numberPercent" or mode == "percentNumber" then
+    if modeName == "percent" then
+        fontStr:SetFormattedText("%.0f%%", pct)
+    elseif modeName == "percentNoSign" then
+        fontStr:SetFormattedText("%.0f", pct)
+    elseif modeName == "number" or modeName == "numberPercent" or modeName == "percentNumber" then
         local num
-        if unit then
-            num = AbbreviateNumbers(UnitPower(unit, pType))
+        if unitToken then
+            num = AbbreviateNumbers(UnitPower(unitToken, pType))
         else
             num = AbbreviateNumbers(pct * perPct)
         end
-        if mode == "number" then
-            fs:SetText(num)
-        elseif mode == "numberPercent" then
-            fs:SetFormattedText("%s | %.0f%%", num, pct)
+        if modeName == "number" then
+            fontStr:SetText(num)
+        elseif modeName == "numberPercent" then
+            fontStr:SetFormattedText("%s | %.0f%%", num, pct)
         else
-            fs:SetFormattedText("%.0f%% | %s", pct, num)
+            fontStr:SetFormattedText("%.0f%% | %s", pct, num)
         end
     else
-        fs:SetText("")
+        fontStr:SetText("")
         return false
     end
     return true
@@ -1425,28 +1437,28 @@ end
 -------------------------------------------------------------------------------
 
 -- The attached positions and their formats: known level, unknown ("??") level.
-ns.RF_LEVEL_ATTACH = {
+mod.RF_LEVEL_ATTACH = {
     name = { "%d %s", "?? %s" },
     nameDiv = { "%d | %s", "?? | %s" },
 }
 
 -- The level as text: a secret level goes straight to the setter (never compared),
 -- "??" for a unit too far above to read, blank while it is not known yet.
-ns._RFLevelInto = function(fs, unit)
-    local lvl = UnitEffectiveLevel(unit)
+mod._RFLevelInto = function(fontStr, unitToken)
+    local lvl = UnitEffectiveLevel(unitToken)
     if issecretvalue(lvl) then
-        fs:SetFormattedText("%d", lvl)
+        fontStr:SetFormattedText("%d", lvl)
     elseif not lvl or lvl == 0 then
-        fs:SetText("")
+        fontStr:SetText("")
     elseif lvl < 0 then
-        fs:SetText("??")
+        fontStr:SetText("??")
     else
-        fs:SetFormattedText("%d", lvl)
+        fontStr:SetFormattedText("%d", lvl)
     end
 end
 
 -- The level the previews show on every sample member: the player's own.
-ns._RFPreviewLevel = function()
+mod._RFPreviewLevel = function()
     local lvl = UnitEffectiveLevel("player")
     if issecretvalue(lvl) or not lvl or lvl <= 0 then
         return 60
@@ -1458,24 +1470,24 @@ end
 -- RF_LEVEL_ATTACH). The name (possibly secret) and the level only ever reach the
 -- format setter; an unknown level, or a name not known yet (empty), leaves the
 -- name alone.
-ns._RFNameWithLevel = function(fs, name, unit, fmt)
-    local lvl = UnitEffectiveLevel(unit)
+mod._RFNameWithLevel = function(fontStr, name, unitToken, fmt)
+    local lvl = UnitEffectiveLevel(unitToken)
     local nameKnown = issecretvalue(name) or (name ~= nil and name ~= "")
     if not nameKnown then
-        fs:SetText(name)
+        fontStr:SetText(name)
     elseif issecretvalue(lvl) then
-        fs:SetFormattedText(fmt[1], lvl, name)
+        fontStr:SetFormattedText(fmt[1], lvl, name)
     elseif not lvl or lvl == 0 then
-        fs:SetText(name)
+        fontStr:SetText(name)
     elseif lvl < 0 then
-        fs:SetFormattedText(fmt[2], name)
+        fontStr:SetFormattedText(fmt[2], name)
     else
-        fs:SetFormattedText(fmt[1], lvl, name)
+        fontStr:SetFormattedText(fmt[1], lvl, name)
     end
 end
 
-I.GetClassicHealthCurve, I.GetDispelColor = GetClassicHealthCurve, GetDispelColor
-I.GetHealthColor, I.GetPowerColor = GetHealthColor, GetPowerColor
-I.GetSafeHealthPercent, I.GetTopNameBarColor = GetSafeHealthPercent, GetTopNameBarColor
-I.LayoutTopNameBar, I.ResolveDisplayName = LayoutTopNameBar, ResolveDisplayName
-I.broken = false
+Inner.GetClassicHealthCurve, Inner.GetDispelColor = GetClassicHealthCurve, GetDispelColor
+Inner.GetHealthColor, Inner.GetPowerColor = GetHealthColor, GetPowerColor
+Inner.GetSafeHealthPercent, Inner.GetTopNameBarColor = GetSafeHealthPercent, GetTopNameBarColor
+Inner.LayoutTopNameBar, Inner.ResolveDisplayName = LayoutTopNameBar, ResolveDisplayName
+Inner.broken = false

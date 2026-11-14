@@ -10,61 +10,61 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
-local I = CUI_NS._soInternals
+local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local BlacklistedFKey, ConflictSpec = I.BlacklistedFKey, I.ConflictSpec
-local CurrentSpecID, DBFor = I.CurrentSpecID, I.DBFor
-local EDIT_B, EDIT_G, EDIT_R, EntryOwning = I.EDIT_B, I.EDIT_G, I.EDIT_R, I.EntryOwning
-local FKeyLoaded, FOLDER_BLACKLIST, GetGroups = I.FKeyLoaded, I.FOLDER_BLACKLIST, I.GetGroups
-local GetStore, HasRegisteredDefault, L = I.GetStore, I.HasRegisteredDefault, I.L
-local LayerOwnedFKey, MatchOwnedFKey, NIL_SENT = I.LayerOwnedFKey, I.MatchOwnedFKey, I.NIL_SENT
-local NumAllowedFKey, PS, PxCo, ReadLive = I.NumAllowedFKey, I.PS, I.PxCo, I.ReadLive
-local RebuildFKeyIndex, RunRefreshers, SegKey = I.RebuildFKeyIndex, I.RunRefreshers, I.SegKey
-local SnapValue, SplitFKey, WriteLive = I.SnapValue, I.SplitFKey, I.WriteLive
-local HarvestDefaults, HarvestGroup = I.HarvestDefaults, I.HarvestGroup
-local WriteDefaultValues, WriteGroupValues = I.WriteDefaultValues, I.WriteGroupValues
-local WriteSpecValues, Cond, CurrentContext = I.WriteSpecValues, I.Cond, I.CurrentContext
-local DiffProfiles, IsExcludedContext = I.DiffProfiles, I.IsExcludedContext
-local SlotReads = I.SlotReads
-local RequestGoldWalk, SnapshotProfiles = I.RequestGoldWalk, I.SnapshotProfiles
-local UpdateEditLocks, SetEditGroup = I.UpdateEditLocks, I.SetEditGroup
-local SetDefaultView, SetEnterSnap = I.SetDefaultView, I.SetEnterSnap
-local SetWatchResync, SetExitGroupEdit = I.SetWatchResync, I.SetExitGroupEdit
-local SetSweepUncaptured = I.SetSweepUncaptured
-local SetTeardownEditSession, SetPanelShown = I.SetTeardownEditSession, I.SetPanelShown
-local SetEnterDefaultView = I.SetEnterDefaultView
+local BlacklistedFKey, ConflictSpec = Inner.BlacklistedFKey, Inner.ConflictSpec
+local CurrentSpecID, DBFor = Inner.CurrentSpecID, Inner.DBFor
+local EDIT_B, EDIT_G, EDIT_R, EntryOwning = Inner.EDIT_B, Inner.EDIT_G, Inner.EDIT_R, Inner.EntryOwning
+local FKeyLoaded, FOLDER_BLACKLIST, GetGroups = Inner.FKeyLoaded, Inner.FOLDER_BLACKLIST, Inner.GetGroups
+local GetStore, HasRegisteredDefault, L = Inner.GetStore, Inner.HasRegisteredDefault, Inner.L
+local LayerOwnedFKey, MatchOwnedFKey, NIL_SENT = Inner.LayerOwnedFKey, Inner.MatchOwnedFKey, Inner.NIL_SENT
+local NumAllowedFKey, PS, PxCo, ReadLive = Inner.NumAllowedFKey, Inner.PS, Inner.PxCo, Inner.ReadLive
+local RebuildFKeyIndex, RunRefreshers, SegKey = Inner.RebuildFKeyIndex, Inner.RunRefreshers, Inner.SegKey
+local SnapValue, SplitFKey, WriteLive = Inner.SnapValue, Inner.SplitFKey, Inner.WriteLive
+local HarvestDefaults, HarvestGroup = Inner.HarvestDefaults, Inner.HarvestGroup
+local WriteDefaultValues, WriteGroupValues = Inner.WriteDefaultValues, Inner.WriteGroupValues
+local WriteSpecValues, Cond, CurrentContext = Inner.WriteSpecValues, Inner.Cond, Inner.CurrentContext
+local DiffProfiles, IsExcludedContext = Inner.DiffProfiles, Inner.IsExcludedContext
+local SlotReads = Inner.SlotReads
+local RequestGoldWalk, SnapshotProfiles = Inner.RequestGoldWalk, Inner.SnapshotProfiles
+local UpdateEditLocks, SetEditGroup = Inner.UpdateEditLocks, Inner.SetEditGroup
+local SetDefaultView, SetEnterSnap = Inner.SetDefaultView, Inner.SetEnterSnap
+local SetWatchResync, SetExitGroupEdit = Inner.SetWatchResync, Inner.SetExitGroupEdit
+local SetSweepUncaptured = Inner.SetSweepUncaptured
+local SetTeardownEditSession, SetPanelShown = Inner.SetTeardownEditSession, Inner.SetPanelShown
+local SetEnterDefaultView = Inner.SetEnterDefaultView
 
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-I.editGroupSetters[#I.editGroupSetters + 1] = function(v)
-    _editGroup = v
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val)
+    _editGroup = val
 end
 local _defaultView = false
-I.defaultViewSetters[#I.defaultViewSetters + 1] = function(v)
-    _defaultView = v
+Inner.defaultViewSetters[#Inner.defaultViewSetters + 1] = function(val)
+    _defaultView = val
 end
 local _enterSnap = nil
-I.enterSnapSetters[#I.enterSnapSetters + 1] = function(v)
-    _enterSnap = v
+Inner.enterSnapSetters[#Inner.enterSnapSetters + 1] = function(val)
+    _enterSnap = val
 end
 local _inTransition = false
-I.inTransitionSetters[#I.inTransitionSetters + 1] = function(v)
-    _inTransition = v
+Inner.inTransitionSetters[#Inner.inTransitionSetters + 1] = function(val)
+    _inTransition = val
 end
 local _activeSpec = nil
-I.activeSpecSetters[#I.activeSpecSetters + 1] = function(v)
-    _activeSpec = v
+Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(val)
+    _activeSpec = val
 end
 local UpdateIndicator
-I.updateIndicatorSetters[#I.updateIndicatorSetters + 1] = function(v)
-    UpdateIndicator = v
+Inner.updateIndicatorSetters[#Inner.updateIndicatorSetters + 1] = function(val)
+    UpdateIndicator = val
 end
 
 -- Forward declarations (assigned further down in this file)
@@ -96,24 +96,24 @@ local _lastAttr = {
     held = { _soSnap = true },
     busy = false,
 }
-function _lastAttr.Snap(region, into)
-    into.cfg = region._captureCfg
-    local row = region._isOptionRow and region or region:GetParent()
-    local hdr = row and row._sectionHeader
-    into.section = hdr and hdr._sectionName or nil
-    into.tip = region._specOvTip
+function _lastAttr.Snap(regionFrame, into)
+    into.cfg = regionFrame._captureCfg
+    local rowFrame = regionFrame._isOptionRow and regionFrame or regionFrame:GetParent()
+    local heading = rowFrame and rowFrame._sectionHeader
+    into.section = heading and heading._sectionName or nil
+    into.tip = regionFrame._specOvTip
     return into
 end
 local _watchResync = false -- absorb the next tick's diff (page rebuild seeds)
-I.watchResyncSetters[#I.watchResyncSetters + 1] = function(v)
-    _watchResync = v
+Inner.watchResyncSetters[#Inner.watchResyncSetters + 1] = function(val)
+    _watchResync = val
 end
 local _sessionIgnored = {} -- fkeys written on excluded pages this session
 -- (never captured, and skipped by the exit sweep)
 
 local function PrettyKey(fkey)
-    local _, path = SplitFKey(fkey)
-    local last = (path and path:match("([^\30]+)$")) or tostring(fkey)
+    local _, filePath = SplitFKey(fkey)
+    local last = (filePath and filePath:match("([^\30]+)$")) or tostring(fkey)
     last = last:gsub("(%l)(%u)", "%1 %2")
     return (last:gsub("^%l", string.upper))
 end
@@ -127,23 +127,23 @@ local function SampleAttribution()
     if not f or f == WorldFrame then
         return
     end
-    local inPanel, popup, region = false, false, nil
+    local inPanel, dialog, regionFrame = false, false, nil
     local n = f
     while n do
         if n._captureCfg then
-            region = n
+            regionFrame = n
         end
         if n._cuiOptionsPopup or n == CludesUI._colorPickerPopup then
-            popup = true
+            dialog = true
         end
         if n == _G.CludesUIFrame then
             inPanel = true
         end
         n = n:GetParent()
     end
-    if region then
-        _lastAttr.snap, _lastAttr.time = _lastAttr.Snap(region, _lastAttr.sample), GetTime()
-    elseif popup then
+    if regionFrame then
+        _lastAttr.snap, _lastAttr.time = _lastAttr.Snap(regionFrame, _lastAttr.sample), GetTime()
+    elseif dialog then
         -- keep the previous attribution (edits flow through the popup)
         _lastAttr.time = GetTime()
     elseif not inPanel then
@@ -184,8 +184,8 @@ end
 --      partner counts with it), for an edit that writes only keys no entry owns.
 -- Only an entry of the same module and element qualifies, and on the spec side never
 -- one a conflicting group owns (its values never bank in this session). nil = none.
-local function SlotOwnerEntry(cfg, owned, condSession, module, element, page, slotLabel, sStore)
-    local reads = SlotReads(cfg)
+local function SlotOwnerEntry(conf, owned, condSession, module, element, page, slotLabel, sStore)
+    local reads = SlotReads(conf)
     if not next(reads) then
         return nil
     end
@@ -198,26 +198,26 @@ local function SlotOwnerEntry(cfg, owned, condSession, module, element, page, sl
                 and true
             or false
     end
-    for i = 1, (owned and #owned or 0) do
-        if reads[owned[i]] then
-            local e = owning(owned[i])
+    for idx = 1, (owned and #owned or 0) do
+        if reads[owned[idx]] then
+            local e = owning(owned[idx])
             if Qualifies(e) then
                 return e
             end
         end
     end
     for _, e in ipairs(sStore or {}) do
-        local def = e.values and e.values.default
+        local spec_def = e.values and e.values.default
         if
-            type(def) == "table"
+            type(spec_def) == "table"
             and e.slotLabel == slotLabel
             and (e.page or "") == (page or "")
             and Qualifies(e)
         then
             local any, all = false, true
-            for fkey in pairs(def) do
-                local base = type(fkey) == "string" and fkey:match("^(.*)Px$")
-                if reads[fkey] or (base and reads[base] and PxCo.Partner(base) == fkey) then
+            for fkey in pairs(spec_def) do
+                local baseValue = type(fkey) == "string" and fkey:match("^(.*)Px$")
+                if reads[fkey] or (baseValue and reads[baseValue] and PxCo.Partner(baseValue) == fkey) then
                     any = true
                 else
                     all = false
@@ -232,10 +232,10 @@ local function SlotOwnerEntry(cfg, owned, condSession, module, element, page, sl
 end
 
 -- The slot's current name and place, on the entry it already has.
-local function TakeOverEntry(entry, slotLabel, module, element, page, section)
-    entry.label, entry.slotLabel = slotLabel, slotLabel
-    entry.crumb = BuildEntryCrumb(module, element, page, section) or entry.crumb
-    entry.page, entry.section, entry.element = page, section, element
+local function TakeOverEntry(record, slotLabel, module, element, page, section)
+    record.label, record.slotLabel = slotLabel, slotLabel
+    record.crumb = BuildEntryCrumb(module, element, page, section) or record.crumb
+    record.page, record.section, record.element = page, section, element
 end
 
 -- An edit that writes only keys the session's store already owns captures nothing,
@@ -259,8 +259,8 @@ local function RelabelOwnedSlot(owned)
     if not sStore then
         return
     end
-    local cfg = snap.cfg
-    local slotLabel = tostring(cfg.text or "?")
+    local conf = snap.cfg
+    local slotLabel = tostring(conf.text or "?")
     local module = CludesUI:GetActiveModule()
     local page = CludesUI:GetActivePage()
     local element = CurrentContext()
@@ -275,9 +275,9 @@ local function RelabelOwnedSlot(owned)
             return -- already under this slot's name
         end
     end
-    local entry = SlotOwnerEntry(cfg, owned, condSession, module, element, page, slotLabel, sStore)
-    if entry then
-        TakeOverEntry(entry, slotLabel, module, element, page, section)
+    local record = SlotOwnerEntry(conf, owned, condSession, module, element, page, slotLabel, sStore)
+    if record then
+        TakeOverEntry(record, slotLabel, module, element, page, section)
     end
 end
 
@@ -309,8 +309,8 @@ local function AutoCapture(changes, owned)
         end
         return
     end
-    local store = GetStore(true)
-    if not store then
+    local storage = GetStore(true)
+    if not storage then
         return
     end
 
@@ -338,18 +338,18 @@ local function AutoCapture(changes, owned)
     end
     if #paths == 0 then
         if layerOwned then
-            local state, text
+            local state, textValue
             if layerOwned == "bm" then
                 state = CludesUI.SpecOverrides_BmOverlayState()
-                text = L("Buff Manager changes on this page apply only to this override.")
+                textValue = L("Buff Manager changes on this page apply only to this override.")
             else
                 state = CludesUI.SpecOverrides_DmOverlayState()
-                text = L("Debuff Manager changes on this page apply only to this override.")
+                textValue = L("Debuff Manager changes on this page apply only to this override.")
             end
             -- No overlay = the fork IS live, so the edit landed in it. An overlay
             -- means the page was blocked and the write came from elsewhere.
             if not state then
-                SetEditStatus(text, 1, 1, 0.6)
+                SetEditStatus(textValue, 1, 1, 0.6)
             end
         elseif skippedBlack then
             if skippedBlack == "CludesUICooldownManager" then
@@ -379,8 +379,8 @@ local function AutoCapture(changes, owned)
         return
     end -- burst; not a slot edit
 
-    local cfg = snap.cfg
-    local slotLabel = tostring(cfg.text or "?")
+    local conf = snap.cfg
+    local slotLabel = tostring(conf.text or "?")
     local module = CludesUI:GetActiveModule()
     local page = CludesUI:GetActivePage()
     local element = CurrentContext()
@@ -389,8 +389,8 @@ local function AutoCapture(changes, owned)
     -- (own fkey index, group id space, per-GROUP value maps instead of
     -- per-spec). Everything else is identical.
     local condSession = Cond._edit
-    local sStore = condSession and Cond.GetStore(true) or store
-    local entry
+    local sStore = condSession and Cond.GetStore(true) or storage
+    local record
     for _, e in ipairs(sStore or {}) do
         if
             e.slotLabel == slotLabel
@@ -399,23 +399,23 @@ local function AutoCapture(changes, owned)
             and (e.page or "") == (page or "")
             and (e.section or "") == (section or "")
         then
-            entry = e
+            record = e
             break
         end
     end
     local isNew = false
-    if not entry then
+    if not record then
         -- No entry under this slot's name: the entry the slot already has (its row
         -- was renamed or moved) takes the slot's current name and place instead of
         -- a second entry starting.
-        entry = SlotOwnerEntry(cfg, owned, condSession, module, element, page, slotLabel, sStore)
-        if entry then
-            TakeOverEntry(entry, slotLabel, module, element, page, section)
+        record = SlotOwnerEntry(conf, owned, condSession, module, element, page, slotLabel, sStore)
+        if record then
+            TakeOverEntry(record, slotLabel, module, element, page, section)
         end
     end
-    if not entry then
+    if not record then
         isNew = true
-        entry = {
+        record = {
             label = slotLabel,
             slotLabel = slotLabel,
             crumb = BuildEntryCrumb(module, element, page, section),
@@ -426,7 +426,7 @@ local function AutoCapture(changes, owned)
             group = condSession and condSession.id or (_editGroup and _editGroup.id or nil),
             values = { default = {} },
         }
-        sStore[#sStore + 1] = entry
+        sStore[#sStore + 1] = record
     end
 
     -- Record originals (pre-change snapshot values) as the shared default; conditional
@@ -436,7 +436,7 @@ local function AutoCapture(changes, owned)
     -- would pin it at this old default forever once the default is later edited
     -- (permanent phantom override on an unassigned spec).
     for _, fkey in ipairs(paths) do
-        if entry.values.default[fkey] == nil then
+        if record.values.default[fkey] == nil then
             local orig = SnapValue(_watchSnap, fkey)
             -- Spec-session capture of a cond-owned fkey: the snapshot may hold an
             -- APPLIED conditional's overlay value, not the shared baseline. Seed from
@@ -452,14 +452,14 @@ local function AutoCapture(changes, owned)
             if type(orig) == "table" then
                 orig = nil
             end
-            entry.values.default[fkey] = (orig == nil) and NIL_SENT or orig
+            record.values.default[fkey] = (orig == nil) and NIL_SENT or orig
             if condSession then
-                local gm = entry.values[condSession.id]
+                local gm = record.values[condSession.id]
                 if not gm then
                     gm = {}
-                    entry.values[condSession.id] = gm
+                    record.values[condSession.id] = gm
                 end
-                gm[fkey] = entry.values.default[fkey]
+                gm[fkey] = record.values.default[fkey]
             end
         end
     end
@@ -469,7 +469,7 @@ local function AutoCapture(changes, owned)
     for _, fkey in ipairs(paths) do
         local partner = PxCo.Partner(fkey)
         local other = partner and (condSession and Cond.EntryOwning(partner) or EntryOwning(partner))
-        if partner and entry.values.default[partner] == nil and not (other and other ~= entry) then
+        if partner and record.values.default[partner] == nil and not (other and other ~= record) then
             local orig = SnapValue(_watchSnap, partner)
             local ce = Cond.EntryOwning(partner)
             if ce then
@@ -481,14 +481,14 @@ local function AutoCapture(changes, owned)
             if type(orig) == "table" then
                 orig = nil
             end
-            entry.values.default[partner] = (orig == nil) and NIL_SENT or orig
+            record.values.default[partner] = (orig == nil) and NIL_SENT or orig
             if condSession then
-                local gm = entry.values[condSession.id]
+                local gm = record.values[condSession.id]
                 if not gm then
                     gm = {}
-                    entry.values[condSession.id] = gm
+                    record.values[condSession.id] = gm
                 end
-                gm[partner] = entry.values.default[partner]
+                gm[partner] = record.values.default[partner]
             end
         end
     end
@@ -508,14 +508,14 @@ end
 -- The table an fkey's leaf lives in, plus that leaf's key, or nil when the path does
 -- not resolve (module not loaded, array entry deleted). Same walk ReadLive does.
 local function OwnerOf(fkey)
-    local folder, path = SplitFKey(fkey)
+    local folder, filePath = SplitFKey(fkey)
     local t = folder and DBFor(folder)
-    if type(t) ~= "table" or not path then
+    if type(t) ~= "table" or not filePath then
         return nil
     end
-    local segs = { strsplit(PS, path) }
-    for i = 1, #segs - 1 do
-        t = t[SegKey(t, segs[i])]
+    local segs = { strsplit(PS, filePath) }
+    for idx = 1, #segs - 1 do
+        t = t[SegKey(t, segs[idx])]
         if type(t) ~= "table" then
             return nil
         end
@@ -528,13 +528,13 @@ end
 do
     -- Does any entry in `sStore` hold a VALUE (not just a recorded default) for `key` of
     -- `store`? Attribution by table identity, the same rule ClearStoreKey uses.
-    local function StoreHoldsKey(sStore, store, key)
+    local function StoreHoldsKey(sStore, storage, key)
         for _, e in ipairs(sStore or {}) do
-            local def = e.values and e.values.default
-            if def then
-                for fkey in pairs(def) do
-                    local owner, leaf = OwnerOf(fkey)
-                    if owner == store and leaf == key then
+            local spec_def = e.values and e.values.default
+            if spec_def then
+                for fkey in pairs(spec_def) do
+                    local ownerFrame, leaf = OwnerOf(fkey)
+                    if ownerFrame == storage and leaf == key then
                         for mapKey, m in pairs(e.values) do
                             if mapKey ~= "default" and type(m) == "table" and m[fkey] ~= nil then
                                 return true
@@ -554,11 +554,11 @@ do
     --- applied carries the marker into every import that does not also take the overrides.
     --- In both cases nothing owns the key any more and the element would stay pinned on it
     --- with no path back.
-    function CludesUI.SpecOverrides_KeyIsOwned(store, key)
-        if type(store) ~= "table" or type(key) ~= "string" then
+    function CludesUI.SpecOverrides_KeyIsOwned(storage, key)
+        if type(storage) ~= "table" or type(key) ~= "string" then
             return false
         end
-        return StoreHoldsKey(GetStore(), store, key) or StoreHoldsKey(Cond.GetStore(), store, key)
+        return StoreHoldsKey(GetStore(), storage, key) or StoreHoldsKey(Cond.GetStore(), storage, key)
     end
 end
 
@@ -596,18 +596,18 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
     end
 
     local cleared = false
-    for i = #sStore, 1, -1 do
-        local e = sStore[i]
-        local def = e.values and e.values.default
+    for idx = #sStore, 1, -1 do
+        local e = sStore[idx]
+        local spec_def = e.values and e.values.default
         -- One entry can hold the key for SEVERAL of the stores (a mirrored row banks all
         -- of them into the same slot), so every hit is collected rather than the first.
         local hits
-        if def then
-            for fkey in pairs(def) do
-                local owner, leaf = OwnerOf(fkey)
-                if leaf == key and owner ~= nil then
+        if spec_def then
+            for fkey in pairs(spec_def) do
+                local ownerFrame, leaf = OwnerOf(fkey)
+                if leaf == key and ownerFrame ~= nil then
                     for si = 1, #stores do
-                        if owner == stores[si] then
+                        if ownerFrame == stores[si] then
                             hits = hits or {}
                             hits[#hits + 1] = fkey
                             break
@@ -616,8 +616,8 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
                 end
             end
         end
-        for h = 1, (hits and #hits or 0) do
-            local hit = hits[h]
+        for hgt = 1, (hits and #hits or 0) do
+            local hit = hits[hgt]
             -- Only the maps the EDITED session owns are cleared. One entry is shared by
             -- every group that customized the same slot (AutoCapture looks it up by slot,
             -- not by group, and adds a per-group value map), so wiping all of them would
@@ -637,7 +637,7 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
                     break
                 end
             end
-            local dv = def[hit]
+            local dv = spec_def[hit]
             if dv == NIL_SENT then
                 dv = nil
             end
@@ -648,14 +648,14 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
                 WriteLive(hit, dv)
             end
             if not stillHeld then
-                def[hit] = nil
+                spec_def[hit] = nil
             end
             cleared = true
         end
         -- Hoisted out of the hits loop: removing inside it would delete a DIFFERENT entry
         -- on the second pass, index i no longer being this one.
-        if hits and def and not next(def) then
-            table.remove(sStore, i)
+        if hits and spec_def and not next(spec_def) then
+            table.remove(sStore, idx)
         end
     end
 
@@ -737,8 +737,8 @@ end
 -- Unfolding from the mini window: absorb whatever changed the profiles while the
 -- panel was folded (WatchTick skipped them), so the first widget edit after it
 -- (ProcessNotifiedWrites diffs against the same snapshot) captures only itself.
-CludesUI:RegisterOnCollapse(function(on)
-    if not on and (_editGroup or Cond._edit) and _watchSnap then
+CludesUI:RegisterOnCollapse(function(enabled)
+    if not enabled and (_editGroup or Cond._edit) and _watchSnap then
         _watchSnap = SnapshotProfiles()
     end
 end)
@@ -795,7 +795,7 @@ local _pendingWrites, _pendingWriteQueued = nil, false
 
 local function ProcessNotifiedWrites()
     _pendingWriteQueued = false
-    local frames = _pendingWrites
+    local frameList = _pendingWrites
     _pendingWrites = nil
     -- the queued snapshot is read below, before anything can take it again
     _lastAttr.busy = false
@@ -810,26 +810,26 @@ local function ProcessNotifiedWrites()
     -- Exact attribution from the notified frames (first that resolves wins). An
     -- entry is either a snapshot the notifier took (CludesUI._SOAttribution)
     -- or the frame itself, resolved here as it stands now.
-    for _, f in ipairs(frames or {}) do
+    for _, f in ipairs(frameList or {}) do
         if type(f) == "table" then
             if f._soSnap then
                 if f.cfg then
-                    local h = _lastAttr.held
-                    h.cfg, h.section, h.tip = f.cfg, f.section, f.tip
-                    _lastAttr.snap, _lastAttr.time = h, GetTime()
+                    local hgt = _lastAttr.held
+                    hgt.cfg, hgt.section, hgt.tip = f.cfg, f.section, f.tip
+                    _lastAttr.snap, _lastAttr.time = hgt, GetTime()
                     break
                 end
             else
-                local n, region = f, nil
+                local n, regionFrame = f, nil
                 while n do
                     if n._captureCfg then
-                        region = n
+                        regionFrame = n
                         break
                     end
                     n = n:GetParent()
                 end
-                if region then
-                    _lastAttr.snap, _lastAttr.time = _lastAttr.Snap(region, _lastAttr.held), GetTime()
+                if regionFrame then
+                    _lastAttr.snap, _lastAttr.time = _lastAttr.Snap(regionFrame, _lastAttr.held), GetTime()
                     break
                 end
             end
@@ -874,7 +874,7 @@ end
 -- live (store non-empty, panel open, no session), so users without overrides pay a
 -- single boolean per write.
 local _warnWatch -- one-shot GLOBAL_MOUSE_UP frame: the guide never pops mid-drag
-local function MaybeWarnDefaultEdit(frame, snap)
+local function MaybeWarnDefaultEdit(widget, snap)
     local DEFAULT_EDIT_GUIDE = "override_default_edit"
     -- The warning popup is not part of CludesUI: nothing to show.
     do
@@ -894,7 +894,7 @@ local function MaybeWarnDefaultEdit(frame, snap)
             return
         end
     else
-        local n = frame
+        local n = widget
         while n do
             if n._captureCfg then
                 break
@@ -946,8 +946,8 @@ end
 --- opens and hands it to _NotifySettingWrite with each later write: it names
 --- that slot even after a rebuild dressed the widget again for another one).
 --- Returns detached (marked as a snapshot), or nil when no slot holds frame.
-function CludesUI._SOAttribution(frame, detached)
-    if type(frame) ~= "table" then
+function CludesUI._SOAttribution(widget, detached)
+    if type(widget) ~= "table" then
         return nil
     end
     local into = detached
@@ -964,7 +964,7 @@ function CludesUI._SOAttribution(frame, detached)
             return nil
         end
     end
-    local n = frame
+    local n = widget
     while n do
         if n._captureCfg then
             if detached then
@@ -982,24 +982,24 @@ end
 --- Called by the widget factory whenever any options widget writes a value.
 --- snap: the slot snapshot the factory took before the setter ran (optional;
 --- a detached one stands alone, with no frame).
-function CludesUI._NotifySettingWrite(frame, snap)
+function CludesUI._NotifySettingWrite(widget, snap)
     -- The written slot's inline cog takes notice (the cog notice in
     -- CludesUI_Widgets_RowAddons.lua, defined once the options load).
     local cogNotice = CludesUI._CogWriteNotice
     if cogNotice then
-        cogNotice(frame)
+        cogNotice(widget)
     end
     -- Conditional sessions capture through this path too. Without them in the gate they
     -- fall back to watcher/exit-sweep capture only, losing edits whenever a setter's
     -- forced refresh raises the resync absorb before a tick can attribute them.
     if not (_editGroup or Cond._edit) then
-        if _defaultView and (type(frame) == "table" or snap ~= nil) then
-            MaybeWarnDefaultEdit(frame, snap)
+        if _defaultView and (type(widget) == "table" or snap ~= nil) then
+            MaybeWarnDefaultEdit(widget, snap)
         end
         return
     end
     _pendingWrites = _pendingWrites or {}
-    _pendingWrites[#_pendingWrites + 1] = snap or frame or false
+    _pendingWrites[#_pendingWrites + 1] = snap or widget or false
     if not _pendingWriteQueued then
         _pendingWriteQueued = true
         C_Timer.After(0, ProcessNotifiedWrites)
@@ -1015,8 +1015,8 @@ SweepUncaptured = function(group)
     if not _enterSnap or not group then
         return
     end
-    local store = GetStore(true)
-    if not store then
+    local storage = GetStore(true)
+    if not storage then
         return
     end
     local added = false
@@ -1045,7 +1045,7 @@ SweepUncaptured = function(group)
             if type(orig) == "table" then
                 orig = nil
             end
-            local entry = {
+            local record = {
                 label = PrettyKey(c.fkey),
                 crumb = (CludesUI:GetModuleTitle(c.folder)) or c.folder,
                 module = c.folder,
@@ -1053,7 +1053,7 @@ SweepUncaptured = function(group)
                 values = { default = { [c.fkey] = (orig == nil) and NIL_SENT or orig } },
             }
             -- The real spec's map is deliberately not seeded (see AutoCapture).
-            store[#store + 1] = entry
+            storage[#storage + 1] = record
             added = true
         end
     end
@@ -1171,11 +1171,11 @@ local function EnsureEditBanner()
     editBanner:SetPoint("BOTTOM", _G.CludesUIClickArea or root, "TOP", 0, 0)
     editBanner:SetClampedToScreen(true)
     editBanner:SetFrameStrata("DIALOG")
-    local bg = editBanner:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.05, 0.05, 0.06, 0.92)
+    local backdrop = editBanner:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.05, 0.05, 0.06, 0.92)
     -- Rounded gold outline, as the Unlock Mode override banner.
-    CludesUI.MakeRoundedBorder(editBanner, EDIT_R, EDIT_G, EDIT_B, 0.7, bg)
+    CludesUI.MakeRoundedBorder(editBanner, EDIT_R, EDIT_G, EDIT_B, 0.7, backdrop)
     editBannerText = editBanner:CreateFontString(nil, "OVERLAY")
     editBannerText:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
     editBannerText:SetPoint("TOPLEFT", editBanner, "TOPLEFT", 16, -8)
@@ -1215,9 +1215,9 @@ local function EnsureEditBanner()
     return editBanner
 end
 
-SetEditStatus = function(text, r, g, b)
+SetEditStatus = function(textValue, r, g, b)
     if editBannerStatus then
-        editBannerStatus:SetText(text or "")
+        editBannerStatus:SetText(textValue or "")
         editBannerStatus:SetTextColor(r or 1, g or 1, b or 0.6)
     end
 end
@@ -1260,9 +1260,9 @@ ApplyEditOverlay = function()
     editOverlay:SetShown(_overlayWanted and not IsExcludedContext())
 end
 
-local function SetEditOverlayShown(shown)
-    _overlayWanted = shown and true or false
-    if shown and not editOverlay then
+local function SetEditOverlayShown(isShown)
+    _overlayWanted = isShown and true or false
+    if isShown and not editOverlay then
         local root = _G.CludesUIFrame
         if not root then
             return
@@ -1271,10 +1271,10 @@ local function SetEditOverlayShown(shown)
         editOverlay:SetAllPoints(root)
         editOverlay:SetFrameLevel(root:GetFrameLevel() + 1)
         editOverlay:EnableMouse(false)
-        local tex = editOverlay:CreateTexture(nil, "BACKGROUND")
-        tex:SetAllPoints()
-        tex:SetTexture(editOverlayTexture)
-        editOverlay._tex = tex
+        local texture = editOverlay:CreateTexture(nil, "BACKGROUND")
+        texture:SetAllPoints()
+        texture:SetTexture(editOverlayTexture)
+        editOverlay._tex = texture
     end
     ApplyEditOverlay()
 end
@@ -1309,19 +1309,19 @@ function CludesUI.SpecOverrides_UpdateBmPassiveChrome()
     if _editGroup or Cond._edit then
         return
     end -- real session owns chrome
-    local kind = CludesUI.SpecOverrides_BmPageLockInfo() or nil
+    local kindOf = CludesUI.SpecOverrides_BmPageLockInfo() or nil
     local status = L("Buff Manager changes on this page apply only to this override.")
     local nameFn = CludesUI.SpecOverrides_BmActiveInfo
-    if not kind then
+    if not kindOf then
         -- Same chrome serves the Debuff Manager page (one page is active at a
         -- time, so the two locks can never both report).
-        kind = CludesUI.SpecOverrides_DmPageLockInfo() or nil
-        if kind then
+        kindOf = CludesUI.SpecOverrides_DmPageLockInfo() or nil
+        if kindOf then
             status = L("Debuff Manager changes on this page apply only to this override.")
             nameFn = CludesUI.SpecOverrides_DmActiveInfo
         end
     end
-    if kind then
+    if kindOf then
         local name = (nameFn and nameFn()) or "?"
         EnsureEditBanner()
         editBannerText:SetText(string.format(L("Override Active: %s"), name))
@@ -1364,8 +1364,8 @@ EnterDefaultView = function()
     if _defaultView or _editGroup or Cond._edit or _inTransition then
         return
     end
-    local store = GetStore()
-    if not store or #store == 0 then
+    local storage = GetStore()
+    if not storage or #storage == 0 then
         return
     end
     -- Bank the real spec's live edits first, then swap the defaults in.
@@ -1597,10 +1597,10 @@ end
 --- override, anything else banks; empty maps drop so cards only list entries the
 --- group actually customizes.
 function Cond.HarvestEdit(g)
-    for _, entry in ipairs(Cond.GetStore() or {}) do
-        if entry.values and entry.values.default then
-            local map = entry.values[g.id]
-            for fkey, dv in pairs(entry.values.default) do
+    for _, record in ipairs(Cond.GetStore() or {}) do
+        if record.values and record.values.default then
+            local map = record.values[g.id]
+            for fkey, dv in pairs(record.values.default) do
                 local live = ReadLive(fkey)
                 -- Table-typed live: structure change, never bank (aliasing).
                 -- FKeyLoaded: a disabled module reads nil, never bank that.
@@ -1626,14 +1626,14 @@ function Cond.HarvestEdit(g)
                     else
                         if not map then
                             map = {}
-                            entry.values[g.id] = map
+                            record.values[g.id] = map
                         end
                         map[fkey] = (live == nil) and NIL_SENT or live
                     end
                 end
             end
             if map and not next(map) then
-                entry.values[g.id] = nil
+                record.values[g.id] = nil
             end
         end
     end
@@ -1646,8 +1646,8 @@ function Cond.SweepUncapturedEdit(g)
     if not _enterSnap or not g then
         return
     end
-    local store = Cond.GetStore(true)
-    if not store then
+    local storage = Cond.GetStore(true)
+    if not storage then
         return
     end
     local added = false
@@ -1666,14 +1666,14 @@ function Cond.SweepUncapturedEdit(g)
             if type(orig) == "table" then
                 orig = nil
             end
-            local entry = {
+            local record = {
                 label = PrettyKey(c.fkey),
                 crumb = (CludesUI:GetModuleTitle(c.folder)) or c.folder,
                 module = c.folder,
                 group = g.id,
                 values = { default = { [c.fkey] = (orig == nil) and NIL_SENT or orig } },
             }
-            store[#store + 1] = entry
+            storage[#storage + 1] = record
             added = true
         end
     end
@@ -1836,7 +1836,7 @@ Cond.EnterEdit = function(g, force)
     EnsurePanelHideHook()
 end
 
-I.EnsurePanelHideHook, I.EnterGroupEdit = EnsurePanelHideHook, EnterGroupEdit
-I.BuildEntryCrumb = BuildEntryCrumb
-I.ExitGroupEdit, I.OnPageRebuilt = ExitGroupEdit, OnPageRebuilt
-I.broken = false
+Inner.EnsurePanelHideHook, Inner.EnterGroupEdit = EnsurePanelHideHook, EnterGroupEdit
+Inner.BuildEntryCrumb = BuildEntryCrumb
+Inner.ExitGroupEdit, Inner.OnPageRebuilt = ExitGroupEdit, OnPageRebuilt
+Inner.broken = false

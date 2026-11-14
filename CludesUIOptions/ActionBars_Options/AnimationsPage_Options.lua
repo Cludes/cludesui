@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  load, at the block's original place, so the Custom Proc Glow site
 --  registers in the same order as before; it returns the page builder.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIActionBars"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+if not mod then
     return
 end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
@@ -19,7 +19,7 @@ end -- module disabled: no options page
 -- (never held back for a later one), so the pool hands each build the same ones.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
+local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
     local SECTION_BAR_INTERACTIONS = "BAR INTERACTIONS"
     local SECTION_PROC_GLOW = "CUSTOM PROC GLOW"
 
@@ -43,18 +43,18 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
     -- Custom Proc Glow: shared glow controls over the proc glow keys. Shape Glow
     -- is internal-only (forced by custom button shapes at render time).
     local function ProcP()
-        return EAB.db.profile
+        return ABAR.db.profile
     end
     local _procGlowPreview
     local UpdateProcGlowPreview
     local GO = CludesUI.GlowOptions
     -- Custom button shapes force Shape Glow at render time (none/cropped do not).
     local function AnyBarHasCustomShape()
-        local bars = EAB.db.profile.bars
-        if not bars then
+        local barList = ABAR.db.profile.bars
+        if not barList then
             return false
         end
-        for _, s in pairs(bars) do
+        for _, s in pairs(barList) do
             if s.buttonShape and s.buttonShape ~= "none" and s.buttonShape ~= "cropped" then
                 return true
             end
@@ -82,7 +82,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             return p.procGlowEnabled == false or p.procGlowType == 0
         end,
         onChange = function()
-            EAB:RefreshProcGlows()
+            ABAR:RefreshProcGlows()
             UpdateProcGlowPreview(_procGlowPreview)
         end,
         get = function(f)
@@ -117,9 +117,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 CludesUI.GlowOptions.FlatSet(p, "procGlow", f, a, b2, c2)
             end
         end,
-        confirm = function(v, commit)
+        confirm = function(val, commit)
             local p = ProcP()
-            if ((p.procGlowType == 0) or (p.procGlowEnabled == false)) and v ~= 0 then
+            if ((p.procGlowType == 0) or (p.procGlowEnabled == false)) and val ~= 0 then
                 CludesUI:ShowConfirmPopup({
                     title = "Custom Proc Glow Settings",
                     message = "Custom proc glow may cause a slight loss in performance efficiency. Do you want to enable it?",
@@ -159,17 +159,17 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
     local function CreatePreviewIcon(parentRegion)
         local f = CreateFrame("Frame", nil, parentRegion)
         f:EnableMouse(false)
-        PP.Size(f, PREVIEW_ICON_SIZE, PREVIEW_ICON_SIZE)
+        Pix.Size(f, PREVIEW_ICON_SIZE, PREVIEW_ICON_SIZE)
         -- Center vertically, positioned roughly between label and dropdown
-        PP.Point(f, "RIGHT", parentRegion, "RIGHT", -200, 0)
+        Pix.Point(f, "RIGHT", parentRegion, "RIGHT", -200, 0)
 
-        local icon = f:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        icon:SetColorTexture(0.15, 0.15, 0.15, 1)
-        f._icon = icon
+        local glyph = f:CreateTexture(nil, "ARTWORK")
+        glyph:SetAllPoints()
+        glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        glyph:SetColorTexture(0.15, 0.15, 0.15, 1)
+        f._icon = glyph
 
-        PP.CreateBorder(f, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        Pix.CreateBorder(f, 0, 0, 0, 1, 1, "OVERLAY", 7)
 
         return f
     end
@@ -183,108 +183,108 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             solidColor = { r = 0.973, g = 0.839, b = 0.604, a = 1 },
         },
     }
-    local function UpdateInteractionPreview(f, prefix)
+    local function UpdateInteractionPreview(f, prefixText)
         if not f then
             return
         end
-        local p = EAB.db.profile
-        local defs = INTERACTION_DEFAULTS[prefix]
-        local iType = p[prefix .. "TextureType"] or defs.typeDefault
+        local p = ABAR.db.profile
+        local defs = INTERACTION_DEFAULTS[prefixText]
+        local iType = p[prefixText .. "TextureType"] or defs.typeDefault
         if not f._overlay then
-            local ov = f:CreateTexture(nil, "OVERLAY", nil, 1)
-            ov:SetAllPoints()
-            f._overlay = ov
+            local shade = f:CreateTexture(nil, "OVERLAY", nil, 1)
+            shade:SetAllPoints()
+            f._overlay = shade
         end
         if not f._borderOv then
             f._borderOv = {}
-            for i = 1, 4 do
+            for idx = 1, 4 do
                 local t = f:CreateTexture(nil, "OVERLAY", nil, 2)
                 t:SetColorTexture(1, 1, 1, 1)
-                f._borderOv[i] = t
+                f._borderOv[idx] = t
             end
         end
-        local ov = f._overlay
+        local shade = f._overlay
         local bo = f._borderOv
         if iType == 6 then
-            ov:Hide()
-            for i = 1, 4 do
-                bo[i]:Hide()
+            shade:Hide()
+            for idx = 1, 4 do
+                bo[idx]:Hide()
             end
         elseif iType == 4 then
-            ov:SetTexture("Interface\\BUTTONS\\WHITE8X8")
-            ov:SetTexCoord(0, 1, 0, 1)
-            ov:SetDesaturated(false)
+            shade:SetTexture("Interface\\BUTTONS\\WHITE8X8")
+            shade:SetTexCoord(0, 1, 0, 1)
+            shade:SetDesaturated(false)
             local cr, cg, cb, ca
-            if p[prefix .. "UseClassColor"] then
-                local _, class = UnitClass("player")
-                local cc = RAID_CLASS_COLORS[class]
+            if p[prefixText .. "UseClassColor"] then
+                local _, classFile = UnitClass("player")
+                local cc = RAID_CLASS_COLORS[classFile]
                 cr, cg, cb = cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1
                 ca = 1
             else
-                local c = p[prefix .. "CustomColor"] or defs.solidColor
+                local c = p[prefixText .. "CustomColor"] or defs.solidColor
                 cr, cg, cb, ca = c.r, c.g, c.b, c.a
             end
-            ov:SetVertexColor(cr, cg, cb, 0.3)
-            ov:Show()
-            for i = 1, 4 do
-                bo[i]:Hide()
+            shade:SetVertexColor(cr, cg, cb, 0.3)
+            shade:Show()
+            for idx = 1, 4 do
+                bo[idx]:Hide()
             end
         elseif iType == 5 then
-            ov:Hide()
-            local bsz = p[prefix .. "BorderSize"] or 4
+            shade:Hide()
+            local bsz = p[prefixText .. "BorderSize"] or 4
             local cr, cg, cb, ca
-            if p[prefix .. "UseClassColor"] then
-                local _, class = UnitClass("player")
-                local cc = RAID_CLASS_COLORS[class]
+            if p[prefixText .. "UseClassColor"] then
+                local _, classFile = UnitClass("player")
+                local cc = RAID_CLASS_COLORS[classFile]
                 cr, cg, cb = cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1
                 ca = 1
             else
-                local c = p[prefix .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
+                local c = p[prefixText .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
                 cr, cg, cb, ca = c.r, c.g, c.b, c.a
             end
-            for i = 1, 4 do
-                bo[i]:SetVertexColor(cr, cg, cb, ca)
+            for idx = 1, 4 do
+                bo[idx]:SetVertexColor(cr, cg, cb, ca)
             end
             bo[1]:ClearAllPoints()
             bo[1]:SetPoint("TOPLEFT", f)
             bo[1]:SetPoint("TOPRIGHT", f)
-            PP.Height(bo[1], bsz)
+            Pix.Height(bo[1], bsz)
             bo[1]:Show()
             bo[2]:ClearAllPoints()
             bo[2]:SetPoint("BOTTOMLEFT", f)
             bo[2]:SetPoint("BOTTOMRIGHT", f)
-            PP.Height(bo[2], bsz)
+            Pix.Height(bo[2], bsz)
             bo[2]:Show()
             bo[3]:ClearAllPoints()
             bo[3]:SetPoint("TOPLEFT", bo[1], "BOTTOMLEFT")
             bo[3]:SetPoint("BOTTOMLEFT", bo[2], "TOPLEFT")
-            PP.Width(bo[3], bsz)
+            Pix.Width(bo[3], bsz)
             bo[3]:Show()
             bo[4]:ClearAllPoints()
             bo[4]:SetPoint("TOPRIGHT", bo[1], "BOTTOMRIGHT")
             bo[4]:SetPoint("BOTTOMRIGHT", bo[2], "TOPRIGHT")
-            PP.Width(bo[4], bsz)
+            Pix.Width(bo[4], bsz)
             bo[4]:Show()
         else
             local texIdx = iType
             if texIdx < 1 or texIdx > 3 then
                 texIdx = defs.texFallback
             end
-            ov:SetTexture(ns.HIGHLIGHT_TEXTURES[texIdx])
-            ov:SetTexCoord(0, 1, 0, 1)
-            if p[prefix .. "UseClassColor"] then
-                local _, class = UnitClass("player")
-                local cc = RAID_CLASS_COLORS[class]
-                ov:SetDesaturated(true)
-                ov:SetVertexColor(cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1, 1)
+            shade:SetTexture(mod.HIGHLIGHT_TEXTURES[texIdx])
+            shade:SetTexCoord(0, 1, 0, 1)
+            if p[prefixText .. "UseClassColor"] then
+                local _, classFile = UnitClass("player")
+                local cc = RAID_CLASS_COLORS[classFile]
+                shade:SetDesaturated(true)
+                shade:SetVertexColor(cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1, 1)
             else
-                local c = p[prefix .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
-                ov:SetDesaturated(true)
-                ov:SetVertexColor(c.r, c.g, c.b, c.a)
+                local c = p[prefixText .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
+                shade:SetDesaturated(true)
+                shade:SetVertexColor(c.r, c.g, c.b, c.a)
             end
-            ov:Show()
-            for i = 1, 4 do
-                bo[i]:Hide()
+            shade:Show()
+            for idx = 1, 4 do
+                bo[idx]:Hide()
             end
         end
     end
@@ -296,9 +296,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
     end
 
     -- Proc glow preview: supports FlipBook + procedural glow engines
-    local function GetNthActionButtonIcon(n)
+    local function GetNthActionButtonIcon(num)
         -- Find the Nth action button with an assigned spell across bars 1-8
-        n = n or 1
+        num = num or 1
         local BAR_CONFIG = {
             { prefix = "ActionButton", count = 12 },
             { prefix = "MultiBarBottomLeftButton", count = 12 },
@@ -310,15 +310,15 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             { prefix = "MultiBar7Button", count = 12 },
         }
         local found = 0
-        for _, bar in ipairs(BAR_CONFIG) do
-            for i = 1, bar.count do
-                local btn = _G[bar.prefix .. i]
-                if btn and btn.icon then
-                    local tex = btn.icon:GetTexture()
-                    if tex and tex ~= 0 and tex ~= "" and tex ~= 136235 then
+        for _, barFrame in ipairs(BAR_CONFIG) do
+            for idx = 1, barFrame.count do
+                local button = _G[barFrame.prefix .. idx]
+                if button and button.icon then
+                    local texture = button.icon:GetTexture()
+                    if texture and texture ~= 0 and texture ~= "" and texture ~= 136235 then
                         found = found + 1
-                        if found >= n then
-                            return tex
+                        if found >= num then
+                            return texture
                         end
                     end
                 end
@@ -334,15 +334,15 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         local G = CludesUI.Glows
         -- The glow draws on its own child frame: on f itself it shares the
         -- border's OVERLAY sublevel and a 1px Pixel Glow can vanish under it.
-        local ov = f._glowOv
-        if not ov then
-            ov = CreateFrame("Frame", nil, f)
-            ov:SetAllPoints(f)
-            ov:EnableMouse(false)
-            f._glowOv = ov
+        local shade = f._glowOv
+        if not shade then
+            shade = CreateFrame("Frame", nil, f)
+            shade:SetAllPoints(f)
+            shade:EnableMouse(false)
+            f._glowOv = shade
         end
-        ov:SetFrameLevel(f:GetFrameLevel() + 2)
-        G.StopAllGlows(ov)
+        shade:SetFrameLevel(f:GetFrameLevel() + 2)
+        G.StopAllGlows(shade)
         f:Show()
         -- Hidden (options closed, page left): stays stopped; OnShow restarts it.
         if not f:IsVisible() then
@@ -355,7 +355,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         end
         f:SetAlpha(1)
         G.StartSpecGlow(
-            ov,
+            shade,
             GO.Spec(procGlowDesc),
             PREVIEW_ICON_SIZE,
             PREVIEW_ICON_SIZE,
@@ -371,44 +371,44 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         if not f then
             return
         end
-        local p = EAB.db and EAB.db.profile or {}
+        local p = ABAR.db and ABAR.db.profile or {}
         local customType = p.assistGlowType or 0
-        local style = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
+        local look = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
         local G = CludesUI.Glows
 
         if not f._assistOverlay then
-            local ov = f:CreateTexture(nil, "OVERLAY", nil, 1)
-            ov:SetAllPoints()
-            f._assistOverlay = ov
+            local shade = f:CreateTexture(nil, "OVERLAY", nil, 1)
+            shade:SetAllPoints()
+            f._assistOverlay = shade
         end
         if not f._assistRing then
             local ring = {}
-            for i = 1, 4 do
+            for idx = 1, 4 do
                 local t = f:CreateTexture(nil, "OVERLAY", nil, 2)
                 t:SetColorTexture(0.15, 0.5, 1, 1)
-                ring[i] = t
+                ring[idx] = t
             end
             f._assistRing = ring
         end
         if not f._assistGlowOv then
-            local host = CreateFrame("Frame", nil, f)
-            host:SetAllPoints(f)
-            host:EnableMouse(false)
-            f._assistGlowOv = host
+            local hostRegion = CreateFrame("Frame", nil, f)
+            hostRegion:SetAllPoints(f)
+            hostRegion:EnableMouse(false)
+            f._assistGlowOv = hostRegion
         end
 
-        local ov = f._assistOverlay
+        local shade = f._assistOverlay
         local ring = f._assistRing
         local glowHost = f._assistGlowOv
         glowHost:SetFrameLevel(f:GetFrameLevel() + 2)
-        ov:Hide()
-        for i = 1, 4 do
-            ring[i]:Hide()
+        shade:Hide()
+        for idx = 1, 4 do
+            ring[idx]:Hide()
         end
 
-        local list = ns.LOOP_GLOW_TYPES or {}
-        if customType > 0 and list[customType] then
-            local cr, cg, cb = ns._AssistCustomGlowColor()
+        local entries = mod.LOOP_GLOW_TYPES or {}
+        if customType > 0 and entries[customType] then
+            local cr, cg, cb = mod._AssistCustomGlowColor()
             f:SetAlpha(1)
             -- Every widget refresh lands here: the engine glow restarts only
             -- when the style or colour moved, or after a hide stopped it.
@@ -440,7 +440,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         f:SetAlpha(1)
 
         -- The ring and overlay styles: a plain stand-in of each.
-        if style == 1 or style == 3 then
+        if look == 1 or look == 3 then
             ring[1]:ClearAllPoints()
             ring[1]:SetPoint("TOPLEFT", f)
             ring[1]:SetPoint("TOPRIGHT", f)
@@ -457,49 +457,49 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             ring[4]:SetPoint("TOPRIGHT", ring[1], "BOTTOMRIGHT")
             ring[4]:SetPoint("BOTTOMRIGHT", ring[2], "TOPRIGHT")
             ring[4]:SetWidth(2)
-            for i = 1, 4 do
-                ring[i]:Show()
+            for idx = 1, 4 do
+                ring[idx]:Show()
             end
         end
 
-        if style == 2 or style == 3 then
+        if look == 2 or look == 3 then
             local c = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
             local a = (p.assistGlowOverlayAlpha or 30) / 100
-            ov:SetColorTexture(c.r or 0.15, c.g or 0.5, c.b or 1, a)
-            ov:Show()
+            shade:SetColorTexture(c.r or 0.15, c.g or 0.5, c.b or 1, a)
+            shade:Show()
         end
     end
 
     -- Persistent preview icon frames (survive page cache restores)
     local _pushedPreview, _highlightPreview, _assistGlowPreview
 
-    local function BuildAnimationsPage(pageName, parent, yOffset)
+    local function BuildAnimationsPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h, row
-        local p = EAB.db.profile
+        local posY = yOffset
+        local _, hgt, rowFrame
+        local p = ABAR.db.profile
 
         -- No content header for animations page (global settings, no bar selector)
         CludesUI:ClearContentHeader()
 
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         -------------------------------------------------------------------
         --  BAR INTERACTIONS
         -------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_BAR_INTERACTIONS, y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, SECTION_BAR_INTERACTIONS, posY)
+        posY = posY - hgt
 
         local INTERACTIONS_TIP =
             "Bar Interactions are the light effects that happen when you hover/press a spell, your cooldown swipe line, aura active border glow, etc"
 
         -- Helper: apply unified color to ALL interaction systems
         local function ApplyAllInteractionColors()
-            EAB:ApplyPushedTextures()
-            EAB:ApplyHighlightTextures()
-            EAB:ApplyCooldownEdge()
-            EAB:ApplyMiscTextures()
-            EAB:RefreshProcGlows()
+            ABAR:ApplyPushedTextures()
+            ABAR:ApplyHighlightTextures()
+            ABAR:ApplyCooldownEdge()
+            ABAR:ApplyMiscTextures()
+            ABAR:RefreshProcGlows()
             UpdatePushedPreview(_pushedPreview)
             UpdateHighlightPreview(_highlightPreview)
             UpdateProcGlowPreview(_procGlowPreview)
@@ -517,20 +517,20 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             ApplyAllInteractionColors()
         end
 
-        local function SetUnifiedClassColor(v)
-            p.pushedUseClassColor = v
-            p.highlightUseClassColor = v
-            p.cooldownEdgeUseClassColor = v
-            p.procGlowUseClassColor = v
+        local function SetUnifiedClassColor(val)
+            p.pushedUseClassColor = val
+            p.highlightUseClassColor = val
+            p.cooldownEdgeUseClassColor = val
+            p.procGlowUseClassColor = val
             -- Keep the mode key in step with the flag.
-            if p.procGlowColorMode == "class" or (v and p.procGlowColorMode) then
-                p.procGlowColorMode = v and "class" or "custom"
+            if p.procGlowColorMode == "class" or (val and p.procGlowColorMode) then
+                p.procGlowColorMode = val and "class" or "custom"
             end
             ApplyAllInteractionColors()
             CludesUI:RefreshPage()
         end
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "colorpicker",
             text = "Bar Interactions Color",
             tooltip = INTERACTIONS_TIP,
@@ -567,13 +567,13 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.pushedUseClassColor
             end,
-            setValue = function(v)
-                SetUnifiedClassColor(v)
+            setValue = function(val)
+                SetUnifiedClassColor(val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Pushed Type",
             tooltip = "The overlay that appears on the icon when you press and hold a spell button",
@@ -587,9 +587,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.pushedTextureType or 2
             end,
-            setValue = function(v)
-                p.pushedTextureType = v
-                EAB:ApplyPushedTextures()
+            setValue = function(val)
+                p.pushedTextureType = val
+                ABAR:ApplyPushedTextures()
                 UpdatePushedPreview(_pushedPreview)
                 CludesUI:RefreshPage()
             end,
@@ -607,16 +607,16 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.highlightTextureType or 2
             end,
-            setValue = function(v)
-                p.highlightTextureType = v
-                EAB:ApplyHighlightTextures()
+            setValue = function(val)
+                p.highlightTextureType = val
+                ABAR:ApplyHighlightTextures()
                 UpdateHighlightPreview(_highlightPreview)
                 CludesUI:RefreshPage()
             end,
         })
         -- Preview chrome: the search pre-build's absorber row cannot host frames.
         if not CludesUI._prebuilding then
-            local leftRgn = row._leftRegion
+            local leftRgn = rowFrame._leftRegion
             _pushedPreview = CreatePreviewIcon(leftRgn)
             if _pushedPreview._icon then
                 _pushedPreview._icon:SetTexture(GetNthActionButtonIcon(1))
@@ -646,9 +646,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                         get = function()
                             return p.pushedBorderSize or 4
                         end,
-                        set = function(v)
-                            p.pushedBorderSize = v
-                            EAB:ApplyPushedTextures()
+                        set = function(val)
+                            p.pushedBorderSize = val
+                            ABAR:ApplyPushedTextures()
                             UpdatePushedPreview(_pushedPreview)
                         end,
                     },
@@ -659,15 +659,15 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                         get = function()
                             return p.pushedBorderMatchBar or false
                         end,
-                        set = function(v)
-                            p.pushedBorderMatchBar = v
-                            EAB:ApplyPushedTextures()
+                        set = function(val)
+                            p.pushedBorderMatchBar = val
+                            ABAR:ApplyPushedTextures()
                         end,
                     },
                 },
             })
 
-            local rightRgn = row._rightRegion
+            local rightRgn = rowFrame._rightRegion
             _highlightPreview = CreatePreviewIcon(rightRgn)
             if _highlightPreview._icon then
                 _highlightPreview._icon:SetTexture(GetNthActionButtonIcon(2))
@@ -697,9 +697,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                         get = function()
                             return p.highlightBorderSize or 4
                         end,
-                        set = function(v)
-                            p.highlightBorderSize = v
-                            EAB:ApplyHighlightTextures()
+                        set = function(val)
+                            p.highlightBorderSize = val
+                            ABAR:ApplyHighlightTextures()
                             UpdateHighlightPreview(_highlightPreview)
                         end,
                     },
@@ -710,22 +710,22 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                         get = function()
                             return p.highlightBorderMatchBar or false
                         end,
-                        set = function(v)
-                            p.highlightBorderMatchBar = v
-                            EAB:ApplyHighlightTextures()
+                        set = function(val)
+                            p.highlightBorderMatchBar = val
+                            ABAR:ApplyHighlightTextures()
                         end,
                     },
                 },
             })
         end
-        y = y - h
+        posY = posY - hgt
 
         local function castAnimForced()
-            local bars = EAB.db.profile.bars
-            if not bars then
+            local barList = ABAR.db.profile.bars
+            if not barList then
                 return false
             end
-            for _, s in pairs(bars) do
+            for _, s in pairs(barList) do
                 if s.buttonShape and s.buttonShape ~= "none" then
                     return true
                 end
@@ -733,7 +733,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             return false
         end
         local castRow
-        castRow, h = W:DualRow(parent, y, {
+        castRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Hide Casting Animations",
             tooltip = "This is the full overlay that swipes from right to left on the icon during its cast duration",
@@ -743,8 +743,8 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.hideCastingAnimations or castAnimForced()
             end,
-            setValue = function(v)
-                p.hideCastingAnimations = v
+            setValue = function(val)
+                p.hideCastingAnimations = val
                 -- ActionBarActionEventsFrame dies at file-load; ApplySettings owns casting animation visibility.
             end,
         }, {
@@ -755,9 +755,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.showCastHighlight ~= false
             end,
-            setValue = function(v)
-                p.showCastHighlight = v
-                EAB:ApplyCheckedTextures()
+            setValue = function(val)
+                p.showCastHighlight = val
+                ABAR:ApplyCheckedTextures()
                 -- The Spell Cast Highlight cog dims with this toggle.
                 CludesUI:RefreshPage()
             end,
@@ -787,37 +787,37 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                     get = function()
                         return p.castHighlightBorder or false
                     end,
-                    set = function(v)
-                        p.castHighlightBorder = v
-                        EAB:ApplyCheckedTextures()
+                    set = function(val)
+                        p.castHighlightBorder = val
+                        ABAR:ApplyCheckedTextures()
                     end,
                 },
             },
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
 
         -------------------------------------------------------------------
         --  PROC GLOW EFFECT
         -------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_PROC_GLOW, y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, SECTION_PROC_GLOW, posY)
+        posY = posY - hgt
 
         local procSpec = GO.DropdownSpec(procGlowDesc, "Custom Proc Glow")
         local function AssistOff()
             return not (GetCVarBool and GetCVarBool("assistedCombatHighlight"))
         end
         -- Row 1: Custom Proc Glow | its color swatches.
-        row, h = W:DualRow(parent, y, procSpec, { type = "label", text = "Glow Color" })
+        rowFrame, hgt = W:DualRow(hostFrame, posY, procSpec, { type = "label", text = "Glow Color" })
         if not CludesUI._prebuilding then
-            local leftRgn = row._leftRegion
-            GO.AttachInline(leftRgn, procGlowDesc, row._rightRegion)
+            local leftRgn = rowFrame._leftRegion
+            GO.AttachInline(leftRgn, procGlowDesc, rowFrame._rightRegion)
             _procGlowPreview = CreatePreviewIcon(leftRgn)
             -- Joins the inline chain left of the glow cog.
             _procGlowPreview:ClearAllPoints()
-            PP.Point(_procGlowPreview, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -12, 0)
+            Pix.Point(_procGlowPreview, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -12, 0)
             leftRgn._lastInline = _procGlowPreview
             if _procGlowPreview._icon then
                 local iconTex = GetNthActionButtonIcon(3)
@@ -837,7 +837,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 UpdateProcGlowPreview(_procGlowPreview)
             end)
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Assisted Highlight: the three stock styles, then one entry per glow
         -- engine (the Shape Glow is not offered: shaped buttons take it by
@@ -848,27 +848,27 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             [3] = "Ring + Overlay",
         }
         local assistOrder = { 1, 2, 3 }
-        for i, entry in ipairs(ns.LOOP_GLOW_TYPES or {}) do
-            if not entry.shapeGlow then
-                assistValues[100 + i] = entry.name
-                assistOrder[#assistOrder + 1] = 100 + i
+        for idx, record in ipairs(mod.LOOP_GLOW_TYPES or {}) do
+            if not record.shapeGlow then
+                assistValues[100 + idx] = record.name
+                assistOrder[#assistOrder + 1] = 100 + idx
             end
         end
         local function assistCustomSelected()
             return (p.assistGlowType or 0) > 0
         end
         local function RingOff()
-            local style = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
-            return AssistOff() or assistCustomSelected() or style == 2
+            local look = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
+            return AssistOff() or assistCustomSelected() or look == 2
         end
         local function OverlayOff()
-            local style = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
-            return AssistOff() or assistCustomSelected() or style == 1
+            local look = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
+            return AssistOff() or assistCustomSelected() or look == 1
         end
 
         -- Row 2: Assisted Highlight | Assisted Highlight Outset
         local assistRow
-        assistRow, h = W:DualRow(parent, y, {
+        assistRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Assisted Highlight",
             values = assistValues,
@@ -879,20 +879,20 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             rawTooltip = true,
             getValue = function()
                 local custom = p.assistGlowType or 0
-                local list = ns.LOOP_GLOW_TYPES or {}
-                if custom > 0 and list[custom] then
+                local entries = mod.LOOP_GLOW_TYPES or {}
+                if custom > 0 and entries[custom] then
                     return 100 + custom
                 end
                 return (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
             end,
-            setValue = function(v)
-                if v >= 100 then
-                    p.assistGlowType = v - 100
+            setValue = function(val)
+                if val >= 100 then
+                    p.assistGlowType = val - 100
                 else
                     p.assistGlowType = 0
-                    p.assistGlowStyle = v
+                    p.assistGlowStyle = val
                 end
-                ns.UpdateAssistHighlights()
+                mod.UpdateAssistHighlights()
                 UpdateAssistGlowPreview(_assistGlowPreview)
                 CludesUI:RefreshPage()
             end,
@@ -909,9 +909,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.assistGlowOutset or 0
             end,
-            setValue = function(v)
-                p.assistGlowOutset = v
-                ns.UpdateAssistHighlights()
+            setValue = function(val)
+                p.assistGlowOutset = val
+                mod.UpdateAssistHighlights()
                 UpdateAssistGlowPreview(_assistGlowPreview)
             end,
         })
@@ -919,7 +919,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             local leftRgn = assistRow._leftRegion
             _assistGlowPreview = CreatePreviewIcon(leftRgn)
             _assistGlowPreview:ClearAllPoints()
-            PP.Point(_assistGlowPreview, "RIGHT", leftRgn._control, "LEFT", -12, 0)
+            Pix.Point(_assistGlowPreview, "RIGHT", leftRgn._control, "LEFT", -12, 0)
             if _assistGlowPreview._icon then
                 _assistGlowPreview._icon:SetTexture(GetNthActionButtonIcon(4))
                 _assistGlowPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -938,7 +938,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                     end,
                     setValue = function(r, g, b)
                         p.assistGlowColor = { r = r, g = g, b = b }
-                        ns.UpdateAssistHighlights()
+                        mod.UpdateAssistHighlights()
                         UpdateAssistGlowPreview(_assistGlowPreview)
                     end,
                 },
@@ -972,11 +972,11 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 UpdateAssistGlowPreview(_assistGlowPreview)
             end)
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Row 3: Overlay Opacity (+ overlay color) | Fit Ring to Cropped Buttons
         local overlayRow
-        overlayRow, h = W:DualRow(parent, y, {
+        overlayRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Overlay Opacity",
             min = 0,
@@ -989,9 +989,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.assistGlowOverlayAlpha or 30
             end,
-            setValue = function(v)
-                p.assistGlowOverlayAlpha = v
-                ns.UpdateAssistHighlights()
+            setValue = function(val)
+                p.assistGlowOverlayAlpha = val
+                mod.UpdateAssistHighlights()
                 UpdateAssistGlowPreview(_assistGlowPreview)
             end,
         }, {
@@ -1004,9 +1004,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.assistGlowFitCropped or false
             end,
-            setValue = function(v)
-                p.assistGlowFitCropped = v
-                ns.UpdateAssistHighlights()
+            setValue = function(val)
+                p.assistGlowFitCropped = val
+                mod.UpdateAssistHighlights()
             end,
         })
         if not CludesUI._prebuilding then
@@ -1020,7 +1020,7 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                     end,
                     setValue = function(r, g, b)
                         p.assistGlowOverlayColor = { r = r, g = g, b = b }
-                        ns.UpdateAssistHighlights()
+                        mod.UpdateAssistHighlights()
                         UpdateAssistGlowPreview(_assistGlowPreview)
                     end,
                 },
@@ -1029,11 +1029,11 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 disabledTooltip = "This option requires the Button Overlay or Ring + Overlay style",
             })
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Row 4: the custom glow's colour source (its swatch sits beside the
         -- preview icon above).
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Use Class Color",
             disabled = function()
@@ -1044,20 +1044,20 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             getValue = function()
                 return p.assistGlowUseClassColor or false
             end,
-            setValue = function(v)
-                p.assistGlowUseClassColor = v
-                ns.UpdateAssistHighlights()
+            setValue = function(val)
+                p.assistGlowUseClassColor = val
+                mod.UpdateAssistHighlights()
                 UpdateAssistGlowPreview(_assistGlowPreview)
                 CludesUI:RefreshPage()
             end,
         }, CludesUI.BlankRowCfg())
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     return BuildAnimationsPage
 end
 
 -- Used by CUI_ActionBars_Options.lua
-ns.ABO_InitAnimationsPage = InitAnimationsPage
+mod.ABO_InitAnimationsPage = InitAnimationsPage

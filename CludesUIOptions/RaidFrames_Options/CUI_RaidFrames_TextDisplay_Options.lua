@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  it (texts may share a position), the dropdown picks its mode or removes
 --  it, "+ Add Text" shows a hidden one. Every text keeps its own keys.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIRaidFrames"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIRaidFrames"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -63,27 +63,27 @@ local CustomText = {}
 do
     -- The text's colour mode as the preview shows it, for the player's class and power.
     function CustomText.Color(t)
-        local SVal = ns._RFO_OptEnv.SVal
+        local SVal = mod._RFO_OptEnv.SVal
         local _, cls = UnitClass("player")
         local _, pTok = UnitPowerType("player")
-        local r, g, b = ns.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), cls, 1, 1, 1, pTok)
+        local r, g, b = mod.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), cls, 1, 1, 1, pTok)
         return { r = r, g = g, b = b }
     end
 
     -- key: the format key (party-aware through the page's SVal/SWrite); onSave
     -- runs after the format is stored.
     function CustomText.Edit(key, color, onSave)
-        local env = ns._RFO_OptEnv
+        local environ = mod._RFO_OptEnv
         CludesUI.TextTags.EditPopup({
-            cat = ns.RF_TextTags,
+            cat = mod.RF_TextTags,
             color = color,
             onSave = onSave,
             tagNotes = { hp = CludesUI.L("shows DEAD or OFFLINE") },
             get = function()
-                return env.SVal(key)
+                return environ.SVal(key)
             end,
             set = function(txt)
-                env.SWrite(key, txt)
+                environ.SWrite(key, txt)
             end,
         })
     end
@@ -95,12 +95,12 @@ do
     end
 
     -- The popup writes the format directly, so Spec Overrides needs an accessor.
-    function CustomText.AddAccessor(rgn, label, key)
-        local env = ns._RFO_OptEnv
-        CludesUI.TextTags.AddFormatAccessor(rgn, label, function()
-            return env.SVal(key)
-        end, function(v)
-            env.SSet(key, v)
+    function CustomText.AddAccessor(region, labelText, key)
+        local environ = mod._RFO_OptEnv
+        CludesUI.TextTags.AddFormatAccessor(region, labelText, function()
+            return environ.SVal(key)
+        end, function(val)
+            environ.SSet(key, val)
         end)
     end
 end
@@ -111,16 +111,16 @@ end
 -- Builds the tiles at y under the Text Display header. opts.page: the page
 -- being built (cache check); opts.party: the Party tab (its textDisplay keys).
 -- Returns y and the first row.
-function ns.RFO_BuildTextDisplay(W, parent, y, opts)
+function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
     -- The text files did not load: no text section, the page still builds.
-    if not (ns.RF_TEXTS and ns.RF_TEXT_POSITIONS and ns.RF_TextShown and ns.RF_TEXT_SIG_KEYS) then
-        return y
+    if not (mod.RF_TEXTS and mod.RF_TEXT_POSITIONS and mod.RF_TextShown and mod.RF_TEXT_SIG_KEYS) then
+        return posY
     end
-    local env = ns._RFO_OptEnv
-    local SVal, SWrite, ReloadAndUpdate = env.SVal, env.SWrite, env.ReloadAndUpdate
-    local TEXTS, POSITIONS, POS_INDEX = ns.RF_TEXTS, ns.RF_TEXT_POSITIONS, ns.RF_TEXT_POS_INDEX
+    local environ = mod._RFO_OptEnv
+    local SVal, SWrite, ReloadAndUpdate = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
+    local TEXTS, POSITIONS, POS_INDEX = mod.RF_TEXTS, mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX
     local POS = CludesUI.POSITION_GRID_VALUES
-    local LEVEL_DEFAULT = ns.RF_LEVEL_DEFAULT
+    local LEVEL_DEFAULT = mod.RF_LEVEL_DEFAULT
 
     local function PosOf(t)
         if t.kind == "level" then
@@ -135,7 +135,7 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
         end,
     })
     local function Shown(t)
-        return ns.RF_TextShown(t, view, SVal("levelTextPosition", LEVEL_DEFAULT)) ~= nil
+        return mod.RF_TextShown(t, view, SVal("levelTextPosition", LEVEL_DEFAULT)) ~= nil
     end
     -- The value the tile's dropdown shows.
     local function ModeOf(t)
@@ -150,23 +150,23 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
     -- The first position no shown text uses, else pref.
     local function FreePos(pref)
         local used = {}
-        for i = 1, #TEXTS do
-            if Shown(TEXTS[i]) then
-                used[PosOf(TEXTS[i])] = true
+        for idx = 1, #TEXTS do
+            if Shown(TEXTS[idx]) then
+                used[PosOf(TEXTS[idx])] = true
             end
         end
         if not used[pref] then
             return pref
         end
-        for i = 1, #POSITIONS do
-            if not used[POSITIONS[i]] then
-                return POSITIONS[i]
+        for idx = 1, #POSITIONS do
+            if not used[POSITIONS[idx]] then
+                return POSITIONS[idx]
             end
         end
         return pref
     end
     local function Notify(t)
-        ns._rfTextNotify = { page = opts.page, key = t.id }
+        mod._rfTextNotify = { page = options.page, key = t.id }
     end
     local function Apply()
         ReloadAndUpdate()
@@ -174,34 +174,34 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
     end
 
     -- A dropdown pick: a mode, the level format in front of the name, or Remove.
-    local function SetMode(t, v)
+    local function SetMode(t, val)
         if t.kind == "name" then
-            if v == "none" then
+            if val == "none" then
                 SWrite(t.pos, "none")
             else
                 local lp = SVal("levelTextPosition", LEVEL_DEFAULT)
-                if v == "levelname" then
+                if val == "levelname" then
                     SWrite("levelTextPosition", "name")
-                elseif v == "levelnameDiv" then
+                elseif val == "levelnameDiv" then
                     SWrite("levelTextPosition", "nameDiv")
                 elseif ATTACH_VALUE[lp] then
                     SWrite("levelTextPosition", "none")
                 end
             end
         elseif t.kind == "level" or t.kind == "custom" then
-            if v == "none" then
+            if val == "none" then
                 SWrite(t.pos, "none")
             end
-        elseif v ~= SVal(t.mode, "none") then
-            SWrite(t.mode, v)
+        elseif val ~= SVal(t.mode, "none") then
+            SWrite(t.mode, val)
         end
         Apply()
     end
-    local function Move(t, pos)
-        if pos == PosOf(t) then
+    local function Move(t, place)
+        if place == PosOf(t) then
             return
         end
-        SWrite(t.pos, pos)
+        SWrite(t.pos, place)
         Notify(t)
         Apply()
     end
@@ -235,9 +235,9 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
     -- The cog (nearest the dropdown), the swatches left of it (Custom first,
     -- then Class, Accent, Power) and the colour mode accessor of one shown
     -- text. The level is drawn in the name's colour: no swatches of its own.
-    local function Decorate(rgn, cell)
-        local t = cell.text
-        local rows = {
+    local function Decorate(region, cellFrame)
+        local t = cellFrame.text
+        local rowList = {
             {
                 type = "slider",
                 label = "Size",
@@ -247,8 +247,8 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                 get = function()
                     return SVal(t.size, 10)
                 end,
-                set = function(v)
-                    env.SSet(t.size, v)
+                set = function(val)
+                    environ.SSet(t.size, val)
                 end,
             },
             {
@@ -260,8 +260,8 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                 get = function()
                     return SVal(t.x, 0)
                 end,
-                set = function(v)
-                    env.SSet(t.x, v)
+                set = function(val)
+                    environ.SSet(t.x, val)
                 end,
             },
             {
@@ -273,8 +273,8 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                 get = function()
                     return SVal(t.y, 0)
                 end,
-                set = function(v)
-                    env.SSet(t.y, v)
+                set = function(val)
+                    environ.SSet(t.y, val)
                 end,
             },
         }
@@ -282,11 +282,11 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
         -- has its own row: it shapes the Top Name Bar too).
         local showsName = t.kind == "name"
         if t.kind == "custom" then
-            local parsed = CludesUI.TextTags.Parse(ns.RF_TextTags, SVal(t.fmt))
+            local parsed = CludesUI.TextTags.Parse(mod.RF_TextTags, SVal(t.fmt))
             showsName = parsed and parsed.has and parsed.has.name and true or false
         end
         if showsName then
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "slider",
                 label = "Max Characters (0=off)",
                 min = 0,
@@ -295,58 +295,64 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                 get = function()
                     return SVal("nameMaxLength", 15)
                 end,
-                set = function(v)
-                    env.SSet("nameMaxLength", v)
+                set = function(val)
+                    environ.SSet("nameMaxLength", val)
                 end,
             }
         end
         -- Show Above Icons: the name's own key; every other text follows it until set here.
         if t.kind == "name" then
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Show Above Icons",
                 tooltip = "Render the name above buff and debuff icons. Texts without a setting of their own follow it.",
                 get = function()
                     return SVal(t.above, false) and true or false
                 end,
-                set = function(v)
-                    env.SSet(t.above, v)
+                set = function(val)
+                    environ.SSet(t.above, val)
                 end,
             }
         else
-            rows[#rows + 1] = {
+            rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Show Above Icons",
                 tooltip = "Render this text above buff and debuff icons. Follows the name's setting until changed here.",
                 get = function()
-                    local v = SVal(t.above)
-                    if v == nil then
-                        v = SVal("nameTextAboveIcons", false)
+                    local val = SVal(t.above)
+                    if val == nil then
+                        val = SVal("nameTextAboveIcons", false)
                     end
-                    return v and true or false
+                    return val and true or false
                 end,
-                set = function(v)
-                    env.SSet(t.above, v)
+                set = function(val)
+                    environ.SSet(t.above, val)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             title = CludesUI.Lf("%1$s Settings", CludesUI.L(t.label)),
-            rows = rows,
+            rows = rowList,
         })
         if t.kind ~= "level" then
             local modeKey = t.cm
-            local function AddSwatch(getColor, setColor, mode, opensPicker, tooltip)
-                local sw =
-                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, getColor, setColor, false, 20)
-                env.PP.Point(sw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = sw
+            local function AddSwatch(getColor, setColor, modeName, opensPicker, tooltip)
+                local sw = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    getColor,
+                    setColor,
+                    false,
+                    20
+                )
+                environ.PP.Point(sw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = sw
                 sw._eabOrigClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self)
-                    if SVal(modeKey, "custom") ~= mode then
+                    if SVal(modeKey, "custom") ~= modeName then
                         -- Attribution read before the write: the rebuild dresses the swatch again.
                         local snap = CludesUI._SOAttribution(self)
-                        env.SSet(modeKey, mode)
+                        environ.SSet(modeKey, modeName)
                         CludesUI._NotifySettingWrite(self, snap)
                         CludesUI:RefreshPage()
                         return
@@ -362,7 +368,7 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function vis()
-                    sw:SetAlpha(SVal(modeKey, "custom") == mode and 1 or 0.3)
+                    sw:SetAlpha(SVal(modeKey, "custom") == modeName and 1 or 0.3)
                 end
                 CludesUI.RegisterWidgetRefresh(vis)
                 vis()
@@ -392,9 +398,9 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
             if AllowsPower(t) then
                 AddSwatch(function()
                     local _, pToken = UnitPowerType("player")
-                    local info = CludesUI.GetPowerColor(pToken or "MANA")
-                    if info then
-                        return info.r, info.g, info.b, 1
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    if details then
+                        return details.r, details.g, details.b, 1
                     end
                     return 0, 0.5, 1, 1
                 end, function() end, "power", false, "Power Colored Text")
@@ -406,7 +412,7 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                 modeValues.power = "Power Colored Text"
                 modeOrder[4] = "power"
             end
-            CludesUI.AddCaptureAccessor(rgn, {
+            CludesUI.AddCaptureAccessor(region, {
                 type = "dropdown",
                 text = t.label .. " Color Mode",
                 values = modeValues,
@@ -414,22 +420,22 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
                 getValue = function()
                     return SVal(modeKey, "custom")
                 end,
-                setValue = function(v)
-                    env.SSet(modeKey, v)
+                setValue = function(val)
+                    environ.SSet(modeKey, val)
                 end,
             })
         end
     end
 
     -- Shown texts in grid order (a shared position: in text order).
-    local shown = {}
-    for i = 1, #TEXTS do
-        local t = TEXTS[i]
+    local isShown = {}
+    for idx = 1, #TEXTS do
+        local t = TEXTS[idx]
         if Shown(t) then
-            shown[#shown + 1] = { text = t, i = i, pos = PosOf(t) }
+            isShown[#isShown + 1] = { text = t, i = idx, pos = PosOf(t) }
         end
     end
-    table.sort(shown, function(a, b)
+    table.sort(isShown, function(a, b)
         local pa, pb = POS_INDEX[a.pos] or 99, POS_INDEX[b.pos] or 99
         if pa ~= pb then
             return pa < pb
@@ -437,38 +443,38 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
         return a.i < b.i
     end)
 
-    local kit = ns.RF_OptPartyKit()
+    local kit = mod.RF_OptPartyKit()
     local cells = {}
-    for j = 1, #shown do
-        local cell = shown[j]
-        local t = cell.text
-        local cfg = {
+    for jdx = 1, #isShown do
+        local cellFrame = isShown[jdx]
+        local t = cellFrame.text
+        local conf = {
             type = "dropdown",
-            text = POS[cell.pos] or cell.pos,
+            text = POS[cellFrame.pos] or cellFrame.pos,
             order = MODE_ORDER[t.kind],
             getValue = function()
                 return ModeOf(t)
             end,
-            setValue = function(v)
-                SetMode(t, v)
+            setValue = function(val)
+                SetMode(t, val)
             end,
         }
         if t.kind == "pp" then
-            cfg.tooltip = "Shows only on frames whose power bar shows."
+            conf.tooltip = "Shows only on frames whose power bar shows."
         elseif t.kind == "name" and kit then
-            cfg.tooltip =
+            conf.tooltip =
                 "On Party Frames style the name keeps the frame's own spot; its offsets still apply."
         elseif t.kind == "level" then
-            cfg.tooltip = "Drawn in the name's colour."
+            conf.tooltip = "Drawn in the name's colour."
         end
-        cfg.values = CustomText.Values(MODE_VALUES[t.kind], t.kind == "custom" and function()
+        conf.values = CustomText.Values(MODE_VALUES[t.kind], t.kind == "custom" and function()
             CustomText.Edit(t.fmt, CustomText.Color(t), function()
                 Notify(t)
                 Apply()
             end)
         end or nil)
-        cell.cfg = cfg
-        cells[#cells + 1] = cell
+        cellFrame.cfg = conf
+        cells[#cells + 1] = cellFrame
     end
 
     -- "+ Add Text": every hidden text; the Custom texts as one entry (the next free
@@ -477,8 +483,8 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
     local addOrder, addValues, addText = {}, {}, {}
     local customId
     local nameShown = Shown(TEXTS[1])
-    for i = 1, #TEXTS do
-        local t = TEXTS[i]
+    for idx = 1, #TEXTS do
+        local t = TEXTS[idx]
         local hidden = not Shown(t)
         -- An attached level shows in the name tile while the name does; with the
         -- name hidden (the Top Name Bar may still use it) it can go on its own spot.
@@ -551,21 +557,21 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
         return c.cfg or c
     end
     local firstRow
-    local function Finish(row, side, cell)
-        if not cell then
+    local function Finish(rowFrame, sideName, cellFrame)
+        if not cellFrame then
             return
         end
-        firstRow = firstRow or row
-        local rgn = row[side]
-        if cell == addCfg then
+        firstRow = firstRow or rowFrame
+        local region = rowFrame[sideName]
+        if cellFrame == addCfg then
             if not CludesUI._prebuilding then
-                addOpen = CludesUI.AttachButtonMenu(rgn._control, {
+                addOpen = CludesUI.AttachButtonMenu(region._control, {
                     width = 220,
                     order = addOrder,
                     values = addValues,
-                    setValue = function(id)
-                        if addText[id] then
-                            Show(addText[id])
+                    setValue = function(ident)
+                        if addText[ident] then
+                            Show(addText[ident])
                         end
                     end,
                 })
@@ -575,74 +581,74 @@ function ns.RFO_BuildTextDisplay(W, parent, y, opts)
         if CludesUI._prebuilding then
             return
         end
-        local t = cell.text
+        local t = cellFrame.text
         -- Spec Overrides name a captured write after the text, not its position
         -- (several texts may share one).
-        if rgn._captureCfg then
-            rgn._captureCfg = setmetatable({ text = t.label }, { __index = rgn._captureCfg })
+        if region._captureCfg then
+            region._captureCfg = setmetatable({ text = t.label }, { __index = region._captureCfg })
         end
-        CludesUI.BuildRowLabelMenu(rgn, {
+        CludesUI.BuildRowLabelMenu(region, {
             order = POSITIONS,
             values = POS,
             getValue = function()
                 return PosOf(t)
             end,
-            setValue = function(v)
-                Move(t, v)
+            setValue = function(val)
+                Move(t, val)
             end,
             tooltip = "Choose this text's position.",
         })
-        Decorate(rgn, cell)
+        Decorate(region, cellFrame)
         if t.kind == "custom" then
-            CustomText.AddAccessor(rgn, t.label, t.fmt)
+            CustomText.AddAccessor(region, t.label, t.fmt)
         end
-        local pending = ns._rfTextNotify
-        if pending and pending.page == opts.page and pending.key == t.id then
-            ns._rfTextNotify = nil
+        local pending = mod._rfTextNotify
+        if pending and pending.page == options.page and pending.key == t.id then
+            mod._rfTextNotify = nil
             -- The text read now, while this build's cell is its dress.
-            local snap = CludesUI._SOAttribution(rgn)
-            CludesUI._NotifySettingWrite(rgn, snap)
+            local snap = CludesUI._SOAttribution(region)
+            CludesUI._NotifySettingWrite(region, snap)
         end
     end
-    for i = 1, #cells, 2 do
-        local row, h = W:DualRow(parent, y, Config(cells[i]), Config(cells[i + 1]))
-        y = y - h
-        Finish(row, "_leftRegion", cells[i])
-        Finish(row, "_rightRegion", cells[i + 1])
+    for idx = 1, #cells, 2 do
+        local rowFrame, hgt = Widgets:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
+        posY = posY - hgt
+        Finish(rowFrame, "_leftRegion", cells[idx])
+        Finish(rowFrame, "_rightRegion", cells[idx + 1])
     end
 
-    if not CludesUI._prebuilding and opts.page then
+    if not CludesUI._prebuilding and options.page then
         -- Presets, spec changes and profile switches can alter the list while
         -- the page is cached: what decides the tiles as built, against the stored.
         -- A Custom text's template counts too (its cog's name row follows it).
-        local SIG_KEYS = ns.RF_TEXT_SIG_KEYS
+        local SIG_KEYS = mod.RF_TEXT_SIG_KEYS
         local function Sig(get)
             local parts = {}
-            for i = 1, #SIG_KEYS do
-                parts[i] = tostring(get(SIG_KEYS[i]))
+            for idx = 1, #SIG_KEYS do
+                parts[idx] = tostring(get(SIG_KEYS[idx]))
             end
             return table.concat(parts, "\31")
         end
         local saved = Sig(SVal)
-        local party = opts.party
-        ns._rfTextChecks = ns._rfTextChecks or {}
-        ns._rfTextChecks[opts.page] = function()
-            local pf = ns.db and ns.db.profile
-            if not pf then
+        local party = options.party
+        mod._rfTextChecks = mod._rfTextChecks or {}
+        mod._rfTextChecks[options.page] = function()
+            local popFrame = mod.db and mod.db.profile
+            if not popFrame then
                 return false
             end
-            local own = party and ns._IsPartySectionCustom and ns._IsPartySectionCustom("textDisplay")
+            local own = party and mod._IsPartySectionCustom and mod._IsPartySectionCustom("textDisplay")
             return Sig(function(k)
-                local v
+                local val
                 if own then
-                    v = pf["party_" .. k]
+                    val = popFrame["party_" .. k]
                 end
-                if v == nil then
-                    v = pf[k]
+                if val == nil then
+                    val = popFrame[k]
                 end
-                return v
+                return val
             end) ~= saved
         end
     end
-    return y, firstRow
+    return posY, firstRow
 end

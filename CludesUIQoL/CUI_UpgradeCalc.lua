@@ -16,7 +16,7 @@ CUIUpgCalc.Data = {}
 local Calc = CUIUpgCalc
 local Data = CUIUpgCalc.Data
 local CUI = CludesUI
-local PP = CUI.PP
+local Pix = CUI.PP
 
 local function IsLocked()
     return InCombatLockdown() or (CUI.InProtectedInstance())
@@ -110,21 +110,21 @@ Data.ascendantBonuses = {
     [13852] = { crafted = true, Hero = 325, Myth = 337 }, -- Venomstone: Tidal Crafted
 }
 
-function Calc:GetAscendantBonus(link)
-    if not canaccessallvalues(link) or type(link) ~= "string" then
+function Calc:GetAscendantBonus(itemLink)
+    if not canaccessallvalues(itemLink) or type(itemLink) ~= "string" then
         return nil
     end
-    local payload = link:match("item:([^|]+)")
+    local payload = itemLink:match("item:([^|]+)")
     if not payload then
         return nil
     end
-    local index, lastBonus = 0, 13
+    local slotPos, lastBonus = 0, 13
     for field in (payload .. ":"):gmatch("([^:]*):") do
-        index = index + 1
-        if index == 13 then
+        slotPos = slotPos + 1
+        if slotPos == 13 then
             lastBonus = 13 + (tonumber(field) or 0)
-        elseif index > 13 then
-            if index > lastBonus then
+        elseif slotPos > 13 then
+            if slotPos > lastBonus then
                 break
             end
             local bonus = Data.ascendantBonuses[tonumber(field)]
@@ -136,11 +136,11 @@ function Calc:GetAscendantBonus(link)
 end
 
 -- Returns min/potential-max item levels, display rank/count and applied Ascendant metadata.
-function Calc:GetItemUpgradeRange(link, track, rank, maxRank, level, cap)
-    if not canaccessallvalues(link, track, rank, maxRank, level, cap) then
+function Calc:GetItemUpgradeRange(itemLink, track, rank, maxRank, level, cap)
+    if not canaccessallvalues(itemLink, track, rank, maxRank, level, cap) then
         return
     end
-    local bonus = self:GetAscendantBonus(link)
+    local bonus = self:GetAscendantBonus(itemLink)
     track = track or (bonus and bonus.track)
     local td = Data.tracks[track or ""]
     local ranks = td and td.ranks
@@ -162,7 +162,7 @@ function Calc:GetItemUpgradeRange(link, track, rank, maxRank, level, cap)
     local maxLevel = ranks[maxRank]
     local potential = td.ascendantBonus and Data.ascendantBonuses[td.ascendantBonus]
     if potential then
-        local _, _, _, equipLoc, _, classID = C_Item.GetItemInfoInstant(link)
+        local _, _, _, equipLoc, _, classID = C_Item.GetItemInfoInstant(itemLink)
         if
             canaccessallvalues(equipLoc, classID)
             and (
@@ -227,39 +227,39 @@ local _optsCache = nil
 -- (Character key used only locally in PLAYER_LOGIN to index per-character storage;
 --  not retained as a module variable since _dbCache is set directly.)
 
-local function DB()
+local function SavedDB()
     if _dbCache then
         return _dbCache
     end
-    local store
+    local storage
     if _cuicProfileRef then
-        store = _cuicProfileRef
+        storage = _cuicProfileRef
     else
         CludesUIQoLDB = CludesUIQoLDB or {}
-        store = CludesUIQoLDB
+        storage = CludesUIQoLDB
     end
-    store.upgradeCalc = store.upgradeCalc or {}
-    local db = store.upgradeCalc
-    db.cache = db.cache or { slots = {}, ts = 0 }
-    db.calibrated = db.calibrated or false
-    db.queue = db.queue or {}
-    db.crestManualAdds = db.crestManualAdds or {}
-    return db
+    storage.upgradeCalc = storage.upgradeCalc or {}
+    local saved = storage.upgradeCalc
+    saved.cache = saved.cache or { slots = {}, ts = 0 }
+    saved.calibrated = saved.calibrated or false
+    saved.queue = saved.queue or {}
+    saved.crestManualAdds = saved.crestManualAdds or {}
+    return saved
 end
 
 local function Opts()
     if _optsCache then
         return _optsCache
     end
-    local store
+    local storage
     if _cuicProfileRef then
-        store = _cuicProfileRef
+        storage = _cuicProfileRef
     else
         CludesUIQoLDB = CludesUIQoLDB or {}
-        store = CludesUIQoLDB
+        storage = CludesUIQoLDB
     end
-    store.upgradeCalcOpts = store.upgradeCalcOpts or {}
-    return store.upgradeCalcOpts
+    storage.upgradeCalcOpts = storage.upgradeCalcOpts or {}
+    return storage.upgradeCalcOpts
 end
 
 -- Exposed so CUI_UpgradeCalc_Options.lua can always read the live opts table,
@@ -268,7 +268,7 @@ Calc.GetOptsDB = function()
     return Opts()
 end
 Calc.GetCalcDB = function()
-    return DB()
+    return SavedDB()
 end -- exposed for Options reset helper
 
 -- Slot IDs grouped by category, used for filter settings.
@@ -281,18 +281,18 @@ Data.slotGroups = {
 -- Build reverse lookup: slotID -> group name
 Data.slotToGroup = {}
 for grp, ids in pairs(Data.slotGroups) do
-    for _, id in ipairs(ids) do
-        Data.slotToGroup[id] = grp
+    for _, ident in ipairs(ids) do
+        Data.slotToGroup[ident] = grp
     end
 end
 
 -- C_TooltipInfo-based scanning. NEVER create a scanning GameTooltipTemplate
 -- from Lua -- it taints the tooltip system. See CLAUDE.md / reference_tooltip_template_taint.
-local function GetTooltipLines(link)
+local function GetTooltipLines(itemLink)
     if not (C_TooltipInfo and C_TooltipInfo.GetHyperlink) then
         return nil
     end
-    local data = C_TooltipInfo.GetHyperlink(link)
+    local data = C_TooltipInfo.GetHyperlink(itemLink)
     if not data then
         return nil
     end
@@ -302,14 +302,14 @@ local function GetTooltipLines(link)
     return data.lines
 end
 
-local function ForEachTooltipLine(lines, fn)
+local function ForEachTooltipLine(lines, func)
     if not lines then
         return
     end
-    for _, line in ipairs(lines) do
-        local text = line.leftText
-        if text and text ~= "" then
-            fn(text)
+    for _, lineTex in ipairs(lines) do
+        local textValue = lineTex.leftText
+        if textValue and textValue ~= "" then
+            func(textValue)
         end
     end
 end
@@ -320,14 +320,14 @@ local function Plain(s)
 end
 
 -- Returns { slot, link, ilvl } for every equipped item on `unit` (default "player").
-function Calc:GetEquippedGear(unit)
-    unit = unit or "player"
+function Calc:GetEquippedGear(unitToken)
+    unitToken = unitToken or "player"
     local gear = {}
-    for _, slot in ipairs(Data.equipSlots) do
-        local link = GetInventoryItemLink(unit, slot)
-        if link then
-            local ilvl = C_Item.GetDetailedItemLevelInfo(link) or 0
-            gear[#gear + 1] = { slot = slot, link = link, ilvl = ilvl }
+    for _, slotIndex in ipairs(Data.equipSlots) do
+        local itemLink = GetInventoryItemLink(unitToken, slotIndex)
+        if itemLink then
+            local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink) or 0
+            gear[#gear + 1] = { slot = slotIndex, link = itemLink, ilvl = ilvl }
         end
     end
     return gear
@@ -341,11 +341,11 @@ Calc._tipCache = {} -- [link] = { track, rank, maxRank, isCrafted, craftBand, cr
 local CREATED_BY_PATTERN =
     Plain(ITEM_CREATED_BY or "Made by %s"):gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"):gsub("%%%%s", ".+")
 
-function Calc:ScanItemLink(link)
-    if not link then
+function Calc:ScanItemLink(itemLink)
+    if not itemLink then
         return nil
     end
-    local cached = Calc._tipCache[link]
+    local cached = Calc._tipCache[itemLink]
     if cached then
         return cached
     end
@@ -366,14 +366,14 @@ function Calc:ScanItemLink(link)
     -- directly is enUS-only and silently mislabels every item on other clients.
     local apiTrack, apiRank, apiMax = nil, nil, nil
     if CludesUI and CludesUI.GetUpgradeTrackKey then
-        apiTrack, apiRank, apiMax = CludesUI.GetUpgradeTrackKey(link)
+        apiTrack, apiRank, apiMax = CludesUI.GetUpgradeTrackKey(itemLink)
     end
 
-    local lines = GetTooltipLines(link)
+    local lines = GetTooltipLines(itemLink)
     local foundTrack, foundRank, foundVoid = apiTrack, apiRank, false
-    ForEachTooltipLine(lines, function(text)
-        if not foundTrack and text:find("Upgrade Level") then
-            local t, r = text:match("Upgrade Level:%s+(%a+)%s+(%d+)/%d+")
+    ForEachTooltipLine(lines, function(textValue)
+        if not foundTrack and textValue:find("Upgrade Level") then
+            local t, r = textValue:match("Upgrade Level:%s+(%a+)%s+(%d+)/%d+")
             if t then
                 foundTrack = t
                 foundRank = tonumber(r)
@@ -381,7 +381,7 @@ function Calc:ScanItemLink(link)
         end
         -- enUS-only: no API exposes the Voidforged modifier. On other locales
         -- this stays false and the ilvl-band fallback covers the max ilvl.
-        if not foundVoid and Plain(text):find("Ascendant Voidforged") then
+        if not foundVoid and Plain(textValue):find("Ascendant Voidforged") then
             foundVoid = true
         end
     end)
@@ -389,12 +389,12 @@ function Calc:ScanItemLink(link)
     result.rank = foundRank
     result.maxRank = (foundTrack == apiTrack) and apiMax or nil
     result.isVoidforged = foundVoid
-    local ascendant = self:GetAscendantBonus(link)
+    local ascendant = self:GetAscendantBonus(itemLink)
     result.ascendant = ascendant
     if ascendant and ascendant.track then
         local track = foundTrack or ascendant.track
-        local level = C_Item.GetDetailedItemLevelInfo(link)
-        local _, _, rank, maxRank = self:GetItemUpgradeRange(link, track, foundRank, apiMax, level)
+        local level = C_Item.GetDetailedItemLevelInfo(itemLink)
+        local _, _, rank, maxRank = self:GetItemUpgradeRange(itemLink, track, foundRank, apiMax, level)
         if rank then
             result.track, result.rank, result.maxRank = track, rank, maxRank
         end
@@ -432,13 +432,13 @@ function Calc:ScanItemLink(link)
         end
     end
 
-    Calc._tipCache[link] = result
+    Calc._tipCache[itemLink] = result
     return result
 end
 
 -- Returns: trackName (string|nil), rank (number|nil), maxRank (number|nil).
-function Calc:GetItemTrackAndRank(link)
-    local r = self:ScanItemLink(link)
+function Calc:GetItemTrackAndRank(itemLink)
+    local r = self:ScanItemLink(itemLink)
     return r and r.track, r and r.rank, r and r.maxRank
 end
 
@@ -459,13 +459,13 @@ local function CraftedBandFromIlvl(ilvl)
         end
     end
     -- Fallback: treat as base crafted (should never be reached; ilvl < 0 is impossible).
-    local base = Data.craftedBandByName["None"]
-    return "None", math.max(base and base.maxIlvl or 0, ilvl)
+    local baseValue = Data.craftedBandByName["None"]
+    return "None", math.max(baseValue and baseValue.maxIlvl or 0, ilvl)
 end
 
 -- Returns: isCrafted, band, tier, maxIlvl.
-function Calc:GetCraftedInfo(link, ilvl)
-    local r = self:ScanItemLink(link)
+function Calc:GetCraftedInfo(itemLink, ilvl)
+    local r = self:ScanItemLink(itemLink)
     if not r or not r.isCrafted then
         return false
     end
@@ -506,8 +506,8 @@ end
 -- Returns true when the item has "Ascendant Voidforged" in its tooltip.
 -- SEASON UPDATE: if the Voidforged modifier is renamed or replaced, update the
 -- search string below to match the new tooltip text.
-function Calc:IsVoidforged(link)
-    local r = self:ScanItemLink(link)
+function Calc:IsVoidforged(itemLink)
+    local r = self:ScanItemLink(itemLink)
     return r and r.isVoidforged or false
 end
 
@@ -516,12 +516,12 @@ function Calc:GetPlayerCrests()
     local owned = {}
     for _, td in pairs(Data.tracks) do
         if td.currID and td.currID > 0 then
-            local info = C_CurrencyInfo.GetCurrencyInfo(td.currID)
-            if info then
+            local details = C_CurrencyInfo.GetCurrencyInfo(td.currID)
+            if details then
                 owned[td.crestName] = {
-                    quantity = info.quantity or 0,
-                    cap = (info.maxQuantity and info.maxQuantity > 0) and info.maxQuantity or nil,
-                    earned = info.totalEarned or 0,
+                    quantity = details.quantity or 0,
+                    cap = (details.maxQuantity and details.maxQuantity > 0) and details.maxQuantity or nil,
+                    earned = details.totalEarned or 0,
                 }
             end
         end
@@ -532,20 +532,20 @@ end
 -- Returns detailed cost info for a single item.
 -- Non-crafted: trackName, rank, crestCost, maxIlvl
 -- Crafted:     "Crafted", nil, nil, maxIlvl, tierLabel, band
-function Calc:GetItemUpgradeCost(item)
-    if not canaccessallvalues(item.ilvl) then
+function Calc:GetItemUpgradeCost(itemInfo)
+    if not canaccessallvalues(itemInfo.ilvl) then
         return nil
     end
-    local track, rank, maxRank = self:GetItemTrackAndRank(item.link)
+    local track, rank, maxRank = self:GetItemTrackAndRank(itemInfo.link)
 
     if not track then
-        local isCrafted, band, tier, maxIlvl = self:GetCraftedInfo(item.link, item.ilvl)
+        local isCrafted, band, tier, maxIlvl = self:GetCraftedInfo(itemInfo.link, itemInfo.ilvl)
         if isCrafted then
-            local label = (band == "Hero" and "Hero Craft")
+            local labelText = (band == "Hero" and "Hero Craft")
                 or (band == "Myth" and "Myth Craft")
                 or (tier and "T" .. tier .. "/5")
                 or "Crafted"
-            return "Crafted", nil, nil, maxIlvl, label, band
+            return "Crafted", nil, nil, maxIlvl, labelText, band
         end
         return nil
     end
@@ -555,17 +555,17 @@ function Calc:GetItemUpgradeCost(item)
         return nil
     end
 
-    local db = DB()
+    local saved = SavedDB()
 
-    local _, expectedMax = self:GetItemUpgradeRange(item.link, track, rank, maxRank, item.ilvl)
-    expectedMax = expectedMax or math.max(td.ranks[#td.ranks], item.ilvl)
+    local _, expectedMax = self:GetItemUpgradeRange(itemInfo.link, track, rank, maxRank, itemInfo.ilvl)
+    expectedMax = expectedMax or math.max(td.ranks[#td.ranks], itemInfo.ilvl)
 
     -- Priority 1: exact costs from Upgrader NPC API (calibrated).
-    local slotCache = db.calibrated and db.cache.slots[item.slot]
-    if slotCache and slotCache.crestAmounts and slotCache.link == item.link then
+    local slotCache = saved.calibrated and saved.cache.slots[itemInfo.slot]
+    if slotCache and slotCache.crestAmounts and slotCache.link == itemInfo.link then
         local exactCrests = 0
-        for _, v in pairs(slotCache.crestAmounts) do
-            exactCrests = exactCrests + v
+        for _, val in pairs(slotCache.crestAmounts) do
+            exactCrests = exactCrests + val
         end
         return track, rank, exactCrests, expectedMax
     end
@@ -597,10 +597,10 @@ local function SelectSlotInUpgrader(loc)
     return false
 end
 
-local function TallySlotCosts(info)
+local function TallySlotCosts(details)
     local crestAmounts = {}
-    local curr = info.currUpgrade or 0
-    for _, lvl in ipairs(info.upgradeLevelInfos or {}) do
+    local curr = details.currUpgrade or 0
+    for _, lvl in ipairs(details.upgradeLevelInfos or {}) do
         if (lvl.upgradeLevel or 0) > curr then
             for _, cc in ipairs(lvl.currencyCostsToUpgrade or {}) do
                 crestAmounts[cc.currencyID] = (crestAmounts[cc.currencyID] or 0) + (cc.cost or 0)
@@ -628,7 +628,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
         end
         return
     end
-    local db = DB()
+    local saved = SavedDB()
     if not self:IsUpgraderOpen() then
         if onDone then
             onDone(false)
@@ -642,27 +642,27 @@ function Calc:ScanEquippedAtUpgrader(onDone)
     -- Build into a fresh scratch table; only swap into db.cache on success.
     local newSlots = {}
     local slots = Data.equipSlots
-    local total = #slots
+    local sum = #slots
 
-    local function onScanDone(ok)
+    local function onScanDone(success)
         Calc._scanning = false
-        if ok then
-            db.cache = { slots = newSlots, ts = time() }
-            db.calibrated = true
+        if success then
+            saved.cache = { slots = newSlots, ts = time() }
+            saved.calibrated = true
         end
         if onDone then
-            onDone(ok)
+            onDone(success)
         end
     end
 
-    local function saveSlotInfo(slotID, info)
-        if not (info and info.upgradeLevelInfos) then
+    local function saveSlotInfo(slotID, details)
+        if not (details and details.upgradeLevelInfos) then
             return
         end
-        local crestAmounts = TallySlotCosts(info)
-        local link = GetInventoryItemLink("player", slotID)
+        local crestAmounts = TallySlotCosts(details)
+        local itemLink = GetInventoryItemLink("player", slotID)
         newSlots[slotID] = {
-            link = link,
+            link = itemLink,
             crestAmounts = crestAmounts,
         }
     end
@@ -677,7 +677,7 @@ function Calc:ScanEquippedAtUpgrader(onDone)
             onScanDone(false)
             return
         end
-        if si > total then
+        if si > sum then
             onScanDone(true)
             return
         end
@@ -690,10 +690,10 @@ function Calc:ScanEquippedAtUpgrader(onDone)
                     onScanDone(false)
                     return
                 end
-                local info = C_ItemUpgrade
+                local details = C_ItemUpgrade
                     and C_ItemUpgrade.GetItemUpgradeItemInfo
                     and C_ItemUpgrade.GetItemUpgradeItemInfo()
-                saveSlotInfo(slotID, info)
+                saveSlotInfo(slotID, details)
                 si = si + 1
                 scanNext()
             end)
@@ -708,9 +708,9 @@ function Calc:ScanEquippedAtUpgrader(onDone)
 end
 
 function Calc:ClearCache()
-    local db = DB()
-    db.cache = { slots = {}, ts = 0 }
-    db.calibrated = false
+    local saved = SavedDB()
+    saved.cache = { slots = {}, ts = 0 }
+    saved.calibrated = false
 end
 
 -- Rescans a single slot at the Upgrader NPC and updates the cache entry for it.
@@ -740,7 +740,7 @@ function Calc:RescanSlot(slotID, onDone)
     -- Guard the async window with _scanning so a second upgrade event within
     -- 0.3 s can't launch a concurrent rescan and overwrite the wrong slot.
     Calc._scanning = true
-    local db = DB()
+    local saved = SavedDB()
     C_Timer.After(0.3, function()
         Calc._scanning = false
         if IsLocked() then
@@ -749,14 +749,14 @@ function Calc:RescanSlot(slotID, onDone)
             end
             return
         end
-        local info = C_ItemUpgrade
+        local details = C_ItemUpgrade
             and C_ItemUpgrade.GetItemUpgradeItemInfo
             and C_ItemUpgrade.GetItemUpgradeItemInfo()
-        if info and info.upgradeLevelInfos then
-            local crestAmounts = TallySlotCosts(info)
-            db.cache = db.cache or { slots = {}, ts = 0 }
-            db.cache.slots = db.cache.slots or {}
-            db.cache.slots[slotID] = {
+        if details and details.upgradeLevelInfos then
+            local crestAmounts = TallySlotCosts(details)
+            saved.cache = saved.cache or { slots = {}, ts = 0 }
+            saved.cache.slots = saved.cache.slots or {}
+            saved.cache.slots[slotID] = {
                 link = GetInventoryItemLink("player", slotID),
                 crestAmounts = crestAmounts,
             }
@@ -776,12 +776,12 @@ local function SolidTex(p, l, r, g, b, a)
 end
 
 local function MFont(p, s, _, r, g, b, a)
-    local fs = p:CreateFontString(nil, "OVERLAY")
-    CludesUI.ApplyModuleFont(fs, nil, s, "extras")
+    local fontStr = p:CreateFontString(nil, "OVERLAY")
+    CludesUI.ApplyModuleFont(fontStr, nil, s, "extras")
     if r then
-        fs:SetTextColor(r, g or 1, b or 1, a or 1)
+        fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
     end
-    return fs
+    return fontStr
 end
 
 local G = CUI.CLUDES_GREEN
@@ -808,7 +808,7 @@ local TRACK_RGB = {
 }
 
 local f = CreateFrame("Frame", "CUIUpgCalcFrame", UIParent)
-PP.Size(f, FRAME_W, FRAME_H)
+Pix.Size(f, FRAME_W, FRAME_H)
 f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 20, -40)
 f:SetFrameStrata("DIALOG")
 f:SetMovable(true)
@@ -823,22 +823,22 @@ local function ShouldSnapToCharacterFrame()
     if _sessionUnpinned then
         return false
     end
-    local cf = _G.CharacterFrame
-    return cf ~= nil and cf:IsShown()
+    local castFrame = _G.CharacterFrame
+    return castFrame ~= nil and castFrame:IsShown()
 end
 
 local function DockToCharacterFrame()
-    local cf = _G.CharacterFrame
-    if not cf or not cf:IsShown() then
+    local castFrame = _G.CharacterFrame
+    if not castFrame or not castFrame:IsShown() then
         return
     end
     local margin = 4
-    local cs = cf:GetEffectiveScale() or 1
+    local cs = castFrame:GetEffectiveScale() or 1
     local es = f:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
     local wAbs = (f:GetWidth() or 0) * es
-    local leftRoom = (cf:GetLeft() or 0) * cs
-    local rightRoom = (GetScreenWidth() or 0) * ues - (cf:GetRight() or 0) * cs
+    local leftRoom = (castFrame:GetLeft() or 0) * cs
+    local rightRoom = (GetScreenWidth() or 0) * ues - (castFrame:GetRight() or 0) * cs
     local minRoom = wAbs + margin * es
     local leftFits = leftRoom >= minRoom
     local rightFits = rightRoom >= minRoom
@@ -852,9 +852,9 @@ local function DockToCharacterFrame()
     end
     f:ClearAllPoints()
     if dockLeft then
-        f:SetPoint("TOPRIGHT", cf, "TOPLEFT", -margin, 0)
+        f:SetPoint("TOPRIGHT", castFrame, "TOPLEFT", -margin, 0)
     else
-        f:SetPoint("TOPLEFT", cf, "TOPRIGHT", margin, 0)
+        f:SetPoint("TOPLEFT", castFrame, "TOPRIGHT", margin, 0)
     end
 end
 
@@ -868,16 +868,16 @@ local function InstallCharacterFrameSnapHooks()
     if _cfSnapHooked then
         return
     end
-    local cf = _G.CharacterFrame
-    if not cf then
+    local castFrame = _G.CharacterFrame
+    if not castFrame then
         return
     end
     _cfSnapHooked = true
-    cf:HookScript("OnShow", TrySnapToCharacterFrame)
-    hooksecurefunc(cf, "SetPoint", function()
+    castFrame:HookScript("OnShow", TrySnapToCharacterFrame)
+    hooksecurefunc(castFrame, "SetPoint", function()
         TrySnapToCharacterFrame()
     end)
-    hooksecurefunc(cf, "SetScale", function()
+    hooksecurefunc(castFrame, "SetScale", function()
         TrySnapToCharacterFrame()
     end)
 end
@@ -900,8 +900,8 @@ fBgOverlay:SetAllPoints(f)
 fBgOverlay:SetColorTexture(0, 0, 0, 0.5)
 
 function Calc.ApplyBgOpacity()
-    local opts = Opts()
-    local alpha = opts and opts.bgOpacity
+    local options = Opts()
+    local alpha = options and options.bgOpacity
     if alpha == nil then
         alpha = 50
     end
@@ -909,8 +909,8 @@ function Calc.ApplyBgOpacity()
 end
 
 function Calc.ApplyScale()
-    local opts = Opts()
-    local scale = opts and opts.uiScale
+    local options = Opts()
+    local scale = options and options.uiScale
     if scale == nil then
         scale = 100
     end
@@ -922,16 +922,16 @@ if CUI and CUI.PanelPP then
 end
 
 local titleBg = SolidTex(f, "BORDER", 0, 0, 0, 0.25)
-PP.Point(titleBg, "TOPLEFT", f, "TOPLEFT", 1, -1)
-PP.Point(titleBg, "TOPRIGHT", f, "TOPRIGHT", -1, 0)
-PP.Height(titleBg, 32)
+Pix.Point(titleBg, "TOPLEFT", f, "TOPLEFT", 1, -1)
+Pix.Point(titleBg, "TOPRIGHT", f, "TOPRIGHT", -1, 0)
+Pix.Height(titleBg, 32)
 
 local titleTxt = MFont(f, 13, "OUTLINE", 1, 1, 1, 1)
-PP.Point(titleTxt, "TOPLEFT", f, "TOPLEFT", 10, -10)
+Pix.Point(titleTxt, "TOPLEFT", f, "TOPLEFT", 10, -10)
 titleTxt:SetText(CUI.L("Upgrade Calculator"))
 
 local closeBtn = CreateFrame("Button", nil, f)
-PP.Size(closeBtn, 24, 24)
+Pix.Size(closeBtn, 24, 24)
 closeBtn:SetPoint("RIGHT", titleBg, "RIGHT", -5, 5)
 local closeTxt = MFont(closeBtn, 16, "", 1, 1, 1, 0.75)
 closeTxt:SetPoint("CENTER", -2, -3)
@@ -953,46 +953,46 @@ local tabY = -36
 -- Top divider removed for cleaner look
 
 -- Row helpers
-local function MakeRow(parent, cols, yOffset, isAlt)
-    local row = {}
+local function MakeRow(hostFrame, cols, yOffset, isAlt)
+    local rowFrame = {}
     if isAlt then
-        local bg = SolidTex(parent, "BACKGROUND", 0, 0, 0, 0.15)
-        PP.Point(bg, "TOPLEFT", parent, "TOPLEFT", 0, yOffset)
-        PP.Point(bg, "TOPRIGHT", parent, "TOPRIGHT", 0, yOffset)
-        PP.Height(bg, ROW_H)
-        row.altBg = bg -- stored so PopulateGear can reposition and hide/show it
+        local backdrop = SolidTex(hostFrame, "BACKGROUND", 0, 0, 0, 0.15)
+        Pix.Point(backdrop, "TOPLEFT", hostFrame, "TOPLEFT", 0, yOffset)
+        Pix.Point(backdrop, "TOPRIGHT", hostFrame, "TOPRIGHT", 0, yOffset)
+        Pix.Height(backdrop, ROW_H)
+        rowFrame.altBg = backdrop -- stored so PopulateGear can reposition and hide/show it
     end
-    for _, col in ipairs(cols) do
-        local cell = MFont(parent, 11, nil, 0.85, 0.85, 0.85, 1)
-        PP.Point(cell, "TOPLEFT", parent, "TOPLEFT", col.x + 4, yOffset - 2)
-        PP.Width(cell, col.w - 8)
-        cell:SetJustifyH(col.align)
-        row[col.key] = cell
+    for _, column in ipairs(cols) do
+        local cellFrame = MFont(hostFrame, 11, nil, 0.85, 0.85, 0.85, 1)
+        Pix.Point(cellFrame, "TOPLEFT", hostFrame, "TOPLEFT", column.x + 4, yOffset - 2)
+        Pix.Width(cellFrame, column.w - 8)
+        cellFrame:SetJustifyH(column.align)
+        rowFrame[column.key] = cellFrame
     end
-    return row
+    return rowFrame
 end
 
-local function MakeButton(parent, label, w, h, yOff, xOff)
-    local btn = CreateFrame("Button", nil, parent)
-    PP.Size(btn, w, h)
-    PP.Point(btn, "TOPLEFT", parent, "TOPLEFT", xOff, yOff)
-    local btnBg = SolidTex(btn, "BACKGROUND", 0, 0, 0, 0.35)
+local function MakeButton(hostFrame, labelText, wid, hgt, yOff, xOff)
+    local button = CreateFrame("Button", nil, hostFrame)
+    Pix.Size(button, wid, hgt)
+    Pix.Point(button, "TOPLEFT", hostFrame, "TOPLEFT", xOff, yOff)
+    local btnBg = SolidTex(button, "BACKGROUND", 0, 0, 0, 0.35)
     btnBg:SetAllPoints()
-    local bb = CUI.MakeBorder(btn, 0.2, 0.2, 0.2, 1)
+    local bb = CUI.MakeBorder(button, 0.2, 0.2, 0.2, 1)
     if bb.SetColor then
         bb:SetColor(0.2, 0.2, 0.2, 1)
     end
-    local txt = MFont(btn, 10, "OUTLINE", 1, 1, 1, 0.75)
+    local txt = MFont(button, 10, "OUTLINE", 1, 1, 1, 0.75)
     txt:SetAllPoints()
     txt:SetJustifyH("CENTER")
-    txt:SetText(label)
-    btn:SetScript("OnEnter", function()
+    txt:SetText(labelText)
+    button:SetScript("OnEnter", function()
         txt:SetTextColor(1, 1, 1, 1)
     end)
-    btn:SetScript("OnLeave", function()
+    button:SetScript("OnLeave", function()
         txt:SetTextColor(1, 1, 1, 0.75)
     end)
-    return btn, txt
+    return button, txt
 end
 
 -- Character Pane ──────────────────────────────────────────────────────────────
@@ -1000,22 +1000,22 @@ f.charPane = CreateFrame("Frame", nil, f)
 f.charPane:SetAllPoints(f)
 
 local ilvlStatLbl = MFont(f.charPane, 12, "OUTLINE", 1, 1, 1, 1)
-PP.Point(ilvlStatLbl, "TOPLEFT", f.charPane, "TOPLEFT", 10, tabY - 11)
+Pix.Point(ilvlStatLbl, "TOPLEFT", f.charPane, "TOPLEFT", 10, tabY - 11)
 ilvlStatLbl:SetText(CUI.L("Current iLvl: -   Max Possible: -"))
 local ilvlEstLbl = MFont(f.charPane, 10, "OUTLINE", 0.53, 0.53, 0.53, 1)
-PP.Point(ilvlEstLbl, "LEFT", ilvlStatLbl, "RIGHT", 4, 0)
+Pix.Point(ilvlEstLbl, "LEFT", ilvlStatLbl, "RIGHT", 4, 0)
 ilvlEstLbl:SetText(CUI.L(""))
 
 local cc = CreateFrame("Frame", nil, f.charPane)
-PP.Point(cc, "TOPLEFT", f.charPane, "TOPLEFT", 10, tabY - 30)
-PP.Point(cc, "TOPRIGHT", f.charPane, "TOPRIGHT", -10, tabY - 30)
-PP.Height(cc, FRAME_H - 100)
+Pix.Point(cc, "TOPLEFT", f.charPane, "TOPLEFT", 10, tabY - 30)
+Pix.Point(cc, "TOPRIGHT", f.charPane, "TOPRIGHT", -10, tabY - 30)
+Pix.Height(cc, FRAME_H - 100)
 
 -- ── iLvl Timeline bar ──────────────────────────────────────────────────────────
 -- iLvl timeline bar: same line as the stat label, starts after "(estimated)"
 local tlTrack = SolidTex(f.charPane, "BACKGROUND", 0, 0, 0, 0.3)
-PP.Point(tlTrack, "LEFT", ilvlEstLbl, "RIGHT", 10, 0)
-PP.Height(tlTrack, 10)
+Pix.Point(tlTrack, "LEFT", ilvlEstLbl, "RIGHT", 10, 0)
+Pix.Height(tlTrack, 10)
 -- Right edge aligns with tile row right edge (cc x=10 + TILE_ROW_W)
 tlTrack:SetPoint("RIGHT", f.charPane, "LEFT", 10 + TILE_ROW_W, 0)
 
@@ -1025,8 +1025,8 @@ tlClip:SetPoint("TOPLEFT", tlTrack, "TOPLEFT", 0, 0)
 tlClip:SetPoint("BOTTOMRIGHT", tlTrack, "BOTTOMRIGHT", 0, 0)
 tlClip:SetClipsChildren(true)
 local tlFill = SolidTex(tlClip, "ARTWORK", G.r, G.g, G.b, 0.9)
-PP.Point(tlFill, "TOPLEFT", tlClip, "TOPLEFT", 0, 0)
-PP.Point(tlFill, "BOTTOMLEFT", tlClip, "BOTTOMLEFT", 0, 0)
+Pix.Point(tlFill, "TOPLEFT", tlClip, "TOPLEFT", 0, 0)
+Pix.Point(tlFill, "BOTTOMLEFT", tlClip, "BOTTOMLEFT", 0, 0)
 tlFill:SetWidth(1) -- updated each refresh
 
 -- ── Tile frames ──────────────────────────────────────────────────────────────────
@@ -1034,65 +1034,65 @@ local ToggleTileQueue -- forward declaration (defined in queue section)
 
 local tileFrames = {}
 for i = 1, 18 do
-    local btn = CreateFrame("Button", nil, cc)
-    PP.Size(btn, TILE_W, TILE_H)
-    btn:Hide()
-    local bg = SolidTex(btn, "BACKGROUND", 1, 1, 1, 0.05)
-    bg:SetAllPoints(btn)
-    btn.bg = bg
+    local button = CreateFrame("Button", nil, cc)
+    Pix.Size(button, TILE_W, TILE_H)
+    button:Hide()
+    local backdrop = SolidTex(button, "BACKGROUND", 1, 1, 1, 0.05)
+    backdrop:SetAllPoints(button)
+    button.bg = backdrop
     -- Left accent bar (3 px, track colour)
-    local accentBar = SolidTex(btn, "BORDER", 0.5, 0.5, 0.5, 1)
-    PP.Point(accentBar, "TOPLEFT", btn, "TOPLEFT", 0, 0)
-    PP.Point(accentBar, "BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
-    accentBar:SetWidth(PP.mult * 3)
+    local accentBar = SolidTex(button, "BORDER", 0.5, 0.5, 0.5, 1)
+    Pix.Point(accentBar, "TOPLEFT", button, "TOPLEFT", 0, 0)
+    Pix.Point(accentBar, "BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+    accentBar:SetWidth(Pix.mult * 3)
     accentBar:SetSnapToPixelGrid(false)
     accentBar:SetTexelSnappingBias(0)
-    btn.accentBar = accentBar
+    button.accentBar = accentBar
     -- Queue overlay: 50% black with "In Queue" text
-    local queueOv = CreateFrame("Frame", nil, btn)
-    queueOv:SetAllPoints(btn)
-    queueOv:SetFrameLevel(btn:GetFrameLevel() + 5)
+    local queueOv = CreateFrame("Frame", nil, button)
+    queueOv:SetAllPoints(button)
+    queueOv:SetFrameLevel(button:GetFrameLevel() + 5)
     local queueOvBg = SolidTex(queueOv, "BACKGROUND", 0, 0, 0, 0.75)
     queueOvBg:SetAllPoints()
     local queueOvTxt = MFont(queueOv, 11, "OUTLINE", 1, 1, 1, 0.9)
     queueOvTxt:SetPoint("CENTER", queueOv, "CENTER", 0, 0)
     queueOvTxt:SetText(CUI.L("In Queue"))
     queueOv:Hide()
-    btn.selHL = queueOv
+    button.selHL = queueOv
     -- Top-left: slot name
-    local sLbl = MFont(btn, 12, "OUTLINE", 0.9, 0.9, 0.9, 1)
-    PP.Point(sLbl, "TOPLEFT", btn, "TOPLEFT", 7, -4)
-    PP.Width(sLbl, TILE_W - 82)
+    local sLbl = MFont(button, 12, "OUTLINE", 0.9, 0.9, 0.9, 1)
+    Pix.Point(sLbl, "TOPLEFT", button, "TOPLEFT", 7, -4)
+    Pix.Width(sLbl, TILE_W - 82)
     sLbl:SetJustifyH("LEFT")
-    btn.sLbl = sLbl
+    button.sLbl = sLbl
     -- Top-right: current ^ max ilvl
-    local iLbl = MFont(btn, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
-    PP.Point(iLbl, "TOPRIGHT", btn, "TOPRIGHT", -5, -4)
-    PP.Width(iLbl, 76)
+    local iLbl = MFont(button, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
+    Pix.Point(iLbl, "TOPRIGHT", button, "TOPRIGHT", -5, -4)
+    Pix.Width(iLbl, 76)
     iLbl:SetJustifyH("RIGHT")
-    btn.iLbl = iLbl
+    button.iLbl = iLbl
     -- Bottom-left: track name
-    local tLbl = MFont(btn, 11, "OUTLINE", 0.55, 0.55, 0.55, 1)
-    PP.Point(tLbl, "BOTTOMLEFT", btn, "BOTTOMLEFT", 7, 5)
-    PP.Width(tLbl, TILE_W - 82)
+    local tLbl = MFont(button, 11, "OUTLINE", 0.55, 0.55, 0.55, 1)
+    Pix.Point(tLbl, "BOTTOMLEFT", button, "BOTTOMLEFT", 7, 5)
+    Pix.Width(tLbl, TILE_W - 82)
     tLbl:SetJustifyH("LEFT")
-    btn.tLbl = tLbl
+    button.tLbl = tLbl
     -- Bottom-right: rank badge
-    local rLbl = MFont(btn, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
-    PP.Point(rLbl, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -5, 5)
-    PP.Width(rLbl, 76)
+    local rLbl = MFont(button, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
+    Pix.Point(rLbl, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -5, 5)
+    Pix.Width(rLbl, 76)
     rLbl:SetJustifyH("RIGHT")
-    btn.rLbl = rLbl
+    button.rLbl = rLbl
 
-    btn.tileEntry = nil
+    button.tileEntry = nil
 
     -- Handlers wired ONCE here — no closures created during refresh.
-    btn:SetScript("OnClick", function(self)
+    button:SetScript("OnClick", function(self)
         if self.tileEntry then
             ToggleTileQueue(self.tileEntry, self)
         end
     end)
-    btn:SetScript("OnEnter", function(self)
+    button:SetScript("OnEnter", function(self)
         self.bg:SetColorTexture(1, 1, 1, 0.1)
         local e = self.tileEntry
         if not e or not CUI.ShowWidgetTooltip then
@@ -1105,7 +1105,7 @@ for i = 1, 18 do
             lines[#lines + 1] = CUI.L("Crafted item — cannot be upgraded here")
         elseif e.trackKey then
             local td = Data.tracks[e.trackKey]
-            local snap = DB()
+            local snap = SavedDB()
             local sc = snap.calibrated and snap.cache.slots[e.slotID] or nil
             -- Discard cached entry if the item in that slot has changed since the scan.
             if sc and sc.link and sc.link ~= (GetInventoryItemLink("player", e.slotID) or "") then
@@ -1129,7 +1129,7 @@ for i = 1, 18 do
             CUI.ShowWidgetTooltip(self, table.concat(lines, "\n"))
         end
     end)
-    btn:SetScript("OnLeave", function(self)
+    button:SetScript("OnLeave", function(self)
         local e = self.tileEntry
         if not e then
             return
@@ -1144,23 +1144,23 @@ for i = 1, 18 do
         CUI.HideWidgetTooltip()
     end)
 
-    tileFrames[i] = btn
+    tileFrames[i] = button
 end
 
 -- Section header labels and group separator line (repositioned each refresh)
 local sHdrNeeds = MFont(cc, 11, "OUTLINE", 1, 1, 1, 1)
 local sHdrMax = MFont(cc, 10, "OUTLINE", 0.48, 0.48, 0.48, 1)
 local groupSepLine = SolidTex(cc, "BORDER", 0.2, 0.2, 0.2, 1)
-groupSepLine:SetHeight(PP.mult)
-PP.Width(groupSepLine, TILE_ROW_W)
+groupSepLine:SetHeight(Pix.mult)
+Pix.Width(groupSepLine, TILE_ROW_W)
 
 -- ── Queue panel ──────────────────────────────────────────────────────────────────
 local queuePane = CreateFrame("Frame", nil, cc)
-PP.Size(queuePane, QUEUE_W, FRAME_H - 140)
-PP.Point(queuePane, "TOPLEFT", cc, "TOPLEFT", QUEUE_X_OFF, -10)
+Pix.Size(queuePane, QUEUE_W, FRAME_H - 140)
+Pix.Point(queuePane, "TOPLEFT", cc, "TOPLEFT", QUEUE_X_OFF, -10)
 
 local qHdrLbl = MFont(queuePane, 11, "OUTLINE", 1, 1, 1, 1)
-PP.Point(qHdrLbl, "TOPLEFT", queuePane, "TOPLEFT", 0, 0)
+Pix.Point(qHdrLbl, "TOPLEFT", queuePane, "TOPLEFT", 0, 0)
 qHdrLbl:SetText(CUI.L("Upgrade Queue"))
 
 -- Sort-by-crest button sits in the header bar, right-aligned (swaps with qSubLbl)
@@ -1170,7 +1170,7 @@ local qSortTxt = MFont(qSortBtn, 11, "OUTLINE", 1, 1, 1, 0.75)
 qSortTxt:SetPoint("RIGHT", qSortBtn, "RIGHT", 0, 0)
 qSortTxt:SetText(CUI.L("Sort"))
 qSortBtn:SetWidth(qSortTxt:GetStringWidth() + 4)
-PP.Point(qSortBtn, "RIGHT", queuePane, "RIGHT", 0, 0)
+Pix.Point(qSortBtn, "RIGHT", queuePane, "RIGHT", 0, 0)
 qSortBtn:SetPoint("TOP", queuePane, "TOP", 0, 0)
 qSortBtn:SetScript("OnEnter", function(self)
     CUI.ShowWidgetTooltip(self, CUI.L("Sort queue by crest type (cheapest first)"))
@@ -1183,15 +1183,15 @@ qSortBtn:Hide() -- shown only when queue has items
 local qHdrSep = CreateFrame("Frame", nil, queuePane)
 qHdrSep:SetPoint("TOPLEFT", queuePane, "TOPLEFT", 0, -18)
 qHdrSep:SetPoint("TOPRIGHT", queuePane, "TOPRIGHT", 0, -18)
-qHdrSep:SetHeight(math.max(PP.mult, 1))
+qHdrSep:SetHeight(math.max(Pix.mult, 1))
 qHdrSep:SetFrameLevel(queuePane:GetFrameLevel() + 5)
 local qHdrSepTex = qHdrSep:CreateTexture(nil, "OVERLAY")
 qHdrSepTex:SetAllPoints()
 qHdrSepTex:SetColorTexture(1, 1, 1, 0.15)
 
 local qEmptyLbl = MFont(queuePane, 10, "OUTLINE", 0.32, 0.32, 0.32, 1)
-PP.Point(qEmptyLbl, "TOPLEFT", queuePane, "TOPLEFT", 4, -23)
-PP.Point(qEmptyLbl, "TOPRIGHT", queuePane, "TOPRIGHT", -4, -23)
+Pix.Point(qEmptyLbl, "TOPLEFT", queuePane, "TOPLEFT", 4, -23)
+Pix.Point(qEmptyLbl, "TOPRIGHT", queuePane, "TOPRIGHT", -4, -23)
 qEmptyLbl:SetJustifyH("LEFT")
 qEmptyLbl:SetWordWrap(true)
 qEmptyLbl:SetText(CUI.L("No items queued, click tiles to add an item to queue."))
@@ -1199,21 +1199,21 @@ qEmptyLbl:SetText(CUI.L("No items queued, click tiles to add an item to queue.")
 -- 16 pre-created queue entry rows
 local queueEntries = {}
 local Q_ROW_H = 20
-local Q_ROW_STEP = Q_ROW_H + PP.mult -- row height + 1 physical pixel gap
+local Q_ROW_STEP = Q_ROW_H + Pix.mult -- row height + 1 physical pixel gap
 for i = 1, 16 do
     local ef = CreateFrame("Frame", nil, queuePane)
-    PP.Size(ef, QUEUE_W, Q_ROW_H)
-    PP.Point(ef, "TOPLEFT", queuePane, "TOPLEFT", 0, -(23 + (i - 1) * Q_ROW_STEP))
+    Pix.Size(ef, QUEUE_W, Q_ROW_H)
+    Pix.Point(ef, "TOPLEFT", queuePane, "TOPLEFT", 0, -(23 + (i - 1) * Q_ROW_STEP))
     ef:Hide()
     local ebg = SolidTex(ef, "BACKGROUND", 1, 1, 1, 0.05)
     ebg:SetAllPoints(ef)
     local nLbl = MFont(ef, 10, "OUTLINE", 0.8, 0.8, 0.8, 1)
-    PP.Point(nLbl, "LEFT", ef, "LEFT", 4, 0)
-    PP.Width(nLbl, QUEUE_W - 84)
+    Pix.Point(nLbl, "LEFT", ef, "LEFT", 4, 0)
+    Pix.Width(nLbl, QUEUE_W - 84)
     nLbl:SetJustifyH("LEFT")
     local cLbl = MFont(ef, 10, nil, 0.8, 0.8, 0.8, 1)
-    PP.Point(cLbl, "RIGHT", ef, "RIGHT", -4, 0)
-    PP.Width(cLbl, 82)
+    Pix.Point(cLbl, "RIGHT", ef, "RIGHT", -4, 0)
+    Pix.Width(cLbl, 82)
     cLbl:SetJustifyH("RIGHT")
     ef.nLbl = nLbl
     ef.cLbl = cLbl
@@ -1223,7 +1223,7 @@ end
 local qTotalSep = CreateFrame("Frame", nil, queuePane)
 qTotalSep:SetPoint("TOPLEFT", queuePane, "TOPLEFT", 0, -42)
 qTotalSep:SetPoint("TOPRIGHT", queuePane, "TOPRIGHT", 0, -42)
-qTotalSep:SetHeight(math.max(PP.mult, 1))
+qTotalSep:SetHeight(math.max(Pix.mult, 1))
 qTotalSep:SetFrameLevel(queuePane:GetFrameLevel() + 5)
 local qTotalSepTex = qTotalSep:CreateTexture(nil, "OVERLAY")
 qTotalSepTex:SetAllPoints()
@@ -1231,7 +1231,7 @@ qTotalSepTex:SetColorTexture(1, 1, 1, 0.15)
 qTotalSep:Hide()
 
 local qTotalLbl = MFont(queuePane, 10, "OUTLINE", G.r, G.g, G.b, 1)
-PP.Point(qTotalLbl, "TOPRIGHT", queuePane, "TOPRIGHT", -4, -46)
+Pix.Point(qTotalLbl, "TOPRIGHT", queuePane, "TOPRIGHT", -4, -46)
 qTotalLbl:SetJustifyH("RIGHT")
 qTotalLbl:SetText("")
 qTotalLbl:Hide()
@@ -1253,58 +1253,58 @@ end
 
 -- Persist the current queue (slot IDs only) to the profile DB.
 local function SaveQueue()
-    local db = DB()
-    db.queue = {}
+    local saved = SavedDB()
+    saved.queue = {}
     for i, it in ipairs(queueItems) do
-        db.queue[i] = it.slotID
+        saved.queue[i] = it.slotID
     end
 end
 
 -- Persist the current crest manual-add offsets to the profile DB.
 local function SaveCrestManualAdds()
-    local db = DB()
-    db.crestManualAdds = {}
-    for k, v in pairs(crestManualAdds) do
-        db.crestManualAdds[k] = v
+    local saved = SavedDB()
+    saved.crestManualAdds = {}
+    for k, val in pairs(crestManualAdds) do
+        saved.crestManualAdds[k] = val
     end
 end
 
 local function UpdateQueueDisplay()
-    local n = #queueItems
-    qEmptyLbl:SetText(n == 0 and CUI.L("No items queued, click tiles to add an item to queue.") or "")
-    if n > 0 then
+    local num = #queueItems
+    qEmptyLbl:SetText(num == 0 and CUI.L("No items queued, click tiles to add an item to queue.") or "")
+    if num > 0 then
         qSortBtn:Show()
     else
         qSortBtn:Hide()
     end
 
     local totalCrests = {}
-    for i, entry in ipairs(queueItems) do
+    for i, record in ipairs(queueItems) do
         local qe = queueEntries[i]
         qe:Show()
         local parts = {}
-        if entry.trackKey and entry.trackKey ~= "Crafted" then
-            local td = Data.tracks[entry.trackKey]
-            if td and (entry.crestCost or 0) > 0 then
-                local trackShortName = (td.crestName or entry.trackKey):gsub(" Crest", "")
-                parts[#parts + 1] = entry.crestCost .. " " .. CUI.L(trackShortName)
-                totalCrests[td.crestName] = (totalCrests[td.crestName] or 0) + entry.crestCost
+        if record.trackKey and record.trackKey ~= "Crafted" then
+            local td = Data.tracks[record.trackKey]
+            if td and (record.crestCost or 0) > 0 then
+                local trackShortName = (td.crestName or record.trackKey):gsub(" Crest", "")
+                parts[#parts + 1] = record.crestCost .. " " .. CUI.L(trackShortName)
+                totalCrests[td.crestName] = (totalCrests[td.crestName] or 0) + record.crestCost
             end
         end
         local costStr = #parts > 0 and table.concat(parts, " ") or ("|cff20c020" .. CUI.L("Max") .. "|r")
-        local gain = (not entry.isAtMax and type(entry.max) == "number" and entry.max > entry.ilvl)
-                and (entry.max - entry.ilvl)
+        local gain = (not record.isAtMax and type(record.max) == "number" and record.max > record.ilvl)
+                and (record.max - record.ilvl)
             or nil
-        local slotNameTranslated = CUI.L(entry.slotName)
+        local slotNameTranslated = CUI.L(record.slotName)
         local nameStr = gain and (slotNameTranslated .. " |cff888888+" .. gain .. "|r") or slotNameTranslated
         qe.nLbl:SetText(nameStr)
         qe.cLbl:SetText(costStr)
     end
-    for i = n + 1, 16 do
+    for i = num + 1, 16 do
         queueEntries[i]:Hide()
     end
 
-    if n > 0 then
+    if num > 0 then
         local parts = {}
         for _, trackName in ipairs(Data.trackOrder) do
             local td = Data.tracks[trackName]
@@ -1315,15 +1315,15 @@ local function UpdateQueueDisplay()
             end
         end
 
-        local sepY = -(23 + n * Q_ROW_STEP + 6)
+        local sepY = -(23 + num * Q_ROW_STEP + 6)
         qTotalSep:ClearAllPoints()
-        PP.Point(qTotalSep, "TOPLEFT", queuePane, "TOPLEFT", 0, sepY)
-        PP.Point(qTotalSep, "TOPRIGHT", queuePane, "TOPRIGHT", 0, sepY)
-        qTotalSep:SetHeight(math.max(PP.mult, 1))
+        Pix.Point(qTotalSep, "TOPLEFT", queuePane, "TOPLEFT", 0, sepY)
+        Pix.Point(qTotalSep, "TOPRIGHT", queuePane, "TOPRIGHT", 0, sepY)
+        qTotalSep:SetHeight(math.max(Pix.mult, 1))
         qTotalLbl:ClearAllPoints()
-        PP.Point(qTotalLbl, "TOPRIGHT", queuePane, "TOPRIGHT", -4, sepY - 6)
+        Pix.Point(qTotalLbl, "TOPRIGHT", queuePane, "TOPRIGHT", -4, sepY - 6)
         qClearBtn:ClearAllPoints()
-        PP.Point(qClearBtn, "TOPLEFT", queuePane, "TOPLEFT", 0, sepY - 28)
+        Pix.Point(qClearBtn, "TOPLEFT", queuePane, "TOPLEFT", 0, sepY - 28)
 
         qTotalLbl:SetText(#parts > 0 and table.concat(parts, "  ") or CUI.L("Nothing needed"))
         qTotalLbl:Show()
@@ -1364,20 +1364,20 @@ end
 
 qSortBtn:SetScript("OnClick", SortQueueByCrest)
 
-ToggleTileQueue = function(entry, btn)
-    local sn = entry.slotName
+ToggleTileQueue = function(record, button)
+    local sn = record.slotName
     if queueSlotSet[sn] then
-        local idx = queueSlotSet[sn]
-        table.remove(queueItems, idx)
+        local position = queueSlotSet[sn]
+        table.remove(queueItems, position)
         queueSlotSet = {}
         for i, it in ipairs(queueItems) do
             queueSlotSet[it.slotName] = i
         end
-        btn.selHL:Hide()
+        button.selHL:Hide()
     else
-        queueItems[#queueItems + 1] = entry
+        queueItems[#queueItems + 1] = record
         queueSlotSet[sn] = #queueItems
-        btn.selHL:Show()
+        button.selHL:Show()
     end
     UpdateQueueDisplay()
     SaveQueue()
@@ -1386,8 +1386,8 @@ end
 qClearBtn:SetScript("OnClick", function()
     queueItems = {}
     queueSlotSet = {}
-    for _, btn in ipairs(tileFrames) do
-        btn.selHL:Hide()
+    for _, button in ipairs(tileFrames) do
+        button.selHL:Hide()
     end
     UpdateQueueDisplay()
     SaveQueue()
@@ -1396,27 +1396,27 @@ end)
 -- ── Crest section — parented to a repositionable container frame ──────────────
 -- crestSection is moved each PopulateGear so the window height stays tight.
 local crestSection = CreateFrame("Frame", nil, cc)
-PP.Point(crestSection, "TOPLEFT", cc, "TOPLEFT", 0, -430) -- initial; overwritten each refresh
-PP.Point(crestSection, "TOPRIGHT", cc, "TOPRIGHT", 0, -430)
-PP.Height(crestSection, 200) -- large enough; content determines visible area
+Pix.Point(crestSection, "TOPLEFT", cc, "TOPLEFT", 0, -430) -- initial; overwritten each refresh
+Pix.Point(crestSection, "TOPRIGHT", cc, "TOPRIGHT", 0, -430)
+Pix.Height(crestSection, 200) -- large enough; content determines visible area
 
 local gearSep = SolidTex(crestSection, "BORDER", 0.2, 0.2, 0.2, 1)
-PP.Point(gearSep, "TOPLEFT", crestSection, "TOPLEFT", 0, 4)
-PP.Point(gearSep, "TOPRIGHT", crestSection, "TOPRIGHT", 0, 4)
-gearSep:SetHeight(PP.mult)
+Pix.Point(gearSep, "TOPLEFT", crestSection, "TOPLEFT", 0, 4)
+Pix.Point(gearSep, "TOPRIGHT", crestSection, "TOPRIGHT", 0, 4)
+gearSep:SetHeight(Pix.mult)
 
 -- Forward-declared so buttons can call it.
 local PopulateGear
 
 -- Summary text labels
 local missingLbl = MFont(crestSection, 11, "OUTLINE", 1, 1, 1, 1)
-PP.Point(missingLbl, "TOPLEFT", crestSection, "TOPLEFT", 4, 0)
+Pix.Point(missingLbl, "TOPLEFT", crestSection, "TOPLEFT", 4, 0)
 missingLbl:SetJustifyH("LEFT")
 missingLbl:SetText(CUI.L("Total Missing Upgrades: -"))
 
 local crestsLbl = MFont(crestSection, 11, "OUTLINE", 1, 1, 1, 1)
-PP.Point(crestsLbl, "TOPLEFT", missingLbl, "BOTTOMLEFT", 0, -4)
-PP.Width(crestsLbl, TILE_ROW_W)
+Pix.Point(crestsLbl, "TOPLEFT", missingLbl, "BOTTOMLEFT", 0, -4)
+Pix.Width(crestsLbl, TILE_ROW_W)
 crestsLbl:SetJustifyH("LEFT")
 crestsLbl:SetText(CUI.L("Total Crests Needed: -"))
 
@@ -1438,16 +1438,16 @@ local CC_MINUS_X = TILE_ROW_W - CC_BTN_W * 2 - 5
 local CC_PLUS_X = TILE_ROW_W - CC_BTN_W
 
 local crestTblHdr = CreateFrame("Frame", nil, crestSection)
-PP.Size(crestTblHdr, TILE_ROW_W, CROW_H)
+Pix.Size(crestTblHdr, TILE_ROW_W, CROW_H)
 local cHdrBg = SolidTex(crestTblHdr, "BACKGROUND", 0, 0, 0, 0.35)
 cHdrBg:SetAllPoints()
-local function MakeCHdr(parent, text, x, w, align)
-    local lbl = MFont(parent, 10, "OUTLINE", 1, 1, 1, 0.9)
-    PP.Point(lbl, "LEFT", parent, "TOPLEFT", x + 4, -CROW_H / 2)
-    PP.Width(lbl, w - 8)
-    lbl:SetJustifyH(align or "LEFT")
-    lbl:SetText(CUI.L(text))
-    return lbl
+local function MakeCHdr(hostFrame, textValue, posX, wid, align)
+    local labelFS = MFont(hostFrame, 10, "OUTLINE", 1, 1, 1, 0.9)
+    Pix.Point(labelFS, "LEFT", hostFrame, "TOPLEFT", posX + 4, -CROW_H / 2)
+    Pix.Width(labelFS, wid - 8)
+    labelFS:SetJustifyH(align or "LEFT")
+    labelFS:SetText(CUI.L(textValue))
+    return labelFS
 end
 MakeCHdr(crestTblHdr, "Crest", CC_NAME_X, CC_NAME_W, "LEFT")
 MakeCHdr(crestTblHdr, "Needed", CC_NEED_X, CC_NEED_W, "RIGHT")
@@ -1460,24 +1460,24 @@ local crestTableRows = {}
 for ri, trackName in ipairs(Data.trackOrder) do
     local td = Data.tracks[trackName]
     local crestKey = td and td.crestName or (trackName .. " Crest")
-    local row = CreateFrame("Frame", nil, crestSection)
-    PP.Size(row, TILE_ROW_W, CROW_H)
+    local rowFrame = CreateFrame("Frame", nil, crestSection)
+    Pix.Size(rowFrame, TILE_ROW_W, CROW_H)
     if ri % 2 == 0 then
-        local altBg = SolidTex(row, "BACKGROUND", 0, 0, 0, 0.15)
+        local altBg = SolidTex(rowFrame, "BACKGROUND", 0, 0, 0, 0.15)
         altBg:SetAllPoints()
     end
-    local function MakeCell(x, w, align)
-        local lbl = MFont(row, 11, nil, 0.85, 0.85, 0.85, 1)
-        PP.Point(lbl, "TOPLEFT", row, "TOPLEFT", x + 4, -3)
-        PP.Width(lbl, w - 8)
-        lbl:SetJustifyH(align or "LEFT")
-        lbl:SetText("-")
-        return lbl
+    local function MakeCell(posX, wid, align)
+        local labelFS = MFont(rowFrame, 11, nil, 0.85, 0.85, 0.85, 1)
+        Pix.Point(labelFS, "TOPLEFT", rowFrame, "TOPLEFT", posX + 4, -3)
+        Pix.Width(labelFS, wid - 8)
+        labelFS:SetJustifyH(align or "LEFT")
+        labelFS:SetText("-")
+        return labelFS
     end
     local hexColor = td and td.hexColor or CludesUI.COLOR_CODES.WHITE
-    local nameLbl = MFont(row, 11, nil, 0.85, 0.85, 0.85, 1)
-    PP.Point(nameLbl, "TOPLEFT", row, "TOPLEFT", CC_NAME_X + 4, -3)
-    PP.Width(nameLbl, CC_NAME_W - 8)
+    local nameLbl = MFont(rowFrame, 11, nil, 0.85, 0.85, 0.85, 1)
+    Pix.Point(nameLbl, "TOPLEFT", rowFrame, "TOPLEFT", CC_NAME_X + 4, -3)
+    Pix.Width(nameLbl, CC_NAME_W - 8)
     nameLbl:SetJustifyH("LEFT")
     nameLbl:SetText(hexColor .. trackName .. "|r")
     local needLbl = MakeCell(CC_NEED_X, CC_NEED_W, "RIGHT")
@@ -1486,8 +1486,8 @@ for ri, trackName in ipairs(Data.trackOrder) do
     local remLbl = MakeCell(CC_REM_X, CC_REM_W, "RIGHT")
     local minusBtn, plusBtn
     if td and td.manualAdds then
-        minusBtn = MakeButton(row, "-80", CC_BTN_W, CROW_H - 4, -2, CC_MINUS_X)
-        plusBtn = MakeButton(row, "+80", CC_BTN_W, CROW_H - 4, -2, CC_PLUS_X)
+        minusBtn = MakeButton(rowFrame, "-80", CC_BTN_W, CROW_H - 4, -2, CC_MINUS_X)
+        plusBtn = MakeButton(rowFrame, "+80", CC_BTN_W, CROW_H - 4, -2, CC_PLUS_X)
         do
             local ck = crestKey
             minusBtn:SetScript("OnClick", function()
@@ -1502,9 +1502,9 @@ for ri, trackName in ipairs(Data.trackOrder) do
             end)
         end
     end
-    row:Hide()
+    rowFrame:Hide()
     crestTableRows[ri] = {
-        frame = row,
+        frame = rowFrame,
         trackName = trackName,
         crestKey = crestKey,
         needLbl = needLbl,
@@ -1529,17 +1529,17 @@ PopulateGear = function()
     -- Running this first also warms _tipCache so the display loop below pays no
     -- extra tooltip scanning cost.
     local maxTotal = 0
-    for _, item in ipairs(gear) do
-        local pOk, _, _, _, _, maxIlvl = pcall(Calc.GetItemUpgradeCost, Calc, item)
+    for _, itemInfo in ipairs(gear) do
+        local pOk, _, _, _, _, maxIlvl = pcall(Calc.GetItemUpgradeCost, Calc, itemInfo)
         if pOk and type(maxIlvl) == "number" then
             maxTotal = maxTotal + maxIlvl
-        elseif Calc:IsVoidforged(item.link) then
-            maxTotal = maxTotal + item.ilvl
-        elseif item.ilvl >= 200 then
-            local _, maxI = CraftedBandFromIlvl(item.ilvl)
+        elseif Calc:IsVoidforged(itemInfo.link) then
+            maxTotal = maxTotal + itemInfo.ilvl
+        elseif itemInfo.ilvl >= 200 then
+            local _, maxI = CraftedBandFromIlvl(itemInfo.ilvl)
             maxTotal = maxTotal + maxI
         else
-            maxTotal = maxTotal + item.ilvl
+            maxTotal = maxTotal + itemInfo.ilvl
         end
     end
 
@@ -1548,7 +1548,7 @@ PopulateGear = function()
     -- sees a consistent view of the cache with no per-item DB reads.
     -- Link validation: skip any slot whose cached link doesn't match current gear.
     local slotCrestMap = {}
-    local dbSnap = DB()
+    local dbSnap = SavedDB()
     if dbSnap.calibrated then
         for slotID, sc in pairs(dbSnap.cache.slots or {}) do
             local currentLink = GetInventoryItemLink("player", slotID)
@@ -1567,20 +1567,20 @@ PopulateGear = function()
         end
     end
     -- Read persistent settings once per refresh
-    local opts = Opts()
-    local hideCrafted = opts.hideCrafted
-    local showMaxed = opts.showMaxed
-    local slotFilter = opts.slotFilter -- table of group -> bool (nil = all shown)
-    local crestFilter = opts.crestFilter -- table of trackName -> bool (nil/true = shown)
-    local showEarnedCap = opts.showEarnedCap
-    local showWeeklyRemaining = opts.showWeeklyRemaining
+    local options = Opts()
+    local hideCrafted = options.hideCrafted
+    local showMaxed = options.showMaxed
+    local slotFilter = options.slotFilter -- table of group -> bool (nil = all shown)
+    local crestFilter = options.crestFilter -- table of trackName -> bool (nil/true = shown)
+    local showEarnedCap = options.showEarnedCap
+    local showWeeklyRemaining = options.showWeeklyRemaining
 
     -- Build per-slot data
-    for _, item in ipairs(gear) do
-        local grp = Data.slotToGroup[item.slot]
+    for _, itemInfo in ipairs(gear) do
+        local grp = Data.slotToGroup[itemInfo.slot]
         if not (slotFilter and grp and slotFilter[grp] == false) then
-            local sn = Data.slotNames[item.slot] or ("Slot " .. item.slot)
-            local pOk, pa, pb, pc, pd, pe, pf = pcall(Calc.GetItemUpgradeCost, Calc, item)
+            local sn = Data.slotNames[itemInfo.slot] or ("Slot " .. itemInfo.slot)
+            local pOk, pa, pb, pc, pd, pe, popFrame = pcall(Calc.GetItemUpgradeCost, Calc, itemInfo)
             local track, rank, crestCost, maxIlvl, craftLabel
             if pOk then
                 track, rank, crestCost, maxIlvl, craftLabel = pa, pb, pc, pd, pe
@@ -1593,16 +1593,16 @@ PopulateGear = function()
                     shouldAdd = false
                 else
                     dt = craftLabel or "Crafted"
-                    dm = maxIlvl or item.ilvl
+                    dm = maxIlvl or itemInfo.ilvl
                     isAtMax = true
                     du = "Crafted"
                 end
             elseif track then
                 local td = Data.tracks[track]
-                local scan = Calc:ScanItemLink(item.link)
+                local scan = Calc:ScanItemLink(itemInfo.link)
                 local maxRank = TrackMaxRank(td, scan and scan.maxRank)
                 totalMissing = totalMissing + math.max(0, maxRank - (rank or 0))
-                local cn_map = slotCrestMap[item.slot]
+                local cn_map = slotCrestMap[itemInfo.slot]
                 if cn_map then
                     for cn, amt in pairs(cn_map) do
                         crestNeeds[cn] = (crestNeeds[cn] or 0) + amt
@@ -1611,27 +1611,27 @@ PopulateGear = function()
                     crestNeeds[td.crestName] = (crestNeeds[td.crestName] or 0) + crestCost
                 end
                 dt = track
-                dm = maxIlvl or item.ilvl
+                dm = maxIlvl or itemInfo.ilvl
                 du = rank and (rank .. "/" .. maxRank) or "-"
                 isAtMax = (rank == maxRank)
             else
-                if Calc:IsVoidforged(item.link) then
+                if Calc:IsVoidforged(itemInfo.link) then
                     dt = "Voidforged"
-                    dm = item.ilvl
+                    dm = itemInfo.ilvl
                     du = "Max"
                     isAtMax = true
-                elseif item.ilvl >= 200 then
+                elseif itemInfo.ilvl >= 200 then
                     -- Use the shared helper so thresholds stay in one place.
-                    local band, maxI = CraftedBandFromIlvl(item.ilvl)
-                    local label = band == "Myth" and "Myth Craft"
+                    local band, maxI = CraftedBandFromIlvl(itemInfo.ilvl)
+                    local labelText = band == "Myth" and "Myth Craft"
                         or band == "Hero" and "Hero Craft"
                         or "Crafted"
-                    dt = label
+                    dt = labelText
                     dm = maxI
-                    du = item.ilvl >= maxI and "Max" or "-"
-                    isAtMax = item.ilvl >= maxI
+                    du = itemInfo.ilvl >= maxI and "Max" or "-"
+                    isAtMax = itemInfo.ilvl >= maxI
                 else
-                    dm = item.ilvl
+                    dm = itemInfo.ilvl
                     isAtMax = true
                 end
             end
@@ -1639,8 +1639,8 @@ PopulateGear = function()
             if shouldAdd then
                 tileEntries[#tileEntries + 1] = {
                     slotName = sn,
-                    slotID = item.slot,
-                    ilvl = item.ilvl,
+                    slotID = itemInfo.slot,
+                    ilvl = itemInfo.ilvl,
                     max = dm,
                     upgrade = du,
                     trackName = dt,
@@ -1672,7 +1672,7 @@ PopulateGear = function()
     -- don't overwrite in-session queue changes the user has made.
     if not _queueLoaded then
         _queueLoaded = true
-        local savedSlots = DB().queue
+        local savedSlots = SavedDB().queue
         if savedSlots and #savedSlots > 0 then
             local slotToEntry = {}
             for _, e in ipairs(tileEntries) do
@@ -1752,7 +1752,7 @@ PopulateGear = function()
 
     if needsCount > 0 then
         sHdrNeeds:ClearAllPoints()
-        PP.Point(sHdrNeeds, "TOPLEFT", cc, "TOPLEFT", 0, -10)
+        Pix.Point(sHdrNeeds, "TOPLEFT", cc, "TOPLEFT", 0, -10)
         local acH = CludesUI.HexColor(G.r, G.g, G.b)
         sHdrNeeds:SetText(CUI.Lf("Upgradable Items (%s%d|r)", acH, needsCount))
         sHdrNeeds:Show()
@@ -1764,10 +1764,10 @@ PopulateGear = function()
     local atMaxHdrY = -10 - (needsCount > 0 and needsRows * TILE_STEP + 18 or 0)
     if maxCount > 0 and showMaxed then
         groupSepLine:ClearAllPoints()
-        PP.Point(groupSepLine, "TOPLEFT", cc, "TOPLEFT", 0, atMaxHdrY - 2)
+        Pix.Point(groupSepLine, "TOPLEFT", cc, "TOPLEFT", 0, atMaxHdrY - 2)
         groupSepLine:Show()
         sHdrMax:ClearAllPoints()
-        PP.Point(sHdrMax, "TOPLEFT", cc, "TOPLEFT", 0, atMaxHdrY - 6)
+        Pix.Point(sHdrMax, "TOPLEFT", cc, "TOPLEFT", 0, atMaxHdrY - 6)
         sHdrMax:SetText(string.format("At Max (%d)", maxCount))
         sHdrMax:Show()
     else
@@ -1777,26 +1777,26 @@ PopulateGear = function()
 
     -- Position and fill tile frames
     local function getTilePos(group_start_y, local_idx)
-        local row = math.floor(local_idx / TILE_COLS)
-        local col = local_idx % TILE_COLS
-        return col * (TILE_W + TILE_GAP), group_start_y - row * TILE_STEP
+        local rowFrame = math.floor(local_idx / TILE_COLS)
+        local column = local_idx % TILE_COLS
+        return column * (TILE_W + TILE_GAP), group_start_y - rowFrame * TILE_STEP
     end
 
     local needsStartY = -28 -- below section header(~18) + gap
     local atMaxStartY = needsStartY - needsRows * TILE_STEP - (needsCount > 0 and 34 or 18)
 
-    for _, btn in ipairs(tileFrames) do
-        btn:Hide()
+    for _, button in ipairs(tileFrames) do
+        button:Hide()
     end
 
     local ni, mi = 0, 0
-    for idx, entry in ipairs(tileEntries) do
-        if idx > #tileFrames then
+    for position, record in ipairs(tileEntries) do
+        if position > #tileFrames then
             break
         end -- tileFrames has 18 slots; equipSlots has 16
-        local btn = tileFrames[idx]
+        local button = tileFrames[position]
         local tx, ty
-        if not entry.isAtMax then
+        if not record.isAtMax then
             tx, ty = getTilePos(needsStartY, ni)
             ni = ni + 1
         elseif showMaxed then
@@ -1804,46 +1804,46 @@ PopulateGear = function()
             mi = mi + 1
         end
         if tx then
-            btn:ClearAllPoints()
-            PP.Point(btn, "TOPLEFT", cc, "TOPLEFT", tx, ty)
-            btn:Show()
+            button:ClearAllPoints()
+            Pix.Point(button, "TOPLEFT", cc, "TOPLEFT", tx, ty)
+            button:Show()
 
             -- Tile background colour by upgrade gap
-            if entry.isAtMax then
-                btn.bg:SetColorTexture(0.1, 0.4, 0.1, 0.2)
-            elseif type(entry.max) == "number" and (entry.max - entry.ilvl) >= 10 then
-                btn.bg:SetColorTexture(0.5, 0.1, 0.1, 0.2)
+            if record.isAtMax then
+                button.bg:SetColorTexture(0.1, 0.4, 0.1, 0.2)
+            elseif type(record.max) == "number" and (record.max - record.ilvl) >= 10 then
+                button.bg:SetColorTexture(0.5, 0.1, 0.1, 0.2)
             else
-                btn.bg:SetColorTexture(0.5, 0.35, 0.05, 0.2)
+                button.bg:SetColorTexture(0.5, 0.35, 0.05, 0.2)
             end
 
             -- Left accent bar: track colour
-            local rgb = (entry.trackKey and TRACK_RGB[entry.trackKey])
-                or TRACK_RGB[entry.trackName]
+            local rgb = (record.trackKey and TRACK_RGB[record.trackKey])
+                or TRACK_RGB[record.trackName]
                 or { 0.4, 0.4, 0.4 }
-            btn.accentBar:SetColorTexture(rgb[1], rgb[2], rgb[3], 1)
+            button.accentBar:SetColorTexture(rgb[1], rgb[2], rgb[3], 1)
 
             -- Text labels
-            btn.sLbl:SetText(CUI.L(entry.slotName))
-            local maxStr = type(entry.max) == "number" and tostring(entry.max) or "-"
-            btn.iLbl:SetText(entry.ilvl .. " (" .. maxStr .. ")")
-            btn.tLbl:SetText(CUI.L(entry.trackName))
-            btn.tLbl:SetTextColor(rgb[1], rgb[2], rgb[3], 1)
-            btn.rLbl:SetText(CUI.L(entry.upgrade))
+            button.sLbl:SetText(CUI.L(record.slotName))
+            local maxStr = type(record.max) == "number" and tostring(record.max) or "-"
+            button.iLbl:SetText(record.ilvl .. " (" .. maxStr .. ")")
+            button.tLbl:SetText(CUI.L(record.trackName))
+            button.tLbl:SetTextColor(rgb[1], rgb[2], rgb[3], 1)
+            button.rLbl:SetText(CUI.L(record.upgrade))
 
-            local txtA = entry.isAtMax and 0.45 or 0.9
-            btn.sLbl:SetTextColor(txtA, txtA, txtA, 1)
-            btn.iLbl:SetTextColor(txtA, txtA, txtA, 1)
-            btn.rLbl:SetTextColor(txtA, txtA, txtA, 1)
+            local txtA = record.isAtMax and 0.45 or 0.9
+            button.sLbl:SetTextColor(txtA, txtA, txtA, 1)
+            button.iLbl:SetTextColor(txtA, txtA, txtA, 1)
+            button.rLbl:SetTextColor(txtA, txtA, txtA, 1)
 
             -- Restore queue highlight
-            if queueSlotSet[entry.slotName] then
-                btn.selHL:Show()
+            if queueSlotSet[record.slotName] then
+                button.selHL:Show()
             else
-                btn.selHL:Hide()
+                button.selHL:Hide()
             end
 
-            btn.tileEntry = entry
+            button.tileEntry = record
         end
     end
 
@@ -1857,8 +1857,8 @@ PopulateGear = function()
         crestY = needsStartY - needsRows * TILE_STEP - 20
     end
     crestSection:ClearAllPoints()
-    PP.Point(crestSection, "TOPLEFT", cc, "TOPLEFT", 0, crestY)
-    PP.Width(crestSection, TILE_ROW_W)
+    Pix.Point(crestSection, "TOPLEFT", cc, "TOPLEFT", 0, crestY)
+    Pix.Width(crestSection, TILE_ROW_W)
 
     -- Summary text: Total Missing Upgrades + Total Crests Needed
     local acHex2 = CludesUI.HexColor(G.r, G.g, G.b)
@@ -1878,8 +1878,8 @@ PopulateGear = function()
         end
     end
     local crestStr = #crestParts > 0 and table.concat(crestParts, ", ") or "None"
-    local db = DB()
-    local accuracyTag = db.calibrated and (" |cff20ff20" .. CUI.L("(exact)") .. "|r")
+    local saved = SavedDB()
+    local accuracyTag = saved.calibrated and (" |cff20ff20" .. CUI.L("(exact)") .. "|r")
         or (" |cff888888" .. CUI.L("(est)") .. "|r")
     crestsLbl:SetText(CUI.L("Total Crests Needed") .. accuracyTag .. ": " .. CUI.L(crestStr))
 
@@ -1890,8 +1890,8 @@ PopulateGear = function()
     local visRowCount = 0
     for _, rowData in ipairs(crestTableRows) do
         local tn = rowData.trackName
-        local shown = not (crestFilter and crestFilter[tn] == false)
-        if shown then
+        local isShown = not (crestFilter and crestFilter[tn] == false)
+        if isShown then
             local needed = crestNeeds[rowData.crestKey] or 0
             local ownInfo = owned[rowData.crestKey]
             rowData.needLbl:SetText(needed > 0 and tostring(needed) or "-")
@@ -1918,7 +1918,7 @@ PopulateGear = function()
                 rowData.remLbl:Hide()
             end
             rowData.frame:ClearAllPoints()
-            PP.Point(rowData.frame, "TOPLEFT", crestTblHdr, "BOTTOMLEFT", 0, -(visRowCount * CROW_STEP))
+            Pix.Point(rowData.frame, "TOPLEFT", crestTblHdr, "BOTTOMLEFT", 0, -(visRowCount * CROW_STEP))
             rowData.frame:Show()
             visRowCount = visRowCount + 1
         else
@@ -1929,17 +1929,17 @@ PopulateGear = function()
     -- Table sits above the buttons when rows are visible; buttons fall back to crestsLbl otherwise
     if visRowCount > 0 then
         crestTblHdr:ClearAllPoints()
-        PP.Point(crestTblHdr, "TOPLEFT", crestsLbl, "BOTTOMLEFT", 4, -8)
+        Pix.Point(crestTblHdr, "TOPLEFT", crestsLbl, "BOTTOMLEFT", 4, -8)
         crestTblHdr:Show()
         refreshBtn:ClearAllPoints()
-        PP.Point(refreshBtn, "TOPLEFT", crestTblHdr, "BOTTOMLEFT", -4, -(visRowCount * CROW_STEP + 10))
+        Pix.Point(refreshBtn, "TOPLEFT", crestTblHdr, "BOTTOMLEFT", -4, -(visRowCount * CROW_STEP + 10))
     else
         crestTblHdr:Hide()
         refreshBtn:ClearAllPoints()
-        PP.Point(refreshBtn, "TOPLEFT", crestsLbl, "BOTTOMLEFT", -4, -10)
+        Pix.Point(refreshBtn, "TOPLEFT", crestsLbl, "BOTTOMLEFT", -4, -10)
     end
     scanBtn:ClearAllPoints()
-    PP.Point(scanBtn, "TOPLEFT", refreshBtn, "TOPRIGHT", 10, 0)
+    Pix.Point(scanBtn, "TOPLEFT", refreshBtn, "TOPRIGHT", 10, 0)
 
     -- Resize frame to fit content
     local CC_TOP = 66 -- distance from frame top to cc top
@@ -1948,8 +1948,8 @@ PopulateGear = function()
     local contentH = math.abs(crestY) + crestSectionH
     local queueH = 22 + #queueItems * Q_ROW_STEP + (#queueItems > 0 and 50 or 0)
     local newFrameH = math.max(contentH, queueH) + CC_TOP + 10
-    PP.Size(f, FRAME_W, newFrameH)
-    PP.Size(queuePane, QUEUE_W, newFrameH - CC_TOP - 10)
+    Pix.Size(f, FRAME_W, newFrameH)
+    Pix.Size(queuePane, QUEUE_W, newFrameH - CC_TOP - 10)
 
     -- Sync queue panel text to match restored/refreshed queue state.
     UpdateQueueDisplay()
@@ -1973,13 +1973,13 @@ end)
 
 scanBtn:HookScript("OnEnter", function(self)
     if CUI.ShowWidgetTooltip then
-        local tip = "Scan all equipped gear costs at the Item Upgrade NPC.\n"
+        local tipText = "Scan all equipped gear costs at the Item Upgrade NPC.\n"
             .. "Scans each slot one at a time — this can take up to 10 seconds.\n"
             .. "Requires the Item Upgrade window to be open."
         if not Calc:IsUpgraderOpen() then
-            tip = tip .. "\n|cffff6060Item Upgrade window is not open.|r"
+            tipText = tipText .. "\n|cffff6060Item Upgrade window is not open.|r"
         end
-        CUI.ShowWidgetTooltip(self, CUI.L(tip))
+        CUI.ShowWidgetTooltip(self, CUI.L(tipText))
     end
 end)
 scanBtn:HookScript("OnLeave", function()
@@ -1992,10 +1992,10 @@ scanBtn:SetScript("OnClick", function()
     end
     scanBtnTxt:SetText(CUI.L("Scanning..."))
     scanBtn:SetAlpha(0.5)
-    Calc:ScanEquippedAtUpgrader(function(ok)
+    Calc:ScanEquippedAtUpgrader(function(success)
         scanBtnTxt:SetText(CUI.L("Update at Upgrader"))
         scanBtn:SetAlpha(1)
-        if ok then
+        if success then
             for k in pairs(crestManualAdds) do
                 crestManualAdds[k] = 0
             end
@@ -2013,8 +2013,8 @@ end)
 local _equipDebounce = nil
 
 local equipListener = CreateFrame("Frame")
-equipListener:SetScript("OnEvent", function(_, event, slotID)
-    if event == "PLAYER_REGEN_DISABLED" then
+equipListener:SetScript("OnEvent", function(_, evt, slotID)
+    if evt == "PLAYER_REGEN_DISABLED" then
         -- Combat started: close the frame silently
         if f:IsShown() then
             f:Hide()
@@ -2023,9 +2023,9 @@ equipListener:SetScript("OnEvent", function(_, event, slotID)
     end
     -- Invalidate the tip cache for the changed slot (or all if slotID is missing).
     if slotID and slotID > 0 then
-        local link = GetInventoryItemLink("player", slotID)
-        if link then
-            Calc._tipCache[link] = nil
+        local itemLink = GetInventoryItemLink("player", slotID)
+        if itemLink then
+            Calc._tipCache[itemLink] = nil
         end
     else
         Calc._tipCache = {}
@@ -2038,9 +2038,9 @@ equipListener:SetScript("OnEvent", function(_, event, slotID)
     if slotID and slotID > 0 and Calc:IsUpgraderOpen() and not Calc._scanning then
         -- Invalidate the slot's cache entry so PopulateGear won't stale-serve
         -- the old data while the rescan is in flight.
-        local db = DB()
-        if db.cache and db.cache.slots then
-            db.cache.slots[slotID] = nil
+        local saved = SavedDB()
+        if saved.cache and saved.cache.slots then
+            saved.cache.slots[slotID] = nil
         end
         Calc:RescanSlot(slotID, function()
             if f:IsShown() then
@@ -2075,7 +2075,7 @@ f:SetScript("OnShow", function()
     TrySnapToCharacterFrame()
     -- Reload persisted crest manual-add offsets each time the frame opens,
     -- so that values the user set before logging out are visible immediately.
-    local dbAdds = DB().crestManualAdds
+    local dbAdds = SavedDB().crestManualAdds
     for k in pairs(crestManualAdds) do
         crestManualAdds[k] = (dbAdds and dbAdds[k]) or 0
     end
@@ -2142,8 +2142,8 @@ _firstRunEvt:SetScript("OnEvent", function(self)
         -- per-character state moves top-level. The old profile copy is dropped
         -- rather than migrated -- on anyone who imported a profile it holds the
         -- exporter's characters, and this state rebuilds from the next scan.
-        local store = _cuicProfileRef
-        store.chars = nil
+        local storage = _cuicProfileRef
+        storage.chars = nil
         -- Throwaway fallback if the parent DB is somehow absent: the session
         -- still works, nothing persists, and the global is never assigned
         -- here (a pre-SavedVariables call could shadow the real table).
@@ -2157,36 +2157,36 @@ _firstRunEvt:SetScript("OnEvent", function(self)
         chars[charKey] = chars[charKey] or {}
         local charStore = chars[charKey]
         charStore.upgradeCalc = charStore.upgradeCalc or {}
-        local db = charStore.upgradeCalc
-        db.cache = db.cache or { slots = {}, ts = 0 }
-        db.calibrated = db.calibrated or false
-        db.queue = db.queue or {}
-        db.crestManualAdds = db.crestManualAdds or {}
-        store.upgradeCalcOpts = store.upgradeCalcOpts or {}
-        _dbCache = db
-        _optsCache = store.upgradeCalcOpts
+        local saved = charStore.upgradeCalc
+        saved.cache = saved.cache or { slots = {}, ts = 0 }
+        saved.calibrated = saved.calibrated or false
+        saved.queue = saved.queue or {}
+        saved.crestManualAdds = saved.crestManualAdds or {}
+        storage.upgradeCalcOpts = storage.upgradeCalcOpts or {}
+        _dbCache = saved
+        _optsCache = storage.upgradeCalcOpts
     end
-    local opts = Opts()
-    if opts.firstRunV2 then
+    local options = Opts()
+    if options.firstRunV2 then
         return
     end
     -- The v1 auto-filter ran on the old enUS-only tooltip scan, so on every
     -- other locale it detected no track at all and permanently hid every crest
     -- row. Wipe that verdict (and the per-slot costs derived from it) before
     -- re-running the scan against the upgrade API.
-    if opts.firstRunDone then
-        opts.crestFilter = nil
+    if options.firstRunDone then
+        options.crestFilter = nil
         Calc:ClearCache()
     end
     -- Brief delay so the client has fully loaded item data before scanning.
     C_Timer.After(1.5, function()
-        opts.firstRunDone = true
-        opts.firstRunV2 = true
+        options.firstRunDone = true
+        options.firstRunV2 = true
         local tracksNeeded = {}
         for _, slotID in ipairs(Data.equipSlots) do
-            local link = GetInventoryItemLink("player", slotID)
-            if link then
-                local r = Calc:ScanItemLink(link)
+            local itemLink = GetInventoryItemLink("player", slotID)
+            if itemLink then
+                local r = Calc:ScanItemLink(itemLink)
                 local td = r and r.track and Data.tracks[r.track]
                 if td and (r.rank or 0) < TrackMaxRank(td, r.maxRank) then
                     tracksNeeded[r.track] = true
@@ -2202,10 +2202,10 @@ _firstRunEvt:SetScript("OnEvent", function(self)
             end
         end
         if anyHidden then
-            opts.crestFilter = opts.crestFilter or {}
+            options.crestFilter = options.crestFilter or {}
             for _, tn in ipairs(Data.trackOrder) do
                 if not tracksNeeded[tn] then
-                    opts.crestFilter[tn] = false
+                    options.crestFilter[tn] = false
                 end
             end
         end
@@ -2226,13 +2226,13 @@ do
     evtFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
     evtFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
     evtFrame:RegisterEvent("ITEM_UPGRADE_MASTER_UPDATE")
-    evtFrame:SetScript("OnEvent", function(_, event, interactionType)
-        local opts = Calc.GetOptsDB and Calc.GetOptsDB()
-        if not opts or not opts.openWithUpgrader then
+    evtFrame:SetScript("OnEvent", function(_, evt, interactionType)
+        local options = Calc.GetOptsDB and Calc.GetOptsDB()
+        if not options or not options.openWithUpgrader then
             return
         end
 
-        if event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
+        if evt == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
             if interactionType == UPGRADE_INTERACTION then
                 _upgraderOpen = true
                 local fr = _G["CUIUpgCalcFrame"]
@@ -2243,7 +2243,7 @@ do
             return
         end
 
-        if event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
+        if evt == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
             if interactionType == UPGRADE_INTERACTION then
                 _upgraderOpen = false
                 local fr = _G["CUIUpgCalcFrame"]

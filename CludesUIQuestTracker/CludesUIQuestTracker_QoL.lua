@@ -15,8 +15,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --     money frames downstream.
 --   * Quest-item hotkey via SecureActionButton (source L3531-3708)
 -------------------------------------------------------------------------------
-local _, ns = ...
-local EQT = ns.EQT
+local _, mod = ...
+local EQT = mod.EQT
 local function Cfg(k)
     return EQT.Cfg(k)
 end
@@ -27,13 +27,13 @@ end
 -- ObjectiveTrackerFrame:Update() from it taints downstream secure frames.
 -------------------------------------------------------------------------------
 local function InstallSplashFrameFix()
-    local sf = _G.SplashFrame
-    if not sf then
+    local scrollFrame = _G.SplashFrame
+    if not scrollFrame then
         return
     end
-    sf:SetScript("OnHide", function(frame)
-        local fromGameMenu = frame.screenInfo and frame.screenInfo.gameMenuRequest
-        frame.screenInfo = nil
+    scrollFrame:SetScript("OnHide", function(widget)
+        local fromGameMenu = widget.screenInfo and widget.screenInfo.gameMenuRequest
+        widget.screenInfo = nil
         if C_TalkingHead_SetConversationsDeferred then
             C_TalkingHead_SetConversationsDeferred(false)
         end
@@ -41,12 +41,12 @@ local function InstallSplashFrameFix()
             _G.AlertFrame:SetAlertsEnabled(true, "splashFrame")
         end
         -- ObjectiveTrackerFrame:Update() intentionally omitted (causes taint)
-        if fromGameMenu and not frame.showingQuestDialog and not InCombatLockdown() then
+        if fromGameMenu and not widget.showingQuestDialog and not InCombatLockdown() then
             if _G.GameMenuFrame then
                 ShowUIPanel(_G.GameMenuFrame)
             end
         end
-        frame.showingQuestDialog = nil
+        widget.showingQuestDialog = nil
     end)
 end
 
@@ -77,11 +77,11 @@ end
 
 -- Hold Shift to Enable runs the feature only while Shift is down; Hold Shift
 -- to Skip runs it only while Shift is up. prefix is "autoAccept" or "autoTurnIn".
-local function ShiftAllows(prefix)
-    if Cfg(prefix .. "ShiftEnable") then
+local function ShiftAllows(prefixText)
+    if Cfg(prefixText .. "ShiftEnable") then
         return IsShiftKeyDown()
     end
-    if Cfg(prefix .. "ShiftSkip") then
+    if Cfg(prefixText .. "ShiftSkip") then
         return not IsShiftKeyDown()
     end
     return true
@@ -95,17 +95,17 @@ local function InstallAutoQuests()
     -- layout work while the tracker is hidden; this frame does neither, it
     -- answers quest NPC dialogs, so Auto Accept / Auto Turn In keep working
     -- while the tracker is hidden.
-    autoFrame:SetScript("OnEvent", function(_, event, ...)
+    autoFrame:SetScript("OnEvent", function(_, evt, ...)
         if Cfg("enabled") == false then
             return
         end
 
-        if event == "GOSSIP_SHOW" then
+        if evt == "GOSSIP_SHOW" then
             if C_GossipInfo then
                 if Cfg("autoTurnIn") and ShiftAllows("autoTurnIn") and C_GossipInfo.GetActiveQuests then
-                    local active = C_GossipInfo.GetActiveQuests()
-                    if active then
-                        for _, quest in ipairs(active) do
+                    local isActive = C_GossipInfo.GetActiveQuests()
+                    if isActive then
+                        for _, quest in ipairs(isActive) do
                             if quest.questID and quest.isComplete then
                                 C_GossipInfo.SelectActiveQuest(quest.questID)
                                 return
@@ -119,9 +119,9 @@ local function InstallAutoQuests()
                     end
                     local available = C_GossipInfo.GetAvailableQuests()
                     if available then
-                        for i = #available, 1, -1 do
-                            if IsIgnoredQuest(available[i].questID, available[i].isTrivial) then
-                                table.remove(available, i)
+                        for idx = #available, 1, -1 do
+                            if IsIgnoredQuest(available[idx].questID, available[idx].isTrivial) then
+                                table.remove(available, idx)
                             end
                         end
                     end
@@ -150,29 +150,29 @@ local function InstallAutoQuests()
         -- The quest greeting: an NPC with quests and no gossip lists them as
         -- Current Quests and Available Quests (common on WoW Forever). The same
         -- order as the gossip above, by the greeting's own indexes.
-        if event == "QUEST_GREETING" then
+        if evt == "QUEST_GREETING" then
             if Cfg("autoTurnIn") and ShiftAllows("autoTurnIn") then
-                for i = 1, GetNumActiveQuests() do
-                    local _, isComplete = GetActiveTitle(i)
+                for idx = 1, GetNumActiveQuests() do
+                    local _, isComplete = GetActiveTitle(idx)
                     if isComplete then
-                        SelectActiveQuest(i)
+                        SelectActiveQuest(idx)
                         return
                     end
                 end
             end
             if Cfg("autoAccept") and ShiftAllows("autoAccept") then
-                local first, count = nil, 0
-                for i = 1, GetNumAvailableQuests() do
-                    local isTrivial, _, _, _, questID = GetAvailableQuestInfo(i)
+                local first, total = nil, 0
+                for idx = 1, GetNumAvailableQuests() do
+                    local isTrivial, _, _, _, questID = GetAvailableQuestInfo(idx)
                     if not IsIgnoredQuest(questID, isTrivial) then
-                        count = count + 1
-                        first = first or i
+                        total = total + 1
+                        first = first or idx
                     end
                 end
                 if first then
                     if Cfg("autoAcceptPreventMulti") then
                         local npcGUID = UnitGUID("npc")
-                        if count > 1 then
+                        if total > 1 then
                             autoPreventNPCGUID = npcGUID
                         end
                         if autoPreventNPCGUID ~= npcGUID then
@@ -194,7 +194,7 @@ local function InstallAutoQuests()
         -- this securely: the player clicks it, and if the reward has no choice, the
         -- QUEST_COMPLETE auto-turn-in below still fires.
 
-        if event == "QUEST_DETAIL" then
+        if evt == "QUEST_DETAIL" then
             if not Cfg("autoAccept") then
                 return
             end
@@ -206,7 +206,7 @@ local function InstallAutoQuests()
                 return
             end
             AcceptQuest()
-        elseif event == "QUEST_PROGRESS" then
+        elseif evt == "QUEST_PROGRESS" then
             -- A turn-in that asks for items shows this page (Continue) before
             -- the reward page. One that costs gold stays with the player, as
             -- Blizzard asks before taking it.
@@ -219,7 +219,7 @@ local function InstallAutoQuests()
             if IsQuestCompletable() and (GetQuestMoneyToGet() or 0) == 0 then
                 CompleteQuest()
             end
-        elseif event == "QUEST_COMPLETE" then
+        elseif evt == "QUEST_COMPLETE" then
             if not Cfg("autoTurnIn") then
                 return
             end
@@ -237,12 +237,12 @@ local function InstallAutoQuests()
     -- is on; their toggles and profile swaps call this.
     local registered = false
     function EQT.SyncAutoQuests()
-        local want = (Cfg("autoAccept") or Cfg("autoTurnIn")) and true or false
-        if want == registered then
+        local wanted = (Cfg("autoAccept") or Cfg("autoTurnIn")) and true or false
+        if wanted == registered then
             return
         end
-        registered = want
-        if want then
+        registered = wanted
+        if wanted then
             autoFrame:RegisterEvent("QUEST_DETAIL")
             autoFrame:RegisterEvent("QUEST_PROGRESS")
             autoFrame:RegisterEvent("QUEST_COMPLETE")
@@ -282,16 +282,17 @@ local function ScanForQuestItem()
     end
     local num = C_QuestLog.GetNumQuestLogEntries() or 0
     local fallback = nil
-    for i = 1, num do
-        local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader and info.questID then
-            local logIdx = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(info.questID)
-                or i
-            local link = GetQuestLogSpecialItemInfo(logIdx)
-            if link then
-                local name = link:match("%[(.-)%]")
+    for idx = 1, num do
+        local details = C_QuestLog.GetInfo(idx)
+        if details and not details.isHeader and details.questID then
+            local logIdx = C_QuestLog.GetLogIndexForQuestID
+                    and C_QuestLog.GetLogIndexForQuestID(details.questID)
+                or idx
+            local itemLink = GetQuestLogSpecialItemInfo(logIdx)
+            if itemLink then
+                local name = itemLink:match("%[(.-)%]")
                 if name then
-                    local wt = C_QuestLog.GetQuestWatchType and C_QuestLog.GetQuestWatchType(info.questID)
+                    local wt = C_QuestLog.GetQuestWatchType and C_QuestLog.GetQuestWatchType(details.questID)
                     if wt ~= nil then
                         return name
                     end
@@ -360,7 +361,7 @@ local function InstallQuestItemHotkey()
         qItemBtn:SetAttribute("type", "item")
     end
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("QuestItemInit", function()
+        mod.CombatQueue.Defer("QuestItemInit", function()
             InitSecureAttributes()
             if EQT.ApplyQuestItemHotkey then
                 EQT.ApplyQuestItemHotkey()
@@ -401,8 +402,8 @@ local function InstallQuestItemHotkey()
         -- Bind only while a quest item actually exists. An override outranks
         -- the player's own binding for that key, so holding it while there is
         -- nothing to use would silently eat the key.
-        local want = (key and qItemBtn:GetAttribute("item")) and key or nil
-        if not _bindingDirty and want == _boundKey then
+        local wanted = (key and qItemBtn:GetAttribute("item")) and key or nil
+        if not _bindingDirty and wanted == _boundKey then
             return
         end
         _bindingDirty = false
@@ -410,10 +411,10 @@ local function InstallQuestItemHotkey()
         if ClearOverrideBindings then
             ClearOverrideBindings(qItemBtn)
         end
-        if want and SetOverrideBindingClick then
-            SetOverrideBindingClick(qItemBtn, true, want, "CUI_QuestItemHotkeyBtn", "LeftButton")
+        if wanted and SetOverrideBindingClick then
+            SetOverrideBindingClick(qItemBtn, true, wanted, "CUI_QuestItemHotkeyBtn", "LeftButton")
         end
-        _boundKey = want
+        _boundKey = wanted
     end
 
     local cachedName = nil
@@ -500,18 +501,18 @@ local function InstallQuestItemHotkey()
     -- The scan it drives is already gated on a hotkey being configured and
     -- coalesced to one pass per burst, so leaving it registered costs nothing
     -- for anyone who has not set a key.
-    qItemFrame:SetScript("OnEvent", function(_, event)
+    qItemFrame:SetScript("OnEvent", function(_, evt)
         if InCombatLockdown() then
             return
         end
-        if event == "PLAYER_REGEN_ENABLED" then
+        if evt == "PLAYER_REGEN_ENABLED" then
             -- Also the recovery path for a /reload taken in combat, where the
             -- init timer bailed before it could run.
             ClearLegacyQuestItemBinding()
             ApplyQuestItemHotkey()
             return
         end
-        if event == "UPDATE_BINDINGS" then
+        if evt == "UPDATE_BINDINGS" then
             -- Ours, echoing back: ignore, or we re-enter forever.
             if GetTime() < _selfWriteUntil then
                 return

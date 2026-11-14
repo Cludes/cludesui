@@ -22,7 +22,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- trigger. ns.EMB121_Gate parks the overlay whenever the primary power type is no
 -- longer Ebon Might (spec change).
 
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
@@ -33,10 +33,10 @@ local EBON_AURA_ID = 395296
 -- Load-time ownership flag: legacy paths gate on this, and it must exist
 -- at FILE LOAD -- a construction-time flag would let legacy paths run (and
 -- error under restriction) before the deferred build completes.
-ns.EMB121_Owns = true
+mod.EMB121_Owns = true
 
 -- proxy, container, btn, bar, built, queued, armed, rbBar, pp, pc, fsErr
-local S = {}
+local Stl = {}
 
 -- "18.4"-style remaining text (legacy parity: %.1f seconds; minutes floor
 -- to "2m" if extensions ever push past 60). Falls back to the suite
@@ -50,11 +50,11 @@ local function GetTimeFormatter()
     if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding then
         local f = C_StringUtil.CreateNumericRuleFormatter()
         local Down = Enum.NumericRuleFormatRounding.Down
-        local ok = pcall(f.SetBreakpoints, f, {
+        local success = pcall(f.SetBreakpoints, f, {
             { threshold = 0, format = "%.1f", step = 0.1, rounding = Down },
             { threshold = 60, format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
         })
-        if ok then
+        if success then
             timeFmt = f
         end
     end
@@ -67,15 +67,15 @@ end
 
 local function Build()
     local AK = CludesUI.AuraKit
-    if S.built or not AK or not S.rbBar then
+    if Stl.built or not AK or not Stl.rbBar then
         return
     end
-    local rb, pp, pc = S.rbBar, S.pp or {}, S.pc
+    local rb, pp, pc = Stl.rbBar, Stl.pp or {}, Stl.pc
 
     AK.styles["erb:emb121"] = AK.styles["erb:emb121"] or { noRegions = true, width = 1, height = 1 }
-    if not S.proxy then
-        S.proxy = CreateFrame("Frame", nil, UIParent)
-        S.proxy:Hide()
+    if not Stl.proxy then
+        Stl.proxy = CreateFrame("Frame", nil, UIParent)
+        Stl.proxy:Hide()
     end
 
     -- Bake the live bar's visuals (our frames -- readable): fill texture
@@ -98,23 +98,23 @@ local function Build()
     if rbText and rbText.GetFont then
         tFont, tSize, tFlags = rbText:GetFont()
         if rbText.GetPoint and rbText:GetNumPoints() > 0 then
-            local p, _, rp, x, y = rbText:GetPoint(1)
-            tPoint, tRelP, tX, tY = p, rp, x, y
+            local p, _, rp, posX, posY = rbText:GetPoint(1)
+            tPoint, tRelP, tX, tY = p, rp, posX, posY
         end
     end
     local showText = pp.textFormat and pp.textFormat ~= "none"
 
-    local container = AK.CreateContainerShell(S.proxy, { point = { "CENTER" } })
-    AK.AddSlotToContainer(container, {
+    local boxHolder = AK.CreateContainerShell(Stl.proxy, { point = { "CENTER" } })
+    AK.AddSlotToContainer(boxHolder, {
         key = "em",
         filter = { "HELPFUL" },
         candidateFilters = { includeSpellIDs = { [EBON_AURA_ID] = true } },
         style = "erb:emb121",
-        extraInit = function(button)
+        extraInit = function(btnFrame)
             -- Creation window: the only legal moment to touch this
             -- subtree. Two-point anchoring sizes the button by anchors
             -- forever; all repositioning is proxy moves.
-            button:SetAllPoints(S.proxy)
+            btnFrame:SetAllPoints(Stl.proxy)
             -- Both halves, and inside the creation window: this is the only
             -- legal moment to set them. The slot button is an engine Button, so
             -- mouse is on by default -- motion alone only suppresses the
@@ -123,17 +123,17 @@ local function Build()
             -- up, swallowing clicks meant for the world (nameplates behind the
             -- bar stop responding mid-combat). It is a display-only overlay and
             -- has no OnClick, so it should never take mouse input at all.
-            if button.SetMouseClickEnabled then
-                button:SetMouseClickEnabled(false)
+            if btnFrame.SetMouseClickEnabled then
+                btnFrame:SetMouseClickEnabled(false)
             end
-            if button.SetMouseMotionEnabled then
-                button:SetMouseMotionEnabled(false)
+            if btnFrame.SetMouseMotionEnabled then
+                btnFrame:SetMouseMotionEnabled(false)
             end
 
-            local bar = CreateFrame("StatusBar", nil, button)
-            bar:SetAllPoints(button)
-            bar:SetStatusBarTexture(texPath)
-            local bft = bar:GetStatusBarTexture()
+            local barFrame = CreateFrame("StatusBar", nil, btnFrame)
+            barFrame:SetAllPoints(btnFrame)
+            barFrame:SetStatusBarTexture(texPath)
+            local bft = barFrame:GetStatusBarTexture()
             if bft then
                 if pp.gradientEnabled and not pp.customColored and bft.SetGradient then
                     -- Mirrors the legacy gradient applier: white vertex,
@@ -153,35 +153,45 @@ local function Build()
                     bft:SetVertexColor(r, g, b, a or 1)
                 end
             end
-            local opts = {}
+            local options = {}
             if Enum.StatusBarInterpolation then
-                opts.interpolation = Enum.StatusBarInterpolation.Immediate
+                options.interpolation = Enum.StatusBarInterpolation.Immediate
             end
             if Enum.StatusBarTimerDirection then
-                opts.direction = Enum.StatusBarTimerDirection.RemainingTime
+                options.direction = Enum.StatusBarTimerDirection.RemainingTime
             end
-            button:SetDurationBar(bar, opts)
+            btnFrame:SetDurationBar(barFrame, options)
 
             if showText then
                 -- ARMORED: an uncaught error here aborts the engine's
                 -- CreateFrameBatch and kills the slot. Text is optional
                 -- polish; failures land in S.fsErr.
                 local okFS, errFS = pcall(function()
-                    local tc = CreateFrame("Frame", nil, button)
-                    tc:SetAllPoints(button)
-                    tc:SetFrameLevel(bar:GetFrameLevel() + 5)
-                    local fs = tc:CreateFontString(nil, "OVERLAY")
+                    local tc = CreateFrame("Frame", nil, btnFrame)
+                    tc:SetAllPoints(btnFrame)
+                    tc:SetFrameLevel(barFrame:GetFrameLevel() + 5)
+                    local fontStr = tc:CreateFontString(nil, "OVERLAY")
                     -- Font BEFORE registration (the engine SetText()s every
                     -- registered string; an unfonted FS hard-errors).
                     if tFont then
-                        fs:SetFont(tFont, tSize, tFlags)
+                        fontStr:SetFont(tFont, tSize, tFlags)
                     else
-                        fs:SetFont("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF", 12, "OUTLINE")
+                        fontStr:SetFont(
+                            "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
+                            12,
+                            "OUTLINE"
+                        )
                     end
                     if rbText and rbText.GetTextColor then
-                        fs:SetTextColor(rbText:GetTextColor())
+                        fontStr:SetTextColor(rbText:GetTextColor())
                     end
-                    fs:SetPoint(tPoint or "CENTER", button, tRelP or tPoint or "CENTER", tX or 0, tY or 0)
+                    fontStr:SetPoint(
+                        tPoint or "CENTER",
+                        btnFrame,
+                        tRelP or tPoint or "CENTER",
+                        tX or 0,
+                        tY or 0
+                    )
                     -- 68914 schema key (textFormatter); BuildDurationTextOpts
                     -- when available, bare table fallback otherwise.
                     local AK2 = CludesUI.AuraKit
@@ -192,38 +202,38 @@ local function Build()
                         dopts = { textFormatter = GetTimeFormatter() }
                     end
                     if AK2 and AK2.SetDurationTextSafe then
-                        AK2.SetDurationTextSafe(button, fs, dopts)
+                        AK2.SetDurationTextSafe(btnFrame, fontStr, dopts)
                     else
-                        button:SetDurationText(fs, dopts)
+                        btnFrame:SetDurationText(fontStr, dopts)
                     end
                 end)
                 if not okFS then
-                    S.fsErr = errFS
+                    Stl.fsErr = errFS
                 end
             end
 
-            S.btn, S.bar = button, bar
+            Stl.btn, Stl.bar = btnFrame, barFrame
         end,
     })
-    AK.FinishContainer(container, "player")
-    S.container = container
-    S.built = true
+    AK.FinishContainer(boxHolder, "player")
+    Stl.container = boxHolder
+    Stl.built = true
 end
 
 local function EnsureBuilt()
-    if S.built or S.queued then
+    if Stl.built or Stl.queued then
         return
     end
     local AK = CludesUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
-    S.queued = true
+    Stl.queued = true
     AKWorker:Queue(function()
-        S.queued = nil
+        Stl.queued = nil
         Build()
-        if S.built and S.armed and S.rbBar then
-            ns.EMB121_Sync(S.rbBar, S.pp, S.pc)
+        if Stl.built and Stl.armed and Stl.rbBar then
+            mod.EMB121_Sync(Stl.rbBar, Stl.pp, Stl.pc)
         end
     end, "erb:emb121-shell")
 end
@@ -235,17 +245,17 @@ end
 -- fall back to the legacy numeric text instead of leaving the bar
 -- permanently blank for the rest of the session (S.built never gets a second
 -- attempt once set -- only a /reload resets it).
-function ns.EMB121_TextOk()
-    return S.built and not S.fsErr
+function mod.EMB121_TextOk()
+    return Stl.built and not Stl.fsErr
 end
 
 -- Called from UpdatePrimaryBar whenever the primary power type resolves:
 -- parks the overlay the moment the bar stops being Ebon Might (spec swap).
-function ns.EMB121_Gate(isEbon)
-    if not isEbon and S.armed then
-        S.armed = nil
-        if S.proxy then
-            S.proxy:Hide()
+function mod.EMB121_Gate(isEbon)
+    if not isEbon and Stl.armed then
+        Stl.armed = nil
+        if Stl.proxy then
+            Stl.proxy:Hide()
         end
     end
 end
@@ -253,21 +263,21 @@ end
 -- Called from UpdatePrimaryBar's Ebon Might branch with the live bar and
 -- resolved settings -- the build trigger AND the attach, race-free by
 -- construction. Repositioning is always proxy moves (our frame).
-function ns.EMB121_Sync(bar, pp, pc)
-    S.rbBar, S.pp, S.pc = bar, pp, pc
-    S.armed = true
-    if not S.built then
+function mod.EMB121_Sync(barFrame, pp, pc)
+    Stl.rbBar, Stl.pp, Stl.pc = barFrame, pp, pc
+    Stl.armed = true
+    if not Stl.built then
         EnsureBuilt()
         return
     end
-    S.proxy:SetParent(bar)
-    S.proxy:ClearAllPoints()
-    S.proxy:SetAllPoints(bar)
-    S.proxy:Show()
+    Stl.proxy:SetParent(barFrame)
+    Stl.proxy:ClearAllPoints()
+    Stl.proxy:SetAllPoints(barFrame)
+    Stl.proxy:Show()
     -- One container-level set lifts the whole engine subtree above the
     -- (empty) legacy fill.
-    local lvl = bar:GetFrameLevel() + 1
-    S.container:SetFrameLevel(lvl)
+    local lvl = barFrame:GetFrameLevel() + 1
+    Stl.container:SetFrameLevel(lvl)
     -- ...which also lifts it above the bar's border strips (bar+2), so the
     -- fill -- a slot-button child two levels down, edge to edge over the whole
     -- rect -- paints over them: Border Size/Color silently did nothing while
@@ -277,7 +287,7 @@ function ns.EMB121_Sync(bar, pp, pc)
     -- sits at fill+5, still above the border, as on the legacy path. Draw Above
     -- GCD Bar stamps its own cover on the bar (_erbGcdCover): the higher wins, so
     -- a power tick never lowers that lift.
-    if bar.RaiseBorderAbove then
-        bar:RaiseBorderAbove(math.max(lvl + 3, bar._erbGcdCover or 0), pp and pp.borderBehind)
+    if barFrame.RaiseBorderAbove then
+        barFrame:RaiseBorderAbove(math.max(lvl + 3, barFrame._erbGcdCover or 0), pp and pp.borderBehind)
     end
 end

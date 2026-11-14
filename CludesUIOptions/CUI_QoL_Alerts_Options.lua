@@ -16,17 +16,17 @@ end -- module disabled: no options page
 -- Text, size, color and class-color rows for the Potion / Talent alerts
 -- (keys: <prefix>Text / TextSize / Color / UseClassColor; defaults come from
 -- the alert itself so the swatch always shows the real default).
-local function AlertCogRows(prefix, applyFrame, preview)
-    local D = (CludesUI.Alerts and CludesUI.Alerts.DEFAULTS[prefix])
+local function AlertCogRows(prefixText, applyFrame, preview)
+    local D = (CludesUI.Alerts and CludesUI.Alerts.DEFAULTS[prefixText])
         or { text = "", color = { r = 1, g = 1, b = 1 } }
-    local function db(k)
-        return CludesUIDB and CludesUIDB[prefix .. k]
+    local function saved(k)
+        return CludesUIDB and CludesUIDB[prefixText .. k]
     end
-    local function put(k, v)
+    local function put(k, val)
         if not CludesUIDB then
             CludesUIDB = {}
         end
-        CludesUIDB[prefix .. k] = v
+        CludesUIDB[prefixText .. k] = val
     end
     return {
         {
@@ -34,10 +34,10 @@ local function AlertCogRows(prefix, applyFrame, preview)
             label = "Text",
             inputWidth = 130,
             get = function()
-                return db("Text") or D.text
+                return saved("Text") or D.text
             end,
-            set = function(v)
-                put("Text", v)
+            set = function(val)
+                put("Text", val)
                 if CludesUI[preview] then
                     CludesUI[preview]()
                 end
@@ -50,10 +50,10 @@ local function AlertCogRows(prefix, applyFrame, preview)
             max = 64,
             step = 1,
             get = function()
-                return db("TextSize") or 22
+                return saved("TextSize") or 22
             end,
-            set = function(v)
-                put("TextSize", v)
+            set = function(val)
+                put("TextSize", val)
                 if CludesUI[applyFrame] then
                     CludesUI[applyFrame]()
                 end
@@ -66,12 +66,12 @@ local function AlertCogRows(prefix, applyFrame, preview)
             type = "colorpicker",
             label = "Color",
             disabled = function()
-                return db("UseClassColor")
+                return saved("UseClassColor")
             end,
             disabledTooltip = "Disable Class Color to pick a custom color.",
             rawTooltip = true,
             get = function()
-                local c = db("Color") or D.color
+                local c = saved("Color") or D.color
                 return c.r, c.g, c.b
             end,
             set = function(r, g, b)
@@ -85,10 +85,10 @@ local function AlertCogRows(prefix, applyFrame, preview)
             type = "toggle",
             label = "Class Color",
             get = function()
-                return db("UseClassColor")
+                return saved("UseClassColor")
             end,
-            set = function(v)
-                put("UseClassColor", v)
+            set = function(val)
+                put("UseClassColor", val)
                 if CludesUI[preview] then
                     CludesUI[preview]()
                 end
@@ -97,29 +97,29 @@ local function AlertCogRows(prefix, applyFrame, preview)
     }
 end
 
-_G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
-    local y = yOffset
-    local _, h, hdr
+_G._CUI_BuildAlertsSection = function(hostFrame, yOffset, Widgets, Pix)
+    local posY = yOffset
+    local _, hgt, heading
 
-    hdr, h = W:SectionHeader(parent, "ALERTS", y)
-    y = y - h
+    heading, hgt = Widgets:SectionHeader(hostFrame, "ALERTS", posY)
+    posY = posY - hgt
     -- One anchor carries the Combat, Potion Ready and Unspent Talents alerts,
     -- each with its own enable, so the button has no single requirement.
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_CombatAlert" })
+    CludesUI.BuildSectionUnlockJump(heading, { key = "CUI_CombatAlert" })
 
     local row1
-    row1, h = W:DualRow(parent, y, {
+    row1, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Combat Alert",
         tooltip = 'Shows a large on-screen text when you enter and/or leave combat (e.g. "+Combat" / "-Combat"). Use the cog to set the display text, size, colors and which transitions are shown; use Layout Mode to reposition the alert.',
         getValue = function()
             return CludesUIDB and CludesUIDB.combatAlertEnabled or false
         end,
-        setValue = function(v)
+        setValue = function(val)
             if not CludesUIDB then
                 CludesUIDB = {}
             end
-            CludesUIDB.combatAlertEnabled = v
+            CludesUIDB.combatAlertEnabled = val
             if CludesUI._applyCombatAlert then
                 CludesUI._applyCombatAlert()
             end
@@ -132,32 +132,32 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
         getValue = function()
             return CludesUIDB and CludesUIDB.potionAlertEnabled or false
         end,
-        setValue = function(v)
+        setValue = function(val)
             if not CludesUIDB then
                 CludesUIDB = {}
             end
-            CludesUIDB.potionAlertEnabled = v
+            CludesUIDB.potionAlertEnabled = val
             if CludesUI._applyPotionAlert then
                 CludesUI._applyPotionAlert()
             end
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     local row2
-    row2, h = W:DualRow(parent, y, {
+    row2, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Unspent Talents Alert",
         tooltip = "Shows on-screen text while you have unspent talent points. It stays up until you spend them or open your talents, and returns after a level-up. Use the cog to set the text, size and color; use Layout Mode to reposition the alerts.",
         getValue = function()
             return CludesUIDB and CludesUIDB.talentAlertEnabled or false
         end,
-        setValue = function(v)
+        setValue = function(val)
             if not CludesUIDB then
                 CludesUIDB = {}
             end
-            CludesUIDB.talentAlertEnabled = v
+            CludesUIDB.talentAlertEnabled = val
             if CludesUI._applyTalentAlert then
                 CludesUI._applyTalentAlert()
             end
@@ -170,18 +170,18 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
         getValue = function()
             return CludesUIDB and CludesUIDB.announceGroupDeaths or false
         end,
-        setValue = function(v)
+        setValue = function(val)
             if not CludesUIDB then
                 CludesUIDB = {}
             end
-            CludesUIDB.announceGroupDeaths = v
+            CludesUIDB.announceGroupDeaths = val
             if CludesUI._applyAnnounceGroupDeaths then
                 CludesUI._applyAnnounceGroupDeaths()
             end
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Inline cog (text, size, colors, mode) on the Combat Alert toggle.
     if not CludesUI._prebuilding then
@@ -215,11 +215,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return (CludesUIDB and CludesUIDB.combatAlertMode) or "both"
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.combatAlertMode = v
+                        CludesUIDB.combatAlertMode = val
                     end,
                 },
                 {
@@ -231,11 +231,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return (CludesUIDB and CludesUIDB.combatAlertTextSize) or 22
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.combatAlertTextSize = v
+                        CludesUIDB.combatAlertTextSize = val
                         if CludesUI._applyCombatAlertFrame then
                             CludesUI._applyCombatAlertFrame()
                         end
@@ -251,11 +251,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return (CludesUIDB and CludesUIDB.combatAlertEnterText) or "+Combat"
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.combatAlertEnterText = v
+                        CludesUIDB.combatAlertEnterText = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("enter")
                         end
@@ -288,11 +288,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return enterClassOn()
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.combatAlertEnterUseClassColor = v
+                        CludesUIDB.combatAlertEnterUseClassColor = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("enter")
                         end
@@ -305,11 +305,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return (CludesUIDB and CludesUIDB.combatAlertLeaveText) or "-Combat"
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.combatAlertLeaveText = v
+                        CludesUIDB.combatAlertLeaveText = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("leave")
                         end
@@ -342,11 +342,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return leaveClassOn()
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.combatAlertLeaveUseClassColor = v
+                        CludesUIDB.combatAlertLeaveUseClassColor = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("leave")
                         end
@@ -405,11 +405,11 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return (CludesUIDB and CludesUIDB.groupDeathTextSize) or 34
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.groupDeathTextSize = v
+                        CludesUIDB.groupDeathTextSize = val
                         if CludesUI._applyGroupDeathAlert then
                             CludesUI._applyGroupDeathAlert()
                         end
@@ -426,12 +426,12 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
                     get = function()
                         return (CludesUIDB and CludesUIDB.groupDeathSoundKey) or "none"
                     end,
-                    set = function(v)
+                    set = function(val)
                         if not CludesUIDB then
                             CludesUIDB = {}
                         end
-                        CludesUIDB.groupDeathSoundKey = v
-                        if v ~= "none" and CludesUI._groupDeathPlaySound then
+                        CludesUIDB.groupDeathSoundKey = val
+                        if val ~= "none" and CludesUI._groupDeathPlaySound then
                             CludesUI._groupDeathPlaySound()
                         end
                     end,
@@ -443,8 +443,8 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
         })
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return math.abs(y - yOffset)
+    return math.abs(posY - yOffset)
 end

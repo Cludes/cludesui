@@ -2,10 +2,10 @@ if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Explicit point relationships. Legacy side anchors keep their existing math.
-local _, ns = ...
-ns = ns.__cuiCoreNS or ns
+local _, mod = ...
+mod = mod.__cuiCoreNS or mod
 local PA = {}
-ns.PointAnchors = PA
+mod.PointAnchors = PA
 
 local POINTS = {
     TOPLEFT = { 0, 1 },
@@ -35,43 +35,43 @@ local LABELS = {
 }
 PA.LABELS = LABELS
 
-function PA.Description(info)
+function PA.Description(details)
     return CludesUI.Lf(
         "Point: %1$s to %2$s",
-        CludesUI.L(LABELS[info.sourcePoint] or "?"),
-        CludesUI.L(LABELS[info.targetPoint] or "?")
+        CludesUI.L(LABELS[details.sourcePoint] or "?"),
+        CludesUI.L(LABELS[details.targetPoint] or "?")
     )
 end
 
-local function Number(v)
-    return not (issecretvalue and issecretvalue(v))
-        and type(v) == "number"
-        and v == v
-        and v > -math.huge
-        and v < math.huge
+local function Number(val)
+    return not (issecretvalue and issecretvalue(val))
+        and type(val) == "number"
+        and val == val
+        and val > -math.huge
+        and val < math.huge
 end
 
-function PA.Is(info)
-    return type(info) == "table" and info.mode == "POINT"
+function PA.Is(details)
+    return type(details) == "table" and details.mode == "POINT"
 end
 
-function PA.Valid(info)
-    return PA.Is(info)
-        and type(info.target) == "string"
-        and POINTS[info.sourcePoint] ~= nil
-        and POINTS[info.targetPoint] ~= nil
-        and Number(info.offsetX)
-        and Number(info.offsetY)
+function PA.Valid(details)
+    return PA.Is(details)
+        and type(details.target) == "string"
+        and POINTS[details.sourcePoint] ~= nil
+        and POINTS[details.targetPoint] ~= nil
+        and Number(details.offsetX)
+        and Number(details.offsetY)
 end
 
-function CludesUI.GetUnlockAnchorSide(info)
-    if not PA.Is(info) then
-        return info and info.side
+function CludesUI.GetUnlockAnchorSide(details)
+    if not PA.Is(details) then
+        return details and details.side
     end
-    if not PA.Valid(info) then
+    if not PA.Valid(details) then
         return
     end
-    local s, t = POINTS[info.sourcePoint], POINTS[info.targetPoint]
+    local s, t = POINTS[details.sourcePoint], POINTS[details.targetPoint]
     if not s or not t then
         return
     end
@@ -94,8 +94,8 @@ function CludesUI.GetUnlockAnchorSide(info)
 end
 
 function CludesUI.IsPointAnchored(key)
-    local db = CludesUIDB and CludesUIDB.unlockAnchors
-    return db and PA.Is(db[key]) or false
+    local saved = CludesUIDB and CludesUIDB.unlockAnchors
+    return saved and PA.Is(saved[key]) or false
 end
 
 function CludesUI.SetPointAnchorHandles(enabled)
@@ -110,7 +110,7 @@ function PA.Frame(key)
     return elem and elem.getFrame and elem.getFrame(key)
 end
 
-local function Insets(key, frame)
+local function Insets(key, widget)
     local elem = CludesUI._unlockRegisteredElements[key]
     local l, r, t, b = 0, 0, 0, 0
     if elem and elem.getInsets then
@@ -124,17 +124,21 @@ local function Insets(key, frame)
     return l, r, t, b - extra
 end
 
-local function Bounds(frame)
-    return frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom(), frame:GetEffectiveScale()
+local function Bounds(widget)
+    return widget:GetLeft(),
+        widget:GetRight(),
+        widget:GetTop(),
+        widget:GetBottom(),
+        widget:GetEffectiveScale()
 end
 
-local function Dimensions(frame)
-    return frame:GetWidth(), frame:GetHeight(), frame:GetEffectiveScale()
+local function Dimensions(widget)
+    return widget:GetWidth(), widget:GetHeight(), widget:GetEffectiveScale()
 end
 
-local function Extent(key, side, fallback)
-    local ok, value = pcall(CludesUI._GetAnchorTargetExtent, key, side)
-    if not ok then
+local function Extent(key, sideName, fallback)
+    local success, value = pcall(CludesUI._GetAnchorTargetExtent, key, sideName)
+    if not success then
         return
     end
     if issecretvalue and issecretvalue(value) then
@@ -148,24 +152,24 @@ local function Extent(key, side, fallback)
     end
 end
 
-function PA.Rect(key, frame, target)
-    if not frame then
+function PA.Rect(key, widget, targetUnit)
+    if not widget then
         return
     end
-    local ok, l, r, t, b, scale = pcall(Bounds, frame)
+    local success, l, r, t, b, scale = pcall(Bounds, widget)
     if
-        not ok
+        not success
         or not (Number(l) and Number(r) and Number(t) and Number(b) and Number(scale) and scale > 0)
     then
         return
     end
-    local safe, il, ir, it, ib = pcall(Insets, key, frame)
+    local safe, il, ir, it, ib = pcall(Insets, key, widget)
     if not safe or not il then
         return
     end
     local ratio = scale / UIParent:GetEffectiveScale()
     l, r, t, b = (l + il) * ratio, (r - ir) * ratio, (t - it) * ratio, (b + ib) * ratio
-    if target and CludesUI._GetAnchorTargetExtent then
+    if targetUnit and CludesUI._GetAnchorTargetExtent then
         l, r = Extent(key, "LEFT", l), Extent(key, "RIGHT", r)
         t, b = Extent(key, "TOP", t), Extent(key, "BOTTOM", b)
     end
@@ -175,77 +179,77 @@ function PA.Rect(key, frame, target)
     return l, r, t, b
 end
 
-function PA.Point(key, frame, point, target)
-    local p = POINTS[point]
+function PA.Point(key, widget, anchorPoint, targetUnit)
+    local p = POINTS[anchorPoint]
     if not p then
         return
     end
-    local l, r, t, b = PA.Rect(key, frame, target)
+    local l, r, t, b = PA.Rect(key, widget, targetUnit)
     if not l then
         return
     end
     return l + (r - l) * p[1], b + (t - b) * p[2]
 end
 
-function PA.Center(childKey, child, info, target, w, h)
-    if not PA.Valid(info) then
+function PA.Center(childKey, childFrame, details, targetUnit, wid, hgt)
+    if not PA.Valid(details) then
         return
     end
     -- Contradictory imported chains must not keep scheduling position changes.
-    local key = info.target
-    local db = CludesUIDB and CludesUIDB.unlockAnchors
-    for i = 1, 100 do
+    local key = details.target
+    local saved = CludesUIDB and CludesUIDB.unlockAnchors
+    for idx = 1, 100 do
         if key == childKey then
             return
         end
-        local parent = db and db[key]
-        if not parent or not parent.target then
+        local hostFrame = saved and saved[key]
+        if not hostFrame or not hostFrame.target then
             break
         end
-        key = parent.target
-        if i == 100 then
+        key = hostFrame.target
+        if idx == 100 then
             return
         end
     end
-    local tx, ty = PA.Point(info.target, target, info.targetPoint, true)
+    local tx, ty = PA.Point(details.target, targetUnit, details.targetPoint, true)
     if not tx then
         return
     end
-    local ok, fw, fh, scale = pcall(Dimensions, child)
-    if not ok or not (Number(scale) and scale > 0) then
+    local success, fw, fh, scale = pcall(Dimensions, childFrame)
+    if not success or not (Number(scale) and scale > 0) then
         return
     end
     local ratio = scale / UIParent:GetEffectiveScale()
-    if not w or not h then
+    if not wid or not hgt then
         if not (Number(fw) and Number(fh)) then
             return
         end
-        w, h = fw * ratio, fh * ratio
+        wid, hgt = fw * ratio, fh * ratio
     end
-    if not (Number(w) and Number(h)) or w <= 0 or h <= 0 then
+    if not (Number(wid) and Number(hgt)) or wid <= 0 or hgt <= 0 then
         return
     end
-    local l, r, t, b = Insets(childKey, child)
+    local l, r, t, b = Insets(childKey, childFrame)
     if not l then
         return
     end
-    l, r, t, b = -w / 2 + l * ratio, w / 2 - r * ratio, h / 2 - t * ratio, -h / 2 + b * ratio
-    local p = POINTS[info.sourcePoint]
-    return tx + info.offsetX - (l + (r - l) * p[1]), ty + info.offsetY - (b + (t - b) * p[2])
+    l, r, t, b = -wid / 2 + l * ratio, wid / 2 - r * ratio, hgt / 2 - t * ratio, -hgt / 2 + b * ratio
+    local p = POINTS[details.sourcePoint]
+    return tx + details.offsetX - (l + (r - l) * p[1]), ty + details.offsetY - (b + (t - b) * p[2])
 end
 
-local function WritePoint(frame, point, rel, rp, x, y)
-    CludesUI.ClearFramePoints(frame)
-    CludesUI.SetFramePoint(frame, point, rel, rp, x, y)
+local function WritePoint(widget, anchorPoint, rel, rp, posX, posY)
+    CludesUI.ClearFramePoints(widget)
+    CludesUI.SetFramePoint(widget, anchorPoint, rel, rp, posX, posY)
 end
 
-function PA.Capture(childKey, info, child, target)
-    if not PA.Valid(info) then
+function PA.Capture(childKey, details, childFrame, targetUnit)
+    if not PA.Valid(details) then
         return
     end
-    child, target = child or PA.Frame(childKey), target or PA.Frame(info.target)
-    local cx, cy = PA.Point(childKey, child, info.sourcePoint)
-    local tx, ty = PA.Point(info.target, target, info.targetPoint, true)
+    childFrame, targetUnit = childFrame or PA.Frame(childKey), targetUnit or PA.Frame(details.target)
+    local cx, cy = PA.Point(childKey, childFrame, details.sourcePoint)
+    local tx, ty = PA.Point(details.target, targetUnit, details.targetPoint, true)
     if not cx or not tx then
         return
     end
@@ -253,35 +257,35 @@ function PA.Capture(childKey, info, child, target)
     if CludesUI._ExtraAnchorOffset then
         ex, ey = CludesUI._ExtraAnchorOffset(childKey)
     end
-    local ratio = child:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    local ratio = childFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     return cx - tx - ex * ratio, cy - ty - ey * ratio
 end
 
 -- Keep the selected native point fixed between resize notifications as well.
-function PA.Place(childKey, child, info, cx, cy, w, h)
+function PA.Place(childKey, childFrame, details, cx, cy, wid, hgt)
     local pp = CludesUI.PP
-    local scale = child:GetEffectiveScale()
+    local scale = childFrame:GetEffectiveScale()
     local ratio = UIParent:GetEffectiveScale() / scale
-    local bx, by = pp.SnapCenterForDim(cx * ratio, w, scale), pp.SnapCenterForDim(cy * ratio, h, scale)
+    local bx, by = pp.SnapCenterForDim(cx * ratio, wid, scale), pp.SnapCenterForDim(cy * ratio, hgt, scale)
     local ex, ey = 0, 0
     if CludesUI._ExtraAnchorOffset then
         ex, ey = CludesUI._ExtraAnchorOffset(childKey)
     end
     bx, by = bx + ex, by + ey
-    local p = POINTS[info.sourcePoint]
-    local x, y = bx + (p[1] - 0.5) * w, by + (p[2] - 0.5) * h
+    local p = POINTS[details.sourcePoint]
+    local posX, posY = bx + (p[1] - 0.5) * wid, by + (p[2] - 0.5) * hgt
     local rel, rp = UIParent, "CENTER"
-    if p and POINTS[info.targetPoint][2] == 0 and CludesUI._GetAnchorFollowFrame then
-        local follow = CludesUI._GetAnchorFollowFrame(childKey, info.target, "BOTTOM")
-        local tx, ty = PA.Point(info.target, PA.Frame(info.target), info.targetPoint, true)
+    if p and POINTS[details.targetPoint][2] == 0 and CludesUI._GetAnchorFollowFrame then
+        local follow = CludesUI._GetAnchorFollowFrame(childKey, details.target, "BOTTOM")
+        local tx, ty = PA.Point(details.target, PA.Frame(details.target), details.targetPoint, true)
         if follow and tx then
-            rel, rp = follow, info.targetPoint
-            x = x - (tx - UIParent:GetWidth() / 2) * ratio
-            y = y - (ty - UIParent:GetHeight() / 2) * ratio
+            rel, rp = follow, details.targetPoint
+            posX = posX - (tx - UIParent:GetWidth() / 2) * ratio
+            posY = posY - (ty - UIParent:GetHeight() / 2) * ratio
         end
     end
-    local ok, pt, rt, rpt, px, py = pcall(child.GetPoint, child, 1)
-    local plain = ok
+    local success, pt, rt, rpt, px, py = pcall(childFrame.GetPoint, childFrame, 1)
+    local plain = success
         and not (
             issecretvalue
             and (
@@ -294,66 +298,67 @@ function PA.Place(childKey, child, info, cx, cy, w, h)
         )
     local tolerance = pp.perfect / scale * 0.25
     local same = plain
-        and child:GetNumPoints() == 1
-        and pt == info.sourcePoint
+        and childFrame:GetNumPoints() == 1
+        and pt == details.sourcePoint
         and rt == rel
         and rpt == rp
         and Number(px)
         and Number(py)
-        and math.abs(px - x) <= tolerance
-        and math.abs(py - y) <= tolerance
+        and math.abs(px - posX) <= tolerance
+        and math.abs(py - posY) <= tolerance
     if not plain and PA.followPins then
-        local last = PA.followPins[child]
+        local last = PA.followPins[childFrame]
         same = last
-            and last.info == info
+            and last.info == details
             and last.rel == rel
-            and last.point == info.sourcePoint
+            and last.point == details.sourcePoint
             and last.rp == rp
-            and math.abs(last.x - x) <= tolerance
-            and math.abs(last.y - y) <= tolerance
+            and math.abs(last.x - posX) <= tolerance
+            and math.abs(last.y - posY) <= tolerance
     end
     if not same then
-        local placed = pcall(WritePoint, child, info.sourcePoint, rel, rp, x, y)
+        local placed = pcall(WritePoint, childFrame, details.sourcePoint, rel, rp, posX, posY)
         if not placed then
             return
         end
         if rel ~= UIParent then
             PA.followPins = PA.followPins or setmetatable({}, { __mode = "k" })
-            PA.followPins[child] = { info = info, rel = rel, point = info.sourcePoint, rp = rp, x = x, y = y }
+            PA.followPins[childFrame] =
+                { info = details, rel = rel, point = details.sourcePoint, rp = rp, x = posX, y = posY }
         elseif PA.followPins then
-            PA.followPins[child] = nil
+            PA.followPins[childFrame] = nil
         end
     end
     return bx, by, not same
 end
 
-function PA.EarlyApply(key, info, child, target)
-    if not PA.Valid(info) or (InCombatLockdown() and child:IsProtected()) then
+function PA.EarlyApply(key, details, childFrame, targetUnit)
+    if not PA.Valid(details) or (InCombatLockdown() and childFrame:IsProtected()) then
         return
     end
-    local cx, cy = PA.Center(key, child, info, target)
+    local cx, cy = PA.Center(key, childFrame, details, targetUnit)
     if not cx then
         return
     end
     PA.Place(
         key,
-        child,
-        info,
+        childFrame,
+        details,
         cx - UIParent:GetWidth() / 2,
         cy - UIParent:GetHeight() / 2,
-        child:GetWidth(),
-        child:GetHeight()
+        childFrame:GetWidth(),
+        childFrame:GetHeight()
     )
 end
 
-function PA.Recenter(key, UM)
-    local info = UM.GetAnchorInfo(key)
-    if not PA.Is(info) then
+function PA.Recenter(key, LM)
+    local details = LM.GetAnchorInfo(key)
+    if not PA.Is(details) then
         return false
     end
-    local mover = UM.movers[key]
+    local mover = LM.movers[key]
     if not (mover and mover._dragging) then
-        UM.ApplyAnchorPosition(key, info.target, nil, true)
+        LM.ApplyAnchorPosition(key, details.target, nil, true)
     end
     return true
 end
@@ -371,8 +376,8 @@ function CludesUI.LayoutExportVersion(value, seen)
         return 3
     end
     seen[value] = true
-    for _, v in pairs(value) do
-        if type(v) == "table" and CludesUI.LayoutExportVersion(v, seen) == 4 then
+    for _, val in pairs(value) do
+        if type(val) == "table" and CludesUI.LayoutExportVersion(val, seen) == 4 then
             return 4
         end
     end

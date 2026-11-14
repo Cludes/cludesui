@@ -9,16 +9,16 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  after the main file and reads it through ns and ns._internals;
 --  db is set through I.dbSetters.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local issecretvalue = issecretvalue
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 
-local I = ns._internals
-local frames, GetSelectedFont, SetFSFont = I.frames, I.GetSelectedFont, I.SetFSFont
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local Inner = mod._internals
+local frameList, GetSelectedFont, SetFSFont = Inner.frames, Inner.GetSelectedFont, Inner.SetFSFont
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -49,23 +49,23 @@ end
 -- Lazily create the dedicated additive shadow border on the player frame. It
 -- sits behind the frame like the real "Shadow" border style, separate from the
 -- unified border so it ADDS to whatever border the user already has.
-local function PT_EnsureBorder(pf)
-    if pf._threatShadowBorder then
-        return pf._threatShadowBorder
+local function PT_EnsureBorder(popFrame)
+    if popFrame._threatShadowBorder then
+        return popFrame._threatShadowBorder
     end
-    local b = CreateFrame("Frame", nil, pf)
-    PP.Point(b, "TOPLEFT", pf, "TOPLEFT", 0, 0)
-    PP.Point(b, "BOTTOMRIGHT", pf, "BOTTOMRIGHT", 0, 0)
-    b:SetFrameLevel(math.max(0, pf:GetFrameLevel() - 1))
+    local b = CreateFrame("Frame", nil, popFrame)
+    Pix.Point(b, "TOPLEFT", popFrame, "TOPLEFT", 0, 0)
+    Pix.Point(b, "BOTTOMRIGHT", popFrame, "BOTTOMRIGHT", 0, 0)
+    b:SetFrameLevel(math.max(0, popFrame:GetFrameLevel() - 1))
     b:Hide()
-    pf._threatShadowBorder = b
+    popFrame._threatShadowBorder = b
     return b
 end
 
 local function PT_Hide()
-    local pf = frames.player
-    if pf and pf._threatShadowBorder then
-        pf._threatShadowBorder:Hide()
+    local popFrame = frameList.player
+    if popFrame and popFrame._threatShadowBorder then
+        popFrame._threatShadowBorder:Hide()
     end
     _ptShownState = nil
 end
@@ -73,11 +73,11 @@ end
 -- Render the additive Shadow border (size 2) tinted with the threat color --
 -- identical to picking "Shadow" at size 2 from the Border Style dropdown.
 local function PT_Show(state, c)
-    local pf = frames.player
-    if not pf then
+    local popFrame = frameList.player
+    if not popFrame then
         return
     end
-    local b = PT_EnsureBorder(pf)
+    local b = PT_EnsureBorder(popFrame)
     if _ptShownState ~= state then
         _ptShownState = state
         CludesUI.ApplyBorderStyle(b, 2, c.r, c.g, c.b, 1, "shadow", nil, nil, nil, nil, "unitframes", 2)
@@ -88,12 +88,12 @@ local function PT_Show(state, c)
 end
 
 -- Re-evaluate the player's threat and paint/clear the additive shadow border.
-function ns.UpdatePlayerThreatBorder()
-    if not (db and db.profile and db.profile.playerThreatBorderEnabled) then
+function mod.UpdatePlayerThreatBorder()
+    if not (saved and saved.profile and saved.profile.playerThreatBorderEnabled) then
         PT_Hide()
         return
     end
-    if not frames.player then
+    if not frameList.player then
         return
     end
     if not PT_InInstancedContent() or not IsInGroup() then
@@ -103,10 +103,10 @@ function ns.UpdatePlayerThreatBorder()
     local status = UnitThreatSituation("player")
     if status and status >= 2 then
         -- status 2/3: the mob is on you -- you have aggro.
-        PT_Show("has", db.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 })
+        PT_Show("has", saved.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 })
     elseif status == 1 then
         -- status 1: higher threat than the tank but not tanking yet -- close to aggro.
-        PT_Show("near", db.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 })
+        PT_Show("near", saved.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 })
     else
         PT_Hide()
     end
@@ -114,13 +114,13 @@ end
 
 -- Enable/disable the watcher. Registers ONLY the player's own threat event plus
 -- the minimal boundaries to clear it; tears everything down and hides when off.
-function ns.SetPlayerThreatEnabled(on)
-    _ptOn = on and true or false
-    if on then
+function mod.SetPlayerThreatEnabled(enabled)
+    _ptOn = enabled and true or false
+    if enabled then
         if not _ptWatcher then
             _ptWatcher = CreateFrame("Frame")
             _ptWatcher:SetScript("OnEvent", function()
-                ns.UpdatePlayerThreatBorder()
+                mod.UpdatePlayerThreatBorder()
             end)
         end
         _ptWatcher:RegisterUnitEvent("UNIT_THREAT_SITUATION_UPDATE", "player")
@@ -128,7 +128,7 @@ function ns.SetPlayerThreatEnabled(on)
         _ptWatcher:RegisterEvent("PLAYER_REGEN_DISABLED")
         _ptWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
         _ptWatcher:RegisterEvent("GROUP_ROSTER_UPDATE")
-        ns.UpdatePlayerThreatBorder()
+        mod.UpdatePlayerThreatBorder()
     else
         if _ptWatcher then
             _ptWatcher:UnregisterAllEvents()
@@ -139,12 +139,12 @@ end
 
 -- Login and every real reload pass (profile switch, spec override, import):
 -- the saved toggle never reaches SetPlayerThreatEnabled any other way.
-function ns.SyncPlayerThreat()
-    local want = db.profile.playerThreatBorderEnabled == true
-    if want ~= _ptOn then
-        ns.SetPlayerThreatEnabled(want)
-    elseif want then
-        ns.UpdatePlayerThreatBorder()
+function mod.SyncPlayerThreat()
+    local wanted = saved.profile.playerThreatBorderEnabled == true
+    if wanted ~= _ptOn then
+        mod.SetPlayerThreatEnabled(wanted)
+    elseif wanted then
+        mod.UpdatePlayerThreatBorder()
     end
 end
 
@@ -165,57 +165,64 @@ if CludesUI.IS_FOREVER then
     }
     local watcher = CreateFrame("Frame")
 
-    local function Layout(frame, fs)
-        local p = db.profile
+    local function Layout(widget, fontStr)
+        local p = saved.profile
         local posKey = POS[p.threatPctPosition] and p.threatPctPosition or "CENTER"
-        local size = p.threatPctSize
-        local x, y = p.threatPctXOffset, p.threatPctYOffset
+        local dim = p.threatPctSize
+        local posX, posY = p.threatPctXOffset, p.threatPctYOffset
         local font = GetSelectedFont()
         local outline = CludesUI.GetFontOutlineFlag("unitFrames")
         if
-            frame._tpPos == posKey
-            and frame._tpSize == size
-            and frame._tpX == x
-            and frame._tpY == y
-            and frame._tpFont == font
-            and frame._tpOutline == outline
+            widget._tpPos == posKey
+            and widget._tpSize == dim
+            and widget._tpX == posX
+            and widget._tpY == posY
+            and widget._tpFont == font
+            and widget._tpOutline == outline
         then
             return
         end
-        frame._tpPos, frame._tpSize, frame._tpX, frame._tpY = posKey, size, x, y
-        frame._tpFont, frame._tpOutline = font, outline
-        local pos = POS[posKey]
-        SetFSFont(fs, size)
-        fs:ClearAllPoints()
-        PP.Point(fs, pos.point, pos.outside and frame or frame.Health, pos.rel or pos.point, pos.x + x, y)
-        fs:SetJustifyH(pos.point)
+        widget._tpPos, widget._tpSize, widget._tpX, widget._tpY = posKey, dim, posX, posY
+        widget._tpFont, widget._tpOutline = font, outline
+        local place = POS[posKey]
+        SetFSFont(fontStr, dim)
+        fontStr:ClearAllPoints()
+        Pix.Point(
+            fontStr,
+            place.point,
+            place.outside and widget or widget.Health,
+            place.rel or place.point,
+            place.x + posX,
+            posY
+        )
+        fontStr:SetJustifyH(place.point)
     end
 
     -- The percent may be secret: only type() and issecretvalue() read it here
     -- (a readable 0 hides the text), then it goes straight to PaintThreatPct.
-    local function UpdateUnit(unit)
-        local frame = frames[unit]
-        if not (frame and frame._textOverlay) then
+    local function UpdateUnit(unitToken)
+        local widget = frameList[unitToken]
+        if not (widget and widget._textOverlay) then
             return
         end
-        local fs = frame._threatPctText
-        local p = db.profile
-        if p.threatPctEnabled and (unit == "target" or p.threatPctFocus) then
-            local isTanking, status, pct = UnitDetailedThreatSituation("player", unit)
+        local fontStr = widget._threatPctText
+        local p = saved.profile
+        if p.threatPctEnabled and (unitToken == "target" or p.threatPctFocus) then
+            local isTanking, status, pct = UnitDetailedThreatSituation("player", unitToken)
             if type(pct) == "number" and (issecretvalue(pct) or pct ~= 0) then
-                if not fs then
-                    fs = frame._textOverlay:CreateFontString(nil, "OVERLAY")
-                    fs:SetWordWrap(false)
-                    frame._threatPctText = fs
+                if not fontStr then
+                    fontStr = widget._textOverlay:CreateFontString(nil, "OVERLAY")
+                    fontStr:SetWordWrap(false)
+                    widget._threatPctText = fontStr
                 end
-                Layout(frame, fs)
-                CludesUI.PaintThreatPct(fs, pct, status, isTanking, p.threatPctColorByThreat)
-                fs:Show()
+                Layout(widget, fontStr)
+                CludesUI.PaintThreatPct(fontStr, pct, status, isTanking, p.threatPctColorByThreat)
+                fontStr:Show()
                 return
             end
         end
-        if fs then
-            fs:Hide()
+        if fontStr then
+            fontStr:Hide()
         end
     end
 
@@ -224,12 +231,12 @@ if CludesUI.IS_FOREVER then
         UpdateUnit("focus")
     end
 
-    local function OnEvent(_, event, unit)
-        if event == "UNIT_THREAT_LIST_UPDATE" then
-            UpdateUnit(unit)
-        elseif event == "PLAYER_TARGET_CHANGED" then
+    local function OnEvent(_, evt, unitToken)
+        if evt == "UNIT_THREAT_LIST_UPDATE" then
+            UpdateUnit(unitToken)
+        elseif evt == "PLAYER_TARGET_CHANGED" then
             UpdateUnit("target")
-        elseif event == "PLAYER_FOCUS_CHANGED" then
+        elseif evt == "PLAYER_FOCUS_CHANGED" then
             UpdateUnit("focus")
         else
             UpdateAll()
@@ -241,11 +248,11 @@ if CludesUI.IS_FOREVER then
     -- Events only while on AND an CludesUI target or focus frame exists
     -- (a frame source change reloads, so the frames never appear later).
     local tpOn = false
-    function ns.SetThreatPctEnabled(on)
-        on = on == true and (frames.target or frames.focus) ~= nil
-        if on ~= tpOn then
-            tpOn = on
-            if on then
+    function mod.SetThreatPctEnabled(enabled)
+        enabled = enabled == true and (frameList.target or frameList.focus) ~= nil
+        if enabled ~= tpOn then
+            tpOn = enabled
+            if enabled then
                 watcher:RegisterUnitEvent("UNIT_THREAT_LIST_UPDATE", "target", "focus")
                 watcher:RegisterEvent("PLAYER_TARGET_CHANGED")
                 watcher:RegisterEvent("PLAYER_FOCUS_CHANGED")
@@ -259,16 +266,16 @@ if CludesUI.IS_FOREVER then
 
     -- Login and every real reload pass (profile switch, spec override, import):
     -- the saved toggle never reaches SetThreatPctEnabled any other way.
-    function ns.SyncThreatPct()
-        local want = db.profile.threatPctEnabled == true and (frames.target or frames.focus) ~= nil
-        if want ~= tpOn then
-            ns.SetThreatPctEnabled(want)
-        elseif want then
+    function mod.SyncThreatPct()
+        local wanted = saved.profile.threatPctEnabled == true and (frameList.target or frameList.focus) ~= nil
+        if wanted ~= tpOn then
+            mod.SetThreatPctEnabled(wanted)
+        elseif wanted then
             UpdateAll()
         end
     end
 
     -- Options setters of the position, size, offset and colour keys (the
     -- layout memo compares every layout input).
-    ns.RefreshThreatPct = UpdateAll
+    mod.RefreshThreatPct = UpdateAll
 end -- IS_FOREVER

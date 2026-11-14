@@ -19,7 +19,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The leader and assistants get a window listing everyone, problems first,
 --  and the names of anyone who did not answer (no CludesUI).
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 -- Inventory slots that take an enchant in Midnight, and their names.
 local ENCHANT_SLOTS = {
@@ -33,8 +33,8 @@ local ENCHANT_SLOTS = {
     [17] = "Off Hand",
 }
 
-function ns.ReadyCheckSettings()
-    local p = ns.RaidLeadDB()
+function mod.ReadyCheckSettings()
+    local p = mod.RaidLeadDB()
     p.readyCheck = p.readyCheck or {}
     local s = p.readyCheck
     if s.enabled == nil then
@@ -51,10 +51,10 @@ end
 
 local function LowestDurability()
     local low
-    for slot = 1, 18 do
-        local cur, max = GetInventoryItemDurability(slot)
-        if cur and max and max > 0 then
-            local pct = cur / max * 100
+    for slotIndex = 1, 18 do
+        local current, upper = GetInventoryItemDurability(slotIndex)
+        if current and upper and upper > 0 then
+            local pct = current / upper * 100
             if not low or pct < low then
                 low = pct
             end
@@ -65,13 +65,13 @@ end
 
 local function MissingEnchants()
     local missing = {}
-    for slot, name in pairs(ENCHANT_SLOTS) do
-        local link = GetInventoryItemLink("player", slot)
-        if link then
-            local enchant = link:match("item:%d+:(%d*)")
+    for slotIndex, name in pairs(ENCHANT_SLOTS) do
+        local itemLink = GetInventoryItemLink("player", slotIndex)
+        if itemLink then
+            local enchant = itemLink:match("item:%d+:(%d*)")
             local isWeaponOffhand = true
-            if slot == 17 then
-                local classID = select(6, C_Item.GetItemInfoInstant(link))
+            if slotIndex == 17 then
+                local classID = select(6, C_Item.GetItemInfoInstant(itemLink))
                 isWeaponOffhand = classID == Enum.ItemClass.Weapon
             end
             if isWeaponOffhand and (enchant == nil or enchant == "" or enchant == "0") then
@@ -84,38 +84,38 @@ local function MissingEnchants()
 end
 
 local function CooldownsNotReady()
-    local out = {}
+    local result = {}
     local presets = CludesUI.BUFF_PRESETS
         and CludesUI.BUFF_PRESETS.spells
         and CludesUI.BUFF_PRESETS.spells.raidcds
-    local _, class = UnitClass("player")
-    for id, info in pairs(presets or {}) do
-        if info.class == class and IsPlayerSpell(id) then
-            local cd = C_Spell.GetSpellCooldown(id)
+    local _, classFile = UnitClass("player")
+    for ident, details in pairs(presets or {}) do
+        if details.class == classFile and IsPlayerSpell(ident) then
+            local cd = C_Spell.GetSpellCooldown(ident)
             if
                 cd
                 and not (issecretvalue and issecretvalue(cd.duration))
                 and cd.duration
                 and cd.duration > 1.5
             then
-                local name = C_Spell.GetSpellName(id)
+                local name = C_Spell.GetSpellName(ident)
                 if type(name) == "string" then
-                    out[#out + 1] = name
+                    result[#result + 1] = name
                 end
             end
         end
     end
-    table.sort(out)
-    return out
+    table.sort(result)
+    return result
 end
 
 local WELL_FED_ICON = 136000
 local HEALTHSTONES = { 5512, 224464 } -- Healthstone, Demonic Healthstone
 
 local function HasAnyAura(ids)
-    for _, id in ipairs(ids or {}) do
-        local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-        if ok and aura then
+    for _, ident in ipairs(ids or {}) do
+        local success, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+        if success and aura then
             return true
         end
     end
@@ -123,13 +123,13 @@ local function HasAnyAura(ids)
 end
 
 local function WellFed()
-    for i = 1, 40 do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+    for idx = 1, 40 do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
         if not aura then
             return false
         end
-        local icon = aura.icon
-        if icon and not (issecretvalue and issecretvalue(icon)) and icon == WELL_FED_ICON then
+        local glyph = aura.icon
+        if glyph and not (issecretvalue and issecretvalue(glyph)) and glyph == WELL_FED_ICON then
             return true
         end
     end
@@ -144,32 +144,32 @@ local function MissingConsumables()
         return "?"
     end
     local prep = CludesUI.RAID_PREP_IDS or {}
-    local out = {}
+    local result = {}
     if not HasAnyAura(prep.flask) then
-        out[#out + 1] = "Flask"
+        result[#result + 1] = "Flask"
     end
-    local ok, fed = pcall(WellFed)
-    if not (ok and fed) then
-        out[#out + 1] = "Food"
+    local success, fed = pcall(WellFed)
+    if not (success and fed) then
+        result[#result + 1] = "Food"
     end
     if not HasAnyAura(prep.rune) then
-        out[#out + 1] = "Rune"
+        result[#result + 1] = "Rune"
     end
     local stone = false
-    for _, id in ipairs(HEALTHSTONES) do
-        if (C_Item.GetItemCount(id) or 0) > 0 then
+    for _, ident in ipairs(HEALTHSTONES) do
+        if (C_Item.GetItemCount(ident) or 0) > 0 then
             stone = true
         end
     end
     if not stone then
-        out[#out + 1] = "Healthstone"
+        result[#result + 1] = "Healthstone"
     end
-    return table.concat(out, ",")
+    return table.concat(result, ",")
 end
-ns.MissingConsumables = MissingConsumables
+mod.MissingConsumables = MissingConsumables
 
 --- The report this player sends: "dur|ilvl|enchants,..|cooldowns,..|consumables,..".
-function ns.MyReadyReport()
+function mod.MyReadyReport()
     local _, equipped = GetAverageItemLevel()
     return ("%d|%d|%s|%s|%s"):format(
         LowestDurability(),
@@ -184,72 +184,72 @@ end
 --  The leader's window
 -------------------------------------------------------------------------------
 local reports = {} -- name -> { dur, ilvl, enchants = {}, cds = {} }
-local win, rows = nil, {}
+local window, rowList = nil, {}
 
 local function Font()
     return CludesUI.GetFontPath(nil)
 end
 
 local function BuildWindow()
-    if win then
+    if window then
         return
     end
-    win = CreateFrame("Frame", "CludesUIRaidLeadReadyCheck", UIParent)
-    win:SetSize(520, 60)
-    win:SetPoint("TOP", UIParent, "TOP", 0, -140)
-    CludesUI.Kit.Panel(win, 0.92)
-    win:SetMovable(true)
-    win:EnableMouse(true)
-    win:RegisterForDrag("LeftButton")
-    win:SetScript("OnDragStart", win.StartMoving)
-    win:SetScript("OnDragStop", win.StopMovingOrSizing)
-    local title = win:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, nil)
-    title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("Ready Check")
-    CludesUI.Kit.AccentText(title)
-    win.title = title
-    local close = CludesUI.Kit.Glyph(win, "x", function()
-        win:Hide()
+    window = CreateFrame("Frame", "CludesUIRaidLeadReadyCheck", UIParent)
+    window:SetSize(520, 60)
+    window:SetPoint("TOP", UIParent, "TOP", 0, -140)
+    CludesUI.Kit.Panel(window, 0.92)
+    window:SetMovable(true)
+    window:EnableMouse(true)
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnDragStart", window.StartMoving)
+    window:SetScript("OnDragStop", window.StopMovingOrSizing)
+    local titleText = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(titleText, 15, nil)
+    titleText:SetPoint("TOPLEFT", 10, -8)
+    titleText:SetText("Ready Check")
+    CludesUI.Kit.AccentText(titleText)
+    window.title = titleText
+    local close = CludesUI.Kit.Glyph(window, "x", function()
+        window:Hide()
     end, nil, nil)
     close:SetPoint("TOPRIGHT", -5, -5)
-    win:Hide()
+    window:Hide()
     tinsert(UISpecialFrames, "CludesUIRaidLeadReadyCheck")
 end
 
-local function Row(i)
-    local fs = rows[i]
-    if not fs then
-        fs = win:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(fs, 13, nil)
-        fs:SetJustifyH("LEFT")
-        fs:SetWidth(500)
-        fs:SetWordWrap(false)
-        rows[i] = fs
+local function Row(idx)
+    local fontStr = rowList[idx]
+    if not fontStr then
+        fontStr = window:CreateFontString(nil, "OVERLAY")
+        CludesUI.Kit.Font(fontStr, 13, nil)
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetWidth(500)
+        fontStr:SetWordWrap(false)
+        rowList[idx] = fontStr
     end
-    fs:ClearAllPoints()
-    fs:SetPoint("TOPLEFT", win, "TOPLEFT", 10, -30 - (i - 1) * 17)
-    fs:Show()
-    return fs
+    fontStr:ClearAllPoints()
+    fontStr:SetPoint("TOPLEFT", window, "TOPLEFT", 10, -30 - (idx - 1) * 17)
+    fontStr:Show()
+    return fontStr
 end
 
 local function Members()
-    local out = {}
-    for i = 1, GetNumGroupMembers() do
-        local unit = IsInRaid() and ("raid" .. i) or (i == 1 and "player" or ("party" .. (i - 1)))
-        local name = UnitName(unit)
+    local result = {}
+    for idx = 1, GetNumGroupMembers() do
+        local unitToken = IsInRaid() and ("raid" .. idx) or (idx == 1 and "player" or ("party" .. (idx - 1)))
+        local name = UnitName(unitToken)
         if type(name) == "string" and not (issecretvalue and issecretvalue(name)) then
-            out[#out + 1] = name
+            result[#result + 1] = name
         end
     end
-    return out
+    return result
 end
 
-function ns.RefreshReadyWindow()
-    if not win then
+function mod.RefreshReadyWindow()
+    if not window then
         return
     end
-    local s = ns.ReadyCheckSettings()
+    local s = mod.ReadyCheckSettings()
     local lines = {}
     local silent = {}
     for _, name in ipairs(Members()) do
@@ -295,17 +295,17 @@ function ns.RefreshReadyWindow()
         lines[#lines + 1] =
             { text = "|cff9aa6b2No answer (no CludesUI): " .. table.concat(silent, ", ") .. "|r" }
     end
-    for i, l in ipairs(lines) do
-        Row(i):SetText(l.text)
+    for idx, l in ipairs(lines) do
+        Row(idx):SetText(l.text)
     end
-    for i = #lines + 1, #rows do
-        rows[i]:Hide()
+    for idx = #lines + 1, #rowList do
+        rowList[idx]:Hide()
     end
-    win:SetHeight(40 + #lines * 17)
+    window:SetHeight(40 + #lines * 17)
 end
 
 --- Called by Comms.lua with a player's report.
-function ns.ReceiveReadyReport(name, report)
+function mod.ReceiveReadyReport(name, report)
     -- The consumables field is new; a report from an older CludesUI has four fields.
     local dur, ilvl, ench, cds, cons = report:match("^(%d+)|(%d+)|([^|]*)|([^|]*)|(.*)$")
     if not dur then
@@ -316,38 +316,38 @@ function ns.ReceiveReadyReport(name, report)
     end
     local function List(s)
         local t = {}
-        for v in s:gmatch("[^,]+") do
-            t[#t + 1] = v
+        for val in s:gmatch("[^,]+") do
+            t[#t + 1] = val
         end
         return t
     end
     reports[name] =
         { dur = tonumber(dur), ilvl = tonumber(ilvl), enchants = List(ench), cds = List(cds), cons = cons }
-    ns.RefreshReadyWindow()
+    mod.RefreshReadyWindow()
 end
 
 --- Shows the window as it is now (for testing outside a ready check).
-function ns.ShowReadyWindow()
+function mod.ShowReadyWindow()
     BuildWindow()
     reports[UnitName("player")] = nil
-    ns.ReceiveReadyReport(UnitName("player"), ns.MyReadyReport())
-    win:Show()
+    mod.ReceiveReadyReport(UnitName("player"), mod.MyReadyReport())
+    window:Show()
 end
 
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("READY_CHECK")
 ev:SetScript("OnEvent", function()
-    if not ns.ReadyCheckSettings().enabled then
+    if not mod.ReadyCheckSettings().enabled then
         return
     end
     wipe(reports)
-    if ns.SendReadyReport then
-        ns.SendReadyReport(ns.MyReadyReport())
+    if mod.SendReadyReport then
+        mod.SendReadyReport(mod.MyReadyReport())
     end
     if UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") then
         BuildWindow()
-        win:Show()
-        ns.ReceiveReadyReport(UnitName("player"), ns.MyReadyReport())
-        C_Timer.After(3, ns.RefreshReadyWindow)
+        window:Show()
+        mod.ReceiveReadyReport(UnitName("player"), mod.MyReadyReport())
+        C_Timer.After(3, mod.RefreshReadyWindow)
     end
 end)

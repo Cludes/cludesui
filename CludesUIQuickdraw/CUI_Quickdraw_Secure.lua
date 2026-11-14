@@ -8,22 +8,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  cancel snippets and the cancel button.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local MAX_LATTICE, PA, REGION_MAX = I.MAX_LATTICE, I.PA, I.REGION_MAX
-local CANCEL_BUTTON, CONFIRM_BUTTON = I.CANCEL_BUTTON, I.CONFIRM_BUTTON
-local EnsureScrollCatcher, EnsureSecureHeader = I.EnsureScrollCatcher, I.EnsureSecureHeader
-local SetCancelButton = I.SetCancelButton
+local MAX_LATTICE, PA, REGION_MAX = Inner.MAX_LATTICE, Inner.PA, Inner.REGION_MAX
+local CANCEL_BUTTON, CONFIRM_BUTTON = Inner.CANCEL_BUTTON, Inner.CONFIRM_BUTTON
+local EnsureScrollCatcher, EnsureSecureHeader = Inner.EnsureScrollCatcher, Inner.EnsureSecureHeader
+local SetCancelButton = Inner.SetCancelButton
 
 local cancelButton
-I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v)
-    cancelButton = v
+Inner.cancelButtonSetters[#Inner.cancelButtonSetters + 1] = function(val)
+    cancelButton = val
 end
 
 -------------------------------------------------------------------------------
@@ -1086,7 +1086,7 @@ local SNIPPET_CANCEL = [==[
 -- Closing the palette on screen is insecure work, and none of it is protected:
 -- the frame is an ordinary addon frame.
 local function OnCancelClick()
-    ns.Close()
+    mod.Close()
 end
 
 local function EnsureCancelButton()
@@ -1094,26 +1094,26 @@ local function EnsureCancelButton()
         return cancelButton
     end
 
-    local btn = CreateFrame("Button", "CUIQuickdrawCancel", UIParent, "SecureActionButtonTemplate")
+    local button = CreateFrame("Button", "CUIQuickdrawCancel", UIParent, "SecureActionButtonTemplate")
     -- Down only: ESCAPE should take effect the instant it is pressed, and a
     -- second run on the up edge would only re-raise a flag that is already set.
-    btn:RegisterForClicks("AnyDown")
+    button:RegisterForClicks("AnyDown")
     -- Parked like the palette buttons: invisible, unclickable by mouse, and shown,
     -- because an override-binding click has to reach a live button.
-    btn:EnableMouse(false)
-    btn:SetSize(1, 1)
-    btn:SetAlpha(0)
-    btn:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -400, 100)
-    btn:Show()
-    btn:SetScript("PostClick", OnCancelClick)
+    button:EnableMouse(false)
+    button:SetSize(1, 1)
+    button:SetAlpha(0)
+    button:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -400, 100)
+    button:Show()
+    button:SetScript("PostClick", OnCancelClick)
 
-    SecureHandlerSetFrameRef(btn, "catcher", EnsureScrollCatcher())
-    SecureHandlerWrapScript(btn, "OnClick", EnsureSecureHeader(), SNIPPET_CANCEL)
+    SecureHandlerSetFrameRef(button, "catcher", EnsureScrollCatcher())
+    SecureHandlerWrapScript(button, "OnClick", EnsureSecureHeader(), SNIPPET_CANCEL)
 
-    SetCancelButton(btn)
-    return btn
+    SetCancelButton(button)
+    return button
 end
 
-I.ARM_CLAIM, I.EnsureCancelButton, I.LayoutModel = ARM_CLAIM, EnsureCancelButton, LayoutModel
-I.SNIPPET_POST, I.SNIPPET_PRE = SNIPPET_POST, SNIPPET_PRE
-I.broken = false
+Inner.ARM_CLAIM, Inner.EnsureCancelButton, Inner.LayoutModel = ARM_CLAIM, EnsureCancelButton, LayoutModel
+Inner.SNIPPET_POST, Inner.SNIPPET_PRE = SNIPPET_POST, SNIPPET_PRE
+Inner.broken = false

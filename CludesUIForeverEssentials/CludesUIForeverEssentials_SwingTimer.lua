@@ -40,8 +40,8 @@ local COLOR = {
 local GAP = 3
 local IDLE_AFTER = 0.4 -- seconds past a swing's end before its bar counts as idle
 
-local holder
-local bars = {} -- [swingType] = StatusBar with .started, .duration
+local holderFrame
+local barList = {} -- [swingType] = StatusBar with .started, .duration
 
 local function Font()
     return CludesUI.GetFontPath("essentials")
@@ -66,28 +66,28 @@ local function HasWeapon(t)
     return type(speed) == "number" and not (issecretvalue and issecretvalue(speed)) and speed > 0
 end
 
-local function OnUpdate(bar)
-    local left = bar.started + bar.duration - GetTime()
-    if left > 0 then
-        bar:SetValue(bar.duration - left)
-        bar.text:SetText(("%.1f"):format(left))
+local function OnUpdate(barFrame)
+    local leftX = barFrame.started + barFrame.duration - GetTime()
+    if leftX > 0 then
+        barFrame:SetValue(barFrame.duration - leftX)
+        barFrame.text:SetText(("%.1f"):format(leftX))
     else
-        bar:SetValue(bar.duration)
-        bar.text:SetText("")
-        if left < -IDLE_AFTER then
-            bar.started = nil
-            bar:SetScript("OnUpdate", nil)
+        barFrame:SetValue(barFrame.duration)
+        barFrame.text:SetText("")
+        if leftX < -IDLE_AFTER then
+            barFrame.started = nil
+            barFrame:SetScript("OnUpdate", nil)
             module.SwingLayout()
         end
     end
 end
 
 local function Bar(t)
-    local b = bars[t]
+    local b = barList[t]
     if b then
         return b
     end
-    b = CreateFrame("StatusBar", nil, holder)
+    b = CreateFrame("StatusBar", nil, holderFrame)
     b:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     if t == SWING.MainHand then
         CludesUI.Kit.SyncAccent(COLOR[t])
@@ -103,52 +103,52 @@ local function Bar(t)
     b.text = b:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(b.text, 10, "essentials")
     b.text:SetPoint("RIGHT", -3, 0)
-    bars[t] = b
+    barList[t] = b
     return b
 end
 
 local function Build()
-    if holder then
-        return holder
+    if holderFrame then
+        return holderFrame
     end
-    holder = CreateFrame("Frame", "CludesUISwingTimer", UIParent)
-    holder:SetSize(Get("width"), Get("height"))
+    holderFrame = CreateFrame("Frame", "CludesUISwingTimer", UIParent)
+    holderFrame:SetSize(Get("width"), Get("height"))
     for _, t in ipairs(ORDER) do
         Bar(t)
     end
-    return holder
+    return holderFrame
 end
 
 --- Stacks the bars in use: a bar shows while it is swinging, or always when
 --- Hide When Idle is off (and the weapon is there), or while Layout Mode is up.
 function module.SwingLayout()
-    if not holder then
+    if not holderFrame then
         return
     end
-    local w, h = Get("width"), Get("height")
+    local wid, hgt = Get("width"), Get("height")
     local preview = CludesUI._unlockActive
-    local y, shown = 0, 0
+    local posY, isShown = 0, 0
     for _, t in ipairs(ORDER) do
-        local b = bars[t]
+        local b = barList[t]
         local on = Enabled() and HasWeapon(t) and (b.started or not Get("hideIdle") or preview)
         if on then
-            b:SetSize(w, h)
+            b:SetSize(wid, hgt)
             b:ClearAllPoints()
-            b:SetPoint("TOP", holder, "TOP", 0, y)
-            y = y - h - GAP
-            shown = shown + 1
+            b:SetPoint("TOP", holderFrame, "TOP", 0, posY)
+            posY = posY - hgt - GAP
+            isShown = isShown + 1
             b:Show()
         else
             b:Hide()
         end
     end
-    holder:SetSize(w, math.max(1, shown) * (h + GAP) - GAP)
+    holderFrame:SetSize(wid, math.max(1, isShown) * (hgt + GAP) - GAP)
 end
 
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event, duration, swingType)
-    if event == "PLAYER_SWING" then
-        local b = bars[swingType]
+ev:SetScript("OnEvent", function(_, evt, duration, swingType)
+    if evt == "PLAYER_SWING" then
+        local b = barList[swingType]
         if
             not b
             or type(duration) ~= "number"
@@ -177,11 +177,11 @@ local function Apply()
         ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
         if not CludesUI._unlockActive then
-            F.Place(holder)
+            F.Place(holderFrame)
         end
     else
         ev:UnregisterAllEvents()
-        for _, b in pairs(bars) do
+        for _, b in pairs(barList) do
             b.started = nil
             b:SetScript("OnUpdate", nil)
         end
@@ -200,7 +200,7 @@ F.Start(Apply, {
             Build()
             module.SwingLayout()
         end
-        return holder
+        return holderFrame
     end,
     size = function()
         return Get("width"), Get("height") * 3 + GAP * 2

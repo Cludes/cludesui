@@ -5,7 +5,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CludesUIBlizzardSkin_GreatVault.lua
 --  Great Vault reskin.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 local LOCK_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-LOCK"
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
@@ -97,10 +97,10 @@ local function ApplyColorTexture(texture, color, alpha)
     texture:SetColorTexture(color.r or 1, color.g or 1, color.b or 1, alpha or color.a or 1)
 end
 
-local function SetBorderColor(frame, theme, color, alpha)
+local function SetBorderColor(widget, theme, color, alpha)
     local pp = theme and theme.borderAPI
-    if pp and pp.SetBorderColor and frame and color then
-        pp.SetBorderColor(frame, color.r or 1, color.g or 1, color.b or 1, alpha or color.a or 1)
+    if pp and pp.SetBorderColor and widget and color then
+        pp.SetBorderColor(widget, color.r or 1, color.g or 1, color.b or 1, alpha or color.a or 1)
     end
 end
 
@@ -135,25 +135,25 @@ local function SuppressTexture(texture)
     end
 end
 
-local function ApplyFont(fontString, theme, size, r, g, b, a, flags)
+local function ApplyFont(fontString, theme, dim, r, g, b, a, flags)
     if not fontString then
         return
     end
 
     CludesUI.PrimeFontShadow(fontString, true)
-    fontString:SetFont((theme and theme.fontPath) or STANDARD_TEXT_FONT, size, flags or "")
+    fontString:SetFont((theme and theme.fontPath) or STANDARD_TEXT_FONT, dim, flags or "")
     fontString:SetTextColor(r or 1, g or 1, b or 1, a or 1)
 end
 
-local function EnsureBackdrop(frame, theme, alpha)
-    if not frame then
+local function EnsureBackdrop(widget, theme, alpha)
+    if not widget then
         return
     end
 
     local rs = theme.reskin
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if not d.bg then
-        d.bg = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+        d.bg = widget:CreateTexture(nil, "BACKGROUND", nil, -8)
         d.bg:SetAllPoints()
         d.bg._cuiOwned = true
     end
@@ -164,29 +164,29 @@ local function EnsureBackdrop(frame, theme, alpha)
     local pp = theme.borderAPI
     if pp and pp.CreateBorder and not d.borderCreated then
         d.borderCreated = true
-        pp.CreateBorder(frame, 1, 1, 1, rs.BRD_ALPHA, 1, "OVERLAY", 7)
+        pp.CreateBorder(widget, 1, 1, 1, rs.BRD_ALPHA, 1, "OVERLAY", 7)
     end
 end
 
-local function EnsureInsetBackdrop(frame, theme, padding)
-    if not frame then
+local function EnsureInsetBackdrop(widget, theme, padding)
+    if not widget then
         return nil
     end
 
     local pad = padding or STYLE.paddings.inset
     local pp = theme.borderAPI
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
 
     if not d.skinFrame then
-        local skinFrame = CreateFrame("Frame", nil, frame)
+        local skinFrame = CreateFrame("Frame", nil, widget)
         d.skinFrame = skinFrame
     end
 
     local skinFrame = d.skinFrame
     skinFrame:ClearAllPoints()
-    skinFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", pad, -pad)
-    skinFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -pad, pad)
-    skinFrame:SetFrameLevel(math.max(1, frame:GetFrameLevel()))
+    skinFrame:SetPoint("TOPLEFT", widget, "TOPLEFT", pad, -pad)
+    skinFrame:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -pad, pad)
+    skinFrame:SetFrameLevel(math.max(1, widget:GetFrameLevel()))
 
     if pp and pp.CreateBorder and not skinFrame._cuiBorderCreated then
         skinFrame._cuiBorderCreated = true
@@ -197,46 +197,46 @@ local function EnsureInsetBackdrop(frame, theme, padding)
     return skinFrame
 end
 
-local function EnsureSelectionGlow(frame, anchorFrame)
-    if not frame then
+local function EnsureSelectionGlow(widget, anchorFrame)
+    if not widget then
         return nil
     end
 
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if not d.selectedGlow then
-        local glow = frame:CreateTexture(nil, "ARTWORK", nil, -5)
+        local glow = widget:CreateTexture(nil, "ARTWORK", nil, -5)
         glow._cuiOwned = true
         glow:Hide()
         d.selectedGlow = glow
     end
 
     local glow = d.selectedGlow
-    local anchor = anchorFrame or frame
+    local anchor = anchorFrame or widget
     glow:ClearAllPoints()
     glow:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
     glow:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 0, 0)
     return glow
 end
 
-local function EnsureProgressBar(frame, anchorFrame)
-    if not frame then
+local function EnsureProgressBar(widget, anchorFrame)
+    if not widget then
         return nil
     end
 
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if not d.progressBarFrame then
-        local barFrame = CreateFrame("Frame", nil, frame)
+        local barFrame = CreateFrame("Frame", nil, widget)
         local track = barFrame:CreateTexture(nil, "BACKGROUND", nil, -4)
-        local fill = barFrame:CreateTexture(nil, "ARTWORK", nil, -3)
+        local fillTex = barFrame:CreateTexture(nil, "ARTWORK", nil, -3)
 
         track:SetAllPoints()
         track._cuiOwned = true
-        fill:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-        fill:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
-        fill._cuiOwned = true
+        fillTex:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+        fillTex:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
+        fillTex._cuiOwned = true
 
         barFrame._cuiTrack = track
-        barFrame._cuiFill = fill
+        barFrame._cuiFill = fillTex
         barFrame:SetScript("OnSizeChanged", function(self)
             if self._cuiFill then
                 local ratio = self._cuiRatio or 0
@@ -250,7 +250,7 @@ local function EnsureProgressBar(frame, anchorFrame)
     end
 
     local barFrame = d.progressBarFrame
-    local anchor = anchorFrame or frame
+    local anchor = anchorFrame or widget
     local pp = CludesUI.PP or CludesUI.PanelPP
     local px = pp and pp.Scale and pp.Scale(1) or 1
     barFrame:ClearAllPoints()
@@ -260,21 +260,21 @@ local function EnsureProgressBar(frame, anchorFrame)
     return barFrame
 end
 
-local function EnsureLockIcon(frame, anchorFrame)
-    if not frame then
+local function EnsureLockIcon(widget, anchorFrame)
+    if not widget then
         return nil
     end
 
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if not d.lockIcon then
-        local lock = frame:CreateTexture(nil, "OVERLAY", nil, 3)
+        local lock = widget:CreateTexture(nil, "OVERLAY", nil, 3)
         lock:SetTexture(LOCK_TEXTURE)
         lock._cuiOwned = true
         d.lockIcon = lock
     end
 
     local lock = d.lockIcon
-    local anchor = anchorFrame or frame
+    local anchor = anchorFrame or widget
     lock:SetSize(STYLE.sizes.lockIcon, STYLE.sizes.lockIcon)
     lock:ClearAllPoints()
     lock:SetPoint("CENTER", anchor, "CENTER", STYLE.offsets.lockIcon.x, STYLE.offsets.lockIcon.y)
@@ -297,8 +297,8 @@ local function ResolveWeeklyRewardItemLink(activityFrame, itemFrame)
         end
     end
 
-    local info = activityFrame and activityFrame.info
-    local rewards = info and info.rewards
+    local details = activityFrame and activityFrame.info
+    local rewards = details and details.rewards
     if type(rewards) ~= "table" then
         return nil
     end
@@ -346,20 +346,20 @@ local function EnsureIconChrome(itemFrame, theme, borderColor)
         return
     end
 
-    local icon = itemFrame.Icon
+    local glyph = itemFrame.Icon
     local pad = STYLE.paddings.icon
     local pp = theme.borderAPI
     local d = GetFFD(itemFrame)
 
     if not d.iconBg then
-        local bg = itemFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
-        bg._cuiOwned = true
-        d.iconBg = bg
+        local backdrop = itemFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
+        backdrop._cuiOwned = true
+        d.iconBg = backdrop
     end
 
     d.iconBg:ClearAllPoints()
-    d.iconBg:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-    d.iconBg:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+    d.iconBg:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
+    d.iconBg:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
     ApplyColorTexture(d.iconBg, STYLE.colors.itemSlotBackground)
 
     if not d.iconBorder then
@@ -373,8 +373,8 @@ local function EnsureIconChrome(itemFrame, theme, borderColor)
 
     local borderHost = d.iconBorder
     borderHost:ClearAllPoints()
-    borderHost:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-    borderHost:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+    borderHost:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
+    borderHost:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
     borderHost:SetFrameLevel(itemFrame:GetFrameLevel() + 1)
     SetBorderColor(borderHost, theme, borderColor or STYLE.colors.itemDefaultBorder, 1)
 
@@ -412,33 +412,33 @@ local function SuppressItemButtonChrome(itemFrame)
     end
 
     local regions = { itemFrame:GetRegions() }
-    for i = 1, #regions do
-        local region = regions[i]
+    for idx = 1, #regions do
+        local regionFrame = regions[idx]
         if
-            region
-            and region:IsObjectType("Texture")
-            and region ~= itemFrame.Icon
-            and not region._cuiOwned
+            regionFrame
+            and regionFrame:IsObjectType("Texture")
+            and regionFrame ~= itemFrame.Icon
+            and not regionFrame._cuiOwned
         then
-            SuppressTexture(region)
+            SuppressTexture(regionFrame)
         end
     end
 end
 
-local function ApplyStoredAnchorOffset(frame, cacheKey, offsetX, offsetY)
-    if not frame then
+local function ApplyStoredAnchorOffset(widget, cacheKey, offsetX, offsetY)
+    if not widget then
         return
     end
 
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     local appliedOffsetKey = cacheKey .. "AppliedOffset"
     local appliedOffset = d[appliedOffsetKey] or { x = 0, y = 0 }
     local cachedPoints = {}
 
-    for i = 1, frame:GetNumPoints() do
-        local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(i)
-        cachedPoints[i] = {
-            point = point,
+    for idx = 1, widget:GetNumPoints() do
+        local anchorPoint, relativeTo, relativePoint, xOfs, yOfs = widget:GetPoint(idx)
+        cachedPoints[idx] = {
+            point = anchorPoint,
             relativeTo = relativeTo,
             relativePoint = relativePoint,
             x = (xOfs or 0) - appliedOffset.x,
@@ -453,9 +453,9 @@ local function ApplyStoredAnchorOffset(frame, cacheKey, offsetX, offsetY)
         return
     end
 
-    frame:ClearAllPoints()
+    widget:ClearAllPoints()
     for _, anchor in ipairs(cachedPoints) do
-        frame:SetPoint(
+        widget:SetPoint(
             anchor.point,
             anchor.relativeTo,
             anchor.relativePoint,
@@ -468,43 +468,43 @@ end
 -------------------------------------------------------------------------------
 --  Component Stylers
 -------------------------------------------------------------------------------
-local function RefreshButtonState(button)
-    if not button then
+local function RefreshButtonState(btnFrame)
+    if not btnFrame then
         return
     end
     -- Engine button treatment: flat theme block, 1px border, white hover, and
     -- a label that mirrors the enabled/disabled state. Idempotent, so calling
     -- it from every refresh pass is free after the first.
-    local WSkin = ns.WSkin
-    if not WSkin or not WSkin.Button then
+    local Skin = mod.WSkin
+    if not Skin or not Skin.Button then
         return
     end
-    WSkin.Button(button)
-    WSkin.StateButtonLabel(button)
+    Skin.Button(btnFrame)
+    Skin.StateButtonLabel(btnFrame)
     -- Fully opaque fill: the engine block carries the theme backdrop's
     -- translucency, which reads washed out over the vault scene.
-    local d = WSkin.GetFFD and WSkin.GetFFD(button)
-    local theme = WSkin.Theme
+    local d = Skin.GetFFD and Skin.GetFFD(btnFrame)
+    local theme = Skin.Theme
     if d and d.bg and theme then
         d.bg:SetColorTexture(theme.bgR or 0, theme.bgG or 0, theme.bgB or 0, 1)
     end
 end
 
-local function RefreshTypeFrameState(frame, theme)
-    if not frame then
+local function RefreshTypeFrameState(widget, theme)
+    if not widget then
         return
     end
-    if frame.Name then
+    if widget.Name then
         local c = STYLE.colors.typeName
-        frame.Name:SetTextColor(c.r, c.g, c.b, 1)
+        widget.Name:SetTextColor(c.r, c.g, c.b, 1)
 
-        local d = GetFFD(frame)
+        local d = GetFFD(widget)
         if not d.nameRaised then
             d.nameRaised = true
-            local raiseFrame = CreateFrame("Frame", nil, frame)
+            local raiseFrame = CreateFrame("Frame", nil, widget)
             raiseFrame:SetAllPoints()
-            raiseFrame:SetFrameLevel(frame:GetFrameLevel() + 20)
-            frame.Name:SetParent(raiseFrame)
+            raiseFrame:SetFrameLevel(widget:GetFrameLevel() + 20)
+            widget.Name:SetParent(raiseFrame)
         end
     end
 end
@@ -533,12 +533,12 @@ local function RefreshActivityItemState(itemFrame, activityFrame, theme)
             if not IsGreatVaultSkinEnabled() then
                 return
             end
-            local host = GetFFD(self).iconBorder
-            if not host then
+            local hostRegion = GetFFD(self).iconBorder
+            if not hostRegion then
                 return
             end
             local link = ResolveWeeklyRewardItemLink(self:GetParent(), self)
-            SetBorderColor(host, BuildThemeContext(), ResolveItemBorderColor(link), 1)
+            SetBorderColor(hostRegion, BuildThemeContext(), ResolveItemBorderColor(link), 1)
         end)
     end
 
@@ -554,15 +554,15 @@ local function GetProgressTextColor(progress, threshold)
     return STYLE.colors.locked
 end
 
-local function GetActivityState(frame, selectedActivity)
-    local hasRewards = frame and frame.hasRewards or false
-    local progress = frame and frame.info and frame.info.progress or 0
-    local threshold = frame and frame.info and frame.info.threshold or 0
+local function GetActivityState(widget, selectedActivity)
+    local hasRewards = widget and widget.hasRewards or false
+    local progress = widget and widget.info and widget.info.progress or 0
+    local threshold = widget and widget.info and widget.info.threshold or 0
     local isComplete = hasRewards or (threshold > 0 and progress >= threshold)
 
     return {
         hasRewards = hasRewards,
-        isSelected = selectedActivity and selectedActivity == frame and hasRewards or false,
+        isSelected = selectedActivity and selectedActivity == widget and hasRewards or false,
         isComplete = isComplete,
         progress = progress,
         threshold = threshold,
@@ -571,9 +571,9 @@ local function GetActivityState(frame, selectedActivity)
     }
 end
 
-local function SetActivityProgressBar(frame, ratio, color, alpha, trackAlpha)
-    local d = GetFFD(frame)
-    if not frame or not d.progressBarFrame then
+local function SetActivityProgressBar(widget, ratio, color, alpha, trackAlpha)
+    local d = GetFFD(widget)
+    if not widget or not d.progressBarFrame then
         return
     end
 
@@ -593,10 +593,10 @@ local function SetActivityProgressBar(frame, ratio, color, alpha, trackAlpha)
     end
 end
 
-local function RefreshSelectableCardState(theme, skinFrame, glow, state)
+local function RefreshSelectableCardState(theme, skinFrame, glow, status)
     if glow then
         ApplyColorTexture(glow, theme.accent, STYLE.alpha.selectedGlow)
-        glow:SetShown(state.isSelected and true or false)
+        glow:SetShown(status.isSelected and true or false)
     end
 
     if not skinFrame then
@@ -607,48 +607,48 @@ local function RefreshSelectableCardState(theme, skinFrame, glow, state)
     SetBorderColor(skinFrame, theme, STYLE.colors.white, theme.reskin.BRD_ALPHA)
 end
 
-local function RefreshActivityVisualState(frame, selectedActivity, theme)
-    if not frame then
+local function RefreshActivityVisualState(widget, selectedActivity, theme)
+    if not widget then
         return
     end
 
-    StripTexture(frame.Background)
-    if frame.Border then
-        local bd = GetFFD(frame.Border)
-        if not bd.suppressed then
-            bd.suppressed = true
-            frame.Border:SetAlpha(0)
-            frame.Border:Hide()
-            hooksecurefunc(frame.Border, "Show", function(self)
+    StripTexture(widget.Background)
+    if widget.Border then
+        local edge = GetFFD(widget.Border)
+        if not edge.suppressed then
+            edge.suppressed = true
+            widget.Border:SetAlpha(0)
+            widget.Border:Hide()
+            hooksecurefunc(widget.Border, "Show", function(self)
                 self:Hide()
                 self:SetAlpha(0)
             end)
         else
-            frame.Border:SetAlpha(0)
-            frame.Border:Hide()
+            widget.Border:SetAlpha(0)
+            widget.Border:Hide()
         end
     end
-    StripTexture(frame.SelectedTexture)
-    StripTexture(frame.ItemGlow)
-    if frame.UncollectedGlow then
-        local ud = GetFFD(frame.UncollectedGlow)
+    StripTexture(widget.SelectedTexture)
+    StripTexture(widget.ItemGlow)
+    if widget.UncollectedGlow then
+        local ud = GetFFD(widget.UncollectedGlow)
         if not ud.hidden then
             ud.hidden = true
             local hiddenParent = CreateFrame("Frame")
             hiddenParent:Hide()
-            frame.UncollectedGlow:SetParent(hiddenParent)
+            widget.UncollectedGlow:SetParent(hiddenParent)
         end
     end
-    if frame.UnselectedFrame then
-        frame.UnselectedFrame:SetAlpha(0)
+    if widget.UnselectedFrame then
+        widget.UnselectedFrame:SetAlpha(0)
     end
 
-    local skinFrame = EnsureInsetBackdrop(frame, theme, STYLE.paddings.activityCard)
-    local glow = EnsureSelectionGlow(frame, skinFrame)
-    EnsureProgressBar(frame, skinFrame)
-    EnsureLockIcon(frame, skinFrame)
+    local skinFrame = EnsureInsetBackdrop(widget, theme, STYLE.paddings.activityCard)
+    local glow = EnsureSelectionGlow(widget, skinFrame)
+    EnsureProgressBar(widget, skinFrame)
+    EnsureLockIcon(widget, skinFrame)
 
-    local activityState = GetActivityState(frame, selectedActivity)
+    local activityState = GetActivityState(widget, selectedActivity)
     local complete = STYLE.colors.complete
 
     RefreshSelectableCardState(theme, skinFrame, glow, {
@@ -671,11 +671,11 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
 
     -- Dark overlay: 20% on complete, 40% on incomplete
     if not skinFrame._cuiDarkOverlay then
-        local overlay = skinFrame:CreateTexture(nil, "ARTWORK", nil, 2)
-        overlay:SetAllPoints()
-        overlay:SetColorTexture(0, 0, 0, 1)
-        overlay._cuiOwned = true
-        skinFrame._cuiDarkOverlay = overlay
+        local overlayFrame = skinFrame:CreateTexture(nil, "ARTWORK", nil, 2)
+        overlayFrame:SetAllPoints()
+        overlayFrame:SetColorTexture(0, 0, 0, 1)
+        overlayFrame._cuiOwned = true
+        skinFrame._cuiDarkOverlay = overlayFrame
     end
     if activityState.isComplete then
         skinFrame._cuiDarkOverlay:SetAlpha(0.2)
@@ -686,7 +686,7 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
 
     if activityState.isComplete then
         SetActivityProgressBar(
-            frame,
+            widget,
             1,
             complete,
             STYLE.alpha.progressRewardFill,
@@ -694,7 +694,7 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
         )
     else
         SetActivityProgressBar(
-            frame,
+            widget,
             activityState.ratio,
             activityState.progressColor,
             activityState.progressColor.a,
@@ -702,40 +702,45 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
         )
     end
 
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if d.lockIcon then
         d.lockIcon:SetShown(not activityState.isComplete)
     end
 
-    if frame.Threshold then
+    if widget.Threshold then
         local thresholdAlpha = activityState.isComplete and STYLE.alpha.thresholdUnlocked
             or STYLE.alpha.thresholdLocked
-        ApplyFont(frame.Threshold, theme, STYLE.sizes.threshold, 1, 1, 1, thresholdAlpha)
+        ApplyFont(widget.Threshold, theme, STYLE.sizes.threshold, 1, 1, 1, thresholdAlpha)
     end
 
-    if frame.Progress then
+    if widget.Progress then
         if activityState.isComplete then
             -- Grab Blizzard's difficulty text, stripping our ilvl prefix if
             -- we already modified it on a prior pass so it stays current.
-            local rawText = frame.Progress:GetText() or ""
+            local rawText = widget.Progress:GetText() or ""
             local diffText = rawText:match("^%d+%s*%((.+)%)$") or rawText
-            ApplyFont(frame.Progress, theme, STYLE.sizes.progress, complete.r, complete.g, complete.b, 1)
+            ApplyFont(widget.Progress, theme, STYLE.sizes.progress, complete.r, complete.g, complete.b, 1)
 
-            local info = frame.info
+            local details = widget.info
             local ilvl
-            if info and info.id and C_WeeklyRewards and C_WeeklyRewards.GetExampleRewardItemHyperlinks then
-                local itemLink = C_WeeklyRewards.GetExampleRewardItemHyperlinks(info.id)
+            if
+                details
+                and details.id
+                and C_WeeklyRewards
+                and C_WeeklyRewards.GetExampleRewardItemHyperlinks
+            then
+                local itemLink = C_WeeklyRewards.GetExampleRewardItemHyperlinks(details.id)
                 if itemLink then
                     ilvl = C_Item.GetDetailedItemLevelInfo(itemLink)
                 end
             end
             if ilvl then
-                frame.Progress:SetText(ilvl .. " (" .. diffText .. ")")
+                widget.Progress:SetText(ilvl .. " (" .. diffText .. ")")
             end
         else
             local progressColor = activityState.progressColor
             ApplyFont(
-                frame.Progress,
+                widget.Progress,
                 theme,
                 STYLE.sizes.progress,
                 progressColor.r,
@@ -746,50 +751,50 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
         end
     end
 
-    if frame.CompletedIcon and activityState.isComplete then
-        frame.CompletedIcon:SetAtlas("VAS-icon-checkmark-glw")
-        frame.CompletedIcon:SetVertexColor(complete.r, complete.g, complete.b, 1)
-        frame.CompletedIcon:SetDrawLayer("OVERLAY", 4)
+    if widget.CompletedIcon and activityState.isComplete then
+        widget.CompletedIcon:SetAtlas("VAS-icon-checkmark-glw")
+        widget.CompletedIcon:SetVertexColor(complete.r, complete.g, complete.b, 1)
+        widget.CompletedIcon:SetDrawLayer("OVERLAY", 4)
     end
 
-    if frame.CompletedActivityFlipbook then
-        local fd = GetFFD(frame.CompletedActivityFlipbook)
+    if widget.CompletedActivityFlipbook then
+        local fd = GetFFD(widget.CompletedActivityFlipbook)
         if not fd.hidden then
             fd.hidden = true
             local hiddenParent = CreateFrame("Frame")
             hiddenParent:Hide()
             fd.hiddenParent = hiddenParent
-            frame.CompletedActivityFlipbook:SetParent(hiddenParent)
+            widget.CompletedActivityFlipbook:SetParent(hiddenParent)
         end
     end
 
-    RefreshActivityItemState(frame.ItemFrame, frame, theme)
+    RefreshActivityItemState(widget.ItemFrame, widget, theme)
 end
 
-local function RefreshConcessionVisualState(frame, selectedActivity, theme)
-    if not frame then
+local function RefreshConcessionVisualState(widget, selectedActivity, theme)
+    if not widget then
         return
     end
 
-    StripTexture(frame.Background)
-    StripTexture(frame.SelectedTexture)
-    StripTexture(frame.Divider1)
-    StripTexture(frame.Divider2)
-    if frame.UnselectedFrame then
-        frame.UnselectedFrame:SetAlpha(0)
+    StripTexture(widget.Background)
+    StripTexture(widget.SelectedTexture)
+    StripTexture(widget.Divider1)
+    StripTexture(widget.Divider2)
+    if widget.UnselectedFrame then
+        widget.UnselectedFrame:SetAlpha(0)
     end
 
-    local skinFrame = EnsureInsetBackdrop(frame, theme, STYLE.paddings.concessionCard)
-    local glow = EnsureSelectionGlow(frame, skinFrame)
+    local skinFrame = EnsureInsetBackdrop(widget, theme, STYLE.paddings.concessionCard)
+    local glow = EnsureSelectionGlow(widget, skinFrame)
 
     RefreshSelectableCardState(theme, skinFrame, glow, {
-        isSelected = selectedActivity and selectedActivity == frame or false,
+        isSelected = selectedActivity and selectedActivity == widget or false,
     })
 
-    if frame.RewardsFrame then
-        if frame.RewardsFrame.Label then
+    if widget.RewardsFrame then
+        if widget.RewardsFrame.Label then
             ApplyFont(
-                frame.RewardsFrame.Label,
+                widget.RewardsFrame.Label,
                 theme,
                 STYLE.sizes.itemName,
                 1,
@@ -798,9 +803,9 @@ local function RefreshConcessionVisualState(frame, selectedActivity, theme)
                 STYLE.alpha.rewardsLabel
             )
         end
-        if frame.RewardsFrame.Text then
+        if widget.RewardsFrame.Text then
             ApplyFont(
-                frame.RewardsFrame.Text,
+                widget.RewardsFrame.Text,
                 theme,
                 STYLE.sizes.itemName,
                 theme.accent.r,
@@ -812,22 +817,22 @@ local function RefreshConcessionVisualState(frame, selectedActivity, theme)
     end
 end
 
-local function RefreshOverlayState(overlay, theme)
-    if not overlay then
+local function RefreshOverlayState(overlayFrame, theme)
+    if not overlayFrame then
         return
     end
 
-    EnsureBackdrop(overlay, theme, 0.97)
-    if overlay.Background then
-        overlay.Background:SetAlpha(0)
+    EnsureBackdrop(overlayFrame, theme, 0.97)
+    if overlayFrame.Background then
+        overlayFrame.Background:SetAlpha(0)
     end
-    if overlay.NineSlice then
-        overlay.NineSlice:SetAlpha(0)
+    if overlayFrame.NineSlice then
+        overlayFrame.NineSlice:SetAlpha(0)
     end
 
-    if overlay.Title then
+    if overlayFrame.Title then
         ApplyFont(
-            overlay.Title,
+            overlayFrame.Title,
             theme,
             STYLE.sizes.overlayTitle,
             theme.accent.r,
@@ -836,30 +841,30 @@ local function RefreshOverlayState(overlay, theme)
             1
         )
     end
-    if overlay.Text then
-        ApplyFont(overlay.Text, theme, STYLE.sizes.overlayText, 1, 1, 1, STYLE.alpha.overlayText)
+    if overlayFrame.Text then
+        ApplyFont(overlayFrame.Text, theme, STYLE.sizes.overlayText, 1, 1, 1, STYLE.alpha.overlayText)
     end
 end
 
-local function RefreshWarningDialogState(frame, theme)
-    if not frame then
+local function RefreshWarningDialogState(widget, theme)
+    if not widget then
         return
     end
 
-    EnsureBackdrop(frame, theme, 0.97)
-    if frame.NineSlice then
-        frame.NineSlice:SetAlpha(0)
+    EnsureBackdrop(widget, theme, 0.97)
+    if widget.NineSlice then
+        widget.NineSlice:SetAlpha(0)
     end
-    if frame.WarningIcon and frame.WarningIcon.SetDesaturated then
-        frame.WarningIcon:SetDesaturated(true)
+    if widget.WarningIcon and widget.WarningIcon.SetDesaturated then
+        widget.WarningIcon:SetDesaturated(true)
     end
-    if frame.Description then
-        ApplyFont(frame.Description, theme, STYLE.sizes.warningText, 1, 1, 1, STYLE.alpha.warningText)
+    if widget.Description then
+        ApplyFont(widget.Description, theme, STYLE.sizes.warningText, 1, 1, 1, STYLE.alpha.warningText)
     end
     -- Any standard buttons on the dialog get the engine treatment too
     -- (depth-capped, no-op when there are none).
-    if ns.WSkin and ns.WSkin.ButtonsIn then
-        ns.WSkin.ButtonsIn(frame)
+    if mod.WSkin and mod.WSkin.ButtonsIn then
+        mod.WSkin.ButtonsIn(widget)
     end
 end
 
@@ -868,11 +873,11 @@ end
 -------------------------------------------------------------------------------
 local RefreshGreatVaultFrame
 
-local function ScheduleGreatVaultRefresh(frame)
-    if not frame then
+local function ScheduleGreatVaultRefresh(widget)
+    if not widget then
         return
     end
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if d.refreshQueued then
         return
     end
@@ -880,14 +885,14 @@ local function ScheduleGreatVaultRefresh(frame)
     d.refreshQueued = true
     C_Timer.After(0, function()
         d.refreshQueued = nil
-        if frame and not frame:IsForbidden() then
-            RefreshGreatVaultFrame(frame)
+        if widget and not widget:IsForbidden() then
+            RefreshGreatVaultFrame(widget)
         end
     end)
 end
 
-RefreshGreatVaultFrame = function(frame)
-    if not frame or frame:IsForbidden() or not frame:IsShown() or not IsGreatVaultSkinEnabled() then
+RefreshGreatVaultFrame = function(widget)
+    if not widget or widget:IsForbidden() or not widget:IsShown() or not IsGreatVaultSkinEnabled() then
         return
     end
 
@@ -896,76 +901,76 @@ RefreshGreatVaultFrame = function(frame)
     -- Window border: the engine's shared atlas frame, so the vault carries the
     -- same soft-edged border as every other Window Skins pack. The 0.2 darken
     -- wash that tames the vault scene stays, on our own overlay frame.
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if not d.borderOverlay then
-        local overlay = CreateFrame("Frame", nil, frame)
-        overlay:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -8)
-        overlay:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 8)
-        overlay:SetFrameLevel(frame:GetFrameLevel() + 2)
+        local overlayFrame = CreateFrame("Frame", nil, widget)
+        overlayFrame:SetPoint("TOPLEFT", widget, "TOPLEFT", 10, -8)
+        overlayFrame:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -10, 8)
+        overlayFrame:SetFrameLevel(widget:GetFrameLevel() + 2)
 
-        local darken = overlay:CreateTexture(nil, "BACKGROUND", nil, 1)
+        local darken = overlayFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
         darken:SetAllPoints()
         darken:SetColorTexture(0, 0, 0, 0.2)
         darken._cuiOwned = true
 
-        d.borderOverlay = overlay
+        d.borderOverlay = overlayFrame
     end
     -- The atlas border hangs on the inset overlay, not the frame: the vault frame's
     -- bounds extend ~10px past its visible panel, so a border on the frame itself draws
     -- off the panel edge. At half opacity so it sits back against the vault scene.
-    if ns.WSkin and ns.WSkin.AtlasBorder then
-        ns.WSkin.AtlasBorder(d.borderOverlay)
-        local ab = ns.WSkin.GetFFD and ns.WSkin.GetFFD(d.borderOverlay).atlasBorderFrame
+    if mod.WSkin and mod.WSkin.AtlasBorder then
+        mod.WSkin.AtlasBorder(d.borderOverlay)
+        local ab = mod.WSkin.GetFFD and mod.WSkin.GetFFD(d.borderOverlay).atlasBorderFrame
         if ab then
             ab:SetAlpha(0.65)
         end
     end
 
     -- Hide Blizzard's border decorations
-    SuppressTexture(frame.BorderShadow)
-    if frame.BorderContainer then
-        local bcd = GetFFD(frame.BorderContainer)
+    SuppressTexture(widget.BorderShadow)
+    if widget.BorderContainer then
+        local bcd = GetFFD(widget.BorderContainer)
         if not bcd.hidden then
             bcd.hidden = true
             local hiddenParent = CreateFrame("Frame")
             hiddenParent:Hide()
-            frame.BorderContainer:SetParent(hiddenParent)
+            widget.BorderContainer:SetParent(hiddenParent)
         end
     end
 
     -- Header adjustments
-    if frame.HeaderFrame then
-        local hf = frame.HeaderFrame
+    if widget.HeaderFrame then
+        local hf = widget.HeaderFrame
         local hfd = GetFFD(hf)
         if not hfd.adjusted then
             hfd.adjusted = true
 
             if hf.Text then
-                local point, rel, relPoint, x, y = hf.Text:GetPoint(1)
-                if point then
+                local anchorPoint, rel, relPoint, posX, posY = hf.Text:GetPoint(1)
+                if anchorPoint then
                     hf.Text:ClearAllPoints()
-                    hf.Text:SetPoint(point, rel, relPoint, x, (y or 0) + 30)
+                    hf.Text:SetPoint(anchorPoint, rel, relPoint, posX, (posY or 0) + 30)
                 end
                 hf.Text:SetFont(theme.fontPath, STYLE.sizes.headerTitle, "")
             end
 
             if hf.HeaderDivider then
                 local hd = hf.HeaderDivider
-                local w = hd:GetWidth()
-                local h = hd:GetHeight()
-                if w and w > 0 and h and h > 0 then
-                    hd:SetSize(w * 0.60, h * 0.60)
+                local wid = hd:GetWidth()
+                local hgt = hd:GetHeight()
+                if wid and wid > 0 and hgt and hgt > 0 then
+                    hd:SetSize(wid * 0.60, hgt * 0.60)
                 end
-                local point, rel, relPoint, x, y = hd:GetPoint(1)
-                if point then
+                local anchorPoint, rel, relPoint, posX, posY = hd:GetPoint(1)
+                if anchorPoint then
                     hd:ClearAllPoints()
-                    hd:SetPoint(point, rel, relPoint, x, (y or 0) - 15)
+                    hd:SetPoint(anchorPoint, rel, relPoint, posX, (posY or 0) - 15)
                 end
             end
         end
     end
 
-    for _, typeFrame in ipairs({ frame.RaidFrame, frame.MythicFrame, frame.PVPFrame, frame.WorldFrame }) do
+    for _, typeFrame in ipairs({ widget.RaidFrame, widget.MythicFrame, widget.PVPFrame, widget.WorldFrame }) do
         if typeFrame and typeFrame:IsShown() then
             RefreshTypeFrameState(typeFrame, theme)
         end
@@ -974,39 +979,39 @@ RefreshGreatVaultFrame = function(frame)
     local concessionType = Enum
         and Enum.WeeklyRewardChestThresholdType
         and Enum.WeeklyRewardChestThresholdType.Concession
-    if frame.Activities then
-        for _, activityFrame in ipairs(frame.Activities) do
+    if widget.Activities then
+        for _, activityFrame in ipairs(widget.Activities) do
             if activityFrame.type == concessionType then
-                RefreshConcessionVisualState(activityFrame, frame.selectedActivity, theme)
+                RefreshConcessionVisualState(activityFrame, widget.selectedActivity, theme)
             else
-                RefreshActivityVisualState(activityFrame, frame.selectedActivity, theme)
+                RefreshActivityVisualState(activityFrame, widget.selectedActivity, theme)
             end
         end
     end
 
     ApplyStoredAnchorOffset(
-        frame.SelectRewardButton,
+        widget.SelectRewardButton,
         "_cuiOriginalPoints",
         STYLE.offsets.selectRewardButton.x,
         STYLE.offsets.selectRewardButton.y
     )
-    RefreshButtonState(frame.SelectRewardButton)
+    RefreshButtonState(widget.SelectRewardButton)
 
     -- Close button: engine primitive, same X glyph and hover as every pack.
-    if frame.CloseButton and ns.WSkin and ns.WSkin.CloseButton then
-        ns.WSkin.CloseButton(frame.CloseButton)
+    if widget.CloseButton and mod.WSkin and mod.WSkin.CloseButton then
+        mod.WSkin.CloseButton(widget.CloseButton)
     end
 
-    RefreshOverlayState(frame.Overlay, theme)
+    RefreshOverlayState(widget.Overlay, theme)
     RefreshWarningDialogState(_G.WeeklyRewardExpirationWarningDialog, theme)
 end
 
 local function HookGreatVault()
-    local frame = _G.WeeklyRewardsFrame
-    if not frame or not IsGreatVaultSkinEnabled() then
+    local widget = _G.WeeklyRewardsFrame
+    if not widget or not IsGreatVaultSkinEnabled() then
         return
     end
-    local d = GetFFD(frame)
+    local d = GetFFD(widget)
     if d.hooked then
         return
     end
@@ -1016,17 +1021,17 @@ local function HookGreatVault()
     -- Window-style system: treat Blizzard's vault scene as this window's CUI
     -- backdrop, so picking Modern fades the scene and shows the flat user
     -- color instead (nil-safe if the scene texture key is absent).
-    if ns.WSkin and ns.WSkin.AdoptShell then
-        local scene = frame.Background or frame.BackgroundTile
-        ns.WSkin.AdoptShell("greatvault", frame, scene)
+    if mod.WSkin and mod.WSkin.AdoptShell then
+        local scene = widget.Background or widget.BackgroundTile
+        mod.WSkin.AdoptShell("greatvault", widget, scene)
     end
 
-    frame:HookScript("OnShow", function(self)
+    widget:HookScript("OnShow", function(self)
         ScheduleGreatVaultRefresh(self)
     end)
 
     for _, methodName in ipairs({ "Refresh", "UpdateSelection", "SetUpConditionalActivities" }) do
-        hooksecurefunc(frame, methodName, function(self)
+        hooksecurefunc(widget, methodName, function(self)
             ScheduleGreatVaultRefresh(self)
         end)
     end

@@ -33,34 +33,34 @@ local Get, Enabled = F.Get, F.Enabled
 
 local GAP = 3
 local STYLE = "cui:raiddebuffs"
-local holder, container
+local holderFrame, boxHolder
 local cells = {}
 local built, pending = nil, false -- built = the picks key the current container was made for
 
 local function Picked()
-    local out = {}
+    local result = {}
     for _, d in ipairs(DEBUFFS) do
         if Get("pick_" .. d.key) then
-            out[#out + 1] = d
+            result[#result + 1] = d
         end
     end
-    return out
+    return result
 end
 
-local function PickKey(list)
-    local keys = { tostring(Get("iconSize")) }
-    for _, d in ipairs(list) do
-        keys[#keys + 1] = d.key
+local function PickKey(entries)
+    local keyList = { tostring(Get("iconSize")) }
+    for _, d in ipairs(entries) do
+        keyList[#keyList + 1] = d.key
     end
-    return table.concat(keys, ",")
+    return table.concat(keyList, ",")
 end
 
-local function Cell(i)
-    local c = cells[i]
+local function Cell(idx)
+    local c = cells[idx]
     if c then
         return c
     end
-    c = CreateFrame("Frame", nil, holder)
+    c = CreateFrame("Frame", nil, holderFrame)
     c.missing = c:CreateTexture(nil, "BACKGROUND")
     c.missing:SetAllPoints()
     c.missing:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -70,7 +70,7 @@ local function Cell(i)
     border:SetPoint("TOPLEFT", -1, 1)
     border:SetPoint("BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0, 0, 0, 1)
-    cells[i] = c
+    cells[idx] = c
     return c
 end
 
@@ -81,11 +81,11 @@ end
 
 -- Builds (or rebuilds) the row for the current picks.
 local function Rebuild()
-    if not holder then
+    if not holderFrame then
         return
     end
-    local list = Enabled() and Picked() or {}
-    local key = PickKey(list)
+    local entries = Enabled() and Picked() or {}
+    local key = PickKey(entries)
     if key == built then
         return
     end
@@ -95,59 +95,59 @@ local function Rebuild()
     end
     pending = false
     local AK = CludesUI.AuraKit
-    if container then
-        container:SetEnabled(false)
-        container:Hide()
-        container = nil
+    if boxHolder then
+        boxHolder:SetEnabled(false)
+        boxHolder:Hide()
+        boxHolder = nil
     end
     built = key
-    local size = Get("iconSize")
-    for i, d in ipairs(list) do
-        local c = Cell(i)
-        c:SetSize(size, size)
+    local dim = Get("iconSize")
+    for idx, d in ipairs(entries) do
+        local c = Cell(idx)
+        c:SetSize(dim, dim)
         c:ClearAllPoints()
-        c:SetPoint("LEFT", holder, "LEFT", (i - 1) * (size + GAP), 0)
+        c:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
         c.missing:SetTexture(C_Spell.GetSpellTexture(d.ids[1]))
         c:Show()
     end
-    for i = #list + 1, #cells do
-        cells[i]:Hide()
+    for idx = #entries + 1, #cells do
+        cells[idx]:Hide()
     end
-    holder:SetSize(math.max(1, #list) * (size + GAP) - GAP, size)
-    if #list == 0 then
+    holderFrame:SetSize(math.max(1, #entries) * (dim + GAP) - GAP, dim)
+    if #entries == 0 then
         return
     end
 
-    AK.styles[STYLE] = { width = size, height = size }
-    local ok, err = pcall(function()
-        local cont = AK.CreateContainerShell(holder, { point = { "TOPLEFT", holder, "TOPLEFT" } })
-        for i, d in ipairs(list) do
-            local set = {}
-            for _, id in ipairs(d.ids) do
-                set[id] = true
+    AK.styles[STYLE] = { width = dim, height = dim }
+    local success, err = pcall(function()
+        local cont = AK.CreateContainerShell(holderFrame, { point = { "TOPLEFT", holderFrame, "TOPLEFT" } })
+        for idx, d in ipairs(entries) do
+            local group = {}
+            for _, ident in ipairs(d.ids) do
+                group[ident] = true
             end
-            local cell = cells[i]
+            local cellFrame = cells[idx]
             AK.AddSlotToContainer(cont, {
                 key = d.key,
                 filter = { "HARMFUL" },
-                candidateFilters = { includeSpellIDs = set },
+                candidateFilters = { includeSpellIDs = group },
                 style = STYLE,
-                extraInit = function(button)
-                    button:SetAllPoints(cell)
+                extraInit = function(btnFrame)
+                    btnFrame:SetAllPoints(cellFrame)
                     -- Display only: an aura button takes the mouse by default.
-                    if button.SetMouseClickEnabled then
-                        button:SetMouseClickEnabled(false)
+                    if btnFrame.SetMouseClickEnabled then
+                        btnFrame:SetMouseClickEnabled(false)
                     end
-                    if button.SetMouseMotionEnabled then
-                        button:SetMouseMotionEnabled(false)
+                    if btnFrame.SetMouseMotionEnabled then
+                        btnFrame:SetMouseMotionEnabled(false)
                     end
                 end,
             })
         end
         AK.FinishContainer(cont, "target")
-        container = cont
+        boxHolder = cont
     end)
-    if not ok then
+    if not success then
         built = nil
         CludesUI.Print("|cffff4040Raid Debuffs could not be set up:|r " .. tostring(err))
     end
@@ -156,7 +156,7 @@ end
 -- Alpha only, which is safe in combat: shown with a living enemy targeted
 -- (and in a group, unless Group Only is off).
 local function UpdateShown()
-    if not holder then
+    if not holderFrame then
         return
     end
     local show = Enabled() and UnitExists("target")
@@ -172,21 +172,21 @@ local function UpdateShown()
     if CludesUI._unlockActive then
         show = Enabled()
     end
-    holder:SetAlpha(show and 1 or 0)
+    holderFrame:SetAlpha(show and 1 or 0)
 end
 
 local function Build()
-    if holder then
-        return holder
+    if holderFrame then
+        return holderFrame
     end
-    holder = CreateFrame("Frame", "CludesUIRaidDebuffs", UIParent)
-    holder:SetSize(Get("iconSize"), Get("iconSize"))
-    return holder
+    holderFrame = CreateFrame("Frame", "CludesUIRaidDebuffs", UIParent)
+    holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
+    return holderFrame
 end
 
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_REGEN_ENABLED" or event == "ADDON_RESTRICTION_STATE_CHANGED" then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_REGEN_ENABLED" or evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         if pending then
             Rebuild()
         end
@@ -209,7 +209,7 @@ local function Apply()
         ev:RegisterUnitEvent("UNIT_FACTION", "target")
         ev:RegisterUnitEvent("UNIT_FLAGS", "target")
         if not CludesUI._unlockActive and not InCombatLockdown() then
-            F.Place(holder)
+            F.Place(holderFrame)
         end
     else
         ev:UnregisterAllEvents()
@@ -230,12 +230,12 @@ F.Start(Apply, {
             Rebuild()
             UpdateShown()
         end
-        return holder
+        return holderFrame
     end,
     size = function()
-        local n = math.max(1, #Picked())
-        local size = Get("iconSize")
-        return n * size + (n - 1) * GAP, size
+        local num = math.max(1, #Picked())
+        local dim = Get("iconSize")
+        return num * dim + (num - 1) * GAP, dim
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

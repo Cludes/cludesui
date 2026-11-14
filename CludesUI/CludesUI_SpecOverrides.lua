@@ -76,35 +76,35 @@ end
 -- bucket that class edits (foreverKeyFor(classToken); a nil key skips the
 -- class). No role buckets there and lead is not called.
 function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
-    local values, order, icons, classes = {}, {}, {}, {}
+    local values, sequence, icons, classes = {}, {}, {}, {}
     if CludesUI.IS_FOREVER then
         local all = CludesUI.SPEC_GROUP_BUCKET_INFO.allspecs
         values.allspecs = CludesUI.L(all.name)
-        order[1] = "allspecs"
+        sequence[1] = "allspecs"
         icons.allspecs = all.icon
-        local list = CludesUI.ForeverClasses()
-        for i = 1, #list do
-            local token = list[i]
+        local entries = CludesUI.ForeverClasses()
+        for idx = 1, #entries do
+            local token = entries[idx]
             local key = foreverKeyFor and foreverKeyFor(token)
             if key and values[key] == nil then
-                if #order == 1 then
-                    order[2] = "---a"
+                if #sequence == 1 then
+                    sequence[2] = "---a"
                 end
                 values[key] = CludesUI.ForeverClassName(token)
-                order[#order + 1] = key
+                sequence[#sequence + 1] = key
                 icons[key] = CludesUI.ForeverClassIcon(token)
                 classes[key] = token
             end
         end
-        return values, order, icons, classes
+        return values, sequence, icons, classes
     end
     for _, g in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
         values[g.key] = CludesUI.L(g.name)
-        order[#order + 1] = g.key
+        sequence[#sequence + 1] = g.key
         icons[g.key] = g.icon
     end
-    order[#order + 1] = "---a"
-    local skip = lead and lead(values, order, icons) or {}
+    sequence[#sequence + 1] = "---a"
+    local skip = lead and lead(values, sequence, icons) or {}
     for classID = 1, (GetNumClasses and GetNumClasses() or 0) do
         local className, classFile = GetClassInfo(classID)
         local numSpecs = GetNumSpecializationsForClassID and GetNumSpecializationsForClassID(classID) or 0
@@ -113,24 +113,24 @@ function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
             if specID and not skip[specID] then
                 local key = "spec" .. specID
                 values[key] = (specName or "") .. " " .. (className or "")
-                order[#order + 1] = key
+                sequence[#sequence + 1] = key
                 icons[key] = sIcon
                 classes[key] = classFile
             end
         end
     end
-    return values, order, icons, classes
+    return values, sequence, icons, classes
 end
 
 -- Right-click "Add To" items: the roster minus dividers, the edited bucket
 -- (selKey, the source) disabled. foreverKeyFor: see BuildSpecBucketRoster.
 function CludesUI.SpecBucketMenuItems(selKey, lead, foreverKeyFor)
-    local values, order, icons = CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
-    local items = {}
-    for i = 1, #order do
-        local key = order[i]
+    local values, sequence, icons = CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
+    local itemList = {}
+    for idx = 1, #sequence do
+        local key = sequence[idx]
         if not key:match("^%-%-%-") then
-            items[#items + 1] = {
+            itemList[#itemList + 1] = {
                 key = key,
                 label = values[key],
                 icon = icons[key],
@@ -138,7 +138,7 @@ function CludesUI.SpecBucketMenuItems(selKey, lead, foreverKeyFor)
             }
         end
     end
-    return items
+    return itemList
 end
 
 local PS = "\30" -- path segment separator
@@ -302,15 +302,15 @@ local DeepCopy = CludesUI.Lite.DeepCopy
 -- retail spec of the class (class order) that a group of the active profile
 -- holds, else the class's first spec. nil until the client knows its spec.
 local function CurrentSpecID()
-    local id = CludesUI._specID
-    if not id or id == 0 then
+    local ident = CludesUI._specID
+    if not ident or ident == 0 then
         CludesUI._RefreshSpecID()
-        id = CludesUI._specID
+        ident = CludesUI._specID
     end
-    if CludesUI.IS_FOREVER and id and id ~= 0 then
-        return CludesUI.SpecFor(id, CludesUI._SO_InAnyGroup)
+    if CludesUI.IS_FOREVER and ident and ident ~= 0 then
+        return CludesUI.SpecFor(ident, CludesUI._SO_InAnyGroup)
     end
-    return (id and id ~= 0) and id or nil
+    return (ident and ident ~= 0) and ident or nil
 end
 
 local function SpecName(specID)
@@ -374,14 +374,14 @@ local function NextGroupId()
     if not prof then
         return 1
     end
-    local id = (prof.specOverrideNextId or 0) + 1
-    prof.specOverrideNextId = id
-    return id
+    local ident = (prof.specOverrideNextId or 0) + 1
+    prof.specOverrideNextId = ident
+    return ident
 end
 
-local function GroupById(id)
+local function GroupById(ident)
     for _, g in ipairs(GetGroups() or {}) do
-        if g.id == id then
+        if g.id == ident then
             return g
         end
     end
@@ -394,8 +394,8 @@ local function SpecInAnyGroup(specID)
         return false
     end
     for _, g in ipairs(GetGroups() or {}) do
-        for _, sid in ipairs(g.specs or {}) do
-            if sid == specID then
+        for _, spellRef in ipairs(g.specs or {}) do
+            if spellRef == specID then
                 return true
             end
         end
@@ -413,32 +413,32 @@ CludesUI.SpecOverrides_CurrentSpecID = CurrentSpecID
 -- player's class but not the one this character uses says so.
 function CludesUI._SO_ForeverGroupNames(specs, curSpec)
     specs = specs or {}
-    local set, out, done = {}, {}, {}
-    for _, id in ipairs(specs) do
-        set[id] = true
+    local set, result, done = {}, {}, {}
+    for _, ident in ipairs(specs) do
+        set[ident] = true
     end
     local player = select(2, UnitClass("player"))
     local inactive = false
-    for _, id in ipairs(specs) do
-        local token = CludesUI.SpecClassOf(id)
+    for _, ident in ipairs(specs) do
+        local token = CludesUI.SpecClassOf(ident)
         local ids = CludesUI.ForeverClassSpecIDs(token)
         if not ids then
-            out[#out + 1] = SpecName(id) -- a class WoW Forever lacks
+            result[#result + 1] = SpecName(ident) -- a class WoW Forever lacks
         elseif not done[token] then
             done[token] = true
             local whole = true
-            for i = 1, #ids do
-                if not set[ids[i]] then
+            for idx = 1, #ids do
+                if not set[ids[idx]] then
                     whole = false
                     break
                 end
             end
             if whole then
-                out[#out + 1] = CludesUI.ForeverClassName(token)
+                result[#result + 1] = CludesUI.ForeverClassName(token)
             else
-                for i = 1, #ids do
-                    if set[ids[i]] then
-                        out[#out + 1] = SpecName(ids[i])
+                for idx = 1, #ids do
+                    if set[ids[idx]] then
+                        result[#result + 1] = SpecName(ids[idx])
                     end
                 end
             end
@@ -448,9 +448,10 @@ function CludesUI._SO_ForeverGroupNames(specs, curSpec)
         end
     end
     if inactive then
-        out[#out + 1] = string.format(L("Inactive on WoW Forever: this character uses %s"), SpecName(curSpec))
+        result[#result + 1] =
+            string.format(L("Inactive on WoW Forever: this character uses %s"), SpecName(curSpec))
     end
-    return out
+    return result
 end
 
 -- First existing group (creation order) whose member specs hold banked values on
@@ -459,8 +460,8 @@ end
 -- being destroyed, or B's overrides and the shared default are lost.
 local function EntryHolderGroup(e)
     for _, og in ipairs(GetGroups() or {}) do
-        for _, sid in ipairs(og.specs or {}) do
-            local mv = e.values and e.values[sid]
+        for _, spellRef in ipairs(og.specs or {}) do
+            local mv = e.values and e.values[spellRef]
             if type(mv) == "table" and next(mv) ~= nil then
                 return og
             end
@@ -471,19 +472,19 @@ end
 
 -- An entry owned by another group whose specs overlap G's is a CONFLICT for the
 -- shared spec(s) (that group's values own the setting). Returns the first overlapping specID, or nil.
-local function ConflictSpec(entry, group)
+local function ConflictSpec(record, group)
     group = group or _editGroup
-    if not group or not entry.group or entry.group == group.id then
+    if not group or not record.group or record.group == group.id then
         return nil
     end
-    local og = GroupById(entry.group)
+    local og = GroupById(record.group)
     if not og then
         return nil
     end
-    for _, sid in ipairs(group.specs or {}) do
+    for _, spellRef in ipairs(group.specs or {}) do
         for _, osid in ipairs(og.specs or {}) do
-            if sid == osid then
-                return sid
+            if spellRef == osid then
+                return spellRef
             end
         end
     end
@@ -495,31 +496,31 @@ end
 -- any session, yet still applied every boundary, pinning the spec off the shared
 -- default. Ungrouped specs aren't stranded (self-heal covers them); legacy entries
 -- (group == nil) keep per-spec values by design.
-local function SpecStrandedOnEntry(entry, specID)
-    if entry.group == nil then
+local function SpecStrandedOnEntry(record, specID)
+    if record.group == nil then
         return false
     end
-    local owner = GroupById(entry.group)
-    if not owner then
+    local ownerFrame = GroupById(record.group)
+    if not ownerFrame then
         return false
     end
-    for _, sid in ipairs(owner.specs or {}) do
-        if sid == specID then
+    for _, spellRef in ipairs(ownerFrame.specs or {}) do
+        if spellRef == specID then
             return false
         end
     end
     local inAnyGroup = false
     for _, g in ipairs(GetGroups() or {}) do
         local hasSpec = false
-        for _, sid in ipairs(g.specs or {}) do
-            if sid == specID then
+        for _, spellRef in ipairs(g.specs or {}) do
+            if spellRef == specID then
                 hasSpec = true
                 break
             end
         end
         if hasSpec then
             inAnyGroup = true
-            if not ConflictSpec(entry, g) then
+            if not ConflictSpec(record, g) then
                 return false
             end
         end
@@ -531,9 +532,9 @@ end
 local _fkeyIndex = nil
 local function RebuildFKeyIndex()
     _fkeyIndex = {}
-    for _, entry in ipairs(GetStore() or {}) do
-        for fkey in pairs(entry.values and entry.values.default or {}) do
-            _fkeyIndex[fkey] = entry
+    for _, record in ipairs(GetStore() or {}) do
+        for fkey in pairs(record.values and record.values.default or {}) do
+            _fkeyIndex[fkey] = record
         end
     end
 end
@@ -552,9 +553,9 @@ local function DBFor(folder)
     if not reg then
         return nil
     end
-    for _, db in ipairs(reg) do
-        if db.folder == folder then
-            return db.profile
+    for _, saved in ipairs(reg) do
+        if saved.folder == folder then
+            return saved.profile
         end
     end
     return nil
@@ -631,8 +632,8 @@ local VIS_OV_FOLDERS = {
 
 -- visibilityModes covers the mode set and its hide lanes at once: the gate below
 -- tests every path segment, so the leaves under it never need naming.
-for i = 1, #VIS_OV_FOLDERS do
-    local folder = VIS_OV_FOLDERS[i]
+for idx = 1, #VIS_OV_FOLDERS do
+    local folder = VIS_OV_FOLDERS[idx]
     local set = SETTING_BLACKLIST[folder]
     if not set then
         set = {}
@@ -656,14 +657,14 @@ local function EnsureVisLaneBlacklist()
     if _visLanesDone then
         return
     end
-    local keys = CludesUI.VIS_OPT_KEYS
-    if not keys then
+    local keyList = CludesUI.VIS_OPT_KEYS
+    if not keyList then
         return
     end
-    for i = 1, #VIS_OV_FOLDERS do
-        local set = SETTING_BLACKLIST[VIS_OV_FOLDERS[i]]
-        for k = 1, #keys do
-            set[keys[k]] = true
+    for idx = 1, #VIS_OV_FOLDERS do
+        local set = SETTING_BLACKLIST[VIS_OV_FOLDERS[idx]]
+        for k = 1, #keyList do
+            set[keyList[k]] = true
         end
     end
     _visLanesDone = true
@@ -673,7 +674,7 @@ end
 -- OR setting-blacklisted. Enforced in BOTH directions plus prune.
 local function BlacklistedFKey(fkey)
     EnsureVisLaneBlacklist()
-    local folder, path = SplitFKey(fkey)
+    local folder, filePath = SplitFKey(fkey)
     if not folder then
         return false
     end
@@ -681,10 +682,10 @@ local function BlacklistedFKey(fkey)
         return true
     end
     local set = SETTING_BLACKLIST[folder]
-    if not set or not path then
+    if not set or not filePath then
         return false
     end
-    for seg in path:gmatch("[^\30]+") do
+    for seg in filePath:gmatch("[^\30]+") do
         if set[seg] then
             return true
         end
@@ -705,14 +706,14 @@ local LAYER_OWNED_SEGS = {
     dmDebuff = "dm",
 }
 local function LayerOwnedFKey(fkey)
-    local folder, path = SplitFKey(fkey)
-    if folder ~= "CludesUIRaidFrames" or not path then
+    local folder, filePath = SplitFKey(fkey)
+    if folder ~= "CludesUIRaidFrames" or not filePath then
         return nil
     end
-    local head, sub = path:match("^([^\30]+)\30?([^\30]*)")
+    local head, subFrame = filePath:match("^([^\30]+)\30?([^\30]*)")
     -- bm2's filter library is shared profile-wide: _CURF_BM2HarvestFork banks
     -- specs + seeded only, so a filter edit is NOT scoped to the fork.
-    if head == "bm2" and sub == "filters" then
+    if head == "bm2" and subFrame == "filters" then
         return nil
     end
     return LAYER_OWNED_SEGS[head or ""]
@@ -744,23 +745,23 @@ local MATCH_OWNED_FKEYS = {
 }
 
 local function MatchOwnedFKey(fkey)
-    local info = MATCH_OWNED_FKEYS[fkey]
-    if not info then
+    local details = MATCH_OWNED_FKEYS[fkey]
+    if not details then
         return false
     end
     if not CludesUIDB then
         return false
     end
-    local dim = info.dim
+    local dim = details.dim
     if dim ~= "h" then
         local wm = CludesUIDB.unlockWidthMatch
-        if wm and wm[info.elem] ~= nil then
+        if wm and wm[details.elem] ~= nil then
             return true
         end
     end
     if dim ~= "w" then
         local hm = CludesUIDB.unlockHeightMatch
-        if hm and hm[info.elem] ~= nil then
+        if hm and hm[details.elem] ~= nil then
             return true
         end
     end
@@ -774,10 +775,10 @@ local function MatchOwnedFKey(fkey)
     -- namespace, not a local, because the function is defined in CUI_SpecOverrides_Layers.lua.
     if CludesUI.SpecOverrides_UnlockBaselineLinks then
         local _, bw, bh = CludesUI.SpecOverrides_UnlockBaselineLinks()
-        if bw and dim ~= "h" and bw[info.elem] ~= nil then
+        if bw and dim ~= "h" and bw[details.elem] ~= nil then
             return true
         end
-        if bh and dim ~= "w" and bh[info.elem] ~= nil then
+        if bh and dim ~= "w" and bh[details.elem] ~= nil then
             return true
         end
     end
@@ -796,13 +797,13 @@ local function NumAllowedFKey(fkey)
 end
 
 function CludesUI.SpecOverrides_OnCDMBarsRestructured()
-    local function sweep(store, rebuild)
-        if not store then
+    local function sweep(storage, rebuild)
+        if not storage then
             return
         end
         local removed = false
-        for i = #store, 1, -1 do
-            local e = store[i]
+        for idx = #storage, 1, -1 do
+            local e = storage[idx]
             local hit = false
             if e.values and e.values.default then
                 for fkey in pairs(e.values.default) do
@@ -816,7 +817,7 @@ function CludesUI.SpecOverrides_OnCDMBarsRestructured()
                 end
             end
             if hit then
-                table.remove(store, i)
+                table.remove(storage, idx)
                 removed = true
             end
         end
@@ -839,22 +840,22 @@ local function SegKey(t, seg)
     if t[seg] ~= nil then
         return seg
     end
-    local n = tonumber(seg)
-    if n ~= nil and t[n] ~= nil then
-        return n
+    local num = tonumber(seg)
+    if num ~= nil and t[num] ~= nil then
+        return num
     end
     return seg
 end
 
 local function ReadLive(fkey)
-    local folder, path = SplitFKey(fkey)
+    local folder, filePath = SplitFKey(fkey)
     local t = folder and DBFor(folder)
     if type(t) ~= "table" then
         return nil
     end
-    local segs = { strsplit(PS, path) }
-    for i = 1, #segs - 1 do
-        t = t[SegKey(t, segs[i])]
+    local segs = { strsplit(PS, filePath) }
+    for idx = 1, #segs - 1 do
+        t = t[SegKey(t, segs[idx])]
         if type(t) ~= "table" then
             return nil
         end
@@ -871,8 +872,8 @@ end
 --- SetFont). Apply sites skip those writes; the next harvest banks live over the
 --- marker, so poisoned stores self-heal.
 local function HasRegisteredDefault(fkey)
-    local folder, path = SplitFKey(fkey)
-    if not folder or not path then
+    local folder, filePath = SplitFKey(fkey)
+    if not folder or not filePath then
         return false
     end
     local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
@@ -880,18 +881,18 @@ local function HasRegisteredDefault(fkey)
         return false
     end
     local t
-    for _, db in ipairs(reg) do
-        if db.folder == folder then
-            t = db._profileDefaults
+    for _, saved in ipairs(reg) do
+        if saved.folder == folder then
+            t = saved._profileDefaults
             break
         end
     end
     if type(t) ~= "table" then
         return false
     end
-    local segs = { strsplit(PS, path) }
-    for i = 1, #segs - 1 do
-        t = t[SegKey(t, segs[i])]
+    local segs = { strsplit(PS, filePath) }
+    for idx = 1, #segs - 1 do
+        t = t[SegKey(t, segs[idx])]
         if type(t) ~= "table" then
             return false
         end
@@ -899,8 +900,8 @@ local function HasRegisteredDefault(fkey)
     return t[SegKey(t, segs[#segs])] ~= nil
 end
 
-local function WriteLive(fkey, v)
-    local folder, path = SplitFKey(fkey)
+local function WriteLive(fkey, val)
+    local folder, filePath = SplitFKey(fkey)
     local t = folder and DBFor(folder)
     if type(t) ~= "table" then
         return false
@@ -910,12 +911,12 @@ local function WriteLive(fkey, v)
     -- means "not customized yet", and RF's options UI fabricates sub-tables on
     -- demand too, nil-guarding sparse tier tables so fabricate-and-write is safe.
     local isRaidSizeOv = fkey:sub(1, #RAID_SIZE_OV_PREFIX) == RAID_SIZE_OV_PREFIX
-    local segs = { strsplit(PS, path) }
-    for i = 1, #segs - 1 do
-        local k = SegKey(t, segs[i])
+    local segs = { strsplit(PS, filePath) }
+    for idx = 1, #segs - 1 do
+        local k = SegKey(t, segs[idx])
         local nxt = t[k]
         if type(nxt) ~= "table" then
-            if v == nil then
+            if val == nil then
                 return false
             end -- nothing to remove
             -- NEVER fabricate a container for a purely-numeric segment: it points at
@@ -923,49 +924,49 @@ local function WriteLive(fkey, v)
             -- gone (deleted bar, different profile after import). Creating it plants
             -- a skeleton "ghost" row that crashes every keyed consumer downstream, so
             -- skip the write. (Raid-size tier keys are exempt -- see isRaidSizeOv.)
-            if tonumber(segs[i]) ~= nil and not isRaidSizeOv then
+            if tonumber(segs[idx]) ~= nil and not isRaidSizeOv then
                 return false
             end
             nxt = {}
             -- A fresh raidSizeOverrides ROOT must carry the offset-scheme markers RF
             -- stamps in _EnsureRaidSizeOverrides, or the next _NormalizeTierOffsetAnchors
             -- pass silently shifts offsets that were never old-scheme.
-            if isRaidSizeOv and i == 1 then
+            if isRaidSizeOv and idx == 1 then
                 nxt._topLeftAnchored = true
                 nxt._cornerAnchored = true
             end
             -- Fabricate under the NUMERIC key (mirrors the leaf write below): RF reads
             -- tiers numerically, so a string-keyed fabrication never renders and
             -- SegKey would prefer the phantom over the real tier forever.
-            local n = tonumber(k)
-            if type(k) == "string" and n ~= nil then
-                k = n
+            local num = tonumber(k)
+            if type(k) == "string" and num ~= nil then
+                k = num
             end
             t[k] = nxt
         end
         t = nxt
     end
     local k = SegKey(t, segs[#segs])
-    if t[k] == nil and v ~= nil then
-        local n = tonumber(k)
-        if type(k) == "string" and n ~= nil then
-            k = n
+    if t[k] == nil and val ~= nil then
+        local num = tonumber(k)
+        if type(k) == "string" and num ~= nil then
+            k = num
         end
     end
-    t[k] = v
+    t[k] = val
     return true
 end
 
 -- Reads a value out of a profiles snapshot (pre-change originals).
 local function SnapValue(snap, fkey)
-    local folder, path = SplitFKey(fkey)
+    local folder, filePath = SplitFKey(fkey)
     local t = folder and snap[folder]
     if type(t) ~= "table" then
         return nil
     end
-    local segs = { strsplit(PS, path) }
-    for i = 1, #segs - 1 do
-        t = t[SegKey(t, segs[i])]
+    local segs = { strsplit(PS, filePath) }
+    for idx = 1, #segs - 1 do
+        t = t[SegKey(t, segs[idx])]
         if type(t) ~= "table" then
             return nil
         end
@@ -994,9 +995,9 @@ local function RunRefreshers(folders)
         local fns = REFRESH_FNS[f]
         if fns then
             for _, name in ipairs(fns) do
-                local fn = _G[name]
-                if fn then
-                    pcall(fn)
+                local func = _G[name]
+                if func then
+                    pcall(func)
                 end
             end
         else
@@ -1070,18 +1071,18 @@ CUI_NS.NewInternals(CUI_NS, "_soInternals", {
     SplitFKey = SplitFKey,
     WriteLive = WriteLive,
     editGroupSetters = {
-        function(v)
-            _editGroup = v
+        function(val)
+            _editGroup = val
         end,
     },
     combatFoldersSetters = {
-        function(v)
-            _combatFolders = v
+        function(val)
+            _combatFolders = val
         end,
     },
     goldWalkSetters = {
-        function(v)
-            RequestGoldWalk = v
+        function(val)
+            RequestGoldWalk = val
         end,
     },
     defaultViewSetters = {},

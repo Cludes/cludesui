@@ -1,5 +1,5 @@
-local addonName, ns = ...
-if ns.standalone then
+local addonName, mod = ...
+if mod.standalone then
     return
 end
 
@@ -15,7 +15,7 @@ end
 --
 -- Boss order follows the Adventure Guide.
 
-ns.SpellData = {
+mod.SpellData = {
     raids = {
         -- ──────────────────────────────────────────────────────────────
         --  THE VENOMOUS ABYSS  (Midnight Season 2, Coiled Isle)
@@ -476,10 +476,10 @@ ns.SpellData = {
 -- True for a spell ID that belongs to the preset list above. Anything else in
 -- db.spellAlerts was added by the user.
 local presetIds
-function ns.SpellData.IsPreset(spellID)
+function mod.SpellData.IsPreset(spellId)
     if not presetIds then
         presetIds = {}
-        for _, raid in ipairs(ns.SpellData.raids) do
+        for _, raid in ipairs(mod.SpellData.raids) do
             for _, boss in ipairs(raid.bosses) do
                 for _, spell in ipairs(boss.spells) do
                     presetIds[spell.id] = true
@@ -487,34 +487,34 @@ function ns.SpellData.IsPreset(spellID)
             end
         end
     end
-    return presetIds[tonumber(spellID)] == true
+    return presetIds[tonumber(spellId)] == true
 end
 
 -- The user's own alerts as a sorted list of {id, key, alert}. `key` is the
 -- table key as stored, which may be a number or a numeric string.
-function ns.SpellData.CustomAlerts(db)
-    local list = {}
-    for key, alert in pairs(db.spellAlerts or {}) do
-        local id = tonumber(key)
-        if id and type(alert) == "table" and not ns.SpellData.IsPreset(id) then
-            list[#list + 1] = { id = id, key = key, alert = alert }
+function mod.SpellData.CustomAlerts(saved)
+    local entries = {}
+    for key, alert in pairs(saved.spellAlerts or {}) do
+        local ident = tonumber(key)
+        if ident and type(alert) == "table" and not mod.SpellData.IsPreset(ident) then
+            entries[#entries + 1] = { id = ident, key = key, alert = alert }
         end
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         return a.id < b.id
     end)
-    return list
+    return entries
 end
 
 -- Seed db.spellAlerts with defaults for any spell not already present.
 -- Called each time the options panel is shown (preserves user changes).
-function ns.SpellData.SeedDefaults(db)
-    db.spellAlerts = db.spellAlerts or {}
-    for _, raid in ipairs(ns.SpellData.raids) do
+function mod.SpellData.SeedDefaults(saved)
+    saved.spellAlerts = saved.spellAlerts or {}
+    for _, raid in ipairs(mod.SpellData.raids) do
         for _, boss in ipairs(raid.bosses) do
             for _, spell in ipairs(boss.spells) do
-                if db.spellAlerts[spell.id] == nil then
-                    db.spellAlerts[spell.id] = {
+                if saved.spellAlerts[spell.id] == nil then
+                    saved.spellAlerts[spell.id] = {
                         enabled = false,
                         threshold = spell.threshold or 1,
                         preset = true,

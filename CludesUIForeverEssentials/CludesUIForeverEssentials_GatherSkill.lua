@@ -101,12 +101,12 @@ local function Forget()
     memoN = 0
 end
 
-local function AddHerb(itemID)
-    local name = C_Item.GetItemNameByID(itemID)
+local function AddHerb(itemId)
+    local name = C_Item.GetItemNameByID(itemId)
     if not name then
         return false
     end
-    nodes[name] = { HERBALISM, HERBS[itemID] }
+    nodes[name] = { HERBALISM, HERBS[itemId] }
     return true
 end
 
@@ -116,10 +116,10 @@ local function Build()
         nodes[CludesUI.L(name)] = { MINING, lvl }
         nodes[name] = { MINING, lvl }
     end
-    for itemID in pairs(HERBS) do
-        if not AddHerb(itemID) then
-            missing[itemID] = true
-            C_Item.RequestLoadItemDataByID(itemID)
+    for itemId in pairs(HERBS) do
+        if not AddHerb(itemId) then
+            missing[itemId] = true
+            C_Item.RequestLoadItemDataByID(itemId)
         end
     end
     if next(missing) then
@@ -127,15 +127,15 @@ local function Build()
     end
 end
 
-events:SetScript("OnEvent", function(self, event, itemID, success)
-    if event == "SKILL_LINES_CHANGED" then
+events:SetScript("OnEvent", function(self, evt, itemId, success)
+    if evt == "SKILL_LINES_CHANGED" then
         Forget()
-    elseif missing[itemID] then
+    elseif missing[itemId] then
         -- A herb that failed to load stays as the game shows it.
         if success then
-            AddHerb(itemID)
+            AddHerb(itemId)
         end
-        missing[itemID] = nil
+        missing[itemId] = nil
         Forget()
         if not next(missing) then
             self:UnregisterEvent("ITEM_DATA_LOAD_RESULT")
@@ -144,11 +144,11 @@ events:SetScript("OnEvent", function(self, event, itemID, success)
 end)
 
 -- The player's skill in a gathering skill line, nil without it.
-local function Skill(line)
-    for _, index in ipairs({ GetProfessions() }) do
-        if index then
-            local _, _, rank, _, _, _, id = GetProfessionInfo(index)
-            if id == line then
+local function Skill(lineTex)
+    for _, slotPos in ipairs({ GetProfessions() }) do
+        if slotPos then
+            local _, _, rank, _, _, _, ident = GetProfessionInfo(slotPos)
+            if ident == lineTex then
                 return rank
             end
         end
@@ -178,9 +178,9 @@ end
 -- A minimap tooltip line rewritten: one name per line inside it (several
 -- nodes under the cursor stack up), each known node's name followed by its
 -- required skill. false when no name is known.
-local function MinimapLine(text)
-    local out, changed = {}, false
-    for part in (text .. "\n"):gmatch("(.-)\n") do
+local function MinimapLine(textValue)
+    local result, changed = {}, false
+    for part in (textValue .. "\n"):gmatch("(.-)\n") do
         local name =
             part:gsub("|T.-|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^%s*(.-)%s*$")
         local node = nodes[name]
@@ -190,9 +190,9 @@ local function MinimapLine(text)
             part = ("%s %s(%d)|r"):format(part, color, node[2])
             changed = true
         end
-        out[#out + 1] = part
+        result[#result + 1] = part
     end
-    return changed and table.concat(out, "\n")
+    return changed and table.concat(result, "\n")
 end
 
 local function OnMinimapTooltip(tooltip)
@@ -203,21 +203,21 @@ local function OnMinimapTooltip(tooltip)
         Build()
     end
     local changed
-    for i = 1, tooltip:NumLines() do
-        local fs = _G["GameTooltipTextLeft" .. i]
-        local text = fs and fs:GetText()
-        if text and not issecretvalue(text) then
-            local new = memo[text]
+    for idx = 1, tooltip:NumLines() do
+        local fontStr = _G["GameTooltipTextLeft" .. idx]
+        local textValue = fontStr and fontStr:GetText()
+        if textValue and not issecretvalue(textValue) then
+            local new = memo[textValue]
             if new == nil then
-                new = MinimapLine(text)
+                new = MinimapLine(textValue)
                 if memoN >= MEMO_MAX then
                     Forget()
                 end
-                memo[text] = new
+                memo[textValue] = new
                 memoN = memoN + 1
             end
             if new then
-                fs:SetText(new)
+                fontStr:SetText(new)
                 changed = true
             end
         end
@@ -227,19 +227,19 @@ local function OnMinimapTooltip(tooltip)
     end
 end
 
-local function OnObjectTooltip(tooltip, data)
+local function OnObjectTooltip(tooltip, payload)
     if tooltip ~= GameTooltip or not F.Enabled() then
         return
     end
-    local lines = data and data.lines
-    local title = lines and lines[1] and lines[1].leftText
-    if not title or issecretvalue(title) then
+    local lines = payload and payload.lines
+    local titleText = lines and lines[1] and lines[1].leftText
+    if not titleText or issecretvalue(titleText) then
         return
     end
     if not nodes then
         Build()
     end
-    local node = nodes[title]
+    local node = nodes[titleText]
     if not node then
         return
     end
@@ -247,14 +247,14 @@ local function OnObjectTooltip(tooltip, data)
     if not skillName then
         return
     end
-    for i = 2, tooltip:NumLines() do
-        local fs = _G["GameTooltipTextLeft" .. i]
-        local text = fs and fs:GetText()
-        if text and not issecretvalue(text) and text:find(skillName, 1, true) then
-            fs:SetText(("%s (%d)"):format(text, node[2]))
+    for idx = 2, tooltip:NumLines() do
+        local fontStr = _G["GameTooltipTextLeft" .. idx]
+        local textValue = fontStr and fontStr:GetText()
+        if textValue and not issecretvalue(textValue) and textValue:find(skillName, 1, true) then
+            fontStr:SetText(("%s (%d)"):format(textValue, node[2]))
             local skill = Skill(node[1])
             if skill and skill >= node[2] then
-                fs:SetTextColor(OddsColor(skill, node[2]))
+                fontStr:SetTextColor(OddsColor(skill, node[2]))
             end
             tooltip:Show()
             return
@@ -277,9 +277,9 @@ local function Apply()
     end
     -- Herbs that loaded while it was off.
     if nodes and next(missing) then
-        for itemID in pairs(missing) do
-            if AddHerb(itemID) then
-                missing[itemID] = nil
+        for itemId in pairs(missing) do
+            if AddHerb(itemId) then
+                missing[itemId] = nil
             end
         end
         if next(missing) then

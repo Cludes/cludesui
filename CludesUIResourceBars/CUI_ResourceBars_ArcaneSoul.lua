@@ -33,7 +33,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- ColorCurve on the same registration, which doubles as the belt-and-braces
 -- hide (alpha 0 above the threshold) if the empty format is ever rejected.
 
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
@@ -63,17 +63,17 @@ local DEFAULT_POS = { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
 -- class; ph[phase] = { container, btn, fs, stamp }; options live preview:
 -- demo (driver), demoOwner/demoPending (page watcher), demoApplied/demoCombat/
 -- demoEv (SyncDemo)
-local S = { ph = { surge = {}, soul = {} } }
-S.class = select(2, UnitClass("player"))
+local Stl = { ph = { surge = {}, soul = {} } }
+Stl.class = select(2, UnitClass("player"))
 
 -------------------------------------------------------------------------------
 --  Settings access
 -------------------------------------------------------------------------------
 
-local function P()
-    local ERB = ns.ERB
-    local db = ERB and ERB.db
-    local p = db and db.profile
+local function Prm()
+    local ERB = mod.ERB
+    local saved = ERB and ERB.db
+    local p = saved and saved.profile
     return p and p.arcaneSoul or nil
 end
 
@@ -85,7 +85,7 @@ end
 -- Counting GCDs before the window opens and counting Barrages inside it are
 -- different questions, so they are separately answerable.
 local function PhaseMode(phase)
-    local p = P()
+    local p = Prm()
     local m = p and p.countMode
     if m == "gcd" then
         return "gcd"
@@ -99,7 +99,7 @@ end
 -- Does any phase need a GCD length? Drives the one combat event this module
 -- registers, so a pure-seconds setup stays event-free in combat.
 local function NeedsGcd()
-    local p = P()
+    local p = Prm()
     local m = p and p.countMode
     return m == "gcd" or m == "secondsGcd"
 end
@@ -107,25 +107,25 @@ end
 -- Seconds of Arcane Surge left at which "Soul in" starts showing. Floor 1,
 -- never 0: a 0 threshold would collide with the tenths breakpoint at 0.
 local function Thr()
-    local p = P()
-    local v = tonumber(p and p.threshold) or 5
-    if v < 1 then
-        v = 1
-    elseif v > 15 then
-        v = 15
+    local p = Prm()
+    local val = tonumber(p and p.threshold) or 5
+    if val < 1 then
+        val = 1
+    elseif val > 15 then
+        val = 15
     end
-    return math.floor(v + 0.5)
+    return math.floor(val + 0.5)
 end
 
 local function TextSize()
-    local p = P()
-    local v = tonumber(p and p.textSize) or 24
-    if v < 10 then
-        v = 10
-    elseif v > 48 then
-        v = 48
+    local p = Prm()
+    local val = tonumber(p and p.textSize) or 24
+    if val < 10 then
+        val = 10
+    elseif val > 48 then
+        val = 48
     end
-    return math.floor(v + 0.5)
+    return math.floor(val + 0.5)
 end
 
 local function ProxySize()
@@ -134,17 +134,17 @@ local function ProxySize()
 end
 
 local function PreColor()
-    local p = P() or {}
+    local p = Prm() or {}
     return p.preR or 0.64, p.preG or 0.21, p.preB or 0.93
 end
 
 local function SoulColor()
-    local p = P() or {}
+    local p = Prm() or {}
     return p.soulR or 0.64, p.soulG or 0.21, p.soulB or 0.93
 end
 
 local function LastColor()
-    local p = P() or {}
+    local p = Prm() or {}
     return p.lastR or 1.0, p.lastG or 0.25, p.lastB or 0.25
 end
 
@@ -156,27 +156,27 @@ end
 -------------------------------------------------------------------------------
 
 local function GetASFont()
-    local p = P()
+    local p = Prm()
     local key = (p and p.font) or "__global"
     if key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local path = CludesUI.ResolveFontName(key)
-        if path then
-            return path
+        local filePath = CludesUI.ResolveFontName(key)
+        if filePath then
+            return filePath
         end
     end
     return (CludesUI.GetFontPath("resourceBars")) or STANDARD_TEXT_FONT
 end
 
 local function GetASOutline()
-    local p = P()
-    local mode = (p and p.outlineMode) or "__global"
-    if mode == "outline" then
+    local p = Prm()
+    local modeName = (p and p.outlineMode) or "__global"
+    if modeName == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
-    if mode == "thick" then
+    if modeName == "thick" then
         return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
     end
-    if mode == "none" then
+    if modeName == "none" then
         return ""
     end
     return (CludesUI.GetFontOutlineFlag("resourceBars"))
@@ -188,20 +188,20 @@ end
 -- setters do not render). The primed object resolves BLACK, so the instance
 -- color is always re-stated afterwards -- it is also the fallback tint if the
 -- engine ever refuses the color curve.
-local function ApplyFsLook(phase, fs)
-    if not fs then
+local function ApplyFsLook(phase, fontStr)
+    if not fontStr then
         return
     end
     local flags = GetASOutline()
-    CludesUI.PrimeFontShadow(fs, flags == "")
-    fs:SetFont(GetASFont(), TextSize(), flags)
+    CludesUI.PrimeFontShadow(fontStr, flags == "")
+    fontStr:SetFont(GetASFont(), TextSize(), flags)
     local r, g, b
     if phase == "soul" then
         r, g, b = SoulColor()
     else
         r, g, b = PreColor()
     end
-    fs:SetTextColor(r, g, b, 1)
+    fontStr:SetTextColor(r, g, b, 1)
 end
 
 -------------------------------------------------------------------------------
@@ -251,8 +251,8 @@ end
 
 -- Reads only; GetGcdLen also records the result as the bound GCD.
 local function CalcGcdLen()
-    local ok, len = pcall(ReadLiveGcd)
-    if not ok then
+    local success, len = pcall(ReadLiveGcd)
+    if not success then
         len = nil
     end
     if not len then
@@ -262,7 +262,7 @@ local function CalcGcdLen()
         end
     end
     if not len then
-        len = S.gcdLen or 1.5
+        len = Stl.gcdLen or 1.5
     end
     if len < 0.75 then
         len = 0.75
@@ -274,7 +274,7 @@ end
 
 local function GetGcdLen()
     local len = CalcGcdLen()
-    S.gcdLen = len
+    Stl.gcdLen = len
     return len
 end
 
@@ -325,12 +325,12 @@ local BAND_MAX = 24
 
 local function GcdBandPoints(fmt, gcd, upTo, firstLabel)
     local pts = {}
-    for n = 1, BAND_MAX do
-        local t = (n == 1) and 0 or ((n - 1) * gcd + BAND_EPS)
-        if n > 1 and t >= upTo then
+    for num = 1, BAND_MAX do
+        local t = (num == 1) and 0 or ((num - 1) * gcd + BAND_EPS)
+        if num > 1 and t >= upTo then
             break
         end
-        pts[#pts + 1] = { threshold = t, format = (n == 1 and firstLabel) or string.format(fmt, n) }
+        pts[#pts + 1] = { threshold = t, format = (num == 1 and firstLabel) or string.format(fmt, num) }
     end
     return pts
 end
@@ -343,8 +343,8 @@ end
 -- to build leaves SetDurationText with no formatter at all, and the engine
 -- default renders bare whole seconds.
 local surgeFmtCache = {}
-local function SurgeFormatter(mode, thr, gcd)
-    local key = mode .. "|" .. thr .. "|" .. tostring(gcd or 0)
+local function SurgeFormatter(modeName, thr, gcd)
+    local key = modeName .. "|" .. thr .. "|" .. tostring(gcd or 0)
     local cached = surgeFmtCache[key]
     if cached ~= nil then
         return cached or nil
@@ -355,7 +355,7 @@ local function SurgeFormatter(mode, thr, gcd)
     local soulInCount = CludesUI.L("Soul in %d")
     local soulInTenths = CludesUI.L("Soul in %.1f")
     local attempts
-    if mode == "gcd" then
+    if modeName == "gcd" then
         attempts = {
             GcdBandPoints(soulInCount, gcd, thr, string.format(soulInCount, 1)),
             {
@@ -379,16 +379,16 @@ local function SurgeFormatter(mode, thr, gcd)
     local hides = { "", " ", false }
 
     for a = 1, #attempts do
-        local base = attempts[a]
-        for h = 1, #hides do
+        local baseValue = attempts[a]
+        for hgt = 1, #hides do
             local points = {}
-            for i = 1, #base do
-                points[i] = base[i]
+            for i = 1, #baseValue do
+                points[i] = baseValue[i]
             end
             -- Every band sits strictly below thr (GcdBandPoints stops there),
             -- so the hide rule always lands last and never duplicates a threshold.
-            if hides[h] then
-                points[#points + 1] = { threshold = thr, format = hides[h] }
+            if hides[hgt] then
+                points[#points + 1] = { threshold = thr, format = hides[hgt] }
             end
             local f = NewFormatter(points)
             if f then
@@ -407,8 +407,8 @@ end
 -- the band table is generated a little past that for headroom.
 local SOUL_BAND_MAX_S = 6
 local soulFmtCache = {}
-local function SoulFormatter(mode, gcd)
-    local key = mode .. "|" .. tostring(gcd or 0)
+local function SoulFormatter(modeName, gcd)
+    local key = modeName .. "|" .. tostring(gcd or 0)
     local cached = soulFmtCache[key]
     if cached ~= nil then
         return cached or nil
@@ -417,24 +417,24 @@ local function SoulFormatter(mode, gcd)
     local Up = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Up
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
     local f
-    if mode == "gcd" then
+    if modeName == "gcd" then
         local lastText = CludesUI.L("LAST")
         f = NewFormatter(GcdBandPoints("%d", gcd, SOUL_BAND_MAX_S, lastText))
         if not f then
             -- Divisor fallback. If the literal-only "LAST" band is what was
             -- refused, the same ceil renders a "1" there instead -- still red,
             -- because the color flip rides the curve, not the text.
-            local count = {
+            local total = {
                 threshold = gcd + BAND_EPS,
                 format = "%d",
                 step = 1,
                 rounding = Up,
                 components = { { div = gcd } },
             }
-            f = NewFormatter({ { threshold = 0, format = lastText }, count })
+            f = NewFormatter({ { threshold = 0, format = lastText }, total })
                 or NewFormatter({
                     { threshold = 0, format = "%d", step = 1, rounding = Up, components = { { div = gcd } } },
-                    count,
+                    total,
                 })
         end
     end
@@ -477,9 +477,9 @@ local function StepCurve(key, points)
         return nil
     end
     curvePts = points
-    local ok, curve = pcall(BuildCurve)
+    local success, curve = pcall(BuildCurve)
     curvePts = nil
-    if not ok or not curve then
+    if not success or not curve then
         curveCache[key] = false
         return nil
     end
@@ -501,15 +501,15 @@ end
 
 -- Seconds mode is one flat color; GCD mode flips to the Last color for the
 -- final Barrage. Two points either way -- a one-point curve has no band.
-local function SoulCurve(mode, gcd)
-    local sr, sg, sb = SoulColor()
-    if mode ~= "gcd" then
-        local key = string.format("c|%.3f|%.3f|%.3f", sr, sg, sb)
-        return StepCurve(key, { { 0, sr, sg, sb, 1 }, { 60, sr, sg, sb, 1 } })
+local function SoulCurve(modeName, gcd)
+    local sr, sg, scrollBar = SoulColor()
+    if modeName ~= "gcd" then
+        local key = string.format("c|%.3f|%.3f|%.3f", sr, sg, scrollBar)
+        return StepCurve(key, { { 0, sr, sg, scrollBar, 1 }, { 60, sr, sg, scrollBar, 1 } })
     end
     local lr, lg, lb = LastColor()
-    local key = string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcd, sr, sg, sb, lr, lg, lb)
-    return StepCurve(key, { { 0, lr, lg, lb, 1 }, { gcd + 0.0001, sr, sg, sb, 1 } })
+    local key = string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcd, sr, sg, scrollBar, lr, lg, lb)
+    return StepCurve(key, { { 0, lr, lg, lb, 1 }, { gcd + 0.0001, sr, sg, scrollBar, 1 } })
 end
 
 -------------------------------------------------------------------------------
@@ -523,44 +523,54 @@ end
 --  time, which is the accepted degradation.
 -------------------------------------------------------------------------------
 
-local function StampFor(phase, mode, thr, gcd)
+local function StampFor(phase, modeName, thr, gcd)
     if phase == "surge" then
         local r, g, b = PreColor()
-        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", mode, thr, gcd or 0, r, g, b)
+        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", modeName, thr, gcd or 0, r, g, b)
     end
-    local sr, sg, sb = SoulColor()
+    local sr, sg, scrollBar = SoulColor()
     local lr, lg, lb = LastColor()
-    return string.format("%s|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", mode, gcd or 0, sr, sg, sb, lr, lg, lb)
+    return string.format(
+        "%s|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f",
+        modeName,
+        gcd or 0,
+        sr,
+        sg,
+        scrollBar,
+        lr,
+        lg,
+        lb
+    )
 end
 
 local function BindPhase(phase, force)
     local AK = CludesUI.AuraKit
-    local st = S.ph[phase]
+    local st = Stl.ph[phase]
     if not (AK and st.btn and st.fs) then
         return
     end
 
-    local mode = PhaseMode(phase)
+    local modeName = PhaseMode(phase)
     local thr = Thr()
-    local gcd = (mode == "gcd") and GetGcdLen() or nil
-    local stamp = StampFor(phase, mode, thr, gcd)
+    local gcd = (modeName == "gcd") and GetGcdLen() or nil
+    local stamp = StampFor(phase, modeName, thr, gcd)
     if not force and st.stamp == stamp then
         return
     end
 
     local fmt, curve
     if phase == "surge" then
-        fmt, curve = SurgeFormatter(mode, thr, gcd), SurgeCurve(thr)
+        fmt, curve = SurgeFormatter(modeName, thr, gcd), SurgeCurve(thr)
     else
-        fmt, curve = SoulFormatter(mode, gcd), SoulCurve(mode, gcd)
+        fmt, curve = SoulFormatter(modeName, gcd), SoulCurve(modeName, gcd)
     end
 
-    local ok, full = AK.SetDurationTextSafe(st.btn, st.fs, AK.BuildDurationTextOpts(fmt, curve))
-    if ok and (full or not curve) then
+    local success, full = AK.SetDurationTextSafe(st.btn, st.fs, AK.BuildDurationTextOpts(fmt, curve))
+    if success and (full or not curve) then
         st.stamp = stamp
     else
         st.stamp = nil
-        S.dirty = true
+        Stl.dirty = true
     end
 end
 
@@ -569,12 +579,12 @@ end
 -------------------------------------------------------------------------------
 
 local function EnsureProxy()
-    if S.proxy then
+    if Stl.proxy then
         return
     end
-    S.proxy = CreateFrame("Frame", nil, UIParent)
-    S.proxy:SetSize(ProxySize())
-    S.proxy:Hide()
+    Stl.proxy = CreateFrame("Frame", nil, UIParent)
+    Stl.proxy:SetSize(ProxySize())
+    Stl.proxy:Hide()
 end
 
 local SURGE_INCLUDE = { [SURGE_AURA_ID] = true, [SURGE_CAST_ID] = true }
@@ -582,56 +592,56 @@ local SOUL_INCLUDE = { [SOUL_AURA_ID] = true }
 
 local function BuildPhase(phase, include)
     local AK = CludesUI.AuraKit
-    local st = S.ph[phase]
+    local st = Stl.ph[phase]
     if st.container then
         return
     end
 
-    local container = AK.CreateContainerShell(S.proxy, { point = { "CENTER" } })
-    AK.AddSlotToContainer(container, {
+    local boxHolder = AK.CreateContainerShell(Stl.proxy, { point = { "CENTER" } })
+    AK.AddSlotToContainer(boxHolder, {
         key = phase,
         filter = { "HELPFUL" },
         candidateFilters = { includeSpellIDs = include },
         style = STYLE_KEY,
-        extraInit = function(button)
+        extraInit = function(btnFrame)
             -- Creation window: the only legal moment to touch this subtree.
             -- Two-point anchoring sizes the button by anchors forever; all
             -- repositioning after this is proxy moves.
-            button:SetAllPoints(S.proxy)
+            btnFrame:SetAllPoints(Stl.proxy)
             -- Display-only overlay with no OnClick: an engine aura button comes
             -- mouse-enabled, and clicks alone would make it an invisible blocker
             -- over its whole rect for as long as the buff is up.
-            if button.SetMouseClickEnabled then
-                button:SetMouseClickEnabled(false)
+            if btnFrame.SetMouseClickEnabled then
+                btnFrame:SetMouseClickEnabled(false)
             end
-            if button.SetMouseMotionEnabled then
-                button:SetMouseMotionEnabled(false)
+            if btnFrame.SetMouseMotionEnabled then
+                btnFrame:SetMouseMotionEnabled(false)
             end
-            st.btn = button
+            st.btn = btnFrame
 
             -- ARMORED: an uncaught error here aborts the engine's
             -- CreateFrameBatch and kills the slot. Failures land in S.fsErr.
             local okFS, errFS = pcall(function()
-                local tc = CreateFrame("Frame", nil, button)
-                tc:SetAllPoints(button)
-                tc:SetFrameLevel(button:GetFrameLevel() + 5)
-                local fs = tc:CreateFontString(nil, "OVERLAY")
+                local tc = CreateFrame("Frame", nil, btnFrame)
+                tc:SetAllPoints(btnFrame)
+                tc:SetFrameLevel(btnFrame:GetFrameLevel() + 5)
+                local fontStr = tc:CreateFontString(nil, "OVERLAY")
                 -- Font BEFORE registration (the engine SetText()s every
                 -- registered string; an unfonted FontString hard-errors).
-                ApplyFsLook(phase, fs)
-                fs:SetPoint("CENTER", button, "CENTER", 0, 0)
-                st.fs = fs
+                ApplyFsLook(phase, fontStr)
+                fontStr:SetPoint("CENTER", btnFrame, "CENTER", 0, 0)
+                st.fs = fontStr
                 BindPhase(phase, true)
             end)
             if not okFS then
-                S.fsErr = errFS
+                Stl.fsErr = errFS
             end
         end,
     })
-    AK.FinishContainer(container, "player")
+    AK.FinishContainer(boxHolder, "player")
     -- One container-level set lifts the whole engine subtree above the proxy.
-    container:SetFrameLevel(S.proxy:GetFrameLevel() + 1)
-    st.container = container
+    boxHolder:SetFrameLevel(Stl.proxy:GetFrameLevel() + 1)
+    st.container = boxHolder
 end
 
 -- POSITION ONLY. Unlock mode owns the frame's placement for as long as the
@@ -641,54 +651,54 @@ end
 -- applyPos and ordinary (non-unlock) applies call it. Same split as the Target
 -- Distance element, whose getFrame deliberately skips ApplyFrameSettings.
 local function ApplyPosition()
-    if not S.proxy then
+    if not Stl.proxy then
         return
     end
     -- Anchored to another element: the unlock anchor system owns placement;
     -- re-applying the stored absolute here would slam the frame back to a
     -- stale spot on every apply (same guard as the GCD / totem bars).
     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(UNLOCK_KEY)
-    if anchored and S.proxy:GetLeft() then
+    if anchored and Stl.proxy:GetLeft() then
         return
     end
 
-    local p = P()
-    local pos = (p and p.unlockPos) or DEFAULT_POS
-    local pt = pos.point or "CENTER"
-    local px, py = pos.x or 0, pos.y or 0
+    local p = Prm()
+    local place = (p and p.unlockPos) or DEFAULT_POS
+    local pt = place.point or "CENTER"
+    local px, py = place.x or 0, place.y or 0
     local PPa = CludesUI and CludesUI.PP
     if PPa then
-        local es = S.proxy:GetEffectiveScale()
+        local es = Stl.proxy:GetEffectiveScale()
         -- CENTER anchor with stored CENTER offsets: SnapCenterForDim gives
         -- odd-pixel-dim frames the +0.5 offset that lands edges on whole pixels.
-        local isCenterAnchor = (pt == "CENTER") and (pos.relPoint == "CENTER" or pos.relPoint == nil)
+        local isCenterAnchor = (pt == "CENTER") and (place.relPoint == "CENTER" or place.relPoint == nil)
         if isCenterAnchor and PPa.SnapCenterForDim then
-            px = PPa.SnapCenterForDim(px, S.proxy:GetWidth() or 0, es)
-            py = PPa.SnapCenterForDim(py, S.proxy:GetHeight() or 0, es)
+            px = PPa.SnapCenterForDim(px, Stl.proxy:GetWidth() or 0, es)
+            py = PPa.SnapCenterForDim(py, Stl.proxy:GetHeight() or 0, es)
         elseif PPa.SnapForES then
             px = PPa.SnapForES(px, es)
             py = PPa.SnapForES(py, es)
         end
     end
-    S.proxy:ClearAllPoints()
-    S.proxy:SetPoint(pt, UIParent, pos.relPoint or pt, px, py)
+    Stl.proxy:ClearAllPoints()
+    Stl.proxy:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
 end
 
 -- LOOK ONLY: size, fonts, colors, duration bindings. Safe to run at any time,
 -- including mid-drag.
 local function ApplyLook()
-    if not S.proxy then
+    if not Stl.proxy then
         return
     end
-    S.proxy:SetSize(ProxySize())
+    Stl.proxy:SetSize(ProxySize())
 
     -- Font/size/color live on OUR regions, but they are children of an engine
     -- aura button, so post-creation writes are denied under aura secrecy like
     -- any other write into that subtree: pcall and defer to the lift.
-    for phase, st in pairs(S.ph) do
+    for phase, st in pairs(Stl.ph) do
         if st.fs then
             if not pcall(ApplyFsLook, phase, st.fs) then
-                S.dirty = true
+                Stl.dirty = true
             end
         end
         BindPhase(phase)
@@ -702,48 +712,48 @@ end
 
 local function Build()
     local AK = CludesUI.AuraKit
-    if S.built or not AK then
+    if Stl.built or not AK then
         return
     end
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY] or { noRegions = true, width = 1, height = 1 }
     EnsureProxy()
     BuildPhase("surge", SURGE_INCLUDE)
     BuildPhase("soul", SOUL_INCLUDE)
-    S.built = true
+    Stl.built = true
 
     -- Self-guarded dirty flag: lift callbacks are never unregistered, so an
     -- idle firing must cost one boolean test.
-    if not S.liftHooked and AK.OnRestrictionLift then
-        S.liftHooked = true
+    if not Stl.liftHooked and AK.OnRestrictionLift then
+        Stl.liftHooked = true
         AK.OnRestrictionLift(function()
-            if not S.dirty then
+            if not Stl.dirty then
                 return
             end
-            S.dirty = nil
-            if ns.AS_Apply then
-                ns.AS_Apply()
+            Stl.dirty = nil
+            if mod.AS_Apply then
+                mod.AS_Apply()
             end
         end)
     end
 end
 
 local function EnsureBuilt()
-    if S.built or S.queued or S.buildErr then
+    if Stl.built or Stl.queued or Stl.buildErr then
         return
     end
     local AK = CludesUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
-    S.queued = true
+    Stl.queued = true
     AKWorker:Queue(function()
-        S.queued = nil
+        Stl.queued = nil
         -- Latched, not retried: every ERB:ApplyAll would otherwise re-enter a
         -- hard build failure and turn one broken container into an error storm.
         -- The display stays absent until a /reload; the reason sits in S.buildErr.
-        local ok, err = pcall(Build)
-        if not ok then
-            S.buildErr = err
+        local success, err = pcall(Build)
+        if not success then
+            Stl.buildErr = err
             return
         end
         ApplySettings()
@@ -758,21 +768,21 @@ end
 
 -- Sample look and text, shared with the options preview header. The font is
 -- set again only when it changed; returns the text size and whether it did.
-local function StyleSample(fs)
-    local font, flags, size, mode = GetASFont(), GetASOutline(), TextSize(), PhaseMode("surge")
-    local stamp = font .. "|" .. size .. "|" .. flags .. "|" .. mode
-    local changed = fs._asStamp ~= stamp
+local function StyleSample(fontStr)
+    local font, flags, dim, modeName = GetASFont(), GetASOutline(), TextSize(), PhaseMode("surge")
+    local stamp = font .. "|" .. dim .. "|" .. flags .. "|" .. modeName
+    local changed = fontStr._asStamp ~= stamp
     if changed then
-        CludesUI.PrimeFontShadow(fs, flags == "")
-        fs:SetFont(font, size, flags)
-        fs._asStamp = stamp
+        CludesUI.PrimeFontShadow(fontStr, flags == "")
+        fontStr:SetFont(font, dim, flags)
+        fontStr._asStamp = stamp
     end
-    fs:SetTextColor(PreColor())
-    fs:SetText(
-        mode == "gcd" and string.format(CludesUI.L("Soul in %d"), 3)
+    fontStr:SetTextColor(PreColor())
+    fontStr:SetText(
+        modeName == "gcd" and string.format(CludesUI.L("Soul in %d"), 3)
             or string.format(CludesUI.L("Soul in %.1f"), 3.2)
     )
-    return size, changed
+    return dim, changed
 end
 _G._CURB_StyleArcaneSoulSample = StyleSample
 
@@ -781,31 +791,31 @@ _G._CURB_StyleArcaneSoulSample = StyleSample
 -- proxy is Activate's: every caller runs it first.
 local function ShowSample()
     EnsureProxy()
-    local fs = S.sample
-    if not fs then
-        local host = CreateFrame("Frame", nil, UIParent)
-        host:SetAllPoints(S.proxy)
-        host:SetFrameStrata(S.proxy:GetFrameStrata())
-        host:SetFrameLevel(S.proxy:GetFrameLevel() + 10)
-        S.sampleHost = host
-        fs = host:CreateFontString(nil, "OVERLAY")
-        fs:SetPoint("CENTER", host, "CENTER", 0, 0)
-        S.sample = fs
+    local fontStr = Stl.sample
+    if not fontStr then
+        local hostRegion = CreateFrame("Frame", nil, UIParent)
+        hostRegion:SetAllPoints(Stl.proxy)
+        hostRegion:SetFrameStrata(Stl.proxy:GetFrameStrata())
+        hostRegion:SetFrameLevel(Stl.proxy:GetFrameLevel() + 10)
+        Stl.sampleHost = hostRegion
+        fontStr = hostRegion:CreateFontString(nil, "OVERLAY")
+        fontStr:SetPoint("CENTER", hostRegion, "CENTER", 0, 0)
+        Stl.sample = fontStr
     end
-    StyleSample(fs)
-    if S.demo then
-        S.demo:Hide()
+    StyleSample(fontStr)
+    if Stl.demo then
+        Stl.demo:Hide()
     end
-    fs:Show()
-    S.sampleHost:Show()
+    fontStr:Show()
+    Stl.sampleHost:Show()
 end
 
 local function HideSample()
-    if S.sampleHost then
-        S.sampleHost:Hide()
+    if Stl.sampleHost then
+        Stl.sampleHost:Hide()
     end
-    if S.demo then
-        S.demo:Hide()
+    if Stl.demo then
+        Stl.demo:Hide()
     end
 end
 
@@ -819,45 +829,45 @@ end
 local SOUL_LEN, DEMO_GAP, DEMO_GCD_AGE = 4, 1, 5
 
 -- ceil(left / gcd) with the band boundary rule of GcdBandPoints.
-local function DemoGcdCount(left, gcd)
-    local n = math.floor((left - BAND_EPS) / gcd) + 1
-    return (n < 1) and 1 or n
+local function DemoGcdCount(leftX, gcd)
+    local num = math.floor((leftX - BAND_EPS) / gcd) + 1
+    return (num < 1) and 1 or num
 end
 
-local function DemoText(fs, t, gcd)
+local function DemoText(fontStr, t, gcd)
     local thr = Thr()
     t = t % (thr + SOUL_LEN + DEMO_GAP)
     if t >= thr + SOUL_LEN then
-        fs:SetText("")
+        fontStr:SetText("")
         return
     end
     local r, g, b
     if t < thr then
         -- The hide rule owns thr itself: the first visible value is below it.
-        local left = math.min(thr - t, thr - 0.01)
+        local leftX = math.min(thr - t, thr - 0.01)
         if PhaseMode("surge") == "gcd" then
-            fs:SetFormattedText(CludesUI.L("Soul in %d"), DemoGcdCount(left, gcd))
+            fontStr:SetFormattedText(CludesUI.L("Soul in %d"), DemoGcdCount(leftX, gcd))
         else
-            fs:SetFormattedText(CludesUI.L("Soul in %.1f"), math.floor(left * 10) / 10)
+            fontStr:SetFormattedText(CludesUI.L("Soul in %.1f"), math.floor(leftX * 10) / 10)
         end
         r, g, b = PreColor()
     else
-        local left = thr + SOUL_LEN - t
+        local leftX = thr + SOUL_LEN - t
         if PhaseMode("soul") ~= "gcd" then
-            fs:SetFormattedText("%.1f", math.floor(left * 10) / 10)
+            fontStr:SetFormattedText("%.1f", math.floor(leftX * 10) / 10)
             r, g, b = SoulColor()
         else
-            local n = DemoGcdCount(left, gcd)
-            if n == 1 then
-                fs:SetText(CludesUI.L("LAST"))
+            local num = DemoGcdCount(leftX, gcd)
+            if num == 1 then
+                fontStr:SetText(CludesUI.L("LAST"))
                 r, g, b = LastColor()
             else
-                fs:SetFormattedText("%d", n)
+                fontStr:SetFormattedText("%d", num)
                 r, g, b = SoulColor()
             end
         end
     end
-    fs:SetTextColor(r, g, b, 1)
+    fontStr:SetTextColor(r, g, b, 1)
 end
 
 -- One step for a driver frame holding its font string in _fs. The GCD is the
@@ -887,13 +897,13 @@ _G._CURB_ArcaneSoulDemoOnUpdate = DemoOnUpdate
 
 local function ShowDemo()
     ShowSample()
-    if not S.demo then
-        S.demo = CreateFrame("Frame", nil, S.sampleHost)
-        S.demo:SetScript("OnUpdate", DemoOnUpdate)
+    if not Stl.demo then
+        Stl.demo = CreateFrame("Frame", nil, Stl.sampleHost)
+        Stl.demo:SetScript("OnUpdate", DemoOnUpdate)
     end
-    S.demo._fs = S.sample
-    S.demo:Show()
-    DemoTick(S.demo)
+    Stl.demo._fs = Stl.sample
+    Stl.demo:Show()
+    DemoTick(Stl.demo)
 end
 
 -------------------------------------------------------------------------------
@@ -903,8 +913,8 @@ end
 -------------------------------------------------------------------------------
 
 local function EnabledForClass()
-    local p = P()
-    return (p and p.enabled and S.class == "MAGE" and not FOREVER) and true or false
+    local p = Prm()
+    return (p and p.enabled and Stl.class == "MAGE" and not FOREVER) and true or false
 end
 
 local function GateOK()
@@ -913,25 +923,25 @@ local function GateOK()
     end
     -- Both spellings are live in this codebase (the options pages use the
     -- C_ namespace, the modules the globals); take whichever answers.
-    local idx = (
+    local position = (
         C_SpecializationInfo
         and C_SpecializationInfo.GetSpecialization
         and C_SpecializationInfo.GetSpecialization()
     ) or (GetSpecialization and GetSpecialization())
-    if not idx then
+    if not position then
         return false
     end
     local specID = (
         C_SpecializationInfo
         and C_SpecializationInfo.GetSpecializationInfo
-        and C_SpecializationInfo.GetSpecializationInfo(idx)
-    ) or (GetSpecializationInfo and GetSpecializationInfo(idx))
+        and C_SpecializationInfo.GetSpecializationInfo(position)
+    ) or (GetSpecializationInfo and GetSpecializationInfo(position))
     if specID ~= ARCANE_SPEC_ID then
         return false
     end
     if C_ClassTalents and C_ClassTalents.GetActiveHeroTalentSpec then
-        local ok, tree = pcall(C_ClassTalents.GetActiveHeroTalentSpec)
-        if ok and type(tree) == "number" and tree ~= SUNFURY_TREE_ID then
+        local success, tree = pcall(C_ClassTalents.GetActiveHeroTalentSpec)
+        if success and type(tree) == "number" and tree ~= SUNFURY_TREE_ID then
             return false
         end
     end
@@ -940,8 +950,8 @@ end
 
 local function Park()
     HideSample()
-    if S.proxy then
-        S.proxy:Hide()
+    if Stl.proxy then
+        Stl.proxy:Hide()
     end
 end
 
@@ -962,7 +972,7 @@ end
 local function Activate(placeOnly)
     EnsureProxy()
     if placeOnly then
-        S.proxy:SetSize(ProxySize())
+        Stl.proxy:SetSize(ProxySize())
     else
         ApplyLook()
     end
@@ -971,11 +981,11 @@ local function Activate(placeOnly)
         ApplyPosition()
     end
     if placeOnly then
-        S.proxy:Hide()
+        Stl.proxy:Hide()
         return
     end
-    S.proxy:Show()
-    if not S.built then
+    Stl.proxy:Show()
+    if not Stl.built then
         EnsureBuilt()
     end
 end
@@ -989,8 +999,8 @@ end
 local applyPending
 local function RunPendingApply()
     applyPending = nil
-    if ns.AS_Apply then
-        ns.AS_Apply()
+    if mod.AS_Apply then
+        mod.AS_Apply()
     end
 end
 
@@ -1004,18 +1014,18 @@ local function ScheduleApply()
     C_Timer.After(0.1, RunPendingApply)
 end
 
-local function OnGateEvent(_, event, _, _, spellID)
-    if event == "UNIT_SPELLCAST_SUCCEEDED" then
-        if spellID ~= SURGE_CAST_ID then
+local function OnGateEvent(_, evt, _, _, spellId)
+    if evt == "UNIT_SPELLCAST_SUCCEEDED" then
+        if spellId ~= SURGE_CAST_ID then
             return
         end
         -- Rebind only on a genuine change: the deadband stops haste jitter from
         -- churning the formatter cache, and a denied rebind leaves the previous
         -- (still ticking) binding in place.
-        local prev = S.gcdLen
+        local prev = Stl.gcdLen
         local len = GetGcdLen()
         if prev and len >= prev - 0.02 and len <= prev + 0.02 then
-            S.gcdLen = prev
+            Stl.gcdLen = prev
             return
         end
         BindPhase("surge")
@@ -1026,33 +1036,33 @@ local function OnGateEvent(_, event, _, _, spellID)
 end
 
 local function EnsureGateEvents()
-    if not S.ev then
-        S.ev = CreateFrame("Frame")
-        S.ev:SetScript("OnEvent", OnGateEvent)
+    if not Stl.ev then
+        Stl.ev = CreateFrame("Frame")
+        Stl.ev:SetScript("OnEvent", OnGateEvent)
     end
-    if not S.evGate then
-        S.evGate = true
-        S.ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-        S.ev:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        S.ev:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
-        S.ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
+    if not Stl.evGate then
+        Stl.evGate = true
+        Stl.ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        Stl.ev:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        Stl.ev:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+        Stl.ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
     end
     local wantCast = NeedsGcd()
-    if wantCast and not S.evCast then
-        S.evCast = true
-        S.ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-    elseif not wantCast and S.evCast then
-        S.evCast = nil
-        S.ev:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    if wantCast and not Stl.evCast then
+        Stl.evCast = true
+        Stl.ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+    elseif not wantCast and Stl.evCast then
+        Stl.evCast = nil
+        Stl.ev:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     end
 end
 
 local function DropGateEvents()
-    if not S.ev then
+    if not Stl.ev then
         return
     end
-    S.ev:UnregisterAllEvents()
-    S.evGate, S.evCast = nil, nil
+    Stl.ev:UnregisterAllEvents()
+    Stl.evGate, Stl.evCast = nil, nil
 end
 
 -------------------------------------------------------------------------------
@@ -1062,32 +1072,32 @@ end
 --  page shows for a Mage with the helper on.
 -------------------------------------------------------------------------------
 
-local function DemoOnEvent(_, event)
-    S.demoCombat = (event == "PLAYER_REGEN_DISABLED")
-    if ns.AS_Apply then
-        ns.AS_Apply()
+local function DemoOnEvent(_, evt)
+    Stl.demoCombat = (evt == "PLAYER_REGEN_DISABLED")
+    if mod.AS_Apply then
+        mod.AS_Apply()
     end
 end
 
 -- Brings S.demoApplied (what AS_Apply reads) and the combat events in line
 -- with the owner; true when that changed anything.
 local function SyncDemo()
-    local want = (S.demoOwner ~= nil) and EnabledForClass()
-    if want == (S.demoApplied or false) then
+    local wanted = (Stl.demoOwner ~= nil) and EnabledForClass()
+    if wanted == (Stl.demoApplied or false) then
         return false
     end
-    S.demoApplied = want
-    if want then
-        if not S.demoEv then
-            S.demoEv = CreateFrame("Frame")
-            S.demoEv:SetScript("OnEvent", DemoOnEvent)
+    Stl.demoApplied = wanted
+    if wanted then
+        if not Stl.demoEv then
+            Stl.demoEv = CreateFrame("Frame")
+            Stl.demoEv:SetScript("OnEvent", DemoOnEvent)
         end
-        S.demoEv:RegisterEvent("PLAYER_REGEN_DISABLED")
-        S.demoEv:RegisterEvent("PLAYER_REGEN_ENABLED")
-        S.demoCombat = InCombatLockdown() and true or nil
-    elseif S.demoEv then
-        S.demoEv:UnregisterAllEvents()
-        S.demoCombat = nil
+        Stl.demoEv:RegisterEvent("PLAYER_REGEN_DISABLED")
+        Stl.demoEv:RegisterEvent("PLAYER_REGEN_ENABLED")
+        Stl.demoCombat = InCombatLockdown() and true or nil
+    elseif Stl.demoEv then
+        Stl.demoEv:UnregisterAllEvents()
+        Stl.demoCombat = nil
     end
     return true
 end
@@ -1097,7 +1107,7 @@ end
 --  options change) and from this module's own gate events.
 -------------------------------------------------------------------------------
 
-function ns.AS_Apply()
+function mod.AS_Apply()
     SyncDemo()
     if not EnabledForClass() then
         DropGateEvents()
@@ -1113,7 +1123,7 @@ function ns.AS_Apply()
     HideSample()
     -- Options page open, out of combat: the live preview, for any Mage (as
     -- unlock mode). The engine slots only for a Mage the gate passes.
-    if S.demoApplied and not S.demoCombat then
+    if Stl.demoApplied and not Stl.demoCombat then
         Activate(not GateOK())
         ShowDemo()
         return
@@ -1127,22 +1137,22 @@ end
 
 -- Applied a frame later, once: a rebuild hides and shows the watcher in one pass.
 local function ApplyDemoState()
-    S.demoPending = nil
-    if SyncDemo() and ns.AS_Apply then
-        ns.AS_Apply()
+    Stl.demoPending = nil
+    if SyncDemo() and mod.AS_Apply then
+        mod.AS_Apply()
     end
 end
 
-_G._CURB_ArcaneSoulScreenDemo = function(owner, on)
+_G._CURB_ArcaneSoulScreenDemo = function(ownerFrame, on)
     if on then
-        S.demoOwner = owner
-    elseif S.demoOwner == owner then
-        S.demoOwner = nil
+        Stl.demoOwner = ownerFrame
+    elseif Stl.demoOwner == ownerFrame then
+        Stl.demoOwner = nil
     else
         return
     end
-    if not S.demoPending then
-        S.demoPending = true
+    if not Stl.demoPending then
+        Stl.demoPending = true
         C_Timer.After(0, ApplyDemoState)
     end
 end
@@ -1151,23 +1161,23 @@ end
 --  Unlock element
 -------------------------------------------------------------------------------
 
-function ns.AS_MakeUnlockElement(MK)
-    if not MK or S.class ~= "MAGE" or FOREVER then
+function mod.AS_MakeUnlockElement(MK)
+    if not MK or Stl.class ~= "MAGE" or FOREVER then
         return nil
     end
 
-    if not S.unlockHooked and CludesUI and CludesUI.RegisterUnlockModeListener then
-        S.unlockHooked = true
-        CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(active)
-            if active then
+    if not Stl.unlockHooked and CludesUI and CludesUI.RegisterUnlockModeListener then
+        Stl.unlockHooked = true
+        CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
+            if isActive then
                 if EnabledForClass() then
                     Activate()
                     ShowSample()
                 end
             else
                 HideSample()
-                if ns.AS_Apply then
-                    ns.AS_Apply()
+                if mod.AS_Apply then
+                    mod.AS_Apply()
                 end
             end
         end)
@@ -1199,29 +1209,34 @@ function ns.AS_MakeUnlockElement(MK)
                     Activate()
                 end
             end
-            return S.proxy
+            return Stl.proxy
         end,
         getSize = function()
             return ProxySize()
         end,
-        savePos = function(_, point, relPoint, x, y)
-            if not point then
+        savePos = function(_, anchorPoint, relPoint, posX, posY)
+            if not anchorPoint then
                 return
             end
-            local p = P()
+            local p = Prm()
             if not p then
                 return
             end
-            p.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
+            p.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
                 ApplyPosition()
             end
         end,
         loadPos = function()
-            local p = P()
-            local pos = p and p.unlockPos
-            if pos and pos.point then
-                return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+            local p = Prm()
+            local place = p and p.unlockPos
+            if place and place.point then
+                return {
+                    point = place.point,
+                    relPoint = place.relPoint or place.point,
+                    x = place.x,
+                    y = place.y,
+                }
             end
             return {
                 point = DEFAULT_POS.point,
@@ -1231,11 +1246,11 @@ function ns.AS_MakeUnlockElement(MK)
             }
         end,
         clearPos = function()
-            local p = P()
+            local p = Prm()
             if p then
                 p.unlockPos = nil
             end
-            if S.proxy then
+            if Stl.proxy then
                 ApplyPosition()
             end
         end,

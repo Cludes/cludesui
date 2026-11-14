@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  visibility with the lazy bar build, and extra bar visibility.
 --  Loads after CUI_ActionBars_Fade.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs = ipairs
@@ -16,18 +16,20 @@ local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 local RegisterAttributeDriver = RegisterAttributeDriver
 
-local EAB, EAB_VTABLE, barButtons = ns.EAB, ns.EAB_VTABLE, ns.barButtons
-local I = ns._internals
-local ALL_BARS, BAR_CONFIG, EXTRA_BARS = I.ALL_BARS, I.BAR_CONFIG, I.EXTRA_BARS
-local barFrames, blizzMovableHolders, dataBarFrames = I.barFrames, I.blizzMovableHolders, I.dataBarFrames
-local extraBarHolders, SecureSetupHandler_PrepareRefs = I.extraBarHolders, I.SecureSetupHandler_PrepareRefs
-local LayoutBar = I.LayoutBar
-local SetSecureRefsReady = I.SetSecureRefsReady
+local ABAR, EAB_VTABLE, barButtons = mod.EAB, mod.EAB_VTABLE, mod.barButtons
+local Inner = mod._internals
+local ALL_BARS, BAR_CONFIG, EXTRA_BARS = Inner.ALL_BARS, Inner.BAR_CONFIG, Inner.EXTRA_BARS
+local barFrames, blizzMovableHolders, dataBarFrames =
+    Inner.barFrames, Inner.blizzMovableHolders, Inner.dataBarFrames
+local extraBarHolders, SecureSetupHandler_PrepareRefs =
+    Inner.extraBarHolders, Inner.SecureSetupHandler_PrepareRefs
+local LayoutBar = Inner.LayoutBar
+local SetSecureRefsReady = Inner.SetSecureRefsReady
 -- Written by ApplyAll (CUI_ActionBars_ApplyAll.lua);
 -- SetIsApplyingAll hands the value to this copy.
 local _isApplyingAll = false
-I.isApplyingAllSetters[#I.isApplyingAllSetters + 1] = function(v)
-    _isApplyingAll = v
+Inner.isApplyingAllSetters[#Inner.isApplyingAllSetters + 1] = function(val)
+    _isApplyingAll = val
 end
 
 -------------------------------------------------------------------------------
@@ -44,35 +46,35 @@ end
 -- Multi-select visibility compiler: thin delegate to the shared secure driver
 -- compiler in CludesUI_Visibility.lua (one grammar for Action Bars and
 -- Unit Frames). EAB table fields, not locals.
-function EAB.BuildVisModeConjuncts(vm)
+function ABAR.BuildVisModeConjuncts(vm)
     return CludesUI.BuildVisModeConjuncts(vm)
 end
 
-function EAB.BuildVisibilityStringMulti(hidePrefix, vm)
+function ABAR.BuildVisibilityStringMulti(hidePrefix, vm)
     return CludesUI.BuildVisibilityDriverString(hidePrefix, vm)
 end
 
 -- Edges this addon watches, for the shared Any tail builder: the target/enemy axes may
 -- compile to live macro tokens because the soft-target machinery (PLAYER_SOFT_* events
 -- + the 0.1s poll) rebuilds the driver when they drift. EAB field, not a local.
-EAB.VIS_EDGES = { softTarget = true }
+ABAR.VIS_EDGES = { softTarget = true }
 
-local function BuildVisibilityString(info, s, visOverride)
+local function BuildVisibilityString(details, s, visOverride)
     -- Hide Bar When Using Gamepad compiles to the constant a Never bar gets, so
     -- every writer that builds a bar's driver here agrees (combat-gated sites,
     -- regen healers, housing/soft-target/pet rebuilds). An explicit override
     -- (toggle keybind, drag, spellbook) still wins, as it does over Never.
-    if EAB._padHide and not visOverride and s.gamepadHideBar == true then
+    if ABAR._padHide and not visOverride and s.gamepadHideBar == true then
         return "hide"
     end
-    local key = info.key
+    local key = details.key
     local vis = visOverride or s.barVisibility or "always"
     -- An applied Visibility override replaces the whole setting, the shared option
     -- lanes included. The runtime toggle keybind still wins over it, the same way it
     -- wins over the saved mode.
     local visOv = (not visOverride) and CludesUI.VisOverrideValue(s) or nil
 
-    if info.isStance and (GetNumShapeshiftForms() or 0) == 0 then
+    if details.isStance and (GetNumShapeshiftForms() or 0) == 0 then
         return "hide" -- classes/specs with no forms have no stance bar to show
     end
 
@@ -119,22 +121,22 @@ local function BuildVisibilityString(info, s, visOverride)
     -- fresh as the last driver rebuild. Explicit overrides keep the legacy path.
     if not visOverride and s.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
         local anyPrefix, anyWrap
-        if info.isPetBar then
+        if details.isPetBar then
             anyPrefix = "[petbattle] hide; "
             anyWrap = "novehicleui,pet,nooverridebar,nopossessbar"
         elseif key == "MainBar" then
             anyPrefix = "[petbattle] hide; "
-        elseif info.isStance then
+        elseif details.isStance then
             anyPrefix = "[vehicleui][petbattle] hide; "
         else
             anyPrefix = "[vehicleui][petbattle][overridebar] hide; "
         end
-        return anyPrefix .. CludesUI.BuildAnyMatchTail(s, "barVisibility", vm, anyWrap, EAB.VIS_EDGES)
+        return anyPrefix .. CludesUI.BuildAnyMatchTail(s, "barVisibility", vm, anyWrap, ABAR.VIS_EDGES)
     end
 
     -- Pet bar has unique logic: it only shows when a pet is active and
     -- the player is not in a vehicle/override/possess state.
-    if info.isPetBar then
+    if details.isPetBar then
         -- Both paths fold the mode's AND terms INTO the pet wrapper bracket. Adjacent
         -- bracket groups are OR in macro grammar, so a mode clause beside the wrapper
         -- ("[...pet...] [combat] show") matches on the pet term alone and ignores the
@@ -150,7 +152,7 @@ local function BuildVisibilityString(info, s, visOverride)
             conj, negGate = "", ""
         elseif vm then
             -- Group modes are structurally unsupported here (locked in UI, stripped by sync copies).
-            conj, negGate = EAB.BuildVisModeConjuncts(vm)
+            conj, negGate = ABAR.BuildVisModeConjuncts(vm)
         else
             conj, negGate = "", ""
             if vis == "in_combat" then
@@ -179,7 +181,7 @@ local function BuildVisibilityString(info, s, visOverride)
     local hidePrefix
     if key == "MainBar" then
         hidePrefix = "[petbattle] hide; "
-    elseif info.isStance then
+    elseif details.isStance then
         hidePrefix = "[vehicleui][petbattle] hide; "
     else
         hidePrefix = "[vehicleui][petbattle][overridebar] hide; "
@@ -196,7 +198,7 @@ local function BuildVisibilityString(info, s, visOverride)
     -- Multi-select set: compiled tail; the legacy single-mode chain below
     -- stays byte-identical for every scalar value.
     if vm then
-        return EAB.BuildVisibilityStringMulti(hidePrefix, vm)
+        return ABAR.BuildVisibilityStringMulti(hidePrefix, vm)
     end
 
     -- Append visibility mode conditions
@@ -234,7 +236,7 @@ end
 -------------------------------------------------------------------------------
 local _extraBarVisProxy -- created once, reused
 
-function EAB:ApplyExtraBarVisibility()
+function ABAR:ApplyExtraBarVisibility()
     if not _extraBarVisProxy then
         _extraBarVisProxy = CreateFrame("Frame", nil, UIParent, "SecureHandlerStateTemplate")
         _extraBarVisProxy:SetAttribute(
@@ -243,47 +245,47 @@ function EAB:ApplyExtraBarVisibility()
             self:CallMethod("OnExtraVisChanged", newstate)
         ]]
         )
-        _extraBarVisProxy.OnExtraVisChanged = function(_, state)
+        _extraBarVisProxy.OnExtraVisChanged = function(_, status)
             -- state is "hide" during pet battle, "show" otherwise
-            local shouldHide = (state == "hide")
-            for _, info in ipairs(EXTRA_BARS) do
-                if info.noManagedVisibility then
+            local shouldHide = (status == "hide")
+            for _, details in ipairs(EXTRA_BARS) do
+                if details.noManagedVisibility then
                     -- skip
                 else
-                    local key = info.key
-                    local s = EAB.db and EAB.db.profile.bars[key]
-                    if s and not EAB.VisibilityCompat.IsNever(s) then
-                        local frame
-                        if EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(info) then
-                            frame = EAB_VTABLE.ExtraBars.GetManagedNonSecureFrame(info)
-                        elseif info.isBlizzardMovable then
-                            frame = blizzMovableHolders[key]
+                    local key = details.key
+                    local s = ABAR.db and ABAR.db.profile.bars[key]
+                    if s and not ABAR.VisibilityCompat.IsNever(s) then
+                        local widget
+                        if EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(details) then
+                            widget = EAB_VTABLE.ExtraBars.GetManagedNonSecureFrame(details)
+                        elseif details.isBlizzardMovable then
+                            widget = blizzMovableHolders[key]
                         else
-                            frame = _G[info.frameName]
+                            widget = _G[details.frameName]
                         end
-                        if frame then
+                        if widget then
                             if shouldHide then
-                                if info.blizzOwnedVisibility then
+                                if details.blizzOwnedVisibility then
                                     EAB_VTABLE.ExtraBars.SetManagedBlizzOwnedSuppressed(
-                                        frame,
+                                        widget,
                                         "petbattle",
                                         true
                                     )
                                 else
-                                    frame:Hide()
+                                    widget:Hide()
                                 end
                             else
-                                if info.blizzOwnedVisibility then
+                                if details.blizzOwnedVisibility then
                                     EAB_VTABLE.ExtraBars.SetManagedBlizzOwnedSuppressed(
-                                        frame,
+                                        widget,
                                         "petbattle",
                                         false
                                     )
                                 end
-                                if EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(info) then
-                                    EAB_VTABLE.ExtraBars.ApplyManagedNonSecureVisibility(info)
+                                if EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(details) then
+                                    EAB_VTABLE.ExtraBars.ApplyManagedNonSecureVisibility(details)
                                 else
-                                    frame:Show()
+                                    widget:Show()
                                 end
                             end
                         end
@@ -298,23 +300,23 @@ end
 
 --  Combat Show/Hide, Runtime Visibility, Click-Through, Housing
 -------------------------------------------------------------------------------
-function EAB:ApplyCombatVisibility()
+function ABAR:ApplyCombatVisibility()
     if InCombatLockdown() then
-        ns._eabApplyDeferred = true
+        mod._eabApplyDeferred = true
         return
     end
-    for _, info in ipairs(ALL_BARS) do
-        local key = info.key
+    for _, details in ipairs(ALL_BARS) do
+        local key = details.key
         local s = self.db.profile.bars[key]
         if s then
-            local frame = barFrames[key]
-                or (info.isDataBar and dataBarFrames[key])
-                or (info.isBlizzardMovable and blizzMovableHolders[key])
+            local widget = barFrames[key]
+                or (details.isDataBar and dataBarFrames[key])
+                or (details.isBlizzardMovable and blizzMovableHolders[key])
                 or extraBarHolders[key]
-                or (info.visibilityOnly and _G[info.frameName])
-            if frame and not info.visibilityOnly then
+                or (details.visibilityOnly and _G[details.frameName])
+            if widget and not details.visibilityOnly then
                 local newStr
-                if EAB.VisibilityCompat.IsNever(s) then
+                if ABAR.VisibilityCompat.IsNever(s) then
                     newStr = "hide"
                 -- Under Any the compiled driver already carries both halves (Show lanes as
                 -- disjuncts, Hide lanes as leading gates, the Lua-only ones resolved at
@@ -326,12 +328,12 @@ function EAB:ApplyCombatVisibility()
                 elseif s.visibilityMatch ~= "any" and CludesUI.CheckVisibilityOptionsNonMacro(s) then
                     newStr = "hide"
                 else
-                    newStr = BuildVisibilityString(info, s)
+                    newStr = BuildVisibilityString(details, s)
                 end
                 -- Skip re-registration if driver string is unchanged (avoids blink from re-evaluation)
-                if frame._eabLastVisStr ~= newStr then
-                    frame._eabLastVisStr = newStr
-                    RegisterAttributeDriver(frame, "state-visibility", newStr)
+                if widget._eabLastVisStr ~= newStr then
+                    widget._eabLastVisStr = newStr
+                    RegisterAttributeDriver(widget, "state-visibility", newStr)
                 end
             end
         end
@@ -344,7 +346,7 @@ end
 -- Gates for the soft-target poll, so it costs nothing for users who do not use
 -- the feature. Recomputed on every visibility refresh below and once at setup,
 -- so it can never desync from the bar settings.
-function EAB:_RefreshSoftTargetGate()
+function ABAR:_RefreshSoftTargetGate()
     -- Two gates from one walk (re-run on every config apply):
     --   _anyHideNoTarget -- any bar with "Hide when No Target" (soft-target
     --   override machinery: the 0.1s poll + ImmediateSoftTargetCheck).
@@ -356,8 +358,8 @@ function EAB:_RefreshSoftTargetGate()
     --   combat/group/mount state moves; under All a mouseover bar is hover-gated for as
     --   long as the setting stands, so its alpha never changes off an edge.
     local anySoft, anyNonMacro, anyHoverGated = false, false, false
-    for _, info in ipairs(ALL_BARS) do
-        local s = self.db.profile.bars[info.key]
+    for _, details in ipairs(ALL_BARS) do
+        local s = self.db.profile.bars[details.key]
         if s then
             if s.mouseoverEnabled and s.visibilityMatch == "any" then
                 anyHoverGated = true
@@ -376,7 +378,7 @@ function EAB:_RefreshSoftTargetGate()
                 anyNonMacro = true
             end
         end
-        if not anyNonMacro and EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(info) then
+        if not anyNonMacro and EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(details) then
             anyNonMacro = true
         end
     end
@@ -391,7 +393,7 @@ end
 -- Alpha only: no Show/Hide, no driver registration, so this is safe inside combat lockdown
 -- and carries no taint exposure. Fully gated -- users with no Any-plus-mouseover bar pay
 -- one flag read per dispatcher event.
-function EAB:RefreshHoverGatedAlpha()
+function ABAR:RefreshHoverGatedAlpha()
     if not self._anyHoverGated then
         return
     end
@@ -413,24 +415,28 @@ end
 -- RefreshRuntimeVisibility, and the login keybind build runs before it, so
 -- reading the empty map there built every skipped bar one frame after load
 -- (plus a second full apply).
-ns._eabBuildSkippedBars = function()
-    if not next(ns._eabBarNoButtons) or InCombatLockdown() then
+mod._eabBuildSkippedBars = function()
+    if not next(mod._eabBarNoButtons) or InCombatLockdown() then
         return false
     end
     local built = false
-    for _, info in ipairs(BAR_CONFIG) do
-        local key = info.key
-        local frame = barFrames[key]
-        if frame and ns._eabBarNoButtons[key] and (not ns.IsNeverBar(info) or ns.BarHasBoundKeys(info)) then
-            ns.BuildBarButtons(info, frame, false)
+    for _, details in ipairs(BAR_CONFIG) do
+        local key = details.key
+        local widget = barFrames[key]
+        if
+            widget
+            and mod._eabBarNoButtons[key]
+            and (not mod.IsNeverBar(details) or mod.BarHasBoundKeys(details))
+        then
+            mod.BuildBarButtons(details, widget, false)
             LayoutBar(key)
             -- Still hidden (keybind case, or a reveal whose driver has not
             -- shown the frame yet): the hide edge already passed with no
             -- buttons, so park the new mixin event lists the way it would
             -- have. The show edge lifts this as usual.
-            if not frame:IsShown() then
-                ns._eabBarDormant[key] = nil
-                ns.ApplyBarDormancy(key, true)
+            if not widget:IsShown() then
+                mod._eabBarDormant[key] = nil
+                mod.ApplyBarDormancy(key, true)
             end
             built = true
         end
@@ -446,8 +452,8 @@ ns._eabBuildSkippedBars = function()
         -- so it finds nothing to build. On ns, not on EAB, so the
         -- CUI_UnlockMode hook on EAB.ApplyAll stays as it was.
         C_Timer.After(0, function()
-            if ns._eabApplyAll then
-                ns._eabApplyAll()
+            if mod._eabApplyAll then
+                mod._eabApplyAll()
             end
         end)
     end
@@ -461,39 +467,39 @@ end
 -- choice; ApplyAll runs them itself right after its bar loop. Lives here, not
 -- in CUI_ActionBars_Pushed.lua with the rest of Match Bar Border: it reads
 -- _isApplyingAll, a chunk local that ApplyAll rewrites.
-ns._ixBarSync = function(barKey, eligOnly)
-    local p = EAB.db and EAB.db.profile
+mod._ixBarSync = function(barId, eligOnly)
+    local p = ABAR.db and ABAR.db.profile
     if not p then
         return
     end
-    local push, hover, cast = ns._ixRolesOn(p)
+    local push, hover, cast = mod._ixRolesOn(p)
     if not (push or hover or cast) then
         return
     end
-    local elig, changed = ns._ixBarEligible(barKey)
+    local elig, changed = mod._ixBarEligible(barId)
     if elig and not eligOnly then
-        local buttons = barButtons[barKey]
-        local s = p.bars[barKey]
+        local buttons = barButtons[barId]
+        local s = p.bars[barId]
         if buttons and s then
             if InCombatLockdown() then
-                ns._eabApplyDeferred = true
+                mod._eabApplyDeferred = true
             else
-                for i = 1, #buttons do
-                    local btn = buttons[i]
-                    local fd = btn and ns._eabFD[btn]
+                for idx = 1, #buttons do
+                    local button = buttons[idx]
+                    local fd = button and mod._eabFD[button]
                     if fd and fd.ixStyled then
-                        ns._ixStyle(btn, fd, s)
+                        mod._ixStyle(button, fd, s)
                     end
                 end
             end
         end
     end
     if changed and not _isApplyingAll then
-        EAB:ApplyPushedTextures()
-        EAB:ApplyHighlightTextures()
-        EAB:ApplyCheckedTextures()
+        ABAR:ApplyPushedTextures()
+        ABAR:ApplyHighlightTextures()
+        ABAR:ApplyCheckedTextures()
     end
 end
 
 -- Entry points the files after this one re-import by name.
-I.BuildVisibilityString = BuildVisibilityString
+Inner.BuildVisibilityString = BuildVisibilityString

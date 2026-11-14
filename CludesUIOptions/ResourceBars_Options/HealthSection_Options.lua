@@ -6,8 +6,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Resource Bars options: HEALTH BAR section builder. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+if not mod then
     return
 end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
@@ -18,52 +18,54 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- Shared, context-aware HEALTH section builder. ctx.cfg() -> health config table
 -- (DB().health). Returns the y after the rendered rows. ctx.advanced is always
 -- false: the Advanced per-spec page was retired.
-function ns.ERB_BuildHealthSection(parent, y, ctx)
-    local env = ns._CURB_OptEnv
-    local DB, PP, Refresh, SmoothRefresh = env.DB, env.PP, env.Refresh, env.SmoothRefresh
+function mod.ERB_BuildHealthSection(hostFrame, posY, context)
+    local environ = mod._CURB_OptEnv
+    local SavedDB, Pix, Refresh, SmoothRefresh =
+        environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local RefreshHealth, RebuildHealth, AddFormBarBtn, AddFormTextBtn =
-        env.RefreshHealth, env.RebuildHealth, env.AddFormBarBtn, env.AddFormTextBtn
-    local BuildHashCog, BuildThresholdSettingsButton = env.BuildHashCog, env.BuildThresholdSettingsButton
+        environ.RefreshHealth, environ.RebuildHealth, environ.AddFormBarBtn, environ.AddFormTextBtn
+    local BuildHashCog, BuildThresholdSettingsButton =
+        environ.BuildHashCog, environ.BuildThresholdSettingsButton
     local W = CludesUI.Widgets
-    local _, h
-    local function cfg()
-        return ctx.cfg()
+    local _, hgt
+    local function conf()
+        return context.cfg()
     end
     local function healthOff()
-        local c = cfg()
+        local c = conf()
         return not (c and c.enabled)
     end
 
-    local hdr
-    hdr, h = W:SectionHeader(parent, "HEALTH BAR", y)
-    y = y - h
+    local heading
+    heading, hgt = W:SectionHeader(hostFrame, "HEALTH BAR", posY)
+    posY = posY - hgt
     -- Move in Unlock Mode on the title; handed back so the page's preview eye sits after it.
     local unlockJump = CludesUI.BuildSectionUnlockJump(
-        hdr,
+        heading,
         { key = "ERB_Health", disabled = healthOff, disabledTooltip = "Health Bar" }
     )
-    y = CludesUI.BlizzStyle.Note(parent, y, "resourcebars")
+    posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "resourcebars")
 
-    local _advTop = y -- content top; also used by the Simple override overlay
+    local _advTop = posY -- content top; also used by the Simple override overlay
     -- Row 1: Show Health Bar | Orientation
     local healthEnableRow
-    healthEnableRow, h = W:DualRow(parent, y, {
+    healthEnableRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Health Bar",
         getValue = function()
-            local c = cfg()
+            local c = conf()
             return c and c.enabled
         end,
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
-            local c = cfg()
+            local c = conf()
             return c and c.enabled
-        end, function(v)
-            local c = cfg()
+        end, function(val)
+            local c = conf()
             if not c then
                 return
             end
-            c.enabled = v
+            c.enabled = val
             RebuildHealth()
             CludesUI:RefreshPage()
         end),
@@ -75,22 +77,22 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
         values = { HORIZONTAL = "Horizontal", VERTICAL_UP = "Vertical Up", VERTICAL_DOWN = "Vertical Down" },
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
-            local c = cfg()
-            local p = DB()
+            local c = conf()
+            local p = SavedDB()
             return (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
         end,
-        setValue = function(v)
-            local c = cfg()
+        setValue = function(val)
+            local c = conf()
             if not c then
                 return
             end
-            c.orientation = v
+            c.orientation = val
             Refresh()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        AddFormBarBtn(healthEnableRow._leftRegion, cfg, RebuildHealth)
+        AddFormBarBtn(healthEnableRow._leftRegion, conf, RebuildHealth)
     end
 
     -- Texture lists for the health overlays (CUI_ResourceBars_HealthIndicators.lua): the shared
@@ -128,16 +130,16 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
         itemHeight = 28,
         background = function(k)
             if k and k ~= "---" and k ~= "none" then
-                return ns.HealthIndicatorTex(k)
+                return mod.HealthIndicatorTex(k)
             end
         end,
     }
 
     -- Max health reduction overlay, off by default: its texture and colour are listed while it is on.
     if not CludesUI._prebuilding then
-        local k = ns.HEALTH_INDICATORS[3]
+        local k = mod.HEALTH_INDICATORS[3]
         local function lossOff()
-            local c = cfg()
+            local c = conf()
             return not (c and c[k.show] == true)
         end
         CludesUI.BuildInlineCog(healthEnableRow._leftRegion, {
@@ -149,15 +151,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     type = "toggle",
                     label = "Show Reduction",
                     get = function()
-                        local c = cfg()
+                        local c = conf()
                         return c and c[k.show] == true
                     end,
-                    set = function(v)
-                        local c = cfg()
+                    set = function(val)
+                        local c = conf()
                         if not c then
                             return
                         end
-                        c[k.show] = v or nil
+                        c[k.show] = val or nil
                         RefreshHealth()
                     end,
                 },
@@ -168,15 +170,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     values = hiNames,
                     order = hiLossOrder,
                     get = function()
-                        local c = cfg()
+                        local c = conf()
                         return c and c[k.style] or "striped"
                     end,
-                    set = function(v)
-                        local c = cfg()
+                    set = function(val)
+                        local c = conf()
                         if not c then
                             return
                         end
-                        c[k.style] = v
+                        c[k.style] = val
                         RefreshHealth()
                     end,
                 },
@@ -186,15 +188,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     hasAlpha = true,
                     hidden = lossOff,
                     get = function()
-                        local c = cfg()
-                        local col = c and c[k.color]
-                        if col then
-                            return col.r or k.r, col.g or k.g, col.b or k.b, col.a or k.a
+                        local c = conf()
+                        local column = c and c[k.color]
+                        if column then
+                            return column.r or k.r, column.g or k.g, column.b or k.b, column.a or k.a
                         end
                         return k.r, k.g, k.b, k.a
                     end,
                     set = function(r, g, b, a)
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -212,66 +214,66 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
     if not healthOff() then
         -- Absorb Style | Absorb Opacity, then Heal Absorb Style | Heal Absorb Opacity: None turns
         -- the overlay off, the inline swatch sets its colour and the slider its opacity.
-        for _, def in ipairs({
+        for _, spec_def in ipairs({
             {
-                k = ns.HEALTH_INDICATORS[1],
+                k = mod.HEALTH_INDICATORS[1],
                 styleText = "Absorb Style",
                 opacityText = "Absorb Opacity",
                 order = hiOrder,
             },
             {
-                k = ns.HEALTH_INDICATORS[2],
+                k = mod.HEALTH_INDICATORS[2],
                 styleText = "Heal Absorb Style",
                 opacityText = "Heal Absorb Opacity",
                 order = hiHealOrder,
             },
         }) do
-            local k, styleText = def.k, def.styleText
+            local k, styleText = spec_def.k, spec_def.styleText
             local function styleOf()
-                local c = cfg()
+                local c = conf()
                 return c and c[k.style] or "none"
             end
             local function styleOff()
                 return styleOf() == "none"
             end
             local absorbRow
-            absorbRow, h = W:DualRow(parent, y, {
+            absorbRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = styleText,
                 values = hiNames,
-                order = def.order,
+                order = spec_def.order,
                 getValue = styleOf,
-                setValue = function(v)
-                    local c = cfg()
+                setValue = function(val)
+                    local c = conf()
                     if not c then
                         return
                     end
-                    c[k.style] = (v ~= "none") and v or nil
+                    c[k.style] = (val ~= "none") and val or nil
                     RefreshHealth()
                     CludesUI:RefreshPage()
                 end,
             }, {
                 type = "slider",
-                text = def.opacityText,
+                text = spec_def.opacityText,
                 min = 5,
                 max = 100,
                 step = 1,
                 disabled = styleOff,
                 disabledTooltip = styleText,
                 getValue = function()
-                    local c = cfg()
+                    local c = conf()
                     return c and c[k.opacity] or k.opacityDef
                 end,
-                setValue = function(v)
-                    local c = cfg()
+                setValue = function(val)
+                    local c = conf()
                     if not c then
                         return
                     end
-                    c[k.opacity] = v
+                    c[k.opacity] = val
                     RefreshHealth()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
             if not CludesUI._prebuilding then
                 local rgn = absorbRow._leftRegion
                 do
@@ -285,7 +287,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     end
                     local lastVertical
                     local function isVertical()
-                        local c, p = cfg(), DB()
+                        local c, p = conf(), SavedDB()
                         local ori = (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
                         return ori == "VERTICAL_UP" or ori == "VERTICAL_DOWN"
                     end
@@ -300,14 +302,14 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         return true
                     end
                     local function get(key, fallback)
-                        local c = cfg()
+                        local c = conf()
                         if c and c[key] ~= nil then
                             return c[key]
                         end
                         return fallback
                     end
-                    local function set(key, value)
-                        local c = cfg()
+                    local function group(key, value)
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -318,7 +320,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         return styleOff() or isVertical() or get("absorbEdgeMode", "overlayReverse") == "left"
                     end
                     syncLabels()
-                    local rows = {
+                    local rowList = {
                         {
                             type = "dropdown",
                             label = "Placement",
@@ -332,13 +334,13 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                                 syncLabels()
                                 return get(edgeKey, edgeDefault)
                             end,
-                            set = function(v)
-                                set(edgeKey, v)
+                            set = function(val)
+                                group(edgeKey, val)
                             end,
                         },
                     }
                     if isHeal then
-                        rows[2] = {
+                        rowList[2] = {
                             type = "slider",
                             label = "Backing Opacity",
                             min = 0,
@@ -349,29 +351,29 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             get = function()
                                 return get("healAbsorbBgOpacity", 0)
                             end,
-                            set = function(v)
-                                set("healAbsorbBgOpacity", v)
+                            set = function(val)
+                                group("healAbsorbBgOpacity", val)
                             end,
                         }
                     else
-                        rows[2] = {
+                        rowList[2] = {
                             type = "dropdown",
                             label = "Show Overshield",
                             tooltip = "Overshield is the part of an absorb exceeding your empty health. Always backfills it over current health from the shield's edge; From Left grows it from the opposite end of the bar; Never hides it.",
                             values = { never = "Never", always = "Always", fromleft = "From Left" },
                             order = { "never", "always", "fromleft" },
-                            itemDisabled = function(v)
-                                return v == "fromleft"
+                            itemDisabled = function(val)
+                                return val == "fromleft"
                                     and get("absorbEdgeMode", "overlayReverse") ~= "overlay"
                             end,
                             get = function()
                                 return get("overshieldMode", "always")
                             end,
-                            set = function(v)
-                                set("overshieldMode", v)
+                            set = function(val)
+                                group("overshieldMode", val)
                             end,
                         }
-                        rows[3] = {
+                        rowList[3] = {
                             type = "toggle",
                             label = "Blizzard Glow Line",
                             tooltip = "Adds the Blizzard shield glow line where the shield meets current health.",
@@ -386,11 +388,11 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             get = function()
                                 return get("absorbGlowLine", false) == true
                             end,
-                            set = function(v)
-                                set("absorbGlowLine", v)
+                            set = function(val)
+                                group("absorbGlowLine", val)
                             end,
                         }
-                        rows[4] = {
+                        rowList[4] = {
                             type = "dropdown",
                             label = "Glow Line Texture",
                             tooltip = "Art used for the glow line and the overshield edge.",
@@ -407,42 +409,42 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             get = function()
                                 return get("absorbGlowLineTexture", "blizzard")
                             end,
-                            set = function(v)
-                                set("absorbGlowLineTexture", v)
+                            set = function(val)
+                                group("absorbGlowLineTexture", val)
                             end,
                         }
                     end
                     local _, cogShow = CludesUI.BuildInlineCog(rgn, {
                         title = isHeal and "Heal Absorb Rendering" or "Absorb Rendering",
-                        rows = rows,
+                        rows = rowList,
                     })
                     CludesUI.RegisterWidgetRefresh(function()
                         if not syncLabels() then
                             return
                         end
-                        local popup = cogShow and cogShow._popupFrame
-                        if popup then
-                            for _, child in ipairs({ popup:GetChildren() }) do
-                                if child._invalidateMenu and not CludesUI._Pool.IsIdle(child) then
-                                    child._invalidateMenu()
+                        local dialog = cogShow and cogShow._popupFrame
+                        if dialog then
+                            for _, childFrame in ipairs({ dialog:GetChildren() }) do
+                                if childFrame._invalidateMenu and not CludesUI._Pool.IsIdle(childFrame) then
+                                    childFrame._invalidateMenu()
                                 end
                             end
                         end
                     end)
                 end
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     rgn,
                     absorbRow:GetFrameLevel() + 3,
                     function()
-                        local c = cfg()
-                        local col = c and c[k.color]
-                        if col then
-                            return col.r or k.r, col.g or k.g, col.b or k.b, 1
+                        local c = conf()
+                        local column = c and c[k.color]
+                        if column then
+                            return column.r or k.r, column.g or k.g, column.b or k.b, 1
                         end
                         return k.r, k.g, k.b, 1
                     end,
                     function(r, g, b)
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -452,20 +454,20 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     false,
                     20
                 )
-                swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = swatch
+                colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                rgn._lastInline = colorSwatch
                 CludesUI.RegisterWidgetRefresh(function()
                     updateSwatch()
                 end)
                 -- Blocked while the style is None, and for the outlined stripes, which carry their own colours.
-                local swBlock = CreateFrame("Frame", nil, swatch)
+                local swBlock = CreateFrame("Frame", nil, colorSwatch)
                 swBlock:SetAllPoints()
-                swBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                swBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
                 swBlock:EnableMouse(true)
                 swBlock:SetScript("OnEnter", function()
-                    local tip = styleOff() and CludesUI.DisabledTooltip(styleText)
+                    local tipText = styleOff() and CludesUI.DisabledTooltip(styleText)
                         or "This style uses its own colors"
-                    CludesUI.ShowWidgetTooltip(swatch, tip)
+                    CludesUI.ShowWidgetTooltip(colorSwatch, tipText)
                 end)
                 swBlock:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
@@ -473,7 +475,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                 local function UpdateSwatchDis()
                     local st = styleOf()
                     local dis = st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR"
-                    swatch:SetAlpha(dis and 0.3 or 1)
+                    colorSwatch:SetAlpha(dis and 0.3 or 1)
                     if dis then
                         swBlock:Show()
                     else
@@ -491,16 +493,16 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
         -- sync icons below are Simple-only). Orientation-aware: a vertical bar swaps the
         -- drawn axes, so the Height slider controls what the match calls Width.
         local function healthOri()
-            local c, p = cfg(), DB()
+            local c, p = conf(), SavedDB()
             return (c and c.orientation) or (p and p.general and p.general.orientation)
         end
         local function guard(propKey)
-            return ns.OrientedMatchGuard("ERB_Health", propKey, healthOri, healthOff, "Health Bar")
+            return mod.OrientedMatchGuard("ERB_Health", propKey, healthOri, healthOff, "Health Bar")
         end
         local hhDis, hhTip, hhRaw = guard("Height")
         local hwDis, hwTip, hwRaw = guard("Width")
         local healthSizeRow
-        healthSizeRow, h = W:DualRow(parent, y, {
+        healthSizeRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Height",
             min = 1,
@@ -510,15 +512,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             disabledTooltip = hhTip,
             rawTooltip = hhRaw,
             getValue = function()
-                local c = cfg()
+                local c = conf()
                 return c and c.height or 20
             end,
-            setValue = function(v)
-                local c = cfg()
+            setValue = function(val)
+                local c = conf()
                 if not c then
                     return
                 end
-                c.height = v
+                c.height = val
                 SmoothRefresh()
                 CludesUI:RefreshPage()
             end,
@@ -532,52 +534,52 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             disabledTooltip = hwTip,
             rawTooltip = hwRaw,
             getValue = function()
-                local c = cfg()
+                local c = conf()
                 return c and c.width or 220
             end,
-            setValue = function(v)
-                local c = cfg()
+            setValue = function(val)
+                local c = conf()
                 if not c then
                     return
                 end
-                c.width = v
+                c.width = val
                 SmoothRefresh()
                 CludesUI:RefreshPage()
             end,
         })
-        y = y - h
-        if not ctx.advanced and ctx.syncRows then
-            ctx.syncRows.healthHeight = healthSizeRow._leftRegion
-            ctx.syncRows.healthWidth = healthSizeRow._rightRegion
+        posY = posY - hgt
+        if not context.advanced and context.syncRows then
+            context.syncRows.healthHeight = healthSizeRow._leftRegion
+            context.syncRows.healthWidth = healthSizeRow._rightRegion
             if not CludesUI._prebuilding then
                 local rgn = healthSizeRow._leftRegion
                 CludesUI.BuildSyncIcon({
                     region = rgn,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        local v = p.health.height or 20
-                        p.secondary.pipHeight = v
-                        p.primary.height = v
+                        local val = p.health.height or 20
+                        p.secondary.pipHeight = val
+                        p.primary.height = val
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return false
                         end
-                        local v = p.health.height or 20
-                        return (p.secondary.pipHeight or 20) == v and (p.primary.height or 16) == v
+                        local val = p.health.height or 20
+                        return (p.secondary.pipHeight or 20) == val and (p.primary.height or 16) == val
                     end,
                     flashTargets = function()
                         return {
-                            ctx.syncRows.healthHeight,
-                            ctx.syncRows.classHeight,
-                            ctx.syncRows.powerHeight,
+                            context.syncRows.healthHeight,
+                            context.syncRows.classHeight,
+                            context.syncRows.powerHeight,
                         }
                     end,
                 })
@@ -588,26 +590,30 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     region = rgn,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        local v = p.health.width or 220
-                        p.secondary.pipWidth = v
-                        p.primary.width = v
+                        local val = p.health.width or 220
+                        p.secondary.pipWidth = val
+                        p.primary.width = val
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return false
                         end
-                        local v = p.health.width or 220
-                        return (p.primary.width or 220) == v and (p.secondary.pipWidth or 214) == v
+                        local val = p.health.width or 220
+                        return (p.primary.width or 220) == val and (p.secondary.pipWidth or 214) == val
                     end,
                     flashTargets = function()
-                        return { ctx.syncRows.healthWidth, ctx.syncRows.classWidth, ctx.syncRows.powerWidth }
+                        return {
+                            context.syncRows.healthWidth,
+                            context.syncRows.classWidth,
+                            context.syncRows.powerWidth,
+                        }
                     end,
                 })
             end
@@ -617,9 +623,9 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local hpBsRow
-            hpBsRow, h = W:DualRow(
-                parent,
-                y,
+            hpBsRow, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 CludesUI.BlizzStyle.Gate("resourcebars", {
                     type = "dropdown",
                     text = "Border Style",
@@ -628,26 +634,26 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     values = texValues,
                     order = texOrder,
                     getValue = function()
-                        local c = cfg()
+                        local c = conf()
                         return c and c.borderTexture or "solid"
                     end,
-                    setValue = function(v)
-                        local c = cfg()
+                    setValue = function(val)
+                        local c = conf()
                         if not c then
                             return
                         end
-                        c.borderTexture = v
+                        c.borderTexture = val
                         c.borderTextureOffset = nil
                         c.borderTextureOffsetY = nil
                         c.borderTextureShiftX = nil
                         c.borderTextureShiftY = nil
-                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
+                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
                         c.borderR = _bcol.r
                         c.borderG = _bcol.g
                         c.borderB = _bcol.b
                         c.borderA = 1
                         c.borderBehind = _bbehind
-                        local defSz = CludesUI.GetBorderDefaultSize("resourcebars", v)
+                        local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
                         if defSz then
                             c.borderSize = defSz
                         end
@@ -658,9 +664,9 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         CludesUI:RefreshPage(true)
                     end,
                 }),
-                ns.ERB_ClassicBorderRow()
-                        and ns.ERB_ClassicBorderSizeCfg(
-                            cfg,
+                mod.ERB_ClassicBorderRow()
+                        and mod.ERB_ClassicBorderSizeCfg(
+                            conf,
                             healthOff,
                             "Health Bar",
                             RebuildHealth,
@@ -673,27 +679,27 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             disabled = healthOff,
                             disabledTooltip = "Health Bar",
                             getStep = function()
-                                local c = cfg()
+                                local c = conf()
                                 return c and c.borderSize or 1
                             end,
-                            setStep = function(v)
-                                local c = cfg()
+                            setStep = function(val)
+                                local c = conf()
                                 if c then
-                                    c.borderSize = v
+                                    c.borderSize = val
                                 end
                             end,
                             getTex = function()
-                                local c = cfg()
+                                local c = conf()
                                 return c and c.borderTexture or "solid"
                             end,
                             getPx = function()
-                                local c = cfg()
+                                local c = conf()
                                 return c and c.borderSizePx
                             end,
-                            setPx = function(v)
-                                local c = cfg()
+                            setPx = function(val)
+                                local c = conf()
                                 if c then
-                                    c.borderSizePx = v
+                                    c.borderSizePx = val
                                 end
                             end,
                             apply = function()
@@ -703,15 +709,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         })
                     )
             )
-            y = y - h
+            posY = posY - hgt
             -- Width Offset | Height Offset: the textured border's outward offsets get their own row while a
             -- textured style is selected (the stock styles gate it away exactly like the row above).
             do
-                local c = cfg()
-                local tex = c and c.borderTexture or "solid"
-                if tex ~= "solid" and tex ~= "" then
+                local c = conf()
+                local texture = c and c.borderTexture or "solid"
+                if texture ~= "solid" and texture ~= "" then
                     local function step()
-                        local c = cfg()
+                        local c = conf()
                         return c and c.borderSize or 1
                     end
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -719,33 +725,33 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         disabled = healthOff,
                         disabledTooltip = "Health Bar",
                         getTex = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.borderTexture or "solid"
                         end,
                         getStep = step,
                         getSizeKey = step,
                         getPx = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.borderSizePx
                         end,
                         getX = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.borderTextureOffset
                         end,
-                        setX = function(v)
-                            local c = cfg()
+                        setX = function(val)
+                            local c = conf()
                             if c then
-                                c.borderTextureOffset = v
+                                c.borderTextureOffset = val
                             end
                         end,
                         getY = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.borderTextureOffsetY
                         end,
-                        setY = function(v)
-                            local c = cfg()
+                        setY = function(val)
+                            local c = conf()
                             if c then
-                                c.borderTextureOffsetY = v
+                                c.borderTextureOffsetY = val
                             end
                         end,
                         apply = function()
@@ -753,16 +759,16 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             CludesUI:RefreshPage()
                         end,
                     })
-                    _, h = W:DualRow(
-                        parent,
-                        y,
+                    _, hgt = W:DualRow(
+                        hostFrame,
+                        posY,
                         CludesUI.BlizzStyle.Gate("resourcebars", ocfgL),
                         CludesUI.BlizzStyle.Gate("resourcebars", ocfgR)
                     )
-                    y = y - h
+                    posY = posY - hgt
                 end
             end
-            if not CludesUI._prebuilding and not ns.ERB_ClassicBorderRow() then
+            if not CludesUI._prebuilding and not mod.ERB_ClassicBorderRow() then
                 local rgn = hpBsRow._rightRegion
                 local ctrl = rgn._control
                 -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog on the
@@ -775,7 +781,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             if healthOff() or CludesUI.BlizzStyle.Get("resourcebars") then
                                 return true
                             end
-                            local c = cfg()
+                            local c = conf()
                             return not CludesUI.RoundedStyleOK(c and c.borderTexture)
                         end,
                         disabledTooltip = function()
@@ -798,27 +804,27 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                                 max = CludesUI.ROUNDED_MAX_RADIUS,
                                 step = 1,
                                 get = function()
-                                    local c = cfg()
+                                    local c = conf()
                                     return c and c.cornerRadius or 0
                                 end,
-                                set = function(v)
-                                    local c = cfg()
+                                set = function(val)
+                                    local c = conf()
                                     if not c then
                                         return
                                     end
-                                    c.cornerRadius = v
+                                    c.cornerRadius = val
                                     RebuildHealth()
                                 end,
                             },
                         }, function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.cornerMask
-                        end, function(v)
-                            local c = cfg()
+                        end, function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.cornerMask = v
+                            c.cornerMask = val
                             RebuildHealth()
                         end),
                     })
@@ -827,14 +833,14 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     rgn,
                     hpBsRow:GetFrameLevel() + 3,
                     function()
-                        local c = cfg()
+                        local c = conf()
                         return (c and c.borderR or 0),
                             (c and c.borderG or 0),
                             (c and c.borderB or 0),
                             (c and c.borderA or 1)
                     end,
                     function(r, g, b, a)
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -845,7 +851,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     true,
                     20
                 )
-                PP.Point(borderSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+                Pix.Point(borderSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
                 rgn._lastInline = borderSwatch -- left of the Corner Radius cog
                 CludesUI.RegisterWidgetRefresh(function()
                     updateBorderSwatch()
@@ -884,13 +890,13 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = cfg()
+                                local c = conf()
                                 if not c then
                                     return 0
                                 end
-                                local v = c.borderTextureShiftX
-                                if v then
-                                    return v
+                                local val = c.borderTextureShiftX
+                                if val then
+                                    return val
                                 end
                                 local _, _, dsx = CludesUI.GetBorderDefaults(
                                     "resourcebars",
@@ -899,12 +905,12 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                                 )
                                 return dsx
                             end,
-                            set = function(v)
-                                local c = cfg()
+                            set = function(val)
+                                local c = conf()
                                 if not c then
                                     return
                                 end
-                                c.borderTextureShiftX = v == 0 and nil or v
+                                c.borderTextureShiftX = val == 0 and nil or val
                                 RebuildHealth()
                                 CludesUI:RefreshPage()
                             end,
@@ -916,13 +922,13 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = cfg()
+                                local c = conf()
                                 if not c then
                                     return 0
                                 end
-                                local v = c.borderTextureShiftY
-                                if v then
-                                    return v
+                                local val = c.borderTextureShiftY
+                                if val then
+                                    return val
                                 end
                                 local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                     "resourcebars",
@@ -931,12 +937,12 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                                 )
                                 return dsy
                             end,
-                            set = function(v)
-                                local c = cfg()
+                            set = function(val)
+                                local c = conf()
                                 if not c then
                                     return
                                 end
-                                c.borderTextureShiftY = v == 0 and nil or v
+                                c.borderTextureShiftY = val == 0 and nil or val
                                 RebuildHealth()
                                 CludesUI:RefreshPage()
                             end,
@@ -945,15 +951,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             type = "toggle",
                             label = "Show Behind",
                             get = function()
-                                local c = cfg()
+                                local c = conf()
                                 return c and c.borderBehind or false
                             end,
-                            set = function(v)
-                                local c = cfg()
+                            set = function(val)
+                                local c = conf()
                                 if not c then
                                     return
                                 end
-                                c.borderBehind = v == false and nil or v
+                                c.borderBehind = val == false and nil or val
                                 RebuildHealth()
                                 CludesUI:RefreshPage()
                             end,
@@ -961,9 +967,9 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     },
                 })
                 local function UpdateCogVis()
-                    local c = cfg()
-                    local tex = c and c.borderTexture or "solid"
-                    if tex == "solid" or ns.ERB_ClassicBorderRow() then
+                    local c = conf()
+                    local texture = c and c.borderTexture or "solid"
+                    if texture == "solid" or mod.ERB_ClassicBorderRow() then
                         cogBtn:Hide()
                     else
                         cogBtn:Show()
@@ -974,26 +980,30 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             end
             -- Cross-bar "apply to all" sync icons: Simple only
             if
-                not ctx.advanced
-                and ctx.syncRows
+                not context.advanced
+                and context.syncRows
                 and not CludesUI._prebuilding
-                and ns.ERB_ClassicBorderRow()
+                and mod.ERB_ClassicBorderRow()
             then
-                ctx.syncRows.healthBorder = hpBsRow._rightRegion
-                ns.ERB_ClassicBorderSync(hpBsRow._rightRegion, DB, "health", SmoothRefresh, function()
-                    return { ctx.syncRows.healthBorder, ctx.syncRows.classBorder, ctx.syncRows.powerBorder }
+                context.syncRows.healthBorder = hpBsRow._rightRegion
+                mod.ERB_ClassicBorderSync(hpBsRow._rightRegion, SavedDB, "health", SmoothRefresh, function()
+                    return {
+                        context.syncRows.healthBorder,
+                        context.syncRows.classBorder,
+                        context.syncRows.powerBorder,
+                    }
                 end)
-            elseif not ctx.advanced and ctx.syncRows and not CludesUI._prebuilding then
-                ctx.syncRows.healthBorder = hpBsRow._rightRegion
+            elseif not context.advanced and context.syncRows and not CludesUI._prebuilding then
+                context.syncRows.healthBorder = hpBsRow._rightRegion
                 CludesUI.BuildSyncIcon({
                     region = hpBsRow._leftRegion,
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        local was = ns.ERB_TexturedBars(p)
+                        local was = mod.ERB_TexturedBars(p)
                         local s = p.health
                         local function apply(t)
                             t.borderTexture = s.borderTexture
@@ -1006,16 +1016,16 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                             t.borderB = s.borderB
                             t.borderA = s.borderA
                             t.borderSize = s.borderSize
-                            ns.ERB_CopyBorderPx(t, s)
+                            mod.ERB_CopyBorderPx(t, s)
                             t.borderBehind = s.borderBehind
                         end
                         apply(p.secondary)
                         apply(p.primary)
                         SmoothRefresh()
-                        CludesUI:RefreshPage(ns.ERB_TexturedBars(p) ~= was)
+                        CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return false
                         end
@@ -1034,11 +1044,11 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     region = hpBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        local was = ns.ERB_TexturedBars(p)
+                        local was = mod.ERB_TexturedBars(p)
                         local r, g, b, a =
                             p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA
                         local sz = p.health.borderSize or 1
@@ -1050,23 +1060,23 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         p.secondary.borderTexture = bt
                         p.secondary.cornerRadius = cr
                         p.secondary.cornerMask = cm
-                        ns.ERB_CopyBorderPx(p.secondary, p.health)
+                        mod.ERB_CopyBorderPx(p.secondary, p.health)
                         p.primary.borderR, p.primary.borderG, p.primary.borderB, p.primary.borderA =
                             r, g, b, a
                         p.primary.borderSize = sz
                         p.primary.borderTexture = bt
                         p.primary.cornerRadius = cr
                         p.primary.cornerMask = cm
-                        ns.ERB_CopyBorderPx(p.primary, p.health)
+                        mod.ERB_CopyBorderPx(p.primary, p.health)
                         SmoothRefresh()
-                        CludesUI:RefreshPage(ns.ERB_TexturedBars(p) ~= was)
+                        CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return false
                         end
-                        local sr, sg, sb, sa, ssz =
+                        local sr, sg, scrollBar, sa, ssz =
                             p.health.borderR,
                             p.health.borderG,
                             p.health.borderB,
@@ -1079,21 +1089,21 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         local function eq(t)
                             return t.borderR == sr
                                 and t.borderG == sg
-                                and t.borderB == sb
+                                and t.borderB == scrollBar
                                 and t.borderA == sa
                                 and (t.borderSize or 1) == ssz
                                 and (t.borderTexture or "solid") == sbt
                                 and (t.cornerRadius or 0) == scr
                                 and (t.cornerMask or 15) == scm
-                                and ns.ERB_SameBorderPx(t, p.health)
+                                and mod.ERB_SameBorderPx(t, p.health)
                         end
                         return eq(p.secondary) and eq(p.primary)
                     end,
                     flashTargets = function()
                         return {
-                            ctx.syncRows.healthBorder,
-                            ctx.syncRows.classBorder,
-                            ctx.syncRows.powerBorder,
+                            context.syncRows.healthBorder,
+                            context.syncRows.classBorder,
+                            context.syncRows.powerBorder,
                         }
                     end,
                 })
@@ -1102,7 +1112,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
 
         -- Row 4: Opacity | Fill Color (gradient/custom/class). The Opacity "apply to all" sync icon is Simple-only; the gradient swatch disables while threshold coloring is on.
         local healthBorderRow
-        healthBorderRow, h = W:DualRow(parent, y, {
+        healthBorderRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Opacity",
             min = 0,
@@ -1111,15 +1121,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             disabled = healthOff,
             disabledTooltip = "Health Bar",
             getValue = function()
-                local c = cfg()
+                local c = conf()
                 return math.floor((c and c.barAlpha or 1) * 100 + 0.5)
             end,
-            setValue = function(v)
-                local c = cfg()
+            setValue = function(val)
+                local c = conf()
                 if not c then
                     return
                 end
-                c.barAlpha = v / 100
+                c.barAlpha = val / 100
                 RefreshHealth()
                 CludesUI:RefreshPage()
             end,
@@ -1134,25 +1144,25 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             disabled = healthOff,
             disabledTooltip = "Health Bar",
             getValue = function()
-                local c = cfg()
+                local c = conf()
                 return (c and c.fillOpacity) or 100
             end,
-            setValue = function(v)
-                local c = cfg()
+            setValue = function(val)
+                local c = conf()
                 if not c then
                     return
                 end
-                c.fillOpacity = v
+                c.fillOpacity = val
                 RebuildHealth()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Fill Color inline cog: gradient settings
         if not CludesUI._prebuilding then
             local rgn = healthBorderRow._rightRegion
             CludesUI.BuildInlineCog(rgn, {
                 disabled = function()
-                    local c = cfg()
+                    local c = conf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = "Health Bar",
@@ -1162,15 +1172,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         type = "toggle",
                         label = "Enable Gradient",
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.gradientEnabled
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.gradientEnabled = v
+                            c.gradientEnabled = val
                             RebuildHealth()
                             CludesUI:RefreshPage()
                         end,
@@ -1181,15 +1191,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                         order = { "HORIZONTAL", "VERTICAL" },
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.gradientDir or "HORIZONTAL"
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.gradientDir = v
+                            c.gradientDir = val
                             RebuildHealth()
                         end,
                     },
@@ -1203,39 +1213,41 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     tooltip = "Gradient End Color",
                     hasAlpha = true,
                     disabled = function()
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return true
                         end
                         if not c.enabled then
                             return true
                         end
-                        local tse = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(c)
+                        local tse = _G._CURB_ResolveThresholdSpecEntry
+                            and _G._CURB_ResolveThresholdSpecEntry(c)
                         if tse and (tse.thresholdEnabled ~= false) then
                             return true
                         end
                         return not c.gradientEnabled
                     end,
                     disabledTooltip = function()
-                        local c = cfg()
+                        local c = conf()
                         if not c or not c.enabled then
                             return "Health Bar"
                         end
-                        local tse = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(c)
+                        local tse = _G._CURB_ResolveThresholdSpecEntry
+                            and _G._CURB_ResolveThresholdSpecEntry(c)
                         if tse and (tse.thresholdEnabled ~= false) then
                             return "This option requires the threshold to be off in Threshold & Hash Lines"
                         end
                         return "Gradient"
                     end,
                     getValue = function()
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return 0.20, 0.20, 0.80, 1
                         end
                         return c.gradientR, c.gradientG, c.gradientB, c.gradientA
                     end,
                     setValue = function(r, g, b, a)
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -1247,14 +1259,14 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return 37 / 255, 193 / 255, 29 / 255, 1
                         end
                         return c.fillR, c.fillG, c.fillB, 1
                     end,
                     setValue = function(r, g, b)
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -1266,7 +1278,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         CludesUI:RefreshPage()
                     end,
                     onClick = function(self)
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -1281,7 +1293,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         end
                     end,
                     refreshAlpha = function()
-                        local c = cfg()
+                        local c = conf()
                         local isClassColored = not c or not c.customColored
                         return isClassColored and 0.3 or 1
                     end,
@@ -1298,7 +1310,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = cfg()
+                        local c = conf()
                         if not c then
                             return
                         end
@@ -1307,40 +1319,44 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = cfg()
+                        local c = conf()
                         local isClassColored = not c or not c.customColored
                         return isClassColored and 1 or 0.3
                     end,
                 },
             }, { size = 20, disabled = healthOff, disabledTooltip = "Health Bar" })
         end
-        if not ctx.advanced and ctx.syncRows and not CludesUI._prebuilding then
-            ctx.syncRows.healthOpacity = healthBorderRow._leftRegion
+        if not context.advanced and context.syncRows and not CludesUI._prebuilding then
+            context.syncRows.healthOpacity = healthBorderRow._leftRegion
             local rgn = healthBorderRow._leftRegion
             CludesUI.BuildSyncIcon({
                 region = rgn,
                 tooltip = "Apply Opacity to all Bars",
                 onClick = function()
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    local v = p.health.barAlpha or 1
-                    p.secondary.barAlpha = v
-                    p.primary.barAlpha = v
+                    local val = p.health.barAlpha or 1
+                    p.secondary.barAlpha = val
+                    p.primary.barAlpha = val
                     SmoothRefresh()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return false
                     end
-                    local v = p.health.barAlpha or 1
-                    return (p.secondary.barAlpha or 1) == v and (p.primary.barAlpha or 1) == v
+                    local val = p.health.barAlpha or 1
+                    return (p.secondary.barAlpha or 1) == val and (p.primary.barAlpha or 1) == val
                 end,
                 flashTargets = function()
-                    return { ctx.syncRows.healthOpacity, ctx.syncRows.classOpacity, ctx.syncRows.powerOpacity }
+                    return {
+                        context.syncRows.healthOpacity,
+                        context.syncRows.classOpacity,
+                        context.syncRows.powerOpacity,
+                    }
                 end,
             })
         end
@@ -1350,7 +1366,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             local rgn = healthBorderRow._leftRegion
             CludesUI.BuildInlineCog(rgn, {
                 disabled = function()
-                    local c = cfg()
+                    local c = conf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = "Health Bar",
@@ -1360,15 +1376,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         type = "toggle",
                         label = "Fade Out of Combat",
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.oocFadeEnabled == true
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.oocFadeEnabled = v
+                            c.oocFadeEnabled = val
                             RefreshHealth()
                         end,
                     },
@@ -1379,19 +1395,19 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         max = 100,
                         step = 1,
                         disabled = function()
-                            local c = cfg()
+                            local c = conf()
                             return not (c and c.oocFadeEnabled)
                         end,
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return math.floor(((c and c.oocAlpha) or 0.5) * 100 + 0.5)
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.oocAlpha = v / 100
+                            c.oocAlpha = val / 100
                             RefreshHealth()
                         end,
                     },
@@ -1400,15 +1416,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         label = "Show When Health Missing",
                         tooltip = "Shows the Health bar while your health is below full, even when its Visibility setting hides it.",
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.showWhenMissing == true
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.showWhenMissing = v
+                            c.showWhenMissing = val
                             RefreshHealth()
                         end,
                     },
@@ -1418,7 +1434,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
 
         -- Text Color disables when the bar is off OR Health Text is None
         local function healthTextDis()
-            local c = cfg()
+            local c = conf()
             if not c then
                 return false
             end
@@ -1428,7 +1444,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             return c.textFormat == "none"
         end
         local function healthTextDisTip()
-            local c = cfg()
+            local c = conf()
             if c and not c.enabled then
                 return "Health Bar"
             end
@@ -1436,129 +1452,124 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
         end
 
         local healthTextSizeRow
-        healthTextSizeRow, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "dropdown",
-                text = "Health Text",
-                disabled = healthOff,
-                disabledTooltip = "Health Bar",
-                values = {
-                    none = "None",
-                    perhp = "Health %",
-                    perhpnosign = "Health % (No Sign)",
-                    curhpshort = "Health #",
-                    curmaxhp = "Health # / Max #",
-                    perhpnum = "Health % | #",
-                    both = "Health # | %",
-                },
-                order = {
-                    "none",
-                    "---",
-                    "perhp",
-                    "perhpnosign",
-                    "curhpshort",
-                    "curmaxhp",
-                    "perhpnum",
-                    "both",
-                },
-                getValue = function()
-                    local c = cfg()
-                    return c and c.textFormat or "none"
-                end,
-                setValue = function(v)
-                    local c = cfg()
-                    if not c then
-                        return
-                    end
-                    c.textFormat = v
-                    RefreshHealth()
-                    CludesUI:RefreshPage()
-                end,
+        healthTextSizeRow, hgt = W:DualRow(hostFrame, posY, {
+            type = "dropdown",
+            text = "Health Text",
+            disabled = healthOff,
+            disabledTooltip = "Health Bar",
+            values = {
+                none = "None",
+                perhp = "Health %",
+                perhpnosign = "Health % (No Sign)",
+                curhpshort = "Health #",
+                curmaxhp = "Health # / Max #",
+                perhpnum = "Health % | #",
+                both = "Health # | %",
             },
-            {
-                type = "multiSwatch",
-                text = "Text Color",
-                disabled = healthTextDis,
-                disabledTooltip = healthTextDisTip,
-                swatches = {
-                    {
-                        tooltip = "Custom Colored",
-                        hasAlpha = true,
-                        getValue = function()
-                            local c = cfg()
-                            if not c then
-                                return 1, 1, 1, 1
-                            end
-                            return c.textFillR, c.textFillG, c.textFillB, c.textFillA
-                        end,
-                        setValue = function(r, g, b, a)
-                            local c = cfg()
-                            if not c then
-                                return
-                            end
-                            c.textFillR, c.textFillG, c.textFillB, c.textFillA = r, g, b, a
-                            RebuildHealth()
-                            SmoothRefresh()
-                        end,
-                        onClick = function(self)
-                            local c = cfg()
-                            if not c then
-                                return
-                            end
-                            if c.textCustomColored == false then
-                                c.textCustomColored = true
-                                RebuildHealth()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            local c = cfg()
-                            local isClassColored = c and c.textCustomColored == false
-                            return isClassColored and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Class Colored",
-                        getValue = function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                            if cc then
-                                return cc.r, cc.g, cc.b, 1
-                            end
+            order = {
+                "none",
+                "---",
+                "perhp",
+                "perhpnosign",
+                "curhpshort",
+                "curmaxhp",
+                "perhpnum",
+                "both",
+            },
+            getValue = function()
+                local c = conf()
+                return c and c.textFormat or "none"
+            end,
+            setValue = function(val)
+                local c = conf()
+                if not c then
+                    return
+                end
+                c.textFormat = val
+                RefreshHealth()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "multiSwatch",
+            text = "Text Color",
+            disabled = healthTextDis,
+            disabledTooltip = healthTextDisTip,
+            swatches = {
+                {
+                    tooltip = "Custom Colored",
+                    hasAlpha = true,
+                    getValue = function()
+                        local c = conf()
+                        if not c then
                             return 1, 1, 1, 1
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            local c = cfg()
-                            if not c then
-                                return
-                            end
-                            c.textCustomColored = false
+                        end
+                        return c.textFillR, c.textFillG, c.textFillB, c.textFillA
+                    end,
+                    setValue = function(r, g, b, a)
+                        local c = conf()
+                        if not c then
+                            return
+                        end
+                        c.textFillR, c.textFillG, c.textFillB, c.textFillA = r, g, b, a
+                        RebuildHealth()
+                        SmoothRefresh()
+                    end,
+                    onClick = function(self)
+                        local c = conf()
+                        if not c then
+                            return
+                        end
+                        if c.textCustomColored == false then
+                            c.textCustomColored = true
                             RebuildHealth()
                             CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            local c = cfg()
-                            local isClassColored = c and c.textCustomColored == false
-                            return isClassColored and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        local c = conf()
+                        local isClassColored = c and c.textCustomColored == false
+                        return isClassColored and 0.3 or 1
+                    end,
                 },
-            }
-        )
-        y = y - h
+                {
+                    tooltip = "Class Colored",
+                    getValue = function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        if cc then
+                            return cc.r, cc.g, cc.b, 1
+                        end
+                        return 1, 1, 1, 1
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        local c = conf()
+                        if not c then
+                            return
+                        end
+                        c.textCustomColored = false
+                        RebuildHealth()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local c = conf()
+                        local isClassColored = c and c.textCustomColored == false
+                        return isClassColored and 1 or 0.3
+                    end,
+                },
+            },
+        })
+        posY = posY - hgt
         -- Health Text inline cog: anchor + x/y offsets
         if not CludesUI._prebuilding then
             local rgn = healthTextSizeRow._leftRegion
             local cogBtn = CludesUI.BuildInlineCog(rgn, {
                 disabled = function()
-                    local c = cfg()
+                    local c = conf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = "Health Bar",
@@ -1571,15 +1582,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         order = { "LEFT", "CENTER", "RIGHT" },
                         tooltip = "Anchor the text inside the bar. The X/Y offsets move it from there.",
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.textAnchor or "CENTER"
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.textAnchor = v
+                            c.textAnchor = val
                             RefreshHealth()
                         end,
                     },
@@ -1590,15 +1601,15 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         max = 100,
                         step = 1,
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.textXOffset or 0
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.textXOffset = v
+                            c.textXOffset = val
                             RefreshHealth()
                         end,
                     },
@@ -1609,26 +1620,26 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                         max = 100,
                         step = 1,
                         get = function()
-                            local c = cfg()
+                            local c = conf()
                             return c and c.textYOffset or 0
                         end,
-                        set = function(v)
-                            local c = cfg()
+                        set = function(val)
+                            local c = conf()
                             if not c then
                                 return
                             end
-                            c.textYOffset = v
+                            c.textYOffset = val
                             RefreshHealth()
                         end,
                     },
                 },
             })
-            AddFormTextBtn(rgn, cogBtn, cfg, RefreshHealth)
+            AddFormTextBtn(rgn, cogBtn, conf, RefreshHealth)
         end
 
         -- Row 5: Text Size | Threshold & Hash Lines
         local healthColorRow
-        healthColorRow, h = W:DualRow(parent, y, {
+        healthColorRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Text Size",
             min = 8,
@@ -1637,31 +1648,31 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
             disabled = healthTextDis,
             disabledTooltip = healthTextDisTip,
             getValue = function()
-                local c = cfg()
+                local c = conf()
                 return c and c.textSize or 11
             end,
-            setValue = function(v)
-                local c = cfg()
+            setValue = function(val)
+                local c = conf()
                 if not c then
                     return
                 end
-                c.textSize = v
+                c.textSize = val
                 RefreshHealth()
             end,
         }, { type = "label", text = "Threshold & Hash Lines" })
-        y = y - h
+        posY = posY - hgt
         -- Threshold & Hash Lines editor: edits the health bar config (multi-spec, with the spec dropdown).
 
         if not CludesUI._prebuilding then
             local healthSettingsBtn = BuildThresholdSettingsButton({
                 parentRgn = healthColorRow._rightRegion,
                 getBarData = function()
-                    return cfg()
+                    return conf()
                 end,
-                pageParent = parent,
+                pageParent = hostFrame,
                 pageTopY = _advTop,
                 pageBotY = function()
-                    return y
+                    return posY
                 end,
                 refreshFn = function()
                     RefreshHealth()
@@ -1687,7 +1698,7 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
                 parentRgn = healthColorRow._rightRegion,
                 anchorTo = healthSettingsBtn,
                 getBarData = function()
-                    return DB().health
+                    return SavedDB().health
                 end,
                 refreshFn = function()
                     RebuildHealth()
@@ -1705,9 +1716,9 @@ function ns.ERB_BuildHealthSection(parent, y, ctx)
     end -- close Health Bar hidden-while-disabled gate
 
     -- Simple page: cover these controls when the current spec overrides Health in Advanced, so edits here aren't silently ignored.
-    if not ctx.advanced then
-        ns.ERB_SimpleOverrideOverlay(parent, _advTop, y, "health")
+    if not context.advanced then
+        mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, posY, "health")
     end
 
-    return y, hdr, healthEnableRow, unlockJump
+    return posY, heading, healthEnableRow, unlockJump
 end

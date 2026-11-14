@@ -6,8 +6,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  All get/set calls go to ns.db.profile (centralized store); does NOT touch nameplate rendering logic.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUINameplates"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -26,14 +26,14 @@ end
 -- border wrap): gated only while Blizzard Style renders, live under Classic
 -- WoW UI. ns fields so the page builders gain no upvalue; the gate returns
 -- cfg for inline use like BlizzStyle.Gate.
-function ns.NP_BlizzOnly()
+function mod.NP_BlizzOnly()
     return CludesUI.BlizzStyle.Active("nameplates") == "blizzard"
 end
-function ns.NP_BlizzOnlyGate(cfg)
-    if ns.NP_BlizzOnly() then
-        return CludesUI.BlizzStyle.Gate("nameplates", cfg)
+function mod.NP_BlizzOnlyGate(conf)
+    if mod.NP_BlizzOnly() then
+        return CludesUI.BlizzStyle.Gate("nameplates", conf)
     end
-    return cfg
+    return conf
 end
 
 -------------------------------------------------------------------------------
@@ -69,21 +69,21 @@ initFrame:SetScript("OnEvent", function(self)
     if not CludesUI or not CludesUI.RegisterModule then
         return
     end
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
 
     ---------------------------------------------------------------------------
     --  Local references from the addon namespace
     ---------------------------------------------------------------------------
-    local defaults = ns.defaults
-    local SetFSFont = ns.SetFSFont
-    local GetEnemyNameTextSize = ns.GetEnemyNameTextSize
-    local GetDebuffTextColor = ns.GetDebuffTextColor
-    local BAR_W = ns.BAR_W
-    local plates = ns.plates
-    local GetNPOutline = ns.GetNPOutline or function()
+    local defaultSet = mod.defaults
+    local SetFSFont = mod.SetFSFont
+    local GetEnemyNameTextSize = mod.GetEnemyNameTextSize
+    local GetDebuffTextColor = mod.GetDebuffTextColor
+    local BAR_W = mod.BAR_W
+    local plates = mod.plates
+    local GetNPOutline = mod.GetNPOutline or function()
         return "OUTLINE, SLUG"
     end
-    local GetNPUseShadow = ns.GetNPUseShadow or function()
+    local GetNPUseShadow = mod.GetNPUseShadow or function()
         return false
     end
 
@@ -93,8 +93,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- Preview font setter: the plates' own font families (SetFSFont), so a
     -- preview name, title or cast target draws as on a live plate. Every font
     -- write to a preview text goes through it, never a plain SetFont.
-    local function SetPVFont(fs, fontPath, size, flags)
-        CludesUI.ApplyModuleFontFamily(fs, fontPath, size, "nameplates", flags)
+    local function SetPVFont(fontStr, fontFile, dim, flags)
+        CludesUI.ApplyModuleFontFamily(fontStr, fontFile, dim, "nameplates", flags)
     end
     local floor = math.floor
     local NAME_RAID_MARKER_GAP = 3
@@ -102,21 +102,21 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  DB helper reads from the centralized profile via ns.db
     ---------------------------------------------------------------------------
-    local function DB()
-        return ns.db and ns.db.profile
+    local function SavedDB()
+        return mod.db and mod.db.profile
     end
 
     local function DBVal(key)
-        local db = DB()
-        if db and db[key] ~= nil then
-            return db[key]
+        local saved = SavedDB()
+        if saved and saved[key] ~= nil then
+            return saved[key]
         end
-        return defaults[key]
+        return defaultSet[key]
     end
 
     local function DBColor(key)
-        local db = DB()
-        local c = (db and db[key]) or defaults[key]
+        local saved = SavedDB()
+        local c = (saved and saved[key]) or defaultSet[key]
         return c.r, c.g, c.b
     end
 
@@ -143,8 +143,8 @@ initFrame:SetScript("OnEvent", function(self)
         "BOTTOMRIGHT",
     }
     local function GetFocusLetterAnchor()
-        local anchor = DBVal("focusLetterAnchor") or defaults.focusLetterAnchor
-        return FOCUS_LETTER_ANCHORS[anchor] and anchor or defaults.focusLetterAnchor
+        local anchor = DBVal("focusLetterAnchor") or defaultSet.focusLetterAnchor
+        return FOCUS_LETTER_ANCHORS[anchor] and anchor or defaultSet.focusLetterAnchor
     end
 
     ---------------------------------------------------------------------------
@@ -152,17 +152,17 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local function RefreshAllPlates()
         -- Color Casting Enemies repaints its tint colors (its swatches, Modify Out of Combat).
-        if ns.NP_CastTintsDirty then
-            ns.NP_CastTintsDirty()
+        if mod.NP_CastTintsDirty then
+            mod.NP_CastTintsDirty()
         end
-        for _, plate in pairs(plates) do
-            plate:UpdateHealth()
+        for _, backing in pairs(plates) do
+            backing:UpdateHealth()
         end
     end
 
     local function RefreshAllAuras()
-        if ns.NPC_ReloadAll then
-            ns.NPC_ReloadAll()
+        if mod.NPC_ReloadAll then
+            mod.NPC_ReloadAll()
         end
     end
 
@@ -171,24 +171,24 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     -- Append SharedMedia textures to the runtime ns tables first so both the dropdown AND the live nameplate rendering can resolve SM keys.
     CludesUI.AppendSharedMediaTextures(
-        ns.healthBarTextureNames or {},
-        ns.healthBarTextureOrder or {},
+        mod.healthBarTextureNames or {},
+        mod.healthBarTextureOrder or {},
         nil,
-        ns.healthBarTextures
+        mod.healthBarTextures
     )
 
     local hbtValues = {}
     local hbtOrder = {}
     do
-        local texNames = ns.healthBarTextureNames or {}
-        local texOrder2 = ns.healthBarTextureOrder or {}
+        local texNames = mod.healthBarTextureNames or {}
+        local texOrder2 = mod.healthBarTextureOrder or {}
         for _, key in ipairs(texOrder2) do
             if key ~= "---" then
                 hbtValues[key] = texNames[key] or key
             end
             hbtOrder[#hbtOrder + 1] = key
         end
-        local texLookup = ns.healthBarTextures or {}
+        local texLookup = mod.healthBarTextures or {}
         hbtValues._menuOpts = {
             itemHeight = 28,
             background = function(key)
@@ -206,7 +206,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- Nil until set: activePreview (preview frame), _previewHintFS (hint
     -- FontString), RefreshCoreEyes (Display page), _colorPreviewRefreshAll
     -- (Colors page, refreshes all color preview bars on cache restore).
-    local optState = {}
+    local optionState = {}
     local _displayHeaderBuilder -- stored for page cache re-use
     local _headerBaseH = 0 -- header height WITHOUT hint (for cache restore)
 
@@ -215,30 +215,30 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     -- Raid marker hidden by default, toggled via eye icon; optState fields so both the preview and the Display page can access them.
-    optState.showRaidMarkerPreview = false
-    optState.showClassificationPreview = false
-    optState.showQuestTextPreview = false
-    optState.showTargetGlowPreview = false
-    optState.showAbsorbPreview = false
+    optionState.showRaidMarkerPreview = false
+    optionState.showClassificationPreview = false
+    optionState.showQuestTextPreview = false
+    optionState.showTargetGlowPreview = false
+    optionState.showAbsorbPreview = false
 
     -- Transient flags: force-show indicators during slider drag
-    optState._sliderDragShowRaidMarker = false
-    optState._sliderDragShowClassification = false
+    optionState._sliderDragShowRaidMarker = false
+    optionState._sliderDragShowClassification = false
 
     -- Random preview values regenerate only on tab switch, not on profile changes or setting tweaks (those trigger fast-path RefreshPage rebuilds).
     -- optState._previewHpPct, _previewCastFill, _previewCastIconIdx: set below.
     local displayCastIcons = { 136197, 236802, 135808, 136116, 135735, 136048, 135812, 136075 }
     local function RandomizePreviewValues()
-        optState._previewHpPct = math.floor(60 + math.random() * 15)
-        optState._previewCastFill = 0.40 + math.random() * 0.20
-        optState._previewCastIconIdx = math.random(#displayCastIcons)
+        optionState._previewHpPct = math.floor(60 + math.random() * 15)
+        optionState._previewCastFill = 0.40 + math.random() * 0.20
+        optionState._previewCastIconIdx = math.random(#displayCastIcons)
     end
 
     -- Only while the preview is on screen: setters of other pages and the panel's
     -- show callback reach it from any page, and the Display page's cache restore
     -- updates it when it shows again.
     local function UpdatePreview()
-        local pv = optState.activePreview
+        local pv = optionState.activePreview
         if pv and pv.Update and pv:IsVisible() then
             pv:Update()
         end
@@ -269,7 +269,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- the default of both aura glows.
         local PAN_BORDER = CludesUI.Glows.PANDEMIC_BORDER
         npDispelGlowDesc = {
-            view = ns.NP_GLOW_VIEW,
+            view = mod.NP_GLOW_VIEW,
             host = "engine",
             extras = {
                 {
@@ -292,16 +292,16 @@ initFrame:SetScript("OnEvent", function(self)
             colorDisabledTooltip = "Color by Type (Magic/Enrage)",
             onChange = RefreshAuraGlows,
             get = function(f)
-                local d = DB()
+                local d = SavedDB()
                 if f == "style" then
-                    return ns.GetDispelGlowStyle and ns.GetDispelGlowStyle() or defaults.dispelGlowStyle
+                    return mod.GetDispelGlowStyle and mod.GetDispelGlowStyle() or defaultSet.dispelGlowStyle
                 elseif f == "mode" then
                     return d.dispelGlowColorMode or (d.dispelGlowColor and "custom" or "default")
                 end
                 return CludesUI.GlowOptions.FlatGet(d, "dispelGlow", f)
             end,
             set = function(f, a, b2, c2)
-                local d = DB()
+                local d = SavedDB()
                 if f == "style" then
                     if a == 0 then
                         d.dispelGlow = false
@@ -325,7 +325,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return DBVal("dispelGlowUseTypeColor") or false
                     end,
                     set = function(v)
-                        DB().dispelGlowUseTypeColor = v
+                        SavedDB().dispelGlowUseTypeColor = v
                         RefreshAuraGlows()
                         CludesUI:RefreshPage()
                     end,
@@ -335,43 +335,43 @@ initFrame:SetScript("OnEvent", function(self)
         -- The cast bar glows (flat <prefix>* keys, on/off in <prefix>): the cast bar is a
         -- bar host (no Shape). An edit reaches the casts already showing.
         local function RefreshCastGlows()
-            if ns.NP_RefreshCastGlows then
-                ns.NP_RefreshCastGlows()
+            if mod.NP_RefreshCastGlows then
+                mod.NP_RefreshCastGlows()
             end
         end
-        local function CastBarGlowDesc(prefix)
-            local k = CludesUI.Glows.FlatKeys(prefix)
+        local function CastBarGlowDesc(prefixText)
+            local k = CludesUI.Glows.FlatKeys(prefixText)
             return {
-                view = ns.NP_GLOW_VIEW,
+                view = mod.NP_GLOW_VIEW,
                 host = "bar",
                 caps = { mode = true, params = true, bg = true },
-                defaultColor = defaults[k.color],
+                defaultColor = defaultSet[k.color],
                 isOff = function()
-                    return DBVal(prefix) ~= true
+                    return DBVal(prefixText) ~= true
                 end,
                 onChange = RefreshCastGlows,
                 get = function(f)
-                    local d = DB()
+                    local d = SavedDB()
                     if f == "style" then
-                        return d[k.style] or defaults[k.style] or 1
+                        return d[k.style] or defaultSet[k.style] or 1
                     elseif f == "mode" then
                         return d[k.mode] or "custom"
                     end
-                    return GO.FlatGet(d, prefix, f, defaults)
+                    return GO.FlatGet(d, prefixText, f, defaultSet)
                 end,
                 set = function(f, a, b2, c2)
-                    local d = DB()
+                    local d = SavedDB()
                     if f == "style" then
                         if a == 0 then
-                            d[prefix] = false
+                            d[prefixText] = false
                         else
-                            d[prefix] = true
+                            d[prefixText] = true
                             d[k.style] = a
                         end
                     elseif f == "mode" then
                         d[k.mode] = a
                     else
-                        GO.FlatSet(d, prefix, f, a, b2, c2)
+                        GO.FlatSet(d, prefixText, f, a, b2, c2)
                     end
                 end,
             }
@@ -384,7 +384,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- the swatch color this glow always drew (the profile merge fills it
         -- with the default gold).
         npPandemicGlowDesc = {
-            view = ns.NP_GLOW_VIEW,
+            view = mod.NP_GLOW_VIEW,
             host = "engine",
             extras = {
                 {
@@ -395,22 +395,22 @@ initFrame:SetScript("OnEvent", function(self)
                 },
             },
             caps = { mode = true, params = true, bg = true },
-            defaultColor = defaults.pandemicGlowColor,
+            defaultColor = defaultSet.pandemicGlowColor,
             isOff = function()
                 return DBVal("pandemicGlow") ~= true
             end,
             onChange = RefreshAuraGlows,
             get = function(f)
-                local d = DB()
+                local d = SavedDB()
                 if f == "style" then
-                    return ns.GetPandemicGlowStyle()
+                    return mod.GetPandemicGlowStyle()
                 elseif f == "mode" then
                     return d.pandemicGlowMode or "custom"
                 end
-                return CludesUI.GlowOptions.FlatGet(d, "pandemicGlow", f, defaults)
+                return CludesUI.GlowOptions.FlatGet(d, "pandemicGlow", f, defaultSet)
             end,
             set = function(f, a, b2, c2)
-                local d = DB()
+                local d = SavedDB()
                 if f == "style" then
                     if a == 0 then
                         d.pandemicGlow = false
@@ -472,54 +472,57 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local LazyColorPreviewBar -- forward declaration; defined with the Colors page helpers below
 
-    local function BuildDisplayPage(pageName, parent, yOffset)
+    local function BuildDisplayPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         -- Set content header with preview centered above nameplate preview
         _displayHeaderBuilder = function(headerParent, headerW)
             local PRESET_HEADER_H = 0
             local PREVIEW_TOP_PAD = 5
             local PREVIEW_BOTTOM_PAD = 5
-            local previewH = ns.NPO_BuildNameplatePreview(headerParent, headerW)
+            local previewH = mod.NPO_BuildNameplatePreview(headerParent, headerW)
             -- Position the preview at the top of the header area. pf's SetScale matches the UIParent/panel ratio, so SetPoint offsets (in that scaled space) must divide by the same ratio for the correct visual offset.
-            if optState.activePreview then
-                optState.activePreview:ClearAllPoints()
+            if optionState.activePreview then
+                optionState.activePreview:ClearAllPoints()
                 local correction = UIParent:GetEffectiveScale() / headerParent:GetEffectiveScale()
-                optState.activePreview:SetPoint(
+                optionState.activePreview:SetPoint(
                     "TOP",
                     headerParent,
                     "TOP",
                     0,
                     -(PRESET_HEADER_H + PREVIEW_TOP_PAD) / correction
                 )
-                optState.activePreview._headerExtra = PRESET_HEADER_H + PREVIEW_TOP_PAD + PREVIEW_BOTTOM_PAD
+                optionState.activePreview._headerExtra = PRESET_HEADER_H
+                    + PREVIEW_TOP_PAD
+                    + PREVIEW_BOTTOM_PAD
             end
 
             -- "Click elements" hint: parented to activePreview (not headerParent directly, which orphaned it via ClearContentHeaderInner on page switch) so the FontString travels through the content-header cache; if orphaned (parent gone), nil it to recreate.
-            if optState._previewHintFS and not optState._previewHintFS:GetParent() then
-                optState._previewHintFS = nil
+            if optionState._previewHintFS and not optionState._previewHintFS:GetParent() then
+                optionState._previewHintFS = nil
             end
             local hintShown = not IsPreviewHintDismissed()
             if hintShown then
-                if not optState._previewHintFS then
+                if not optionState._previewHintFS then
                     -- Held across builds: out of the preview's frame pool for good
                     -- (its later builds only hide it with the preview).
-                    optState._previewHintFS =
-                        PoolKeep(CludesUI.MakeFont(optState.activePreview or headerParent, 11, nil, 1, 1, 1))
-                    optState._previewHintFS:SetAlpha(0.45)
-                    optState._previewHintFS:SetText(
+                    optionState._previewHintFS = PoolKeep(
+                        CludesUI.MakeFont(optionState.activePreview or headerParent, 11, nil, 1, 1, 1)
+                    )
+                    optionState._previewHintFS:SetAlpha(0.45)
+                    optionState._previewHintFS:SetText(
                         CludesUI.L("Click elements to scroll to and highlight their options")
                     )
                 end
-                optState._previewHintFS:SetParent(optState.activePreview or headerParent)
-                optState._previewHintFS:ClearAllPoints()
-                optState._previewHintFS:SetPoint("BOTTOM", headerParent, "BOTTOM", 0, 17)
-                optState._previewHintFS:SetAlpha(0.45)
-                optState._previewHintFS:Show()
-            elseif optState._previewHintFS then
-                optState._previewHintFS:Hide()
+                optionState._previewHintFS:SetParent(optionState.activePreview or headerParent)
+                optionState._previewHintFS:ClearAllPoints()
+                optionState._previewHintFS:SetPoint("BOTTOM", headerParent, "BOTTOM", 0, 17)
+                optionState._previewHintFS:SetAlpha(0.45)
+                optionState._previewHintFS:Show()
+            elseif optionState._previewHintFS then
+                optionState._previewHintFS:Hide()
             end
 
             _headerBaseH = previewH + PRESET_HEADER_H + PREVIEW_TOP_PAD + PREVIEW_BOTTOM_PAD
@@ -528,7 +531,7 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:SetContentHeader(_displayHeaderBuilder)
 
         -- Enable per-row center divider for the dual-column layout
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         -----------------------------------------------------------------------
         --  AURA POSITIONS
@@ -550,19 +553,19 @@ initFrame:SetScript("OnEvent", function(self)
             keyToElement[key] = elem
         end
 
-        local function GetElementAtPosition(pos)
-            local db = DB()
+        local function GetElementAtPosition(place)
+            local saved = SavedDB()
             for _, key in ipairs(slotKeys) do
                 -- A leftover Faction slot is ignored while Rare/Quest + Faction is on
                 -- (the badge rides the classification slot), so it is not shown here either.
-                local ignored = key == "factionSlot" and db.classificationIncludeFaction
-                if not ignored and (db[key] or defaults[key]) == pos then
+                local ignored = key == "factionSlot" and saved.classificationIncludeFaction
+                if not ignored and (saved[key] or defaultSet[key]) == place then
                     -- "Debuffs + CC" is a VIEW over the debuff slot: same position key + the debuffIncludeCC flag.
-                    if key == "debuffSlot" and db.debuffIncludeCC then
+                    if key == "debuffSlot" and saved.debuffIncludeCC then
                         return "debuffsccs"
                     end
                     -- "Rare/Quest + Faction" is a VIEW over the classification slot + classificationIncludeFaction.
-                    if key == "classificationSlot" and db.classificationIncludeFaction then
+                    if key == "classificationSlot" and saved.classificationIncludeFaction then
                         return "classfaction"
                     end
                     return keyToElement[key]
@@ -571,52 +574,52 @@ initFrame:SetScript("OnEvent", function(self)
             return "none"
         end
 
-        local function SetElementAtPosition(pos, element)
+        local function SetElementAtPosition(place, element)
             -- The Quest Objective Text view reads the Rare/Quest slot and its Quest
             -- half: fix its own keys before either can move.
-            ns.NP_MaterializeQuestText(DB())
+            mod.NP_MaterializeQuestText(SavedDB())
             if element == "none" then
                 -- Clear: find whatever element is at this position and move it to "none"
-                local db = DB()
+                local saved = SavedDB()
                 for _, key in ipairs(slotKeys) do
-                    if (db[key] or defaults[key]) == pos then
-                        db[key] = "none"
+                    if (saved[key] or defaultSet[key]) == place then
+                        saved[key] = "none"
                     end
                 end
-                if ns.NP_GetQuestTextSlot(db) == pos then
-                    db.questTextSlot = "none"
+                if mod.NP_GetQuestTextSlot(saved) == place then
+                    saved.questTextSlot = "none"
                 end
                 return
             end
             -- "Debuffs + CC" rides the debuff slot key; the two entries differ only by debuffIncludeCC.
             if element == "debuffsccs" then
-                DB().debuffIncludeCC = true
+                SavedDB().debuffIncludeCC = true
                 element = "debuffs"
             elseif element == "debuffs" then
-                DB().debuffIncludeCC = false
+                SavedDB().debuffIncludeCC = false
             end
             -- "Rare/Quest + Faction" rides the classification slot key and takes the
             -- faction badge with it (its own Faction slot is cleared); picking either
             -- one alone splits them again.
             if element == "classfaction" then
-                DB().classificationIncludeFaction = true
-                DB().factionSlot = "none"
+                SavedDB().classificationIncludeFaction = true
+                SavedDB().factionSlot = "none"
                 element = "classification"
             elseif element == "classification" or element == "faction" then
-                DB().classificationIncludeFaction = false
+                SavedDB().classificationIncludeFaction = false
             end
             local key = elementToKey[element]
             if not key then
                 return
             end
-            local db = DB()
+            local saved = SavedDB()
             -- Clear old holder of this position (set to "none"), no swapping
             for _, otherKey in ipairs(slotKeys) do
-                if otherKey ~= key and (db[otherKey] or defaults[otherKey]) == pos then
-                    db[otherKey] = "none"
+                if otherKey ~= key and (saved[otherKey] or defaultSet[otherKey]) == place then
+                    saved[otherKey] = "none"
                 end
             end
-            db[key] = pos
+            saved[key] = place
         end
 
         local slotValues = {
@@ -631,18 +634,18 @@ initFrame:SetScript("OnEvent", function(self)
         local slotOrder = { "top", "left", "right", "topleft", "topright", "bottom", "none" }
         local function RefreshAllSlots()
             RefreshAllAuras()
-            for _, plate in pairs(plates) do
-                plate:UpdateRaidIcon()
-                plate:UpdateClassification()
+            for _, backing in pairs(plates) do
+                backing:UpdateRaidIcon()
+                backing:UpdateClassification()
                 -- Rare/Quest + Faction: the classification pass already ran it.
                 if not DBVal("classificationIncludeFaction") then
-                    plate:UpdateFaction()
+                    backing:UpdateFaction()
                 end
-                if ns.ApplySlotStrata then
-                    ns.ApplySlotStrata(plate)
+                if mod.ApplySlotStrata then
+                    mod.ApplySlotStrata(backing)
                 end
             end
-            ns.NP_RefreshFriendlyFaction()
+            mod.NP_RefreshFriendlyFaction()
             UpdatePreview()
             CludesUI:RefreshPage()
         end
@@ -652,23 +655,25 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
 
         -- Exclusive slot assignment for the new Core Text Positions system.
-        local textSlotKeys = ns.textSlotKeys
+        local textSlotKeys = mod.textSlotKeys
         local function SetTextElementAtSlot(slotKey, element)
-            local db = DB()
+            local saved = SavedDB()
             -- Custom keeps its template per slot: any number of slots may show it.
             if element ~= "none" and element ~= "custom" then
                 for _, key in ipairs(textSlotKeys) do
                     if key ~= slotKey then
-                        local cur = db[key] or defaults[key]
+                        local current = saved[key] or defaultSet[key]
                         -- Name-family variants (name and the level+name combos) all render through the plate's single name FontString, so slotting any of
                         -- them evicts whichever family member occupies another slot -- same rule as an exact match. STANDALONE level has its own FontString and only exact-match evicts, so name + level can coexist.
-                        if cur == element or (ns.IsNameElement(element) and ns.IsNameElement(cur)) then
-                            db[key] = "none"
+                        if
+                            current == element or (mod.IsNameElement(element) and mod.IsNameElement(current))
+                        then
+                            saved[key] = "none"
                         end
                     end
                 end
             end
-            db[slotKey] = element
+            saved[slotKey] = element
         end
 
         local timerPosValues = {
@@ -681,34 +686,34 @@ initFrame:SetScript("OnEvent", function(self)
         }
         local timerPosOrder = { "none", "topleft", "topright", "bottomleft", "bottomright", "center" }
 
-        local function AuraDurationVal(kind, suffix)
-            local db = DB()
-            local key = kind .. "DurationText" .. suffix
+        local function AuraDurationVal(kindOf, suffix)
+            local saved = SavedDB()
+            local key = kindOf .. "DurationText" .. suffix
             local oldKey = "auraDurationText" .. suffix
-            if db and db[key] ~= nil then
-                return db[key]
+            if saved and saved[key] ~= nil then
+                return saved[key]
             end
-            if db and db[oldKey] ~= nil then
-                return db[oldKey]
+            if saved and saved[oldKey] ~= nil then
+                return saved[oldKey]
             end
-            return defaults[oldKey]
+            return defaultSet[oldKey]
         end
 
         -- Aura duration and stack text draw through the aura containers' style
         -- pass, which a settings edit re-runs (fingerprint-guarded).
         local function LiveApplyAuraText()
-            if ns.NPC_ReloadAll then
-                ns.NPC_ReloadAll()
+            if mod.NPC_ReloadAll then
+                mod.NPC_ReloadAll()
             end
         end
 
-        local atFallback = DBVal("auraTextPosition") or defaults.auraTextPosition
-        local asFallback = DBVal("auraStackTextPosition") or defaults.auraStackTextPosition
+        local atFallback = DBVal("auraTextPosition") or defaultSet.auraTextPosition
+        local asFallback = DBVal("auraStackTextPosition") or defaultSet.auraStackTextPosition
 
         -- The sections live in Nameplates_Options\DisplayLayout_Options.lua
         -- (which calls CoreTextColoring_Options.lua) and DisplayBars_Options.lua;
         -- they return the rows the click navigation below maps to.
-        local ctx = {
+        local context = {
             W = W,
             GetElementAtPosition = GetElementAtPosition,
             RefreshAllSlots = RefreshAllSlots,
@@ -723,19 +728,19 @@ initFrame:SetScript("OnEvent", function(self)
         }
         local styleHeader, coreHeader, coreRow1, coreRow2, coreRow3, coreTextHeader, textSlotCells
         local textFirstRow
-        y, styleHeader, coreHeader, coreRow1, coreRow2, coreRow3, coreTextHeader, textSlotCells, textFirstRow, ctx.ShowCogPopup, ctx.CogPopupOpen, ctx.RefreshAllTextures =
-            ns.NPO_BuildDisplayLayout(parent, y, ctx)
+        posY, styleHeader, coreHeader, coreRow1, coreRow2, coreRow3, coreTextHeader, textSlotCells, textFirstRow, context.ShowCogPopup, context.CogPopupOpen, context.RefreshAllTextures =
+            mod.NPO_BuildDisplayLayout(hostFrame, posY, context)
         local healthBarHeader, healthBarHeightRow, castBarHeightRow, showCastIconRow, castTimerRow
         local tfxHeader, targetGlowRow, classResourceHeader, classResourceSection, generalTextHeader
         local auraDurPosRow, auraTimerStackRow, spellNameRow
-        y, healthBarHeader, healthBarHeightRow, castBarHeightRow, showCastIconRow, castTimerRow, tfxHeader, targetGlowRow, classResourceHeader, classResourceSection, generalTextHeader, auraDurPosRow, auraTimerStackRow, spellNameRow =
-            ns.NPO_BuildDisplayBars(parent, y, ctx)
+        posY, healthBarHeader, healthBarHeightRow, castBarHeightRow, showCastIconRow, castTimerRow, tfxHeader, targetGlowRow, classResourceHeader, classResourceSection, generalTextHeader, auraDurPosRow, auraTimerStackRow, spellNameRow =
+            mod.NPO_BuildDisplayBars(hostFrame, posY, context)
 
         -- The search pre-build indexes rows only. The click navigation below
         -- rewires the live preview's hit overlays, which a hidden build of
         -- this page must leave alone.
         if CludesUI._prebuilding then
-            return math.abs(y)
+            return math.abs(posY)
         end
 
         -----------------------------------------------------------------------
@@ -744,7 +749,7 @@ initFrame:SetScript("OnEvent", function(self)
         local PlaySettingGlow = CludesUI.MakeSettingGlow({
             color = CludesUI.CLUDES_GREEN,
             thickness = function()
-                return PP.Scale(2)
+                return Pix.Scale(2)
             end,
             noSnap = true,
         })
@@ -755,23 +760,23 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Reverse lookup: find which Core Position slot holds a given element
         local function FindCorePosForElement(element)
-            local db = DB()
+            local saved = SavedDB()
             local key = elementToKey[element]
             if not key then
                 return nil
             end
-            local pos = db[key] or defaults[key]
-            if pos == "none" then
+            local place = saved[key] or defaultSet[key]
+            if place == "none" then
                 return nil
             end
-            return pos
+            return place
         end
 
         -- Reverse lookup: find which text slot holds a given element
         local function FindTextSlotForElement(element)
-            local db = DB()
+            local saved = SavedDB()
             for _, key in ipairs(textSlotKeys) do
-                if (db[key] or defaults[key]) == element then
+                if (saved[key] or defaultSet[key]) == element then
                     return key
                 end
             end
@@ -780,18 +785,18 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Resolve a dynamic click mapping to the Core Positions row of a position
         -- (the first row while the element sits in none)
-        local function ResolveCorePos(pos)
-            if not pos or pos == "none" then
+        local function ResolveCorePos(place)
+            if not place or place == "none" then
                 return { section = coreHeader, target = coreRow1 }
             end
-            local info = ctx.corePosToRegion[pos]
-            if not info then
+            local details = context.corePosToRegion[place]
+            if not details then
                 return { section = coreHeader, target = coreRow1 }
             end
             return {
                 section = coreHeader,
-                target = info[1],
-                slotSide = (info[2] == "_leftRegion") and "left" or "right",
+                target = details[1],
+                slotSide = (details[2] == "_leftRegion") and "left" or "right",
             }
         end
         -- The same for the slot holding an icon element
@@ -823,20 +828,20 @@ initFrame:SetScript("OnEvent", function(self)
             -- Classic WoW UI: the level in the health border's plate. Its row
             -- exists only on that style, so this resolves to nothing elsewhere.
             classicLevel = function()
-                local row = parent._classicPlateRow
-                if not row then
+                local rowFrame = hostFrame._classicPlateRow
+                if not rowFrame then
                     return nil
                 end
-                return { section = styleHeader, target = row, slotSide = "left" }
+                return { section = styleHeader, target = rowFrame, slotSide = "left" }
             end,
             -- WoW Forever: the level box, whose row exists only under that
             -- variant.
             foreverLevelBox = function()
-                local row = parent._foreverBoxRow
-                if not row then
+                local rowFrame = hostFrame._foreverBoxRow
+                if not rowFrame then
                     return nil
                 end
-                return { section = styleHeader, target = row, slotSide = "left" }
+                return { section = styleHeader, target = rowFrame, slotSide = "left" }
             end,
             debuffIcon = function()
                 return ResolveCoreMapping("debuffs")
@@ -855,65 +860,65 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             -- The Quest Objective Text's effective slot.
             questText = function()
-                return ResolveCorePos(ns.NP_GetQuestTextSlot(DB()))
+                return ResolveCorePos(mod.NP_GetQuestTextSlot(SavedDB()))
             end,
             -- Combined with Rare/Quest, the badge's settings live on that row.
             factionIcon = function()
-                if DB().classificationIncludeFaction then
+                if SavedDB().classificationIncludeFaction then
                     return ResolveCoreMapping("classification")
                 end
                 return ResolveCoreMapping("faction")
             end,
             enemyName = function()
                 -- The name FontString renders whichever name-family variant is slotted; resolve the row for any of them.
-                local slot = FindTextSlotForElement("enemyName")
+                local slotIndex = FindTextSlotForElement("enemyName")
                     or FindTextSlotForElement("levelName")
                     or FindTextSlotForElement("nameLevel")
-                if not slot then
+                if not slotIndex then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
-                local info = textSlotToRow[slot]
-                if not info then
+                local details = textSlotToRow[slotIndex]
+                if not details then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
                 return {
                     section = coreTextHeader,
-                    target = info.row,
-                    slotSide = (info.side == "_leftRegion") and "left" or "right",
+                    target = details.row,
+                    slotSide = (details.side == "_leftRegion") and "left" or "right",
                 }
             end,
             healthText = function()
-                local slot = FindTextSlotForElement("healthPercent")
+                local slotIndex = FindTextSlotForElement("healthPercent")
                     or FindTextSlotForElement("healthPercentNoSign")
                     or FindTextSlotForElement("healthPctNum")
                     or FindTextSlotForElement("healthNumPct")
                     or FindTextSlotForElement("healthPctNumDash")
                     or FindTextSlotForElement("healthNumPctDash")
-                if not slot then
+                if not slotIndex then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
-                local info = textSlotToRow[slot]
-                if not info then
+                local details = textSlotToRow[slotIndex]
+                if not details then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
                 return {
                     section = coreTextHeader,
-                    target = info.row,
-                    slotSide = (info.side == "_leftRegion") and "left" or "right",
+                    target = details.row,
+                    slotSide = (details.side == "_leftRegion") and "left" or "right",
                 }
             end,
         }
         -- Custom texts: each position's own font string, that position's row.
-        for _, slotKey in ipairs(ns.textSlotKeys) do
+        for _, slotKey in ipairs(mod.textSlotKeys) do
             dynamicMappings["custom_" .. slotKey] = function()
-                local info = textSlotToRow[slotKey]
-                if not info then
+                local details = textSlotToRow[slotKey]
+                if not details then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
                 return {
                     section = coreTextHeader,
-                    target = info.row,
-                    slotSide = (info.side == "_leftRegion") and "left" or "right",
+                    target = details.row,
+                    slotSide = (details.side == "_leftRegion") and "left" or "right",
                 }
             end
         end
@@ -924,14 +929,14 @@ initFrame:SetScript("OnEvent", function(self)
             targetOfTarget = "targetOfTarget",
         }) do
             dynamicMappings[mapKey] = function()
-                local info = textSlotToRow[FindTextSlotForElement(element) or ""]
-                if not info then
+                local details = textSlotToRow[FindTextSlotForElement(element) or ""]
+                if not details then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
                 return {
                     section = coreTextHeader,
-                    target = info.row,
-                    slotSide = (info.side == "_leftRegion") and "left" or "right",
+                    target = details.row,
+                    slotSide = (details.side == "_leftRegion") and "left" or "right",
                 }
             end
         end
@@ -950,10 +955,10 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             -- Header grows by 29 but shrinks by 39 (kept as shipped).
-            CludesUI.DismissPreviewHint(optState._previewHintFS, _headerBaseH, 29, 17)
+            CludesUI.DismissPreviewHint(optionState._previewHintFS, _headerBaseH, 29, 17)
 
-            local sf = CludesUI._scrollFrame
-            if not sf then
+            local scrollFrame = CludesUI._scrollFrame
+            if not scrollFrame then
                 return
             end
             local _, _, _, _, headerY = m.section:GetPoint(1)
@@ -964,9 +969,9 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.SmoothScrollTo(scrollPos)
             local glowTarget = m.target
             if m.slotSide and m.target then
-                local region = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-                if region then
-                    glowTarget = region
+                local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
+                if regionFrame then
+                    glowTarget = regionFrame
                 end
             end
             -- A page built again before the glow plays dressed the row anew: no glow.
@@ -981,7 +986,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Hit overlay factory for preview elements. opts (optional): hlAnchor = frame to draw the highlight around (instead of btn); hlBehindText = true draws it on a child frame at icon level+1 (text lives at icon level+2).
         local function SnapPreview(val)
-            local s = optState.activePreview and optState.activePreview:GetEffectiveScale() or 1
+            local s = optionState.activePreview and optionState.activePreview:GetEffectiveScale() or 1
             if s <= 0 then
                 s = 1
             end
@@ -992,23 +997,23 @@ initFrame:SetScript("OnEvent", function(self)
         -- preview that has none: a new one, or (page reuse) the same frames dressed
         -- again with their overlays parked by the preview's pool.
         local hitStyle = { container = true }
-        local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, opts)
-            local btn = CludesUI.CreatePreviewHitOverlay(
+        local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
+            local button = CludesUI.CreatePreviewHitOverlay(
                 element,
                 NavigateToSetting,
                 mappingKey,
                 isText,
                 frameLevelOverride,
-                opts,
+                options,
                 hitStyle
             )
-            return btn
+            return button
         end
 
         -- Create hit overlays for all interactive preview elements
         local textOverlays = {} -- collect text overlays for size refresh
-        if optState.activePreview then
-            local pv = optState.activePreview
+        if optionState.activePreview then
+            local pv = optionState.activePreview
             -- Icon overlays need to be above the icon frames (health:GetFrameLevel() + 9, or + 13 with Raise Strata)
             local iconLevel = (pv._health and pv._health:GetFrameLevel() or 20) + 15
             -- Text overlays on icons need to be above the icon overlays
@@ -1020,9 +1025,9 @@ initFrame:SetScript("OnEvent", function(self)
                     if pv._ccs[i] then
                         CreateHitOverlay(pv._ccs[i], "ccIcon", false, iconLevel, iconHlOpts)
                         if pv._ccs[i].durationText then
-                            local ov =
+                            local shade =
                                 CreateHitOverlay(pv._ccs[i].durationText, "ccDuration", true, textOnIconLevel)
-                            textOverlays[#textOverlays + 1] = ov
+                            textOverlays[#textOverlays + 1] = shade
                         end
                     end
                 end
@@ -1032,13 +1037,13 @@ initFrame:SetScript("OnEvent", function(self)
                     if pv._buffs[i] then
                         CreateHitOverlay(pv._buffs[i], "buffIcon", false, iconLevel, iconHlOpts)
                         if pv._buffs[i].durationText then
-                            local ov = CreateHitOverlay(
+                            local shade = CreateHitOverlay(
                                 pv._buffs[i].durationText,
                                 "buffDuration",
                                 true,
                                 textOnIconLevel
                             )
-                            textOverlays[#textOverlays + 1] = ov
+                            textOverlays[#textOverlays + 1] = shade
                         end
                     end
                 end
@@ -1048,18 +1053,18 @@ initFrame:SetScript("OnEvent", function(self)
                     if pv._debuffs[i] then
                         CreateHitOverlay(pv._debuffs[i], "debuffIcon", false, iconLevel, iconHlOpts)
                         if pv._debuffs[i].durationText then
-                            local ov = CreateHitOverlay(
+                            local shade = CreateHitOverlay(
                                 pv._debuffs[i].durationText,
                                 "debuffDuration",
                                 true,
                                 textOnIconLevel
                             )
-                            textOverlays[#textOverlays + 1] = ov
+                            textOverlays[#textOverlays + 1] = shade
                         end
                         if pv._debuffs[i].stackText then
-                            local ov =
+                            local shade =
                                 CreateHitOverlay(pv._debuffs[i].stackText, "auraStack", true, textOnIconLevel)
-                            textOverlays[#textOverlays + 1] = ov
+                            textOverlays[#textOverlays + 1] = shade
                         end
                     end
                 end
@@ -1107,26 +1112,26 @@ initFrame:SetScript("OnEvent", function(self)
             -- Cast spell name and target text (above the cast bar overlay)
             local castTextLevel = (castOverlayLevel or 30) + 5
             if pv._castNameFS and pv._castNameFS:IsShown() then
-                local ov = CreateHitOverlay(pv._castNameFS, "castName", true, castTextLevel)
-                textOverlays[#textOverlays + 1] = ov
+                local shade = CreateHitOverlay(pv._castNameFS, "castName", true, castTextLevel)
+                textOverlays[#textOverlays + 1] = shade
             end
             if pv._castTargetFS and pv._castTargetFS:IsShown() then
-                local ov = CreateHitOverlay(pv._castTargetFS, "castTarget", true, castTextLevel)
-                textOverlays[#textOverlays + 1] = ov
+                local shade = CreateHitOverlay(pv._castTargetFS, "castTarget", true, castTextLevel)
+                textOverlays[#textOverlays + 1] = shade
             end
             if pv._castTimerFS and pv._castTimerFS:IsShown() then
-                local ov = CreateHitOverlay(pv._castTimerFS, "castTimer", true, castTextLevel)
-                textOverlays[#textOverlays + 1] = ov
+                local shade = CreateHitOverlay(pv._castTimerFS, "castTimer", true, castTextLevel)
+                textOverlays[#textOverlays + 1] = shade
             end
             -- Enemy name text
             if pv._nameFS then
-                local ov = CreateHitOverlay(pv._nameFS, "enemyName", true)
-                textOverlays[#textOverlays + 1] = ov
+                local shade = CreateHitOverlay(pv._nameFS, "enemyName", true)
+                textOverlays[#textOverlays + 1] = shade
             end
             -- Health text
             if pv._hpText then
-                local ov = CreateHitOverlay(pv._hpText, "healthText", true)
-                textOverlays[#textOverlays + 1] = ov
+                local shade = CreateHitOverlay(pv._hpText, "healthText", true)
+                textOverlays[#textOverlays + 1] = shade
             end
             -- Health #, standalone level and Target of Target: each on its own font
             -- string, shown only while a slot holds it, so the overlay follows the
@@ -1136,27 +1141,27 @@ initFrame:SetScript("OnEvent", function(self)
                 _lvlText = "levelText",
                 _totFS = "targetOfTarget",
             }) do
-                local fs = pv[fsKey]
-                if fs then
-                    local ov = CreateHitOverlay(fs, mapKey, true)
-                    ov._syncFS = fs
-                    ov:SetShown(fs:IsShown())
-                    textOverlays[#textOverlays + 1] = ov
+                local fontStr = pv[fsKey]
+                if fontStr then
+                    local shade = CreateHitOverlay(fontStr, mapKey, true)
+                    shade._syncFS = fontStr
+                    shade:SetShown(fontStr:IsShown())
+                    textOverlays[#textOverlays + 1] = shade
                 end
             end
             -- Custom texts: one font string per position, shown while it holds one.
             if pv._customFS then
-                for slotKey, fs in pairs(pv._customFS) do
-                    local ov = CreateHitOverlay(fs, "custom_" .. slotKey, true)
-                    ov._syncFS = fs
-                    ov:SetShown(fs:IsShown())
-                    textOverlays[#textOverlays + 1] = ov
+                for slotKey, fontStr in pairs(pv._customFS) do
+                    local shade = CreateHitOverlay(fontStr, "custom_" .. slotKey, true)
+                    shade._syncFS = fontStr
+                    shade:SetShown(fontStr:IsShown())
+                    textOverlays[#textOverlays + 1] = shade
                 end
             end
             -- Classic WoW UI: the level in the health border's plate
             if pv._classicLevel then
-                local ov = CreateHitOverlay(pv._classicLevel, "classicLevel", true)
-                textOverlays[#textOverlays + 1] = ov
+                local shade = CreateHitOverlay(pv._classicLevel, "classicLevel", true)
+                textOverlays[#textOverlays + 1] = shade
             end
             -- WoW Forever: the level box (its child, so it hides with it)
             if pv._fvLevelBox then
@@ -1170,7 +1175,7 @@ initFrame:SetScript("OnEvent", function(self)
             local raidOverlay
             if pv._raidFrame then
                 raidOverlay = CreateHitOverlay(pv._raidFrame, "raidMarker")
-                if not optState.showRaidMarkerPreview then
+                if not optionState.showRaidMarkerPreview then
                     raidOverlay:Hide()
                 end
             end
@@ -1178,7 +1183,7 @@ initFrame:SetScript("OnEvent", function(self)
             local classOverlay
             if pv._classIcon then
                 classOverlay = CreateHitOverlay(pv._classIcon, "classIcon")
-                if not optState.showClassificationPreview then
+                if not optionState.showClassificationPreview then
                     classOverlay:Hide()
                 end
             end
@@ -1264,9 +1269,9 @@ initFrame:SetScript("OnEvent", function(self)
                     cpOverlay = cpBtn
                     -- Disable hover/click when class resource setting is off
                     local function UpdateCPOverlay()
-                        local off = DBVal("showClassPower") ~= true
-                        cpBtn:EnableMouse(not off)
-                        cpBtn:SetAlpha(off and 0 or 1)
+                        local offset = DBVal("showClassPower") ~= true
+                        cpBtn:EnableMouse(not offset)
+                        cpBtn:SetAlpha(offset and 0 or 1)
                     end
                     CludesUI.RegisterWidgetRefresh(UpdateCPOverlay)
                     UpdateCPOverlay()
@@ -1360,7 +1365,7 @@ initFrame:SetScript("OnEvent", function(self)
             pv._textOverlays = textOverlays
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -1383,14 +1388,14 @@ initFrame:SetScript("OnEvent", function(self)
     local function NextCastFill()
         for _ = 1, 50 do
             local v = 0.40 + math.random() * 0.20
-            local ok = true
+            local success = true
             for _, prev in ipairs(castFillUsed) do
                 if math.abs(v - prev) < 0.05 then
-                    ok = false
+                    success = false
                     break
                 end
             end
-            if ok then
+            if success then
                 castFillUsed[#castFillUsed + 1] = v
                 return v
             end
@@ -1427,7 +1432,7 @@ initFrame:SetScript("OnEvent", function(self)
             if real then
                 return real
             end
-            real = ns.NPO_MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
+            real = mod.NPO_MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             if _disabled and real._health then
                 real._health:SetAlpha(0.3)
             end
@@ -1479,30 +1484,30 @@ initFrame:SetScript("OnEvent", function(self)
                 r.RefreshHealthText()
             end
         end
-        proxy.SetDisabled = function(off)
-            _disabled = off
+        proxy.SetDisabled = function(offset)
+            _disabled = offset
             local r = Built()
             if r and r._health then
-                r._health:SetAlpha(off and 0.3 or 1)
+                r._health:SetAlpha(offset and 0.3 or 1)
             end
         end
-        proxy.SetColorOverride = function(fn)
-            _colorOverrideFn = fn
+        proxy.SetColorOverride = function(func)
+            _colorOverrideFn = func
         end
         parentRow:HookScript("OnShow", function()
             if not real then
                 EnsureBuilt()
                 -- Listed once: page reuse can hand the same bar frame to a later build.
-                local list = _G._CUI_ColorPreviews
+                local entries = _G._CUI_ColorPreviews
                 local listed = false
-                for i = 1, #list do
-                    if list[i] == real then
+                for i = 1, #entries do
+                    if entries[i] == real then
                         listed = true
                         break
                     end
                 end
                 if not listed then
-                    list[#list + 1] = real
+                    entries[#entries + 1] = real
                 end
             end
             if real and real._health then
@@ -1512,24 +1517,24 @@ initFrame:SetScript("OnEvent", function(self)
         if parentRow:IsVisible() then
             EnsureBuilt()
         end
-        local slot = colorType .. ":" .. tostring(colorKey)
-        local idx = _colorPreviewSlot[slot]
-        if not idx then
-            idx = #_colorPagePreviews + 1
-            _colorPreviewSlot[slot] = idx
+        local slotIndex = colorType .. ":" .. tostring(colorKey)
+        local position = _colorPreviewSlot[slotIndex]
+        if not position then
+            position = #_colorPagePreviews + 1
+            _colorPreviewSlot[slotIndex] = position
         end
-        _colorPagePreviews[idx] = proxy
+        _colorPagePreviews[position] = proxy
         return proxy
     end
 
     -- Textured Background: the Texture Settings cog row, shared by the Display
     -- page and Global Settings > Textures. kind: "health" or "cast"; apply: the
     -- page's own refresh after a write.
-    local function TexBgRowCfg(kind, apply)
-        local cast = kind == "cast"
+    local function TexBgRowCfg(kindOf, apply)
+        local cast = kindOf == "cast"
         local key = cast and "castTextureBg" or "healthTextureBg"
         local texKey = cast and "castBarTexture" or "healthBarTexture"
-        return ns.NP_BlizzOnlyGate({
+        return mod.NP_BlizzOnlyGate({
             type = "toggle",
             label = "Textured Background",
             tooltip = cast and "Draws the bar texture on the cast bar background too."
@@ -1543,22 +1548,22 @@ initFrame:SetScript("OnEvent", function(self)
                 return DBVal(key) == true
             end,
             set = function(v)
-                DB()[key] = v and true or false
+                SavedDB()[key] = v and true or false
                 apply()
             end,
         })
     end
     -- Shared with the page builders under Nameplates_Options\ (read in their
     -- prologs). Every field is final here: optState holds the mutable state.
-    ns._NPO_OptEnv = {
+    mod._NPO_OptEnv = {
         TexBgRowCfg = TexBgRowCfg,
         _colorPagePreviews = _colorPagePreviews,
         ADDON_NAME = ADDON_NAME,
         BAR_W = BAR_W,
-        DB = DB,
+        DB = SavedDB,
         DBColor = DBColor,
         DBVal = DBVal,
-        defaults = defaults,
+        defaults = defaultSet,
         displayCastIcons = displayCastIcons,
         FOCUS_LETTER_ANCHOR_ORDER = FOCUS_LETTER_ANCHOR_ORDER,
         FOCUS_LETTER_ANCHORS = FOCUS_LETTER_ANCHORS,
@@ -1574,11 +1579,11 @@ initFrame:SetScript("OnEvent", function(self)
         npImpCastGlowDesc = npImpCastGlowDesc,
         npPandemicGlowDesc = npPandemicGlowDesc,
         npCastTargetGlowDesc = npCastTargetGlowDesc,
-        optState = optState,
+        optState = optionState,
         pairs = pairs,
         pcall = pcall,
         plates = plates,
-        PP = PP,
+        PP = Pix,
         RandomizePreviewValues = RandomizePreviewValues,
         RefreshAllAuras = RefreshAllAuras,
         RefreshAllPlates = RefreshAllPlates,
@@ -1602,8 +1607,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- Rebuild preview when spec changes (class resource pips may appear/disappear)
     local npOptSpecFrame = CreateFrame("Frame")
     npOptSpecFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-    npOptSpecFrame:SetScript("OnEvent", function(_, _, unit)
-        if unit ~= "player" then
+    npOptSpecFrame:SetScript("OnEvent", function(_, _, unitToken)
+        if unitToken ~= "player" then
             return
         end
         -- Only invalidate + rebuild when the panel is open; invalidating while closed destroys all cached pages, causing a blank panel on next open.
@@ -1627,13 +1632,13 @@ initFrame:SetScript("OnEvent", function(self)
         title = "Nameplates",
         description = "Custom nameplate design and behavior.",
         pages = { PAGE_DISPLAY, PAGE_COLORS, PAGE_GENERAL },
-        buildPage = function(pageName, parent, yOffset)
+        buildPage = function(pageName, hostFrame, yOffset)
             if pageName == PAGE_GENERAL then
-                return ns.NPO_BuildGeneralPage(pageName, parent, yOffset)
+                return mod.NPO_BuildGeneralPage(pageName, hostFrame, yOffset)
             elseif pageName == PAGE_DISPLAY then
-                return BuildDisplayPage(pageName, parent, yOffset)
+                return BuildDisplayPage(pageName, hostFrame, yOffset)
             elseif pageName == PAGE_COLORS then
-                return ns.NPO_BuildColorsPage(pageName, parent, yOffset)
+                return mod.NPO_BuildColorsPage(pageName, hostFrame, yOffset)
             end
         end,
         getHeaderBuilder = function(pageName)
@@ -1648,7 +1653,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- page (a spec change while the panel was closed, a preset, a
                 -- Style swap), so Core Text Positions and Core Text Coloring
                 -- match the profile.
-                if optState._npTextFP and ns.NPO_TextStructureFP() ~= optState._npTextFP then
+                if optionState._npTextFP and mod.NPO_TextStructureFP() ~= optionState._npTextFP then
                     C_Timer.After(0, function()
                         if
                             CludesUI:GetActiveModule() == "CludesUINameplates"
@@ -1666,17 +1671,17 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Randomize preview values when switching TO this tab
                 RandomizePreviewValues()
                 -- Refresh the preview after cache restore
-                if optState.activePreview and optState.activePreview.Update then
-                    optState.activePreview:Update()
+                if optionState.activePreview and optionState.activePreview.Update then
+                    optionState.activePreview:Update()
                 end
                 -- Refresh hint visibility only; never recreate here.
                 local dismissed = IsPreviewHintDismissed()
-                if optState._previewHintFS then
+                if optionState._previewHintFS then
                     if dismissed then
-                        optState._previewHintFS:Hide()
+                        optionState._previewHintFS:Hide()
                     else
-                        optState._previewHintFS:SetAlpha(0.45)
-                        optState._previewHintFS:Show()
+                        optionState._previewHintFS:SetAlpha(0.45)
+                        optionState._previewHintFS:Show()
                     end
                 end
                 -- Set correct header height based on current hint state
@@ -1685,8 +1690,8 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             elseif pageName == PAGE_COLORS then
                 -- Refresh all color preview bars (colors from DB)
-                if optState._colorPreviewRefreshAll then
-                    optState._colorPreviewRefreshAll()
+                if optionState._colorPreviewRefreshAll then
+                    optionState._colorPreviewRefreshAll()
                 end
             end
         end,
@@ -1694,7 +1699,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Invalidate page cache so pages are rebuilt with fresh defaults
             CludesUI:InvalidatePageCache()
             -- Preserve user-saved presets (display + color), Custom presets, AND spec assignments across reset
-            local old = DB()
+            local old = SavedDB()
             if old then
                 local pD = old._presets
                 local oD = old._presetOrder
@@ -1751,7 +1756,7 @@ initFrame:SetScript("OnEvent", function(self)
         if msg == "reset" then
             -- The reload first (RequestReload); the reset below lands before it.
             CludesUI.RequestReload()
-            local _db = DB()
+            local _db = SavedDB()
             if _db then
                 local pD = _db._presets
                 local oD = _db._presetOrder

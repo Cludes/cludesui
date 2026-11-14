@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  4 tabs: Main Frames, Boss Frames, Mini Frames, Player Aura Bars
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIUnitFrames"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -33,14 +33,14 @@ local PAGE_UNLOCK = "Layout Mode"
 -- Essentials Threat page reads the same lists. Outside = beside the whole
 -- frame, clear of an attached portrait.
 if CludesUI.IS_FOREVER then
-    ns._threatPctPositions = {
+    mod._threatPctPositions = {
         RIGHT = "Inside Right",
         LEFT = "Inside Left",
         CENTER = "Inside Center",
         OUTRIGHT = "Outside Right",
         OUTLEFT = "Outside Left",
     }
-    ns._threatPctPositionOrder = { "RIGHT", "LEFT", "CENTER", "OUTRIGHT", "OUTLEFT" }
+    mod._threatPctPositionOrder = { "RIGHT", "LEFT", "CENTER", "OUTRIGHT", "OUTLEFT" }
 end
 
 -- Settings-cog rows of a text slot that can show a name: its Name Format.
@@ -51,31 +51,34 @@ do
     local HAS_NAME =
         { name = true, levelname = true, namelevel = true, nametotarget = true, targetname = true }
     -- A custom format shows a name when its parse holds a name tag.
-    function ns.UF_ContentShowsName(content, customFmt)
-        if content ~= "custom" then
-            return HAS_NAME[content] or false
+    function mod.UF_ContentShowsName(contentFrame, customFmt)
+        if contentFrame ~= "custom" then
+            return HAS_NAME[contentFrame] or false
         end
-        local parsed = CludesUI.TextTags.Parse(ns.UF_TextTags, customFmt)
+        local parsed = CludesUI.TextTags.Parse(mod.UF_TextTags, customFmt)
         return parsed ~= nil and (parsed.has.name or parsed.has.target) == true
     end
     -- contentKey: the slot's content key when it is not <prefix>Content
     -- (the power text's powerTextFormat). A unit frame text can show an enemy's
     -- name (target, focus, boss, a Name > Target text).
     local ENEMIES = { enemies = true }
-    function ns.UF_NameFormatRows(prefix, contentDefault, get, set, rows, contentKey)
-        local formatKey = prefix .. "NameFormat"
-        contentKey = contentKey or (prefix .. "Content")
-        local row = CludesUI.NameFormatCogRow(function()
+    function mod.UF_NameFormatRows(prefixText, contentDefault, get, set, rowList, contentKey)
+        local formatKey = prefixText .. "NameFormat"
+        contentKey = contentKey or (prefixText .. "Content")
+        local rowFrame = CludesUI.NameFormatCogRow(function()
             return get(formatKey)
         end, function(v)
             set(formatKey, v)
         end, ENEMIES)
-        row.disabled = function()
-            return not ns.UF_ContentShowsName(get(contentKey, contentDefault), get(prefix .. "CustomFormat"))
+        rowFrame.disabled = function()
+            return not mod.UF_ContentShowsName(
+                get(contentKey, contentDefault),
+                get(prefixText .. "CustomFormat")
+            )
         end
-        row.disabledTooltip = "This option only applies when the text shows a name."
-        table.insert(rows, 1, row)
-        return rows
+        rowFrame.disabledTooltip = "This option only applies when the text shows a name."
+        table.insert(rowList, 1, rowFrame)
+        return rowList
     end
 end
 
@@ -107,16 +110,16 @@ if CludesUI.IS_FOREVER then
     end
     -- The power text: a name only through a custom format, shown while
     -- its Text Position is not None (power = that position key).
-    for _, unit in ipairs({ "player", "target", "focus", "boss", "pet" }) do
+    for _, unitToken in ipairs({ "player", "target", "focus", "boss", "pet" }) do
         slots[#slots + 1] = {
-            unit = unit,
+            unit = unitToken,
             content = "powerTextFormat",
             custom = "powerTextCustomFormat",
             format = "powerTextNameFormat",
             power = "powerPercentText",
         }
     end
-    ns.UF_NAME_FORMAT_SLOTS = slots
+    mod.UF_NAME_FORMAT_SLOTS = slots
 end
 
 -- Classic WoW UI: a cast bar section's closing Border Size row (the odd last
@@ -129,14 +132,14 @@ end
 -- unit's element is "<unit>Castbar". `right` (optional) fills the free right
 -- slot. Returns the row height, 0 (nothing built) off the style, and the row.
 -- On ns: the page builders sit at the local cap.
-function ns.UF_ClassicCastBorderRow(W, parent, y, getS, key, onChange, sync, matchKey, right)
+function mod.UF_ClassicCastBorderRow(W, hostFrame, posY, getS, key, onChange, sync, matchKey, right)
     local BS = CludesUI.BlizzStyle
     if not (BS and BS.Active("unitframes") == "classic") then
         return 0
     end
-    local row, h = W:DualRow(
-        parent,
-        y,
+    local rowFrame, hgt = W:DualRow(
+        hostFrame,
+        posY,
         BS.ClassicBorderSizeCfg(function()
             local s = getS()
             return s and s[key]
@@ -154,19 +157,19 @@ function ns.UF_ClassicCastBorderRow(W, parent, y, getS, key, onChange, sync, mat
         right or CludesUI.BlankRowCfg()
     )
     if sync and not CludesUI._prebuilding then
-        local rgn = row._leftRegion
+        local rgn = rowFrame._leftRegion
         local function apply(units)
             local s = getS()
             local v = s and s[key]
-            for i = 1, #units do
-                local t = sync.db(units[i])
+            for idx = 1, #units do
+                local t = sync.db(units[idx])
                 if t then
-                    t[ns.UF_CastClassicKey(units[i])] = v
+                    t[mod.UF_CastClassicKey(units[idx])] = v
                 end
             end
             sync.reload()
-            for i = 1, #units do
-                CludesUI.ReapplyMatchPads(units[i] .. "Castbar")
+            for idx = 1, #units do
+                CludesUI.ReapplyMatchPads(units[idx] .. "Castbar")
             end
             CludesUI:RefreshPage()
         end
@@ -179,9 +182,9 @@ function ns.UF_ClassicCastBorderRow(W, parent, y, getS, key, onChange, sync, mat
             isSynced = function()
                 local s = getS()
                 local v = s and s[key]
-                for i = 1, #sync.units do
-                    local t = sync.db(sync.units[i])
-                    if t and t[ns.UF_CastClassicKey(sync.units[i])] ~= v then
+                for idx = 1, #sync.units do
+                    local t = sync.db(sync.units[idx])
+                    if t and t[mod.UF_CastClassicKey(sync.units[idx])] ~= v then
                         return false
                     end
                 end
@@ -198,14 +201,14 @@ function ns.UF_ClassicCastBorderRow(W, parent, y, getS, key, onChange, sync, mat
             },
         })
     end
-    return h, row
+    return hgt, rowFrame
 end
 
 -- The 3D portrait performance warning, shown until confirmed once (account-
 -- wide). Returns true when it asked (onConfirm runs on Enable, Cancel refreshes
 -- the page), false when it was already dismissed and the caller applies the
 -- pick itself. On ns: the page builders sit at their upvalue caps.
-function ns.UF_Ask3DPortraits(onConfirm)
+function mod.UF_Ask3DPortraits(onConfirm)
     if CludesUIDB and CludesUIDB.dismissed3DWarning then
         return false
     end
@@ -230,7 +233,7 @@ end
 
 -- Separate acknowledgement: enabling 3D does not opt into 2D model lookups.
 -- onCancel (optional) replaces the plain page refresh on Cancel.
-function ns.UF_Ask2DMirroredPortraits(onConfirm, onCancel)
+function mod.UF_Ask2DMirroredPortraits(onConfirm, onCancel)
     if CludesUIDB and CludesUIDB.dismissed2DMirrorWarning then
         return false
     end
@@ -260,19 +263,19 @@ end
 do
     local asked
     local UNITS = { "player", "target", "focus", "targettarget", "focustarget", "pet", "boss" }
-    function ns.UF_AskExisting2DMirror()
+    function mod.UF_AskExisting2DMirror()
         if asked or CludesUI._prebuilding then
             return
         end
         asked = true
-        if (CludesUIDB and CludesUIDB.dismissed2DMirrorWarning) or ns.UF_Blizz() then
+        if (CludesUIDB and CludesUIDB.dismissed2DMirrorWarning) or mod.UF_Blizz() then
             return
         end
-        local prof = ns.db and ns.db.profile
+        local prof = mod.db and mod.db.profile
         if not prof then
             return
         end
-        local on
+        local enabled
         for _, k in ipairs(UNITS) do
             local s = prof[k]
             if
@@ -281,17 +284,17 @@ do
                 and (s.portraitMode or prof.portraitMode or "2d") == "2d"
                 and (s.portraitStyle or prof.portraitStyle) ~= "none"
             then
-                on = on or {}
-                on[#on + 1] = k
+                enabled = enabled or {}
+                enabled[#enabled + 1] = k
             end
         end
-        if not on then
+        if not enabled then
             return
         end
-        ns.UF_Ask2DMirroredPortraits(function() end, function()
-            for _, k in ipairs(on) do
+        mod.UF_Ask2DMirroredPortraits(function() end, function()
+            for _, k in ipairs(enabled) do
                 prof[k].portraitMirror = false
-                ns.UF_RefreshPortraitMirror(k)
+                mod.UF_RefreshPortraitMirror(k)
             end
             CludesUI:RefreshPage()
         end)
@@ -301,12 +304,12 @@ end
 -- Dragon Strata dropdown (the PORTRAIT section's dragon cog): Match Frame
 -- keeps the frame's own strata, then the base stratas.
 do
-    local values, order = { inherit = "Match Frame" }, { "inherit" }
+    local values, sequence = { inherit = "Match Frame" }, { "inherit" }
     for _, k in ipairs(CludesUI.FRAME_STRATA_ORDER_BASE) do
         values[k] = CludesUI.FRAME_STRATA_LABELS[k]
-        order[#order + 1] = k
+        sequence[#sequence + 1] = k
     end
-    ns._ufDragonStrataValues, ns._ufDragonStrataOrder = values, order
+    mod._ufDragonStrataValues, mod._ufDragonStrataOrder = values, sequence
 end
 
 -- Custom Border Style rows of a cast bar section, built only while the Cast
@@ -321,9 +324,9 @@ end
 -- frames page only) adds the two apply-to-all links: { units, labels,
 -- current(), db(unit) }. Returns the height built. On ns: the page builders
 -- sit at their upvalue caps.
-function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
+function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, sync)
     local BS = CludesUI.BlizzStyle
-    local y0 = y
+    local y0 = posY
     local function Changed()
         onChange()
         if matchKey then
@@ -331,9 +334,9 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
         end
     end
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
-    local row, h = W:DualRow(
-        parent,
-        y,
+    local rowFrame, hgt = W:DualRow(
+        hostFrame,
+        posY,
         BS.Gate("unitframes", {
             type = "dropdown",
             text = "Border Style",
@@ -348,8 +351,8 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
                 s.castBorderStyle = v
                 s.castBorderOffsetX, s.castBorderOffsetY = nil, nil
                 s.castBorderShiftX, s.castBorderShiftY = nil, nil
-                local col, behind = CludesUI.GetBorderStyleSelectDefaults(v)
-                s.castBorderColor, s.castBorderAlpha, s.castBorderBehind = col, 1, behind
+                local column, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+                s.castBorderColor, s.castBorderAlpha, s.castBorderBehind = column, 1, behind
                 local defSz = CludesUI.GetBorderDefaultSize("unitframes", v)
                 if defSz then
                     s.castBorderSize = defSz
@@ -392,11 +395,11 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
             })
         )
     )
-    y = y - h
+    posY = posY - hgt
     -- Width Offset | Height Offset: a textured style's outward offsets.
     do
-        local tex = getS().castBorderStyle or "solid"
-        if tex ~= "solid" and tex ~= "" then
+        local texture = getS().castBorderStyle or "solid"
+        if texture ~= "solid" and texture ~= "" then
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 getTex = function()
@@ -425,12 +428,13 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
                 end,
                 apply = Changed,
             })
-            local _, oh = W:DualRow(parent, y, BS.Gate("unitframes", ocfgL), BS.Gate("unitframes", ocfgR))
-            y = y - oh
+            local _, oh =
+                W:DualRow(hostFrame, posY, BS.Gate("unitframes", ocfgL), BS.Gate("unitframes", ocfgR))
+            posY = posY - oh
         end
     end
     if CludesUI._prebuilding then
-        return y0 - y
+        return y0 - posY
     end
 
     -- Border Options cog (left): shifts and layering, textured styles only.
@@ -457,7 +461,7 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
             end
             Changed()
         end
-        local cogBtn = CludesUI.BuildInlineCog(row._leftRegion, {
+        local cogBtn = CludesUI.BuildInlineCog(rowFrame._leftRegion, {
             title = "Border Options",
             rows = {
                 {
@@ -501,8 +505,8 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
             },
         })
         local function UpdateCogVis()
-            local tex = getS().castBorderStyle or "solid"
-            if tex == "solid" or tex == "" or BS.Get("unitframes") then
+            local texture = getS().castBorderStyle or "solid"
+            if texture == "solid" or texture == "" or BS.Get("unitframes") then
                 cogBtn:Hide()
             else
                 cogBtn:Show()
@@ -514,8 +518,8 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
 
     -- Colour swatch (with alpha) on Border Size; greyed and blocked at 0.
     do
-        local rgn = row._rightRegion
-        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+        local rgn = rowFrame._rightRegion
+        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rowFrame:GetFrameLevel() + 3, function()
             local s = getS()
             local c = s.castBorderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBorderAlpha or 1
@@ -533,27 +537,27 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
             CludesUI.HideWidgetTooltip()
         end)
         rgn._lastInline = sw
-        local block = CreateFrame("Frame", nil, sw)
-        block:SetAllPoints()
-        block:SetFrameLevel(sw:GetFrameLevel() + 10)
-        block:EnableMouse(true)
-        block:SetScript("OnEnter", function()
+        local blockData = CreateFrame("Frame", nil, sw)
+        blockData:SetAllPoints()
+        blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
+        blockData:EnableMouse(true)
+        blockData:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 sw,
                 CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
             )
         end)
-        block:SetScript("OnLeave", function()
+        blockData:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSw()
             updateSw()
             if (getS().castBorderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
-                block:Show()
+                blockData:Show()
             else
                 sw:SetAlpha(1)
-                block:Hide()
+                blockData:Hide()
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSw)
@@ -565,64 +569,65 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
     -- exact px, colour and style. Both carry the opt-in itself.
     if sync then
         local function CopyTo(units, withSize)
-            local src = getS()
-            for i = 1, #units do
-                local d = sync.db(units[i])
-                if d and d ~= src then
-                    d.castBorderCustom = src.castBorderCustom
-                    d.castBorderStyle = src.castBorderStyle
-                    d.castBorderOffsetX, d.castBorderOffsetY = src.castBorderOffsetX, src.castBorderOffsetY
-                    d.castBorderShiftX, d.castBorderShiftY = src.castBorderShiftX, src.castBorderShiftY
-                    local c = src.castBorderColor
+            local source = getS()
+            for idx = 1, #units do
+                local d = sync.db(units[idx])
+                if d and d ~= source then
+                    d.castBorderCustom = source.castBorderCustom
+                    d.castBorderStyle = source.castBorderStyle
+                    d.castBorderOffsetX, d.castBorderOffsetY =
+                        source.castBorderOffsetX, source.castBorderOffsetY
+                    d.castBorderShiftX, d.castBorderShiftY = source.castBorderShiftX, source.castBorderShiftY
+                    local c = source.castBorderColor
                     if c then
                         d.castBorderColor = { r = c.r, g = c.g, b = c.b }
                     end
-                    d.castBorderAlpha = src.castBorderAlpha
+                    d.castBorderAlpha = source.castBorderAlpha
                     if withSize then
-                        d.castBorderSize = src.castBorderSize
+                        d.castBorderSize = source.castBorderSize
                         -- Verbatim; a source with no exact size clears a set one
                         -- with false (nil would not travel through mirror sync).
-                        local v = src.castBorderSizePx
+                        local v = source.castBorderSizePx
                         if v == nil and d.castBorderSizePx ~= nil then
                             v = false
                         end
                         d.castBorderSizePx = v
                     else
-                        d.castBorderBehind = src.castBorderBehind
+                        d.castBorderBehind = source.castBorderBehind
                     end
                 end
             end
             onChange()
-            for i = 1, #units do
-                CludesUI.ReapplyMatchPads(units[i] .. "Castbar")
+            for idx = 1, #units do
+                CludesUI.ReapplyMatchPads(units[idx] .. "Castbar")
             end
             CludesUI:RefreshPage()
         end
         local function StyleSynced()
-            local src = getS()
-            local bt = src.castBorderStyle or "solid"
-            for i = 1, #sync.units do
-                local d = sync.db(sync.units[i])
+            local source = getS()
+            local bt = source.castBorderStyle or "solid"
+            for idx = 1, #sync.units do
+                local d = sync.db(sync.units[idx])
                 if d then
-                    if (d.castBorderCustom == true) ~= (src.castBorderCustom == true) then
+                    if (d.castBorderCustom == true) ~= (source.castBorderCustom == true) then
                         return false
                     end
                     if (d.castBorderStyle or "solid") ~= bt then
                         return false
                     end
                     if
-                        d.castBorderOffsetX ~= src.castBorderOffsetX
-                        or d.castBorderOffsetY ~= src.castBorderOffsetY
+                        d.castBorderOffsetX ~= source.castBorderOffsetX
+                        or d.castBorderOffsetY ~= source.castBorderOffsetY
                     then
                         return false
                     end
                     if
-                        d.castBorderShiftX ~= src.castBorderShiftX
-                        or d.castBorderShiftY ~= src.castBorderShiftY
+                        d.castBorderShiftX ~= source.castBorderShiftX
+                        or d.castBorderShiftY ~= source.castBorderShiftY
                     then
                         return false
                     end
-                    if (d.castBorderBehind == true) ~= (src.castBorderBehind == true) then
+                    if (d.castBorderBehind == true) ~= (source.castBorderBehind == true) then
                         return false
                     end
                 end
@@ -630,14 +635,14 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
             return true
         end
         local function SizeSynced()
-            local src = getS()
-            local bs, bt = src.castBorderSize or 1, src.castBorderStyle or "solid"
+            local source = getS()
+            local bs, bt = source.castBorderSize or 1, source.castBorderStyle or "solid"
             -- Exact sizes compare as rendered (a cleared or stale value equals none).
-            local bpx = CludesUI.BorderPx(src.castBorderSizePx, bs, bt)
-            for i = 1, #sync.units do
-                local d = sync.db(sync.units[i])
+            local bpx = CludesUI.BorderPx(source.castBorderSizePx, bs, bt)
+            for idx = 1, #sync.units do
+                local d = sync.db(sync.units[idx])
                 if d then
-                    if (d.castBorderCustom == true) ~= (src.castBorderCustom == true) then
+                    if (d.castBorderCustom == true) ~= (source.castBorderCustom == true) then
                         return false
                     end
                     if (d.castBorderSize or 1) ~= bs then
@@ -653,7 +658,7 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
             end
             return true
         end
-        local lr, rr = row._leftRegion, row._rightRegion
+        local lr, rr = rowFrame._leftRegion, rowFrame._rightRegion
         CludesUI.BuildSyncIcon({
             region = lr,
             tooltip = "Apply Cast Bar Border Style to all Frames",
@@ -668,8 +673,8 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
                 elementKeys = sync.units,
                 elementLabels = sync.labels,
                 getCurrentKey = sync.current,
-                onApply = function(keys)
-                    CopyTo(keys, false)
+                onApply = function(keyList)
+                    CopyTo(keyList, false)
                 end,
             },
         })
@@ -687,13 +692,13 @@ function ns.UF_CastBorderRows(W, parent, y, getS, onChange, matchKey, sync)
                 elementKeys = sync.units,
                 elementLabels = sync.labels,
                 getCurrentKey = sync.current,
-                onApply = function(keys)
-                    CopyTo(keys, true)
+                onApply = function(keyList)
+                    CopyTo(keyList, true)
                 end,
             },
         })
     end
-    return y0 - y
+    return y0 - posY
 end
 
 -- Boss Frames DISPLAY "Border Style | Border Size": the boss frames' own frame
@@ -705,23 +710,23 @@ end
 -- stock styles drop the rows. B = the boss settings table (boss1-5 share it);
 -- onChange repaints. Returns the height built. On ns: the page builders sit at
 -- their upvalue caps.
-function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
+function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
     local BS = CludesUI.BlizzStyle
-    local y0 = y
+    local y0 = posY
     local function Inheriting()
         return B.borderCustom ~= true
     end
     -- What the live frames draw: the donor's border while inheriting.
     local function Src()
-        return ns.UF_BossBorderSettings()
+        return mod.UF_BossBorderSettings()
     end
     local NEEDS_STYLE = "This option requires a Border Style other than Inherit (Main Frames)."
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
     table.insert(texOrder, 1, "inherit")
     texValues.inherit = "Inherit (Main Frames)"
-    local row, h = W:DualRow(
-        parent,
-        y,
+    local rowFrame, hgt = W:DualRow(
+        hostFrame,
+        posY,
         BS.Gate("unitframes", {
             type = "dropdown",
             text = "Border Style",
@@ -750,8 +755,8 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
                     B.borderTexture = v
                     B.borderTextureOffset, B.borderTextureOffsetY = nil, nil
                     B.borderTextureShiftX, B.borderTextureShiftY = nil, nil
-                    local col, behind = CludesUI.GetBorderStyleSelectDefaults(v)
-                    B.borderColor, B.borderAlpha, B.borderBehind = col, 1, behind
+                    local column, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+                    B.borderColor, B.borderAlpha, B.borderBehind = column, 1, behind
                     local defSz = CludesUI.GetBorderDefaultSize("unitframes", v)
                     if defSz then
                         B.borderSize = defSz
@@ -798,11 +803,11 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
             })
         )
     )
-    y = y - h
+    posY = posY - hgt
     -- Width Offset | Height Offset: a textured style's outward offsets.
     do
-        local tex = B.borderTexture or "solid"
-        if not Inheriting() and tex ~= "solid" and tex ~= "" then
+        local texture = B.borderTexture or "solid"
+        if not Inheriting() and texture ~= "solid" and texture ~= "" then
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 getTex = function()
@@ -831,12 +836,13 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
                 end,
                 apply = onChange,
             })
-            local _, oh = W:DualRow(parent, y, BS.Gate("unitframes", ocfgL), BS.Gate("unitframes", ocfgR))
-            y = y - oh
+            local _, oh =
+                W:DualRow(hostFrame, posY, BS.Gate("unitframes", ocfgL), BS.Gate("unitframes", ocfgR))
+            posY = posY - oh
         end
     end
     if CludesUI._prebuilding then
-        return y0 - y
+        return y0 - posY
     end
 
     -- Border Options cog (left): shifts and layering, own textured styles only.
@@ -861,7 +867,7 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
             end
             onChange()
         end
-        local cogBtn = CludesUI.BuildInlineCog(row._leftRegion, {
+        local cogBtn = CludesUI.BuildInlineCog(rowFrame._leftRegion, {
             title = "Border Options",
             rows = {
                 {
@@ -906,12 +912,12 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
                     label = "Power Bar Seam",
                     tooltip = "Draws the border style's seam art between the health bar and an attached power bar.",
                     disabled = function()
-                        local pos = B.powerPosition or "below"
+                        local place = B.powerPosition or "below"
                         local border = Src()
                         return not (
                             CludesUI.GetBorderCompanion(border.borderTexture or "solid", "sepH")
                             and (B.borderSizeOverride or border.borderSize or 1) > 0
-                            and (pos == "above" or pos == "below")
+                            and (place == "above" or place == "below")
                             and (B.powerHeight or 6) > 0
                         )
                     end,
@@ -928,8 +934,8 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
             },
         })
         local function UpdateCogVis()
-            local tex = B.borderTexture or "solid"
-            if Inheriting() or tex == "solid" or tex == "" or BS.Get("unitframes") then
+            local texture = B.borderTexture or "solid"
+            if Inheriting() or texture == "solid" or texture == "" or BS.Get("unitframes") then
                 cogBtn:Hide()
             else
                 cogBtn:Show()
@@ -942,7 +948,7 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
     -- Colour swatch (with alpha) on Border Size: shows what is drawn; greyed
     -- and blocked while inheriting or at 0.
     do
-        local rgn = row._rightRegion
+        local rgn = rowFrame._rightRegion
         -- Corner Radius (CludesUI_RoundedCorners.lua): the boss table's own,
         -- beside the control with the swatch left of it; while inheriting the
         -- main frames' radius applies.
@@ -990,13 +996,13 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
                     onChange()
                 end,
                 function()
-                    local pos = B.powerPosition or "below"
-                    return pos == "detached_top" or pos == "detached_bottom"
+                    local place = B.powerPosition or "below"
+                    return place == "detached_top" or place == "detached_bottom"
                 end,
                 "Detached Power Bar"
             ),
         })
-        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rowFrame:GetFrameLevel() + 3, function()
             local s = Src()
             local c = s.borderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.borderAlpha or 1
@@ -1013,31 +1019,31 @@ function ns.UF_BossFrameBorderRows(W, parent, y, B, onChange)
             CludesUI.HideWidgetTooltip()
         end)
         rgn._lastInline = sw
-        local block = CreateFrame("Frame", nil, sw)
-        block:SetAllPoints()
-        block:SetFrameLevel(sw:GetFrameLevel() + 10)
-        block:EnableMouse(true)
-        block:SetScript("OnEnter", function()
+        local blockData = CreateFrame("Frame", nil, sw)
+        blockData:SetAllPoints()
+        blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
+        blockData:EnableMouse(true)
+        blockData:SetScript("OnEnter", function()
             local req = Inheriting() and NEEDS_STYLE or "This option requires a Border Size above 0."
             CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(req))
         end)
-        block:SetScript("OnLeave", function()
+        blockData:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSw()
             updateSw()
             if Inheriting() or (B.borderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
-                block:Show()
+                blockData:Show()
             else
                 sw:SetAlpha(1)
-                block:Hide()
+                blockData:Hide()
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSw)
         UpdateSw()
     end
-    return y0 - y
+    return y0 - posY
 end
 
 -- Tracked Auras popup for target/focus/boss debuff filters ("Edit Tracked
@@ -1056,8 +1062,8 @@ local TRACKED_TITLES = {
     boss = "Boss Tracked Auras",
 }
 local function TrackedList(unitKey, field)
-    local db = ns.db
-    local s = db and db.profile and db.profile[unitKey]
+    local saved = mod.db
+    local s = saved and saved.profile and saved.profile[unitKey]
     if not s then
         return nil
     end
@@ -1066,20 +1072,20 @@ local function TrackedList(unitKey, field)
     end
     return s[field]
 end
-function ns.UFOpt_ShowTrackedAuras(unitKey)
+function mod.UFOpt_ShowTrackedAuras(unitKey)
     local choices = {}
-    for i = 1, #TRACKED_UNITS do
-        local u = TRACKED_UNITS[i]
+    for idx = 1, #TRACKED_UNITS do
+        local u = TRACKED_UNITS[idx]
         if u.key ~= unitKey then
             choices[#choices + 1] = u
         end
     end
     local function Changed()
-        if ns.ReloadFrames then
-            ns.ReloadFrames()
+        if mod.ReloadFrames then
+            mod.ReloadFrames()
         end
-        if ns.UpdatePreview then
-            ns.UpdatePreview()
+        if mod.UpdatePreview then
+            mod.UpdatePreview()
         end
         -- Non-force: the Debuff Filter dropdown's empty warning (Only Tracked
         -- Auras with its list emptied) re-reads live, without rebuilding the
@@ -1116,10 +1122,10 @@ function ns.UFOpt_ShowTrackedAuras(unitKey)
             label = "Copy Included/Excluded Spells From:",
             choices = choices,
             apply = function(srcKey)
-                local db = ns.db
-                local src = db and db.profile and db.profile[srcKey]
-                local dst = db and db.profile and db.profile[unitKey]
-                if not (src and dst) then
+                local saved = mod.db
+                local source = saved and saved.profile and saved.profile[srcKey]
+                local dst = saved and saved.profile and saved.profile[unitKey]
+                if not (source and dst) then
                     return
                 end
                 local function Clone(t)
@@ -1132,22 +1138,22 @@ function ns.UFOpt_ShowTrackedAuras(unitKey)
                     end
                     return c
                 end
-                dst.debuffInclude = Clone(src.debuffInclude)
-                dst.debuffExclude = Clone(src.debuffExclude)
+                dst.debuffInclude = Clone(source.debuffInclude)
+                dst.debuffExclude = Clone(source.debuffExclude)
                 -- The caster-scope maps have opposite polarity per unit kind (boss:
                 -- any-caster opt-out; target/focus: MINE opt-in). Same kind copies
                 -- them as-is; across kinds the set is inverted so every copied
                 -- entry keeps the scope it showed with.
                 local srcBoss, dstBoss = srcKey == "boss", unitKey == "boss"
                 if srcBoss == dstBoss then
-                    dst.debuffIncludeAnyCaster = Clone(src.debuffIncludeAnyCaster)
-                    dst.debuffIncludeMine = Clone(src.debuffIncludeMine)
+                    dst.debuffIncludeAnyCaster = Clone(source.debuffIncludeAnyCaster)
+                    dst.debuffIncludeMine = Clone(source.debuffIncludeMine)
                 else
-                    local srcMap = srcBoss and src.debuffIncludeAnyCaster or src.debuffIncludeMine
+                    local srcMap = srcBoss and source.debuffIncludeAnyCaster or source.debuffIncludeMine
                     local inv = {}
-                    for id in pairs(src.debuffInclude or {}) do
-                        if not (srcMap and srcMap[id]) then
-                            inv[id] = true
+                    for ident in pairs(source.debuffInclude or {}) do
+                        if not (srcMap and srcMap[ident]) then
+                            inv[ident] = true
                         end
                     end
                     if dstBoss then
@@ -1167,40 +1173,40 @@ end
 -- Options preview: the first fake buff stands in for a purgeable one while
 -- Purgeable Buff Glow is set on target/focus and this character can purge or
 -- spellsteal (the live frame's own gate). The host is our own frame.
-function ns.UFOpt_PreviewPurgeGlow(bf, unitKey, s, w, h)
+function mod.UFOpt_PreviewPurgeGlow(bf, unitKey, s, wid, hgt)
     local Glows = CludesUI.Glows
-    if not ns.UF_PurgeGlowSpec then
+    if not mod.UF_PurgeGlowSpec then
         return
     end
     local g = (unitKey == "target" or unitKey == "focus") and s and s.buffPurgeGlow
-    local on = type(g) == "number" and g > 0
-    if on then
+    local enabled = type(g) == "number" and g > 0
+    if enabled then
         local AK = CludesUI.AuraKit
         local magic, enrage = false, false
         if AK and AK.OffensiveDispelTypes then
             magic, enrage = AK.OffensiveDispelTypes()
         end
-        on = magic or enrage
+        enabled = magic or enrage
     end
-    local host = bf._purgeGlow
-    if not on then
-        if host then
-            if host._cuiGlowActive then
-                Glows.StopGlow(host)
+    local hostRegion = bf._purgeGlow
+    if not enabled then
+        if hostRegion then
+            if hostRegion._cuiGlowActive then
+                Glows.StopGlow(hostRegion)
             end
-            host:Hide()
+            hostRegion:Hide()
         end
         return
     end
-    if not host then
-        host = CreateFrame("Frame", nil, bf)
-        host:SetAllPoints(bf)
-        host:SetFrameLevel(bf:GetFrameLevel() + 2)
-        bf._purgeGlow = host
+    if not hostRegion then
+        hostRegion = CreateFrame("Frame", nil, bf)
+        hostRegion:SetAllPoints(bf)
+        hostRegion:SetFrameLevel(bf:GetFrameLevel() + 2)
+        bf._purgeGlow = hostRegion
     end
-    host:Show()
+    hostRegion:Show()
     -- The live renderer's own spec, so the preview is the live look.
-    Glows.StartSpecGlow(host, ns.UF_PurgeGlowSpec(s), w, h, "engine", Glows.PANEL_EXTRA)
+    Glows.StartSpecGlow(hostRegion, mod.UF_PurgeGlowSpec(s), wid, hgt, "engine", Glows.PANEL_EXTRA)
 end
 
 -- Target/focus/boss Debuff Filter: ONE single-select mode, an engine VIEW over
@@ -1228,12 +1234,12 @@ local DEBUFF_MODE_TIPS = {
     importantOwn = "Shows only the debuffs you apply that Blizzard also flags as important.",
     importantOrOwn = "Shows the debuffs you apply plus important debuffs from anyone.",
 }
-local function DebuffModeDropdownCfg(text, unitKey, getS, onChanged, extra)
+local function DebuffModeDropdownCfg(textValue, unitKey, getS, onChanged, extra)
     local values = {
         __editTracked = {
             text = "Edit Tracked Auras",
             action = function()
-                ns.UFOpt_ShowTrackedAuras(unitKey)
+                mod.UFOpt_ShowTrackedAuras(unitKey)
             end,
         },
         all = "Show All",
@@ -1243,10 +1249,10 @@ local function DebuffModeDropdownCfg(text, unitKey, getS, onChanged, extra)
         importantOwn = "Important and Own",
         importantOrOwn = "Important or Own",
         _menuOpts = {
-            onItemHover = function(key, item)
-                local tip = DEBUFF_MODE_TIPS[key]
-                if tip and item then
-                    CludesUI.ShowWidgetTooltip(item, tip)
+            onItemHover = function(key, itemInfo)
+                local tipText = DEBUFF_MODE_TIPS[key]
+                if tipText and itemInfo then
+                    CludesUI.ShowWidgetTooltip(itemInfo, tipText)
                 end
             end,
             onItemLeave = function()
@@ -1254,13 +1260,13 @@ local function DebuffModeDropdownCfg(text, unitKey, getS, onChanged, extra)
             end,
         },
     }
-    local cfg = {
+    local conf = {
         type = "dropdown",
-        text = text,
+        text = textValue,
         values = values,
         order = DEBUFF_MODE_ORDER,
         getValue = function()
-            return ns.UF_DebuffFilterMode(getS())
+            return mod.UF_DebuffFilterMode(getS())
         end,
         setValue = function(v)
             getS().debuffFilterMode = v
@@ -1269,10 +1275,10 @@ local function DebuffModeDropdownCfg(text, unitKey, getS, onChanged, extra)
     }
     if extra then
         for k, val in pairs(extra) do
-            cfg[k] = val
+            conf[k] = val
         end
     end
-    return cfg
+    return conf
 end
 -- Hide Exhaustion: the Debuff Filter cog row of target, focus and boss (their
 -- filter is a single-pick mode list; the player's checkbox Debuff Filter has
@@ -1300,17 +1306,22 @@ end
 -- DualRow slot (rgn._control): shown while Only Tracked Auras has no active
 -- entry and the column is not already dimmed by its Display = None.
 local function AttachDebuffModeWarn(rgn, getS, offFn)
-    local dd = rgn and rgn._control
-    if not dd then
+    local dropdown = rgn and rgn._control
+    if not dropdown then
         return
     end
-    CludesUI.AttachEmptyFilterWarn(rgn, dd, CludesUI.L("You are displaying NO debuffs at all."), function()
-        if offFn() then
-            return true
+    CludesUI.AttachEmptyFilterWarn(
+        rgn,
+        dropdown,
+        CludesUI.L("You are displaying NO debuffs at all."),
+        function()
+            if offFn() then
+                return true
+            end
+            local s = getS()
+            return mod.UF_DebuffFilterMode(s) ~= "tracked" or mod.UF_DebuffHasIncludes(s)
         end
-        local s = getS()
-        return ns.UF_DebuffFilterMode(s) ~= "tracked" or ns.UF_DebuffHasIncludes(s)
-    end)
+    )
 end
 
 local initFrame = CreateFrame("Frame")
@@ -1320,19 +1331,19 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Init fn on the namespace; the main addon calls it from SetupOptionsPanel()
     -- once ns.db/ns.frames are ready, or immediately if that already ran.
-    ns._InitCUIModule = function()
+    mod._InitCUIModule = function()
         if not CludesUI or not CludesUI.RegisterModule then
             return
         end
-        if not ns.db then
+        if not mod.db then
             return
         end
 
-        local PP = CludesUI.PanelPP
-        local db = ns.db
-        local frames = ns.frames
-        local ReloadFrames = ns.ReloadFrames
-        local ResolveFontPath = ns.ResolveFontPath
+        local Pix = CludesUI.PanelPP
+        local saved = mod.db
+        local frameList = mod.frames
+        local ReloadFrames = mod.ReloadFrames
+        local ResolveFontPath = mod.ResolveFontPath
 
         local floor = math.floor
         local abs = math.abs
@@ -1349,13 +1360,13 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Mutable state the page builders share. A table instead of locals so the
         -- builders under UnitFrames_Options\ read and write the live values.
-        local optState = {}
-        optState.showCombatIndicatorPreview = false
-        optState.showHealAbsorbPreview = false -- eyeball toggle for the Heal Absorb Style preview
-        optState.showMaxHealthPreview = false -- eyeball toggle for the Max Health Style preview
-        optState.showDispelOverlayPreview = false -- eyeball toggle for the player dispel overlay preview
+        local optionState = {}
+        optionState.showCombatIndicatorPreview = false
+        optionState.showHealAbsorbPreview = false -- eyeball toggle for the Heal Absorb Style preview
+        optionState.showMaxHealthPreview = false -- eyeball toggle for the Max Health Style preview
+        optionState.showDispelOverlayPreview = false -- eyeball toggle for the player dispel overlay preview
         -- Preview hover-highlight hint text (shared across Single/Multi tabs)
-        optState._ufPreviewHintFS_display = nil -- hint FontString for the Main Frames page
+        optionState._ufPreviewHintFS_display = nil -- hint FontString for the Main Frames page
         local _displayHeaderBaseH = 0 -- display header height WITHOUT hint
 
         local function IsPreviewHintDismissed()
@@ -1366,7 +1377,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- pages). A target may be a resolver function (e.g. boss buff/debuff icons,
         -- which point to Simple Display or Location depending on the mode). On ns
         -- to stay clear of the 200-local cap; dismissHint is Main-page only.
-        ns._UFNavigateToSetting = function(targets, key, playGlow, dismissHint)
+        mod._UFNavigateToSetting = function(targets, key, playGlow, dismissHint)
             if not targets then
                 return
             end
@@ -1378,10 +1389,10 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             if dismissHint then
-                CludesUI.DismissPreviewHint(optState._ufPreviewHintFS_display, _displayHeaderBaseH, 29, 17)
+                CludesUI.DismissPreviewHint(optionState._ufPreviewHintFS_display, _displayHeaderBaseH, 29, 17)
             end
-            local sf = CludesUI._scrollFrame
-            if not sf then
+            local scrollFrame = CludesUI._scrollFrame
+            if not scrollFrame then
                 return
             end
             local _, _, _, _, headerY = m.section:GetPoint(1)
@@ -1392,9 +1403,9 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.SmoothScrollTo(scrollPos)
             local glowTarget = m.target
             if m.slotSide and m.target then
-                local region = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-                if region then
-                    glowTarget = region
+                local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
+                if regionFrame then
+                    glowTarget = regionFrame
                 end
             end
             -- A page rebuilt before the glow plays (page reuse) has parked or dressed
@@ -1417,15 +1428,15 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
             -- Sync in-game boss preview fake debuffs with live edits (location, simple display, size).
-            if ns.RefreshBossPreviewDebuffs then
-                ns.RefreshBossPreviewDebuffs()
+            if mod.RefreshBossPreviewDebuffs then
+                mod.RefreshBossPreviewDebuffs()
             end
         end
 
         local function ReloadAndUpdate()
             -- Resolve at call time: ns.ReloadFrames is wrapped after this file's setup
             -- (aura containers, dispel overlay); a load-time capture bypasses those hooks.
-            local rf = ns.ReloadFrames or ReloadFrames
+            local rf = mod.ReloadFrames or ReloadFrames
             if rf then
                 rf()
             end
@@ -1433,7 +1444,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         CludesUI:RegisterOnShow(UpdatePreview)
-        ns.UpdatePreview = UpdatePreview
+        mod.UpdatePreview = UpdatePreview
 
         -- Re-run preview Update() when panel scale changes so border pixel sizes refresh
         if not CludesUI._onScaleChanged then
@@ -1449,16 +1460,16 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
             -- Auto-disable in-game boss preview so live boss frames don't linger on close.
-            if ns._bossPreviewActive and ns.SetBossPreview then
-                ns.SetBossPreview(false)
+            if mod._bossPreviewActive and mod.SetBossPreview then
+                mod.SetBossPreview(false)
             end
             -- Player Aura Bars root lives on the shared live scrollFrame, not a page's
             -- own `parent`; only fires on full window close (cf. _bmRoot/_dmRoot/_ccRoot
             -- cleanup in CUI_RaidFrames_Options.lua). Module switching is handled below via SelectModule.
             -- The root is kept for the session (its next render dresses it again):
             -- parked hidden, off the scroll frame; nil means "needs a render".
-            if ns._pabRoot then
-                ns.PABMP_ParkRoot()
+            if mod._pabRoot then
+                mod.PABMP_ParkRoot()
             end
         end)
 
@@ -1469,15 +1480,15 @@ initFrame:SetScript("OnEvent", function(self)
             if
                 CludesUI:GetActiveModule() == "CludesUIUnitFrames"
                 and CludesUI:GetActivePage() == PAGE_AURA_BARS
-                and not ns._pabRoot
+                and not mod._pabRoot
             then
                 C_Timer.After(0, function()
                     if
                         CludesUI:GetActiveModule() == "CludesUIUnitFrames"
                         and CludesUI:GetActivePage() == PAGE_AURA_BARS
-                        and ns.PABMP_BuildPage
+                        and mod.PABMP_BuildPage
                     then
-                        ns.PABMP_BuildPage(PAGE_AURA_BARS, nil, -6)
+                        mod.PABMP_BuildPage(PAGE_AURA_BARS, nil, -6)
                     end
                 end)
             end
@@ -1488,8 +1499,8 @@ initFrame:SetScript("OnEvent", function(self)
         -- content. Mirrors RF's SelectModule cleanup in CUI_RaidFrames_Options.lua.
         if CludesUI.SelectModule then
             hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
-                if folderName ~= "CludesUIUnitFrames" and ns._pabRoot then
-                    ns.PABMP_ParkRoot()
+                if folderName ~= "CludesUIUnitFrames" and mod._pabRoot then
+                    mod.PABMP_ParkRoot()
                 end
             end)
         end
@@ -1497,16 +1508,16 @@ initFrame:SetScript("OnEvent", function(self)
         ---------------------------------------------------------------------------
         --  Individual Display unit selector
         ---------------------------------------------------------------------------
-        optState.selectedUnit = "player"
+        optionState.selectedUnit = "player"
 
         -- External unit pre-select: direct setter + pending override consumed at page build.
-        CludesUI._setUnitFrameUnit = function(unit)
-            optState.selectedUnit = unit
+        CludesUI._setUnitFrameUnit = function(unitToken)
+            optionState.selectedUnit = unitToken
         end
         CludesUI._consumePendingUnitSelect = function()
             local pending = CludesUI._pendingUnitSelect
             if pending then
-                optState.selectedUnit = pending
+                optionState.selectedUnit = pending
                 CludesUI._pendingUnitSelect = nil
             end
         end
@@ -1538,25 +1549,25 @@ initFrame:SetScript("OnEvent", function(self)
         ---------------------------------------------------------------------------
         local UNIT_DB_MAP = {
             player = function()
-                return db.profile.player
+                return saved.profile.player
             end,
             target = function()
-                return db.profile.target
+                return saved.profile.target
             end,
             focus = function()
-                return db.profile.focus
+                return saved.profile.focus
             end,
             targettarget = function()
-                return db.profile.targettarget
+                return saved.profile.targettarget
             end,
             focustarget = function()
-                return db.profile.focustarget
+                return saved.profile.focustarget
             end,
             pet = function()
-                return db.profile.pet
+                return saved.profile.pet
             end,
             boss = function()
-                return db.profile.boss
+                return saved.profile.boss
             end,
         }
 
@@ -1636,10 +1647,10 @@ initFrame:SetScript("OnEvent", function(self)
         do
             local GO = CludesUI.GlowOptions
             -- Open Settings selects the unit first (the page shows one unit at a time).
-            local function SelectUnit(unit)
+            local function SelectUnit(unitToken)
                 return function()
-                    CludesUI._setUnitFrameUnit(unit)
-                    CludesUI._pendingUnitSelect = unit
+                    CludesUI._setUnitFrameUnit(unitToken)
+                    CludesUI._pendingUnitSelect = unitToken
                 end
             end
             GO.RegisterSite({
@@ -1719,15 +1730,15 @@ initFrame:SetScript("OnEvent", function(self)
             -- Refresh shared snapshot from LSM; first call also registers the
             -- late-registration callback (idempotent after).
             CludesUI.AppendSharedMediaTextures(
-                ns.healthBarTextureNames or {},
-                ns.healthBarTextureOrder or {},
+                mod.healthBarTextureNames or {},
+                mod.healthBarTextureOrder or {},
                 nil,
-                ns.healthBarTextures
+                mod.healthBarTextures
             )
 
             local hbtValues, hbtOrder = {}, {}
-            local texNames = ns.healthBarTextureNames or {}
-            local texOrder2 = ns.healthBarTextureOrder or {}
+            local texNames = mod.healthBarTextureNames or {}
+            local texOrder2 = mod.healthBarTextureOrder or {}
             for _, key in ipairs(texOrder2) do
                 if key ~= "---" then
                     hbtValues[key] = texNames[key] or key
@@ -1735,7 +1746,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
             -- _menuOpts: texture preview backgrounds on each item
-            local texLookup = ns.healthBarTextures or {}
+            local texLookup = mod.healthBarTextures or {}
             hbtValues._menuOpts = {
                 itemHeight = 28,
                 background = function(key)
@@ -2067,9 +2078,9 @@ initFrame:SetScript("OnEvent", function(self)
             end
             local dest = prev
             if dest == "none" or dest == newVal then
-                for i = 1, #AURA_FREE_CORNERS do
-                    if AURA_FREE_CORNERS[i] ~= newVal then
-                        dest = AURA_FREE_CORNERS[i]
+                for idx = 1, #AURA_FREE_CORNERS do
+                    if AURA_FREE_CORNERS[idx] ~= newVal then
+                        dest = AURA_FREE_CORNERS[idx]
                         break
                     end
                 end
@@ -2099,16 +2110,16 @@ initFrame:SetScript("OnEvent", function(self)
         local MASK_INSETS = CludesUI.SHAPE_INSETS
 
         -- mirror = true swaps the cell's left/right coords (Mirror Portrait).
-        local function ApplyClassIconTexture_Preview(tex, classToken, style, mirror)
+        local function ApplyClassIconTexture_Preview(texture, classToken, look, mirror)
             local coords = CLASS_FULL_COORDS[classToken]
             if not coords then
                 return false
             end
-            tex:SetTexture(CLASS_FULL_SPRITE_BASE .. style .. ".tga")
+            texture:SetTexture(CLASS_FULL_SPRITE_BASE .. look .. ".tga")
             if mirror then
-                tex:SetTexCoord(coords[2], coords[1], coords[3], coords[4])
+                texture:SetTexCoord(coords[2], coords[1], coords[3], coords[4])
             else
-                tex:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+                texture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
             end
             return true
         end
@@ -2118,7 +2129,7 @@ initFrame:SetScript("OnEvent", function(self)
             if not pFrame then
                 return
             end
-            local isDetached = (s.portraitStyle or db.profile.portraitStyle or "attached") == "detached"
+            local isDetached = (s.portraitStyle or saved.profile.portraitStyle or "attached") == "detached"
             local shape = s.detachedPortraitShape or "portrait"
             local showBorder = true
             local borderOpacity = (s.detachedPortraitBorderOpacity or 100) / 100
@@ -2167,8 +2178,8 @@ initFrame:SetScript("OnEvent", function(self)
             -- Remove mask when not detached
             if not isDetached then
                 if pFrame._shapeMask then
-                    for _, tex in ipairs(texList) do
-                        tex:RemoveMaskTexture(pFrame._shapeMask)
+                    for _, texture in ipairs(texList) do
+                        texture:RemoveMaskTexture(pFrame._shapeMask)
                     end
                     pFrame._shapeMask:Hide()
                 end
@@ -2183,7 +2194,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Reset texture positions to default (detached mode expands them for mask fill)
                 if pFrame._previewTex then
                     if classInset then
-                        ns.UF_SetClassPortraitPoints(
+                        mod.UF_SetClassPortraitPoints(
                             pFrame._previewTex,
                             pFrame,
                             s.portraitClassZoom,
@@ -2201,7 +2212,7 @@ initFrame:SetScript("OnEvent", function(self)
                     pFrame._previewModel:SetPoint("TOPLEFT", pFrame, "TOPLEFT", 0, 0)
                     pFrame._previewModel:SetPoint("BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", 0, 0)
                 end
-                ns.UF_PortraitExtras(pFrame, nil)
+                mod.UF_PortraitExtras(pFrame, nil)
                 return
             end
 
@@ -2212,8 +2223,8 @@ initFrame:SetScript("OnEvent", function(self)
                     pFrame._previewBg:Hide()
                 end
                 if pFrame._shapeMask then
-                    for _, tex in ipairs(texList) do
-                        pcall(tex.RemoveMaskTexture, tex, pFrame._shapeMask)
+                    for _, texture in ipairs(texList) do
+                        pcall(texture.RemoveMaskTexture, texture, pFrame._shapeMask)
                     end
                     pFrame._shapeMask:Hide()
                 end
@@ -2227,7 +2238,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 if pFrame._previewTex then
                     if classInset then
-                        ns.UF_SetClassPortraitPoints(
+                        mod.UF_SetClassPortraitPoints(
                             pFrame._previewTex,
                             pFrame,
                             s.portraitClassZoom,
@@ -2245,7 +2256,7 @@ initFrame:SetScript("OnEvent", function(self)
                     pFrame._previewModel:SetPoint("TOPLEFT", pFrame, "TOPLEFT", 0, 0)
                     pFrame._previewModel:SetPoint("BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", 0, 0)
                 end
-                ns.UF_PortraitExtras(pFrame, nil)
+                mod.UF_PortraitExtras(pFrame, nil)
                 return
             end
             if pFrame._previewBg then
@@ -2259,8 +2270,8 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 pFrame._shapeMask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
                 pFrame._shapeMask:Show()
-                for _, tex in ipairs(texList) do
-                    tex:AddMaskTexture(pFrame._shapeMask)
+                for _, texture in ipairs(texList) do
+                    texture:AddMaskTexture(pFrame._shapeMask)
                 end
             end
 
@@ -2281,11 +2292,11 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- Pixels Circle (ns.UF_UNMASKED_RING) keeps its ring outside the mask,
             -- inset from the frame edge, exactly as on the live portrait.
-            local ringInset = ns.UF_UNMASKED_RING[shape]
-            local off = bExp - (ringInset or 0)
+            local ringInset = mod.UF_UNMASKED_RING[shape]
+            local offset = bExp - (ringInset or 0)
             pFrame._shapeBorderTex:ClearAllPoints()
-            PP.Point(pFrame._shapeBorderTex, "TOPLEFT", pFrame, "TOPLEFT", -off, off)
-            PP.Point(pFrame._shapeBorderTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", off, -off)
+            Pix.Point(pFrame._shapeBorderTex, "TOPLEFT", pFrame, "TOPLEFT", -offset, offset)
+            Pix.Point(pFrame._shapeBorderTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", offset, -offset)
             -- Add border to mask so the mask clips its inner edge
             if pFrame._shapeMask then
                 pcall(pFrame._shapeBorderTex.RemoveMaskTexture, pFrame._shapeBorderTex, pFrame._shapeMask)
@@ -2329,7 +2340,7 @@ initFrame:SetScript("OnEvent", function(self)
             local oB = -(expand * bh2)
             if pFrame._previewTex then
                 if classInset then
-                    ns.UF_SetClassPortraitPoints(
+                    mod.UF_SetClassPortraitPoints(
                         pFrame._previewTex,
                         pFrame,
                         s.portraitClassZoom,
@@ -2338,13 +2349,13 @@ initFrame:SetScript("OnEvent", function(self)
                     )
                 else
                     pFrame._previewTex:ClearAllPoints()
-                    PP.Point(pFrame._previewTex, "TOPLEFT", pFrame, "TOPLEFT", oL, oT)
-                    PP.Point(pFrame._previewTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", oR, oB)
+                    Pix.Point(pFrame._previewTex, "TOPLEFT", pFrame, "TOPLEFT", oL, oT)
+                    Pix.Point(pFrame._previewTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", oR, oB)
                 end
             end
             -- 3D Portrait Below Border: the model inside the ring and under it,
             -- as on the live portrait; off, it fills the frame over the ring.
-            ns.UF_PortraitShapeModel(
+            mod.UF_PortraitShapeModel(
                 pFrame,
                 pFrame._shapeBorderTex,
                 pFrame._previewModel,
@@ -2358,7 +2369,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- so the detached preview stops clipping (every layout branch of
             -- Update sets its clip again first; the Portrait Dragon lifts it on
             -- its own after this).
-            ns.UF_PortraitExtras(pFrame, s, shape)
+            mod.UF_PortraitExtras(pFrame, s, shape)
             if ringInset or (pFrame._outerRing and pFrame._outerRing:IsShown()) then
                 pFrame:SetClipsChildren(false)
             end
@@ -2491,7 +2502,10 @@ initFrame:SetScript("OnEvent", function(self)
                 { name = "Mind Blast", castTime = 1.5 },
                 { name = "Greater Heal", castTime = 2.5 },
             },
-            DEATHKNIGHT = { { name = "Death Coil", castTime = 1.5 }, { name = "Howling Blast", castTime = 1.5 } },
+            DEATHKNIGHT = {
+                { name = "Death Coil", castTime = 1.5 },
+                { name = "Howling Blast", castTime = 1.5 },
+            },
             SHAMAN = {
                 { name = "Lightning Bolt", castTime = 2.0 },
                 { name = "Chain Lightning", castTime = 2.0 },
@@ -2537,16 +2551,16 @@ initFrame:SetScript("OnEvent", function(self)
         -- Returns icon fileID + castTime (seconds) from the API, so instant-cast
         -- spells never reach the preview.
         local function ResolveSpellInfo(spellNameOrID)
-            local info = C_Spell.GetSpellInfo(spellNameOrID)
-            if info then
-                local icon = info.iconID or 136197
-                local ct = (info.castTime or 0) / 1000 -- API returns ms
-                return icon, ct
+            local details = C_Spell.GetSpellInfo(spellNameOrID)
+            if details then
+                local glyph = details.iconID or 136197
+                local ct = (details.castTime or 0) / 1000 -- API returns ms
+                return glyph, ct
             end
             return 136197, 0
         end
-        optState._previewCastSpell = nil -- {icon, name, castTime} -- randomized on tab switch
-        optState._previewCastFill = nil -- 0.4 0.9 fill for the cast bar
+        optionState._previewCastSpell = nil -- {icon, name, castTime} -- randomized on tab switch
+        optionState._previewCastFill = nil -- 0.4 0.9 fill for the cast bar
 
         -- Class-specific common proc/buff icons for player preview (icon IDs)
         local CLASS_BUFF_ICONS = {
@@ -2567,8 +2581,8 @@ initFrame:SetScript("OnEvent", function(self)
         local FALLBACK_BUFF_ICONS = { 135932, 135981, 136075, 136205, 135987 }
         local _previewBuffIcons = {} -- 2 randomized buff icons for player preview
 
-        optState._previewHealthPct = 0.70 -- randomized health percentage for preview
-        optState._previewPowerPct = 0.85 -- randomized power percentage for preview
+        optionState._previewHealthPct = 0.70 -- randomized health percentage for preview
+        optionState._previewPowerPct = 0.85 -- randomized power percentage for preview
 
         local function RandomizePreviewCreatures()
             _previewCreatureNames.target = PREVIEW_ENEMY_NAMES[math.random(#PREVIEW_ENEMY_NAMES)]
@@ -2588,15 +2602,15 @@ initFrame:SetScript("OnEvent", function(self)
                 pool[#pool + 1] = s
             end
             -- Shuffle pool (Fisher-Yates) then pick first spell with a real cast time
-            for i = #pool, 2, -1 do
-                local j = math.random(i)
-                pool[i], pool[j] = pool[j], pool[i]
+            for idx = #pool, 2, -1 do
+                local jdx = math.random(idx)
+                pool[idx], pool[jdx] = pool[jdx], pool[idx]
             end
             local chosen = nil
             for _, s in ipairs(pool) do
-                local icon, ct = ResolveSpellInfo(s.spellID or s.name)
+                local glyph, ct = ResolveSpellInfo(s.spellID or s.name)
                 if ct and ct > 0 then
-                    chosen = { icon = icon, name = s.name, castTime = ct }
+                    chosen = { icon = glyph, name = s.name, castTime = ct }
                     break
                 end
             end
@@ -2605,10 +2619,10 @@ initFrame:SetScript("OnEvent", function(self)
                 local fb = FALLBACK_CAST_SPELLS[1]
                 chosen = { icon = 136197, name = fb.name, castTime = fb.castTime }
             end
-            optState._previewCastSpell = chosen
-            optState._previewCastFill = 0.40 + math.random() * 0.50
-            optState._previewHealthPct = 0.60 + math.random() * 0.30
-            optState._previewPowerPct = 0.50 + math.random() * 0.45
+            optionState._previewCastSpell = chosen
+            optionState._previewCastFill = 0.40 + math.random() * 0.50
+            optionState._previewHealthPct = 0.60 + math.random() * 0.30
+            optionState._previewPowerPct = 0.50 + math.random() * 0.45
             -- Two distinct buff icons for the player preview.
             local buffPool = CLASS_BUFF_ICONS[classToken] or FALLBACK_BUFF_ICONS
             local i1 = math.random(#buffPool)
@@ -2629,33 +2643,33 @@ initFrame:SetScript("OnEvent", function(self)
             if not (BS and BS.Get and BS.Get("unitframes")) then
                 return nil
             end
-            local UFB = ns.UF_BLIZZ
-            if not (UFB and ns.UF_BlizzSide and ns.UF_PaintBlizzArt) then
+            local UFB = mod.UF_BLIZZ
+            if not (UFB and mod.UF_BlizzSide and mod.UF_PaintBlizzArt) then
                 return nil
             end
-            local kind
+            local kindOf
             if unitKey == "player" then
-                kind = "player"
+                kindOf = "player"
             elseif unitKey == "target" or unitKey == "focus" or unitKey == "boss" then
-                kind = "target"
+                kindOf = "target"
             elseif unitKey == "pet" and UFB.pet then
-                kind = "pet"
+                kindOf = "pet"
             else
-                kind = "mini"
+                kindOf = "mini"
             end
-            local native = UFB[kind]
-            local side = ns.UF_BlizzSide(s, native)
+            local native = UFB[kindOf]
+            local sideName = mod.UF_BlizzSide(s, native)
             local G, mirror = native, nil
             if native.small then
-                if side ~= native.side then
+                if sideName ~= native.side then
                     mirror = true
                 end
-            elseif side == "right" then
+            elseif sideName == "right" then
                 G = UFB.target
             else
                 G = UFB.player
             end
-            return G, mirror, (G.rep and kind == "target") or nil
+            return G, mirror, (G.rep and kindOf == "target") or nil
         end
         -- Frame Scale (the style's stand-in for Bar Width / Health Bar Height).
         local function BlizzPreviewScale(s)
@@ -2677,11 +2691,11 @@ initFrame:SetScript("OnEvent", function(self)
         ---------------------------------------------------------------------------
         --  MULTI FRAME EDIT TAB  (checkbox selector + shared per-unit settings)
         ---------------------------------------------------------------------------
-        local function RegisterWidgetRefresh(fn)
+        local function RegisterWidgetRefresh(func)
             if not CludesUI._widgetRefreshList then
                 CludesUI._widgetRefreshList = {}
             end
-            table.insert(CludesUI._widgetRefreshList, fn)
+            table.insert(CludesUI._widgetRefreshList, func)
         end
 
         -- Dark Mode flattens the health bar to a fixed dark color, so fill/background
@@ -2692,26 +2706,26 @@ initFrame:SetScript("OnEvent", function(self)
             if not rgn then
                 return
             end
-            local block = CreateFrame("Frame", nil, rgn)
-            block:SetAllPoints()
-            block:SetFrameLevel(rgn:GetFrameLevel() + 50)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
+            local blockData = CreateFrame("Frame", nil, rgn)
+            blockData:SetAllPoints()
+            blockData:SetFrameLevel(rgn:GetFrameLevel() + 50)
+            blockData:EnableMouse(true)
+            blockData:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
-                    block,
+                    blockData,
                     "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
                 )
             end)
-            block:SetScript("OnLeave", function()
+            blockData:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function Update()
-                if ns.UF_DarkThemeOn(unitFn()) then
+                if mod.UF_DarkThemeOn(unitFn()) then
                     rgn:SetAlpha(0.3)
-                    block:Show()
+                    blockData:Show()
                 else
                     rgn:SetAlpha(1)
-                    block:Hide()
+                    blockData:Hide()
                 end
             end
             Update()
@@ -2832,15 +2846,15 @@ initFrame:SetScript("OnEvent", function(self)
         -- Shown in place of a unit's settings when it isn't on the CludesUI frame
         -- (Blizzard default / hidden); the inapplicable controls are never built.
         -- Returns the new y.
-        local function BuildInactiveNotice(parent, y, src)
+        local function BuildInactiveNotice(hostFrame, posY, source)
             local CPAD = CludesUI.CONTENT_PAD or 10
-            local note = CludesUI.MakeFont(parent, 13, nil, 1, 1, 1)
+            local note = CludesUI.MakeFont(hostFrame, 13, nil, 1, 1, 1)
             note:SetTextColor(1, 1, 1, 0.55)
-            note:SetPoint("TOPLEFT", parent, "TOPLEFT", CPAD + 4, y - 18)
-            note:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -(CPAD + 4), y - 18)
+            note:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CPAD + 4, posY - 18)
+            note:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -(CPAD + 4), posY - 18)
             note:SetJustifyH("LEFT")
             note:SetText(
-                src == "blizzard"
+                source == "blizzard"
                         and CludesUI.L(
                             "This unit uses the Blizzard default frame -- there are no CludesUI settings to configure here."
                         )
@@ -2848,14 +2862,14 @@ initFrame:SetScript("OnEvent", function(self)
                         "This unit's frame is hidden -- there are no CludesUI settings to configure here."
                     )
             )
-            return y - 54
+            return posY - 54
         end
 
         -- A unit whose source was Blizzard/Hidden at login has no spawned CUI frame this
         -- session (and Blizzard's frame can't be torn down live), so a visibility/enable
         -- change can't apply live -- prompt for a /reload. unitKeys: "boss" checks boss1.
         local function PromptReloadIfUnspawned(unitKeys)
-            local f = ns.frames
+            local f = mod.frames
             if not f then
                 return
             end
@@ -2885,35 +2899,35 @@ initFrame:SetScript("OnEvent", function(self)
         -- Show" / Enable), so "Hidden" is not duplicated; the stored style survives
         -- hiding and resumes on re-enable. opts: tooltip, disabled/disabledTooltip
         -- (ToT/FoT parent gating), onBeforeSet(v) (boss stops its live preview).
-        local function AttachFrameSourceCog(rgn, unitKey, opts)
-            opts = opts or {}
+        local function AttachFrameSourceCog(rgn, unitKey, options)
+            options = options or {}
             local function StoredStyle()
-                local fs = db.profile.frameSource and db.profile.frameSource[unitKey]
-                return fs == "blizzard" and "blizzard" or "cui"
+                local fontStr = saved.profile.frameSource and saved.profile.frameSource[unitKey]
+                return fontStr == "blizzard" and "blizzard" or "cui"
             end
             local fsShow -- forward decl: set() below closes the popup through it
             local _
-            local rows = {
+            local rowList = {
                 {
                     type = "dropdown",
                     label = "Frame Source",
                     values = { cui = "CludesUI", blizzard = "Blizzard Default" },
                     order = { "cui", "blizzard" },
-                    tooltip = opts.tooltip,
-                    disabled = opts.disabled,
-                    disabledTooltip = opts.disabledTooltip,
+                    tooltip = options.tooltip,
+                    disabled = options.disabled,
+                    disabledTooltip = options.disabledTooltip,
                     get = StoredStyle,
                     set = function(v)
                         if v == StoredStyle() then
                             return
                         end
-                        if opts.onBeforeSet then
-                            opts.onBeforeSet(v)
+                        if options.onBeforeSet then
+                            options.onBeforeSet(v)
                         end
                         -- Also re-enables a hidden frame (see ns.SetUnitFrameSource).
-                        ns.SetUnitFrameSource(unitKey, v)
-                        if ns.UpdateFrameVisibility then
-                            ns.UpdateFrameVisibility()
+                        mod.SetUnitFrameSource(unitKey, v)
+                        if mod.UpdateFrameVisibility then
+                            mod.UpdateFrameVisibility()
                         end
                         ReloadAndUpdate()
                         CludesUI:RefreshPage(true)
@@ -2936,18 +2950,18 @@ initFrame:SetScript("OnEvent", function(self)
             }
             -- Callers can fold extra rows into the same popup (the Visibility row hosts
             -- the Out of Combat fade, so it carries ONE cog instead of two).
-            if opts.extraRows then
-                for _, r in ipairs(opts.extraRows) do
-                    rows[#rows + 1] = r
+            if options.extraRows then
+                for _, r in ipairs(options.extraRows) do
+                    rowList[#rowList + 1] = r
                 end
             end
             _, fsShow = CludesUI.BuildInlineCog(rgn, {
-                title = opts.title or "Frame Source",
+                title = options.title or "Frame Source",
                 bgAlpha = 1,
                 frameStrata = "FULLSCREEN_DIALOG",
                 frameLevel = 500,
-                rows = rows,
-                tip = CludesUI.L(opts.cogTooltip or "Frame Source"),
+                rows = rowList,
+                tip = CludesUI.L(options.cogTooltip or "Frame Source"),
             })
         end
 
@@ -2979,7 +2993,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- WoW Forever: the pet's power bar position has no counterpart on the
             -- other small frames (theirs never shows), so it stays with the pet.
-            if key == "powerPosition" and ns.UF_PetHasPower and groupUnits == MINI_GROUP_ORDER then
+            if key == "powerPosition" and mod.UF_PetHasPower and groupUnits == MINI_GROUP_ORDER then
                 return false
             end
             -- The pet's buffs and debuffs stay with the pet: the other small frames
@@ -3005,7 +3019,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end
             end
-            local defs = db._profileDefaults or {}
+            local defs = saved._profileDefaults or {}
             local inAny, inAll = false, true
             for _, u in ipairs(groupUnits) do
                 local d = defs[u]
@@ -3027,23 +3041,23 @@ initFrame:SetScript("OnEvent", function(self)
             then
                 groupUnits = TARGET_FOCUS_PAIR
             end
-            local src = UNIT_DB_MAP[srcUnit]()
+            local source = UNIT_DB_MAP[srcUnit]()
             local dst = UNIT_DB_MAP[dstUnit]()
             -- A target on the old "wingless" Elite/Rare style shows its dragon
             -- through a view (ns.UF_DragonLegacy) over target-only keys this copy
             -- never moves: pin both tables onto the dragon's own keys first.
-            ns.UF_PinLegacyDragon(src)
-            ns.UF_PinLegacyDragon(dst)
-            local keys = {}
-            for k in pairs(src) do
-                keys[k] = true
+            mod.UF_PinLegacyDragon(source)
+            mod.UF_PinLegacyDragon(dst)
+            local keyList = {}
+            for k in pairs(source) do
+                keyList[k] = true
             end
             for k in pairs(dst) do
-                keys[k] = true
+                keyList[k] = true
             end
-            for k in pairs(keys) do
+            for k in pairs(keyList) do
                 if IsGroupSharedKey(k, groupUnits) then
-                    local v = src[k]
+                    local v = source[k]
                     if type(v) == "table" then
                         dst[k] = CludesUI.Lite.DeepCopy(v)
                     else
@@ -3061,14 +3075,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- player). No choice (lookSource nil) keeps following that order:
         -- re-picking the frame shown stores nothing, and Focus, which behaves
         -- exactly as no choice, is stored as none.
-        local function BuildLookSourcePair(row, unitKey, ddW)
+        local function BuildLookSourcePair(rowFrame, unitKey, ddW)
             local function Shown()
-                return ns.UF_MiniDonorKey(unitKey)
+                return mod.UF_MiniDonorKey(unitKey)
             end
             local ddBtn = CludesUI.BuildDropdownControl(
-                row,
+                rowFrame,
                 ddW,
-                row:GetFrameLevel() + 2,
+                rowFrame:GetFrameLevel() + 2,
                 { target = "Target", focus = "Focus", player = "Player" },
                 { "target", "focus", "player" },
                 Shown,
@@ -3076,7 +3090,7 @@ initFrame:SetScript("OnEvent", function(self)
                     if v == Shown() then
                         return
                     end
-                    db.profile[unitKey].lookSource = (v ~= "focus") and v or nil
+                    saved.profile[unitKey].lookSource = (v ~= "focus") and v or nil
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end
@@ -3087,10 +3101,10 @@ initFrame:SetScript("OnEvent", function(self)
                 ddBtn._refreshLabel()
             end)
 
-            local label = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
-            label:SetText(CludesUI.L("Copy Look From"))
-            label:SetTextColor(1, 1, 1, 0.6)
-            return label, ddBtn
+            local labelText = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
+            labelText:SetText(CludesUI.L("Copy Look From"))
+            labelText:SetTextColor(1, 1, 1, 0.6)
+            return labelText, ddBtn
         end
 
         -- Centered label + action dropdown atop a unit's settings: lists the group's
@@ -3107,7 +3121,7 @@ initFrame:SetScript("OnEvent", function(self)
         --
         -- withLook (the mini frames) puts the frame's Copy Look From pair beside it,
         -- the two pairs centred as one line.
-        local function BuildApplyAllRow(parent, y, groupUnits, curUnit, withLook)
+        local function BuildApplyAllRow(hostFrame, posY, groupUnits, curUnit, withLook)
             local ddValues = { [""] = "Choose Frame..." }
             local ddOrder = {}
             for _, key in ipairs(groupUnits) do
@@ -3119,19 +3133,19 @@ initFrame:SetScript("OnEvent", function(self)
 
             local ROW_H = 50
             local contentPad = CludesUI.CONTENT_PAD or 45
-            local row = CreateFrame("Frame", nil, parent)
-            PP.Size(row, parent:GetWidth() - contentPad * 2, ROW_H)
-            PP.Point(row, "TOPLEFT", parent, "TOPLEFT", contentPad, y)
+            local rowFrame = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(rowFrame, hostFrame:GetWidth() - contentPad * 2, ROW_H)
+            Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
 
-            local label = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
-            label:SetText(CludesUI.L("Apply All Settings From"))
-            label:SetTextColor(1, 1, 1, 0.6)
+            local labelText = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
+            labelText:SetText(CludesUI.L("Apply All Settings From"))
+            labelText:SetTextColor(1, 1, 1, 0.6)
 
             local DD_W, GAP, PAIR_GAP = 180, 12, 40
             local ddBtn = CludesUI.BuildDropdownControl(
-                row,
+                rowFrame,
                 DD_W,
-                row:GetFrameLevel() + 2,
+                rowFrame:GetFrameLevel() + 2,
                 ddValues,
                 ddOrder,
                 function()
@@ -3176,42 +3190,42 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             -- Center the label + dropdown pair (both pairs with withLook) as one line
-            local totalW = label:GetStringWidth() + GAP + DD_W
+            local totalW = labelText:GetStringWidth() + GAP + DD_W
             local lookLabel, lookDD
             if withLook then
-                lookLabel, lookDD = BuildLookSourcePair(row, curUnit, DD_W)
+                lookLabel, lookDD = BuildLookSourcePair(rowFrame, curUnit, DD_W)
                 totalW = totalW + PAIR_GAP + lookLabel:GetStringWidth() + GAP + DD_W
             end
-            label:SetPoint("LEFT", row, "CENTER", -totalW / 2, 0)
-            ddBtn:SetPoint("LEFT", label, "RIGHT", GAP, 0)
+            labelText:SetPoint("LEFT", rowFrame, "CENTER", -totalW / 2, 0)
+            ddBtn:SetPoint("LEFT", labelText, "RIGHT", GAP, 0)
             if lookLabel then
                 lookLabel:SetPoint("LEFT", ddBtn, "RIGHT", PAIR_GAP, 0)
                 lookDD:SetPoint("LEFT", lookLabel, "RIGHT", GAP, 0)
             end
 
-            return row, ROW_H
+            return rowFrame, ROW_H
         end
 
-        local function BuildSharedSettings(parent, y)
+        local function BuildSharedSettings(hostFrame, posY)
             local W = CludesUI.Widgets
-            local _, h
-            local row
+            local _, hgt
+            local rowFrame
 
             ---------------------------------------------------------------
             --  Unified Get / Set / DB abstraction
             ---------------------------------------------------------------
             local function SGet(key)
-                return UNIT_DB_MAP[optState.selectedUnit]()[key]
+                return UNIT_DB_MAP[optionState.selectedUnit]()[key]
             end
             local function SSet(key, val)
-                UNIT_DB_MAP[optState.selectedUnit]()[key] = val
+                UNIT_DB_MAP[optionState.selectedUnit]()[key] = val
                 ReloadAndUpdate()
             end
             local function SDB()
-                return UNIT_DB_MAP[optState.selectedUnit]()
+                return UNIT_DB_MAP[optionState.selectedUnit]()
             end
             local function SVal(key, default)
-                local v = UNIT_DB_MAP[optState.selectedUnit]()[key]
+                local v = UNIT_DB_MAP[optionState.selectedUnit]()[key]
                 if v ~= nil then
                     return v
                 end
@@ -3219,15 +3233,15 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- Set that also writes to the current unit (for UNIT_SUPPORTS keys)
             local function SSetSupported(key, val)
-                UNIT_DB_MAP[optState.selectedUnit]()[key] = val
+                UNIT_DB_MAP[optionState.selectedUnit]()[key] = val
                 ReloadAndUpdate()
                 UpdatePreview()
             end
             local function SGetSupported(key)
-                return UNIT_DB_MAP[optState.selectedUnit]()[key]
+                return UNIT_DB_MAP[optionState.selectedUnit]()[key]
             end
             local function SValSupported(key, default)
-                local v = UNIT_DB_MAP[optState.selectedUnit]()[key]
+                local v = UNIT_DB_MAP[optionState.selectedUnit]()[key]
                 if v == nil then
                     return default
                 end
@@ -3239,31 +3253,31 @@ initFrame:SetScript("OnEvent", function(self)
                 if not sup then
                     return true
                 end
-                return sup[optState.selectedUnit] == true
+                return sup[optionState.selectedUnit] == true
             end
             -- Dim a row region and add a tooltip when the current unit doesn't support
             -- the key; unsupportedTip (optional) shows over the dimmed row.
-            local function SApplySupport(region, key, unsupportedTip)
+            local function SApplySupport(regionFrame, key, unsupportedTip)
                 local visible = SVisible(key)
                 if not visible then
-                    region:SetAlpha(0.35)
-                    if region._control and region._control.Disable then
-                        region._control:Disable()
+                    regionFrame:SetAlpha(0.35)
+                    if regionFrame._control and regionFrame._control.Disable then
+                        regionFrame._control:Disable()
                     end
                 end
-                local tip = not visible and unsupportedTip or nil
-                if tip then
-                    local function MakeSupportHit(anchor)
-                        if not anchor then
+                local tipText = not visible and unsupportedTip or nil
+                if tipText then
+                    local function MakeSupportHit(anchorFrame)
+                        if not anchorFrame then
                             return
                         end
-                        local hitFrame = CreateFrame("Frame", nil, region)
-                        hitFrame:SetPoint("TOPLEFT", anchor, "TOPLEFT", -5, 5)
-                        hitFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 5, -5)
-                        hitFrame:SetFrameLevel(region:GetFrameLevel() + 10)
+                        local hitFrame = CreateFrame("Frame", nil, regionFrame)
+                        hitFrame:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", -5, 5)
+                        hitFrame:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", 5, -5)
+                        hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
                         hitFrame:EnableMouse(true)
                         hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(anchor, tip)
+                            CludesUI.ShowWidgetTooltip(anchorFrame, tipText)
                         end)
                         hitFrame:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
@@ -3275,21 +3289,21 @@ initFrame:SetScript("OnEvent", function(self)
                             "RightButton"
                         )
                     end
-                    MakeSupportHit(region._label)
-                    MakeSupportHit(region._control)
+                    MakeSupportHit(regionFrame._label)
+                    MakeSupportHit(regionFrame._control)
                 end
             end
 
-            parent._showRowDivider = true
+            hostFrame._showRowDivider = true
 
-            row, h = BuildApplyAllRow(parent, y, GROUP_UNIT_ORDER, optState.selectedUnit)
-            y = y - h
+            rowFrame, hgt = BuildApplyAllRow(hostFrame, posY, GROUP_UNIT_ORDER, optionState.selectedUnit)
+            posY = posY - hgt
 
             -- The sections live in UnitFrames_Options\Shared*_Options.lua and read
             -- this page's accessors through ctx. Each returns the new y plus the rows
             -- the click mapping below points at; Display returns true second when
             -- the unit has no CUI frame (only the inactive notice is built).
-            local ctx = {
+            local context = {
                 W = W,
                 SGet = SGet,
                 SSet = SSet,
@@ -3302,39 +3316,42 @@ initFrame:SetScript("OnEvent", function(self)
                 SApplySupport = SApplySupport,
             }
             local inactive
-            y, inactive = ns.UFO_BuildDisplaySection(parent, y, ctx)
+            posY, inactive = mod.UFO_BuildDisplaySection(hostFrame, posY, context)
             if inactive then
-                return y
+                return posY
             end
             local sharedPortraitHeader, sharedPortraitModeRow
-            y, sharedPortraitHeader, sharedPortraitModeRow = ns.UFO_BuildPortraitSection(parent, y, ctx)
+            posY, sharedPortraitHeader, sharedPortraitModeRow =
+                mod.UFO_BuildPortraitSection(hostFrame, posY, context)
             local sharedBarsHeader, sharedScaleRow, sharedSizeRow, sharedTextRow, sharedCenterTextRow
-            y, sharedBarsHeader, sharedScaleRow, sharedSizeRow, sharedTextRow, sharedCenterTextRow =
-                ns.UFO_BuildHealthBarSection(parent, y, ctx)
+            posY, sharedBarsHeader, sharedScaleRow, sharedSizeRow, sharedTextRow, sharedCenterTextRow =
+                mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             local sharedPowerHeader, sharedPowerRow1, sharedPowerRow2
-            y, sharedPowerHeader, sharedPowerRow1, sharedPowerRow2 =
-                ns.UFO_BuildPowerBarSection(parent, y, ctx)
+            posY, sharedPowerHeader, sharedPowerRow1, sharedPowerRow2 =
+                mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             local sharedCastHeader, sharedCastRow1, castRow2, castTextRow, castTargetRow
-            y, sharedCastHeader, sharedCastRow1, castRow2, castTextRow, castTargetRow =
-                ns.UFO_BuildCastBarSection(parent, y, ctx)
+            posY, sharedCastHeader, sharedCastRow1, castRow2, castTextRow, castTargetRow =
+                mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             local sharedBtbHeader, sharedBtbToggleRow, sharedBtbTextRow, sharedBtbCenterRow
-            y, sharedBtbHeader, sharedBtbToggleRow, sharedBtbTextRow, sharedBtbCenterRow =
-                ns.UFO_BuildTextBarSection(parent, y, ctx)
+            posY, sharedBtbHeader, sharedBtbToggleRow, sharedBtbTextRow, sharedBtbCenterRow =
+                mod.UFO_BuildTextBarSection(hostFrame, posY, context)
             local sharedClassResHeader, sharedClassResRow
-            y, sharedClassResHeader, sharedClassResRow = ns.UFO_BuildClassResourceSection(parent, y, ctx)
+            posY, sharedClassResHeader, sharedClassResRow =
+                mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
             local sharedBuffDebuffHeader, sharedAddRow2, sharedAddRow3
-            y, sharedBuffDebuffHeader, sharedAddRow2, sharedAddRow3 =
-                ns.UFO_BuildBuffsDebuffsSection(parent, y, ctx)
+            posY, sharedBuffDebuffHeader, sharedAddRow2, sharedAddRow3 =
+                mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             local sharedAbsorbsHeader, absorbRow, healAbsorbRow
-            y, sharedAbsorbsHeader, absorbRow, healAbsorbRow = ns.UFO_BuildAbsorbsHealsSection(parent, y, ctx)
+            posY, sharedAbsorbsHeader, absorbRow, healAbsorbRow =
+                mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             local sharedAddHeader, sharedAddRow1, sharedAddRow4, sharedAddRow5
-            y, sharedAddHeader, sharedAddRow1, sharedAddRow4, sharedAddRow5 =
-                ns.UFO_BuildExtrasSection(parent, y, ctx)
+            posY, sharedAddHeader, sharedAddRow1, sharedAddRow4, sharedAddRow5 =
+                mod.UFO_BuildExtrasSection(hostFrame, posY, context)
 
             -------------------------------------------------------------------
             --  Return click mapping targets + total height
             -------------------------------------------------------------------
-            parent._sharedClickTargets = {
+            hostFrame._sharedClickTargets = {
                 healthBar = { section = sharedBarsHeader, target = sharedScaleRow or sharedSizeRow },
                 absorbs = { section = sharedAbsorbsHeader, target = absorbRow, slotSide = "left" },
                 healAbsorb = { section = sharedAbsorbsHeader, target = healAbsorbRow, slotSide = "left" },
@@ -3345,10 +3362,15 @@ initFrame:SetScript("OnEvent", function(self)
                     target = sharedPortraitModeRow,
                     slotSide = "left",
                 },
-                nameText = ns.UFO_TextClickTarget(parent, "leftText", sharedBarsHeader, sharedTextRow),
-                healthText = ns.UFO_TextClickTarget(parent, "rightText", sharedBarsHeader, sharedTextRow),
-                centerText = ns.UFO_TextClickTarget(parent, "centerText", sharedBarsHeader, sharedTextRow),
-                extraText = ns.UFO_TextClickTarget(parent, "extraText", sharedBarsHeader, sharedTextRow),
+                nameText = mod.UFO_TextClickTarget(hostFrame, "leftText", sharedBarsHeader, sharedTextRow),
+                healthText = mod.UFO_TextClickTarget(hostFrame, "rightText", sharedBarsHeader, sharedTextRow),
+                centerText = mod.UFO_TextClickTarget(
+                    hostFrame,
+                    "centerText",
+                    sharedBarsHeader,
+                    sharedTextRow
+                ),
+                extraText = mod.UFO_TextClickTarget(hostFrame, "extraText", sharedBarsHeader, sharedTextRow),
                 classResource = {
                     section = sharedClassResHeader,
                     target = sharedClassResRow,
@@ -3382,22 +3404,22 @@ initFrame:SetScript("OnEvent", function(self)
                 castTime = { section = sharedCastHeader, target = castTextRow, slotSide = "right" },
                 castTarget = { section = sharedCastHeader, target = castTargetRow, slotSide = "left" },
                 -- Blizzard Style level number -> Show Level (+ its cog).
-                levelText = { section = sharedBarsHeader, target = parent._ufLevelRow, slotSide = "left" },
+                levelText = { section = sharedBarsHeader, target = hostFrame._ufLevelRow, slotSide = "left" },
             }
             -- Rows that exist only for some frames (Elite/Rare: target; Faction: player + target).
-            if optState.selectedUnit == "target" and parent._ufEliteRow then
-                parent._sharedClickTargets.eliteIndicator =
-                    { section = sharedAddHeader, target = parent._ufEliteRow, slotSide = "left" }
+            if optionState.selectedUnit == "target" and hostFrame._ufEliteRow then
+                hostFrame._sharedClickTargets.eliteIndicator =
+                    { section = sharedAddHeader, target = hostFrame._ufEliteRow, slotSide = "left" }
             end
             if
-                (optState.selectedUnit == "player" or optState.selectedUnit == "target")
-                and parent._ufFactionRow
+                (optionState.selectedUnit == "player" or optionState.selectedUnit == "target")
+                and hostFrame._ufFactionRow
             then
-                parent._sharedClickTargets.factionIndicator =
-                    { section = sharedAddHeader, target = parent._ufFactionRow, slotSide = "left" }
+                hostFrame._sharedClickTargets.factionIndicator =
+                    { section = sharedAddHeader, target = hostFrame._ufFactionRow, slotSide = "left" }
             end
 
-            return y
+            return posY
         end -- BuildSharedSettings
 
         ---------------------------------------------------------------------------
@@ -3406,7 +3428,7 @@ initFrame:SetScript("OnEvent", function(self)
         local _displayHeaderBuilder
         local displayHeaderFixedH = 0
 
-        local function BuildFrameDisplayPage(pageName, parent, yOffset)
+        local function BuildFrameDisplayPage(pageName, hostFrame, yOffset)
             -- Consume any pending unit selection from Element Options navigation
             if CludesUI._consumePendingUnitSelect then
                 CludesUI._consumePendingUnitSelect()
@@ -3416,38 +3438,39 @@ initFrame:SetScript("OnEvent", function(self)
             -- search jump to a unit-specific setting can restore this unit first via
             -- CludesUI._setUnitFrameUnit (see the matching CludesUI._buildingSelector
             -- comment in CUI_CooldownManager_Options.lua for the full reasoning).
-            CludesUI._buildingSelector = { setter = CludesUI._setUnitFrameUnit, key = optState.selectedUnit }
+            CludesUI._buildingSelector =
+                { setter = CludesUI._setUnitFrameUnit, key = optionState.selectedUnit }
 
             local W = CludesUI.Widgets
-            local y = yOffset
-            local _, h
+            local posY = yOffset
+            local _, hgt
 
             activePreview = nil
 
             -------------------------------------------------------------------
             --  CONTENT HEADER  (dropdown + preview)
             -------------------------------------------------------------------
-            _displayHeaderBuilder = function(hdr, hdrW)
+            _displayHeaderBuilder = function(heading, hdrW)
                 local DD_H = 34
                 local fy = -20
 
                 -- Centered dropdown (matches Action Bars Single Bar Edit)
                 local ddW = 350
                 local ddBtn, ddLbl = CludesUI.BuildDropdownControl(
-                    hdr,
+                    heading,
                     ddW,
-                    hdr:GetFrameLevel() + 5,
+                    heading:GetFrameLevel() + 5,
                     unitLabels,
                     unitOrder,
                     function()
-                        return optState.selectedUnit
+                        return optionState.selectedUnit
                     end,
                     function(v)
                         -- Preserve scroll position across the unit swap; capture BEFORE the
                         -- rebuild since the header relayout can clobber the live value.
                         -- Settings sit below the fixed header, so the same offset lands on the same section for any unit.
                         local savedScroll = CludesUI.GetContentScroll and CludesUI.GetContentScroll() or 0
-                        optState.selectedUnit = v
+                        optionState.selectedUnit = v
                         -- One pass builds the page and its header together (buildPage
                         -- sets the header for the new unit).
                         CludesUI:RefreshPage(true)
@@ -3459,18 +3482,18 @@ initFrame:SetScript("OnEvent", function(self)
                         C_Timer.After(0, UpdatePreview)
                     end
                 )
-                PP.Point(ddBtn, "TOP", hdr, "TOP", 0, fy)
+                Pix.Point(ddBtn, "TOP", heading, "TOP", 0, fy)
                 ddBtn:SetHeight(DD_H)
                 fy = fy - DD_H - 20
 
-                local side = unitSide[optState.selectedUnit] or "left"
-                local preview = ns.UFO_BuildUnitPreview(hdr, optState.selectedUnit, side)
+                local sideName = unitSide[optionState.selectedUnit] or "left"
+                local preview = mod.UFO_BuildUnitPreview(heading, optionState.selectedUnit, sideName)
                 activePreview = preview
                 local previewScale = preview._previewScale or 1
                 local initBuffTopPad = preview._buffTopPad or 0
                 preview._headerDropdownOY = math.abs(fy)
                 preview:ClearAllPoints()
-                PP.Point(preview, "TOP", hdr, "TOP", 0, (fy - initBuffTopPad) / previewScale)
+                Pix.Point(preview, "TOP", heading, "TOP", 0, (fy - initBuffTopPad) / previewScale)
                 preview._lastOY = (fy - initBuffTopPad) / previewScale
                 preview:Update()
                 local previewH = preview:GetHeight() * preview:GetScale()
@@ -3485,31 +3508,32 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Hint text
                 if
-                    optState._ufPreviewHintFS_display and not optState._ufPreviewHintFS_display:GetParent()
+                    optionState._ufPreviewHintFS_display
+                    and not optionState._ufPreviewHintFS_display:GetParent()
                 then
-                    optState._ufPreviewHintFS_display = nil
+                    optionState._ufPreviewHintFS_display = nil
                 end
                 local hintH = 0
                 if not IsPreviewHintDismissed() then
-                    if not optState._ufPreviewHintFS_display then
+                    if not optionState._ufPreviewHintFS_display then
                         -- Held across builds by optState: it leaves the preview's
                         -- region pool (Pool.Keep), so no later build hands it out
                         -- for another text; it is still hidden at its host's reset.
-                        optState._ufPreviewHintFS_display =
-                            PoolKeep(CludesUI.MakeFont(preview or hdr, 11, nil, 1, 1, 1))
-                        optState._ufPreviewHintFS_display:SetAlpha(0.45)
-                        optState._ufPreviewHintFS_display:SetText(
+                        optionState._ufPreviewHintFS_display =
+                            PoolKeep(CludesUI.MakeFont(preview or heading, 11, nil, 1, 1, 1))
+                        optionState._ufPreviewHintFS_display:SetAlpha(0.45)
+                        optionState._ufPreviewHintFS_display:SetText(
                             CludesUI.L("Click elements to scroll to and highlight their options")
                         )
                     end
-                    optState._ufPreviewHintFS_display:SetParent(preview or hdr)
-                    optState._ufPreviewHintFS_display:ClearAllPoints()
-                    optState._ufPreviewHintFS_display:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 17)
-                    optState._ufPreviewHintFS_display:SetAlpha(0.45)
-                    optState._ufPreviewHintFS_display:Show()
+                    optionState._ufPreviewHintFS_display:SetParent(preview or heading)
+                    optionState._ufPreviewHintFS_display:ClearAllPoints()
+                    optionState._ufPreviewHintFS_display:SetPoint("BOTTOM", heading, "BOTTOM", 0, 17)
+                    optionState._ufPreviewHintFS_display:SetAlpha(0.45)
+                    optionState._ufPreviewHintFS_display:Show()
                     hintH = 29
-                elseif optState._ufPreviewHintFS_display then
-                    optState._ufPreviewHintFS_display:Hide()
+                elseif optionState._ufPreviewHintFS_display then
+                    optionState._ufPreviewHintFS_display:Hide()
                 end
 
                 _displayHeaderBaseH = math.abs(fy)
@@ -3517,25 +3541,32 @@ initFrame:SetScript("OnEvent", function(self)
             end
             CludesUI:SetContentHeader(_displayHeaderBuilder)
 
-            parent._showRowDivider = true
+            hostFrame._showRowDivider = true
 
             -------------------------------------------------------------------
             --  Route to shared settings or mini builders
             -------------------------------------------------------------------
             if
-                optState.selectedUnit == "player"
-                or optState.selectedUnit == "target"
-                or optState.selectedUnit == "focus"
+                optionState.selectedUnit == "player"
+                or optionState.selectedUnit == "target"
+                or optionState.selectedUnit == "focus"
             then
-                y = BuildSharedSettings(parent, y)
-            elseif optState.selectedUnit == "targettarget" then
-                y = -ns.UFO_BuildFoTToTOptions(W, parent, y, db.profile.targettarget, "targettarget")
-            elseif optState.selectedUnit == "focustarget" then
-                y = -ns.UFO_BuildFoTToTOptions(W, parent, y, db.profile.focustarget, "focustarget")
-            elseif optState.selectedUnit == "pet" then
-                y = -ns.UFO_BuildPetOptions(W, parent, y)
-            elseif optState.selectedUnit == "boss" then
-                y = -ns.UFO_BuildBossOptions(W, parent, y)
+                posY = BuildSharedSettings(hostFrame, posY)
+            elseif optionState.selectedUnit == "targettarget" then
+                posY = -mod.UFO_BuildFoTToTOptions(
+                    W,
+                    hostFrame,
+                    posY,
+                    saved.profile.targettarget,
+                    "targettarget"
+                )
+            elseif optionState.selectedUnit == "focustarget" then
+                posY =
+                    -mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, saved.profile.focustarget, "focustarget")
+            elseif optionState.selectedUnit == "pet" then
+                posY = -mod.UFO_BuildPetOptions(W, hostFrame, posY)
+            elseif optionState.selectedUnit == "boss" then
+                posY = -mod.UFO_BuildBossOptions(W, hostFrame, posY)
             end
 
             -------------------------------------------------------------------
@@ -3543,14 +3574,14 @@ initFrame:SetScript("OnEvent", function(self)
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
             local function NavigateToSetting(key)
-                ns._UFNavigateToSetting(
-                    parent._sharedClickTargets or parent._ufClickTargets,
+                mod._UFNavigateToSetting(
+                    hostFrame._sharedClickTargets or hostFrame._ufClickTargets,
                     key,
                     PlaySettingGlow,
                     true
                 )
             end
-            local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, opts)
+            local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
                 return (
                     CludesUI.CreatePreviewHitOverlay(
                         element,
@@ -3558,7 +3589,7 @@ initFrame:SetScript("OnEvent", function(self)
                         mappingKey,
                         isText,
                         frameLevelOverride,
-                        opts
+                        options
                     )
                 )
             end
@@ -3661,16 +3692,16 @@ initFrame:SetScript("OnEvent", function(self)
                 -- re-anchors with it. A prior ":IsShown()" guard tied clickability to
                 -- build-time visibility, so icons shown later (header is cached, not rebuilt) had no overlay.
                 if pv._buffIcons then
-                    for i = 1, #pv._buffIcons do
-                        if pv._buffIcons[i] then
-                            CreateHitOverlay(pv._buffIcons[i], "buffIcon", false, baseLevel)
+                    for idx = 1, #pv._buffIcons do
+                        if pv._buffIcons[idx] then
+                            CreateHitOverlay(pv._buffIcons[idx], "buffIcon", false, baseLevel)
                         end
                     end
                 end
                 if pv._debuffIcons then
-                    for i = 1, #pv._debuffIcons do
-                        if pv._debuffIcons[i] then
-                            CreateHitOverlay(pv._debuffIcons[i], "debuffIcon", false, baseLevel)
+                    for idx = 1, #pv._debuffIcons do
+                        if pv._debuffIcons[idx] then
+                            CreateHitOverlay(pv._debuffIcons[idx], "debuffIcon", false, baseLevel)
                         end
                     end
                 end
@@ -3708,7 +3739,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Indicator badges (eye toggles): overlays made up front, shown and hidden
                 -- with their badge by the preview update, so a badge switched on later is
                 -- clickable straight away.
-                local targets = parent._sharedClickTargets or {}
+                local targets = hostFrame._sharedClickTargets or {}
                 pv._badgeOv = {}
                 for _, b in ipairs({
                     { pv._pvRaid, "raidMarker" },
@@ -3717,15 +3748,15 @@ initFrame:SetScript("OnEvent", function(self)
                     { pv._factionIndicator, "factionIndicator" },
                 }) do
                     if b[1] and targets[b[2]] then
-                        local ov = CreateHitOverlay(b[1], b[2], false, baseLevel + 20)
-                        ov:SetShown(b[1]:IsShown())
-                        pv._badgeOv[b[1]] = ov
+                        local shade = CreateHitOverlay(b[1], b[2], false, baseLevel + 20)
+                        shade:SetShown(b[1]:IsShown())
+                        pv._badgeOv[b[1]] = shade
                     end
                 end
                 pv._textOverlays = textOverlays
             end
 
-            return abs(y)
+            return abs(posY)
         end
 
         ---------------------------------------------------------------------------
@@ -3742,8 +3773,8 @@ initFrame:SetScript("OnEvent", function(self)
         -- Allow Unlock Mode's "Element Options" to pre-select a mini unit before the
         -- Mini Frames page builds (mirrors the Main Frames _setUnitFrameUnit /
         -- _pendingUnitSelect mechanism). Field assignments -- no new locals.
-        CludesUI._setMiniUnit = function(unit)
-            selectedMiniUnit = unit
+        CludesUI._setMiniUnit = function(unitToken)
+            selectedMiniUnit = unitToken
         end
         CludesUI._consumePendingMiniSelect = function()
             local pending = CludesUI._pendingMiniSelect
@@ -3756,7 +3787,7 @@ initFrame:SetScript("OnEvent", function(self)
         local _miniHeaderBuilder
         local miniHeaderFixedH = 0
 
-        local function BuildMiniPage(pageName, parent, yOffset)
+        local function BuildMiniPage(pageName, hostFrame, yOffset)
             -- Consume any pending mini selection from Element Options navigation
             if CludesUI._consumePendingMiniSelect then
                 CludesUI._consumePendingMiniSelect()
@@ -3769,24 +3800,24 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI._buildingSelector = { setter = CludesUI._setMiniUnit, key = selectedMiniUnit }
 
             local W = CludesUI.Widgets
-            local y = yOffset
-            local _, h
+            local posY = yOffset
+            local _, hgt
 
             activePreview = nil
 
             -------------------------------------------------------------------
             --  CONTENT HEADER  (dropdown + preview)
             -------------------------------------------------------------------
-            _miniHeaderBuilder = function(hdr, hdrW)
+            _miniHeaderBuilder = function(heading, hdrW)
                 local DD_H = 34
                 local fy = -20
 
                 -- Centered dropdown (matches Action Bars Single Bar Edit)
                 local ddW = 350
                 local ddBtn, ddLbl = CludesUI.BuildDropdownControl(
-                    hdr,
+                    heading,
                     ddW,
-                    hdr:GetFrameLevel() + 5,
+                    heading:GetFrameLevel() + 5,
                     miniUnitLabels,
                     miniUnitOrder,
                     function()
@@ -3802,18 +3833,18 @@ initFrame:SetScript("OnEvent", function(self)
                         C_Timer.After(0, UpdatePreview)
                     end
                 )
-                PP.Point(ddBtn, "TOP", hdr, "TOP", 0, fy)
+                Pix.Point(ddBtn, "TOP", heading, "TOP", 0, fy)
                 ddBtn:SetHeight(DD_H)
                 fy = fy - DD_H - 20
 
-                local side = unitSide[selectedMiniUnit] or "left"
-                local preview = ns.UFO_BuildUnitPreview(hdr, selectedMiniUnit, side)
+                local sideName = unitSide[selectedMiniUnit] or "left"
+                local preview = mod.UFO_BuildUnitPreview(heading, selectedMiniUnit, sideName)
                 activePreview = preview
                 local previewScale = preview._previewScale or 1
                 local initBuffTopPad = preview._buffTopPad or 0
                 preview._headerDropdownOY = math.abs(fy)
                 preview:ClearAllPoints()
-                PP.Point(preview, "TOP", hdr, "TOP", 0, (fy - initBuffTopPad) / previewScale)
+                Pix.Point(preview, "TOP", heading, "TOP", 0, (fy - initBuffTopPad) / previewScale)
                 preview._lastOY = (fy - initBuffTopPad) / previewScale
                 preview:Update()
                 local previewH = preview:GetHeight() * preview:GetScale()
@@ -3830,17 +3861,24 @@ initFrame:SetScript("OnEvent", function(self)
             end
             CludesUI:SetContentHeader(_miniHeaderBuilder)
 
-            parent._showRowDivider = true
+            hostFrame._showRowDivider = true
 
             -------------------------------------------------------------------
             --  Route to mini builders
             -------------------------------------------------------------------
             if selectedMiniUnit == "targettarget" then
-                y = -ns.UFO_BuildFoTToTOptions(W, parent, y, db.profile.targettarget, "targettarget")
+                posY = -mod.UFO_BuildFoTToTOptions(
+                    W,
+                    hostFrame,
+                    posY,
+                    saved.profile.targettarget,
+                    "targettarget"
+                )
             elseif selectedMiniUnit == "focustarget" then
-                y = -ns.UFO_BuildFoTToTOptions(W, parent, y, db.profile.focustarget, "focustarget")
+                posY =
+                    -mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, saved.profile.focustarget, "focustarget")
             elseif selectedMiniUnit == "pet" then
-                y = -ns.UFO_BuildPetOptions(W, parent, y)
+                posY = -mod.UFO_BuildPetOptions(W, hostFrame, posY)
             end
 
             -------------------------------------------------------------------
@@ -3848,10 +3886,10 @@ initFrame:SetScript("OnEvent", function(self)
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
             local function NavigateToSetting(key)
-                ns._UFNavigateToSetting(parent._ufClickTargets, key, PlaySettingGlow)
+                mod._UFNavigateToSetting(hostFrame._ufClickTargets, key, PlaySettingGlow)
             end
             local hitStyle = { container = true }
-            local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, opts)
+            local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
                 return (
                     CludesUI.CreatePreviewHitOverlay(
                         element,
@@ -3859,7 +3897,7 @@ initFrame:SetScript("OnEvent", function(self)
                         mappingKey,
                         isText,
                         frameLevelOverride,
-                        opts,
+                        options,
                         hitStyle
                     )
                 )
@@ -3915,23 +3953,23 @@ initFrame:SetScript("OnEvent", function(self)
                 -- other mini frames show none).
                 if selectedMiniUnit == "pet" then
                     if pv._buffIcons then
-                        for i = 1, #pv._buffIcons do
-                            if pv._buffIcons[i] then
-                                CreateHitOverlay(pv._buffIcons[i], "buffIcon", false, baseLevel)
+                        for idx = 1, #pv._buffIcons do
+                            if pv._buffIcons[idx] then
+                                CreateHitOverlay(pv._buffIcons[idx], "buffIcon", false, baseLevel)
                             end
                         end
                     end
                     if pv._debuffIcons then
-                        for i = 1, #pv._debuffIcons do
-                            if pv._debuffIcons[i] then
-                                CreateHitOverlay(pv._debuffIcons[i], "debuffIcon", false, baseLevel)
+                        for idx = 1, #pv._debuffIcons do
+                            if pv._debuffIcons[idx] then
+                                CreateHitOverlay(pv._debuffIcons[idx], "debuffIcon", false, baseLevel)
                             end
                         end
                     end
                 end
             end
 
-            return abs(y)
+            return abs(posY)
         end
 
         ---------------------------------------------------------------------------
@@ -3940,26 +3978,26 @@ initFrame:SetScript("OnEvent", function(self)
         -- Stored on ns (not init-function locals) to stay clear of the Lua 5.1 200-local
         -- cap. Header builder mirrors the Mini page's minus the unit dropdown (boss is the
         -- only unit here); click-navigation block reuses the Mini page's machinery.
-        ns._bossHeaderBuilder = nil
-        ns._BuildBossPage = function(pageName, parent, yOffset)
+        mod._bossHeaderBuilder = nil
+        mod._BuildBossPage = function(pageName, hostFrame, yOffset)
             local W = CludesUI.Widgets
-            local y = yOffset
+            local posY = yOffset
 
             activePreview = nil
 
             -------------------------------------------------------------------
             --  CONTENT HEADER  (preview only, no dropdown)
             -------------------------------------------------------------------
-            ns._bossHeaderBuilder = function(hdr, hdrW)
+            mod._bossHeaderBuilder = function(heading, hdrW)
                 local fy = -20
-                local side = unitSide.boss or "right"
-                local preview = ns.UFO_BuildUnitPreview(hdr, "boss", side)
+                local sideName = unitSide.boss or "right"
+                local preview = mod.UFO_BuildUnitPreview(heading, "boss", sideName)
                 activePreview = preview
                 local previewScale = preview._previewScale or 1
                 local initBuffTopPad = preview._buffTopPad or 0
                 preview._headerDropdownOY = math.abs(fy)
                 preview:ClearAllPoints()
-                PP.Point(preview, "TOP", hdr, "TOP", 0, (fy - initBuffTopPad) / previewScale)
+                Pix.Point(preview, "TOP", heading, "TOP", 0, (fy - initBuffTopPad) / previewScale)
                 preview._lastOY = (fy - initBuffTopPad) / previewScale
                 preview:Update()
                 local previewH = preview:GetHeight() * preview:GetScale()
@@ -3969,24 +4007,24 @@ initFrame:SetScript("OnEvent", function(self)
                 preview._headerFixedH = 20 + 20
                 return math.abs(fy)
             end
-            CludesUI:SetContentHeader(ns._bossHeaderBuilder)
+            CludesUI:SetContentHeader(mod._bossHeaderBuilder)
 
-            parent._showRowDivider = true
+            hostFrame._showRowDivider = true
 
             -------------------------------------------------------------------
             --  Boss section
             -------------------------------------------------------------------
-            y = -ns.UFO_BuildBossOptions(W, parent, y)
+            posY = -mod.UFO_BuildBossOptions(W, hostFrame, posY)
 
             -------------------------------------------------------------------
             --  CLICK NAVIGATION  (mirrors the Mini Frames page)
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
             local function NavigateToSetting(key)
-                ns._UFNavigateToSetting(parent._ufClickTargets, key, PlaySettingGlow)
+                mod._UFNavigateToSetting(hostFrame._ufClickTargets, key, PlaySettingGlow)
             end
             local hitStyle = { container = true }
-            local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, opts)
+            local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
                 return (
                     CludesUI.CreatePreviewHitOverlay(
                         element,
@@ -3994,7 +4032,7 @@ initFrame:SetScript("OnEvent", function(self)
                         mappingKey,
                         isText,
                         frameLevelOverride,
-                        opts,
+                        options,
                         hitStyle
                     )
                 )
@@ -4053,28 +4091,28 @@ initFrame:SetScript("OnEvent", function(self)
                 -- resolved at click time). Overlay every icon so newly shown ones stay
                 -- clickable without a header rebuild.
                 if pv._buffIcons then
-                    for i = 1, #pv._buffIcons do
-                        if pv._buffIcons[i] then
-                            CreateHitOverlay(pv._buffIcons[i], "buffIcon", false, baseLevel)
+                    for idx = 1, #pv._buffIcons do
+                        if pv._buffIcons[idx] then
+                            CreateHitOverlay(pv._buffIcons[idx], "buffIcon", false, baseLevel)
                         end
                     end
                 end
                 if pv._debuffIcons then
-                    for i = 1, #pv._debuffIcons do
-                        if pv._debuffIcons[i] then
-                            CreateHitOverlay(pv._debuffIcons[i], "debuffIcon", false, baseLevel)
+                    for idx = 1, #pv._debuffIcons do
+                        if pv._debuffIcons[idx] then
+                            CreateHitOverlay(pv._debuffIcons[idx], "debuffIcon", false, baseLevel)
                         end
                     end
                 end
             end
 
-            return abs(y)
+            return abs(posY)
         end
 
         ---------------------------------------------------------------------------
         --  Unlock Mode page  (stub SelectPage intercepts this before buildPage)
         ---------------------------------------------------------------------------
-        local function BuildUnlockPage(pageName, parent, yOffset)
+        local function BuildUnlockPage(pageName, hostFrame, yOffset)
             -- SelectPage() intercepts "Unlock Mode" and fires _openUnlockMode directly.
             -- This stub exists only as a safety net in case buildPage is ever called.
             if CludesUI._openUnlockMode then
@@ -4087,11 +4125,11 @@ initFrame:SetScript("OnEvent", function(self)
         --  Register the module
         ---------------------------------------------------------------------------
         local ufSearchTerms = {}
-        for _, label in pairs(unitLabels) do
-            ufSearchTerms[#ufSearchTerms + 1] = label
+        for _, labelText in pairs(unitLabels) do
+            ufSearchTerms[#ufSearchTerms + 1] = labelText
         end
-        for _, label in pairs(miniUnitLabels) do
-            ufSearchTerms[#ufSearchTerms + 1] = label
+        for _, labelText in pairs(miniUnitLabels) do
+            ufSearchTerms[#ufSearchTerms + 1] = labelText
         end
         -- "external defensives" matches the External Defensive aura-filter
         -- checkbox and the External Defensives bar inside Player Aura Bars.
@@ -4115,8 +4153,8 @@ initFrame:SetScript("OnEvent", function(self)
         -- Rebuild preview when spec changes (class resource pips may appear/disappear)
         local ufOptSpecFrame = CreateFrame("Frame")
         ufOptSpecFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        ufOptSpecFrame:SetScript("OnEvent", function(_, _, unit)
-            if unit ~= "player" then
+        ufOptSpecFrame:SetScript("OnEvent", function(_, _, unitToken)
+            if unitToken ~= "player" then
                 return
             end
             -- Only invalidate + rebuild when the panel is actually open. Invalidating while
@@ -4140,14 +4178,14 @@ initFrame:SetScript("OnEvent", function(self)
                     label = "Textured Background",
                     tooltip = "Draws the bar texture on the cast bar backgrounds too.",
                     disabled = function()
-                        return db.profile.castBarTexture == "blizzard"
+                        return saved.profile.castBarTexture == "blizzard"
                     end,
                     disabledTooltip = "This option requires a Cast Bar Texture other than Blizzard.",
                     get = function()
-                        return db.profile.castTextureBg == true
+                        return saved.profile.castTextureBg == true
                     end,
                     set = function(v)
-                        db.profile.castTextureBg = v and true or false
+                        saved.profile.castTextureBg = v and true or false
                         apply()
                     end,
                 }
@@ -4157,7 +4195,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return mini and (v == nil or v == "inherit")
             end
             local function Tex(s)
-                return s.healthBarTexture or db.profile.healthBarTexture or "none"
+                return s.healthBarTexture or saved.profile.healthBarTexture or "none"
             end
             return {
                 type = "toggle",
@@ -4168,7 +4206,7 @@ initFrame:SetScript("OnEvent", function(self)
                     if not s or Inheriting(s) then
                         return true
                     end
-                    return Tex(s) == "none" or not ns.UF_HealthOpaque(s)
+                    return Tex(s) == "none" or not mod.UF_HealthOpaque(s)
                 end,
                 disabledTooltip = function()
                     local s = unitFn()
@@ -4181,7 +4219,7 @@ initFrame:SetScript("OnEvent", function(self)
                     if Tex(s) == "none" then
                         return "This option requires a Bar Texture other than None."
                     end
-                    if ns.UF_DarkThemeOn(s) then
+                    if mod.UF_DarkThemeOn(s) then
                         return "This option requires a Dark Mode Fill of 100 (Global Settings > Colors)."
                     end
                     if mini == "boss" then
@@ -4195,7 +4233,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return false
                     end
                     if Inheriting(s) then
-                        return ns.UF_TexBgOn(mini)
+                        return mod.UF_TexBgOn(mini)
                     end
                     return s.textureBg == true
                 end,
@@ -4212,7 +4250,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Shared helpers and state for the builders under UnitFrames_Options\
         -- (loaded before this file, read when a page builds).
-        ns._UFO_OptEnv = {
+        mod._UFO_OptEnv = {
             TexBgRowCfg = TexBgRowCfg,
             _previewBuffIcons = _previewBuffIcons,
             _previewCreatureNames = _previewCreatureNames,
@@ -4247,11 +4285,11 @@ initFrame:SetScript("OnEvent", function(self)
             classPowerStyleValues = classPowerStyleValues,
             classThemeSubOrder = classThemeSubOrder,
             classThemeSubValues = classThemeSubValues,
-            db = db,
+            db = saved,
             DebuffModeDropdownCfg = DebuffModeDropdownCfg,
             detPortraitShapeOrder = detPortraitShapeOrder,
             detPortraitShapeValues = detPortraitShapeValues,
-            frames = frames,
+            frames = frameList,
             GROUP_UNIT_ORDER = GROUP_UNIT_ORDER,
             HideExhaustionRow = HideExhaustionRow,
             healthTextOrder = healthTextOrder,
@@ -4260,14 +4298,14 @@ initFrame:SetScript("OnEvent", function(self)
             healthTextOrderTargetFocus = healthTextOrderTargetFocus,
             healthTextValues = healthTextValues,
             MINI_GROUP_ORDER = MINI_GROUP_ORDER,
-            optState = optState,
+            optState = optionState,
             portraitArtOrder = portraitArtOrder,
             portraitArtValues = portraitArtValues,
             portraitModeOrder2 = portraitModeOrder2,
             portraitModeValues2 = portraitModeValues2,
             portraitNonPlayerOrder = portraitNonPlayerOrder,
             portraitNonPlayerValues = portraitNonPlayerValues,
-            PP = PP,
+            PP = Pix,
             PREVIEW_FONT = PREVIEW_FONT,
             PromptReloadIfUnspawned = PromptReloadIfUnspawned,
             RegisterWidgetRefresh = RegisterWidgetRefresh,
@@ -4297,7 +4335,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Player Aura Bars draws over the scroll frame: no inline search there.
             noSearchPages = { [PAGE_AURA_BARS] = true },
             searchTerms = ufSearchTerms,
-            buildPage = function(pageName, parent, yOffset)
+            buildPage = function(pageName, hostFrame, yOffset)
                 if CludesUI._prebuilding and pageName == PAGE_AURA_BARS then
                     return
                 end
@@ -4307,21 +4345,21 @@ initFrame:SetScript("OnEvent", function(self)
                 -- cleanup is inconsistent across tab switches (mirrors CUI_RaidFrames_Options.lua's _bmRoot/_dmRoot/_ccRoot pattern).
                 -- Never from the global search's hidden prebuild of another page: the
                 -- root is the live page's.
-                if pageName ~= PAGE_AURA_BARS and ns._pabRoot and not CludesUI._prebuilding then
-                    ns.PABMP_ParkRoot()
+                if pageName ~= PAGE_AURA_BARS and mod._pabRoot and not CludesUI._prebuilding then
+                    mod.PABMP_ParkRoot()
                 end
                 -- Randomize preview creature IDs on every tab switch
                 RandomizePreviewCreatures()
-                ns.UF_AskExisting2DMirror()
+                mod.UF_AskExisting2DMirror()
                 if pageName == PAGE_DISPLAY then
-                    return BuildFrameDisplayPage(pageName, parent, yOffset)
+                    return BuildFrameDisplayPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_BOSS then
-                    return ns._BuildBossPage(pageName, parent, yOffset)
+                    return mod._BuildBossPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_MINI then
-                    return BuildMiniPage(pageName, parent, yOffset)
+                    return BuildMiniPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_AURA_BARS then
-                    if ns.PABMP_BuildPage then
-                        return ns.PABMP_BuildPage(pageName, parent, yOffset)
+                    if mod.PABMP_BuildPage then
+                        return mod.PABMP_BuildPage(pageName, hostFrame, yOffset)
                     end
                 end
             end,
@@ -4329,7 +4367,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if pageName == PAGE_DISPLAY then
                     return _displayHeaderBuilder
                 elseif pageName == PAGE_BOSS then
-                    return ns._bossHeaderBuilder
+                    return mod._bossHeaderBuilder
                 elseif pageName == PAGE_MINI then
                     return _miniHeaderBuilder
                 end
@@ -4344,7 +4382,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return {
                         setter = CludesUI._setUnitFrameUnit,
                         keys = unitOrder,
-                        currentKey = optState.selectedUnit,
+                        currentKey = optionState.selectedUnit,
                     }
                 elseif pageName == PAGE_MINI then
                     return {
@@ -4356,7 +4394,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return nil
             end,
             onPageCacheRestore = function(pageName)
-                local textCheck = ns._ufTextChecks and ns._ufTextChecks[pageName]
+                local textCheck = mod._ufTextChecks and mod._ufTextChecks[pageName]
                 if textCheck and textCheck() then
                     C_Timer.After(0, function()
                         if
@@ -4368,9 +4406,9 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                 end
                 -- Clean up Player Aura Bars root when switching away
-                if pageName ~= PAGE_AURA_BARS and ns._pabRoot then
-                    ns.PABMP_ParkRoot()
-                elseif pageName == PAGE_AURA_BARS and not ns._pabRoot then
+                if pageName ~= PAGE_AURA_BARS and mod._pabRoot then
+                    mod.PABMP_ParkRoot()
+                elseif pageName == PAGE_AURA_BARS and not mod._pabRoot then
                     -- PABMP_BuildPage bypasses `parent` and builds onto the live shared
                     -- scrollFrame into ns._pabRoot (see buildPage's _prebuilding guard
                     -- above). The framework's page cache doesn't know about that
@@ -4387,7 +4425,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                 end
                 RandomizePreviewCreatures()
-                ns.UF_AskExisting2DMirror()
+                mod.UF_AskExisting2DMirror()
                 -- Hide all UIParent-parented disabled overlays before restoring
                 -- (they persist across tab switches since they're not children of pf)
                 for k, pv in pairs(allPreviews) do
@@ -4412,24 +4450,24 @@ initFrame:SetScript("OnEvent", function(self)
                 UpdatePreview()
                 -- Refresh hint visibility on cache restore
                 local dismissed = IsPreviewHintDismissed()
-                if pageName == PAGE_DISPLAY and optState._ufPreviewHintFS_display then
+                if pageName == PAGE_DISPLAY and optionState._ufPreviewHintFS_display then
                     if dismissed then
-                        optState._ufPreviewHintFS_display:Hide()
+                        optionState._ufPreviewHintFS_display:Hide()
                     else
-                        optState._ufPreviewHintFS_display:SetAlpha(0.45)
-                        optState._ufPreviewHintFS_display:Show()
+                        optionState._ufPreviewHintFS_display:SetAlpha(0.45)
+                        optionState._ufPreviewHintFS_display:Show()
                     end
                 end
             end,
             onReset = function()
-                db:ResetProfile()
+                saved:ResetProfile()
                 -- No reload here: Reset CUI Module Settings reloads after this returns.
             end,
             -- Tears down Boss Preview on module switch (RegisterOnHide above
             -- only covers closing the whole options window).
             onModuleLeave = function()
-                if ns._bossPreviewActive and ns.SetBossPreview then
-                    ns.SetBossPreview(false)
+                if mod._bossPreviewActive and mod.SetBossPreview then
+                    mod.SetBossPreview(false)
                 end
             end,
         })
@@ -4447,7 +4485,7 @@ initFrame:SetScript("OnEvent", function(self)
             if msg == "reset" then
                 -- The reload first (RequestReload); the reset lands before it.
                 CludesUI.RequestReload()
-                db:ResetProfile()
+                saved:ResetProfile()
                 return
             end
 
@@ -4457,8 +4495,8 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- If SetupOptionsPanel already ran before PLAYER_LOGIN (unlikely but safe),
     -- fire immediately
-    if ns.db then
-        ns._InitCUIModule()
+    if mod.db then
+        mod._InitCUIModule()
     end
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.

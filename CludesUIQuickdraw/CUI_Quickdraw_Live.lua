@@ -8,34 +8,34 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  its wheel snippet, the palette alpha, ns.Open and ns.Close.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local GetCursorPosition = GetCursorPosition
 local InCombatLockdown = InCombatLockdown
 local GetTime = GetTime
 
-local LIVE_STRATA, liveFrame, P = I.LIVE_STRATA, I.liveFrame, I.P
-local LATCH_TIMEOUT, OPEN_TIMEOUT = I.LATCH_TIMEOUT, I.OPEN_TIMEOUT
-local secureButtons, SetLiveView = I.secureButtons, I.SetLiveView
-local SetScrollCatcher = I.SetScrollCatcher
+local LIVE_STRATA, liveFrame, Prm = Inner.LIVE_STRATA, Inner.liveFrame, Inner.P
+local LATCH_TIMEOUT, OPEN_TIMEOUT = Inner.LATCH_TIMEOUT, Inner.OPEN_TIMEOUT
+local secureButtons, SetLiveView = Inner.secureButtons, Inner.SetLiveView
+local SetScrollCatcher = Inner.SetScrollCatcher
 
 local liveView
-I.liveViewSetters[#I.liveViewSetters + 1] = function(v)
-    liveView = v
+Inner.liveViewSetters[#Inner.liveViewSetters + 1] = function(val)
+    liveView = val
 end
 local scrollCatcher
-I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v)
-    scrollCatcher = v
+Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val)
+    scrollCatcher = val
 end
 local cancelButton
-I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v)
-    cancelButton = v
+Inner.cancelButtonSetters[#Inner.cancelButtonSetters + 1] = function(val)
+    cancelButton = val
 end
 
 local secureHeader
@@ -48,7 +48,7 @@ local function CreateLiveView()
     if liveView then
         return liveView
     end
-    SetLiveView(ns.CreatePaletteView(UIParent, { frame = liveFrame, live = true }))
+    SetLiveView(mod.CreatePaletteView(UIParent, { frame = liveFrame, live = true }))
     local f = liveView:GetFrame()
     f:SetFrameStrata(LIVE_STRATA)
     f:Hide()
@@ -214,7 +214,7 @@ local function UpdatePaletteAlpha()
 end
 
 local function OnPaletteUpdate(_, elapsed)
-    local now = GetTime()
+    local nowTime = GetTime()
     -- A latched menu has no key held, so the backstop that catches a lost
     -- key-up is not what it needs -- it is meant to sit there while the player
     -- decides. It still gets one, well past the held palette's: a menu left
@@ -223,8 +223,8 @@ local function OnPaletteUpdate(_, elapsed)
     -- Read off the button rather than off the profile: the latch is the
     -- SNIPPET's answer, and a palette with the switch on but no Select key set
     -- never latched at all. Reading an attribute is unrestricted in combat.
-    local btn = secureButtons[liveView:GetPaletteIndex()]
-    local latched = btn and btn:GetAttribute("eqdLatched")
+    local button = secureButtons[liveView:GetPaletteIndex()]
+    local latched = button and button:GetAttribute("eqdLatched")
     -- ns.Close is INSECURE, and a latched menu's teardown -- the two bindings,
     -- the ownership stamp, the gates -- is every one of the protected calls a
     -- fight refuses. Timing out mid-fight would put the menu off screen and
@@ -236,8 +236,8 @@ local function OnPaletteUpdate(_, elapsed)
     -- The held palette's own backstop is unaffected -- its close rides a key
     -- release through the sandbox and was never refused anything.
     if not (latched and InCombatLockdown()) then
-        if now - openedAt > (latched and LATCH_TIMEOUT or OPEN_TIMEOUT) then
-            ns.Close()
+        if nowTime - openedAt > (latched and LATCH_TIMEOUT or OPEN_TIMEOUT) then
+            mod.Close()
             return
         end
     end
@@ -259,10 +259,10 @@ local function OnPaletteUpdate(_, elapsed)
     -- Outside the steer skip: the connector line's grow-in and sweep both
     -- keep moving under a cursor that is holding still. Costs two table
     -- reads per frame when no line is up.
-    liveView:AdvanceNeedle(now)
+    liveView:AdvanceNeedle(nowTime)
     -- After the steering, which repaints alphas flat: the slam's lerp has to
     -- own the frame's final word while it runs.
-    liveView:AdvanceSlam(now)
+    liveView:AdvanceSlam(nowTime)
 end
 
 -- The mount tint's events (see PaletteView:RefreshMountTints), registered only
@@ -289,11 +289,11 @@ local function SyncMountWatch(on)
     if not mountWatch then
         return
     end
-    for i = 1, #MOUNT_WATCH_EVENTS do
+    for idx = 1, #MOUNT_WATCH_EVENTS do
         if on then
-            mountWatch:RegisterEvent(MOUNT_WATCH_EVENTS[i])
+            mountWatch:RegisterEvent(MOUNT_WATCH_EVENTS[idx])
         else
-            mountWatch:UnregisterEvent(MOUNT_WATCH_EVENTS[i])
+            mountWatch:UnregisterEvent(MOUNT_WATCH_EVENTS[idx])
         end
     end
 end
@@ -322,8 +322,8 @@ local function PositionPalette(forceFixed)
     end
 end
 
-function ns.Open(paletteIndex)
-    local p = P()
+function mod.Open(paletteIndex)
+    local p = Prm()
     if not p or not p.enabled then
         return
     end
@@ -410,7 +410,7 @@ end
 -- there is nothing it may do.
 local ReleaseSecureState
 
-function ns.Close()
+function mod.Close()
     if not liveView then
         return
     end
@@ -435,9 +435,9 @@ function ns.Close()
     liveView:SetSelection(nil)
 end
 
-I.CreateLiveView, I.EnsureScrollCatcher = CreateLiveView, EnsureScrollCatcher
-I.EnsureSecureHeader, I.ReleaseEscape = EnsureSecureHeader, ReleaseEscape
-I.SetReleaseSecureState = function(f)
+Inner.CreateLiveView, Inner.EnsureScrollCatcher = CreateLiveView, EnsureScrollCatcher
+Inner.EnsureSecureHeader, Inner.ReleaseEscape = EnsureSecureHeader, ReleaseEscape
+Inner.SetReleaseSecureState = function(f)
     ReleaseSecureState = f
 end
-I.broken = false
+Inner.broken = false

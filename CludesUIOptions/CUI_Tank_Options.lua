@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  calls the module's refresh functions, so a change shows on the frame at once.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUITank"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -27,15 +27,15 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local K = ns.K
-    local function DB()
-        return ns.DB()
+    local Keys = mod.K
+    local function SavedDB()
+        return mod.DB()
     end
     local function Frame()
         return _G.CoTankAuras
     end
-    local function Round(v)
-        return math.floor(v + 0.5)
+    local function Round(val)
+        return math.floor(val + 0.5)
     end
 
     -- A blank right-hand slot.
@@ -48,73 +48,73 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function IconsChanged()
-        ns.RefreshAllIconSettings()
+        mod.RefreshAllIconSettings()
         local f = Frame()
-        if ns.isTestMode and f then
+        if mod.isTestMode and f then
             f:UpdateDebuffs()
         end
     end
 
     -- { values, order } for a dropdown, from one of the module's {id, label} lists.
-    local function Choices(list)
-        local values, order = {}, {}
-        for _, item in ipairs(list) do
-            values[item.id] = item.label
-            order[#order + 1] = item.id
+    local function Choices(entries)
+        local values, sequence = {}, {}
+        for _, itemInfo in ipairs(entries) do
+            values[itemInfo.id] = itemInfo.label
+            sequence[#sequence + 1] = itemInfo.id
         end
-        return values, order
+        return values, sequence
     end
 
     -- A slider bound to one numeric setting.
-    local function Slider(text, key, default, min, max, step, apply, tooltip)
+    local function Slider(textValue, key, default, min, max, step, apply, tooltip)
         return {
             type = "slider",
-            text = text,
+            text = textValue,
             min = min,
             max = max,
             step = step or 1,
             tooltip = tooltip,
             getValue = function()
-                return ns.SettingNumber(key, default)
+                return mod.SettingNumber(key, default)
             end,
-            setValue = function(v)
-                DB()[key] = Round(v)
+            setValue = function(val)
+                SavedDB()[key] = Round(val)
                 if apply then
-                    apply(Round(v))
+                    apply(Round(val))
                 end
             end,
         }
     end
 
     -- A switch bound to one on/off setting.
-    local function Toggle(text, key, apply, tooltip)
+    local function Toggle(textValue, key, apply, tooltip)
         return {
             type = "toggle",
-            text = text,
+            text = textValue,
             tooltip = tooltip,
             getValue = function()
-                return DB()[key] and true or false
+                return SavedDB()[key] and true or false
             end,
-            setValue = function(v)
-                DB()[key] = v and true or false
+            setValue = function(val)
+                SavedDB()[key] = val and true or false
                 if apply then
-                    apply(v)
+                    apply(val)
                 end
             end,
         }
     end
 
     -- A colour picker bound to one of the module's text colours.
-    local function Colour(text, key, apply)
+    local function Colour(textValue, key, apply)
         return {
             type = "colorpicker",
-            text = text,
+            text = textValue,
             hasAlpha = false,
             getValue = function()
-                return ns.FontColor(key)
+                return mod.FontColor(key)
             end,
             setValue = function(r, g, b)
-                ns.SetFontColor(key, r, g, b)
+                mod.SetFontColor(key, r, g, b)
                 if apply then
                     apply()
                 end
@@ -125,34 +125,34 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  Frame page
     ---------------------------------------------------------------------------
-    local function BuildFramePage(_, parent, yOffset)
+    local function BuildFramePage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "TEXT", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "TEXT", posY)
+        posY = posY - hgt
 
         local fontValues, fontOrder = { [GLOBAL_FONT] = "CludesUI Global Font" }, { GLOBAL_FONT }
-        for _, f in ipairs(ns.FontList()) do
+        for _, f in ipairs(mod.FontList()) do
             fontValues[f.id] = f.label
             fontOrder[#fontOrder + 1] = f.id
         end
-        local flagValues, flagOrder = Choices(K.FONT_FLAGS)
-        _, h = W:DualRow(parent, y, {
+        local flagValues, flagOrder = Choices(Keys.FONT_FLAGS)
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Font",
             values = fontValues,
             order = fontOrder,
             tooltip = "CludesUI Global Font follows the font chosen under Global Settings > Fonts.",
             getValue = function()
-                return DB().fontFace or GLOBAL_FONT
+                return SavedDB().fontFace or GLOBAL_FONT
             end,
-            setValue = function(v)
-                DB().fontFace = (v ~= GLOBAL_FONT) and v or nil
-                ns.RefreshAllFonts()
+            setValue = function(val)
+                SavedDB().fontFace = (val ~= GLOBAL_FONT) and val or nil
+                mod.RefreshAllFonts()
             end,
         }, {
             type = "dropdown",
@@ -160,85 +160,93 @@ initFrame:SetScript("OnEvent", function(self)
             values = flagValues,
             order = flagOrder,
             getValue = function()
-                return DB().fontFlags or "OUTLINE"
+                return SavedDB().fontFlags or "OUTLINE"
             end,
-            setValue = function(v)
-                DB().fontFlags = v
-                ns.RefreshAllFonts()
+            setValue = function(val)
+                SavedDB().fontFlags = val
+                mod.RefreshAllFonts()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Name Size",
                 "nameFontSize",
-                K.DEFAULT_NAME_FONT_SIZE,
-                K.MIN_FONT_SIZE,
-                K.MAX_FONT_SIZE,
+                Keys.DEFAULT_NAME_FONT_SIZE,
+                Keys.MIN_FONT_SIZE,
+                Keys.MAX_FONT_SIZE,
                 1,
-                ns.RefreshAllFonts
+                mod.RefreshAllFonts
             ),
             Slider(
                 "Health Text Size",
                 "hpFontSize",
-                K.DEFAULT_HP_FONT_SIZE,
-                K.MIN_FONT_SIZE,
-                K.MAX_FONT_SIZE,
+                Keys.DEFAULT_HP_FONT_SIZE,
+                Keys.MIN_FONT_SIZE,
+                Keys.MAX_FONT_SIZE,
                 1,
-                ns.RefreshAllFonts
+                mod.RefreshAllFonts
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            Colour("Name Colour", "nameTextColor", ns.RefreshAllFonts),
-            Colour("Health Text Colour", "hpTextColor", ns.RefreshAllFonts)
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
+            Colour("Name Colour", "nameTextColor", mod.RefreshAllFonts),
+            Colour("Health Text Colour", "hpTextColor", mod.RefreshAllFonts)
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "FRAME SIZE", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "FRAME SIZE", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            Slider("Width", "frameWidth", K.DEFAULT_WIDTH, K.MIN_WIDTH, K.MAX_WIDTH, 5, function(v)
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
+            Slider("Width", "frameWidth", Keys.DEFAULT_WIDTH, Keys.MIN_WIDTH, Keys.MAX_WIDTH, 5, function(val)
                 local f = Frame()
                 if f and not InCombatLockdown() then
-                    f:SetWidth(v)
+                    f:SetWidth(val)
                     f:FitNameToWidth()
                 end
             end),
-            Slider("Height", "frameHeight", K.DEFAULT_HEIGHT, K.MIN_HEIGHT, K.MAX_HEIGHT, 5, function(v)
-                local f = Frame()
-                if f and not InCombatLockdown() then
-                    f:SetHeight(v)
+            Slider(
+                "Height",
+                "frameHeight",
+                Keys.DEFAULT_HEIGHT,
+                Keys.MIN_HEIGHT,
+                Keys.MAX_HEIGHT,
+                5,
+                function(val)
+                    local f = Frame()
+                    if f and not InCombatLockdown() then
+                        f:SetHeight(val)
+                    end
+                    mod.RefreshAuraContainerLayout(f)
+                    mod.RestyleAuraButtons()
                 end
-                ns.RefreshAuraContainerLayout(f)
-                ns.RestyleAuraButtons()
-            end)
+            )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "CO-TANK DEBUFFS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "CO-TANK DEBUFFS", posY)
+        posY = posY - hgt
 
-        local filterValues, filterOrder = Choices(K.DEBUFF_FILTER_MODES)
-        _, h = W:DualRow(parent, y, {
+        local filterValues, filterOrder = Choices(Keys.DEBUFF_FILTER_MODES)
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Co-Tank Debuffs",
             tooltip = "The row of harmful effects on your co-tank.",
             getValue = function()
-                return ns.DebuffsEnabled()
+                return mod.DebuffsEnabled()
             end,
-            setValue = function(v)
-                if (ns.DebuffsEnabled() and true or false) ~= (v and true or false) then
-                    ns.ToggleDebuffs()
+            setValue = function(val)
+                if (mod.DebuffsEnabled() and true or false) ~= (val and true or false) then
+                    mod.ToggleDebuffs()
                 end
             end,
         }, {
@@ -248,30 +256,30 @@ initFrame:SetScript("OnEvent", function(self)
             order = filterOrder,
             tooltip = "The game applies this filter itself, so it holds during boss fights.",
             getValue = function()
-                return DB().debuffFilter or "ALL"
+                return SavedDB().debuffFilter or "ALL"
             end,
-            setValue = function(v)
-                DB().debuffFilter = v
-                ns.RefreshDebuffFilter()
+            setValue = function(val)
+                SavedDB().debuffFilter = val
+                mod.RefreshDebuffFilter()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Debuff Icons",
                 "maxDebuffs",
-                K.DEBUFF_DEFAULT_COUNT,
-                K.DEBUFF_MIN_COUNT,
-                K.DEBUFF_MAX_COUNT,
+                Keys.DEBUFF_DEFAULT_COUNT,
+                Keys.DEBUFF_MIN_COUNT,
+                Keys.DEBUFF_MAX_COUNT,
                 1,
-                function(v)
+                function(val)
                     local f = Frame()
                     if f then
-                        f:UpdateAndRefreshDebuffLayout(v)
-                        if ns.isTestMode then
+                        f:UpdateAndRefreshDebuffLayout(val)
+                        if mod.isTestMode then
                             f:ShowMockDebuffs()
                         end
                     end
@@ -280,35 +288,35 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Debuff Icon Gap",
                 "debuffSpacing",
-                K.DEBUFF_SPACING,
-                K.ICON_SPACING_MIN,
-                K.ICON_SPACING_MAX,
+                Keys.DEBUFF_SPACING,
+                Keys.ICON_SPACING_MIN,
+                Keys.ICON_SPACING_MAX,
                 1,
-                ns.RefreshDebuffSpacing
+                mod.RefreshDebuffSpacing
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Highlight at Stacks",
                 "stackHighlightAt",
-                K.STACK_HIGHLIGHT_DEFAULT,
-                K.STACK_HIGHLIGHT_MIN,
-                K.STACK_HIGHLIGHT_MAX,
+                Keys.STACK_HIGHLIGHT_DEFAULT,
+                Keys.STACK_HIGHLIGHT_MIN,
+                Keys.STACK_HIGHLIGHT_MAX,
                 1,
                 IconsChanged,
                 "A debuff that reaches this many stacks gets a coloured border. 0 turns it off."
             ),
             Colour("Highlight Colour", "stackHighlightColor", IconsChanged)
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Toggle(
                 "Alert Text at That Stack Count",
                 "stackBanner",
@@ -317,24 +325,24 @@ initFrame:SetScript("OnEvent", function(self)
             ),
             Toggle("Colour Borders by Debuff Type", "debuffTypeBorders", IconsChanged)
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Toggle("Hide Icon Tooltips in Combat", "hideTooltipsInCombat", IconsChanged),
             Slider(
                 "Defensive Icons",
                 "maxDefensives",
-                K.BIG_DEFENSIVES_DEFAULT_COUNT,
-                K.BIG_DEFENSIVES_MIN_COUNT,
-                K.BIG_DEFENSIVES_MAX_COUNT,
+                Keys.BIG_DEFENSIVES_DEFAULT_COUNT,
+                Keys.BIG_DEFENSIVES_MIN_COUNT,
+                Keys.BIG_DEFENSIVES_MAX_COUNT,
                 1,
-                function(v)
+                function(val)
                     local f = Frame()
                     if f then
-                        f:UpdateAndRefreshDefensiveLayout(v)
-                        if ns.isTestMode then
+                        f:UpdateAndRefreshDefensiveLayout(val)
+                        if mod.isTestMode then
                             f:UpdateBigDefensives()
                         end
                     end
@@ -342,25 +350,25 @@ initFrame:SetScript("OnEvent", function(self)
                 "Your co-tank's active defensive cooldowns. 0 hides the row."
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "EXTERNALS ON YOU", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "EXTERNALS ON YOU", posY)
+        posY = posY - hgt
 
-        local EXT = ns.EXT
-        _, h = W:DualRow(
-            parent,
-            y,
+        local EXT = mod.EXT
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "toggle",
                 text = "Show Externals on You",
                 tooltip = "A row of the big defensives other players put on you, such as Pain Suppression or Ironbark. It shows only in a tank spec. Move it in Layout Mode.",
                 getValue = function()
-                    return ns.ExternalsEnabled()
+                    return mod.ExternalsEnabled()
                 end,
-                setValue = function(v)
-                    DB().extEnabled = v and true or false
-                    ns.RefreshExternals()
+                setValue = function(val)
+                    SavedDB().extEnabled = val and true or false
+                    mod.RefreshExternals()
                 end,
             },
             Slider(
@@ -370,46 +378,46 @@ initFrame:SetScript("OnEvent", function(self)
                 0,
                 EXT.MAX_COUNT,
                 1,
-                ns.RefreshExternals,
+                mod.RefreshExternals,
                 "How many externals the row can show at once. 0 hides it."
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider("Icon Size", "extSize", EXT.DEFAULT_SIZE, EXT.MIN_SIZE, EXT.MAX_SIZE, 1, function()
-                ns.RefreshExternals()
-                ns.RestyleAuraButtons()
+                mod.RefreshExternals()
+                mod.RestyleAuraButtons()
             end),
             Slider(
                 "Icon Gap",
                 "extSpacing",
-                K.DEBUFF_SPACING,
-                K.ICON_SPACING_MIN,
-                K.ICON_SPACING_MAX,
+                Keys.DEBUFF_SPACING,
+                Keys.ICON_SPACING_MIN,
+                Keys.ICON_SPACING_MAX,
                 1,
-                ns.RefreshExternals
+                mod.RefreshExternals
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "ICON LABELS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "ICON LABELS", posY)
+        posY = posY - hgt
 
-        local posValues, posOrder = Choices(K.STACK_COUNT_POSITIONS)
-        _, h = W:DualRow(
-            parent,
-            y,
+        local posValues, posOrder = Choices(Keys.STACK_COUNT_POSITIONS)
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Stack Count Size",
                 "stackCountSize",
-                K.STACK_COUNT_DEFAULT_SIZE,
-                K.STACK_COUNT_MIN_SIZE,
-                K.STACK_COUNT_MAX_SIZE,
+                Keys.STACK_COUNT_DEFAULT_SIZE,
+                Keys.STACK_COUNT_MIN_SIZE,
+                Keys.STACK_COUNT_MAX_SIZE,
                 1,
-                ns.RefreshAllIconSettings,
+                mod.RefreshAllIconSettings,
                 "0 hides the stack count."
             ),
             {
@@ -418,112 +426,112 @@ initFrame:SetScript("OnEvent", function(self)
                 values = posValues,
                 order = posOrder,
                 getValue = function()
-                    return DB().stackCountPos or "BR_IN"
+                    return SavedDB().stackCountPos or "BR_IN"
                 end,
-                setValue = function(v)
-                    DB().stackCountPos = v
-                    ns.RefreshAllIconSettings()
+                setValue = function(val)
+                    SavedDB().stackCountPos = val
+                    mod.RefreshAllIconSettings()
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Stack Count Nudge X",
                 "stackCountNudgeX",
                 0,
-                K.STACK_NUDGE_MIN,
-                K.STACK_NUDGE_MAX,
+                Keys.STACK_NUDGE_MIN,
+                Keys.STACK_NUDGE_MAX,
                 1,
-                ns.RefreshAllIconSettings
+                mod.RefreshAllIconSettings
             ),
             Slider(
                 "Stack Count Nudge Y",
                 "stackCountNudgeY",
                 0,
-                K.STACK_NUDGE_MIN,
-                K.STACK_NUDGE_MAX,
+                Keys.STACK_NUDGE_MIN,
+                Keys.STACK_NUDGE_MAX,
                 1,
-                ns.RefreshAllIconSettings
+                mod.RefreshAllIconSettings
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "segmented",
                 text = "Timer Position",
                 values = { icon = "On Icon", above = "Above Icon" },
                 order = { "icon", "above" },
                 getValue = function()
-                    return DB().cdAbove and "above" or "icon"
+                    return SavedDB().cdAbove and "above" or "icon"
                 end,
-                setValue = function(v)
-                    DB().cdAbove = (v == "above")
-                    ns.RefreshAllIconSettings()
+                setValue = function(val)
+                    SavedDB().cdAbove = (val == "above")
+                    mod.RefreshAllIconSettings()
                 end,
             },
             Slider(
                 "On-Icon Timer Scale",
                 "cdFontScale",
-                K.CD_FONT_SCALE_DEFAULT,
-                K.CD_FONT_SCALE_MIN,
-                K.CD_FONT_SCALE_MAX,
+                Keys.CD_FONT_SCALE_DEFAULT,
+                Keys.CD_FONT_SCALE_MIN,
+                Keys.CD_FONT_SCALE_MAX,
                 1,
-                ns.RefreshAllIconSettings,
+                mod.RefreshAllIconSettings,
                 "0 hides the timer on the icon. 10 is full size."
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Above-Icon Timer Size",
                 "timerTextSize",
-                K.TIMER_TEXT_DEFAULT_SIZE,
-                K.TIMER_TEXT_MIN_SIZE,
-                K.TIMER_TEXT_MAX_SIZE,
+                Keys.TIMER_TEXT_DEFAULT_SIZE,
+                Keys.TIMER_TEXT_MIN_SIZE,
+                Keys.TIMER_TEXT_MAX_SIZE,
                 1,
-                ns.RefreshAllIconSettings
+                mod.RefreshAllIconSettings
             ),
             EMPTY
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
-            Colour("Stack Count Colour", "stackCountColor", ns.RefreshAllFonts),
-            Colour("Timer Colour", "timerTextColor", ns.RefreshAllFonts)
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
+            Colour("Stack Count Colour", "stackCountColor", mod.RefreshAllFonts),
+            Colour("Timer Colour", "timerTextColor", mod.RefreshAllFonts)
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "PRIVATE AURAS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "PRIVATE AURAS", posY)
+        posY = posY - hgt
 
-        local growValues, growOrder = Choices(K.PRIVATE_AURA_GROW_DIRECTIONS)
-        _, h = W:DualRow(
-            parent,
-            y,
+        local growValues, growOrder = Choices(Keys.PRIVATE_AURA_GROW_DIRECTIONS)
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Private Aura Slots",
                 "maxPrivateAuras",
-                K.PRIVATE_AURAS_DEFAULT_COUNT,
-                K.PRIVATE_AURAS_MIN_COUNT,
-                K.PRIVATE_AURAS_MAX_COUNT,
+                Keys.PRIVATE_AURAS_DEFAULT_COUNT,
+                Keys.PRIVATE_AURAS_MIN_COUNT,
+                Keys.PRIVATE_AURAS_MAX_COUNT,
                 1,
-                function(v)
+                function(val)
                     local f = Frame()
                     if f then
-                        f:UpdateAndRefreshAuraLayout(v)
-                        if ns.isTestMode then
+                        f:UpdateAndRefreshAuraLayout(val)
+                        if mod.isTestMode then
                             f:ShowMockPrivateAuras()
                         end
                     end
@@ -533,75 +541,75 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Private Aura Size",
                 "privateAuraSize",
-                K.PRIVATE_AURA_SIZE_DEFAULT,
-                K.PRIVATE_AURA_SIZE_MIN,
-                K.PRIVATE_AURA_SIZE_MAX,
+                Keys.PRIVATE_AURA_SIZE_DEFAULT,
+                Keys.PRIVATE_AURA_SIZE_MIN,
+                Keys.PRIVATE_AURA_SIZE_MAX,
                 2,
                 function()
-                    ns.RefreshPrivateAuraSize()
+                    mod.RefreshPrivateAuraSize()
                     local f = Frame()
-                    if ns.isTestMode and f then
+                    if mod.isTestMode and f then
                         f:ShowMockPrivateAuras()
                     end
                 end
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "dropdown",
                 text = "Grow Direction",
                 values = growValues,
                 order = growOrder,
                 getValue = function()
-                    return DB().privateAuraGrowDir or "LEFT"
+                    return SavedDB().privateAuraGrowDir or "LEFT"
                 end,
-                setValue = function(v)
-                    DB().privateAuraGrowDir = v
-                    ns.RefreshPrivateAuraGrow()
+                setValue = function(val)
+                    SavedDB().privateAuraGrowDir = val
+                    mod.RefreshPrivateAuraGrow()
                 end,
             },
             Slider(
                 "Private Aura Gap",
                 "privateAuraSpacing",
-                K.DEBUFF_SPACING,
-                K.ICON_SPACING_MIN,
-                K.ICON_SPACING_MAX,
+                Keys.DEBUFF_SPACING,
+                Keys.ICON_SPACING_MIN,
+                Keys.ICON_SPACING_MAX,
                 1,
-                ns.RefreshPrivateAuraSpacing
+                mod.RefreshPrivateAuraSpacing
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Slider(
                 "Border Scale",
                 "privateAuraBorderScale",
-                K.PRIVATE_AURA_BORDER_SCALE_DEFAULT,
-                K.PRIVATE_AURA_BORDER_SCALE_MIN,
-                K.PRIVATE_AURA_BORDER_SCALE_MAX,
+                Keys.PRIVATE_AURA_BORDER_SCALE_DEFAULT,
+                Keys.PRIVATE_AURA_BORDER_SCALE_MIN,
+                Keys.PRIVATE_AURA_BORDER_SCALE_MAX,
                 1,
-                ns.RefreshPrivateAuraGrow,
+                mod.RefreshPrivateAuraGrow,
                 "0 hides the border."
             ),
             Slider(
                 "Stack and Timer Scale",
                 "privateAuraStackScale",
-                K.PRIVATE_AURA_STACK_SCALE_DEFAULT,
-                K.PRIVATE_AURA_STACK_SCALE_MIN,
-                K.PRIVATE_AURA_STACK_SCALE_MAX,
+                Keys.PRIVATE_AURA_STACK_SCALE_DEFAULT,
+                Keys.PRIVATE_AURA_STACK_SCALE_MIN,
+                Keys.PRIVATE_AURA_STACK_SCALE_MAX,
                 1,
-                ns.RefreshPrivateAuraGrow
+                mod.RefreshPrivateAuraGrow
             )
         )
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -609,28 +617,28 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local function ResyncSounds()
         local f = Frame()
-        ns.Alert:RegisterAuraSounds(f and f:GetAttribute("unit"))
+        mod.Alert:RegisterAuraSounds(f and f:GetAttribute("unit"))
     end
 
     -- One alert: a switch on the left, its stack threshold on the right.
-    local function AlertRow(W, parent, y, label, key, tooltip)
+    local function AlertRow(W, hostFrame, posY, labelText, key, tooltip)
         local function Entry()
-            local alerts = DB().spellAlerts
+            local alerts = SavedDB().spellAlerts
             return alerts and alerts[key]
         end
-        local _, h = W:DualRow(parent, y, {
+        local _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
-            text = label,
+            text = labelText,
             tooltip = tooltip,
             getValue = function()
                 local a = Entry()
                 return a and a.enabled and true or false
             end,
-            setValue = function(v)
-                local db = DB()
-                db.spellAlerts = db.spellAlerts or {}
-                db.spellAlerts[key] = db.spellAlerts[key] or { threshold = 1 }
-                db.spellAlerts[key].enabled = v and true or false
+            setValue = function(val)
+                local saved = SavedDB()
+                saved.spellAlerts = saved.spellAlerts or {}
+                saved.spellAlerts[key] = saved.spellAlerts[key] or { threshold = 1 }
+                saved.spellAlerts[key].enabled = val and true or false
                 ResyncSounds()
             end,
         }, {
@@ -643,39 +651,39 @@ initFrame:SetScript("OnEvent", function(self)
                 local a = Entry()
                 return (a and tonumber(a.threshold)) or 1
             end,
-            setValue = function(v)
+            setValue = function(val)
                 local a = Entry()
                 if a then
-                    a.threshold = Round(v)
+                    a.threshold = Round(val)
                 end
             end,
         })
-        return h
+        return hgt
     end
 
-    local function BuildAlertsPage(_, parent, yOffset)
+    local function BuildAlertsPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
-        local db = DB()
+        local posY = yOffset
+        local _, hgt
+        local saved = SavedDB()
 
         CludesUI:ClearContentHeader()
-        ns.SpellData.SeedDefaults(db)
+        mod.SpellData.SeedDefaults(saved)
 
-        _, h = W:SectionHeader(parent, "ALERT", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "ALERT", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Alert Text",
             inputWidth = 170,
             placeholder = "TAUNT",
             tooltip = "The words shown on screen when an alert fires. Press Enter to save.",
             getValue = function()
-                return DB().alertText or "TAUNT"
+                return SavedDB().alertText or "TAUNT"
             end,
-            setValue = function(text)
-                ns.Alert:SetText(text)
+            setValue = function(textValue)
+                mod.Alert:SetText(textValue)
             end,
         }, {
             type = "slider",
@@ -684,22 +692,22 @@ initFrame:SetScript("OnEvent", function(self)
             max = 48,
             step = 1,
             getValue = function()
-                return ns.SettingNumber("alertTextSize", 22)
+                return mod.SettingNumber("alertTextSize", 22)
             end,
-            setValue = function(v)
-                ns.Alert:SetTextSize(Round(v))
+            setValue = function(val)
+                mod.Alert:SetTextSize(Round(val))
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "labeledButton",
             text = "Try the Alert",
             buttonText = "Test",
             width = 90,
             tooltip = "Fires the flash, sound and text once.",
             onClick = function()
-                ns.Alert:Test()
+                mod.Alert:Test()
             end,
         }, {
             type = "input",
@@ -711,63 +719,63 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return ""
             end,
-            setValue = function(text)
-                local sid = tonumber(text)
-                if not sid or sid <= 0 then
+            setValue = function(textValue)
+                local spellRef = tonumber(textValue)
+                if not spellRef or spellRef <= 0 then
                     return
                 end
-                sid = math.floor(sid)
-                local d = DB()
+                spellRef = math.floor(spellRef)
+                local d = SavedDB()
                 d.spellAlerts = d.spellAlerts or {}
-                local existing = d.spellAlerts[sid]
-                d.spellAlerts[sid] = {
+                local existing = d.spellAlerts[spellRef]
+                d.spellAlerts[spellRef] = {
                     enabled = true,
                     threshold = (existing and existing.threshold) or 1,
-                    preset = ns.SpellData.IsPreset(sid) or nil,
+                    preset = mod.SpellData.IsPreset(spellRef) or nil,
                 }
                 ResyncSounds()
                 Rebuild()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        local custom = ns.SpellData.CustomAlerts(db)
+        local custom = mod.SpellData.CustomAlerts(saved)
         if #custom > 0 then
-            _, h = W:SectionHeader(parent, "YOUR ALERTS", y)
-            y = y - h
-            for _, entry in ipairs(custom) do
-                local name = ns.Alert.SpellName(entry.id) or ("Spell " .. entry.id)
-                y = y - AlertRow(W, parent, y, name, entry.key, "Spell ID " .. entry.id)
-                _, h = W:DualRow(parent, y, {
+            _, hgt = W:SectionHeader(hostFrame, "YOUR ALERTS", posY)
+            posY = posY - hgt
+            for _, record in ipairs(custom) do
+                local name = mod.Alert.SpellName(record.id) or ("Spell " .. record.id)
+                posY = posY - AlertRow(W, hostFrame, posY, name, record.key, "Spell ID " .. record.id)
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "labeledButton",
                     text = "Remove " .. name,
                     buttonText = "Remove",
                     width = 90,
                     onClick = function()
-                        local alerts = DB().spellAlerts
+                        local alerts = SavedDB().spellAlerts
                         if alerts then
-                            alerts[entry.key] = nil
+                            alerts[record.key] = nil
                         end
                         ResyncSounds()
                         Rebuild()
                     end,
                 }, EMPTY)
-                y = y - h
+                posY = posY - hgt
             end
         end
 
-        for _, raid in ipairs(ns.SpellData.raids) do
-            _, h = W:SectionHeader(parent, raid.name:upper(), y)
-            y = y - h
+        for _, raid in ipairs(mod.SpellData.raids) do
+            _, hgt = W:SectionHeader(hostFrame, raid.name:upper(), posY)
+            posY = posY - hgt
             for _, boss in ipairs(raid.bosses) do
                 for _, spell in ipairs(boss.spells) do
-                    local label = boss.name .. ": " .. spell.name
-                    y = y
+                    local labelText = boss.name .. ": " .. spell.name
+                    posY = posY
                         - AlertRow(
                             W,
-                            parent,
-                            y,
-                            label,
+                            hostFrame,
+                            posY,
+                            labelText,
                             spell.id,
                             (spell.note and (spell.note .. ". ") or "") .. "Spell ID " .. spell.id
                         )
@@ -775,31 +783,31 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
     --  Tools page
     ---------------------------------------------------------------------------
-    local function BuildToolsPage(_, parent, yOffset)
+    local function BuildToolsPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h
+        local posY = yOffset
+        local _, hgt
 
         CludesUI:ClearContentHeader()
 
-        _, h = W:SectionHeader(parent, "FRAME", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "FRAME", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Test Mode",
             tooltip = "Shows the frame on yourself with sample debuffs, so you can set it up without a co-tank. Not available in combat.",
             getValue = function()
-                return ns.isTestMode and true or false
+                return mod.isTestMode and true or false
             end,
-            setValue = function(v)
-                if not ns.SetTestMode(v and true or false) then
+            setValue = function(val)
+                if not mod.SetTestMode(val and true or false) then
                     Rebuild()
                 end
             end,
@@ -819,24 +827,24 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Click-Through",
             tooltip = "The frame ignores the mouse. Not available in combat.",
             getValue = function()
-                return DB().clickThrough and true or false
+                return SavedDB().clickThrough and true or false
             end,
-            setValue = function(v)
+            setValue = function(val)
                 if InCombatLockdown() then
                     Rebuild()
                     return
                 end
-                DB().clickThrough = v and true or false
+                SavedDB().clickThrough = val and true or false
                 local f = Frame()
                 if f then
-                    f:EnableMouse(not v)
+                    f:EnableMouse(not val)
                 end
             end,
         }, {
@@ -848,21 +856,21 @@ initFrame:SetScript("OnEvent", function(self)
             onClick = function()
                 local f = Frame()
                 if f and not InCombatLockdown() then
-                    ns.ResetPosition(f)
+                    mod.ResetPosition(f)
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:SectionHeader(parent, "CO-TANK", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "CO-TANK", posY)
+        posY = posY - hgt
 
-        local pinned = DB().pinnedTank
-        local found = ns.FindCoTank()
+        local pinned = SavedDB().pinnedTank
+        local found = mod.FindCoTank()
         local foundName = found and UnitName(found)
         local status = pinned and ("Pinned: " .. pinned)
             or ("Auto-detect: " .. ((type(foundName) == "string" and foundName) or "none found"))
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "input",
             text = "Pin a Co-Tank by Name",
             inputWidth = 170,
@@ -870,11 +878,11 @@ initFrame:SetScript("OnEvent", function(self)
             tooltip = status
                 .. ". Pin a player when there are more than two tanks in the group. Press Enter to save.",
             getValue = function()
-                return DB().pinnedTank or ""
+                return SavedDB().pinnedTank or ""
             end,
-            setValue = function(text)
-                text = text and text:match("^%s*(.-)%s*$") or ""
-                DB().pinnedTank = (text ~= "") and text or nil
+            setValue = function(textValue)
+                textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
+                SavedDB().pinnedTank = (textValue ~= "") and textValue or nil
                 Rebuild()
             end,
         }, {
@@ -883,21 +891,21 @@ initFrame:SetScript("OnEvent", function(self)
             buttonText = pinned and "Unpin" or "Pin Current",
             width = 110,
             onClick = function()
-                if DB().pinnedTank then
-                    DB().pinnedTank = nil
+                if SavedDB().pinnedTank then
+                    SavedDB().pinnedTank = nil
                 else
-                    local unit = ns.FindCoTank()
-                    local name = unit and UnitName(unit)
+                    local unitToken = mod.FindCoTank()
+                    local name = unitToken and UnitName(unitToken)
                     if type(name) == "string" then
-                        DB().pinnedTank = name
+                        SavedDB().pinnedTank = name
                     end
                 end
                 Rebuild()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -907,26 +915,26 @@ initFrame:SetScript("OnEvent", function(self)
         title = "Tank Kit",
         description = "For tanks: your co-tank's health, debuffs and defensives, and TAUNT alerts.",
         pages = { PAGE_FRAME, PAGE_ALERTS, PAGE_TOOLS },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == PAGE_FRAME then
-                return BuildFramePage(pageName, parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            if page == PAGE_FRAME then
+                return BuildFramePage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_ALERTS then
-                return BuildAlertsPage(pageName, parent, yOffset)
+            if page == PAGE_ALERTS then
+                return BuildAlertsPage(page, hostFrame, yOffset)
             end
-            if pageName == PAGE_TOOLS then
-                return BuildToolsPage(pageName, parent, yOffset)
+            if page == PAGE_TOOLS then
+                return BuildToolsPage(page, hostFrame, yOffset)
             end
         end,
         onReset = function()
             if InCombatLockdown() then
                 return
             end
-            wipe(ns.DB())
-            ns.SpellData.SeedDefaults(ns.DB())
+            wipe(mod.DB())
+            mod.SpellData.SeedDefaults(mod.DB())
             local f = Frame()
             if f then
-                ns.ResetPosition(f)
+                mod.ResetPosition(f)
             end
             CludesUI:InvalidatePageCache()
             ReloadUI()

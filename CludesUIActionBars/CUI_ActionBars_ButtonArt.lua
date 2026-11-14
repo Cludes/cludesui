@@ -10,24 +10,24 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  its entry points to the files after it through ns._internals (bottom of
 --  this file).
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local ipairs, pcall = ipairs, pcall
-local max = math.max
+local upper = math.max
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
-local PP = CludesUI.PP
-local EFD = ns.EFD
+local Pix = CludesUI.PP
+local EFD = mod.EFD
 
-local EAB, EAB_VTABLE = ns.EAB, ns.EAB_VTABLE
+local ABAR, EAB_VTABLE = mod.EAB, mod.EAB_VTABLE
 local HIGHLIGHT_TEXTURES, ResolveBorderThickness, ButtonHasAction =
-    ns.HIGHLIGHT_TEXTURES, ns.ResolveBorderThickness, ns.ButtonHasAction
-local SHAPE_MASKS, SHAPE_BORDERS, SHAPE_INSETS = ns.SHAPE_MASKS, ns.SHAPE_BORDERS, ns.SHAPE_INSETS
+    mod.HIGHLIGHT_TEXTURES, mod.ResolveBorderThickness, mod.ButtonHasAction
+local SHAPE_MASKS, SHAPE_BORDERS, SHAPE_INSETS = mod.SHAPE_MASKS, mod.SHAPE_BORDERS, mod.SHAPE_INSETS
 local SHAPE_ZOOM_DEFAULTS, SHAPE_ICON_EXPAND, SHAPE_ICON_EXPAND_OFFSETS =
-    ns.SHAPE_ZOOM_DEFAULTS, ns.SHAPE_ICON_EXPAND, ns.SHAPE_ICON_EXPAND_OFFSETS
-local I = ns._internals
+    mod.SHAPE_ZOOM_DEFAULTS, mod.SHAPE_ICON_EXPAND, mod.SHAPE_ICON_EXPAND_OFFSETS
+local Inner = mod._internals
 local SHAPE_EDGE_SCALES, _quickKeybindState, HideSlotArt =
-    I.SHAPE_EDGE_SCALES, I._quickKeybindState, I.HideSlotArt
+    Inner.SHAPE_EDGE_SCALES, Inner._quickKeybindState, Inner.HideSlotArt
 
 -------------------------------------------------------------------------------
 --  Visual Customization Button Appearance
@@ -45,30 +45,30 @@ local function HideSelfDeferred(self)
     C_Timer_After(0, fd.hideFn)
 end
 
-local function HideBorder(button)
-    if button.NormalTexture then
-        button.NormalTexture:Hide()
-        button.NormalTexture:SetAlpha(0)
+local function HideBorder(btnFrame)
+    if btnFrame.NormalTexture then
+        btnFrame.NormalTexture:Hide()
+        btnFrame.NormalTexture:SetAlpha(0)
     end
-    if button.Border then
+    if btnFrame.Border then
         -- Equipped Item Color (Effects > Item Information) keeps Blizzard's
         -- equipped-item border, in our square art; its shown state stays
         -- with the updates.
-        if EAB.db.profile.showEquippedBorder then
-            ns.AB_EquippedBorderLook(button.Border, button)
+        if ABAR.db.profile.showEquippedBorder then
+            mod.AB_EquippedBorderLook(btnFrame.Border, btnFrame)
         else
-            button.Border:Hide()
-            button.Border:SetAlpha(0)
+            btnFrame.Border:Hide()
+            btnFrame.Border:SetAlpha(0)
         end
     end
-    if button.icon and button.IconMask then
-        button.icon:RemoveMaskTexture(button.IconMask)
+    if btnFrame.icon and btnFrame.IconMask then
+        btnFrame.icon:RemoveMaskTexture(btnFrame.IconMask)
         -- Neutralize IconMask: UpdateButtonArt re-applies it via
         -- icon:AddMaskTexture on combat transitions, page changes, etc.
-        button.IconMask:Hide()
-        button.IconMask:SetTexture(nil)
-        button.IconMask:ClearAllPoints()
-        button.IconMask:SetSize(0.001, 0.001)
+        btnFrame.IconMask:Hide()
+        btnFrame.IconMask:SetTexture(nil)
+        btnFrame.IconMask:ClearAllPoints()
+        btnFrame.IconMask:SetSize(0.001, 0.001)
     end
 end
 
@@ -96,65 +96,65 @@ do
     -- holds it (an item's quality can differ from its base record): an item
     -- action by its ID, anything else (a macro) by its icon.
     local function EquippedQuality(action)
-        local aType, id = GetActionInfo(action)
-        local isItem = aType == "item" and id
+        local aType, ident = GetActionInfo(action)
+        local isItem = aType == "item" and ident
         local tex = not isItem and GetActionTexture(action)
         if not (isItem or tex) then
             return
         end
-        for slot = 1, 19 do
+        for slotIndex = 1, 19 do
             local hit
             if isItem then
-                hit = GetInventoryItemID("player", slot) == id
+                hit = GetInventoryItemID("player", slotIndex) == ident
             else
-                hit = GetInventoryItemTexture("player", slot) == tex
+                hit = GetInventoryItemTexture("player", slotIndex) == tex
             end
             if hit then
-                return GetInventoryItemQuality("player", slot)
+                return GetInventoryItemQuality("player", slotIndex)
             end
         end
         if isItem then
-            return C_Item.GetItemQualityByID(id)
+            return C_Item.GetItemQualityByID(ident)
         end
     end
 
-    function ns.AB_EquippedBorderLook(bd, btn)
+    function mod.AB_EquippedBorderLook(edge, btn)
         if busy then
             return
         end
         busy = true
-        SetSquareTexture(bd, HIGHLIGHT_TEXTURES[1])
+        SetSquareTexture(edge, HIGHLIGHT_TEXTURES[1])
         busy = false
         local a = btn and btn:GetAttribute("action")
         local q = a and IsEquippedAction(a) and EquippedQuality(a)
         if q then
             local r, g, b = C_Item.GetItemQualityColor(q)
-            bd:SetVertexColor(r, g, b, 1)
+            edge:SetVertexColor(r, g, b, 1)
         else
-            bd:SetVertexColor(0, 1, 0, 0.5)
+            edge:SetVertexColor(0, 1, 0, 0.5)
         end
-        bd:SetAlpha(1)
+        edge:SetAlpha(1)
     end
 
     -- The equipped-item Border from live slot contents, for every path that
     -- changes what a button holds (slot changes, page flips, bar reveals,
     -- setup). Our square buttons show it only with Equipped Item Color
     -- on; the Blizzard and Classic styles keep Blizzard's own look.
-    function ns.AB_SyncEquippedBorder(btn, action)
-        local bd = btn.Border
-        if not bd then
+    function mod.AB_SyncEquippedBorder(btn, action)
+        local edge = btn.Border
+        if not edge then
             return
         end
-        local fd = ns._eabFD[btn]
+        local fd = mod._eabFD[btn]
         local square = fd and fd.squared
-        if square and not EAB.db.profile.showEquippedBorder then
+        if square and not ABAR.db.profile.showEquippedBorder then
             return
         end
         local on = action and IsEquippedAction(action) and true or false
         if square and on then
-            ns.AB_EquippedBorderLook(bd, btn)
+            mod.AB_EquippedBorderLook(edge, btn)
         end
-        bd:SetShown(on)
+        edge:SetShown(on)
     end
 end
 
@@ -171,7 +171,7 @@ end
 --  re-runs it per native size (our buttons' UpdateButtonArt is a noop, so
 --  nothing of Blizzard's repaints the ring behind it).
 -------------------------------------------------------------------------------
-ns.AB_CLASSIC = {
+mod.AB_CLASSIC = {
     slot = "Interface\\Buttons\\UI-Quickslot2",
     empty = "Interface\\Buttons\\UI-Quickslot",
     pushed = "Interface\\Buttons\\UI-Quickslot-Depress",
@@ -182,7 +182,7 @@ ns.AB_CLASSIC = {
 
 -- Slot ring or empty-slot art on the NormalTexture. Memo per button: the
 -- content edges (slot change, page flip) cost one comparison when unchanged.
-function ns.AB_ClassicSlotRing(btn, filled)
+function mod.AB_ClassicSlotRing(btn, filled)
     filled = filled and true or false
     local fd = EFD(btn)
     if fd.classicFilled == filled then
@@ -191,7 +191,7 @@ function ns.AB_ClassicSlotRing(btn, filled)
     fd.classicFilled = filled
     local nt = btn.NormalTexture
     if nt then
-        nt:SetTexture(filled and ns.AB_CLASSIC.slot or ns.AB_CLASSIC.empty)
+        nt:SetTexture(filled and mod.AB_CLASSIC.slot or mod.AB_CLASSIC.empty)
         nt:SetTexCoord(0, 1, 0, 1)
     end
 end
@@ -200,13 +200,13 @@ end
 -- OnLoad left on our button's NormalTexture (IconFrame-AddRow, as our
 -- buttons have no .bar; IconFrame on a bar-art button) is redrawn once from
 -- its retail sheet, where the client's atlas would draw Forever art.
-function ns.AB_StockNormal(btn)
+function mod.AB_StockNormal(btn)
     local fd = EFD(btn)
     if fd.stockNT then
         return
     end
     fd.stockNT = true
-    if ns.AB_Forever() then
+    if mod.AB_Forever() then
         return
     end
     local nt = btn.NormalTexture
@@ -222,29 +222,29 @@ end
 
 -- Paints the whole kit on `btn` for a `w` x `h` button (its own size when
 -- omitted). Our bar buttons pass their native size; flyout buttons pass none.
-function ns.AB_PaintClassicButton(btn, w, h)
+function mod.AB_PaintClassicButton(btn, wid, hgt)
     local fd = EFD(btn)
-    local art = ns.AB_CLASSIC
-    if not w then
-        w, h = btn:GetSize()
+    local art = mod.AB_CLASSIC
+    if not wid then
+        wid, hgt = btn:GetSize()
     end
-    if not w or w <= 0 then
-        w = 45
+    if not wid or wid <= 0 then
+        wid = 45
     end
-    if not h or h <= 0 then
-        h = w
+    if not hgt or hgt <= 0 then
+        hgt = wid
     end
-    local sw, sh = w / 36, h / 36
-    local icon = btn.icon
-    if icon then
+    local sw, sh = wid / 36, hgt / 36
+    local glyph = btn.icon
+    if glyph then
         if btn.IconMask then
-            icon:RemoveMaskTexture(btn.IconMask)
+            glyph:RemoveMaskTexture(btn.IconMask)
             btn.IconMask:Hide()
             btn.IconMask:SetTexture(nil)
             btn.IconMask:ClearAllPoints()
             btn.IconMask:SetSize(0.001, 0.001)
         end
-        icon:SetTexCoord(0, 1, 0, 1)
+        glyph:SetTexCoord(0, 1, 0, 1)
     end
     -- The 12.1 rounded slot background stays transparent (the square ring
     -- below is the slot); alpha, so Blizzard's own art passes keep working.
@@ -303,15 +303,15 @@ function ns.AB_PaintClassicButton(btn, w, h)
         ct:ClearAllPoints()
         ct:SetAllPoints(btn)
     end
-    local bd = btn.Border
-    if bd then
-        bd:SetAtlas(nil)
-        bd:SetTexture(art.equipped)
-        bd:SetTexCoord(0, 1, 0, 1)
-        bd:SetBlendMode("ADD")
-        bd:ClearAllPoints()
-        bd:SetPoint("CENTER", btn, "CENTER", 0, sh)
-        bd:SetSize(62 * sw, 62 * sh)
+    local edge = btn.Border
+    if edge then
+        edge:SetAtlas(nil)
+        edge:SetTexture(art.equipped)
+        edge:SetTexCoord(0, 1, 0, 1)
+        edge:SetBlendMode("ADD")
+        edge:ClearAllPoints()
+        edge:SetPoint("CENTER", btn, "CENTER", 0, sh)
+        edge:SetSize(62 * sw, 62 * sh)
     end
     fd.classicArt = true
 end
@@ -322,7 +322,7 @@ _quickKeybindState.art.ApplyButtonHighlight = function(btn)
         return
     end
 
-    local p = EAB and EAB.db and EAB.db.profile
+    local p = ABAR and ABAR.db and ABAR.db.profile
     local useCC = p and p.highlightUseClassColor
     local customC = (p and p.highlightCustomColor) or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local cr, cg, cb = customC.r, customC.g, customC.b
@@ -387,12 +387,12 @@ _quickKeybindState.art.ApplyButtonHighlightAlpha = function(btn, show)
     end
 end
 
-_quickKeybindState.art.ForEachSpecialButton = function(fn)
-    if not fn then
+_quickKeybindState.art.ForEachSpecialButton = function(func)
+    if not func then
         return
     end
     if ExtraActionButton1 then
-        fn(ExtraActionButton1)
+        func(ExtraActionButton1)
     end
 end
 
@@ -401,8 +401,8 @@ _quickKeybindState.ReassertButtonsAfterCombatChange = function()
         return
     end
     C_Timer_After(0, function()
-        if _quickKeybindState.open and ns.EAB_UpdateQuickKeybindButtons then
-            ns.EAB_UpdateQuickKeybindButtons(true)
+        if _quickKeybindState.open and mod.EAB_UpdateQuickKeybindButtons then
+            mod.EAB_UpdateQuickKeybindButtons(true)
         end
     end)
 end
@@ -414,17 +414,17 @@ local function HideTexture(texture)
     texture:SetAlpha(0)
 end
 
-function EAB_VTABLE.HideRegionDeferred(region, resetAlpha)
-    if not region then
+function EAB_VTABLE.HideRegionDeferred(regionFrame, resetAlpha)
+    if not regionFrame then
         return
     end
-    local fd = EFD(region)
+    local fd = EFD(regionFrame)
     if not fd.hideFn then
         fd.hideFn = function()
-            if region and not region:IsForbidden() then
-                region:Hide()
+            if regionFrame and not regionFrame:IsForbidden() then
+                regionFrame:Hide()
                 if resetAlpha then
-                    region:SetAlpha(resetAlpha)
+                    regionFrame:SetAlpha(resetAlpha)
                 end
             end
         end
@@ -440,8 +440,8 @@ local function MakeButtonSquare(btn)
     -- background toggle controls slot backgrounds for all bars).
     HideSlotArt(btn)
     -- Skip the rest of Blizzard texture stripping for the stock styles
-    local _p = EAB.db and EAB.db.profile
-    if ns.AB_Style() ~= "cui" then
+    local _p = ABAR.db and ABAR.db.profile
+    if mod.AB_Style() ~= "cui" then
         return
     end
     HideBorder(btn)
@@ -514,8 +514,8 @@ local function MakeButtonSquare(btn)
                 if rtf:IsShown() then
                     rtf:Hide()
                 end
-                local spin = ns.EnsureAssistSpinner(self, rtf)
-                local p2 = EAB.db and EAB.db.profile
+                local spin = mod.EnsureAssistSpinner(self, rtf)
+                local p2 = ABAR.db and ABAR.db.profile
                 local enabled = not p2 or p2.obaIconEnabled ~= false
                 local action = self.GetAttribute and self:GetAttribute("action") or self.action
                 local isAssist = action
@@ -529,12 +529,12 @@ local function MakeButtonSquare(btn)
                 -- ns._ArmAssistTicker for cost discipline). When the assist
                 -- action leaves, stop the ticker if no assist button remains.
                 if isAssist then
-                    if ns._ArmAssistTicker then
-                        ns._ArmAssistTicker()
+                    if mod._ArmAssistTicker then
+                        mod._ArmAssistTicker()
                     end
-                elseif ns._assistTicker and ns._assistTicker.IsPlaying() then
-                    if ns.RepaintAssistIcons() == 0 then
-                        ns._assistTicker.Stop()
+                elseif mod._assistTicker and mod._assistTicker.IsPlaying() then
+                    if mod.RepaintAssistIcons() == 0 then
+                        mod._assistTicker.Stop()
                     end
                 end
             end
@@ -567,7 +567,7 @@ local function MakeButtonSquare(btn)
     -- fallback reset. Insecure UNIT_SPELLCAST/OnShow context, IsForbidden-guarded.
     if (btn.SpellCastAnimFrame and not fd.castHooked) or (btn.InterruptDisplay and not fd.intHooked) then
         local hideCastAnim = function(self)
-            local prof = EAB.db and EAB.db.profile
+            local prof = ABAR.db and ABAR.db.profile
             if not prof then
                 return
             end
@@ -599,7 +599,7 @@ local function MakeButtonSquare(btn)
     if btn.SpellCastAnimFrame and not fd.castSwipeHooked then
         fd.castSwipeHooked = true
         btn.SpellCastAnimFrame:HookScript("OnHide", function()
-            local pdb = EAB.db and EAB.db.profile
+            local pdb = ABAR.db and ABAR.db.profile
             local cd = btn.cooldown
             if not pdb or not (cd and cd.SetSwipeColor) then
                 return
@@ -620,15 +620,15 @@ local function MakeButtonSquare(btn)
         end
     end
     if not fd.slotBG then
-        local bg = btn:CreateTexture(nil, "BACKGROUND", nil, -1)
-        bg:SetAllPoints(btn)
+        local backdrop = btn:CreateTexture(nil, "BACKGROUND", nil, -1)
+        backdrop:SetAllPoints(btn)
         local sc = (_p and _p.slotBgColor) or { r = 0.15, g = 0.15, b = 0.15 }
         local so = _p and _p.slotBgOpacity
         if so == nil then
             so = 50
         end
-        bg:SetColorTexture(sc.r or 0.15, sc.g or 0.15, sc.b or 0.15, so / 100)
-        fd.slotBG = bg
+        backdrop:SetColorTexture(sc.r or 0.15, sc.g or 0.15, sc.b or 0.15, so / 100)
+        fd.slotBG = backdrop
     end
     if btn.SlotArt then
         btn.SlotArt:SetAlpha(0)
@@ -647,8 +647,8 @@ local function MakeButtonSquare(btn)
     -- keeps it (in our square art and the item's rarity color).
     if btn.Border and not fd.borderHooked then
         local function BorderRefresh(self)
-            if EAB.db.profile.showEquippedBorder then
-                ns.AB_EquippedBorderLook(self, btn)
+            if ABAR.db.profile.showEquippedBorder then
+                mod.AB_EquippedBorderLook(self, btn)
             else
                 self:SetAlpha(0)
                 EAB_VTABLE.HideRegionDeferred(self)
@@ -666,10 +666,10 @@ local function EnsureBorders(btn)
     if fd.borders then
         return fd.borders
     end
-    local PP = CludesUI and CludesUI.PP
-    if PP then
-        PP.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", 2)
-        fd.borders = PP.GetBorders(btn)
+    local Pix = CludesUI and CludesUI.PP
+    if Pix then
+        Pix.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", 2)
+        fd.borders = Pix.GetBorders(btn)
         -- Reparent the flyout arrow INTO the border frame and lift it above the
         -- strips (OVERLAY sublevel 2, from PP.CreateBorder above): sharing the
         -- frame is not enough, without a higher sublevel the arrow draws under.
@@ -691,10 +691,10 @@ end
 -- overlay (+14) and ring (+15), the cooldown swipe and the item-rank diamond
 -- (+18). Otherwise the button's own level, in front of the icon. Show Behind
 -- wins. On ns: CUI_ActionBars_Pushed.lua calls it too.
-ns._eabBorderLevel = function(btn, behind, above)
+mod._eabBorderLevel = function(btn, behind, above)
     local lvl = btn:GetFrameLevel()
     if behind then
-        return max(0, lvl - 1)
+        return upper(0, lvl - 1)
     end
     if above then
         return lvl + 20
@@ -725,11 +725,11 @@ local function ApplyButtonBorders(
     above
 )
     MakeButtonSquare(btn)
-    local PP = CludesUI and CludesUI.PP
+    local Pix = CludesUI and CludesUI.PP
     local fd = EFD(btn)
     if not on then
         if fd.borders then
-            PP.HideBorder(btn)
+            Pix.HideBorder(btn)
         end
         -- Also hide textured border if present
         if CludesUI._bdBorderData then
@@ -766,8 +766,8 @@ local function ApplyButtonBorders(
             EnsureBorders(btn)
         elseif fd.borders then
             -- Switching from solid to textured: hide existing PP borders
-            PP.HideBorder(btn)
-            local ppC = PP.GetBorders(btn)
+            Pix.HideBorder(btn)
+            local ppC = Pix.GetBorders(btn)
             if ppC then
                 if ppC._top then
                     ppC._top:SetAlpha(0)
@@ -807,11 +807,11 @@ local function ApplyButtonBorders(
         if texKey ~= "solid" and CludesUI._bdBorderData then
             local bdFrame = CludesUI._bdBorderData[btn]
             if bdFrame then
-                bdFrame:SetFrameLevel(ns._eabBorderLevel(btn, behind, above))
+                bdFrame:SetFrameLevel(mod._eabBorderLevel(btn, behind, above))
             end
         end
         if fd.borders and fd.shapeMask and fd.shapeMask:IsShown() then
-            PP.HideBorder(btn)
+            Pix.HideBorder(btn)
             if CludesUI._bdBorderData then
                 local bdFrame = CludesUI._bdBorderData[btn]
                 if bdFrame then
@@ -821,9 +821,14 @@ local function ApplyButtonBorders(
         end
     end
     if zoom > 0 then
-        local icon = btn.icon or btn.Icon
-        if icon and icon.SetTexCoord and not (fd.shapeMask and fd.shapeMask:IsShown()) and not fd.cropped then
-            icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+        local glyph = btn.icon or btn.Icon
+        if
+            glyph
+            and glyph.SetTexCoord
+            and not (fd.shapeMask and fd.shapeMask:IsShown())
+            and not fd.cropped
+        then
+            glyph:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
 end
@@ -831,24 +836,24 @@ end
 -------------------------------------------------------------------------------
 --  Shape Masking
 -------------------------------------------------------------------------------
-local function MaskFrameTextures(frame, mask)
-    if not frame or not mask then
+local function MaskFrameTextures(widget, mask)
+    if not widget or not mask then
         return
     end
-    for _, region in ipairs({ frame:GetRegions() }) do
-        if region.AddMaskTexture then
-            pcall(region.AddMaskTexture, region, mask)
+    for _, regionFrame in ipairs({ widget:GetRegions() }) do
+        if regionFrame.AddMaskTexture then
+            pcall(regionFrame.AddMaskTexture, regionFrame, mask)
         end
     end
 end
 
-local function UnmaskFrameTextures(frame, mask)
-    if not frame or not mask then
+local function UnmaskFrameTextures(widget, mask)
+    if not widget or not mask then
         return
     end
-    for _, region in ipairs({ frame:GetRegions() }) do
-        if region.RemoveMaskTexture then
-            pcall(region.RemoveMaskTexture, region, mask)
+    for _, regionFrame in ipairs({ widget:GetRegions() }) do
+        if regionFrame.RemoveMaskTexture then
+            pcall(regionFrame.RemoveMaskTexture, regionFrame, mask)
         end
     end
 end
@@ -861,9 +866,9 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
         -- Remove shape mask if previously applied
         if fd.shapeMask then
             local mask = fd.shapeMask
-            local icon = btn.icon or btn.Icon
-            if icon then
-                pcall(icon.RemoveMaskTexture, icon, mask)
+            local glyph = btn.icon or btn.Icon
+            if glyph then
+                pcall(glyph.RemoveMaskTexture, glyph, mask)
             end
             -- Unmask slot BG and icon BG from main mask
             if fd.slotBG then
@@ -997,35 +1002,35 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
             end
         end
         -- Restore icon
-        local icon = btn.icon or btn.Icon
-        if icon then
-            icon:ClearAllPoints()
-            icon:SetSize(0, 0)
-            icon:SetAllPoints(btn)
+        local glyph = btn.icon or btn.Icon
+        if glyph then
+            glyph:ClearAllPoints()
+            glyph:SetSize(0, 0)
+            glyph:SetAllPoints(btn)
             if shape == "cropped" then
                 local z = (zoom or 0)
-                icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+                glyph:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
                 fd.cropped = true
             else
                 fd.cropped = false
                 if zoom and zoom > 0 then
-                    icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+                    glyph:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
                 else
-                    icon:SetTexCoord(0, 1, 0, 1)
+                    glyph:SetTexCoord(0, 1, 0, 1)
                 end
             end
         end
         -- Show square borders only if border is enabled
         if fd.borders and brdOn then
             -- Re-apply border style to restore correct type (PP or textured)
-            local barKey = fd.barKey
-            local texKey = barKey
-                    and EAB.db
-                    and EAB.db.profile.bars[barKey]
-                    and EAB.db.profile.bars[barKey].borderTexture
+            local barId = fd.barKey
+            local texKey = barId
+                    and ABAR.db
+                    and ABAR.db.profile.bars[barId]
+                    and ABAR.db.profile.bars[barId].borderTexture
                 or "solid"
             if texKey ~= "solid" then
-                local s = EAB.db.profile.bars[barKey]
+                local s = ABAR.db.profile.bars[barId]
                 local c = s and s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
                 local sz, px = ResolveBorderThickness(s)
                 local thKey = s.borderThickness or "thin"
@@ -1049,14 +1054,14 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
                 if CludesUI._bdBorderData then
                     local bdFrame = CludesUI._bdBorderData[btn]
                     if bdFrame then
-                        bdFrame:SetFrameLevel(ns._eabBorderLevel(btn, s.borderBehind, s.borderAboveEffects))
+                        bdFrame:SetFrameLevel(mod._eabBorderLevel(btn, s.borderBehind, s.borderAboveEffects))
                     end
                 end
             else
-                PP.ShowBorder(btn)
+                Pix.ShowBorder(btn)
             end
         elseif fd.borders then
-            PP.HideBorder(btn)
+            Pix.HideBorder(btn)
             if CludesUI._bdBorderData then
                 local bdFrame = CludesUI._bdBorderData[btn]
                 if bdFrame then
@@ -1085,12 +1090,12 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:Show()
 
-    local icon = btn.icon or btn.Icon
+    local glyph = btn.icon or btn.Icon
 
     -- Always remove existing mask references before re-adding
     -- (AddMaskTexture is additive; stale references cause shape-inside-shape)
-    if icon then
-        pcall(icon.RemoveMaskTexture, icon, mask)
+    if glyph then
+        pcall(glyph.RemoveMaskTexture, glyph, mask)
     end
     if fd.slotBG then
         pcall(fd.slotBG.RemoveMaskTexture, fd.slotBG, mask)
@@ -1177,8 +1182,8 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     end
 
     -- Apply mask to icon
-    if icon then
-        icon:AddMaskTexture(mask)
+    if glyph then
+        glyph:AddMaskTexture(mask)
     end
 
     -- Overlay/animation mask: with a border (brdSize >= 1) use a separate inset
@@ -1192,8 +1197,8 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
         overlayMask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         overlayMask:ClearAllPoints()
         local inset = 3
-        PP.Point(overlayMask, "TOPLEFT", btn, "TOPLEFT", inset, -inset)
-        PP.Point(overlayMask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -inset, inset)
+        Pix.Point(overlayMask, "TOPLEFT", btn, "TOPLEFT", inset, -inset)
+        Pix.Point(overlayMask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -inset, inset)
         overlayMask:Show()
     else
         -- No border overlays share the main mask, hide overlay mask if it exists
@@ -1226,7 +1231,7 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     -- (Equipped Item Color); with that option off it stays hidden.
     if btn.Border then
         pcall(btn.Border.AddMaskTexture, btn.Border, overlayMask)
-        if not EAB.db.profile.showEquippedBorder then
+        if not ABAR.db.profile.showEquippedBorder then
             btn.Border:Hide()
         end
     end
@@ -1249,17 +1254,17 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
         iconExp = 0
     end
     local halfIE = iconExp / 2
-    if icon then
-        icon:ClearAllPoints()
-        PP.Point(icon, "TOPLEFT", btn, "TOPLEFT", -halfIE, halfIE)
-        PP.Point(icon, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", halfIE, -halfIE)
+    if glyph then
+        glyph:ClearAllPoints()
+        Pix.Point(glyph, "TOPLEFT", btn, "TOPLEFT", -halfIE, halfIE)
+        Pix.Point(glyph, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", halfIE, -halfIE)
     end
 
     -- Mask inset for border
     mask:ClearAllPoints()
     if brdSize and brdSize >= 1 then
-        PP.Point(mask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
-        PP.Point(mask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+        Pix.Point(mask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
+        Pix.Point(mask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
     else
         mask:SetAllPoints(btn)
     end
@@ -1268,13 +1273,13 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     local insetPx = SHAPE_INSETS[shape] or 17
     local visRatio = (128 - 2 * insetPx) / 128
     local expand = ((1 / visRatio) - 1) * 0.5
-    if icon then
-        icon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+    if glyph then
+        glyph:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
     end
 
     -- Hide square borders (both PP and textured)
     if fd.borders then
-        PP.HideBorder(btn)
+        Pix.HideBorder(btn)
         if CludesUI._bdBorderData then
             local bdFrame = CludesUI._bdBorderData[btn]
             if bdFrame then
@@ -1322,17 +1327,17 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
         EFD(btn.SpellActivationAlert).shapeMasked = true
     end
     if fd.glowWrapper then
-        local w = fd.glowWrapper
-        local wfd = EFD(w)
+        local wid = fd.glowWrapper
+        local wfd = EFD(wid)
         if not wfd.ownMask then
-            wfd.ownMask = w:CreateMaskTexture()
+            wfd.ownMask = wid:CreateMaskTexture()
         end
         wfd.ownMask:ClearAllPoints()
-        PP.Point(wfd.ownMask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
-        PP.Point(wfd.ownMask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+        Pix.Point(wfd.ownMask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
+        Pix.Point(wfd.ownMask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
         wfd.ownMask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         wfd.ownMask:Show()
-        MaskFrameTextures(w, wfd.ownMask)
+        MaskFrameTextures(wid, wfd.ownMask)
     end
 
     -- Store shape tracking flags for cooldown edge system
@@ -1346,7 +1351,7 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     local useCircular = (shape ~= "square" and shape ~= "csquare")
     do
         local edgeTex = "Interface\\AddOns\\CludesUIActionBars\\Media\\edge.png"
-        local p = EAB.db and EAB.db.profile
+        local p = ABAR.db and ABAR.db.profile
         local cr, cg, cb, ca = 0.973, 0.839, 0.604, 1
         if p then
             if p.cooldownEdgeUseClassColor then
@@ -1385,7 +1390,7 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
 end
 
 -- Entry points the files after this one re-import by name.
-I.SetSquareTexture = SetSquareTexture
-I.ApplyButtonBorders = ApplyButtonBorders
-I.ApplyShapeToButton = ApplyShapeToButton
-I.MaskFrameTextures = MaskFrameTextures
+Inner.SetSquareTexture = SetSquareTexture
+Inner.ApplyButtonBorders = ApplyButtonBorders
+Inner.ApplyShapeToButton = ApplyShapeToButton
+Inner.MaskFrameTextures = MaskFrameTextures

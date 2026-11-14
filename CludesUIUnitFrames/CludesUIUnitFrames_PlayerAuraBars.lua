@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  12.1 AuraKit-based player buff/debuff bars.
 -------------------------------------------------------------------------------
 
-local _, ns = ...
+local _, mod = ...
 
 -------------------------------------------------------------------------------
 --  Settings accessor
@@ -16,8 +16,8 @@ local _, ns = ...
 -- table. Unconfigured -> every class toggle false, but BuildChain() still emits
 -- the "all" catch-all per polarity, so bars show everything before settings exist.
 local function PAB()
-    local db = ns.db
-    return db and db.profile and db.profile.playerAuraBars
+    local saved = mod.db
+    return saved and saved.profile and saved.profile.playerAuraBars
 end
 -- WoW Forever: every read passes the one-time buff clear first
 -- (CludesUI_Migration.lua; "fvBuffWipe" is its frozen mark). The table is
@@ -26,10 +26,10 @@ end
 if CludesUI.FvBW then
     local fv = CludesUI.FvBW
     PAB = function()
-        local db = ns.db
-        local s = db and db.profile and db.profile.playerAuraBars
+        local saved = mod.db
+        local s = saved and saved.profile and saved.profile.playerAuraBars
         if s and s.fvBuffWipe == nil then
-            fv.ProcessUF(db.profile, nil, "live")
+            fv.ProcessUF(saved.profile, nil, "live")
         end
         return s
     end
@@ -45,22 +45,22 @@ end
 local HIDDEN_CLASSES = {}
 
 local function VisibleTokenClasses()
-    local uf = ns.UF_TokenClasses
+    local uf = mod.UF_TokenClasses
     if not uf then
         return nil
     end
-    local out = {}
-    for i = 1, #uf do
-        if not HIDDEN_CLASSES[uf[i].key] then
-            out[#out + 1] = uf[i]
+    local result = {}
+    for idx = 1, #uf do
+        if not HIDDEN_CLASSES[uf[idx].key] then
+            result[#result + 1] = uf[idx]
         end
     end
-    return out
+    return result
 end
 
 -- No candidate class is hidden today; kept behind an accessor so a future hide is one line.
 local function VisibleCandidateClasses()
-    return ns.UF_CandidateClasses
+    return mod.UF_CandidateClasses
 end
 
 -- Display metadata for the Options class-toggle dropdown, keyed by .skey (matches
@@ -109,7 +109,7 @@ local CLASS_LABELS = {
 -- Non-Player Auras and From Any Player share one engine field: checking either
 -- (in either lane) clears the other from both lanes. Keyed by .skey.
 local EXCLUSIVE_SKEY = { NonPlayer = "AnyPlayer", AnyPlayer = "NonPlayer" }
-ns.PAB_ExclusiveSkey = EXCLUSIVE_SKEY
+mod.PAB_ExclusiveSkey = EXCLUSIVE_SKEY
 
 -- Curated debuff filter list: exact vocabulary+order parity with Raid Frames' debuff
 -- filters (CUI_RaidFrames_ManagerPages.lua TILE_FILTER_ITEMS); shared by Base Filters
@@ -141,64 +141,64 @@ local DEBUFF_FILTER_ORDER = {
 }
 
 local function ClassByKey(key)
-    local uf = ns.UF_TokenClasses
+    local uf = mod.UF_TokenClasses
     if uf then
-        for i = 1, #uf do
-            if uf[i].key == key then
-                return uf[i]
+        for idx = 1, #uf do
+            if uf[idx].key == key then
+                return uf[idx]
             end
         end
     end
-    local cc = ns.UF_CandidateClasses
+    local cc = mod.UF_CandidateClasses
     if cc then
-        for i = 1, #cc do
-            if cc[i].key == key then
-                return cc[i]
+        for idx = 1, #cc do
+            if cc[idx].key == key then
+                return cc[idx]
             end
         end
     end
 end
 
-function ns.PAB_ClassItems(isBuff)
+function mod.PAB_ClassItems(isBuff)
     if not isBuff then
-        local items = {}
-        for i = 1, #DEBUFF_FILTER_ORDER do
-            local key = DEBUFF_FILTER_ORDER[i]
+        local itemList = {}
+        for idx = 1, #DEBUFF_FILTER_ORDER do
+            local key = DEBUFF_FILTER_ORDER[idx]
             if key == "__less" then
-                items[#items + 1] = { isHeader = true, label = "Less Common Filters" }
+                itemList[#itemList + 1] = { isHeader = true, label = "Less Common Filters" }
             else
-                local class = ClassByKey(key)
-                if class then
-                    local meta = CLASS_LABELS[class.skey]
-                    items[#items + 1] = {
-                        key = class.skey,
-                        label = meta and meta[1] or class.skey,
+                local classFile = ClassByKey(key)
+                if classFile then
+                    local meta = CLASS_LABELS[classFile.skey]
+                    itemList[#itemList + 1] = {
+                        key = classFile.skey,
+                        label = meta and meta[1] or classFile.skey,
                         tooltip = meta and meta[2] or nil,
                     }
                 end
             end
         end
-        return items
+        return itemList
     end
 
     -- Buffs: generic enumeration kept for signature compatibility; never called
     -- with isBuff=true today (buffs use Filters/Extra Spells).
-    local items = {}
+    local itemList = {}
     local tokenClasses = VisibleTokenClasses()
     local candidateClasses = VisibleCandidateClasses()
     if not (tokenClasses and candidateClasses) then
-        return items
+        return itemList
     end
-    local function AddAll(list)
-        for i = 1, #list do
-            local class = list[i]
+    local function AddAll(entries)
+        for idx = 1, #entries do
+            local classFile = entries[idx]
             -- isBuff is always true here (false returned above), so polarity
             -- exclusion reduces to just debuffOnly.
-            if not class.debuffOnly then
-                local meta = CLASS_LABELS[class.skey]
-                items[#items + 1] = {
-                    key = class.skey,
-                    label = meta and meta[1] or class.skey,
+            if not classFile.debuffOnly then
+                local meta = CLASS_LABELS[classFile.skey]
+                itemList[#itemList + 1] = {
+                    key = classFile.skey,
+                    label = meta and meta[1] or classFile.skey,
                     tooltip = meta and meta[2] or nil,
                 }
             end
@@ -206,7 +206,7 @@ function ns.PAB_ClassItems(isBuff)
     end
     AddAll(tokenClasses)
     AddAll(candidateClasses)
-    return items
+    return itemList
 end
 
 -------------------------------------------------------------------------------
@@ -228,39 +228,39 @@ local function PAB_FxEntryActive(e)
         and (((e.glowType or 0) > 0) or ((e.borderSize or 0) > 0) or ((tonumber(e.size) or 0) > 0))
 end
 
-local function PAB_FxListView(list)
-    if not list then
+local function PAB_FxListView(entries)
+    if not entries then
         return nil
     end
-    local out
-    for i = 1, #list do
-        if PAB_FxEntryActive(list[i]) then
-            out = out or {}
-            out[#out + 1] = list[i]
+    local result
+    for idx = 1, #entries do
+        if PAB_FxEntryActive(entries[idx]) then
+            result = result or {}
+            result[#result + 1] = entries[idx]
         end
     end
-    return out
+    return result
 end
 
 -- First ACTIVE block whose filters include `cat` wins (list is already pre-filtered
 -- to active-only blocks by PAB_FxListView/style.fxList). `cat` is one category key,
 -- or a Match All group's category list (any listed category matches).
-local function PAB_FxBlockFor(list, cat)
-    if not (list and cat) then
+local function PAB_FxBlockFor(entries, category)
+    if not (entries and category) then
         return nil
     end
-    local many = type(cat) == "table"
-    for i = 1, #list do
-        local f = list[i].filters
+    local many = type(category) == "table"
+    for idx = 1, #entries do
+        local f = entries[idx].filters
         if f then
             if many then
-                for j = 1, #cat do
-                    if f[cat[j]] then
-                        return list[i]
+                for jdx = 1, #category do
+                    if f[category[jdx]] then
+                        return entries[idx]
                     end
                 end
-            elseif f[cat] then
-                return list[i]
+            elseif f[category] then
+                return entries[idx]
             end
         end
     end
@@ -269,26 +269,26 @@ end
 -- Per-filter Size: first ACTIVE block matching `cat` wins outright (same rule
 -- PAB_ApplyDmFx uses for glow/border) -- a later block's Size never overrides an
 -- already-claimed category. `cat` takes a category list like PAB_FxBlockFor.
-local function PAB_FxSizeFor(list, cat)
-    if not (list and cat) then
+local function PAB_FxSizeFor(entries, category)
+    if not (entries and category) then
         return nil
     end
-    local many = type(cat) == "table"
-    for i = 1, #list do
-        local e = list[i]
+    local many = type(category) == "table"
+    for idx = 1, #entries do
+        local e = entries[idx]
         if PAB_FxEntryActive(e) then
             local f = e.filters
             local hit = false
             if f then
                 if many then
-                    for j = 1, #cat do
-                        if f[cat[j]] then
+                    for jdx = 1, #category do
+                        if f[category[jdx]] then
                             hit = true
                             break
                         end
                     end
                 else
-                    hit = f[cat] and true or false
+                    hit = f[category] and true or false
                 end
             end
             if hit then
@@ -308,12 +308,12 @@ end
 -- aura data is engine-secret so a shown aura's category can't be read back off
 -- the button (style.dispelBorder/dispelColorMap write-only). Fix: give fx-targeted
 -- categories their own group, as if that Base Filter were on.
-local function PAB_FxWantsCategory(list, key)
-    if not (list and key) then
+local function PAB_FxWantsCategory(entries, key)
+    if not (entries and key) then
         return false
     end
-    for i = 1, #list do
-        local e = list[i]
+    for idx = 1, #entries do
+        local e = entries[idx]
         if PAB_FxEntryActive(e) and e.filters and e.filters[key] then
             return true
         end
@@ -330,8 +330,8 @@ end
 -- here: forcing one would add a group beside the catch-all on every Show All bar with
 -- such an Icon Effect, a regrouping this gate leaves out. Their Icon Effects still
 -- require Show All Debuffs off plus the matching Base Filter on.
-local function PAB_FxSafeToForce(class)
-    local c = class.cand
+local function PAB_FxSafeToForce(classFile)
+    local c = classFile.cand
     return not (
         c
         and (c.isBossAura ~= nil or c.isRoleAura ~= nil or c.isPriorityAura ~= nil or c.canApplyAura ~= nil)
@@ -343,20 +343,20 @@ end
 -- key (class.key) not CamelCase classFilters key (class.skey), since fxList blocks
 -- match d.dmCat (stamped with class.key by ApplyGroupConfig's extraInit). No
 -- catch-all "all" entry, matching Raid Frames' TILE_FILTER_ITEMS.
-function ns.PAB_FxClassItems()
-    local items = {}
-    for i = 1, #DEBUFF_FILTER_ORDER do
-        local class = ClassByKey(DEBUFF_FILTER_ORDER[i])
-        if class then
-            local meta = CLASS_LABELS[class.skey]
-            items[#items + 1] = {
-                key = class.key,
-                label = meta and meta[1] or class.key,
+function mod.PAB_FxClassItems()
+    local itemList = {}
+    for idx = 1, #DEBUFF_FILTER_ORDER do
+        local classFile = ClassByKey(DEBUFF_FILTER_ORDER[idx])
+        if classFile then
+            local meta = CLASS_LABELS[classFile.skey]
+            itemList[#itemList + 1] = {
+                key = classFile.key,
+                label = meta and meta[1] or classFile.key,
                 tooltip = meta and meta[2] or nil,
             }
         end
     end
-    return items
+    return itemList
 end
 
 -- Icon Glow (CludesUI.Glows overlay) + Border override (CludesUI.PP), keyed
@@ -377,8 +377,8 @@ end
 -- Action Bars' own ns.BORDER_THICKNESS table: thin/normal/heavy all carry shape=0,
 -- only strong carries shape=7. Border Size's 0-4 levels mirror that table 1:1 (see
 -- CUI_PlayerAuraBars_ManagerPages.lua's BORDER_SIZE_LEVELS).
-local function PabShapeBorderSize(v)
-    return ((v or 0) >= 4) and 7 or 0
+local function PabShapeBorderSize(val)
+    return ((val or 0) >= 4) and 7 or 0
 end
 local function PabShapedSize(rawSize, shape)
     if PabShapeActive(shape) then
@@ -392,18 +392,18 @@ end
 -- along a row, so a bar measured a different number of UI units per resolution.
 -- PP.ToPixels rounds with the 0.001 tie guard, so an exact half pixel cannot flip
 -- between sessions.
-local function PabSnap(x)
-    local PP = CludesUI.PP
-    if x == 0 or PP.mult == 1 then
-        return x
+local function PabSnap(posX)
+    local Pix = CludesUI.PP
+    if posX == 0 or Pix.mult == 1 then
+        return posX
     end
-    return PP.FromPixels(PP.ToPixels(x))
+    return Pix.FromPixels(Pix.ToPixels(posX))
 end
 
 -- Shared by the PAB chunks and options without adding main-chunk locals or
 -- depending on Cooldown Manager being enabled. Matches its per-side crop.
-function ns.PAB_CropPercent(cfg)
-    local pct = tonumber(cfg and cfg.iconCropPercent) or 10
+function mod.PAB_CropPercent(conf)
+    local pct = tonumber(conf and conf.iconCropPercent) or 10
     if pct < 5 then
         pct = 5
     elseif pct > 25 then
@@ -412,26 +412,26 @@ function ns.PAB_CropPercent(cfg)
     return pct
 end
 
-function ns.PAB_CroppedHeight(size, cfg)
-    return math.floor(size * (1 - 2 * ns.PAB_CropPercent(cfg) / 100) + 0.5)
+function mod.PAB_CroppedHeight(dim, conf)
+    return math.floor(dim * (1 - 2 * mod.PAB_CropPercent(conf) / 100) + 0.5)
 end
 
 -- On ns, not file locals. The need
 -- table names the engine glow families the Icon Glow menu offers (Pixel and
 -- the flipbooks, no Blizzard Border), so a prewarm builds only those.
-ns.PAB_GLOW_SPEC = {}
-ns.PAB_GLOW_NEED = { ants = true, flip = true }
-local function PAB_ApplyDmFx(button, d, style, arming)
-    local cat = d.dmCat
-    local e = style.fxList and PAB_FxBlockFor(style.fxList, cat) or nil
+mod.PAB_GLOW_SPEC = {}
+mod.PAB_GLOW_NEED = { ants = true, flip = true }
+local function PAB_ApplyDmFx(btnFrame, d, look, arming)
+    local category = d.dmCat
+    local e = look.fxList and PAB_FxBlockFor(look.fxList, category) or nil
 
     local Glows = CludesUI.Glows
-    local PP = CludesUI.PP
+    local Pix = CludesUI.PP
     -- Engine host: a Lua OnUpdate touching a frame parented to a 12.1 engine aura
     -- button is forbidden unconditionally, so only C-side animations render here
     -- (StartSpecGlow's engine path: Pixel as animated ants, ABG as its FlipBook twin).
-    local spec = e and Glows.SpecFromPrefix(ns.PAB_GLOW_SPEC, e, "glow", 1.0, 0.776, 0.376)
-    local sz = style.width or 18
+    local specInfo = e and Glows.SpecFromPrefix(mod.PAB_GLOW_SPEC, e, "glow", 1.0, 0.776, 0.376)
+    local sz = look.width or 18
 
     -- Icon Glow overlay: created UNCONDITIONALLY, matching block or not. The first call
     -- lands in the button's one legal creation window (extraInit, see AddGroupToContainer
@@ -441,12 +441,12 @@ local function PAB_ApplyDmFx(button, d, style, arming)
     -- StartGlow/StopGlow, which is always legal.
     local gov = d.pabFxGlow
     if not gov then
-        gov = CreateFrame("Frame", nil, button)
-        gov:SetAllPoints(button)
+        gov = CreateFrame("Frame", nil, btnFrame)
+        gov:SetAllPoints(btnFrame)
         -- Level ladder: base border(+1) < fx border(+2) < glow(+3) < dispel ring(+4)
         -- < text(+5). The glow gets its own level, never shared with the fx border's.
-        local base = (d.borderHost and d.borderHost:GetFrameLevel()) or (button:GetFrameLevel() + 1)
-        gov:SetFrameLevel(base + 3)
+        local baseValue = (d.borderHost and d.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
+        gov:SetFrameLevel(baseValue + 3)
         gov:EnableMouse(false)
         gov:Hide()
         d.pabFxGlow = gov
@@ -456,11 +456,11 @@ local function PAB_ApplyDmFx(button, d, style, arming)
     -- built there whatever its own category, so a glow added to that category
     -- later only reconfigures them. Buff bars (never fxList) and styles with no
     -- Icon Glow keep the one empty frame.
-    if arming and style.fxList then
-        local fx = style.fxList
-        for i = 1, #fx do
-            if (fx[i].glowType or 0) > 0 then
-                Glows.PrewarmEngineHost(gov, sz, style.height or sz, ns.PAB_GLOW_NEED)
+    if arming and look.fxList then
+        local fx = look.fxList
+        for idx = 1, #fx do
+            if (fx[idx].glowType or 0) > 0 then
+                Glows.PrewarmEngineHost(gov, sz, look.height or sz, mod.PAB_GLOW_NEED)
                 break
             end
         end
@@ -472,12 +472,12 @@ local function PAB_ApplyDmFx(button, d, style, arming)
     -- window or at a later restyle out of restriction (a glow block added
     -- later). Bound, every button carries the glow. Unbound, the animation
     -- plays while hidden too, so only buttons the group can ever show run one.
-    if spec and d.pabFxBound == nil then
-        d.pabFxBound = Glows.BindEngineHost(gov, button, d)
+    if specInfo and d.pabFxBound == nil then
+        d.pabFxBound = Glows.BindEngineHost(gov, btnFrame, d)
     end
-    if spec and (d.pabFxBound or CludesUI.AuraKit.ButtonCanShow(button)) then
+    if specInfo and (d.pabFxBound or CludesUI.AuraKit.ButtonCanShow(btnFrame)) then
         gov:Show()
-        Glows.StartSpecGlow(gov, spec, sz, style.height or sz, "engine")
+        Glows.StartSpecGlow(gov, specInfo, sz, look.height or sz, "engine")
     else
         if gov._cuiGlowActive then
             Glows.StopGlow(gov)
@@ -489,23 +489,23 @@ local function PAB_ApplyDmFx(button, d, style, arming)
     -- container is created lazily below (non-shaped branch only) -- a shaped bar
     -- uses PP.ApplyMaskedShapeBorder instead, which owns its own child texture.
     local bSize = (e and e.borderSize) or 0
-    local host = d.pabFxBdr
-    if not host and PP then
-        host = CreateFrame("Frame", nil, button)
-        host:SetAllPoints(button)
-        local base = (d.borderHost and d.borderHost:GetFrameLevel()) or (button:GetFrameLevel() + 1)
-        host:SetFrameLevel(base + 1)
-        host:EnableMouse(false)
-        host:Hide()
-        d.pabFxBdr = host
+    local hostRegion = d.pabFxBdr
+    if not hostRegion and Pix then
+        hostRegion = CreateFrame("Frame", nil, btnFrame)
+        hostRegion:SetAllPoints(btnFrame)
+        local baseValue = (d.borderHost and d.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
+        hostRegion:SetFrameLevel(baseValue + 1)
+        hostRegion:EnableMouse(false)
+        hostRegion:Hide()
+        d.pabFxBdr = hostRegion
     end
-    if bSize > 0 and host and PP then
+    if bSize > 0 and hostRegion and Pix then
         local bc = e.borderColor or { r = 0, g = 0, b = 0 }
-        if style.iconShape and style.iconShape ~= "none" and style.shapeBorderPath and d.shapeMask then
-            PP:ApplyMaskedShapeBorder(
-                host,
+        if look.iconShape and look.iconShape ~= "none" and look.shapeBorderPath and d.shapeMask then
+            Pix:ApplyMaskedShapeBorder(
+                hostRegion,
                 d.shapeMask,
-                style.shapeBorderPath,
+                look.shapeBorderPath,
                 PabShapeBorderSize(bSize),
                 bc.r or 0,
                 bc.g or 0,
@@ -513,13 +513,13 @@ local function PAB_ApplyDmFx(button, d, style, arming)
                 1
             )
         else
-            PP:HideMaskedShapeBorder(host)
-            PP.CreateBorder(host, 0, 0, 0, 1, 1)
-            PP.UpdateBorder(host, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
+            Pix:HideMaskedShapeBorder(hostRegion)
+            Pix.CreateBorder(hostRegion, 0, 0, 0, 1, 1)
+            Pix.UpdateBorder(hostRegion, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
         end
-        host:Show()
-    elseif host then
-        host:Hide()
+        hostRegion:Show()
+    elseif hostRegion then
+        hostRegion:Hide()
     end
 end
 
@@ -533,11 +533,11 @@ end
 --  negation chain as boolean engine selectors, not addable to the token chain.
 -------------------------------------------------------------------------------
 
-local function ClassEnabled(class, isBuff, cfg)
-    if class.buffOnly and not isBuff then
+local function ClassEnabled(classFile, isBuff, conf)
+    if classFile.buffOnly and not isBuff then
         return false
     end
-    if class.debuffOnly and isBuff then
+    if classFile.debuffOnly and isBuff then
         return false
     end
     -- "Show All Debuffs": bypasses every class toggle without touching saved
@@ -545,11 +545,11 @@ local function ClassEnabled(class, isBuff, cfg)
     -- Debuffs only -- buffs never read classFilters. ~= false not == true: nil
     -- (unconfigured bar) means ON, matching showAllBuffs' "nil == on". Has
     -- Duration is a MODIFIER, not a mode: it never bypasses class toggles.
-    if not isBuff and cfg.showAllDebuffs ~= false then
+    if not isBuff and conf.showAllDebuffs ~= false then
         return false
     end
     -- playerUnitOnly classes ("nonplayer") always apply: player unit only.
-    return cfg.classFilters and cfg.classFilters[class.skey] == true
+    return conf.classFilters and conf.classFilters[classFile.skey] == true
 end
 
 -- Curated FAMILIES (a primary plus its `alts`: rank/talent ids for one buff, and
@@ -560,14 +560,14 @@ end
 -- that member alone. `blocked` is the owning filter's spell map, where an explicit
 -- `false` wins. Show lane and hide lane both expand, or a hide filter carrying one id
 -- of a family would leak the rest.
-local function ExpandFamily(set, id, blocked)
-    local fam = ns.PAB_SPELL_FAMILY and ns.PAB_SPELL_FAMILY[id]
+local function ExpandFamily(group, ident, blocked)
+    local fam = mod.PAB_SPELL_FAMILY and mod.PAB_SPELL_FAMILY[ident]
     if not fam then
         return
     end
-    for i = 1, #fam do
-        if not (blocked and blocked[fam[i]] == false) then
-            set[fam[i]] = true
+    for idx = 1, #fam do
+        if not (blocked and blocked[fam[idx]] == false) then
+            group[fam[idx]] = true
         end
     end
 end
@@ -588,51 +588,51 @@ end
 -- ApplyGroupConfig pass so edits stay live. ApplyGroupConfig self-zeroes any group
 -- falling out of the returned chain, so callers pass this UNGATED; an empty chain is
 -- the correct "nothing" case.
-local function BuffBarChain(cfg)
+local function BuffBarChain(conf)
     -- All Buffs and Has Duration are mutually exclusive broad-content modes (options
     -- setters enforce it): either builds the catch-all (Has Duration narrowed to
     -- duration-carrying buffs via the maxDuration extras merge) and hide-lane filters
     -- SUBTRACT from it. With neither on, show-lane filters ADD through the spells
     -- group (minus the hide lane, resolved in PAB_ResolveSpells).
-    if cfg.showAllBuffs == false and cfg.hasDuration ~= true then
+    if conf.showAllBuffs == false and conf.hasDuration ~= true then
         return {}
     end
-    local link = { key = "all", tokens = { "HELPFUL" } }
-    if cfg.negFilters then
+    local itemLink = { key = "all", tokens = { "HELPFUL" } }
+    if conf.negFilters then
         local ex
-        for filterId in pairs(cfg.negFilters) do
-            local f = ns.PAB_GetFilter and ns.PAB_GetFilter(filterId)
+        for filterId in pairs(conf.negFilters) do
+            local f = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
             if f and f.spells then
-                for id, on in pairs(f.spells) do
-                    if on and not ns.PAB_OtherClientSpell(f, id) then
+                for ident, enabled in pairs(f.spells) do
+                    if enabled and not mod.PAB_OtherClientSpell(f, ident) then
                         ex = ex or {}
-                        ex[id] = true
-                        ExpandFamily(ex, id, f.spells)
+                        ex[ident] = true
+                        ExpandFamily(ex, ident, f.spells)
                     end
                 end
             end
         end
         if ex then
-            link.cand = { excludeSpellIDs = ex }
+            itemLink.cand = { excludeSpellIDs = ex }
         end
     end
-    return { link }
+    return { itemLink }
 end
 
 -- Unified filter model (debuffs, Raid Frames DM parity): HIDE-lane classes
 -- (cfg.negClassFilters) SUBTRACT in BOTH modes -- from the catch-all while Show All
 -- Debuffs is on, from the show-lane class groups in add mode. Returns the per-class
 -- hide-lane test as BuildChain's subtractFn; nil when nothing is hidden.
-local function DebuffSubtractFn(cfg)
-    local neg = cfg.negClassFilters
+local function DebuffSubtractFn(conf)
+    local neg = conf.negClassFilters
     if not (neg and next(neg)) then
         return nil
     end
-    return function(class)
-        if class.buffOnly then
+    return function(classFile)
+        if classFile.buffOnly then
             return false
         end
-        return neg[class.skey] == true
+        return neg[classFile.skey] == true
     end
 end
 
@@ -640,19 +640,19 @@ end
 -- are never mutated); nil-safe on the accumulator. Several per-type classes
 -- can forward at once, so the carrier accumulates instead of overwriting.
 local function MergeTypes(acc, add)
-    local out = {}
+    local result = {}
     if acc then
-        for k, v in pairs(acc) do
-            out[k] = v
+        for k, val in pairs(acc) do
+            result[k] = val
         end
     end
-    for k, v in pairs(add) do
-        out[k] = v
+    for k, val in pairs(add) do
+        result[k] = val
     end
-    return out
+    return result
 end
 
-local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
+local function BuildChain(baseValue, classEnabledFn, includeCatchAll, subtractFn)
     local chain, negations = {}, {}
     local excludeDispelTypes, npOwned, anyOwned, prOwned, boolOwned, subCand
     local tokenClasses = VisibleTokenClasses()
@@ -700,10 +700,10 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     local npFlip, flipTypes, flipBools
     do
         local npShown, prShown, types, bools
-        for i = 1, #candidateClasses do
-            local class = candidateClasses[i]
-            local cc = class.cand
-            if cc and classEnabledFn(class) then
+        for idx = 1, #candidateClasses do
+            local classFile = candidateClasses[idx]
+            local cc = classFile.cand
+            if cc and classEnabledFn(classFile) then
                 local bk = OwnedBool(cc)
                 if cc.isFromPlayerOrPlayerPet == false then
                     npShown = true
@@ -759,13 +759,13 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             t.isPriorityAura = false
         end
         if bo then
-            for k, v in pairs(bo) do
-                t[k] = v
+            for k, val in pairs(bo) do
+                t[k] = val
             end
         end
         if withSub then
-            for k, v in pairs(withSub) do
-                t[k] = v
+            for k, val in pairs(withSub) do
+                t[k] = val
             end
         end
         return t
@@ -800,8 +800,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 ex.excludeDispelTypes = MergeTypes(ex.excludeDispelTypes, flipTypes)
             end
             if flipBools then
-                for k, v in pairs(flipBools) do
-                    ex[k] = v
+                for k, val in pairs(flipBools) do
+                    ex[k] = val
                 end
             end
         end
@@ -810,9 +810,9 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
 
     local function CollectSub(cc)
         subCand = subCand or {}
-        for k, v in pairs(cc) do
-            if type(v) == "boolean" then
-                subCand[k] = not v
+        for k, val in pairs(cc) do
+            if type(val) == "boolean" then
+                subCand[k] = not val
             end
         end
     end
@@ -823,38 +823,38 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         -- negation machinery enabling a class does, never a re-tokened catch-all.
         -- An fx-forced class stays visible (effect wins) and is emitted by the
         -- positive pass instead.
-        for i = 1, #tokenClasses do
-            local class = tokenClasses[i]
-            if subtractFn(class) and not classEnabledFn(class) then
-                local tokens = { base, class.token }
-                for n = 1, #negations do
-                    tokens[#tokens + 1] = negations[n]
+        for idx = 1, #tokenClasses do
+            local classFile = tokenClasses[idx]
+            if subtractFn(classFile) and not classEnabledFn(classFile) then
+                local tokens = { baseValue, classFile.token }
+                for num = 1, #negations do
+                    tokens[#tokens + 1] = negations[num]
                 end
                 chain[#chain + 1] = {
-                    key = class.key,
+                    key = classFile.key,
                     tokens = tokens,
                     excludeCand = ExtraCand(),
                     hidden = true,
                 }
-                negations[#negations + 1] = class.neg or ("!" .. class.token)
+                negations[#negations + 1] = classFile.neg or ("!" .. classFile.token)
             end
         end
-        for i = 1, #candidateClasses do
-            local class = candidateClasses[i]
-            local cc = class.cand
-            if cc and subtractFn(class) and not classEnabledFn(class) then
+        for idx = 1, #candidateClasses do
+            local classFile = candidateClasses[idx]
+            local cc = classFile.cand
+            if cc and subtractFn(classFile) and not classEnabledFn(classFile) then
                 -- Forward-capable candidate classes (dispeltyped's include map,
                 -- nonplayer's complementary boolean) subtract through the hidden-
                 -- link + forward-exclude route; pure boolean classes (bossaura/
                 -- roleaura/priority) invert onto subCand instead.
                 local forward = cc.includeDispelTypes ~= nil or cc.isFromPlayerOrPlayerPet ~= nil
                 if forward then
-                    local tokens = { base }
-                    for n = 1, #negations do
-                        tokens[#tokens + 1] = negations[n]
+                    local tokens = { baseValue }
+                    for num = 1, #negations do
+                        tokens[#tokens + 1] = negations[num]
                     end
                     chain[#chain + 1] = {
-                        key = class.key,
+                        key = classFile.key,
                         tokens = tokens,
                         cand = cc,
                         excludeCand = ExtraCand(),
@@ -874,29 +874,29 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             end
         end
         -- POSITIVE PASS -- the legacy loop shape; negations arrive pre-seeded.
-        for i = 1, #tokenClasses do
-            local class = tokenClasses[i]
-            if classEnabledFn(class) then
-                local tokens = { base, class.token }
-                for n = 1, #negations do
-                    tokens[#tokens + 1] = negations[n]
+        for idx = 1, #tokenClasses do
+            local classFile = tokenClasses[idx]
+            if classEnabledFn(classFile) then
+                local tokens = { baseValue, classFile.token }
+                for num = 1, #negations do
+                    tokens[#tokens + 1] = negations[num]
                 end
-                chain[#chain + 1] = { key = class.key, tokens = tokens, excludeCand = ExtraCand() }
-                negations[#negations + 1] = class.neg or ("!" .. class.token)
+                chain[#chain + 1] = { key = classFile.key, tokens = tokens, excludeCand = ExtraCand() }
+                negations[#negations + 1] = classFile.neg or ("!" .. classFile.token)
             end
         end
-        for i = 1, #candidateClasses do
-            local class = candidateClasses[i]
-            local cc = class.cand
-            if cc and classEnabledFn(class) then
-                local tokens = { base }
-                for n = 1, #negations do
-                    tokens[#tokens + 1] = negations[n]
+        for idx = 1, #candidateClasses do
+            local classFile = candidateClasses[idx]
+            local cc = classFile.cand
+            if cc and classEnabledFn(classFile) then
+                local tokens = { baseValue }
+                for num = 1, #negations do
+                    tokens[#tokens + 1] = negations[num]
                 end
                 -- class.cand is a candidate-filter TABLE; the shared vocabulary
                 -- carries set-valued filters (includeDispelTypes) directly in it.
                 chain[#chain + 1] =
-                    { key = class.key, tokens = tokens, cand = cc, excludeCand = ShownCand(cc) }
+                    { key = classFile.key, tokens = tokens, cand = cc, excludeCand = ShownCand(cc) }
                 if cc.includeDispelTypes then
                     excludeDispelTypes = MergeTypes(excludeDispelTypes, cc.includeDispelTypes)
                 end
@@ -923,30 +923,30 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     -- otherwise enabled) join as HIDDEN links in vocabulary order: the group
     -- parks at 0 frames while its negations/forward excludes still remove it
     -- from the catch-all. An fx-forced class stays visible (effect wins).
-    for i = 1, #tokenClasses do
-        local class = tokenClasses[i]
-        local en = classEnabledFn(class)
-        local sub = subtractFn and subtractFn(class) or false
-        if en or sub then
-            local tokens = { base, class.token }
-            for n = 1, #negations do
-                tokens[#tokens + 1] = negations[n]
+    for idx = 1, #tokenClasses do
+        local classFile = tokenClasses[idx]
+        local en = classEnabledFn(classFile)
+        local subFrame = subtractFn and subtractFn(classFile) or false
+        if en or subFrame then
+            local tokens = { baseValue, classFile.token }
+            for num = 1, #negations do
+                tokens[#tokens + 1] = negations[num]
             end
             chain[#chain + 1] = {
-                key = class.key,
+                key = classFile.key,
                 tokens = tokens,
                 excludeCand = ExtraCand(),
-                hidden = (sub and not en) or nil,
+                hidden = (subFrame and not en) or nil,
             }
-            negations[#negations + 1] = class.neg or ("!" .. class.token)
+            negations[#negations + 1] = classFile.neg or ("!" .. classFile.token)
         end
     end
-    for i = 1, #candidateClasses do
-        local class = candidateClasses[i]
-        local en = classEnabledFn(class)
-        local sub = subtractFn and subtractFn(class) or false
-        local cc = class.cand
-        if (en or sub) and cc then
+    for idx = 1, #candidateClasses do
+        local classFile = candidateClasses[idx]
+        local en = classEnabledFn(classFile)
+        local subFrame = subtractFn and subtractFn(classFile) or false
+        local cc = classFile.cand
+        if (en or subFrame) and cc then
             -- Forward-capable candidate classes (dispeltyped's include map, nonplayer's
             -- complementary boolean) subtract through the same hidden-link + forward-
             -- exclude route as token classes. Pure boolean classes (bossaura/roleaura/
@@ -954,9 +954,9 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             -- booleans onto the catch-all's candidates (which re-apply every pass).
             local forward = cc.includeDispelTypes ~= nil or cc.isFromPlayerOrPlayerPet ~= nil
             if en or forward then
-                local tokens = { base }
-                for n = 1, #negations do
-                    tokens[#tokens + 1] = negations[n]
+                local tokens = { baseValue }
+                for num = 1, #negations do
+                    tokens[#tokens + 1] = negations[num]
                 end
                 -- class.cand is a candidate-filter TABLE; the shared vocabulary carries
                 -- set-valued filters (includeDispelTypes) directly in it. ShownCand
@@ -968,11 +968,11 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                     ex = ExtraCand()
                 end
                 chain[#chain + 1] = {
-                    key = class.key,
+                    key = classFile.key,
                     tokens = tokens,
                     cand = cc,
                     excludeCand = ex,
-                    hidden = (sub and not en) or nil,
+                    hidden = (subFrame and not en) or nil,
                 }
                 if cc.includeDispelTypes then
                     excludeDispelTypes = MergeTypes(excludeDispelTypes, cc.includeDispelTypes)
@@ -1000,16 +1000,16 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         -- Catch-all LAST: everything not claimed by an enabled class, negating the
         -- full chain above. Zero classes enabled = just { base }, every aura of
         -- that polarity.
-        local allTokens = { base }
-        for n = 1, #negations do
-            allTokens[#allTokens + 1] = negations[n]
+        local allTokens = { baseValue }
+        for num = 1, #negations do
+            allTokens[#allTokens + 1] = negations[num]
         end
         local ex = ExtraCand()
         if subCand then
             ex = ex or {}
-            for k, v in pairs(subCand) do
+            for k, val in pairs(subCand) do
                 if ex[k] == nil then
-                    ex[k] = v
+                    ex[k] = val
                 end
             end
         end
@@ -1025,7 +1025,7 @@ end
 -- writes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_PlayerAuraBars_*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
-CludesUI.NewInternals(ns, "_pabInternals", {
+CludesUI.NewInternals(mod, "_pabInternals", {
     BuffBarChain = BuffBarChain,
     BuildChain = BuildChain,
     ClassByKey = ClassByKey,

@@ -8,187 +8,187 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  combat and segment state, unlock registration and the session events.
 --  Reads the earlier Damage Meters files through ns and ns._dmInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._dmInternals
+local _, mod = ...
+local Inner = mod._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local CUI = CludesUI
 
-local DB, DM_TYPE_ICONS, DM_TYPE_NAMES = I.DB, I.DM_TYPE_ICONS, I.DM_TYPE_NAMES
-local GetHeaderH, HOME_DEFAULTS, MAX_WINDOWS = I.GetHeaderH, I.HOME_DEFAULTS, I.MAX_WINDOWS
-local MIN_H, MIN_W, SetCombatEndTime = I.MIN_H, I.MIN_W, I.SetCombatEndTime
-local SetCurViewFrozenDur, SetInEncounter = I.SetCurViewFrozenDur, I.SetInEncounter
-local SetInCombat, SetNeedsFinalRefresh = I.SetInCombat, I.SetNeedsFinalRefresh
+local SavedDB, DM_TYPE_ICONS, DM_TYPE_NAMES = Inner.DB, Inner.DM_TYPE_ICONS, Inner.DM_TYPE_NAMES
+local GetHeaderH, HOME_DEFAULTS, MAX_WINDOWS = Inner.GetHeaderH, Inner.HOME_DEFAULTS, Inner.MAX_WINDOWS
+local MIN_H, MIN_W, SetCombatEndTime = Inner.MIN_H, Inner.MIN_W, Inner.SetCombatEndTime
+local SetCurViewFrozenDur, SetInEncounter = Inner.SetCurViewFrozenDur, Inner.SetInEncounter
+local SetInCombat, SetNeedsFinalRefresh = Inner.SetInCombat, Inner.SetNeedsFinalRefresh
 
 -- Header icon visibility (hide until title bar hovered)
-local function ResetButtonHidden(cfg)
-    cfg = cfg or DB()
-    return cfg.hideResetButton == true
+local function ResetButtonHidden(conf)
+    conf = conf or SavedDB()
+    return conf.hideResetButton == true
 end
 
-local function GetHeaderLayoutButtons(W, cfg)
+local function GetHeaderLayoutButtons(Widgets, conf)
     local buttons = {}
-    if not W or not W.hdrBtns then
+    if not Widgets or not Widgets.hdrBtns then
         return buttons
     end
-    local hideReset = ResetButtonHidden(cfg)
-    for _, btn in ipairs(W.hdrBtns) do
-        if btn ~= W.resetBtn or not hideReset then
-            buttons[#buttons + 1] = btn
+    local hideReset = ResetButtonHidden(conf)
+    for _, button in ipairs(Widgets.hdrBtns) do
+        if button ~= Widgets.resetBtn or not hideReset then
+            buttons[#buttons + 1] = button
         end
     end
     return buttons
 end
 -- The same count without building the list (the title fit runs on every paint).
-function ns.DMHeaderButtonCount(W, cfg)
-    if not W or not W.hdrBtns then
+function mod.DMHeaderButtonCount(Widgets, conf)
+    if not Widgets or not Widgets.hdrBtns then
         return 0
     end
-    local hideReset = ResetButtonHidden(cfg)
-    local n = 0
-    for _, btn in ipairs(W.hdrBtns) do
-        if btn ~= W.resetBtn or not hideReset then
-            n = n + 1
+    local hideReset = ResetButtonHidden(conf)
+    local num = 0
+    for _, button in ipairs(Widgets.hdrBtns) do
+        if button ~= Widgets.resetBtn or not hideReset then
+            num = num + 1
         end
     end
-    return n
+    return num
 end
 
-local function LayoutHeaderButtons(W, cfg, iconSz)
-    if not W or not W.header or not W.hdrBtns then
+local function LayoutHeaderButtons(Widgets, conf, iconSz)
+    if not Widgets or not Widgets.header or not Widgets.hdrBtns then
         return
     end
-    local btnPad = ns.DMHdrIconPad()
-    local lift = ns.DMHdrLift(cfg and cfg.hdrHeight)
-    local layoutBtns = GetHeaderLayoutButtons(W, cfg)
-    for bi, btn in ipairs(layoutBtns) do
+    local btnPad = mod.DMHdrIconPad()
+    local lift = mod.DMHdrLift(conf and conf.hdrHeight)
+    local layoutBtns = GetHeaderLayoutButtons(Widgets, conf)
+    for bi, button in ipairs(layoutBtns) do
         if iconSz then
-            btn:SetSize(iconSz, iconSz)
+            button:SetSize(iconSz, iconSz)
             -- Inset stock art follows the new size.
-            if btn._hdrIcon and btn._hdrIcon._hdrArt then
-                ns.DMSeatHdrArt(btn._hdrIcon, iconSz)
+            if button._hdrIcon and button._hdrIcon._hdrArt then
+                mod.DMSeatHdrArt(button._hdrIcon, iconSz)
             end
         end
-        btn:ClearAllPoints()
-        btn:SetPoint("RIGHT", W.header, "RIGHT", -(iconSz * (bi - 1) + btnPad * bi + 2), lift)
+        button:ClearAllPoints()
+        button:SetPoint("RIGHT", Widgets.header, "RIGHT", -(iconSz * (bi - 1) + btnPad * bi + 2), lift)
     end
 end
 
-local function SetHeaderButtonsShown(W, shown)
-    if not W or not W.hdrBtns then
+local function SetHeaderButtonsShown(Widgets, isShown)
+    if not Widgets or not Widgets.hdrBtns then
         return
     end
     local hideReset = ResetButtonHidden()
-    for _, btn in ipairs(W.hdrBtns) do
-        if btn == W.resetBtn and hideReset then
-            btn:Hide()
-            btn:SetAlpha(0)
-            btn:EnableMouse(false)
+    for _, button in ipairs(Widgets.hdrBtns) do
+        if button == Widgets.resetBtn and hideReset then
+            button:Hide()
+            button:SetAlpha(0)
+            button:EnableMouse(false)
         else
-            btn:Show()
-            btn:SetAlpha(shown and 1 or 0)
-            btn:EnableMouse(shown)
+            button:Show()
+            button:SetAlpha(isShown and 1 or 0)
+            button:EnableMouse(isShown)
         end
     end
     -- Title reserves room for the icons and must re-fit whenever hide-until-hover shows/hides them
-    W._hdrIconsShown = shown and true or false
-    if W.FitTitle then
-        W.FitTitle()
+    Widgets._hdrIconsShown = isShown and true or false
+    if Widgets.FitTitle then
+        Widgets.FitTitle()
     end
 end
 
-local function EnsureHeaderButtonsHoverHooks(W)
-    if not W or W._hdrHideUntilHoverHooksInstalled then
+local function EnsureHeaderButtonsHoverHooks(Widgets)
+    if not Widgets or Widgets._hdrHideUntilHoverHooksInstalled then
         return
     end
-    W._hdrHideUntilHoverHooksInstalled = true
+    Widgets._hdrHideUntilHoverHooksInstalled = true
 
     local function Show()
-        local cfg = DB()
-        if not cfg.hdrMouseoverIcons then
+        local conf = SavedDB()
+        if not conf.hdrMouseoverIcons then
             return
         end
-        SetHeaderButtonsShown(W, true)
+        SetHeaderButtonsShown(Widgets, true)
     end
 
     local function MaybeHide()
-        local cfg = DB()
-        if not cfg.hdrMouseoverIcons then
+        local conf = SavedDB()
+        if not conf.hdrMouseoverIcons then
             return
         end
-        if not W.header then
+        if not Widgets.header then
             return
         end
         C_Timer.After(0, function()
-            if not W.header then
+            if not Widgets.header then
                 return
             end
-            if W.header:IsMouseOver() then
+            if Widgets.header:IsMouseOver() then
                 return
             end
-            SetHeaderButtonsShown(W, false)
+            SetHeaderButtonsShown(Widgets, false)
         end)
     end
 
-    if W.header then
-        W.header:HookScript("OnEnter", Show)
-        W.header:HookScript("OnLeave", MaybeHide)
+    if Widgets.header then
+        Widgets.header:HookScript("OnEnter", Show)
+        Widgets.header:HookScript("OnLeave", MaybeHide)
     end
-    if W.hdrBtns then
-        for _, btn in ipairs(W.hdrBtns) do
-            btn:HookScript("OnEnter", Show)
-            btn:HookScript("OnLeave", MaybeHide)
+    if Widgets.hdrBtns then
+        for _, button in ipairs(Widgets.hdrBtns) do
+            button:HookScript("OnEnter", Show)
+            button:HookScript("OnLeave", MaybeHide)
         end
     end
 end
 
-local function ApplyHeaderButtonsHoverVisibility(W, cfg)
-    if not W or not W.header or not W.hdrBtns then
+local function ApplyHeaderButtonsHoverVisibility(Widgets, conf)
+    if not Widgets or not Widgets.header or not Widgets.hdrBtns then
         return
     end
-    EnsureHeaderButtonsHoverHooks(W)
-    if cfg and cfg.hdrMouseoverIcons then
-        SetHeaderButtonsShown(W, W.header:IsMouseOver())
+    EnsureHeaderButtonsHoverHooks(Widgets)
+    if conf and conf.hdrMouseoverIcons then
+        SetHeaderButtonsShown(Widgets, Widgets.header:IsMouseOver())
     else
-        SetHeaderButtonsShown(W, true)
+        SetHeaderButtonsShown(Widgets, true)
     end
 end
 
 -- Per-window DB accessor
 local function WinDB(idx)
-    local cfg = DB()
-    if not cfg.windows then
-        cfg.windows = {}
+    local conf = SavedDB()
+    if not conf.windows then
+        conf.windows = {}
     end
-    if not cfg.windows[idx] then
-        cfg.windows[idx] = {
+    if not conf.windows[idx] then
+        conf.windows[idx] = {
             position = nil,
             width = 375,
             height = 150,
         }
     end
-    return cfg.windows[idx]
+    return conf.windows[idx]
 end
 
 -- Applies a window's saved position. Two formats: unlock format { point, relPoint, x, y } (relative
 -- to UIParent, from unlock mode's Save & Exit); legacy format { x = left, y = top } (TOPLEFT offset from UIParent's BOTTOMLEFT, from header drags outside unlock mode)
-ns.ApplyWinPosition = function(frame, wdb, idx)
+mod.ApplyWinPosition = function(widget, wdb, idx)
     -- The resize grip owns the frame's anchor while a drag is in flight. Even
     -- with the format converted above, re-anchoring mid-resize would fight the
     -- grip's live SetPoint for a frame; leave it alone until the drag ends.
     -- ns._windows, not the _windows local: that local is declared BELOW this
     -- function, so referencing it here would read a nil global and the guard
     -- would silently never fire.
-    local W = ns._windows and ns._windows[idx]
-    if W and W.resizing then
+    local Widgets = mod._windows and mod._windows[idx]
+    if Widgets and Widgets.resizing then
         return
     end
-    local pos = wdb.position
+    local place = wdb.position
     -- Unlock-anchored window (e.g. one meter window anchored to another): the
     -- anchor system owns the position ENTIRELY -- the standard Build* guard
     -- (see the ERB/CDM siblings), but stricter: never seed from the stored
@@ -202,16 +202,16 @@ ns.ApplyWinPosition = function(frame, wdb, idx)
     if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EDM_Win" .. idx) then
         return
     end
-    frame:ClearAllPoints()
-    if pos and pos.point then
-        frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
-    elseif pos and pos.x and pos.y then
-        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", pos.x, pos.y)
+    widget:ClearAllPoints()
+    if place and place.point then
+        widget:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
+    elseif place and place.x and place.y then
+        widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", place.x, place.y)
     else
         -- Default: 20px from bottom-right of screen, cascading per window
         local uiW = UIParent:GetWidth()
-        local fw, fh = frame:GetSize()
-        frame:SetPoint(
+        local fw, fh = widget:GetSize()
+        widget:SetPoint(
             "TOPLEFT",
             UIParent,
             "BOTTOMLEFT",
@@ -223,64 +223,64 @@ end
 
 -- Bookmarks are shared across all windows (stored in dm.bookmarks)
 local function GetBookmarks()
-    local cfg = DB()
-    if not cfg.bookmarks then
-        cfg.bookmarks = {}
+    local conf = SavedDB()
+    if not conf.bookmarks then
+        conf.bookmarks = {}
         for _, dt in ipairs(HOME_DEFAULTS) do
-            cfg.bookmarks[#cfg.bookmarks + 1] = dt
+            conf.bookmarks[#conf.bookmarks + 1] = dt
         end
     end
-    return cfg.bookmarks
+    return conf.bookmarks
 end
 
 -- ipairs over the bookmarks this client offers, keeping each one's index in
 -- the saved list: a type not offered here (WoW Forever's Threat in a profile
 -- brought elsewhere) gets no card, and its bookmark stays saved.
-local function NextHomeType(list, i)
+local function NextHomeType(entries, i)
     i = i + 1
-    local v = list[i]
-    while v ~= nil and not DM_TYPE_NAMES[v] do
+    local val = entries[i]
+    while val ~= nil and not DM_TYPE_NAMES[val] do
         i = i + 1
-        v = list[i]
+        val = entries[i]
     end
-    if v ~= nil then
-        return i, v
+    if val ~= nil then
+        return i, val
     end
 end
-function ns.DMHomeTypes(list)
-    return NextHomeType, list, 0
+function mod.DMHomeTypes(entries)
+    return NextHomeType, entries, 0
 end
 
 -- Shared state
 local _inCombat = false
 local _inEncounter = false -- true between ENCOUNTER_START and ENCOUNTER_END
-I.inCombatSetters[#I.inCombatSetters + 1] = function(v)
-    _inCombat = v
+Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val)
+    _inCombat = val
 end
-I.inEncounterSetters[#I.inEncounterSetters + 1] = function(v)
-    _inEncounter = v
+Inner.inEncounterSetters[#Inner.inEncounterSetters + 1] = function(val)
+    _inEncounter = val
 end
 local _windows = {} -- array of active window tables
-ns._windows = _windows
+mod._windows = _windows
 -- Windows taken out of use (a closed window, or one past a profile's window
 -- count), kept whole with their frames: ns.DMAcquireWindow brings them back.
-ns._dmParked = {}
+mod._dmParked = {}
 
 -- Hotkey toggle state. Deliberately not persisted: a window hidden by accident would
 -- otherwise stay gone after a reload with nothing on screen explaining why. Every place
 -- that can show one of the toggled frames consults this flag, because the shared
 -- visibility dispatcher, the standalone timer ticker and the spell history rebuild all
 -- re-show their frames on their own schedule. Options mode and unlock mode still win.
-ns._toggleHidden = false
+mod._toggleHidden = false
 
-ns._DM_TYPE_NAMES = DM_TYPE_NAMES
-ns._DM_TYPE_ICONS = DM_TYPE_ICONS
+mod._DM_TYPE_NAMES = DM_TYPE_NAMES
+mod._DM_TYPE_ICONS = DM_TYPE_ICONS
 
 -- Unlock mode registration: each window is a first-class unlock element (EDM_Win1..N) via the
 -- core mover system (drag, exact X/Y, anchor-to-element, width/height matching). Index-based
 -- keys; deletion re-keys anchor/match links via ShiftIndexedAnchorKeys (see W.Destroy). Called
 -- on login, window add/remove, and profile swap; slots beyond the live count unregister.
-ns.RegisterDMUnlock = function()
+mod.RegisterDMUnlock = function()
     if not CUI or not CUI.RegisterUnlockElements or not CUI.MakeUnlockElement then
         return
     end
@@ -297,13 +297,13 @@ ns.RegisterDMUnlock = function()
             group = "Damage Meters",
             order = 650 + i,
             getFrame = function(key)
-                local w = winOf(key)
-                return w and w.frame
+                local wid = winOf(key)
+                return wid and wid.frame
             end,
             getSize = function(key)
-                local w, idx = winOf(key)
-                if w and w.frame then
-                    return w.frame:GetWidth(), w.frame:GetHeight()
+                local wid, idx = winOf(key)
+                if wid and wid.frame then
+                    return wid.frame:GetWidth(), wid.frame:GetHeight()
                 end
                 local wdb = idx and WinDB(idx)
                 return wdb and wdb.width or 375, wdb and wdb.height or 150
@@ -314,18 +314,18 @@ ns.RegisterDMUnlock = function()
             -- Offsets, and its top starts below the header when the header is
             -- left out. Each side clamped at 0. nil under a stock look or solid.
             getMatchPad = function()
-                if ns.DMBlizz() then
+                if mod.DMBlizz() then
                     return nil
                 end
-                local cfg = DB()
-                local size = tonumber(cfg.windowBorderSize) or 0
-                local texture = cfg.windowBorderTexture or "solid"
-                if size <= 0 or texture == "solid" then
+                local conf = SavedDB()
+                local dim = tonumber(conf.windowBorderSize) or 0
+                local texture = conf.windowBorderTexture or "solid"
+                if dim <= 0 or texture == "solid" then
                     return nil
                 end
-                local color = cfg.windowBorderColor
+                local color = conf.windowBorderColor
                 local l, r, t, b = CUI.BorderReach(
-                    size,
+                    dim,
                     texture,
                     nil,
                     nil,
@@ -333,17 +333,17 @@ ns.RegisterDMUnlock = function()
                     nil,
                     nil,
                     nil,
-                    CUI.BorderPx(cfg.windowBorderSizePx, size, texture),
+                    CUI.BorderPx(conf.windowBorderSizePx, dim, texture),
                     nil,
                     color and color.a or 1
                 )
                 if not l then
                     return nil
                 end
-                local ox = tonumber(cfg.windowBorderOffsetX) or 0
-                local oy = tonumber(cfg.windowBorderOffsetY) or 0
+                local ox = tonumber(conf.windowBorderOffsetX) or 0
+                local oy = tonumber(conf.windowBorderOffsetY) or 0
                 l, r, b = l + ox, r + ox, b + oy
-                if cfg.windowBorderIncludeHeader ~= false then
+                if conf.windowBorderIncludeHeader ~= false then
                     t = t + oy
                 else
                     t = t + oy - GetHeaderH()
@@ -356,58 +356,59 @@ ns.RegisterDMUnlock = function()
                 return pw, ph
             end,
             setWidth = function(key, newW)
-                local w, idx = winOf(key)
-                if not w or not w.frame then
+                local wid, idx = winOf(key)
+                if not wid or not wid.frame then
                     return
                 end
                 local PPu = CUI.PP
-                local v = math.max(MIN_W, newW or MIN_W)
-                v = PPu and PPu.Snap and PPu.Snap(v) or math.floor(v + 0.5)
-                w.frame:SetWidth(v)
+                local val = math.max(MIN_W, newW or MIN_W)
+                val = PPu and PPu.Snap and PPu.Snap(val) or math.floor(val + 0.5)
+                wid.frame:SetWidth(val)
                 if CUI._unlockActive then
-                    WinDB(idx).width = math.floor(v + 0.5)
+                    WinDB(idx).width = math.floor(val + 0.5)
                 end
-                if w.FitTitle then
-                    w.FitTitle()
+                if wid.FitTitle then
+                    wid.FitTitle()
                 end
             end,
             setHeight = function(key, newH)
-                local w, idx = winOf(key)
-                if not w or not w.frame then
+                local wid, idx = winOf(key)
+                if not wid or not wid.frame then
                     return
                 end
                 local PPu = CUI.PP
-                local v = math.max(MIN_H, newH or MIN_H)
-                v = PPu and PPu.Snap and PPu.Snap(v) or math.floor(v + 0.5)
-                w.frame:SetHeight(v)
+                local val = math.max(MIN_H, newH or MIN_H)
+                val = PPu and PPu.Snap and PPu.Snap(val) or math.floor(val + 0.5)
+                wid.frame:SetHeight(val)
                 if CUI._unlockActive then
-                    WinDB(idx).height = math.floor(v + 0.5)
+                    WinDB(idx).height = math.floor(val + 0.5)
                 end
             end,
-            savePos = function(key, point, relPoint, x, y)
-                local w, idx = winOf(key)
+            savePos = function(key, anchorPoint, relPoint, posX, posY)
+                local wid, idx = winOf(key)
                 if not idx then
                     return
                 end
-                WinDB(idx).position = { point = point, relPoint = relPoint or point, x = x, y = y }
-                if w and w.ApplyPosition and not CUI._unlockActive then
-                    w.ApplyPosition()
+                WinDB(idx).position =
+                    { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+                if wid and wid.ApplyPosition and not CUI._unlockActive then
+                    wid.ApplyPosition()
                 end
             end,
             loadPos = function(key)
                 local _, idx = winOf(key)
-                local pos = idx and WinDB(idx).position
-                if not pos then
+                local place = idx and WinDB(idx).position
+                if not place then
                     return nil
                 end
                 -- Return a copy: callers may hold or rebase the table, and the
                 -- live DB entry must never be mutated through it
-                if pos.point then
-                    return { point = pos.point, relPoint = pos.relPoint, x = pos.x, y = pos.y }
+                if place.point then
+                    return { point = place.point, relPoint = place.relPoint, x = place.x, y = place.y }
                 end
-                if pos.x and pos.y then
+                if place.x and place.y then
                     -- Legacy drag format: TOPLEFT offset from UIParent's BOTTOMLEFT
-                    return { point = "TOPLEFT", relPoint = "BOTTOMLEFT", x = pos.x, y = pos.y }
+                    return { point = "TOPLEFT", relPoint = "BOTTOMLEFT", x = place.x, y = place.y }
                 end
                 return nil
             end,
@@ -418,22 +419,22 @@ ns.RegisterDMUnlock = function()
                 end
             end,
             applyPos = function(key)
-                local w = winOf(key)
-                if w and w.ApplyPosition then
-                    w.ApplyPosition()
+                local wid = winOf(key)
+                if wid and wid.ApplyPosition then
+                    wid.ApplyPosition()
                 end
             end,
         })
     end
     -- Standalone combat timer rides the master toggle (factory defined in CUI_DamageMeters_Timer.lua, resolved via ns)
-    if DB().standaloneTimer and ns.MakeSATimerUnlockElement then
-        elements[#elements + 1] = ns.MakeSATimerUnlockElement(MK)
+    if SavedDB().standaloneTimer and mod.MakeSATimerUnlockElement then
+        elements[#elements + 1] = mod.MakeSATimerUnlockElement(MK)
     end
     -- Icon History is owned by the spell-history file, but participates in the
     -- same first-class unlock system as the meter windows and combat timer.
-    local spellHistory = DB().spellHistory
-    if spellHistory and spellHistory.iconEnabled and ns.MakeIconHistoryUnlockElement then
-        elements[#elements + 1] = ns.MakeIconHistoryUnlockElement(MK)
+    local spellHistory = SavedDB().spellHistory
+    if spellHistory and spellHistory.iconEnabled and mod.MakeIconHistoryUnlockElement then
+        elements[#elements + 1] = mod.MakeIconHistoryUnlockElement(MK)
     end
     CUI:RegisterUnlockElements(elements, "CludesUIDamageMeters")
     -- Drop registrations for window slots beyond the live count and optional
@@ -442,7 +443,7 @@ ns.RegisterDMUnlock = function()
         for i = #_windows + 1, MAX_WINDOWS do
             CUI:UnregisterUnlockElement("EDM_Win" .. i)
         end
-        if not DB().standaloneTimer then
+        if not SavedDB().standaloneTimer then
             CUI:UnregisterUnlockElement("EDM_CombatTimer")
         end
         if not (spellHistory and spellHistory.iconEnabled) then
@@ -462,14 +463,14 @@ end
 local _combatEndTime = 0 -- GetTime() at combat end; control-flow sentinel (ticker teardown / freeze-once)
 local _needsFinalRefresh = false
 local _curViewFrozenDur = 0 -- final Current-session duration, pinned when combat ends
-I.combatEndTimeSetters[#I.combatEndTimeSetters + 1] = function(v)
-    _combatEndTime = v
+Inner.combatEndTimeSetters[#Inner.combatEndTimeSetters + 1] = function(val)
+    _combatEndTime = val
 end
-I.needsFinalRefreshSetters[#I.needsFinalRefreshSetters + 1] = function(v)
-    _needsFinalRefresh = v
+Inner.needsFinalRefreshSetters[#Inner.needsFinalRefreshSetters + 1] = function(val)
+    _needsFinalRefresh = val
 end
-I.curViewFrozenDurSetters[#I.curViewFrozenDurSetters + 1] = function(v)
-    _curViewFrozenDur = v
+Inner.curViewFrozenDurSetters[#Inner.curViewFrozenDurSetters + 1] = function(val)
+    _curViewFrozenDur = val
 end
 -- Tracks feigned GUIDs since C_DamageMeter can give a feign a valid deathRecapID, which the
 -- deathRecapID > 0 filter would treat as a real death. Cleared at combat/encounter start and on
@@ -486,42 +487,42 @@ local _deathStamps = {}
 
 -- Switch a window to a segment (sessionID) or session type (Current/Overall); windows with
 -- syncSegments switch together. On ns not local: CreateDMWindow is at Lua 5.1's 60-upvalue limit.
-function ns.ApplySegmentSelection(W, sessionType, sessionID)
-    local targets = { W }
-    if WinDB(W.idx).syncSegments then
+function mod.ApplySegmentSelection(Widgets, sessionType, sessionID)
+    local targets = { Widgets }
+    if WinDB(Widgets.idx).syncSegments then
         targets = {}
-        for _, w in ipairs(_windows) do
-            if WinDB(w.idx).syncSegments then
-                targets[#targets + 1] = w
+        for _, wid in ipairs(_windows) do
+            if WinDB(wid.idx).syncSegments then
+                targets[#targets + 1] = wid
             end
         end
     end
-    for _, w in ipairs(targets) do
+    for _, wid in ipairs(targets) do
         if sessionID then
-            w.curSessionID = sessionID
+            wid.curSessionID = sessionID
         else
-            w.curSession = sessionType
-            WinDB(w.idx).curSession = sessionType
-            w.curSessionID = nil
+            wid.curSession = sessionType
+            WinDB(wid.idx).curSession = sessionType
+            wid.curSessionID = nil
         end
-        if w.CloseSource then
-            w.CloseSource()
+        if wid.CloseSource then
+            wid.CloseSource()
         end
-        w.Refresh()
+        wid.Refresh()
     end
 end
 
 -- Combat start: switch windows viewing a past segment back to Current (per-window autoCurrentOnCombat option); Overall windows untouched.
-function ns.AutoCurrentOnCombat()
-    for _, w in ipairs(_windows) do
-        if w.curSessionID and WinDB(w.idx).autoCurrentOnCombat then
-            w.curSessionID = nil
-            w.curSession = Enum.DamageMeterSessionType.Current
-            WinDB(w.idx).curSession = Enum.DamageMeterSessionType.Current
-            if w.CloseSource then
-                w.CloseSource()
+function mod.AutoCurrentOnCombat()
+    for _, wid in ipairs(_windows) do
+        if wid.curSessionID and WinDB(wid.idx).autoCurrentOnCombat then
+            wid.curSessionID = nil
+            wid.curSession = Enum.DamageMeterSessionType.Current
+            WinDB(wid.idx).curSession = Enum.DamageMeterSessionType.Current
+            if wid.CloseSource then
+                wid.CloseSource()
             end
-            w.Refresh()
+            wid.Refresh()
         end
     end
 end
@@ -582,15 +583,15 @@ local function IsGroupInCombat()
         return true
     end
     if IsInRaid() then
-        local n = GetNumGroupMembers()
-        for i = 1, n do
+        local num = GetNumGroupMembers()
+        for i = 1, num do
             if UnitAffectingCombat(_raidUnits[i]) then
                 return true
             end
         end
     elseif IsInGroup() then
-        local n = GetNumGroupMembers() - 1 -- party units exclude player
-        for i = 1, n do
+        local num = GetNumGroupMembers() - 1 -- party units exclude player
+        for i = 1, num do
             if UnitAffectingCombat(_partyUnits[i]) then
                 return true
             end
@@ -606,10 +607,10 @@ local function CleanupFeignCache()
     end
     -- Build GUID -> unit map for the group so iteration below runs O(N+M) instead of O(N*M)
     local present = {}
-    local function note(unit)
-        local g = UnitGUID(unit)
+    local function note(unitToken)
+        local g = UnitGUID(unitToken)
         if g and not (issecretvalue and issecretvalue(g)) then
-            present[g] = unit
+            present[g] = unitToken
         end
     end
     note("player")
@@ -623,14 +624,14 @@ local function CleanupFeignCache()
         end
     end
     -- HP == 0 confirms a real death; Feign Death keeps actual HP, and UnitIsFeignDeath can linger after a feign-then-die transition
-    for guid in pairs(_feignDeathGUIDs) do
-        local unit = present[guid]
-        if not unit then
-            _feignDeathGUIDs[guid] = nil -- player left the group: untrackable
+    for unitGuid in pairs(_feignDeathGUIDs) do
+        local unitToken = present[unitGuid]
+        if not unitToken then
+            _feignDeathGUIDs[unitGuid] = nil -- player left the group: untrackable
         else
-            local hp = UnitHealth(unit)
+            local hp = UnitHealth(unitToken)
             if hp and not (issecretvalue and issecretvalue(hp)) and hp <= 0 then
-                _feignDeathGUIDs[guid] = nil
+                _feignDeathGUIDs[unitGuid] = nil
             end
         end
     end
@@ -639,14 +640,14 @@ end
 local StopSharedTicker -- forward declaration (defined in CUI_DamageMeters_Lifecycle.lua)
 local StartSharedTicker -- forward declaration (defined in CUI_DamageMeters_Lifecycle.lua)
 local _sharedTicker -- the live refresh ticker (assigned in CUI_DamageMeters_Lifecycle.lua)
-I.stopSharedTickerSetters[#I.stopSharedTickerSetters + 1] = function(v)
-    StopSharedTicker = v
+Inner.stopSharedTickerSetters[#Inner.stopSharedTickerSetters + 1] = function(val)
+    StopSharedTicker = val
 end
-I.startSharedTickerSetters[#I.startSharedTickerSetters + 1] = function(v)
-    StartSharedTicker = v
+Inner.startSharedTickerSetters[#Inner.startSharedTickerSetters + 1] = function(val)
+    StartSharedTicker = val
 end
-I.sharedTickerSetters[#I.sharedTickerSetters + 1] = function(v)
-    _sharedTicker = v
+Inner.sharedTickerSetters[#Inner.sharedTickerSetters + 1] = function(val)
+    _sharedTicker = val
 end
 local _targetsCache = {} -- Damage Done targets map (BuildAllPlayerTargets): { key = sessionKey, map = { [playerName] = sorted targets } }
 
@@ -659,63 +660,63 @@ instanceFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 instanceFrame:RegisterEvent("DAMAGE_METER_RESET")
 instanceFrame:RegisterEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED")
 instanceFrame:RegisterEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED")
-instanceFrame:SetScript("OnEvent", function(_, event)
-    if event == "CHALLENGE_MODE_START" then
+instanceFrame:SetScript("OnEvent", function(_, evt)
+    if evt == "CHALLENGE_MODE_START" then
         if C_DamageMeter and C_DamageMeter.ResetAllCombatSessions then
             C_DamageMeter.ResetAllCombatSessions()
         end
         SetCombatEndTime(0)
         SetCurViewFrozenDur(0)
         -- Auto-swap: Overall -> Current on key start
-        for _, w in ipairs(_windows) do
-            local wdb2 = WinDB(w.idx)
-            if wdb2.autoSwapMythic and w.curSession == Enum.DamageMeterSessionType.Overall then
-                w.curSession = Enum.DamageMeterSessionType.Current
+        for _, wid in ipairs(_windows) do
+            local wdb2 = WinDB(wid.idx)
+            if wdb2.autoSwapMythic and wid.curSession == Enum.DamageMeterSessionType.Overall then
+                wid.curSession = Enum.DamageMeterSessionType.Current
                 wdb2.curSession = Enum.DamageMeterSessionType.Current
-                w.curSessionID = nil
+                wid.curSessionID = nil
             end
             -- Default on M+ Start: switch this window to its configured meter type
-            if wdb2.mythicStartDMType and w.SetDMType then
-                w.SetDMType(wdb2.mythicStartDMType)
+            if wdb2.mythicStartDMType and wid.SetDMType then
+                wid.SetDMType(wdb2.mythicStartDMType)
             end
-            w.Refresh()
+            wid.Refresh()
         end
-    elseif event == "CHALLENGE_MODE_COMPLETED" then
+    elseif evt == "CHALLENGE_MODE_COMPLETED" then
         -- Auto-swap: Current -> Overall on key completion
-        for _, w in ipairs(_windows) do
-            local wdb2 = WinDB(w.idx)
+        for _, wid in ipairs(_windows) do
+            local wdb2 = WinDB(wid.idx)
             if
                 wdb2.autoSwapMythic
-                and not w.curSessionID
-                and w.curSession == Enum.DamageMeterSessionType.Current
+                and not wid.curSessionID
+                and wid.curSession == Enum.DamageMeterSessionType.Current
             then
-                w.curSession = Enum.DamageMeterSessionType.Overall
+                wid.curSession = Enum.DamageMeterSessionType.Overall
                 wdb2.curSession = Enum.DamageMeterSessionType.Overall
-                w.curSessionID = nil
-                w.Refresh()
+                wid.curSessionID = nil
+                wid.Refresh()
             end
         end
-    elseif event == "DAMAGE_METER_COMBAT_SESSION_UPDATED" then
+    elseif evt == "DAMAGE_METER_COMBAT_SESSION_UPDATED" then
         -- Blizzard created/updated a combat session (boss kill, combat end); "Current" may now point
         -- elsewhere. Invalidate cache for the next ticker refresh; force an immediate refresh only out of combat (the shared ticker covers combat at refreshRate).
         -- Readable session data changed: refresh the breakdown resolver's
         -- class:spec -> guid snapshot (ns route: this closure predates the
         -- resolver's definition).
-        if ns._SnapshotSourceKeys and not InCombatLockdown() then
-            ns._SnapshotSourceKeys()
+        if mod._SnapshotSourceKeys and not InCombatLockdown() then
+            mod._SnapshotSourceKeys()
         end
         if not instanceFrame._sessionPending then
             instanceFrame._sessionPending = true
             C_Timer.After(0.1, function()
                 instanceFrame._sessionPending = nil
-                for _, w in ipairs(_windows) do
+                for _, wid in ipairs(_windows) do
                     -- Data-only: session updates change DATA never STYLE. _barCacheKey gates the
                     -- per-bar restyle; nilling it here made every death restyle all bars at ticker rate (the dominant profiled cost). Style invalidation belongs to the settings/palette appliers only.
-                    w._cachedTargets = nil
+                    wid._cachedTargets = nil
                 end
                 if not _inCombat then
-                    for _, w in ipairs(_windows) do
-                        w.Refresh()
+                    for _, wid in ipairs(_windows) do
+                        wid.Refresh()
                     end
                 elseif not _sharedTicker then
                     -- Ticker died from a teardown race; a new server session is our cue to revive it
@@ -723,15 +724,15 @@ instanceFrame:SetScript("OnEvent", function(_, event)
                 end
             end)
         end
-    elseif event == "DAMAGE_METER_CURRENT_SESSION_UPDATED" then
+    elseif evt == "DAMAGE_METER_CURRENT_SESSION_UPDATED" then
         -- Authoritative "Current just rolled" signal (boss-pull reset trigger, catches rolls the
         -- ticker-only model could miss between polls). Can fire continuously during combat, so a
         -- debounced repaint per burst (each paying a session-fetch C call, multiplied across windows) would dwarf the ticker's rate; in combat we only invalidate
         -- caches (ENCOUNTER_START/REGEN_DISABLED already force immediate repaints at segment
         -- boundaries, ticker covers the rest). Out of combat, one debounced repaint keeps rolls prompt.
-        for _, w in ipairs(_windows) do
+        for _, wid in ipairs(_windows) do
             -- Data caches only -- style never changes on a session roll (see SESSION_UPDATED note above)
-            w._cachedTargets = nil
+            wid._cachedTargets = nil
         end
         if _inCombat or _needsFinalRefresh then
             if not _sharedTicker then
@@ -741,24 +742,24 @@ instanceFrame:SetScript("OnEvent", function(_, event)
             instanceFrame._curSessionPending = true
             C_Timer.After(0.1, function()
                 instanceFrame._curSessionPending = nil
-                for _, w in ipairs(_windows) do
-                    w.Refresh()
+                for _, wid in ipairs(_windows) do
+                    wid.Refresh()
                 end
             end)
         end
-    elseif event == "DAMAGE_METER_RESET" then
+    elseif evt == "DAMAGE_METER_RESET" then
         -- Blizzard cleared all session data (auto-reset CVar, manual reset, etc.)
         SetCombatEndTime(0)
         SetCurViewFrozenDur(0)
         if _targetsCache then
             wipe(_targetsCache)
         end
-        for _, w in ipairs(_windows) do
-            w._barCacheKey = nil
-            w._cachedTargets = nil
-            w.Refresh()
+        for _, wid in ipairs(_windows) do
+            wid._barCacheKey = nil
+            wid._cachedTargets = nil
+            wid.Refresh()
         end
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         -- Zone transition (load screen); WoW does not re-fire PLAYER_REGEN_DISABLED here, so
         -- combat state must be re-derived per branch below or the session-derived timer would blank.
         if UnitAffectingCombat("player") then
@@ -775,8 +776,8 @@ instanceFrame:SetScript("OnEvent", function(_, event)
             SetInCombat(false)
             SetCombatEndTime(0)
             -- A stale stamp of the last fight would trip the 5s failsafe on the first tick.
-            if ns.DMClearRegenStamp then
-                ns.DMClearRegenStamp()
+            if mod.DMClearRegenStamp then
+                mod.DMClearRegenStamp()
             end
             SetNeedsFinalRefresh(true)
             if not _sharedTicker then
@@ -796,22 +797,22 @@ instanceFrame:SetScript("OnEvent", function(_, event)
         end
         -- Refresh after zone-in to pick up visibility/data changes (window 1's
         -- refresh also applies the standalone timer's visibility)
-        for _, w in ipairs(_windows) do
-            w._barCacheKey = nil
+        for _, wid in ipairs(_windows) do
+            wid._barCacheKey = nil
         end
         C_Timer.After(0.5, function()
-            for _, w in ipairs(_windows) do
-                w.Refresh()
+            for _, wid in ipairs(_windows) do
+                wid.Refresh()
             end
         end)
     end
 end)
 
-I._combatEndTime, I._deathStamps = _combatEndTime, _deathStamps
-I._feignDeathGUIDs, I._inCombat = _feignDeathGUIDs, _inCombat
-I._needsFinalRefresh, I._targetsCache, I._windows = _needsFinalRefresh, _targetsCache, _windows
-I.ApplyHeaderButtonsHoverVisibility = ApplyHeaderButtonsHoverVisibility
-I.CleanupFeignCache, I.FreezeCombat = CleanupFeignCache, FreezeCombat
-I.GetBookmarks, I.GetCurrentViewDuration = GetBookmarks, GetCurrentViewDuration
-I.IsGroupInCombat, I.LayoutHeaderButtons, I.WinDB = IsGroupInCombat, LayoutHeaderButtons, WinDB
-I.broken = false
+Inner._combatEndTime, Inner._deathStamps = _combatEndTime, _deathStamps
+Inner._feignDeathGUIDs, Inner._inCombat = _feignDeathGUIDs, _inCombat
+Inner._needsFinalRefresh, Inner._targetsCache, Inner._windows = _needsFinalRefresh, _targetsCache, _windows
+Inner.ApplyHeaderButtonsHoverVisibility = ApplyHeaderButtonsHoverVisibility
+Inner.CleanupFeignCache, Inner.FreezeCombat = CleanupFeignCache, FreezeCombat
+Inner.GetBookmarks, Inner.GetCurrentViewDuration = GetBookmarks, GetCurrentViewDuration
+Inner.IsGroupInCombat, Inner.LayoutHeaderButtons, Inner.WinDB = IsGroupInCombat, LayoutHeaderButtons, WinDB
+Inner.broken = false

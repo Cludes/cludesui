@@ -29,8 +29,8 @@ local textures, used = {}, 0
 local explored = {}
 
 local function Clear()
-    for i = 1, used do
-        textures[i]:Hide()
+    for idx = 1, used do
+        textures[idx]:Hide()
     end
     used = 0
 end
@@ -46,9 +46,9 @@ end
 
 local function Refresh()
     Clear()
-    local data = module.MapRevealData
+    local payload = module.MapRevealData
     local mapID = WorldMapFrame:GetMapID()
-    local overlays = data and mapID and data[C_Map.GetMapArtID(mapID)]
+    local overlays = payload and mapID and payload[C_Map.GetMapArtID(mapID)]
     if not overlays then
         return
     end
@@ -62,26 +62,26 @@ local function Refresh()
     wipe(explored)
     local known = C_MapExplorationInfo.GetExploredMapTextures(mapID)
     if known then
-        for i = 1, #known do
-            local id = known[i].fileDataIDs[1]
-            if id then
-                explored[id] = true
+        for idx = 1, #known do
+            local ident = known[idx].fileDataIDs[1]
+            if ident then
+                explored[ident] = true
             end
         end
     end
 
-    local col = F.Get("color")
-    local cr, cg, cb, ca = col.r, col.g, col.b, col.a or 1
-    for i = 1, #overlays do
-        local o = overlays[i]
+    local column = F.Get("color")
+    local cr, cg, cb, ca = column.r, column.g, column.b, column.a or 1
+    for idx = 1, #overlays do
+        local o = overlays[idx]
         if not explored[o[5]] then
-            local w, h, x, y = o[1], o[2], o[3], o[4]
-            local cols, rows = math.ceil(w / tw), math.ceil(h / th)
-            for r = 1, rows do
-                local ph = r < rows and th or h - th * (rows - 1)
-                local fh = r < rows and th or FileSize(ph)
+            local wid, hgt, posX, posY = o[1], o[2], o[3], o[4]
+            local cols, rowList = math.ceil(wid / tw), math.ceil(hgt / th)
+            for r = 1, rowList do
+                local ph = r < rowList and th or hgt - th * (rowList - 1)
+                local fh = r < rowList and th or FileSize(ph)
                 for c = 1, cols do
-                    local pw = c < cols and tw or w - tw * (cols - 1)
+                    local pw = c < cols and tw or wid - tw * (cols - 1)
                     local fw = c < cols and tw or FileSize(pw)
                     used = used + 1
                     local t = textures[used]
@@ -92,7 +92,7 @@ local function Refresh()
                     t:SetSize(pw, ph)
                     t:SetTexCoord(0, pw / fw, 0, ph / fh)
                     t:ClearAllPoints()
-                    t:SetPoint("TOPLEFT", x + tw * (c - 1), -(y + th * (r - 1)))
+                    t:SetPoint("TOPLEFT", posX + tw * (c - 1), -(posY + th * (r - 1)))
                     t:SetTexture(o[4 + (r - 1) * cols + c], nil, nil, "TRILINEAR")
                     t:SetVertexColor(cr, cg, cb, ca)
                     t:Show()

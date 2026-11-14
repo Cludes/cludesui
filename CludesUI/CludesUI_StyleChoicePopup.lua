@@ -35,7 +35,7 @@ if IS_STANDALONE then
     return
 end
 
-local PP = CludesUI.PanelPP
+local Pix = CludesUI.PanelPP
 local MakeBorder = CludesUI.MakeBorder
 local CLUDES_GREEN = CludesUI.CLUDES_GREEN
 
@@ -82,7 +82,7 @@ CludesUI.ApplyFirstInstallLook = ApplyLook
 -- change needs, asked for first in the click, then the look written as its
 -- pre-reload work (RequestReload). When the options addon is turned off,
 -- the popup (dimmer) closes on the chat hint instead of reloading.
-local function ChooseOtherLook(styleKey, label, dimmer)
+local function ChooseOtherLook(styleKey, labelText, dimmer)
     Stamp()
     if C_AddOns.IsAddOnLoaded("CludesUIOptions") or C_AddOns.GetAddOnEnableState("CludesUIOptions") > 0 then
         CludesUI.RequestReload(
@@ -94,7 +94,9 @@ local function ChooseOtherLook(styleKey, label, dimmer)
         )
         return
     end
-    CludesUI.Print("|cff4cc9f0CludesUI:|r " .. label .. " can be switched on under Global Settings > Style.")
+    CludesUI.Print(
+        "|cff4cc9f0CludesUI:|r " .. labelText .. " can be switched on under Global Settings > Style."
+    )
     if dimmer then
         dimmer:Hide()
     end
@@ -102,14 +104,14 @@ local function ChooseOtherLook(styleKey, label, dimmer)
 end
 
 local function ShowStyleChoicePopup()
-    if not (PP and MakeBorder and CLUDES_GREEN and CludesUI.BuildStyleCards) then
+    if not (Pix and MakeBorder and CLUDES_GREEN and CludesUI.BuildStyleCards) then
         Release()
         return
     end
     local FONT = CludesUI._font
         or CludesUI.EXPRESSWAY
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-    local EG = CLUDES_GREEN
+    local ACC = CLUDES_GREEN
     -- Wide enough for the card row (four cards on the WoW Forever client).
     local POPUP_W, POPUP_H = math.max(700, CludesUI.STYLE_CARDS_W + 32), 480
     -- The DEFAULT card: CludesUI, or on the WoW Forever client WoW
@@ -128,7 +130,7 @@ local function ShowStyleChoicePopup()
     end
     local KeepLook, OnPick
     -- Escape keeps whatever renders: it never writes.
-    local dimmer, popup = CludesUI.BuildPopupShell("CUIStyleChoice", {
+    local dimmer, dialog = CludesUI.BuildPopupShell("CUIStyleChoice", {
         w = POPUP_W,
         h = POPUP_H,
         bump = 1.15,
@@ -138,25 +140,25 @@ local function ShowStyleChoicePopup()
         end,
     })
 
-    local eyebrow = popup:CreateFontString(nil, "OVERLAY")
+    local eyebrow = dialog:CreateFontString(nil, "OVERLAY")
     eyebrow:SetFont(FONT, 13, "")
-    eyebrow:SetTextColor(EG.r, EG.g, EG.b, 0.9)
-    PP.Point(eyebrow, "TOP", popup, "TOP", 0, -26)
+    eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
+    Pix.Point(eyebrow, "TOP", dialog, "TOP", 0, -26)
     eyebrow:SetText(CludesUI.L("CHOOSE YOUR LOOK"))
 
-    local title = popup:CreateFontString(nil, "OVERLAY")
-    title:SetFont(FONT, 26, "")
-    title:SetTextColor(1, 1, 1, 1)
-    PP.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
-    title:SetText(CludesUI.L("How should CludesUI look?"))
+    local titleText = dialog:CreateFontString(nil, "OVERLAY")
+    titleText:SetFont(FONT, 26, "")
+    titleText:SetTextColor(1, 1, 1, 1)
+    Pix.Point(titleText, "TOP", eyebrow, "BOTTOM", 0, -6)
+    titleText:SetText(CludesUI.L("How should CludesUI look?"))
 
-    local desc = popup:CreateFontString(nil, "OVERLAY")
+    local desc = dialog:CreateFontString(nil, "OVERLAY")
     desc:SetFont(FONT, 14, "")
     desc:SetTextColor(1, 1, 1, 0.5)
     desc:SetWidth(POPUP_W - 90)
     desc:SetJustifyH("CENTER")
     desc:SetWordWrap(true)
-    PP.Point(desc, "TOP", title, "BOTTOM", 0, -10)
+    Pix.Point(desc, "TOP", titleText, "BOTTOM", 0, -10)
     desc:SetText(
         CludesUI.L(
             "CludesUI's features work with every look. Change your mind any time under Global Settings > Style."
@@ -186,7 +188,7 @@ local function ShowStyleChoicePopup()
     -- The look cards (CludesUI_StyleCards.lua, shared with the Style page
     -- header): three, plus WoW Forever on that client, CludesUI's first.
     -- Set 10 below the description so the IN USE badge above a card clears it.
-    local cards = CludesUI.BuildStyleCards(popup, -138, {
+    local cards = CludesUI.BuildStyleCards(dialog, -138, {
         buttonText = {
             cui = "Use CludesUI Style",
             blizzard = "Use Blizzard Style",
@@ -204,12 +206,12 @@ local function ShowStyleChoicePopup()
         inUse:SetState(true, true, "In Use")
     end
 
-    local footnote = popup:CreateFontString(nil, "OVERLAY")
+    local footnote = dialog:CreateFontString(nil, "OVERLAY")
     footnote:SetFont(FONT, 12, "")
     footnote:SetTextColor(1, 1, 1, 0.35)
     footnote:SetWidth(POPUP_W - 90)
     footnote:SetJustifyH("CENTER")
-    PP.Point(footnote, "BOTTOM", popup, "BOTTOM", 0, 14)
+    Pix.Point(footnote, "BOTTOM", dialog, "BOTTOM", 0, 14)
     -- Names the cards that reload: every one but the active look's.
     if CludesUI.IS_FOREVER and activeKey == "forever" then
         footnote:SetText(
@@ -248,8 +250,8 @@ CludesUI.ShowStyleChoicePopup = ShowStyleChoicePopup
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
 loader:RegisterEvent("PLAYER_LOGIN")
-loader:SetScript("OnEvent", function(self, event, addonName)
-    if event == "ADDON_LOADED" then
+loader:SetScript("OnEvent", function(self, evt, addonName)
+    if evt == "ADDON_LOADED" then
         if addonName ~= "CludesUI" then
             return
         end

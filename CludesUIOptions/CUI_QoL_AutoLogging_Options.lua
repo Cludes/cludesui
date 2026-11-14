@@ -95,23 +95,23 @@ end
 -- Built as the tail of the Quality of Life page (chained from BuildQoLPage),
 -- not as its own tab. Lays out from yOffset and returns the height used,
 -- like every other section builder.
-local function BuildAutoLoggingPage(pageName, parent, yOffset)
+local function BuildAutoLoggingPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local PP = CludesUI.PanelPP
-    local y = yOffset
-    local _, h
+    local Pix = CludesUI.PanelPP
+    local posY = yOffset
+    local _, hgt
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     ---------------------------------------------------------------------------
     --  KEYSTONE CHECK POPUP (no keystones on WoW Forever: the section and the
     --  /keys file behind it do not exist there)
     ---------------------------------------------------------------------------
     if not CludesUI.IS_FOREVER then
-        _, h = W:SectionHeader(parent, "KEYSTONE CHECK POPUP", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "KEYSTONE CHECK POPUP", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable /keys Popup (or /ckeys)",
             tooltip = "Shows a popup with party and guild keystones when typing /keys.",
@@ -119,8 +119,8 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             -- popup is off; the flip forces the full rebuild.
             setValue = CludesUI.DependentSetValue(function()
                 return KeysCfg().enabled ~= false
-            end, function(v)
-                KeysCfg().enabled = v
+            end, function(val)
+                KeysCfg().enabled = val
                 CludesUI:RefreshPage()
                 CludesUI:ShowConfirmPopup({
                     title = "Reload Required",
@@ -147,18 +147,18 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             getValue = function()
                 return KeysCfg().textSize or 11
             end,
-            setValue = function(v)
-                KeysCfg().textSize = v
+            setValue = function(val)
+                KeysCfg().textSize = val
                 if _G._CUI_RefreshKeystonePopup then
                     _G._CUI_RefreshKeystonePopup()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Window Scale row: HIDDEN entirely while the /keys popup is off.
         if KeysCfg().enabled ~= false then
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Window Scale",
                 min = 50,
@@ -168,19 +168,19 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
                 getValue = function()
                     return math.floor((KeysCfg().scale or 1.05) * 100 + 0.5)
                 end,
-                setValue = function(v)
-                    KeysCfg().scale = v / 100
-                    local popup = _G.CUIKeysPopup
-                    if popup then
-                        popup:SetScale(v / 100)
+                setValue = function(val)
+                    KeysCfg().scale = val / 100
+                    local dialog = _G.CUIKeysPopup
+                    if dialog then
+                        dialog:SetScale(val / 100)
                     end
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
         end -- close /keys popup hidden-while-disabled gate
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
     end -- not IS_FOREVER
 
     ---------------------------------------------------------------------------
@@ -188,10 +188,10 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
     --  reminder runtime behind it do not exist there)
     ---------------------------------------------------------------------------
     if not CludesUI.IS_FOREVER then
-        _, h = W:SectionHeader(parent, "LFG REMINDER", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "LFG REMINDER", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable LFG Reminder",
             tooltip = "When you join a Group Finder group for a dungeon that has a teleport, shows a small movable popup with the dungeon name and a one-click teleport button. It hides when you enter the dungeon, leave the group, or enter combat.",
@@ -202,8 +202,8 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             -- hidden while the reminder is off; the flip forces the rebuild.
             setValue = CludesUI.DependentSetValue(function()
                 return TeleCfg().enabled ~= false
-            end, function(v)
-                TeleCfg().enabled = v
+            end, function(val)
+                TeleCfg().enabled = val
                 CludesUI:RefreshPage()
                 -- Applies live in both directions: enable builds the popup and
                 -- registers events, disable hides and unregisters.
@@ -225,46 +225,46 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             getValue = function()
                 return math.floor((TeleCfg().scale or 1.05) * 100 + 0.5)
             end,
-            setValue = function(v)
-                TeleCfg().scale = v / 100
+            setValue = function(val)
+                TeleCfg().scale = val / 100
                 if _G._CUI_RefreshTeleportPrompt then
                     _G._CUI_RefreshTeleportPrompt()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Show 'Disable Feature' Text row: HIDDEN while the reminder is off.
         if TeleCfg().enabled ~= false then
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Show 'Disable Feature' Text",
                 tooltip = "Shows the 'Disable Feature' text below the teleport button. When off, the text is hidden and the window is 20px shorter.",
                 getValue = function()
                     return TeleCfg().showDisable ~= false
                 end,
-                setValue = function(v)
-                    TeleCfg().showDisable = v
+                setValue = function(val)
+                    TeleCfg().showDisable = val
                     if _G._CUI_RefreshTeleportPrompt then
                         _G._CUI_RefreshTeleportPrompt()
                     end
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
         end -- close LFG Reminder hidden-while-disabled gate
 
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        _, hgt = W:Spacer(hostFrame, posY, 20)
+        posY = posY - hgt
     end -- not IS_FOREVER
 
     ---------------------------------------------------------------------------
     --  WAYPOINT COMMAND (/way, runtime in CludesUIQoL_Waypoint.lua)
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "WAYPOINT COMMAND", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "WAYPOINT COMMAND", posY)
+    posY = posY - hgt
 
     local wayRow
-    wayRow, h = W:DualRow(parent, y, {
+    wayRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable /way Command",
         tooltip = "Adds /way, which prints a map pin link.",
@@ -272,8 +272,8 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
         getValue = function()
             return WayCfg().enabled == true
         end,
-        setValue = function(v)
-            SetWay("enabled", v or nil)
+        setValue = function(val)
+            SetWay("enabled", val or nil)
             CludesUI:RefreshPage()
             CludesUI:ShowConfirmPopup({
                 title = "Reload Required",
@@ -284,7 +284,7 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             })
         end,
     }, CludesUI.BlankRowCfg())
-    y = y - h
+    posY = posY - hgt
 
     -- The arrival message for hand-placed pins (off by default). The runtime
     -- reads it live and listens for arrivals only while it or a /way list
@@ -303,8 +303,8 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
                 get = function()
                     return WayCfg().manualArrival == true
                 end,
-                set = function(v)
-                    SetWay("manualArrival", v or nil)
+                set = function(val)
+                    SetWay("manualArrival", val or nil)
                     local sync = CludesUI._ModuleNS["CludesUIQoL"].WaypointArrivalSync
                     if sync then
                         sync()
@@ -314,16 +314,16 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
         },
     })
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  AUTO COMBAT LOGGING
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "AUTO COMBAT LOGGING", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "AUTO COMBAT LOGGING", posY)
+    posY = posY - hgt
 
-    local trigRow, trigH = W:DualRow(parent, y, {
+    local trigRow, trigH = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Auto Logging",
         tooltip = "Automatically starts and stops combat logging when entering or leaving a loggable instance.",
@@ -334,8 +334,8 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
         -- while auto logging is off; the flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
             return Cfg().enabled == true
-        end, function(v)
-            Cfg().enabled = v or nil
+        end, function(val)
+            Cfg().enabled = val or nil
             Recheck()
             CludesUI:RefreshPage()
         end),
@@ -349,7 +349,7 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
         end,
         setValue = function() end,
     })
-    y = y - trigH
+    posY = posY - trigH
 
     -- Replace dummy dropdown with a checkbox dropdown.
     do
@@ -364,18 +364,18 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             rightRgn:GetFrameLevel() + 2,
             TRIGGER_ITEMS,
             function(k)
-                local v = Cfg()[k]
-                if v == nil then
+                local val = Cfg()[k]
+                if val == nil then
                     return TRIGGER_DEFAULTS[k]
                 end
-                return v
+                return val
             end,
-            function(k, v)
-                Cfg()[k] = v
+            function(k, val)
+                Cfg()[k] = val
                 Recheck()
             end
         )
-        PP.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
+        Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
         rightRgn._control = cbDD
         rightRgn._lastInline = nil
 
@@ -384,11 +384,11 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
         -- Gray + block the triggers dropdown (and its label) while Auto
         -- Logging is off; the CB dropdown has no native disabled handling.
         local function UpdateTrigDisabled()
-            local off = Cfg().enabled ~= true
-            cbDD:SetAlpha(off and 0.3 or 1)
-            cbDD:EnableMouse(not off)
+            local offset = Cfg().enabled ~= true
+            cbDD:SetAlpha(offset and 0.3 or 1)
+            cbDD:EnableMouse(not offset)
             if rightRgn._label then
-                rightRgn._label:SetAlpha(off and 0.3 or 1)
+                rightRgn._label:SetAlpha(offset and 0.3 or 1)
             end
         end
         UpdateTrigDisabled()
@@ -397,19 +397,19 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
 
     -- Warcraft Recorder row: HIDDEN entirely while Auto Logging is off.
     if Cfg().enabled == true then
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Warcraft Recorder Compatibility",
             tooltip = "Delays stopping combat logging by 30 seconds after leaving an instance. Recommended for Warcraft Recorder compatibility.",
             getValue = function()
-                local v = Cfg().delaystop
-                if v == nil then
+                local val = Cfg().delaystop
+                if val == nil then
                     return TRIGGER_DEFAULTS.delaystop
                 end
-                return v
+                return val
             end,
-            setValue = function(v)
-                Cfg().delaystop = v
+            setValue = function(val)
+                Cfg().delaystop = val
             end,
         }, {
             type = "toggle",
@@ -418,22 +418,22 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
             getValue = function()
                 return Cfg().notify == true
             end,
-            setValue = function(v)
-                Cfg().notify = v or nil
+            setValue = function(val)
+                Cfg().notify = val or nil
             end,
         })
-        y = y - h
+        posY = posY - hgt
     end -- close Auto Logging hidden-while-disabled gate
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  ALERTS (Combat Alert, Potion Ready, Unspent Talents; one shared anchor)
     ---------------------------------------------------------------------------
     if _G._CUI_BuildAlertsSection then
-        local alertsH = _G._CUI_BuildAlertsSection(parent, y, W, CludesUI.PP)
-        y = y - alertsH
+        local alertsH = _G._CUI_BuildAlertsSection(hostFrame, posY, W, CludesUI.PP)
+        posY = posY - alertsH
     end
 
     ---------------------------------------------------------------------------
@@ -441,8 +441,8 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
     --  runtime builds nothing there and the section is not built)
     ---------------------------------------------------------------------------
     if _G._CUI_BuildBattleResSection and not CludesUI.IS_FOREVER then
-        local brezH = _G._CUI_BuildBattleResSection(parent, y, W, CludesUI.PP)
-        y = y - brezH
+        local brezH = _G._CUI_BuildBattleResSection(hostFrame, posY, W, CludesUI.PP)
+        posY = posY - brezH
     end
 
     ---------------------------------------------------------------------------
@@ -450,11 +450,11 @@ local function BuildAutoLoggingPage(pageName, parent, yOffset)
     --  runtime returns at load there and the section is not built)
     ---------------------------------------------------------------------------
     if _G._CUI_BuildBloodlustSection and not CludesUI.IS_FOREVER then
-        local lustH = _G._CUI_BuildBloodlustSection(parent, y, W, CludesUI.PP)
-        y = y - lustH
+        local lustH = _G._CUI_BuildBloodlustSection(hostFrame, posY, W, CludesUI.PP)
+        posY = posY - lustH
     end
 
-    return math.abs(y - yOffset)
+    return math.abs(posY - yOffset)
 end
 
 _G._CUI_BuildAutoLoggingPage = BuildAutoLoggingPage

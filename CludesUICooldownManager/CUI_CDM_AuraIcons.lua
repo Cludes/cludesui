@@ -33,13 +33,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  every reanchor), CUI_CDM_Icons.lua (RefreshCDMIconAppearance), and the
 --  drop pass, the repopulate and the options preview (ns.CDM_AuraIconKeeps).
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._hookInternals
-if not I or I.broken or not I._AC then
+local _, mod = ...
+local Inner = mod._hookInternals
+if not Inner or Inner.broken or not Inner._AC then
     return
 end
-local _AC, _presetFrames = I._AC, I._presetFrames
-local barDataByKey = ns.barDataByKey
+local _AC, _presetFrames = Inner._AC, Inner._presetFrames
+local barDataByKey = mod.barDataByKey
 local IsSecret = CludesUI.IsSecret
 
 local AKWorker = CludesUI.AuraKit.NewBuildWorker()
@@ -71,24 +71,24 @@ local hostEntry = setmetatable({}, { __mode = "k" })
 --    Placed(),      optional: after each reanchor that placed it
 --  }
 -------------------------------------------------------------------------------
-function ns.CDM_AuraIconProvider(spellID, provider)
-    byID[spellID] = provider
+function mod.CDM_AuraIconProvider(spellId, provider)
+    byID[spellId] = provider
     if provider.Aliases then
         pendingAliases[#pendingAliases + 1] = provider
     end
 end
 
 local function ReadAliases()
-    if not ns._cdmDataLoaded then
+    if not mod._cdmDataLoaded then
         return
     end
-    for i = #pendingAliases, 1, -1 do
-        local p = table.remove(pendingAliases, i)
+    for idx = #pendingAliases, 1, -1 do
+        local p = table.remove(pendingAliases, idx)
         local ids = p.Aliases()
         if ids then
-            for j = 1, #ids do
-                if byID[ids[j]] == nil then
-                    byID[ids[j]] = p
+            for jdx = 1, #ids do
+                if byID[ids[jdx]] == nil then
+                    byID[ids[jdx]] = p
                 end
             end
         end
@@ -102,11 +102,11 @@ end
 
 -- An assigned spell ID a provider draws: kept by the drop pass and the
 -- repopulate, never dimmed as unlearned by the options preview.
-function ns.CDM_AuraIconKeeps(id)
+function mod.CDM_AuraIconKeeps(ident)
     if pendingAliases[1] then
         ReadAliases()
     end
-    return byID[id] ~= nil
+    return byID[ident] ~= nil
 end
 
 -------------------------------------------------------------------------------
@@ -116,22 +116,22 @@ end
 -- change can move a spell's override: each set is read again at its next
 -- placement. Registered only while an entry is placed.
 local listening = false
-local events = ns.TakeShell()
+local events = mod.TakeShell()
 events:SetScript("OnEvent", function()
     for _, E in pairs(entries) do
         E.dirty = true
     end
-    if ns.QueueReanchor then
-        ns.QueueReanchor()
+    if mod.QueueReanchor then
+        mod.QueueReanchor()
     end
 end)
 
-local function Listen(on)
-    if on == listening then
+local function Listen(enabled)
+    if enabled == listening then
         return
     end
-    listening = on
-    if on then
+    listening = enabled
+    if enabled then
         events:RegisterEvent("TRAIT_CONFIG_UPDATED")
         if CludesUI.IS_FOREVER == true then
             events:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
@@ -153,9 +153,9 @@ local function Entry(provider)
     E.proxy = proxy
     -- Creation window: the CDM look's own regions, then the button fills the
     -- proxy (two-point anchors size it by the proxy for good).
-    E.init = function(button, d)
-        _AC.InitExtra(button, d)
-        button:SetAllPoints(proxy)
+    E.init = function(btnFrame, d)
+        _AC.InitExtra(btnFrame, d)
+        btnFrame:SetAllPoints(proxy)
     end
     entries[provider.key] = E
     return E
@@ -167,49 +167,62 @@ end
 -- so the look is cut for the host rather than for the bar's Icon Size. nil
 -- before the first layout (the bar's Icon Size stands in).
 local function HostSize(E)
-    local host = E.host
-    if not host then
+    local hostRegion = E.host
+    if not hostRegion then
         return nil
     end
-    local w, h = host:GetSize()
-    if type(w) ~= "number" or type(h) ~= "number" or IsSecret(w) or IsSecret(h) or w <= 0 or h <= 0 then
+    local wid, hgt = hostRegion:GetSize()
+    if
+        type(wid) ~= "number"
+        or type(hgt) ~= "number"
+        or IsSecret(wid)
+        or IsSecret(hgt)
+        or wid <= 0
+        or hgt <= 0
+    then
         return nil
     end
-    return w, h
+    return wid, hgt
 end
 
 -- The slot's look: the bar's custom-aura look, cut for the host's size.
-local function HostStyle(E, bd)
-    local style = _AC.BuildStyle(bd)
-    local w, h = HostSize(E)
-    if w then
-        style.width, style.height = w, h
-        if style.cdm then
-            style.cdm.size = w
+local function HostStyle(E, edge)
+    local look = _AC.BuildStyle(edge)
+    local wid, hgt = HostSize(E)
+    if wid then
+        look.width, look.height = wid, hgt
+        if look.cdm then
+            look.cdm.size = wid
         end
     end
-    return style
+    return look
 end
 
 -- The look's fingerprint: the bar settings a restyle carries, and the size
 -- the look's own regions are cut for.
-local function StyleSig(E, bd)
-    local w, h = HostSize(E)
-    return _AC.StyleSig(bd) .. "|" .. tostring(bd.iconSize or 36) .. "|" .. tostring(w) .. "x" .. tostring(h)
+local function StyleSig(E, edge)
+    local wid, hgt = HostSize(E)
+    return _AC.StyleSig(edge)
+        .. "|"
+        .. tostring(edge.iconSize or 36)
+        .. "|"
+        .. tostring(wid)
+        .. "x"
+        .. tostring(hgt)
 end
 
-local function Restyle(E, barKey)
-    local bd = barDataByKey[barKey]
-    if not bd then
+local function Restyle(E, barId)
+    local edge = barDataByKey[barId]
+    if not edge then
         return
     end
-    local sig = StyleSig(E, bd)
-    if E.styleBar == barKey and E.styleSig == sig then
+    local sig = StyleSig(E, edge)
+    if E.styleBar == barId and E.styleSig == sig then
         return
     end
     local AK = CludesUI.AuraKit
-    AK.styles[E.styleKey] = HostStyle(E, bd)
-    E.styleBar, E.styleSig = barKey, sig
+    AK.styles[E.styleKey] = HostStyle(E, edge)
+    E.styleBar, E.styleSig = barId, sig
     if AK.RestyleSoon then
         AK.RestyleSoon(E.styleKey)
     end
@@ -218,32 +231,32 @@ end
 -- Levels follow the host: DecorateFrame levels its regions off the frame's
 -- own level, which the reanchor's reparent moves.
 local function Level(E)
-    local host, container = E.host, E.container
-    if not (host and container) then
+    local hostRegion, boxHolder = E.host, E.container
+    if not (hostRegion and boxHolder) then
         return
     end
-    local lvl = host:GetFrameLevel() + SLOT_LEVEL
+    local lvl = hostRegion:GetFrameLevel() + SLOT_LEVEL
     if E.level == lvl then
         return
     end
     E.level = lvl
     E.proxy:SetFrameLevel(lvl)
-    container:SetFrameLevel(lvl + 1)
+    boxHolder:SetFrameLevel(lvl + 1)
 end
 
 local function Build(E, include, sig)
-    local bd = E.hostBar and barDataByKey[E.hostBar]
-    if not bd then
+    local edge = E.hostBar and barDataByKey[E.hostBar]
+    if not edge then
         return
     end
     local AK = CludesUI.AuraKit
-    AK.styles[E.styleKey] = HostStyle(E, bd)
-    E.styleBar, E.styleSig = E.hostBar, StyleSig(E, bd)
+    AK.styles[E.styleKey] = HostStyle(E, edge)
+    E.styleBar, E.styleSig = E.hostBar, StyleSig(E, edge)
     if E.container then
         AK.ReleaseContainer(E.container)
     end
-    local container = AK.CreateContainerShell(E.proxy, { point = { "CENTER" } })
-    AK.AddSlotToContainer(container, {
+    local boxHolder = AK.CreateContainerShell(E.proxy, { point = { "CENTER" } })
+    AK.AddSlotToContainer(boxHolder, {
         key = "aura",
         filter = { "HELPFUL" },
         -- Helpful spell id includes on the player pass the identity gate
@@ -252,15 +265,15 @@ local function Build(E, include, sig)
         style = E.styleKey,
         extraInit = E.init,
     })
-    AK.FinishContainer(container, "player")
-    E.container, E.sig, E.level = container, sig, nil
+    AK.FinishContainer(boxHolder, "player")
+    E.container, E.sig, E.level = boxHolder, sig, nil
     Level(E)
 end
 
 -- The reanchor placed the entry's frame on a bar: the slot follows it, and is
 -- built (or built again for a new include set) on the AuraKit worker.
-local function Attach(E, f, barKey)
-    E.host, E.hostBar = f, barKey
+local function Attach(E, f, barId)
+    E.host, E.hostBar = f, barId
     hostEntry[f] = E
     placed[E] = true
     Listen(true)
@@ -285,8 +298,8 @@ local function Attach(E, f, barKey)
             end, "cdm:auraicon")
         end
     end
-    if E.container and E.styleBar ~= barKey then
-        Restyle(E, barKey)
+    if E.container and E.styleBar ~= barId then
+        Restyle(E, barId)
     end
 end
 
@@ -294,10 +307,10 @@ end
 --  The host frame
 -------------------------------------------------------------------------------
 local function OnEnter(self)
-    local fc = ns._ecmeFC[self]
-    local bd = fc and fc.barKey and barDataByKey[fc.barKey]
-    local sid = self._auraIconTip
-    if not (bd and bd.showTooltip and sid) then
+    local fc = mod._ecmeFC[self]
+    local edge = fc and fc.barKey and barDataByKey[fc.barKey]
+    local spellRef = self._auraIconTip
+    if not (edge and edge.showTooltip and spellRef) then
         return
     end
     -- Honor the global "Show Tooltips" mode (Blizzard Skin).
@@ -305,7 +318,7 @@ local function OnEnter(self)
         return
     end
     GameTooltip_SetDefaultAnchor(GameTooltip, self)
-    GameTooltip:SetSpellByID(sid)
+    GameTooltip:SetSpellByID(spellRef)
     if CludesUI._repointTooltipAtCursor then
         CludesUI._repointTooltipAtCursor(GameTooltip)
     end
@@ -323,8 +336,8 @@ end
 
 -- Built once per bar and entry, kept in the preset frame map, so the reanchor
 -- and every rebuild park it with the other injected frames.
-local function HostFrame(barKey, key)
-    local fkey = barKey .. ":auraicon:" .. key
+local function HostFrame(barId, key)
+    local fkey = barId .. ":auraicon:" .. key
     local f = _presetFrames[fkey]
     if f then
         return f
@@ -336,11 +349,11 @@ local function HostFrame(barKey, key)
     if f.SetMouseClickEnabled then
         f:SetMouseClickEnabled(false)
     end
-    local tex = f:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints()
-    ns.CdmOwnIconCrop(tex)
-    f.Icon = tex
-    f._tex = tex
+    local texture = f:CreateTexture(nil, "ARTWORK")
+    texture:SetAllPoints()
+    mod.CdmOwnIconCrop(texture)
+    f.Icon = texture
+    f._tex = texture
     -- Never armed (the slot draws the aura's swipe); the decoration styles it
     -- like any icon's.
     local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
@@ -376,14 +389,14 @@ local function PaintIdle(f, provider)
     f._auraIconTip = provider.tip
 end
 
-local function Place(barKey, provider)
+local function Place(barId, provider)
     if provider.Off and provider.Off() then
         return nil
     end
-    local f = HostFrame(barKey, provider.key)
+    local f = HostFrame(barId, provider.key)
     -- Attach first: the include read is what tells the idle paint whether
     -- the entry's spell is known.
-    Attach(Entry(provider), f, barKey)
+    Attach(Entry(provider), f, barId)
     PaintIdle(f, provider)
     return f
 end
@@ -393,39 +406,39 @@ end
 -------------------------------------------------------------------------------
 -- A positive spell ID no Blizzard frame claimed: the frame of the provider
 -- that draws it, or nil.
-function ns.CDM_AuraIconFor(barKey, sid)
+function mod.CDM_AuraIconFor(barId, spellRef)
     if pendingAliases[1] then
         ReadAliases()
     end
-    local p = byID[sid]
+    local p = byID[spellRef]
     if not p then
         return nil
     end
-    return Place(barKey, p)
+    return Place(barId, p)
 end
 
 -- One provider per custom buff spell ID, made on first use. Its aura IDs are
 -- the spell's own forms (typed, override, base), as on a buff bar.
-local function BuffProvider(sid)
-    local p = buffProviders[sid]
+local function BuffProvider(spellRef)
+    local p = buffProviders[spellRef]
     if p then
         return p
     end
     p = {
-        key = "buff:" .. sid,
-        tip = sid,
+        key = "buff:" .. spellRef,
+        tip = spellRef,
         Include = function()
-            local set = _AC.AddSpellForms({}, sid)
+            local group = _AC.AddSpellForms({}, spellRef)
             local ids = {}
-            for id in pairs(set) do
-                ids[#ids + 1] = id
+            for ident in pairs(group) do
+                ids[#ids + 1] = ident
             end
             table.sort(ids)
-            return set, table.concat(ids, ",")
+            return group, table.concat(ids, ",")
         end,
         Icon = function()
             if not p.art then
-                p.art = C_Spell.GetSpellTexture(sid)
+                p.art = C_Spell.GetSpellTexture(spellRef)
             end
             return p.art
         end,
@@ -433,14 +446,14 @@ local function BuffProvider(sid)
             return true
         end,
     }
-    buffProviders[sid] = p
+    buffProviders[spellRef] = p
     return p
 end
 
 -- A custom buff's hosted marker no Blizzard frame or placeholder claimed: its
 -- frame on this bar.
-function ns.CDM_AuraIconForBuff(barKey, sid)
-    return Place(barKey, BuffProvider(sid))
+function mod.CDM_AuraIconForBuff(barId, spellRef)
+    return Place(barId, BuffProvider(spellRef))
 end
 
 -------------------------------------------------------------------------------
@@ -448,7 +461,7 @@ end
 -------------------------------------------------------------------------------
 -- Level the slots the pass placed (the reparent can move a host's level), run
 -- their providers' checks, and let the listener go once nothing is placed.
-function ns.CDM_AuraIconsPlaced()
+function mod.CDM_AuraIconsPlaced()
     local any = false
     for E in pairs(placed) do
         placed[E] = nil
@@ -465,10 +478,10 @@ function ns.CDM_AuraIconsPlaced()
 end
 
 -- RefreshCDMIconAppearance: the slots on this bar take its new look.
-function ns.CDM_AuraIconsRestyle(barKey)
+function mod.CDM_AuraIconsRestyle(barId)
     for _, E in pairs(entries) do
-        if E.container and E.hostBar == barKey then
-            Restyle(E, barKey)
+        if E.container and E.hostBar == barId then
+            Restyle(E, barId)
             Level(E)
         end
     end

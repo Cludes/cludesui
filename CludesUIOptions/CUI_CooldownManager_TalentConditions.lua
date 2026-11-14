@@ -13,8 +13,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  what the picker shows (the active config's committed build) is exactly
 --  what decides the icon.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
+if not mod then
     return
 end
 
@@ -23,7 +23,7 @@ end
 -- reset to fresh.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local NOT_TAKEN = CludesUI.TALENT_COND_NOT_TAKEN
 
 -- The picker's texts, in the icon's words (made on the first open).
@@ -35,13 +35,13 @@ local function IconTexts()
                 "Click a talent to require it: Taken, then Not Taken, then cleared. Every condition must hold for the icon to show."
             ),
             none = CludesUI.L("No conditions: the icon always shows."),
-            met = function(n)
-                return CludesUI.Lf("%1$d condition(s), met by your current talents: the icon shows.", n)
+            met = function(num)
+                return CludesUI.Lf("%1$d condition(s), met by your current talents: the icon shows.", num)
             end,
-            notMet = function(n)
+            notMet = function(num)
                 return CludesUI.Lf(
                     "%1$d condition(s), not met by your current talents: the icon is hidden.",
-                    n
+                    num
                 )
             end,
         }
@@ -56,49 +56,51 @@ end
 
 -- For a CD/utility bar's assigned ids: id -> "on" when its conditions hold now,
 -- "off" when they do not. Includes Empty Slot markers; nil when none have conditions.
-function ns.TalentCondPreviewSet(barKey, tracked)
-    local store = ns.GetSpellSettingsStore(barKey)
-    if not store or type(tracked) ~= "table" then
+function mod.TalentCondPreviewSet(barId, tracked)
+    local storage = mod.GetSpellSettingsStore(barId)
+    if not storage or type(tracked) ~= "table" then
         return nil
     end
-    local set
-    for _, id in ipairs(tracked) do
-        local entry = type(id) == "number" and (id > 0 or ns.IsEmptySlotMarker(id)) and store[id]
-        local conds = type(entry) == "table" and rawget(entry, "talentConditions")
+    local group
+    for _, ident in ipairs(tracked) do
+        local record = type(ident) == "number"
+            and (ident > 0 or mod.IsEmptySlotMarker(ident))
+            and storage[ident]
+        local conds = type(record) == "table" and rawget(record, "talentConditions")
         if type(conds) == "table" and #conds > 0 then
-            set = set or {}
-            set[id] = ns.TalentConditionsHold(conds) and "on" or "off"
+            group = group or {}
+            group[ident] = mod.TalentConditionsHold(conds) and "on" or "off"
         end
     end
-    return set
+    return group
 end
 
 -- Small corner mark on a preview slot whose spell carries conditions: accent while
 -- they hold, red while they do not. state nil hides it. Built on first use. Kept under
 -- the slot's text overlay (its border strips sit one level above the fill), so keybind
 -- and stack text stay readable in every icon style (the overlay's level differs per style).
-function ns.PaintTalentCondMark(slot, state)
-    local mark = slot._tcMark
-    if not state then
+function mod.PaintTalentCondMark(slotIndex, status)
+    local mark = slotIndex._tcMark
+    if not status then
         if mark then
             mark:Hide()
         end
         return
     end
     if not mark then
-        mark = CreateFrame("Frame", nil, slot)
+        mark = CreateFrame("Frame", nil, slotIndex)
         mark:EnableMouse(false)
         mark._tex = mark:CreateTexture(nil, "ARTWORK")
         mark._tex:SetAllPoints()
-        PP.CreateBorder(mark, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        slot._tcMark = mark
+        Pix.CreateBorder(mark, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        slotIndex._tcMark = mark
     end
-    mark:SetFrameLevel(slot._pvTextOverlay:GetFrameLevel() - 2)
-    local size = math.max(6, math.floor((slot:GetWidth() or 0) * 0.28 + 0.5))
-    mark:SetSize(size, size)
+    mark:SetFrameLevel(slotIndex._pvTextOverlay:GetFrameLevel() - 2)
+    local dim = math.max(6, math.floor((slotIndex:GetWidth() or 0) * 0.28 + 0.5))
+    mark:SetSize(dim, dim)
     mark:ClearAllPoints()
-    mark:SetPoint("TOPLEFT", slot, "TOPLEFT", 3, -3)
-    if state == "off" then
+    mark:SetPoint("TOPLEFT", slotIndex, "TOPLEFT", 3, -3)
+    if status == "off" then
         mark._tex:SetColorTexture(NOT_TAKEN[1], NOT_TAKEN[2], NOT_TAKEN[3], 1)
     else
         local ar, ag, ab = CludesUI.GetAccentColor()
@@ -111,10 +113,10 @@ end
 --  Entry point (the per-icon menu's "Talent Conditions" row)
 --  conds: the spell's saved list (read only here); confirm(newList or nil).
 -------------------------------------------------------------------------------
-function ns.ShowCDMTalentConditionsPopup(spellID, conds, confirm)
-    local spellName = ns.IsEmptySlotMarker(spellID) and CludesUI.L("Empty Slot")
-        or C_Spell.GetSpellName(spellID)
-        or tostring(spellID)
+function mod.ShowCDMTalentConditionsPopup(spellId, conds, confirm)
+    local spellName = mod.IsEmptySlotMarker(spellId) and CludesUI.L("Empty Slot")
+        or C_Spell.GetSpellName(spellId)
+        or tostring(spellId)
     CludesUI.ShowTalentConditionsPopup({
         title = CludesUI.Lf("Talent Conditions: %1$s", spellName),
         conds = conds,

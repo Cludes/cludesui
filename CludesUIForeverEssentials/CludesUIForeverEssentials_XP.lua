@@ -20,8 +20,8 @@ local _, module = ...
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 local HOUR, MINUTE = 3600, 60
 
@@ -32,14 +32,14 @@ local function AtMax()
     return UnitLevel("player") >= MaxLevel() or (IsXPUserDisabled and IsXPUserDisabled())
 end
 
-local function Short(n)
-    if n >= 1e6 then
-        return ("%.1fm"):format(n / 1e6)
+local function Short(num)
+    if num >= 1e6 then
+        return ("%.1fm"):format(num / 1e6)
     end
-    if n >= 1e3 then
-        return ("%.1fk"):format(n / 1e3)
+    if num >= 1e3 then
+        return ("%.1fk"):format(num / 1e3)
     end
-    return tostring(math.floor(n))
+    return tostring(math.floor(num))
 end
 
 local function Clock(s)
@@ -67,32 +67,32 @@ local X = module.Feature(
 )
 local TREND_WINDOW, TREND_MIN_SHARE = 180, 0.05
 
-local card
+local cardFrame
 local sessionStart, sessionXP = 0, 0
 local paused, pausedAt, pausedTotal = false, nil, 0
 local lastXP, lastXPMax
-local cur, anchor -- the level being timed, and when its clock last started
+local cur, anchorFrame -- the level being timed, and when its clock last started
 local trendBase, trendAt, trendDir = 0, 0, 0
 
 -- Per character: { current = { level, base, partial }, levels = { [level] = { total } } }
 local function Splits()
     local c = X.Cfg()
     c.chars = c.chars or {}
-    local guid = UnitGUID("player")
-    if not guid then
+    local unitGuid = UnitGUID("player")
+    if not unitGuid then
         return nil
     end
-    c.chars[guid] = c.chars[guid] or { levels = {} }
-    return c.chars[guid]
+    c.chars[unitGuid] = c.chars[unitGuid] or { levels = {} }
+    return c.chars[unitGuid]
 end
 
 local function LevelTime()
-    return cur and (cur.base + (anchor and GetTime() - anchor or 0)) or 0
+    return cur and (cur.base + (anchorFrame and GetTime() - anchorFrame or 0)) or 0
 end
 
 local function StartLevel(s, fromStart, level)
     cur = { level = level or UnitLevel("player"), base = 0, partial = not fromStart }
-    anchor = not paused and GetTime() or nil
+    anchorFrame = not paused and GetTime() or nil
     s.current = cur
 end
 
@@ -104,7 +104,7 @@ local function TrackSplits(newLevel)
     if not cur then
         local saved = s.current
         if saved and saved.level == UnitLevel("player") then
-            cur, anchor = saved, not paused and GetTime() or nil
+            cur, anchorFrame = saved, not paused and GetTime() or nil
         else
             StartLevel(s, UnitXP("player") == 0)
         end
@@ -113,22 +113,22 @@ local function TrackSplits(newLevel)
     if level > cur.level then
         s.levels[cur.level] = { total = not cur.partial and LevelTime() or nil }
         StartLevel(s, true, level)
-    elseif not anchor and not paused then
-        anchor = GetTime()
+    elseif not anchorFrame and not paused then
+        anchorFrame = GetTime()
     end
 end
 
-local function Btn(parent, text, tip, fn)
-    local b = CreateFrame("Button", nil, parent)
+local function Btn(hostFrame, textValue, tipText, func)
+    local b = CreateFrame("Button", nil, hostFrame)
     b:SetSize(16, 16)
     b.t = b:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(b.t, 12, "essentials")
     b.t:SetPoint("CENTER")
-    b.t:SetText(text)
-    b:SetScript("OnClick", fn)
+    b.t:SetText(textValue)
+    b:SetScript("OnClick", func)
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(tip)
+        GameTooltip:SetText(tipText)
         GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function()
@@ -145,7 +145,7 @@ function module.XPStart()
     pausedTotal = pausedTotal + GetTime() - pausedAt
     paused, pausedAt = false, nil
     if cur then
-        anchor = GetTime()
+        anchorFrame = GetTime()
     end
     if Update then
         Update()
@@ -156,8 +156,8 @@ function module.XPPause()
         return
     end
     paused, pausedAt = true, GetTime()
-    if cur and anchor then
-        cur.base, anchor = LevelTime(), nil
+    if cur and anchorFrame then
+        cur.base, anchorFrame = LevelTime(), nil
     end
     if Update then
         Update()
@@ -175,69 +175,71 @@ function module.XPReset()
 end
 
 local function Build()
-    if card then
-        return card
+    if cardFrame then
+        return cardFrame
     end
-    card = CreateFrame("Frame", "CludesUIXPTicker", UIParent)
-    card:SetSize(190, 60)
-    CludesUI.Kit.Panel(card, 0.75)
-    card.rate = card:CreateFontString(nil, "OVERLAY")
-    card.rate:SetPoint("TOPLEFT", 8, -6)
-    card.info = card:CreateFontString(nil, "OVERLAY")
-    card.info:SetPoint("TOPLEFT", card.rate, "BOTTOMLEFT", 0, -3)
-    card.info:SetJustifyH("LEFT")
-    card.bar = CreateFrame("StatusBar", nil, card)
-    card.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    card.bar:SetStatusBarColor(0.58, 0.0, 0.55)
-    card.bar:SetMinMaxValues(0, 1)
-    card.bar:SetPoint("BOTTOMLEFT", 1, 1)
-    card.bar:SetPoint("BOTTOMRIGHT", -1, 1)
-    card.bar:SetHeight(3)
-    card.rested = card.bar:CreateTexture(nil, "BACKGROUND")
-    card.rested:SetColorTexture(0.0, 0.39, 0.88, 0.6)
-    card.rested:SetPoint("TOPLEFT")
-    card.rested:SetPoint("BOTTOMLEFT")
-    card.toggle = Btn(card, "||", "Pause or start the session", function()
+    cardFrame = CreateFrame("Frame", "CludesUIXPTicker", UIParent)
+    cardFrame:SetSize(190, 60)
+    CludesUI.Kit.Panel(cardFrame, 0.75)
+    cardFrame.rate = cardFrame:CreateFontString(nil, "OVERLAY")
+    cardFrame.rate:SetPoint("TOPLEFT", 8, -6)
+    cardFrame.info = cardFrame:CreateFontString(nil, "OVERLAY")
+    cardFrame.info:SetPoint("TOPLEFT", cardFrame.rate, "BOTTOMLEFT", 0, -3)
+    cardFrame.info:SetJustifyH("LEFT")
+    cardFrame.bar = CreateFrame("StatusBar", nil, cardFrame)
+    cardFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    cardFrame.bar:SetStatusBarColor(0.58, 0.0, 0.55)
+    cardFrame.bar:SetMinMaxValues(0, 1)
+    cardFrame.bar:SetPoint("BOTTOMLEFT", 1, 1)
+    cardFrame.bar:SetPoint("BOTTOMRIGHT", -1, 1)
+    cardFrame.bar:SetHeight(3)
+    cardFrame.rested = cardFrame.bar:CreateTexture(nil, "BACKGROUND")
+    cardFrame.rested:SetColorTexture(0.0, 0.39, 0.88, 0.6)
+    cardFrame.rested:SetPoint("TOPLEFT")
+    cardFrame.rested:SetPoint("BOTTOMLEFT")
+    cardFrame.toggle = Btn(cardFrame, "||", "Pause or start the session", function()
         if paused then
             module.XPStart()
         else
             module.XPPause()
         end
     end)
-    card.toggle:SetPoint("TOPRIGHT", -22, -4)
-    card.reset = Btn(card, "o", "Reset the session to zero", module.XPReset)
-    card.reset:SetPoint("TOPRIGHT", -4, -4)
-    return card
+    cardFrame.toggle:SetPoint("TOPRIGHT", -22, -4)
+    cardFrame.reset = Btn(cardFrame, "o", "Reset the session to zero", module.XPReset)
+    cardFrame.reset:SetPoint("TOPRIGHT", -4, -4)
+    return cardFrame
 end
 
 Update = function()
-    if not card then
+    if not cardFrame then
         return
     end
     if
         not X.Enabled()
         or (not CludesUI._unlockActive and (AtMax() or (X.Get("hideResting") and IsResting())))
     then
-        card:Hide()
+        cardFrame:Hide()
         return
     end
-    local size = X.Get("size")
-    CludesUI.Kit.Font(card.rate, size + 4, "essentials")
-    CludesUI.Kit.Font(card.info, size - 3, "essentials")
-    local now = GetTime()
-    local elapsed = now - sessionStart - pausedTotal - (paused and now - pausedAt or 0)
+    local dim = X.Get("size")
+    CludesUI.Kit.Font(cardFrame.rate, dim + 4, "essentials")
+    CludesUI.Kit.Font(cardFrame.info, dim - 3, "essentials")
+    local nowTime = GetTime()
+    local elapsed = nowTime - sessionStart - pausedTotal - (paused and nowTime - pausedAt or 0)
     local rate = sessionXP / (math.max(elapsed, MINUTE) / HOUR)
-    if not paused and now - trendAt >= TREND_WINDOW then
+    if not paused and nowTime - trendAt >= TREND_WINDOW then
         local diff = rate - trendBase
         trendDir = (trendBase > 0 and math.abs(diff) > trendBase * TREND_MIN_SHARE) and (diff > 0 and 1 or -1)
             or 0
-        trendBase, trendAt = rate, now
+        trendBase, trendAt = rate, nowTime
     end
     local arrow = trendDir > 0 and " |cff60d080+|r" or (trendDir < 0 and " |cffff6060-|r" or "")
     if sessionXP > 0 then
-        card.rate:SetText(("%s%s|r |cff9aa6b2xp/hr|r%s"):format(CludesUI.Kit.AccentHex(), Short(rate), arrow))
+        cardFrame.rate:SetText(
+            ("%s%s|r |cff9aa6b2xp/hr|r%s"):format(CludesUI.Kit.AccentHex(), Short(rate), arrow)
+        )
     else
-        card.rate:SetText("|cff9aa6b2no XP yet|r")
+        cardFrame.rate:SetText("|cff9aa6b2no XP yet|r")
     end
     local lines = {}
     if rate > 0 then
@@ -254,78 +256,81 @@ Update = function()
     end
     if X.Get("splits") then
         local s = Splits()
-        local keys = {}
-        for level, rec in pairs(s and s.levels or {}) do
-            if type(level) == "number" and rec.total and (not cur or level < cur.level) then
-                keys[#keys + 1] = level
+        local keyList = {}
+        for level, recd in pairs(s and s.levels or {}) do
+            if type(level) == "number" and recd.total and (not cur or level < cur.level) then
+                keyList[#keyList + 1] = level
             end
         end
-        table.sort(keys, function(a, b)
+        table.sort(keyList, function(a, b)
             return a > b
         end)
-        for i = 1, math.min(#keys, X.Get("history")) do
-            lines[#lines + 1] = ("|cff9aa6b2Level %d  %s|r"):format(keys[i], Clock(s.levels[keys[i]].total))
+        for idx = 1, math.min(#keyList, X.Get("history")) do
+            lines[#lines + 1] = ("|cff9aa6b2Level %d  %s|r"):format(
+                keyList[idx],
+                Clock(s.levels[keyList[idx]].total)
+            )
         end
     end
-    card.info:SetText(table.concat(lines, "\n"))
-    local max = UnitXPMax("player")
-    if max > 0 then
-        local share = UnitXP("player") / max
-        card.bar:SetValue(share)
-        local rested = math.min((GetXPExhaustion() or 0) / max, 1 - share)
-        card.rested:SetWidth(math.max(0.01, (share + rested) * card.bar:GetWidth()))
+    cardFrame.info:SetText(table.concat(lines, "\n"))
+    local upper = UnitXPMax("player")
+    if upper > 0 then
+        local share = UnitXP("player") / upper
+        cardFrame.bar:SetValue(share)
+        local rested = math.min((GetXPExhaustion() or 0) / upper, 1 - share)
+        cardFrame.rested:SetWidth(math.max(0.01, (share + rested) * cardFrame.bar:GetWidth()))
     end
-    card.toggle.t:SetText(paused and ">" or "||")
-    card:SetSize(
-        math.max(150, card.rate:GetStringWidth() + 50, card.info:GetStringWidth() + 16),
-        card.rate:GetStringHeight() + card.info:GetStringHeight() + 20
+    cardFrame.toggle.t:SetText(paused and ">" or "||")
+    cardFrame:SetSize(
+        math.max(150, cardFrame.rate:GetStringWidth() + 50, cardFrame.info:GetStringWidth() + 16),
+        cardFrame.rate:GetStringHeight() + cardFrame.info:GetStringHeight() + 20
     )
-    card:Show()
+    cardFrame:Show()
 end
 
 local xEv = CreateFrame("Frame")
-xEv:SetScript("OnEvent", function(_, event, arg1)
-    if event == "PLAYER_LOGOUT" then
+xEv:SetScript("OnEvent", function(_, evt, arg1)
+    if evt == "PLAYER_LOGOUT" then
         if cur then
             cur.base = LevelTime()
         end
         return
     end
-    if event == "PLAYER_XP_UPDATE" then
-        local xp, max = UnitXP("player"), UnitXPMax("player")
+    if evt == "PLAYER_XP_UPDATE" then
+        local xp, upper = UnitXP("player"), UnitXPMax("player")
         local gained = xp >= lastXP and xp - lastXP or (lastXPMax - lastXP) + xp
-        lastXP, lastXPMax = xp, max
+        lastXP, lastXPMax = xp, upper
         if not paused then
             sessionXP = sessionXP + gained
         end
     end
-    TrackSplits(event == "PLAYER_LEVEL_UP" and arg1 or nil)
+    TrackSplits(evt == "PLAYER_LEVEL_UP" and arg1 or nil)
     Update()
 end)
 
 local clock
 local function XApply()
     if not X.Enabled() then
-        if cur and anchor then
-            cur.base, anchor = LevelTime(), nil
+        if cur and anchorFrame then
+            cur.base, anchorFrame = LevelTime(), nil
         end
         xEv:UnregisterAllEvents()
         if clock then
             clock:Cancel()
             clock = nil
         end
-        if card then
-            card:Hide()
+        if cardFrame then
+            cardFrame:Hide()
         end
         return
     end
-    if not card then
+    if not cardFrame then
         Build()
         sessionStart, sessionXP = GetTime(), 0
         trendAt = sessionStart
     end
     if not CludesUI._unlockActive then
-        X.Place(card)
+        X.Place(cardFrame)
     end
     lastXP, lastXPMax = UnitXP("player"), UnitXPMax("player")
     for _, e in ipairs({
@@ -353,7 +358,7 @@ X.Start(XApply, {
             Build()
             Update()
         end
-        return card
+        return cardFrame
     end,
     size = function()
         return 190, 60
@@ -390,7 +395,7 @@ local GROUP_CHANNELS = { PARTY = true, RAID = true, INSTANCE_CHAT = true }
 local MAX_XP = 2 ^ 31
 
 local gFrame
-local others, rows = {}, {}
+local others, rowList = {}, {}
 local sendQueued, sendAfterCombat, requestPending
 
 local function Channel()
@@ -441,42 +446,42 @@ local function SendSoon(request)
 end
 
 local function Roster()
-    local list, units = {}, { "player" }
+    local entries, units = {}, { "player" }
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            local me = UnitIsUnit("raid" .. i, "player")
+        for idx = 1, GetNumGroupMembers() do
+            local me = UnitIsUnit("raid" .. idx, "player")
             if not Secret(me) and not me then
-                units[#units + 1] = "raid" .. i
+                units[#units + 1] = "raid" .. idx
             end
         end
     else
-        for i = 1, GetNumSubgroupMembers() do
-            units[#units + 1] = "party" .. i
+        for idx = 1, GetNumSubgroupMembers() do
+            units[#units + 1] = "party" .. idx
         end
     end
-    for _, unit in ipairs(units) do
-        local name, guid = UnitName(unit), UnitGUID(unit)
-        local _, class = UnitClass(unit)
-        if name and guid and not (Secret(name) or Secret(guid) or Secret(class)) then
-            list[#list + 1] = { unit = unit, name = name, class = class, guid = guid }
+    for _, unitToken in ipairs(units) do
+        local name, unitGuid = UnitName(unitToken), UnitGUID(unitToken)
+        local _, classFile = UnitClass(unitToken)
+        if name and unitGuid and not (Secret(name) or Secret(unitGuid) or Secret(classFile)) then
+            entries[#entries + 1] = { unit = unitToken, name = name, class = classFile, guid = unitGuid }
         end
     end
-    return list
+    return entries
 end
 
 -- The sender must be the group member whose GUID the message carries.
-local function SenderIs(sender, guid)
+local function SenderIs(sender, unitGuid)
     local short = Ambiguate(sender, "none")
     for _, m in ipairs(Roster()) do
-        if m.guid == guid then
+        if m.guid == unitGuid then
             return m.name == short or short:find("^" .. m.name) ~= nil
         end
     end
     return false
 end
 
-local function Row(i)
-    local r = rows[i]
+local function Row(idx)
+    local r = rowList[idx]
     if r then
         return r
     end
@@ -493,7 +498,7 @@ local function Row(i)
     CludesUI.Kit.Panel(r.bar, 0.85)
     r.text = r.bar:CreateFontString(nil, "OVERLAY")
     r.text:SetPoint("CENTER")
-    rows[i] = r
+    rowList[idx] = r
     return r
 end
 
@@ -507,9 +512,9 @@ local function GRefresh()
     if not gFrame then
         return
     end
-    local list = {}
+    local entries = {}
     if CludesUI._unlockActive and G.Enabled() then
-        list = SAMPLE
+        entries = SAMPLE
     elseif G.Enabled() and IsInGroup() and (G.Get("raid") or not IsInRaid()) then
         for _, m in ipairs(Roster()) do
             if m.unit ~= "player" or G.Get("showSelf") then
@@ -517,33 +522,33 @@ local function GRefresh()
                 if Secret(level) then
                     level = nil
                 end
-                local data = m.unit == "player"
+                local payload = m.unit == "player"
                         and { level = UnitLevel("player"), xp = UnitXP("player"), max = UnitXPMax("player") }
                     or others[m.guid]
-                local current = data and data.level or level
+                local current = payload and payload.level or level
                 if not (current and current >= MaxLevel()) then
-                    list[#list + 1] = { name = m.name, class = m.class, level = level, data = data }
+                    entries[#entries + 1] = { name = m.name, class = m.class, level = level, data = payload }
                 end
             end
         end
     end
-    if #list == 0 then
+    if #entries == 0 then
         gFrame:Hide()
         return
     end
-    local size = G.Get("size")
-    local rowH = math.max(18, size + 6)
-    local nameW = 90 * size / 12
-    gFrame:SetSize(G.Get("width"), #list * (rowH + 2) - 2)
-    for i, m in ipairs(list) do
-        local r = Row(i)
+    local dim = G.Get("size")
+    local rowH = math.max(18, dim + 6)
+    local nameW = 90 * dim / 12
+    gFrame:SetSize(G.Get("width"), #entries * (rowH + 2) - 2)
+    for idx, m in ipairs(entries) do
+        local r = Row(idx)
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", 0, -(i - 1) * (rowH + 2))
-        r:SetPoint("TOPRIGHT", 0, -(i - 1) * (rowH + 2))
+        r:SetPoint("TOPLEFT", 0, -(idx - 1) * (rowH + 2))
+        r:SetPoint("TOPRIGHT", 0, -(idx - 1) * (rowH + 2))
         r:SetHeight(rowH)
-        CludesUI.Kit.Font(r.name, size, "essentials")
+        CludesUI.Kit.Font(r.name, dim, "essentials")
         r.name:SetWidth(nameW - 4)
-        CludesUI.Kit.Font(r.text, size - 1, "essentials")
+        CludesUI.Kit.Font(r.text, dim - 1, "essentials")
         r.bar:SetPoint("TOPLEFT", nameW, 0)
         local c = m.class and RAID_CLASS_COLORS[m.class]
         r.name:SetText(m.name)
@@ -568,49 +573,49 @@ local function GRefresh()
         end
         r:Show()
     end
-    for i = #list + 1, #rows do
-        rows[i]:Hide()
+    for idx = #entries + 1, #rowList do
+        rowList[idx]:Hide()
     end
     gFrame:Show()
 end
 
 local gEv = CreateFrame("Frame")
-gEv:SetScript("OnEvent", function(_, event, prefix, msg, channel, sender)
-    if event == "CHAT_MSG_ADDON" then
-        if Secret(prefix) or Secret(msg) or Secret(channel) or Secret(sender) then
+gEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
+    if evt == "CHAT_MSG_ADDON" then
+        if Secret(prefixText) or Secret(msg) or Secret(channel) or Secret(sender) then
             return
         end
-        if prefix ~= PREFIX or not GROUP_CHANNELS[channel] then
+        if prefixText ~= PREFIX or not GROUP_CHANNELS[channel] then
             return
         end
         if msg == ASK then
             SendSoon()
             return
         end
-        local guid, level, xp, max = msg:match(MESSAGE_PATTERN)
-        if not guid or not guid:find("^Player%-") or guid == UnitGUID("player") then
+        local unitGuid, level, xp, upper = msg:match(MESSAGE_PATTERN)
+        if not unitGuid or not unitGuid:find("^Player%-") or unitGuid == UnitGUID("player") then
             return
         end
-        level, xp, max = tonumber(level), tonumber(xp), tonumber(max)
-        if level > 1000 or xp > MAX_XP or max > MAX_XP or not SenderIs(sender, guid) then
+        level, xp, upper = tonumber(level), tonumber(xp), tonumber(upper)
+        if level > 1000 or xp > MAX_XP or upper > MAX_XP or not SenderIs(sender, unitGuid) then
             return
         end
-        others[guid] = { level = level, xp = xp, max = max }
+        others[unitGuid] = { level = level, xp = xp, max = upper }
         return GRefresh()
-    elseif event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ENTERING_WORLD" then
         local inGroup = {}
         for _, m in ipairs(Roster()) do
             inGroup[m.guid] = true
         end
-        for guid in pairs(others) do
-            if not inGroup[guid] then
-                others[guid] = nil
+        for unitGuid in pairs(others) do
+            if not inGroup[unitGuid] then
+                others[unitGuid] = nil
             end
         end
-        SendSoon(event == "PLAYER_ENTERING_WORLD")
-    elseif event == "PLAYER_XP_UPDATE" or event == "PLAYER_LEVEL_UP" then
+        SendSoon(evt == "PLAYER_ENTERING_WORLD")
+    elseif evt == "PLAYER_XP_UPDATE" or evt == "PLAYER_LEVEL_UP" then
         SendSoon()
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "PLAYER_REGEN_ENABLED" then
         if sendAfterCombat then
             sendAfterCombat = false
             Send()

@@ -9,22 +9,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and swap detection, the slot pools and the Pawn arrows.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
 local CUI = CludesUI
 local GetUpgradeTrack = CUI.GetUpgradeTrack
 
-local BP, SetSelectedCategoryIndex = I.BP, I.SetSelectedCategoryIndex
-local SetSelectedGroupName, SetAnyItemPanelOpen = I.SetSelectedGroupName, I.SetAnyItemPanelOpen
-local SetPaintedPanelOpen = I.SetPaintedPanelOpen
+local BP, SetSelectedCategoryIndex = Inner.BP, Inner.SetSelectedCategoryIndex
+local SetSelectedGroupName, SetAnyItemPanelOpen = Inner.SetSelectedGroupName, Inner.SetAnyItemPanelOpen
+local SetPaintedPanelOpen = Inner.SetPaintedPanelOpen
 
 -------------------------------------------------------------------------------
 --  Sidebar constants
@@ -41,11 +41,11 @@ local FOOTER_H = 28
 -- Runtime state (never persisted; always "All" on load)
 local selectedCategoryIndex = 0 -- 0 = All Items, -1 = OneBag, -2 = MultiBag, >0 = category index
 local selectedGroupName = nil -- set when a group header is clicked (overrides selectedCategoryIndex)
-I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v)
-    selectedCategoryIndex = v
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
+    selectedCategoryIndex = val
 end
-I.groupNameSetters[#I.groupNameSetters + 1] = function(v)
-    selectedGroupName = v
+Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val)
+    selectedGroupName = val
 end
 
 -- Invalidate categories after the equipment-set list changes (event or the
@@ -59,14 +59,14 @@ function CUI_Bags.InvalidateSetCategories()
     end
     local selKey
     if selectedCategoryIndex > 0 then
-        local cat = mgr:GetCategories()[selectedCategoryIndex]
-        selKey = cat and cat._defaultName
+        local category = mgr:GetCategories()[selectedCategoryIndex]
+        selKey = category and category._defaultName
     end
     mgr:OnEquipmentSetsChanged()
     if selKey then
         local found = 0
-        for i, cat in ipairs(mgr:GetCategories()) do
-            if cat._defaultName == selKey then
+        for i, category in ipairs(mgr:GetCategories()) do
+            if category._defaultName == selKey then
                 found = i
                 break
             end
@@ -75,8 +75,8 @@ function CUI_Bags.InvalidateSetCategories()
     end
     if selectedGroupName then
         local alive = false
-        for _, cat in ipairs(mgr:GetCategories()) do
-            if cat.groupName == selectedGroupName then
+        for _, category in ipairs(mgr:GetCategories()) do
+            if category.groupName == selectedGroupName then
                 alive = true
                 break
             end
@@ -92,20 +92,23 @@ end
 local _trackRank = CUI._TRACK_RANK
 -- Gear category lookup: built lazily, maps catIdx -> true for gear categories
 local _gearCatSet
-I.gearCatSetSetters[#I.gearCatSetSetters + 1] = function(v)
-    _gearCatSet = v
+Inner.gearCatSetSetters[#Inner.gearCatSetSetters + 1] = function(val)
+    _gearCatSet = val
 end
 local function IsGearCategory(catIdx)
     if not _gearCatSet then
         _gearCatSet = {}
         local cats = CUI_CategoryManager and CUI_CategoryManager:GetCategories()
         if cats then
-            for i, cat in ipairs(cats) do
+            for i, category in ipairs(cats) do
                 if
-                    cat.isSetGear
+                    category.isSetGear
                     or (
-                        cat.types
-                        and (cat._defaultName == "Armor" or cat._defaultName == "Weapons / Trinkets")
+                        category.types
+                        and (
+                            category._defaultName == "Armor"
+                            or category._defaultName == "Weapons / Trinkets"
+                        )
                     )
                 then
                     _gearCatSet[i] = true
@@ -120,8 +123,8 @@ end
 -- only hands over the slot behind it (3 merged mails would mail 1), so duplicates stay unmerged while any panel is open. bagMergeDuplicates disables merging outright.
 local _openItemPanels = {}
 local _anyItemPanelOpen = false
-I.anyItemPanelOpenSetters[#I.anyItemPanelOpenSetters + 1] = function(v)
-    _anyItemPanelOpen = v
+Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val)
+    _anyItemPanelOpen = val
 end
 -- Returns true when the aggregate state flipped and the bags' view merges, so
 -- the caller can refresh. A view that does not merge paints the same either
@@ -251,9 +254,9 @@ local function GetItemExpansionIDFromLink(itemLink)
     if not itemLink then
         return nil
     end
-    local itemID = tonumber(itemLink:match("item:(%d+)")) or tonumber(itemLink:match("keystone:(%d+)"))
-    if itemID and EXPANSION_ID_OVERRIDES[itemID] then
-        return EXPANSION_ID_OVERRIDES[itemID]
+    local itemId = tonumber(itemLink:match("item:(%d+)")) or tonumber(itemLink:match("keystone:(%d+)"))
+    if itemId and EXPANSION_ID_OVERRIDES[itemId] then
+        return EXPANSION_ID_OVERRIDES[itemId]
     end
     if C_Item and C_Item.GetItemInfo then
         local _, _, _, _, _, _, _, _, _, _, _, _, _, _, expID = C_Item.GetItemInfo(itemLink)
@@ -264,15 +267,15 @@ end
 
 -- The game's own name for an expansion ID, in the client's language; the
 -- fallbacks cover an ID this client has no name for.
-local function ExpansionName(id)
-    local name = _G["EXPANSION_NAME" .. id]
+local function ExpansionName(ident)
+    local name = _G["EXPANSION_NAME" .. ident]
     if name and name ~= "" then
         return name
     end
-    if id == 11 then
+    if ident == 11 then
         return "Midnight"
     end
-    return CludesUI.Lf("Expansion %1$d", id)
+    return CludesUI.Lf("Expansion %1$d", ident)
 end
 
 -- sortKey: higher = newer expansion, shown first. Unknown / uncached last.
@@ -281,50 +284,50 @@ local function GetExpansionBucketKeyAndLabel(itemLink)
     if expID == nil then
         return -999, (UNKNOWN or CludesUI.L("Unknown"))
     end
-    local id = tonumber(expID)
-    if id == nil then
+    local ident = tonumber(expID)
+    if ident == nil then
         return -999, (UNKNOWN or CludesUI.L("Unknown"))
     end
     -- Classic-era sentinel from some clients / items
-    if id == 254 or id == 255 then
+    if ident == 254 or ident == 255 then
         local name = _G["EXPANSION_NAME0"] or CludesUI.L("Classic")
         return 0, name
     end
-    return id, ExpansionName(id)
+    return ident, ExpansionName(ident)
 end
 
 local function BuildExpansionBuckets(itemList)
     local byKey = {}
-    for _, data in ipairs(itemList) do
-        local sk, label
-        if data.itemLink then
-            local _, _, _, ilvl = GetItemInfo(data.itemLink)
+    for _, payload in ipairs(itemList) do
+        local sk, labelText
+        if payload.itemLink then
+            local _, _, _, ilvl = GetItemInfo(payload.itemLink)
             if ilvl and ilvl >= 180 then
-                sk, label = 11, ExpansionName(11)
+                sk, labelText = 11, ExpansionName(11)
             end
         end
         if not sk then
-            sk, label = GetExpansionBucketKeyAndLabel(data.itemLink)
+            sk, labelText = GetExpansionBucketKeyAndLabel(payload.itemLink)
         end
         local b = byKey[sk]
         if not b then
-            b = { sortKey = sk, label = label, items = {} }
+            b = { sortKey = sk, label = labelText, items = {} }
             byKey[sk] = b
         end
-        b.items[#b.items + 1] = data
+        b.items[#b.items + 1] = payload
     end
-    local keys = {}
+    local keyList = {}
     for sk in pairs(byKey) do
-        keys[#keys + 1] = sk
+        keyList[#keyList + 1] = sk
     end
-    table.sort(keys, function(a, b)
+    table.sort(keyList, function(a, b)
         return a > b
     end)
-    local out = {}
-    for _, sk in ipairs(keys) do
-        out[#out + 1] = byKey[sk]
+    local result = {}
+    for _, sk in ipairs(keyList) do
+        result[#result + 1] = byKey[sk]
     end
-    return out
+    return result
 end
 
 -------------------------------------------------------------------------------
@@ -333,17 +336,17 @@ end
 local IC_WEAPON = Enum.ItemClass.Weapon
 local IC_ARMOR = Enum.ItemClass.Armor
 
-local function IsArmoryGearCategory(cat)
-    if not cat then
+local function IsArmoryGearCategory(category)
+    if not category then
         return false
     end
-    if cat.isEquipSet then
+    if category.isEquipSet then
         return true
     end
-    if cat.isSetGear then
+    if category.isSetGear then
         return true
     end
-    return cat._defaultName == "Weapons / Trinkets" or cat._defaultName == "Armor"
+    return category._defaultName == "Weapons / Trinkets" or category._defaultName == "Armor"
 end
 
 local function IsGearOnlyGroup(groupName)
@@ -398,14 +401,14 @@ local ARMORY_ARMOR_SLOTS = {
 -- refresh pre-cache deliberately does not fill them, so this runs only for
 -- gear items and only while Group Gear by Slot is on (grid, Compact and the
 -- List display's gear categories).
-local function GetArmorySlotBucket(data)
-    local equipSlot = data._equipSlot
-    local classID = data._classID
-    local subclassID = data._subclassID
-    if data.itemLink and classID == nil then
+local function GetArmorySlotBucket(payload)
+    local equipSlot = payload._equipSlot
+    local classID = payload._classID
+    local subclassID = payload._subclassID
+    if payload.itemLink and classID == nil then
         local _
-        _, _, _, equipSlot, _, classID, subclassID = GetItemInfoInstant(data.itemLink)
-        data._equipSlot, data._classID, data._subclassID = equipSlot, classID, subclassID
+        _, _, _, equipSlot, _, classID, subclassID = GetItemInfoInstant(payload.itemLink)
+        payload._equipSlot, payload._classID, payload._subclassID = equipSlot, classID, subclassID
     end
 
     if classID == IC_ARMOR and ARMORY_IDS.cosmetic and subclassID == ARMORY_IDS.cosmetic then
@@ -444,9 +447,9 @@ local function GetArmorySlotBucket(data)
         end
     end
 
-    local entry = ARMORY_ARMOR_SLOTS[equipSlot]
-    if entry then
-        return entry[1], _G[entry[2]] or equipSlot
+    local record = ARMORY_ARMOR_SLOTS[equipSlot]
+    if record then
+        return record[1], _G[record[2]] or equipSlot
     end
 
     return 999, CludesUI.L("Other")
@@ -454,30 +457,30 @@ end
 
 local function BuildSlotBuckets(itemList)
     local byKey = {}
-    for _, data in ipairs(itemList) do
-        local sk, label = GetArmorySlotBucket(data)
+    for _, payload in ipairs(itemList) do
+        local sk, labelText = GetArmorySlotBucket(payload)
         local b = byKey[sk]
         if not b then
-            b = { sortKey = sk, label = label, items = {} }
+            b = { sortKey = sk, label = labelText, items = {} }
             byKey[sk] = b
         end
-        b.items[#b.items + 1] = data
+        b.items[#b.items + 1] = payload
     end
-    local keys = {}
+    local keyList = {}
     for sk in pairs(byKey) do
-        keys[#keys + 1] = sk
+        keyList[#keyList + 1] = sk
     end
-    table.sort(keys)
-    local out = {}
-    for _, sk in ipairs(keys) do
+    table.sort(keyList)
+    local result = {}
+    for _, sk in ipairs(keyList) do
         local b = byKey[sk]
         if #b.items > 0 then
             PreCacheSortFields(b.items)
             table.sort(b.items, VisualSortCompare)
-            out[#out + 1] = b
+            result[#result + 1] = b
         end
     end
-    return out
+    return result
 end
 
 local function ArmorySlotGroupingEnabled()
@@ -545,13 +548,13 @@ local function MergeDuplicates(items)
     -- OnShow repaints when the marks were wiped by the close that hid them.
     CUI_Bags._paintedUnmerged = (unmerged ~= nil and next(unmerged) ~= nil) or nil
     local seen = {}
-    local out = {}
-    for _, data in ipairs(items) do
-        local key = data.itemLink
-        if key and not IsGearCategory(data.categoryIndex or 0) and not (unmerged and unmerged[key]) then
-            local idx = seen[key]
-            if idx then
-                local prev = out[idx]
+    local result = {}
+    for _, payload in ipairs(items) do
+        local key = payload.itemLink
+        if key and not IsGearCategory(payload.categoryIndex or 0) and not (unmerged and unmerged[key]) then
+            local position = seen[key]
+            if position then
+                local prev = result[position]
                 if not prev._mergedCount then
                     -- First duplicate for this key: swap the winner out for a copy.
                     -- The aggregate cannot live on the winner itself, because the
@@ -559,23 +562,23 @@ local function MergeDuplicates(items)
                     -- merge pass of its own and would show one slot's count inflated
                     -- by its twins. data.info stays shared by reference on purpose.
                     local proxy = AcquireSlotTable()
-                    for k, v in pairs(prev) do
-                        proxy[k] = v
+                    for k, val in pairs(prev) do
+                        proxy[k] = val
                     end
                     proxy._mergedCount = prev.info.stackCount or 1
-                    out[idx] = proxy
+                    result[position] = proxy
                     prev = proxy
                 end
-                prev._mergedCount = prev._mergedCount + (data.info.stackCount or 1)
+                prev._mergedCount = prev._mergedCount + (payload.info.stackCount or 1)
             else
-                out[#out + 1] = data
-                seen[key] = #out
+                result[#result + 1] = payload
+                seen[key] = #result
             end
         else
-            out[#out + 1] = data
+            result[#result + 1] = payload
         end
     end
-    return out
+    return result
 end
 
 -- Saved visual order per category/group in BP().bagVisualOrder, keyed by category index
@@ -598,43 +601,43 @@ local function OrderFor(key)
 end
 
 local function SaveCategoryOrder(key, items)
-    local order, k = OrderFor(key)
-    local list = {}
-    for i, data in ipairs(items) do
-        list[i] = data.info and data.info.itemID or 0
+    local sequence, k = OrderFor(key)
+    local entries = {}
+    for i, payload in ipairs(items) do
+        entries[i] = payload.info and payload.info.itemID or 0
     end
-    order[k] = list
+    sequence[k] = entries
 end
 
 local function ApplySavedOrder(key, items)
-    local order, k = OrderFor(key)
-    local saved = order[k]
+    local sequence, k = OrderFor(key)
+    local saved = sequence[k]
     if not saved or #saved == 0 then
         return
     end
 
     -- Build position queues per itemID: each ID maps to its saved positions
     local posQueues = {}
-    for i, id in ipairs(saved) do
-        if not posQueues[id] then
-            posQueues[id] = {}
+    for i, ident in ipairs(saved) do
+        if not posQueues[ident] then
+            posQueues[ident] = {}
         end
-        local q = posQueues[id]
+        local q = posQueues[ident]
         q[#q + 1] = i
     end
 
     -- Assign each item a saved position (consume from queue) or append to end
     local consumed = {}
     local nextUnsaved = #saved + 1
-    for _, data in ipairs(items) do
-        local id = data.info and data.info.itemID or 0
-        local q = posQueues[id]
-        local ci = consumed[id] or 1
+    for _, payload in ipairs(items) do
+        local ident = payload.info and payload.info.itemID or 0
+        local q = posQueues[ident]
+        local ci = consumed[ident] or 1
         if q and ci <= #q then
-            data._savedPos = q[ci]
-            consumed[id] = ci + 1
+            payload._savedPos = q[ci]
+            consumed[ident] = ci + 1
         else
-            data._savedPos = nextUnsaved
+            payload._savedPos = nextUnsaved
             nextUnsaved = nextUnsaved + 1
         end
     end
@@ -655,8 +658,8 @@ local function ClearGroupOrder(groupName)
     if not groupName then
         return
     end
-    local order = GetVisualOrder()
-    order[groupName] = nil
+    local sequence = GetVisualOrder()
+    sequence[groupName] = nil
 end
 
 -- Bag snapshot: tracks bag:slot -> itemID between refreshes for swap detection
@@ -703,10 +706,10 @@ local function DetectAndApplySwaps(tempItems, applySwap)
                 for pass = 1, 2 do
                     for _, saved in pairs(vo) do
                         local idx1, idx2
-                        for i, sid in ipairs(saved) do
-                            if sid == id1 and not idx1 then
+                        for i, spellRef in ipairs(saved) do
+                            if spellRef == id1 and not idx1 then
                                 idx1 = i
-                            elseif sid == id2 and not idx2 then
+                            elseif spellRef == id2 and not idx2 then
                                 idx2 = i
                             end
                         end
@@ -729,13 +732,13 @@ local _pendingResortGroups = {}
 
 -- Invalidate saved order; RefreshInventory does the re-sort on already-scanned items.
 local function ResortAfterGroupChange(catIndices, groupName)
-    local order = GetVisualOrder()
+    local sequence = GetVisualOrder()
     for _, ci in ipairs(catIndices) do
-        order[ci] = nil
+        sequence[ci] = nil
         _pendingResortCats[ci] = true
     end
     if groupName then
-        order[groupName] = nil
+        sequence[groupName] = nil
         _pendingResortGroups[groupName] = true
     end
 end
@@ -761,42 +764,42 @@ local function RetryPawnArrows()
     local pending = pawnPending
     pawnPending = setmetatable({}, { __mode = "k" })
 
-    for btn, expectedLink in pairs(pending) do
-        local parent = btn:GetParent()
-        local currentLink = parent and C_Container.GetContainerItemLink(parent:GetID(), btn:GetID())
-        if btn:IsShown() and currentLink == expectedLink then
-            UpdatePawnArrow(btn, currentLink)
+    for button, expectedLink in pairs(pending) do
+        local hostFrame = button:GetParent()
+        local currentLink = hostFrame and C_Container.GetContainerItemLink(hostFrame:GetID(), button:GetID())
+        if button:IsShown() and currentLink == expectedLink then
+            UpdatePawnArrow(button, currentLink)
         end
     end
 end
 
-UpdatePawnArrow = function(btn, itemLink)
-    if not pawnRegistered or not btn.UpgradeIcon then
+UpdatePawnArrow = function(button, itemLink)
+    if not pawnRegistered or not button.UpgradeIcon then
         return
     end
-    if not pawnPositioned[btn] then
-        btn.UpgradeIcon:ClearAllPoints()
-        btn.UpgradeIcon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
-        btn.UpgradeIcon:SetSize(16, 16)
-        pawnPositioned[btn] = true
+    if not pawnPositioned[button] then
+        button.UpgradeIcon:ClearAllPoints()
+        button.UpgradeIcon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
+        button.UpgradeIcon:SetSize(16, 16)
+        pawnPositioned[button] = true
     end
-    btn.UpgradeIcon:Hide()
+    button.UpgradeIcon:Hide()
 
     if not itemLink or not PawnCommon or not PawnCommon.ShowBagUpgradeAdvisor then
-        pawnPending[btn] = nil
+        pawnPending[button] = nil
         return
     end
 
     local isUpgrade = PawnShouldItemLinkHaveUpgradeArrow(itemLink, true)
     if isUpgrade == nil then
-        pawnPending[btn] = itemLink
+        pawnPending[button] = itemLink
         if not pawnRetryScheduled then
             pawnRetryScheduled = true
             C_Timer.After(0, RetryPawnArrows)
         end
     else
-        pawnPending[btn] = nil
-        btn.UpgradeIcon:SetShown(isUpgrade)
+        pawnPending[button] = nil
+        button.UpgradeIcon:SetShown(isUpgrade)
     end
 end
 
@@ -831,23 +834,23 @@ end
 -------------------------------------------------------------------------------
 local _slotCategories = {} -- bag*1000+slot -> categoryIndex from last full refresh
 
-I._anyItemPanelOpen, I._openItemPanels = _anyItemPanelOpen, _openItemPanels
-I._pendingResortCats, I._pendingResortGroups = _pendingResortCats, _pendingResortGroups
-I._slotCategories, I.AcquireSlotTable = _slotCategories, AcquireSlotTable
-I.ApplySavedOrder, I.ArmorySlotGroupingEnabled = ApplySavedOrder, ArmorySlotGroupingEnabled
-I.bagSlots, I.BuildExpansionBuckets = bagSlots, BuildExpansionBuckets
-I.BuildSlotBuckets, I.ClearGroupOrder = BuildSlotBuckets, ClearGroupOrder
-I.DetectAndApplySwaps, I.FOOTER_H = DetectAndApplySwaps, FOOTER_H
-I.GetArmorySlotBucket, I.HEADER_H = GetArmorySlotBucket, HEADER_H
-I.IsArmoryGearCategory, I.IsGearOnlyGroup = IsArmoryGearCategory, IsGearOnlyGroup
-I.itemSlots, I.MergeDuplicates = itemSlots, MergeDuplicates
-I.PreCacheSortFields, I.reagentSlots = PreCacheSortFields, reagentSlots
-I.RegisterPawnIntegration = RegisterPawnIntegration
-I.ReleaseAllSlotTables, I.ResortAfterGroupChange = ReleaseAllSlotTables, ResortAfterGroupChange
-I.SaveCategoryOrder, I.selectedCategoryIndex = SaveCategoryOrder, selectedCategoryIndex
-I.SetItemPanelOpen, I.SIDEBAR_BTN_H = SetItemPanelOpen, SIDEBAR_BTN_H
-I.SIDEBAR_ICON_SIZE, I.SIDEBAR_INDENT = SIDEBAR_ICON_SIZE, SIDEBAR_INDENT
-I.SIDEBAR_PAD, I.SIDEBAR_W_COLLAPSED = SIDEBAR_PAD, SIDEBAR_W_COLLAPSED
-I.SIDEBAR_W_EXPANDED, I.TakeBagSnapshot = SIDEBAR_W_EXPANDED, TakeBagSnapshot
-I.UpdatePawnArrow, I.VisualSortCompare = UpdatePawnArrow, VisualSortCompare
-I.broken = false
+Inner._anyItemPanelOpen, Inner._openItemPanels = _anyItemPanelOpen, _openItemPanels
+Inner._pendingResortCats, Inner._pendingResortGroups = _pendingResortCats, _pendingResortGroups
+Inner._slotCategories, Inner.AcquireSlotTable = _slotCategories, AcquireSlotTable
+Inner.ApplySavedOrder, Inner.ArmorySlotGroupingEnabled = ApplySavedOrder, ArmorySlotGroupingEnabled
+Inner.bagSlots, Inner.BuildExpansionBuckets = bagSlots, BuildExpansionBuckets
+Inner.BuildSlotBuckets, Inner.ClearGroupOrder = BuildSlotBuckets, ClearGroupOrder
+Inner.DetectAndApplySwaps, Inner.FOOTER_H = DetectAndApplySwaps, FOOTER_H
+Inner.GetArmorySlotBucket, Inner.HEADER_H = GetArmorySlotBucket, HEADER_H
+Inner.IsArmoryGearCategory, Inner.IsGearOnlyGroup = IsArmoryGearCategory, IsGearOnlyGroup
+Inner.itemSlots, Inner.MergeDuplicates = itemSlots, MergeDuplicates
+Inner.PreCacheSortFields, Inner.reagentSlots = PreCacheSortFields, reagentSlots
+Inner.RegisterPawnIntegration = RegisterPawnIntegration
+Inner.ReleaseAllSlotTables, Inner.ResortAfterGroupChange = ReleaseAllSlotTables, ResortAfterGroupChange
+Inner.SaveCategoryOrder, Inner.selectedCategoryIndex = SaveCategoryOrder, selectedCategoryIndex
+Inner.SetItemPanelOpen, Inner.SIDEBAR_BTN_H = SetItemPanelOpen, SIDEBAR_BTN_H
+Inner.SIDEBAR_ICON_SIZE, Inner.SIDEBAR_INDENT = SIDEBAR_ICON_SIZE, SIDEBAR_INDENT
+Inner.SIDEBAR_PAD, Inner.SIDEBAR_W_COLLAPSED = SIDEBAR_PAD, SIDEBAR_W_COLLAPSED
+Inner.SIDEBAR_W_EXPANDED, Inner.TakeBagSnapshot = SIDEBAR_W_EXPANDED, TakeBagSnapshot
+Inner.UpdatePawnArrow, Inner.VisualSortCompare = UpdatePawnArrow, VisualSortCompare
+Inner.broken = false

@@ -60,8 +60,8 @@ CludesUI._applyHideBlizzardPartyFrame = ApplyHideBlizzardPartyFrame
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-initFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_ENTERING_WORLD" then
+initFrame:SetScript("OnEvent", function(self, evt)
+    if evt == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
     end
     ApplyHideBlizzardPartyFrame()

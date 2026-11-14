@@ -9,24 +9,24 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
-local I = CUI_NS._soInternals
+local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local DeepCopy, GetStore, RunRefreshers = I.DeepCopy, I.GetStore, I.RunRefreshers
-local PruneRedundantValues, RequestGoldWalk = I.PruneRedundantValues, I.RequestGoldWalk
-local OnPageRebuilt, PruneOrphanEntries = I.OnPageRebuilt, I.PruneOrphanEntries
-local SetCombatFolders, SetWatchResync = I.SetCombatFolders, I.SetWatchResync
+local DeepCopy, GetStore, RunRefreshers = Inner.DeepCopy, Inner.GetStore, Inner.RunRefreshers
+local PruneRedundantValues, RequestGoldWalk = Inner.PruneRedundantValues, Inner.RequestGoldWalk
+local OnPageRebuilt, PruneOrphanEntries = Inner.OnPageRebuilt, Inner.PruneOrphanEntries
+local SetCombatFolders, SetWatchResync = Inner.SetCombatFolders, Inner.SetWatchResync
 
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _combatFolders = nil
-I.combatFoldersSetters[#I.combatFoldersSetters + 1] = function(v)
-    _combatFolders = v
+Inner.combatFoldersSetters[#Inner.combatFoldersSetters + 1] = function(val)
+    _combatFolders = val
 end
 
 -------------------------------------------------------------------------------
@@ -52,20 +52,20 @@ end
 local evFrame = CreateFrame("Frame")
 evFrame:RegisterEvent("PLAYER_LOGIN")
 evFrame:RegisterEvent("PLAYER_REGEN_ENABLED") -- guardrails-allow: combat-deferral by Cludes: moved unchanged by the file split; multi-event frame (login, combat end)
-evFrame:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_LOGIN" then
+evFrame:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_LOGIN" then
         -- De-alias repair for stores that banked live TABLE references, which aliased
         -- the store to the live profile (any later live edit silently mutated the
         -- stored "override"). DeepCopy every table-typed value once so stores own their
         -- data. Harvests skip table values, so it cannot recur.
-        local function DeAlias(store)
-            for _, e in ipairs(store or {}) do
+        local function DeAlias(storage)
+            for _, e in ipairs(storage or {}) do
                 if e.values then
                     for _, m in pairs(e.values) do
                         if type(m) == "table" then
-                            for fkey, v in pairs(m) do
-                                if type(v) == "table" then
-                                    m[fkey] = DeepCopy(v)
+                            for fkey, val in pairs(m) do
+                                if type(val) == "table" then
+                                    m[fkey] = DeepCopy(val)
                                 end
                             end
                         end
@@ -84,7 +84,7 @@ evFrame:SetScript("OnEvent", function(_, event)
             CludesUI._CondOv.PruneEntries()
             CludesUI._CondOv.PruneRedundant()
         end
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "PLAYER_REGEN_ENABLED" then
         if _combatFolders then
             local fl = _combatFolders
             SetCombatFolders(nil)
@@ -101,4 +101,4 @@ CludesUI.Lite.RegisterPreLogout(function()
     CludesUI.SpecOverrides_HarvestCurrent()
 end)
 
-I.broken = false
+Inner.broken = false

@@ -6,8 +6,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Resource Bars options: GCD Bar page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+if not mod then
     return
 end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
@@ -16,19 +16,20 @@ end -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- GCD Bar page
-function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
-    local env = ns._CURB_OptEnv
-    local DB, PP, CLASS_COLORS, _clickMappings = env.DB, env.PP, env.CLASS_COLORS, env._clickMappings
-    local UpdateGCDPreview = env.UpdateGCDPreview
-    local TexBgRowCfg = env.TexBgRowCfg
+function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
+    local environ = mod._CURB_OptEnv
+    local SavedDB, Pix, CLASS_COLORS, _clickMappings =
+        environ.DB, environ.PP, environ.CLASS_COLORS, environ._clickMappings
+    local UpdateGCDPreview = environ.UpdateGCDPreview
+    local TexBgRowCfg = environ.TexBgRowCfg
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
+    local posY = yOffset
+    local _, hgt
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
-    env.SetGCDPreviewFill(math.random(30, 85) / 100)
-    CludesUI:SetContentHeader(env._gcdPreviewBuilder)
+    environ.SetGCDPreviewFill(math.random(30, 85) / 100)
+    CludesUI:SetContentHeader(environ._gcdPreviewBuilder)
 
     -- Clear this page's own click mapping (shared table; never from a hidden pre-build)
     if not CludesUI._prebuilding then
@@ -63,7 +64,7 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
     end
 
     local gcdOff = function()
-        local p = DB()
+        local p = SavedDB()
         return p and not p.gcdBar.enabled
     end
 
@@ -78,8 +79,8 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
     end
 
     local _sec
-    _sec, h = W:SectionHeader(parent, "LAYOUT", y)
-    y = y - h
+    _sec, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+    posY = posY - hgt
     CludesUI.BuildSectionUnlockJump(
         _sec,
         { key = "ERB_GCDBar", disabled = gcdOff, disabledTooltip = "GCD Bar" }
@@ -91,20 +92,20 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
 
     -- Row: Enable GCD Bar (+ position cog) | Frame Strata
     local enableRow
-    enableRow, h = W:DualRow(parent, y, {
+    enableRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable GCD Bar",
         tooltip = "Shows a bar that fills over the global cooldown.",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.enabled
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.enabled = v
+            p.gcdBar.enabled = val
             RefreshGCD()
             CludesUI:RefreshPage()
         end,
@@ -117,25 +118,25 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         values = gStrataValues,
         order = gStrataOrder,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.frameStrata or "MEDIUM"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.frameStrata = v
+            p.gcdBar.frameStrata = val
             RefreshGCD()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline position cog (X/Y + unlock) on Enable
     if not CludesUI._prebuilding then
-        local rgn = enableRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = enableRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and not p.gcdBar.enabled
             end,
             disabledTooltip = "GCD Bar",
@@ -149,7 +150,7 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 0
                         end
@@ -159,16 +160,16 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         end
                         return g.anchorX or 0
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
                         local g = p.gcdBar
                         if g.unlockPos and g.unlockPos.point then
-                            g.unlockPos.x = v
+                            g.unlockPos.x = val
                         else
-                            g.anchorX = v
+                            g.anchorX = val
                         end
                         RefreshGCD()
                     end,
@@ -180,7 +181,7 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 0
                         end
@@ -190,16 +191,16 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         end
                         return g.anchorY or -78
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
                         local g = p.gcdBar
                         if g.unlockPos and g.unlockPos.point then
-                            g.unlockPos.y = v
+                            g.unlockPos.y = val
                         else
-                            g.anchorY = v
+                            g.anchorY = val
                         end
                         RefreshGCD()
                     end,
@@ -211,13 +212,13 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
 
     -- Row: Height | Width. Orientation-aware: this bar's size callbacks report the drawn axes, so its sliders must be guarded on the matching axis for vertical orientations.
     local function gcdOri()
-        local p = DB()
+        local p = SavedDB()
         return p and p.gcdBar and p.gcdBar.orientation
     end
-    local ghDis, ghTip, ghRaw = ns.OrientedMatchGuard("ERB_GCDBar", "Height", gcdOri, gcdOff, "GCD Bar")
-    local gwDis, gwTip, gwRaw = ns.OrientedMatchGuard("ERB_GCDBar", "Width", gcdOri, gcdOff, "GCD Bar")
+    local ghDis, ghTip, ghRaw = mod.OrientedMatchGuard("ERB_GCDBar", "Height", gcdOri, gcdOff, "GCD Bar")
+    local gwDis, gwTip, gwRaw = mod.OrientedMatchGuard("ERB_GCDBar", "Width", gcdOri, gcdOff, "GCD Bar")
     local sizeRow
-    sizeRow, h = W:DualRow(parent, y, {
+    sizeRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Height",
         min = 1,
@@ -227,15 +228,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         disabledTooltip = ghTip,
         rawTooltip = ghRaw,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.height or 12
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.height = v
+            p.gcdBar.height = val
             RefreshGCD()
         end,
     }, {
@@ -248,22 +249,22 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         disabledTooltip = gwTip,
         rawTooltip = gwRaw,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.width or 220
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.width = v
+            p.gcdBar.width = val
             RefreshGCD()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Row: Orientation | Instance Only
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Orientation",
         disabled = gcdOff,
@@ -276,15 +277,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         },
         order = { "HORIZONTAL", "HORIZONTAL_LEFT", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.orientation or "HORIZONTAL"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.orientation = v
+            p.gcdBar.orientation = val
             RefreshGCD()
             CludesUI:RefreshPage()
         end,
@@ -295,38 +296,38 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.instanceOnly
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.instanceOnly = v
+            p.gcdBar.instanceOnly = val
             RefreshGCD()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Row: Only Instant Casts | Always Show (+ idle fill cog)
     local gcdShowRow
-    gcdShowRow, h = W:DualRow(parent, y, {
+    gcdShowRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Only Instant Casts",
         tooltip = "Only show the GCD bar for instant-cast abilities. While hard-casting or channeling a spell, the bar stays hidden (the cast bar already shows that progress).",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.instantOnly
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.instantOnly = v
+            p.gcdBar.instantOnly = val
             RefreshGCD()
         end,
     }, {
@@ -336,19 +337,19 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.alwaysShow
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.alwaysShow = v
+            p.gcdBar.alwaysShow = val
             RefreshGCD()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline cog on Always Show: idle fill appearance
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(gcdShowRow._rightRegion, {
@@ -359,15 +360,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                     label = "Show Fill Color When Idle",
                     tooltip = "Show the bar full of its fill color while no global cooldown is running, instead of the background color.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.gcdBar.idleShowFill) == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        if v then
+                        if val then
                             p.gcdBar.idleShowFill = true
                         else
                             p.gcdBar.idleShowFill = nil
@@ -379,19 +380,19 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
-    _sec, h = W:SectionHeader(parent, "DISPLAY", y)
-    y = y - h
+    _sec, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+    posY = posY - hgt
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog)
     do
         local btValues, btOrder = CludesUI.GetBorderTextureDropdown()
         local bsRow
-        bsRow, h = W:DualRow(
-            parent,
-            y,
+        bsRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "dropdown",
                 text = "Border Style",
@@ -400,26 +401,26 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                 values = btValues,
                 order = btOrder,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.gcdBar.borderTexture or "solid"
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.gcdBar.borderTexture = v
+                    p.gcdBar.borderTexture = val
                     p.gcdBar.borderTextureOffset = nil
                     p.gcdBar.borderTextureOffsetY = nil
                     p.gcdBar.borderTextureShiftX = nil
                     p.gcdBar.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
+                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
                     p.gcdBar.borderR = _bcol.r
                     p.gcdBar.borderG = _bcol.g
                     p.gcdBar.borderB = _bcol.b
                     p.gcdBar.borderA = 1
                     p.gcdBar.borderBehind = _bbehind
-                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", v)
+                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then
                         p.gcdBar.borderSize = defSz
                     end
@@ -435,27 +436,27 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                 disabled = gcdOff,
                 disabledTooltip = "GCD Bar",
                 getStep = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and (p.gcdBar.borderSize or 0) or 0
                 end,
-                setStep = function(v)
-                    local p = DB()
+                setStep = function(val)
+                    local p = SavedDB()
                     if p then
-                        p.gcdBar.borderSize = v
+                        p.gcdBar.borderSize = val
                     end
                 end,
                 getTex = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and (p.gcdBar.borderTexture or "solid") or "solid"
                 end,
                 getPx = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.gcdBar.borderSizePx
                 end,
-                setPx = function(v)
-                    local p = DB()
+                setPx = function(val)
+                    local p = SavedDB()
                     if p then
-                        p.gcdBar.borderSizePx = v
+                        p.gcdBar.borderSizePx = val
                     end
                 end,
                 apply = function()
@@ -464,14 +465,14 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                 end,
             })
         )
-        y = y - h
+        posY = posY - hgt
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
-            local p = DB()
+            local p = SavedDB()
             local tex = p and p.gcdBar.borderTexture or "solid"
             if tex ~= "solid" and tex ~= "" then
                 local function step()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and (p.gcdBar.borderSize or 0) or 0
                 end
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -479,33 +480,33 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                     disabled = gcdOff,
                     disabledTooltip = "GCD Bar",
                     getTex = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and (p.gcdBar.borderTexture or "solid") or "solid"
                     end,
                     getStep = step,
                     getSizeKey = step,
                     getPx = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.gcdBar.borderSizePx
                     end,
                     getX = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.gcdBar.borderTextureOffset
                     end,
-                    setX = function(v)
-                        local p = DB()
+                    setX = function(val)
+                        local p = SavedDB()
                         if p then
-                            p.gcdBar.borderTextureOffset = v
+                            p.gcdBar.borderTextureOffset = val
                         end
                     end,
                     getY = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.gcdBar.borderTextureOffsetY
                     end,
-                    setY = function(v)
-                        local p = DB()
+                    setY = function(val)
+                        local p = SavedDB()
                         if p then
-                            p.gcdBar.borderTextureOffsetY = v
+                            p.gcdBar.borderTextureOffsetY = val
                         end
                     end,
                     apply = function()
@@ -513,53 +514,60 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 })
-                _, h = W:DualRow(parent, y, ocfgL, ocfgR)
-                y = y - h
+                _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
+                posY = posY - hgt
             end
         end
         -- Border color swatch on the size slider (right region); none in the
         -- search pre-build (it indexes nothing, and the row is a stand-in there)
         if not CludesUI._prebuilding then
-            local rgn = bsRow._rightRegion
-            local ctrl = rgn._control
-            local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, bsRow:GetFrameLevel() + 3, function()
-                local p = DB()
-                return (p and p.gcdBar.borderR or 0),
-                    (p and p.gcdBar.borderG or 0),
-                    (p and p.gcdBar.borderB or 0),
-                    (p and p.gcdBar.borderA or 1)
-            end, function(r, g, b, a)
-                local p = DB()
-                if not p then
-                    return
-                end
-                p.gcdBar.borderR, p.gcdBar.borderG, p.gcdBar.borderB, p.gcdBar.borderA = r, g, b, a
-                RefreshGCD()
-                CludesUI:RefreshPage()
-            end, true, 20)
-            PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
-            local block = CreateFrame("Frame", nil, swatch)
-            block:SetAllPoints()
-            block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
+            local region = bsRow._rightRegion
+            local ctrl = region._control
+            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                region,
+                bsRow:GetFrameLevel() + 3,
+                function()
+                    local p = SavedDB()
+                    return (p and p.gcdBar.borderR or 0),
+                        (p and p.gcdBar.borderG or 0),
+                        (p and p.gcdBar.borderB or 0),
+                        (p and p.gcdBar.borderA or 1)
+                end,
+                function(r, g, b, a)
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    p.gcdBar.borderR, p.gcdBar.borderG, p.gcdBar.borderB, p.gcdBar.borderA = r, g, b, a
+                    RefreshGCD()
+                    CludesUI:RefreshPage()
+                end,
+                true,
+                20
+            )
+            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            local blockData = CreateFrame("Frame", nil, colorSwatch)
+            blockData:SetAllPoints()
+            blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            blockData:EnableMouse(true)
+            blockData:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
-                    swatch,
+                    colorSwatch,
                     CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
                 )
             end)
-            block:SetScript("OnLeave", function()
+            blockData:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateSwatchState()
-                local p = DB()
+                local p = SavedDB()
                 local noBorder = not p or (p.gcdBar.borderSize or 0) == 0
                 if noBorder then
-                    swatch:SetAlpha(0.3)
-                    block:Show()
+                    colorSwatch:SetAlpha(0.3)
+                    blockData:Show()
                 else
-                    swatch:SetAlpha(1)
-                    block:Hide()
+                    colorSwatch:SetAlpha(1)
+                    blockData:Hide()
                 end
             end
             CludesUI.RegisterWidgetRefresh(function()
@@ -570,9 +578,9 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         end
         -- Offset cog on Border Style (left region), hidden for "solid"
         if not CludesUI._prebuilding then
-            local rgn = bsRow._leftRegion
-            local sepValues, sepOrder = ns.ERB_SeparatorArtValues(true)
-            local cogBtn = CludesUI.BuildInlineCog(rgn, {
+            local region = bsRow._leftRegion
+            local sepValues, sepOrder = mod.ERB_SeparatorArtValues(true)
+            local cogBtn = CludesUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -582,13 +590,13 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return 0
                             end
-                            local v = p.gcdBar.borderTextureShiftX
-                            if v then
-                                return v
+                            local val = p.gcdBar.borderTextureShiftX
+                            if val then
+                                return val
                             end
                             local _, _, dsx = CludesUI.GetBorderDefaults(
                                 "resourcebars",
@@ -597,12 +605,12 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                             )
                             return dsx
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderTextureShiftX = v == 0 and nil or v
+                            p.gcdBar.borderTextureShiftX = val == 0 and nil or val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -614,13 +622,13 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return 0
                             end
-                            local v = p.gcdBar.borderTextureShiftY
-                            if v then
-                                return v
+                            local val = p.gcdBar.borderTextureShiftY
+                            if val then
+                                return val
                             end
                             local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                 "resourcebars",
@@ -629,12 +637,12 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                             )
                             return dsy
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderTextureShiftY = v == 0 and nil or v
+                            p.gcdBar.borderTextureShiftY = val == 0 and nil or val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -643,15 +651,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         type = "toggle",
                         label = "Show Behind",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.gcdBar.borderBehind or false
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderBehind = v == false and nil or v
+                            p.gcdBar.borderBehind = val == false and nil or val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -667,15 +675,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.gcdBar.borderExtendTop or 0
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderExtendTop = v
+                            p.gcdBar.borderExtendTop = val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -690,15 +698,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.gcdBar.borderExtendBottom or 0
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderExtendBottom = v
+                            p.gcdBar.borderExtendBottom = val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -713,15 +721,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.gcdBar.borderExtendLeft or 0
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderExtendLeft = v
+                            p.gcdBar.borderExtendLeft = val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -736,15 +744,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.gcdBar.borderExtendRight or 0
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.borderExtendRight = v
+                            p.gcdBar.borderExtendRight = val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -760,22 +768,22 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not (p and p.gcdBar.edgeSep) then
                                 return "none"
                             end
                             return p.gcdBar.edgeSepArt or "match"
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            if v == "none" then
+                            if val == "none" then
                                 p.gcdBar.edgeSep = false
                             else
                                 p.gcdBar.edgeSep = true
-                                p.gcdBar.edgeSepArt = v
+                                p.gcdBar.edgeSepArt = val
                             end
                             RefreshGCD()
                             CludesUI:RefreshPage()
@@ -788,22 +796,22 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                         max = 50,
                         step = 1,
                         disabled = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return gcdOff() or not (p and p.gcdBar.edgeSep)
                         end,
                         disabledTooltip = function()
                             return gcdOff() and "GCD Bar" or "Bottom Separator"
                         end,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.gcdBar.edgeSepY or 0
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.gcdBar.edgeSepY = v
+                            p.gcdBar.edgeSepY = val
                             RefreshGCD()
                             CludesUI:RefreshPage()
                         end,
@@ -811,7 +819,7 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                 },
             })
             local function UpdateCogVis()
-                local p = DB()
+                local p = SavedDB()
                 local tex = p and p.gcdBar.borderTexture or "solid"
                 if tex == "solid" then
                     cogBtn:Hide()
@@ -826,135 +834,130 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
 
     -- Row: Color (gradient end / custom / class + gradient cog) | Background (+ bg swatch)
     local colorRow
-    colorRow, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "multiSwatch",
-            text = "Color",
-            disabled = gcdOff,
-            disabledTooltip = "GCD Bar",
-            swatches = {
-                {
-                    tooltip = "Gradient End Color",
-                    hasAlpha = true,
-                    getValue = function()
-                        local p = DB()
-                        if not p then
-                            return 0.20, 0.20, 0.80, 1
-                        end
-                        return p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA
-                    end,
-                    setValue = function(r, g, b, a)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA =
-                            r, g, b, a
-                        RefreshGCD()
-                    end,
-                },
-                {
-                    tooltip = "Custom Colored",
-                    hasAlpha = true,
-                    getValue = function()
-                        local p = DB()
-                        if not p then
-                            local _, cf = UnitClass("player")
-                            local cc = CLASS_COLORS[cf]
-                            return cc and cc[1] or 1, cc and cc[2] or 0.70, cc and cc[3] or 0, 1
-                        end
-                        return p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA
-                    end,
-                    setValue = function(r, g, b, a)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA = r, g, b, a
-                        if p.gcdBar.classColored then
-                            p.gcdBar.classColored = false
-                        end
-                        RefreshGCD()
-                        CludesUI:RefreshPage()
-                    end,
-                    onClick = function(self)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        if p.gcdBar.classColored then
-                            p.gcdBar.classColored = false
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                            return
-                        end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
-                    end,
-                    refreshAlpha = function()
-                        local p = DB()
-                        return (p and not p.gcdBar.classColored) and 1 or 0.3
-                    end,
-                },
-                {
-                    tooltip = "Class Colored",
-                    getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                        if cc then
-                            return cc.r, cc.g, cc.b, 1
-                        end
-                        return 1, 0.70, 0, 1
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.gcdBar.classColored = true
+    colorRow, hgt = W:DualRow(hostFrame, posY, {
+        type = "multiSwatch",
+        text = "Color",
+        disabled = gcdOff,
+        disabledTooltip = "GCD Bar",
+        swatches = {
+            {
+                tooltip = "Gradient End Color",
+                hasAlpha = true,
+                getValue = function()
+                    local p = SavedDB()
+                    if not p then
+                        return 0.20, 0.20, 0.80, 1
+                    end
+                    return p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA
+                end,
+                setValue = function(r, g, b, a)
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA =
+                        r, g, b, a
+                    RefreshGCD()
+                end,
+            },
+            {
+                tooltip = "Custom Colored",
+                hasAlpha = true,
+                getValue = function()
+                    local p = SavedDB()
+                    if not p then
+                        local _, castFrame = UnitClass("player")
+                        local cc = CLASS_COLORS[castFrame]
+                        return cc and cc[1] or 1, cc and cc[2] or 0.70, cc and cc[3] or 0, 1
+                    end
+                    return p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA
+                end,
+                setValue = function(r, g, b, a)
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA = r, g, b, a
+                    if p.gcdBar.classColored then
+                        p.gcdBar.classColored = false
+                    end
+                    RefreshGCD()
+                    CludesUI:RefreshPage()
+                end,
+                onClick = function(self)
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    if p.gcdBar.classColored then
+                        p.gcdBar.classColored = false
                         RefreshGCD()
                         CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        local p = DB()
-                        return (not p or p.gcdBar.classColored == true) and 1 or 0.3
-                    end,
-                },
+                        return
+                    end
+                    if self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
+                end,
+                refreshAlpha = function()
+                    local p = SavedDB()
+                    return (p and not p.gcdBar.classColored) and 1 or 0.3
+                end,
+            },
+            {
+                tooltip = "Class Colored",
+                getValue = function()
+                    local _, classFile = UnitClass("player")
+                    local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                    if cc then
+                        return cc.r, cc.g, cc.b, 1
+                    end
+                    return 1, 0.70, 0, 1
+                end,
+                setValue = function() end,
+                onClick = function()
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    p.gcdBar.classColored = true
+                    RefreshGCD()
+                    CludesUI:RefreshPage()
+                end,
+                refreshAlpha = function()
+                    local p = SavedDB()
+                    return (not p or p.gcdBar.classColored == true) and 1 or 0.3
+                end,
             },
         },
-        {
-            type = "slider",
-            text = "Background",
-            min = 0,
-            max = 100,
-            step = 1,
-            disabled = gcdOff,
-            disabledTooltip = "GCD Bar",
-            getValue = function()
-                local p = DB()
-                return math.floor(((p and p.gcdBar.bgA or 0.7) * 100) + 0.5)
-            end,
-            setValue = function(v)
-                local p = DB()
-                if not p then
-                    return
-                end
-                p.gcdBar.bgA = v / 100
-                RefreshGCD()
-            end,
-        }
-    )
-    y = y - h
+    }, {
+        type = "slider",
+        text = "Background",
+        min = 0,
+        max = 100,
+        step = 1,
+        disabled = gcdOff,
+        disabledTooltip = "GCD Bar",
+        getValue = function()
+            local p = SavedDB()
+            return math.floor(((p and p.gcdBar.bgA or 0.7) * 100) + 0.5)
+        end,
+        setValue = function(val)
+            local p = SavedDB()
+            if not p then
+                return
+            end
+            p.gcdBar.bgA = val / 100
+            RefreshGCD()
+        end,
+    })
+    posY = posY - hgt
     -- Gradient cog on Color
     if not CludesUI._prebuilding then
-        local rgn = colorRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = colorRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and not p.gcdBar.enabled
             end,
             disabledTooltip = "GCD Bar",
@@ -964,15 +967,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                     type = "toggle",
                     label = "Enable Gradient",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.gcdBar.gradientEnabled
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.gcdBar.gradientEnabled = v
+                        p.gcdBar.gradientEnabled = val
                         RefreshGCD()
                         CludesUI:RefreshPage()
                     end,
@@ -983,15 +986,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.gcdBar.gradientDir or "HORIZONTAL"
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.gcdBar.gradientDir = v
+                        p.gcdBar.gradientDir = val
                         RefreshGCD()
                     end,
                 },
@@ -1000,21 +1003,21 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
     end
     -- Gradient end-color swatch enable/disable
     do
-        local swatch = colorRow._leftRegion._control
+        local colorSwatch = colorRow._leftRegion._control
         local function UpdateGradientSwatch()
-            local p = DB()
+            local p = SavedDB()
             if not p or not p.gcdBar.enabled then
-                swatch:SetAlpha(0.15)
-                swatch:Disable()
-                swatch._disabledTooltip = "GCD Bar"
+                colorSwatch:SetAlpha(0.15)
+                colorSwatch:Disable()
+                colorSwatch._disabledTooltip = "GCD Bar"
             elseif not p.gcdBar.gradientEnabled then
-                swatch:SetAlpha(0.15)
-                swatch:Disable()
-                swatch._disabledTooltip = "Gradient"
+                colorSwatch:SetAlpha(0.15)
+                colorSwatch:Disable()
+                colorSwatch._disabledTooltip = "Gradient"
             else
-                swatch:SetAlpha(1)
-                swatch:Enable()
-                swatch._disabledTooltip = nil
+                colorSwatch:SetAlpha(1)
+                colorSwatch:Enable()
+                colorSwatch._disabledTooltip = nil
             end
         end
         UpdateGradientSwatch()
@@ -1022,17 +1025,17 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
     end
     -- Background color swatch on the Background slider (right region)
     if not CludesUI._prebuilding then
-        local rgn = colorRow._rightRegion
-        local ctrl = rgn._control
+        local region = colorRow._rightRegion
+        local ctrl = region._control
         local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(
-            rgn,
+            region,
             colorRow:GetFrameLevel() + 3,
             function()
-                local p = DB()
+                local p = SavedDB()
                 return (p and p.gcdBar.bgR or 0), (p and p.gcdBar.bgG or 0), (p and p.gcdBar.bgB or 0)
             end,
             function(r, g, b)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -1042,9 +1045,9 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
             nil,
             20
         )
-        PP.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
         local function UpdateBgSwatch()
-            local p = DB()
+            local p = SavedDB()
             if not p or not p.gcdBar.enabled then
                 bgSwatch:SetAlpha(0.15)
                 bgSwatch:Disable()
@@ -1062,7 +1065,7 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
 
     -- Row: Bar Texture | Show Spark
     local gcdTexRow
-    gcdTexRow, h = W:DualRow(parent, y, {
+    gcdTexRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Bar Texture",
         disabled = gcdOff,
@@ -1070,15 +1073,15 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         values = texValues,
         order = texOrder,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.texture or "none"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.texture = v
+            p.gcdBar.texture = val
             RefreshGCD()
         end,
     }, {
@@ -1088,19 +1091,19 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.showSpark
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.showSpark = v
+            p.gcdBar.showSpark = val
             RefreshGCD()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline cog on Bar Texture: Textured Background (greyed with the dropdown).
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(gcdTexRow._leftRegion, {
@@ -1112,31 +1115,31 @@ function ns.ERB_BuildGCDBarPage(pageName, parent, yOffset)
     end
 
     -- Row: Deplete Fill (left half only)
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Deplete Fill",
         tooltip = "Start the bar full and drain it as the global cooldown elapses, instead of filling it up.",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.gcdBar.depleteFill
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.gcdBar.depleteFill = v
+            p.gcdBar.depleteFill = val
             RefreshGCD()
         end,
     }, { type = "spacer" })
-    y = y - h
+    posY = posY - hgt
 
     -- Click mapping for the preview's hit overlay (never from a hidden pre-build)
     if not CludesUI._prebuilding then
         _clickMappings.gcdBar = { section = layoutSection, target = sizeRow }
     end
 
-    return math.abs(y)
+    return math.abs(posY)
 end

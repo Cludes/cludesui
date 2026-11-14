@@ -7,25 +7,25 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The header bar: title, search, sort and the header buttons.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local CUI = CludesUI
 
-local BP, GetFont, SetBagFont, HEADER_H = I.BP, I.GetFont, I.SetBagFont, I.HEADER_H
-local PreCacheSortFields, SaveCategoryOrder = I.PreCacheSortFields, I.SaveCategoryOrder
-local VisualSortCompare = I.VisualSortCompare
+local BP, GetFont, SetBagFont, HEADER_H = Inner.BP, Inner.GetFont, Inner.SetBagFont, Inner.HEADER_H
+local PreCacheSortFields, SaveCategoryOrder = Inner.PreCacheSortFields, Inner.SaveCategoryOrder
+local VisualSortCompare = Inner.VisualSortCompare
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._bagsInternals, which hands the value to every copy.
-local selectedCategoryIndex = I.selectedCategoryIndex
-I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v)
-    selectedCategoryIndex = v
+local selectedCategoryIndex = Inner.selectedCategoryIndex
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
+    selectedCategoryIndex = val
 end
 
 -------------------------------------------------------------------------------
@@ -34,51 +34,51 @@ end
 -- Fits the title and item count between their start and the leftmost header icon
 -- (SyncHeaderIcons): the count truncates first, then the title, both with "...".
 function CUI_Bags:FitHeaderText()
-    local hdr, edge = self.Header, self._hdrEdge
-    if not (hdr and edge) then
+    local heading, edge = self.Header, self._hdrEdge
+    if not (heading and edge) then
         return
     end
-    local title, count = hdr.title, hdr.itemCount
-    local tl, el = title:GetLeft(), edge:GetLeft()
+    local titleText, count = heading.title, heading.itemCount
+    local tl, el = titleText:GetLeft(), edge:GetLeft()
     if not (tl and el) then
         return
     end
-    if hdr.slotLines then
-        hdr.slotLines[1]:Hide()
-        hdr.slotLines[2]:Hide()
+    if heading.slotLines then
+        heading.slotLines[1]:Hide()
+        heading.slotLines[2]:Hide()
     end
     local room = el - 12 - tl
-    local tw = title:GetUnboundedStringWidth()
+    local tw = titleText:GetUnboundedStringWidth()
     if tw > room then
-        title:SetWidth(math.max(room, 1))
+        titleText:SetWidth(math.max(room, 1))
         count:SetAlpha(0)
         return
     end
-    title:SetWidth(tw + 1)
+    titleText:SetWidth(tw + 1)
     local countRoom = room - tw - 8
     local first, second = (count:GetText() or ""):match("^([^\n]+)\n(.+)$")
     if first then
         -- Each capacity line truncates independently instead of wrapping into the other.
-        if not hdr.slotLines then
-            hdr.slotLines = {}
+        if not heading.slotLines then
+            heading.slotLines = {}
             for i = 1, 2 do
-                local line = hdr:CreateFontString(nil, "OVERLAY")
-                SetBagFont(line, 11)
-                line:SetWordWrap(false)
-                line:SetJustifyH("LEFT")
-                hdr.slotLines[i] = line
+                local lineTex = heading:CreateFontString(nil, "OVERLAY")
+                SetBagFont(lineTex, 11)
+                lineTex:SetWordWrap(false)
+                lineTex:SetJustifyH("LEFT")
+                heading.slotLines[i] = lineTex
             end
         end
-        local _, size = count:GetFont()
+        local _, dim = count:GetFont()
         local r, g, b = count:GetTextColor()
         for i = 1, 2 do
-            local line = hdr.slotLines[i]
-            line:SetFont(count:GetFont())
-            line:SetTextColor(r, g, b, 1)
-            line:SetPoint("LEFT", title, "RIGHT", 8, i == 1 and size / 2 or -size / 2)
-            line:SetText(i == 1 and first or second)
-            line:SetWidth(math.max(math.min(line:GetUnboundedStringWidth() + 1, countRoom), 1))
-            line:SetShown(countRoom >= 16)
+            local lineTex = heading.slotLines[i]
+            lineTex:SetFont(count:GetFont())
+            lineTex:SetTextColor(r, g, b, 1)
+            lineTex:SetPoint("LEFT", titleText, "RIGHT", 8, i == 1 and dim / 2 or -dim / 2)
+            lineTex:SetText(i == 1 and first or second)
+            lineTex:SetWidth(math.max(math.min(lineTex:GetUnboundedStringWidth() + 1, countRoom), 1))
+            lineTex:SetShown(countRoom >= 16)
         end
         count:SetAlpha(0)
         return
@@ -91,49 +91,49 @@ local function CreateHeader()
     if CUI_Bags.Header then
         return
     end
-    local forever = ns.BagsForever()
-    local header = CreateFrame("Frame", nil, CUI_Bags)
-    header:SetPoint("TOPLEFT", 1, -1)
-    header:SetPoint("TOPRIGHT", -1, -1)
+    local forever = mod.BagsForever()
+    local headerFrame = CreateFrame("Frame", nil, CUI_Bags)
+    headerFrame:SetPoint("TOPLEFT", 1, -1)
+    headerFrame:SetPoint("TOPRIGHT", -1, -1)
     if forever then
-        ns.LayoutForeverBagHeader(header)
+        mod.LayoutForeverBagHeader(headerFrame)
     else
-        header:SetHeight(HEADER_H)
+        headerFrame:SetHeight(HEADER_H)
     end
-    header.bg = header:CreateTexture(nil, "BACKGROUND")
-    header.bg:SetAllPoints()
-    header.bg:SetColorTexture(0, 0, 0, 0.5)
+    headerFrame.bg = headerFrame:CreateTexture(nil, "BACKGROUND")
+    headerFrame.bg:SetAllPoints()
+    headerFrame.bg:SetColorTexture(0, 0, 0, 0.5)
 
-    header.title = header:CreateFontString(nil, "OVERLAY")
-    SetBagFont(header.title, 13)
-    header.title:SetPoint("LEFT", header, "LEFT", 8, 0)
-    header.title:SetText(CludesUI.L("Inventory"))
-    header.title:SetTextColor(1, 1, 1)
+    headerFrame.title = headerFrame:CreateFontString(nil, "OVERLAY")
+    SetBagFont(headerFrame.title, 13)
+    headerFrame.title:SetPoint("LEFT", headerFrame, "LEFT", 8, 0)
+    headerFrame.title:SetText(CludesUI.L("Inventory"))
+    headerFrame.title:SetTextColor(1, 1, 1)
 
     -- Item count (updated by RefreshInventory)
-    header.itemCount = header:CreateFontString(nil, "OVERLAY")
-    SetBagFont(header.itemCount, 11)
-    header.itemCount:SetPoint("LEFT", header.title, "RIGHT", 8, 0)
-    header.itemCount:SetTextColor(0.6, 0.6, 0.6)
+    headerFrame.itemCount = headerFrame:CreateFontString(nil, "OVERLAY")
+    SetBagFont(headerFrame.itemCount, 11)
+    headerFrame.itemCount:SetPoint("LEFT", headerFrame.title, "RIGHT", 8, 0)
+    headerFrame.itemCount:SetTextColor(0.6, 0.6, 0.6)
 
     -- Title and count stop short of the header icons (CUI_Bags:FitHeaderText),
     -- refitted whenever either text, the title's spot or the header width changes.
-    header.title:SetWordWrap(false)
-    header.title:SetJustifyH("LEFT")
-    header.itemCount:SetWordWrap(false)
-    header.itemCount:SetJustifyH("LEFT")
+    headerFrame.title:SetWordWrap(false)
+    headerFrame.title:SetJustifyH("LEFT")
+    headerFrame.itemCount:SetWordWrap(false)
+    headerFrame.itemCount:SetJustifyH("LEFT")
     if not forever then
         local function Fit()
             CUI_Bags:FitHeaderText()
         end
-        hooksecurefunc(header.title, "SetText", Fit)
-        hooksecurefunc(header.title, "SetPoint", Fit)
-        hooksecurefunc(header.itemCount, "SetText", Fit)
-        header:HookScript("OnSizeChanged", Fit)
-        header:HookScript("OnShow", Fit)
+        hooksecurefunc(headerFrame.title, "SetText", Fit)
+        hooksecurefunc(headerFrame.title, "SetPoint", Fit)
+        hooksecurefunc(headerFrame.itemCount, "SetText", Fit)
+        headerFrame:HookScript("OnSizeChanged", Fit)
+        headerFrame:HookScript("OnShow", Fit)
     end
 
-    local search = CreateFrame("EditBox", "CUI_BagSearchBox", header)
+    local search = CreateFrame("EditBox", "CUI_BagSearchBox", headerFrame)
     search:SetSize(160, 22)
     search:SetPoint("RIGHT", -35, 0)
     search:SetFont(GetFont(), 12, CUI.GetFontOutlineFlag("bags"))
@@ -153,7 +153,7 @@ local function CreateHeader()
     placeholder:SetTextColor(0.4, 0.4, 0.4)
     CUI_Bags._searchBox = search
 
-    local sort = CreateFrame("Button", nil, header)
+    local sort = CreateFrame("Button", nil, headerFrame)
     sort:SetSize(24, 24)
     sort:SetPoint("RIGHT", search, "LEFT", -13, 0)
     sort.icon = sort:CreateTexture(nil, "OVERLAY")
@@ -162,11 +162,11 @@ local function CreateHeader()
     sort.icon:SetAlpha(0.9)
 
     if forever then
-        header.bg:Hide()
-        ns.AddForeverBagPortrait(header, "Interface\\Icons\\Inv_misc_bag_08")
-        ns.SkinForeverBagTitle(header.title, header.itemCount)
+        headerFrame.bg:Hide()
+        mod.AddForeverBagPortrait(headerFrame, "Interface\\Icons\\Inv_misc_bag_08")
+        mod.SkinForeverBagTitle(headerFrame.title, headerFrame.itemCount)
         sort:ClearAllPoints()
-        sort:SetPoint("RIGHT", header, "TOPRIGHT", -9, header._foreverToolsY)
+        sort:SetPoint("RIGHT", headerFrame, "TOPRIGHT", -9, headerFrame._foreverToolsY)
     end
 
     sort:SetScript("OnEnter", function(self)
@@ -187,9 +187,9 @@ local function CreateHeader()
     -- The sort button is clickable only while no sort runs, and where it
     -- moves items only out of combat.
     local function ApplySortEnabled()
-        local on = not sortLocked and not (InCombatLockdown() and SortMovesItems())
-        sort:EnableMouse(on)
-        sort.icon:SetAlpha(on and 0.9 or 0.2)
+        local enabled = not sortLocked and not (InCombatLockdown() and SortMovesItems())
+        sort:EnableMouse(enabled)
+        sort.icon:SetAlpha(enabled and 0.9 or 0.2)
     end
     -- A view switch in combat re-runs it from the refresh (FinishRefresh).
     CUI_Bags._applySortEnabled = ApplySortEnabled
@@ -314,25 +314,25 @@ local function CreateHeader()
                 local stacks = {} -- itemID -> { {bag,slot,count}, ... }
                 -- A WoW Forever special bag's stacks merge only with each other
                 -- (a key of their own), so nothing leaves or enters the bag.
-                local special = ns.SpecialBags()
+                local special = mod.SpecialBags()
                 for bag = 0, 5 do
                     local numSlots = C_Container.GetContainerNumSlots(bag)
-                    for slot = 1, numSlots do
-                        local info = C_Container.GetContainerItemInfo(bag, slot)
-                        if info and info.itemID and info.stackCount then
-                            local maxStack = maxStackByID[info.itemID]
+                    for slotIndex = 1, numSlots do
+                        local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                        if details and details.itemID and details.stackCount then
+                            local maxStack = maxStackByID[details.itemID]
                             if not maxStack then
-                                maxStack = select(8, C_Item.GetItemInfo(info.itemID))
+                                maxStack = select(8, C_Item.GetItemInfo(details.itemID))
                                 -- Uncached item data: don't memo the fallback,
                                 -- a later pass can still resolve it.
                                 if maxStack then
-                                    maxStackByID[info.itemID] = maxStack
+                                    maxStackByID[details.itemID] = maxStack
                                 else
                                     maxStack = 1
                                 end
                             end
-                            if maxStack > 1 and info.stackCount < maxStack then
-                                local key = info.itemID
+                            if maxStack > 1 and details.stackCount < maxStack then
+                                local key = details.itemID
                                 if special and special[bag] then
                                     key = bag .. ":" .. key
                                 end
@@ -341,8 +341,8 @@ local function CreateHeader()
                                 end
                                 stacks[key][#stacks[key] + 1] = {
                                     bag = bag,
-                                    slot = slot,
-                                    count = info.stackCount,
+                                    slot = slotIndex,
+                                    count = details.stackCount,
                                 }
                             end
                         end
@@ -356,17 +356,17 @@ local function CreateHeader()
                 -- later pass, same as before.
                 local merged = false
                 for _, partials in pairs(stacks) do
-                    local n = #partials
-                    if n >= 2 then
+                    local num = #partials
+                    if num >= 2 then
                         table.sort(partials, ByCount)
-                        local lo, hi = 1, n
+                        local lo, hi = 1, num
                         while lo < hi do
-                            local source, target = partials[lo], partials[hi]
+                            local source, targetUnit = partials[lo], partials[hi]
                             local srcLoc = ItemLocation:CreateFromBagAndSlot(source.bag, source.slot)
-                            local dstLoc = ItemLocation:CreateFromBagAndSlot(target.bag, target.slot)
+                            local dstLoc = ItemLocation:CreateFromBagAndSlot(targetUnit.bag, targetUnit.slot)
                             if not C_Item.IsLocked(srcLoc) and not C_Item.IsLocked(dstLoc) then
                                 C_Container.PickupContainerItem(source.bag, source.slot)
-                                C_Container.PickupContainerItem(target.bag, target.slot)
+                                C_Container.PickupContainerItem(targetUnit.bag, targetUnit.slot)
                                 ClearCursor()
                                 merged = true
                             end
@@ -424,30 +424,30 @@ local function CreateHeader()
             end -- combat started: stop moving items
             bagMin = bagMin or 0
             bagMax = bagMax or 4
-            local total = 0
+            local sum = 0
             local sBag, sSlot, sKey, sID = {}, {}, {}, {}
 
-            local items = {}
+            local itemList = {}
             -- A WoW Forever special bag adds no slots: its items stay put and
             -- nothing is moved into it.
-            local special = ns.SpecialBags()
+            local special = mod.SpecialBags()
             for bag = bagMin, bagMax do
                 local numSlots = (special and special[bag]) and 0 or C_Container.GetContainerNumSlots(bag)
-                for slot = 1, numSlots do
-                    total = total + 1
-                    sBag[total] = bag
-                    sSlot[total] = slot
-                    local info = C_Container.GetContainerItemInfo(bag, slot)
-                    if info then
-                        local link = C_Container.GetContainerItemLink(bag, slot)
-                        local key = link .. "\0" .. (info.stackCount or 0)
-                        sKey[total] = key
-                        sID[total] = info.itemID
-                        items[#items + 1] = {
-                            pos = total,
+                for slotIndex = 1, numSlots do
+                    sum = sum + 1
+                    sBag[sum] = bag
+                    sSlot[sum] = slotIndex
+                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                    if details then
+                        local link = C_Container.GetContainerItemLink(bag, slotIndex)
+                        local key = link .. "\0" .. (details.stackCount or 0)
+                        sKey[sum] = key
+                        sID[sum] = details.itemID
+                        itemList[#itemList + 1] = {
+                            pos = sum,
                             bag = bag,
-                            slot = slot,
-                            info = info,
+                            slot = slotIndex,
+                            info = details,
                             itemLink = link,
                             key = key,
                         }
@@ -455,21 +455,21 @@ local function CreateHeader()
                 end
             end
 
-            if #items == 0 then
+            if #itemList == 0 then
                 return false
             end
 
-            CUI_CategoryManager:ClassifyAll(items)
+            CUI_CategoryManager:ClassifyAll(itemList)
             local cats = CUI_CategoryManager:GetCategories()
             local sectionOrder = {}
             local ord = 0
             local doneGroups = {}
-            for ci, cat in ipairs(cats) do
-                if cat.groupName then
-                    if not doneGroups[cat.groupName] then
-                        doneGroups[cat.groupName] = true
+            for ci, category in ipairs(cats) do
+                if category.groupName then
+                    if not doneGroups[category.groupName] then
+                        doneGroups[category.groupName] = true
                         ord = ord + 1
-                        local members = CUI_CategoryManager:GetGroupMembers(cat.groupName)
+                        local members = CUI_CategoryManager:GetGroupMembers(category.groupName)
                         if members then
                             for _, mi in ipairs(members) do
                                 sectionOrder[mi] = ord
@@ -482,11 +482,11 @@ local function CreateHeader()
                 end
             end
 
-            PreCacheSortFields(items)
-            for _, d in ipairs(items) do
+            PreCacheSortFields(itemList)
+            for _, d in ipairs(itemList) do
                 d._sectionOrder = sectionOrder[d.categoryIndex] or 9999
             end
-            table.sort(items, function(a, b)
+            table.sort(itemList, function(a, b)
                 if a._sectionOrder ~= b._sectionOrder then
                     return a._sectionOrder < b._sectionOrder
                 end
@@ -496,18 +496,18 @@ local function CreateHeader()
             -- Compute moves via selection sort on pre-computed data (zero API calls)
             local atPos = {}
             local whereIs = {}
-            for idx, d in ipairs(items) do
-                atPos[d.pos] = idx
-                whereIs[idx] = d.pos
+            for position, d in ipairs(itemList) do
+                atPos[d.pos] = position
+                whereIs[position] = d.pos
             end
 
             -- Sorted item i targets slot i; Sort to Bottom offsets so the block lands in the LAST
             -- #items slots (free slots float up either way). The walk must move toward the free slots
             -- (forward for top, backward for bottom), or a displaced item lands in an already-visited slot -- costing a retry per move, risking the 15-retry cap.
-            local offset, first, last, step = 0, 1, #items, 1
+            local offset, first, last, step = 0, 1, #itemList, 1
             if BP().bagSortToBottom then
-                offset = total - #items
-                first, last, step = #items, 1, -1
+                offset = sum - #itemList
+                first, last, step = #itemList, 1, -1
             end
 
             local moves = {}
@@ -614,8 +614,8 @@ local function CreateHeader()
         -- write is never heard, nor, past FinishSort's unregister, the
         -- release's) and before the first pass, which can finish the whole run
         -- at once.
-        sortCombatStop:SetScript("OnEvent", function(_, event, cvar)
-            if event == "CVAR_UPDATE" then
+        sortCombatStop:SetScript("OnEvent", function(_, evt, cvar)
+            if evt == "CVAR_UPDATE" then
                 if type(cvar) == "string" and cvar:lower() == "sound_enablesfx" then
                     tookOver = true
                     sortCombatStop:UnregisterEvent("CVAR_UPDATE")
@@ -643,11 +643,12 @@ local function CreateHeader()
         local tempItems = {}
         for bag = 0, 5 do
             local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slot = 1, numSlots do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info then
-                    local itemLink = C_Container.GetContainerItemLink(bag, slot)
-                    tempItems[#tempItems + 1] = { bag = bag, slot = slot, info = info, itemLink = itemLink }
+            for slotIndex = 1, numSlots do
+                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                if details then
+                    local itemLink = C_Container.GetContainerItemLink(bag, slotIndex)
+                    tempItems[#tempItems + 1] =
+                        { bag = bag, slot = slotIndex, info = details, itemLink = itemLink }
                 end
             end
         end
@@ -657,32 +658,32 @@ local function CreateHeader()
         for i = 1, #cats do
             itemsByCat[i] = {}
         end
-        for _, data in ipairs(tempItems) do
-            local ci = data.categoryIndex
+        for _, payload in ipairs(tempItems) do
+            local ci = payload.categoryIndex
             if ci and itemsByCat[ci] then
-                itemsByCat[ci][#itemsByCat[ci] + 1] = data
+                itemsByCat[ci][#itemsByCat[ci] + 1] = payload
             end
         end
 
         local sortedGroups = {}
         for ci = 1, #cats do
-            local cat = cats[ci]
-            if cat.groupName then
-                if not sortedGroups[cat.groupName] then
-                    sortedGroups[cat.groupName] = true
+            local category = cats[ci]
+            if category.groupName then
+                if not sortedGroups[category.groupName] then
+                    sortedGroups[category.groupName] = true
                     -- Merge all members, sort as one, save under group name
-                    local members = CUI_CategoryManager:GetGroupMembers(cat.groupName)
+                    local members = CUI_CategoryManager:GetGroupMembers(category.groupName)
                     local merged = {}
                     for _, mi in ipairs(members) do
-                        for _, data in ipairs(itemsByCat[mi] or {}) do
-                            merged[#merged + 1] = data
+                        for _, payload in ipairs(itemsByCat[mi] or {}) do
+                            merged[#merged + 1] = payload
                         end
                     end
                     if #merged > 1 then
                         PreCacheSortFields(merged)
                         table.sort(merged, VisualSortCompare)
                     end
-                    SaveCategoryOrder(cat.groupName, merged)
+                    SaveCategoryOrder(category.groupName, merged)
                     -- Also save per-member order for individual category views
                     for _, mi in ipairs(members) do
                         local memberItems = itemsByCat[mi]
@@ -693,7 +694,7 @@ local function CreateHeader()
                         SaveCategoryOrder(mi, memberItems or {})
                     end
                 end
-            elseif not cat.isRecent and not cat.isPinned then
+            elseif not category.isRecent and not category.isPinned then
                 local catItems = itemsByCat[ci]
                 if #catItems > 1 then
                     PreCacheSortFields(catItems)
@@ -788,7 +789,7 @@ local function CreateHeader()
     CUI_Bags._sortBtn = sort
     ApplySortEnabled() -- a /reload mid-combat builds the button locked
 
-    local bagsBtn = CreateFrame("Button", nil, header)
+    local bagsBtn = CreateFrame("Button", nil, headerFrame)
     bagsBtn:SetSize(24, 24)
     bagsBtn.icon = bagsBtn:CreateTexture(nil, "ARTWORK")
     bagsBtn.icon:SetAllPoints()
@@ -826,7 +827,7 @@ local function CreateHeader()
     clear.tex:SetPoint("CENTER", 0, 1)
     clear.tex:SetTextColor(0.8, 0.8, 0.8)
     if forever then
-        ns.SkinForeverBagSearch(search, search.bg, placeholder, clear)
+        mod.SkinForeverBagSearch(search, search.bg, placeholder, clear)
     end
     clear:Hide()
     clear:SetScript("OnClick", function()
@@ -845,13 +846,13 @@ local function CreateHeader()
     -- the search (CUI_Bags.SetSearchText), so both windows show the same filter.
     local searchChanged = CUI_Bags.WatchSearchBox(search, CUI_Bags.SetSearchText)
     search:SetScript("OnTextChanged", function(self, userInput)
-        local text = self:GetText()
-        placeholder:SetShown(text == "")
-        clear:SetShown(text ~= "")
+        local textValue = self:GetText()
+        placeholder:SetShown(textValue == "")
+        clear:SetShown(textValue ~= "")
         searchChanged(userInput)
     end)
 
-    local close = CreateFrame("Button", nil, header)
+    local close = CreateFrame("Button", nil, headerFrame)
     close:SetSize(12, 12)
     close:SetPoint("RIGHT", -9, 0)
     close.icon = close:CreateTexture(nil, "OVERLAY")
@@ -865,7 +866,7 @@ local function CreateHeader()
         close.icon:SetAlpha(0.7)
     end)
     if forever then
-        ns.PositionForeverBagClose(close)
+        mod.PositionForeverBagClose(close)
     end
     close:SetScript("OnClick", function()
         CUI_Bags:Hide()
@@ -876,7 +877,7 @@ local function CreateHeader()
         CludesUIDB.bagsVisible = false
         -- Controller cursor: keep Blizzard's hidden bag frames closed too.
         if CUI.PadInUse() then
-            ns.PadReleaseBlizzBags()
+            mod.PadReleaseBlizzBags()
         end
     end)
     CUI_Bags._closeBtn = close -- Junk Marker mode lets a click on it through
@@ -888,18 +889,18 @@ local function CreateHeader()
 
     -- Bottom-edge separator (1px physical pixel)
     if not forever then
-        local PP = CUI and CUI.PP
-        local px = (PP and PP.mult) or 1
-        local hdrSep = header:CreateTexture(nil, "ARTWORK")
+        local Pix = CUI and CUI.PP
+        local px = (Pix and Pix.mult) or 1
+        local hdrSep = headerFrame:CreateTexture(nil, "ARTWORK")
         hdrSep:SetHeight(px)
-        hdrSep:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
-        hdrSep:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
+        hdrSep:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
+        hdrSep:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
         hdrSep:SetColorTexture(0.15, 0.15, 0.15, 1)
     end
 
-    CUI_Bags.Header = header
+    CUI_Bags.Header = headerFrame
     CUI_Bags._bagsBtn = bagsBtn
 end
 
-I.CreateHeader = CreateHeader
-I.broken = false
+Inner.CreateHeader = CreateHeader
+Inner.broken = false

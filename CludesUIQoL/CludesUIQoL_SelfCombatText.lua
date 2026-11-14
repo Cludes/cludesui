@@ -19,7 +19,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- element (CUI_SelfCombatText): unlock mode applies saved positions and
 -- anchor links; with nothing saved it sits above the player frame.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
 -- WoW Forever: no number under 10,000 abbreviates (CludesUI_NumberFormat.lua)
 local AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
@@ -86,31 +86,31 @@ local avoidLabel = {}
 -- Fountain arc: quarter circle of radius 1, x toward the side, y along the scroll
 local ARC = { { 0.134, 0.5 }, { 0.5, 0.866 }, { 1, 1 } }
 
-local anchor, ev, db
+local anchorFrame, ev, saved
 local pool = {}
 local nextIdx = 0
 local enabled = false
 local xDir = 1
 -- Settings as the message path reads them, refilled by Refresh. fontVer tells
 -- a pooled string its font is stale.
-local S = { fontVer = 0 }
+local Stl = { fontVer = 0 }
 
 -- The QoL profile (the shared CludesUIQoLDB; no defaults are merged in:
 -- Get falls back to DEFAULTS).
 local function Profile()
-    if not db then
-        db = CludesUI.Lite.NewDB("CludesUIQoLDB")
+    if not saved then
+        saved = CludesUI.Lite.NewDB("CludesUIQoLDB")
     end
-    return db.profile
+    return saved.profile
 end
 
 local function Get(k)
     local t = Profile().selfCombatText
-    local v = t and t[k]
-    if v == nil then
+    local val = t and t[k]
+    if val == nil then
         return DEFAULTS[k]
     end
-    return v
+    return val
 end
 
 local function Settings()
@@ -132,148 +132,151 @@ end
 local function ReadSettings()
     local key = Get("font")
     if key == "__global" then
-        S.font = CludesUI.GetFontPath("extras")
+        Stl.font = CludesUI.GetFontPath("extras")
     elseif key ~= "__combat" then
-        S.font = CludesUI.ResolveFontName(key)
+        Stl.font = CludesUI.ResolveFontName(key)
     else
         local f = _G.CombatTextFont
-        S.font = f and f:GetFont() or STANDARD_TEXT_FONT
+        Stl.font = f and f:GetFont() or STANDARD_TEXT_FONT
     end
     local outline = Get("outline")
-    S.flags = (outline == "OUTLINE" and CludesUI.SlugFlag("OUTLINE, SLUG"))
+    Stl.flags = (outline == "OUTLINE" and CludesUI.SlugFlag("OUTLINE, SLUG"))
         or (outline == "THICKOUTLINE" and CludesUI.SlugFlag("THICKOUTLINE, SLUG"))
         or ""
-    S.shadow = Get("shadow") == true
-    S.size = Get("size")
-    S.critSize = S.size * Get("critScale")
-    S.fontVer = S.fontVer + 1
-    S.anim, S.rise, S.duration = Get("anim"), Get("rise"), Get("duration")
-    S.dy = Get("direction") == "down" and -S.rise or S.rise
-    S.stagger, S.abbreviate = Get("stagger"), Get("abbreviate")
-    S.damage, S.heal, S.avoid, S.combat = Get("damage"), Get("heal"), Get("avoid"), Get("combat")
-    S.damageColor, S.healColor = Get("damageColor"), Get("healColor")
-    S.avoidColor, S.combatColor = Get("avoidColor"), Get("combatColor")
+    Stl.shadow = Get("shadow") == true
+    Stl.size = Get("size")
+    Stl.critSize = Stl.size * Get("critScale")
+    Stl.fontVer = Stl.fontVer + 1
+    Stl.anim, Stl.rise, Stl.duration = Get("anim"), Get("rise"), Get("duration")
+    Stl.dy = Get("direction") == "down" and -Stl.rise or Stl.rise
+    Stl.stagger, Stl.abbreviate = Get("stagger"), Get("abbreviate")
+    Stl.damage, Stl.heal, Stl.avoid, Stl.combat = Get("damage"), Get("heal"), Get("avoid"), Get("combat")
+    Stl.damageColor, Stl.healColor = Get("damageColor"), Get("healColor")
+    Stl.avoidColor, Stl.combatColor = Get("avoidColor"), Get("combatColor")
 end
 
 -------------------------------------------------------------------------------
 --  Position (unlock mode owns it once saved)
 -------------------------------------------------------------------------------
 local function ApplyPos()
-    if not anchor then
+    if not anchorFrame then
         return
     end
-    local pos = Get("pos")
-    anchor:ClearAllPoints()
-    if pos then
-        anchor:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+    local place = Get("pos")
+    anchorFrame:ClearAllPoints()
+    if place then
+        anchorFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x, place.y)
         return
     end
-    local pf = _G.CludesUIUnitFrames_Player
-    if pf then
-        anchor:SetPoint("BOTTOM", pf, "TOP", 0, 10)
+    local popFrame = _G.CludesUIUnitFrames_Player
+    if popFrame then
+        anchorFrame:SetPoint("BOTTOM", popFrame, "TOP", 0, 10)
     else
-        anchor:SetPoint("BOTTOM", UIParent, "CENTER", 0, -140)
+        anchorFrame:SetPoint("BOTTOM", UIParent, "CENTER", 0, -140)
     end
 end
 
 local function RegisterMover()
-    CludesUI:RegisterUnlockElements(
-        {
-            CludesUI.MakeUnlockElement({
-                key = UNLOCK_KEY,
-                label = "Self Combat Text",
-                group = "Utilities",
-                order = 730,
-                noResize = true,
-                isHidden = function()
-                    return not Enabled()
-                end,
-                getFrame = function()
-                    return enabled and anchor or nil
-                end,
-                getSize = function()
-                    return BOX_W, BOX_H
-                end,
-                savePos = function(_, point, relPoint, x, y)
-                    if not point then
-                        return
-                    end
-                    Settings().pos = { point = point, relPoint = relPoint or point, x = x, y = y }
-                    if not CludesUI._unlockActive then
-                        ApplyPos()
-                    end
-                end,
-                loadPos = function()
-                    local pos = Get("pos")
-                    if not pos then
-                        return nil
-                    end
-                    return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
-                end,
-                clearPos = function()
-                    local t = Profile().selfCombatText
-                    if t then
-                        t.pos = nil
-                    end
+    CludesUI:RegisterUnlockElements({
+        CludesUI.MakeUnlockElement({
+            key = UNLOCK_KEY,
+            label = "Self Combat Text",
+            group = "Utilities",
+            order = 730,
+            noResize = true,
+            isHidden = function()
+                return not Enabled()
+            end,
+            getFrame = function()
+                return enabled and anchorFrame or nil
+            end,
+            getSize = function()
+                return BOX_W, BOX_H
+            end,
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                if not anchorPoint then
+                    return
+                end
+                Settings().pos =
+                    { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+                if not CludesUI._unlockActive then
                     ApplyPos()
-                end,
-                applyPos = ApplyPos,
-            }),
-        },
-        "CludesUIQoL"
-    )
+                end
+            end,
+            loadPos = function()
+                local place = Get("pos")
+                if not place then
+                    return nil
+                end
+                return {
+                    point = place.point,
+                    relPoint = place.relPoint or place.point,
+                    x = place.x,
+                    y = place.y,
+                }
+            end,
+            clearPos = function()
+                local t = Profile().selfCombatText
+                if t then
+                    t.pos = nil
+                end
+                ApplyPos()
+            end,
+            applyPos = ApplyPos,
+        }),
+    }, "CludesUIQoL")
 end
 
 -------------------------------------------------------------------------------
 --  Message pool
 -------------------------------------------------------------------------------
 local function ApplyAnim()
-    local dur, mode = S.duration, S.anim
-    for i = 1, POOL_SIZE do
-        local fs = pool[i]
-        fs.mv:SetOffset(0, mode == "straight" and S.dy or 0)
-        fs.mv:SetDuration(dur)
-        fs.path:SetDuration(dur)
-        if mode ~= "fountain" then
-            for j = 1, #ARC do
-                fs.cps[j]:SetOffset(0, 0)
+    local dur, modeName = Stl.duration, Stl.anim
+    for idx = 1, POOL_SIZE do
+        local fontStr = pool[idx]
+        fontStr.mv:SetOffset(0, modeName == "straight" and Stl.dy or 0)
+        fontStr.mv:SetDuration(dur)
+        fontStr.path:SetDuration(dur)
+        if modeName ~= "fountain" then
+            for jdx = 1, #ARC do
+                fontStr.cps[jdx]:SetOffset(0, 0)
             end
         end
-        fs.fade:SetStartDelay(dur * (1 - FADE_FRAC))
-        fs.fade:SetDuration(dur * FADE_FRAC)
+        fontStr.fade:SetStartDelay(dur * (1 - FADE_FRAC))
+        fontStr.fade:SetDuration(dur * FADE_FRAC)
     end
 end
 
 local function Build()
-    anchor = CreateFrame("Frame", nil, UIParent)
-    anchor:SetSize(BOX_W, BOX_H)
-    anchor:SetFrameStrata("HIGH")
-    for i = 1, POOL_SIZE do
-        local fs = anchor:CreateFontString(nil, "OVERLAY")
-        fs:Hide()
-        local ag = fs:CreateAnimationGroup()
-        fs.mv = ag:CreateAnimation("Translation")
-        fs.path = ag:CreateAnimation("Path")
-        fs.path:SetCurveType("SMOOTH")
-        fs.cps = {}
-        for j = 1, #ARC do
-            fs.cps[j] = fs.path:CreateControlPoint(nil, nil, j)
+    anchorFrame = CreateFrame("Frame", nil, UIParent)
+    anchorFrame:SetSize(BOX_W, BOX_H)
+    anchorFrame:SetFrameStrata("HIGH")
+    for idx = 1, POOL_SIZE do
+        local fontStr = anchorFrame:CreateFontString(nil, "OVERLAY")
+        fontStr:Hide()
+        local ag = fontStr:CreateAnimationGroup()
+        fontStr.mv = ag:CreateAnimation("Translation")
+        fontStr.path = ag:CreateAnimation("Path")
+        fontStr.path:SetCurveType("SMOOTH")
+        fontStr.cps = {}
+        for jdx = 1, #ARC do
+            fontStr.cps[jdx] = fontStr.path:CreateControlPoint(nil, nil, jdx)
         end
-        fs.fade = ag:CreateAnimation("Alpha")
-        fs.fade:SetFromAlpha(1)
-        fs.fade:SetToAlpha(0)
+        fontStr.fade = ag:CreateAnimation("Alpha")
+        fontStr.fade:SetFromAlpha(1)
+        fontStr.fade:SetToAlpha(0)
         ag:SetScript("OnFinished", function()
-            fs:Hide()
-            fs.live = nil
+            fontStr:Hide()
+            fontStr.live = nil
         end)
-        fs.ag = ag
-        pool[i] = fs
+        fontStr.ag = ag
+        pool[idx] = fontStr
     end
     -- The plain and SPELL_ forms of an avoid share Blizzard's label.
-    for i = 1, #AVOID do
-        local t = AVOID[i]
-        local label = _G["COMBAT_TEXT_" .. t]
-        avoidLabel[t], avoidLabel["SPELL_" .. t] = label, label
+    for idx = 1, #AVOID do
+        local t = AVOID[idx]
+        local labelText = _G["COMBAT_TEXT_" .. t]
+        avoidLabel[t], avoidLabel["SPELL_" .. t] = labelText, labelText
     end
     ev = CreateFrame("Frame")
     ApplyPos()
@@ -283,25 +286,25 @@ end
 -- How far along its scroll a message is at `now`, as a fraction of the
 -- distance: linear for Straight, the arc's height for Fountain (its control
 -- points are evenly spaced in time), none for Static.
-local function Travel(m, now)
-    local mode = S.anim
-    if mode == "static" then
+local function Travel(m, nowTime)
+    local modeName = Stl.anim
+    if modeName == "static" then
         return 0
     end
-    local f = (now - m.t0) / S.duration
+    local f = (nowTime - m.t0) / Stl.duration
     if f > 1 then
         f = 1
     end
-    if mode ~= "fountain" then
+    if modeName ~= "fountain" then
         return f
     end
     local seg = f * #ARC
-    local i = math.floor(seg)
-    if i >= #ARC then
+    local idx = math.floor(seg)
+    if idx >= #ARC then
         return ARC[#ARC][2]
     end
-    local from = i > 0 and ARC[i][2] or 0
-    return from + (ARC[i + 1][2] - from) * (seg - i)
+    local from = idx > 0 and ARC[idx][2] or 0
+    return from + (ARC[idx + 1][2] - from) * (seg - idx)
 end
 
 -- Stagger Hits: before a message of line height h starts at the anchor, push
@@ -309,14 +312,14 @@ end
 -- along the scroll until the one nearest the anchor sits clear of it. They all
 -- move together, so the spacing holds, and the newest always starts at the
 -- anchor; Static stacks the same way.
-local function ClearLane(lane, h)
-    local now, dur, dy = GetTime(), S.duration, S.dy
+local function ClearLane(lane, hgt)
+    local nowTime, dur, dy = GetTime(), Stl.duration, Stl.dy
     local s = dy < 0 and -1 or 1
     local near, nearD
-    for i = 1, POOL_SIZE do
-        local m = pool[i]
-        if m.live and m.lane == lane and now - m.t0 < dur then
-            local d = s * (m.y0 + dy * Travel(m, now))
+    for idx = 1, POOL_SIZE do
+        local m = pool[idx]
+        if m.live and m.lane == lane and nowTime - m.t0 < dur then
+            local d = s * (m.y0 + dy * Travel(m, nowTime))
             if not nearD or d < nearD then
                 near, nearD = m, d
             end
@@ -327,16 +330,16 @@ local function ClearLane(lane, h)
     end
     -- Scrolling up, the new message's top must clear the nearest one's bottom;
     -- scrolling down, the nearest one's top must clear the anchor.
-    local need = (s > 0 and h or near.h) + LINE_GAP - nearD
+    local need = (s > 0 and hgt or near.h) + LINE_GAP - nearD
     if need <= 0 then
         return
     end
     local shift = s * need
-    for i = 1, POOL_SIZE do
-        local m = pool[i]
-        if m.live and m.lane == lane and now - m.t0 < dur then
+    for idx = 1, POOL_SIZE do
+        local m = pool[idx]
+        if m.live and m.lane == lane and nowTime - m.t0 < dur then
             m.y0 = m.y0 + shift
-            m:SetPoint("BOTTOM", anchor, "BOTTOM", 0, m.y0)
+            m:SetPoint("BOTTOM", anchorFrame, "BOTTOM", 0, m.y0)
         end
     end
 end
@@ -344,87 +347,87 @@ end
 -- Round-robin pool: a burst past POOL_SIZE restarts the oldest message.
 local function Emit(fmt, value, c, crit)
     nextIdx = nextIdx % POOL_SIZE + 1
-    local fs = pool[nextIdx]
-    fs.ag:Stop()
-    fs.live = nil
+    local fontStr = pool[nextIdx]
+    fontStr.ag:Stop()
+    fontStr.live = nil
     local lane = 0
-    if S.anim == "fountain" then
+    if Stl.anim == "fountain" then
         -- Alternate sides, like Blizzard's fountain
         xDir = -xDir
         lane = xDir
-        local rise, sy = S.rise, S.dy
-        for j = 1, #ARC do
-            fs.cps[j]:SetOffset(xDir * ARC[j][1] * rise, ARC[j][2] * sy)
+        local rise, sy = Stl.rise, Stl.dy
+        for jdx = 1, #ARC do
+            fontStr.cps[jdx]:SetOffset(xDir * ARC[jdx][1] * rise, ARC[jdx][2] * sy)
         end
     end
-    local h = (crit and S.critSize or S.size) * LINE_H
-    if S.stagger then
-        ClearLane(lane, h)
+    local hgt = (crit and Stl.critSize or Stl.size) * LINE_H
+    if Stl.stagger then
+        ClearLane(lane, hgt)
     end
-    fs.t0, fs.y0, fs.h, fs.lane, fs.live = GetTime(), 0, h, lane, true
-    fs:ClearAllPoints()
-    fs:SetPoint("BOTTOM", anchor, "BOTTOM", 0, 0)
+    fontStr.t0, fontStr.y0, fontStr.h, fontStr.lane, fontStr.live = GetTime(), 0, hgt, lane, true
+    fontStr:ClearAllPoints()
+    fontStr:SetPoint("BOTTOM", anchorFrame, "BOTTOM", 0, 0)
     -- A pooled string's font changes only with the settings or between a hit
     -- and a crit.
-    local kind = crit and 2 or 1
-    if fs.fontVer ~= S.fontVer or fs.fontKind ~= kind then
-        fs.fontVer, fs.fontKind = S.fontVer, kind
-        CludesUI.PrimeFontShadow(fs, S.shadow)
-        fs:SetFont(S.font, crit and S.critSize or S.size, S.flags)
+    local kindOf = crit and 2 or 1
+    if fontStr.fontVer ~= Stl.fontVer or fontStr.fontKind ~= kindOf then
+        fontStr.fontVer, fontStr.fontKind = Stl.fontVer, kindOf
+        CludesUI.PrimeFontShadow(fontStr, Stl.shadow)
+        fontStr:SetFont(Stl.font, crit and Stl.critSize or Stl.size, Stl.flags)
     end
-    fs:SetTextColor(c.r, c.g, c.b)
-    fs:SetFormattedText(fmt, value)
-    fs:SetAlpha(1)
-    fs:Show()
-    fs.ag:Play()
+    fontStr:SetTextColor(c.r, c.g, c.b)
+    fontStr:SetFormattedText(fmt, value)
+    fontStr:SetAlpha(1)
+    fontStr:Show()
+    fontStr.ag:Play()
 end
 
 -- Both formatters are C-side and accept secret numbers
-local function FormatAmount(n)
-    if S.abbreviate then
-        return AbbreviateNumbers(n)
+local function FormatAmount(num)
+    if Stl.abbreviate then
+        return AbbreviateNumbers(num)
     end
-    return BreakUpLargeNumbers(n)
+    return BreakUpLargeNumbers(num)
 end
 
 local function SetUnit()
     C_CombatText.SetActiveUnit(UnitHasVehicleUI("player") and "vehicle" or "player")
 end
 
-local function OnEvent(_, event, arg1, arg2)
-    if event == "COMBAT_TEXT_UPDATE" then
+local function OnEvent(_, evt, arg1, arg2)
+    if evt == "COMBAT_TEXT_UPDATE" then
         -- data = amount (damage) or source name (heals); arg3 = heal amount
         local crit = DAMAGE[arg1]
         if crit ~= nil then
-            if not S.damage then
+            if not Stl.damage then
                 return
             end
-            local data = C_CombatText.GetCurrentEventInfo()
-            Emit("-%s", FormatAmount(data), S.damageColor, crit)
+            local payload = C_CombatText.GetCurrentEventInfo()
+            Emit("-%s", FormatAmount(payload), Stl.damageColor, crit)
             return
         end
         crit = HEAL[arg1]
         if crit ~= nil then
-            if not S.heal then
+            if not Stl.heal then
                 return
             end
             local _, arg3 = C_CombatText.GetCurrentEventInfo()
-            Emit("+%s", FormatAmount(arg3), S.healColor, crit)
+            Emit("+%s", FormatAmount(arg3), Stl.healColor, crit)
             return
         end
-        local label = S.avoid and avoidLabel[arg1]
-        if label then
-            Emit("%s", label, S.avoidColor, false)
+        local labelText = Stl.avoid and avoidLabel[arg1]
+        if labelText then
+            Emit("%s", labelText, Stl.avoidColor, false)
         end
-    elseif event == "PLAYER_REGEN_DISABLED" then
-        Emit("%s", _G.ENTERING_COMBAT or "+Combat", S.combatColor, false)
-    elseif event == "PLAYER_REGEN_ENABLED" then
-        Emit("%s", _G.LEAVING_COMBAT or "-Combat", S.combatColor, false)
-    elseif event == "UNIT_ENTERED_VEHICLE" then
+    elseif evt == "PLAYER_REGEN_DISABLED" then
+        Emit("%s", _G.ENTERING_COMBAT or "+Combat", Stl.combatColor, false)
+    elseif evt == "PLAYER_REGEN_ENABLED" then
+        Emit("%s", _G.LEAVING_COMBAT or "-Combat", Stl.combatColor, false)
+    elseif evt == "UNIT_ENTERED_VEHICLE" then
         C_CombatText.SetActiveUnit(arg2 and "vehicle" or "player")
-    elseif event == "UNIT_EXITING_VEHICLE" then
+    elseif evt == "UNIT_EXITING_VEHICLE" then
         C_CombatText.SetActiveUnit("player")
-    elseif event == "ADDON_LOADED" then
+    elseif evt == "ADDON_LOADED" then
         if arg1 == "Blizzard_CombatText" and _G.CombatText then
             _G.CombatText:Hide()
             ev:UnregisterEvent("ADDON_LOADED")
@@ -434,7 +437,7 @@ end
 
 -- Registers only the events the enabled categories need.
 local function UpdateEvents()
-    if S.damage or S.heal or S.avoid then
+    if Stl.damage or Stl.heal or Stl.avoid then
         ev:RegisterEvent("COMBAT_TEXT_UPDATE")
         ev:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
         ev:RegisterUnitEvent("UNIT_EXITING_VEHICLE", "player")
@@ -443,7 +446,7 @@ local function UpdateEvents()
         ev:UnregisterEvent("UNIT_ENTERED_VEHICLE")
         ev:UnregisterEvent("UNIT_EXITING_VEHICLE")
     end
-    if S.combat then
+    if Stl.combat then
         ev:RegisterEvent("PLAYER_REGEN_DISABLED")
         ev:RegisterEvent("PLAYER_REGEN_ENABLED")
     else
@@ -453,23 +456,23 @@ local function UpdateEvents()
 end
 
 local function Refresh()
-    local want = Enabled()
-    if want == enabled then
-        if want then
+    local wanted = Enabled()
+    if wanted == enabled then
+        if wanted then
             ReadSettings()
             ApplyAnim()
             UpdateEvents()
         end
         return
     end
-    enabled = want
-    if want then
-        if not anchor then
+    enabled = wanted
+    if wanted then
+        if not anchorFrame then
             Build()
         end
         ReadSettings()
         ApplyAnim()
-        anchor:Show()
+        anchorFrame:Show()
         ev:SetScript("OnEvent", OnEvent)
         UpdateEvents()
         SetUnit()
@@ -480,24 +483,24 @@ local function Refresh()
         end
     else
         ev:UnregisterAllEvents()
-        anchor:Hide()
+        anchorFrame:Hide()
         if _G.CombatText then
             _G.CombatText:Show()
         end
     end
 end
 
-ns.SCT_Refresh = Refresh
-ns.SCT_Get = Get
+mod.SCT_Refresh = Refresh
+mod.SCT_Get = Get
 CludesUI._applySelfCombatText = Refresh -- RefreshAllAddons (profile swaps)
 
-function ns.SCT_Set(k, v)
-    Settings()[k] = v
+function mod.SCT_Set(k, val)
+    Settings()[k] = val
     Refresh()
 end
 
 -- QoL page reset: every setting back to its default, the anchor link dropped.
-function ns.SCT_Reset()
+function mod.SCT_Reset()
     Profile().selfCombatText = nil
     if CludesUIDB.unlockAnchors then
         CludesUIDB.unlockAnchors[UNLOCK_KEY] = nil

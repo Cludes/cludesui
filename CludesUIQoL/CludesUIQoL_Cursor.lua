@@ -66,14 +66,14 @@ end
 --  cursor modules (Circle, GCD, Cast). Mutually exclusive: useAccentColor
 --  wins over useClassColor which wins over the stored hex.
 -------------------------------------------------------------------------------
-local function ResolveColor(cfg)
-    if not cfg then
+local function ResolveColor(conf)
+    if not conf then
         return 1, 1, 1
     end
-    if cfg.useAccentColor and CludesUI.GetAccentColor then
+    if conf.useAccentColor and CludesUI.GetAccentColor then
         return CludesUI.GetAccentColor()
     end
-    if cfg.useClassColor then
+    if conf.useClassColor then
         local _, engClass = UnitClass("player")
         local cc = engClass
             and (CludesUI.GetRawClassColor(engClass) or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[engClass]))
@@ -81,7 +81,7 @@ local function ResolveColor(cfg)
             return cc.r, cc.g, cc.b
         end
     end
-    return ParseHex(cfg.hex or DEF_HEX)
+    return ParseHex(conf.hex or DEF_HEX)
 end
 
 local function InRealInstancedContent()
@@ -104,17 +104,17 @@ local UpdateVisibility
 local lastUseClassColor
 
 local function CursorSize(p)
-    local size = floor((p.baseSize or DEF_BASESIZE) * (p.scale or DEF_SCALE) + 0.5)
-    if size < 8 then
+    local dim = floor((p.baseSize or DEF_BASESIZE) * (p.scale or DEF_SCALE) + 0.5)
+    if dim < 8 then
         return 8
     end
-    if size > 512 then
+    if dim > 512 then
         return 512
     end
-    return size
+    return dim
 end
 
-local function ApplyReticle(p, size, r, g, b, a)
+local function ApplyReticle(p, dim, r, g, b, a)
     if not reticle then
         return
     end
@@ -123,7 +123,7 @@ local function ApplyReticle(p, size, r, g, b, a)
         return
     end
     -- ~20% of the ring so the mask has enough pixels to stay circular.
-    local dot = max(4, floor(size * 0.2 + 0.5))
+    local dot = max(4, floor(dim * 0.2 + 0.5))
     reticle:SetSize(dot, dot)
     reticle:SetColorTexture(r, g, b, a)
     reticle:Show()
@@ -136,10 +136,10 @@ local function Apply()
     local p = ECL.db.profile
 
     local scale = p.scale or DEF_SCALE
-    local size = CursorSize(p)
+    local dim = CursorSize(p)
     if scale ~= lastScale then
         lastScale = scale
-        f:SetSize(size, size)
+        f:SetSize(dim, dim)
     end
 
     local hex = p.hex or DEF_HEX
@@ -162,8 +162,8 @@ local function Apply()
         lastTex = tex
         -- Map dropdown keys (ring_thin, etc.) to RING_TEXTURES keys (thin, etc.)
         local ringKey = tex:match("^ring_(.+)$")
-        local path = (ringKey and RING_TEXTURES[ringKey]) or RING_TEXTURES[tex] or TEX_CUSTOM
-        t:SetTexture(path)
+        local filePath = (ringKey and RING_TEXTURES[ringKey]) or RING_TEXTURES[tex] or TEX_CUSTOM
+        t:SetTexture(filePath)
     end
 
     -- Reticle is cheap and Apply() only runs on setting changes, so always
@@ -171,7 +171,7 @@ local function Apply()
     if not r then
         r, g, b = ResolveColor(p)
     end
-    ApplyReticle(p, size, r, g, b, a)
+    ApplyReticle(p, dim, r, g, b, a)
 
     UpdateVisibility()
 end
@@ -201,12 +201,12 @@ local function InitTrailDotPool()
         trailContainer:SetFrameLevel(9998)
         trailContainer:EnableMouse(false)
     end
-    for i = 1, TRAIL_POOL_SIZE do
+    for idx = 1, TRAIL_POOL_SIZE do
         local dot = trailContainer:CreateTexture(nil, "ARTWORK")
         dot:SetTexture("Interface\\AddOns\\CludesUIQoL\\Media\\ring_normal.tga")
         dot:SetBlendMode("ADD")
         dot:Hide()
-        trailDots[i] = dot
+        trailDots[idx] = dot
     end
 end
 
@@ -230,23 +230,23 @@ local function SpawnTrailDot(cx, cy)
     dot:SetPoint("CENTER", trailContainer, "BOTTOMLEFT", cx / s, cy / s)
     dot:SetAlpha(1)
     dot:Show()
-    local entry = table.remove(trailEntryPool) or {}
-    entry.tex = dot
-    entry.life = TRAIL_DOT_DURATION
-    entry.maxLife = TRAIL_DOT_DURATION
-    trailActive[#trailActive + 1] = entry
+    local record = table.remove(trailEntryPool) or {}
+    record.tex = dot
+    record.life = TRAIL_DOT_DURATION
+    record.maxLife = TRAIL_DOT_DURATION
+    trailActive[#trailActive + 1] = record
 end
 
 local function UpdateTrailDots(elapsed)
-    for i = #trailActive, 1, -1 do
-        local e = trailActive[i]
+    for idx = #trailActive, 1, -1 do
+        local e = trailActive[idx]
         e.life = e.life - elapsed
         if e.life <= 0 then
             e.tex:Hide()
             trailDots[#trailDots + 1] = e.tex
             e.tex = nil
             trailEntryPool[#trailEntryPool + 1] = e
-            trailActive[i] = trailActive[#trailActive]
+            trailActive[idx] = trailActive[#trailActive]
             trailActive[#trailActive] = nil
         else
             local pct = e.life / e.maxLife
@@ -258,13 +258,13 @@ local function UpdateTrailDots(elapsed)
 end
 
 local function HideTrailDots()
-    for i = #trailActive, 1, -1 do
-        local e = trailActive[i]
+    for idx = #trailActive, 1, -1 do
+        local e = trailActive[idx]
         e.tex:Hide()
         trailDots[#trailDots + 1] = e.tex
         e.tex = nil
         trailEntryPool[#trailEntryPool + 1] = e
-        trailActive[i] = nil
+        trailActive[idx] = nil
     end
 end
 
@@ -325,10 +325,10 @@ end
 -- edges), preserving the old hidden-frame-stops-OnUpdate behavior.
 local function CursorGlueBody(rawX, rawY)
     local s = UIParent:GetEffectiveScale()
-    local x, y = floor(rawX / s + 0.5), floor(rawY / s + 0.5)
-    if x ~= lastX or y ~= lastY then
-        lastX, lastY = x, y
-        f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+    local posX, posY = floor(rawX / s + 0.5), floor(rawY / s + 0.5)
+    if posX ~= lastX or posY ~= lastY then
+        lastX, lastY = posX, posY
+        f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX, posY)
     end
 end
 local function SetCursorGlue(on)
@@ -363,11 +363,11 @@ end
 --- @param b number  blue
 --- @param a number  alpha
 --- @return Frame  the ring frame with :StartRing / :StopRing / :SetRingColor / :SetRingTexture
-local function CreateRing(parent, radius, ringTex, r, g, b, a)
-    local ring = CreateFrame("Frame", nil, parent)
+local function CreateRing(hostFrame, radius, ringTex, r, g, b, a)
+    local ring = CreateFrame("Frame", nil, hostFrame)
     ring:SetSize(radius * 2, radius * 2)
-    ring:SetPoint("CENTER", parent, "CENTER", 0, 0)
-    ring:SetFrameLevel(parent:GetFrameLevel() + 1)
+    ring:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
+    ring:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
 
     ring.radius = radius
     ring.dur = 0
@@ -416,8 +416,8 @@ local function CreateRing(parent, radius, ringTex, r, g, b, a)
         self.dur = max(elapsed, 0)
         self.maxDur = maxDur
         self._fg:Hide()
-        local now = GetTime()
-        self._cd:SetCooldown(now - elapsed, maxDur)
+        local nowTime = GetTime()
+        self._cd:SetCooldown(nowTime - elapsed, maxDur)
         self._cd:Show()
         self:Show()
     end
@@ -517,8 +517,8 @@ local function CreateGCDCircle()
     gcdRoot:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
     gcdRoot:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
     gcdRoot:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
-    gcdRoot:SetScript("OnEvent", function(self, event, unit, _, spellID)
-        if unit ~= "player" then
+    gcdRoot:SetScript("OnEvent", function(self, evt, unitToken, _, spellId)
+        if unitToken ~= "player" then
             return
         end
         local g2 = GCD_DB()
@@ -533,9 +533,9 @@ local function CreateGCDCircle()
         end
         -- On cancelled/failed/interrupted casts the GCD resets stop the ring
         if
-            event == "UNIT_SPELLCAST_FAILED"
-            or event == "UNIT_SPELLCAST_INTERRUPTED"
-            or event == "UNIT_SPELLCAST_STOP"
+            evt == "UNIT_SPELLCAST_FAILED"
+            or evt == "UNIT_SPELLCAST_INTERRUPTED"
+            or evt == "UNIT_SPELLCAST_STOP"
         then
             local cdData = GetSpellCooldown(GCD_SPELL)
             local stillActive = false
@@ -669,18 +669,18 @@ UpdateVisibility = function()
     end
     -- Standard visibility mode (mouseover treated as always for cursor)
     if shouldShow then
-        local mode = p.visibility or "always"
-        if mode == "never" then
+        local modeName = p.visibility or "always"
+        if modeName == "never" then
             shouldShow = false
-        elseif mode == "in_combat" then
+        elseif modeName == "in_combat" then
             shouldShow = _G._CUBS_InCombat and _G._CUBS_InCombat() or false
-        elseif mode == "out_of_combat" then
+        elseif modeName == "out_of_combat" then
             shouldShow = not (_G._CUBS_InCombat and _G._CUBS_InCombat())
-        elseif mode == "in_raid" then
+        elseif modeName == "in_raid" then
             shouldShow = IsInRaid()
-        elseif mode == "in_party" then
+        elseif modeName == "in_party" then
             shouldShow = IsInGroup() and not IsInRaid()
-        elseif mode == "solo" then
+        elseif modeName == "solo" then
             shouldShow = not IsInGroup()
             -- "always" and "mouseover" both show (cursor is always at mouse)
         end
@@ -986,8 +986,8 @@ local function CreateCastCircle()
 
     castRoot._castID = nil
 
-    castRoot:SetScript("OnEvent", function(self, event, unit, castID)
-        if unit ~= "player" then
+    castRoot:SetScript("OnEvent", function(self, evt, unitToken, castID)
+        if unitToken ~= "player" then
             return
         end
         local c2 = Cast_DB()
@@ -1001,13 +1001,13 @@ local function CreateCastCircle()
             return
         end
 
-        if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_DELAYED" then
+        if evt == "UNIT_SPELLCAST_START" or evt == "UNIT_SPELLCAST_DELAYED" then
             local name, _, _, startMS, endMS, _, cID = UnitCastingInfo("player")
             if name then
                 self._castID = cID
                 local elapsed = GetTime() - startMS * 0.001
-                local total = (endMS - startMS) * 0.001
-                castRing:StartRing(elapsed, total)
+                local sum = (endMS - startMS) * 0.001
+                castRing:StartRing(elapsed, sum)
                 if c2.sparkEnabled then
                     if self._spark then
                         self._spark:Show()
@@ -1018,10 +1018,10 @@ local function CreateCastCircle()
                 end
             end
         elseif
-            event == "UNIT_SPELLCAST_CHANNEL_START"
-            or event == "UNIT_SPELLCAST_CHANNEL_UPDATE"
-            or event == "UNIT_SPELLCAST_EMPOWER_START"
-            or event == "UNIT_SPELLCAST_EMPOWER_UPDATE"
+            evt == "UNIT_SPELLCAST_CHANNEL_START"
+            or evt == "UNIT_SPELLCAST_CHANNEL_UPDATE"
+            or evt == "UNIT_SPELLCAST_EMPOWER_START"
+            or evt == "UNIT_SPELLCAST_EMPOWER_UPDATE"
         then
             local name, _, _, startMS, endMS, _, _, _, _, numStages = UnitChannelInfo("player")
             if name then
@@ -1030,8 +1030,8 @@ local function CreateCastCircle()
                     endMS = endMS + GetUnitEmpowerHoldAtMaxTime("player")
                 end
                 local elapsed = GetTime() - startMS * 0.001
-                local total = (endMS - startMS) * 0.001
-                castRing:StartRing(elapsed, total)
+                local sum = (endMS - startMS) * 0.001
+                castRing:StartRing(elapsed, sum)
                 if c2.sparkEnabled then
                     if self._spark then
                         self._spark:Show()
@@ -1041,7 +1041,7 @@ local function CreateCastCircle()
                     end
                 end
             end
-        elseif event == "UNIT_SPELLCAST_STOP" then
+        elseif evt == "UNIT_SPELLCAST_STOP" then
             if castID == self._castID then
                 self._castID = nil
                 castRing:StopRing()
@@ -1116,19 +1116,19 @@ local function ApplyCastCircle()
         local sparkSize = radius * 0.6
         castRoot._spark:SetSize(sparkSize, sparkSize)
         if c.sparkEnabled then
-            local sr, sg, sb
+            local sr, sg, scrollBar
             -- In accent or class mode, the spark inherits the ring color.
             -- In custom mode, the spark uses its own sparkHex (or falls
             -- back to the ring hex if sparkHex isn't set).
             if c.useAccentColor or c.useClassColor then
-                sr, sg, sb = r, ng, b
+                sr, sg, scrollBar = r, ng, b
             else
-                sr, sg, sb = ParseHex(c.sparkHex or c.hex)
+                sr, sg, scrollBar = ParseHex(c.sparkHex or c.hex)
             end
-            castRoot._spark:SetVertexColor(sr, sg, sb, 1)
+            castRoot._spark:SetVertexColor(sr, sg, scrollBar, 1)
             -- Glow layer: same color, slightly transparent for bloom
             if castRoot._sparkGlow then
-                castRoot._sparkGlow:SetVertexColor(sr, sg, sb, 1)
+                castRoot._sparkGlow:SetVertexColor(sr, sg, scrollBar, 1)
                 castRoot._sparkGlow:SetSize(radius * 0.9, radius * 0.9)
                 castRoot._sparkGlow:SetAlpha(0.5)
             end
@@ -1230,31 +1230,31 @@ local function RegisterUnlockElements()
                 local r = g2.radius or 30
                 return r * 2, r * 2
             end,
-            setWidth = function(_, w)
+            setWidth = function(_, wid)
                 local p = ECL.db and ECL.db.profile
                 if not p or not p.gcd then
                     return
                 end
                 local PPg = CludesUI and CludesUI.PP
-                p.gcd.radius = math.max(PPg and PPg.Snap(w / 2) or math.floor(w / 2 + 0.5), 5)
+                p.gcd.radius = math.max(PPg and PPg.Snap(wid / 2) or math.floor(wid / 2 + 0.5), 5)
                 ApplyGCDCircle()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("ECL_GCD")
                 end
             end,
-            setHeight = function(_, h)
+            setHeight = function(_, hgt)
                 local p = ECL.db and ECL.db.profile
                 if not p or not p.gcd then
                     return
                 end
                 local PPg = CludesUI and CludesUI.PP
-                p.gcd.radius = math.max(PPg and PPg.Snap(h / 2) or math.floor(h / 2 + 0.5), 5)
+                p.gcd.radius = math.max(PPg and PPg.Snap(hgt / 2) or math.floor(hgt / 2 + 0.5), 5)
                 ApplyGCDCircle()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("ECL_GCD")
                 end
             end,
-            savePos = function(key, point, relPoint, x, y)
+            savePos = function(key, anchorPoint, relPoint, posX, posY)
                 local p = ECL.db and ECL.db.profile
                 if not p then
                     return
@@ -1262,7 +1262,7 @@ local function RegisterUnlockElements()
                 if not p.gcd then
                     p.gcd = {}
                 end
-                p.gcd.pos = { point = point, relPoint = relPoint, x = x, y = y }
+                p.gcd.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
                     ApplyGCDCircle()
                 end
@@ -1303,27 +1303,27 @@ local function RegisterUnlockElements()
                 local r = c2.radius or 36
                 return r * 2, r * 2
             end,
-            setWidth = function(_, w)
+            setWidth = function(_, wid)
                 local p = ECL.db and ECL.db.profile
                 if not p or not p.castCircle then
                     return
                 end
                 local PPc = CludesUI and CludesUI.PP
-                p.castCircle.radius = math.max(PPc and PPc.Snap(w / 2) or math.floor(w / 2 + 0.5), 5)
+                p.castCircle.radius = math.max(PPc and PPc.Snap(wid / 2) or math.floor(wid / 2 + 0.5), 5)
                 ApplyCastCircle()
                 CludesUI.RepositionBarToMover("ECL_Cast")
             end,
-            setHeight = function(_, h)
+            setHeight = function(_, hgt)
                 local p = ECL.db and ECL.db.profile
                 if not p or not p.castCircle then
                     return
                 end
                 local PPc = CludesUI and CludesUI.PP
-                p.castCircle.radius = math.max(PPc and PPc.Snap(h / 2) or math.floor(h / 2 + 0.5), 5)
+                p.castCircle.radius = math.max(PPc and PPc.Snap(hgt / 2) or math.floor(hgt / 2 + 0.5), 5)
                 ApplyCastCircle()
                 CludesUI.RepositionBarToMover("ECL_Cast")
             end,
-            savePos = function(key, point, relPoint, x, y)
+            savePos = function(key, anchorPoint, relPoint, posX, posY)
                 local p = ECL.db and ECL.db.profile
                 if not p then
                     return
@@ -1331,7 +1331,7 @@ local function RegisterUnlockElements()
                 if not p.castCircle then
                     p.castCircle = {}
                 end
-                p.castCircle.pos = { point = point, relPoint = relPoint, x = x, y = y }
+                p.castCircle.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
                     ApplyCastCircle()
                 end
@@ -1368,14 +1368,14 @@ _G._CUCL_ApplyGCDPosition = function()
         return
     end
     local g = GCD_DB()
-    local pos = g.pos
-    if pos and pos.point then
-        local px, py = pos.x or 0, pos.y or 0
+    local place = g.pos
+    if place and place.point then
+        local px, py = place.x or 0, place.y or 0
         local PPa = CludesUI and CludesUI.PP
         if PPa then
             local es = gcdRoot:GetEffectiveScale()
-            local isCenterAnchor = (pos.point == "CENTER")
-                and (pos.relPoint == "CENTER" or pos.relPoint == nil)
+            local isCenterAnchor = (place.point == "CENTER")
+                and (place.relPoint == "CENTER" or place.relPoint == nil)
             if isCenterAnchor and PPa.SnapCenterForDim then
                 px = PPa.SnapCenterForDim(px, gcdRoot:GetWidth() or 0, es)
                 py = PPa.SnapCenterForDim(py, gcdRoot:GetHeight() or 0, es)
@@ -1385,7 +1385,7 @@ _G._CUCL_ApplyGCDPosition = function()
             end
         end
         gcdRoot:ClearAllPoints()
-        gcdRoot:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, px, py)
+        gcdRoot:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
     else
         -- Default: screen center
         gcdRoot:ClearAllPoints()
@@ -1403,14 +1403,14 @@ _G._CUCL_ApplyCastPosition = function()
         return
     end
     local c = Cast_DB()
-    local pos = c.pos
-    if pos and pos.point then
-        local px, py = pos.x or 0, pos.y or 0
+    local place = c.pos
+    if place and place.point then
+        local px, py = place.x or 0, place.y or 0
         local PPa = CludesUI and CludesUI.PP
         if PPa then
             local es = castRoot:GetEffectiveScale()
-            local isCenterAnchor = (pos.point == "CENTER")
-                and (pos.relPoint == "CENTER" or pos.relPoint == nil)
+            local isCenterAnchor = (place.point == "CENTER")
+                and (place.relPoint == "CENTER" or place.relPoint == nil)
             if isCenterAnchor and PPa.SnapCenterForDim then
                 px = PPa.SnapCenterForDim(px, castRoot:GetWidth() or 0, es)
                 py = PPa.SnapCenterForDim(py, castRoot:GetHeight() or 0, es)
@@ -1420,7 +1420,7 @@ _G._CUCL_ApplyCastPosition = function()
             end
         end
         castRoot:ClearAllPoints()
-        castRoot:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, px, py)
+        castRoot:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
     else
         -- Default: screen center
         castRoot:ClearAllPoints()
@@ -1435,17 +1435,17 @@ end
 -- UnregisterEvent is nil-safe, the _combatEventsOn latch skips no-op flips.
 local function ApplyCombatOnlyEvents()
     local p = ECL.db and ECL.db.profile
-    local want = (
+    local wanted = (
         p
         and (p.combatOnly or (p.gcd and p.gcd.combatOnly) or (p.castCircle and p.castCircle.combatOnly))
     )
             and true
         or false
-    if want == ECL._combatEventsOn then
+    if wanted == ECL._combatEventsOn then
         return
     end
-    ECL._combatEventsOn = want
-    if want then
+    ECL._combatEventsOn = wanted
+    if wanted then
         ECL:RegisterEvent("PLAYER_REGEN_DISABLED", UpdateVisibility)
         ECL:RegisterEvent("PLAYER_REGEN_ENABLED", UpdateVisibility)
     else
@@ -1527,16 +1527,16 @@ function ECL:OnInitialize()
         end,
     })
     self.db.ResetProfile = function(dbSelf)
-        local defaults = cursorDefaults.profile.cursor
+        local defaultSet = cursorDefaults.profile.cursor
         wipe(dbSelf.profile)
-        for k, v in pairs(defaults) do
-            if type(v) == "table" then
+        for k, val in pairs(defaultSet) do
+            if type(val) == "table" then
                 dbSelf.profile[k] = {}
-                for k2, v2 in pairs(v) do
+                for k2, v2 in pairs(val) do
                     dbSelf.profile[k][k2] = v2
                 end
             else
-                dbSelf.profile[k] = v
+                dbSelf.profile[k] = val
             end
         end
     end

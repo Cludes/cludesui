@@ -1,5 +1,5 @@
-local addonName, ns = ...
-if ns.standalone then
+local addonName, mod = ...
+if mod.standalone then
     return
 end
 -------------------------------------------------------------------------------
@@ -13,7 +13,7 @@ end
 --
 --  Both the co-tank frame and this row are placed with CludesUI Layout Mode.
 -------------------------------------------------------------------------------
-local K = ns.K
+local Keys = mod.K
 
 local EXT_DEFAULT_COUNT = 4
 local EXT_MAX_COUNT = 8
@@ -21,7 +21,7 @@ local EXT_DEFAULT_SIZE = 36
 local EXT_MIN_SIZE = 16
 local EXT_MAX_SIZE = 64
 local EXT_FILTER = "HELPFUL|EXTERNAL_DEFENSIVE"
-ns.EXT = {
+mod.EXT = {
     DEFAULT_COUNT = EXT_DEFAULT_COUNT,
     MAX_COUNT = EXT_MAX_COUNT,
     DEFAULT_SIZE = EXT_DEFAULT_SIZE,
@@ -29,89 +29,89 @@ ns.EXT = {
     MAX_SIZE = EXT_MAX_SIZE,
 }
 
-local anchor -- the row's frame; Layout Mode moves this
-local container -- the AuraContainer inside it
+local anchorFrame -- the row's frame; Layout Mode moves this
+local boxHolder -- the AuraContainer inside it
 local rejected = false -- the game refused the filter: do not retry
 
-local function DB()
-    return ns.DB()
+local function SavedDB()
+    return mod.DB()
 end
 
-function ns.ExternalsEnabled()
-    local v = DB().extEnabled
-    return v == nil or v == true
+function mod.ExternalsEnabled()
+    local val = SavedDB().extEnabled
+    return val == nil or val == true
 end
 
 local function Count()
-    return ns.SettingNumber("extCount", EXT_DEFAULT_COUNT)
+    return mod.SettingNumber("extCount", EXT_DEFAULT_COUNT)
 end
 local function Size()
-    return ns.SettingNumber("extSize", EXT_DEFAULT_SIZE)
+    return mod.SettingNumber("extSize", EXT_DEFAULT_SIZE)
 end
 local function Gap()
-    return ns.SettingNumber("extSpacing", K.DEBUFF_SPACING)
+    return mod.SettingNumber("extSpacing", Keys.DEBUFF_SPACING)
 end
 
 --- True while the player's current spec is a tank spec.
-function ns.PlayerIsTankSpec()
-    local spec = GetSpecialization and GetSpecialization()
-    if not spec then
+function mod.PlayerIsTankSpec()
+    local specInfo = GetSpecialization and GetSpecialization()
+    if not specInfo then
         return false
     end
-    return GetSpecializationRole(spec) == "TANK"
+    return GetSpecializationRole(specInfo) == "TANK"
 end
 
 local function RowSize()
-    local n = math.max(Count(), 1)
-    return n * Size() + (n - 1) * Gap(), Size()
+    local num = math.max(Count(), 1)
+    return num * Size() + (num - 1) * Gap(), Size()
 end
 
 local function ApplyAnchorPosition()
-    if not anchor or InCombatLockdown() then
+    if not anchorFrame or InCombatLockdown() then
         return
     end
-    local p = DB().extPos
-    anchor:ClearAllPoints()
+    local p = SavedDB().extPos
+    anchorFrame:ClearAllPoints()
     if p then
-        anchor:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        anchorFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        anchor:SetPoint("CENTER", UIParent, "CENTER", 0, -170)
+        anchorFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -170)
     end
 end
 
 local function ApplyAnchorSize()
-    if not anchor or InCombatLockdown() then
+    if not anchorFrame or InCombatLockdown() then
         return
     end
-    anchor:SetSize(RowSize())
+    anchorFrame:SetSize(RowSize())
 end
 
 --- Builds the row. AuraContainers cannot be created in combat, so this runs
 --- from the out-of-combat init and retries after combat.
-function ns.CreateExternals()
-    if anchor or rejected or InCombatLockdown() then
+function mod.CreateExternals()
+    if anchorFrame or rejected or InCombatLockdown() then
         return
     end
-    if not ns.HasAuraContainers() then
+    if not mod.HasAuraContainers() then
         return
     end
 
-    anchor = CreateFrame("Frame", "CludesUITankExternals", UIParent)
-    anchor:SetFrameStrata("MEDIUM")
+    anchorFrame = CreateFrame("Frame", "CludesUITankExternals", UIParent)
+    anchorFrame:SetFrameStrata("MEDIUM")
     ApplyAnchorSize()
     ApplyAnchorPosition()
 
-    local ok, c = pcall(
+    local success, c = pcall(
         CreateFrame,
         "AuraContainer",
         nil,
-        anchor,
+        anchorFrame,
         "CustomAuraContainerTemplate, DisableUntrustedLayoutScriptsTemplate"
     )
-    if not ok or not c then
-        ok, c = pcall(CreateFrame, "AuraContainer", nil, anchor, "CustomAuraContainerTemplate")
+    if not success or not c then
+        success, c = pcall(CreateFrame, "AuraContainer", nil, anchorFrame, "CustomAuraContainerTemplate")
     end
-    if not ok or not c then
+    if not success or not c then
         return
     end
     c:SetSize(Size(), Size())
@@ -119,14 +119,14 @@ function ns.CreateExternals()
     c:SetFlowLayoutAnchorPoint("TOPLEFT")
     c:SetFlowLayoutGrowthDirection(AnchorUtil.FlowDirection.Right, AnchorUtil.FlowDirection.Down)
     c:SetFlowLayoutPadding(0, 0, 0, 0)
-    c:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
+    c:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, 0)
 
     local addOk, err = pcall(c.AddAuraGroup, c, "externals", EXT_FILTER, {
         maxFrameCount = math.max(Count(), 0),
         sortMethod = AuraContainerSortMethod.Default,
         sortDirection = AuraContainerSortDirection.Normal,
-        initializeFrame = function(btn)
-            ns.StyleAuraButton(btn, "external")
+        initializeFrame = function(button)
+            mod.StyleAuraButton(button, "external")
         end,
         layout = {
             elementSpacing = Gap(),
@@ -138,32 +138,32 @@ function ns.CreateExternals()
     if not addOk then
         c:Hide()
         rejected = true
-        ns.Print("|cffff4040Externals on You could not be set up:|r " .. tostring(err))
+        mod.Print("|cffff4040Externals on You could not be set up:|r " .. tostring(err))
         return
     end
-    container = c
-    ns.RefreshExternals()
+    boxHolder = c
+    mod.RefreshExternals()
 end
 
 --- Turns the row on or off and applies count, size and gap.
-function ns.RefreshExternals()
-    if not container then
+function mod.RefreshExternals()
+    if not boxHolder then
         return
     end
-    local live = ns.ExternalsEnabled() and Count() > 0 and ns.PlayerIsTankSpec() and not ns.IsInEditMode()
-    pcall(container.SetAuraGroupMaxFrameCount, container, "externals", math.max(Count(), 0))
-    pcall(container.SetAuraGroupLayout, container, "externals", {
+    local live = mod.ExternalsEnabled() and Count() > 0 and mod.PlayerIsTankSpec() and not mod.IsInEditMode()
+    pcall(boxHolder.SetAuraGroupMaxFrameCount, boxHolder, "externals", math.max(Count(), 0))
+    pcall(boxHolder.SetAuraGroupLayout, boxHolder, "externals", {
         elementSpacing = Gap(),
         lineSpacing = Gap(),
         elementWidth = Size(),
         elementHeight = Size(),
     })
     if live then
-        container:SetUnit("player")
+        boxHolder:SetUnit("player")
     end
-    container:SetEnabled(live)
+    boxHolder:SetEnabled(live)
     if not InCombatLockdown() then
-        container:SetShown(live)
+        boxHolder:SetShown(live)
         ApplyAnchorSize()
     end
 end
@@ -178,8 +178,8 @@ local function RegisterLayoutMode()
         return
     end
     local MK = CludesUI.MakeUnlockElement
-    local frame = _G.CoTankAuras
-    if not frame then
+    local widget = _G.CoTankAuras
+    if not widget then
         return
     end
     registered = true
@@ -197,53 +197,53 @@ local function RegisterLayoutMode()
             group = "Tank Kit",
             order = 650,
             getFrame = function()
-                return frame
+                return widget
             end,
             getSize = function()
-                return ns.SettingNumber("frameWidth", K.DEFAULT_WIDTH),
-                    ns.SettingNumber("frameHeight", K.DEFAULT_HEIGHT)
+                return mod.SettingNumber("frameWidth", Keys.DEFAULT_WIDTH),
+                    mod.SettingNumber("frameHeight", Keys.DEFAULT_HEIGHT)
             end,
-            setWidth = function(_, w)
-                w = math.max(K.MIN_WIDTH, math.min(K.MAX_WIDTH, math.floor(w + 0.5)))
-                DB().frameWidth = w
+            setWidth = function(_, wid)
+                wid = math.max(Keys.MIN_WIDTH, math.min(Keys.MAX_WIDTH, math.floor(wid + 0.5)))
+                SavedDB().frameWidth = wid
                 if not InCombatLockdown() then
-                    frame:SetWidth(w)
-                    frame:FitNameToWidth()
+                    widget:SetWidth(wid)
+                    widget:FitNameToWidth()
                 end
                 Reposition("TANK_CoTank")
             end,
-            setHeight = function(_, h)
-                h = math.max(K.MIN_HEIGHT, math.min(K.MAX_HEIGHT, math.floor(h + 0.5)))
-                DB().frameHeight = h
+            setHeight = function(_, hgt)
+                hgt = math.max(Keys.MIN_HEIGHT, math.min(Keys.MAX_HEIGHT, math.floor(hgt + 0.5)))
+                SavedDB().frameHeight = hgt
                 if not InCombatLockdown() then
-                    frame:SetHeight(h)
+                    widget:SetHeight(hgt)
                 end
-                ns.RefreshAuraContainerLayout(frame)
-                ns.RestyleAuraButtons()
+                mod.RefreshAuraContainerLayout(widget)
+                mod.RestyleAuraButtons()
                 Reposition("TANK_CoTank")
             end,
-            savePos = function(_, point, relPoint, x, y)
-                local db = DB()
-                db.point, db.relPoint, db.x, db.y = point, relPoint, x, y
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                local saved = SavedDB()
+                saved.point, saved.relPoint, saved.x, saved.y = anchorPoint, relPoint, posX, posY
             end,
             loadPos = function()
-                local db = DB()
-                if db.point then
+                local saved = SavedDB()
+                if saved.point then
                     return {
-                        point = db.point,
-                        relPoint = db.relPoint or db.point,
-                        x = db.x or 0,
-                        y = db.y or 0,
+                        point = saved.point,
+                        relPoint = saved.relPoint or saved.point,
+                        x = saved.x or 0,
+                        y = saved.y or 0,
                     }
                 end
                 return nil
             end,
             clearPos = function()
-                local db = DB()
-                db.point, db.relPoint, db.x, db.y = nil, nil, nil, nil
+                local saved = SavedDB()
+                saved.point, saved.relPoint, saved.x, saved.y = nil, nil, nil, nil
             end,
             applyPos = function()
-                ns.ApplyPosition(frame)
+                mod.ApplyPosition(widget)
             end,
         }),
         MK({
@@ -253,31 +253,31 @@ local function RegisterLayoutMode()
             order = 651,
             noAnchorTarget = true, -- its width follows the icon count
             isHidden = function()
-                return not ns.ExternalsEnabled() or Count() == 0
+                return not mod.ExternalsEnabled() or Count() == 0
             end,
             getFrame = function()
-                if not anchor then
-                    ns.CreateExternals()
+                if not anchorFrame then
+                    mod.CreateExternals()
                 end
-                return anchor
+                return anchorFrame
             end,
             getSize = function()
                 return RowSize()
             end,
             setWidth = function() end,
-            setHeight = function(_, h)
-                DB().extSize = math.max(EXT_MIN_SIZE, math.min(EXT_MAX_SIZE, math.floor(h + 0.5)))
-                ns.RefreshExternals()
+            setHeight = function(_, hgt)
+                SavedDB().extSize = math.max(EXT_MIN_SIZE, math.min(EXT_MAX_SIZE, math.floor(hgt + 0.5)))
+                mod.RefreshExternals()
                 Reposition("TANK_Externals")
             end,
-            savePos = function(_, point, relPoint, x, y)
-                DB().extPos = { point = point, relPoint = relPoint, x = x, y = y }
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                SavedDB().extPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
             loadPos = function()
-                return DB().extPos
+                return SavedDB().extPos
             end,
             clearPos = function()
-                DB().extPos = nil
+                SavedDB().extPos = nil
             end,
             applyPos = ApplyAnchorPosition,
         }),
@@ -291,13 +291,13 @@ local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function(_, event, unit)
-    if event == "PLAYER_SPECIALIZATION_CHANGED" and unit and unit ~= "player" then
+events:SetScript("OnEvent", function(_, evt, unitToken)
+    if evt == "PLAYER_SPECIALIZATION_CHANGED" and unitToken and unitToken ~= "player" then
         return
     end
     if not InCombatLockdown() then
-        ns.CreateExternals()
+        mod.CreateExternals()
         RegisterLayoutMode()
     end
-    ns.RefreshExternals()
+    mod.RefreshExternals()
 end)

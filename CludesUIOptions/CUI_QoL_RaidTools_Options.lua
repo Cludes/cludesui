@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  dispatches to the builder this file publishes as _G._CUI_BuildRaidToolsPage.
 --  Same arrangement as the Cursor and Upgrade Calculator pages.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIQoL"] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIQoL"] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -41,19 +41,19 @@ initFrame:SetScript("OnEvent", function(self)
     -- a read-tracking proxy. Writing back what was just read stores a proxy in
     -- the real table and each later call wraps it again, until reading a leaf
     -- overflows the C stack. DB_DEFAULTS guarantees the slice exists.
-    local function DB()
+    local function SavedDB()
         local get = _G._CUI_RaidTools_DB
         local root = get and get()
         return root and root.profile and root.profile.raidTools
     end
 
     local function Cfg(key)
-        local p = DB()
+        local p = SavedDB()
         return p and p[key]
     end
 
     local function Set(key, val)
-        local p = DB()
+        local p = SavedDB()
         if p then
             p[key] = val
         end
@@ -75,8 +75,8 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- The runtime owns the normalize (unknown values retain One Window).
     local function ShowAsVal()
-        if ns.ShowAs then
-            return ns.ShowAs()
+        if mod.ShowAs then
+            return mod.ShowAs()
         end
         return Cfg("showAs") or "one"
     end
@@ -88,8 +88,8 @@ initFrame:SetScript("OnEvent", function(self)
         return Disabled() or ShowAsVal() == "markers"
     end
     local function FullPanelButtonDisabled()
-        local mode = ShowAsVal()
-        return Disabled() or mode == "compact" or mode == "markers"
+        local modeName = ShowAsVal()
+        return Disabled() or modeName == "compact" or modeName == "markers"
     end
     -- Raid Buff Check is retail only: its rows are not built on WoW Forever.
     local function BuffCheckOff()
@@ -100,24 +100,24 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     -- Pull durations live in a fixed 3-slot array; each slider owns one slot.
-    local function PullGet(i)
+    local function PullGet(idx)
         local t = Cfg("pullTimes")
-        return (t and t[i]) or ns.PULL_DEFAULTS[i]
+        return (t and t[idx]) or mod.PULL_DEFAULTS[idx]
     end
 
-    local function PullSet(i, v)
+    local function PullSet(idx, v)
         local t = Cfg("pullTimes")
         if not t then
             return
         end
-        t[i] = v
+        t[idx] = v
         Refresh()
     end
 
-    local function BuildPage(pageName, parent, yOffset)
+    local function BuildPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h, hdr
+        local posY = yOffset
+        local _, hgt, heading
 
         CludesUI:ClearContentHeader()
 
@@ -130,12 +130,12 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- GENERAL
-        hdr, h = W:SectionHeader(parent, "GENERAL", y)
-        y = y - h
+        heading, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
+        posY = posY - hgt
         -- The Show as choice decides which shell has a mover: the Compact
         -- Band, the Markers window alone, or the Group & Pull window (which
         -- is also the One Window shell and the first of Two Windows).
-        CludesUI.BuildSectionUnlockJump(hdr, {
+        CludesUI.BuildSectionUnlockJump(heading, {
             key = function()
                 local showAs = ShowAsVal()
                 if showAs == "compact" then
@@ -155,7 +155,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- built at all (no frames, events, bindings or unlock rows), which is
         -- why there is no separate Enable toggle.
         local kbRow
-        kbRow, h = W:DualRow(parent, y, {
+        kbRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Show Raid Tools",
             tooltip = "A raid control panel with ready check, pull timer and raid markers. In a raid it only shows while you are the leader or an assistant, since none of its buttons work without that; in a party it always shows.",
@@ -175,7 +175,7 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Toggle Raid Tools" })
-        y = y - h
+        posY = posY - hgt
 
         -- Keybind button in the label's slot -- the exact Toggle Action Bar
         -- Visibility arrangement from Action Bars: profile-stored key, click
@@ -223,7 +223,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Row 2: collapsed-when-shown default | window composition.
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Default to Collapsed When Shown",
             tooltip = "Full-window modes only. Shows start as a small icon, and the keybind switches between the icon and the full windows.",
@@ -257,10 +257,10 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI:RefreshPage()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Row 3: one scale for every layout | legacy menu grow direction.
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Window Scale",
             min = 0.5,
@@ -294,15 +294,15 @@ initFrame:SetScript("OnEvent", function(self)
                 Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- QUICK FIRE
         -- An explicitly enabled, empty-by-default set of world-marker binds.
-        _, h = W:SectionHeader(parent, "QUICK FIRE", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "QUICK FIRE", posY)
+        posY = posY - hgt
 
         local qfEnableRow
-        qfEnableRow, h = W:DualRow(parent, y, {
+        qfEnableRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Quick Fire",
             tooltip = "Adds three optional world-marker keybinds that remain usable in combat. Place drops the first free marker at the cursor in Star to Skull order; Undo removes the last marker placed through Quick Fire; Clear removes all world markers. Every binding starts empty. Marker changes made elsewhere during combat are picked up afterward.",
@@ -316,22 +316,22 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Place World Marker" })
-        y = y - h
+        posY = posY - hgt
 
         local qfKeysRow
-        qfKeysRow, h = W:DualRow(
-            parent,
-            y,
+        qfKeysRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             { type = "label", text = "Undo Last Marker" },
             { type = "label", text = "Clear All Markers" }
         )
-        y = y - h
+        posY = posY - hgt
 
         if not CludesUI._prebuilding then
-            local PP = CludesUI.PanelPP
+            local Pix = CludesUI.PanelPP
 
-            local function AddQuickFireKeybind(region, key)
-                local button, refresh = CludesUI.BuildKeybindButton(region, {
+            local function AddQuickFireKeybind(regionFrame, key)
+                local btnFrame, refresh = CludesUI.BuildKeybindButton(regionFrame, {
                     w = 126,
                     h = 29,
                     level = 4,
@@ -340,21 +340,21 @@ initFrame:SetScript("OnEvent", function(self)
                         return Cfg(key)
                     end,
                     set = function(v)
-                        local snap = CludesUI._SOAttribution(region)
+                        local snap = CludesUI._SOAttribution(regionFrame)
                         Set(key, v or false)
                         Refresh()
-                        CludesUI._NotifySettingWrite(region, snap)
+                        CludesUI._NotifySettingWrite(regionFrame, snap)
                     end,
                     disabled = QuickFireDisabled,
                     disabledTip = function()
                         return Disabled() and "Show Raid Tools" or "Enable Quick Fire"
                     end,
                 })
-                PP.Point(button, "RIGHT", region, "RIGHT", -20, 0)
+                Pix.Point(btnFrame, "RIGHT", regionFrame, "RIGHT", -20, 0)
                 CludesUI.RegisterWidgetRefresh(refresh)
-                CludesUI.AddCaptureAccessor(region, {
+                CludesUI.AddCaptureAccessor(regionFrame, {
                     type = "keybind",
-                    text = region._label and region._label:GetText() or key,
+                    text = regionFrame._label and regionFrame._label:GetText() or key,
                     getValue = function()
                         return Cfg(key)
                     end,
@@ -376,13 +376,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- One switch per optional action. Ready Check has none: it is the
         -- reason the panel exists. Turning a button off closes the gap it
         -- leaves -- the survivors re-flow across the rows.
-        _, h = W:SectionHeader(parent, "GROUP BUTTONS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "GROUP BUTTONS", posY)
+        posY = posY - hgt
 
-        local function ButtonToggle(key, text, tooltip, disabled)
+        local function ButtonToggle(key, textValue, tooltip, disabled)
             return {
                 type = "toggle",
-                text = text,
+                text = textValue,
                 tooltip = tooltip,
                 disabled = disabled or Disabled,
                 getValue = function()
@@ -395,9 +395,9 @@ initFrame:SetScript("OnEvent", function(self)
             }
         end
 
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             ButtonToggle(
                 "showRoleCheck",
                 "Show Role Check",
@@ -411,10 +411,10 @@ initFrame:SetScript("OnEvent", function(self)
                 FullPanelButtonDisabled
             )
         )
-        y = y - h
-        _, h = W:DualRow(
-            parent,
-            y,
+        posY = posY - hgt
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             ButtonToggle(
                 "showDisband",
                 "Show Disband",
@@ -447,14 +447,14 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                 }
         )
-        y = y - h
+        posY = posY - hgt
 
         -- RAID BUFF CHECK (retail only)
         if not CludesUI.IS_FOREVER then
-            _, h = W:SectionHeader(parent, "RAID BUFF CHECK", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "RAID BUFF CHECK", posY)
+            posY = posY - hgt
 
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Raid Buff Check",
                 tooltip = "A window of each group member's flask, food, augment and vantus runes and missing raid buffs.",
@@ -480,40 +480,40 @@ initFrame:SetScript("OnEvent", function(self)
                     Refresh()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end -- not IS_FOREVER
 
         -- PULL TIMER
-        _, h = W:SectionHeader(parent, "PULL TIMER", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "PULL TIMER", posY)
+        posY = posY - hgt
 
         local PULL_LABELS = { "First Timer", "Second Timer", "Third Timer" }
         local PULL_TIP =
             "Countdown length in seconds. Compact Band uses First with Ctrl + Left Click, Second with Shift + Left Click, Third with Left Click, and Right Click stops the timer. Set a timer to 0 to disable that shortcut."
-        local function PullSlider(i)
+        local function PullSlider(idx)
             return {
                 type = "slider",
-                text = PULL_LABELS[i],
+                text = PULL_LABELS[idx],
                 min = 0,
                 max = 60,
                 step = 1,
                 tooltip = PULL_TIP,
                 disabled = PullDisabled,
                 getValue = function()
-                    return PullGet(i)
+                    return PullGet(idx)
                 end,
                 setValue = function(v)
-                    PullSet(i, v)
+                    PullSet(idx, v)
                 end,
             }
         end
 
-        _, h = W:DualRow(parent, y, PullSlider(1), PullSlider(2))
-        y = y - h
-        _, h = W:DualRow(parent, y, PullSlider(3), { type = "spacer" })
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, PullSlider(1), PullSlider(2))
+        posY = posY - hgt
+        _, hgt = W:DualRow(hostFrame, posY, PullSlider(3), { type = "spacer" })
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     _G._CUI_BuildRaidToolsPage = BuildPage

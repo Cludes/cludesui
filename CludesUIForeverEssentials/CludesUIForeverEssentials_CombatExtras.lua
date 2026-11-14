@@ -21,11 +21,11 @@ local function Font()
     return CludesUI.GetFontPath("essentials")
 end
 
-local function Text(parent, size)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(fs, size, "essentials")
-    fs:SetPoint("CENTER")
-    return fs
+local function Text(hostFrame, dim)
+    local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(fontStr, dim, "essentials")
+    fontStr:SetPoint("CENTER")
+    return fontStr
 end
 
 -------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ local function TimerTick()
 end
 
 local timerEv = CreateFrame("Frame")
-timerEv:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_REGEN_DISABLED" then
+timerEv:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_REGEN_DISABLED" then
         started = GetTime()
         timerText:SetTextColor(1, 1, 1)
         timerFrame:Show()
@@ -149,11 +149,11 @@ local function AlertBuild()
     hold:SetToAlpha(1)
     hold:SetDuration(0.8)
     hold:SetOrder(1)
-    local out = fade:CreateAnimation("Alpha")
-    out:SetFromAlpha(1)
-    out:SetToAlpha(0)
-    out:SetDuration(0.6)
-    out:SetOrder(2)
+    local result = fade:CreateAnimation("Alpha")
+    result:SetFromAlpha(1)
+    result:SetToAlpha(0)
+    result:SetDuration(0.6)
+    result:SetOrder(2)
     fade:SetScript("OnFinished", function()
         alertFrame:Hide()
     end)
@@ -162,8 +162,8 @@ local function AlertBuild()
 end
 
 local alertEv = CreateFrame("Frame")
-alertEv:SetScript("OnEvent", function(_, event)
-    local entering = event == "PLAYER_REGEN_DISABLED"
+alertEv:SetScript("OnEvent", function(_, evt)
+    local entering = evt == "PLAYER_REGEN_DISABLED"
     alertText:SetText(entering and "+ Combat" or "- Combat")
     if entering then
         alertText:SetTextColor(1, 0.35, 0.3)
@@ -215,7 +215,7 @@ A.Start(AlertApply, {
 -------------------------------------------------------------------------------
 --  Stealth Reminder
 -------------------------------------------------------------------------------
-local S = module.Feature(
+local Stl = module.Feature(
     "stealthReminder",
     { enabled = false, groupOnly = false },
     { point = "CENTER", relPoint = "CENTER", x = 0, y = 180 }
@@ -225,7 +225,7 @@ local _, classFile = UnitClass("player")
 local CAT_FORM = 1
 
 local function StealthWanted()
-    if not S.Enabled() then
+    if not Stl.Enabled() then
         return false
     end
     if CludesUI._unlockActive then
@@ -241,7 +241,7 @@ local function StealthWanted()
     if InCombatLockdown() or IsStealthed() or IsResting() or UnitIsDeadOrGhost("player") or IsMounted() then
         return false
     end
-    if S.Get("groupOnly") and not IsInGroup() then
+    if Stl.Get("groupOnly") and not IsInGroup() then
         return false
     end
     return true
@@ -270,7 +270,7 @@ local stealthEv = CreateFrame("Frame")
 stealthEv:SetScript("OnEvent", StealthUpdate)
 
 local function StealthApply()
-    if S.Enabled() then
+    if Stl.Enabled() then
         StealthBuild()
         for _, e in ipairs({
             "UPDATE_STEALTH",
@@ -287,7 +287,7 @@ local function StealthApply()
             stealthEv:RegisterEvent(e)
         end
         if not CludesUI._unlockActive then
-            S.Place(stealthFrame)
+            Stl.Place(stealthFrame)
         end
     else
         stealthEv:UnregisterAllEvents()
@@ -295,7 +295,7 @@ local function StealthApply()
     StealthUpdate()
 end
 
-S.Start(StealthApply, {
+Stl.Start(StealthApply, {
     key = "CUI_StealthReminder",
     label = "Stealth Reminder",
     order = 744,
@@ -316,5 +316,5 @@ S.Start(StealthApply, {
 CludesUI._CombatExtras = {
     timer = { Get = T.Get, Cfg = T.Cfg, Apply = TimerApply },
     alert = { Get = A.Get, Cfg = A.Cfg, Apply = AlertApply },
-    stealth = { Get = S.Get, Cfg = S.Cfg, Apply = StealthApply },
+    stealth = { Get = Stl.Get, Cfg = Stl.Cfg, Apply = StealthApply },
 }

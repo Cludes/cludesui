@@ -17,8 +17,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --   3. Positioning is delegated to Blizzard's Edit Mode; we provide a
 --      ctrl-drag session-only nudge on top, nothing persistent.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local EQT = ns.EQT
+local _, mod = ...
+local EQT = mod.EQT
 
 local _eqtSuppressed = false
 
@@ -57,9 +57,9 @@ local function GetBGTopAnchor()
         return nil, "TOP"
     end
     if EQT.ShouldHideMasterHeader and EQT.ShouldHideMasterHeader() then
-        local header = otf.HeaderMenu or otf.Header
-        if header then
-            return header, "BOTTOM"
+        local headerFrame = otf.HeaderMenu or otf.Header
+        if headerFrame then
+            return headerFrame, "BOTTOM"
         end
     end
     return otf, "TOP"
@@ -82,11 +82,11 @@ local function ShouldAutoHide()
         return true
     end
     if instanceType == "raid" then
-        local cfg = EQT.DB()
-        if cfg and cfg.hideInRaidMode == "always" then
+        local conf = EQT.DB()
+        if conf and conf.hideInRaidMode == "always" then
             return true
         end
-        if cfg and cfg.hideInRaidMode == "never" then
+        if conf and conf.hideInRaidMode == "never" then
             return false
         end
         -- Default / "boss": only hide during an encounter.
@@ -142,8 +142,8 @@ local function ResumeQTEvents()
     end
     _eventsSuspended = false
     if EQT._eventFrames and EQT._eventRegistrations then
-        for i, f in ipairs(EQT._eventFrames) do
-            local evts = EQT._eventRegistrations[i]
+        for idx, f in ipairs(EQT._eventFrames) do
+            local evts = EQT._eventRegistrations[idx]
             if evts then
                 local refresh
                 for _, ev in ipairs(evts) do
@@ -164,8 +164,8 @@ end
 
 -- Suppression API (cross-module hide). Routed through UpdateVisibility so
 -- suppression composes with the user's chosen visibility mode / options.
-function EQT.ApplySuppression(on)
-    _eqtSuppressed = on and true or false
+function EQT.ApplySuppression(enabled)
+    _eqtSuppressed = enabled and true or false
     if EQT.UpdateVisibility then
         EQT.UpdateVisibility()
     end
@@ -268,10 +268,10 @@ local function UpdateVisibility()
 
     -- User visibility: enabled flag, visibility mode, and the visHide* opts.
     -- EvalVisibility returns true / false / "mouseover".
-    local cfg = EQT.DB()
+    local conf = EQT.DB()
     local vis = true
     if CludesUI and CludesUI.EvalVisibility then
-        vis = CludesUI.EvalVisibility(cfg)
+        vis = CludesUI.EvalVisibility(conf)
     end
 
     local alpha
@@ -342,9 +342,9 @@ local function EnsureBG()
     -- Bottom is re-anchored dynamically in ResizeBGToContent(); this is
     -- only the fallback extent when no content has loaded yet (30px tall).
     _bgFrame:SetPoint("BOTTOMRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs - 30)
-    local tex = _bgFrame:CreateTexture(nil, "BACKGROUND")
-    tex:SetAllPoints()
-    _bgFrame._tex = tex
+    local texture = _bgFrame:CreateTexture(nil, "BACKGROUND")
+    texture:SetAllPoints()
+    _bgFrame._tex = texture
 
     -- 1px physical-pixel-perfect accent divider at the very top of the BG
     -- (i.e. at the topOfs cutoff line). Full width of the tracker, anchored
@@ -358,29 +358,29 @@ local function EnsureBG()
 end
 
 local function ApplyTopDivider()
-    local bg = _bgFrame
-    if not bg or not bg._divider then
+    local backdrop = _bgFrame
+    if not backdrop or not backdrop._divider then
         return
     end
-    local tex = bg._divider
+    local texture = backdrop._divider
     if EQT.Cfg("showTopLine") == false then
-        tex:Hide()
+        texture:Hide()
         return
     end
     local PP_CORE = CludesUI and CludesUI.PP
     local PP_SEC = CludesUI and CludesUI.PanelPP
     if PP_SEC and PP_SEC.DisablePixelSnap then
-        PP_SEC.DisablePixelSnap(tex)
+        PP_SEC.DisablePixelSnap(texture)
     end
     local perfect = (PP_CORE and PP_CORE.perfect) or (PP_SEC and PP_SEC.mult) or 1
     local otf = GetTracker()
     local es = (otf and otf.GetEffectiveScale and otf:GetEffectiveScale()) or 1
     local onePixel = (es and es > 0) and (perfect / es) or (PP_SEC and PP_SEC.mult) or 1
-    tex:SetHeight(onePixel)
+    texture:SetHeight(onePixel)
     local eg = CludesUI and CludesUI.CLUDES_GREEN
     local r, g, b = (eg and eg.r) or 0.298, (eg and eg.g) or 0.788, (eg and eg.b) or 0.9414
-    tex:SetColorTexture(r, g, b, 1)
-    tex:Show()
+    texture:SetColorTexture(r, g, b, 1)
+    texture:Show()
 end
 
 -- Find the module that sits at the bottom of the tracker. Used to anchor the
@@ -391,14 +391,14 @@ end
 -- throws. The container anchors each displayed module below the previous one in
 -- ipairs(modules) order, so the last displayed one owns the bottom edge -- the
 -- same frame Blizzard anchors its own NineSlice background to.
-local function IsUsableAnchor(frame)
-    if not frame or type(frame) ~= "table" then
+local function IsUsableAnchor(widget)
+    if not widget or type(widget) ~= "table" then
         return false
     end
-    if not frame.IsShown or not frame.GetObjectType then
+    if not widget.IsShown or not widget.GetObjectType then
         return false
     end
-    return frame:IsShown()
+    return widget:IsShown()
 end
 
 local function GetLowestContentFrame()
@@ -462,16 +462,16 @@ end
 EQT.QueueResize = QueueResize
 
 local function ResizeBGToContent()
-    local bg = _bgFrame
+    local backdrop = _bgFrame
     local otf = GetTracker()
-    if not bg or not otf then
+    if not backdrop or not otf then
         return
     end
     -- Tracker hidden (e.g. raid/arena auto-hide, Blizzard hide, or the
     -- combat alpha-fallback in HardHide): BG follows.
     if not TrackerIsVisible(otf) then
-        if bg:IsShown() then
-            bg:Hide()
+        if backdrop:IsShown() then
+            backdrop:Hide()
         end
         return
     end
@@ -483,8 +483,8 @@ local function ResizeBGToContent()
         and C_ChallengeMode.IsChallengeModeActive
         and C_ChallengeMode.IsChallengeModeActive()
     then
-        if bg:IsShown() then
-            bg:Hide()
+        if backdrop:IsShown() then
+            backdrop:Hide()
         end
         return
     end
@@ -493,13 +493,13 @@ local function ResizeBGToContent()
     -- track/untrack/collapse/expand while blocks are recycled. Keep the
     -- BG at its last position to avoid a hide/show blink.
     if not lowest then
-        if bg._lastLowest then
+        if backdrop._lastLowest then
             -- Had content before -- keep BG visible at last known size.
             -- A deferred check will hide if content truly went away.
-            if not bg._hideCheck then
-                bg._hideCheck = true
+            if not backdrop._hideCheck then
+                backdrop._hideCheck = true
                 C_Timer.After(0.2, function()
-                    bg._hideCheck = nil
+                    backdrop._hideCheck = nil
                     if EQT.ResizeBGToContent then
                         EQT.ResizeBGToContent()
                     end
@@ -508,23 +508,23 @@ local function ResizeBGToContent()
             return
         end
         -- Never had content: hide.
-        if bg:IsShown() then
-            bg:Hide()
+        if backdrop:IsShown() then
+            backdrop:Hide()
         end
         return
     end
-    bg._hideCheck = nil
-    if not bg:IsShown() then
-        bg:Show()
+    backdrop._hideCheck = nil
+    if not backdrop:IsShown() then
+        backdrop:Show()
     end
     local topOfs = TopGapOffset()
     local leftOfs = GetBGLeftOffset()
     local anchorFrame, anchorPoint = GetBGTopAnchor()
     anchorFrame = anchorFrame or otf
-    if bg._divider then
-        bg._divider:ClearAllPoints()
-        bg._divider:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
-        bg._divider:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
+    if backdrop._divider then
+        backdrop._divider:ClearAllPoints()
+        backdrop._divider:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
+        backdrop._divider:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
     end
     -- UpdateHeight sizes a module to contentsHeight + bottomSpacing, so its
     -- bottom sits bottomSpacing below its last block. Adding that back keeps the
@@ -536,25 +536,25 @@ local function ResizeBGToContent()
     if type(bottomSpacing) ~= "number" then
         bottomSpacing = 0
     end
-    bg:ClearAllPoints()
-    bg:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
-    bg:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
-    bg:SetPoint("BOTTOM", lowest, "BOTTOM", 0, bottomSpacing - 15)
-    bg._lastLowest = lowest
+    backdrop:ClearAllPoints()
+    backdrop:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
+    backdrop:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
+    backdrop:SetPoint("BOTTOM", lowest, "BOTTOM", 0, bottomSpacing - 15)
+    backdrop._lastLowest = lowest
 end
 EQT.ResizeBGToContent = ResizeBGToContent
 
 function EQT.ApplyBackground()
-    local bg = EnsureBG()
-    if not bg then
+    local backdrop = EnsureBG()
+    if not backdrop then
         return
     end
-    local cfg = EQT.DB()
-    local r = cfg.bgR or 0
-    local g = cfg.bgG or 0
-    local b = cfg.bgB or 0
-    local a = cfg.bgAlpha or 0.5
-    bg._tex:SetColorTexture(r, g, b, a)
+    local conf = EQT.DB()
+    local r = conf.bgR or 0
+    local g = conf.bgG or 0
+    local b = conf.bgB or 0
+    local a = conf.bgAlpha or 0.5
+    backdrop._tex:SetColorTexture(r, g, b, a)
     ResizeBGToContent()
     ApplyTopDivider()
 end
@@ -568,8 +568,8 @@ function EQT.ApplyForceOnScreen()
     if not otf then
         return
     end
-    local cfg = EQT.DB()
-    local force = cfg and cfg.forceOnScreen == true or false
+    local conf = EQT.DB()
+    local force = conf and conf.forceOnScreen == true or false
     otf:SetClampedToScreen(force)
 end
 

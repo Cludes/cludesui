@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the shared raid brez pool (charges + recharge timer) as a single icon.
 -------------------------------------------------------------------------------
 
-local _, ns = ...
+local _, mod = ...
 
 local BREZ_SPELL_ID = 20484 -- Rebirth -- canonical shared brez pool spell ID
 
@@ -15,7 +15,7 @@ local SHAPE_MASKS = CludesUI.SHAPE_MASKS
 
 -- Sits under CludesUIQoLDB.profile.battleRes so we don't clobber the
 -- existing cursor / QoL feature data that already lives in that SavedVariable.
-local defaults = {
+local defaultSet = {
     profile = {
         battleRes = {
             enabled = true,
@@ -67,11 +67,11 @@ local defaults = {
 
 local addon = {}
 addon.db = nil
-local function P()
+local function Prm()
     return addon.db and addon.db.profile and addon.db.profile.battleRes
 end
 
-local frame, iconTex, borderTex, durationFS, countFS, cooldownFrame, textFS
+local widget, iconTex, borderTex, durationFS, countFS, cooldownFrame, textFS
 
 -- Options-page live preview: forces the icon on screen for as long as the owning
 -- page is. Real charge data is used whenever the brez pool reports any; outside
@@ -83,7 +83,7 @@ local function _previewActive()
 end
 
 local function IsTextMode()
-    local p = P()
+    local p = Prm()
     return (p and p.displayMode) == "text"
 end
 
@@ -93,27 +93,27 @@ end
 --  through the shared font registry, and outline overrides stay slug-gated.
 -------------------------------------------------------------------------------
 local function GetBrezFont()
-    local p = P()
+    local p = Prm()
     local key = (p and p.font) or "__global"
     if key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local path = CludesUI.ResolveFontName(key)
-        if path then
-            return path
+        local filePath = CludesUI.ResolveFontName(key)
+        if filePath then
+            return filePath
         end
     end
     return (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT
 end
 
 local function GetBrezOutline()
-    local p = P()
-    local mode = (p and p.outlineMode) or "__global"
-    if mode == "outline" then
+    local p = Prm()
+    local modeName = (p and p.outlineMode) or "__global"
+    if modeName == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
-    if mode == "thick" then
+    if modeName == "thick" then
         return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
     end
-    if mode == "none" then
+    if modeName == "none" then
         return ""
     end
     return (CludesUI.GetFontOutlineFlag("qol")) or (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
@@ -123,24 +123,24 @@ end
 -- duration / count texts keep the fixed house style via SetBrezIconFont
 -- below. Empty flags = Drop Shadow mode, primed via FontObject (instance
 -- shadow setters do not render).
-local function SetBrezFont(fs, size)
-    if not fs then
+local function SetBrezFont(fontStr, dim)
+    if not fontStr then
         return
     end
     local flags = GetBrezOutline()
-    CludesUI.PrimeFontShadow(fs, flags == "")
-    fs:SetFont(GetBrezFont(), size, flags)
+    CludesUI.PrimeFontShadow(fontStr, flags == "")
+    fontStr:SetFont(GetBrezFont(), dim, flags)
 end
 
 -- Icon-mode duration / count texts: fixed module font + forced crisp
 -- outline (slug-gated), untouched by the Font / Font Outline settings.
-local function SetBrezIconFont(fs, size)
-    if not fs then
+local function SetBrezIconFont(fontStr, dim)
+    if not fontStr then
         return
     end
-    fs:SetFont(
+    fontStr:SetFont(
         (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
-        size,
+        dim,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
 end
@@ -167,40 +167,40 @@ end
 -- Snap a config-driven layout offset onto the pixel grid. The frame's own edges
 -- and center are snapped already (ApplyShape / ApplyPosition), so snapping the
 -- offset is what keeps the child anchored to it on the grid too.
-local function _snapOff(v)
-    local PP = CludesUI and CludesUI.PP
-    if PP and PP.Snap then
-        return PP.Snap(v)
+local function _snapOff(val)
+    local Pix = CludesUI and CludesUI.PP
+    if Pix and Pix.Snap then
+        return Pix.Snap(val)
     end
-    return v
+    return val
 end
 
 -- Custom-shape outline: the shape's mask grown by the border size and filled with
 -- the border colour behind the masked icon, leaving a ring exactly that thick.
-local function _applyShapeOutline(host, shape, bs, r, g, b, a)
-    local t = host._cuiOutline
+local function _applyShapeOutline(hostRegion, shape, bs, r, g, b, a)
+    local t = hostRegion._cuiOutline
     local maskPath = shape and CludesUI.SHAPE_MASKS[shape]
-    local PP = CludesUI and CludesUI.PP
-    if not (maskPath and PP) or bs <= 0 then
+    local Pix = CludesUI and CludesUI.PP
+    if not (maskPath and Pix) or bs <= 0 then
         if t then
             t:Hide()
         end
         return
     end
     if not t then
-        t = host:CreateTexture(nil, "BACKGROUND", nil, 7)
-        host._cuiOutlineMask = host:CreateMaskTexture()
-        t:AddMaskTexture(host._cuiOutlineMask)
-        host._cuiOutline = t
+        t = hostRegion:CreateTexture(nil, "BACKGROUND", nil, 7)
+        hostRegion._cuiOutlineMask = hostRegion:CreateMaskTexture()
+        t:AddMaskTexture(hostRegion._cuiOutlineMask)
+        hostRegion._cuiOutline = t
     end
-    local m = host._cuiOutlineMask
+    local m = hostRegion._cuiOutlineMask
     -- The mask's opening is its middle (128 - 2 * inset) / 128: grow it by bs over
     -- that ratio so the outline reaches bs pixels past the icon's own edge.
     local inset = CludesUI.SHAPE_INSETS[shape] or 17
-    local grow = _snapOff(PP.FromPixels(bs * 128 / (128 - 2 * inset)))
+    local grow = _snapOff(Pix.FromPixels(bs * 128 / (128 - 2 * inset)))
     m:ClearAllPoints()
-    m:SetPoint("TOPLEFT", host, "TOPLEFT", -grow, grow)
-    m:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", grow, -grow)
+    m:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", -grow, grow)
+    m:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", grow, -grow)
     m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     t:ClearAllPoints()
     t:SetAllPoints(m)
@@ -208,39 +208,39 @@ local function _applyShapeOutline(host, shape, bs, r, g, b, a)
     t:Show()
 end
 -- Shared with the Bloodlust tracker (this file loads first).
-ns.QoL_ApplyShapeOutline = _applyShapeOutline
+mod.QoL_ApplyShapeOutline = _applyShapeOutline
 
 local function ApplyShape()
-    if not frame then
+    if not widget then
         return
     end
-    local p = P()
+    local p = Prm()
     if not p then
         return
     end
 
-    local PP = CludesUI and CludesUI.PP
+    local Pix = CludesUI and CludesUI.PP
     local shape = p.shape or "none"
     local bs = BORDER_PX[p.borderSize or "thin"] or 1
 
     -- Frame sizing: square by default; for "cropped" the height is 80% of width
     -- (mirrors Action Bars line 2263: btnH = btnH * 0.80).
-    local size = p.iconSize or 40
-    local fw, fh = size, size
+    local dim = p.iconSize or 40
+    local fw, fh = dim, dim
     if shape == "cropped" then
-        fh = math.floor(size * 0.80 + 0.5)
+        fh = math.floor(dim * 0.80 + 0.5)
     end
-    if PP and PP.Snap then
-        fw, fh = PP.Snap(fw), PP.Snap(fh)
+    if Pix and Pix.Snap then
+        fw, fh = Pix.Snap(fw), Pix.Snap(fh)
     end
-    frame:SetSize(fw, fh)
+    widget:SetSize(fw, fh)
     iconTex:ClearAllPoints()
-    iconTex:SetAllPoints(frame)
+    iconTex:SetAllPoints(widget)
 
     -- Cooldown swirl: covers the icon area.
     if cooldownFrame then
         cooldownFrame:ClearAllPoints()
-        cooldownFrame:SetAllPoints(frame)
+        cooldownFrame:SetAllPoints(widget)
     end
 
     -- Duration text (centered) and count text (bottom-right) -- positioned for
@@ -249,7 +249,7 @@ local function ApplyShape()
     durationFS:ClearAllPoints()
     durationFS:SetPoint(
         "CENTER",
-        frame,
+        widget,
         "CENTER",
         _snapOff(p.durationOffsetX or 0),
         _snapOff(p.durationOffsetY or 0)
@@ -259,7 +259,7 @@ local function ApplyShape()
     countFS:ClearAllPoints()
     countFS:SetPoint(
         "BOTTOMRIGHT",
-        frame,
+        widget,
         "BOTTOMRIGHT",
         _snapOff(-2 + (p.countOffsetX or 0)),
         _snapOff(2 + (p.countOffsetY or 0))
@@ -287,7 +287,7 @@ local function ApplyShape()
             iconTex._mask = nil
         end
         borderTex:Hide() -- shape-border atlas is for custom shapes only
-        _applyShapeOutline(frame, nil, 0)
+        _applyShapeOutline(widget, nil, 0)
 
         local z = (p.iconZoom or 11) / 100
         if shape == "cropped" then
@@ -299,16 +299,16 @@ local function ApplyShape()
         end
 
         -- Pixel-perfect border via PP.CreateBorder (canonical CUI pattern).
-        if PP then
-            if not PP.GetBorders(frame) then
-                PP.CreateBorder(frame, 0, 0, 0, 1, 1, "OVERLAY", 2)
+        if Pix then
+            if not Pix.GetBorders(widget) then
+                Pix.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
             if bs > 0 then
                 local r, g, b, a = _resolveBorderColor(p)
-                PP.UpdateBorder(frame, bs, r, g, b, a)
-                PP.ShowBorder(frame)
+                Pix.UpdateBorder(widget, bs, r, g, b, a)
+                Pix.ShowBorder(widget)
             else
-                PP.HideBorder(frame)
+                Pix.HideBorder(widget)
             end
         end
         return
@@ -317,14 +317,14 @@ local function ApplyShape()
     -----------------------------------------------------------------------
     --  CUSTOM SHAPE: apply mask + shape-matching border overlay
     -----------------------------------------------------------------------
-    if PP then
-        PP.HideBorder(frame)
+    if Pix then
+        Pix.HideBorder(widget)
     end
 
     local maskPath = SHAPE_MASKS[shape]
     if maskPath then
         if not iconTex._mask then
-            iconTex._mask = frame:CreateMaskTexture()
+            iconTex._mask = widget:CreateMaskTexture()
             iconTex._mask:SetAllPoints(iconTex)
             iconTex:AddMaskTexture(iconTex._mask)
         end
@@ -353,7 +353,7 @@ local function ApplyShape()
 
     borderTex:Hide()
     local r, g, b, a = _resolveBorderColor(p)
-    _applyShapeOutline(frame, shape, bs, r, g, b, a)
+    _applyShapeOutline(widget, shape, bs, r, g, b, a)
 end
 
 -------------------------------------------------------------------------------
@@ -392,7 +392,7 @@ end
 -- placeholder string; live polling overwrites it the moment the tracker
 -- shows (UpdateVisibility polls immediately on Show).
 local function ApplyText()
-    local p = P()
+    local p = Prm()
     if not p or not textFS then
         return
     end
@@ -402,46 +402,46 @@ local function ApplyText()
     -- Drop the dedupe caches so the next compose re-renders with new colors
     -- (the ticker repaints within half a second while shown).
     _txtCount, _txtTime, _txtZero = nil, nil, nil
-    if not frame:IsShown() then
+    if not widget:IsShown() then
         _setTextDisplay("2", "4:14", false)
     end
-    local w = textFS:GetStringWidth() or 0
-    local h = textFS:GetStringHeight() or 0
-    if w < 1 then
-        w = (p.textSize or 14) * 4
+    local wid = textFS:GetStringWidth() or 0
+    local hgt = textFS:GetStringHeight() or 0
+    if wid < 1 then
+        wid = (p.textSize or 14) * 4
     end
-    if h < 1 then
-        h = p.textSize or 14
+    if hgt < 1 then
+        hgt = p.textSize or 14
     end
-    local tw, th = math.ceil(w) + 4, math.ceil(h) + 2
+    local tw, th = math.ceil(wid) + 4, math.ceil(hgt) + 2
     local PPt = CludesUI and CludesUI.PP
     if PPt and PPt.Snap then
         tw, th = PPt.Snap(tw), PPt.Snap(th)
     end
-    frame:SetSize(tw, th)
+    widget:SetSize(tw, th)
 end
 
 -------------------------------------------------------------------------------
 --  Position
 -------------------------------------------------------------------------------
 local function ApplyPosition()
-    if not frame then
+    if not widget then
         return
     end
-    local p = P()
+    local p = Prm()
     if not p then
         return
     end
-    frame:ClearAllPoints()
-    local pos = p.pos
-    local cx = (pos and pos.centerX) or 0
-    local cy = (pos and pos.centerY) or 200
+    widget:ClearAllPoints()
+    local place = p.pos
+    local cx = (place and place.centerX) or 0
+    local cy = (place and place.centerY) or 200
     local PPp = CludesUI and CludesUI.PP
     if PPp and PPp.SnapCenterForDim then
-        cx = PPp.SnapCenterForDim(cx, frame:GetWidth())
-        cy = PPp.SnapCenterForDim(cy, frame:GetHeight())
+        cx = PPp.SnapCenterForDim(cx, widget:GetWidth())
+        cy = PPp.SnapCenterForDim(cy, widget:GetHeight())
     end
-    frame:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
+    widget:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
 end
 
 -------------------------------------------------------------------------------
@@ -473,7 +473,7 @@ local function _activeKeystoneLevel()
 end
 
 -- Re-read encounter and keystone state directly (zone-in, or events re-registered).
-function ns.RefreshInstanceState(st)
+function mod.RefreshInstanceState(st)
     st.inEncounter = IsEncounterInProgress() or false
     if st.inEncounter then
         local _, instanceType = GetInstanceInfo()
@@ -486,34 +486,34 @@ end
 
 -- Mirrors CludesUIMythicTimer's keystone events plus ENCOUNTER_START/END
 -- for raid bosses. Other events are ignored.
-function ns.ApplyInstanceEvent(st, event)
-    if event == "ENCOUNTER_START" then
+function mod.ApplyInstanceEvent(st, evt)
+    if evt == "ENCOUNTER_START" then
         st.inEncounter = true
         local _, instanceType = GetInstanceInfo()
         st.encounterIsRaid = (instanceType == "raid")
-    elseif event == "ENCOUNTER_END" then
+    elseif evt == "ENCOUNTER_END" then
         st.inEncounter = false
         st.encounterIsRaid = false
-    elseif event == "CHALLENGE_MODE_START" or event == "WORLD_STATE_TIMER_START" then
+    elseif evt == "CHALLENGE_MODE_START" or evt == "WORLD_STATE_TIMER_START" then
         st.inChallenge = _activeKeystoneLevel() ~= nil
     elseif
-        event == "CHALLENGE_MODE_COMPLETED"
-        or event == "CHALLENGE_MODE_RESET"
-        or event == "WORLD_STATE_TIMER_STOP"
+        evt == "CHALLENGE_MODE_COMPLETED"
+        or evt == "CHALLENGE_MODE_RESET"
+        or evt == "WORLD_STATE_TIMER_STOP"
     then
         st.inChallenge = false
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        ns.RefreshInstanceState(st)
+    elseif evt == "PLAYER_ENTERING_WORLD" then
+        mod.RefreshInstanceState(st)
     end
 end
 
 local function ShouldShow()
-    local p = P()
+    local p = Prm()
     if not p or not p.enabled then
         return false
     end
-    local v = p.visibility or "MPLUS_AND_RAID"
-    if v == "NEVER" then
+    local val = p.visibility or "MPLUS_AND_RAID"
+    if val == "NEVER" then
         return false
     end
     -- Options preview: forced on screen while the page is up, skipping the instance
@@ -531,8 +531,8 @@ local function ShouldShow()
         return false
     end
 
-    local wantMPlus = (v == "MPLUS_AND_RAID" or v == "MPLUS")
-    local wantRaid = (v == "MPLUS_AND_RAID" or v == "RAID")
+    local wantMPlus = (val == "MPLUS_AND_RAID" or val == "MPLUS")
+    local wantRaid = (val == "MPLUS_AND_RAID" or val == "RAID")
     if wantMPlus and _state.inChallenge then
         return true
     end
@@ -555,7 +555,7 @@ local function FormatTime(s)
 end
 -- Shared with the Bloodlust tracker (identical display contract; this file
 -- loads first).
-ns.FormatTime = FormatTime
+mod.FormatTime = FormatTime
 
 -- WoW Forever has no shared battle res charge pool, so the indicator does not
 -- exist there: the shared helpers above stay defined, and nothing below runs
@@ -589,11 +589,11 @@ local function _setDur(s)
     end
 end
 local _lastDesat = false
-local function _setDesat(want)
-    want = want and true or false
-    if want ~= _lastDesat then
-        iconTex:SetDesaturated(want)
-        _lastDesat = want
+local function _setDesat(wanted)
+    wanted = wanted and true or false
+    if wanted ~= _lastDesat then
+        iconTex:SetDesaturated(wanted)
+        _lastDesat = wanted
     end
 end
 
@@ -623,12 +623,12 @@ local function _showPreviewCharges()
 end
 
 local function PollCharges()
-    if not frame then
+    if not widget then
         return
     end
     local textMode = IsTextMode()
-    local info = C_Spell and C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(BREZ_SPELL_ID)
-    if not info or not info.maxCharges then
+    local details = C_Spell and C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(BREZ_SPELL_ID)
+    if not details or not details.maxCharges then
         if _previewActive() then
             return _showPreviewCharges()
         end
@@ -641,8 +641,8 @@ local function PollCharges()
         end
         return
     end
-    local charges, maxCharges = info.currentCharges, info.maxCharges
-    local start, dur = info.cooldownStartTime, info.cooldownDuration
+    local charges, maxCharges = details.currentCharges, details.maxCharges
+    local start, dur = details.cooldownStartTime, details.cooldownDuration
     local recharging = charges < maxCharges and start and dur and dur > 0
     local timeText = ""
     if recharging then
@@ -657,7 +657,7 @@ local function PollCharges()
 
     _setCount(tostring(charges), charges <= 0)
     _setDur(timeText)
-    local p = P()
+    local p = Prm()
     _setDesat(p and p.desaturateNoCharges ~= false and charges <= 0)
     if cooldownFrame then
         if recharging then
@@ -671,20 +671,20 @@ end
 -- Ticker only runs while the icon is actually visible.
 local _ticker
 local function UpdateVisibility()
-    if not frame then
+    if not widget then
         return
     end
     if ShouldShow() then
-        if not frame:IsShown() then
-            frame:Show()
+        if not widget:IsShown() then
+            widget:Show()
         end
         if not _ticker then
             _ticker = C_Timer.NewTicker(0.5, PollCharges)
         end
         PollCharges()
     else
-        if frame:IsShown() then
-            frame:Hide()
+        if widget:IsShown() then
+            widget:Hide()
         end
         if _ticker then
             _ticker:Cancel()
@@ -719,16 +719,16 @@ end
 --  Frame creation
 -------------------------------------------------------------------------------
 local function CreateBrezFrame()
-    if frame then
-        return frame
+    if widget then
+        return widget
     end
-    frame = CreateFrame("Frame", "CludesUIBattleResIcon", UIParent)
-    frame:SetFrameStrata("MEDIUM")
-    frame:SetSize(40, 40)
-    frame:Hide()
+    widget = CreateFrame("Frame", "CludesUIBattleResIcon", UIParent)
+    widget:SetFrameStrata("MEDIUM")
+    widget:SetSize(40, 40)
+    widget:Hide()
 
-    iconTex = frame:CreateTexture(nil, "ARTWORK")
-    iconTex:SetAllPoints(frame)
+    iconTex = widget:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints(widget)
     local brezIcon
     if C_Spell and C_Spell.GetSpellTexture then
         brezIcon = C_Spell.GetSpellTexture(BREZ_SPELL_ID)
@@ -736,14 +736,14 @@ local function CreateBrezFrame()
     iconTex:SetTexture(brezIcon or 136080)
     iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    borderTex = frame:CreateTexture(nil, "OVERLAY")
+    borderTex = widget:CreateTexture(nil, "OVERLAY")
     borderTex:Hide()
 
-    cooldownFrame = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-    cooldownFrame:SetAllPoints(frame)
+    cooldownFrame = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    cooldownFrame:SetAllPoints(widget)
     cooldownFrame:SetDrawEdge(false)
     cooldownFrame:SetHideCountdownNumbers(true) -- we render our own duration text
-    cooldownFrame:SetFrameLevel(frame:GetFrameLevel() + 1)
+    cooldownFrame:SetFrameLevel(widget:GetFrameLevel() + 1)
 
     durationFS = cooldownFrame:CreateFontString(nil, "OVERLAY")
     SetBrezIconFont(durationFS, 14)
@@ -757,13 +757,13 @@ local function CreateBrezFrame()
     -- icon elements when displayMode is "text". A default font is required
     -- before any SetText ("Font not set" error otherwise); ApplyText re-applies
     -- the configured size on top of it.
-    textFS = frame:CreateFontString(nil, "OVERLAY")
+    textFS = widget:CreateFontString(nil, "OVERLAY")
     SetBrezFont(textFS, 14)
-    textFS:SetPoint("CENTER", frame, "CENTER", 0, 0)
+    textFS:SetPoint("CENTER", widget, "CENTER", 0, 0)
     textFS:SetText("")
     textFS:Hide()
 
-    return frame
+    return widget
 end
 
 -------------------------------------------------------------------------------
@@ -774,7 +774,7 @@ local function Apply()
     if not addon.db then
         return
     end
-    if not frame then
+    if not widget then
         CreateBrezFrame()
     end
     if IsTextMode() then
@@ -786,11 +786,11 @@ local function Apply()
             cooldownFrame:Clear()
             cooldownFrame:Hide()
         end
-        local PP = CludesUI and CludesUI.PP
-        if PP and PP.GetBorders and PP.GetBorders(frame) then
-            PP.HideBorder(frame)
+        local Pix = CludesUI and CludesUI.PP
+        if Pix and Pix.GetBorders and Pix.GetBorders(widget) then
+            Pix.HideBorder(widget)
         end
-        _applyShapeOutline(frame, nil, 0)
+        _applyShapeOutline(widget, nil, 0)
         textFS:Show()
         ApplyText()
     else
@@ -815,7 +815,7 @@ function _G._CUI_BattleRes_Reset()
         return
     end
     prof.battleRes, prof.bloodlust = {}, {}
-    CludesUI.Lite.DeepMergeDefaults(prof, defaults.profile)
+    CludesUI.Lite.DeepMergeDefaults(prof, defaultSet.profile)
     Apply()
     if _G._CUI_Bloodlust_Apply then
         _G._CUI_Bloodlust_Apply()
@@ -826,8 +826,8 @@ end
 --  Event handler (state writes live in ns.ApplyInstanceEvent above)
 -------------------------------------------------------------------------------
 local _eventFrame
-local function OnEvent(_, event)
-    ns.ApplyInstanceEvent(_state, event)
+local function OnEvent(_, evt)
+    mod.ApplyInstanceEvent(_state, evt)
     UpdateVisibility()
 end
 
@@ -838,13 +838,13 @@ end
 -- mid-key still catches up on events missed while unregistered.
 local _eventsRegistered = false
 _syncEventRegistration = function()
-    local p = P()
-    local want = (p and p.enabled and (p.visibility or "MPLUS_AND_RAID") ~= "NEVER") and true or false
-    if want == _eventsRegistered then
+    local p = Prm()
+    local wanted = (p and p.enabled and (p.visibility or "MPLUS_AND_RAID") ~= "NEVER") and true or false
+    if wanted == _eventsRegistered then
         return
     end
-    _eventsRegistered = want
-    if want then
+    _eventsRegistered = wanted
+    if wanted then
         if not _eventFrame then
             _eventFrame = CreateFrame("Frame")
             _eventFrame:SetScript("OnEvent", OnEvent)
@@ -857,7 +857,7 @@ _syncEventRegistration = function()
         _eventFrame:RegisterEvent("WORLD_STATE_TIMER_START")
         _eventFrame:RegisterEvent("WORLD_STATE_TIMER_STOP")
         _eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        ns.RefreshInstanceState(_state)
+        mod.RefreshInstanceState(_state)
     else
         if _eventFrame then
             _eventFrame:UnregisterAllEvents()
@@ -876,7 +876,7 @@ local function RegisterUnlock()
     if not MK then
         return
     end
-    local loadPos, clearPos = ns.CenterPosFns(P)
+    local loadPos, clearPos = mod.CenterPosFns(Prm)
 
     CludesUI:RegisterUnlockElements({
         MK({
@@ -886,34 +886,34 @@ local function RegisterUnlock()
             order = 600,
             noAnchorTarget = true, -- icon size changes; nothing should be anchored to it
             isHidden = function()
-                local p = P()
+                local p = Prm()
                 return not p or not p.enabled or (p.visibility == "NEVER")
             end,
             getFrame = function()
-                if not frame then
+                if not widget then
                     CreateBrezFrame()
                 end
-                return frame
+                return widget
             end,
             getSize = function()
-                local p = P()
+                local p = Prm()
                 if p and p.displayMode == "text" then
                     -- Text display: the frame is sized to the measured text
                     -- box by ApplyText, so report that instead of iconSize.
-                    if not frame then
+                    if not widget then
                         CreateBrezFrame()
                     end
-                    local w, h = frame:GetWidth(), frame:GetHeight()
-                    if w and w > 0 then
-                        return w, h
+                    local wid, hgt = widget:GetWidth(), widget:GetHeight()
+                    if wid and wid > 0 then
+                        return wid, hgt
                     end
                 end
                 local s = (p and p.iconSize) or 40
                 return s, s
             end,
             linkedDimensions = true, -- always square; one slider drives both
-            setWidth = function(_, w)
-                local p = P()
+            setWidth = function(_, wid)
+                local p = Prm()
                 if not p then
                     return
                 end
@@ -924,14 +924,14 @@ local function RegisterUnlock()
                     return
                 end
                 local PPb = CludesUI and CludesUI.PP
-                p.iconSize = math.max(16, PPb and PPb.Snap(w) or math.floor(w + 0.5))
+                p.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_BattleRes")
                 end
             end,
-            setHeight = function(_, h)
-                local p = P()
+            setHeight = function(_, hgt)
+                local p = Prm()
                 if not p then
                     return
                 end
@@ -940,27 +940,27 @@ local function RegisterUnlock()
                     -- to the current one is the unlock round-trip (Cancel feeds the open
                     -- snapshot back) and leaves textSize alone; a different height is a
                     -- real resize, mapped back through ApplyText's box padding.
-                    if frame and math.abs(h - frame:GetHeight()) < 0.5 then
+                    if widget and math.abs(hgt - widget:GetHeight()) < 0.5 then
                         return
                     end
-                    p.textSize = math.max(8, math.min(40, math.floor(h + 0.5) - 2))
+                    p.textSize = math.max(8, math.min(40, math.floor(hgt + 0.5) - 2))
                 else
                     local PPb = CludesUI and CludesUI.PP
-                    p.iconSize = math.max(16, PPb and PPb.Snap(h) or math.floor(h + 0.5))
+                    p.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 end
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_BattleRes")
                 end
             end,
-            savePos = function(_, point, relPoint, x, y)
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
-                local p = P()
+                local p = Prm()
                 if not p then
                     return
                 end
-                p.pos = { centerX = x, centerY = y }
+                p.pos = { centerX = posX, centerY = posY }
             end,
             loadPos = loadPos,
             clearPos = clearPos,
@@ -982,7 +982,7 @@ boot:SetScript("OnEvent", function(self)
     if not CludesUI or not CludesUI.Lite or not CludesUI.Lite.NewDB then
         return
     end
-    addon.db = CludesUI.Lite.NewDB("CludesUIQoLDB", defaults, true)
+    addon.db = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet, true)
     _G._CUI_BattleRes_DB = function()
         return addon.db
     end

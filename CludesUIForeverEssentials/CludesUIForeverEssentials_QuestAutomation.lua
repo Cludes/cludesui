@@ -27,8 +27,8 @@ local Get, Enabled = F.Get, F.Enabled
 local function Paused()
     return IsShiftKeyDown()
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 
 local ev = CreateFrame("Frame")
@@ -53,26 +53,26 @@ end
 -- The older quest greeting window (an NPC with only quests to offer).
 local function OnGreeting()
     if Get("turnIn") then
-        for i = 1, GetNumActiveQuests() do
-            local _, complete = GetActiveTitle(i)
+        for idx = 1, GetNumActiveQuests() do
+            local _, complete = GetActiveTitle(idx)
             if complete then
-                return SelectActiveQuest(i)
+                return SelectActiveQuest(idx)
             end
         end
     end
     if Get("accept") then
-        for i = 1, GetNumAvailableQuests() do
-            local trivial = IsAvailableQuestTrivial and IsAvailableQuestTrivial(i)
+        for idx = 1, GetNumAvailableQuests() do
+            local trivial = IsAvailableQuestTrivial and IsAvailableQuestTrivial(idx)
             if not (Get("skipGrey") and trivial) then
-                return SelectAvailableQuest(i)
+                return SelectAvailableQuest(idx)
             end
         end
     end
 end
 
 local lastSaid = {}
-ev:SetScript("OnEvent", function(_, event, a1, a2)
-    if event == "UI_INFO_MESSAGE" then
+ev:SetScript("OnEvent", function(_, evt, a1, a2)
+    if evt == "UI_INFO_MESSAGE" then
         if not (Get("progress") and IsInGroup(LE_PARTY_CATEGORY_HOME) and not IsInRaid()) then
             return
         end
@@ -94,24 +94,24 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
     if Paused() then
         return
     end
-    if event == "GOSSIP_SHOW" then
+    if evt == "GOSSIP_SHOW" then
         OnGossip()
-    elseif event == "QUEST_GREETING" then
+    elseif evt == "QUEST_GREETING" then
         OnGreeting()
-    elseif event == "QUEST_DETAIL" then
+    elseif evt == "QUEST_DETAIL" then
         if Get("accept") and not (Get("skipGrey") and QuestIsTrivial and QuestIsTrivial()) then
             AcceptQuest()
         end
-    elseif event == "QUEST_ACCEPT_CONFIRM" then
+    elseif evt == "QUEST_ACCEPT_CONFIRM" then
         -- An escort quest started by a group member.
         if Get("accept") then
             ConfirmAcceptQuest()
         end
-    elseif event == "QUEST_PROGRESS" then
+    elseif evt == "QUEST_PROGRESS" then
         if Get("turnIn") and IsQuestCompletable() then
             CompleteQuest()
         end
-    elseif event == "QUEST_COMPLETE" then
+    elseif evt == "QUEST_COMPLETE" then
         if Get("turnIn") and GetNumQuestChoices() <= 1 then
             GetQuestReward(GetNumQuestChoices())
         end

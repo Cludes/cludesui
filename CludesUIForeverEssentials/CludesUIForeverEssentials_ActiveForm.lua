@@ -65,7 +65,7 @@ local buffIDs -- [spell id] = true, built the first time it is needed
 local buffIcon, buffInstance
 local buffDirty = true
 
-local frame, tex, border
+local widget, tex, border
 local eventFrame = CreateFrame("Frame")
 local active = false -- shown, with its events registered
 local visRegistered = false -- on the shared visibility dispatcher
@@ -77,10 +77,10 @@ local function BuildBuffIDs()
         return
     end
     buffIDs = {}
-    for i = 1, #buffSpells do
-        local ids = buffSpells[i]
-        for j = 1, #ids do
-            buffIDs[ids[j]] = true
+    for idx = 1, #buffSpells do
+        local ids = buffSpells[idx]
+        for jdx = 1, #ids do
+            buffIDs[ids[jdx]] = true
         end
     end
 end
@@ -99,13 +99,13 @@ local function BuffIcon()
     BuildBuffIDs()
     buffDirty = false
     buffIcon, buffInstance = nil, nil
-    for i = 1, 40 do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL|PLAYER")
+    for idx = 1, 40 do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL|PLAYER")
         if not aura then
             break
         end
-        local id = aura.spellId
-        if not IsSecret(id) and id and buffIDs[id] then
+        local ident = aura.spellId
+        if not IsSecret(ident) and ident and buffIDs[ident] then
             buffIcon = aura.icon
             local iid = aura.auraInstanceID
             if not IsSecret(iid) then
@@ -123,37 +123,37 @@ end
 -- indexing one is a hard error, so every layer is gated; a payload that cannot
 -- be read counts as one that matters (the scan keeps its last answer while
 -- aura data is restricted).
-local function AuraChangeMatters(info)
-    if info == nil or IsSecret(info) then
+local function AuraChangeMatters(details)
+    if details == nil or IsSecret(details) then
         return true
     end
-    local full = info.isFullUpdate
+    local full = details.isFullUpdate
     if IsSecret(full) or full then
         return true
     end
-    local added = info.addedAuras
+    local added = details.addedAuras
     if added ~= nil and buffIDs then
         if IsSecret(added) then
             return true
         end
-        for i = 1, #added do
-            local aura = added[i]
+        for idx = 1, #added do
+            local aura = added[idx]
             if aura == nil or IsSecret(aura) then
                 return true
             end
-            local id = aura.spellId
-            if not IsSecret(id) and id and buffIDs[id] then
+            local ident = aura.spellId
+            if not IsSecret(ident) and ident and buffIDs[ident] then
                 return true
             end
         end
     end
-    local removed = info.removedAuraInstanceIDs
+    local removed = details.removedAuraInstanceIDs
     if removed ~= nil and buffInstance then
         if IsSecret(removed) then
             return true
         end
-        for i = 1, #removed do
-            local iid = removed[i]
+        for idx = 1, #removed do
+            local iid = removed[idx]
             if not IsSecret(iid) and iid == buffInstance then
                 return true
             end
@@ -166,20 +166,20 @@ end
 -- (secret), so the icon keeps what it shows. The form's own spell icon: the
 -- stance bar gives an active druid form or paladin aura a generic one.
 local function CurrentIcon()
-    local n = GetNumShapeshiftForms()
-    if IsSecret(n) then
+    local num = GetNumShapeshiftForms()
+    if IsSecret(num) then
         return false
     end
-    for i = 1, n do
-        local icon, isActive, _, spellID = GetShapeshiftFormInfo(i)
+    for idx = 1, num do
+        local glyph, isActive, _, spellID = GetShapeshiftFormInfo(idx)
         if IsSecret(isActive) then
             return false
         end
         if isActive then
             if spellID and not IsSecret(spellID) then
-                return C_Spell.GetSpellTexture(spellID) or icon
+                return C_Spell.GetSpellTexture(spellID) or glyph
             end
-            return icon
+            return glyph
         end
     end
     return buffSpells and BuffIcon() or nil
@@ -189,29 +189,29 @@ local function Refresh()
     if not active then
         return
     end
-    local icon = CurrentIcon()
+    local glyph = CurrentIcon()
     -- A secret icon still paints (the texture takes it); it cannot be tested.
-    if IsSecret(icon) then
-        tex:SetTexture(icon)
-        frame:Show()
+    if IsSecret(glyph) then
+        tex:SetTexture(glyph)
+        widget:Show()
         return
     end
-    if icon == false then
+    if glyph == false then
         return
     end
-    if icon then
-        tex:SetTexture(icon)
-        frame:Show()
+    if glyph then
+        tex:SetTexture(glyph)
+        widget:Show()
     else
-        frame:Hide()
+        widget:Hide()
     end
 end
 
 -- Stance and form changes only repaint (the buff answer is kept); aura
 -- changes rescan only when they can matter; combat end and a loading screen
 -- rescan, since a restricted stretch may have hidden a change.
-local function OnEvent(_, event, _, info, spellID)
-    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+local function OnEvent(_, evt, _, details, spellID)
+    if evt == "UNIT_SPELLCAST_SUCCEEDED" then
         -- Only while the buff scan cannot run (combat): own casts stay readable, a tracked
         -- cast is the new aspect or aura, and the scan reruns once it can.
         if not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()) then
@@ -222,12 +222,12 @@ local function OnEvent(_, event, _, info, spellID)
             return
         end
         buffIcon, buffInstance, buffDirty = (C_Spell.GetSpellTexture(spellID)), nil, true
-    elseif event == "UNIT_AURA" then
-        if not AuraChangeMatters(info) then
+    elseif evt == "UNIT_AURA" then
+        if not AuraChangeMatters(details) then
             return
         end
         buffDirty = true
-    elseif event == "PLAYER_REGEN_ENABLED" or event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_REGEN_ENABLED" or evt == "PLAYER_ENTERING_WORLD" then
         buffDirty = true
     end
     Refresh()
@@ -238,7 +238,7 @@ local function SnappedSize()
 end
 
 local function Style()
-    frame:SetSize(SnappedSize(), SnappedSize())
+    widget:SetSize(SnappedSize(), SnappedSize())
     local z = Get("zoom") / 100
     tex:SetTexCoord(z, 1 - z, z, 1 - z)
     local step, texture = Get("borderSize"), Get("borderTexture")
@@ -262,17 +262,17 @@ local function Style()
 end
 
 local function BuildFrame()
-    if frame then
+    if widget then
         return
     end
-    frame = CreateFrame("Frame", "CludesUIActiveForm", UIParent)
-    frame:SetFrameStrata("MEDIUM")
-    frame:SetClampedToScreen(true)
-    frame:EnableMouse(false)
-    frame:Hide()
-    tex = frame:CreateTexture(nil, "ARTWORK")
+    widget = CreateFrame("Frame", "CludesUIActiveForm", UIParent)
+    widget:SetFrameStrata("MEDIUM")
+    widget:SetClampedToScreen(true)
+    widget:EnableMouse(false)
+    widget:Hide()
+    tex = widget:CreateTexture(nil, "ARTWORK")
     tex:SetAllPoints()
-    border = CreateFrame("Frame", nil, frame)
+    border = CreateFrame("Frame", nil, widget)
     border:SetAllPoints()
     border:EnableMouse(false)
     eventFrame:SetScript("OnEvent", OnEvent)
@@ -299,12 +299,12 @@ local function SetActive(on)
         return
     end
     eventFrame:UnregisterAllEvents()
-    frame:Hide()
+    widget:Hide()
 end
 
 local function UpdateVisibility()
     SetActive(
-        (frame and supported and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false
+        (widget and supported and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false
     )
 end
 
@@ -317,7 +317,7 @@ local function Apply()
         end
         Style()
         if not CludesUI._unlockActive then
-            F.Place(frame, true)
+            F.Place(widget, true)
         end
     elseif visRegistered then
         visRegistered = false
@@ -340,11 +340,11 @@ F.Start(Apply, {
     label = "Active Stance",
     order = 730,
     frame = function()
-        return frame
+        return widget
     end,
     size = function()
-        local size = SnappedSize()
-        return size, size
+        local dim = SnappedSize()
+        return dim, dim
     end,
     snap = true,
     noAnchorTarget = true,

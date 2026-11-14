@@ -9,31 +9,31 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  its font, anchor and colour, and one painter per kind. The event paths read
 --  the plan and settings the button was last painted with (d._txP, d._txS).
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs, setmetatable, type, CreateFrame = pairs, setmetatable, type, CreateFrame
 local tostring, tconcat = tostring, table.concat
 local UnitIsConnected, UnitIsDeadOrGhost = UnitIsConnected, UnitIsDeadOrGhost
 local UnitClass, UnitPowerType, UnitPowerPercent = UnitClass, UnitPowerType, UnitPowerPercent
 local UnitGetTotalHealAbsorbs, issecretvalue = UnitGetTotalHealAbsorbs, issecretvalue
-local ApplyFont, GetPowerColor = I.ApplyFont, I.GetPowerColor
-local GetSafeHealthPercent, ResolveDisplayName = I.GetSafeHealthPercent, I.ResolveDisplayName
+local ApplyFont, GetPowerColor = Inner.ApplyFont, Inner.GetPowerColor
+local GetSafeHealthPercent, ResolveDisplayName = Inner.GetSafeHealthPercent, Inner.ResolveDisplayName
 
-local TEXTS = ns.RF_TEXTS
+local TEXTS = mod.RF_TEXTS
 local NTEXTS = #TEXTS
-local IS_POS = ns.RF_TEXT_POS_INDEX
+local IS_POS = mod.RF_TEXT_POS_INDEX
 
 -- Every text's setting keys under the names the painters read, built once.
 local KEYS = {}
-for i = 1, NTEXTS do
-    local t = TEXTS[i]
-    KEYS[i] = {
+for idx = 1, NTEXTS do
+    local t = TEXTS[idx]
+    KEYS[idx] = {
         X = t.x,
         Y = t.y,
         Size = t.size,
@@ -47,7 +47,7 @@ end
 -- Per kind, as the old element FontStrings: width (a share of the frame width; the
 -- name its own), word wrap, alpha and the colour a mode falls back to.
 local KIND = {
-    name = { width = ns.RF_NAME_WIDTH_FRACTION, wrap = false, a = 1 },
+    name = { width = mod.RF_NAME_WIDTH_FRACTION, wrap = false, a = 1 },
     level = { wrap = false, a = 1 },
     hp = { width = 0.75, wrap = true, a = 0.9 },
     pp = { width = 0.75, wrap = false, a = 0.9 },
@@ -84,7 +84,7 @@ local MODES = {
 -------------------------------------------------------------------------------
 local gen, plans = 1, setmetatable({}, { __mode = "k" })
 
-function ns.RF_TextPlanDirty()
+function mod.RF_TextPlanDirty()
     gen = gen + 1
 end
 
@@ -92,57 +92,57 @@ end
 -- settings (anything indexable), lvlPos: its level position or the client default.
 -- Shared with the Text Display tiles, so a tile shows exactly what the frames draw.
 local function Shown(t, s, lvlPos)
-    local kind = t.kind
-    if kind == "level" then
+    local kindOf = t.kind
+    if kindOf == "level" then
         if IS_POS[lvlPos] then
             return lvlPos
         end
         return
     end
-    local pos = s[t.pos] or "center"
-    if pos == "none" then
+    local place = s[t.pos] or "center"
+    if place == "none" then
         return
     end
-    if kind == "name" then
-        return pos
+    if kindOf == "name" then
+        return place
     end
-    if kind == "custom" then
+    if kindOf == "custom" then
         -- No template, nothing to draw.
         local f = s[t.fmt]
         if type(f) == "string" and f ~= "" then
-            return pos
+            return place
         end
         return
     end
-    local mode = s[t.mode]
-    if MODES[kind][mode] then
-        return pos, mode
+    local modeName = s[t.mode]
+    if MODES[kindOf][modeName] then
+        return place, modeName
     end
 end
-ns.RF_TextShown = Shown
+mod.RF_TextShown = Shown
 
 local function Build(s)
     local p = { gen = gen, all = {}, bySlot = {} }
-    local lvlPos = s.levelTextPosition or ns.RF_LEVEL_DEFAULT
-    p.nameAttach = ns.RF_LEVEL_ATTACH[lvlPos]
+    local lvlPos = s.levelTextPosition or mod.RF_LEVEL_DEFAULT
+    p.nameAttach = mod.RF_LEVEL_ATTACH[lvlPos]
     p.wantLevel = (lvlPos ~= "none") or nil
-    for i = 1, NTEXTS do
-        local t = TEXTS[i]
-        local pos, mode = Shown(t, s, lvlPos)
-        if pos then
-            local k = KEYS[i]
-            local kind = t.kind
+    for idx = 1, NTEXTS do
+        local t = TEXTS[idx]
+        local place, modeName = Shown(t, s, lvlPos)
+        if place then
+            local key = KEYS[idx]
+            local kindOf = t.kind
             local e = {
-                i = i,
-                k = k,
-                pos = pos,
-                kind = kind,
-                mode = mode,
-                prop = KIND[kind],
-                attach = (kind == "name") and p.nameAttach or nil,
+                i = idx,
+                k = key,
+                pos = place,
+                kind = kindOf,
+                mode = modeName,
+                prop = KIND[kindOf],
+                attach = (kindOf == "name") and p.nameAttach or nil,
             }
-            if kind == "custom" then
-                local cc = ns.RF_CustomCompile(s[k.CustomFormat])
+            if kindOf == "custom" then
+                local cc = mod.RF_CustomCompile(s[key.CustomFormat])
                 e.reads = cc and cc.reads or nil
                 if e.reads then
                     local r = p.reads or {}
@@ -152,14 +152,14 @@ local function Build(s)
                     end
                 end
             end
-            local l = p[kind]
+            local l = p[kindOf]
             if not l then
                 l = {}
-                p[kind] = l
+                p[kindOf] = l
             end
             l[#l + 1] = e
             p.all[#p.all + 1] = e
-            p.bySlot[i] = e
+            p.bySlot[idx] = e
         end
     end
     p.tick = (p.hp or p.ha or p.pp or (p.reads and p.reads.hp)) and true or nil
@@ -171,8 +171,8 @@ end
 -- plan, so the buttons skip a relayout (the reload paths re-anchor offsets and
 -- sizes themselves).
 local SIG_KEYS = { "levelTextPosition" }
-for i = 1, NTEXTS do
-    local t = TEXTS[i]
+for idx = 1, NTEXTS do
+    local t = TEXTS[idx]
     if t.kind ~= "level" then
         SIG_KEYS[#SIG_KEYS + 1] = t.pos
     end
@@ -183,16 +183,16 @@ for i = 1, NTEXTS do
         SIG_KEYS[#SIG_KEYS + 1] = t.fmt
     end
 end
-ns.RF_TEXT_SIG_KEYS = SIG_KEYS
+mod.RF_TEXT_SIG_KEYS = SIG_KEYS
 local sigParts = {}
 local function Sig(s)
-    for i = 1, #SIG_KEYS do
-        sigParts[i] = tostring(s[SIG_KEYS[i]])
+    for idx = 1, #SIG_KEYS do
+        sigParts[idx] = tostring(s[SIG_KEYS[idx]])
     end
     return tconcat(sigParts, "\31")
 end
 
-function ns.RF_TextPlan(s)
+function mod.RF_TextPlan(s)
     local p = plans[s]
     if not p or p.gen ~= gen then
         local sig = Sig(s)
@@ -206,14 +206,14 @@ function ns.RF_TextPlan(s)
     end
     return p
 end
-local Plan = ns.RF_TextPlan
+local Plan = mod.RF_TextPlan
 
 -- True while the raid, party or extra-frames view wants what: "level" (UNIT_LEVEL)
 -- or a value class some Custom text reads. Settings-time only: the event syncs.
 local VIEWS = { "_scaledProfile", "_scaledPartyProxy", "_scaledExtraProxy" }
-function ns.RF_TextWanted(what)
-    for i = 1, #VIEWS do
-        local s = ns[VIEWS[i]]
+function mod.RF_TextWanted(what)
+    for idx = 1, #VIEWS do
+        local s = mod[VIEWS[idx]]
         if s then
             local p = Plan(s)
             if (what == "level" and p.wantLevel) or (p.reads and p.reads[what]) then
@@ -225,54 +225,54 @@ function ns.RF_TextWanted(what)
 end
 
 -- The level format in front of the name, nil without one: the Top Name Bar follows it.
-function ns.RF_TextNameAttach(s)
+function mod.RF_TextNameAttach(s)
     return Plan(s).nameAttach
 end
 
 -------------------------------------------------------------------------------
 --  Layout and colour
 -------------------------------------------------------------------------------
-local function Dead(unit)
-    return UnitIsDeadOrGhost(unit) or not UnitIsConnected(unit)
+local function Dead(unitToken)
+    return UnitIsDeadOrGhost(unitToken) or not UnitIsConnected(unitToken)
 end
 
 -- A text's colour for its colour mode; pr, pg, pb: the unit's power colour when the
 -- caller has it. Unknown or unreadable falls back to the content's colour.
-local function TextColor(e, unit, s, pr, pg, pb)
-    local mode, P = s[e.k.ColorMode], e.prop
-    if mode == "accent" then
-        local r, g, b = ns.CludesUI.ResolveActiveAccent()
+local function TextColor(e, unitToken, s, pr, pg, pb)
+    local modeName, Prm = s[e.k.ColorMode], e.prop
+    if modeName == "accent" then
+        local r, g, b = mod.CludesUI.ResolveActiveAccent()
         if r then
             return r, g, b
         end
-    elseif mode == "class" then
-        local _, tok = UnitClass(unit)
+    elseif modeName == "class" then
+        local _, tok = UnitClass(unitToken)
         if tok and not issecretvalue(tok) then
-            local cc = ns.CludesUI.GetClassColor(tok)
+            local cc = mod.CludesUI.GetClassColor(tok)
             if cc then
                 return cc.r, cc.g, cc.b
             end
         end
-    elseif mode == "power" then
+    elseif modeName == "power" then
         if pr then
             return pr, pg, pb
         end
-        return GetPowerColor(unit)
+        return GetPowerColor(unitToken)
     else -- "custom"
         local c = s[e.k.Color]
         if c then
             return c.r, c.g, c.b
         end
     end
-    return P.r or 1, P.g or 1, P.b or 1
+    return Prm.r or 1, Prm.g or 1, Prm.b or 1
 end
 
 -- Stamped on the FontString (ours) so a repaint with the same colour sets nothing.
-local function Tint(fs, e, unit, s, pr, pg, pb)
-    local r, g, b = TextColor(e, unit, s, pr, pg, pb)
-    if fs._r ~= r or fs._g ~= g or fs._b ~= b then
-        fs._r, fs._g, fs._b = r, g, b
-        fs:SetTextColor(r, g, b, e.prop.a)
+local function Tint(fontStr, e, unitToken, s, pr, pg, pb)
+    local r, g, b = TextColor(e, unitToken, s, pr, pg, pb)
+    if fontStr._r ~= r or fontStr._g ~= g or fontStr._b ~= b then
+        fontStr._r, fontStr._g, fontStr._b = r, g, b
+        fontStr:SetTextColor(r, g, b, e.prop.a)
     end
 end
 
@@ -285,22 +285,22 @@ local function CarrierOf(d, s, e)
     if d._txFB then
         return main
     end
-    local base = s.nameTextAboveIcons and true or false
-    local v = s[e.k.Above]
-    if v == nil then
-        v = base
+    local baseValue = s.nameTextAboveIcons and true or false
+    local val = s[e.k.Above]
+    if val == nil then
+        val = baseValue
     end
-    if (v and true or false) == base then
+    if (val and true or false) == baseValue then
         return main
     end
-    local owner = main:GetParent()
+    local ownerFrame = main:GetParent()
     local alt = d._txAlt
     if not alt then
-        alt = CreateFrame("Frame", nil, owner)
+        alt = CreateFrame("Frame", nil, ownerFrame)
         alt:SetAllPoints(main)
         d._txAlt = alt
     end
-    local lvl = owner:GetFrameLevel() + (v and (ns.LVL_AURA + 6) or ns.LVL_TEXT)
+    local lvl = ownerFrame:GetFrameLevel() + (val and (mod.LVL_AURA + 6) or mod.LVL_TEXT)
     if alt:GetFrameLevel() ~= lvl then
         alt:SetFrameLevel(lvl)
     end
@@ -312,42 +312,49 @@ end
 -- sit on the bar host. Power Text shows only while the power bar does (d._pwtOn).
 -- Boss and pet frames (d._txFB) bring their own host (d._txHost) and width (d._txW),
 -- never wrap and have no Top Name Bar. Preview frames keep their bar as d._health.
-local function Place(d, s, e, fs)
-    local k, P, g, fb = e.k, e.prop, d.kitG, d._txFB
-    local health = d.health or d._health
-    local x, y = s[k.X] or 0, s[k.Y] or 0
+local function Place(d, s, e, fontStr)
+    local key, Prm, g, fb = e.k, e.prop, d.kitG, d._txFB
+    local healthBar = d.health or d._health
+    local posX, posY = s[key.X] or 0, s[key.Y] or 0
     local fw = d._txW or s.frameWidth or 72
     local carrier = CarrierOf(d, s, e)
-    if fs._cr ~= carrier then
-        fs:SetParent(carrier)
-        fs._cr = carrier
+    if fontStr._cr ~= carrier then
+        fontStr:SetParent(carrier)
+        fontStr._cr = carrier
     end
-    ApplyFont(fs, s[k.Size] or 10)
-    fs:SetWordWrap(P.wrap and not fb)
-    fs._r = nil
+    ApplyFont(fontStr, s[key.Size] or 10)
+    fontStr:SetWordWrap(Prm.wrap and not fb)
+    fontStr._r = nil
     if e.kind == "name" and g then
-        fs:SetWidth(g.name.w)
-        fs:SetHeight(0)
-        ns.RF_KitSpot(g.name, fs, d.kitOwner, x, y)
-        fs:SetJustifyH("LEFT")
-        fs:SetJustifyV(g.name.jv)
-        local txt = fs:GetText()
-        fs:SetText("")
-        fs:SetText(txt or "")
+        fontStr:SetWidth(g.name.w)
+        fontStr:SetHeight(0)
+        mod.RF_KitSpot(g.name, fontStr, d.kitOwner, posX, posY)
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetJustifyV(g.name.jv)
+        local txt = fontStr:GetText()
+        fontStr:SetText("")
+        fontStr:SetText(txt or "")
     elseif e.kind == "name" then
         if s.topNameBarEnabled and not fb then
-            fs:Hide()
+            fontStr:Hide()
             return
         end
-        ns.AnchorRFText(fs, d._txHost or ns.RF_AnchorHost(health, s), e.pos, x, y, fw * P.width)
+        mod.AnchorRFText(
+            fontStr,
+            d._txHost or mod.RF_AnchorHost(healthBar, s),
+            e.pos,
+            posX,
+            posY,
+            fw * Prm.width
+        )
     else
-        local w = P.width and (g and g.health.w or fw * P.width)
-        if not w then
-            fs:SetWidth(0)
+        local wid = Prm.width and (g and g.health.w or fw * Prm.width)
+        if not wid then
+            fontStr:SetWidth(0)
         end
-        ns.AnchorRFText(fs, d._txHost or ns.RF_BarHost(health, s), e.pos, x, y, w)
+        mod.AnchorRFText(fontStr, d._txHost or mod.RF_BarHost(healthBar, s), e.pos, posX, posY, wid)
     end
-    fs:SetShown(e.kind ~= "pp" or d._pwtOn == true)
+    fontStr:SetShown(e.kind ~= "pp" or d._pwtOn == true)
 end
 
 -- Boss and pet frames show no level and have no power bar.
@@ -356,7 +363,7 @@ local FB_SKIP = { level = true, pp = true }
 -- Builds (on first need), fonts, anchors and shows the texts of s's plan on a
 -- live button and hides the others. Re-run by every reload and kit pass; the paints
 -- run it themselves when the plan changed since (ns._RFTextReady).
-function ns.RF_TextLayout(d, s)
+function mod.RF_TextLayout(d, s)
     local p = Plan(s)
     local pool = d._tx
     if not pool then
@@ -364,20 +371,20 @@ function ns.RF_TextLayout(d, s)
         d._tx = pool
     end
     local fb = d._txFB
-    for i = 1, NTEXTS do
-        local e, fs = p.bySlot[i], pool[i]
+    for idx = 1, NTEXTS do
+        local e, fontStr = p.bySlot[idx], pool[idx]
         if e and fb and FB_SKIP[e.kind] then
             e = nil
         end
         if e then
-            if not fs then
-                fs = d.textCarrier:CreateFontString(nil, "OVERLAY")
-                fs._cr = d.textCarrier
-                pool[i] = fs
+            if not fontStr then
+                fontStr = d.textCarrier:CreateFontString(nil, "OVERLAY")
+                fontStr._cr = d.textCarrier
+                pool[idx] = fontStr
             end
-            Place(d, s, e, fs)
-        elseif fs then
-            fs:Hide()
+            Place(d, s, e, fontStr)
+        elseif fontStr then
+            fontStr:Hide()
         end
     end
     d._txL, d._txP, d._txS = p, p, s
@@ -385,25 +392,25 @@ end
 
 -- The name's width on the resize paths that know the bar width better than
 -- s.frameWidth (extra frames, party drags); the kit keeps its stock width.
-function ns.RF_TextNameWidth(d, w)
+function mod.RF_TextNameWidth(d, wid)
     local l = d._txL and d._txL.name
     if not l or d.kitG then
         return
     end
-    for j = 1, #l do
-        d._tx[l[j].i]:SetWidth(w * l[j].prop.width)
+    for jdx = 1, #l do
+        d._tx[l[jdx].i]:SetWidth(wid * l[jdx].prop.width)
     end
 end
 
 -- Fonts only, for the live resize drags that rescale sizes without a layout pass.
-function ns.RF_TextFonts(d, s)
+function mod.RF_TextFonts(d, s)
     local p = d._txL
     if not p then
         return
     end
     local all, pool = p.all, d._tx
-    for j = 1, #all do
-        ApplyFont(pool[all[j].i], s[all[j].k.Size] or 10)
+    for jdx = 1, #all do
+        ApplyFont(pool[all[jdx].i], s[all[jdx].k.Size] or 10)
     end
 end
 
@@ -412,39 +419,43 @@ end
 local function Ready(d, s)
     local p = Plan(s)
     if d._txL ~= p then
-        ns.RF_TextLayout(d, s)
+        mod.RF_TextLayout(d, s)
     end
     d._txP, d._txS = p, s
     return p
 end
-ns._RFTextReady = Ready
+mod._RFTextReady = Ready
 
 -------------------------------------------------------------------------------
 --  Painters. Values only reach a format setter (secret-safe). Health, Power and
 --  Heal Absorb Text blank while dead or offline (the status text names it); the
 --  name, the level and Custom stay (Custom's tags name the status).
 -------------------------------------------------------------------------------
-local function PaintName(fs, e, unit, s, fb)
+local function PaintName(fontStr, e, unitToken, s, fb)
     if e.attach and not fb then
-        ns._RFNameWithLevel(fs, ResolveDisplayName(unit, true, s), unit, e.attach)
+        mod._RFNameWithLevel(fontStr, ResolveDisplayName(unitToken, true, s), unitToken, e.attach)
     else
-        fs:SetText(ResolveDisplayName(unit, true, s))
+        fontStr:SetText(ResolveDisplayName(unitToken, true, s))
     end
 end
 
-local function PaintHealAbsorb(fs, e, unit, s, gone)
+local function PaintHealAbsorb(fontStr, e, unitToken, s, gone)
     if gone then
-        fs:SetText("")
+        fontStr:SetText("")
         return
     end
-    ns.FormatHealAbsorbInto(fs, (UnitGetTotalHealAbsorbs and UnitGetTotalHealAbsorbs(unit)) or 0, e.mode)
-    Tint(fs, e, unit, s)
+    mod.FormatHealAbsorbInto(
+        fontStr,
+        (UnitGetTotalHealAbsorbs and UnitGetTotalHealAbsorbs(unitToken)) or 0,
+        e.mode
+    )
+    Tint(fontStr, e, unitToken, s)
 end
 
 -- d._txArgs[i]: the values text i was last painted with on this button. A repaint for
 -- value classes a / b reads only the tags reading them (a health tick never resolves
 -- the name again); a full paint (a nil) reads every tag.
-local function PaintCustom(fs, e, unit, s, d, a, b)
+local function PaintCustom(fontStr, e, unitToken, s, d, a, b)
     local all = d._txArgs
     if not all then
         all = {}
@@ -455,45 +466,45 @@ local function PaintCustom(fs, e, unit, s, d, a, b)
         args = {}
         all[e.i] = args
     end
-    ns.RF_CustomTextInto(fs, s[e.k.CustomFormat], unit, s, nil, args, a, b)
+    mod.RF_CustomTextInto(fontStr, s[e.k.CustomFormat], unitToken, s, nil, args, a, b)
 end
 
 -- The full paint's share: every text but Power Text (the power paint owns it).
-function ns.RF_TextFull(d, s, unit)
+function mod.RF_TextFull(d, s, unitToken)
     local p = Ready(d, s)
     local all, pool, fb = p.all, d._tx, d._txFB
-    local gone = Dead(unit)
-    local pct = p.hp and not gone and GetSafeHealthPercent(unit)
-    for j = 1, #all do
-        local e = all[j]
-        local kind, fs = e.kind, pool[e.i]
-        if kind == "name" then
-            PaintName(fs, e, unit, s, fb)
-            Tint(fs, e, unit, s)
-        elseif kind == "level" then
+    local gone = Dead(unitToken)
+    local pct = p.hp and not gone and GetSafeHealthPercent(unitToken)
+    for jdx = 1, #all do
+        local e = all[jdx]
+        local kindOf, fontStr = e.kind, pool[e.i]
+        if kindOf == "name" then
+            PaintName(fontStr, e, unitToken, s, fb)
+            Tint(fontStr, e, unitToken, s)
+        elseif kindOf == "level" then
             if not fb then
-                ns._RFLevelInto(fs, unit)
-                Tint(fs, e, unit, s)
+                mod._RFLevelInto(fontStr, unitToken)
+                Tint(fontStr, e, unitToken, s)
             end
-        elseif kind == "custom" then
-            PaintCustom(fs, e, unit, s, d)
-            Tint(fs, e, unit, s)
-        elseif kind == "hp" then
+        elseif kindOf == "custom" then
+            PaintCustom(fontStr, e, unitToken, s, d)
+            Tint(fontStr, e, unitToken, s)
+        elseif kindOf == "hp" then
             if gone then
-                fs:SetText("")
+                fontStr:SetText("")
             else
-                ns.RF_HealthTextInto(fs, e.mode, pct, unit)
-                Tint(fs, e, unit, s)
+                mod.RF_HealthTextInto(fontStr, e.mode, pct, unitToken)
+                Tint(fontStr, e, unitToken, s)
             end
-        elseif kind == "ha" then
-            PaintHealAbsorb(fs, e, unit, s, gone)
+        elseif kindOf == "ha" then
+            PaintHealAbsorb(fontStr, e, unitToken, s, gone)
         end
     end
 end
 
 -- Name and Level texts and the Custom texts' names and levels (nickname changes,
 -- UNIT_LEVEL).
-function ns.RF_TextNames(d, unit)
+function mod.RF_TextNames(d, unitToken)
     local p = d._txP
     if not p then
         return
@@ -501,53 +512,53 @@ function ns.RF_TextNames(d, unit)
     local s, pool, fb = d._txS, d._tx, d._txFB
     local l = p.name
     if l then
-        for j = 1, #l do
-            local e = l[j]
-            PaintName(pool[e.i], e, unit, s, fb)
-            Tint(pool[e.i], e, unit, s)
+        for jdx = 1, #l do
+            local e = l[jdx]
+            PaintName(pool[e.i], e, unitToken, s, fb)
+            Tint(pool[e.i], e, unitToken, s)
         end
     end
     l = not fb and p.level
     if l then
-        for j = 1, #l do
-            ns._RFLevelInto(pool[l[j].i], unit)
+        for jdx = 1, #l do
+            mod._RFLevelInto(pool[l[jdx].i], unitToken)
         end
     end
     if p.reads and p.reads.id then
-        ns.RF_TextRepaintCustom(d, unit, "id")
+        mod.RF_TextRepaintCustom(d, unitToken, "id")
     end
 end
 
 -- Heal Absorb Texts (the absorb-only event path).
-function ns.RF_TextHealAbsorb(d, unit)
+function mod.RF_TextHealAbsorb(d, unitToken)
     local p = d._txP
     local l = p and p.ha
     if not l then
         return
     end
-    local s, pool, gone = d._txS, d._tx, Dead(unit)
-    for j = 1, #l do
-        PaintHealAbsorb(pool[l[j].i], l[j], unit, s, gone)
+    local s, pool, gone = d._txS, d._tx, Dead(unitToken)
+    for jdx = 1, #l do
+        PaintHealAbsorb(pool[l[jdx].i], l[jdx], unitToken, s, gone)
     end
 end
 
 -- The Custom texts reading value class a or b (the event paths that move only those).
-function ns.RF_TextRepaintCustom(d, unit, a, b)
+function mod.RF_TextRepaintCustom(d, unitToken, a, b)
     local p = d._txP
     local r = p and p.reads
     if not (r and (r[a] or (b and r[b]))) then
         return
     end
     local s, pool, l = d._txS, d._tx, p.custom
-    for j = 1, #l do
-        local e = l[j]
+    for jdx = 1, #l do
+        local e = l[jdx]
         local er = e.reads
         if er and (er[a] or (b and er[b])) then
-            PaintCustom(pool[e.i], e, unit, s, d, a, b)
+            PaintCustom(pool[e.i], e, unitToken, s, d, a, b)
         end
     end
 end
-local RepaintCustom = ns.RF_TextRepaintCustom
+local RepaintCustom = mod.RF_TextRepaintCustom
 
 -------------------------------------------------------------------------------
 --  Power Text: shown only while the button's power bar shows (d._pwtOn). The
@@ -555,7 +566,7 @@ local RepaintCustom = ns.RF_TextRepaintCustom
 --  value rides every power value push; dead/offline blanks it on the edge the
 --  health tick sees (d._pwtGone, cleared by the full power paint).
 -------------------------------------------------------------------------------
-function ns.RF_TextPowerShow(d, s)
+function mod.RF_TextPowerShow(d, s)
     local l = Ready(d, s).pp
     if not l then
         d._pwtOn = nil
@@ -563,12 +574,12 @@ function ns.RF_TextPowerShow(d, s)
     end
     d._pwtOn, d._pwtGone = true, nil
     local pool = d._tx
-    for j = 1, #l do
-        pool[l[j].i]:Show()
+    for jdx = 1, #l do
+        pool[l[jdx].i]:Show()
     end
 end
 
-function ns.RF_TextPowerHide(d)
+function mod.RF_TextPowerHide(d)
     if not d._pwtOn then
         return
     end
@@ -578,13 +589,13 @@ function ns.RF_TextPowerHide(d)
         return
     end
     local pool = d._tx
-    for j = 1, #l do
-        pool[l[j].i]:Hide()
+    for jdx = 1, #l do
+        pool[l[jdx].i]:Hide()
     end
 end
 
 -- A power value push. full: the full power paint, whose tail paints the Custom texts.
-function ns.RF_TextPower(d, unit, ppct, pType, full)
+function mod.RF_TextPower(d, unitToken, ppct, pType, full)
     local p = d._txP
     if not p then
         return
@@ -592,82 +603,82 @@ function ns.RF_TextPower(d, unit, ppct, pType, full)
     local l = d._pwtOn and p.pp
     if l then
         local pool = d._tx
-        for j = 1, #l do
-            ns.RF_PowerTextInto(pool[l[j].i], l[j].mode, ppct, unit, pType)
+        for jdx = 1, #l do
+            mod.RF_PowerTextInto(pool[l[jdx].i], l[jdx].mode, ppct, unitToken, pType)
         end
     end
     if not full and p.reads and p.reads.pp then
-        RepaintCustom(d, unit, "pp")
+        RepaintCustom(d, unitToken, "pp")
     end
 end
 
 -- Power Text colour on the identity edge; pr, pg, pb: the unit's power colour.
-function ns.RF_TextPowerColor(d, unit, s, pr, pg, pb)
+function mod.RF_TextPowerColor(d, unitToken, s, pr, pg, pb)
     local l = d._pwtOn and d._txP and d._txP.pp
     if not l then
         return
     end
     local pool = d._tx
-    for j = 1, #l do
-        Tint(pool[l[j].i], l[j], unit, s, pr, pg, pb)
+    for jdx = 1, #l do
+        Tint(pool[l[jdx].i], l[jdx], unitToken, s, pr, pg, pb)
     end
 end
 
-local function PowerLife(d, l, unit, gone)
+local function PowerLife(d, l, unitToken, gone)
     if d._pwtGone == gone then
         return
     end
     d._pwtGone = gone
     local pool = d._tx
     if gone then
-        for j = 1, #l do
-            pool[l[j].i]:SetText("")
+        for jdx = 1, #l do
+            pool[l[jdx].i]:SetText("")
         end
         return
     end
-    local pType = d._pwType or UnitPowerType(unit) or 0
-    local ppct = UnitPowerPercent(unit, pType, true, CurveConstants.ScaleTo100)
-    for j = 1, #l do
-        ns.RF_PowerTextInto(pool[l[j].i], l[j].mode, ppct, unit, pType)
+    local pType = d._pwType or UnitPowerType(unitToken) or 0
+    local ppct = UnitPowerPercent(unitToken, pType, true, CurveConstants.ScaleTo100)
+    for jdx = 1, #l do
+        mod.RF_PowerTextInto(pool[l[jdx].i], l[jdx].mode, ppct, unitToken, pType)
     end
 end
 
 -- The health tick's share (callers gate on d._txP.tick): Health and Heal Absorb
 -- Text, Power Text's dead/offline edge, and the Custom texts reading health.
 -- allCustom: every Custom text (boss and pet frames, which have no other text events).
-function ns.RF_TextHealth(d, unit, pct, gone, allCustom)
+function mod.RF_TextHealth(d, unitToken, pct, gone, allCustom)
     local p = d._txP
     local s, pool = d._txS, d._tx
     local l = p.hp
     if l then
-        for j = 1, #l do
-            local e = l[j]
-            local fs = pool[e.i]
+        for jdx = 1, #l do
+            local e = l[jdx]
+            local fontStr = pool[e.i]
             if gone then
-                fs:SetText("")
+                fontStr:SetText("")
             else
-                ns.RF_HealthTextInto(fs, e.mode, pct, unit)
-                Tint(fs, e, unit, s)
+                mod.RF_HealthTextInto(fontStr, e.mode, pct, unitToken)
+                Tint(fontStr, e, unitToken, s)
             end
         end
     end
     l = p.ha
     if l then
-        for j = 1, #l do
-            PaintHealAbsorb(pool[l[j].i], l[j], unit, s, gone)
+        for jdx = 1, #l do
+            PaintHealAbsorb(pool[l[jdx].i], l[jdx], unitToken, s, gone)
         end
     end
     l = d._pwtOn and p.pp
     if l then
-        PowerLife(d, l, unit, gone)
+        PowerLife(d, l, unitToken, gone)
     end
     l = allCustom and p.custom
     if l then
-        for j = 1, #l do
-            PaintCustom(pool[l[j].i], l[j], unit, s, d)
+        for jdx = 1, #l do
+            PaintCustom(pool[l[jdx].i], l[jdx], unitToken, s, d)
         end
     elseif p.reads and p.reads.hp then
-        RepaintCustom(d, unit, "hp")
+        RepaintCustom(d, unitToken, "hp")
     end
 end
 
@@ -677,49 +688,49 @@ end
 --  power: the power bar shows, class and pToken: the sample member's class
 --  and power type for the colours). The same layout and rules as live.
 -------------------------------------------------------------------------------
-local function PvPaint(fs, e, s, pv, fb)
-    local kind = e.kind
-    if kind == "name" then
+local function PvPaint(fontStr, e, s, pv, fb)
+    local kindOf = e.kind
+    if kindOf == "name" then
         if e.attach and not fb then
-            fs:SetFormattedText(e.attach[1], ns._RFPreviewLevel(), pv.name or "")
+            fontStr:SetFormattedText(e.attach[1], mod._RFPreviewLevel(), pv.name or "")
         else
-            fs:SetText(pv.name or "")
+            fontStr:SetText(pv.name or "")
         end
-    elseif kind == "level" then
-        fs:SetFormattedText("%d", ns._RFPreviewLevel())
-    elseif kind == "custom" then
-        ns.RF_CustomTextInto(fs, s[e.k.CustomFormat], nil, s, pv)
+    elseif kindOf == "level" then
+        fontStr:SetFormattedText("%d", mod._RFPreviewLevel())
+    elseif kindOf == "custom" then
+        mod.RF_CustomTextInto(fontStr, s[e.k.CustomFormat], nil, s, pv)
     elseif pv.dead or pv.offline then
-        fs:SetText("")
+        fontStr:SetText("")
         return
-    elseif kind == "hp" then
-        ns.RF_HealthTextInto(fs, e.mode, pv.hpPct or 100, nil, pv.hpPer or 1)
-    elseif kind == "pp" then
-        ns.RF_PowerTextInto(fs, e.mode, pv.ppPct or 100, nil, nil, pv.ppPer or 1)
+    elseif kindOf == "hp" then
+        mod.RF_HealthTextInto(fontStr, e.mode, pv.hpPct or 100, nil, pv.hpPer or 1)
+    elseif kindOf == "pp" then
+        mod.RF_PowerTextInto(fontStr, e.mode, pv.ppPct or 100, nil, nil, pv.ppPer or 1)
     else -- "ha"
-        ns.FormatHealAbsorbInto(fs, pv.ha or 0, e.mode)
+        mod.FormatHealAbsorbInto(fontStr, pv.ha or 0, e.mode)
     end
-    local P = e.prop
-    local r, g, b = ns.RF_PreviewTextColor(
+    local Prm = e.prop
+    local r, g, b = mod.RF_PreviewTextColor(
         s[e.k.ColorMode],
         s[e.k.Color],
         pv.class,
-        P.r or 1,
-        P.g or 1,
-        P.b or 1,
+        Prm.r or 1,
+        Prm.g or 1,
+        Prm.b or 1,
         pv.pToken
     )
-    fs:SetTextColor(r, g, b, P.a)
+    fontStr:SetTextColor(r, g, b, Prm.a)
 end
 
 -- Lays out and paints every shown text of a preview frame (d: the frame or a state with
 -- textCarrier, _health and, for a replica, _txW). Keeps pv for the animated previews.
-function ns.RF_TextPreview(d, s, pv)
+function mod.RF_TextPreview(d, s, pv)
     d._pwtOn = pv.power or nil
-    ns.RF_TextLayout(d, s)
+    mod.RF_TextLayout(d, s)
     local all, pool, fb = d._txL.all, d._tx, d._txFB
-    for j = 1, #all do
-        local e = all[j]
+    for jdx = 1, #all do
+        local e = all[jdx]
         if not (fb and FB_SKIP[e.kind]) then
             PvPaint(pool[e.i], e, s, pv, fb)
         end
@@ -729,18 +740,18 @@ end
 
 -- An animated preview's step after it moved pv: the texts following health ("hp") or
 -- power ("pp"), Custom texts reading it included.
-function ns.RF_TextPreviewTick(d, what)
+function mod.RF_TextPreviewTick(d, what)
     local p, pv = d._txL, d._txPv
     if not (p and pv) then
         return
     end
     local all, pool, s, fb = p.all, d._tx, d._txS, d._txFB
-    for j = 1, #all do
-        local e = all[j]
-        local kind = e.kind
+    for jdx = 1, #all do
+        local e = all[jdx]
+        local kindOf = e.kind
         if
-            (kind == what or (kind == "custom" and e.reads and e.reads[what]))
-            and not (fb and FB_SKIP[kind])
+            (kindOf == what or (kindOf == "custom" and e.reads and e.reads[what]))
+            and not (fb and FB_SKIP[kindOf])
         then
             PvPaint(pool[e.i], e, s, pv, fb)
         end
@@ -750,16 +761,16 @@ end
 -- The text inputs the boss/pet styler reads, written from t[n + 1] for the pet frames'
 -- restyle fingerprint: the plan's signature (positions, modes, templates), then each
 -- text's offsets and size. ns.RF_TEXT_STYLE_N values; returns the last index written.
-ns.RF_TEXT_STYLE_N = 1 + 3 * NTEXTS
-function ns.RF_TextStyleInputs(t, n, s)
-    n = n + 1
-    t[n] = Plan(s).sig
-    for i = 1, NTEXTS do
-        local k = KEYS[i]
-        t[n + 1], t[n + 2], t[n + 3] = s[k.X], s[k.Y], s[k.Size]
-        n = n + 3
+mod.RF_TEXT_STYLE_N = 1 + 3 * NTEXTS
+function mod.RF_TextStyleInputs(t, num, s)
+    num = num + 1
+    t[num] = Plan(s).sig
+    for idx = 1, NTEXTS do
+        local key = KEYS[idx]
+        t[num + 1], t[num + 2], t[num + 3] = s[key.X], s[key.Y], s[key.Size]
+        num = num + 3
     end
-    return n
+    return num
 end
 
-I.broken = false
+Inner.broken = false

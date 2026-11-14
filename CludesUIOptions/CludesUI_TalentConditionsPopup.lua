@@ -33,7 +33,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- under its own shell, so every frame it asks for is a plain one.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 
 local POPUP_W, POPUP_H = 940, 620
 -- Bump over the dimmer's panel scale: the popup draws at panelScale px per unit, the
@@ -75,48 +75,48 @@ CludesUI.TALENT_COND_NOT_TAKEN = { NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B }
 -------------------------------------------------------------------------------
 local fonted = {} -- [i] = { fs, size }
 local buttonLabels = {} -- the footer buttons' labels
-local fontKey, fontPath, fontFlags
+local fontKey, fontFile, fontFlags
 
-local function SetTCFont(fs, size)
-    fonted[#fonted + 1] = { fs = fs, size = size }
-    CludesUI.ApplyModuleFont(fs, nil, size, fontKey)
+local function SetTCFont(fontStr, dim)
+    fonted[#fonted + 1] = { fs = fontStr, size = dim }
+    CludesUI.ApplyModuleFont(fontStr, nil, dim, fontKey)
 end
 
 local function UseFont(key)
-    local path, flags = CludesUI.GetFontPath(key), CludesUI.GetFontOutlineFlag(key)
-    if key == fontKey and path == fontPath and flags == fontFlags then
+    local filePath, flags = CludesUI.GetFontPath(key), CludesUI.GetFontOutlineFlag(key)
+    if key == fontKey and filePath == fontFile and flags == fontFlags then
         return
     end
-    fontKey, fontPath, fontFlags = key, path, flags
-    for i = 1, #fonted do
-        local f = fonted[i]
+    fontKey, fontFile, fontFlags = key, filePath, flags
+    for idx = 1, #fonted do
+        local f = fonted[idx]
         CludesUI.ApplyModuleFont(f.fs, nil, f.size, key)
     end
-    for i = 1, #buttonLabels do
-        buttonLabels[i]:SetFont(path, BTN_FONT, "")
+    for idx = 1, #buttonLabels do
+        buttonLabels[idx]:SetFont(filePath, BTN_FONT, "")
     end
 end
 
 -- A MakeActionButton's label (btn._label), re-fonted with the strings above.
-local function KeepButtonLabel(btn)
-    buttonLabels[#buttonLabels + 1] = btn._label
+local function KeepButtonLabel(button)
+    buttonLabels[#buttonLabels + 1] = button._label
 end
 
 -------------------------------------------------------------------------------
 --  Tree data (read fresh on every open; talents cannot change while it is up
 --  in any way that matters, and a stale read only costs a reopen)
 -------------------------------------------------------------------------------
-local function ReadNode(configID, nodeID, info)
+local function ReadNode(configID, nodeID, details)
     local entries = {}
-    for _, entryID in ipairs(info.entryIDs or EMPTY) do
-        local entry = C_Traits.GetEntryInfo(configID, entryID)
-        local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
-        local spellID = def and def.spellID
-        if spellID then
+    for _, entryID in ipairs(details.entryIDs or EMPTY) do
+        local record = C_Traits.GetEntryInfo(configID, entryID)
+        local spec_def = record and record.definitionID and C_Traits.GetDefinitionInfo(record.definitionID)
+        local spellId = spec_def and spec_def.spellID
+        if spellId then
             entries[#entries + 1] = {
                 entryID = entryID,
-                spellID = spellID,
-                icon = def.overrideIcon or C_Spell.GetSpellTexture(spellID) or 134400,
+                spellID = spellId,
+                icon = spec_def.overrideIcon or C_Spell.GetSpellTexture(spellId) or 134400,
             }
         end
     end
@@ -128,19 +128,19 @@ local function ReadNode(configID, nodeID, info)
     -- counts it). A granted rank (activeRank above ranksPurchased) cannot be
     -- staged, so it counts as taken.
     local taken = false
-    local committed = info.entryIDsWithCommittedRanks
+    local committed = details.entryIDsWithCommittedRanks
     if committed and #committed > 0 then
         taken = committed[1]
-    elseif (info.activeRank or 0) > (info.ranksPurchased or 0) then
-        taken = (info.activeEntry and info.activeEntry.entryID) or true
+    elseif (details.activeRank or 0) > (details.ranksPurchased or 0) then
+        taken = (details.activeEntry and details.activeEntry.entryID) or true
     end
     return {
         nodeID = nodeID,
-        x = info.posX or 0,
-        y = info.posY or 0,
+        x = details.posX or 0,
+        y = details.posY or 0,
         entries = entries,
-        choice = (info.type == Enum.TraitNodeType.Selection) and #entries > 1,
-        edges = info.visibleEdges,
+        choice = (details.type == Enum.TraitNodeType.Selection) and #entries > 1,
+        edges = details.visibleEdges,
         taken = taken, -- current build: committed entryID, true, or false
     }
 end
@@ -183,14 +183,14 @@ local function ReadTree()
     local halves = { {}, {} }
     local free = {}
     for _, nodeID in ipairs(nodeIDs) do
-        local info = C_Traits.GetNodeInfo(configID, nodeID)
+        local details = C_Traits.GetNodeInfo(configID, nodeID)
         if
-            info
-            and info.isVisible
-            and not info.subTreeID
-            and info.type ~= Enum.TraitNodeType.SubTreeSelection
+            details
+            and details.isVisible
+            and not details.subTreeID
+            and details.type ~= Enum.TraitNodeType.SubTreeSelection
         then
-            local node = ReadNode(configID, nodeID, info)
+            local node = ReadNode(configID, nodeID, details)
             if node then
                 local half
                 for _, cost in ipairs(C_Traits.GetNodeCost(configID, nodeID) or EMPTY) do
@@ -203,13 +203,13 @@ local function ReadTree()
                     end
                 end
                 if half then
-                    local h = halves[half]
-                    h[#h + 1] = node
-                    if not h.minX or node.x < h.minX then
-                        h.minX = node.x
+                    local hgt = halves[half]
+                    hgt[#hgt + 1] = node
+                    if not hgt.minX or node.x < hgt.minX then
+                        hgt.minX = node.x
                     end
-                    if not h.maxX or node.x > h.maxX then
-                        h.maxX = node.x
+                    if not hgt.maxX or node.x > hgt.maxX then
+                        hgt.maxX = node.x
                     end
                 else
                     free[#free + 1] = node
@@ -222,8 +222,8 @@ local function ReadTree()
     for _, node in ipairs(free) do
         local c = RangeDistance(halves[CLASS_HALF], node.x)
         local s = RangeDistance(halves[SPEC_HALF], node.x)
-        local h = halves[(s < c) and SPEC_HALF or CLASS_HALF]
-        h[#h + 1] = node
+        local hgt = halves[(s < c) and SPEC_HALF or CLASS_HALF]
+        hgt[#hgt + 1] = node
     end
     return halves, specName
 end
@@ -237,15 +237,15 @@ local function ReadForeverTrees()
     if not trees then
         return nil
     end
-    local out, span = {}, { x = 1, y = 1 }
-    for i, t in ipairs(trees) do
+    local result, span = {}, { x = 1, y = 1 }
+    for idx, t in ipairs(trees) do
         local cells = CludesUI.TalentTreeGrid(configID, t.nodes)
         local nodes = {}
         for _, nodeID in ipairs(t.nodes) do
-            local cell = cells[nodeID]
-            local node = cell and ReadNode(configID, nodeID, cell.info)
+            local cellFrame = cells[nodeID]
+            local node = cellFrame and ReadNode(configID, nodeID, cellFrame.info)
             if node then
-                node.x, node.y = cell.col, cell.row
+                node.x, node.y = cellFrame.col, cellFrame.row
                 if node.x > span.x then
                     span.x = node.x
                 end
@@ -255,15 +255,15 @@ local function ReadForeverTrees()
                 nodes[#nodes + 1] = node
             end
         end
-        out[i] = { name = t.name, nodes = nodes }
+        result[idx] = { name = t.name, nodes = nodes }
     end
-    return out, span
+    return result, span
 end
 
 -------------------------------------------------------------------------------
 --  Popup state
 -------------------------------------------------------------------------------
-local dimmer, popup, titleFS, hintFS, statusFS, offFrame
+local dimmer, dialog, titleFS, hintFS, statusFS, offFrame
 -- [i] = { frame, label, area, empty, lines = {}, buttons = {}, used = 0 }, one per tree
 -- (CLASS_HALF / SPEC_HALF, or WoW Forever's trees in order). Each panel keeps its own
 -- button pool so a button never changes parent (its border's frame level is fixed
@@ -278,41 +278,41 @@ local tipOwner -- node button that set GameTooltip up (hidden only while it owns
 
 local RepaintAll, UpdateStatus, LayoutOffTree
 
-local function ConditionOn(btn)
-    local c = pending[btn.node.nodeID]
-    if c and c.entryID == btn.entryID then
+local function ConditionOn(button)
+    local c = pending[button.node.nodeID]
+    if c and c.entryID == button.entryID then
         return c
     end
     return nil
 end
 
-local function PaintButton(btn)
-    local c = ConditionOn(btn)
+local function PaintButton(button)
+    local c = ConditionOn(button)
     if c then
         if c.taken then
             local ar, ag, ab = CludesUI.GetAccentColor()
-            PP.SetBorderColor(btn, ar, ag, ab, 1)
+            Pix.SetBorderColor(button, ar, ag, ab, 1)
         else
-            PP.SetBorderColor(btn, NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
+            Pix.SetBorderColor(button, NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
         end
-        PP.SetBorderSize(btn, MARK_PX)
+        Pix.SetBorderSize(button, MARK_PX)
     else
-        PP.SetBorderColor(btn, 0.35, 0.35, 0.35, 0.9)
-        PP.SetBorderSize(btn, BORDER_PX)
+        Pix.SetBorderColor(button, 0.35, 0.35, 0.35, 0.9)
+        Pix.SetBorderSize(button, BORDER_PX)
     end
     -- Current build at a glance: taken talents in full colour, the rest dimmed.
-    local t = btn.node.taken
-    local takenNow = t ~= false and (btn.entryID == nil or t == btn.entryID)
-    btn.icon:SetDesaturated(not takenNow)
-    btn.icon:SetAlpha(takenNow and 1 or 0.45)
+    local t = button.node.taken
+    local takenNow = t ~= false and (button.entryID == nil or t == button.entryID)
+    button.icon:SetDesaturated(not takenNow)
+    button.icon:SetAlpha(takenNow and 1 or 0.45)
 end
 
-local function ButtonOnEnter(btn)
-    tipOwner = btn
-    GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-    GameTooltip:SetSpellByID(btn.spellID)
+local function ButtonOnEnter(button)
+    tipOwner = button
+    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+    GameTooltip:SetSpellByID(button.spellID)
     GameTooltip:AddLine(" ")
-    local c = ConditionOn(btn)
+    local c = ConditionOn(button)
     if not c then
         GameTooltip:AddLine(CludesUI.L("Click: show only while this talent is taken"), 0.7, 0.7, 0.7, true)
     elseif c.taken then
@@ -332,8 +332,8 @@ local function ButtonOnEnter(btn)
     GameTooltip:Show()
 end
 
-local function ButtonOnLeave(btn)
-    if GameTooltip:IsOwned(btn) then
+local function ButtonOnLeave(button)
+    if GameTooltip:IsOwned(button) then
         GameTooltip:Hide()
     end
     tipOwner = nil
@@ -342,46 +342,47 @@ end
 -- Taken > Not Taken > cleared. On a choice node the condition names one side,
 -- so clicking the other half moves it there (starting again at Taken). Only
 -- this node's buttons can change paint.
-local function ButtonOnClick(btn)
-    local nodeID = btn.node.nodeID
-    local c = ConditionOn(btn)
+local function ButtonOnClick(button)
+    local nodeID = button.node.nodeID
+    local c = ConditionOn(button)
     if not c then
-        pending[nodeID] = { nodeID = nodeID, entryID = btn.entryID, spellID = btn.spellID, taken = true }
+        pending[nodeID] =
+            { nodeID = nodeID, entryID = button.entryID, spellID = button.spellID, taken = true }
     elseif c.taken then
         c.taken = false
     else
         pending[nodeID] = nil
     end
-    for _, b in ipairs(btn.node.btns) do
+    for _, b in ipairs(button.node.btns) do
         PaintButton(b)
     end
     UpdateStatus()
-    ButtonOnEnter(btn)
+    ButtonOnEnter(button)
 end
 
-local function AcquireButton(panel)
-    panel.used = panel.used + 1
-    local btn = panel.buttons[panel.used]
-    if not btn then
-        btn = CreateFrame("Button", nil, panel.area)
-        btn:SetFrameLevel(panel.area:GetFrameLevel() + 2)
-        btn.icon = btn:CreateTexture(nil, "ARTWORK")
-        btn.icon:SetAllPoints()
-        PP.CreateBorder(btn, 0.35, 0.35, 0.35, 0.9, BORDER_PX)
-        btn:SetScript("OnEnter", ButtonOnEnter)
-        btn:SetScript("OnLeave", ButtonOnLeave)
-        btn:SetScript("OnClick", ButtonOnClick)
-        panel.buttons[panel.used] = btn
+local function AcquireButton(panelFrame)
+    panelFrame.used = panelFrame.used + 1
+    local button = panelFrame.buttons[panelFrame.used]
+    if not button then
+        button = CreateFrame("Button", nil, panelFrame.area)
+        button:SetFrameLevel(panelFrame.area:GetFrameLevel() + 2)
+        button.icon = button:CreateTexture(nil, "ARTWORK")
+        button.icon:SetAllPoints()
+        Pix.CreateBorder(button, 0.35, 0.35, 0.35, 0.9, BORDER_PX)
+        button:SetScript("OnEnter", ButtonOnEnter)
+        button:SetScript("OnLeave", ButtonOnLeave)
+        button:SetScript("OnClick", ButtonOnClick)
+        panelFrame.buttons[panelFrame.used] = button
     end
-    btn:Show()
-    return btn
+    button:Show()
+    return button
 end
 
 -- True when a drawn button can show a condition on this node side.
 local function IsDrawn(nodeID, entryID)
-    for _, panel in ipairs(panels) do
-        for i = 1, panel.used do
-            local b = panel.buttons[i]
+    for _, panelFrame in ipairs(panels) do
+        for idx = 1, panelFrame.used do
+            local b = panelFrame.buttons[idx]
             if b.node.nodeID == nodeID and b.entryID == entryID then
                 return true
             end
@@ -391,36 +392,36 @@ local function IsDrawn(nodeID, entryID)
 end
 
 RepaintAll = function()
-    for _, panel in ipairs(panels) do
-        for i = 1, panel.used do
-            PaintButton(panel.buttons[i])
+    for _, panelFrame in ipairs(panels) do
+        for idx = 1, panelFrame.used do
+            PaintButton(panelFrame.buttons[idx])
         end
     end
 end
 
 UpdateStatus = function()
-    local count, met = 0, true
+    local total, met = 0, true
     for _, c in pairs(pending) do
-        count = count + 1
+        total = total + 1
         if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then
             met = false
         end
     end
     for _, c in ipairs(offTree) do
-        count = count + 1
+        total = total + 1
         if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then
             met = false
         end
     end
-    if count == 0 then
+    if total == 0 then
         statusFS:SetText(texts.none)
         statusFS:SetTextColor(0.7, 0.7, 0.7, 0.9)
     elseif met then
         local ar, ag, ab = CludesUI.GetAccentColor()
-        statusFS:SetText(texts.met(count))
+        statusFS:SetText(texts.met(total))
         statusFS:SetTextColor(ar, ag, ab, 1)
     else
-        statusFS:SetText(texts.notMet(count))
+        statusFS:SetText(texts.notMet(total))
         statusFS:SetTextColor(NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
     end
 end
@@ -430,32 +431,32 @@ end
 --  the grid every tree shares, from column and row 0, in place of this tree's
 --  own extent.
 -------------------------------------------------------------------------------
-local function LayoutPanel(panel, nodes, span)
-    local area = panel.area
-    local lines = panel.lines
+local function LayoutPanel(panelFrame, nodes, span)
+    local area = panelFrame.area
+    local lines = panelFrame.lines
     local usedLines = 0
-    for i = 1, panel.used do
-        panel.buttons[i]:Hide()
+    for idx = 1, panelFrame.used do
+        panelFrame.buttons[idx]:Hide()
     end
-    panel.used = 0
+    panelFrame.used = 0
 
     if nodes and #nodes > 0 then
         local minX, maxX, minY, maxY = math.huge, -math.huge, math.huge, -math.huge
         if span then
             minX, maxX, minY, maxY = 0, span.x, 0, span.y
         else
-            for _, n in ipairs(nodes) do
-                if n.x < minX then
-                    minX = n.x
+            for _, num in ipairs(nodes) do
+                if num.x < minX then
+                    minX = num.x
                 end
-                if n.x > maxX then
-                    maxX = n.x
+                if num.x > maxX then
+                    maxX = num.x
                 end
-                if n.y < minY then
-                    minY = n.y
+                if num.y < minY then
+                    minY = num.y
                 end
-                if n.y > maxY then
-                    maxY = n.y
+                if num.y > maxY then
+                    maxY = num.y
                 end
             end
         end
@@ -465,61 +466,61 @@ local function LayoutPanel(panel, nodes, span)
         local offX = (AREA_W - (spanX * scale + NODE)) / 2
         local offY = (AREA_H - (spanY * scale + NODE)) / 2
 
-        for _, n in ipairs(nodes) do
-            local left = offX + (n.x - minX) * scale
-            local top = offY + (n.y - minY) * scale
-            n._cx, n._cy = left + NODE / 2, top + NODE / 2
-            local parts = n.choice and 2 or 1
-            local w = NODE / parts
-            n.btns = {}
+        for _, num in ipairs(nodes) do
+            local leftX = offX + (num.x - minX) * scale
+            local topY = offY + (num.y - minY) * scale
+            num._cx, num._cy = leftX + NODE / 2, topY + NODE / 2
+            local parts = num.choice and 2 or 1
+            local wid = NODE / parts
+            num.btns = {}
             for k = 1, parts do
-                local e = n.entries[k]
-                local btn = AcquireButton(panel)
-                btn:SetSize(w, NODE)
-                btn:ClearAllPoints()
-                btn:SetPoint("TOPLEFT", area, "TOPLEFT", left + (k - 1) * w, -top)
-                btn.icon:SetTexture(e.icon)
-                if n.choice then
-                    btn.icon:SetTexCoord(0.27, 0.73, 0.08, 0.92)
+                local e = num.entries[k]
+                local button = AcquireButton(panelFrame)
+                button:SetSize(wid, NODE)
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", area, "TOPLEFT", leftX + (k - 1) * wid, -topY)
+                button.icon:SetTexture(e.icon)
+                if num.choice then
+                    button.icon:SetTexCoord(0.27, 0.73, 0.08, 0.92)
                 else
-                    btn.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
                 end
-                btn.node = n
-                btn.entryID = n.choice and e.entryID or nil
-                btn.spellID = e.spellID
-                n.btns[k] = btn
+                button.node = num
+                button.entryID = num.choice and e.entryID or nil
+                button.spellID = e.spellID
+                num.btns[k] = button
             end
         end
 
         -- Connections, drawn under the nodes. Only edges whose both ends sit in this tree.
         local byID = {}
-        for _, n in ipairs(nodes) do
-            byID[n.nodeID] = n
+        for _, num in ipairs(nodes) do
+            byID[num.nodeID] = num
         end
-        for _, n in ipairs(nodes) do
-            for _, edge in ipairs(n.edges or EMPTY) do
-                local target = edge.targetNode and byID[edge.targetNode]
-                if target then
+        for _, num in ipairs(nodes) do
+            for _, edge in ipairs(num.edges or EMPTY) do
+                local targetUnit = edge.targetNode and byID[edge.targetNode]
+                if targetUnit then
                     usedLines = usedLines + 1
-                    local line = lines[usedLines]
-                    if not line then
-                        line = area:CreateLine(nil, "BACKGROUND")
-                        line:SetThickness(1.5)
-                        lines[usedLines] = line
+                    local lineTex = lines[usedLines]
+                    if not lineTex then
+                        lineTex = area:CreateLine(nil, "BACKGROUND")
+                        lineTex:SetThickness(1.5)
+                        lines[usedLines] = lineTex
                     end
-                    line:SetColorTexture(0.45, 0.45, 0.45, 0.6)
-                    line:SetStartPoint("TOPLEFT", area, n._cx, -n._cy)
-                    line:SetEndPoint("TOPLEFT", area, target._cx, -target._cy)
-                    line:Show()
+                    lineTex:SetColorTexture(0.45, 0.45, 0.45, 0.6)
+                    lineTex:SetStartPoint("TOPLEFT", area, num._cx, -num._cy)
+                    lineTex:SetEndPoint("TOPLEFT", area, targetUnit._cx, -targetUnit._cy)
+                    lineTex:Show()
                 end
             end
         end
     end
 
-    for i = usedLines + 1, #lines do
-        lines[i]:Hide()
+    for idx = usedLines + 1, #lines do
+        lines[idx]:Hide()
     end
-    panel.empty:SetShown(not nodes or #nodes == 0)
+    panelFrame.empty:SetShown(not nodes or #nodes == 0)
 end
 
 -------------------------------------------------------------------------------
@@ -531,9 +532,9 @@ local function ChipOnEnter(chip)
     if not c then
         return
     end
-    local state = c.taken and CludesUI.L("Shown only while this talent is taken")
+    local status = c.taken and CludesUI.L("Shown only while this talent is taken")
         or CludesUI.L("Shown only while this talent is NOT taken")
-    CludesUI.ShowWidgetTooltip(chip, state .. "\n" .. CludesUI.L("Click: clear"))
+    CludesUI.ShowWidgetTooltip(chip, status .. "\n" .. CludesUI.L("Click: clear"))
 end
 
 local function ChipOnLeave(chip)
@@ -555,13 +556,13 @@ local function ChipOnClick(chip)
     end
 end
 
-local function MakeChip(i)
+local function MakeChip(idx)
     local chip = CreateFrame("Button", nil, offFrame)
     chip:SetSize(CHIP_W, CHIP_H)
-    local bg = chip:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.060, 0.049, 0.037, 1)
-    chip.border = CludesUI.MakeBorder(chip, 1, 1, 1, 0.10, PP)
+    local backdrop = chip:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.060, 0.049, 0.037, 1)
+    chip.border = CludesUI.MakeBorder(chip, 1, 1, 1, 0.10, Pix)
     chip.icon = chip:CreateTexture(nil, "ARTWORK")
     chip.icon:SetSize(CHIP_H - 8, CHIP_H - 8)
     chip.icon:SetPoint("LEFT", chip, "LEFT", 4, 0)
@@ -585,39 +586,39 @@ local function MakeChip(i)
     chip:SetScript("OnEnter", ChipOnEnter)
     chip:SetScript("OnLeave", ChipOnLeave)
     chip:SetScript("OnClick", ChipOnClick)
-    chips[i] = chip
+    chips[idx] = chip
     return chip
 end
 
 -- Lays the strip out and sizes the popup to it (no strip: the base size). The
 -- scale is re-fitted to the new height, so a long list still fits the screen.
 LayoutOffTree = function()
-    local n = #offTree
-    local h = POPUP_H
-    if n > 0 then
-        local rows = math.ceil(n / CHIP_COLS)
-        local stripH = OFF_LABEL_H + rows * CHIP_H + (rows - 1) * CHIP_GAP_Y
-        h = POPUP_H + OFF_PAD + stripH
+    local num = #offTree
+    local hgt = POPUP_H
+    if num > 0 then
+        local rowList = math.ceil(num / CHIP_COLS)
+        local stripH = OFF_LABEL_H + rowList * CHIP_H + (rowList - 1) * CHIP_GAP_Y
+        hgt = POPUP_H + OFF_PAD + stripH
         offFrame:SetHeight(stripH)
         local ar, ag, ab = CludesUI.GetAccentColor()
-        for i = 1, n do
-            local c = offTree[i]
-            local chip = chips[i] or MakeChip(i)
-            local col = (i - 1) % CHIP_COLS
-            local row = math.floor((i - 1) / CHIP_COLS)
+        for idx = 1, num do
+            local c = offTree[idx]
+            local chip = chips[idx] or MakeChip(idx)
+            local column = (idx - 1) % CHIP_COLS
+            local rowFrame = math.floor((idx - 1) / CHIP_COLS)
             chip:ClearAllPoints()
             chip:SetPoint(
                 "TOPLEFT",
                 offFrame,
                 "TOPLEFT",
-                col * (CHIP_W + CHIP_GAP_X),
-                -(OFF_LABEL_H + row * (CHIP_H + CHIP_GAP_Y))
+                column * (CHIP_W + CHIP_GAP_X),
+                -(OFF_LABEL_H + rowFrame * (CHIP_H + CHIP_GAP_Y))
             )
-            chip.index = i
+            chip.index = idx
             chip.x:SetAlpha(0.6)
-            local sid = type(c.spellID) == "number" and c.spellID or nil
-            chip.icon:SetTexture((sid and C_Spell.GetSpellTexture(sid)) or 134400)
-            chip.label:SetText((sid and C_Spell.GetSpellName(sid)) or CludesUI.L("Unknown talent"))
+            local spellRef = type(c.spellID) == "number" and c.spellID or nil
+            chip.icon:SetTexture((spellRef and C_Spell.GetSpellTexture(spellRef)) or 134400)
+            chip.label:SetText((spellRef and C_Spell.GetSpellName(spellRef)) or CludesUI.L("Unknown talent"))
             if c.taken then
                 chip.border:SetColor(ar, ag, ab, 1)
             else
@@ -629,47 +630,47 @@ LayoutOffTree = function()
     else
         offFrame:Hide()
     end
-    for i = n + 1, #chips do
-        chips[i]:Hide()
+    for idx = num + 1, #chips do
+        chips[idx]:Hide()
     end
-    popup:SetHeight(h)
-    popup:SetScale(CludesUI.PopupBump(POPUP_BUMP))
-    CludesUI.ClampPopupToScreen(popup, POPUP_W, h)
+    dialog:SetHeight(hgt)
+    dialog:SetScale(CludesUI.PopupBump(POPUP_BUMP))
+    CludesUI.ClampPopupToScreen(dialog, POPUP_W, hgt)
     -- Also runs while shown (a chip removed, Clear All): refit the outline.
-    popup._brd:Fit()
+    dialog._brd:Fit()
 end
 
 -------------------------------------------------------------------------------
 --  Frames (built once, on first open)
 -------------------------------------------------------------------------------
-local function MakePanel(index)
-    local frame = CreateFrame("Frame", nil, popup)
-    frame:SetSize(PANEL_W, PANEL_H)
-    frame:SetPoint("TOPLEFT", popup, "TOPLEFT", SIDE_PAD + (index - 1) * (PANEL_W + PANEL_GAP), -HEADER_H)
-    local bg = frame:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.060, 0.049, 0.037, 1)
-    CludesUI.MakeBorder(frame, 1, 1, 1, 0.10, PP)
+local function MakePanel(slotPos)
+    local widget = CreateFrame("Frame", nil, dialog)
+    widget:SetSize(PANEL_W, PANEL_H)
+    widget:SetPoint("TOPLEFT", dialog, "TOPLEFT", SIDE_PAD + (slotPos - 1) * (PANEL_W + PANEL_GAP), -HEADER_H)
+    local backdrop = widget:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.060, 0.049, 0.037, 1)
+    CludesUI.MakeBorder(widget, 1, 1, 1, 0.10, Pix)
 
-    local label = frame:CreateFontString(nil, "OVERLAY")
-    SetTCFont(label, 12)
-    label:SetPoint("TOPLEFT", frame, "TOPLEFT", AREA_PAD, -6)
-    label:SetTextColor(0.85, 0.85, 0.85, 1)
+    local labelText = widget:CreateFontString(nil, "OVERLAY")
+    SetTCFont(labelText, 12)
+    labelText:SetPoint("TOPLEFT", widget, "TOPLEFT", AREA_PAD, -6)
+    labelText:SetTextColor(0.85, 0.85, 0.85, 1)
 
-    local area = CreateFrame("Frame", nil, frame)
+    local area = CreateFrame("Frame", nil, widget)
     area:SetSize(AREA_W, AREA_H)
-    area:SetPoint("TOPLEFT", frame, "TOPLEFT", AREA_PAD, -PANEL_LABEL_H)
+    area:SetPoint("TOPLEFT", widget, "TOPLEFT", AREA_PAD, -PANEL_LABEL_H)
 
-    local empty = frame:CreateFontString(nil, "OVERLAY")
+    local empty = widget:CreateFontString(nil, "OVERLAY")
     SetTCFont(empty, 11)
     empty:SetPoint("CENTER")
     empty:SetTextColor(0.6, 0.6, 0.6, 0.8)
     empty:SetText(CludesUI.L("Talent data is not available right now."))
     empty:Hide()
 
-    panels[index] = {
-        frame = frame,
-        label = label,
+    panels[slotPos] = {
+        frame = widget,
+        label = labelText,
         area = area,
         empty = empty,
         lines = {},
@@ -690,33 +691,33 @@ local function Close()
 end
 
 local function Commit()
-    local out = {}
+    local result = {}
     for _, c in pairs(pending) do
-        out[#out + 1] = { nodeID = c.nodeID, entryID = c.entryID, spellID = c.spellID, taken = c.taken }
+        result[#result + 1] = { nodeID = c.nodeID, entryID = c.entryID, spellID = c.spellID, taken = c.taken }
     end
     for _, c in ipairs(offTree) do
-        out[#out + 1] = c
+        result[#result + 1] = c
     end
-    table.sort(out, function(a, b)
+    table.sort(result, function(a, b)
         return a.nodeID < b.nodeID
     end)
     -- Hiding clears onConfirm (dimmer OnHide), so take it first.
     local confirm = onConfirm
     Close()
     if confirm then
-        confirm(#out > 0 and out or nil)
+        confirm(#result > 0 and result or nil)
     end
 end
 
 local function Build()
-    if popup then
+    if dialog then
         return
     end
     -- Dimmer scaled by the panel scale, the popup by its bump (the sibling CDM popups'
     -- density), and registered so the Panel Scale slider rescales it. Clamped: the
     -- trees side by side are wide, and the dimmer eats every click behind it, so an
     -- overflowing popup would strand its buttons off-screen.
-    dimmer, popup = CludesUI.BuildPopupShell("CUI_TalentConditions", {
+    dimmer, dialog = CludesUI.BuildPopupShell("CUI_TalentConditions", {
         w = POPUP_W,
         h = POPUP_H,
         bump = POPUP_BUMP,
@@ -726,24 +727,24 @@ local function Build()
         onDimmerDown = Close,
     })
     dimmer:Hide()
-    CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = popup, dimmer = dimmer }
+    CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog, dimmer = dimmer }
 
-    titleFS = popup:CreateFontString(nil, "OVERLAY")
+    titleFS = dialog:CreateFontString(nil, "OVERLAY")
     SetTCFont(titleFS, 16)
-    titleFS:SetPoint("TOP", popup, "TOP", 0, -16)
+    titleFS:SetPoint("TOP", dialog, "TOP", 0, -16)
     titleFS:SetTextColor(1, 1, 1, 1)
 
-    hintFS = popup:CreateFontString(nil, "OVERLAY")
+    hintFS = dialog:CreateFontString(nil, "OVERLAY")
     SetTCFont(hintFS, 11)
     hintFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -6)
     hintFS:SetTextColor(0.7, 0.7, 0.7, 0.85)
 
-    for i = 1, PANELS do
-        MakePanel(i)
+    for idx = 1, PANELS do
+        MakePanel(idx)
     end
 
-    offFrame = CreateFrame("Frame", nil, popup)
-    offFrame:SetPoint("TOPLEFT", popup, "TOPLEFT", SIDE_PAD, -(HEADER_H + PANEL_H + OFF_PAD))
+    offFrame = CreateFrame("Frame", nil, dialog)
+    offFrame:SetPoint("TOPLEFT", dialog, "TOPLEFT", SIDE_PAD, -(HEADER_H + PANEL_H + OFF_PAD))
     offFrame:SetWidth(POPUP_W - SIDE_PAD * 2)
     offFrame:Hide()
     local offLabel = offFrame:CreateFontString(nil, "OVERLAY")
@@ -753,14 +754,14 @@ local function Build()
     offLabel:SetText(CludesUI.L("Conditions on talents not shown above (they still apply):"))
 
     local ar, ag, ab = CludesUI.GetAccentColor()
-    local saveBtn = CludesUI.MakeActionButton(popup, fontPath, CludesUI.L("Save"), ar, ag, ab, { w = BTN_W })
-    saveBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -SIDE_PAD, BTN_BOTTOM)
+    local saveBtn = CludesUI.MakeActionButton(dialog, fontFile, CludesUI.L("Save"), ar, ag, ab, { w = BTN_W })
+    saveBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -SIDE_PAD, BTN_BOTTOM)
     saveBtn:SetScript("OnClick", Commit)
     KeepButtonLabel(saveBtn)
 
     local cancelBtn = CludesUI.MakeActionButton(
-        popup,
-        fontPath,
+        dialog,
+        fontFile,
         CludesUI.L("Cancel"),
         1,
         1,
@@ -769,12 +770,12 @@ local function Build()
     )
     cancelBtn:SetPoint("RIGHT", saveBtn, "LEFT", -BTN_GAP, 0)
     cancelBtn:SetScript("OnClick", Close)
-    popup._cancelBtn = cancelBtn
+    dialog._cancelBtn = cancelBtn
     KeepButtonLabel(cancelBtn)
 
     local clearBtn = CludesUI.MakeActionButton(
-        popup,
-        fontPath,
+        dialog,
+        fontFile,
         CludesUI.L("Clear All"),
         1,
         1,
@@ -793,10 +794,10 @@ local function Build()
 
     -- Status line: left of the buttons, on their centre line.
     local statusY = BTN_BOTTOM + BTN_H / 2
-    statusFS = popup:CreateFontString(nil, "OVERLAY")
+    statusFS = dialog:CreateFontString(nil, "OVERLAY")
     SetTCFont(statusFS, 11)
-    statusFS:SetPoint("LEFT", popup, "BOTTOMLEFT", SIDE_PAD, statusY)
-    statusFS:SetPoint("RIGHT", popup, "BOTTOMRIGHT", -(SIDE_PAD + 3 * BTN_W + 3 * BTN_GAP), statusY)
+    statusFS:SetPoint("LEFT", dialog, "BOTTOMLEFT", SIDE_PAD, statusY)
+    statusFS:SetPoint("RIGHT", dialog, "BOTTOMRIGHT", -(SIDE_PAD + 3 * BTN_W + 3 * BTN_GAP), statusY)
     statusFS:SetJustifyH("LEFT")
     statusFS:SetWordWrap(false)
 
@@ -810,20 +811,20 @@ end
 -------------------------------------------------------------------------------
 --  Entry point. opts: see the header.
 -------------------------------------------------------------------------------
-function CludesUI.ShowTalentConditionsPopup(opts)
-    UseFont(opts.fontKey)
+function CludesUI.ShowTalentConditionsPopup(options)
+    UseFont(options.fontKey)
     Build()
 
-    texts = opts.texts
-    titleFS:SetText(opts.title or "")
+    texts = options.texts
+    titleFS:SetText(options.title or "")
     hintFS:SetText(texts.hint)
 
     if CludesUI.IS_FOREVER then
         local trees, span = ReadForeverTrees()
-        for i, panel in ipairs(panels) do
-            local t = trees and trees[i]
-            panel.label:SetText(t and t.name or "")
-            LayoutPanel(panel, t and t.nodes, span)
+        for idx, panelFrame in ipairs(panels) do
+            local t = trees and trees[idx]
+            panelFrame.label:SetText(t and t.name or "")
+            LayoutPanel(panelFrame, t and t.nodes, span)
         end
     else
         local halves, specName = ReadTree()
@@ -839,7 +840,7 @@ function CludesUI.ShowTalentConditionsPopup(opts)
     -- Clear All.
     wipe(pending)
     wipe(offTree)
-    for _, c in ipairs(type(opts.conds) == "table" and opts.conds or EMPTY) do
+    for _, c in ipairs(type(options.conds) == "table" and options.conds or EMPTY) do
         if type(c) == "table" and c.nodeID then
             local copy =
                 { nodeID = c.nodeID, entryID = c.entryID, spellID = c.spellID, taken = c.taken ~= false }
@@ -851,10 +852,10 @@ function CludesUI.ShowTalentConditionsPopup(opts)
         end
     end
 
-    onConfirm = opts.onConfirm
+    onConfirm = options.onConfirm
     LayoutOffTree()
     RepaintAll()
     UpdateStatus()
-    CludesUI.PadPopupOpen(dimmer, popup, popup._cancelBtn, Close) -- controller cursor
+    CludesUI.PadPopupOpen(dimmer, dialog, dialog._cancelBtn, Close) -- controller cursor
     dimmer:Show()
 end

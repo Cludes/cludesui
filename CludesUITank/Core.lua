@@ -1,10 +1,10 @@
-local addonName, ns = ...
-if ns.standalone then
+local addonName, mod = ...
+if mod.standalone then
     return
 end
 
 -- ── Constants (shared with all modules via ns.K) ───────────────────────────
-ns.K = {
+mod.K = {
     BACKDROP_TEXTURE = "Interface\\Buttons\\WHITE8X8",
     DEFAULT_FONT_FACE = "Fonts\\ARIALN.TTF",
     FONT_FACES = {
@@ -150,69 +150,69 @@ ns.K = {
 }
 
 -- ── Shared addon-level objects ─────────────────────────────────────────────
-ns.ADDON_COLOR = CreateColorFromHexString("ff5ab4ff")
-ns.isTestMode = false
+mod.ADDON_COLOR = CreateColorFromHexString("ff5ab4ff")
+mod.isTestMode = false
 
 -- ── Helper functions ───────────────────────────────────────────────────────
 -- Settings live in the active CludesUI profile (CludesUIDB.profiles[name]
 -- .addons.CludesUITank), so they save, export, import and switch with it.
 -- db.profile is re-pointed by the profile system, so always read it here.
 local profileDB
-function ns.DB()
+function mod.DB()
     if not profileDB then
         profileDB = CludesUI.Lite.NewDB("CludesUITankDB", { profile = {} })
     end
     return profileDB.profile
 end
 
-function ns.SettingNumber(key, default)
-    local val = ns.DB()[key]
+function mod.SettingNumber(key, default)
+    local val = mod.DB()[key]
     return tonumber(val) or default
 end
 
-function ns.IsInEditMode()
+function mod.IsInEditMode()
     if C_EditMode and type(C_EditMode.IsEditModeActive) == "function" then
         return C_EditMode.IsEditModeActive()
     end
     return false
 end
 
-function ns.CalculateScaleFactor()
-    return ns.DB().scaleFactorPrivateAuras or ns.K.PRIVATE_AURAS_DEFAULT_SCALE_FACTOR
+function mod.CalculateScaleFactor()
+    return mod.DB().scaleFactorPrivateAuras or mod.K.PRIVATE_AURAS_DEFAULT_SCALE_FACTOR
 end
 
-function ns.FindCoTank()
-    if ns.isTestMode then
+function mod.FindCoTank()
+    if mod.isTestMode then
         return "player"
     end
     local groupType = IsInRaid() and "raid" or (IsInGroup() and "party")
     if not groupType then
         return nil
     end
-    local count = GetNumGroupMembers()
+    local total = GetNumGroupMembers()
     -- Prefer pinned tank if set
-    local pinned = ns.DB().pinnedTank
+    local pinned = mod.DB().pinnedTank
     if pinned then
-        for i = 1, count do
-            local unit = groupType .. i
-            if UnitExists(unit) and UnitName(unit) == pinned then
-                return unit
+        for idx = 1, total do
+            local unitToken = groupType .. idx
+            if UnitExists(unitToken) and UnitName(unitToken) == pinned then
+                return unitToken
             end
         end
         -- pinned player not in group; fall through to auto-detect
     end
-    for i = 1, count do
-        local unit = groupType .. i
-        if UnitExists(unit) and not UnitIsUnit(unit, "player") then
-            if UnitGroupRolesAssigned(unit) == "TANK" then
-                return unit
+    for idx = 1, total do
+        local unitToken = groupType .. idx
+        if UnitExists(unitToken) and not UnitIsUnit(unitToken, "player") then
+            if UnitGroupRolesAssigned(unitToken) == "TANK" then
+                return unitToken
             end
         end
     end
     return nil
 end
 
-function ns.Print(msg)
+function mod.Print(msg)
     print("|cff4cc9f0Tank Kit:|r " .. tostring(msg))
 end
 
@@ -221,19 +221,19 @@ end
 -- switched off, so roster, zoning and end-of-combat events leave it alone:
 -- testing solo usually means no TANK role, which used to hide the frame the
 -- moment the first fight ended.
-function ns.AssignCoTank(frame)
-    if ns.isTestMode then
+function mod.AssignCoTank(widget)
+    if mod.isTestMode then
         return
     end
     local myRole = UnitGroupRolesAssigned("player")
-    local currentTank = ns.FindCoTank()
+    local currentTank = mod.FindCoTank()
     if myRole == "TANK" and currentTank then
-        frame:SetAttribute("unit", currentTank)
-        RegisterUnitWatch(frame)
+        widget:SetAttribute("unit", currentTank)
+        RegisterUnitWatch(widget)
     else
-        UnregisterUnitWatch(frame)
-        frame:Hide()
-        frame:SetAttribute("unit", nil)
+        UnregisterUnitWatch(widget)
+        widget:Hide()
+        widget:SetAttribute("unit", nil)
     end
 end
 
@@ -241,202 +241,203 @@ end
 -- which used to do this separately and had drifted: the panel never refreshed
 -- the preview icons, so its test mode showed no mock debuffs. Returns false
 -- in combat, where changing a secure frame's unit or visibility is blocked.
-function ns.SetTestMode(on)
+function mod.SetTestMode(enabled)
     if InCombatLockdown() then
         return false
     end
-    ns.isTestMode = on and true or false
-    local frame = CoTankAuras
-    if frame then
-        if ns.isTestMode then
-            UnregisterUnitWatch(frame)
-            frame:SetAttribute("unit", "player")
-            frame:Show()
+    mod.isTestMode = enabled and true or false
+    local widget = CoTankAuras
+    if widget then
+        if mod.isTestMode then
+            UnregisterUnitWatch(widget)
+            widget:SetAttribute("unit", "player")
+            widget:Show()
         else
-            ns.AssignCoTank(frame)
+            mod.AssignCoTank(widget)
         end
         -- Test mode swaps the live AuraContainers for the mock icons, and
         -- back again, so both displays have to be told either way.
-        frame:RefreshDebuffLayout()
-        frame:RefreshDefensiveLayout()
-        frame:UpdateVisuals()
+        widget:RefreshDebuffLayout()
+        widget:RefreshDefensiveLayout()
+        widget:UpdateVisuals()
     end
-    ns.Options:SyncTestButton()
+    mod.Options:SyncTestButton()
     return true
 end
 
 -- ── Position helpers ───────────────────────────────────────────────────────
-function ns.SavePosition(frame)
-    local point, _, relPoint, x, y = frame:GetPoint()
-    local db = ns.DB()
-    db.point = point
-    db.relPoint = relPoint
-    db.x = x
-    db.y = y
+function mod.SavePosition(widget)
+    local anchorPoint, _, relPoint, posX, posY = widget:GetPoint()
+    local saved = mod.DB()
+    saved.point = anchorPoint
+    saved.relPoint = relPoint
+    saved.x = posX
+    saved.y = posY
 end
 
-function ns.ApplyPosition(frame)
-    local db = ns.DB()
-    frame:ClearAllPoints()
-    frame:SetPoint(db.point or "CENTER", UIParent, db.relPoint or "CENTER", db.x or 0, db.y or 0)
+function mod.ApplyPosition(widget)
+    local saved = mod.DB()
+    widget:ClearAllPoints()
+    widget:SetPoint(saved.point or "CENTER", UIParent, saved.relPoint or "CENTER", saved.x or 0, saved.y or 0)
 end
 
-function ns.ResetPosition(frame)
-    local db = ns.DB()
-    db.point = "CENTER"
-    db.relPoint = "CENTER"
-    db.x = 0
-    db.y = 0
-    ns.ApplyPosition(frame)
+function mod.ResetPosition(widget)
+    local saved = mod.DB()
+    saved.point = "CENTER"
+    saved.relPoint = "CENTER"
+    saved.x = 0
+    saved.y = 0
+    mod.ApplyPosition(widget)
 end
 
 -- ── Frame initialization ───────────────────────────────────────────────────
 -- Called after all modules have loaded (ADDON_LOADED fires after all TOC files run).
 local function InitializeFrame()
-    ns.DB()
+    mod.DB()
 
     if InCombatLockdown() then
         return
     end
 
-    local K = ns.K
+    local Keys = mod.K
 
-    local frame = CreateFrame("Button", "CoTankAuras", UIParent, "SecureUnitButtonTemplate, BackdropTemplate")
-    frame:SetAttribute("type1", "target") -- left-click targets the co-tank
+    local widget =
+        CreateFrame("Button", "CoTankAuras", UIParent, "SecureUnitButtonTemplate, BackdropTemplate")
+    widget:SetAttribute("type1", "target") -- left-click targets the co-tank
 
-    Mixin(frame, ns.Mixin) -- ns.Mixin defined in modules/mixin.lua
+    Mixin(widget, mod.Mixin) -- ns.Mixin defined in modules/mixin.lua
 
-    local db = ns.DB()
-    frame:SetSize(db.frameWidth or K.DEFAULT_WIDTH, db.frameHeight or K.DEFAULT_HEIGHT)
-    frame:SetMovable(true)
-    frame:SetClampedToScreen(true)
+    local saved = mod.DB()
+    widget:SetSize(saved.frameWidth or Keys.DEFAULT_WIDTH, saved.frameHeight or Keys.DEFAULT_HEIGHT)
+    widget:SetMovable(true)
+    widget:SetClampedToScreen(true)
 
     -- Background
-    frame.bg = frame:CreateTexture(nil, "BACKGROUND")
-    frame.bg:SetAllPoints()
-    frame.bg:SetColorTexture(0.05, 0.07, 0.11, 0.92)
-    frame:SetBackdrop({ edgeFile = K.BACKDROP_TEXTURE, edgeSize = 1 })
-    frame:SetBackdropBorderColor(0.08, 0.12, 0.20, 1)
+    widget.bg = widget:CreateTexture(nil, "BACKGROUND")
+    widget.bg:SetAllPoints()
+    widget.bg:SetColorTexture(0.05, 0.07, 0.11, 0.92)
+    widget:SetBackdrop({ edgeFile = Keys.BACKDROP_TEXTURE, edgeSize = 1 })
+    widget:SetBackdropBorderColor(0.08, 0.12, 0.20, 1)
 
     -- Health bar
-    frame.health = CreateFrame("StatusBar", nil, frame)
-    frame.health:SetPoint("TOPLEFT", 1, -1)
-    frame.health:SetPoint("BOTTOMRIGHT", -1, K.POWER_BAR_HEIGHT + 2)
-    frame.health.statusBarTextureString = db.barTexture or K.BACKDROP_TEXTURE
-    frame.health:SetStatusBarTexture(frame.health.statusBarTextureString)
+    widget.health = CreateFrame("StatusBar", nil, widget)
+    widget.health:SetPoint("TOPLEFT", 1, -1)
+    widget.health:SetPoint("BOTTOMRIGHT", -1, Keys.POWER_BAR_HEIGHT + 2)
+    widget.health.statusBarTextureString = saved.barTexture or Keys.BACKDROP_TEXTURE
+    widget.health:SetStatusBarTexture(widget.health.statusBarTextureString)
 
     -- Power bar
-    frame.power = CreateFrame("StatusBar", nil, frame)
-    frame.power:SetHeight(K.POWER_BAR_HEIGHT)
-    frame.power:SetPoint("TOPLEFT", frame.health, "BOTTOMLEFT", 0, -1)
-    frame.power:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1)
-    frame.power.statusBarTextureString = db.barTexture or K.BACKDROP_TEXTURE
-    frame.power:SetStatusBarTexture(frame.power.statusBarTextureString)
-    frame.powerBG = frame.power:CreateTexture(nil, "BACKGROUND")
-    frame.powerBG:SetAllPoints()
-    frame.powerBG:SetColorTexture(0, 0, 0, 0.5)
+    widget.power = CreateFrame("StatusBar", nil, widget)
+    widget.power:SetHeight(Keys.POWER_BAR_HEIGHT)
+    widget.power:SetPoint("TOPLEFT", widget.health, "BOTTOMLEFT", 0, -1)
+    widget.power:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -1, 1)
+    widget.power.statusBarTextureString = saved.barTexture or Keys.BACKDROP_TEXTURE
+    widget.power:SetStatusBarTexture(widget.power.statusBarTextureString)
+    widget.powerBG = widget.power:CreateTexture(nil, "BACKGROUND")
+    widget.powerBG:SetAllPoints()
+    widget.powerBG:SetColorTexture(0, 0, 0, 0.5)
 
     -- Name text
-    local face = ns.FontPath()
-    local nameSize = db.nameFontSize or K.DEFAULT_NAME_FONT_SIZE
-    local hpSize = db.hpFontSize or K.DEFAULT_HP_FONT_SIZE
-    frame.nameText = frame.health:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
-    frame.nameText:SetFont(face, nameSize, ns.FontFlags())
-    frame.nameText:SetPoint("BOTTOMLEFT", frame.health, "LEFT", 6, 4)
-    frame.nameText:SetJustifyH("LEFT")
-    frame.nameText:SetIgnoreParentAlpha(false)
-    frame.nameText.rawText = ""
+    local face = mod.FontPath()
+    local nameSize = saved.nameFontSize or Keys.DEFAULT_NAME_FONT_SIZE
+    local hpSize = saved.hpFontSize or Keys.DEFAULT_HP_FONT_SIZE
+    widget.nameText = widget.health:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
+    widget.nameText:SetFont(face, nameSize, mod.FontFlags())
+    widget.nameText:SetPoint("BOTTOMLEFT", widget.health, "LEFT", 6, 4)
+    widget.nameText:SetJustifyH("LEFT")
+    widget.nameText:SetIgnoreParentAlpha(false)
+    widget.nameText.rawText = ""
 
     -- HP text
-    frame.hpText = frame.health:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
-    frame.hpText:SetFont(face, hpSize, ns.FontFlags())
-    frame.hpText:SetPoint("TOPLEFT", frame.health, "LEFT", 6, -4)
-    frame.hpText:SetJustifyH("LEFT")
-    frame.hpText:SetTextColor(0.9, 0.9, 0.9)
-    frame.hpText:SetIgnoreParentAlpha(false)
+    widget.hpText = widget.health:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
+    widget.hpText:SetFont(face, hpSize, mod.FontFlags())
+    widget.hpText:SetPoint("TOPLEFT", widget.health, "LEFT", 6, -4)
+    widget.hpText:SetJustifyH("LEFT")
+    widget.hpText:SetTextColor(0.9, 0.9, 0.9)
+    widget.hpText:SetIgnoreParentAlpha(false)
 
     -- Preview icon frames (test mode / edit mode only)
-    frame:CreateDebuffContainer()
-    frame:CreateDefensiveContainer()
-    frame:CreatePrivateAnchorContainers()
-    frame:CreateDeadOverlay()
+    widget:CreateDebuffContainer()
+    widget:CreateDefensiveContainer()
+    widget:CreatePrivateAnchorContainers()
+    widget:CreateDeadOverlay()
 
     -- Live aura display. Since 12.1 the engine owns this: AuraContainers can
     -- only be created out of combat, which the guard at the top of this
     -- function already ensures.
-    ns.CreateDebuffAuraContainer(frame)
-    ns.CreateDefensiveAuraContainer(frame)
-    ns.MigratePrivateAuraRow()
+    mod.CreateDebuffAuraContainer(widget)
+    mod.CreateDefensiveAuraContainer(widget)
+    mod.MigratePrivateAuraRow()
 
     -- Click-through
-    if db.clickThrough then
-        frame:EnableMouse(false)
+    if saved.clickThrough then
+        widget:EnableMouse(false)
     end
 
     -- Frame scripts
-    frame:SetScript("OnAttributeChanged", frame.OnAttributeChanged)
-    frame:SetScript("OnSizeChanged", function(s, w, h)
-        s:OnSizeChangedHandler(w, h)
+    widget:SetScript("OnAttributeChanged", widget.OnAttributeChanged)
+    widget:SetScript("OnSizeChanged", function(s, wid, hgt)
+        s:OnSizeChangedHandler(wid, hgt)
     end)
-    frame:SetScript("OnEvent", frame.UpdateVisuals)
-    frame:SetScript("OnShow", function(self)
+    widget:SetScript("OnEvent", widget.UpdateVisuals)
+    widget:SetScript("OnShow", function(self)
         self:UpdateHealthBarColor()
         self:AttachPrivateAnchors()
     end)
-    frame:SetScript("OnHide", function(self)
+    widget:SetScript("OnHide", function(self)
         self:CleanupPrivateAnchors()
     end)
-    frame:SetScript("OnMouseUp", function(self, btn)
-        if btn == "RightButton" and not InCombatLockdown() then
-            ns.Options:Open()
+    widget:SetScript("OnMouseUp", function(self, button)
+        if button == "RightButton" and not InCombatLockdown() then
+            mod.Options:Open()
         end
     end)
     -- Placed with CludesUI Layout Mode (modules/externals.lua registers it).
 
     -- Apply saved position
-    ns.ApplyPosition(frame)
+    mod.ApplyPosition(widget)
 
     -- Group / role manager - shows/hides the frame as roster changes
     local manager = CreateFrame("Frame")
     manager:RegisterEvent("GROUP_ROSTER_UPDATE")
     manager:RegisterEvent("PLAYER_REGEN_ENABLED")
     manager:RegisterEvent("PLAYER_ENTERING_WORLD")
-    local function OnGroupEvent(event)
+    local function OnGroupEvent(evt)
         if InCombatLockdown() then
             return
         end
         -- Anything the secrecy rules blocked mid-fight gets replayed here:
         -- aura sound registration, and restyling of AuraButtons that were
         -- forbidden while auras were secret.
-        if event == "PLAYER_REGEN_ENABLED" then
-            ns.Alert:FlushPendingAuraSounds()
-            ns.FlushPendingRestyle()
+        if evt == "PLAYER_REGEN_ENABLED" then
+            mod.Alert:FlushPendingAuraSounds()
+            mod.FlushPendingRestyle()
         end
-        if not frame.anchorFrames then
-            frame:CreatePrivateAnchorContainers()
+        if not widget.anchorFrames then
+            widget:CreatePrivateAnchorContainers()
         end
-        ns.AssignCoTank(frame)
+        mod.AssignCoTank(widget)
         -- Retry the AuraContainers in case an earlier attempt could not create them.
-        ns.CreateDebuffAuraContainer(frame)
-        ns.CreateDefensiveAuraContainer(frame)
-        ns.MigratePrivateAuraRow()
-        frame:UpdateHealthBarColor()
-        frame:UpdateVisuals()
-        frame:RefreshAuraLayout()
-        frame:RefreshDebuffLayout()
-        frame:RefreshDefensiveLayout()
+        mod.CreateDebuffAuraContainer(widget)
+        mod.CreateDefensiveAuraContainer(widget)
+        mod.MigratePrivateAuraRow()
+        widget:UpdateHealthBarColor()
+        widget:UpdateVisuals()
+        widget:RefreshAuraLayout()
+        widget:RefreshDebuffLayout()
+        widget:RefreshDefensiveLayout()
     end
-    manager:SetScript("OnEvent", function(_, event)
-        OnGroupEvent(event)
+    manager:SetScript("OnEvent", function(_, evt)
+        OnGroupEvent(evt)
     end)
 
     -- Clique support
     _G["ClickCastFrames"] = _G["ClickCastFrames"] or {}
-    _G["ClickCastFrames"][frame] = true
+    _G["ClickCastFrames"][widget] = true
 
     -- Initialise alert and options sub-systems (modules already loaded by TOC order)
-    ns.Alert:Initialize()
-    ns.Options:Initialize()
+    mod.Alert:Initialize()
+    mod.Options:Initialize()
 
     -- Started late because the addon loaded in combat: the login events that
     -- normally assign the co-tank have already fired, so run that pass now.
@@ -448,8 +449,8 @@ end
 -- ── Bootstrap ──────────────────────────────────────────────────────────────
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
-loader:SetScript("OnEvent", function(self, event, name)
-    if event == "ADDON_LOADED" then
+loader:SetScript("OnEvent", function(self, evt, name)
+    if evt == "ADDON_LOADED" then
         if name ~= addonName then
             return
         end
@@ -464,8 +465,8 @@ loader:SetScript("OnEvent", function(self, event, name)
     else
         self:UnregisterEvent("PLAYER_REGEN_ENABLED")
     end
-    local ok, err = pcall(InitializeFrame)
-    if not ok then
+    local success, err = pcall(InitializeFrame)
+    if not success then
         print("|cffff4040Tank Kit load error:|r " .. tostring(err))
     end
 end)
@@ -479,12 +480,12 @@ local function handleSlashCommand(msg)
     local cmd = ((msg or ""):match("^%s*(%S*)") or ""):lower()
 
     if cmd == "" or cmd == "config" or cmd == "options" or cmd == "menu" then
-        ns.Options:Open()
+        mod.Options:Open()
         return
     end
 
     if cmd == "help" then
-        ns.Print("|cffaaaaaa--- Commands ---")
+        mod.Print("|cffaaaaaa--- Commands ---")
         DEFAULT_CHAT_FRAME:AddMessage(
             "  " .. CMD .. " (or |cffffff00/tankkit|r) - open the Tank Kit settings"
         )
@@ -521,7 +522,7 @@ local function handleSlashCommand(msg)
 
     if cmd == "sounds" then
         local filter = (msg or ""):match("^%s*%S+%s+(.+)")
-        ns.Alert:PrintSoundNames(filter)
+        mod.Alert:PrintSoundNames(filter)
         return
     end
 
@@ -529,44 +530,44 @@ local function handleSlashCommand(msg)
         local rest = (msg or ""):match("^%s*%S+%s+(.+)")
         local name = rest and rest:match("^set%s+(.+)")
         if name then
-            ns.Alert:SetSound(name)
+            mod.Alert:SetSound(name)
         else
-            ns.Alert:ReportAuraSounds()
+            mod.Alert:ReportAuraSounds()
         end
         return
     end
 
     if cmd == "debuffs" or cmd == "debuff" then
-        local on = ns.ToggleDebuffs()
-        ns.Print("Tank debuffs: " .. (on and ON or OFF))
+        local enabled = mod.ToggleDebuffs()
+        mod.Print("Tank debuffs: " .. (enabled and ON or OFF))
         return
     end
 
     if cmd == "test" then
-        if ns.SetTestMode(not ns.isTestMode) then
-            ns.Print("Test Mode: " .. (ns.isTestMode and ON or OFF))
+        if mod.SetTestMode(not mod.isTestMode) then
+            mod.Print("Test Mode: " .. (mod.isTestMode and ON or OFF))
         else
-            ns.Print("|cffff4040Cannot change test mode during combat.|r")
+            mod.Print("|cffff4040Cannot change test mode during combat.|r")
         end
         return
     end
 
     if cmd == "reset" then
         if InCombatLockdown() then
-            ns.Print("|cffff4040Cannot reset during combat.|r")
+            mod.Print("|cffff4040Cannot reset during combat.|r")
             return
         end
         if CoTankAuras then
-            ns.ResetPosition(CoTankAuras)
+            mod.ResetPosition(CoTankAuras)
         end
-        ns.Print("Position reset.")
+        mod.Print("Position reset.")
         return
     end
 
     if cmd == "lock" or cmd == "unlock" or cmd == "move" then
         -- The frame is placed with CludesUI Layout Mode.
         if InCombatLockdown() then
-            ns.Print("Layout Mode cannot open in combat.")
+            mod.Print("Layout Mode cannot open in combat.")
             return
         end
         CludesUI:EnsureUnlockCore()
@@ -580,35 +581,35 @@ local function handleSlashCommand(msg)
         local rest = (msg or ""):match("^%s*%S+%s+(.+)") or ""
         rest = rest:match("^%s*(.-)%s*$")
         if rest ~= "" then
-            ns.DB().pinnedTank = rest
-            ns.Print("Pinned co-tank: |cff5ab4ff" .. rest .. "|r")
+            mod.DB().pinnedTank = rest
+            mod.Print("Pinned co-tank: |cff5ab4ff" .. rest .. "|r")
         else
-            local coTank = ns.FindCoTank()
+            local coTank = mod.FindCoTank()
             local name = coTank and UnitName(coTank)
             if name then
-                ns.DB().pinnedTank = name
-                ns.Print("Pinned co-tank: |cff5ab4ff" .. name .. "|r")
+                mod.DB().pinnedTank = name
+                mod.Print("Pinned co-tank: |cff5ab4ff" .. name .. "|r")
             else
-                ns.Print("|cffff4040No co-tank found. Use /ctank pin PlayerName|r")
+                mod.Print("|cffff4040No co-tank found. Use /ctank pin PlayerName|r")
             end
         end
         return
     end
 
     if cmd == "unpin" then
-        ns.DB().pinnedTank = nil
-        ns.Print("Pin cleared - auto-detecting co-tank.")
+        mod.DB().pinnedTank = nil
+        mod.Print("Pin cleared - auto-detecting co-tank.")
         return
     end
 
-    ns.Print("Unknown command - use " .. CMD .. " help")
+    mod.Print("Unknown command - use " .. CMD .. " help")
 end
 
 SLASH_COTANKAURAS1 = "/ctank"
 SLASH_COTANKAURAS2 = "/tankkit"
 SlashCmdList["COTANKAURAS"] = function(msg)
-    local ok, err = pcall(handleSlashCommand, msg)
-    if not ok then
-        ns.Print("|cffff4040Error: " .. tostring(err) .. "|r")
+    local success, err = pcall(handleSlashCommand, msg)
+    if not success then
+        mod.Print("|cffff4040Error: " .. tostring(err) .. "|r")
     end
 end

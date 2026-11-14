@@ -8,47 +8,47 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  recovery path.
 --  Reads the earlier Player Aura Bars files through ns and ns._pabInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._pabInternals
+local _, mod = ...
+local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local PAB, ComputeGrid, DefaultBuffsCfg = I.PAB, I.ComputeGrid, I.DefaultBuffsCfg
-local DefaultDebuffsCfg, ApplyDefaultBarShown = I.DefaultDebuffsCfg, I.ApplyDefaultBarShown
-local ApplyLiveConfig, BuffsContentSig = I.ApplyLiveConfig, I.BuffsContentSig
-local CreateBars, RegisterPABUnlock = I.CreateBars, I.RegisterPABUnlock
-local SetParentShownSafe = I.SetParentShownSafe
-local ShowBlizzardPlayerAuras = I.ShowBlizzardPlayerAuras
-local SyncEnchantEvents, SyncNativeAuras = I.SyncEnchantEvents, I.SyncNativeAuras
-local customBuffContainers, customBuffParents = I.customBuffContainers, I.customBuffParents
-local customDebuffContainers = I.customDebuffContainers
-local customDebuffParents = I.customDebuffParents
-local RegisterPABCustomUnlock = I.RegisterPABCustomUnlock
-local ReloadAllCustomBars, SetPabSuppressed = I.ReloadAllCustomBars, I.SetPabSuppressed
+local PAB, ComputeGrid, DefaultBuffsCfg = Inner.PAB, Inner.ComputeGrid, Inner.DefaultBuffsCfg
+local DefaultDebuffsCfg, ApplyDefaultBarShown = Inner.DefaultDebuffsCfg, Inner.ApplyDefaultBarShown
+local ApplyLiveConfig, BuffsContentSig = Inner.ApplyLiveConfig, Inner.BuffsContentSig
+local CreateBars, RegisterPABUnlock = Inner.CreateBars, Inner.RegisterPABUnlock
+local SetParentShownSafe = Inner.SetParentShownSafe
+local ShowBlizzardPlayerAuras = Inner.ShowBlizzardPlayerAuras
+local SyncEnchantEvents, SyncNativeAuras = Inner.SyncEnchantEvents, Inner.SyncNativeAuras
+local customBuffContainers, customBuffParents = Inner.customBuffContainers, Inner.customBuffParents
+local customDebuffContainers = Inner.customDebuffContainers
+local customDebuffParents = Inner.customDebuffParents
+local RegisterPABCustomUnlock = Inner.RegisterPABCustomUnlock
+local ReloadAllCustomBars, SetPabSuppressed = Inner.ReloadAllCustomBars, Inner.SetPabSuppressed
 
 local buffsContainer
-I.buffsContainerSetters[#I.buffsContainerSetters + 1] = function(v)
-    buffsContainer = v
+Inner.buffsContainerSetters[#Inner.buffsContainerSetters + 1] = function(val)
+    buffsContainer = val
 end
 local debuffsContainer
-I.debuffsContainerSetters[#I.debuffsContainerSetters + 1] = function(v)
-    debuffsContainer = v
+Inner.debuffsContainerSetters[#Inner.debuffsContainerSetters + 1] = function(val)
+    debuffsContainer = val
 end
 local buffsParent
-I.buffsParentSetters[#I.buffsParentSetters + 1] = function(v)
-    buffsParent = v
+Inner.buffsParentSetters[#Inner.buffsParentSetters + 1] = function(val)
+    buffsParent = val
 end
 local debuffsParent
-I.debuffsParentSetters[#I.debuffsParentSetters + 1] = function(v)
-    debuffsParent = v
+Inner.debuffsParentSetters[#Inner.debuffsParentSetters + 1] = function(val)
+    debuffsParent = val
 end
 local buffsSlotSig
-I.buffsSlotSigSetters[#I.buffsSlotSigSetters + 1] = function(v)
-    buffsSlotSig = v
+Inner.buffsSlotSigSetters[#Inner.buffsSlotSigSetters + 1] = function(val)
+    buffsSlotSig = val
 end
 
 local ClearDegraded -- forward-declared; defined in the recovery section, called from PAB_SetEnabled
@@ -63,9 +63,9 @@ local vehicleHidden = false -- vehicle ride state; feeds pabSuppressed
 -- first and stood down silently otherwise (field: Blizzard buffs up, no custom
 -- bars until an options change). A disabled Unit Frames module never runs
 -- SetupOptionsPanel, so PAB stays down with no extra check.
-ns.PAB_CreateBars = CreateBars
+mod.PAB_CreateBars = CreateBars
 
-function ns.PAB_Enabled()
+function mod.PAB_Enabled()
     local s = PAB()
     return (s and s.enabled == true) or false
 end
@@ -77,13 +77,13 @@ end
 -- hide latches for the session) but stands every PAB frame down NOW -- the
 -- field bug was custom bars lingering through the "Later" window while the
 -- default bars hid: Disable All must be a complete visual no-op.
-function ns.PAB_SetEnabled(v)
+function mod.PAB_SetEnabled(val)
     local s = PAB()
     if not s then
         return
     end
-    s.enabled = v and true or nil
-    if v then
+    s.enabled = val and true or nil
+    if val then
         -- A stand-down latched before the module went off has no lane to lift
         -- it while disabled, and the rebuild below would come up dimmed.
         ClearDegraded()
@@ -96,11 +96,11 @@ function ns.PAB_SetEnabled(v)
     if debuffsParent then
         debuffsParent:Hide()
     end
-    for _, parent in pairs(customBuffParents) do
-        parent:Hide()
+    for _, hostFrame in pairs(customBuffParents) do
+        hostFrame:Hide()
     end
-    for _, parent in pairs(customDebuffParents) do
-        parent:Hide()
+    for _, hostFrame in pairs(customDebuffParents) do
+        hostFrame:Hide()
     end
     SyncEnchantEvents(false)
     -- The re-hide hooks release once the master is off: hand Blizzard's
@@ -119,20 +119,20 @@ end
 -- engine-registered border art; the profile system prompts for a reload
 -- instead. The Classic flag wins when both are set. Both stock styles wear
 -- the same stock aura borders, so PAB_Blizz answers for either.
-function ns.PAB_Style()
-    local v = ns._pabStyle
-    if v == nil then
+function mod.PAB_Style()
+    local val = mod._pabStyle
+    if val == nil then
         local s = PAB()
         if not s then
             return "cui"
         end
-        v = (s.useClassicStyle and "classic") or (s.useBlizzardStyle and "blizzard") or "cui"
-        ns._pabStyle = v
+        val = (s.useClassicStyle and "classic") or (s.useBlizzardStyle and "blizzard") or "cui"
+        mod._pabStyle = val
     end
-    return v
+    return val
 end
-function ns.PAB_Blizz()
-    return ns.PAB_Style() ~= "cui"
+function mod.PAB_Blizz()
+    return mod.PAB_Style() ~= "cui"
 end
 
 -- Profile-grade resync, called from the _CUUF_ReloadFrames tail (profile
@@ -143,7 +143,7 @@ end
 -- enabled profile (nothing else would). Deliberately does NOT run
 -- ApplyLiveConfig: its size-rebase writes assume lastSize belongs to the
 -- SAME profile and would corrupt the new profile's saved positions.
-function ns.PAB_ProfileResync()
+function mod.PAB_ProfileResync()
     local s = PAB()
     if s and s.enabled == true and s.useBlizzardBuffs ~= true and not (buffsParent or debuffsParent) then
         -- Enabled profile, module never built this session: full build
@@ -160,7 +160,7 @@ function ns.PAB_ProfileResync()
     if s and s.enabled == true and s.useBlizzardBuffs ~= true and buffsParent then
         local buffCfg = DefaultBuffsCfg(s)
         local buffGrid = ComputeGrid(true, buffCfg)
-        if BuffsContentSig(buffCfg, ns.PAB_ResolveSpells(buffCfg), buffGrid.enchSlots) ~= buffsSlotSig then
+        if BuffsContentSig(buffCfg, mod.PAB_ResolveSpells(buffCfg), buffGrid.enchSlots) ~= buffsSlotSig then
             CreateBars()
             return
         end
@@ -175,7 +175,7 @@ end
 -- down and the natives come back NOW (the re-hide hooks read ownership
 -- live). OFF: a full CreateBars pass rebuilds the default bars and hides
 -- the natives again, entirely live. Custom bars run in both modes.
-function ns.PAB_ApplyUseBlizzard()
+function mod.PAB_ApplyUseBlizzard()
     local s = PAB()
     if not (s and s.enabled == true) then
         return
@@ -233,8 +233,8 @@ local function PabAssistProbe()
     if probe("player") then
         return false
     end
-    local ok, canSelf = pcall(UnitCanAssist, "player", "player")
-    if ok and not (issecretvalue and issecretvalue(canSelf)) and canSelf == false then
+    local success, canSelf = pcall(UnitCanAssist, "player", "player")
+    if success and not (issecretvalue and issecretvalue(canSelf)) and canSelf == false then
         return false
     end
     return true
@@ -288,21 +288,21 @@ local function ApplyVehicleHidden(hidden)
     -- must never re-show a parked bar's fully-populated grid. Orphan parents
     -- (bar gone after a delete/profile switch) stay hidden -- the old
     -- `not bar` show-fallback punched through every gate.
-    for barId, parent in pairs(customBuffParents) do
-        local bar, bk = ns.PAB_GetCustomBuffBar(barId)
+    for barId, hostFrame in pairs(customBuffParents) do
+        local barFrame, bk = mod.PAB_GetCustomBuffBar(barId)
         SetParentShownSafe(
             "vehicle-cb-" .. barId,
-            parent,
-            bar ~= nil and ns.PAB_BarActive(bar, bk),
+            hostFrame,
+            barFrame ~= nil and mod.PAB_BarActive(barFrame, bk),
             recompute
         )
     end
-    for barId, parent in pairs(customDebuffParents) do
-        local bar, bk = ns.PAB_GetCustomDebuffBar(barId)
+    for barId, hostFrame in pairs(customDebuffParents) do
+        local barFrame, bk = mod.PAB_GetCustomDebuffBar(barId)
         SetParentShownSafe(
             "vehicle-cd-" .. barId,
-            parent,
-            bar ~= nil and ns.PAB_BarActive(bar, bk),
+            hostFrame,
+            barFrame ~= nil and mod.PAB_BarActive(barFrame, bk),
             recompute
         )
     end
@@ -440,8 +440,8 @@ end
 -- Registers nothing itself: CreateBars calls ns.PAB_ArmRecovery() once it has
 -- confirmed the module is enabled -- login build and live enable both.
 local initFrame = CreateFrame("Frame")
-initFrame:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_ENTERING_WORLD" then
+initFrame:SetScript("OnEvent", function(self, evt)
+    if evt == "PLAYER_ENTERING_WORLD" then
         if vehicleHidden then
             local probe = UnitUsingVehicle or UnitInVehicle
             if not probe("player") then
@@ -459,14 +459,14 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
         return
     end
-    if event == "UNIT_ENTERING_VEHICLE" or event == "UNIT_ENTERED_VEHICLE" then
+    if evt == "UNIT_ENTERING_VEHICLE" or evt == "UNIT_ENTERED_VEHICLE" then
         SetVehicleHidden(true)
         return
     end
-    if event == "UNIT_EXITED_VEHICLE" then
+    if evt == "UNIT_EXITED_VEHICLE" then
         SetVehicleHidden(false)
     end
-    if event == "PLAYER_SPECIALIZATION_CHANGED" then
+    if evt == "PLAYER_SPECIALIZATION_CHANGED" then
         -- Editing-spec bucket bars activate/park with the spec. Gated to
         -- profiles that actually built buckets -- everyone else pays one
         -- table read per spec change. Unlock elements re-sync through the
@@ -484,7 +484,7 @@ end)
 -- point where "PAB is actually running" is known to be true. Idempotent:
 -- CreateBars can run more than once per session (login build, live enable).
 local recoveryArmed = false
-function ns.PAB_ArmRecovery()
+function mod.PAB_ArmRecovery()
     if recoveryArmed then
         return
     end
@@ -510,4 +510,4 @@ function ns.PAB_ArmRecovery()
     initFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
 end
 
-I.broken = false
+Inner.broken = false

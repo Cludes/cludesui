@@ -7,9 +7,9 @@ end -- Mythic+ Tools does not load on WoW Forever: no runs, no factory (the main
 -- Blocks\MythicSummary.lua
 -- Mythic+ run summary block factory.
 
-local ADDON_NAME, ns = ...
-local L = ns.L
-local K = ns.BlockKit
+local ADDON_NAME, mod = ...
+local L = mod.L
+local Keys = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -18,16 +18,16 @@ local pairs = pairs
 local type = type
 local format = string.format
 local floor = math.floor
-local max = math.max
+local upper = math.max
 local min = math.min
 
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
+local CONTENT_BASE = Keys.CONTENT_BASE
+local InstKey = Keys.InstKey
+local HBudget = Keys.HBudget
+local VSlotW = Keys.VSlotW
+local MaybeRelayout = Keys.MaybeRelayout
+local AttachTextOffset = Keys.AttachTextOffset
+local BlockColorOf = Keys.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  M+ SUMMARY (newest Run Summary record; click opens it like /ov, the
@@ -41,8 +41,8 @@ local BlockColorOf = K.BlockColorOf
 local liveInsts = {}
 
 local function OnRunsChanged()
-    for inst in pairs(liveInsts) do
-        inst:Refresh()
+    for instance in pairs(liveInsts) do
+        instance:Refresh()
     end
 end
 
@@ -65,32 +65,32 @@ local function LatestRun()
 end
 
 -- Level in its keystone-rarity color, as in the Run Summary header.
-local function RunText(rec)
-    if not rec then
+local function RunText(recd)
+    if not recd then
         return CludesUI.L("No runs recorded yet")
     end
-    local level = "+" .. (rec.level or 0)
+    local level = "+" .. (recd.level or 0)
     local kcol = C_ChallengeMode
         and C_ChallengeMode.GetKeystoneLevelRarityColor
-        and C_ChallengeMode.GetKeystoneLevelRarityColor(rec.level or 0)
+        and C_ChallengeMode.GetKeystoneLevelRarityColor(recd.level or 0)
     if type(kcol) == "table" and kcol.r then
         level = CludesUI.HexColor(kcol.r, kcol.g, kcol.b) .. level .. "|r"
     end
-    return level .. " " .. (rec.mapName or "?")
+    return level .. " " .. (recd.mapName or "?")
 end
 
 -- Completion time as m:ss, green when timed, red when depleted.
-local function RunTime(rec)
-    local ms = rec.timeMS
+local function RunTime(recd)
+    local ms = recd.timeMS
     if not ms then
         return "-", 0.6, 0.6, 0.6
     end
     local secs = floor(ms / 1000)
-    local text = format("%d:%02d", floor(secs / 60), secs % 60)
-    if rec.onTime then
-        return text, 0.176, 0.796, 0.349
+    local textValue = format("%d:%02d", floor(secs / 60), secs % 60)
+    if recd.onTime then
+        return textValue, 0.176, 0.796, 0.349
     end
-    return text, 0.9, 0.3, 0.3
+    return textValue, 0.9, 0.3, 0.3
 end
 
 local function ConfirmClear()
@@ -108,9 +108,9 @@ local function ConfirmClear()
     })
 end
 
-ns.BlockFactories.mplussummary = function(blockCfg, slot, content, barCtx)
-    local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
+mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+    instance.key = InstKey(barCtx, blockCfg)
 
     local mouseOver = false
 
@@ -118,116 +118,116 @@ ns.BlockFactories.mplussummary = function(blockCfg, slot, content, barCtx)
         return blockCfg.settings or {}
     end
 
-    local button = CreateFrame("Button", nil, content)
-    button:SetAllPoints()
-    button:EnableMouse(true)
-    button:RegisterForClicks("AnyUp")
+    local btnFrame = CreateFrame("Button", nil, contentFrame)
+    btnFrame:SetAllPoints()
+    btnFrame:EnableMouse(true)
+    btnFrame:RegisterForClicks("AnyUp")
 
-    local label = button:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(inst, label)
+    local labelText = btnFrame:CreateFontString(nil, "OVERLAY")
+    AttachTextOffset(instance, labelText)
 
-    function inst:Refresh()
+    function instance:Refresh()
         if self._dead then
             return
         end
         local barCfg = barCtx.cfg
         local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local rec = LatestRun()
+        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local recd = LatestRun()
         -- Hide When Empty: no runs collapses the block (GetAutoLength reports
         -- 0, so the solver drops the slot). Show/Hide wait out lockdown.
-        local collapsed = not rec and D().hideWhenEmpty == true
-        if content:IsShown() == collapsed then
+        local collapsed = not recd and D().hideWhenEmpty == true
+        if contentFrame:IsShown() == collapsed then
             if InCombatLockdown() then
-                ns.DeferUntilOOC("mplussummary:" .. inst.key, function()
-                    inst:Refresh()
+                mod.DeferUntilOOC("mplussummary:" .. instance.key, function()
+                    instance:Refresh()
                 end)
             elseif collapsed then
-                content:Hide()
+                contentFrame:Hide()
             else
-                content:Show()
+                contentFrame:Show()
             end
         end
         if collapsed then
-            MaybeRelayout(inst)
+            MaybeRelayout(instance)
             return
         end
-        local text = RunText(rec)
+        local textValue = RunText(recd)
 
-        ns.SetFont(label, fontSize, barCfg)
+        mod.SetFont(labelText, fontSize, barCfg)
         if mouseOver then
-            label:SetTextColor(ns.GetAccent())
+            labelText:SetTextColor(mod.GetAccent())
         else
-            label:SetTextColor(BlockColorOf(blockCfg))
+            labelText:SetTextColor(BlockColorOf(blockCfg))
         end
         -- A secure overlay elsewhere on the bar protects its geometry in
         -- lockdown: only the text updates now, sizing waits for regen.
         if InCombatLockdown() then
-            label:SetText(text)
-            ns.DeferUntilOOC("mplussummary:" .. inst.key, function()
-                inst:Refresh()
+            labelText:SetText(textValue)
+            mod.DeferUntilOOC("mplussummary:" .. instance.key, function()
+                instance:Refresh()
             end)
             return
         end
         if barCtx.IsVertical() then
-            local slotW = VSlotW(inst)
-            local innerW = max(24, slotW - 8)
-            label:SetText(text)
-            ns.SetWrappedText(label, innerW, "CENTER")
-            label:ClearAllPoints()
-            label:SetPoint("TOP", button, "TOP", 0, -4)
-            local totalH = max(8 + ns.SnapToPixelGrid(label:GetStringHeight()) + 4, barH)
-            content:SetSize(slotW, totalH)
-            button:SetSize(slotW, totalH)
+            local slotW = VSlotW(instance)
+            local innerW = upper(24, slotW - 8)
+            labelText:SetText(textValue)
+            mod.SetWrappedText(labelText, innerW, "CENTER")
+            labelText:ClearAllPoints()
+            labelText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+            local totalH = upper(8 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4, barH)
+            contentFrame:SetSize(slotW, totalH)
+            btnFrame:SetSize(slotW, totalH)
         else
-            local slotW = HBudget(inst, 180)
-            ns.ResetInlineText(label, "LEFT")
-            label:SetText(text)
-            label:ClearAllPoints()
-            label:SetPoint("LEFT", button, "LEFT", 0, 0)
-            local tw = ns.SnapToPixelGrid(label:GetStringWidth())
-            local totalW = max(min(slotW, tw + 4), 10)
-            content:SetSize(totalW, barH)
-            button:SetSize(totalW, barH)
+            local slotW = HBudget(instance, 180)
+            mod.ResetInlineText(labelText, "LEFT")
+            labelText:SetText(textValue)
+            labelText:ClearAllPoints()
+            labelText:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+            local tw = mod.SnapToPixelGrid(labelText:GetStringWidth())
+            local totalW = upper(min(slotW, tw + 4), 10)
+            contentFrame:SetSize(totalW, barH)
+            btnFrame:SetSize(totalW, barH)
         end
-        MaybeRelayout(inst)
+        MaybeRelayout(instance)
     end
 
     local function ShowSummaryTooltip()
-        local ar, ag, ab = ns.GetAccent()
+        local ar, ag, ab = mod.GetAccent()
         local runs = Runs()
-        local count = runs and #runs or 0
-        ns.Tip_Begin(button)
-        ns.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", ar, ag, ab)
-        ns.Tip_AddLine(" ")
-        if count == 0 then
-            ns.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6)
+        local total = runs and #runs or 0
+        mod.Tip_Begin(btnFrame)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", ar, ag, ab)
+        mod.Tip_AddLine(" ")
+        if total == 0 then
+            mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6)
         end
-        for i = 1, count do
-            local rec = runs[i]
-            local t, tr, tg, tb = RunTime(rec)
-            ns.Tip_AddDouble(RunText(rec), t, 0.8, 0.8, 0.8, tr, tg, tb)
+        for idx = 1, total do
+            local recd = runs[idx]
+            local t, tr, tg, tb = RunTime(recd)
+            mod.Tip_AddDouble(RunText(recd), t, 0.8, 0.8, 0.8, tr, tg, tb)
         end
-        ns.Tip_AddLine(" ")
-        ns.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, ar, ag, ab)
-        if count > 0 then
-            ns.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddLine(" ")
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, ar, ag, ab)
+        if total > 0 then
+            mod.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, ar, ag, ab)
         end
-        ns.Tip_Show()
+        mod.Tip_Show()
     end
 
-    button:SetScript("OnEnter", function()
+    btnFrame:SetScript("OnEnter", function()
         mouseOver = true
-        inst:Refresh()
+        instance:Refresh()
         ShowSummaryTooltip()
     end)
-    button:SetScript("OnLeave", function()
+    btnFrame:SetScript("OnLeave", function()
         mouseOver = false
-        ns.Tip_Hide(button)
-        inst:Refresh()
+        mod.Tip_Hide(btnFrame)
+        instance:Refresh()
     end)
     -- Same path as typing /ov, so a disabled Run Summary prints the same error.
-    button:SetScript("OnClick", function(_, mb)
+    btnFrame:SetScript("OnClick", function(_, mb)
         if mb == "RightButton" then
             if LatestRun() then
                 ConfirmClear()
@@ -237,41 +237,41 @@ ns.BlockFactories.mplussummary = function(blockCfg, slot, content, barCtx)
         if mb ~= "LeftButton" then
             return
         end
-        local ov = SlashCmdList and SlashCmdList.CUIMPLUS
-        if ov then
-            ov("")
+        local shade = SlashCmdList and SlashCmdList.CUIMPLUS
+        if shade then
+            shade("")
         end
     end)
 
-    function inst:Enable()
+    function instance:Enable()
         liveInsts[self] = true
         SyncRunsHook()
         self:Refresh()
     end
 
-    function inst:Disable()
+    function instance:Disable()
         liveInsts[self] = nil
         SyncRunsHook()
-        ns.Tip_Hide(button)
-        content:Hide()
+        mod.Tip_Hide(btnFrame)
+        contentFrame:Hide()
     end
 
-    function inst:GetAutoLength()
-        if not content:IsShown() then
+    function instance:GetAutoLength()
+        if not contentFrame:IsShown() then
             return 0
         end
         if barCtx.IsVertical() then
-            return max(content:GetHeight() or 40, 30)
+            return upper(contentFrame:GetHeight() or 40, 30)
         end
-        return max(content:GetWidth() or 60, 24)
+        return upper(contentFrame:GetWidth() or 60, 24)
     end
 
-    function inst:Destroy()
+    function instance:Destroy()
         self._dead = true
         liveInsts[self] = nil
         SyncRunsHook()
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    return inst
+    return instance
 end

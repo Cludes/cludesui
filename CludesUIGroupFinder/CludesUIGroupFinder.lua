@@ -5,7 +5,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CludesUIGroupFinder.lua: premade group filters, list tweaks and the M+
 -- applications bar. Nothing hooks in until it's enabled.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 if
     not (
         CludesUI
@@ -24,11 +24,11 @@ end -- stale-parent guard: a partially updated install (old parent, new child) g
 if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then
     return
 end
-CludesUI._ModuleNS[ADDON_NAME] = ns -- options file grabs the ns from here
+CludesUI._ModuleNS[ADDON_NAME] = mod -- options file grabs the ns from here
 
 local GF = CludesUI.Lite.NewAddon(ADDON_NAME)
 -- Work on Blizzard frames that waits for combat to end; inert until a Defer.
-ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 local DEFAULTS = {
     padding = 12,
@@ -43,7 +43,7 @@ local DEFAULTS = {
     dungeonAbbr = false,
     dungeonScore = false,
 }
-ns.DEFAULTS = DEFAULTS
+mod.DEFAULTS = DEFAULTS
 
 local APPS_DEFAULTS = {
     enabled = false,
@@ -54,12 +54,12 @@ local APPS_DEFAULTS = {
     showDelisted = true,
     showCancelled = true,
 }
-ns.APPS_DEFAULTS = APPS_DEFAULTS
+mod.APPS_DEFAULTS = APPS_DEFAULTS
 
-local db
+local saved
 
 local function Profile()
-    return db and db.profile
+    return saved and saved.profile
 end
 
 -- Account-wide bits live in CludesUIDB.<key>, outside profiles.
@@ -76,18 +76,18 @@ local function Account(key)
 end
 
 -- Account-wide so profile swaps and imports never flip it.
-function ns.Enabled()
+function mod.Enabled()
     local t = CludesUIDB and CludesUIDB.groupFinder
     return type(t) == "table" and t.enabled == true or false
 end
 
-function ns.SetEnabled(v)
-    Account("groupFinder").enabled = v and true or false
+function mod.SetEnabled(val)
+    Account("groupFinder").enabled = val and true or false
 end
 
 -- True while another premade groups filter that hooks the same panel is loaded:
 -- Group Finder can't be turned on then (its page and the login announcement ask).
-function ns.Blocked()
+function mod.Blocked()
     return C_AddOns.IsAddOnLoaded("PremadeGroupsFilter") and true or false
 end
 
@@ -133,7 +133,7 @@ local function CharFilters()
     return charDB and charDB.filters
 end
 
-local cfg = setmetatable({}, {
+local conf = setmetatable({}, {
     __index = function(_, k)
         if FILTER_KEYS[k] then
             local f = CharFilters()
@@ -141,27 +141,27 @@ local cfg = setmetatable({}, {
         end
         return Search()[k]
     end,
-    __newindex = function(_, k, v)
+    __newindex = function(_, k, val)
         if FILTER_KEYS[k] then
             local f = CharFilters()
             if f then
-                f[k] = v
+                f[k] = val
             end
             return
         end
-        Search()[k] = v
+        Search()[k] = val
     end,
 })
 
-function ns.Cfg()
-    return cfg
+function mod.Cfg()
+    return conf
 end
 
 -- blizzard's dungeon picks for this character, nil until saved once
-function ns.CharBlizzFilter()
+function mod.CharBlizzFilter()
     return charDB and charDB.blizz
 end
-function ns.SetCharBlizzFilter(t)
+function mod.SetCharBlizzFilter(t)
     if charDB then
         charDB.blizz = t
     end
@@ -170,7 +170,7 @@ end
 -- the results and applicant lists' display settings, in the profile (read-only
 -- until the profile's ready)
 local ownListRO = setmetatable({}, { __newindex = function() end })
-function ns.OwnListDB()
+function mod.OwnListDB()
     local p = Profile()
     if not p then
         return ownListRO
@@ -183,12 +183,12 @@ function ns.OwnListDB()
     return t
 end
 
-function ns.AppsCfg()
+function mod.AppsCfg()
     local p = Profile()
     return p and p.apps or readOnly.apps
 end
 
-function ns.AppCountsStore()
+function mod.AppCountsStore()
     local t = Account("groupFinderApps")
     if type(t.dungeon) ~= "table" then
         t.dungeon = {}
@@ -196,9 +196,9 @@ function ns.AppCountsStore()
     return t.dungeon
 end
 
-function ns.ResetSettings()
-    if db then
-        db:ResetProfile()
+function mod.ResetSettings()
+    if saved then
+        saved:ResetProfile()
     end
     if charDB then
         wipe(charDB.filters)
@@ -206,7 +206,7 @@ function ns.ResetSettings()
 end
 
 function GF:OnInitialize()
-    db = CludesUI.Lite.NewDB(
+    saved = CludesUI.Lite.NewDB(
         "CludesUIGroupFinderDB",
         { profile = { search = DEFAULTS, apps = APPS_DEFAULTS } }
     )
@@ -221,11 +221,11 @@ function GF:OnInitialize()
         local s = Profile() and Profile().search
         if s then
             for k in pairs(FILTER_KEYS) do
-                local v = s[k]
-                if type(v) == "table" then
-                    v = CopyTable(v)
+                local val = s[k]
+                if type(val) == "table" then
+                    val = CopyTable(val)
                 end
-                filters[k] = v
+                filters[k] = val
             end
         end
         charDB.filters = filters
@@ -233,12 +233,12 @@ function GF:OnInitialize()
 end
 
 function GF:OnEnable()
-    if not ns.Enabled() then
+    if not mod.Enabled() then
         return
     end
     -- PGF hooks the same panel, so we turn ourselves off while it's loaded.
-    if ns.Blocked() then
-        ns.SetEnabled(false)
+    if mod.Blocked() then
+        mod.SetEnabled(false)
         CludesUI.Print(
             CludesUI.COLOR_CODES.BRAND
                 .. "CludesUI|r "
@@ -247,12 +247,12 @@ function GF:OnEnable()
         return
     end
 
-    if ns.Apps_Enable then
-        ns.Apps_Enable()
+    if mod.Apps_Enable then
+        mod.Apps_Enable()
     end
     local function Start()
-        if ns.Search_OnEnable then
-            ns.Search_OnEnable()
+        if mod.Search_OnEnable then
+            mod.Search_OnEnable()
         end
     end
     if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") and PVEFrame then

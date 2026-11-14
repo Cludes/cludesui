@@ -8,27 +8,28 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  party mode and LayoutBar.
 --  Loads after CUI_ActionBars_Bars.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local ipairs = ipairs
 local ceil, floor, max = math.ceil, math.floor, math.max
 local wipe = wipe
 local InCombatLockdown = InCombatLockdown
 local GetBindingKey = GetBindingKey
-local EFD = ns.EFD
+local EFD = mod.EFD
 
-local EAB, barButtons = ns.EAB, ns.barButtons
-local I = ns._internals
-local _gridState, BAR_CONFIG, BAR_LOOKUP = I._gridState, I.BAR_CONFIG, I.BAR_LOOKUP
-local SHAPE_BTN_EXPAND, ShouldQuickKeybindSurfaceBar = I.SHAPE_BTN_EXPAND, I.ShouldQuickKeybindSurfaceBar
-local barBaseSize, barFrames = I.barBaseSize, I.barFrames
-local LayoutPagingFrame, SetupPagingFrame = I.LayoutPagingFrame, I.SetupPagingFrame
-local WireSecurePagingButton = I.WireSecurePagingButton
+local ABAR, barButtons = mod.EAB, mod.barButtons
+local Inner = mod._internals
+local _gridState, BAR_CONFIG, BAR_LOOKUP = Inner._gridState, Inner.BAR_CONFIG, Inner.BAR_LOOKUP
+local SHAPE_BTN_EXPAND, ShouldQuickKeybindSurfaceBar =
+    Inner.SHAPE_BTN_EXPAND, Inner.ShouldQuickKeybindSurfaceBar
+local barBaseSize, barFrames = Inner.barBaseSize, Inner.barFrames
+local LayoutPagingFrame, SetupPagingFrame = Inner.LayoutPagingFrame, Inner.SetupPagingFrame
+local WireSecurePagingButton = Inner.WireSecurePagingButton
 -- Written in CUI_ActionBars_Paging.lua;
 -- SetPagingFrame hands the value to this copy.
 local _pagingFrame
-I.pagingFrameSetters[#I.pagingFrameSetters + 1] = function(v)
-    _pagingFrame = v
+Inner.pagingFrameSetters[#Inner.pagingFrameSetters + 1] = function(val)
+    _pagingFrame = val
 end
 
 -------------------------------------------------------------------------------
@@ -36,22 +37,22 @@ end
 -------------------------------------------------------------------------------
 -- Snap to a whole number of physical pixels at the bar's effective scale (same
 -- round-trip as the border system), eliminating sub-pixel drift between siblings.
-local function SnapForScale(x, barScale)
-    if x == 0 then
+local function SnapForScale(posX, barScale)
+    if posX == 0 then
         return 0
     end
-    local PP = CludesUI and CludesUI.PP
-    if PP then
-        return PP.Scale(x)
+    local Pix = CludesUI and CludesUI.PP
+    if Pix then
+        return Pix.Scale(posX)
     end
-    return math.floor(x + 0.5)
+    return math.floor(posX + 0.5)
 end
 
 -- Grow direction for icon layout + fixed-edge resize. Lives on EAB, not a
 -- file-scope local. Caveat: in an unlock
 -- anchor chain a mid-chain bar can inherit its parent's grow visually while its
 -- own DB still holds the old value.
-function EAB:ResolveGrowDirectionForLayout(key, s, depth)
+function ABAR:ResolveGrowDirectionForLayout(key, s, depth)
     return (s.growDirection or "up"):upper()
 end
 
@@ -63,19 +64,19 @@ end
 -- are consumed.
 do
     local function ResolveIconOrder(s)
-        local order = s.iconOrder
-        if order == nil then
-            order = s.reverseIconOrder and "reversed" or "default"
+        local sequence = s.iconOrder
+        if sequence == nil then
+            sequence = s.reverseIconOrder and "reversed" or "default"
         end
-        if order == "reversed" then
+        if sequence == "reversed" then
             return true, nil, nil
-        elseif order == "TOPLEFT" then
+        elseif sequence == "TOPLEFT" then
             return false, "LEFT", "TOP"
-        elseif order == "TOPRIGHT" then
+        elseif sequence == "TOPRIGHT" then
             return false, "RIGHT", "TOP"
-        elseif order == "BOTTOMLEFT" then
+        elseif sequence == "BOTTOMLEFT" then
             return false, "LEFT", "BOTTOM"
-        elseif order == "BOTTOMRIGHT" then
+        elseif sequence == "BOTTOMRIGHT" then
             return false, "RIGHT", "BOTTOM"
         end
         return false, nil, nil
@@ -88,7 +89,7 @@ do
     -- modes. On vertical bars those fill ACROSS the columns first and wrap down to the
     -- next row; Default/Reversed keep the legacy down-each-column fill. Horizontal bars
     -- already fill row-first, so callers ignore it there.
-    function ns.GetOrderFlips(s, isVertical, rowsUpward)
+    function mod.GetOrderFlips(s, isVertical, rowsUpward)
         local flowFlip, hAnchor, vAnchor = ResolveIconOrder(s)
         local colFlip, rowFlip = false, false
         if isVertical then
@@ -107,8 +108,8 @@ end
 -- Compute layout for a bar and return a table of per-button data.
 -- Returns: { [i] = { x, y, w, h, show } }, frameW, frameH
 local function ComputeBarLayout(key)
-    local info = BAR_LOOKUP[key]
-    if not info then
+    local details = BAR_LOOKUP[key]
+    if not details then
         return {}, 1, 1
     end
     local buttons = barButtons[key]
@@ -116,16 +117,16 @@ local function ComputeBarLayout(key)
         return {}, 1, 1
     end
 
-    local s = EAB.db.profile.bars[key]
-    local numIcons = s.overrideNumIcons or s.numIcons or info.count
+    local s = ABAR.db.profile.bars[key]
+    local numIcons = s.overrideNumIcons or s.numIcons or details.count
     if numIcons < 1 then
-        numIcons = info.count
+        numIcons = details.count
     end
-    if numIcons > info.count then
-        numIcons = info.count
+    if numIcons > details.count then
+        numIcons = details.count
     end
-    if info.isStance then
-        numIcons = GetNumShapeshiftForms() or info.count
+    if details.isStance then
+        numIcons = GetNumShapeshiftForms() or details.count
     end
     if numIcons < 1 then
         numIcons = 1
@@ -141,12 +142,12 @@ local function ComputeBarLayout(key)
     -- loses a pixel where PP.mult > 1. Pixel-lock happens below, post-shape.
     local padding = s.buttonPadding or 2
     local isVertical = (s.orientation == "vertical")
-    local growDir = EAB:ResolveGrowDirectionForLayout(key, s)
-    local shape = ns.AB_LayoutShape(s)
+    local growDir = ABAR:ResolveGrowDirectionForLayout(key, s)
+    local shape = mod.AB_LayoutShape(s)
 
-    local base = barBaseSize[key]
-    local baseW = base and base.w or 45
-    local baseH = base and base.h or 45
+    local baseValue = barBaseSize[key]
+    local baseW = baseValue and baseValue.w or 45
+    local baseH = baseValue and baseValue.h or 45
     local btnW = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or baseW
     local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or baseH
     if shape ~= "none" and shape ~= "cropped" then
@@ -177,66 +178,66 @@ local function ComputeBarLayout(key)
     if showEmpty == nil then
         showEmpty = true
     end
-    if info.isStance then
+    if details.isStance then
         showEmpty = false
     end
 
     -- Icon order flips are constant for the whole grid.
     local rowsUpward = not isVertical and (growDir == "UP" or growDir == "CENTER")
-    local colFlip, rowFlip, cornerFill = ns.GetOrderFlips(s, isVertical, rowsUpward)
+    local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(s, isVertical, rowsUpward)
 
     local result = {}
-    for i = 1, info.count do
-        local btn = buttons[i]
-        if not btn then
+    for idx = 1, details.count do
+        local button = buttons[idx]
+        if not button then
             break
         end
-        if i > numIcons then
-            result[i] = { x = 0, y = 0, w = btnW, h = btnH, show = false }
+        if idx > numIcons then
+            result[idx] = { x = 0, y = 0, w = btnW, h = btnH, show = false }
         else
-            local col, row
+            local column, rowFrame
             if isVertical then
                 if cornerFill then
                     -- Corner modes fill across columns first, then wrap down a
                     -- row (numRows = the column count on vertical bars).
-                    col = (i - 1) % numRows
-                    row = floor((i - 1) / numRows)
+                    column = (idx - 1) % numRows
+                    rowFrame = floor((idx - 1) / numRows)
                 else
-                    col = floor((i - 1) / stride)
-                    row = (i - 1) % stride
+                    column = floor((idx - 1) / stride)
+                    rowFrame = (idx - 1) % stride
                 end
             else
-                col = (i - 1) % stride
-                row = floor((i - 1) / stride)
+                column = (idx - 1) % stride
+                rowFrame = floor((idx - 1) / stride)
             end
             -- Icon order flips first so the width/height-match extras
             -- below derive from the final visual position.
             if colFlip then
-                col = (isVertical and numRows or stride) - 1 - col
+                column = (isVertical and numRows or stride) - 1 - column
             end
             if rowFlip then
-                row = (isVertical and stride or numRows) - 1 - row
+                rowFrame = (isVertical and stride or numRows) - 1 - rowFrame
             end
-            local thisBtnW = (extraWC > 0 and col < extraWC) and (btnW + onePxC) or btnW
-            local thisBtnH = (extraHC > 0 and row < extraHC) and (btnH + onePxC) or btnH
-            local extraBeforeW = math.min(col, extraWC) * onePxC
-            local extraBeforeH = math.min(row, extraHC) * onePxC
-            local xOff = col * stepW + extraBeforeW
+            local thisBtnW = (extraWC > 0 and column < extraWC) and (btnW + onePxC) or btnW
+            local thisBtnH = (extraHC > 0 and rowFrame < extraHC) and (btnH + onePxC) or btnH
+            local extraBeforeW = math.min(column, extraWC) * onePxC
+            local extraBeforeH = math.min(rowFrame, extraHC) * onePxC
+            local xOff = column * stepW + extraBeforeW
             local yOff
             if rowsUpward then
-                yOff = row * stepH + extraBeforeH
+                yOff = rowFrame * stepH + extraBeforeH
             else
-                yOff = -(row * stepH + extraBeforeH)
+                yOff = -(rowFrame * stepH + extraBeforeH)
             end
             local show = true
             if
                 not showEmpty
                 and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(s))
-                and ns.AB_EmptySlot(btn, info)
+                and mod.AB_EmptySlot(button, details)
             then
                 show = false
             end
-            result[i] = { x = xOff, y = yOff, w = thisBtnW, h = thisBtnH, show = show }
+            result[idx] = { x = xOff, y = yOff, w = thisBtnW, h = thisBtnH, show = show }
         end
     end
 
@@ -252,15 +253,15 @@ local function ComputeBarLayout(key)
     return result, max(frameW, 1), max(frameH, 1)
 end
 
-local function HideSlotArt(btn)
-    if not btn.SlotArt then
+local function HideSlotArt(button)
+    if not button.SlotArt then
         return
     end
     if CludesUI and CludesUI._hiddenParent then
-        btn.SlotArt:SetParent(CludesUI._hiddenParent)
+        button.SlotArt:SetParent(CludesUI._hiddenParent)
     else
-        btn.SlotArt:Hide()
-        btn.SlotArt:SetAlpha(0)
+        button.SlotArt:Hide()
+        button.SlotArt:SetAlpha(0)
     end
 end
 
@@ -278,25 +279,25 @@ end
 -------------------------------------------------------------------------------
 do
     local groups, groupOf = {}, {}
-    ns.PartySpin_Refresh = CludesUI.PartySpin_Create({
+    mod.PartySpin_Refresh = CludesUI.PartySpin_Create({
         target = "actionBars",
         collect = function()
             wipe(groups)
-            for _, info in ipairs(BAR_CONFIG) do
-                local buttons, frame = barButtons[info.key], barFrames[info.key]
-                if buttons and frame then
-                    local grp = groupOf[info.key]
+            for _, details in ipairs(BAR_CONFIG) do
+                local buttons, widget = barButtons[details.key], barFrames[details.key]
+                if buttons and widget then
+                    local grp = groupOf[details.key]
                     if not grp then
                         grp = { frames = {} }
-                        groupOf[info.key] = grp
+                        groupOf[details.key] = grp
                     end
-                    grp.pivot = frame
-                    local list = grp.frames
-                    wipe(list)
-                    for i = 1, #buttons do
-                        local btn = buttons[i]
-                        if btn and btn:IsShown() then
-                            list[#list + 1] = btn
+                    grp.pivot = widget
+                    local entries = grp.frames
+                    wipe(entries)
+                    for idx = 1, #buttons do
+                        local button = buttons[idx]
+                        if button and button:IsShown() then
+                            entries[#entries + 1] = button
                         end
                     end
                     groups[#groups + 1] = grp
@@ -310,26 +311,26 @@ end
 -- Upvalue for LayoutBar (must be declared before it). ApplyAll sets it during full
 -- rebuilds so edge preservation cannot save stale positions into the new profile.
 local _isApplyingAll = false
-I.isApplyingAllSetters[#I.isApplyingAllSetters + 1] = function(v)
-    _isApplyingAll = v
+Inner.isApplyingAllSetters[#Inner.isApplyingAllSetters + 1] = function(val)
+    _isApplyingAll = val
 end
 
 local function LayoutBar(key)
     if InCombatLockdown() then
-        ns._eabApplyDeferred = true
+        mod._eabApplyDeferred = true
         return
     end
-    local info = BAR_LOOKUP[key]
-    if not info then
+    local details = BAR_LOOKUP[key]
+    if not details then
         return
     end
-    local frame = barFrames[key]
+    local widget = barFrames[key]
     local buttons = barButtons[key]
-    if not frame or not buttons then
+    if not widget or not buttons then
         return
     end
 
-    local s = EAB.db.profile.bars[key]
+    local s = ABAR.db.profile.bars[key]
     -- LAYOUT STAMP: skips a re-layout whose inputs are unchanged (the combat-exit
     -- ApplyAll re-ran this full layout for nothing). EVERY input the body reads
     -- folds into one string: raw settings, profile flags, barPositions, base sizes,
@@ -342,23 +343,23 @@ local function LayoutBar(key)
     -- never leave a stale valid stamp.
     local _lbStamp
     do
-        local p = EAB.db.profile
-        local pos = p.barPositions and p.barPositions[key]
+        local p = ABAR.db.profile
+        local place = p.barPositions and p.barPositions[key]
         local base0 = barBaseSize[key]
         local PPm = CludesUI and CludesUI.PP
-        local growDirS = EAB:ResolveGrowDirectionForLayout(key, s)
+        local growDirS = ABAR:ResolveGrowDirectionForLayout(key, s)
         local isVertS = (s.orientation == "vertical")
         local rowsUpS = not isVertS and (growDirS == "UP" or growDirS == "CENTER")
-        local cfS, rfS, cnS = ns.GetOrderFlips(s, isVertS, rowsUpS)
-        local nIcoS = s.overrideNumIcons or s.numIcons or info.count
-        if info.isStance then
-            nIcoS = GetNumShapeshiftForms() or info.count
+        local cfS, rfS, cnS = mod.GetOrderFlips(s, isVertS, rowsUpS)
+        local nIcoS = s.overrideNumIcons or s.numIcons or details.count
+        if details.isStance then
+            nIcoS = GetNumShapeshiftForms() or details.count
         end
         local fbS = -1
         do
-            local cx, cy = frame:GetCenter()
+            local cx, cy = widget:GetCenter()
             if cx and cy then
-                local r = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                local r = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                 local uw, uh = UIParent:GetSize()
                 fbS = ((cx * r > uw * 2 / 3) and 2 or 0) + ((cy * r > uh * 2 / 3) and 1 or 0)
             end
@@ -367,15 +368,15 @@ local function LayoutBar(key)
         if showES == nil then
             showES = true
         end
-        if info.isStance then
+        if details.isStance then
             showES = false
         end
         local fillS = ""
         if not showES then
             local tf = {}
-            for i = 1, info.count do
-                local b = buttons[i]
-                tf[i] = (b and not ns.AB_EmptySlot(b, info)) and "1" or "0"
+            for idx = 1, details.count do
+                local b = buttons[idx]
+                tf[idx] = (b and not mod.AB_EmptySlot(b, details)) and "1" or "0"
             end
             fillS = table.concat(tf)
         end
@@ -397,13 +398,13 @@ local function LayoutBar(key)
             tostring(s._matchExtraPixelsH),
             tostring(showES),
             tostring(s.mouseoverEnabled),
-            ns.AB_Forever() and "forever" or ns.AB_Style(),
-            ns.AB_ChromeStamp(key),
+            mod.AB_Forever() and "forever" or mod.AB_Style(),
+            mod.AB_ChromeStamp(key),
             tostring(p.procGlowEnabled),
-            pos and tostring(pos.point) or "-",
-            pos and tostring(pos.relPoint) or "-",
-            pos and tostring(pos.x) or "-",
-            pos and tostring(pos.y) or "-",
+            place and tostring(place.point) or "-",
+            place and tostring(place.relPoint) or "-",
+            place and tostring(place.x) or "-",
+            place and tostring(place.y) or "-",
             base0 and tostring(base0.w) or "-",
             base0 and tostring(base0.h) or "-",
             tostring(PPm and PPm.mult or 1),
@@ -416,10 +417,10 @@ local function LayoutBar(key)
             tostring(fbS),
             fillS,
         }, "|")
-        local st = ns._eabLayoutStamp
+        local st = mod._eabLayoutStamp
         if not st then
             st = {}
-            ns._eabLayoutStamp = st
+            mod._eabLayoutStamp = st
         end
         if st[key] == _lbStamp then
             return
@@ -427,19 +428,19 @@ local function LayoutBar(key)
         st[key] = nil
         -- This pass rewrites the pet buttons from live state: drop the pet
         -- handler's shape memo so its next full pass lays them out again.
-        if info.isPetBar then
-            ns._eabPetLayoutSig = nil
+        if details.isPetBar then
+            mod._eabPetLayoutSig = nil
         end
     end
-    local numIcons = s.overrideNumIcons or s.numIcons or info.count
+    local numIcons = s.overrideNumIcons or s.numIcons or details.count
     if numIcons < 1 then
-        numIcons = info.count
+        numIcons = details.count
     end
-    if numIcons > info.count then
-        numIcons = info.count
+    if numIcons > details.count then
+        numIcons = details.count
     end
-    if info.isStance then
-        numIcons = GetNumShapeshiftForms() or info.count
+    if details.isStance then
+        numIcons = GetNumShapeshiftForms() or details.count
     end
     if numIcons < 1 then
         numIcons = 1
@@ -460,12 +461,12 @@ local function LayoutBar(key)
     -- loses a pixel where PP.mult > 1. Pixel-lock happens below, post-shape.
     local padding = s.buttonPadding or 2
     local isVertical = (s.orientation == "vertical")
-    local growDir = EAB:ResolveGrowDirectionForLayout(key, s)
-    local shape = ns.AB_LayoutShape(s)
+    local growDir = ABAR:ResolveGrowDirectionForLayout(key, s)
+    local shape = mod.AB_LayoutShape(s)
 
-    local base = barBaseSize[key]
-    local baseW = base and base.w or 45
-    local baseH = base and base.h or 45
+    local baseValue = barBaseSize[key]
+    local baseW = baseValue and baseValue.w or 45
+    local baseH = baseValue and baseValue.h or 45
     local btnW = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or baseW
     local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or baseH
 
@@ -478,8 +479,8 @@ local function LayoutBar(key)
     end
 
     -- Width/height match: distribute extra physical pixels across buttons
-    local PP = CludesUI and CludesUI.PP
-    local onePx = PP and PP.mult or 1
+    local Pix = CludesUI and CludesUI.PP
+    local onePx = Pix and Pix.mult or 1
     -- Lock btnW/btnH/padding to exact physical pixel multiples so stepW and the
     -- width-match +1px extras share one pixel grid; prevents sub-pixel drift
     -- that shrinks visible spacing where PP.mult > 1.
@@ -500,7 +501,7 @@ local function LayoutBar(key)
     if showEmpty == nil then
         showEmpty = true
     end
-    if info.isStance then
+    if details.isStance then
         showEmpty = false
     end
 
@@ -508,150 +509,150 @@ local function LayoutBar(key)
     -- horizontal bars stack rows upward (2nd row above 1st); icon order flips
     -- permute indexes within that fixed grid.
     local rowsUpward = not isVertical and (growDir == "UP" or growDir == "CENTER")
-    local colFlip, rowFlip, cornerFill = ns.GetOrderFlips(s, isVertical, rowsUpward)
+    local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(s, isVertical, rowsUpward)
 
     -- Fit Ring to Cropped Buttons sizes the assist ring from the button's own
     -- rectangle: a shown ring on this bar is refitted (or restored) after the
     -- re-layout. A hidden ring is fitted by AssistShow before it next shows.
-    local assistFit = EAB.db.profile.assistGlowFitCropped
+    local assistFit = ABAR.db.profile.assistGlowFitCropped
     local assistRefit = false
 
-    for i = 1, info.count do
-        local btn = buttons[i]
-        if not btn then
+    for idx = 1, details.count do
+        local button = buttons[idx]
+        if not button then
             break
         end
 
-        if i > numIcons then
-            btn:Hide()
-            btn:SetAlpha(0)
-            ns._eabMarkParked(btn, info)
+        if idx > numIcons then
+            button:Hide()
+            button:SetAlpha(0)
+            mod._eabMarkParked(button, details)
         else
             -- Buttons inside range stay Shown; visibility is alpha-only so
             -- combat page swaps never strand a button hidden.
-            local lfd = EFD(btn)
-            local demote = lfd.parkA0 == 2 and not btn:IsShown()
-            btn:Show()
-            if demote and btn:IsShown() then
+            local lfd = EFD(button)
+            local demote = lfd.parkA0 == 2 and not button:IsShown()
+            button:Show()
+            if demote and button:IsShown() then
                 lfd.parkA0 = 1
             end
 
-            local col, row
+            local column, rowFrame
             if isVertical then
                 if cornerFill then
                     -- Corner modes fill across columns first, then wrap down a
                     -- row (numRows = the column count on vertical bars).
-                    col = (i - 1) % numRows
-                    row = floor((i - 1) / numRows)
+                    column = (idx - 1) % numRows
+                    rowFrame = floor((idx - 1) / numRows)
                 else
-                    col = floor((i - 1) / stride)
-                    row = (i - 1) % stride
+                    column = floor((idx - 1) / stride)
+                    rowFrame = (idx - 1) % stride
                 end
             else
-                col = (i - 1) % stride
-                row = floor((i - 1) / stride)
+                column = (idx - 1) % stride
+                rowFrame = floor((idx - 1) / stride)
             end
 
             -- Icon order flips first so the width/height-match extras
             -- below derive from the final visual position.
             if colFlip then
-                col = (isVertical and numRows or stride) - 1 - col
+                column = (isVertical and numRows or stride) - 1 - column
             end
             if rowFlip then
-                row = (isVertical and stride or numRows) - 1 - row
+                rowFrame = (isVertical and stride or numRows) - 1 - rowFrame
             end
 
             -- Width/height match: first N columns/rows get +1 physical pixel.
             -- Only the matched axis expands, so a row stays uniform (no 1px jag).
-            local thisBtnW = (extraW > 0 and col < extraW) and (btnW + onePx) or btnW
-            local thisBtnH = (extraH > 0 and row < extraH) and (btnH + onePx) or btnH
+            local thisBtnW = (extraW > 0 and column < extraW) and (btnW + onePx) or btnW
+            local thisBtnH = (extraH > 0 and rowFrame < extraH) and (btnH + onePx) or btnH
             -- Cumulative offset from expanded buttons before this one
-            local extraBeforeW = math.min(col, extraW) * onePx
-            local extraBeforeH = math.min(row, extraH) * onePx
+            local extraBeforeW = math.min(column, extraW) * onePx
+            local extraBeforeH = math.min(rowFrame, extraH) * onePx
 
-            btn:ClearAllPoints()
-            local xOff = col * stepW + extraBeforeW
-            local yOff, anchor
+            button:ClearAllPoints()
+            local xOff = column * stepW + extraBeforeW
+            local yOff, anchorFrame
             if rowsUpward then
-                yOff = row * stepH + extraBeforeH
-                anchor = "BOTTOMLEFT"
+                yOff = rowFrame * stepH + extraBeforeH
+                anchorFrame = "BOTTOMLEFT"
             else
-                yOff = -(row * stepH + extraBeforeH)
-                anchor = "TOPLEFT"
+                yOff = -(rowFrame * stepH + extraBeforeH)
+                anchorFrame = "TOPLEFT"
             end
-            EFD(btn).barKey = key
+            EFD(button).barKey = key
             -- Stock styles (Blizzard, Classic) keep the native-size button and
             -- scale it, so the stock art scales with it.
-            local abStyle = ns.AB_Style()
+            local abStyle = mod.AB_Style()
             if abStyle ~= "cui" then
-                local base = barBaseSize[key]
-                local nativeW = base and base.w or 45
-                local nativeH = base and base.h or 45
+                local baseValue = barBaseSize[key]
+                local nativeW = baseValue and baseValue.w or 45
+                local nativeH = baseValue and baseValue.h or 45
                 local sc = thisBtnW / nativeW
-                btn:SetScale(sc)
-                btn:SetSize(nativeW, nativeH)
-                btn:SetPoint(anchor, frame, anchor, xOff / sc, yOff / sc)
+                button:SetScale(sc)
+                button:SetSize(nativeW, nativeH)
+                button:SetPoint(anchorFrame, widget, anchorFrame, xOff / sc, yOff / sc)
                 -- Classic WoW UI: the vanilla ring on the native-size button,
                 -- painted once per size (the scale carries it). Blizzard
                 -- Style on the Forever client: the retail border, once.
                 if abStyle == "classic" then
-                    local cfd = EFD(btn)
+                    local cfd = EFD(button)
                     if cfd.classicW ~= nativeW or cfd.classicH ~= nativeH then
                         cfd.classicW, cfd.classicH = nativeW, nativeH
-                        ns.AB_PaintClassicButton(btn, nativeW, nativeH)
+                        mod.AB_PaintClassicButton(button, nativeW, nativeH)
                     end
-                elseif CludesUI.IS_FOREVER and not (info.isStance or info.isPetBar) then
-                    ns.AB_StockNormal(btn)
+                elseif CludesUI.IS_FOREVER and not (details.isStance or details.isPetBar) then
+                    mod.AB_StockNormal(button)
                 end
             else
-                btn:SetPoint(anchor, frame, anchor, xOff, yOff)
-                btn:SetSize(thisBtnW, thisBtnH)
+                button:SetPoint(anchorFrame, widget, anchorFrame, xOff, yOff)
+                button:SetSize(thisBtnW, thisBtnH)
             end
-            HideSlotArt(btn)
+            HideSlotArt(button)
 
             -- Stock styles: counter-scale SpellActivationAlert so the native
             -- proc glow renders at screen size despite the button's SetScale.
-            if abStyle ~= "cui" and btn.SpellActivationAlert then
-                local base = barBaseSize[key]
-                local nativeW = base and base.w or 45
+            if abStyle ~= "cui" and button.SpellActivationAlert then
+                local baseValue = barBaseSize[key]
+                local nativeW = baseValue and baseValue.w or 45
                 local sc = thisBtnW / nativeW
                 if sc > 0 then
-                    btn.SpellActivationAlert:SetScale(1 / sc)
+                    button.SpellActivationAlert:SetScale(1 / sc)
                 end
             end
 
             -- Resize the autocast overlay to match the button size
-            if btn.AutoCastOverlay then
-                btn.AutoCastOverlay:SetAllPoints(btn)
+            if button.AutoCastOverlay then
+                button.AutoCastOverlay:SetAllPoints(button)
             end
 
             -- TargetReticleAnimFrame is authored 128x128 for the default 45x45
             -- button, so btnW/45 keeps the visual proportions.
-            if btn.TargetReticleAnimFrame then
-                btn.TargetReticleAnimFrame:SetScale(btnW / 45)
+            if button.TargetReticleAnimFrame then
+                button.TargetReticleAnimFrame:SetScale(btnW / 45)
             end
 
             -- AssistedCombat frames are created lazily at the default 45x45,
             -- anchored CENTER; scale them to our button size. A highlight ring
             -- fitted to a Cropped button (ns._AssistFit) runs at scale 1 and is
             -- refitted by the assist pass queued at the end of this layout.
-            local ahf = btn.AssistedCombatHighlightFrame
-            if ahf and not (ns._eabFD[ahf] and ns._eabFD[ahf].fitW) then
+            local ahf = button.AssistedCombatHighlightFrame
+            if ahf and not (mod._eabFD[ahf] and mod._eabFD[ahf].fitW) then
                 ahf:SetScale(btnW / 45)
             end
             if assistFit and not assistRefit then
-                local ohf = EFD(btn).assistHL
+                local ohf = EFD(button).assistHL
                 assistRefit = (ohf and ohf:IsShown()) or (ahf and ahf:IsShown()) or false
             end
-            if btn.AssistedCombatRotationFrame then
-                btn.AssistedCombatRotationFrame:SetScale(btnW / 45)
+            if button.AssistedCombatRotationFrame then
+                button.AssistedCombatRotationFrame:SetScale(btnW / 45)
             end
 
             -- Pin SpellActivationAlert to button bounds for custom proc glows;
             -- with custom glows off or a stock style on, leave it untouched.
-            if btn.SpellActivationAlert and EAB.db.profile.procGlowEnabled and abStyle == "cui" then
-                btn.SpellActivationAlert:SetAllPoints(btn)
-                btn.SpellActivationAlert:SetScale(1)
+            if button.SpellActivationAlert and ABAR.db.profile.procGlowEnabled and abStyle == "cui" then
+                button.SpellActivationAlert:SetAllPoints(button)
+                button.SpellActivationAlert:SetScale(1)
             end
 
             -- Profession quality diamonds: EAB paints its own rank icon (the
@@ -659,29 +660,29 @@ local function LayoutBar(key)
             -- inside the secure button Update, which our buttons get no
             -- events for, and forcing that update writes the new frame onto
             -- the secure button's table (taint). Keep it permanently hidden.
-            if btn.ProfessionQualityOverlayFrame then
-                btn.ProfessionQualityOverlayFrame:SetShown(false)
-                if not EFD(btn).qualityHooked then
-                    btn.ProfessionQualityOverlayFrame:HookScript("OnShow", function(self)
+            if button.ProfessionQualityOverlayFrame then
+                button.ProfessionQualityOverlayFrame:SetShown(false)
+                if not EFD(button).qualityHooked then
+                    button.ProfessionQualityOverlayFrame:HookScript("OnShow", function(self)
                         self:SetShown(false)
                     end)
-                    EFD(btn).qualityHooked = true
+                    EFD(button).qualityHooked = true
                 end
             end
-            if EAB._QueueRankScan then
-                EAB._QueueRankScan()
+            if ABAR._QueueRankScan then
+                ABAR._QueueRankScan()
             end
 
             if
                 not showEmpty
                 and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(s))
-                and ns.AB_EmptySlot(btn, info)
+                and mod.AB_EmptySlot(button, details)
             then
-                btn:SetAlpha(0)
-                ns._eabMarkParked(btn, info)
+                button:SetAlpha(0)
+                mod._eabMarkParked(button, details)
             else
                 if not s.mouseoverEnabled then
-                    btn:SetAlpha(1)
+                    button:SetAlpha(1)
                     lfd.parkA0 = nil
                 end
             end
@@ -699,35 +700,35 @@ local function LayoutBar(key)
     -- is owned by the anchor chain, not barPositions.
     local isAnchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
     if not isAnchored then
-        local curPt = ({ frame:GetPoint(1) })[1]
-        local pos = EAB.db.profile.barPositions and EAB.db.profile.barPositions[key]
-        if pos and pos.point and pos.relPoint == "CENTER" and curPt ~= pos.point then
+        local curPt = ({ widget:GetPoint(1) })[1]
+        local place = ABAR.db.profile.barPositions and ABAR.db.profile.barPositions[key]
+        if place and place.point and place.relPoint == "CENTER" and curPt ~= place.point then
             local PPa = CludesUI and CludesUI.PP
-            local px, py = pos.x or 0, pos.y or 0
-            if pos.point == "CENTER" and curPt and curPt ~= "CENTER" then
+            local px, py = place.x or 0, place.y or 0
+            if place.point == "CENTER" and curPt and curPt ~= "CENTER" then
                 -- Edge -> CENTER: read the live center (stored CENTER coords may
                 -- be stale from a different width) so the bar does not jump.
-                local fCx, fCy = frame:GetCenter()
+                local fCx, fCy = widget:GetCenter()
                 if fCx and fCy then
                     local uiS = UIParent:GetEffectiveScale()
-                    local fS = frame:GetEffectiveScale()
+                    local fS = widget:GetEffectiveScale()
                     local ratio = fS / uiS
                     local uiW, uiH = UIParent:GetSize()
                     px = fCx * ratio - uiW / 2
                     py = fCy * ratio - uiH / 2
                 end
                 if PPa and PPa.SnapCenterForDim then
-                    local es = frame:GetEffectiveScale()
-                    px = PPa.SnapCenterForDim(px, frame:GetWidth() or 0, es)
-                    py = PPa.SnapCenterForDim(py, frame:GetHeight() or 0, es)
+                    local es = widget:GetEffectiveScale()
+                    px = PPa.SnapCenterForDim(px, widget:GetWidth() or 0, es)
+                    py = PPa.SnapCenterForDim(py, widget:GetHeight() or 0, es)
                 end
             elseif PPa and PPa.SnapForES then
-                local es = frame:GetEffectiveScale()
+                local es = widget:GetEffectiveScale()
                 px = PPa.SnapForES(px, es)
                 py = PPa.SnapForES(py, es)
             end
-            frame:ClearAllPoints()
-            frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, px, py)
+            widget:ClearAllPoints()
+            widget:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
         end
     end
     -- Pre-resize center in UIParent space, captured BEFORE SetSize (an
@@ -735,14 +736,14 @@ local function LayoutBar(key)
     -- upkeep below validates against it.
     local preCX, preCY
     do
-        local c1, c2 = frame:GetCenter()
+        local c1, c2 = widget:GetCenter()
         if c1 and c2 then
-            local r = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            local r = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
             preCX, preCY = c1 * r, c2 * r
         end
     end
     CludesUI._layoutBarResizing = key
-    frame:SetSize(max(frameW, 1), max(frameH, 1))
+    widget:SetSize(max(frameW, 1), max(frameH, 1))
     CludesUI._layoutBarResizing = nil
     -- Anchor offset upkeep: a growth-direction resize shifts the center by
     -- delta/2 while the fixed edge stays put, so the center-based anchor
@@ -750,10 +751,10 @@ local function LayoutBar(key)
     do
         local newW = max(frameW, 1)
         local newH = max(frameH, 1)
-        local prevW = frame._eabPrevLayoutW
-        local prevH = frame._eabPrevLayoutH
-        frame._eabPrevLayoutW = newW
-        frame._eabPrevLayoutH = newH
+        local prevW = widget._eabPrevLayoutW
+        local prevH = widget._eabPrevLayoutH
+        widget._eabPrevLayoutW = newW
+        widget._eabPrevLayoutH = newH
         -- Self-validating gate: dw/2 compensation is correct only when the PRE-resize
         -- center sat at the anchor-derived position (target center + stored offset on
         -- the compensated axis). Mid-profile-apply the bar still holds the OUTGOING
@@ -767,7 +768,7 @@ local function LayoutBar(key)
             and not CludesUI._abAnchorSuppressed
             and not _isApplyingAll
         then
-            local s = EAB.db.profile.bars[key]
+            local s = ABAR.db.profile.bars[key]
             local grow = s and s.growDirection
             if grow then
                 grow = grow:upper()
@@ -775,7 +776,7 @@ local function LayoutBar(key)
                     local adb = CludesUIDB and CludesUIDB.unlockAnchors
                     local ai = adb and adb[key]
                     if ai and ai.mode ~= "POINT" then
-                        local side = ai.side
+                        local sideName = ai.side
                         local PPo = CludesUI and CludesUI.PP
                         local uiES = PPo and UIParent:GetEffectiveScale()
                         local tCX, tCY
@@ -797,7 +798,7 @@ local function LayoutBar(key)
                         if
                             prevW
                             and math.abs(newW - prevW) > 0.1
-                            and (side == "TOP" or side == "BOTTOM")
+                            and (sideName == "TOP" or sideName == "BOTTOM")
                             and not wMatched
                             and preCX
                             and tCX
@@ -817,7 +818,7 @@ local function LayoutBar(key)
                         if
                             prevH
                             and math.abs(newH - prevH) > 0.1
-                            and (side == "LEFT" or side == "RIGHT")
+                            and (sideName == "LEFT" or sideName == "RIGHT")
                             and not hMatched
                             and preCY
                             and tCY
@@ -847,11 +848,11 @@ local function LayoutBar(key)
     -- each axis into thirds and open away from the nearest screen edge.
     local flyDir
     do
-        local cx, cy = frame:GetCenter()
+        local cx, cy = widget:GetCenter()
         local uiW = UIParent:GetWidth()
         local uiH = UIParent:GetHeight()
         local uiScale = UIParent:GetEffectiveScale()
-        local fScale = frame:GetEffectiveScale()
+        local fScale = widget:GetEffectiveScale()
         -- Convert to UIParent coordinate space
         if cx and cy then
             cx = cx * fScale / uiScale
@@ -872,18 +873,18 @@ local function LayoutBar(key)
             flyDir = isVertical and "RIGHT" or "UP"
         end
     end
-    for i = 1, #buttons do
-        local btn = buttons[i]
-        if btn then
+    for idx = 1, #buttons do
+        local button = buttons[idx]
+        if button then
             -- Ensure the button has GetPopupDirection for Blizzard's SpellFlyout system
             -- (must be available on all buttons, regardless of squareIcons setting)
-            if not btn.GetPopupDirection then
-                btn.GetPopupDirection = function(self)
+            if not button.GetPopupDirection then
+                button.GetPopupDirection = function(self)
                     return self:GetAttribute("flyoutDirection") or "UP"
                 end
             end
             if not InCombatLockdown() then
-                btn:SetAttribute("flyoutDirection", flyDir)
+                button:SetAttribute("flyoutDirection", flyDir)
             end
         end
     end
@@ -929,7 +930,7 @@ local function LayoutBar(key)
             prevBtn:SetAlpha(0)
             prevBtn:RegisterForClicks("AnyUp", "AnyDown")
             WireSecurePagingButton(prevBtn, -1)
-            ns.RefreshPagingCycleMacros()
+            mod.RefreshPagingCycleMacros()
 
             local function ApplyPageBindings()
                 if InCombatLockdown() then
@@ -949,15 +950,15 @@ local function LayoutBar(key)
             -- Re-apply if user changes keybinds
             _pagingFrame:RegisterEvent("UPDATE_BINDINGS")
             local origOnEvent = _pagingFrame:GetScript("OnEvent")
-            _pagingFrame:SetScript("OnEvent", function(self, event, ...)
-                if event == "UPDATE_BINDINGS" then
+            _pagingFrame:SetScript("OnEvent", function(self, evt, ...)
+                if evt == "UPDATE_BINDINGS" then
                     if not InCombatLockdown() then
                         ApplyPageBindings()
                     end
                     return
                 end
                 if origOnEvent then
-                    origOnEvent(self, event, ...)
+                    origOnEvent(self, evt, ...)
                 end
             end)
         end
@@ -966,11 +967,11 @@ local function LayoutBar(key)
     -- The bar's chrome: WoW Forever's frame and dividers when shown (dividers
     -- only on a one-line bar at spacing 2 or less, as Blizzard draws them)
     -- and the bar's end caps. A bar that never showed either builds nothing.
-    if (ns._abChrome and ns._abChrome[key]) or ns.AB_ForeverBg(key) or ns.AB_CapsLook(key) then
+    if (mod._abChrome and mod._abChrome[key]) or mod.AB_ForeverBg(key) or mod.AB_CapsLook(key) then
         local oneLine = (isVertical and totalCols or totalRows) == 1 and (s.buttonPadding or 2) <= 2
-        ns.AB_ApplyBarChrome(
+        mod.AB_ApplyBarChrome(
             key,
-            frame,
+            widget,
             max(frameW, 1),
             max(frameH, 1),
             btnW,
@@ -985,8 +986,8 @@ local function LayoutBar(key)
     -- The micro menu's and bag bar's caps size from Action Bar 1's buttons
     -- and may carry its caps (the span): repaint them after bar 1's pass.
     if key == "MainBar" then
-        ns._abMainBtnW = btnW
-        ns.AB_ExtraCapsAll()
+        mod._abMainBtnW = btnW
+        mod.AB_ExtraCapsAll()
     end
 
     -- Countdown size can be capped against button width (CooldownFonts .EffectiveSize,
@@ -994,36 +995,36 @@ local function LayoutBar(key)
     -- ~fourteen callers (icon size, padding, row/column overrides, width/height-match
     -- links, profile swaps, ...), because hooking one leaves the rest applying a stale
     -- size. Cheap when nothing changed: the per-frame stamp no-ops unless size differs.
-    EAB:ApplyCooldownFontsForBar(key)
+    ABAR:ApplyCooldownFontsForBar(key)
     -- A shown fitted-or-fittable assist ring on this bar: refit or restore it
     -- on the next assist pass (coalesced; never queued with the option off).
     if assistRefit then
-        ns.QueueAssistRescan()
+        mod.QueueAssistRescan()
     end
     -- Publish the stamp only on a completed pass (cleared on entry above).
-    ns._eabLayoutStamp[key] = _lbStamp
+    mod._eabLayoutStamp[key] = _lbStamp
 end
 
 -- Recompute a bar's flyout direction from its current screen position.
-function EAB:RecalcFlyoutDirection(barKey)
+function ABAR:RecalcFlyoutDirection(barId)
     if InCombatLockdown() then
         return
     end
-    local frame = barFrames[barKey]
-    local btns = barButtons[barKey]
-    local s = self.db.profile.bars[barKey]
-    if not frame or not btns or not s then
+    local widget = barFrames[barId]
+    local btns = barButtons[barId]
+    local s = self.db.profile.bars[barId]
+    if not widget or not btns or not s then
         return
     end
     local isVert = (s.orientation == "vertical")
-    local cx, cy = frame:GetCenter()
+    local cx, cy = widget:GetCenter()
     if not cx or not cy then
         return
     end
     local uiW = UIParent:GetWidth()
     local uiH = UIParent:GetHeight()
     local uiScale = UIParent:GetEffectiveScale()
-    local fScale = frame:GetEffectiveScale()
+    local fScale = widget:GetEffectiveScale()
     cx = cx * fScale / uiScale
     cy = cy * fScale / uiScale
     local thirdW = uiW / 3
@@ -1034,10 +1035,10 @@ function EAB:RecalcFlyoutDirection(barKey)
     else
         dir = (cy > thirdH * 2) and "DOWN" or "UP"
     end
-    for _, btn in ipairs(btns) do
-        btn:SetAttribute("flyoutDirection", dir)
+    for _, button in ipairs(btns) do
+        button:SetAttribute("flyoutDirection", dir)
     end
 end
 
 -- Entry points the files after this one re-import by name.
-I.LayoutBar, I.HideSlotArt, I.ComputeBarLayout = LayoutBar, HideSlotArt, ComputeBarLayout
+Inner.LayoutBar, Inner.HideSlotArt, Inner.ComputeBarLayout = LayoutBar, HideSlotArt, ComputeBarLayout

@@ -38,9 +38,9 @@ local pending = { player = {}, pet = {} } -- spell names to uprank once out of c
 -- Read tables, reused by every read
 local playerTop, petTop, petSlots, counts = {}, {}, {}, {}
 
-local function Plain(v, kind)
-    if not issecretvalue(v) and type(v) == (kind or "number") then
-        return v
+local function Plain(val, kindOf)
+    if not issecretvalue(val) and type(val) == (kindOf or "number") then
+        return val
     end
 end
 
@@ -49,18 +49,18 @@ end
 -------------------------------------------------------------------------------
 local function ReadPlayerTop()
     wipe(playerTop)
-    for line = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
-        local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
+    for lineTex = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
+        local li = C_SpellBook.GetSpellBookSkillLineInfo(lineTex)
         if li and not li.offSpecID then
-            for slot = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
+            for slotIndex = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
                 if
-                    C_SpellBook.GetSpellBookItemType(slot, PLAYER) == Enum.SpellBookItemType.Spell
-                    and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
-                    and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER)
+                    C_SpellBook.GetSpellBookItemType(slotIndex, PLAYER) == Enum.SpellBookItemType.Spell
+                    and not C_SpellBook.IsSpellBookItemPassive(slotIndex, PLAYER)
+                    and not C_SpellBook.IsSpellBookItemLowRank(slotIndex, PLAYER)
                 then
-                    local info = C_SpellBook.GetSpellBookItemInfo(slot, PLAYER)
-                    if info and info.spellID and info.name then
-                        playerTop[info.name] = info.spellID
+                    local details = C_SpellBook.GetSpellBookItemInfo(slotIndex, PLAYER)
+                    if details and details.spellID and details.name then
+                        playerTop[details.name] = details.spellID
                     end
                 end
             end
@@ -74,17 +74,17 @@ end
 local function ReadPetTop()
     wipe(petTop)
     wipe(petSlots)
-    local n = C_SpellBook.HasPetSpells()
-    if not n or n == 0 then
+    local num = C_SpellBook.HasPetSpells()
+    if not num or num == 0 then
         return false
     end
-    for slot = 1, n do
+    for slotIndex = 1, num do
         -- Pet spells are PetAction items; the stances and commands among them carry no spell ID.
-        local info = C_SpellBook.GetSpellBookItemInfo(slot, PET)
-        if info and info.spellID and info.name and not info.isPassive then
-            petSlots[info.spellID] = slot
-            if not C_SpellBook.IsSpellBookItemLowRank(slot, PET) then
-                petTop[info.name] = info.spellID
+        local details = C_SpellBook.GetSpellBookItemInfo(slotIndex, PET)
+        if details and details.spellID and details.name and not details.isPassive then
+            petSlots[details.spellID] = slotIndex
+            if not C_SpellBook.IsSpellBookItemLowRank(slotIndex, PET) then
+                petTop[details.name] = details.spellID
             end
         end
     end
@@ -109,21 +109,21 @@ local function Known()
         all = {}
         CludesUIDB.spellUprankChars = all
     end
-    local guid = UnitGUID("player")
-    local mine = all[guid]
+    local unitGuid = UnitGUID("player")
+    local mine = all[unitGuid]
     if not mine then
         mine = { player = {}, pets = {} }
-        all[guid] = mine
+        all[unitGuid] = mine
     end
     return mine
 end
 
 -- Marks every name whose highest rank is not the remembered one, then remembers it.
-local function Diff(now, was, into)
-    for name, id in pairs(now) do
-        if was[name] ~= id then
+local function Diff(nowTime, was, into)
+    for name, ident in pairs(nowTime) do
+        if was[name] ~= ident then
             into[name] = true
-            was[name] = id
+            was[name] = ident
         end
     end
 end
@@ -131,19 +131,19 @@ end
 -- The spells learned since the last check, each on its own; false when one is
 -- not in the spellbook yet, so the check reads the whole book instead.
 local function ProbeLearned(known)
-    for id in pairs(learned) do
-        local name = C_Spell.GetSpellName(id)
-        local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(id)
-        if not (name and slot) then
+    for ident in pairs(learned) do
+        local name = C_Spell.GetSpellName(ident)
+        local slotIndex, bank = C_SpellBook.FindSpellBookSlotForSpell(ident)
+        if not (name and slotIndex) then
             return false
         end
         if
             bank == PLAYER
-            and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
-            and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER)
-            and known.player[name] ~= id
+            and not C_SpellBook.IsSpellBookItemPassive(slotIndex, PLAYER)
+            and not C_SpellBook.IsSpellBookItemLowRank(slotIndex, PLAYER)
+            and known.player[name] ~= ident
         then
-            known.player[name] = id
+            known.player[name] = ident
             pending.player[name] = true
         end
     end
@@ -154,13 +154,13 @@ end
 --  Swapping
 -------------------------------------------------------------------------------
 local function Report()
-    for id, count in pairs(counts) do
-        local name = C_Spell.GetSpellName(id)
-        local rank = C_Spell.GetSpellSubtext(id)
-        local spell = (C_Spell.GetSpellLink(id) or name or "?")
+    for ident, total in pairs(counts) do
+        local name = C_Spell.GetSpellName(ident)
+        local rank = C_Spell.GetSpellSubtext(ident)
+        local spell = (C_Spell.GetSpellLink(ident) or name or "?")
             .. (rank and rank ~= "" and " (" .. rank .. ")" or "")
-        local msg = count == 1 and CludesUI.Lf("Upranked %s on 1 action slot.", spell)
-            or CludesUI.Lf("Upranked %1$s on %2$d action slots.", spell, count)
+        local msg = total == 1 and CludesUI.Lf("Upranked %s on 1 action slot.", spell)
+            or CludesUI.Lf("Upranked %1$s on %2$d action slots.", spell, total)
         CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
     end
 end
@@ -177,18 +177,18 @@ local function UprankPending()
     wipe(counts)
 
     for action = 1, MAX_ACTION_SLOT do
-        local kind, id = GetActionInfo(action)
-        id = kind == "spell" and Plain(id)
-        local name = id and C_Spell.GetSpellName(id)
+        local kindOf, ident = GetActionInfo(action)
+        ident = kindOf == "spell" and Plain(ident)
+        local name = ident and C_Spell.GetSpellName(ident)
         if name then
             local petNew = hasPet and pending.pet[name] and petTop[name]
             local playerNew = hasPlayer and pending.player[name] and playerTop[name]
-            if petNew and petNew ~= id and not C_SpellBook.IsSpellKnown(id) then
+            if petNew and petNew ~= ident and not C_SpellBook.IsSpellKnown(ident) then
                 C_SpellBook.PickupSpellBookItem(petSlots[petNew], PET)
                 PlaceAction(action)
                 ClearCursor()
                 counts[petNew] = (counts[petNew] or 0) + 1
-            elseif playerNew and playerNew ~= id and C_SpellBook.IsSpellKnown(id) then
+            elseif playerNew and playerNew ~= ident and C_SpellBook.IsSpellKnown(ident) then
                 C_Spell.PickupSpell(playerNew)
                 PlaceAction(action)
                 ClearCursor()
@@ -259,18 +259,18 @@ local function Queue()
     flusher:Show()
 end
 
-local function OnEvent(_, event, spellID)
-    if event == "CURSOR_CHANGED" then
+local function OnEvent(_, evt, spellId)
+    if evt == "CURSOR_CHANGED" then
         Flush()
         return
     end
-    if event == "LEARNED_SPELL_IN_SKILL_LINE" then
-        spellID = Plain(spellID)
-        if not spellID then
+    if evt == "LEARNED_SPELL_IN_SKILL_LINE" then
+        spellId = Plain(spellId)
+        if not spellId then
             return
         end
-        learned[spellID] = true
-    elseif event == "SPELLS_CHANGED" then
+        learned[spellId] = true
+    elseif evt == "SPELLS_CHANGED" then
         if firstScan then
             firstScan = false
             wantPlayer = true

@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  only; the shared helpers come from ns._UFO_OptEnv (filled by
 --  CUI_UnitFrames_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIUnitFrames"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -30,9 +30,9 @@ local PoolIsIdle = CludesUI._Pool.IsIdle
 --  about which frame is on screen to inherit from.
 ---------------------------------------------------------------------------
 local function GetMiniDonorSettings(unitKey)
-    local env = ns._UFO_OptEnv
-    local db = env.db
-    return ns.GetMiniDonorSettings and ns.GetMiniDonorSettings(unitKey) or db.profile.player
+    local environ = mod._UFO_OptEnv
+    local saved = environ.db
+    return mod.GetMiniDonorSettings and mod.GetMiniDonorSettings(unitKey) or saved.profile.player
 end
 
 -- The label of each mini frame's enable toggle (the row that opens its DISPLAY
@@ -48,16 +48,25 @@ local MINI_ENABLE_LABELS = {
 ---------------------------------------------------------------------------
 --  Shared mini frame settings builder
 ---------------------------------------------------------------------------
-local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enableRow, afterSizeRow, opts)
-    local env = ns._UFO_OptEnv
-    local AddDarkModeBlock, BuildBarTexDropdown, BuildInactiveNotice, PP =
-        env.AddDarkModeBlock, env.BuildBarTexDropdown, env.BuildInactiveNotice, env.PP
-    local RegisterWidgetRefresh, ReloadAndUpdate, db, healthTextOrder =
-        env.RegisterWidgetRefresh, env.ReloadAndUpdate, env.db, env.healthTextOrder
-    local healthTextOrderBoss, healthTextValues = env.healthTextOrderBoss, env.healthTextValues
-    local TexBgRowCfg = env.TexBgRowCfg
-    local _, h
-    opts = opts or {}
+local function BuildMiniTextAndSize(
+    Widgets,
+    hostFrame,
+    posY,
+    settingsTable,
+    unitKey,
+    enableRow,
+    afterSizeRow,
+    options
+)
+    local environ = mod._UFO_OptEnv
+    local AddDarkModeBlock, BuildBarTexDropdown, BuildInactiveNotice, Pix =
+        environ.AddDarkModeBlock, environ.BuildBarTexDropdown, environ.BuildInactiveNotice, environ.PP
+    local RegisterWidgetRefresh, ReloadAndUpdate, saved, healthTextOrder =
+        environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.db, environ.healthTextOrder
+    local healthTextOrderBoss, healthTextValues = environ.healthTextOrderBoss, environ.healthTextValues
+    local TexBgRowCfg = environ.TexBgRowCfg
+    local _, hgt
+    options = options or {}
 
     -- Shorthand accessors for this mini frame's settings
     local function MGet(key)
@@ -77,37 +86,37 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
     -- DISPLAY
     local displayHeader
-    displayHeader, h = W:SectionHeader(parent, "DISPLAY", y)
-    y = y - h
+    displayHeader, hgt = Widgets:SectionHeader(hostFrame, "DISPLAY", posY)
+    posY = posY - hgt
     -- The Move in Unlock Mode button on the frame's first section: its mover
     -- exists only for the CludesUI frame source, so the button explains
     -- itself while the frame is hidden (its enable toggle) or on Blizzard's frame.
     CludesUI.BuildSectionUnlockJump(displayHeader, {
         key = unitKey,
         disabled = function()
-            return ns.GetUnitFrameSource(unitKey) ~= "cui"
+            return mod.GetUnitFrameSource(unitKey) ~= "cui"
         end,
         disabledTooltip = function()
-            if ns.VisUnitDisabled(db.profile, unitKey) then
+            if mod.VisUnitDisabled(saved.profile, unitKey) then
                 return MINI_ENABLE_LABELS[unitKey]
             end
             return "This option requires the CludesUI Frame Source."
         end,
     })
-    y = CludesUI.BlizzStyle.Note(parent, y, "unitframes")
+    posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "unitframes")
 
     -- Enable row (passed in from each builder)
     local enableRowFrame
     if enableRow then
-        enableRowFrame, h = enableRow(W, parent, y)
-        y = y - h
+        enableRowFrame, hgt = enableRow(Widgets, hostFrame, posY)
+        posY = posY - hgt
     end
 
     -- If this unit isn't on the CludesUI frame, skip the (inapplicable)
     -- settings below and show a short notice instead.
-    if enableRow and ns.GetUnitFrameSource(unitKey) ~= "cui" then
-        y = BuildInactiveNotice(parent, y, ns.GetUnitFrameSource(unitKey))
-        return y, displayHeader, nil, nil, nil, enableRowFrame
+    if enableRow and mod.GetUnitFrameSource(unitKey) ~= "cui" then
+        posY = BuildInactiveNotice(hostFrame, posY, mod.GetUnitFrameSource(unitKey))
+        return posY, displayHeader, nil, nil, nil, enableRowFrame
     end
 
     -- Bar Texture override. Mini frames inherit the main frames' donor texture
@@ -128,8 +137,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     if dk == "inherit" then
                         dk = nil
                     end
-                    dk = dk or db.profile.healthBarTexture
-                    return dk and (ns.healthBarTextures or {})[dk] or nil
+                    dk = dk or saved.profile.healthBarTexture
+                    return dk and (mod.healthBarTextures or {})[dk] or nil
                 end
                 return baseBg and baseBg(key) or nil
             end
@@ -162,7 +171,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 values = miniStrataValues,
                 order = miniStrataOrder,
                 getValue = function()
-                    return settingsTable.frameStrata or db.profile.frameStrata or "MEDIUM"
+                    return settingsTable.frameStrata or saved.profile.frameStrata or "MEDIUM"
                 end,
                 setValue = function(v)
                     settingsTable.frameStrata = v
@@ -171,7 +180,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             }
         end
         local barTexRow
-        barTexRow, h = W:DualRow(parent, y, {
+        barTexRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Bar Texture",
             values = mtVals,
@@ -192,15 +201,17 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 ReloadAndUpdate()
             end,
         }, rightSlot)
-        y = y - h
+        posY = posY - hgt
         -- Textured Background cog: while Bar Texture is Inherit the toggle
         -- follows the main frame and shows its value, greyed.
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(barTexRow._leftRegion, {
                 title = "Texture Settings",
-                rows = { TexBgRowCfg(function()
-                    return settingsTable
-                end, ReloadAndUpdate, unitKey) },
+                rows = {
+                    TexBgRowCfg(function()
+                        return settingsTable
+                    end, ReloadAndUpdate, unitKey),
+                },
             })
         end
 
@@ -208,7 +219,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- both default off) with inline color swatches. Enabling one recolors
         -- the boss frame's existing border to that color (hover > target).
         if isBoss and not CludesUI._prebuilding then
-            local PP = CludesUI.PP
+            local Pix = CludesUI.PP
             local rightRgn = barTexRow._rightRegion
             if rightRgn._control then
                 rightRgn._control:Hide()
@@ -295,7 +306,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     -- while the style reads Inherit. Full pairs, so Strata | Dark Mode below
     -- stays the section's last row.
     if unitKey == "boss" then
-        y = y - ns.UF_BossFrameBorderRows(W, parent, y, settingsTable, ReloadAndUpdate)
+        posY = posY - mod.UF_BossFrameBorderRows(Widgets, hostFrame, posY, settingsTable, ReloadAndUpdate)
     end
 
     -- Dark Mode for this frame alone, as on the Main Frames page (unset follows the
@@ -306,7 +317,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         text = "Dark Mode",
         tooltip = "Dark Mode for this frame. Global Settings > Colors switches every frame.",
         getValue = function()
-            return ns.UF_DarkThemeOn(settingsTable)
+            return mod.UF_DarkThemeOn(settingsTable)
         end,
         setValue = function(v)
             MSet("darkTheme", v)
@@ -314,12 +325,12 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             CludesUI:RefreshPage()
         end,
     }
-    local function LockDark(rgn)
+    local function LockDark(region)
         if CludesUI._prebuilding then
             return
         end
         CludesUI.SpecOverrides_AttachEditLock(
-            rgn,
+            region,
             "Dark Mode drives a Dark Mode override condition and can't be changed while editing an override",
             CludesUI.SpecOverrides_DarkCondEditActive
         )
@@ -334,21 +345,21 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         local bossStrataValues = CludesUI.FRAME_STRATA_LABELS
         local bossStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
         local strataRow
-        strataRow, h = W:DualRow(parent, y, {
+        strataRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Strata",
             tooltip = "Overrides the Frame Strata set in the main frames for this frame only. Controls the order that overlapping frames display in; set higher to show above other frames.",
             values = bossStrataValues,
             order = bossStrataOrder,
             getValue = function()
-                return settingsTable.frameStrata or db.profile.frameStrata or "MEDIUM"
+                return settingsTable.frameStrata or saved.profile.frameStrata or "MEDIUM"
             end,
             setValue = function(v)
                 settingsTable.frameStrata = v
                 ReloadAndUpdate()
             end,
         }, darkCfg)
-        y = y - h
+        posY = posY - hgt
         LockDark(strataRow._rightRegion)
     end
 
@@ -357,9 +368,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     -- borderSizeOverride nil = inherit donor size until set. Boss frames use
     -- their own Border Style | Border Size row above instead.
     if unitKey ~= "boss" then
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             CludesUI.BlizzStyle.Gate("unitframes", {
                 type = "slider",
                 text = "Border Size",
@@ -388,22 +399,22 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
         local darkRow
-        darkRow, h = W:DualRow(parent, y, darkCfg, CludesUI.BlankRowCfg())
-        y = y - h
+        darkRow, hgt = Widgets:DualRow(hostFrame, posY, darkCfg, CludesUI.BlankRowCfg())
+        posY = posY - hgt
         LockDark(darkRow._leftRegion)
     end
 
     -- Optional extra rows after enable (e.g. portrait, cast icon, indicators)
     if afterSizeRow then
-        y = afterSizeRow(W, parent, y)
+        posY = afterSizeRow(Widgets, hostFrame, posY)
     end
 
     -- HEALTH BAR section
     local textHeader
-    textHeader, h = W:SectionHeader(parent, "HEALTH BAR", y)
-    y = y - h
+    textHeader, hgt = Widgets:SectionHeader(hostFrame, "HEALTH BAR", posY)
+    posY = posY - hgt
 
     -- Row 1: Bar Height + Bar Width
     local sizeRow
@@ -430,7 +441,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 ReloadAndUpdate()
             end,
         }
-    elseif opts.hideBarWidth then
+    elseif options.hideBarWidth then
         rightSlot = { type = "label", text = "" }
     else
         rightSlot = CludesUI.BlizzStyle.Gate("unitframes", {
@@ -451,9 +462,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             end,
         })
     end
-    sizeRow, h = W:DualRow(
-        parent,
-        y,
+    sizeRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "slider",
             text = "Health Bar Height",
@@ -473,7 +484,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         }),
         rightSlot
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Row 2: Fill Color + Bar Background/Opacity. Boss frames present each as an
     -- opacity slider with inline class/custom swatches (mirroring Main Frames' Bar
@@ -492,7 +503,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 max = 100,
                 step = 1,
                 disabled = function()
-                    return ns.UF_DarkThemeOn(settingsTable)
+                    return mod.UF_DarkThemeOn(settingsTable)
                 end,
                 disabledTooltip = "Dark Mode",
                 requireState = "disabled",
@@ -583,7 +594,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 max = 100,
                 step = 1,
                 disabled = function()
-                    return ns.UF_DarkThemeOn(settingsTable)
+                    return mod.UF_DarkThemeOn(settingsTable)
                 end,
                 disabledTooltip = "Dark Mode",
                 requireState = "disabled",
@@ -597,14 +608,14 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         end
 
         local colorRow
-        colorRow, h = W:DualRow(parent, y, leftSlot2, rightSlot2)
-        y = y - h
+        colorRow, hgt = Widgets:DualRow(hostFrame, posY, leftSlot2, rightSlot2)
+        posY = posY - hgt
 
         if isBoss then
             -- Inline Custom + Class fill swatches on the Fill Color slider (left
             -- region); both toggle healthClassColored, the inactive one dims to 0.3.
             if not CludesUI._prebuilding then
-                local rgn = colorRow._leftRegion
+                local region = colorRow._leftRegion
                 local fClassGet = function()
                     local _, ct = UnitClass("player")
                     local cc = ct and RAID_CLASS_COLORS[ct]
@@ -614,8 +625,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     return 1, 1, 1
                 end
                 local fClassSw, fClassUpdate = CludesUI.BuildColorSwatch(
-                    rgn,
-                    rgn:GetFrameLevel() + 5,
+                    region,
+                    region:GetFrameLevel() + 5,
                     fClassGet,
                     function() end,
                     false,
@@ -633,8 +644,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 fClassSw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(fClassSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = fClassSw
+                Pix.Point(fClassSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = fClassSw
                 RegisterWidgetRefresh(function()
                     fClassUpdate()
                     fClassSw:SetAlpha(MVal("healthClassColored", false) and 1 or 0.3)
@@ -652,8 +663,14 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     settingsTable.customFillColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end
-                local fCustomSw, fCustomUpdate =
-                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fCustomGet, fCustomSet, false, 20)
+                local fCustomSw, fCustomUpdate = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    fCustomGet,
+                    fCustomSet,
+                    false,
+                    20
+                )
                 fCustomSw._eabOrigClick = fCustomSw:GetScript("OnClick")
                 fCustomSw:SetScript("OnClick", function(self)
                     if MVal("healthClassColored", false) then
@@ -675,8 +692,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 fCustomSw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(fCustomSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = fCustomSw
+                Pix.Point(fCustomSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = fCustomSw
                 RegisterWidgetRefresh(function()
                     fCustomUpdate()
                     fCustomSw:SetAlpha(MVal("healthClassColored", false) and 0.3 or 1)
@@ -687,7 +704,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             -- Inline Custom + Class background swatches on the Bar Background
             -- slider (right region); both toggle bgClassColored, inactive dims to 0.3.
             if not CludesUI._prebuilding then
-                local rgn = colorRow._rightRegion
+                local region = colorRow._rightRegion
                 local bgClassGet = function()
                     local _, ct = UnitClass("player")
                     local cc = ct and RAID_CLASS_COLORS[ct]
@@ -697,8 +714,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     return 1, 1, 1
                 end
                 local bgClassSw, bgClassUpdate = CludesUI.BuildColorSwatch(
-                    rgn,
-                    rgn:GetFrameLevel() + 5,
+                    region,
+                    region:GetFrameLevel() + 5,
                     bgClassGet,
                     function() end,
                     false,
@@ -716,8 +733,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 bgClassSw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(bgClassSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = bgClassSw
+                Pix.Point(bgClassSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = bgClassSw
                 RegisterWidgetRefresh(function()
                     bgClassUpdate()
                     bgClassSw:SetAlpha(MVal("bgClassColored", false) and 1 or 0.3)
@@ -736,7 +753,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     ReloadAndUpdate()
                 end
                 local bgSw, bgSwUpdate =
-                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
+                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
                 bgSw._eabOrigClick = bgSw:GetScript("OnClick")
                 bgSw:SetScript("OnClick", function(self)
                     if MVal("bgClassColored", false) then
@@ -755,8 +772,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 bgSw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = bgSw
+                Pix.Point(bgSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = bgSw
                 RegisterWidgetRefresh(function()
                     bgSwUpdate()
                     bgSw:SetAlpha(MVal("bgClassColored", false) and 0.3 or 1)
@@ -804,15 +821,15 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         end,
     }
     if unitKey == "boss" then
-        _, h = W:DualRow(parent, y, smoothBarsWidget, reverseFillWidget)
-        y = y - h
+        _, hgt = Widgets:DualRow(hostFrame, posY, smoothBarsWidget, reverseFillWidget)
+        posY = posY - hgt
     else
         -- Bar Background (opacity slider + inline color swatch) | Reverse Fill.
         -- Reuses the existing customBgAlpha (opacity) + customBgColor (color)
         -- variables -- same as the Boss frames and the runtime health bg, so
         -- no saved option changes.
         local bgRow
-        bgRow, h = W:DualRow(parent, y, {
+        bgRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Background",
             min = 0,
@@ -825,7 +842,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 MSet("customBgAlpha", v)
             end,
         }, reverseFillWidget)
-        y = y - h
+        posY = posY - hgt
         -- inline bg colors - custom swatch + class swatch
         -- tot/focus use class for player, reaction for npc
         -- pet resolves to player's class color
@@ -887,9 +904,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
     -- Vertical Fill swaps the fill AXIS (Reverse Fill above flips direction within
     -- it, so vertical+reverse fills top-to-bottom); own row since Reverse Fill's row is already full on both layouts.
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
             text = "Vertical Fill",
@@ -905,14 +922,14 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         }),
         unitKey ~= "boss" and smoothBarsWidget or CludesUI.BlankRowCfg()
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Blizzard Style: the stock level number in the boss art's level circle
     -- (the small frames' stock art carries none), with its size and
     -- offsets on a cog. The row is the preview level text's click target
     -- (stashed on the page: the boss targets table reads it).
     if unitKey == "boss" and CludesUI.BlizzStyle.Get("unitframes") then
-        parent._ufLevelRow, h = W:DualRow(parent, y, {
+        hostFrame._ufLevelRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Level",
             tooltip = "Shows the unit's level in the frame's level circle, as the default UI does.",
@@ -925,9 +942,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(parent._ufLevelRow._leftRegion, {
+            CludesUI.BuildInlineCog(hostFrame._ufLevelRow._leftRegion, {
                 disabled = function()
                     return settingsTable.blizzShowLevel == false
                 end,
@@ -1006,7 +1023,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             end,
             setValue = function(v)
                 settingsTable.leftTextContent = v
-                if ns.UF_IsUniqueContent(v) then
+                if mod.UF_IsUniqueContent(v) then
                     if settingsTable.rightTextContent == v then
                         settingsTable.rightTextContent = "none"
                     end
@@ -1018,16 +1035,16 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 CludesUI:RefreshPage(true)
             end,
         },
-        decorate = function(rgn)
+        decorate = function(region)
             -- Inline cog + color swatches on Left Text: Custom + Class (CDM Border Size pattern)
             if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(rgn, {
+                CludesUI.BuildInlineCog(region, {
                     disabled = function()
                         return MVal("leftTextContent", "name") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Left Text Settings",
-                    rows = ns.UF_CoreTextRows("leftText", "name", MVal, MSet, {
+                    rows = mod.UF_CoreTextRows("leftText", "name", MVal, MSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1176,15 +1193,22 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     }),
                 })
 
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and CludesUI.GetClassColor(classFile)
-                    if cc then
-                        return cc.r, cc.g, cc.b
-                    end
-                    return 1, 1, 1
-                end, function() end, nil, 20)
-                PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    function() end,
+                    nil,
+                    20
+                )
+                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 classSw:SetScript("OnClick", function()
                     if MVal("leftTextContent", "name") == "none" then
                         return
@@ -1208,9 +1232,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     ReloadAndUpdate()
                 end
                 local sw, swUp =
-                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                rgn._lastInline = sw
+                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
+                region._lastInline = sw
                 local origClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self, ...)
                     if MVal("leftTextContent", "name") == "none" then
@@ -1260,7 +1284,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             end,
             setValue = function(v)
                 settingsTable.rightTextContent = v
-                if ns.UF_IsUniqueContent(v) then
+                if mod.UF_IsUniqueContent(v) then
                     if settingsTable.leftTextContent == v then
                         settingsTable.leftTextContent = "none"
                     end
@@ -1272,16 +1296,16 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 CludesUI:RefreshPage(true)
             end,
         },
-        decorate = function(rgn)
+        decorate = function(region)
             -- Inline cog + color swatches on Right Text: Custom + Class (CDM Border Size pattern)
             if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(rgn, {
+                CludesUI.BuildInlineCog(region, {
                     disabled = function()
                         return MVal("rightTextContent", "none") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Right Text Settings",
-                    rows = ns.UF_CoreTextRows("rightText", "none", MVal, MSet, {
+                    rows = mod.UF_CoreTextRows("rightText", "none", MVal, MSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1430,15 +1454,22 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     }),
                 })
 
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and CludesUI.GetClassColor(classFile)
-                    if cc then
-                        return cc.r, cc.g, cc.b
-                    end
-                    return 1, 1, 1
-                end, function() end, nil, 20)
-                PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    function() end,
+                    nil,
+                    20
+                )
+                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 classSw:SetScript("OnClick", function()
                     if MVal("rightTextContent", "none") == "none" then
                         return
@@ -1462,9 +1493,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     ReloadAndUpdate()
                 end
                 local sw, swUp =
-                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                rgn._lastInline = sw
+                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
+                region._lastInline = sw
                 local origClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self, ...)
                     if MVal("rightTextContent", "none") == "none" then
@@ -1518,16 +1549,16 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 CludesUI:RefreshPage(true)
             end,
         },
-        decorate = function(rgn)
+        decorate = function(region)
             -- Inline cog + color swatches on Center Text: Custom + Class (CDM Border Size pattern)
             if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(rgn, {
+                CludesUI.BuildInlineCog(region, {
                     disabled = function()
                         return MVal("centerTextContent", "none") == "none"
                     end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Center Text Settings",
-                    rows = ns.UF_CoreTextRows("centerText", "none", MVal, MSet, {
+                    rows = mod.UF_CoreTextRows("centerText", "none", MVal, MSet, {
                         {
                             type = "slider",
                             label = "Size",
@@ -1676,15 +1707,22 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     }),
                 })
 
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and CludesUI.GetClassColor(classFile)
-                    if cc then
-                        return cc.r, cc.g, cc.b
-                    end
-                    return 1, 1, 1
-                end, function() end, nil, 20)
-                PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    function()
+                        local _, classFile = UnitClass("player")
+                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    function() end,
+                    nil,
+                    20
+                )
+                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 classSw:SetScript("OnClick", function()
                     if MVal("centerTextContent", "none") == "none" then
                         return
@@ -1710,9 +1748,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     ReloadAndUpdate()
                 end
                 local sw, swUp =
-                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                rgn._lastInline = sw
+                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
+                region._lastInline = sw
                 local origClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self, ...)
                     if MVal("centerTextContent", "none") == "none" then
@@ -1767,16 +1805,16 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     CludesUI:RefreshPage(true)
                 end,
             },
-            decorate = function(rgn)
+            decorate = function(region)
                 -- Extra Text retains the boss-only Alignment setting.
                 if unitKey == "boss" and not CludesUI._prebuilding then
-                    CludesUI.BuildInlineCog(rgn, {
+                    CludesUI.BuildInlineCog(region, {
                         disabled = function()
                             return MVal("extraTextContent", "none") == "none"
                         end,
                         disabledTooltip = "This option requires a text selection other than none.",
                         title = "Extra Text Settings",
-                        rows = ns.UF_CoreTextRows("extraText", "none", MVal, MSet, {
+                        rows = mod.UF_CoreTextRows("extraText", "none", MVal, MSet, {
                             {
                                 type = "dropdown",
                                 label = "Alignment",
@@ -1938,8 +1976,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                     })
 
                     local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                        rgn,
-                        rgn:GetFrameLevel() + 5,
+                        region,
+                        region:GetFrameLevel() + 5,
                         function()
                             local _, classFile = UnitClass("player")
                             local cc = classFile and CludesUI.GetClassColor(classFile)
@@ -1952,7 +1990,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                         nil,
                         20
                     )
-                    PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                    Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                     classSw:SetScript("OnClick", function()
                         if MVal("extraTextContent", "none") == "none" then
                             return
@@ -1978,9 +2016,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                         ReloadAndUpdate()
                     end
                     local sw, swUp =
-                        CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                    PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                    rgn._lastInline = sw
+                        CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                    Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
+                    region._lastInline = sw
                     local swOrigClick = sw:GetScript("OnClick")
                     sw:SetScript("OnClick", function(self, ...)
                         if MVal("extraTextContent", "none") == "none" then
@@ -2018,7 +2056,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         }
     end
     local textRow
-    y, textRow = ns.UFO_BuildTextSlots(W, parent, y, {
+    posY, textRow = mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, {
         slots = textSlots,
         values = healthTextValues,
         contentOrder = textSlots[1].cfg.order,
@@ -2028,7 +2066,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             return settingsTable
         end,
         liveDB = function()
-            return db.profile[unitKey]
+            return saved.profile[unitKey]
         end,
         apply = ReloadAndUpdate,
     })
@@ -2036,16 +2074,16 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     -- POWER BAR section (mini units with a power bar: boss, and the pet on WoW Forever).
     -- Fill always uses the unit's power color (powerPercentPowerColor default on);
     -- a height of 0 effectively hides the bar.
-    if opts.hasPowerBar then
+    if options.hasPowerBar then
         local powerHeader
-        powerHeader, h = W:SectionHeader(parent, "POWER BAR", y)
-        y = y - h
+        powerHeader, hgt = Widgets:SectionHeader(hostFrame, "POWER BAR", posY)
+        posY = posY - hgt
 
         -- Row 1: Power Bar Height (+ Reverse Fill cog) | Above Health Bar toggle
         local pwrRow1
-        pwrRow1, h = W:DualRow(
-            parent,
-            y,
+        pwrRow1, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             -- Blizzard Style: the stock track fixes height and spot; the
             -- Reverse Fill cog on this slot keeps working (keepRow).
             CludesUI.BlizzStyle.Gate("unitframes", {
@@ -2072,15 +2110,15 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 end,
             })
         )
-        y = y - h
+        posY = posY - hgt
         -- Expose the Power Bar Height row + POWER BAR header so the boss
         -- preview's power-bar click overlay can scroll here.
-        parent._powerHeaderFrame = powerHeader
-        parent._powerHeightRow = pwrRow1
+        hostFrame._powerHeaderFrame = powerHeader
+        hostFrame._powerHeightRow = pwrRow1
         -- Reverse Fill cog on Power Bar Height (left) -- mirrors Main Frames.
         if not CludesUI._prebuilding then
-            local rgn = pwrRow1._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = pwrRow1._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 title = "Power Bar Fill",
                 rows = {
                     {
@@ -2101,7 +2139,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- Fill Color (opacity slider + power/custom fill swatches). Mirrors the
         -- Main Frames power bar; the opacity sliders replace the old plain ones.
         local pwrRow2
-        pwrRow2, h = W:DualRow(parent, y, {
+        pwrRow2, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Background",
             min = 0,
@@ -2126,21 +2164,21 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 MSet("powerBarOpacity", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Inline Power Colored + Custom background swatches on Bar Background
         -- (left region); both toggle powerBgPowerColored, the inactive one
         -- dims to 0.3 (mirrors the Main Frames power Bar Background).
         if not CludesUI._prebuilding then
-            local rgn = pwrRow2._leftRegion
+            local region = pwrRow2._leftRegion
             local bgPwrGet = function()
                 local _, pToken = UnitPowerType("player")
-                local info = CludesUI.GetPowerColor(pToken or "MANA")
+                local details = CludesUI.GetPowerColor(pToken or "MANA")
                 local f = CludesUI.GetPowerBgDarkenFactor()
-                return info.r * f, info.g * f, info.b * f
+                return details.r * f, details.g * f, details.b * f
             end
             local bgPwrSw, bgPwrUpdate = CludesUI.BuildColorSwatch(
-                rgn,
-                rgn:GetFrameLevel() + 5,
+                region,
+                region:GetFrameLevel() + 5,
                 bgPwrGet,
                 function() end,
                 false,
@@ -2161,8 +2199,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             bgPwrSw:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            PP.Point(bgPwrSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = bgPwrSw
+            Pix.Point(bgPwrSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = bgPwrSw
             RegisterWidgetRefresh(function()
                 bgPwrUpdate()
                 bgPwrSw:SetAlpha(MVal("powerBgPowerColored", false) and 1 or 0.3)
@@ -2181,7 +2219,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 ReloadAndUpdate()
             end
             local bgSw, bgSwUp =
-                CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgGet, bgSet, false, 20)
+                CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, bgGet, bgSet, false, 20)
             bgSw._eabOrigClick = bgSw:GetScript("OnClick")
             bgSw:SetScript("OnClick", function(self)
                 if MVal("powerBgPowerColored", false) then
@@ -2200,8 +2238,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             bgSw:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            PP.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = bgSw
+            Pix.Point(bgSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = bgSw
             RegisterWidgetRefresh(function()
                 bgSwUp()
                 bgSw:SetAlpha(MVal("powerBgPowerColored", false) and 0.3 or 1)
@@ -2212,15 +2250,15 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- region); both toggle powerPercentPowerColor (default on = power
         -- colored), the inactive one dims to 0.3.
         if not CludesUI._prebuilding then
-            local rgn = pwrRow2._rightRegion
+            local region = pwrRow2._rightRegion
             local fPwrGet = function()
                 local _, pToken = UnitPowerType("player")
-                local info = CludesUI.GetPowerColor(pToken or "MANA")
-                return info.r, info.g, info.b
+                local details = CludesUI.GetPowerColor(pToken or "MANA")
+                return details.r, details.g, details.b
             end
             local fPwrSw, fPwrUpdate = CludesUI.BuildColorSwatch(
-                rgn,
-                rgn:GetFrameLevel() + 5,
+                region,
+                region:GetFrameLevel() + 5,
                 fPwrGet,
                 function() end,
                 false,
@@ -2241,8 +2279,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             fPwrSw:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            PP.Point(fPwrSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = fPwrSw
+            Pix.Point(fPwrSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = fPwrSw
             RegisterWidgetRefresh(function()
                 fPwrUpdate()
                 fPwrSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
@@ -2260,7 +2298,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 settingsTable.customPowerFillColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
             end
-            local fSw, fSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fGet, fSet, false, 20)
+            local fSw, fSwUp =
+                CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, fGet, fSet, false, 20)
             fSw._eabOrigClick = fSw:GetScript("OnClick")
             fSw:SetScript("OnClick", function(self)
                 if MVal("powerPercentPowerColor", true) ~= false then
@@ -2279,8 +2318,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             fSw:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            PP.Point(fSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = fSw
+            Pix.Point(fSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = fSw
             RegisterWidgetRefresh(function()
                 fSwUp()
                 fSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
@@ -2303,28 +2342,24 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             ReloadAndUpdate()
             CludesUI:RefreshPage()
             -- The page stays, so the menu is rebuilt for Custom's pencil.
-            ns.UFO_RefreshMenus(pwrTextRow and pwrTextRow._leftRegion)
+            mod.UFO_RefreshMenus(pwrTextRow and pwrTextRow._leftRegion)
         end
-        pwrTextRow, h = W:DualRow(parent, y, {
+        pwrTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Power Text",
-            values = ns.UFO_CustomTextValues(
-                {
-                    ["none"] = "None",
-                    ["smart"] = "Smart Text",
-                    ["curpp"] = "Power Value",
-                    ["perpp"] = "Power %",
-                    ["both"] = "Value | %",
-                },
-                function()
-                    return MVal("powerTextFormat", "perpp")
-                end,
-                function()
-                    ns.UFO_EditCustomText("powerText", settingsTable, unitKey, function()
-                        SetPowerTextFormat("custom")
-                    end)
-                end
-            ),
+            values = mod.UFO_CustomTextValues({
+                ["none"] = "None",
+                ["smart"] = "Smart Text",
+                ["curpp"] = "Power Value",
+                ["perpp"] = "Power %",
+                ["both"] = "Value | %",
+            }, function()
+                return MVal("powerTextFormat", "perpp")
+            end, function()
+                mod.UFO_EditCustomText("powerText", settingsTable, unitKey, function()
+                    SetPowerTextFormat("custom")
+                end)
+            end),
             -- WoW Forever lists no Smart Text (CludesUI.PowerTextFormat).
             order = CludesUI.PowerTextFormatOrder({
                 "none",
@@ -2353,12 +2388,12 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 CludesUI:RefreshPage()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Expose the power-text row so the preview's power-text click overlay
         -- can scroll here (mirrors parent._powerHeightRow / _powerHeaderFrame).
-        parent._powerTextRow = pwrTextRow
+        hostFrame._powerTextRow = pwrTextRow
         if not CludesUI._prebuilding then
-            ns.UFO_AddCustomFormatAccessor(
+            mod.UFO_AddCustomFormatAccessor(
                 pwrTextRow._leftRegion,
                 "Power Text",
                 "powerText",
@@ -2371,10 +2406,10 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         end
         -- Show % cog on Power Text (left)
         if not CludesUI._prebuilding then
-            local rgn = pwrTextRow._leftRegion
+            local region = pwrTextRow._leftRegion
             CludesUI.BuildInlineCog(
-                rgn,
-                ns.UFO_PowerTextCog(MVal, MSet, { none = true, curpp = true }, function(v)
+                region,
+                mod.UFO_PowerTextCog(MVal, MSet, { none = true, curpp = true }, function(v)
                     MSet("powerShowPercent", v)
                 end)
             )
@@ -2384,19 +2419,26 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- click: first clears power-colored (selecting custom), second opens the
         -- picker. Power-colored click: selects power-colored + clears custom.
         if not CludesUI._prebuilding then
-            local rgn = pwrTextRow._leftRegion
-            local customSw, customSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                local c = MGet("powerTextColor")
-                if c then
-                    return c.r, c.g, c.b
-                end
-                return 1, 1, 1
-            end, function(r, g, b)
-                settingsTable.powerTextColor = { r = r, g = g, b = b }
-                ReloadAndUpdate()
-            end, false, 20)
-            PP.Point(customSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = customSw
+            local region = pwrTextRow._leftRegion
+            local customSw, customSwUp = CludesUI.BuildColorSwatch(
+                region,
+                region:GetFrameLevel() + 5,
+                function()
+                    local c = MGet("powerTextColor")
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end,
+                function(r, g, b)
+                    settingsTable.powerTextColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end,
+                false,
+                20
+            )
+            Pix.Point(customSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = customSw
             local customOrigClick = customSw:GetScript("OnClick")
             customSw:SetScript("OnClick", function(self, ...)
                 if MVal("powerPercentTextPowerColor", false) then
@@ -2415,16 +2457,23 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             customSw:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            local powerSw, powerSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                local _, pToken = UnitPowerType("player")
-                local info = CludesUI.GetPowerColor(pToken or "MANA")
-                if info then
-                    return info.r, info.g, info.b
-                end
-                return 1, 1, 1
-            end, function() end, false, 20)
-            PP.Point(powerSw, "RIGHT", customSw, "LEFT", -8, 0)
-            rgn._lastInline = powerSw
+            local powerSw, powerSwUp = CludesUI.BuildColorSwatch(
+                region,
+                region:GetFrameLevel() + 5,
+                function()
+                    local _, pToken = UnitPowerType("player")
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    if details then
+                        return details.r, details.g, details.b
+                    end
+                    return 1, 1, 1
+                end,
+                function() end,
+                false,
+                20
+            )
+            Pix.Point(powerSw, "RIGHT", customSw, "LEFT", -8, 0)
+            region._lastInline = powerSw
             powerSw:SetScript("OnClick", function()
                 settingsTable.powerPercentTextPowerColor = true
                 settingsTable.powerTextColor = nil
@@ -2451,8 +2500,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         end
         -- Size + X/Y offsets cog on Text Position (right)
         if not CludesUI._prebuilding then
-            local rgn = pwrTextRow._rightRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = pwrTextRow._rightRegion
+            CludesUI.BuildInlineCog(region, {
                 disabled = function()
                     return MVal("powerPercentText", "none") == "none"
                 end,
@@ -2504,7 +2553,7 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
         -- Power bar border size and color, matching Player/Target/Focus.
         local pwrBorderRow
-        pwrBorderRow, h = W:DualRow(parent, y, {
+        pwrBorderRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Border Size",
             min = 0,
@@ -2518,11 +2567,11 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 MSet("powerBorderSize", v)
             end,
         }, { type = "label", text = "" })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            local rgn = pwrBorderRow._leftRegion
-            local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                rgn,
+            local region = pwrBorderRow._leftRegion
+            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                region,
                 pwrBorderRow:GetFrameLevel() + 3,
                 function()
                     local c = MGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
@@ -2536,36 +2585,39 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 true,
                 20
             )
-            PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -8, 0)
-            swatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(swatch, "Border Color")
+            Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
+            colorSwatch:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(colorSwatch, "Border Color")
             end)
-            swatch:SetScript("OnLeave", function()
+            colorSwatch:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            rgn._lastInline = swatch
+            region._lastInline = colorSwatch
             RegisterWidgetRefresh(updateSwatch)
         end
     end
 
     -- Extra section rendered at the very bottom, below the Power Bar (boss "Indicators").
-    if opts.afterPowerRow then
-        y = opts.afterPowerRow(W, parent, y)
+    if options.afterPowerRow then
+        posY = options.afterPowerRow(Widgets, hostFrame, posY)
     end
 
-    return y, displayHeader, sizeRow, textHeader, textRow, enableRowFrame
+    return posY, displayHeader, sizeRow, textHeader, textRow, enableRowFrame
 end
 
 -- Inline "Portrait on Right" cog attached to a Show Portrait toggle
 -- region. Clicking the cog opens a popup with a toggle that swaps
 -- settings.portraitSide between "left" and "right" live; withArtStyle
 -- (Target of Target / Focus Target) adds the 2D / Class art choice.
-local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
-    local env = ns._UFO_OptEnv
+local function AttachPortraitSideCog(region, settingsTable, withArtStyle, unitKey)
+    local environ = mod._UFO_OptEnv
     local ReloadAndUpdate, UpdatePreview, classThemeSubOrder, classThemeSubValues =
-        env.ReloadAndUpdate, env.UpdatePreview, env.classThemeSubOrder, env.classThemeSubValues
+        environ.ReloadAndUpdate,
+        environ.UpdatePreview,
+        environ.classThemeSubOrder,
+        environ.classThemeSubValues
     local _, portraitShow
-    local rows = {
+    local rowList = {
         {
             type = "toggle",
             label = "Portrait on Right",
@@ -2580,7 +2632,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
         },
     }
     if withArtStyle then
-        rows[#rows + 1] = {
+        rowList[#rowList + 1] = {
             type = "dropdown",
             label = "Art Style",
             values = { ["2d"] = "2D Portrait", ["class"] = "Class" },
@@ -2599,7 +2651,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
                     and settingsTable.portraitMode == "class"
                     and settingsTable.portraitMirror
                     and not CludesUI.BlizzStyle.Get("unitframes")
-                    and ns.UF_Ask2DMirroredPortraits(function()
+                    and mod.UF_Ask2DMirroredPortraits(function()
                         ApplyArt()
                         CludesUI:RefreshPage()
                     end)
@@ -2612,7 +2664,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
                 ApplyArt()
             end,
         }
-        rows[#rows + 1] = {
+        rowList[#rowList + 1] = {
             type = "dropdown",
             label = "Class Style",
             values = classThemeSubValues,
@@ -2632,7 +2684,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
             rawTooltip = true,
         }
         -- The Non-Player Portrait opt-in and its choice, as on the main frames.
-        rows[#rows + 1] = {
+        rowList[#rowList + 1] = {
             type = "toggle",
             label = "Custom Non-Player Portrait",
             tooltip = "Pick what NPCs show in Class art instead of their 2D portrait.",
@@ -2646,7 +2698,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
         }
         -- No 3D here: a mini frame's fade never reaches a model (the
         -- runtime resolves a saved "3d" to 2D the same way).
-        rows[#rows + 1] = {
+        rowList[#rowList + 1] = {
             type = "dropdown",
             label = "Non-Player Portrait",
             values = { ["2d"] = "2D Portrait", ["none"] = "Nothing" },
@@ -2670,7 +2722,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
         }
     end
     if unitKey == "targettarget" or unitKey == "boss" then
-        rows[#rows + 1] = {
+        rowList[#rowList + 1] = {
             type = "toggle",
             label = "Mirror Portrait",
             tooltip = "Mirrors playable-race portraits in 2D. Always flips class art horizontally.",
@@ -2687,7 +2739,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
             set = function(v)
                 local function ApplyMirror()
                     settingsTable.portraitMirror = v or nil
-                    ns.UF_RefreshPortraitMirror(unitKey)
+                    mod.UF_RefreshPortraitMirror(unitKey)
                     UpdatePreview()
                 end
                 if
@@ -2695,7 +2747,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
                     and not settingsTable.portraitMirror
                     and settingsTable.portraitMode ~= "3d"
                     and settingsTable.portraitMode ~= "class"
-                    and ns.UF_Ask2DMirroredPortraits(function()
+                    and mod.UF_Ask2DMirroredPortraits(function()
                         ApplyMirror()
                         CludesUI:RefreshPage()
                     end)
@@ -2708,12 +2760,12 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
                 ApplyMirror()
             end,
         }
-        rows[#rows + 1] = {
+        rowList[#rowList + 1] = {
             type = "toggle",
             label = "Vertical Border Separator",
             tooltip = "Draws the selected border style between the attached portrait and the bars.",
             disabled = function()
-                local donor = unitKey == "boss" and ns.UF_BossBorderSettings()
+                local donor = unitKey == "boss" and mod.UF_BossBorderSettings()
                     or GetMiniDonorSettings(unitKey)
                 return CludesUI.BlizzStyle.Get("unitframes")
                     or (settingsTable.borderSizeOverride or donor.borderSize or 1) <= 0
@@ -2736,7 +2788,7 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
             end,
         }
     end
-    _, portraitShow = CludesUI.BuildInlineCog(rgn, {
+    _, portraitShow = CludesUI.BuildInlineCog(region, {
         gap = 9,
         title = "Portrait Settings",
         -- Side and art only show on a shown portrait (the stock styles
@@ -2745,29 +2797,32 @@ local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
             return settingsTable.showPortrait == false and not CludesUI.BlizzStyle.Get("unitframes")
         end,
         disabledTooltip = "Show Portrait",
-        rows = rows,
+        rows = rowList,
     })
 end
 
 -- Shared builder for the two independent mini frames (Target of Target,
 -- Focus Target). settingsTable/unitKey select which one; each renders its
 -- own single enable toggle + Show Portrait (right slot), Pet-style.
-function ns.UFO_BuildFoTToTOptions(W, parent, y, settingsTable, unitKey)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildFoTToTOptions(Widgets, hostFrame, posY, settingsTable, unitKey)
+    local environ = mod._UFO_OptEnv
     local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
-        env.AttachFrameSourceCog, env.BuildApplyAllRow, env.MINI_GROUP_ORDER, env.PromptReloadIfUnspawned
-    local ReloadAndUpdate, abs, db = env.ReloadAndUpdate, env.abs, env.db
-    settingsTable = settingsTable or db.profile.targettarget
+        environ.AttachFrameSourceCog,
+        environ.BuildApplyAllRow,
+        environ.MINI_GROUP_ORDER,
+        environ.PromptReloadIfUnspawned
+    local ReloadAndUpdate, abs, saved = environ.ReloadAndUpdate, environ.abs, environ.db
+    settingsTable = settingsTable or saved.profile.targettarget
     unitKey = unitKey or "targettarget"
     local enableText = (unitKey == "focustarget") and "Enable Focus Target" or "Enable Target of Target"
-    local _, h
+    local _, hgt
 
-    _, h = BuildApplyAllRow(parent, y, MINI_GROUP_ORDER, unitKey, true)
-    y = y - h
+    _, hgt = BuildApplyAllRow(hostFrame, posY, MINI_GROUP_ORDER, unitKey, true)
+    posY = posY - hgt
 
     local portraitRow
     local function enableRow(Ww, pp, yy)
-        local isCUI = ns.GetUnitFrameSource(unitKey) == "cui"
+        local isCUI = mod.GetUnitFrameSource(unitKey) == "cui"
         -- The Frame Source cog's "Blizzard Default" only makes sense when the
         -- parent target/focus frame is itself on Blizzard's frame (its native
         -- child target-of-target is then alive; see ns.GetUnitFrameSource);
@@ -2775,14 +2830,14 @@ function ns.UFO_BuildFoTToTOptions(W, parent, y, settingsTable, unitKey)
         local parentLabel = (unitKey == "focustarget") and "Focus" or "Target"
         local parentKey = (unitKey == "focustarget") and "focus" or "target"
         local childName = (unitKey == "focustarget") and "focus-target" or "target-of-target"
-        portraitRow, h = Ww:DualRow(pp, yy, {
+        portraitRow, hgt = Ww:DualRow(pp, yy, {
             type = "toggle",
             text = enableText,
             getValue = function()
-                return db.profile.enabledFrames[unitKey] ~= false
+                return saved.profile.enabledFrames[unitKey] ~= false
             end,
             setValue = function(v)
-                db.profile.enabledFrames[unitKey] = v
+                saved.profile.enabledFrames[unitKey] = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ unitKey })
@@ -2809,7 +2864,7 @@ function ns.UFO_BuildFoTToTOptions(W, parent, y, settingsTable, unitKey)
                 .. parentLabel
                 .. " frame's source -- both Blizzard Default, or both CludesUI.",
             disabled = function()
-                return ns.GetUnitFrameSource(parentKey) ~= "blizzard"
+                return mod.GetUnitFrameSource(parentKey) ~= "blizzard"
             end,
             disabledTooltip = '"Blizzard Default" is only available when the '
                 .. parentLabel
@@ -2819,67 +2874,71 @@ function ns.UFO_BuildFoTToTOptions(W, parent, y, settingsTable, unitKey)
                 .. parentKey
                 .. " frame.",
         })
-        return portraitRow, h
+        return portraitRow, hgt
     end
 
     local displayHeader, sizeRow, textHeader, textRow
-    y, displayHeader, sizeRow, textHeader, textRow =
-        BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enableRow)
+    posY, displayHeader, sizeRow, textHeader, textRow =
+        BuildMiniTextAndSize(Widgets, hostFrame, posY, settingsTable, unitKey, enableRow)
 
     -- Store click targets for hover highlight system
-    parent._ufClickTargets = {
+    hostFrame._ufClickTargets = {
         healthBar = { section = displayHeader, target = sizeRow },
         portrait = { section = displayHeader, target = portraitRow, slotSide = "right" },
-        nameText = ns.UFO_TextClickTarget(
-            parent,
+        nameText = mod.UFO_TextClickTarget(
+            hostFrame,
             "leftText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        healthText = ns.UFO_TextClickTarget(
-            parent,
+        healthText = mod.UFO_TextClickTarget(
+            hostFrame,
             "rightText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        centerText = ns.UFO_TextClickTarget(
-            parent,
+        centerText = mod.UFO_TextClickTarget(
+            hostFrame,
             "centerText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        extraText = ns.UFO_TextClickTarget(
-            parent,
+        extraText = mod.UFO_TextClickTarget(
+            hostFrame,
             "extraText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
     }
 
-    return abs(y)
+    return abs(posY)
 end
 
-function ns.UFO_BuildPetOptions(W, parent, y)
-    local env = ns._UFO_OptEnv
+function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
+    local environ = mod._UFO_OptEnv
     local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
-        env.AttachFrameSourceCog, env.BuildApplyAllRow, env.MINI_GROUP_ORDER, env.PromptReloadIfUnspawned
-    local ReloadAndUpdate, UpdatePreview, abs, db = env.ReloadAndUpdate, env.UpdatePreview, env.abs, env.db
-    local _, h
+        environ.AttachFrameSourceCog,
+        environ.BuildApplyAllRow,
+        environ.MINI_GROUP_ORDER,
+        environ.PromptReloadIfUnspawned
+    local ReloadAndUpdate, UpdatePreview, abs, saved =
+        environ.ReloadAndUpdate, environ.UpdatePreview, environ.abs, environ.db
+    local _, hgt
 
-    _, h = BuildApplyAllRow(parent, y, MINI_GROUP_ORDER, "pet", true)
-    y = y - h
+    _, hgt = BuildApplyAllRow(hostFrame, posY, MINI_GROUP_ORDER, "pet", true)
+    posY = posY - hgt
 
     local portraitRow
     local function enableRow(Ww, pp, yy)
-        local isCUI = ns.GetUnitFrameSource("pet") == "cui"
-        portraitRow, h = Ww:DualRow(pp, yy, {
+        local isCUI = mod.GetUnitFrameSource("pet") == "cui"
+        portraitRow, hgt = Ww:DualRow(pp, yy, {
             type = "toggle",
             text = "Enable Pet Frame",
             getValue = function()
-                return db.profile.enabledFrames.pet ~= false
+                return saved.profile.enabledFrames.pet ~= false
             end,
             setValue = function(v)
-                db.profile.enabledFrames.pet = v
+                saved.profile.enabledFrames.pet = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "pet" })
@@ -2888,16 +2947,16 @@ function ns.UFO_BuildPetOptions(W, parent, y)
             type = "toggle",
             text = "Show Portrait",
             getValue = function()
-                return CludesUI.BlizzStyle.Get("unitframes") or db.profile.pet.showPortrait ~= false
+                return CludesUI.BlizzStyle.Get("unitframes") or saved.profile.pet.showPortrait ~= false
             end,
             setValue = function(v)
-                db.profile.pet.showPortrait = v
+                saved.profile.pet.showPortrait = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
         if isCUI and not CludesUI._prebuilding then
-            AttachPortraitSideCog(portraitRow._rightRegion, db.profile.pet)
+            AttachPortraitSideCog(portraitRow._rightRegion, saved.profile.pet)
         end
         AttachFrameSourceCog(portraitRow._leftRegion, "pet", {
             extraRows = {
@@ -2906,18 +2965,18 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                     label = "Always Show Pet Frame",
                     tooltip = "Show the pet frame whenever you have a pet, ignoring the Player frame's visibility settings.",
                     get = function()
-                        return db.profile.pet.alwaysShow == true
+                        return saved.profile.pet.alwaysShow == true
                     end,
                     set = function(v)
-                        db.profile.pet.alwaysShow = v and true or nil
-                        if ns.UpdateFrameVisibility then
-                            ns.UpdateFrameVisibility()
+                        saved.profile.pet.alwaysShow = v and true or nil
+                        if mod.UpdateFrameVisibility then
+                            mod.UpdateFrameVisibility()
                         end
                     end,
                 },
             },
         })
-        return portraitRow, h
+        return portraitRow, hgt
     end
 
     -- WoW Forever: the pet has power (its POWER BAR section exists in the
@@ -2926,14 +2985,14 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     -- Retail builds neither.
     local petOpts, petPower, happyHeader, happyRow
     if CludesUI.IS_FOREVER == true then
-        petPower = ns.UF_PetHasPower and not CludesUI.BlizzStyle.Get("unitframes")
-        local P = db.profile.pet
+        petPower = mod.UF_PetHasPower and not CludesUI.BlizzStyle.Get("unitframes")
+        local Prm = saved.profile.pet
         local function happyOff()
-            return P.happinessEnabled == false
+            return Prm.happinessEnabled == false
         end
         -- The live icon repaints itself; the preview mirrors it.
         local function happyApply()
-            ns.UF_ApplyPetHappiness()
+            mod.UF_ApplyPetHappiness()
             UpdatePreview()
         end
         petOpts = {
@@ -2949,10 +3008,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                     text = "Show Happiness",
                     tooltip = "Shows your hunter pet's happiness beside the pet frame.",
                     getValue = function()
-                        return P.happinessEnabled ~= false
+                        return Prm.happinessEnabled ~= false
                     end,
                     setValue = function(v)
-                        P.happinessEnabled = v
+                        Prm.happinessEnabled = v
                         happyApply()
                         CludesUI:RefreshPage()
                     end,
@@ -2965,10 +3024,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                     disabled = happyOff,
                     disabledTooltip = "Show Happiness",
                     getValue = function()
-                        return P.happinessSize or 20
+                        return Prm.happinessSize or 20
                     end,
                     setValue = function(v)
-                        P.happinessSize = v
+                        Prm.happinessSize = v
                         happyApply()
                     end,
                 })
@@ -2984,10 +3043,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                     disabled = happyOff,
                     disabledTooltip = "Show Happiness",
                     getValue = function()
-                        return P.happinessAlign or "right"
+                        return Prm.happinessAlign or "right"
                     end,
                     setValue = function(v)
-                        P.happinessAlign = v
+                        Prm.happinessAlign = v
                         happyApply()
                     end,
                 }, CludesUI.BlankRowCfg())
@@ -3005,10 +3064,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    return P.happinessX or 0
+                                    return Prm.happinessX or 0
                                 end,
                                 set = function(v)
-                                    P.happinessX = v
+                                    Prm.happinessX = v
                                     happyApply()
                                 end,
                             },
@@ -3019,10 +3078,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    return P.happinessY or 0
+                                    return Prm.happinessY or 0
                                 end,
                                 set = function(v)
-                                    P.happinessY = v
+                                    Prm.happinessY = v
                                     happyApply()
                                 end,
                             },
@@ -3035,8 +3094,8 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     end
 
     local displayHeader, sizeRow, textHeader, textRow
-    y, displayHeader, sizeRow, textHeader, textRow =
-        BuildMiniTextAndSize(W, parent, y, db.profile.pet, "pet", enableRow, nil, petOpts)
+    posY, displayHeader, sizeRow, textHeader, textRow =
+        BuildMiniTextAndSize(Widgets, hostFrame, posY, saved.profile.pet, "pet", enableRow, nil, petOpts)
 
     -- BUFFS AND DEBUFFS, on the CludesUI pet frame only (an inactive frame
     -- shows the notice above instead). Location, size (Cropped Icons
@@ -3046,24 +3105,24 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     -- Every getter reads db.profile.pet live (Spec Override slot marks trace
     -- those reads) and writes nothing.
     local auraHeader, buffRow, debuffRow
-    if ns.GetUnitFrameSource("pet") == "cui" then
-        local SwapAuraSlot = env.SwapAuraSlot
+    if mod.GetUnitFrameSource("pet") == "cui" then
+        local SwapAuraSlot = environ.SwapAuraSlot
         local function PGet(key, default)
-            local v = db.profile.pet[key]
+            local v = saved.profile.pet[key]
             if v == nil then
                 return default
             end
             return v
         end
         local function PSet(key, v)
-            db.profile.pet[key] = v
+            saved.profile.pet[key] = v
             ReloadAndUpdate()
         end
         local function buffsOff()
-            return db.profile.pet.showBuffs == false
+            return saved.profile.pet.showBuffs == false
         end
         local function debuffsOff()
-            return (db.profile.pet.debuffAnchor or "none") == "none"
+            return (saved.profile.pet.debuffAnchor or "none") == "none"
         end
         local function anyOn()
             return not (buffsOff() and debuffsOff())
@@ -3074,23 +3133,23 @@ function ns.UFO_BuildPetOptions(W, parent, y)
         -- rebuilds the page.
         local function PlaceAuras(key)
             return CludesUI.DependentSetValue(anyOn, function(v)
-                SwapAuraSlot(db.profile.pet, key, v)
+                SwapAuraSlot(saved.profile.pet, key, v)
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end)
         end
-        auraHeader, h = W:SectionHeader(parent, "BUFFS AND DEBUFFS", y)
-        y = y - h
+        auraHeader, hgt = Widgets:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", posY)
+        posY = posY - hgt
 
         -- Buffs Location | Buff Size, then Debuffs Location | Debuff Size: the
         -- settings cog on each Location, the position cog on each Size.
-        buffRow, h = W:DualRow(parent, y, {
+        buffRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Buffs Location",
-            values = env.buffAnchorValues,
-            order = env.buffAnchorOrder,
+            values = environ.buffAnchorValues,
+            order = environ.buffAnchorOrder,
             getValue = function()
-                local pet = db.profile.pet
+                local pet = saved.profile.pet
                 if pet.showBuffs == false then
                     return "none"
                 end
@@ -3112,12 +3171,12 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                 PSet("buffSize", v)
             end,
         })
-        y = y - h
-        debuffRow, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        debuffRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Debuffs Location",
-            values = env.buffAnchorValues,
-            order = env.buffAnchorOrder,
+            values = environ.buffAnchorValues,
+            order = environ.buffAnchorOrder,
             getValue = function()
                 return PGet("debuffAnchor", "none")
             end,
@@ -3137,7 +3196,7 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                 PSet("debuffSize", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Copy Auras From | (blank: odd last slot), built while buffs or
         -- debuffs show. Shows the frame in use: the pick while that frame can
@@ -3145,95 +3204,85 @@ function ns.UFO_BuildPetOptions(W, parent, y)
         -- no pick follows. Every pick is stored, so it sticks when Copy Look
         -- From changes later.
         if anyOn() then
-            _, h = W:DualRow(parent, y, {
+            _, hgt = Widgets:DualRow(hostFrame, posY, {
                 type = "segmented",
                 text = "Copy Auras From",
                 tooltip = "The frame whose aura look the pet copies.",
                 values = { target = "Target", focus = "Focus", player = "Player" },
                 order = { "target", "focus", "player" },
                 getValue = function()
-                    return ns.UF_MiniAuraSourceKey("pet")
+                    return mod.UF_MiniAuraSourceKey("pet")
                 end,
                 setValue = function(v)
-                    if v == db.profile.pet.auraSource then
+                    if v == saved.profile.pet.auraSource then
                         return
                     end
-                    db.profile.pet.auraSource = v
+                    saved.profile.pet.auraSource = v
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
                 end,
                 -- Slot marks follow the stored pick alone: the frame shown
                 -- also reads the other frames' enable and Visibility keys.
-                accessors = { {
-                    getValue = function()
-                        return db.profile.pet.auraSource
-                    end,
-                } },
+                accessors = {
+                    {
+                        getValue = function()
+                            return saved.profile.pet.auraSource
+                        end,
+                    },
+                },
             }, CludesUI.BlankRowCfg())
-            y = y - h
+            posY = posY - hgt
         end
 
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(
-                buffRow._leftRegion,
-                {
-                    disabled = buffsOff,
-                    disabledTooltip = "Buffs Location",
-                    title = "Buff Settings",
-                    rows = ns.UFO_AuraSettingsRows("buff", PGet, PSet, 40, 4),
-                }
-            )
-            CludesUI.BuildInlineCog(
-                buffRow._rightRegion,
-                {
-                    disabled = buffsOff,
-                    disabledTooltip = "Buffs Location",
-                    title = "Buff Position",
-                    rows = ns.UFO_AuraPositionRows("buff", PGet, PSet),
-                }
-            )
-            CludesUI.BuildInlineCog(
-                debuffRow._leftRegion,
-                {
-                    disabled = debuffsOff,
-                    disabledTooltip = "Debuffs Location",
-                    title = "Debuff Settings",
-                    rows = ns.UFO_AuraSettingsRows("debuff", PGet, PSet, 20, 10),
-                }
-            )
-            CludesUI.BuildInlineCog(
-                debuffRow._rightRegion,
-                {
-                    disabled = debuffsOff,
-                    disabledTooltip = "Debuffs Location",
-                    title = "Debuff Position",
-                    rows = ns.UFO_AuraPositionRows("debuff", PGet, PSet),
-                }
-            )
+            CludesUI.BuildInlineCog(buffRow._leftRegion, {
+                disabled = buffsOff,
+                disabledTooltip = "Buffs Location",
+                title = "Buff Settings",
+                rows = mod.UFO_AuraSettingsRows("buff", PGet, PSet, 40, 4),
+            })
+            CludesUI.BuildInlineCog(buffRow._rightRegion, {
+                disabled = buffsOff,
+                disabledTooltip = "Buffs Location",
+                title = "Buff Position",
+                rows = mod.UFO_AuraPositionRows("buff", PGet, PSet),
+            })
+            CludesUI.BuildInlineCog(debuffRow._leftRegion, {
+                disabled = debuffsOff,
+                disabledTooltip = "Debuffs Location",
+                title = "Debuff Settings",
+                rows = mod.UFO_AuraSettingsRows("debuff", PGet, PSet, 20, 10),
+            })
+            CludesUI.BuildInlineCog(debuffRow._rightRegion, {
+                disabled = debuffsOff,
+                disabledTooltip = "Debuffs Location",
+                title = "Debuff Position",
+                rows = mod.UFO_AuraPositionRows("debuff", PGet, PSet),
+            })
         end
     end
 
     -- CAST BAR, on the CludesUI pet frame only. Off by default; the bar is
     -- built at login, so turning it on asks for a reload. Move it in Unlock Mode.
-    if ns.GetUnitFrameSource("pet") == "cui" then
-        local P = db.profile.pet
+    if mod.GetUnitFrameSource("pet") == "cui" then
+        local Prm = saved.profile.pet
         local function castOff()
-            return P.showCastbar ~= true
+            return Prm.showCastbar ~= true
         end
-        _, h = W:SectionHeader(parent, "CAST BAR", y)
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        _, hgt = Widgets:SectionHeader(hostFrame, "CAST BAR", posY)
+        posY = posY - hgt
+        _, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Cast Bar",
             tooltip = "Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Layout Mode.",
             getValue = function()
-                return P.showCastbar == true
+                return Prm.showCastbar == true
             end,
             setValue = function(v)
-                P.showCastbar = v
+                Prm.showCastbar = v
                 ReloadAndUpdate()
-                local pf = ns.frames and ns.frames.pet
-                if v and pf and not pf.Castbar then
+                local popFrame = mod.frames and mod.frames.pet
+                if v and popFrame and not popFrame.Castbar then
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "The pet cast bar is built at login. Reload to show it.",
@@ -3253,15 +3302,15 @@ function ns.UFO_BuildPetOptions(W, parent, y)
             disabled = castOff,
             disabledTooltip = "Show Cast Bar",
             getValue = function()
-                return P.castbarWidth or 120
+                return Prm.castbarWidth or 120
             end,
             setValue = function(v)
-                P.castbarWidth = v
+                Prm.castbarWidth = v
                 ReloadAndUpdate()
             end,
         })
-        y = y - h
-        _, h = W:DualRow(parent, y, {
+        posY = posY - hgt
+        _, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Cast Bar Height",
             min = 1,
@@ -3270,10 +3319,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
             disabled = castOff,
             disabledTooltip = "Show Cast Bar",
             getValue = function()
-                return P.castbarHeight or 12
+                return Prm.castbarHeight or 12
             end,
             setValue = function(v)
-                P.castbarHeight = v
+                Prm.castbarHeight = v
                 ReloadAndUpdate()
             end,
         }, {
@@ -3283,40 +3332,40 @@ function ns.UFO_BuildPetOptions(W, parent, y)
             disabled = castOff,
             disabledTooltip = "Show Cast Bar",
             getValue = function()
-                return P.castbarHideWhenInactive ~= false
+                return Prm.castbarHideWhenInactive ~= false
             end,
             setValue = function(v)
-                P.castbarHideWhenInactive = v
+                Prm.castbarHideWhenInactive = v
                 ReloadAndUpdate()
             end,
         })
-        y = y - h
+        posY = posY - hgt
     end
 
     -- Store click targets for hover highlight system
-    parent._ufClickTargets = {
+    hostFrame._ufClickTargets = {
         healthBar = { section = displayHeader, target = sizeRow },
         portrait = { section = displayHeader, target = portraitRow, slotSide = "right" },
-        nameText = ns.UFO_TextClickTarget(
-            parent,
+        nameText = mod.UFO_TextClickTarget(
+            hostFrame,
             "leftText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        healthText = ns.UFO_TextClickTarget(
-            parent,
+        healthText = mod.UFO_TextClickTarget(
+            hostFrame,
             "rightText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        centerText = ns.UFO_TextClickTarget(
-            parent,
+        centerText = mod.UFO_TextClickTarget(
+            hostFrame,
             "centerText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        extraText = ns.UFO_TextClickTarget(
-            parent,
+        extraText = mod.UFO_TextClickTarget(
+            hostFrame,
             "extraText",
             textHeader or displayHeader,
             textRow or sizeRow
@@ -3327,62 +3376,65 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     -- WoW Forever: the preview's power bar, power text and happiness icon
     -- (only once the sections exist: an inactive frame builds none).
     if happyRow then
-        local tg = parent._ufClickTargets
+        local tg = hostFrame._ufClickTargets
         if petPower then
-            tg.powerBar =
-                { section = parent._powerHeaderFrame, target = parent._powerHeightRow, slotSide = "left" }
+            tg.powerBar = {
+                section = hostFrame._powerHeaderFrame,
+                target = hostFrame._powerHeightRow,
+                slotSide = "left",
+            }
             tg.powerBarText =
-                { section = parent._powerHeaderFrame, target = parent._powerTextRow, slotSide = "left" }
+                { section = hostFrame._powerHeaderFrame, target = hostFrame._powerTextRow, slotSide = "left" }
         end
         tg.petHappiness = { section = happyHeader, target = happyRow, slotSide = "left" }
     end
 
-    return abs(y)
+    return abs(posY)
 end
 
-function ns.UFO_BuildBossOptions(W, parent, y)
-    local env = ns._UFO_OptEnv
-    local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, PP =
-        env.AttachDebuffModeWarn, env.AttachFrameSourceCog, env.DebuffModeDropdownCfg, env.PP
-    local HideExhaustionRow = env.HideExhaustionRow
+function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
+    local environ = mod._UFO_OptEnv
+    local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, Pix =
+        environ.AttachDebuffModeWarn, environ.AttachFrameSourceCog, environ.DebuffModeDropdownCfg, environ.PP
+    local HideExhaustionRow = environ.HideExhaustionRow
     local PromptReloadIfUnspawned, ReloadAndUpdate, SwapAuraSlot, abs =
-        env.PromptReloadIfUnspawned, env.ReloadAndUpdate, env.SwapAuraSlot, env.abs
+        environ.PromptReloadIfUnspawned, environ.ReloadAndUpdate, environ.SwapAuraSlot, environ.abs
     local buffAnchorOrder, buffAnchorValues, buffGrowthOrder, buffGrowthValues =
-        env.buffAnchorOrder, env.buffAnchorValues, env.buffGrowthOrder, env.buffGrowthValues
-    local db = env.db
-    local _, h
+        environ.buffAnchorOrder, environ.buffAnchorValues, environ.buffGrowthOrder, environ.buffGrowthValues
+    local saved = environ.db
+    local _, hgt
 
     -- Activate/Deactivate Boss Preview button (matches Party Mode's activate
     -- button, centered above the first section). Disabled while Boss Frames are
     -- off: the in-game preview rides on the real (now-disabled) boss frames and renders broken.
     local activateBtnFrame, activateBtnLbl, activateBtn
     local function PreviewLabel()
-        return ns._bossPreviewActive and CludesUI.L("Deactivate Boss Preview")
+        return mod._bossPreviewActive and CludesUI.L("Deactivate Boss Preview")
             or CludesUI.L("Activate Boss Preview")
     end
     local function BossFramesDisabled()
-        return ns.GetUnitFrameSource("boss") ~= "cui"
+        return mod.GetUnitFrameSource("boss") ~= "cui"
     end
-    activateBtnFrame, h = W:WideButton(parent, PreviewLabel(), y, function()
+    activateBtnFrame, hgt = Widgets:WideButton(hostFrame, PreviewLabel(), posY, function()
         if BossFramesDisabled() then
             return
         end
-        if not ns.SetBossPreview then
+        if not mod.SetBossPreview then
             return
         end
-        ns.SetBossPreview(not ns._bossPreviewActive)
+        mod.SetBossPreview(not mod._bossPreviewActive)
         if activateBtnLbl then
             activateBtnLbl:SetText(PreviewLabel())
         end
     end)
-    y = y - h
+    posY = posY - hgt
     do
         -- The row's button and its label, picked by kind and use rather than by
         -- position: on a kept page the row frame may still hold idle children
         -- and regions of an earlier dress (page reuse).
         local kids = { activateBtnFrame:GetChildren() }
-        for i = 1, #kids do
-            local c = kids[i]
+        for idx = 1, #kids do
+            local c = kids[idx]
             if c:GetObjectType() == "Button" and not PoolIsIdle(c) then
                 activateBtn = c
                 break
@@ -3390,12 +3442,12 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         end
         if activateBtn then
             local regions = { activateBtn:GetRegions() }
-            for i = 1, #regions do
-                local rgn = regions[i]
-                if rgn and rgn.GetText and not PoolIsIdle(rgn) then
-                    local t = rgn:GetText()
+            for idx = 1, #regions do
+                local region = regions[idx]
+                if region and region.GetText and not PoolIsIdle(region) then
+                    local t = region:GetText()
                     if t and t ~= "" then
-                        activateBtnLbl = rgn
+                        activateBtnLbl = region
                         break
                     end
                 end
@@ -3403,13 +3455,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         end
     end
     local function UpdateActivateBtn()
-        local off = BossFramesDisabled()
+        local offset = BossFramesDisabled()
         if activateBtnLbl then
             activateBtnLbl:SetText(PreviewLabel())
         end
         if activateBtn then
-            activateBtn:SetAlpha(off and 0.4 or 1)
-            activateBtn:EnableMouse(not off)
+            activateBtn:SetAlpha(offset and 0.4 or 1)
+            activateBtn:EnableMouse(not offset)
         end
     end
     UpdateActivateBtn()
@@ -3420,26 +3472,26 @@ function ns.UFO_BuildBossOptions(W, parent, y)
     -- simpleRow/simpleBuffRow/bossAuraRow + bossAuraHeader are the Buffs and Debuffs section rows.
     local portraitRow, growthRow, simpleRow, simpleBuffRow, bossAuraRow, bossAuraHeader, bossCastHeader, castMainRow
     local function enableRow(Ww, pp, yy)
-        local isCUI = ns.GetUnitFrameSource("boss") == "cui"
+        local isCUI = mod.GetUnitFrameSource("boss") == "cui"
         local eh
         portraitRow, eh = Ww:DualRow(pp, yy, {
             type = "toggle",
             text = "Enable Boss Frames",
             getValue = function()
-                return db.profile.enabledFrames.boss ~= false
+                return saved.profile.enabledFrames.boss ~= false
             end,
             setValue = function(v)
-                db.profile.enabledFrames.boss = v
+                saved.profile.enabledFrames.boss = v
                 -- Force-stop the in-game preview when disabling boss frames;
                 -- it rides on the now-disabled frames and renders broken.
-                if not v and ns._bossPreviewActive and ns.SetBossPreview then
-                    ns.SetBossPreview(false)
+                if not v and mod._bossPreviewActive and mod.SetBossPreview then
+                    mod.SetBossPreview(false)
                 end
                 -- Live apply on the spawned CUI frames (unit-watch register/
                 -- unregister). Frames never spawned this session no-op here
                 -- and hit the reload prompt below instead.
-                if ns.UF_SetBossFramesActive then
-                    ns.UF_SetBossFramesActive(v)
+                if mod.UF_SetBossFramesActive then
+                    mod.UF_SetBossFramesActive(v)
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
@@ -3449,27 +3501,27 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             type = "toggle",
             text = "Show Portrait",
             getValue = function()
-                return CludesUI.BlizzStyle.Get("unitframes") or db.profile.boss.showPortrait ~= false
+                return CludesUI.BlizzStyle.Get("unitframes") or saved.profile.boss.showPortrait ~= false
             end,
             setValue = function(v)
-                db.profile.boss.showPortrait = v
+                saved.profile.boss.showPortrait = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
         if isCUI and not CludesUI._prebuilding then
-            AttachPortraitSideCog(portraitRow._rightRegion, db.profile.boss, false, "boss")
+            AttachPortraitSideCog(portraitRow._rightRegion, saved.profile.boss, false, "boss")
         end
         AttachFrameSourceCog(portraitRow._leftRegion, "boss", {
             onBeforeSet = function(v)
                 -- Force-stop the in-game preview when boss frames are no longer
                 -- CUI-owned; it rides on the real boss frames and renders broken.
-                if v ~= "cui" and ns._bossPreviewActive and ns.SetBossPreview then
-                    ns.SetBossPreview(false)
+                if v ~= "cui" and mod._bossPreviewActive and mod.SetBossPreview then
+                    mod.SetBossPreview(false)
                 end
             end,
         })
-        local total = eh
+        local sum = eh
         if isCUI then
             local castRow, ch = Ww:DualRow(
                 pp,
@@ -3480,10 +3532,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     values = { up = "Up", down = "Down" },
                     order = { "up", "down" },
                     getValue = function()
-                        return db.profile.boss.bossStackDirection or "down"
+                        return saved.profile.boss.bossStackDirection or "down"
                     end,
                     setValue = function(v)
-                        db.profile.boss.bossStackDirection = v
+                        saved.profile.boss.bossStackDirection = v
                         ReloadAndUpdate()
                     end,
                 },
@@ -3496,17 +3548,17 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     max = 200,
                     step = 1,
                     getValue = function()
-                        return math.abs(db.profile.bossSpacing or 80)
+                        return math.abs(saved.profile.bossSpacing or 80)
                     end,
                     setValue = function(v)
-                        db.profile.bossSpacing = v
+                        saved.profile.bossSpacing = v
                         ReloadAndUpdate()
                     end,
                 }
             )
-            total = total + ch
+            sum = sum + ch
         end
-        return portraitRow, total
+        return portraitRow, sum
     end
 
     local function bossAfterSize(Ww, pp, yy)
@@ -3521,15 +3573,15 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- Raw key checks deadlock: defaults hold simpleDebuffs="left" alongside
         -- debuffAnchor="bottomleft", locking BOTH the Simple dropdown (raw anchor not none) and the Location dropdown (simple active) at once.
         local function BossDebuffLocationActive()
-            local s = db.profile.boss
-            if ns.GetBossSimpleDebuffMode(s) ~= "none" then
+            local s = saved.profile.boss
+            if mod.GetBossSimpleDebuffMode(s) ~= "none" then
                 return false
             end
             return (s.debuffAnchor or "bottomleft") ~= "none"
         end
         local function BossBuffLocationActive()
-            local s = db.profile.boss
-            if ns.GetBossSimpleBuffMode(s) ~= "none" then
+            local s = saved.profile.boss
+            if mod.GetBossSimpleBuffMode(s) ~= "none" then
                 return false
             end
             if s.showBuffs == false then
@@ -3543,12 +3595,12 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- four Location/Simple setters capture this BEFORE writing and force a full
         -- rebuild on change: any of them can flip EITHER row (collision pushes, SwapAuraSlot displacing the other anchor, simple forcing showBuffs/debuffAnchor).
         local function BossBuffRowShown()
-            local p = db.profile.boss
-            return ns.GetBossSimpleBuffMode(p) == "none" and p.showBuffs ~= false
+            local p = saved.profile.boss
+            return mod.GetBossSimpleBuffMode(p) == "none" and p.showBuffs ~= false
         end
         local function BossDebuffRowShown()
-            local p = db.profile.boss
-            return ns.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") ~= "none"
+            local p = saved.profile.boss
+            return mod.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") ~= "none"
         end
         local function BossAuraRowsState()
             return tostring(BossBuffRowShown()) .. "/" .. tostring(BossDebuffRowShown())
@@ -3559,8 +3611,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- the frame height, overriding Buffs Location + Buff Size while active.
         local simpleBuffTextOff = function()
             return BossBuffLocationActive()
-                or ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
-                or not db.profile.boss.simpleBuffShowCooldownText
+                or mod.GetBossSimpleBuffMode(saved.profile.boss) == "none"
+                or not saved.profile.boss.simpleBuffShowCooldownText
         end
         simpleBuffRow, hh = Ww:DualRow(pp, yy, {
             type = "segmented",
@@ -3574,24 +3626,24 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             values = { none = "None", left = "Left", right = "Right" },
             order = { "none", "left", "right" },
             getValue = function()
-                return ns.GetBossSimpleBuffMode(db.profile.boss)
+                return mod.GetBossSimpleBuffMode(saved.profile.boss)
             end,
             setValue = function(v)
                 local prevState = BossAuraRowsState()
-                db.profile.boss.simpleBuffs = v
+                saved.profile.boss.simpleBuffs = v
                 if v ~= "none" then
                     -- Same-side collision: if Simple Debuff Display occupies this
                     -- side, push it off (set to None) so they never overlap.
-                    if ns.GetBossSimpleDebuffMode(db.profile.boss) == v then
-                        db.profile.boss.simpleDebuffs = "none"
+                    if mod.GetBossSimpleDebuffMode(saved.profile.boss) == v then
+                        saved.profile.boss.simpleDebuffs = "none"
                     end
                     -- Selecting a side takes over from the normal Buffs
                     -- Location, so force that setting to None.
-                    db.profile.boss.showBuffs = false
+                    saved.profile.boss.showBuffs = false
                 end
                 ReloadAndUpdate()
-                if ns.RefreshBossPreviewDebuffs then
-                    ns.RefreshBossPreviewDebuffs()
+                if mod.RefreshBossPreviewDebuffs then
+                    mod.RefreshBossPreviewDebuffs()
                 end
                 if BossAuraRowsState() ~= prevState then
                     CludesUI:RefreshPage(true)
@@ -3609,10 +3661,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             disabled = simpleBuffTextOff,
             disabledTooltip = "Show Duration (Inside Cog)",
             getValue = function()
-                return db.profile.boss.simpleBuffCooldownTextSize or 14
+                return saved.profile.boss.simpleBuffCooldownTextSize or 14
             end,
             setValue = function(v)
-                db.profile.boss.simpleBuffCooldownTextSize = v
+                saved.profile.boss.simpleBuffCooldownTextSize = v
                 ReloadAndUpdate()
             end,
         })
@@ -3625,7 +3677,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             local leftRgn = simpleBuffRow._leftRegion
             CludesUI.BuildInlineCog(leftRgn, {
                 disabled = function()
-                    return ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
+                    return mod.GetBossSimpleBuffMode(saved.profile.boss) == "none"
                 end,
                 disabledTooltip = "Simple Buff Display",
                 title = "Simple Buff Position",
@@ -3639,15 +3691,15 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         min = 1,
                         max = 20,
                         step = 1,
-                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
                         get = function()
-                            return db.profile.boss.maxBuffs or 4
+                            return saved.profile.boss.maxBuffs or 4
                         end,
                         set = function(v)
-                            db.profile.boss.maxBuffs = v
+                            saved.profile.boss.maxBuffs = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -3660,13 +3712,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 20,
                         step = 1,
                         get = function()
-                            return db.profile.boss.buffMaxPerRow or db.profile.boss.maxBuffs or 4
+                            return saved.profile.boss.buffMaxPerRow or saved.profile.boss.maxBuffs or 4
                         end,
                         set = function(v)
-                            db.profile.boss.buffMaxPerRow = v
+                            saved.profile.boss.buffMaxPerRow = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -3677,14 +3729,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 200,
                         step = 1,
                         get = function()
-                            local x = ns.GetBossSimpleBuffOffset(db.profile.boss)
-                            return x
+                            local posX = mod.GetBossSimpleBuffOffset(saved.profile.boss)
+                            return posX
                         end,
                         set = function(v)
-                            db.profile.boss.simpleBuffOffsetX = v
+                            saved.profile.boss.simpleBuffOffsetX = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -3695,14 +3747,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 200,
                         step = 1,
                         get = function()
-                            local _, y = ns.GetBossSimpleBuffOffset(db.profile.boss)
-                            return y
+                            local _, posY = mod.GetBossSimpleBuffOffset(saved.profile.boss)
+                            return posY
                         end,
                         set = function(v)
-                            db.profile.boss.simpleBuffOffsetY = v
+                            saved.profile.boss.simpleBuffOffsetY = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -3715,13 +3767,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 10,
                         step = 1,
                         get = function()
-                            return db.profile.boss.simpleBuffSpacing or 1
+                            return saved.profile.boss.simpleBuffSpacing or 1
                         end,
                         set = function(v)
-                            db.profile.boss.simpleBuffSpacing = v
+                            saved.profile.boss.simpleBuffSpacing = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -3735,128 +3787,125 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- Inline Duration + Stack swatches mirroring the regular Buff Text Size
             -- swatches (same keys); greyed + disabled on this row cog's condition.
             local buffOff = function()
-                return BossBuffLocationActive() or ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
+                return BossBuffLocationActive() or mod.GetBossSimpleBuffMode(saved.profile.boss) == "none"
             end
-            CludesUI.BuildInlineCog(
-                rightRgn,
-                {
-                    disabled = buffOff,
-                    disabledTooltip = "Simple Buff Display",
-                    title = "Duration & Stack",
-                    rows = {
-                        {
-                            type = "toggle",
-                            label = "Show Duration",
-                            get = function()
-                                return db.profile.boss.simpleBuffShowCooldownText
-                            end,
-                            set = function(v)
-                                db.profile.boss.simpleBuffShowCooldownText = v
-                                ReloadAndUpdate()
-                                CludesUI:RefreshPage()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Duration X",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.simpleBuffCooldownTextOffsetX or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.simpleBuffCooldownTextOffsetX = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Duration Y",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.simpleBuffCooldownTextOffsetY or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.simpleBuffCooldownTextOffsetY = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Stack Size",
-                            min = 6,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.buffStackTextSize or 14
-                            end,
-                            set = function(v)
-                                db.profile.boss.buffStackTextSize = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "dropdown",
-                            label = "Stack Position",
-                            values = {
-                                bottomright = "Bottom Right",
-                                bottomleft = "Bottom Left",
-                                topright = "Top Right",
-                                topleft = "Top Left",
-                                center = "Center",
-                            },
-                            order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                            get = function()
-                                return db.profile.boss.buffStackTextPosition or "bottomright"
-                            end,
-                            set = function(v)
-                                db.profile.boss.buffStackTextPosition = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Stack X",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.buffStackTextOffsetX or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.buffStackTextOffsetX = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Stack Y",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.buffStackTextOffsetY or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.buffStackTextOffsetY = v
-                                ReloadAndUpdate()
-                            end,
-                        },
+            CludesUI.BuildInlineCog(rightRgn, {
+                disabled = buffOff,
+                disabledTooltip = "Simple Buff Display",
+                title = "Duration & Stack",
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Show Duration",
+                        get = function()
+                            return saved.profile.boss.simpleBuffShowCooldownText
+                        end,
+                        set = function(v)
+                            saved.profile.boss.simpleBuffShowCooldownText = v
+                            ReloadAndUpdate()
+                            CludesUI:RefreshPage()
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "slider",
+                        label = "Duration X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.simpleBuffCooldownTextOffsetX or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.simpleBuffCooldownTextOffsetX = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Duration Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.simpleBuffCooldownTextOffsetY or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.simpleBuffCooldownTextOffsetY = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Stack Size",
+                        min = 6,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.buffStackTextSize or 14
+                        end,
+                        set = function(v)
+                            saved.profile.boss.buffStackTextSize = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Stack Position",
+                        values = {
+                            bottomright = "Bottom Right",
+                            bottomleft = "Bottom Left",
+                            topright = "Top Right",
+                            topleft = "Top Left",
+                            center = "Center",
+                        },
+                        order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                        get = function()
+                            return saved.profile.boss.buffStackTextPosition or "bottomright"
+                        end,
+                        set = function(v)
+                            saved.profile.boss.buffStackTextPosition = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Stack X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.buffStackTextOffsetX or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.buffStackTextOffsetX = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Stack Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.buffStackTextOffsetY or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.buffStackTextOffsetY = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                },
+            })
             do
                 local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = db.profile.boss.buffCooldownTextColor
+                    local c = saved.profile.boss.buffCooldownTextColor
                     if c then
                         return c.r, c.g, c.b
                     end
                     return 1, 1, 1
                 end, function(r, g, b)
-                    db.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
+                    saved.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:HookScript("OnEnter", function()
@@ -3865,7 +3914,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 sw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
                 local function apply()
                     upd()
@@ -3878,13 +3927,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             end
             do
                 local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = db.profile.boss.buffStackTextColor
+                    local c = saved.profile.boss.buffStackTextColor
                     if c then
                         return c.r, c.g, c.b
                     end
                     return 1, 1, 1
                 end, function(r, g, b)
-                    db.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
+                    saved.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:HookScript("OnEnter", function()
@@ -3893,7 +3942,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 sw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
                 local function apply()
                     upd()
@@ -3915,8 +3964,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
 
         local simpleTextOff = function()
             return BossDebuffLocationActive()
-                or ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
-                or not db.profile.boss.simpleDebuffShowCooldownText
+                or mod.GetBossSimpleDebuffMode(saved.profile.boss) == "none"
+                or not saved.profile.boss.simpleDebuffShowCooldownText
         end
         simpleRow, hh = Ww:DualRow(pp, yy, {
             type = "segmented",
@@ -3930,24 +3979,24 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             values = { none = "None", left = "Left", right = "Right" },
             order = { "none", "left", "right" },
             getValue = function()
-                return ns.GetBossSimpleDebuffMode(db.profile.boss)
+                return mod.GetBossSimpleDebuffMode(saved.profile.boss)
             end,
             setValue = function(v)
                 local prevState = BossAuraRowsState()
-                db.profile.boss.simpleDebuffs = v
+                saved.profile.boss.simpleDebuffs = v
                 if v ~= "none" then
                     -- Same-side collision: if Simple Buff Display occupies this
                     -- side, push it off (set to None) so they never overlap.
-                    if ns.GetBossSimpleBuffMode(db.profile.boss) == v then
-                        db.profile.boss.simpleBuffs = "none"
+                    if mod.GetBossSimpleBuffMode(saved.profile.boss) == v then
+                        saved.profile.boss.simpleBuffs = "none"
                     end
                     -- Selecting a side takes over from the normal Debuffs
                     -- Location, so force that setting to None.
-                    db.profile.boss.debuffAnchor = "none"
+                    saved.profile.boss.debuffAnchor = "none"
                 end
                 ReloadAndUpdate()
-                if ns.RefreshBossPreviewDebuffs then
-                    ns.RefreshBossPreviewDebuffs()
+                if mod.RefreshBossPreviewDebuffs then
+                    mod.RefreshBossPreviewDebuffs()
                 end
                 if BossAuraRowsState() ~= prevState then
                     CludesUI:RefreshPage(true)
@@ -3965,10 +4014,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             disabled = simpleTextOff,
             disabledTooltip = "Show Duration (Inside Cog)",
             getValue = function()
-                return db.profile.boss.simpleDebuffCooldownTextSize or 14
+                return saved.profile.boss.simpleDebuffCooldownTextSize or 14
             end,
             setValue = function(v)
-                db.profile.boss.simpleDebuffCooldownTextSize = v
+                saved.profile.boss.simpleDebuffCooldownTextSize = v
                 ReloadAndUpdate()
             end,
         })
@@ -3982,7 +4031,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             local leftRgn = simpleRow._leftRegion
             CludesUI.BuildInlineCog(leftRgn, {
                 disabled = function()
-                    return ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
+                    return mod.GetBossSimpleDebuffMode(saved.profile.boss) == "none"
                 end,
                 disabledTooltip = "Simple Debuff Display",
                 title = "Simple Debuff Position",
@@ -3996,20 +4045,20 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         min = 1,
                         max = 20,
                         step = 1,
-                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
                         get = function()
-                            return db.profile.boss.maxDebuffs or 10
+                            return saved.profile.boss.maxDebuffs or 10
                         end,
                         set = function(v)
-                            db.profile.boss.maxDebuffs = v
+                            saved.profile.boss.maxDebuffs = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
-                    ns.UFO_MaxImportantRow(function()
-                        return db.profile.boss
+                    mod.UFO_MaxImportantRow(function()
+                        return saved.profile.boss
                     end, ReloadAndUpdate, 20, 10),
                     -- Shares the boss debuffMaxPerRow key with Debuffs Location
                     -- (mutually exclusive modes), like Max Count above.
@@ -4020,13 +4069,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 20,
                         step = 1,
                         get = function()
-                            return db.profile.boss.debuffMaxPerRow or db.profile.boss.maxDebuffs or 10
+                            return saved.profile.boss.debuffMaxPerRow or saved.profile.boss.maxDebuffs or 10
                         end,
                         set = function(v)
-                            db.profile.boss.debuffMaxPerRow = v
+                            saved.profile.boss.debuffMaxPerRow = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -4037,14 +4086,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 200,
                         step = 1,
                         get = function()
-                            local x = ns.GetBossSimpleDebuffOffset(db.profile.boss)
-                            return x
+                            local posX = mod.GetBossSimpleDebuffOffset(saved.profile.boss)
+                            return posX
                         end,
                         set = function(v)
-                            db.profile.boss.simpleDebuffOffsetX = v
+                            saved.profile.boss.simpleDebuffOffsetX = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -4055,14 +4104,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 200,
                         step = 1,
                         get = function()
-                            local _, y = ns.GetBossSimpleDebuffOffset(db.profile.boss)
-                            return y
+                            local _, posY = mod.GetBossSimpleDebuffOffset(saved.profile.boss)
+                            return posY
                         end,
                         set = function(v)
-                            db.profile.boss.simpleDebuffOffsetY = v
+                            saved.profile.boss.simpleDebuffOffsetY = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -4075,13 +4124,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 10,
                         step = 1,
                         get = function()
-                            return db.profile.boss.simpleDebuffSpacing or 1
+                            return saved.profile.boss.simpleDebuffSpacing or 1
                         end,
                         set = function(v)
-                            db.profile.boss.simpleDebuffSpacing = v
+                            saved.profile.boss.simpleDebuffSpacing = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -4096,128 +4145,125 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- Size swatches (same keys); greyed + disabled on this row cog's
             -- condition.
             local debuffOff = function()
-                return BossDebuffLocationActive() or ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
+                return BossDebuffLocationActive() or mod.GetBossSimpleDebuffMode(saved.profile.boss) == "none"
             end
-            CludesUI.BuildInlineCog(
-                rightRgn,
-                {
-                    disabled = debuffOff,
-                    disabledTooltip = "Simple Debuff Display",
-                    title = "Duration & Stack",
-                    rows = {
-                        {
-                            type = "toggle",
-                            label = "Show Duration",
-                            get = function()
-                                return db.profile.boss.simpleDebuffShowCooldownText
-                            end,
-                            set = function(v)
-                                db.profile.boss.simpleDebuffShowCooldownText = v
-                                ReloadAndUpdate()
-                                CludesUI:RefreshPage()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Duration X",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.simpleDebuffCooldownTextOffsetX or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.simpleDebuffCooldownTextOffsetX = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Duration Y",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.simpleDebuffCooldownTextOffsetY or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.simpleDebuffCooldownTextOffsetY = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Stack Size",
-                            min = 6,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.debuffStackTextSize or 14
-                            end,
-                            set = function(v)
-                                db.profile.boss.debuffStackTextSize = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "dropdown",
-                            label = "Stack Position",
-                            values = {
-                                bottomright = "Bottom Right",
-                                bottomleft = "Bottom Left",
-                                topright = "Top Right",
-                                topleft = "Top Left",
-                                center = "Center",
-                            },
-                            order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                            get = function()
-                                return db.profile.boss.debuffStackTextPosition or "bottomright"
-                            end,
-                            set = function(v)
-                                db.profile.boss.debuffStackTextPosition = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Stack X",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.debuffStackTextOffsetX or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.debuffStackTextOffsetX = v
-                                ReloadAndUpdate()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Stack Y",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return db.profile.boss.debuffStackTextOffsetY or 0
-                            end,
-                            set = function(v)
-                                db.profile.boss.debuffStackTextOffsetY = v
-                                ReloadAndUpdate()
-                            end,
-                        },
+            CludesUI.BuildInlineCog(rightRgn, {
+                disabled = debuffOff,
+                disabledTooltip = "Simple Debuff Display",
+                title = "Duration & Stack",
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Show Duration",
+                        get = function()
+                            return saved.profile.boss.simpleDebuffShowCooldownText
+                        end,
+                        set = function(v)
+                            saved.profile.boss.simpleDebuffShowCooldownText = v
+                            ReloadAndUpdate()
+                            CludesUI:RefreshPage()
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "slider",
+                        label = "Duration X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.simpleDebuffCooldownTextOffsetX or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.simpleDebuffCooldownTextOffsetX = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Duration Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.simpleDebuffCooldownTextOffsetY or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.simpleDebuffCooldownTextOffsetY = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Stack Size",
+                        min = 6,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.debuffStackTextSize or 14
+                        end,
+                        set = function(v)
+                            saved.profile.boss.debuffStackTextSize = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Stack Position",
+                        values = {
+                            bottomright = "Bottom Right",
+                            bottomleft = "Bottom Left",
+                            topright = "Top Right",
+                            topleft = "Top Left",
+                            center = "Center",
+                        },
+                        order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                        get = function()
+                            return saved.profile.boss.debuffStackTextPosition or "bottomright"
+                        end,
+                        set = function(v)
+                            saved.profile.boss.debuffStackTextPosition = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Stack X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.debuffStackTextOffsetX or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.debuffStackTextOffsetX = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Stack Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return saved.profile.boss.debuffStackTextOffsetY or 0
+                        end,
+                        set = function(v)
+                            saved.profile.boss.debuffStackTextOffsetY = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                },
+            })
             do
                 local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = db.profile.boss.debuffCooldownTextColor
+                    local c = saved.profile.boss.debuffCooldownTextColor
                     if c then
                         return c.r, c.g, c.b
                     end
                     return 1, 1, 1
                 end, function(r, g, b)
-                    db.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
+                    saved.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:HookScript("OnEnter", function()
@@ -4226,7 +4272,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 sw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
                 local function apply()
                     upd()
@@ -4239,13 +4285,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             end
             do
                 local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = db.profile.boss.debuffStackTextColor
+                    local c = saved.profile.boss.debuffStackTextColor
                     if c then
                         return c.r, c.g, c.b
                     end
                     return 1, 1, 1
                 end, function(r, g, b)
-                    db.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
+                    saved.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:HookScript("OnEnter", function()
@@ -4254,7 +4300,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 sw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
                 local function apply()
                     upd()
@@ -4274,15 +4320,15 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             values = buffAnchorValues,
             order = buffAnchorOrder,
             disabled = function()
-                return ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none"
+                return mod.GetBossSimpleBuffMode(saved.profile.boss) ~= "none"
             end,
             disabledTooltip = "Simple Buff Display",
             requireState = "disabled",
             getValue = function()
-                local s = db.profile.boss
+                local s = saved.profile.boss
                 -- Forced to None while Simple Buff Display is active (it takes
                 -- over placement); the setter also stores None (showBuffs=false).
-                if ns.GetBossSimpleBuffMode(s) ~= "none" then
+                if mod.GetBossSimpleBuffMode(s) ~= "none" then
                     return "none"
                 end
                 if s.showBuffs == false then
@@ -4292,7 +4338,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             end,
             setValue = function(v)
                 local prevState = BossAuraRowsState()
-                local s = db.profile.boss
+                local s = saved.profile.boss
                 if v == "none" then
                     s.showBuffs = false
                 else
@@ -4300,8 +4346,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     SwapAuraSlot(s, "buffAnchor", v)
                 end
                 ReloadAndUpdate()
-                if ns.RefreshBossPreviewDebuffs then
-                    ns.RefreshBossPreviewDebuffs()
+                if mod.RefreshBossPreviewDebuffs then
+                    mod.RefreshBossPreviewDebuffs()
                 end
                 if BossAuraRowsState() ~= prevState then
                     CludesUI:RefreshPage(true)
@@ -4315,24 +4361,24 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             values = buffAnchorValues,
             order = buffAnchorOrder,
             disabled = function()
-                return ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none"
+                return mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none"
             end,
             disabledTooltip = "Simple Debuff Display",
             requireState = "disabled",
             getValue = function()
                 -- Forced to None while Simple Debuff Display is active (it
                 -- takes over placement); the setter also stores None.
-                if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then
+                if mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none" then
                     return "none"
                 end
-                return db.profile.boss.debuffAnchor or "bottomleft"
+                return saved.profile.boss.debuffAnchor or "bottomleft"
             end,
             setValue = function(v)
                 local prevState = BossAuraRowsState()
-                SwapAuraSlot(db.profile.boss, "debuffAnchor", v)
+                SwapAuraSlot(saved.profile.boss, "debuffAnchor", v)
                 ReloadAndUpdate()
-                if ns.RefreshBossPreviewDebuffs then
-                    ns.RefreshBossPreviewDebuffs()
+                if mod.RefreshBossPreviewDebuffs then
+                    mod.RefreshBossPreviewDebuffs()
                 end
                 -- Full rebuild when either aura row's visibility flipped;
                 -- otherwise the fast refresh keeps dependent disabled
@@ -4351,20 +4397,20 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- frames + both previews. Debuff Size (and its cog) disable while Simple
         -- Debuff Display frame-matches the size, or when no debuffs show at all (Simple None + Location None).
         local bossDebuffSizeOff = function()
-            local p = db.profile.boss
-            return ns.GetBossSimpleDebuffMode(p) ~= "none" or (p.debuffAnchor or "bottomleft") == "none"
+            local p = saved.profile.boss
+            return mod.GetBossSimpleDebuffMode(p) ~= "none" or (p.debuffAnchor or "bottomleft") == "none"
         end
         -- Buff Size (and its directions cog) are disabled while Simple Buff
         -- Display frame-matches the size, or when buffs are hidden (Buffs
         -- Location None). Shared so the cog matches.
         local bossBuffSizeOff = function()
-            local p = db.profile.boss
-            return ns.GetBossSimpleBuffMode(p) ~= "none" or p.showBuffs == false
+            local p = saved.profile.boss
+            return mod.GetBossSimpleBuffMode(p) ~= "none" or p.showBuffs == false
         end
         -- Buff Text Size gates on the "Show Duration" toggle inside its
         -- Duration & Stack cog (mirrors Debuff Text Size on the row below).
         local buffTextOff = function()
-            return not BossBuffLocationActive() or not db.profile.boss.buffShowCooldownText
+            return not BossBuffLocationActive() or not saved.profile.boss.buffShowCooldownText
         end
         -- Buff Size | Buff Text Size row: HIDDEN entirely while the buff
         -- column's effective Location is None (see BossBuffRowShown; the
@@ -4379,20 +4425,20 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 step = 1,
                 disabled = bossBuffSizeOff,
                 disabledTooltip = function()
-                    if ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" then
+                    if mod.GetBossSimpleBuffMode(saved.profile.boss) ~= "none" then
                         return CludesUI.DisabledTooltip("Simple Buff Display", "disabled")
                     end
                     return CludesUI.DisabledTooltip("Buffs Location")
                 end,
                 rawTooltip = true,
                 getValue = function()
-                    return db.profile.boss.buffSize or 22
+                    return saved.profile.boss.buffSize or 22
                 end,
                 setValue = function(v)
-                    db.profile.boss.buffSize = v
+                    saved.profile.boss.buffSize = v
                     ReloadAndUpdate()
-                    if ns.RefreshBossPreviewDebuffs then
-                        ns.RefreshBossPreviewDebuffs()
+                    if mod.RefreshBossPreviewDebuffs then
+                        mod.RefreshBossPreviewDebuffs()
                     end
                 end,
             }, {
@@ -4405,10 +4451,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 disabled = buffTextOff,
                 disabledTooltip = "Show Duration (Inside Cog)",
                 getValue = function()
-                    return db.profile.boss.buffCooldownTextSize or 10
+                    return saved.profile.boss.buffCooldownTextSize or 10
                 end,
                 setValue = function(v)
-                    db.profile.boss.buffCooldownTextSize = v
+                    saved.profile.boss.buffCooldownTextSize = v
                     ReloadAndUpdate()
                 end,
             })
@@ -4425,13 +4471,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             max = 200,
                             step = 1,
                             get = function()
-                                return db.profile.boss.buffOffsetX or 0
+                                return saved.profile.boss.buffOffsetX or 0
                             end,
                             set = function(v)
-                                db.profile.boss.buffOffsetX = v
+                                saved.profile.boss.buffOffsetX = v
                                 ReloadAndUpdate()
-                                if ns.RefreshBossPreviewDebuffs then
-                                    ns.RefreshBossPreviewDebuffs()
+                                if mod.RefreshBossPreviewDebuffs then
+                                    mod.RefreshBossPreviewDebuffs()
                                 end
                             end,
                         },
@@ -4442,13 +4488,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             max = 200,
                             step = 1,
                             get = function()
-                                return db.profile.boss.buffOffsetY or 0
+                                return saved.profile.boss.buffOffsetY or 0
                             end,
                             set = function(v)
-                                db.profile.boss.buffOffsetY = v
+                                saved.profile.boss.buffOffsetY = v
                                 ReloadAndUpdate()
-                                if ns.RefreshBossPreviewDebuffs then
-                                    ns.RefreshBossPreviewDebuffs()
+                                if mod.RefreshBossPreviewDebuffs then
+                                    mod.RefreshBossPreviewDebuffs()
                                 end
                             end,
                         },
@@ -4461,13 +4507,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             max = 10,
                             step = 1,
                             get = function()
-                                return db.profile.boss.buffSpacing or 1
+                                return saved.profile.boss.buffSpacing or 1
                             end,
                             set = function(v)
-                                db.profile.boss.buffSpacing = v
+                                saved.profile.boss.buffSpacing = v
                                 ReloadAndUpdate()
-                                if ns.RefreshBossPreviewDebuffs then
-                                    ns.RefreshBossPreviewDebuffs()
+                                if mod.RefreshBossPreviewDebuffs then
+                                    mod.RefreshBossPreviewDebuffs()
                                 end
                             end,
                         },
@@ -4477,169 +4523,163 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             if not CludesUI._prebuilding then -- Icon Zoom cog on Buff Size (gated only on buffs hidden, so it
                 -- stays adjustable in Simple Buff Display, where zoom still applies)
                 local bossBuffZoomOff = function()
-                    return db.profile.boss.showBuffs == false
+                    return saved.profile.boss.showBuffs == false
                 end
-                CludesUI.BuildInlineCog(
-                    bossAuraSizeRow._leftRegion,
-                    {
-                        disabled = bossBuffZoomOff,
-                        disabledTooltip = "Buffs Location",
-                        title = "Icon Zoom",
-                        rows = {
-                            {
-                                type = "slider",
-                                label = "Zoom",
-                                min = 0,
-                                max = 0.20,
-                                step = 0.01,
-                                get = function()
-                                    return db.profile.boss.buffIconZoom or 0.07
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffIconZoom = v
-                                    ReloadAndUpdate()
-                                    if ns.RefreshBossPreviewDebuffs then
-                                        ns.RefreshBossPreviewDebuffs()
-                                    end
-                                end,
-                            },
+                CludesUI.BuildInlineCog(bossAuraSizeRow._leftRegion, {
+                    disabled = bossBuffZoomOff,
+                    disabledTooltip = "Buffs Location",
+                    title = "Icon Zoom",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Zoom",
+                            min = 0,
+                            max = 0.20,
+                            step = 0.01,
+                            get = function()
+                                return saved.profile.boss.buffIconZoom or 0.07
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffIconZoom = v
+                                ReloadAndUpdate()
+                                if mod.RefreshBossPreviewDebuffs then
+                                    mod.RefreshBossPreviewDebuffs()
+                                end
+                            end,
                         },
-                    }
-                )
+                    },
+                })
             end
             -- Buff Text Size cog + swatches (right slot): Show Duration +
             -- Duration X/Y + Stack, with inline Duration/Stack text-color
             -- swatches; greyed on the same condition as the cog.
             if not CludesUI._prebuilding then
-                local PP = CludesUI.PanelPP
+                local Pix = CludesUI.PanelPP
                 local rightRgn = bossAuraSizeRow._rightRegion
                 local buffOff = function()
                     return not BossBuffLocationActive()
                 end
-                CludesUI.BuildInlineCog(
-                    rightRgn,
-                    {
-                        disabled = buffOff,
-                        disabledTooltip = "Buffs Location",
-                        title = "Duration & Stack",
-                        rows = {
-                            {
-                                type = "toggle",
-                                label = "Show Duration",
-                                get = function()
-                                    return db.profile.boss.buffShowCooldownText
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffShowCooldownText = v
-                                    ReloadAndUpdate()
-                                    CludesUI:RefreshPage()
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Duration X",
-                                min = -100,
-                                max = 100,
-                                step = 1,
-                                get = function()
-                                    return db.profile.boss.buffCooldownTextOffsetX or 0
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffCooldownTextOffsetX = v
-                                    ReloadAndUpdate()
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Duration Y",
-                                min = -100,
-                                max = 100,
-                                step = 1,
-                                get = function()
-                                    return db.profile.boss.buffCooldownTextOffsetY or 0
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffCooldownTextOffsetY = v
-                                    ReloadAndUpdate()
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Stack Size",
-                                min = 6,
-                                max = 100,
-                                step = 1,
-                                get = function()
-                                    return db.profile.boss.buffStackTextSize or 14
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffStackTextSize = v
-                                    ReloadAndUpdate()
-                                end,
-                            },
-                            {
-                                type = "dropdown",
-                                label = "Stack Position",
-                                values = {
-                                    bottomright = "Bottom Right",
-                                    bottomleft = "Bottom Left",
-                                    topright = "Top Right",
-                                    topleft = "Top Left",
-                                    center = "Center",
-                                },
-                                order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                                get = function()
-                                    return db.profile.boss.buffStackTextPosition or "bottomright"
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffStackTextPosition = v
-                                    ReloadAndUpdate()
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Stack X",
-                                min = -100,
-                                max = 100,
-                                step = 1,
-                                get = function()
-                                    return db.profile.boss.buffStackTextOffsetX or 0
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffStackTextOffsetX = v
-                                    ReloadAndUpdate()
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Stack Y",
-                                min = -100,
-                                max = 100,
-                                step = 1,
-                                get = function()
-                                    return db.profile.boss.buffStackTextOffsetY or 0
-                                end,
-                                set = function(v)
-                                    db.profile.boss.buffStackTextOffsetY = v
-                                    ReloadAndUpdate()
-                                end,
-                            },
+                CludesUI.BuildInlineCog(rightRgn, {
+                    disabled = buffOff,
+                    disabledTooltip = "Buffs Location",
+                    title = "Duration & Stack",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Show Duration",
+                            get = function()
+                                return saved.profile.boss.buffShowCooldownText
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffShowCooldownText = v
+                                ReloadAndUpdate()
+                                CludesUI:RefreshPage()
+                            end,
                         },
-                    }
-                )
+                        {
+                            type = "slider",
+                            label = "Duration X",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return saved.profile.boss.buffCooldownTextOffsetX or 0
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffCooldownTextOffsetX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Duration Y",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return saved.profile.boss.buffCooldownTextOffsetY or 0
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffCooldownTextOffsetY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack Size",
+                            min = 6,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return saved.profile.boss.buffStackTextSize or 14
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffStackTextSize = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "dropdown",
+                            label = "Stack Position",
+                            values = {
+                                bottomright = "Bottom Right",
+                                bottomleft = "Bottom Left",
+                                topright = "Top Right",
+                                topleft = "Top Left",
+                                center = "Center",
+                            },
+                            order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                            get = function()
+                                return saved.profile.boss.buffStackTextPosition or "bottomright"
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffStackTextPosition = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack X",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return saved.profile.boss.buffStackTextOffsetX or 0
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffStackTextOffsetX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack Y",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return saved.profile.boss.buffStackTextOffsetY or 0
+                            end,
+                            set = function(v)
+                                saved.profile.boss.buffStackTextOffsetY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                    },
+                })
                 do
                     local sw, upd = CludesUI.BuildColorSwatch(
                         rightRgn,
                         rightRgn:GetFrameLevel() + 5,
                         function()
-                            local c = db.profile.boss.buffCooldownTextColor
+                            local c = saved.profile.boss.buffCooldownTextColor
                             if c then
                                 return c.r, c.g, c.b
                             end
                             return 1, 1, 1
                         end,
                         function(r, g, b)
-                            db.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
+                            saved.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
                             ReloadAndUpdate()
                         end,
                         false,
@@ -4651,7 +4691,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     sw:HookScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
-                    PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                    Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                     rightRgn._lastInline = sw
                     local function apply()
                         upd()
@@ -4667,14 +4707,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         rightRgn,
                         rightRgn:GetFrameLevel() + 5,
                         function()
-                            local c = db.profile.boss.buffStackTextColor
+                            local c = saved.profile.boss.buffStackTextColor
                             if c then
                                 return c.r, c.g, c.b
                             end
                             return 1, 1, 1
                         end,
                         function(r, g, b)
-                            db.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
+                            saved.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
                             ReloadAndUpdate()
                         end,
                         false,
@@ -4686,7 +4726,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     sw:HookScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
-                    PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                    Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                     rightRgn._lastInline = sw
                     local function apply()
                         upd()
@@ -4705,7 +4745,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- dropdown (DebuffModeDropdownCfg; per-spell control through Tracked
         -- Auras), Buff Filter = the two-lane checkbox dropdown.
         do
-            local PP = CludesUI.PanelPP
+            local Pix = CludesUI.PanelPP
             local buffFilterItems, BUFF_FILTER_KEYS, BOSS_BUFF_NEG_SKEYS
             -- Non-player buff vocabulary is just these three (see
             -- the Main Frames list).
@@ -4749,7 +4789,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- debuff column's effective Location is None (BossDebuffRowShown; setters above force rebuild on flips).
             if BossDebuffRowShown() then
                 local debuffTextOff = function()
-                    return not BossDebuffLocationActive() or not db.profile.boss.debuffShowCooldownText
+                    return not BossDebuffLocationActive() or not saved.profile.boss.debuffShowCooldownText
                 end
                 local textSizeRow
                 textSizeRow, hh = Ww:DualRow(pp, yy, {
@@ -4760,20 +4800,20 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     step = 1,
                     disabled = bossDebuffSizeOff,
                     disabledTooltip = function()
-                        if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then
+                        if mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none" then
                             return CludesUI.DisabledTooltip("Simple Debuff Display", "disabled")
                         end
                         return CludesUI.DisabledTooltip("Debuffs Location")
                     end,
                     rawTooltip = true,
                     getValue = function()
-                        return db.profile.boss.debuffSize or 22
+                        return saved.profile.boss.debuffSize or 22
                     end,
                     setValue = function(v)
-                        db.profile.boss.debuffSize = v
+                        saved.profile.boss.debuffSize = v
                         ReloadAndUpdate()
-                        if ns.RefreshBossPreviewDebuffs then
-                            ns.RefreshBossPreviewDebuffs()
+                        if mod.RefreshBossPreviewDebuffs then
+                            mod.RefreshBossPreviewDebuffs()
                         end
                     end,
                 }, {
@@ -4786,10 +4826,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     disabled = debuffTextOff,
                     disabledTooltip = "Show Duration (Inside Cog)",
                     getValue = function()
-                        return db.profile.boss.debuffCooldownTextSize or 10
+                        return saved.profile.boss.debuffCooldownTextSize or 10
                     end,
                     setValue = function(v)
-                        db.profile.boss.debuffCooldownTextSize = v
+                        saved.profile.boss.debuffCooldownTextSize = v
                         ReloadAndUpdate()
                     end,
                 })
@@ -4806,13 +4846,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                                 max = 200,
                                 step = 1,
                                 get = function()
-                                    return db.profile.boss.debuffOffsetX or 0
+                                    return saved.profile.boss.debuffOffsetX or 0
                                 end,
                                 set = function(v)
-                                    db.profile.boss.debuffOffsetX = v
+                                    saved.profile.boss.debuffOffsetX = v
                                     ReloadAndUpdate()
-                                    if ns.RefreshBossPreviewDebuffs then
-                                        ns.RefreshBossPreviewDebuffs()
+                                    if mod.RefreshBossPreviewDebuffs then
+                                        mod.RefreshBossPreviewDebuffs()
                                     end
                                 end,
                             },
@@ -4823,13 +4863,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                                 max = 200,
                                 step = 1,
                                 get = function()
-                                    return db.profile.boss.debuffOffsetY or 0
+                                    return saved.profile.boss.debuffOffsetY or 0
                                 end,
                                 set = function(v)
-                                    db.profile.boss.debuffOffsetY = v
+                                    saved.profile.boss.debuffOffsetY = v
                                     ReloadAndUpdate()
-                                    if ns.RefreshBossPreviewDebuffs then
-                                        ns.RefreshBossPreviewDebuffs()
+                                    if mod.RefreshBossPreviewDebuffs then
+                                        mod.RefreshBossPreviewDebuffs()
                                     end
                                 end,
                             },
@@ -4842,13 +4882,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                                 max = 10,
                                 step = 1,
                                 get = function()
-                                    return db.profile.boss.debuffSpacing or 1
+                                    return saved.profile.boss.debuffSpacing or 1
                                 end,
                                 set = function(v)
-                                    db.profile.boss.debuffSpacing = v
+                                    saved.profile.boss.debuffSpacing = v
                                     ReloadAndUpdate()
-                                    if ns.RefreshBossPreviewDebuffs then
-                                        ns.RefreshBossPreviewDebuffs()
+                                    if mod.RefreshBossPreviewDebuffs then
+                                        mod.RefreshBossPreviewDebuffs()
                                     end
                                 end,
                             },
@@ -4857,35 +4897,32 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 end
                 if not CludesUI._prebuilding then -- Icon Zoom cog on Debuff Size
                     local bossDebuffZoomOff = function()
-                        return (db.profile.boss.debuffAnchor or "bottomleft") == "none"
+                        return (saved.profile.boss.debuffAnchor or "bottomleft") == "none"
                     end
-                    CludesUI.BuildInlineCog(
-                        textSizeRow._leftRegion,
-                        {
-                            disabled = bossDebuffZoomOff,
-                            disabledTooltip = "Debuffs Location",
-                            title = "Icon Zoom",
-                            rows = {
-                                {
-                                    type = "slider",
-                                    label = "Zoom",
-                                    min = 0,
-                                    max = 0.20,
-                                    step = 0.01,
-                                    get = function()
-                                        return db.profile.boss.debuffIconZoom or 0.07
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffIconZoom = v
-                                        ReloadAndUpdate()
-                                        if ns.RefreshBossPreviewDebuffs then
-                                            ns.RefreshBossPreviewDebuffs()
-                                        end
-                                    end,
-                                },
+                    CludesUI.BuildInlineCog(textSizeRow._leftRegion, {
+                        disabled = bossDebuffZoomOff,
+                        disabledTooltip = "Debuffs Location",
+                        title = "Icon Zoom",
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Zoom",
+                                min = 0,
+                                max = 0.20,
+                                step = 0.01,
+                                get = function()
+                                    return saved.profile.boss.debuffIconZoom or 0.07
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffIconZoom = v
+                                    ReloadAndUpdate()
+                                    if mod.RefreshBossPreviewDebuffs then
+                                        mod.RefreshBossPreviewDebuffs()
+                                    end
+                                end,
                             },
-                        }
-                    )
+                        },
+                    })
                 end
                 -- Debuff Text Size cog (right): Show Duration + Duration X/Y + Stack.
                 -- Disabled while Simple Debuff Display is active.
@@ -4897,117 +4934,114 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     local debuffOff = function()
                         return not BossDebuffLocationActive()
                     end
-                    CludesUI.BuildInlineCog(
-                        rightRgn,
-                        {
-                            disabled = debuffOff,
-                            disabledTooltip = "Debuffs Location",
-                            title = "Duration & Stack",
-                            rows = {
-                                {
-                                    type = "toggle",
-                                    label = "Show Duration",
-                                    get = function()
-                                        return db.profile.boss.debuffShowCooldownText
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffShowCooldownText = v
-                                        ReloadAndUpdate()
-                                        CludesUI:RefreshPage()
-                                    end,
-                                },
-                                {
-                                    type = "slider",
-                                    label = "Duration X",
-                                    min = -100,
-                                    max = 100,
-                                    step = 1,
-                                    get = function()
-                                        return db.profile.boss.debuffCooldownTextOffsetX or 0
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffCooldownTextOffsetX = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "slider",
-                                    label = "Duration Y",
-                                    min = -100,
-                                    max = 100,
-                                    step = 1,
-                                    get = function()
-                                        return db.profile.boss.debuffCooldownTextOffsetY or 0
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffCooldownTextOffsetY = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "slider",
-                                    label = "Stack Size",
-                                    min = 6,
-                                    max = 100,
-                                    step = 1,
-                                    get = function()
-                                        return db.profile.boss.debuffStackTextSize or 14
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffStackTextSize = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "dropdown",
-                                    label = "Stack Position",
-                                    values = {
-                                        bottomright = "Bottom Right",
-                                        bottomleft = "Bottom Left",
-                                        topright = "Top Right",
-                                        topleft = "Top Left",
-                                        center = "Center",
-                                    },
-                                    order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                                    get = function()
-                                        return db.profile.boss.debuffStackTextPosition or "bottomright"
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffStackTextPosition = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "slider",
-                                    label = "Stack X",
-                                    min = -100,
-                                    max = 100,
-                                    step = 1,
-                                    get = function()
-                                        return db.profile.boss.debuffStackTextOffsetX or 0
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffStackTextOffsetX = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "slider",
-                                    label = "Stack Y",
-                                    min = -100,
-                                    max = 100,
-                                    step = 1,
-                                    get = function()
-                                        return db.profile.boss.debuffStackTextOffsetY or 0
-                                    end,
-                                    set = function(v)
-                                        db.profile.boss.debuffStackTextOffsetY = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
+                    CludesUI.BuildInlineCog(rightRgn, {
+                        disabled = debuffOff,
+                        disabledTooltip = "Debuffs Location",
+                        title = "Duration & Stack",
+                        rows = {
+                            {
+                                type = "toggle",
+                                label = "Show Duration",
+                                get = function()
+                                    return saved.profile.boss.debuffShowCooldownText
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffShowCooldownText = v
+                                    ReloadAndUpdate()
+                                    CludesUI:RefreshPage()
+                                end,
                             },
-                        }
-                    )
+                            {
+                                type = "slider",
+                                label = "Duration X",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return saved.profile.boss.debuffCooldownTextOffsetX or 0
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffCooldownTextOffsetX = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Duration Y",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return saved.profile.boss.debuffCooldownTextOffsetY or 0
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffCooldownTextOffsetY = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Stack Size",
+                                min = 6,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return saved.profile.boss.debuffStackTextSize or 14
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffStackTextSize = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "dropdown",
+                                label = "Stack Position",
+                                values = {
+                                    bottomright = "Bottom Right",
+                                    bottomleft = "Bottom Left",
+                                    topright = "Top Right",
+                                    topleft = "Top Left",
+                                    center = "Center",
+                                },
+                                order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                                get = function()
+                                    return saved.profile.boss.debuffStackTextPosition or "bottomright"
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffStackTextPosition = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Stack X",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return saved.profile.boss.debuffStackTextOffsetX or 0
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffStackTextOffsetX = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Stack Y",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return saved.profile.boss.debuffStackTextOffsetY or 0
+                                end,
+                                set = function(v)
+                                    saved.profile.boss.debuffStackTextOffsetY = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                        },
+                    })
                     -- Disabled while Simple Debuff Display is active: simple mode
                     -- uses its own (simpleDebuff*) cooldown text, so the regular
                     -- debuff Duration & Stack controls do not apply.
@@ -5016,14 +5050,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             rightRgn,
                             rightRgn:GetFrameLevel() + 5,
                             function()
-                                local c = db.profile.boss.debuffCooldownTextColor
+                                local c = saved.profile.boss.debuffCooldownTextColor
                                 if c then
                                     return c.r, c.g, c.b
                                 end
                                 return 1, 1, 1
                             end,
                             function(r, g, b)
-                                db.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
+                                saved.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
                                 ReloadAndUpdate()
                             end,
                             false,
@@ -5035,7 +5069,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         sw:HookScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
-                        PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                        Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                         rightRgn._lastInline = sw
                         local function apply()
                             upd()
@@ -5051,14 +5085,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             rightRgn,
                             rightRgn:GetFrameLevel() + 5,
                             function()
-                                local c = db.profile.boss.debuffStackTextColor
+                                local c = saved.profile.boss.debuffStackTextColor
                                 if c then
                                     return c.r, c.g, c.b
                                 end
                                 return 1, 1, 1
                             end,
                             function(r, g, b)
-                                db.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
+                                saved.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
                                 ReloadAndUpdate()
                             end,
                             false,
@@ -5070,7 +5104,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         sw:HookScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
-                        PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                        Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                         rightRgn._lastInline = sw
                         local function apply()
                             upd()
@@ -5087,7 +5121,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- Built alongside the aura controls, then appended at the end
             -- of this section to keep border settings consistently last.
             local function AddBossAuraBorderSettings()
-                local B = db.profile.boss
+                local B = saved.profile.boss
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
                 borderRow, hh = Ww:DualRow(
@@ -5124,8 +5158,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                                 B.auraBorderSizePx = false
                             end
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                             -- The Width / Height Offset row exists only under a textured style.
                             CludesUI:RefreshPage(true)
@@ -5153,8 +5187,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             end,
                             apply = function()
                                 ReloadAndUpdate()
-                                if ns.RefreshBossPreviewDebuffs then
-                                    ns.RefreshBossPreviewDebuffs()
+                                if mod.RefreshBossPreviewDebuffs then
+                                    mod.RefreshBossPreviewDebuffs()
                                 end
                             end,
                         })
@@ -5194,8 +5228,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             end,
                             apply = function()
                                 ReloadAndUpdate()
-                                if ns.RefreshBossPreviewDebuffs then
-                                    ns.RefreshBossPreviewDebuffs()
+                                if mod.RefreshBossPreviewDebuffs then
+                                    mod.RefreshBossPreviewDebuffs()
                                 end
                             end,
                         })
@@ -5210,127 +5244,134 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     end
                 end
                 if not CludesUI._prebuilding then
-                    local rgn = borderRow._leftRegion
-                    local btn = CludesUI.BuildInlineCog(
-                        rgn,
-                        {
-                            title = "Border Options",
-                            rows = {
-                                {
-                                    type = "slider",
-                                    label = "Shift X",
-                                    min = -10,
-                                    max = 10,
-                                    step = 1,
-                                    get = function()
-                                        local v = B.auraBorderTextureShiftX
-                                        if v ~= nil then
-                                            return v
-                                        end
-                                        local _, _, x = CludesUI.GetBorderDefaults(
-                                            "unitframes",
-                                            B.auraBorderTexture or "solid",
-                                            B.auraBorderSize or 1
-                                        )
-                                        return x
-                                    end,
-                                    set = function(v)
-                                        B.auraBorderTextureShiftX = v == 0 and nil or v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "slider",
-                                    label = "Shift Y",
-                                    min = -10,
-                                    max = 10,
-                                    step = 1,
-                                    get = function()
-                                        local v = B.auraBorderTextureShiftY
-                                        if v ~= nil then
-                                            return v
-                                        end
-                                        local _, _, _, y = CludesUI.GetBorderDefaults(
-                                            "unitframes",
-                                            B.auraBorderTexture or "solid",
-                                            B.auraBorderSize or 1
-                                        )
-                                        return y
-                                    end,
-                                    set = function(v)
-                                        B.auraBorderTextureShiftY = v == 0 and nil or v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "toggle",
-                                    label = "Show Behind",
-                                    get = function()
-                                        return B.auraBorderBehind or false
-                                    end,
-                                    set = function(v)
-                                        B.auraBorderBehind = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "toggle",
-                                    label = "Behind Unit Frame",
-                                    get = function()
-                                        return B.auraBorderBehindUnitFrame or false
-                                    end,
-                                    set = function(v)
-                                        B.auraBorderBehindUnitFrame = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
-                                {
-                                    type = "toggle",
-                                    label = "Border Above Effects",
-                                    tooltip = "Draws boss aura icon borders over their cooldown swipes and glows. Duration and stack text stay above the borders.",
-                                    disabled = function()
-                                        local tex = B.auraBorderTexture or "solid"
-                                        return B.auraBorderBehind
-                                            or B.auraBorderBehindUnitFrame
-                                            or tex == "solid"
-                                            or tex == ""
-                                            or (B.auraBorderSize or 1) <= 0
-                                    end,
-                                    disabledTooltip = "This option requires a textured Aura Border with a size above 0, and its Show Behind and Behind Unit Frame options disabled.",
-                                    rawTooltip = true,
-                                    get = function()
-                                        return B.auraBorderAboveEffects == true
-                                    end,
-                                    set = function(v)
-                                        B.auraBorderAboveEffects = v
-                                        ReloadAndUpdate()
-                                    end,
-                                },
+                    local region = borderRow._leftRegion
+                    local button = CludesUI.BuildInlineCog(region, {
+                        title = "Border Options",
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Shift X",
+                                min = -10,
+                                max = 10,
+                                step = 1,
+                                get = function()
+                                    local v = B.auraBorderTextureShiftX
+                                    if v ~= nil then
+                                        return v
+                                    end
+                                    local _, _, posX = CludesUI.GetBorderDefaults(
+                                        "unitframes",
+                                        B.auraBorderTexture or "solid",
+                                        B.auraBorderSize or 1
+                                    )
+                                    return posX
+                                end,
+                                set = function(v)
+                                    B.auraBorderTextureShiftX = v == 0 and nil or v
+                                    ReloadAndUpdate()
+                                end,
                             },
-                        }
-                    )
+                            {
+                                type = "slider",
+                                label = "Shift Y",
+                                min = -10,
+                                max = 10,
+                                step = 1,
+                                get = function()
+                                    local v = B.auraBorderTextureShiftY
+                                    if v ~= nil then
+                                        return v
+                                    end
+                                    local _, _, _, posY = CludesUI.GetBorderDefaults(
+                                        "unitframes",
+                                        B.auraBorderTexture or "solid",
+                                        B.auraBorderSize or 1
+                                    )
+                                    return posY
+                                end,
+                                set = function(v)
+                                    B.auraBorderTextureShiftY = v == 0 and nil or v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "toggle",
+                                label = "Show Behind",
+                                get = function()
+                                    return B.auraBorderBehind or false
+                                end,
+                                set = function(v)
+                                    B.auraBorderBehind = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "toggle",
+                                label = "Behind Unit Frame",
+                                get = function()
+                                    return B.auraBorderBehindUnitFrame or false
+                                end,
+                                set = function(v)
+                                    B.auraBorderBehindUnitFrame = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "toggle",
+                                label = "Border Above Effects",
+                                tooltip = "Draws boss aura icon borders over their cooldown swipes and glows. Duration and stack text stay above the borders.",
+                                disabled = function()
+                                    local texture = B.auraBorderTexture or "solid"
+                                    return B.auraBorderBehind
+                                        or B.auraBorderBehindUnitFrame
+                                        or texture == "solid"
+                                        or texture == ""
+                                        or (B.auraBorderSize or 1) <= 0
+                                end,
+                                disabledTooltip = "This option requires a textured Aura Border with a size above 0, and its Show Behind and Behind Unit Frame options disabled.",
+                                rawTooltip = true,
+                                get = function()
+                                    return B.auraBorderAboveEffects == true
+                                end,
+                                set = function(v)
+                                    B.auraBorderAboveEffects = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                        },
+                    })
                     local function vis()
                         if (B.auraBorderTexture or "solid") == "solid" then
-                            btn:Hide()
+                            button:Hide()
                         else
-                            btn:Show()
+                            button:Show()
                         end
                     end
                     CludesUI.RegisterWidgetRefresh(vis)
                     vis()
                 end
                 if not CludesUI._prebuilding then
-                    local rgn = borderRow._rightRegion
-                    local sw, upd = CludesUI.BuildColorSwatch(rgn, borderRow:GetFrameLevel() + 3, function()
-                        return B.auraBorderR or 0, B.auraBorderG or 0, B.auraBorderB or 0, B.auraBorderA or 1
-                    end, function(r, g, b, a)
-                        B.auraBorderR = r
-                        B.auraBorderG = g
-                        B.auraBorderB = b
-                        B.auraBorderA = a
-                        ReloadAndUpdate()
-                    end, true, 20)
-                    PP.Point(sw, "RIGHT", rgn._control, "LEFT", -8, 0)
+                    local region = borderRow._rightRegion
+                    local sw, upd = CludesUI.BuildColorSwatch(
+                        region,
+                        borderRow:GetFrameLevel() + 3,
+                        function()
+                            return B.auraBorderR or 0,
+                                B.auraBorderG or 0,
+                                B.auraBorderB or 0,
+                                B.auraBorderA or 1
+                        end,
+                        function(r, g, b, a)
+                            B.auraBorderR = r
+                            B.auraBorderG = g
+                            B.auraBorderB = b
+                            B.auraBorderA = a
+                            ReloadAndUpdate()
+                        end,
+                        true,
+                        20
+                    )
+                    Pix.Point(sw, "RIGHT", region._control, "LEFT", -8, 0)
                     CludesUI.RegisterWidgetRefresh(upd)
                 end
             end
@@ -5341,17 +5382,17 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- Boss Buff Filter.
             local filterRow
             local filterOff = function()
-                local p = db.profile.boss
-                return ns.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") == "none"
+                local p = saved.profile.boss
+                return mod.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") == "none"
             end
             local function BossS()
-                return db.profile.boss
+                return saved.profile.boss
             end
             local buffFilterOff
             local bossFilterRightSlot = { type = "label", text = "" }
             buffFilterOff = function()
-                local p = db.profile.boss
-                return ns.GetBossSimpleBuffMode(p) == "none" and not p.showBuffs
+                local p = saved.profile.boss
+                return mod.GetBossSimpleBuffMode(p) == "none" and not p.showBuffs
             end
             bossFilterRightSlot = {
                 type = "dropdown",
@@ -5393,25 +5434,25 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             end
             -- Right slot: Boss Buff Filter (two-lane checkbox dropdown).
             if not CludesUI._prebuilding then
-                local rgn = filterRow._rightRegion
-                if rgn._control then
-                    rgn._control:Hide()
+                local region = filterRow._rightRegion
+                if region._control then
+                    region._control:Hide()
                 end
                 local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    rgn,
+                    region,
                     210,
-                    rgn:GetFrameLevel() + 2,
+                    region:GetFrameLevel() + 2,
                     buffFilterItems,
                     function(k, neg)
                         if neg then
-                            local m = db.profile.boss.buffNegClasses
+                            local m = saved.profile.boss.buffNegClasses
                             local sk = BOSS_BUFF_NEG_SKEYS[k]
                             return m ~= nil and sk ~= nil and m[sk] == true
                         end
-                        return db.profile.boss[BUFF_FILTER_KEYS[k]] or false
+                        return saved.profile.boss[BUFF_FILTER_KEYS[k]] or false
                     end,
                     function(k, v, neg)
-                        local bt = db.profile.boss
+                        local bt = saved.profile.boss
                         local sk = BOSS_BUFF_NEG_SKEYS[k]
                         if neg then
                             if not sk then
@@ -5438,9 +5479,9 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         ReloadAndUpdate()
                     end
                 )
-                PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-                rgn._control = cbDD
-                rgn._lastInline = nil
+                Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+                region._control = cbDD
+                region._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbRefresh)
                 local buffFilterBlock = CreateFrame("Frame", nil, cbDD)
                 buffFilterBlock:SetAllPoints()
@@ -5474,7 +5515,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 disabled = bossBuffSizeOff,
                 -- Both branches are whole sentences (raw), so translated clients wrap once.
                 disabledTooltip = function()
-                    return ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none"
+                    return mod.GetBossSimpleBuffMode(saved.profile.boss) ~= "none"
                             and CludesUI.DisabledTooltip("Simple Buff Display", "disabled")
                         or CludesUI.DisabledTooltip("Buffs Location")
                 end,
@@ -5487,10 +5528,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         values = buffGrowthValues,
                         order = buffGrowthOrder,
                         get = function()
-                            return db.profile.boss.buffGrowth or "auto"
+                            return saved.profile.boss.buffGrowth or "auto"
                         end,
                         set = function(v)
-                            db.profile.boss.buffGrowth = v
+                            saved.profile.boss.buffGrowth = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5500,12 +5541,12 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         min = 1,
                         max = 20,
                         step = 1,
-                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
                         get = function()
-                            return db.profile.boss.maxBuffs or 4
+                            return saved.profile.boss.maxBuffs or 4
                         end,
                         set = function(v)
-                            db.profile.boss.maxBuffs = v
+                            saved.profile.boss.maxBuffs = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5516,10 +5557,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 20,
                         step = 1,
                         get = function()
-                            return db.profile.boss.buffMaxPerRow or db.profile.boss.maxBuffs or 4
+                            return saved.profile.boss.buffMaxPerRow or saved.profile.boss.maxBuffs or 4
                         end,
                         set = function(v)
-                            db.profile.boss.buffMaxPerRow = v
+                            saved.profile.boss.buffMaxPerRow = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5531,10 +5572,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         end,
                         disabledTooltip = "This option requires Blizzard Style to be disabled",
                         get = function()
-                            return db.profile.boss.buffDispelBorder == true
+                            return saved.profile.boss.buffDispelBorder == true
                         end,
                         set = function(v)
-                            db.profile.boss.buffDispelBorder = v
+                            saved.profile.boss.buffDispelBorder = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5548,7 +5589,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             CludesUI.BuildInlineCog(rightRgn, {
                 disabled = bossDebuffSizeOff,
                 disabledTooltip = function()
-                    return ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none"
+                    return mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none"
                             and CludesUI.DisabledTooltip("Simple Debuff Display", "disabled")
                         or CludesUI.DisabledTooltip("Debuffs Location")
                 end,
@@ -5561,10 +5602,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         values = buffGrowthValues,
                         order = buffGrowthOrder,
                         get = function()
-                            return db.profile.boss.debuffGrowth or "auto"
+                            return saved.profile.boss.debuffGrowth or "auto"
                         end,
                         set = function(v)
-                            db.profile.boss.debuffGrowth = v
+                            saved.profile.boss.debuffGrowth = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5574,17 +5615,17 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         min = 1,
                         max = 20,
                         step = 1,
-                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
                         get = function()
-                            return db.profile.boss.maxDebuffs or 10
+                            return saved.profile.boss.maxDebuffs or 10
                         end,
                         set = function(v)
-                            db.profile.boss.maxDebuffs = v
+                            saved.profile.boss.maxDebuffs = v
                             ReloadAndUpdate()
                         end,
                     },
-                    ns.UFO_MaxImportantRow(function()
-                        return db.profile.boss
+                    mod.UFO_MaxImportantRow(function()
+                        return saved.profile.boss
                     end, ReloadAndUpdate, 20, 10),
                     {
                         type = "slider",
@@ -5593,10 +5634,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 20,
                         step = 1,
                         get = function()
-                            return db.profile.boss.debuffMaxPerRow or db.profile.boss.maxDebuffs or 10
+                            return saved.profile.boss.debuffMaxPerRow or saved.profile.boss.maxDebuffs or 10
                         end,
                         set = function(v)
-                            db.profile.boss.debuffMaxPerRow = v
+                            saved.profile.boss.debuffMaxPerRow = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5630,20 +5671,20 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             step = 1,
             tooltip = "Fades boss frames when the boss is out of range of your spells. Set to 100% to disable the fade.",
             getValue = function()
-                return math.floor(((db.profile.boss.oorAlpha or 0.4) * 100) + 0.5)
+                return math.floor(((saved.profile.boss.oorAlpha or 0.4) * 100) + 0.5)
             end,
             setValue = function(v)
-                db.profile.boss.oorAlpha = v / 100
+                saved.profile.boss.oorAlpha = v / 100
             end,
         }, {
             type = "toggle",
             text = "Spell Target",
             tooltip = "Show the name of who the boss is casting on.",
             getValue = function()
-                return db.profile.boss.showCastTarget == true
+                return saved.profile.boss.showCastTarget == true
             end,
             setValue = function(v)
-                db.profile.boss.showCastTarget = v
+                saved.profile.boss.showCastTarget = v
                 ReloadAndUpdate()
             end,
         })
@@ -5663,10 +5704,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 300,
                         step = 1,
                         get = function()
-                            return db.profile.boss.castSpellTargetX or 0
+                            return saved.profile.boss.castSpellTargetX or 0
                         end,
                         set = function(v)
-                            db.profile.boss.castSpellTargetX = v
+                            saved.profile.boss.castSpellTargetX = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5677,10 +5718,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 300,
                         step = 1,
                         get = function()
-                            return db.profile.boss.castSpellTargetY or 0
+                            return saved.profile.boss.castSpellTargetY or 0
                         end,
                         set = function(v)
-                            db.profile.boss.castSpellTargetY = v
+                            saved.profile.boss.castSpellTargetY = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5690,7 +5731,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
 
         -- Row 2: Show Raid Marker | Raid Marker Size (+ position cog)
         local function bossRmOff()
-            return db.profile.boss.raidMarkerEnabled == false
+            return saved.profile.boss.raidMarkerEnabled == false
         end
         local bossRmRow
         bossRmRow, hh = Ww:DualRow(pp, yy, {
@@ -5698,10 +5739,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             text = "Show Raid Marker",
             tooltip = "Shows the raid target marker icon on boss frames.",
             getValue = function()
-                return db.profile.boss.raidMarkerEnabled ~= false
+                return saved.profile.boss.raidMarkerEnabled ~= false
             end,
             setValue = function(v)
-                db.profile.boss.raidMarkerEnabled = v
+                saved.profile.boss.raidMarkerEnabled = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end,
@@ -5714,10 +5755,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             disabled = bossRmOff,
             disabledTooltip = "Raid Marker",
             getValue = function()
-                return db.profile.boss.raidMarkerSize or 28
+                return saved.profile.boss.raidMarkerSize or 28
             end,
             setValue = function(v)
-                db.profile.boss.raidMarkerSize = v
+                saved.profile.boss.raidMarkerSize = v
                 ReloadAndUpdate()
             end,
         })
@@ -5733,10 +5774,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 50,
                         step = 1,
                         get = function()
-                            return db.profile.boss.raidMarkerX or 0
+                            return saved.profile.boss.raidMarkerX or 0
                         end,
                         set = function(v)
-                            db.profile.boss.raidMarkerX = v
+                            saved.profile.boss.raidMarkerX = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5747,10 +5788,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         max = 50,
                         step = 1,
                         get = function()
-                            return db.profile.boss.raidMarkerY or 0
+                            return saved.profile.boss.raidMarkerY or 0
                         end,
                         set = function(v)
-                            db.profile.boss.raidMarkerY = v
+                            saved.profile.boss.raidMarkerY = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5760,10 +5801,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         values = { left = "Left", center = "Center", right = "Right" },
                         order = { "left", "center", "right" },
                         get = function()
-                            return db.profile.boss.raidMarkerAlign or "left"
+                            return saved.profile.boss.raidMarkerAlign or "left"
                         end,
                         set = function(v)
-                            db.profile.boss.raidMarkerAlign = v
+                            saved.profile.boss.raidMarkerAlign = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5779,7 +5820,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
     -- All keys are boss-scoped (db.profile.boss.*), read by the shared castbar
     -- runtime + preview so both live-update. "Show Cast Bar" off (showCastbar=false) hides it entirely (runtime disables Castbar; preview zero-heights it).
     local function bossCastBar(Ww, pp, yy)
-        local B = db.profile.boss
+        local B = saved.profile.boss
         local hh
 
         -- The Show Cast Bar toggle gates the rest of the section. AddCastBlock
@@ -5787,27 +5828,27 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- blocks its mouse while the cast bar is off, tracked live via the
         -- widget-refresh fast path (mirrors AddDarkModeBlock). The toggle's own color swatches gate separately so the toggle stays interactive.
         local castColorSwatches = {}
-        local function AddCastBlock(rgn, enabledAlpha)
-            if not rgn then
+        local function AddCastBlock(region, enabledAlpha)
+            if not region then
                 return
             end
-            local block = CreateFrame("Frame", nil, rgn)
-            block:SetAllPoints()
-            block:SetFrameLevel(rgn:GetFrameLevel() + 50)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Show Cast Bar"))
+            local blockData = CreateFrame("Frame", nil, region)
+            blockData:SetAllPoints()
+            blockData:SetFrameLevel(region:GetFrameLevel() + 50)
+            blockData:EnableMouse(true)
+            blockData:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(blockData, CludesUI.DisabledTooltip("Show Cast Bar"))
             end)
-            block:SetScript("OnLeave", function()
+            blockData:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function Update()
                 if B.showCastbar == false then
-                    rgn:SetAlpha(0.3)
-                    block:Show()
+                    region:SetAlpha(0.3)
+                    blockData:Show()
                 else
-                    rgn:SetAlpha(enabledAlpha and enabledAlpha() or 1)
-                    block:Hide()
+                    region:SetAlpha(enabledAlpha and enabledAlpha() or 1)
+                    blockData:Hide()
                 end
             end
             Update()
@@ -5893,10 +5934,10 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         label = "Raise Cast Bar Strata (All)",
                         tooltip = "Lifts player, target, focus, and boss cast bars above other frames so they are never hidden behind them.",
                         get = function()
-                            return db.profile.raiseCastbarStrata ~= false
+                            return saved.profile.raiseCastbarStrata ~= false
                         end,
                         set = function(v)
-                            db.profile.raiseCastbarStrata = v
+                            saved.profile.raiseCastbarStrata = v
                             ReloadAndUpdate()
                         end,
                     },
@@ -5937,8 +5978,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         set = function(v)
                             B.castbarOffsetX = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -5954,8 +5995,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         set = function(v)
                             B.castbarOffsetY = v
                             ReloadAndUpdate()
-                            if ns.RefreshBossPreviewDebuffs then
-                                ns.RefreshBossPreviewDebuffs()
+                            if mod.RefreshBossPreviewDebuffs then
+                                mod.RefreshBossPreviewDebuffs()
                             end
                         end,
                     },
@@ -5986,23 +6027,23 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         end
         -- Enemy cast colors on Show Cast Bar (left region), matching target/focus.
         if not CludesUI._prebuilding then
-            local rgn = castMainRow._leftRegion
+            local region = castMainRow._leftRegion
             local function AddCastColorSwatch(tooltip, colorKey, fallback, disabledFn)
-                local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local sw, updateSw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B[colorKey] or fallback
                     return c.r, c.g, c.b, 1
                 end, function(r, g, b)
                     B[colorKey] = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 sw:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(self, tooltip)
                 end)
                 sw:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                rgn._lastInline = sw
+                region._lastInline = sw
                 castColorSwatches[#castColorSwatches + 1] = {
                     sw = sw,
                     enabledAlpha = disabledFn and function()
@@ -6011,9 +6052,9 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 }
                 if disabledFn then
                     local function Update()
-                        local off = disabledFn()
-                        sw:SetAlpha(off and 0.3 or 1)
-                        sw:EnableMouse(not off)
+                        local offset = disabledFn()
+                        sw:SetAlpha(offset and 0.3 or 1)
+                        sw:EnableMouse(not offset)
                         if updateSw then
                             updateSw()
                         end
@@ -6078,8 +6119,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     end
                     B.castbarWidth = v
                     ReloadAndUpdate()
-                    if ns.RefreshBossPreviewDebuffs then
-                        ns.RefreshBossPreviewDebuffs()
+                    if mod.RefreshBossPreviewDebuffs then
+                        mod.RefreshBossPreviewDebuffs()
                     end
                 end,
             })
@@ -6137,7 +6178,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             disabled = function()
                                 return CludesUI.BlizzStyle.Get("unitframes")
                                     or B.castBorderCustom ~= true
-                                    or not ns.UF_CastIconInWidth("boss", B)
+                                    or not mod.UF_CastIconInWidth("boss", B)
                             end,
                             disabledTooltip = "This option requires Custom Border Style, Show Icon and Make Icon Part of the Bar, with the CludesUI style.",
                             get = function()
@@ -6154,13 +6195,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                             tooltip = "Draw a divider between the integrated icon and the bar, using the cast bar's border appearance.",
                             disabled = function()
                                 return CludesUI.BlizzStyle.Get("unitframes")
-                                    or not ns.UF_CastIconInWidth("boss", B)
-                                    or not ns.UF_CastIconSeamOK(B)
+                                    or not mod.UF_CastIconInWidth("boss", B)
+                                    or not mod.UF_CastIconSeamOK(B)
                             end,
                             disabledTooltip = function()
                                 if
                                     CludesUI.BlizzStyle.Get("unitframes")
-                                    or not ns.UF_CastIconInWidth("boss", B)
+                                    or not mod.UF_CastIconInWidth("boss", B)
                                 then
                                     return "This option requires Show Icon and Make Icon Part of the Bar, with the CludesUI style."
                                 end
@@ -6220,8 +6261,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             yy = yy - hh
             -- Inline color swatch on Bar Background (right region).
             if not CludesUI._prebuilding then
-                local rgn = reverseRow._rightRegion
-                local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local region = reverseRow._rightRegion
+                local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B.castBgColor
                     if c then
                         return c.r, c.g, c.b
@@ -6231,14 +6272,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                     B.castBgColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 sw:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(self, "Cast Background")
                 end)
                 sw:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                rgn._lastInline = sw
+                region._lastInline = sw
             end
 
             -- Row 4: Spell Name (dropdown + Size/X/Y cog + swatch) | Duration (same)
@@ -6291,8 +6332,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             yy = yy - hh
             -- Spell Name (left): Size/X/Y cog + color swatch
             if not CludesUI._prebuilding then
-                local rgn = castTextRow._leftRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = castTextRow._leftRegion
+                CludesUI.BuildInlineCog(region, {
                     title = "Spell Name",
                     rows = {
                         {
@@ -6339,20 +6380,20 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         },
                     },
                 })
-                local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B.castSpellNameColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b
                 end, function(r, g, b)
                     B.castSpellNameColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = sw
+                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = sw
             end
             -- Duration (right): Size/X/Y cog + color swatch
             if not CludesUI._prebuilding then
-                local rgn = castTextRow._rightRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = castTextRow._rightRegion
+                CludesUI.BuildInlineCog(region, {
                     title = "Duration",
                     rows = {
                         {
@@ -6399,33 +6440,34 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         },
                     },
                 })
-                local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B.castDurationColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b
                 end, function(r, g, b)
                     B.castDurationColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                rgn._lastInline = sw
+                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = sw
             end
             -- Custom Border Style rows (the Cast Bar cog's opt-in): one table
             -- styles all five boss cast bars; no unlock element, no sync links.
             if B.castBorderCustom == true then
-                yy = yy - ns.UF_CastBorderRows(Ww, pp, yy, function()
-                    return B
-                end, ReloadAndUpdate)
+                yy = yy
+                    - mod.UF_CastBorderRows(Ww, pp, yy, function()
+                        return B
+                    end, ReloadAndUpdate)
             end
             -- Classic WoW UI: Border Size closes the section (odd last slot).
             yy = yy
-                - ns.UF_ClassicCastBorderRow(
+                - mod.UF_ClassicCastBorderRow(
                     Ww,
                     pp,
                     yy,
                     function()
                         return B
                     end,
-                    ns.UF_CastClassicKey("boss"),
+                    mod.UF_CastClassicKey("boss"),
                     function()
                         ReloadAndUpdate()
                     end
@@ -6435,15 +6477,15 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- The Show Cast Bar toggle's own color swatches stay gated grey +
         -- blocked while the cast bar is off (the Height slider uses a
         -- native disabled state; the hidden rows need nothing).
-        for _, item in ipairs(castColorSwatches) do
-            AddCastBlock(item.sw, item.enabledAlpha)
+        for _, itemInfo in ipairs(castColorSwatches) do
+            AddCastBlock(itemInfo.sw, itemInfo.enabledAlpha)
         end
         return yy
     end
 
     local displayHeader, sizeRow, textHeader, textRow
-    y, displayHeader, sizeRow, textHeader, textRow =
-        BuildMiniTextAndSize(W, parent, y, db.profile.boss, "boss", enableRow, bossAfterSize, {
+    posY, displayHeader, sizeRow, textHeader, textRow =
+        BuildMiniTextAndSize(Widgets, hostFrame, posY, saved.profile.boss, "boss", enableRow, bossAfterSize, {
             hasPowerBar = true,
             afterPowerRow = function(Ww, pp, yy)
                 yy = bossCastBar(Ww, pp, yy)
@@ -6452,47 +6494,51 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         })
 
     -- Store click targets for hover highlight system
-    parent._ufClickTargets = {
+    hostFrame._ufClickTargets = {
         -- Health bar -> Health Bar Height (sizeRow left, HEALTH BAR section);
         -- Power bar -> Power Bar Height (pwrRow1 left, POWER BAR section).
         healthBar = { section = textHeader or displayHeader, target = sizeRow, slotSide = "left" },
         powerBar = {
-            section = parent._powerHeaderFrame or displayHeader,
-            target = parent._powerHeightRow,
+            section = hostFrame._powerHeaderFrame or displayHeader,
+            target = hostFrame._powerHeightRow,
             slotSide = "left",
         },
         powerBarText = {
-            section = parent._powerHeaderFrame or displayHeader,
-            target = parent._powerTextRow,
+            section = hostFrame._powerHeaderFrame or displayHeader,
+            target = hostFrame._powerTextRow,
             slotSide = "left",
         },
         portrait = { section = displayHeader, target = portraitRow, slotSide = "right" },
-        nameText = ns.UFO_TextClickTarget(
-            parent,
+        nameText = mod.UFO_TextClickTarget(
+            hostFrame,
             "leftText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        healthText = ns.UFO_TextClickTarget(
-            parent,
+        healthText = mod.UFO_TextClickTarget(
+            hostFrame,
             "rightText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        centerText = ns.UFO_TextClickTarget(
-            parent,
+        centerText = mod.UFO_TextClickTarget(
+            hostFrame,
             "centerText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
-        extraText = ns.UFO_TextClickTarget(
-            parent,
+        extraText = mod.UFO_TextClickTarget(
+            hostFrame,
             "extraText",
             textHeader or displayHeader,
             textRow or sizeRow
         ),
         -- Blizzard Style level number -> Show Level (+ its cog).
-        levelText = { section = textHeader or displayHeader, target = parent._ufLevelRow, slotSide = "left" },
+        levelText = {
+            section = textHeader or displayHeader,
+            target = hostFrame._ufLevelRow,
+            slotSide = "left",
+        },
         -- Cast bar -> Cast Bar Height; spell icon -> Show Cast Icon. Both live
         -- in growthRow after the swap (Show Cast Icon left, Cast Bar Height right).
         castBar = {
@@ -6504,18 +6550,18 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- Buffs/Debuffs scroll to the active control: Simple Display when it's
         -- on (the column is forced), otherwise the normal Location dropdown.
         buffIcon = function()
-            if ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" then
+            if mod.GetBossSimpleBuffMode(saved.profile.boss) ~= "none" then
                 return { section = bossAuraHeader or displayHeader, target = simpleBuffRow }
             end
             return { section = bossAuraHeader or displayHeader, target = bossAuraRow, slotSide = "left" }
         end,
         debuffIcon = function()
-            if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then
+            if mod.GetBossSimpleDebuffMode(saved.profile.boss) ~= "none" then
                 return { section = bossAuraHeader or displayHeader, target = simpleRow }
             end
             return { section = bossAuraHeader or displayHeader, target = bossAuraRow, slotSide = "right" }
         end,
     }
 
-    return abs(y)
+    return abs(posY)
 end

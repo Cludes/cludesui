@@ -8,33 +8,33 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the scan that collects and hides the addon buttons.
 --  Reads the earlier Minimap files through ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local _addonVisible, cachedAddonButtons, EBS = I._addonVisible, I.cachedAddonButtons, I.EBS
-local flyoutOwnedFrames, GetFFD, QueueApplyAll = I.flyoutOwnedFrames, I.GetFFD, I.QueueApplyAll
-local InvalidateFlyout, IsUngrouped = I.InvalidateFlyout, I.IsUngrouped
+local _addonVisible, cachedAddonButtons, SKIN = Inner._addonVisible, Inner.cachedAddonButtons, Inner.EBS
+local flyoutOwnedFrames, GetFFD, QueueApplyAll = Inner.flyoutOwnedFrames, Inner.GetFFD, Inner.QueueApplyAll
+local InvalidateFlyout, IsUngrouped = Inner.InvalidateFlyout, Inner.IsUngrouped
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local flyoutToggle
-I.flyoutToggleSetters[#I.flyoutToggleSetters + 1] = function(v)
-    flyoutToggle = v
+Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val)
+    flyoutToggle = val
 end
 local flyoutPanel
-I.flyoutPanelSetters[#I.flyoutPanelSetters + 1] = function(v)
-    flyoutPanel = v
+Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val)
+    flyoutPanel = val
 end
 -- Assigned when CUI_Minimap_Apply.lua loads (see SetApplyMinimap); the free
 -- move release in EnableFreeMove runs it.
 local ApplyMinimap
-I.applyMinimapSetters[#I.applyMinimapSetters + 1] = function(v)
-    ApplyMinimap = v
+Inner.applyMinimapSetters[#Inner.applyMinimapSetters + 1] = function(val)
+    ApplyMinimap = val
 end
 
 -------------------------------------------------------------------------------
@@ -42,65 +42,65 @@ end
 --  freeMoveBtns: shift+drag any minimap-area button. Offsets are stored in
 --  DB.profile.minimap.btnPositions keyed by a stable identifier string.
 -------------------------------------------------------------------------------
-local function GetBtnPosKey(frame)
+local function GetBtnPosKey(widget)
     -- Custom indicator buttons store their key directly
-    if frame._indicatorKey then
-        return frame._indicatorKey
+    if widget._indicatorKey then
+        return widget._indicatorKey
     end
-    local name = frame:GetName()
+    local name = widget:GetName()
     if name then
         return name
     end
-    if frame == flyoutToggle then
+    if widget == flyoutToggle then
         return "_flyoutToggle"
     end
     return nil
 end
 
 local function GetBtnOffset(key)
-    local mp = EBS.db and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile.minimap
     if not mp or not mp.freeMoveBtns or not mp.btnPositions then
         return 0, 0
     end
-    local pos = mp.btnPositions[key]
-    if not pos then
+    local place = mp.btnPositions[key]
+    if not place then
         return 0, 0
     end
-    return pos.x or 0, pos.y or 0
+    return place.x or 0, place.y or 0
 end
 
-local function SaveBtnOffset(key, x, y)
-    local mp = EBS.db and EBS.db.profile.minimap
+local function SaveBtnOffset(key, posX, posY)
+    local mp = SKIN.db and SKIN.db.profile.minimap
     if not mp then
         return
     end
     if not mp.btnPositions then
         mp.btnPositions = {}
     end
-    mp.btnPositions[key] = { x = x, y = y }
+    mp.btnPositions[key] = { x = posX, y = posY }
 end
 
 local _freeMoveHooked = {} -- [frame] = true, one-time hook guard
 
-local function EnableFreeMove(frame)
-    if not frame or _freeMoveHooked[frame] then
+local function EnableFreeMove(widget)
+    if not widget or _freeMoveHooked[widget] then
         return
     end
-    _freeMoveHooked[frame] = true
+    _freeMoveHooked[widget] = true
 
-    local key = GetBtnPosKey(frame)
+    local key = GetBtnPosKey(widget)
     if not key then
         return
     end
 
-    frame:SetMovable(true)
-    frame:SetClampedToScreen(true)
+    widget:SetMovable(true)
+    widget:SetClampedToScreen(true)
 
     -- Third-party buttons (LibDBIcon etc.) own OnClick: wrap it so the drag flag blocks click-through.
-    if not frame._indicatorKey and frame ~= flyoutToggle then
-        local origClick = frame:GetScript("OnClick")
+    if not widget._indicatorKey and widget ~= flyoutToggle then
+        local origClick = widget:GetScript("OnClick")
         if origClick then
-            frame:SetScript("OnClick", function(self, ...)
+            widget:SetScript("OnClick", function(self, ...)
                 if GetFFD(self).freeMoveJustDragged then
                     return
                 end
@@ -143,14 +143,14 @@ local function EnableFreeMove(frame)
         end
     end
 
-    frame:HookScript("OnMouseDown", function(self, button)
-        if button ~= "LeftButton" then
+    widget:HookScript("OnMouseDown", function(self, btnFrame)
+        if btnFrame ~= "LeftButton" then
             return
         end
         if not IsShiftKeyDown() then
             return
         end
-        local mp = EBS.db and EBS.db.profile.minimap
+        local mp = SKIN.db and SKIN.db.profile.minimap
         if not mp or not mp.freeMoveBtns then
             return
         end
@@ -168,8 +168,8 @@ local function EnableFreeMove(frame)
         self:SetScript("OnUpdate", FreeMoveOnUpdate)
     end)
 
-    frame:HookScript("OnMouseUp", function(self, button)
-        if button ~= "LeftButton" or not isDragging then
+    widget:HookScript("OnMouseUp", function(self, btnFrame)
+        if btnFrame ~= "LeftButton" or not isDragging then
             return
         end
         isDragging = false
@@ -180,7 +180,7 @@ local function EnableFreeMove(frame)
         local dx, dy = cx - startX, cy - startY
         SaveBtnOffset(key, origOffX + dx, origOffY + dy)
         C_Timer.After(0, function()
-            GetFFD(frame).freeMoveJustDragged = nil
+            GetFFD(widget).freeMoveJustDragged = nil
         end)
         if ApplyMinimap then
             ApplyMinimap()
@@ -189,11 +189,11 @@ local function EnableFreeMove(frame)
 end
 
 -- Apply saved offset to a button (called during layout)
-local function ApplyBtnOffset(frame)
-    if not frame then
+local function ApplyBtnOffset(widget)
+    if not widget then
         return
     end
-    local key = GetBtnPosKey(frame)
+    local key = GetBtnPosKey(widget)
     if not key then
         return
     end
@@ -201,14 +201,14 @@ local function ApplyBtnOffset(frame)
     if ox == 0 and oy == 0 then
         return
     end
-    local p1, rel, p2, x, y = frame:GetPoint(1)
+    local p1, rel, p2, posX, posY = widget:GetPoint(1)
     if p1 then
-        frame:SetPoint(p1, rel, p2, (x or 0) + ox, (y or 0) + oy)
+        widget:SetPoint(p1, rel, p2, (posX or 0) + ox, (posY or 0) + oy)
     end
 end
 
 local function SaveZoomLevel()
-    local p = EBS.db and EBS.db.profile.minimap
+    local p = SKIN.db and SKIN.db.profile.minimap
     if not p then
         return
     end
@@ -222,7 +222,7 @@ local function RestartZoomResetTimer()
         zoomResetTimer:Cancel()
         zoomResetTimer = nil
     end
-    local p = EBS.db and EBS.db.profile.minimap
+    local p = SKIN.db and SKIN.db.profile.minimap
     local secs = p and p.zoomResetSeconds or 0
     if not secs or secs <= 0 then
         return
@@ -268,7 +268,7 @@ end
 local addonButtonHooks = {}
 
 local function HideMinimapChild(btn)
-    EBS._suppressVisTrack = true
+    SKIN._suppressVisTrack = true
     -- Hide() on a protected frame is blocked inside lockdown for ANY insecure caller,
     -- taint or not, and the block is silent (no Lua error) -- so the SetAlpha below
     -- still ran and the button just went invisible-but-shown. Skip only the blocked
@@ -279,11 +279,11 @@ local function HideMinimapChild(btn)
         btn:Hide()
     end
     btn:SetAlpha(0)
-    EBS._suppressVisTrack = false
+    SKIN._suppressVisTrack = false
     if not addonButtonHooks[btn] then
         -- Track addon-intended visibility via Show/Hide hooks
         hooksecurefunc(btn, "Show", function(self)
-            if not EBS._suppressVisTrack then
+            if not SKIN._suppressVisTrack then
                 -- Don't track addon Show() while the flyout is open: the button is
                 -- visible in our grid and a later Hide() would mark it unwanted.
                 if not (flyoutPanel and flyoutPanel:IsShown()) then
@@ -304,13 +304,13 @@ local function HideMinimapChild(btn)
             if IsUngrouped(self) then
                 return
             end
-            local mp = EBS.db and EBS.db.profile.minimap
+            local mp = SKIN.db and SKIN.db.profile.minimap
             if mp and mp.enabled and not flyoutOwnedFrames[self] then
                 self:SetAlpha(0)
             end
         end)
         hooksecurefunc(btn, "Hide", function(self)
-            if not EBS._suppressVisTrack then
+            if not SKIN._suppressVisTrack then
                 -- Freeze tracking while open: addon refresh Hide() calls would otherwise
                 -- blank buttons from the grid.
                 if flyoutPanel and flyoutPanel:IsShown() then
@@ -356,12 +356,12 @@ do
     local hooked = {}
     local function repoint(tt, btn)
         if tt and tt:IsShown() and tt:GetOwner() == btn then
-            local gpt = EBS._Grow.edge[EBS._Grow.Dir()] or EBS._Grow.edge.left
+            local gpt = SKIN._Grow.edge[SKIN._Grow.Dir()] or SKIN._Grow.edge.left
             tt:ClearAllPoints()
             tt:SetPoint(gpt[1], btn, gpt[2], gpt[3], gpt[4])
         end
     end
-    function EBS._HookAddonBtnTT(btn)
+    function SKIN._HookAddonBtnTT(btn)
         if hooked[btn] then
             return
         end
@@ -385,30 +385,30 @@ local function GatherMinimapButtons()
         sources[2] = flyoutPanel
     end
     for _, source in ipairs(sources) do
-        for _, child in ipairs({ source:GetChildren() }) do
-            if not flyoutOwnedFrames[child] then
-                local name = child:GetName()
+        for _, childFrame in ipairs({ source:GetChildren() }) do
+            if not flyoutOwnedFrames[childFrame] then
+                local name = childFrame:GetName()
                 if flyoutBlacklist[name] then
                     -- skip
                 elseif IsPinFrame(name) then
                     -- skip pin/POI frames
-                elseif child:IsObjectType("Button") and name and not name:match("%d+$") then
-                    local w = child:GetWidth() or 0
+                elseif childFrame:IsObjectType("Button") and name and not name:match("%d+$") then
+                    local wid = childFrame:GetWidth() or 0
                     -- Width gate applies to first discovery only; once tracked in
                     -- _addonVisible a button is always re-collected, so our own SetSize (slider < 20) can't permanently drop it.
-                    if w >= 20 or _addonVisible[child] ~= nil then
-                        if _addonVisible[child] == nil then
-                            _addonVisible[child] = child:IsShown()
+                    if wid >= 20 or _addonVisible[childFrame] ~= nil then
+                        if _addonVisible[childFrame] == nil then
+                            _addonVisible[childFrame] = childFrame:IsShown()
                         end
-                        cachedAddonButtons[#cachedAddonButtons + 1] = child
-                        EBS._HookAddonBtnTT(child)
+                        cachedAddonButtons[#cachedAddonButtons + 1] = childFrame
+                        SKIN._HookAddonBtnTT(childFrame)
                     end
-                elseif not child:IsObjectType("Button") and name and name:match("^LibDBIcon10_") then
-                    if _addonVisible[child] == nil then
-                        _addonVisible[child] = child:IsShown()
+                elseif not childFrame:IsObjectType("Button") and name and name:match("^LibDBIcon10_") then
+                    if _addonVisible[childFrame] == nil then
+                        _addonVisible[childFrame] = childFrame:IsShown()
                     end
-                    cachedAddonButtons[#cachedAddonButtons + 1] = child
-                    EBS._HookAddonBtnTT(child)
+                    cachedAddonButtons[#cachedAddonButtons + 1] = childFrame
+                    SKIN._HookAddonBtnTT(childFrame)
                 end
             end
         end
@@ -418,14 +418,14 @@ local function GatherMinimapButtons()
     -- this). With two or more, grouping is the user's choice alone, even when
     -- they ungroup all but one. A second button ends the solo state on the
     -- next scan.
-    local solo, count = nil, 0
+    local solo, total = nil, 0
     for _, btn in ipairs(cachedAddonButtons) do
         if _addonVisible[btn] ~= false then
-            count = count + 1
+            total = total + 1
             solo = btn
         end
     end
-    EBS._soloAddonButton = (count == 1) and solo or nil
+    SKIN._soloAddonButton = (total == 1) and solo or nil
 end
 
 -- Expose for options UI
@@ -449,8 +449,8 @@ local function HideAllMinimapButtons()
     end
 end
 
-I.ApplyBtnOffset, I.EnableFreeMove = ApplyBtnOffset, EnableFreeMove
-I.FOLIO_REPLACEMENT_BUTTONS = FOLIO_REPLACEMENT_BUTTONS
-I.HideAllMinimapButtons, I.RestartZoomResetTimer = HideAllMinimapButtons, RestartZoomResetTimer
-I.SaveZoomLevel = SaveZoomLevel
-I.broken = false
+Inner.ApplyBtnOffset, Inner.EnableFreeMove = ApplyBtnOffset, EnableFreeMove
+Inner.FOLIO_REPLACEMENT_BUTTONS = FOLIO_REPLACEMENT_BUTTONS
+Inner.HideAllMinimapButtons, Inner.RestartZoomResetTimer = HideAllMinimapButtons, RestartZoomResetTimer
+Inner.SaveZoomLevel = SaveZoomLevel
+Inner.broken = false

@@ -7,13 +7,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Role and class assignment of the 20 preview slots.
 --  Reads the earlier preview files through ns and ns._previewInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._previewInternals
+local _, mod = ...
+local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local ipairs = ipairs
 local wipe = wipe
@@ -21,16 +21,16 @@ local tinsert = table.insert
 local UnitName = UnitName
 local UnitClass = UnitClass
 
-local RF = ns._internals -- the table of the Raid Frames chain
+local RF = mod._internals -- the table of the Raid Frames chain
 
-local previewClassTokens = I.previewClassTokens
+local previewClassTokens = Inner.previewClassTokens
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
-local db
-RF.dbSetters[#RF.dbSetters + 1] = function(v)
-    db = v
+local saved
+RF.dbSetters[#RF.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -- Preview role assignments: 2 tanks, 4 healers, 14 DPS.
@@ -63,67 +63,67 @@ local function BuildPreviewRoles()
     -- previewRoles so it resets exactly with the other random picks.
     if not previewRoles._hpalPick then
         local hpals = {}
-        for ri = 1, #ns._PV_ROSTER do
-            if ns._PV_ROSTER[ri].hpal then
+        for ri = 1, #mod._PV_ROSTER do
+            if mod._PV_ROSTER[ri].hpal then
                 hpals[#hpals + 1] = ri
             end
         end
         for i = #hpals, 2, -1 do
-            local j = math.random(i)
-            hpals[i], hpals[j] = hpals[j], hpals[i]
+            local jdx = math.random(i)
+            hpals[i], hpals[jdx] = hpals[jdx], hpals[i]
         end
         local pick = {}
-        for k = 3, #hpals do
+        for key = 3, #hpals do
             local pool = {}
-            for _, c in ipairs(ns._PV_DPS_CLASSES) do
+            for _, c in ipairs(mod._PV_DPS_CLASSES) do
                 if c ~= "PALADIN" then
                     pool[#pool + 1] = c
                 end
             end
-            pick[hpals[k]] = pool[math.random(#pool)]
+            pick[hpals[key]] = pool[math.random(#pool)]
         end
         previewRoles._hpalPick = pick
     end
-    ns._pvNames = ns._pvNames or {}
-    ns._pvNames[1] = nil -- slot 1 = the player's real name
+    mod._pvNames = mod._pvNames or {}
+    mod._pvNames[1] = nil -- slot 1 = the player's real name
     for i = 2, 20 do
-        local e = ns._PV_ROSTER[i - 1]
-        local role, class = e.role, e.class
+        local e = mod._PV_ROSTER[i - 1]
+        local role, classFile = e.role, e.class
         local reroll = previewRoles._hpalPick[i - 1]
         if reroll then
-            role, class = "DAMAGER", reroll
+            role, classFile = "DAMAGER", reroll
         end
         previewRoles[i] = role
-        previewClassTokens[i] = class
-        ns._pvNames[i] = e.name
+        previewClassTokens[i] = classFile
+        mod._pvNames[i] = e.name
     end
 
     -- Sort within each group based on sort settings
-    local sortMode = db.profile.sortMode or "INDEX"
+    local sortMode = saved.profile.sortMode or "INDEX"
     -- Self ordering pins the player first (or last). Separated mode moves the
     -- player within each preview group; merged mode flows the whole grid in
     -- one sort, which the per-group preview approximates with the player at
     -- the first cell. showSelfFirst here means "self ordering active";
     -- selfLast picks the end.
-    local selfLast = db.profile.showSelfLast
-    local showSelfFirst = db.profile.showSelfFirst or db.profile.showSelfLast
+    local selfLast = saved.profile.showSelfLast
+    local showSelfFirst = saved.profile.showSelfFirst or saved.profile.showSelfLast
     -- Same gate as the live headers: FrameSort's list wins only while it is loaded.
-    local prioritizeClass = db.profile.prioritizeClass == true
-        and not (sortMode == "FRAMESORT" and ns._FrameSortApi())
+    local prioritizeClass = saved.profile.prioritizeClass == true
+        and not (sortMode == "FRAMESORT" and mod._FrameSortApi())
     previewRoles._playerSlot = 1 -- default: player is slot 1
 
     if sortMode == "ROLE" or showSelfFirst or prioritizeClass then
         for g = 0, 3 do
-            local base = g * 5
+            local baseValue = g * 5
             -- Build sortable list for this group
             local group = {}
             for u = 1, 5 do
-                local idx = base + u
+                local position = baseValue + u
                 group[u] = {
-                    role = previewRoles[idx],
-                    classToken = previewClassTokens[idx],
-                    name = ns._pvNames and ns._pvNames[idx],
-                    isPlayer = (idx == 1),
+                    role = previewRoles[position],
+                    classToken = previewClassTokens[position],
+                    name = mod._pvNames and mod._pvNames[position],
+                    isPlayer = (position == 1),
                     idx = u,
                 }
             end
@@ -134,11 +134,11 @@ local function BuildPreviewRoles()
                 local sortByRole = (sortMode == "ROLE")
                 local pName = UnitName("player") or ""
                 local rolePri = {}
-                for pri, role in ipairs(db.profile.roleOrder or { "TANK", "HEALER", "DAMAGER" }) do
+                for pri, role in ipairs(saved.profile.roleOrder or { "TANK", "HEALER", "DAMAGER" }) do
                     rolePri[role] = pri
                 end
                 local classPri = {}
-                for pri, c in ipairs(db.profile.classOrder or ns._GetDefaultClassOrder()) do
+                for pri, c in ipairs(saved.profile.classOrder or mod._GetDefaultClassOrder()) do
                     classPri[c] = pri
                 end
                 table.sort(group, function(a, b)
@@ -160,7 +160,7 @@ local function BuildPreviewRoles()
                     return a.idx < b.idx
                 end)
             elseif sortMode == "ROLE" then
-                local roleOrder = db.profile.roleOrder or { "TANK", "HEALER", "DAMAGER" }
+                local roleOrder = saved.profile.roleOrder or { "TANK", "HEALER", "DAMAGER" }
                 local rolePriority = {}
                 for pri, role in ipairs(roleOrder) do
                     rolePriority[role] = pri
@@ -168,16 +168,16 @@ local function BuildPreviewRoles()
                 -- Stable sort by role priority
                 local tmpGroup = {}
                 for pri, role in ipairs(roleOrder) do
-                    for _, entry in ipairs(group) do
-                        if entry.role == role then
-                            tmpGroup[#tmpGroup + 1] = entry
+                    for _, record in ipairs(group) do
+                        if record.role == role then
+                            tmpGroup[#tmpGroup + 1] = record
                         end
                     end
                 end
                 -- Any roles not in roleOrder (shouldn't happen, but safe)
-                for _, entry in ipairs(group) do
-                    if not rolePriority[entry.role] then
-                        tmpGroup[#tmpGroup + 1] = entry
+                for _, record in ipairs(group) do
+                    if not rolePriority[record.role] then
+                        tmpGroup[#tmpGroup + 1] = record
                     end
                 end
                 group = tmpGroup
@@ -185,8 +185,8 @@ local function BuildPreviewRoles()
 
             if showSelfFirst then
                 local playerPos
-                for i, entry in ipairs(group) do
-                    if entry.isPlayer then
+                for i, record in ipairs(group) do
+                    if record.isPlayer then
                         playerPos = i
                         break
                     end
@@ -204,14 +204,14 @@ local function BuildPreviewRoles()
 
             -- Write back sorted data
             for u = 1, 5 do
-                local idx = base + u
-                previewRoles[idx] = group[u].role
-                previewClassTokens[idx] = group[u].classToken
-                if ns._pvNames then
-                    ns._pvNames[idx] = group[u].name
+                local position = baseValue + u
+                previewRoles[position] = group[u].role
+                previewClassTokens[position] = group[u].classToken
+                if mod._pvNames then
+                    mod._pvNames[position] = group[u].name
                 end
                 if group[u].isPlayer then
-                    previewRoles._playerSlot = idx
+                    previewRoles._playerSlot = position
                 end
             end
         end
@@ -251,8 +251,8 @@ local function BuildPreviewRoles()
         rcStatuses[#rcStatuses + 1] = "summon_declined"
         -- Shuffle
         for i = #rcStatuses, 2, -1 do
-            local j = math.random(i)
-            rcStatuses[i], rcStatuses[j] = rcStatuses[j], rcStatuses[i]
+            local jdx = math.random(i)
+            rcStatuses[i], rcStatuses[jdx] = rcStatuses[jdx], rcStatuses[i]
         end
         -- Clear readycheck/summon on marker slots so they don't overlap
         local ms1, ms2 = previewRoles._markerSlot1, previewRoles._markerSlot2
@@ -280,8 +280,8 @@ local function BuildPreviewRoles()
             statePool[#statePool + 1] = i
         end
         for i = #statePool, 2, -1 do
-            local j = math.random(i)
-            statePool[i], statePool[j] = statePool[j], statePool[i]
+            local jdx = math.random(i)
+            statePool[i], statePool[jdx] = statePool[jdx], statePool[i]
         end
         previewRoles._deadSlot = statePool[1] -- plain corpse
         previewRoles._offlineSlot = statePool[2]
@@ -304,5 +304,5 @@ local function BuildPreviewRoles()
     end
 end
 
-I.BuildPreviewRoles, I.previewRoles = BuildPreviewRoles, previewRoles
-I.broken = false
+Inner.BuildPreviewRoles, Inner.previewRoles = BuildPreviewRoles, previewRoles
+Inner.broken = false

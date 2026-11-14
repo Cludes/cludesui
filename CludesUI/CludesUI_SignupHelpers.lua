@@ -44,51 +44,51 @@ local function InstallQuickSignupHooks()
     end
     installed = true
 
-    hooksecurefunc("LFGListSearchEntry_OnClick", function(entry, button)
+    hooksecurefunc("LFGListSearchEntry_OnClick", function(record, btnFrame)
         if not (CludesUIDB and CludesUIDB.quickSignup) then
             return
         end
-        if button == "RightButton" then
+        if btnFrame == "RightButton" then
             return
         end
 
-        local panel = LFGListFrame and LFGListFrame.SearchPanel
-        if not panel then
+        local panelFrame = LFGListFrame and LFGListFrame.SearchPanel
+        if not panelFrame then
             return
         end
         -- Blizzard's select check tests the result's fields, which are secret
         -- during chat messaging lockdown: stand down instead of erroring.
-        local resultID = entry.resultID
+        local resultID = record.resultID
         if issecretvalue(resultID) then
             return
         end
-        local info = C_LFGList.GetSearchResultInfo(resultID)
+        local details = C_LFGList.GetSearchResultInfo(resultID)
         if
-            type(info) ~= "table"
-            or issecretvalue(info)
-            or not canaccesstable(info)
-            or issecretvalue(info.isDelisted)
+            type(details) ~= "table"
+            or issecretvalue(details)
+            or not canaccesstable(details)
+            or issecretvalue(details.isDelisted)
         then
             return
         end
         if not LFGListSearchPanelUtil_CanSelectResult(resultID) then
             return
         end
-        if not panel.SignUpButton or not panel.SignUpButton:IsEnabled() then
+        if not panelFrame.SignUpButton or not panelFrame.SignUpButton:IsEnabled() then
             return
         end
 
-        local now = GetTime()
-        if lastClickEntry == resultID and (now - lastClickTime) < DOUBLE_CLICK_THRESHOLD then
-            if panel.selectedResult ~= resultID then
-                LFGListSearchPanel_SelectResult(panel, resultID)
+        local nowTime = GetTime()
+        if lastClickEntry == resultID and (nowTime - lastClickTime) < DOUBLE_CLICK_THRESHOLD then
+            if panelFrame.selectedResult ~= resultID then
+                LFGListSearchPanel_SelectResult(panelFrame, resultID)
             end
-            LFGListSearchPanel_SignUp(panel)
+            LFGListSearchPanel_SignUp(panelFrame)
             lastClickEntry = nil
             lastClickTime = 0
         else
             lastClickEntry = resultID
-            lastClickTime = now
+            lastClickTime = nowTime
         end
     end)
 
@@ -139,12 +139,12 @@ CludesUI._applyQuickSignup = function()
     if not ready then
         return
     end
-    local on = CludesUIDB and CludesUIDB.quickSignup
-    if on then
+    local enabled = CludesUIDB and CludesUIDB.quickSignup
+    if enabled then
         InstallQuickSignupHooks()
     end
     if roleFrame then
-        if on then
+        if enabled then
             roleFrame:RegisterEvent("LFG_ROLE_CHECK_SHOW")
         else
             roleFrame:UnregisterEvent("LFG_ROLE_CHECK_SHOW")
@@ -161,23 +161,23 @@ local copyHooked = false
 local copyHelper
 local hidingCopyField = false
 
-local function LimitNote(text)
-    if type(text) ~= "string" then
+local function LimitNote(textValue)
+    if type(textValue) ~= "string" then
         return ""
     end
-    text = text:gsub("[\r\n]+", " ")
-    local bytes, position, count, last = #text, 1, 0, 0
-    while position <= bytes and count < 63 do
-        local byte = text:byte(position)
+    textValue = textValue:gsub("[\r\n]+", " ")
+    local bytes, position, total, last = #textValue, 1, 0, 0
+    while position <= bytes and total < 63 do
+        local byte = textValue:byte(position)
         local width = byte < 128 and 1 or byte < 224 and 2 or byte < 240 and 3 or 4
         if position + width - 1 > bytes then
             break
         end
         last = position + width - 1
         position = last + 1
-        count = count + 1
+        total = total + 1
     end
-    return text:sub(1, last)
+    return textValue:sub(1, last)
 end
 
 local function SavedNote()
@@ -221,29 +221,29 @@ local function RefreshCopyHelper(dialog)
     end
 
     if not copyHelper then
-        local EG = CludesUI.CLUDES_GREEN
+        local ACC = CludesUI.CLUDES_GREEN
         local FONT = CludesUI.GetFontPath("main") or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-        local PP = CludesUI.PP
+        local Pix = CludesUI.PP
 
         local helper = CreateFrame("Frame", nil, dialog)
         helper:SetAllPoints(dialog)
         helper:EnableMouse(false)
 
-        local button = CreateFrame("Button", nil, helper)
-        button:SetSize(42, 20)
-        button:SetPoint("LEFT", description, "RIGHT", 4, 0)
-        button:EnableMouse(true)
+        local btnFrame = CreateFrame("Button", nil, helper)
+        btnFrame:SetSize(42, 20)
+        btnFrame:SetPoint("LEFT", description, "RIGHT", 4, 0)
+        btnFrame:EnableMouse(true)
 
-        local buttonBg = button:CreateTexture(nil, "BACKGROUND")
+        local buttonBg = btnFrame:CreateTexture(nil, "BACKGROUND")
         buttonBg:SetAllPoints()
         buttonBg:SetColorTexture(0.020, 0.025, 0.031, 0.92)
-        local buttonBorder = CludesUI.MakeBorder(button, EG.r, EG.g, EG.b, 0.72, PP)
+        local buttonBorder = CludesUI.MakeBorder(btnFrame, ACC.r, ACC.g, ACC.b, 0.72, Pix)
 
-        local buttonText = button:CreateFontString(nil, "OVERLAY")
+        local buttonText = btnFrame:CreateFontString(nil, "OVERLAY")
         buttonText:SetFont(FONT, 9, "")
         buttonText:SetPoint("CENTER", 0, 0)
         buttonText:SetText(CludesUI.L("Copy"))
-        buttonText:SetTextColor(EG.r, EG.g, EG.b, 0.92)
+        buttonText:SetTextColor(ACC.r, ACC.g, ACC.b, 0.92)
 
         local copyBox = CreateFrame("EditBox", nil, helper)
         copyBox:SetPoint("TOPLEFT", description, "TOPLEFT", 0, 0)
@@ -253,16 +253,16 @@ local function RefreshCopyHelper(dialog)
         copyBox:SetTextColor(1, 1, 1, 0.96)
         copyBox:SetTextInsets(5, 5, 0, 0)
         copyBox:SetJustifyH("LEFT")
-        copyBox:SetHighlightColor(EG.r, EG.g, EG.b, 0.45)
+        copyBox:SetHighlightColor(ACC.r, ACC.g, ACC.b, 0.45)
         copyBox:EnableMouse(true)
         local copyBg = copyBox:CreateTexture(nil, "BACKGROUND")
         copyBg:SetAllPoints()
         copyBg:SetColorTexture(0.020, 0.025, 0.031, 1)
-        CludesUI.MakeBorder(copyBox, EG.r, EG.g, EG.b, 0.9, PP)
+        CludesUI.MakeBorder(copyBox, ACC.r, ACC.g, ACC.b, 0.9, Pix)
         copyBox:Hide()
 
         copyBox:SetScript("OnEditFocusLost", function()
-            if not hidingCopyField and not button:IsMouseOver() then
+            if not hidingCopyField and not btnFrame:IsMouseOver() then
                 HideCopyField(false)
             end
         end)
@@ -272,15 +272,15 @@ local function RefreshCopyHelper(dialog)
             end
         end)
 
-        button:SetScript("OnEnter", function()
-            buttonBorder:SetColor(EG.r, EG.g, EG.b, 1)
-            buttonText:SetTextColor(EG.r, EG.g, EG.b, 1)
+        btnFrame:SetScript("OnEnter", function()
+            buttonBorder:SetColor(ACC.r, ACC.g, ACC.b, 1)
+            buttonText:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
         end)
-        button:SetScript("OnLeave", function()
-            buttonBorder:SetColor(EG.r, EG.g, EG.b, 0.72)
-            buttonText:SetTextColor(EG.r, EG.g, EG.b, 0.92)
+        btnFrame:SetScript("OnLeave", function()
+            buttonBorder:SetColor(ACC.r, ACC.g, ACC.b, 0.72)
+            buttonText:SetTextColor(ACC.r, ACC.g, ACC.b, 0.92)
         end)
-        button:SetScript("OnClick", function()
+        btnFrame:SetScript("OnClick", function()
             if copyBox:IsShown() then
                 HideCopyField(false)
                 return
@@ -296,7 +296,7 @@ local function RefreshCopyHelper(dialog)
             buttonText:SetText("Ctrl+C")
         end)
 
-        helper.button = button
+        helper.button = btnFrame
         helper.buttonText = buttonText
         helper.copyBox = copyBox
         copyHelper = helper
@@ -320,16 +320,16 @@ local function PatchedShow(self, resultID)
         pcall(function()
             -- Cleared up-front so a mid-read throw can't leave a stale activityID from a previous dialog open.
             self.activityID = nil
-            local info = C_LFGList.GetSearchResultInfo(resultID)
-            if type(info) ~= "table" then
+            local details = C_LFGList.GetSearchResultInfo(resultID)
+            if type(details) ~= "table" then
                 return
             end
-            local aid = info.activityID
+            local aid = details.activityID
             if issecretvalue(aid) then
                 aid = nil
             end
-            if aid == nil and info.activityIDs and not issecretvalue(info.activityIDs) then
-                aid = info.activityIDs[1]
+            if aid == nil and details.activityIDs and not issecretvalue(details.activityIDs) then
+                aid = details.activityIDs[1]
                 if issecretvalue(aid) then
                     aid = nil
                 end

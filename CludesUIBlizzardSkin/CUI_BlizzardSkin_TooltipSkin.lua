@@ -8,16 +8,15 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  menus, the resurrect glow and the LFG queue popup.
 --  Reads CludesUIBlizzardSkin.lua through ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not I or I.last ~= "main" then
+if not Inner or Inner.last ~= "main" then
     return
 end
 
-local FFD, GetFFD = I.FFD, I.GetFFD
--------------------------------------------------------------------------------
+local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------------------------------------------------
 --  Tooltip / Context Menu / Static Popup Skinning
 --  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color,
 --  font). NEVER Hide/Show/SetParent Blizzard frames; hooks are hooksecurefunc post-hooks only.
@@ -47,11 +46,11 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- below it without ever setting that flag, so the only legal probe is a pcall'd read.
     -- Skip the pass instead of raising inside a Blizzard OnShow; the last-good skin stands and the next apply, off that anchor, runs normally.
     local function _ttUsable(tt)
-        local ok, w = pcall(tt.GetWidth, tt)
-        if not ok then
+        local success, wid = pcall(tt.GetWidth, tt)
+        if not success then
             return false
         end
-        if _isSecret and _isSecret(w) then
+        if _isSecret and _isSecret(wid) then
             return false
         end
         return true
@@ -59,75 +58,75 @@ local FFD, GetFFD = I.FFD, I.GetFFD
 
     -- Size step, step key, color and opacity of a <prefix>Border* configured border
     -- colorOverride (optional {r,g,b}): a caller-computed color for loot window's "quality"
-    local function _resolveConfiguredBorder(prefix, legacySize, colorOverride)
-        local db = CludesUIDB or {}
-        local key = db[prefix .. "BorderThickness"]
+    local function _resolveConfiguredBorder(prefixText, legacySize, colorOverride)
+        local saved = CludesUIDB or {}
+        local key = saved[prefixText .. "BorderThickness"]
         local sizes = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
-        local size = key and (sizes[key] or 1) or (legacySize or 1)
+        local dim = key and (sizes[key] or 1) or (legacySize or 1)
         key = key
-            or ({ [0] = "none", [1] = "thin", [2] = "normal", [3] = "heavy", [4] = "strong" })[size]
+            or ({ [0] = "none", [1] = "thin", [2] = "normal", [3] = "heavy", [4] = "strong" })[dim]
             or "thin"
-        local mode = db[prefix .. "BorderColorMode"] or "custom"
+        local modeName = saved[prefixText .. "BorderColorMode"] or "custom"
         local color
         if colorOverride then
             color = colorOverride
-        elseif mode == "accent" then
+        elseif modeName == "accent" then
             color = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
-        elseif mode == "class" then
+        elseif modeName == "class" then
             local _, class = UnitClass("player")
             color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
         else
-            color = db[prefix .. "BorderColor"] or { r = 1, g = 1, b = 1 }
+            color = saved[prefixText .. "BorderColor"] or { r = 1, g = 1, b = 1 }
         end
-        local alpha = db[prefix .. "BorderOpacity"]
+        local alpha = saved[prefixText .. "BorderOpacity"]
         if alpha == nil then
-            alpha = (mode == "custom") and CludesUI.RESKIN.BRD_ALPHA or 0.5
+            alpha = (modeName == "custom") and CludesUI.RESKIN.BRD_ALPHA or 0.5
         end
-        return db, size, key, color, alpha
+        return saved, dim, key, color, alpha
     end
 
-    local function _applyConfiguredBorder(owner, prefix, legacySize, colorOverride)
-        if not owner or not CludesUI.ApplyBorderStyle then
+    local function _applyConfiguredBorder(ownerFrame, prefixText, legacySize, colorOverride)
+        if not ownerFrame or not CludesUI.ApplyBorderStyle then
             return
         end
         -- Read the level up front: it is the first widget call this makes, so it doubles as the restriction probe (see _ttUsable).
-        local okLvl, ownerLevel = pcall(owner.GetFrameLevel, owner)
+        local okLvl, ownerLevel = pcall(ownerFrame.GetFrameLevel, ownerFrame)
         if not okLvl then
             return
         end
-        local db, size, key, color, alpha = _resolveConfiguredBorder(prefix, legacySize, colorOverride)
-        local data = GetFFD(owner)
-        if not data.configBorder then
-            data.configBorder = CreateFrame("Frame", nil, owner, "BackdropTemplate")
-            data.configBorder:SetAllPoints(owner)
-            data.configBorder:EnableMouse(false)
+        local saved, dim, key, color, alpha = _resolveConfiguredBorder(prefixText, legacySize, colorOverride)
+        local payload = GetFFD(ownerFrame)
+        if not payload.configBorder then
+            payload.configBorder = CreateFrame("Frame", nil, ownerFrame, "BackdropTemplate")
+            payload.configBorder:SetAllPoints(ownerFrame)
+            payload.configBorder:EnableMouse(false)
             if not _PP then
                 _PP = CludesUI.PP
             end
             if _PP and _PP.HideBorder then
-                _PP.HideBorder(owner)
+                _PP.HideBorder(ownerFrame)
             end
         end
         -- Recomputed every apply so Show Behind works live. +4 not +5: the resurrect-accept
         -- glow overlay sits at +5 on the same buttons and a tie goes to the later-created sibling, so the border must never bury it.
-        data.configBorder:SetFrameLevel(
-            db[prefix .. "BorderBehind"] and math.max(0, ownerLevel - 1) or (ownerLevel + 4)
+        payload.configBorder:SetFrameLevel(
+            saved[prefixText .. "BorderBehind"] and math.max(0, ownerLevel - 1) or (ownerLevel + 4)
         )
-        local tex = db[prefix .. "BorderTexture"] or "solid"
+        local texture = saved[prefixText .. "BorderTexture"] or "solid"
         -- Exact Border Size (the <prefix>BorderThicknessPx companion); nil = the legacy step above, unchanged.
-        local px = CludesUI.BorderPx(db[prefix .. "BorderThicknessPx"], size, tex)
+        local px = CludesUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], dim, texture)
         CludesUI.ApplyBorderStyle(
-            data.configBorder,
-            size,
+            payload.configBorder,
+            dim,
             color.r,
             color.g,
             color.b,
             alpha,
-            tex,
-            db[prefix .. "BorderOffsetX"],
-            db[prefix .. "BorderOffsetY"],
-            db[prefix .. "BorderShiftX"],
-            db[prefix .. "BorderShiftY"],
+            texture,
+            saved[prefixText .. "BorderOffsetX"],
+            saved[prefixText .. "BorderOffsetY"],
+            saved[prefixText .. "BorderShiftX"],
+            saved[prefixText .. "BorderShiftY"],
             "blizzardSkin",
             key,
             nil,
@@ -137,9 +136,9 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     CludesUI._applyBlizzardConfiguredBorder = _applyConfiguredBorder
 
     -- Removes a border drawn by _applyConfiguredBorder for a setting that went back to its default.
-    CludesUI._hideBlizzardConfiguredBorder = function(owner)
-        local data = owner and FFD[owner]
-        local border = data and data.configBorder
+    CludesUI._hideBlizzardConfiguredBorder = function(ownerFrame)
+        local payload = ownerFrame and FFD[ownerFrame]
+        local border = payload and payload.configBorder
         if not border then
             return
         end
@@ -150,22 +149,22 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- Element & Text Color mode. "native" = surfaces keep original coloring (Game Menu header
     -- stays branded green). UNSET resolves to native unless the user had the legacy Accent Colored Elements toggle on, so old choices carry forward with no migration write and a fresh install sees no change.
     local function _elementColorMode()
-        local db = CludesUIDB or {}
-        local mode = db.popupMenuButtonTextColorMode
-        if mode == nil then
-            mode = db.accentReskinElements and "accent" or "native"
+        local saved = CludesUIDB or {}
+        local modeName = saved.popupMenuButtonTextColorMode
+        if modeName == nil then
+            modeName = saved.accentReskinElements and "accent" or "native"
         end
-        return mode
+        return modeName
     end
     CludesUI._getPopupMenuElementMode = _elementColorMode
 
     local function _getElementColor()
-        local db = CludesUIDB or {}
-        local mode = _elementColorMode()
-        if mode == "custom" then
-            local c = db.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
+        local saved = CludesUIDB or {}
+        local modeName = _elementColorMode()
+        if modeName == "custom" then
+            local c = saved.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
             return c.r, c.g, c.b
-        elseif mode == "class" then
+        elseif modeName == "class" then
             local _, class = UnitClass("player")
             local c = class and RAID_CLASS_COLORS[class]
             if c then
@@ -230,11 +229,11 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- on the family is left alone.
         local SetFamily = CludesUI.SetFontFamily
         for i = (startFrom or 1), nLines do
-            local left = _G[name .. "TextLeft" .. i]
-            if not left then
+            local leftX = _G[name .. "TextLeft" .. i]
+            if not leftX then
                 break
             end
-            SetFamily(left, fp, (i == 1) and titleSize or bodySize, ol, false)
+            SetFamily(leftX, fp, (i == 1) and titleSize or bodySize, ol, false)
             local right = _G[name .. "TextRight" .. i]
             if right then
                 SetFamily(right, fp, bodySize, ol, false)
@@ -304,16 +303,16 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- GUID the visible GameTooltip was last populated for (set by the Unit post-call, cleared on hide); lets the async inspect handler confirm identity before touching it.
     local _tipShownGUID = nil
     -- True when any left line already shows label, so an appended score/ilvl line never duplicates one another Unit post-call produced. Matches label as a plain (non-pattern) substring, so "+" is literal.
-    local function _tipHasLine(tt, label)
+    local function _tipHasLine(tt, labelText)
         local nm = tt.GetName and tt:GetName()
         if not nm then
             return false
         end
-        local n = tt.NumLines and tt:NumLines() or 0
-        for i = 1, n do
-            local fs = _G[nm .. "TextLeft" .. i]
-            local txt = fs and fs:GetText()
-            if txt and not (_isSecret and _isSecret(txt)) and txt:find(label, 1, true) then
+        local num = tt.NumLines and tt:NumLines() or 0
+        for i = 1, num do
+            local fontStr = _G[nm .. "TextLeft" .. i]
+            local txt = fontStr and fontStr:GetText()
+            if txt and not (_isSecret and _isSecret(txt)) and txt:find(labelText, 1, true) then
                 return true
             end
         end
@@ -322,11 +321,11 @@ local FFD, GetFFD = I.FFD, I.GetFFD
 
     -- Returns the mount name shown on a unit and whether the LOCAL player has it collected
     -- (true/false, nil if unknown -- e.g. name came from the aura, not MountJournal). Collection state is the 11th return of GetMountInfoByID, per-character.
-    local function _getMountedAuraName(unit)
-        if not unit or (_isSecret and _isSecret(unit)) then
+    local function _getMountedAuraName(unitToken)
+        if not unitToken or (_isSecret and _isSecret(unitToken)) then
             return nil
         end
-        if not UnitExists(unit) or not UnitIsPlayer(unit) then
+        if not UnitExists(unitToken) or not UnitIsPlayer(unitToken) then
             return nil
         end
         if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then
@@ -347,7 +346,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         end
 
         for i = 1, 255 do
-            local aura = C_UnitAuras.GetAuraDataByIndex(unit, i, "HELPFUL")
+            local aura = C_UnitAuras.GetAuraDataByIndex(unitToken, i, "HELPFUL")
             if not aura then
                 break
             end
@@ -391,7 +390,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- Caches every INSPECT_READY, including the ones other addons asked for, which is
     -- what lets the tooltip stay passive while such an addon polls the group.
     local _inspectFrame
-    local function _onInspectReady(self, _, guid)
+    local function _onInspectReady(self, _, unitGuid)
         -- Option turned off this session: stop listening; the next unit tooltip with it
         -- on re-activates. Same test as the tooltip pass, so the two never flip-flop
         -- (the reskin master only takes effect on /reload, when nothing is activated).
@@ -400,47 +399,47 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             _insp.active = false
             return
         end
-        if not guid or (_isSecret and _isSecret(guid)) then
+        if not unitGuid or (_isSecret and _isSecret(unitGuid)) then
             return
         end
-        if guid == _inspectPendingGUID then
+        if unitGuid == _inspectPendingGUID then
             _inspectPendingGUID = nil
         end
         -- Read item level through a token derived from THAT GUID, so it is captured even after the cursor left the unit and cached under the right GUID.
         if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel and _G.UnitTokenFromGUID then
-            local u = _G.UnitTokenFromGUID(guid)
+            local u = _G.UnitTokenFromGUID(unitGuid)
             if u and not (_isSecret and _isSecret(u)) and UnitExists(u) then
                 local val = C_PaperDollInfo.GetInspectItemLevel(u)
                 if val and not (_isSecret and _isSecret(val)) and val > 0 then
                     -- One request fires a burst of 10+ events; update in place instead of allocating per event.
-                    local entry = _ilvlCache[guid]
-                    local now = GetTime()
-                    if entry then
-                        entry.ilvl = math.floor(val)
-                        entry.time = now
+                    local record = _ilvlCache[unitGuid]
+                    local nowTime = GetTime()
+                    if record then
+                        record.ilvl = math.floor(val)
+                        record.time = nowTime
                     else
                         -- Every inspect source feeds the cache now, so sweep expired
                         -- entries at most once per TTL, only when a new one is added.
-                        if now >= _insp.pruneAt then
-                            _insp.pruneAt = now + _ilvlCacheTTL
+                        if nowTime >= _insp.pruneAt then
+                            _insp.pruneAt = nowTime + _ilvlCacheTTL
                             for g, e in pairs(_ilvlCache) do
-                                if (now - e.time) >= _ilvlCacheTTL then
+                                if (nowTime - e.time) >= _ilvlCacheTTL then
                                     _ilvlCache[g] = nil
                                 end
                             end
                         end
-                        _ilvlCache[guid] = { ilvl = math.floor(val), time = now }
+                        _ilvlCache[unitGuid] = { ilvl = math.floor(val), time = nowTime }
                     end
                 end
             end
         end
         -- Append only while the tooltip still shows this GUID and the line is not already present.
-        local cached = _ilvlCache[guid]
+        local cached = _ilvlCache[unitGuid]
         local ttd = GetFFD(_GameTooltip)
         if
             cached
             and _GameTooltip:IsShown()
-            and _tipShownGUID == guid
+            and _tipShownGUID == unitGuid
             and not ttd.ilvlShown
             and not _tipHasLine(_GameTooltip, CludesUI.L("Item Level"))
         then
@@ -495,18 +494,18 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- tokens we build ourselves (player/raidN/partyN). On secure raid-frame unit
     -- tooltips, GetUnit()/UnitTokenFromGUID can return a secret/unusable token even
     -- though the GUID is clean, starving token-based APIs (M+ summary, inspect item level); a literal token built here is never secret.
-    local function _CleanTokenForGUID(guid)
-        if not guid or (_isSecret and _isSecret(guid)) then
+    local function _CleanTokenForGUID(unitGuid)
+        if not unitGuid or (_isSecret and _isSecret(unitGuid)) then
             return nil
         end
-        if UnitGUID("player") == guid then
+        if UnitGUID("player") == unitGuid then
             return "player"
         end
         if IsInRaid() then
             for i = 1, GetNumGroupMembers() do
                 local tk = "raid" .. i
                 local tg = UnitGUID(tk)
-                if tg and not (_isSecret and _isSecret(tg)) and tg == guid then
+                if tg and not (_isSecret and _isSecret(tg)) and tg == unitGuid then
                     return tk
                 end
             end
@@ -514,7 +513,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             for i = 1, GetNumSubgroupMembers() do
                 local tk = "party" .. i
                 local tg = UnitGUID(tk)
-                if tg and not (_isSecret and _isSecret(tg)) and tg == guid then
+                if tg and not (_isSecret and _isSecret(tg)) and tg == unitGuid then
                     return tk
                 end
             end
@@ -526,7 +525,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- inspect window is open or waiting on this player, or the talent frame is inspecting
     -- someone (ClearInspectPlayer would retarget it). Timed hold-offs, passive mode
     -- included, are not blocks; _dwellTick waits them out.
-    local function _inspBlocked(guid, now)
+    local function _inspBlocked(unitGuid, nowTime)
         local psf = PlayerSpellsFrame
         if psf and psf.IsInspecting and psf:IsInspecting() then
             return true
@@ -541,7 +540,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             local u = f.unit
             if u and not (_isSecret and _isSecret(u)) then
                 local g = UnitGUID(u)
-                if g and not (_isSecret and _isSecret(g)) and g == guid then
+                if g and not (_isSecret and _isSecret(g)) and g == unitGuid then
                     return true
                 end
             end
@@ -558,28 +557,28 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- One named timer function, rescheduled while needed, so no closure per hover.
     local function _dwellTick()
         _insp.dwellArmed = false
-        local guid = _insp.dwellGUID
-        if not guid then
+        local unitGuid = _insp.dwellGUID
+        if not unitGuid then
             return
         end
-        local db = CludesUIDB
+        local saved = CludesUIDB
         -- Cursor moved on, option turned off, or combat started: drop it; the next tooltip pass re-arms.
         if
-            _tipShownGUID ~= guid
+            _tipShownGUID ~= unitGuid
             or not _GameTooltip:IsShown()
-            or not (db and db.tooltipItemLevel ~= false)
+            or not (saved and saved.tooltipItemLevel ~= false)
             or InCombatLockdown()
         then
             _insp.dwellGUID = nil
             return
         end
-        local now = GetTime()
-        local cached = _ilvlCache[guid]
-        if cached and (now - cached.time) < _ilvlCacheTTL then
+        local nowTime = GetTime()
+        local cached = _ilvlCache[unitGuid]
+        if cached and (nowTime - cached.time) < _ilvlCacheTTL then
             _insp.dwellGUID = nil
             return
         end
-        if _inspBlocked(guid, now) then
+        if _inspBlocked(unitGuid, nowTime) then
             _insp.dwellGUID = nil
             return
         end
@@ -587,59 +586,59 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- request (the user's own Inspect included), and our outstanding request's expiry.
         -- Raid frames never refresh their tooltip, so a dropped hover would stay blank.
         local readyAt = math.max(_insp.dwellAt + _insp.DWELL, _insp.lastAny + _insp.MIN_GAP)
-        if guid == _inspectPendingGUID then
+        if unitGuid == _inspectPendingGUID then
             readyAt = math.max(readyAt, _insp.pendingAt + _insp.PENDING_TTL)
         end
         -- Passive mode: a group member waits out another addon's polling, which will
         -- inspect them and feed the open tooltip through the handler. Anyone outside the
         -- group is never polled by it, so they keep the plain MIN_GAP pacing.
-        local unit = _CleanTokenForGUID(guid)
-        if unit then
+        local unitToken = _CleanTokenForGUID(unitGuid)
+        if unitToken then
             readyAt = math.max(readyAt, _insp.lastForeign + _insp.FOREIGN_WINDOW)
         end
-        if readyAt > now then
+        if readyAt > nowTime then
             _insp.dwellArmed = true
-            C_Timer.After(readyAt - now, _dwellTick)
+            C_Timer.After(readyAt - nowTime, _dwellTick)
             return
         end
         _insp.dwellGUID = nil
-        if not unit and _G.UnitTokenFromGUID then
-            local tu = _G.UnitTokenFromGUID(guid)
+        if not unitToken and _G.UnitTokenFromGUID then
+            local tu = _G.UnitTokenFromGUID(unitGuid)
             if tu and not (_isSecret and _isSecret(tu)) then
-                unit = tu
+                unitToken = tu
             end
         end
         -- Same last resort as _resolveTipIdentity: "mouseover" only when it provably maps to this guid.
-        if not unit and UnitExists("mouseover") then
+        if not unitToken and UnitExists("mouseover") then
             local mg = UnitGUID("mouseover")
-            if mg and not (_isSecret and _isSecret(mg)) and mg == guid then
-                unit = "mouseover"
+            if mg and not (_isSecret and _isSecret(mg)) and mg == unitGuid then
+                unitToken = "mouseover"
             end
         end
-        if not unit or not UnitExists(unit) or not CanInspect(unit) then
+        if not unitToken or not UnitExists(unitToken) or not CanInspect(unitToken) then
             return
         end
-        _inspectPendingGUID = guid
-        _insp.pendingAt = now
-        _insp.ourAt = now
+        _inspectPendingGUID = unitGuid
+        _insp.pendingAt = nowTime
+        _insp.ourAt = nowTime
         ClearInspectPlayer()
-        NotifyInspect(unit)
+        NotifyInspect(unitToken)
     end
     -- Caller has already found no cached item level for guid.
-    local function _requestTooltipInspect(guid)
+    local function _requestTooltipInspect(unitGuid)
         -- The pending dwell re-checks every gate itself; skip them on each refresh meanwhile.
-        if _insp.dwellArmed and _insp.dwellGUID == guid then
+        if _insp.dwellArmed and _insp.dwellGUID == unitGuid then
             return
         end
-        local now = GetTime()
+        local nowTime = GetTime()
         -- Hard-blocked now: arm nothing; a later tooltip refresh or re-hover asks again.
-        if _inspBlocked(guid, now) then
+        if _inspBlocked(unitGuid, nowTime) then
             return
         end
         -- Always track the latest unit; a running timer picks up the retarget.
-        if _insp.dwellGUID ~= guid then
-            _insp.dwellGUID = guid
-            _insp.dwellAt = now
+        if _insp.dwellGUID ~= unitGuid then
+            _insp.dwellGUID = unitGuid
+            _insp.dwellAt = nowTime
         end
         if not _insp.dwellArmed then
             _insp.dwellArmed = true
@@ -653,75 +652,78 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- for identity: the secure focus system updates it on its own schedule and can still
     -- point at the previous frame's unit on fast movement/first hover. Returns (guid,
     -- token); token always maps to guid, used only by token-based APIs (class fallback, M+ summary, inspect). Either may be nil; callers then skip our extras.
-    local function _resolveTipIdentity(tt, data)
-        local guid = data and data.guid
-        if guid and _isSecret and _isSecret(guid) then
-            guid = nil
+    local function _resolveTipIdentity(tt, payload)
+        local unitGuid = payload and payload.guid
+        if unitGuid and _isSecret and _isSecret(unitGuid) then
+            unitGuid = nil
         end
         local token
-        local ok, _, u = pcall(tt.GetUnit, tt)
-        if ok and u and not (_isSecret and _isSecret(u)) and UnitExists(u) then
+        local success, _, u = pcall(tt.GetUnit, tt)
+        if success and u and not (_isSecret and _isSecret(u)) and UnitExists(u) then
             local g = UnitGUID(u)
             if g and not (_isSecret and _isSecret(g)) then
-                if not guid then
-                    guid = g
+                if not unitGuid then
+                    unitGuid = g
                 end
-                if g == guid then
+                if g == unitGuid then
                     token = u
                 end
             end
         end
         -- Covers our raid/party frames, where GetUnit()/UnitTokenFromGUID return secret tokens but the GUID is clean.
-        if guid and not token then
-            token = _CleanTokenForGUID(guid)
+        if unitGuid and not token then
+            token = _CleanTokenForGUID(unitGuid)
         end
-        if guid and not token and _G.UnitTokenFromGUID then
-            local tu = _G.UnitTokenFromGUID(guid)
+        if unitGuid and not token and _G.UnitTokenFromGUID then
+            local tu = _G.UnitTokenFromGUID(unitGuid)
             if tu and not (_isSecret and _isSecret(tu)) and UnitExists(tu) then
                 token = tu
             end
         end
         -- Last resort: accept "mouseover" ONLY when it provably maps to the same authoritative
         -- guid -- recovers a usable token (M+/ilvl/title) where UnitTokenFromGUID returns secret, with no cursor-lag misattribution risk.
-        if guid and not token and UnitExists("mouseover") then
+        if unitGuid and not token and UnitExists("mouseover") then
             local mg = UnitGUID("mouseover")
-            if mg and not (_isSecret and _isSecret(mg)) and mg == guid then
+            if mg and not (_isSecret and _isSecret(mg)) and mg == unitGuid then
                 token = "mouseover"
             end
         end
-        return guid, token
+        return unitGuid, token
     end
 
     -- "Targeting" line: who the hovered unit targets. Opt-in (default off). Needs a
     -- live unit token to build the relational target token, so hovers resolving only
     -- a GUID (our raid/party frames) skip it; identity-secret targets are skipped
     -- entirely. Refresh passes re-run the postprocessor while the tip is up, so an existing line is updated IN PLACE (never appended twice).
-    local function _ttTargetLine(tt, unit)
-        local db = CludesUIDB
-        if not (unit and db and db.tooltipShowTarget) then
+    local function _ttTargetLine(tt, unitToken)
+        local saved = CludesUIDB
+        if not (unitToken and saved and saved.tooltipShowTarget) then
             return
         end
-        local tu = unit .. "target"
+        local tu = unitToken .. "target"
         if C_Secrets and C_Secrets.ShouldUnitIdentityBeSecret then
             local s = C_Secrets.ShouldUnitIdentityBeSecret(tu)
             if (_isSecret and _isSecret(s)) or s == true then
                 return
             end
         end
-        local label = CludesUI.L("Targeting:")
+        local labelText = CludesUI.L("Targeting:")
         local tName, r, g, b
         if UnitExists(tu) then
             if UnitIsUnit(tu, "player") then
                 tName = CludesUI.L("You")
                 r, g, b = 0.1, 1, 0.1
             else
-                local n = UnitName(tu)
-                if n and not (_isSecret and _isSecret(n)) then
-                    tName = n
+                local num = UnitName(tu)
+                if num and not (_isSecret and _isSecret(num)) then
+                    tName = num
                     r, g, b = 0.9, 0.9, 0.9
                     if UnitIsPlayer(tu) then
-                        local _, cf = UnitClass(tu)
-                        local cc = cf and not (_isSecret and _isSecret(cf)) and _RAID_CC and _RAID_CC[cf]
+                        local _, castFrame = UnitClass(tu)
+                        local cc = castFrame
+                            and not (_isSecret and _isSecret(castFrame))
+                            and _RAID_CC
+                            and _RAID_CC[castFrame]
                         if cc then
                             r, g, b = cc.r, cc.g, cc.b
                         end
@@ -741,7 +743,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         for i = 2, (tt.NumLines and tt:NumLines() or 0) do
             local lineL = _G["GameTooltipTextLeft" .. i]
             local txt = lineL and lineL:GetText()
-            if txt and not (_isSecret and _isSecret(txt)) and txt == label then
+            if txt and not (_isSecret and _isSecret(txt)) and txt == labelText then
                 local lineR = _G["GameTooltipTextRight" .. i]
                 if lineR then
                     if tName then
@@ -757,7 +759,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             end
         end
         if tName then
-            tt:AddDoubleLine(label, tName, 1, 1, 1, r, g, b)
+            tt:AddDoubleLine(labelText, tName, 1, 1, 1, r, g, b)
         end
     end
 
@@ -778,35 +780,35 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             return
         end
         local AK = CludesUI.AuraKit
-        local db = CludesUIDB or {}
-        if not db.tooltipShowBuffs then
+        local saved = CludesUIDB or {}
+        if not saved.tooltipShowBuffs then
             c:Hide()
             return
         end
-        local size = db.tooltipBuffSize or 20
-        local perRow = db.tooltipBuffsPerRow or 8
-        local p = _TT_BUFF_POS[db.tooltipBuffPosition or "bottom"] or _TT_BUFF_POS.bottom
-        local style = AK.styles.ttBuffs
+        local dim = saved.tooltipBuffSize or 20
+        local perRow = saved.tooltipBuffsPerRow or 8
+        local p = _TT_BUFF_POS[saved.tooltipBuffPosition or "bottom"] or _TT_BUFF_POS.bottom
+        local look = AK.styles.ttBuffs
         -- Only a size change restyles, and through the deferred restyle: the
         -- tooltip can be built from tainted code (a unit frame hover) while
         -- auras are secret, when the engine's aura buttons refuse tainted calls,
         -- and the deferred pass holds the restyle until that lifts.
-        if style.width ~= size or style.height ~= size then
-            style.width, style.height = size, size
+        if look.width ~= dim or look.height ~= dim then
+            look.width, look.height = dim, dim
             AK.RestyleSoon("ttBuffs")
         end
         c:SetAuraGroupLayout(
             "buffs",
-            { elementWidth = size, elementHeight = size, elementSpacing = 2, lineSpacing = 2 }
+            { elementWidth = dim, elementHeight = dim, elementSpacing = 2, lineSpacing = 2 }
         )
-        AK.SetContainerRowWidth(c, perRow * size + (perRow - 1) * 2 + 0.4)
+        AK.SetContainerRowWidth(c, perRow * dim + (perRow - 1) * 2 + 0.4)
         c:ClearAllPoints()
         c:SetPoint(
             p[1],
             _GameTooltip,
             p[2],
-            p[5] + (db.tooltipBuffOffsetX or 0),
-            p[6] + (db.tooltipBuffOffsetY or 0)
+            p[5] + (saved.tooltipBuffOffsetX or 0),
+            p[6] + (saved.tooltipBuffOffsetY or 0)
         )
         AK.SetContainerAnchor(c, p[1])
         local FD = AnchorUtil.FlowDirection
@@ -814,9 +816,9 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     end
     CludesUI._applyTooltipBuffs = _ttBuffsLayout
 
-    local function _ttShowBuffs(guid, unit)
-        local db = CludesUIDB
-        if not (unit and db and db.tooltipShowBuffs) then
+    local function _ttShowBuffs(unitGuid, unitToken)
+        local saved = CludesUIDB
+        if not (unitToken and saved and saved.tooltipShowBuffs) then
             return
         end
         local AK = CludesUI.AuraKit
@@ -825,10 +827,10 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             -- AuraKit keeps the buttons mouse-free through every restyle. Built
             -- at the saved size, so the buttons are decorated in the engine's
             -- creation window and the first show needs no restyle.
-            local size = db.tooltipBuffSize or 20
+            local dim = saved.tooltipBuffSize or 20
             AK.styles.ttBuffs = {
-                width = size,
-                height = size,
+                width = dim,
+                height = dim,
                 iconCrop = true,
                 hideDurationText = true,
                 noTooltips = true,
@@ -837,21 +839,18 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             local c =
                 AK.CreateContainerShell(_GameTooltip, { point = { "TOPLEFT", _GameTooltip, "BOTTOMLEFT" } })
             -- Capped at 16 icons.
-            AK.AddGroupToContainer(
-                c,
-                {
-                    key = "buffs",
-                    filter = { "HELPFUL" },
-                    maxFrameCount = 16,
-                    style = "ttBuffs",
-                    layout = {
-                        elementWidth = size,
-                        elementHeight = size,
-                        elementSpacing = 2,
-                        lineSpacing = 2,
-                    },
-                }
-            )
+            AK.AddGroupToContainer(c, {
+                key = "buffs",
+                filter = { "HELPFUL" },
+                maxFrameCount = 16,
+                style = "ttBuffs",
+                layout = {
+                    elementWidth = dim,
+                    elementHeight = dim,
+                    elementSpacing = 2,
+                    lineSpacing = 2,
+                },
+            })
             _ttBuffs = c
             _ttBuffsLayout()
             -- Cleared on every tooltip rebuild; the unit post-call re-shows it for players.
@@ -862,9 +861,9 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 _ttBuffsGUID = nil
             end)
         end
-        if guid ~= _ttBuffsGUID or unit ~= _ttBuffsUnit then
-            _ttBuffsGUID, _ttBuffsUnit = guid, unit
-            _ttBuffs:SetUnit(unit)
+        if unitGuid ~= _ttBuffsGUID or unitToken ~= _ttBuffsUnit then
+            _ttBuffsGUID, _ttBuffsUnit = unitGuid, unitToken
+            _ttBuffs:SetUnit(unitToken)
             _ttBuffs:UpdateAllAuras()
         end
         _ttBuffs:Show()
@@ -903,12 +902,12 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             _LEVEL_PATTERNS[#_LEVEL_PATTERNS + 1] = pat
         end
     end
-    local function _isLevelText(text)
-        if not text:find("[%d%?]") then
+    local function _isLevelText(textValue)
+        if not textValue:find("[%d%?]") then
             return false
         end
         for _, pat in ipairs(_LEVEL_PATTERNS) do
-            if text:find(pat) then
+            if textValue:find(pat) then
                 return true
             end
         end
@@ -916,33 +915,33 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     end
     -- The guild line is the guild name, optionally followed by "-Realm", " (Rank)" or
     -- Guild Rank's " [Rank]"; matching the start keeps a guild named "Or" off "Level 80 Orc".
-    local function _isGuildText(text, guildName)
-        if text:sub(1, #guildName) ~= guildName then
+    local function _isGuildText(textValue, guildName)
+        if textValue:sub(1, #guildName) ~= guildName then
             return false
         end
-        local rest = text:sub(#guildName + 1)
+        local rest = textValue:sub(#guildName + 1)
         local two = rest:sub(1, 2)
         return rest == "" or rest:sub(1, 1) == "-" or two == " (" or two == " ["
     end
     -- One parts list for the compact level line, refilled on every build.
     local _compactParts = {}
-    local function _ttLineColors(tt, data, unit, cc)
-        local db = CludesUIDB
+    local function _ttLineColors(tt, payload, unitToken, cc)
+        local saved = CludesUIDB
         if
             not (
-                db
+                saved
                 and (
-                    db.tooltipLevelColor
-                    or db.tooltipClassLineColor
-                    or db.tooltipFactionColor
-                    or db.tooltipGuildmateColor
-                    or db.tooltipCompactLevel
+                    saved.tooltipLevelColor
+                    or saved.tooltipClassLineColor
+                    or saved.tooltipFactionColor
+                    or saved.tooltipGuildmateColor
+                    or saved.tooltipCompactLevel
                 )
             )
         then
             return
         end
-        local guildName = unit and GetGuildInfo(unit)
+        local guildName = unitToken and GetGuildInfo(unitToken)
         if guildName and _isSecret and _isSecret(guildName) then
             guildName = nil
         end
@@ -950,7 +949,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- Level line: the tooltip data's UnitLevel line type when the client tags it, else the
         -- first of lines 2-4 (after name, guild or title) that matches a level format.
         local levelIdx
-        for _, ld in ipairs(data and data.lines or {}) do
+        for _, ld in ipairs(payload and payload.lines or {}) do
             local t = ld.type
             if not (_isSecret and _isSecret(t)) and t == Enum.TooltipDataLineType.UnitLevel then
                 levelIdx = ld.lineIndex
@@ -959,12 +958,12 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         end
         if not levelIdx then
             for i = 2, math.min(nLines, 4) do
-                local text = _G["GameTooltipTextLeft" .. i]:GetText()
+                local textValue = _G["GameTooltipTextLeft" .. i]:GetText()
                 if
-                    text
-                    and not (_isSecret and _isSecret(text))
-                    and not (guildName and _isGuildText(text, guildName))
-                    and _isLevelText(text)
+                    textValue
+                    and not (_isSecret and _isSecret(textValue))
+                    and not (guildName and _isGuildText(textValue, guildName))
+                    and _isLevelText(textValue)
                 then
                     levelIdx = i
                     break
@@ -976,32 +975,32 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         local hex, compact
         if
             levelIdx
-            and unit
-            and (db.tooltipLevelColor or db.tooltipCompactLevel)
-            and not (UnitIsWildBattlePet(unit) or UnitIsBattlePetCompanion(unit))
+            and unitToken
+            and (saved.tooltipLevelColor or saved.tooltipCompactLevel)
+            and not (UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken))
         then
-            local lvl = UnitEffectiveLevel(unit)
+            local lvl = UnitEffectiveLevel(unitToken)
             local r, g, b
-            if db.tooltipLevelColor then
-                r, g, b = CludesUI.GetLevelColor(unit, lvl, true)
+            if saved.tooltipLevelColor then
+                r, g, b = CludesUI.GetLevelColor(unitToken, lvl, true)
             end
             if r then
                 hex = CludesUI.ColorText("%0", r, g, b)
             end
             -- Compact line: "90 Tauren" for players, "90 Elite Humanoid" for NPCs.
-            local player = UnitIsPlayer(unit)
-            if db.tooltipCompactLevel and not (_isSecret and (_isSecret(lvl) or _isSecret(player))) then
+            local player = UnitIsPlayer(unitToken)
+            if saved.tooltipCompactLevel and not (_isSecret and (_isSecret(lvl) or _isSecret(player))) then
                 local parts = _compactParts
                 wipe(parts)
                 parts[1] = CludesUI.ColorText(lvl > 0 and lvl or "??", r, g, b)
                 if player then
-                    parts[2] = UnitRace(unit)
+                    parts[2] = UnitRace(unitToken)
                 else
-                    local cl = _CLASSIFICATION[UnitClassification(unit)]
+                    local cl = _CLASSIFICATION[UnitClassification(unitToken)]
                     if cl then
                         parts[#parts + 1] = cl[2]:WrapTextInColorCode(cl[1])
                     end
-                    parts[#parts + 1] = UnitCreatureType(unit)
+                    parts[#parts + 1] = UnitCreatureType(unitToken)
                 end
                 local secret = false
                 for _, v in ipairs(parts) do
@@ -1014,82 +1013,86 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 end
             end
         end
-        local doClass = levelIdx and unit and cc and db.tooltipClassLineColor
+        local doClass = levelIdx and unitToken and cc and saved.tooltipClassLineColor
         local guildColor = guildName
-            and db.tooltipGuildmateColor
-            and UnitIsInMyGuild(unit)
+            and saved.tooltipGuildmateColor
+            and UnitIsInMyGuild(unitToken)
             and ChatTypeInfo.GUILD
-        if not (hex or compact or doClass or guildColor or db.tooltipFactionColor) then
+        if not (hex or compact or doClass or guildColor or saved.tooltipFactionColor) then
             return
         end
         for i = 2, nLines do
-            local line = _G["GameTooltipTextLeft" .. i]
-            local text = line and line:GetText()
-            if text and not (_isSecret and _isSecret(text)) then
+            local lineTex = _G["GameTooltipTextLeft" .. i]
+            local textValue = lineTex and lineTex:GetText()
+            if textValue and not (_isSecret and _isSecret(textValue)) then
                 if i == levelIdx then
                     -- Compact rewrite, else color the number (or "??") only, leaving text
                     -- another addon already colored.
                     if compact then
-                        line:SetText(compact)
-                    elseif hex and not string.find(text, "|c", 1, true) then
-                        local newText, n = text:gsub("%d+", hex, 1)
-                        if n == 0 then
-                            newText, n = text:gsub("%?%?", hex, 1)
+                        lineTex:SetText(compact)
+                    elseif hex and not string.find(textValue, "|c", 1, true) then
+                        local newText, num = textValue:gsub("%d+", hex, 1)
+                        if num == 0 then
+                            newText, num = textValue:gsub("%?%?", hex, 1)
                         end
-                        if n > 0 then
-                            line:SetText(newText)
+                        if num > 0 then
+                            lineTex:SetText(newText)
                         end
                     end
-                elseif guildColor and (not levelIdx or i < levelIdx) and _isGuildText(text, guildName) then
-                    line:SetTextColor(guildColor.r, guildColor.g, guildColor.b)
+                elseif
+                    guildColor
+                    and (not levelIdx or i < levelIdx)
+                    and _isGuildText(textValue, guildName)
+                then
+                    lineTex:SetTextColor(guildColor.r, guildColor.g, guildColor.b)
                     guildColor = nil
-                elseif _FACTION_CC[text] then
-                    if db.tooltipFactionColor then
-                        local fc = _FACTION_CC[text]
-                        line:SetTextColor(fc.r, fc.g, fc.b)
+                elseif _FACTION_CC[textValue] then
+                    if saved.tooltipFactionColor then
+                        local fc = _FACTION_CC[textValue]
+                        lineTex:SetTextColor(fc.r, fc.g, fc.b)
                     end
                 -- The spec/class line directly follows the level line on player tooltips.
-                elseif doClass and i == levelIdx + 1 and text ~= PVP_ENABLED then
-                    line:SetTextColor(cc.r, cc.g, cc.b)
+                elseif doClass and i == levelIdx + 1 and textValue ~= PVP_ENABLED then
+                    lineTex:SetTextColor(cc.r, cc.g, cc.b)
                 end
             end
         end
     end
 
-    local function _ttUnitColor(tt, data)
+    local function _ttUnitColor(tt, payload)
         if tt ~= _GameTooltip or tt:IsForbidden() then
             return
         end
         local nLinesBefore = tt.NumLines and tt:NumLines() or 0
         -- Identity comes from the tooltip's own SetUnit data pass (data.guid), never the cursor-focus token, so it never lags to the previous frame.
-        local guid, unit = _resolveTipIdentity(tt, data)
+        local unitGuid, unitToken = _resolveTipIdentity(tt, payload)
         -- Record who this render is for (so a late INSPECT_READY can confirm the tooltip still shows this person) and reset the ilvl marker, before any early return.
-        _tipShownGUID = guid
+        _tipShownGUID = unitGuid
         local ttd = GetFFD(tt)
         ttd.ilvlShown = false
-        if not guid then
+        if not unitGuid then
             return
         end
         -- Class and plain name from the authoritative GUID, with a live-token fallback. Non-players get no additions (GetPlayerInfoByGUID returns no class for non-player GUIDs, matching stock hover).
         local classFile, pname, prealm
         if GetPlayerInfoByGUID then
-            local _, eClass, _, _, _, n, r = GetPlayerInfoByGUID(guid)
+            local _, eClass, _, _, _, num, r = GetPlayerInfoByGUID(unitGuid)
             if eClass and not (_isSecret and _isSecret(eClass)) then
-                classFile, pname, prealm = eClass, n, r
+                classFile, pname, prealm = eClass, num, r
             end
         end
-        if not classFile and unit then
-            if not UnitIsPlayer(unit) then
+        if not classFile and unitToken then
+            if not UnitIsPlayer(unitToken) then
                 -- No class additions on non-players, but Targeting still applies (checking a boss's target is the core case).
-                _ttLineColors(tt, data, unit)
-                _ttTargetLine(tt, unit)
+                _ttLineColors(tt, payload, unitToken)
+                _ttTargetLine(tt, unitToken)
                 _ttFonts(tt, nLinesBefore)
                 return
             end
-            local _, cf = UnitClass(unit)
-            if cf and not (_isSecret and _isSecret(cf)) then
-                classFile = cf
-                pname, prealm = UnitName(unit)
+            local _, castFrame = UnitClass(unitToken)
+            if castFrame and not (_isSecret and _isSecret(castFrame)) then
+                classFile = castFrame
+                pname, prealm = UnitName(unitToken)
             end
         end
         if not classFile then
@@ -1101,17 +1104,17 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         if not _nameL1 then
             return
         end
-        local db = CludesUIDB
+        local saved = CludesUIDB
         -- Title hiding is default (tooltipPlayerTitles is opt-in). Rewrite line 1 ONLY when a title is genuinely present, so the no-title case never clobbers foreign line-1 formatting.
-        if not (db and db.tooltipPlayerTitles) and pname and not (_isSecret and _isSecret(pname)) then
+        if not (saved and saved.tooltipPlayerTitles) and pname and not (_isSecret and _isSecret(pname)) then
             local display = (prealm and prealm ~= "") and (pname .. "-" .. prealm) or pname
-            local cur = _nameL1:GetText()
+            local current = _nameL1:GetText()
             -- Line 1 carries a title (or other decoration) when it differs from the plain name.
             -- With a clean token, confirm via UnitPVPName so an equivalent plain-name form is never rewritten; without one (our raid/party frames, secret token, GUID-only) fall back to the name-difference check.
-            if cur and not (_isSecret and _isSecret(cur)) and cur ~= display then
+            if current and not (_isSecret and _isSecret(current)) and current ~= display then
                 local strip
-                if unit and UnitPVPName then
-                    local titled = UnitPVPName(unit)
+                if unitToken and UnitPVPName then
+                    local titled = UnitPVPName(unitToken)
                     strip = titled and not (_isSecret and _isSecret(titled)) and titled ~= pname
                 else
                     strip = true
@@ -1122,13 +1125,17 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             end
         end
         -- Away/busy tag after the name, in Blizzard's own <Away>/<Busy> wording.
-        if unit and db and db.tooltipAFKTag then
-            local afk, dnd = UnitIsAFK(unit), UnitIsDND(unit)
+        if unitToken and saved and saved.tooltipAFKTag then
+            local afk, dnd = UnitIsAFK(unitToken), UnitIsDND(unitToken)
             local tag = not (_isSecret and (_isSecret(afk) or _isSecret(dnd)))
                 and (afk and CHAT_FLAG_AFK or dnd and CHAT_FLAG_DND)
-            local cur = tag and _nameL1:GetText()
-            if cur and not (_isSecret and _isSecret(cur)) and not string.find(cur, tag, 1, true) then
-                _nameL1:SetText(cur .. " " .. GRAY_FONT_COLOR:WrapTextInColorCode(tag))
+            local current = tag and _nameL1:GetText()
+            if
+                current
+                and not (_isSecret and _isSecret(current))
+                and not string.find(current, tag, 1, true)
+            then
+                _nameL1:SetText(current .. " " .. GRAY_FONT_COLOR:WrapTextInColorCode(tag))
             end
         end
         -- Recolor only (never replaces text): name line + health bar.
@@ -1139,11 +1146,11 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 GameTooltipStatusBar:SetStatusBarColor(cc.r, cc.g, cc.b)
             end
         end
-        _ttLineColors(tt, data, unit, cc)
+        _ttLineColors(tt, payload, unitToken, cc)
         -- Guild rank next to guild name: Name-Realm [Rank]. Re-found every call (index varies
         -- per unit; titles shift it, so a cached index would decorate the wrong row). Deduped like the M+ line against refresh re-runs.
-        if unit and db and db.tooltipShowGuildRank then
-            local guildName, guildRankName = GetGuildInfo(unit)
+        if unitToken and saved and saved.tooltipShowGuildRank then
+            local guildName, guildRankName = GetGuildInfo(unitToken)
             if
                 guildName
                 and guildRankName
@@ -1151,15 +1158,15 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             then
                 local suffix = " [" .. guildRankName .. "]"
                 for i = 2, nLinesBefore do
-                    local line = _G["GameTooltipTextLeft" .. i]
-                    local text = line and line:GetText()
+                    local lineTex = _G["GameTooltipTextLeft" .. i]
+                    local textValue = lineTex and lineTex:GetText()
                     if
-                        text
-                        and not (_isSecret and _isSecret(text))
-                        and string.find(text, guildName, 1, true)
+                        textValue
+                        and not (_isSecret and _isSecret(textValue))
+                        and string.find(textValue, guildName, 1, true)
                     then
-                        if text:sub(-#suffix) ~= suffix then
-                            line:SetText(text .. suffix)
+                        if textValue:sub(-#suffix) ~= suffix then
+                            lineTex:SetText(textValue .. suffix)
                         end
                         break
                     end
@@ -1168,14 +1175,14 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         end
         -- M+ Score (append-only, deduped against an equivalent foreign line).
         if
-            unit
-            and db
-            and db.tooltipMythicScore ~= false
+            unitToken
+            and saved
+            and saved.tooltipMythicScore ~= false
             and C_PlayerInfo
             and C_PlayerInfo.GetPlayerMythicPlusRatingSummary
         then
-            local info = C_PlayerInfo.GetPlayerMythicPlusRatingSummary(unit)
-            local score = info and info.currentSeasonScore
+            local details = C_PlayerInfo.GetPlayerMythicPlusRatingSummary(unitToken)
+            local score = details and details.currentSeasonScore
             if
                 score
                 and not (_isSecret and _isSecret(score))
@@ -1193,29 +1200,35 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             end
         end
         -- Mount name from the live helpful aura MountJournal recognizes. Opt-in (default off); per-GUID cached so refresh ticks on an unmounted player never re-walk the aura list.
-        if unit and guid and db and db.tooltipShowMount and not _tipHasLine(tt, CludesUI.L("Mount:")) then
+        if
+            unitToken
+            and unitGuid
+            and saved
+            and saved.tooltipShowMount
+            and not _tipHasLine(tt, CludesUI.L("Mount:"))
+        then
             local mountName, mountCollected
-            local cached = _mountCache[guid]
-            local now = GetTime()
-            if cached and (now - cached.time) < _mountCacheTTL then
+            local cached = _mountCache[unitGuid]
+            local nowTime = GetTime()
+            if cached and (nowTime - cached.time) < _mountCacheTTL then
                 mountName = cached.name
                 mountCollected = cached.collected
             else
-                local nm, col = _getMountedAuraName(unit)
+                local nm, column = _getMountedAuraName(unitToken)
                 mountName = nm or false
-                mountCollected = col
+                mountCollected = column
                 -- Expired entries are dropped, so only the last few seconds of hovers stay
                 -- cached and this loop stays tiny; this player's stale entry is refreshed
                 -- in place rather than replaced.
                 for g, e in pairs(_mountCache) do
-                    if e ~= cached and (now - e.time) >= _mountCacheTTL then
+                    if e ~= cached and (nowTime - e.time) >= _mountCacheTTL then
                         _mountCache[g] = nil
                     end
                 end
                 if cached then
-                    cached.name, cached.collected, cached.time = mountName, mountCollected, now
+                    cached.name, cached.collected, cached.time = mountName, mountCollected, nowTime
                 else
-                    _mountCache[guid] = { name = mountName, collected = mountCollected, time = now }
+                    _mountCache[unitGuid] = { name = mountName, collected = mountCollected, time = nowTime }
                 end
             end
             if mountName then
@@ -1229,37 +1242,37 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 tt:AddDoubleLine(CludesUI.L("Mount:"), valText, 1, 1, 1, 1, 1, 1)
             end
         end
-        _ttShowBuffs(guid, unit)
+        _ttShowBuffs(unitGuid, unitToken)
         -- Who the hovered player currently targets (opt-in, default off).
-        _ttTargetLine(tt, unit)
+        _ttTargetLine(tt, unitToken)
         -- Item Level. Cache keyed strictly by the authoritative GUID so reads/writes can never land under a different person.
-        if db and db.tooltipItemLevel ~= false then
+        if saved and saved.tooltipItemLevel ~= false then
             -- Re-activates after a mid-session toggle back on (login activation is in _ttInitData).
             if not _insp.active then
                 _insp.Activate()
             end
             local ilvl
-            if unit and UnitIsUnit(unit, "player") then
+            if unitToken and UnitIsUnit(unitToken, "player") then
                 local _, equipped = GetAverageItemLevel()
                 if equipped and equipped > 0 then
                     ilvl = math.floor(equipped)
                 end
             else
-                local cached = _ilvlCache[guid]
+                local cached = _ilvlCache[unitGuid]
                 if cached and (GetTime() - cached.time) < _ilvlCacheTTL then
                     ilvl = cached.ilvl
-                elseif unit then
+                elseif unitToken then
                     if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
-                        local val = C_PaperDollInfo.GetInspectItemLevel(unit)
+                        local val = C_PaperDollInfo.GetInspectItemLevel(unitToken)
                         if val and not (_isSecret and _isSecret(val)) and val > 0 then
                             ilvl = math.floor(val)
-                            _ilvlCache[guid] = { ilvl = ilvl, time = GetTime() }
+                            _ilvlCache[unitGuid] = { ilvl = ilvl, time = GetTime() }
                         end
                     end
                     local inspOpen = InspectFrame and InspectFrame:IsShown()
-                    if not ilvl and not inspOpen and CanInspect(unit) and not InCombatLockdown() then
+                    if not ilvl and not inspOpen and CanInspect(unitToken) and not InCombatLockdown() then
                         -- Paced and re-checked there; timed gaps are waited out, not dropped.
-                        _requestTooltipInspect(guid)
+                        _requestTooltipInspect(unitGuid)
                     end
                 end
             end
@@ -1376,22 +1389,22 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- under our border. _menuSkinFrame is idempotent (skips owned regions,
     -- re-anchors relative to the frame, nothing accumulates), so running every pass self-heals reuse.
 
-    local function _menuSkinFrame(frame)
-        if not frame or frame:IsForbidden() or not _pmEnabled() then
+    local function _menuSkinFrame(widget)
+        if not widget or widget:IsForbidden() or not _pmEnabled() then
             return
         end
-        for i = 1, _select("#", frame:GetRegions()) do
-            local region = _select(i, frame:GetRegions())
-            if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+        for i = 1, _select("#", widget:GetRegions()) do
+            local regionFrame = _select(i, widget:GetRegions())
+            if regionFrame and regionFrame:IsObjectType("Texture") and not GetFFD(regionFrame).owned then
                 local RS = CludesUI.RESKIN
-                region:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, 1)
-                region:SetAlpha(RS.CTX_ALPHA)
-                region:ClearAllPoints()
-                region:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
-                region:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1)
+                regionFrame:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, 1)
+                regionFrame:SetAlpha(RS.CTX_ALPHA)
+                regionFrame:ClearAllPoints()
+                regionFrame:SetPoint("TOPLEFT", widget, "TOPLEFT", 1, -1)
+                regionFrame:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -1, 1)
             end
         end
-        _applyConfiguredBorder(frame, "popupMenu", 1)
+        _applyConfiguredBorder(widget, "popupMenu", 1)
     end
 
     local function _menuOnOpen(manager, _, menuDescription)
@@ -1411,9 +1424,9 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- Self-owned staggered passes instead: fetch the menu frame from the manager and
         -- skin it ourselves, handing Blizzard nothing. Extra passes cover submenus and pooled frames acquired shortly after open.
         local function skinOpenMenu()
-            local menu = manager.GetOpenMenu and manager:GetOpenMenu()
-            if menu then
-                _menuSkinFrame(menu)
+            local dropMenu = manager.GetOpenMenu and manager:GetOpenMenu()
+            if dropMenu then
+                _menuSkinFrame(dropMenu)
             end
         end
         C_Timer.After(0, skinOpenMenu)
@@ -1529,62 +1542,62 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         end
         local popupName = popup.GetName and popup:GetName()
         popupBtns[#popupBtns + 1] = popup.extraButton or (popupName and _G[popupName .. "ExtraButton"])
-        for _, btn in ipairs(popupBtns) do
-            if btn and not GetFFD(btn).skinned then
-                GetFFD(btn).skinned = true
-                local regions = { btn:GetRegions() }
-                for j = 1, #regions do
-                    local r = regions[j]
-                    if r and r:IsObjectType("Texture") and r ~= btn:GetFontString() then
+        for _, button in ipairs(popupBtns) do
+            if button and not GetFFD(button).skinned then
+                GetFFD(button).skinned = true
+                local regions = { button:GetRegions() }
+                for jdx = 1, #regions do
+                    local r = regions[jdx]
+                    if r and r:IsObjectType("Texture") and r ~= button:GetFontString() then
                         r:SetTexture(nil)
                         if r.SetAtlas then
                             r:SetAtlas("")
                         end
                     end
                 end
-                local btnBg = btn:CreateTexture(nil, "BACKGROUND", nil, -6)
+                local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
                 btnBg:SetAllPoints()
                 GetFFD(btnBg).owned = true
-                GetFFD(btn).bg = btnBg
+                GetFFD(button).bg = btnBg
                 -- 10% white wash; the HIGHLIGHT layer only renders while the button is enabled and hovered.
-                local hov = btn:CreateTexture(nil, "HIGHLIGHT")
+                local hov = button:CreateTexture(nil, "HIGHLIGHT")
                 hov:SetColorTexture(1, 1, 1, 0.1)
                 hov:SetAllPoints()
                 GetFFD(hov).owned = true
 
                 -- Mirror Blizzard's enabled/disabled state so buttons visibly dim when locked out (e.g. Release in boss combat).
                 local function _cuiRefreshEnabled(self)
-                    local fs = self:GetFontString()
+                    local fontStr = self:GetFontString()
                     local enabled = (self.IsEnabled and self:IsEnabled()) and true or false
-                    if fs then
+                    if fontStr then
                         if enabled then
                             -- Native mode enabled color is white.
                             if _elementColorMode() == "native" then
-                                fs:SetTextColor(1, 1, 1, 1)
+                                fontStr:SetTextColor(1, 1, 1, 1)
                             else
                                 local r, g, b = _getElementColor()
-                                fs:SetTextColor(r, g, b, 1)
+                                fontStr:SetTextColor(r, g, b, 1)
                             end
                         else
-                            fs:SetTextColor(0.4, 0.4, 0.4, 1)
+                            fontStr:SetTextColor(0.4, 0.4, 0.4, 1)
                         end
                     end
                     if GetFFD(self).bg then
                         GetFFD(self).bg:SetAlpha(enabled and 1 or 0.5)
                     end
                 end
-                GetFFD(btn).refreshEnabled = _cuiRefreshEnabled
-                btn:HookScript("OnEnable", _cuiRefreshEnabled)
-                btn:HookScript("OnDisable", _cuiRefreshEnabled)
-                _cuiRefreshEnabled(btn)
+                GetFFD(button).refreshEnabled = _cuiRefreshEnabled
+                button:HookScript("OnEnable", _cuiRefreshEnabled)
+                button:HookScript("OnDisable", _cuiRefreshEnabled)
+                _cuiRefreshEnabled(button)
             end
-            if btn then
+            if button then
                 local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                     or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-                if GetFFD(btn).bg then
-                    GetFFD(btn).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                if GetFFD(button).bg then
+                    GetFFD(button).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
                 end
-                _applyConfiguredBorder(btn, "popupMenuButton", 1)
+                _applyConfiguredBorder(button, "popupMenuButton", 1)
             end
         end
 
@@ -1594,9 +1607,9 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             hooksecurefunc(popup, "UpdateRecapButton", function(self)
                 for i = 1, 4 do
                     local b = self["button" .. i]
-                    local fn = b and GetFFD(b).refreshEnabled
-                    if fn then
-                        fn(b)
+                    local func = b and GetFFD(b).refreshEnabled
+                    if func then
+                        func(b)
                     end
                 end
             end)
@@ -1605,17 +1618,17 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- Re-sync state for popups shown already-disabled
         for i = 1, 4 do
             local b = popup["button" .. i]
-            local fn = b and GetFFD(b).refreshEnabled
-            if fn then
-                fn(b)
+            local func = b and GetFFD(b).refreshEnabled
+            if func then
+                func(b)
             end
         end
         local eb = popup.editBox or (popup.GetName and _G[popup:GetName() .. "EditBox"])
         if eb and not GetFFD(eb).skinned then
             GetFFD(eb).skinned = true
             local regions = { eb:GetRegions() }
-            for j = 1, #regions do
-                local r = regions[j]
+            for jdx = 1, #regions do
+                local r = regions[jdx]
                 if r and r:IsObjectType("Texture") then
                     r:SetTexture(nil)
                     if r.SetAtlas then
@@ -1675,8 +1688,8 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     local _resGlowHooked = false
 
     local function _resGlowEnabled()
-        local db = CludesUIDB
-        return db and db.resurrectAcceptGlow and db.reskinPopupsMenus ~= false or false
+        local saved = CludesUIDB
+        return saved and saved.resurrectAcceptGlow and saved.reskinPopupsMenus ~= false or false
     end
 
     local function _resGlowButton(popup)
@@ -1684,75 +1697,75 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     end
 
     -- Addon-owned overlay 3px outside the button, built once per button on first glow; state lives in FFD, never on the Blizzard frame.
-    local function _resGlowGet(btn)
-        local d = GetFFD(btn)
+    local function _resGlowGet(button)
+        local d = GetFFD(button)
         if not d.resGlow then
-            local ov = CreateFrame("Frame", nil, btn)
-            ov:SetPoint("TOPLEFT", btn, "TOPLEFT", -3, 3)
-            ov:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 3, -3)
-            ov:SetFrameLevel(btn:GetFrameLevel() + 5)
-            ov:Hide()
+            local shade = CreateFrame("Frame", nil, button)
+            shade:SetPoint("TOPLEFT", button, "TOPLEFT", -3, 3)
+            shade:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 3, -3)
+            shade:SetFrameLevel(button:GetFrameLevel() + 5)
+            shade:Hide()
             if not _PP then
                 _PP = CludesUI and CludesUI.PP
             end
             if _PP and _PP.CreateBorder then
-                _PP.CreateBorder(ov, 1, 1, 1, 1, 2, "OVERLAY", 7)
+                _PP.CreateBorder(shade, 1, 1, 1, 1, 2, "OVERLAY", 7)
             end
-            local ag = ov:CreateAnimationGroup()
+            local ag = shade:CreateAnimationGroup()
             ag:SetLooping("BOUNCE")
             local pulse = ag:CreateAnimation("Alpha")
             pulse:SetFromAlpha(1)
             pulse:SetToAlpha(0.15)
             pulse:SetDuration(0.7)
             pulse:SetSmoothing("IN_OUT")
-            d.resGlow = ov
+            d.resGlow = shade
             d.resGlowAG = ag
         end
         return d.resGlow, d.resGlowAG
     end
 
-    local function _resGlowStart(btn)
-        local ov, ag = _resGlowGet(btn)
-        if not ov then
+    local function _resGlowStart(button)
+        local shade, ag = _resGlowGet(button)
+        if not shade then
             return
         end
         -- Color resolved every start so re-shows follow the current element color setting (same source as the popup skin).
-        local EG = CludesUI.CLUDES_GREEN
+        local ACC = CludesUI.CLUDES_GREEN
         if _PP and _PP.SetBorderColor then
-            if _accentEnabled() and EG then
-                _PP.SetBorderColor(ov, EG.r, EG.g, EG.b, 1)
+            if _accentEnabled() and ACC then
+                _PP.SetBorderColor(shade, ACC.r, ACC.g, ACC.b, 1)
             else
-                _PP.SetBorderColor(ov, 1, 1, 1, 1)
+                _PP.SetBorderColor(shade, 1, 1, 1, 1)
             end
         end
-        ov:SetAlpha(1)
-        ov:Show()
+        shade:SetAlpha(1)
+        shade:Show()
         if ag and not ag:IsPlaying() then
             ag:Play()
         end
     end
 
     -- Raw FFD read (not GetFFD): stopping must never allocate state for a button that never glowed.
-    local function _resGlowStop(btn)
-        local d = btn and FFD[btn]
-        local ov = d and d.resGlow
-        if ov then
+    local function _resGlowStop(button)
+        local d = button and FFD[button]
+        local shade = d and d.resGlow
+        if shade then
             if d.resGlowAG then
                 d.resGlowAG:Stop()
             end
-            ov:Hide()
+            shade:Hide()
         end
     end
 
     local function _resGlowRefresh(popup)
-        local btn = _resGlowButton(popup)
-        if not btn then
+        local button = _resGlowButton(popup)
+        if not button then
             return
         end
         if _resGlowEnabled() and RES_WHICH[popup.which] and popup:IsShown() then
-            _resGlowStart(btn)
+            _resGlowStart(button)
         else
-            _resGlowStop(btn)
+            _resGlowStop(button)
         end
     end
 
@@ -1845,39 +1858,39 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     local _PV_SCORE = 2850
     local _PV_MOUNT_SPELL = 458 -- Brown Horse
 
-    local function _pvLine(tt, text, c)
+    local function _pvLine(tt, textValue, c)
         if c then
-            tt:AddLine(text, c.r, c.g, c.b)
+            tt:AddLine(textValue, c.r, c.g, c.b)
         else
-            tt:AddLine(text, 1, 1, 1)
+            tt:AddLine(textValue, 1, 1, 1)
         end
     end
 
     local function _pvPaint()
-        local tt, parent = _pv.tt, _pv.parent
+        local tt, hostFrame = _pv.tt, _pv.parent
         if not tt then
             return
         end
-        local db = CludesUIDB or {}
+        local saved = CludesUIDB or {}
         local on = _enabled()
         -- Extras exist only under the reskin, as on the live tooltip.
-        local x = on and db or {}
+        local posX = on and saved or {}
         local L = CludesUI.L
         if _pv.place then
             _pv.place(tt)
         end
         -- SetOwner clears the lines and re-owns the tooltip after the header was hidden.
-        tt:SetOwner(parent, "ANCHOR_NONE")
+        tt:SetOwner(hostFrame, "ANCHOR_NONE")
 
         local _, classFile = UnitClass("player")
         local cc = classFile and _RAID_CC and _RAID_CC[classFile]
         local name = UnitName("player") or ""
-        local title = (not on or x.tooltipPlayerTitles) and UnitPVPName("player")
-        if title and _isSecret and _isSecret(title) then
-            title = nil
+        local titleText = (not on or posX.tooltipPlayerTitles) and UnitPVPName("player")
+        if titleText and _isSecret and _isSecret(titleText) then
+            titleText = nil
         end
-        local line1 = (title and title ~= "") and title or name
-        if x.tooltipAFKTag then
+        local line1 = (titleText and titleText ~= "") and titleText or name
+        if posX.tooltipAFKTag then
             line1 = line1 .. " " .. GRAY_FONT_COLOR:WrapTextInColorCode(CHAT_FLAG_AFK)
         end
         _pvLine(tt, line1, on and cc or nil)
@@ -1888,10 +1901,10 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         if not inGuild then
             gName, gRank = GUILD, RANK
         end
-        if x.tooltipShowGuildRank then
+        if posX.tooltipShowGuildRank then
             gName = gName .. " [" .. (gRank or RANK) .. "]"
         end
-        _pvLine(tt, gName, inGuild and x.tooltipGuildmateColor and ChatTypeInfo.GUILD or nil)
+        _pvLine(tt, gName, inGuild and posX.tooltipGuildmateColor and ChatTypeInfo.GUILD or nil)
 
         -- Level line as _ttLineColors leaves it: compact, or the number colored by difficulty.
         local lvl, race = UnitEffectiveLevel("player"), UnitRace("player") or ""
@@ -1899,36 +1912,40 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             lvl = 0
         end
         local r, g, b
-        if x.tooltipLevelColor and CludesUI.GetLevelColor then
+        if posX.tooltipLevelColor and CludesUI.GetLevelColor then
             r, g, b = CludesUI.GetLevelColor("player", lvl, true)
         end
-        if x.tooltipCompactLevel then
+        if posX.tooltipCompactLevel then
             _pvLine(tt, CludesUI.ColorText(lvl, r, g, b) .. " " .. race)
         else
-            local text = UNIT_TYPE_LEVEL_TEMPLATE:format(lvl, race)
+            local textValue = UNIT_TYPE_LEVEL_TEMPLATE:format(lvl, race)
             if r then
-                text = text:gsub("%d+", CludesUI.ColorText("%0", r, g, b), 1)
+                textValue = textValue:gsub("%d+", CludesUI.ColorText("%0", r, g, b), 1)
             end
-            _pvLine(tt, text)
+            _pvLine(tt, textValue)
         end
 
         local className = UnitClass("player") or ""
-        local spec
-        local idx = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
-        if idx then
-            spec = select(2, C_SpecializationInfo.GetSpecializationInfo(idx))
+        local specInfo
+        local position = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
+        if position then
+            specInfo = select(2, C_SpecializationInfo.GetSpecializationInfo(position))
         end
-        _pvLine(tt, spec and (spec .. " " .. className) or className, x.tooltipClassLineColor and cc or nil)
+        _pvLine(
+            tt,
+            specInfo and (specInfo .. " " .. className) or className,
+            posX.tooltipClassLineColor and cc or nil
+        )
 
         local _, faction = UnitFactionGroup("player")
         if faction then
-            _pvLine(tt, faction, x.tooltipFactionColor and _FACTION_CC[faction] or nil)
+            _pvLine(tt, faction, posX.tooltipFactionColor and _FACTION_CC[faction] or nil)
         end
 
         -- No Mythic+ on WoW Forever: the live line never shows there (no score above 0).
         if
             on
-            and db.tooltipMythicScore ~= false
+            and saved.tooltipMythicScore ~= false
             and not CludesUI.IS_FOREVER
             and C_PlayerInfo
             and C_PlayerInfo.GetPlayerMythicPlusRatingSummary
@@ -1947,7 +1964,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 sc and sc.b or 1
             )
         end
-        local mount = x.tooltipShowMount and C_Spell.GetSpellName(_PV_MOUNT_SPELL)
+        local mount = posX.tooltipShowMount and C_Spell.GetSpellName(_PV_MOUNT_SPELL)
         if mount then
             tt:AddDoubleLine(
                 L("Mount:"),
@@ -1960,10 +1977,10 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 1
             )
         end
-        if x.tooltipShowTarget then
+        if posX.tooltipShowTarget then
             tt:AddDoubleLine(L("Targeting:"), L("You"), 1, 1, 1, 0.1, 1, 0.1)
         end
-        if on and db.tooltipItemLevel ~= false then
+        if on and saved.tooltipItemLevel ~= false then
             local _, equipped = GetAverageItemLevel()
             if equipped and equipped > 0 then
                 tt:AddDoubleLine(L("Item Level:"), math.floor(equipped), 1, 1, 1, 1, 1, 1)
@@ -1972,13 +1989,13 @@ local FFD, GetFFD = I.FFD, I.GetFFD
 
         -- The look: the live skin and fonts, or Blizzard's own frame and fonts
         -- with the reskin off (a switch that waits for its reload).
-        local data = GetFFD(tt)
+        local payload = GetFFD(tt)
         if on then
-            if data.bg then
-                data.bg:Show()
+            if payload.bg then
+                payload.bg:Show()
             end
-            if data.configBorder then
-                data.configBorder:Show()
+            if payload.configBorder then
+                payload.configBorder:Show()
             end
             _ttSkin(tt)
             _ttFonts(tt)
@@ -1986,17 +2003,17 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             if tt.NineSlice then
                 tt.NineSlice:SetAlpha(1)
             end
-            if data.bg then
-                data.bg:Hide()
+            if payload.bg then
+                payload.bg:Hide()
             end
-            if data.configBorder then
-                data.configBorder:Hide()
+            if payload.configBorder then
+                payload.configBorder:Hide()
             end
             local nm = tt:GetName()
             for i = 1, tt:NumLines() do
-                local left, right = _G[nm .. "TextLeft" .. i], _G[nm .. "TextRight" .. i]
-                if left then
-                    left:SetFontObject(i == 1 and GameTooltipHeaderText or GameTooltipText)
+                local leftX, right = _G[nm .. "TextLeft" .. i], _G[nm .. "TextRight" .. i]
+                if leftX then
+                    leftX:SetFontObject(i == 1 and GameTooltipHeaderText or GameTooltipText)
                 end
                 if right then
                     right:SetFontObject(GameTooltipText)
@@ -2009,7 +2026,7 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- live strip's own pass; Blizzard's bar below the tooltip without it.
         local strip = _pv.strip
         local below = 0
-        if db.tooltipHideHealthStrip == false then
+        if saved.tooltipHideHealthStrip == false then
             if not strip then
                 strip = CreateFrame("StatusBar", nil, tt)
                 strip:SetMinMaxValues(0, 1)
@@ -2058,16 +2075,16 @@ local FFD, GetFFD = I.FFD, I.GetFFD
 
     -- Shows the sample under parent and paints it. place(tt) runs before the
     -- paint (scale it), place(tt, w, h) after it (anchor it, size the header).
-    function CludesUI.ShowTooltipPreview(parent, place)
+    function CludesUI.ShowTooltipPreview(hostFrame, place)
         if not _pv.tt then
-            _pv.tt = CreateFrame("GameTooltip", "CludesUITooltipPreview", parent, "SharedTooltipTemplate")
+            _pv.tt = CreateFrame("GameTooltip", "CludesUITooltipPreview", hostFrame, "SharedTooltipTemplate")
             _pv.tt:SetClampedToScreen(false)
         end
         local tt = _pv.tt
-        tt:SetParent(parent)
-        tt:SetFrameStrata(parent:GetFrameStrata())
-        tt:SetFrameLevel(parent:GetFrameLevel() + 5)
-        _pv.parent, _pv.place = parent, place
+        tt:SetParent(hostFrame)
+        tt:SetFrameStrata(hostFrame:GetFrameStrata())
+        tt:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
+        _pv.parent, _pv.place = hostFrame, place
         _pvPaint()
         return tt
     end
@@ -2078,14 +2095,14 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     -- dims, as the live popups wait for the reload.
     local _pp = {} -- f, place
 
-    local function _ppButton(f, text)
+    local function _ppButton(f, textValue)
         local b = CreateFrame("Button", nil, f)
         b:SetSize(128, 21)
         b:EnableMouse(false)
         b:SetNormalTexture("Interface\\Buttons\\UI-DialogBox-Button-Up")
         b:GetNormalTexture():SetTexCoord(0, 1, 0, 0.71875)
         b:SetNormalFontObject(GameFontNormal)
-        b:SetText(text)
+        b:SetText(textValue)
         return b
     end
 
@@ -2117,14 +2134,14 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     end
 
     -- Same contract as ShowTooltipPreview. Named: _popupSkin builds child names from it.
-    function CludesUI.ShowPopupPreview(parent, place)
+    function CludesUI.ShowPopupPreview(hostFrame, place)
         local f = _pp.f
         if not f then
-            f = CreateFrame("Frame", "CludesUIPopupPreview", parent)
+            f = CreateFrame("Frame", "CludesUIPopupPreview", hostFrame)
             f.which = "RESURRECT"
-            local bg = f:CreateTexture(nil, "BACKGROUND")
-            bg:SetAtlas("UI-DialogBox-Background-Dark")
-            bg:SetAllPoints()
+            local backdrop = f:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAtlas("UI-DialogBox-Background-Dark")
+            backdrop:SetAllPoints()
             f.text = f:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
             f.text:SetWidth(290)
             f.text:SetPoint("TOP", f, "TOP", 0, -16)
@@ -2136,9 +2153,9 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             f:SetSize(320, 16 + f.text:GetStringHeight() + 16 + 21 + 16)
             _pp.f = f
         end
-        f:SetParent(parent)
-        f:SetFrameStrata(parent:GetFrameStrata())
-        f:SetFrameLevel(parent:GetFrameLevel() + 5)
+        f:SetParent(hostFrame)
+        f:SetFrameStrata(hostFrame:GetFrameStrata())
+        f:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
         _pp.place = place
         _ppPaint()
         return f
@@ -2161,8 +2178,8 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             end
             local cr, cg, cb, ca = CludesUI.GetTooltipBg()
             local _, _, _, _, legacySize = CludesUI.GetTooltipBorder()
-            local db, size, key, color, alpha = _resolveConfiguredBorder("tooltip", legacySize)
-            local info = {
+            local saved, dim, key, color, alpha = _resolveConfiguredBorder("tooltip", legacySize)
+            local details = {
                 backdropInfo = {
                     bgFile = "Interface\\Buttons\\WHITE8X8",
                     insets = { left = 0, right = 0, top = 0, bottom = 0 },
@@ -2172,19 +2189,19 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             -- Same style, size and placement as the GameTooltip border (ApplyBorderStyle,
             -- through CludesUI.BorderPlacement), drawn by the one backdrop the engine
             -- allows; insets keep the fill on the tooltip.
-            if size > 0 then
-                local tex = db.tooltipBorderTexture or "solid"
-                local px = CludesUI.BorderPx(db.tooltipBorderThicknessPx, size, tex)
-                local edgeFile = CludesUI.ResolveBorderTexture(tex)
+            if dim > 0 then
+                local texture = saved.tooltipBorderTexture or "solid"
+                local px = CludesUI.BorderPx(saved.tooltipBorderThicknessPx, dim, texture)
+                local edgeFile = CludesUI.ResolveBorderTexture(texture)
                 local edge, ox, oy, sx, sy
                 if edgeFile then
                     edge, ox, oy, sx, sy = CludesUI.BorderPlacement(
-                        size,
-                        tex,
-                        db.tooltipBorderOffsetX,
-                        db.tooltipBorderOffsetY,
-                        db.tooltipBorderShiftX,
-                        db.tooltipBorderShiftY,
+                        dim,
+                        texture,
+                        saved.tooltipBorderOffsetX,
+                        saved.tooltipBorderOffsetY,
+                        saved.tooltipBorderShiftX,
+                        saved.tooltipBorderShiftY,
                         "blizzardSkin",
                         key,
                         px
@@ -2192,16 +2209,16 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 else
                     -- Solid: the PP line, (px or size) whole pixels inside the tooltip.
                     edgeFile = "Interface\\Buttons\\WHITE8X8"
-                    edge, ox, oy, sx, sy = (px or size) * CludesUI.PP.mult, 0, 0, 0, 0
+                    edge, ox, oy, sx, sy = (px or dim) * CludesUI.PP.mult, 0, 0, 0, 0
                 end
-                info.backdropInfo.edgeFile = edgeFile
-                info.backdropInfo.edgeSize = edge
-                info.backdropInfo.insets =
+                details.backdropInfo.edgeFile = edgeFile
+                details.backdropInfo.edgeSize = edge
+                details.backdropInfo.insets =
                     { left = ox - sx, right = ox + sx, top = oy + sy, bottom = oy - sy }
-                info.anchorOffsets = { left = sx - ox, right = sx + ox, top = sy + oy, bottom = sy - oy }
-                info.borderColor = CreateColor(color.r, color.g, color.b, alpha)
+                details.anchorOffsets = { left = sx - ox, right = sx + ox, top = sy + oy, bottom = sy - oy }
+                details.borderColor = CreateColor(color.r, color.g, color.b, alpha)
             end
-            pcall(inb.SetTooltipBackdrop, info)
+            pcall(inb.SetTooltipBackdrop, details)
         elseif inb.ResetTooltipStyle then
             pcall(inb.ResetTooltipStyle)
         end
@@ -2245,10 +2262,10 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             -- and fought it. Dimming keeps every queue type consistent (they all
             -- still show their own art) while letting the dark skin dominate.
             -- Re-applied every show: Blizzard re-sets the texture per pop.
-            for _, frame in ipairs({ popup, dialog }) do
-                if frame then
-                    for i = 1, _select("#", frame:GetRegions()) do
-                        local r = _select(i, frame:GetRegions())
+            for _, widget in ipairs({ popup, dialog }) do
+                if widget then
+                    for i = 1, _select("#", widget:GetRegions()) do
+                        local r = _select(i, widget:GetRegions())
                         if
                             r
                             and r:IsObjectType("Texture")
@@ -2261,14 +2278,14 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                             end
                         end
                     end
-                    if frame.BG then
-                        frame.BG:SetAlpha(0)
+                    if widget.BG then
+                        widget.BG:SetAlpha(0)
                     end
-                    if frame.NineSlice then
-                        frame.NineSlice:SetAlpha(0)
+                    if widget.NineSlice then
+                        widget.NineSlice:SetAlpha(0)
                     end
-                    if frame.Border then
-                        frame.Border:SetAlpha(0)
+                    if widget.Border then
+                        widget.Border:SetAlpha(0)
                     end
                 end
             end
@@ -2325,52 +2342,52 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             -- Enter Dungeon / Leave Queue. Textures are re-stripped every show (Blizzard re-applies art per popup); bg/border created once.
             if dialog then
                 for _, btnName in ipairs({ "enterButton", "leaveButton" }) do
-                    local btn = dialog[btnName]
-                    if btn then
+                    local button = dialog[btnName]
+                    if button then
                         -- Named Left/Middle/Right textures are swapped by C++ on mouse down, so SetTexture alone does not stick.
-                        local regions = { btn:GetRegions() }
-                        for j = 1, #regions do
-                            local r = regions[j]
+                        local regions = { button:GetRegions() }
+                        for jdx = 1, #regions do
+                            local r = regions[jdx]
                             if
                                 r
                                 and r:IsObjectType("Texture")
                                 and not GetFFD(r).owned
-                                and r ~= btn:GetFontString()
+                                and r ~= button:GetFontString()
                             then
                                 r:SetAlpha(0)
                             end
                         end
-                        if btn.Left then
-                            btn.Left:SetAlpha(0)
+                        if button.Left then
+                            button.Left:SetAlpha(0)
                         end
-                        if btn.Middle then
-                            btn.Middle:SetAlpha(0)
+                        if button.Middle then
+                            button.Middle:SetAlpha(0)
                         end
-                        if btn.Right then
-                            btn.Right:SetAlpha(0)
+                        if button.Right then
+                            button.Right:SetAlpha(0)
                         end
-                        if not GetFFD(btn).skinned then
-                            GetFFD(btn).skinned = true
+                        if not GetFFD(button).skinned then
+                            GetFFD(button).skinned = true
                             -- Hook SetAlpha on the named textures so C++ press state changes cannot make them visible again.
                             for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
-                                local tex = btn[texKey]
-                                if tex and tex.SetAlpha then
-                                    hooksecurefunc(tex, "SetAlpha", function(self, a)
+                                local texture = button[texKey]
+                                if texture and texture.SetAlpha then
+                                    hooksecurefunc(texture, "SetAlpha", function(self, a)
                                         if a > 0 then
                                             self:SetAlpha(0)
                                         end
                                     end)
                                 end
                             end
-                            local EG = CludesUI.CLUDES_GREEN
-                            local useAccent = _accentEnabled() and EG
+                            local ACC = CludesUI.CLUDES_GREEN
+                            local useAccent = _accentEnabled() and ACC
                             local RS2 = CludesUI.RESKIN
-                            local btnBg = btn:CreateTexture(nil, "BACKGROUND", nil, -6)
+                            local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
                             btnBg:SetAllPoints()
                             GetFFD(btnBg).owned = true
-                            GetFFD(btn).bg = btnBg
+                            GetFFD(button).bg = btnBg
                             -- 10% white wash; marked owned so the every-show re-strip above leaves it alone.
-                            local hov = btn:CreateTexture(nil, "HIGHLIGHT")
+                            local hov = button:CreateTexture(nil, "HIGHLIGHT")
                             hov:SetColorTexture(1, 1, 1, 0.1)
                             hov:SetAllPoints()
                             GetFFD(hov).owned = true
@@ -2378,18 +2395,18 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                         -- Colors re-applied every show.
                         local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                             or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-                        if GetFFD(btn).bg then
-                            GetFFD(btn).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                        if GetFFD(button).bg then
+                            GetFFD(button).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
                         end
-                        _applyConfiguredBorder(btn, "popupMenuButton", 1)
-                        local fs = btn:GetFontString()
-                        if fs then
+                        _applyConfiguredBorder(button, "popupMenuButton", 1)
+                        local fontStr = button:GetFontString()
+                        if fontStr then
                             -- Native mode text is plain white.
                             if _elementColorMode() == "native" then
-                                fs:SetTextColor(1, 1, 1, 1)
+                                fontStr:SetTextColor(1, 1, 1, 1)
                             else
                                 local r, g, b = _getElementColor()
-                                fs:SetTextColor(r, g, b, 1)
+                                fontStr:SetTextColor(r, g, b, 1)
                             end
                         end
                     end
@@ -2405,14 +2422,14 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- byte-identically; the first setting they touch activates the unified
         -- style in both modes (and a section reset returns them to legacy).
         local function QueueTimerCustomized()
-            local db = CludesUIDB
+            local saved = CludesUIDB
             return (
-                db
+                saved
                 and (
-                    db.queueTimerTextColor ~= nil
-                    or db.queueTimerTextSize ~= nil
-                    or db.queueTimerBarHeight ~= nil
-                    or db.queueTimerTextOffsetY ~= nil
+                    saved.queueTimerTextColor ~= nil
+                    or saved.queueTimerTextSize ~= nil
+                    or saved.queueTimerBarHeight ~= nil
+                    or saved.queueTimerTextOffsetY ~= nil
                 )
             )
                     and true
@@ -2432,12 +2449,12 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 timerBar:SetHeight(9)
                 return
             end
-            local db = CludesUIDB or {}
+            local saved = CludesUIDB or {}
             local QT = CludesUI.QUEUE_TIMER
-            local c = db.queueTimerTextColor
-            local fontPath = (CludesUI.GetFontPath("extras")) or "Fonts\\FRIZQT__.TTF"
+            local c = saved.queueTimerTextColor
+            local fontFile = (CludesUI.GetFontPath("extras")) or "Fonts\\FRIZQT__.TTF"
             CludesUI.PrimeFontShadow(timerText, true)
-            timerText:SetFont(fontPath, db.queueTimerTextSize or QT.TEXT_SIZE, "")
+            timerText:SetFont(fontFile, saved.queueTimerTextSize or QT.TEXT_SIZE, "")
             timerText:SetTextColor(
                 (c and c.r) or QT.TEXT_R,
                 (c and c.g) or QT.TEXT_G,
@@ -2445,8 +2462,14 @@ local FFD, GetFFD = I.FFD, I.GetFFD
                 1
             )
             timerText:ClearAllPoints()
-            timerText:SetPoint("CENTER", timerBar, "CENTER", 0, db.queueTimerTextOffsetY or QT.TEXT_OFFSET_Y)
-            timerBar:SetHeight(db.queueTimerBarHeight or QT.BAR_HEIGHT)
+            timerText:SetPoint(
+                "CENTER",
+                timerBar,
+                "CENTER",
+                0,
+                saved.queueTimerTextOffsetY or QT.TEXT_OFFSET_Y
+            )
+            timerBar:SetHeight(saved.queueTimerBarHeight or QT.BAR_HEIGHT)
         end
         CludesUI.RefreshQueueTimerStyle = ApplyTimerStyle
 
@@ -2517,9 +2540,13 @@ local FFD, GetFFD = I.FFD, I.GetFFD
             ApplyTimerStyle()
 
             -- Hide any other addon's timer bar parented to the popup.
-            for _, child in ipairs({ popup:GetChildren() }) do
-                if child ~= timerBar and child.GetObjectType and child:GetObjectType() == "StatusBar" then
-                    child:Hide()
+            for _, childFrame in ipairs({ popup:GetChildren() }) do
+                if
+                    childFrame ~= timerBar
+                    and childFrame.GetObjectType
+                    and childFrame:GetObjectType() == "StatusBar"
+                then
+                    childFrame:Hide()
                 end
             end
 
@@ -2598,59 +2625,65 @@ local FFD, GetFFD = I.FFD, I.GetFFD
 
         -- Accept/Decline both inherit stock UIPanelButtonTemplate and were never
         -- touched, same treatment as SkinQueuePopup's enterButton/leaveButton.
-        local function SkinRoleCheckButton(btn)
-            if not btn then
+        local function SkinRoleCheckButton(button)
+            if not button then
                 return
             end
-            local regions = { btn:GetRegions() }
-            for j = 1, #regions do
-                local r = regions[j]
-                if r and r:IsObjectType("Texture") and not GetFFD(r).owned and r ~= btn:GetFontString() then
+            local regions = { button:GetRegions() }
+            for jdx = 1, #regions do
+                local r = regions[jdx]
+                if
+                    r
+                    and r:IsObjectType("Texture")
+                    and not GetFFD(r).owned
+                    and r ~= button:GetFontString()
+                then
                     r:SetAlpha(0)
                 end
             end
-            if btn.Left then
-                btn.Left:SetAlpha(0)
+            if button.Left then
+                button.Left:SetAlpha(0)
             end
-            if btn.Middle then
-                btn.Middle:SetAlpha(0)
+            if button.Middle then
+                button.Middle:SetAlpha(0)
             end
-            if btn.Right then
-                btn.Right:SetAlpha(0)
+            if button.Right then
+                button.Right:SetAlpha(0)
             end
-            if not GetFFD(btn).skinned then
-                GetFFD(btn).skinned = true
+            if not GetFFD(button).skinned then
+                GetFFD(button).skinned = true
                 for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
-                    local tex = btn[texKey]
-                    if tex and tex.SetAlpha then
-                        hooksecurefunc(tex, "SetAlpha", function(self, a)
+                    local texture = button[texKey]
+                    if texture and texture.SetAlpha then
+                        hooksecurefunc(texture, "SetAlpha", function(self, a)
                             if a > 0 then
                                 self:SetAlpha(0)
                             end
                         end)
                     end
                 end
-                local btnBg = btn:CreateTexture(nil, "BACKGROUND", nil, -6)
+                local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
                 btnBg:SetAllPoints()
                 GetFFD(btnBg).owned = true
-                GetFFD(btn).bg = btnBg
-                local hov = btn:CreateTexture(nil, "HIGHLIGHT")
+                GetFFD(button).bg = btnBg
+                local hov = button:CreateTexture(nil, "HIGHLIGHT")
                 hov:SetColorTexture(1, 1, 1, 0.1)
                 hov:SetAllPoints()
                 GetFFD(hov).owned = true
             end
-            local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-            if GetFFD(btn).bg then
-                GetFFD(btn).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+            local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+                or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
+            if GetFFD(button).bg then
+                GetFFD(button).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
             end
-            _applyConfiguredBorder(btn, "popupMenuButton", 1)
-            local fs = btn:GetFontString()
-            if fs then
+            _applyConfiguredBorder(button, "popupMenuButton", 1)
+            local fontStr = button:GetFontString()
+            if fontStr then
                 if _elementColorMode() == "native" then
-                    fs:SetTextColor(1, 1, 1, 1)
+                    fontStr:SetTextColor(1, 1, 1, 1)
                 else
                     local r, g, b = _getElementColor()
-                    fs:SetTextColor(r, g, b, 1)
+                    fontStr:SetTextColor(r, g, b, 1)
                 end
             end
         end
@@ -2733,13 +2766,13 @@ local FFD, GetFFD = I.FFD, I.GetFFD
         -- LFDRoleCheckPopup somehow didn't exist yet at that point, this catches it
         -- the first time a role check actually happens, before the popup shows.
         lfgFrame:RegisterEvent("LFG_ROLE_CHECK_SHOW")
-        lfgFrame:SetScript("OnEvent", function(_, event)
+        lfgFrame:SetScript("OnEvent", function(_, evt)
             if not CludesUIDB then
                 return
             end
-            if event == "LFG_ROLE_CHECK_SHOW" then
+            if evt == "LFG_ROLE_CHECK_SHOW" then
                 HookRoleCheckOnShow()
-            elseif event == "LFG_PROPOSAL_SHOW" then
+            elseif evt == "LFG_PROPOSAL_SHOW" then
                 local reskinOn = IsQueueReskinOn()
                 if reskinOn then
                     SkinQueuePopup()
@@ -2756,4 +2789,4 @@ local FFD, GetFFD = I.FFD, I.GetFFD
     end
 end)()
 
-I.last = "TooltipSkin"
+Inner.last = "TooltipSkin"

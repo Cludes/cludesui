@@ -198,12 +198,12 @@ local CANON_TO_FOLDER = {}
 -- folder -> the addon whose loaded-state proves this module is installed. Most
 -- modules host themselves; a sub-module (e.g. Dragon Riding) maps to its host.
 local FOLDER_HOST = {}
-for _, entry in ipairs(ADDON_DB_MAP) do
-    local canon = CUI_CANON_PREFIX .. (entry.suffix or "")
-    entry.canon = canon
-    FOLDER_TO_CANON[entry.folder] = canon
-    CANON_TO_FOLDER[canon] = entry.folder
-    FOLDER_HOST[entry.folder] = entry.hostAddon or entry.folder
+for _, record in ipairs(ADDON_DB_MAP) do
+    local canon = CUI_CANON_PREFIX .. (record.suffix or "")
+    record.canon = canon
+    FOLDER_TO_CANON[record.folder] = canon
+    CANON_TO_FOLDER[canon] = record.folder
+    FOLDER_HOST[record.folder] = record.hostAddon or record.folder
 end
 
 -- Re-key an addons table from this build's local db.folder keys to canonical
@@ -260,10 +260,10 @@ local function StripPrivateAddonData(addons)
     if type(addons) ~= "table" then
         return
     end
-    for folder, keys in pairs(PRIVATE_ADDON_KEYS) do
+    for folder, keyList in pairs(PRIVATE_ADDON_KEYS) do
         local blob = addons[folder] or addons[FOLDER_TO_CANON[folder] or folder]
         if type(blob) == "table" then
-            for _, key in ipairs(keys) do
+            for _, key in ipairs(keyList) do
                 blob[key] = nil
             end
         end
@@ -351,8 +351,8 @@ local function ResolveKeyToFolder(key, providedFolder)
     if type(key) ~= "string" then
         return nil
     end
-    for prefix, folder in pairs(KEY_PREFIX_FOLDER) do
-        if key:sub(1, #prefix) == prefix then
+    for prefixText, folder in pairs(KEY_PREFIX_FOLDER) do
+        if key:sub(1, #prefixText) == prefixText then
             return folder
         end
     end
@@ -374,8 +374,8 @@ CludesUI.ResolveKeyToFolder = ResolveKeyToFolder
 local NO_CHECKBOX_FOLDER = {}
 do
     local has = {}
-    for _, entry in ipairs(ADDON_DB_MAP) do
-        has[entry.folder] = true
+    for _, record in ipairs(ADDON_DB_MAP) do
+        has[record.folder] = true
     end
     -- Any folder the resolver can return that isn't a checkbox module:
     for _, folder in pairs(KEY_PREFIX_FOLDER) do
@@ -413,14 +413,14 @@ local function SerializeValue(v, parts)
     elseif t == "table" then
         parts[#parts + 1] = "{"
         -- Serialize array part first (integer keys 1..n)
-        local n = #v
-        for i = 1, n do
+        local num = #v
+        for i = 1, num do
             SerializeValue(v[i], parts)
         end
         -- Then hash part (non-integer keys, or integer keys > n)
         for k, val in pairs(v) do
             local kt = type(k)
-            if kt == "number" and k >= 1 and k <= n and k == math.floor(k) then
+            if kt == "number" and k >= 1 and k <= num and k == math.floor(k) then
                 -- Already serialized in array part
             else
                 parts[#parts + 1] = "K"
@@ -453,43 +453,43 @@ local function Malformed(str)
     return nil, #str + 1
 end
 
-local function DeserializeValue(str, pos)
+local function DeserializeValue(str, place)
     if deserializeYieldHook then
         deserializeOps = deserializeOps + 1
         if deserializeOps >= 2048 then
             deserializeOps = 0
-            deserializeYieldHook(pos)
+            deserializeYieldHook(place)
         end
     end
-    local tag = str:sub(pos, pos)
+    local tag = str:sub(place, place)
     if tag == "s" then
         -- Find the colon after the length
-        local colonPos = str:find(":", pos + 1, true)
+        local colonPos = str:find(":", place + 1, true)
         if not colonPos then
             return Malformed(str)
         end
-        local len = tonumber(str:sub(pos + 1, colonPos - 1))
+        local len = tonumber(str:sub(place + 1, colonPos - 1))
         if not len or not (len >= 0) then
             return Malformed(str)
         end -- negative/NaN would not advance
         local val = str:sub(colonPos + 1, colonPos + len)
         return val, colonPos + len + 1
     elseif tag == "n" then
-        local semi = str:find(";", pos + 1, true)
+        local semi = str:find(";", place + 1, true)
         if not semi then
             return Malformed(str)
         end
-        return tonumber(str:sub(pos + 1, semi - 1)), semi + 1
+        return tonumber(str:sub(place + 1, semi - 1)), semi + 1
     elseif tag == "T" then
-        return true, pos + 1
+        return true, place + 1
     elseif tag == "F" then
-        return false, pos + 1
+        return false, place + 1
     elseif tag == "N" then
-        return nil, pos + 1
+        return nil, place + 1
     elseif tag == "{" then
         local tbl = {}
-        local idx = 1
-        local p = pos + 1
+        local position = 1
+        local p = place + 1
         while p <= #str do
             local c = str:sub(p, p)
             if c == "}" then
@@ -506,13 +506,13 @@ local function DeserializeValue(str, pos)
                 -- Array element
                 local val
                 val, p = DeserializeValue(str, p)
-                tbl[idx] = val
-                idx = idx + 1
+                tbl[position] = val
+                position = position + 1
             end
         end
         return tbl, p
     end
-    return nil, pos + 1
+    return nil, place + 1
 end
 
 function Serializer.Deserialize(str)
@@ -533,8 +533,8 @@ function Serializer.Deserialize(str)
 end
 
 -- Install/clear the deserializer's cooperative-yield hook (async decode).
-function Serializer.SetYieldHook(fn)
-    deserializeYieldHook = fn
+function Serializer.SetYieldHook(func)
+    deserializeYieldHook = func
     deserializeOps = 0
 end
 
@@ -605,23 +605,23 @@ function CludesUI.BuildLayoutKeyToFolder(ul)
     end
     if type(ul) == "table" then
         if type(ul.anchors) == "table" then
-            for child, info in pairs(ul.anchors) do
-                add(child)
-                if type(info) == "table" then
-                    add(info.target)
+            for childFrame, details in pairs(ul.anchors) do
+                add(childFrame)
+                if type(details) == "table" then
+                    add(details.target)
                 end
             end
         end
         if type(ul.widthMatch) == "table" then
-            for child, target in pairs(ul.widthMatch) do
-                add(child)
-                add(target)
+            for childFrame, targetUnit in pairs(ul.widthMatch) do
+                add(childFrame)
+                add(targetUnit)
             end
         end
         if type(ul.heightMatch) == "table" then
-            for child, target in pairs(ul.heightMatch) do
-                add(child)
-                add(target)
+            for childFrame, targetUnit in pairs(ul.heightMatch) do
+                add(childFrame)
+                add(targetUnit)
             end
         end
     end
@@ -636,9 +636,9 @@ end
 local function CopyLinkedExtras(extras, links)
     local out = {}
     if type(extras) == "table" and type(links) == "table" then
-        for child, px in pairs(extras) do
-            if links[child] ~= nil then
-                out[child] = px
+        for childFrame, px in pairs(extras) do
+            if links[childFrame] ~= nil then
+                out[childFrame] = px
             end
         end
     end
@@ -652,8 +652,8 @@ local function OverlayLinkedExtras(dst, links, extras)
     if type(extras) ~= "table" then
         extras = nil
     end
-    for child in pairs(links) do
-        dst[child] = extras and extras[child] or nil
+    for childFrame in pairs(links) do
+        dst[childFrame] = extras and extras[childFrame] or nil
     end
 end
 
@@ -694,27 +694,27 @@ function CludesUI.FilterLayoutToFolders(ul, folderSet, k2f)
     local isEdge = CludesUI.IsScreenEdgeKey
     local out = { anchors = {}, widthMatch = {}, heightMatch = {}, phantomBounds = {} }
     if type(ul.anchors) == "table" then
-        for child, info in pairs(ul.anchors) do
+        for childFrame, details in pairs(ul.anchors) do
             if
-                type(info) == "table"
-                and endpointOK(child)
-                and (endpointOK(info.target) or (isEdge and isEdge(info.target)))
+                type(details) == "table"
+                and endpointOK(childFrame)
+                and (endpointOK(details.target) or (isEdge and isEdge(details.target)))
             then
-                out.anchors[child] = DeepCopy(info)
+                out.anchors[childFrame] = DeepCopy(details)
             end
         end
     end
     if type(ul.widthMatch) == "table" then
-        for child, target in pairs(ul.widthMatch) do
-            if endpointOK(child) and endpointOK(target) then
-                out.widthMatch[child] = target
+        for childFrame, targetUnit in pairs(ul.widthMatch) do
+            if endpointOK(childFrame) and endpointOK(targetUnit) then
+                out.widthMatch[childFrame] = targetUnit
             end
         end
     end
     if type(ul.heightMatch) == "table" then
-        for child, target in pairs(ul.heightMatch) do
-            if endpointOK(child) and endpointOK(target) then
-                out.heightMatch[child] = target
+        for childFrame, targetUnit in pairs(ul.heightMatch) do
+            if endpointOK(childFrame) and endpointOK(targetUnit) then
+                out.heightMatch[childFrame] = targetUnit
             end
         end
     end
@@ -733,23 +733,23 @@ function CludesUI.BuildModuleComponents(ul, k2f)
     if not k2f then
         k2f = CludesUI.BuildLayoutKeyToFolder(ul)
     end
-    local parent = {}
-    local function find(x)
-        while parent[x] and parent[x] ~= x do
-            x = parent[x]
+    local hostFrame = {}
+    local function find(posX)
+        while hostFrame[posX] and hostFrame[posX] ~= posX do
+            posX = hostFrame[posX]
         end
-        return x
+        return posX
     end
     local function union(a, b)
-        if not parent[a] then
-            parent[a] = a
+        if not hostFrame[a] then
+            hostFrame[a] = a
         end
-        if not parent[b] then
-            parent[b] = b
+        if not hostFrame[b] then
+            hostFrame[b] = b
         end
         local ra, rb = find(a), find(b)
         if ra ~= rb then
-            parent[ra] = rb
+            hostFrame[ra] = rb
         end
     end
     local function edge(c, t)
@@ -787,7 +787,7 @@ function CludesUI.BuildModuleComponents(ul, k2f)
         end
     end
     local rootMembers = {}
-    for f in pairs(parent) do
+    for f in pairs(hostFrame) do
         local r = find(f)
         rootMembers[r] = rootMembers[r] or {}
         rootMembers[r][f] = true
@@ -858,60 +858,60 @@ end
 -- its child). importedFolders = set of LOCAL folders being imported. For a full
 -- import (every module) this reduces to "replace with imported" (every child is
 -- owned by an imported module). LOCAL keyspace throughout.
-function CludesUI.MergeImportedLayout(base, imported, importedFolders)
-    base = (type(base) == "table") and base or {}
+function CludesUI.MergeImportedLayout(baseValue, imported, importedFolders)
+    baseValue = (type(baseValue) == "table") and baseValue or {}
     imported = (type(imported) == "table") and imported or {}
     importedFolders = importedFolders or {}
     local out = {
-        anchors = DeepCopy(base.anchors or {}),
-        widthMatch = DeepCopy(base.widthMatch or {}),
-        heightMatch = DeepCopy(base.heightMatch or {}),
-        phantomBounds = DeepCopy(base.phantomBounds or {}),
+        anchors = DeepCopy(baseValue.anchors or {}),
+        widthMatch = DeepCopy(baseValue.widthMatch or {}),
+        heightMatch = DeepCopy(baseValue.heightMatch or {}),
+        phantomBounds = DeepCopy(baseValue.phantomBounds or {}),
     }
     -- 1) Drop base entries OWNED by an imported module (child in importedFolders),
     --    so the imported module's layout fully replaces the base's for that module.
     --    Classify the BASE children via the live (recipient) registry + static
     --    resolver, since these are the recipient's own profile keys.
-    local baseK2F = CludesUI.BuildLayoutKeyToFolder(base)
-    local function childImported(child)
-        local f = baseK2F[child]
+    local baseK2F = CludesUI.BuildLayoutKeyToFolder(baseValue)
+    local function childImported(childFrame)
+        local f = baseK2F[childFrame]
         return f ~= nil and importedFolders[f] == true
     end
-    for child in pairs(out.anchors) do
-        if childImported(child) then
-            out.anchors[child] = nil
+    for childFrame in pairs(out.anchors) do
+        if childImported(childFrame) then
+            out.anchors[childFrame] = nil
         end
     end
-    for child in pairs(out.widthMatch) do
-        if childImported(child) then
-            out.widthMatch[child] = nil
+    for childFrame in pairs(out.widthMatch) do
+        if childImported(childFrame) then
+            out.widthMatch[childFrame] = nil
         end
     end
-    for child in pairs(out.heightMatch) do
-        if childImported(child) then
-            out.heightMatch[child] = nil
+    for childFrame in pairs(out.heightMatch) do
+        if childImported(childFrame) then
+            out.heightMatch[childFrame] = nil
         end
     end
     -- 2) Overlay the imported entries (already filtered to the imported modules).
     if type(imported.anchors) == "table" then
-        for child, info in pairs(imported.anchors) do
-            out.anchors[child] = DeepCopy(info)
+        for childFrame, details in pairs(imported.anchors) do
+            out.anchors[childFrame] = DeepCopy(details)
         end
     end
     if type(imported.widthMatch) == "table" then
-        for child, t in pairs(imported.widthMatch) do
-            out.widthMatch[child] = t
+        for childFrame, t in pairs(imported.widthMatch) do
+            out.widthMatch[childFrame] = t
         end
     end
     if type(imported.heightMatch) == "table" then
-        for child, t in pairs(imported.heightMatch) do
-            out.heightMatch[child] = t
+        for childFrame, t in pairs(imported.heightMatch) do
+            out.heightMatch[childFrame] = t
         end
     end
     -- 3) Match extras follow their links: a kept base link keeps its extra, an
     --    imported link brings the import's extra (or none).
-    out.widthMatchExtra = CopyLinkedExtras(base.widthMatchExtra, out.widthMatch)
-    out.heightMatchExtra = CopyLinkedExtras(base.heightMatchExtra, out.heightMatch)
+    out.widthMatchExtra = CopyLinkedExtras(baseValue.widthMatchExtra, out.widthMatch)
+    out.heightMatchExtra = CopyLinkedExtras(baseValue.heightMatchExtra, out.heightMatch)
     OverlayLinkedExtras(out.widthMatchExtra, imported.widthMatch, imported.widthMatchExtra)
     OverlayLinkedExtras(out.heightMatchExtra, imported.heightMatch, imported.heightMatchExtra)
     return out
@@ -930,8 +930,8 @@ function CludesUI.BuildExportUnlockLayout(unlockLayout, includeLayout, folderSet
     end
     if not folderSet then
         folderSet = {}
-        for _, entry in ipairs(ADDON_DB_MAP) do
-            folderSet[entry.folder] = true
+        for _, record in ipairs(ADDON_DB_MAP) do
+            folderSet[record.folder] = true
         end
     end
     local k2f = CludesUI.BuildLayoutKeyToFolder(unlockLayout)
@@ -1096,12 +1096,12 @@ local function StampUnlockLayoutIfMissing(prof)
         { cb = "focusCastbar", parent = "focus" },
         { cb = "petCastbar", parent = "pet" },
     }
-    for _, def in ipairs(CB_DEFAULTS) do
-        if not snap.anchors[def.cb] then
-            snap.anchors[def.cb] = { target = def.parent, side = "BOTTOM" }
+    for _, spec_def in ipairs(CB_DEFAULTS) do
+        if not snap.anchors[spec_def.cb] then
+            snap.anchors[spec_def.cb] = { target = spec_def.parent, side = "BOTTOM" }
         end
-        if not snap.widthMatch[def.cb] then
-            snap.widthMatch[def.cb] = def.parent
+        if not snap.widthMatch[spec_def.cb] then
+            snap.widthMatch[spec_def.cb] = spec_def.parent
         end
     end
     prof.unlockLayout = snap
@@ -1147,8 +1147,8 @@ local function RepointAllDBs(profileName)
                     local exclusions = CludesUI._syncExclusions and CludesUI._syncExclusions[folder]
                     local exFn = CludesUI._SyncExclusionsWithOverrides
                     if exFn then
-                        local ok, m = pcall(exFn, folder, exclusions, outProf, profileData)
-                        if ok and m then
+                        local success, m = pcall(exFn, folder, exclusions, outProf, profileData)
+                        if success and m then
                             exclusions = m
                         end
                     end
@@ -1173,17 +1173,17 @@ local function RepointAllDBs(profileName)
     if not registry then
         return
     end
-    for _, db in ipairs(registry) do
-        local folder = db.folder
+    for _, saved in ipairs(registry) do
+        local folder = saved.folder
         if folder then
             if type(profileData.addons[folder]) ~= "table" then
                 profileData.addons[folder] = {}
             end
-            db.profile = profileData.addons[folder]
-            db._profileName = profileName
+            saved.profile = profileData.addons[folder]
+            saved._profileName = profileName
             -- Re-merge defaults so new profile has all keys
-            if db._profileDefaults then
-                CludesUI.Lite.DeepMergeDefaults(db.profile, db._profileDefaults)
+            if saved._profileDefaults then
+                CludesUI.Lite.DeepMergeDefaults(saved.profile, saved._profileDefaults)
             end
         end
     end
@@ -1274,8 +1274,8 @@ local function RepointAllDBs(profileName)
     -- Sidebar sync icons key off the ACTIVE profile's group membership;
     -- re-evaluate them on every repoint (switch/create/delete/rename/import)
     if CludesUI._syncRefreshFns then
-        for _, fn in pairs(CludesUI._syncRefreshFns) do
-            fn()
+        for _, func in pairs(CludesUI._syncRefreshFns) do
+            func()
         end
     end
     -- The account-wide window skins follow the whole-UI look of the profile
@@ -1386,11 +1386,11 @@ end
 --- Get the live profile table for an addon.
 --- All addons use _dbRegistry (which points into
 --- CludesUIDB.profiles[active].addons[folder]).
-local function GetAddonProfile(entry)
+local function GetAddonProfile(record)
     if CludesUI.Lite and CludesUI.Lite._dbRegistry then
-        for _, db in ipairs(CludesUI.Lite._dbRegistry) do
-            if db.folder == entry.folder then
-                return db.profile
+        for _, saved in ipairs(CludesUI.Lite._dbRegistry) do
+            if saved.folder == record.folder then
+                return saved.profile
             end
         end
     end
@@ -1400,15 +1400,15 @@ end
 --- Snapshot the current state of all loaded addons into a profile data table
 function CludesUI.SnapshotAllAddons()
     local data = { addons = {} }
-    for _, entry in ipairs(ADDON_DB_MAP) do
+    for _, record in ipairs(ADDON_DB_MAP) do
         -- Host-aware: Dragon Riding's folder is not a loadable addon (it lives
         -- inside BlizzardSkin), so a bare IsAddonLoaded(entry.folder) would drop
         -- it from every full-profile export. IsModuleAddonLoaded resolves through
         -- the hostAddon, matching the per-addon export path (ExportProfile).
-        if CludesUI.IsModuleAddonLoaded(entry.folder) then
-            local profile = GetAddonProfile(entry)
+        if CludesUI.IsModuleAddonLoaded(record.folder) then
+            local profile = GetAddonProfile(record)
             if profile then
-                data.addons[entry.folder] = DeepCopy(profile)
+                data.addons[record.folder] = DeepCopy(profile)
             end
         end
     end
@@ -1506,19 +1506,19 @@ function CludesUI.ApplyProfileData(profileData)
     -- Build a folder -> db lookup from the Lite registry
     local dbByFolder = {}
     if CludesUI.Lite and CludesUI.Lite._dbRegistry then
-        for _, db in ipairs(CludesUI.Lite._dbRegistry) do
-            if db.folder then
-                dbByFolder[db.folder] = db
+        for _, saved in ipairs(CludesUI.Lite._dbRegistry) do
+            if saved.folder then
+                dbByFolder[saved.folder] = saved
             end
         end
     end
 
-    for _, entry in ipairs(ADDON_DB_MAP) do
-        local snap = profileData.addons[entry.folder]
-        if snap and IsAddonLoaded(entry.folder) then
-            local db = dbByFolder[entry.folder]
-            if db then
-                local profile = db.profile
+    for _, record in ipairs(ADDON_DB_MAP) do
+        local snap = profileData.addons[record.folder]
+        if snap and IsAddonLoaded(record.folder) then
+            local saved = dbByFolder[record.folder]
+            if saved then
+                local profile = saved.profile
                 -- CDM spell content (barSpells, TBB, barGlows) lives in the
                 -- per-profile store at spellAssignments.profiles[name], NOT in
                 -- this profile blob. No save/restore needed here: ImportProfile
@@ -1538,7 +1538,7 @@ function CludesUI.ApplyProfileData(profileData)
                 -- but without the conversion the absorb still renders as a fallback
                 -- texture instead of honouring the setting. Normalise on the way in,
                 -- matching the mapping the migrations use.
-                if entry.folder == "CludesUIUnitFrames" then
+                if record.folder == "CludesUIUnitFrames" then
                     for _, unitCfg in pairs(profile) do
                         if type(unitCfg) == "table" then
                             local v = unitCfg.showPlayerAbsorb
@@ -1556,7 +1556,7 @@ function CludesUI.ApplyProfileData(profileData)
                 -- DeepCopy(current), which inherits the current profile's
                 -- migration flags), so forward-copy here -- BEFORE
                 -- DeepMergeDefaults would otherwise fill in DEFAULT minis.
-                if entry.folder == "CludesUIUnitFrames" and type(profile.totPet) == "table" then
+                if record.folder == "CludesUIUnitFrames" and type(profile.totPet) == "table" then
                     if profile.targettarget == nil then
                         profile.targettarget = DeepCopy(profile.totPet)
                     end
@@ -1571,7 +1571,7 @@ function CludesUI.ApplyProfileData(profileData)
                 -- migration (uf_boss_simple_text_seed_v1) is SKIPPED for
                 -- imported profiles (inherited migration flags), so
                 -- forward-copy here BEFORE the merge masks the nil keys.
-                if entry.folder == "CludesUIUnitFrames" and type(profile.boss) == "table" then
+                if record.folder == "CludesUIUnitFrames" and type(profile.boss) == "table" then
                     local b = profile.boss
                     if
                         b.simpleDebuffCooldownTextSize == nil
@@ -1600,7 +1600,7 @@ function CludesUI.ApplyProfileData(profileData)
                 -- here BEFORE DeepMergeDefaults fills the "all" default and masks
                 -- the legacy key from the resolver.
                 if
-                    entry.folder == "CludesUIBags"
+                    record.folder == "CludesUIBags"
                     and profile.bagDefaultBagType == nil
                     and profile.bagDefaultOneBag == true
                 then
@@ -1612,7 +1612,7 @@ function CludesUI.ApplyProfileData(profileData)
                 -- here BEFORE DeepMergeDefaults fills the DEFAULT boss color and
                 -- changes the user's boss nameplates.
                 if
-                    entry.folder == "CludesUINameplates"
+                    record.folder == "CludesUINameplates"
                     and profile.boss == nil
                     and type(profile.miniboss) == "table"
                 then
@@ -1623,7 +1623,7 @@ function CludesUI.ApplyProfileData(profileData)
                 -- migrations are SKIPPED for imported profiles (inherited migration
                 -- flags), so forward-copy here BEFORE DeepMergeDefaults fills the new
                 -- defaults and masks the legacy keys.
-                if entry.folder == "CludesUIMinimap" and type(profile.minimap) == "table" then
+                if record.folder == "CludesUIMinimap" and type(profile.minimap) == "table" then
                     local mm = profile.minimap
                     if mm.coordsMode == nil then
                         if mm.coordsBelow then
@@ -1666,24 +1666,24 @@ function CludesUI.ApplyProfileData(profileData)
                 -- (inherited migration flags), so forward-copy here so the
                 -- pinned-row behavior survives the import.
                 if
-                    entry.folder == "CludesUICooldownManager"
+                    record.folder == "CludesUICooldownManager"
                     and type(profile.cdmBars) == "table"
                     and type(profile.cdmBars.bars) == "table"
                 then
-                    for _, bar in ipairs(profile.cdmBars.bars) do
-                        if bar.anchorFirstRow then
-                            if bar.rowGrowDirection == nil then
-                                bar.rowGrowDirection = bar.verticalOrientation and "RIGHT" or "DOWN"
+                    for _, barFrame in ipairs(profile.cdmBars.bars) do
+                        if barFrame.anchorFirstRow then
+                            if barFrame.rowGrowDirection == nil then
+                                barFrame.rowGrowDirection = barFrame.verticalOrientation and "RIGHT" or "DOWN"
                             end
-                            bar.anchorFirstRow = nil
+                            barFrame.anchorFirstRow = nil
                         end
                     end
                 end
-                if db._profileDefaults then
-                    CludesUI.Lite.DeepMergeDefaults(profile, db._profileDefaults)
+                if saved._profileDefaults then
+                    CludesUI.Lite.DeepMergeDefaults(profile, saved._profileDefaults)
                 end
                 -- Ensure per-unit bg colors are never nil after import
-                if entry.folder == "CludesUIUnitFrames" then
+                if record.folder == "CludesUIUnitFrames" then
                     local UF_UNITS = { "player", "target", "focus", "boss", "pet", "totPet" }
                     local DEF_BG = 17 / 255
                     for _, uKey in ipairs(UF_UNITS) do
@@ -2124,11 +2124,11 @@ local function EnsureProfileBindBtn(profileName)
         return _profileBindBtns[profileName]
     end
     local safeName = profileName:gsub("[^%w]", "")
-    local btn = CreateFrame("Button", "CludesUIProfileBind_" .. safeName, UIParent)
-    btn:Hide()
-    btn:SetScript("OnClick", function()
-        local active = CludesUI.GetActiveProfileName()
-        if active == profileName then
+    local button = CreateFrame("Button", "CludesUIProfileBind_" .. safeName, UIParent)
+    button:Hide()
+    button:SetScript("OnClick", function()
+        local isActive = CludesUI.GetActiveProfileName()
+        if isActive == profileName then
             return
         end
         local _, profiles = CludesUI.GetProfileList()
@@ -2152,21 +2152,21 @@ local function EnsureProfileBindBtn(profileName)
             CludesUI:RefreshPage()
         end
     end)
-    _profileBindBtns[profileName] = btn
-    return btn
+    _profileBindBtns[profileName] = button
+    return button
 end
 
 function CludesUI.SetProfileKeybind(profileName, key)
     local kb = GetProfileKeybinds()
     -- Clear old binding for this profile
     local oldKey = kb[profileName]
-    local btn = EnsureProfileBindBtn(profileName)
+    local button = EnsureProfileBindBtn(profileName)
     if oldKey then
-        ClearOverrideBindings(btn)
+        ClearOverrideBindings(button)
     end
     if key then
         kb[profileName] = key
-        SetOverrideBindingClick(btn, true, key, btn:GetName())
+        SetOverrideBindingClick(button, true, key, button:GetName())
     else
         kb[profileName] = nil
     end
@@ -2182,8 +2182,8 @@ function CludesUI.RestoreProfileKeybinds()
     local kb = GetProfileKeybinds()
     for profileName, key in pairs(kb) do
         if key then
-            local btn = EnsureProfileBindBtn(profileName)
-            SetOverrideBindingClick(btn, true, key, btn:GetName())
+            local button = EnsureProfileBindBtn(profileName)
+            SetOverrideBindingClick(button, true, key, button:GetName())
         end
     end
 end
@@ -2209,9 +2209,9 @@ end
 function CludesUI.OnProfileDeleted(profileName)
     local kb = GetProfileKeybinds()
     if kb[profileName] then
-        local btn = _profileBindBtns[profileName]
-        if btn then
-            ClearOverrideBindings(btn)
+        local button = _profileBindBtns[profileName]
+        if button then
+            ClearOverrideBindings(button)
         end
         _profileBindBtns[profileName] = nil
         kb[profileName] = nil
@@ -2437,11 +2437,11 @@ end
 -- profile yet).
 local function RenderedStyleOf(f, mns)
     if f.active then
-        local fn = mns[f.active]
-        if not fn then
+        local func = mns[f.active]
+        if not func then
             return nil
         end
-        local cur = fn()
+        local cur = func()
         if cur ~= "blizzard" and cur ~= "classic" then
             cur = "cui"
         end
@@ -2454,8 +2454,8 @@ local function RenderedStyleOf(f, mns)
         end
         return cur
     end
-    local EAB = mns.EAB
-    local p = EAB and EAB.db and EAB.db.profile
+    local ABAR = mns.EAB
+    local p = ABAR and ABAR.db and ABAR.db.profile
     if p then
         return StyleKeyOfFlags(p, f)
     end
@@ -2474,8 +2474,9 @@ function CludesUI.ProfileChangesStyle(profileData)
     local bags = CludesUI.IS_FOREVER and reg.CludesUIBags
     if bags and bags.BagsForeverWanted then
         local incoming = profileData.addons.CludesUIBags
-        local want = bags.BagsForeverWanted(type(incoming) == "table" and incoming or nil, profileData.addons)
-        if bags.BagsForever() ~= want then
+        local wanted =
+            bags.BagsForeverWanted(type(incoming) == "table" and incoming or nil, profileData.addons)
+        if bags.BagsForever() ~= wanted then
             return true
         end
     end
@@ -2571,11 +2572,11 @@ function CludesUI.ForeverLookMajority(addons)
     if type(addons) ~= "table" or not reg then
         return false
     end
-    local total, forever = 0, 0
+    local sum, forever = 0, 0
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
         if reg[f.folder] and not f.retailOnly then
-            total = total + 1
+            sum = sum + 1
             local t = addons[f.data or f.folder]
             if f.sub and type(t) == "table" then
                 t = t[f.sub]
@@ -2590,7 +2591,7 @@ function CludesUI.ForeverLookMajority(addons)
             end
         end
     end
-    return forever * 2 > total
+    return forever * 2 > sum
 end
 
 -------------------------------------------------------------------------------
@@ -2792,14 +2793,14 @@ local function CollectAssignedSpecs(profileName)
     if type(sp) ~= "table" then
         return nil
     end
-    local list
+    local entries
     for specID, prof in pairs(sp) do
         if prof == profileName then
-            list = list or {}
-            list[#list + 1] = specID
+            entries = entries or {}
+            entries[#entries + 1] = specID
         end
     end
-    return list
+    return entries
 end
 
 -------------------------------------------------------------------------------
@@ -2824,10 +2825,10 @@ end
 -------------------------------------------------------------------------------
 local BLIZZ_SKIN_GLOBAL_KEYS = {}
 do
-    local keys = BLIZZ_SKIN_GLOBAL_KEYS
-    local function add(list)
-        for _, k in ipairs(list) do
-            keys[#keys + 1] = k
+    local keyList = BLIZZ_SKIN_GLOBAL_KEYS
+    local function add(entries)
+        for _, k in ipairs(entries) do
+            keyList[#keyList + 1] = k
         end
     end
     -- Tooltips, Menus & Popups tab
@@ -2891,7 +2892,7 @@ do
         "accentReskinElements",
     })
     -- Shared border-editor key sets (tooltip / popup menu / popup menu button)
-    for _, prefix in ipairs({ "tooltip", "popupMenu", "popupMenuButton", "lootWindow", "lootIcon" }) do
+    for _, prefixText in ipairs({ "tooltip", "popupMenu", "popupMenuButton", "lootWindow", "lootIcon" }) do
         for _, suffix in ipairs({
             "BorderTexture",
             "BorderThickness",
@@ -2905,7 +2906,7 @@ do
             "BorderShiftY",
             "BorderBehind",
         }) do
-            keys[#keys + 1] = prefix .. suffix
+            keyList[#keyList + 1] = prefixText .. suffix
         end
     end
     -- Window Skins tab: per-window enables + skin styles + shared look
@@ -3110,13 +3111,13 @@ function CludesUI.ExportProfile(
     if includeBlizzSkin == nil then
         includeBlizzSkin = true
     end
-    local db = GetProfilesDB()
-    local profileData = db.profiles[profileName]
+    local saved = GetProfilesDB()
+    local profileData = saved.profiles[profileName]
     if not profileData then
         return nil
     end
     -- If exporting the active profile, ensure fonts/colors/layout are current
-    if profileName == (db.activeProfile or "Default") then
+    if profileName == (saved.activeProfile or "Default") then
         profileData.fonts = DeepCopy(CludesUI.GetFontsDB())
         profileData.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
         profileData.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
@@ -3427,8 +3428,8 @@ local FULL_IMPORT_MERGE = {
         end
         local key = type(str) == "table" and str[name]
         if key then
-            for n, k in pairs(own) do
-                if k == key and n ~= name then
+            for num, k in pairs(own) do
+                if k == key and num ~= name then
                     return own
                 end
             end
@@ -3468,8 +3469,8 @@ function CludesUI.ExportFullAccountData()
     if CludesUI.SpecOverrides_HarvestCurrent then
         CludesUI.SpecOverrides_HarvestCurrent()
     end
-    local db = GetProfilesDB()
-    local activeName = db.activeProfile or "Default"
+    local saved = GetProfilesDB()
+    local activeName = saved.activeProfile or "Default"
     local out = {}
     for k, v in pairs(CludesUIDB) do
         if k ~= "profiles" and not FULL_EXPORT_EXCLUDED[k] then
@@ -3479,7 +3480,7 @@ function CludesUI.ExportFullAccountData()
     -- ONLY the active profile travels; the exporter's other profiles are
     -- their own business and would overwrite same-named profiles on import.
     out.profiles = {}
-    local prof = db.profiles and db.profiles[activeName]
+    local prof = saved.profiles and saved.profiles[activeName]
     if prof then
         local copy = DeepCopy(prof)
         -- Freshen profile-global appearance and the unlock layout from live,
@@ -3640,20 +3641,20 @@ function CludesUI.ImportFullAccountData(payload)
 
     -- 3) Order list: keep the recipient's and append, never replace -- a
     --    wholesale copy would drop their own profiles out of the picker.
-    local order = CludesUIDB.profileOrder
-    if type(order) ~= "table" then
-        order = {}
-        CludesUIDB.profileOrder = order
+    local sequence = CludesUIDB.profileOrder
+    if type(sequence) ~= "table" then
+        sequence = {}
+        CludesUIDB.profileOrder = sequence
     end
     local listed = false
-    for _, n in ipairs(order) do
-        if n == activeName then
+    for _, num in ipairs(sequence) do
+        if num == activeName then
             listed = true
             break
         end
     end
     if not listed then
-        order[#order + 1] = activeName
+        sequence[#sequence + 1] = activeName
     end
     CludesUIDB.activeProfile = activeName
 
@@ -3736,7 +3737,7 @@ end
 --- ticked keeps the keys the picker was opened with, and a newly ticked class
 --- = its resolved key (the player's class: opts.foreverActiveKey). Specs of
 --- classes Forever lacks pass through.
-function CludesUI.ForeverCDMSelection(assignments, opts, out)
+function CludesUI.ForeverCDMSelection(assignments, options, out)
     local sa = CludesUIDB and CludesUIDB.spellAssignments
     local b = sa and sa.profiles and sa.profiles[CludesUIDB.activeProfile or "Default"]
     local sp = (b and b.specProfiles) or {}
@@ -3749,26 +3750,26 @@ function CludesUI.ForeverCDMSelection(assignments, opts, out)
             opened[t][#opened[t] + 1] = key
         end
     end
-    for _, s in ipairs(opts.specs or {}) do
+    for _, s in ipairs(options.specs or {}) do
         if s.checked then
             Opened(s.key)
         end
     end
-    for k, v in pairs(opts.lockedSpecs or {}) do
+    for k, v in pairs(options.lockedSpecs or {}) do
         if v then
             Opened(k)
         end
     end
     local done = {}
-    for id in pairs(assignments) do
-        local token = CludesUI.SpecClassOf(id)
+    for ident in pairs(assignments) do
+        local token = CludesUI.SpecClassOf(ident)
         local ids = CludesUI.ForeverClassSpecIDs(token)
         if not ids then
-            out[tostring(id)] = true
+            out[tostring(ident)] = true
         elseif not done[token] then
             done[token] = true
             local any = false
-            if opts.foreverAllKeys then
+            if options.foreverAllKeys then
                 for i = 1, #ids do
                     local k = tostring(ids[i])
                     if sp[k] ~= nil then
@@ -3788,7 +3789,7 @@ function CludesUI.ForeverCDMSelection(assignments, opts, out)
                 any = true
             end
             if not any then
-                local k = (token == player) and opts.foreverActiveKey
+                local k = (token == player) and options.foreverActiveKey
                     or tostring(CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, sp, true))
                 out[k] = true
             end
@@ -3800,8 +3801,8 @@ do
     -- Dummy db/dbKey/presetKey for the assignments table
     local dummyDB = { _cdmPick = { _cdm = {} } }
 
-    function CludesUI:ShowCDMSpecPickerPopup(opts)
-        local specs = opts.specs or {}
+    function CludesUI:ShowCDMSpecPickerPopup(options)
+        local specs = options.specs or {}
 
         -- Reset assignments
         dummyDB._cdmPick._cdm = {}
@@ -3819,16 +3820,16 @@ do
         -- opts.lockedSpecs is a set keyed by string specKey; value may be a
         -- tooltip string (or true). opts.disabledSpecs likewise grays specs out.
         local lockedOnSpecs, disabledSpecs = {}, {}
-        if opts.lockedSpecs then
-            for k, v in pairs(opts.lockedSpecs) do
+        if options.lockedSpecs then
+            for k, v in pairs(options.lockedSpecs) do
                 local numID = tonumber(k)
                 if numID and v then
                     lockedOnSpecs[numID] = v
                 end
             end
         end
-        if opts.disabledSpecs then
-            for k, v in pairs(opts.disabledSpecs) do
+        if options.disabledSpecs then
+            for k, v in pairs(options.disabledSpecs) do
                 local numID = tonumber(k)
                 if numID and v then
                     disabledSpecs[numID] = v
@@ -3847,15 +3848,15 @@ do
             db = dummyDB,
             dbKey = "_cdmPick",
             presetKey = "_cdm",
-            title = opts.title,
-            subtitle = opts.subtitle,
-            subtitleColor = opts.subtitleColor,
-            subtitleAtBottom = opts.subtitleAtBottom,
-            buttonText = opts.confirmText or "Confirm",
+            title = options.title,
+            subtitle = options.subtitle,
+            subtitleColor = options.subtitleColor,
+            subtitleAtBottom = options.subtitleAtBottom,
+            buttonText = options.confirmText or "Confirm",
             disabledSpecs = disabledSpecs,
             lockedOnSpecs = lockedOnSpecs,
             preCheckedSpecs = preCheckedSpecs,
-            onConfirm = opts.onConfirm and function(assignments)
+            onConfirm = options.onConfirm and function(assignments)
                 -- Convert numeric specID assignments back to string keys
                 local selected = {}
                 for specID in pairs(assignments) do
@@ -3864,11 +3865,11 @@ do
                 -- WoW Forever: class rows -> the store keys each class uses.
                 if CludesUI.IS_FOREVER then
                     wipe(selected)
-                    CludesUI.ForeverCDMSelection(assignments, opts, selected)
+                    CludesUI.ForeverCDMSelection(assignments, options, selected)
                 end
-                opts.onConfirm(selected)
+                options.onConfirm(selected)
             end,
-            onCancel = opts.onCancel,
+            onCancel = options.onCancel,
         })
     end
 end
@@ -4011,11 +4012,11 @@ do
     local SLICE_LEN = 65536 -- printable-decode slice (multiple of 4)
 
     local driver -- shared OnUpdate frame, hidden while idle
-    local active -- state table of the in-flight run, or nil
+    local isActive -- state table of the in-flight run, or nil
 
     local function StopRun(run)
-        if active == run then
-            active = nil
+        if isActive == run then
+            isActive = nil
             Serializer.SetYieldHook(nil)
             if driver then
                 driver:Hide()
@@ -4045,11 +4046,11 @@ do
             return nil
         end
 
-        if active then
-            StopRun(active)
+        if isActive then
+            StopRun(isActive)
         end
         local run = {}
-        active = run
+        isActive = run
 
         local sliceStart = 0
         local function Yield(frac)
@@ -4073,22 +4074,22 @@ do
             -- Printable decode in slices (block codec: 4 chars -> 3 bytes,
             -- so any 4-char boundary is a clean cut; the tail of the final
             -- slice is handled by the codec itself).
-            local total = #encoded
+            local sum = #encoded
             local pieces, pn = {}, 0
             local i = 1
-            while i <= total do
-                local j = i + SLICE_LEN - 1
-                if j > total then
-                    j = total
+            while i <= sum do
+                local jdx = i + SLICE_LEN - 1
+                if jdx > sum then
+                    jdx = sum
                 end
-                local piece = LibDeflate:DecodeForPrint(encoded:sub(i, j))
+                local piece = LibDeflate:DecodeForPrint(encoded:sub(i, jdx))
                 if not piece then
                     return nil, "Failed to decode string"
                 end
                 pn = pn + 1
                 pieces[pn] = piece
-                i = j + 1
-                Yield((i / total) * 0.4)
+                i = jdx + 1
+                Yield((i / sum) * 0.4)
             end
             local decoded = table.concat(pieces)
             pieces = nil
@@ -4105,9 +4106,9 @@ do
                 and Enum.CompressionMethod
                 and Enum.CompressionMethod.Deflate
             then
-                local ok, res =
+                local success, res =
                     pcall(C_EncodingUtil.DecompressString, decoded, Enum.CompressionMethod.Deflate)
-                if ok and type(res) == "string" and #res > 0 then
+                if success and type(res) == "string" and #res > 0 then
                     decompressed = res
                 end
             end
@@ -4122,8 +4123,8 @@ do
 
             -- Deserialize with the cooperative hook installed.
             local dtotal = #decompressed
-            Serializer.SetYieldHook(function(pos)
-                Yield(0.5 + (pos / dtotal) * 0.5)
+            Serializer.SetYieldHook(function(place)
+                Yield(0.5 + (place / dtotal) * 0.5)
             end)
             local payload = Serializer.Deserialize(decompressed)
             Serializer.SetYieldHook(nil)
@@ -4150,15 +4151,15 @@ do
         end)
 
         local function Step()
-            if active ~= run then
+            if isActive ~= run then
                 if driver then
                     driver:Hide()
                 end
                 return
             end
             sliceStart = debugprofilestop()
-            local ok, payload, perr = coroutine.resume(run.co)
-            if not ok then
+            local success, payload, perr = coroutine.resume(run.co)
+            if not success then
                 StopRun(run)
                 onDone(nil, "Failed to read import data")
                 return
@@ -4236,11 +4237,11 @@ local function ReconcileImportedMedia(data)
     end
 
     local function Signature(s)
-        local h = 5381
+        local hgt = 5381
         for i = 1, #s do
-            h = (h * 33 + s:byte(i)) % 4294967296
+            hgt = (hgt * 33 + s:byte(i)) % 4294967296
         end
-        return h
+        return hgt
     end
 
     local function Walk(t, depth)
@@ -4253,9 +4254,9 @@ local function ReconcileImportedMedia(data)
             elseif type(v) == "string" and #v >= 9 and #v <= 26 then
                 -- Saved texture values are either plain names or carry the
                 -- "sm:" dropdown key prefix.
-                local base = v:match("^sm:(.+)") or v
-                if RECONCILE_BAR_SIGS[Signature(base)] then
-                    if not LSM:Fetch("statusbar", base, true) then
+                local baseValue = v:match("^sm:(.+)") or v
+                if RECONCILE_BAR_SIGS[Signature(baseValue)] then
+                    if not LSM:Fetch("statusbar", baseValue, true) then
                         t[k] = "sm:" .. RECONCILE_TEX_NAME
                     end
                 end
@@ -4453,7 +4454,7 @@ function CludesUI.ImportProfile(importStr, profileName)
     -- the payload is merged or stored (see Imported media reconciliation above).
     ReconcileImportedMedia(payload.data)
 
-    local db = GetProfilesDB()
+    local saved = GetProfilesDB()
 
     if payload.type == "cdm_spells" then
         return false, "This is a CDM Bar Layout string, not a profile string."
@@ -4539,7 +4540,7 @@ function CludesUI.ImportProfile(importStr, profileName)
         end
 
         -- Base: deep-copy current active profile, then overlay imported addons
-        local current = db.profiles[db.activeProfile or "Default"]
+        local current = saved.profiles[saved.activeProfile or "Default"]
         local merged = current and DeepCopy(current) or {}
         if not merged.addons then
             merged.addons = {}
@@ -4716,17 +4717,17 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- Snap all positions to the physical pixel grid (imported profiles
         -- may come from a different version without pixel snapping)
         CludesUI.SnapProfilePositions(merged)
-        db.profiles[profileName] = merged
+        saved.profiles[profileName] = merged
         -- Add to order if not present
         local found = false
-        for _, n in ipairs(db.profileOrder) do
-            if n == profileName then
+        for _, num in ipairs(saved.profileOrder) do
+            if num == profileName then
                 found = true
                 break
             end
         end
         if not found then
-            table.insert(db.profileOrder, 1, profileName)
+            table.insert(saved.profileOrder, 1, profileName)
         end
         -- CDM spell allocation: inherit-then-overlay via the shared builder
         -- (BuildImportedCDMSpellBucket above): specs missing from the string
@@ -4752,7 +4753,7 @@ function CludesUI.ImportProfile(importStr, profileName)
             end
             BuildImportedCDMSpellBucket(
                 profileName,
-                db.activeProfile or "Default",
+                saved.activeProfile or "Default",
                 incomingSpells,
                 importedBarsCfg
             )
@@ -4789,7 +4790,7 @@ function CludesUI.ImportProfile(importStr, profileName)
         if type(payload.data.assignedSpecs) == "table" then
             for _, specID in ipairs(payload.data.assignedSpecs) do
                 if type(specID) == "number" then
-                    db.specProfiles[specID] = profileName
+                    saved.specProfiles[specID] = profileName
                 end
             end
         end
@@ -4800,12 +4801,12 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- off this profile, so save it but don't activate. If the current spec is
         -- unassigned -- or was just auto-assigned to THIS profile -- activate.
         local assignedNow = curSpecID
-            and db.specProfiles[CludesUI.SpecFor(curSpecID, CludesUI.SpecHasEntry, db.specProfiles)]
+            and saved.specProfiles[CludesUI.SpecFor(curSpecID, CludesUI.SpecHasEntry, saved.specProfiles)]
         if assignedNow and assignedNow ~= profileName then
             -- Stored but not activated: migrate legacy Resource Bars Advanced
             -- data now (the runner's flag was inherited from the base profile,
             -- so it would never run for this import otherwise).
-            CludesUI.MigrateRBAdvancedProfile(db.profiles[profileName])
+            CludesUI.MigrateRBAdvancedProfile(saved.profiles[profileName])
             -- Import window guard, spec_locked flavor: the merged profile was built on
             -- the dirty active profile all the same, so its first ACTIVATION (e.g. a
             -- later login preseeding onto an auto-assigned spec) hits the same
@@ -4813,14 +4814,14 @@ function CludesUI.ImportProfile(importStr, profileName)
             -- the profile is stored; whichever session first activates it clears it at
             -- its first apply. Runtime armed flag deliberately NOT set here: this
             -- session keeps its own active profile.
-            db.profiles[profileName]._importEstablishPending = true
+            saved.profiles[profileName]._importEstablishPending = true
             -- First-install captures: an imported profile is a chosen layout.
             -- Stamp the one-shot capture flags so a capture that has not
             -- fired yet cannot overwrite this stored profile's layout data
             -- once a later session activates it.
-            db._capturedOnce_EAB = true
-            db._capturedOnce_CDM = true
-            db._capturedOnce_RF = true
+            saved._capturedOnce_EAB = true
+            saved._capturedOnce_CDM = true
+            saved._capturedOnce_RF = true
             return true, nil, "spec_locked"
         end
         -- Flush the OUTGOING (currently active) profile's LIVE unlock data into its
@@ -4836,15 +4837,15 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- match after import" bug. Importing over the active profile's own name:
         -- merged is already installed under it, so the snapshot would bank the
         -- live layout over the imported one.
-        local outgoingName = db.activeProfile or "Default"
-        local outgoing = outgoingName ~= profileName and db.profiles[outgoingName]
+        local outgoingName = saved.activeProfile or "Default"
+        local outgoing = outgoingName ~= profileName and saved.profiles[outgoingName]
         if outgoing and CludesUIDB then
             outgoing.unlockLayout = SnapshotUnlockLayout()
         end
         -- Make it the active profile and re-point db references (stamp a
         -- missing unlockLayout before the flip -- see StampUnlockLayoutIfMissing)
-        StampUnlockLayoutIfMissing(db.profiles[profileName])
-        db.activeProfile = profileName
+        StampUnlockLayoutIfMissing(saved.profiles[profileName])
+        saved.activeProfile = profileName
         RepointAllDBs(profileName)
         -- Import window guard: suppress unlock/BM LAYOUT banks from now until the first
         -- apply of a later session. The imported store already holds the exporter's
@@ -4856,7 +4857,7 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- companion runtime flag stops THIS session's applies (the SpecOverrides_Apply
         -- below) from closing the window early. Cleared unconditionally at the first
         -- apply of any later session; value harvests are never suppressed.
-        db.profiles[profileName]._importEstablishPending = true
+        saved.profiles[profileName]._importEstablishPending = true
         CludesUI._importGuardArmedNow = true
         -- Custom colours resolve live via GetCustomColorsDB. A GLOBAL-mode colour
         -- section takes its palette from its Pull Colors From (or the first profile); a
@@ -4883,7 +4884,7 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- Resource Bars: migrate legacy Advanced/per-spec-enable data carried
         -- by old export strings (ApplyProfileData refilled the live RB table
         -- from the raw payload, so this must run after it). Idempotent.
-        CludesUI.MigrateRBAdvancedProfile(db.profiles[profileName])
+        CludesUI.MigrateRBAdvancedProfile(saved.profiles[profileName])
         -- NO default re-bank here. The imported entries carry the EXPORTER's recorded
         -- values.default, consistent with the imported addon blobs by construction
         -- (MergeImportedStores partitions per folder). The old
@@ -4902,9 +4903,9 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- re-check them at fire time) so a capture that has not fired yet -- deferred
         -- past login, spec-gated, or armed by a module first enabled in a later session
         -- -- can never overwrite the imported data with live-captured layout state.
-        db._capturedOnce_EAB = true
-        db._capturedOnce_CDM = true
-        db._capturedOnce_RF = true
+        saved._capturedOnce_EAB = true
+        saved._capturedOnce_CDM = true
+        saved._capturedOnce_RF = true
         -- The minimap capture flag is per-profile. Stamp the imported profile's minimap
         -- table (after ApplyProfileData, so the write sticks) in case the payload
         -- predates the flag or came from an install that never ran the Minimap module.
@@ -4925,12 +4926,12 @@ function CludesUI.ImportProfile(importStr, profileName)
         -- A successful import means real user data exists: close the first-install
         -- window now instead of at the next login's data-detection pass, so first-run
         -- popups and capture paths stay quiet from here on.
-        db.firstInstallPopupShown = true
+        saved.firstInstallPopupShown = true
         CludesUI._firstInstallPending = nil
         -- WoW Forever: the imported profile carries its own look, so an
         -- import also settles the first-install style picker.
         if CludesUI.IS_FOREVER then
-            db.styleChoicePending = nil
+            saved.styleChoicePending = nil
         end
         -- Don't ReloadUI() here: the caller (options panel import flow)
         -- reloads unconditionally right after this returns. (The old CDM
@@ -4945,8 +4946,8 @@ end
 --  Profile management
 -------------------------------------------------------------------------------
 function CludesUI.SaveCurrentAsProfile(name)
-    local db = GetProfilesDB()
-    local current = db.activeProfile or "Default"
+    local saved = GetProfilesDB()
+    local current = saved.activeProfile or "Default"
     -- Freshen the override stores from live before snapshotting (same as the
     -- export path): the whole-profile DeepCopy below carries every override
     -- store with it, and without this bank the current spec's most recent
@@ -4954,11 +4955,11 @@ function CludesUI.SaveCurrentAsProfile(name)
     if CludesUI.SpecOverrides_HarvestCurrent then
         CludesUI.SpecOverrides_HarvestCurrent()
     end
-    local src = db.profiles[current]
+    local src = saved.profiles[current]
 
     -- Count existing profiles BEFORE adding the new one
     local profileCountBefore = 0
-    for _ in pairs(db.profiles) do
+    for _ in pairs(saved.profiles) do
         profileCountBefore = profileCountBefore + 1
     end
 
@@ -4972,7 +4973,7 @@ function CludesUI.SaveCurrentAsProfile(name)
     copy.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
     copy.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
     copy.unlockLayout = SnapshotUnlockLayout()
-    db.profiles[name] = copy
+    saved.profiles[name] = copy
 
     -- CDM spell content lives in the per-profile spell store at
     -- CludesUIDB.spellAssignments.profiles[<name>], OUTSIDE the profile blob.
@@ -4987,14 +4988,14 @@ function CludesUI.SaveCurrentAsProfile(name)
     end
 
     local found = false
-    for _, n in ipairs(db.profileOrder) do
-        if n == name then
+    for _, num in ipairs(saved.profileOrder) do
+        if num == name then
             found = true
             break
         end
     end
     if not found then
-        table.insert(db.profileOrder, 1, name)
+        table.insert(saved.profileOrder, 1, name)
     end
 
     -- Bags is the ONE module that auto-syncs: bag settings should match
@@ -5024,18 +5025,18 @@ function CludesUI.SaveCurrentAsProfile(name)
 end
 
 function CludesUI.DeleteProfile(name)
-    local db = GetProfilesDB()
-    db.profiles[name] = nil
-    for i, n in ipairs(db.profileOrder) do
-        if n == name then
-            table.remove(db.profileOrder, i)
+    local saved = GetProfilesDB()
+    saved.profiles[name] = nil
+    for i, num in ipairs(saved.profileOrder) do
+        if num == name then
+            table.remove(saved.profileOrder, i)
             break
         end
     end
     -- Clean up spec assignments
-    for specID, pName in pairs(db.specProfiles) do
+    for specID, pName in pairs(saved.specProfiles) do
         if pName == name then
-            db.specProfiles[specID] = nil
+            saved.specProfiles[specID] = nil
         end
     end
     -- CDM spell content lives in the per-profile spell store at
@@ -5067,26 +5068,26 @@ function CludesUI.DeleteProfile(name)
     -- auto-created Default gets the current baseline links STAMPED (the
     -- deleted profile is gone -- inheriting unrecorded would resurrect the
     -- mutating-links bug, and wiping would be unrecoverable).
-    if db.activeProfile == name then
-        StampUnlockLayoutIfMissing(db.profiles["Default"])
-        db.activeProfile = "Default"
+    if saved.activeProfile == name then
+        StampUnlockLayoutIfMissing(saved.profiles["Default"])
+        saved.activeProfile = "Default"
         RepointAllDBs("Default")
     end
     -- Refresh all sync buttons (hide them if down to 1 profile)
     if CludesUI._syncRefreshFns then
-        for _, fn in pairs(CludesUI._syncRefreshFns) do
-            fn()
+        for _, func in pairs(CludesUI._syncRefreshFns) do
+            func()
         end
     end
 end
 
 function CludesUI.RenameProfile(oldName, newName)
-    local db = GetProfilesDB()
-    if not db.profiles[oldName] then
+    local saved = GetProfilesDB()
+    if not saved.profiles[oldName] then
         return
     end
-    db.profiles[newName] = db.profiles[oldName]
-    db.profiles[oldName] = nil
+    saved.profiles[newName] = saved.profiles[oldName]
+    saved.profiles[oldName] = nil
     -- CDM spell content lives in the per-profile spell store at
     -- CludesUIDB.spellAssignments.profiles[<name>] (OUTSIDE the profile blob),
     -- keyed by profile name. Move the bucket to the new name so the renamed
@@ -5096,15 +5097,15 @@ function CludesUI.RenameProfile(oldName, newName)
         sa.profiles[newName] = sa.profiles[oldName]
         sa.profiles[oldName] = nil
     end
-    for i, n in ipairs(db.profileOrder) do
-        if n == oldName then
-            db.profileOrder[i] = newName
+    for i, num in ipairs(saved.profileOrder) do
+        if num == oldName then
+            saved.profileOrder[i] = newName
             break
         end
     end
-    for specID, pName in pairs(db.specProfiles) do
+    for specID, pName in pairs(saved.specProfiles) do
         if pName == oldName then
-            db.specProfiles[specID] = newName
+            saved.specProfiles[specID] = newName
         end
     end
     -- Move sync group membership to the new name so the renamed profile
@@ -5120,11 +5121,11 @@ function CludesUI.RenameProfile(oldName, newName)
     -- Keep every colour source following the renamed profile (same palette
     -- tables, so no colour refresh is needed).
     CludesUI.ColorSourcesProfileRenamed(oldName, newName)
-    if db.activeProfile == oldName then
+    if saved.activeProfile == oldName then
         -- Rename repoints the SAME profile table: unlockLayout rides it, so
         -- the stamp is a no-op unless the table never had one.
-        StampUnlockLayoutIfMissing(db.profiles[newName])
-        db.activeProfile = newName
+        StampUnlockLayoutIfMissing(saved.profiles[newName])
+        saved.activeProfile = newName
         RepointAllDBs(newName)
     end
     -- Update keybind reference
@@ -5132,8 +5133,8 @@ function CludesUI.RenameProfile(oldName, newName)
 end
 
 function CludesUI.SwitchProfile(name)
-    local db = GetProfilesDB()
-    if not db.profiles[name] then
+    local saved = GetProfilesDB()
+    if not saved.profiles[name] then
         return
     end
 
@@ -5163,7 +5164,7 @@ function CludesUI.SwitchProfile(name)
     -- colors are GLOBAL (not per-profile) and are deliberately NOT saved here --
     -- snapshotting them per profile let a combat-end spec switch restore a stale
     -- snapshot and reset the user's custom power / class-resource colors.
-    local outgoing = db.profiles[db.activeProfile or "Default"]
+    local outgoing = saved.profiles[saved.activeProfile or "Default"]
     if outgoing then
         outgoing.fonts = DeepCopy(CludesUI.GetFontsDB())
         -- Save unlock layout into outgoing profile (baseline-sourced while
@@ -5174,12 +5175,12 @@ function CludesUI.SwitchProfile(name)
     -- If settings were changed this session and any synced modules have
     -- targets, a live re-point won't fully apply cached addon state.
     -- Prompt the user to reload so every addon starts clean.
-    if CludesUI._settingsChanged and name ~= (db.activeProfile or "Default") then
+    if CludesUI._settingsChanged and name ~= (saved.activeProfile or "Default") then
         local sm = CludesUIDB.syncedModules
         if sm then
             -- Mirror group: only flush groups the OUTGOING profile belongs
             -- to. A profile outside a group never pushes into it.
-            local outName = db.activeProfile or "Default"
+            local outName = saved.activeProfile or "Default"
             local hasSyncTargets = false
             for folder, targets in pairs(sm) do
                 if type(targets) == "table" and targets[outName] then
@@ -5195,8 +5196,8 @@ function CludesUI.SwitchProfile(name)
                     end
                 end
                 -- Switch the active profile immediately (persisted on logout)
-                StampUnlockLayoutIfMissing(db.profiles[name])
-                db.activeProfile = name
+                StampUnlockLayoutIfMissing(saved.profiles[name])
+                saved.activeProfile = name
                 RepointAllDBs(name)
                 -- Prompt for reload
                 CludesUI:ShowConfirmPopup({
@@ -5211,24 +5212,24 @@ function CludesUI.SwitchProfile(name)
         end
     end
 
-    StampUnlockLayoutIfMissing(db.profiles[name])
-    db.activeProfile = name
+    StampUnlockLayoutIfMissing(saved.profiles[name])
+    saved.activeProfile = name
     RepointAllDBs(name)
 end
 
 function CludesUI.GetActiveProfileName()
-    local db = GetProfilesDB()
-    return db.activeProfile or "Default"
+    local saved = GetProfilesDB()
+    return saved.activeProfile or "Default"
 end
 
 function CludesUI.GetProfileList()
-    local db = GetProfilesDB()
-    return db.profileOrder, db.profiles
+    local saved = GetProfilesDB()
+    return saved.profileOrder, saved.profiles
 end
 
 function CludesUI.GetSpecProfile(specID)
-    local db = GetProfilesDB()
-    return db.specProfiles[CludesUI.SpecFor(specID, CludesUI.SpecHasEntry, db.specProfiles)]
+    local saved = GetProfilesDB()
+    return saved.specProfiles[CludesUI.SpecFor(specID, CludesUI.SpecHasEntry, saved.specProfiles)]
 end
 
 -------------------------------------------------------------------------------
@@ -5259,11 +5260,11 @@ do
     specFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     specFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     specFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    specFrame:SetScript("OnEvent", function(_, event, unit)
+    specFrame:SetScript("OnEvent", function(_, evt, unitToken)
         ---------------------------------------------------------------
         --  PLAYER_REGEN_ENABLED: handle deferred spec switch
         ---------------------------------------------------------------
-        if event == "PLAYER_REGEN_ENABLED" then
+        if evt == "PLAYER_REGEN_ENABLED" then
             if pendingSpecSwitch then
                 pendingSpecSwitch = false
                 -- Spec Overrides: run the combat-deferred leave/enter
@@ -5314,7 +5315,7 @@ do
         ---------------------------------------------------------------
         --  Filter: only handle "player" for PLAYER_SPECIALIZATION_CHANGED
         ---------------------------------------------------------------
-        if event == "PLAYER_SPECIALIZATION_CHANGED" and unit ~= "player" then
+        if evt == "PLAYER_SPECIALIZATION_CHANGED" and unitToken ~= "player" then
             return
         end
 
@@ -5332,13 +5333,16 @@ do
                 local attempts = 0
                 specRetryTimer = C_Timer.NewTicker(1, function(ticker)
                     attempts = attempts + 1
-                    local idx = C_SpecializationInfo.GetSpecialization() or 0
-                    local sid = idx and idx > 0 and C_SpecializationInfo.GetSpecializationInfo(idx) or nil
-                    if sid then
+                    local position = C_SpecializationInfo.GetSpecialization() or 0
+                    local spellRef = position
+                            and position > 0
+                            and C_SpecializationInfo.GetSpecializationInfo(position)
+                        or nil
+                    if spellRef then
                         ticker:Cancel()
                         specRetryTimer = nil
                         -- Record the spec so future events use the fast path
-                        lastKnownSpecID = sid
+                        lastKnownSpecID = spellRef
                         local ck = CludesUI.CharKey(" - ")
                         lastKnownCharKey = ck
                         if not CludesUIDB then
@@ -5347,19 +5351,21 @@ do
                         if not CludesUIDB.lastSpecByChar then
                             CludesUIDB.lastSpecByChar = {}
                         end
-                        CludesUIDB.lastSpecByChar[ck] = sid
+                        CludesUIDB.lastSpecByChar[ck] = spellRef
                         CludesUI._profileSaveLocked = false
                         -- Resolve via the unified function
-                        local target = ResolveSpecProfile()
-                        if target then
+                        local targetUnit = ResolveSpecProfile()
+                        if targetUnit then
                             local cur = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
-                            if cur ~= target then
-                                local fontChange = CludesUI.ProfileChangesFont(CludesUIDB.profiles[target])
+                            if cur ~= targetUnit then
+                                local fontChange =
+                                    CludesUI.ProfileChangesFont(CludesUIDB.profiles[targetUnit])
                                 local skinsChange =
-                                    CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[target])
-                                local styleChange = CludesUI.ProfileChangesStyle(CludesUIDB.profiles[target])
+                                    CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[targetUnit])
+                                local styleChange =
+                                    CludesUI.ProfileChangesStyle(CludesUIDB.profiles[targetUnit])
                                 -- _specProfileSwitching disabled (see doSwitch comment)
-                                CludesUI.SwitchProfile(target)
+                                CludesUI.SwitchProfile(targetUnit)
                                 CludesUI.RefreshAllAddons()
                                 if fontChange or skinsChange or styleChange then
                                     CludesUI:ShowConfirmPopup({
@@ -5399,7 +5405,7 @@ do
         -- On PLAYER_ENTERING_WORLD (reload/zone-in), skip if same character
         -- and same spec -- a plain /reload should not override the user's
         -- active profile selection.
-        if event == "PLAYER_ENTERING_WORLD" then
+        if evt == "PLAYER_ENTERING_WORLD" then
             if not isFirstLogin and not charChanged and specID == lastKnownSpecID then
                 return -- same char, same spec, nothing to do
             end
@@ -5460,10 +5466,10 @@ do
         ---------------------------------------------------------------
         --  Resolve target profile via the unified function
         ---------------------------------------------------------------
-        local db = GetProfilesDB()
+        local saved = GetProfilesDB()
         local targetProfile = ResolveSpecProfile()
         if targetProfile then
-            local current = db.activeProfile or "Default"
+            local current = saved.activeProfile or "Default"
             if current ~= targetProfile then
                 local function doSwitch()
                     -- _specProfileSwitching disabled: was causing width/height
@@ -5471,9 +5477,9 @@ do
                     -- before PLAYER_SPECIALIZATION_CHANGED (CDM completes
                     -- before the flag is set, flag stuck true forever).
                     -- CludesUI._specProfileSwitching = true
-                    local fontWillChange = CludesUI.ProfileChangesFont(db.profiles[targetProfile])
-                    local skinsWillChange = CludesUI.ProfileChangesWindowSkins(db.profiles[targetProfile])
-                    local styleWillChange = CludesUI.ProfileChangesStyle(db.profiles[targetProfile])
+                    local fontWillChange = CludesUI.ProfileChangesFont(saved.profiles[targetProfile])
+                    local skinsWillChange = CludesUI.ProfileChangesWindowSkins(saved.profiles[targetProfile])
+                    local styleWillChange = CludesUI.ProfileChangesStyle(saved.profiles[targetProfile])
                     CludesUI.SwitchProfile(targetProfile)
                     CludesUI.RefreshAllAddons()
                     if not isFirstLogin and (fontWillChange or skinsWillChange or styleWillChange) then
@@ -5520,10 +5526,10 @@ do
             -- previous character), switch to the last non-spec profile so this
             -- character doesn't inherit another character's spec layout. Skip on plain
             -- /reload (same char) to respect the user's intentional profile choice.
-            local current = db.activeProfile or "Default"
+            local current = saved.activeProfile or "Default"
             local currentIsSpecAssigned = false
-            if db.specProfiles then
-                for _, pName in pairs(db.specProfiles) do
+            if saved.specProfiles then
+                for _, pName in pairs(saved.specProfiles) do
                     if pName == current then
                         currentIsSpecAssigned = true
                         break
@@ -5533,24 +5539,24 @@ do
             if currentIsSpecAssigned then
                 -- Find the best fallback: lastNonSpecProfile, or any profile
                 -- that isn't spec-assigned, or Default as last resort.
-                local fallback = db.lastNonSpecProfile
-                if not fallback or not db.profiles[fallback] then
+                local fallback = saved.lastNonSpecProfile
+                if not fallback or not saved.profiles[fallback] then
                     -- Walk profileOrder to find first non-spec-assigned profile
                     local specAssignedSet = {}
-                    if db.specProfiles then
-                        for _, pName in pairs(db.specProfiles) do
+                    if saved.specProfiles then
+                        for _, pName in pairs(saved.specProfiles) do
                             specAssignedSet[pName] = true
                         end
                     end
-                    for _, pName in ipairs(db.profileOrder or {}) do
-                        if not specAssignedSet[pName] and db.profiles[pName] then
+                    for _, pName in ipairs(saved.profileOrder or {}) do
+                        if not specAssignedSet[pName] and saved.profiles[pName] then
                             fallback = pName
                             break
                         end
                     end
                 end
                 fallback = fallback or "Default"
-                if fallback ~= current and db.profiles[fallback] then
+                if fallback ~= current and saved.profiles[fallback] then
                     C_Timer.After(0, function()
                         C_Timer.After(0, function()
                             CludesUI.SwitchProfile(fallback)
@@ -5583,9 +5589,9 @@ do
     -- they write directly to the central store.
     CludesUI.Lite.RegisterPreLogout(function()
         if not CludesUI._profileSaveLocked then
-            local db = GetProfilesDB()
-            local name = db.activeProfile or "Default"
-            local profileData = db.profiles[name]
+            local saved = GetProfilesDB()
+            local name = saved.activeProfile or "Default"
+            local profileData = saved.profiles[name]
             if profileData then
                 profileData.fonts = DeepCopy(CludesUI.GetFontsDB())
                 profileData.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
@@ -5595,8 +5601,8 @@ do
             -- Track the last active profile that was NOT spec-assigned so
             -- characters without a spec assignment can fall back to it.
             local isSpecAssigned = false
-            if db.specProfiles then
-                for _, pName in pairs(db.specProfiles) do
+            if saved.specProfiles then
+                for _, pName in pairs(saved.specProfiles) do
                     if pName == name then
                         isSpecAssigned = true
                         break
@@ -5604,7 +5610,7 @@ do
                 end
             end
             if not isSpecAssigned then
-                db.lastNonSpecProfile = name
+                saved.lastNonSpecProfile = name
             end
         end
     end)
@@ -5614,45 +5620,45 @@ do
     initFrame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
 
-        local db = GetProfilesDB()
+        local saved = GetProfilesDB()
 
         -- On first install, create "Default" from current (default) settings.
         -- If activeProfile is already set (user deleted Default intentionally),
         -- don't recreate it.
-        if not db.activeProfile then
-            db.activeProfile = "Default"
-            if not db.profiles["Default"] then
-                db.profiles["Default"] = {}
+        if not saved.activeProfile then
+            saved.activeProfile = "Default"
+            if not saved.profiles["Default"] then
+                saved.profiles["Default"] = {}
             end
             local hasDefault = false
-            for _, n in ipairs(db.profileOrder) do
-                if n == "Default" then
+            for _, num in ipairs(saved.profileOrder) do
+                if num == "Default" then
                     hasDefault = true
                     break
                 end
             end
             if not hasDefault then
-                table.insert(db.profileOrder, "Default")
+                table.insert(saved.profileOrder, "Default")
             end
         end
         -- Safety: if the active profile doesn't exist, fall back to the first
         -- available profile or create Default as a last resort.
-        if not db.profiles[db.activeProfile] then
+        if not saved.profiles[saved.activeProfile] then
             local fallback
-            for _, n in ipairs(db.profileOrder) do
-                if db.profiles[n] then
-                    fallback = n
+            for _, num in ipairs(saved.profileOrder) do
+                if saved.profiles[num] then
+                    fallback = num
                     break
                 end
             end
             if not fallback then
                 fallback = "Default"
-                db.profiles["Default"] = {}
-                if not db.profileOrder[1] then
-                    db.profileOrder[1] = "Default"
+                saved.profiles["Default"] = {}
+                if not saved.profileOrder[1] then
+                    saved.profileOrder[1] = "Default"
                 end
             end
-            db.activeProfile = fallback
+            saved.activeProfile = fallback
         end
 
         ---------------------------------------------------------------
@@ -5758,7 +5764,7 @@ function CludesUI.AttachImportPasteAbsorber(editBox, onRetry)
     }
 end
 
-local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLabel)
+local function BuildStringPopup(titleText, subtitle, readOnly, onConfirm, confirmLabel)
     local POPUP_W, POPUP_H = 520, 310
     local FONT = CludesUI.EXPRESSWAY
 
@@ -5774,39 +5780,39 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     dimTex:SetColorTexture(0, 0, 0, 0.25)
 
     -- Popup
-    local popup = CreateFrame("Frame", nil, dimmer)
-    popup:SetSize(POPUP_W, POPUP_H)
-    popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-    popup:SetFrameStrata("FULLSCREEN_DIALOG")
-    popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
-    popup:EnableMouse(true)
-    local bg = popup:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.062, 0.070, 0.082, 1)
-    CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, bg)
+    local dialog = CreateFrame("Frame", nil, dimmer)
+    dialog:SetSize(POPUP_W, POPUP_H)
+    dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+    dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+    dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+    dialog:EnableMouse(true)
+    local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
+    CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
 
     -- Title
-    local titleFS = CludesUI.MakeFont(popup, 15, "", 1, 1, 1)
-    titleFS:SetPoint("TOP", popup, "TOP", 0, -20)
-    titleFS:SetText(title)
+    local titleFS = CludesUI.MakeFont(dialog, 15, "", 1, 1, 1)
+    titleFS:SetPoint("TOP", dialog, "TOP", 0, -20)
+    titleFS:SetText(titleText)
 
     -- Subtitle
-    local subFS = CludesUI.MakeFont(popup, 11, "", 1, 1, 1)
+    local subFS = CludesUI.MakeFont(dialog, 11, "", 1, 1, 1)
     subFS:SetAlpha(0.45)
     subFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -4)
     subFS:SetText(subtitle)
 
     -- ScrollFrame containing the EditBox
-    local sf = CreateFrame("ScrollFrame", nil, popup)
-    sf:SetPoint("TOPLEFT", popup, "TOPLEFT", 20, -58)
-    sf:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -20, 52)
-    sf:SetFrameLevel(popup:GetFrameLevel() + 1)
-    sf:EnableMouseWheel(true)
+    local scrollFrame = CreateFrame("ScrollFrame", nil, dialog)
+    scrollFrame:SetPoint("TOPLEFT", dialog, "TOPLEFT", 20, -58)
+    scrollFrame:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -20, 52)
+    scrollFrame:SetFrameLevel(dialog:GetFrameLevel() + 1)
+    scrollFrame:EnableMouseWheel(true)
 
-    local sc = CreateFrame("Frame", nil, sf)
-    sc:SetWidth(sf:GetWidth() or (POPUP_W - 40))
+    local sc = CreateFrame("Frame", nil, scrollFrame)
+    sc:SetWidth(scrollFrame:GetWidth() or (POPUP_W - 40))
     sc:SetHeight(1)
-    sf:SetScrollChild(sc)
+    scrollFrame:SetScrollChild(sc)
 
     local editBox = CreateFrame("EditBox", nil, sc)
     editBox:SetMultiLine(true)
@@ -5817,7 +5823,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     editBox:SetPoint("TOPRIGHT", sc, "TOPRIGHT", -14, 0)
     editBox:SetHeight(1) -- grows with content
 
-    local UpdateThumb, scrollTo = CludesUI.AttachSmoothScrollbar(sf)
+    local UpdateThumb, scrollTo = CludesUI.AttachSmoothScrollbar(scrollFrame)
 
     -- Reset on hide
     dimmer:HookScript("OnHide", function()
@@ -5842,7 +5848,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
             self:SetFocus()
         end)
         -- Click anywhere in the scroll area should also focus the editbox
-        sf:SetScript("OnMouseDown", function()
+        scrollFrame:SetScript("OnMouseDown", function()
             editBox:SetFocus()
         end)
     end
@@ -5858,15 +5864,15 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     local function RefreshHeight()
         C_Timer.After(0.01, function()
             local lineH = (editBox.GetLineHeight and editBox:GetLineHeight()) or 14
-            local h = editBox:GetNumLines() * lineH
-            local sfH = sf:GetHeight() or 100
+            local hgt = editBox:GetNumLines() * lineH
+            local sfH = scrollFrame:GetHeight() or 100
             -- Only grow scroll child beyond the visible area when content is taller
-            if h <= sfH then
+            if hgt <= sfH then
                 sc:SetHeight(sfH)
                 editBox:SetHeight(sfH)
             else
-                sc:SetHeight(h + 4)
-                editBox:SetHeight(h + 4)
+                sc:SetHeight(hgt + 4)
+                editBox:SetHeight(hgt + 4)
             end
             UpdateThumb()
         end)
@@ -5889,10 +5895,10 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
 
     -- Buttons
     if onConfirm then
-        local confirmBtn = CreateFrame("Button", nil, popup)
+        local confirmBtn = CreateFrame("Button", nil, dialog)
         confirmBtn:SetSize(120, 26)
-        confirmBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOM", -4, 14)
-        confirmBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        confirmBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -4, 14)
+        confirmBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         CludesUI.MakeStyledButton(confirmBtn, confirmLabel or "Import", 11, CludesUI.WB_COLOURS, function()
             local str = absorber and absorber.GetText() or editBox:GetText()
             if str and #str > 0 then
@@ -5901,18 +5907,18 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
             end
         end)
 
-        local cancelBtn = CreateFrame("Button", nil, popup)
+        local cancelBtn = CreateFrame("Button", nil, dialog)
         cancelBtn:SetSize(120, 26)
-        cancelBtn:SetPoint("BOTTOMLEFT", popup, "BOTTOM", 4, 14)
-        cancelBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        cancelBtn:SetPoint("BOTTOMLEFT", dialog, "BOTTOM", 4, 14)
+        cancelBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         CludesUI.MakeStyledButton(cancelBtn, "Cancel", 11, CludesUI.RB_COLOURS, function()
             dimmer:Hide()
         end)
     else
-        local closeBtn = CreateFrame("Button", nil, popup)
+        local closeBtn = CreateFrame("Button", nil, dialog)
         closeBtn:SetSize(120, 26)
-        closeBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, 14)
-        closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        closeBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 14)
+        closeBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         CludesUI.MakeStyledButton(closeBtn, "Close", 11, CludesUI.RB_COLOURS, function()
             dimmer:Hide()
         end)
@@ -5920,14 +5926,14 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
 
     -- Dimmer click to close
     dimmer:SetScript("OnMouseDown", function()
-        if not popup:IsMouseOver() then
+        if not dialog:IsMouseOver() then
             dimmer:Hide()
         end
     end)
 
     -- Escape to close
-    CludesUI.PopupTakeKeys(popup, dimmer)
-    popup:SetScript("OnKeyDown", function(self, key)
+    CludesUI.PopupTakeKeys(dialog, dimmer)
+    dialog:SetScript("OnKeyDown", function(self, key)
         if InCombatLockdown() then
             return
         end
@@ -5965,8 +5971,9 @@ end
 --  Same auto-highlight behavior as ShowExportPopup, but the caller supplies the
 --  title and subtitle (e.g. for the preset "Copy Blizz Edit Mode" string).
 -------------------------------------------------------------------------------
-function CludesUI:ShowCopyPopup(title, subtitle, str)
-    local dimmer, editBox, RefreshHeight = BuildStringPopup(title or "Copy", subtitle or "", true, nil, nil)
+function CludesUI:ShowCopyPopup(titleText, subtitle, str)
+    local dimmer, editBox, RefreshHeight =
+        BuildStringPopup(titleText or "Copy", subtitle or "", true, nil, nil)
 
     editBox._readOnly = str or ""
     editBox:SetText(str or "")
@@ -6053,11 +6060,11 @@ function CludesUI.ApplyPresetEditMode(layoutString, layoutName)
     -- Blizzard's built-in presets ahead of them, and SaveLayouts / SetActiveLayout
     -- index into that combined view: presets first, then the saved layouts, so
     -- the active index we hand back lines up with what the game uses.
-    local info, presetCount = CludesUI.EditModeLayoutsForSave()
-    if not info then
+    local details, presetCount = CludesUI.EditModeLayoutsForSave()
+    if not details then
         return false
     end
-    local layouts = info.layouts
+    local layouts = details.layouts
     for i = presetCount + 1, #layouts do
         Reconcile(layouts[i])
     end
@@ -6073,28 +6080,28 @@ function CludesUI.ApplyPresetEditMode(layoutString, layoutName)
     -- The game lists layouts as presets, then Account, then Character. Slot ours in
     -- just before the first Character layout (or at the end when there is none) so
     -- it stays grouped with the Account layouts.
-    local slot = #layouts + 1
+    local slotIndex = #layouts + 1
     for i = presetCount + 1, #layouts do
         if layouts[i].layoutType == Enum.EditModeLayoutType.Character then
-            slot = i
+            slotIndex = i
             break
         end
     end
-    table.insert(layouts, slot, imported)
+    table.insert(layouts, slotIndex, imported)
 
-    info.layouts = layouts
-    info.activeLayout = slot
-    C_EditMode.SaveLayouts(info)
-    C_EditMode.SetActiveLayout(slot)
+    details.layouts = layouts
+    details.activeLayout = slotIndex
+    C_EditMode.SaveLayouts(details)
+    C_EditMode.SetActiveLayout(slotIndex)
     return true
 end
 
 -------------------------------------------------------------------------------
 --  Import Popup
 -------------------------------------------------------------------------------
-function CludesUI:ShowImportPopup(onImport, title, subtitle)
+function CludesUI:ShowImportPopup(onImport, titleText, subtitle)
     local dimmer, editBox = BuildStringPopup(
-        title or "Import Profile",
+        titleText or "Import Profile",
         subtitle or "Paste an CludesUI profile string below",
         false,
         function(str)
@@ -6129,13 +6136,13 @@ end
 
 function CludesUI.GetProfileKeys()
     local _, profiles = CludesUI.GetProfileList()
-    local keys = {}
+    local keyList = {}
     if profiles then
         for k in pairs(profiles) do
-            keys[k] = true
+            keyList[k] = true
         end
     end
-    return keys
+    return keyList
 end
 
 function CludesUI.GetProfileAssignments()
@@ -6181,8 +6188,8 @@ end
 --  box), source (optional display name of the caller), callback (optional).
 --  Returns true, or false + reason when the call could not start a session.
 -------------------------------------------------------------------------------
-function CludesUI.ImportProfileInteractive(opts)
-    if type(opts) ~= "table" or type(opts.importString) ~= "string" or opts.importString == "" then
+function CludesUI.ImportProfileInteractive(options)
+    if type(options) ~= "table" or type(options.importString) ~= "string" or options.importString == "" then
         return false, "invalid arguments"
     end
     if InCombatLockdown() then
@@ -6199,16 +6206,16 @@ function CludesUI.ImportProfileInteractive(opts)
     -- yet. Re-run the whole call next frame instead; the session is not created
     -- until then, so the re-entry is not blocked as "already pending".
     if CludesUI:_SplitFirstOpen(function()
-        CludesUI.ImportProfileInteractive(opts)
+        CludesUI.ImportProfileInteractive(options)
     end) then
         return true
     end
 
     CludesUI._apiImportSession = {
-        str = opts.importString,
-        name = type(opts.profileName) == "string" and opts.profileName or nil,
-        source = type(opts.source) == "string" and opts.source or nil,
-        callback = type(opts.callback) == "function" and opts.callback or nil,
+        str = options.importString,
+        name = type(options.profileName) == "string" and options.profileName or nil,
+        source = type(options.source) == "string" and options.source or nil,
+        callback = type(options.callback) == "function" and options.callback or nil,
         state = "pending", -- pending -> active (import page up) -> done
     }
     -- Land on the Profiles page (opens the panel if needed). The page builder registers
@@ -6312,30 +6319,30 @@ end
 --  Returns ok, err. NEVER reloads: the caller owns the ReloadUI at the end of
 --  its own flow (addon enable/disable state also only applies then).
 -------------------------------------------------------------------------------
-function CludesUI.ImportProfileSilent(opts)
-    if type(opts) ~= "table" or type(opts.importString) ~= "string" or opts.importString == "" then
+function CludesUI.ImportProfileSilent(options)
+    if type(options) ~= "table" or type(options.importString) ~= "string" or options.importString == "" then
         return false, "invalid arguments"
     end
-    if type(opts.profileName) ~= "string" or opts.profileName == "" then
+    if type(options.profileName) ~= "string" or options.profileName == "" then
         return false, "profileName is required"
     end
     if InCombatLockdown() then
         return false, "in combat"
     end
-    local profileName = opts.profileName
+    local profileName = options.profileName
 
     -- Decode once and hand ImportProfile the TABLE. Never re-encode a decoded
     -- payload: a serializer round trip is not identity on decoded content.
-    local payload = CludesUI.DecodeImportString(opts.importString)
+    local payload = CludesUI.DecodeImportString(options.importString)
     if type(payload) ~= "table" or type(payload.data) ~= "table" then
         return false, "could not decode import string"
     end
 
     -- Normalize + guard the disable set.
     local disable
-    if type(opts.disableAddons) == "table" then
+    if type(options.disableAddons) == "table" then
         disable = {}
-        for _, folder in ipairs(opts.disableAddons) do
+        for _, folder in ipairs(options.disableAddons) do
             if type(folder) == "string" then
                 disable[folder] = true
             end
@@ -6382,24 +6389,24 @@ function CludesUI.ImportProfileSilent(opts)
     -- Meta is transport-only; never let it persist into the profile.
     payload.data.unlockLayoutMeta = nil
 
-    if opts.applyUIScale == false then
+    if options.applyUIScale == false then
         payload.data.uiScale = nil
         payload.data.applyUIScale = nil
     end
-    if not opts.autoAssignSpecs then
+    if not options.autoAssignSpecs then
         payload.data.assignedSpecs = nil
     end
 
     -- Clean slate (see doc block above).
-    if opts.cleanSlate ~= false then
-        local db = GetProfilesDB()
-        if db.profiles and db.profiles[profileName] then
+    if options.cleanSlate ~= false then
+        local saved = GetProfilesDB()
+        if saved.profiles and saved.profiles[profileName] then
             CludesUI.DeleteProfile(profileName)
         end
     end
 
-    local ok, err, status = CludesUI.ImportProfile(payload, profileName)
-    if not ok then
+    local success, err, status = CludesUI.ImportProfile(payload, profileName)
+    if not success then
         return false, err
     end
 

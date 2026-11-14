@@ -9,8 +9,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Definitions only: CUI_MythicTimer_Options.lua registers the module and
 --  dispatches the page to ns._KT_BuildPage.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIMythicTimer"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIMythicTimer"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -18,18 +18,18 @@ local REQ = "Kick Tracker"
 
 -- Settings: db.profile.kickTracker of the Mythic+ Tools Lite DB.
 local function KT()
-    local db = _G._CUMT_AceDB
-    local p = db and db.profile
+    local saved = _G._CUMT_AceDB
+    local p = saved and saved.profile
     return p and p.kickTracker
 end
 
 local function Get(key, fallback)
     local c = KT()
-    local v = c and c[key]
-    if v == nil then
+    local val = c and c[key]
+    if val == nil then
         return fallback
     end
-    return v
+    return val
 end
 
 -- The header preview's state and builder (ns._MT_Preview), made on the
@@ -39,20 +39,20 @@ local ktPv, ktBuilder
 -- Every write hands the new settings to the runtime, which restyles the live
 -- icons and bars first; the header sample paints second.
 local function Refresh()
-    if ns.KT_Refresh then
-        ns.KT_Refresh()
+    if mod.KT_Refresh then
+        mod.KT_Refresh()
     end
     if ktPv then
-        ns._MT_Preview.Repaint(ktPv)
+        mod._MT_Preview.Repaint(ktPv)
     end
 end
 
-local function Set(key, v)
+local function Set(key, val)
     local c = KT()
     if not c then
         return
     end
-    c[key] = v
+    c[key] = val
     Refresh()
 end
 
@@ -87,9 +87,9 @@ local KT_COLS = {
     {
         title = "Bars",
         on = BarsOn,
-        paint = function(host)
-            if ns.KTB_PaintSample then
-                return ns.KTB_PaintSample(host, 3)
+        paint = function(hostRegion)
+            if mod.KTB_PaintSample then
+                return mod.KTB_PaintSample(hostRegion, 3)
             end
         end,
     },
@@ -97,24 +97,24 @@ local KT_COLS = {
         title = "Nameplate Icon",
         on = PlatesOn,
         noFit = true,
-        paint = function(host)
-            if ns.KT_PaintSampleIcon then
-                return ns.KT_PaintSampleIcon(host)
+        paint = function(hostRegion)
+            if mod.KT_PaintSampleIcon then
+                return mod.KT_PaintSampleIcon(hostRegion)
             end
         end,
     },
 }
-ns._KT_HeaderBuilder = function(hdr, hdrW)
+mod._KT_HeaderBuilder = function(heading, hdrW)
     if not ktBuilder then
-        ktPv = ns._MT_Preview.NewState()
-        ktBuilder = ns._MT_Preview.Builder(ktPv, KT_COLS)
+        ktPv = mod._MT_Preview.NewState()
+        ktBuilder = mod._MT_Preview.Builder(ktPv, KT_COLS)
     end
-    return ktBuilder(hdr, hdrW)
+    return ktBuilder(heading, hdrW)
 end
 -- A kept page shown again (onPageCacheRestore): the preview paints again.
-ns._KT_RestorePreview = function()
+mod._KT_RestorePreview = function()
     if ktPv then
-        ns._MT_Preview.Update(ktPv, false)
+        mod._MT_Preview.Update(ktPv, false)
     end
 end
 
@@ -125,15 +125,15 @@ local function WhereItems()
     if whereItems then
         return whereItems
     end
-    local keys = ns.KickEngine and ns.KickEngine.WHERE_LIST
-    if not keys then
+    local keyList = mod.KickEngine and mod.KickEngine.WHERE_LIST
+    if not keyList then
         return {}
     end
-    local labels = ns._MT_WHERE_LABELS
+    local labels = mod._MT_WHERE_LABELS
     whereItems = {}
-    for i = 1, #keys do
-        local k = keys[i]
-        whereItems[i] = { key = k, label = labels[k] or k }
+    for idx = 1, #keyList do
+        local k = keyList[idx]
+        whereItems[idx] = { key = k, label = labels[k] or k }
     end
     return whereItems
 end
@@ -146,7 +146,7 @@ local function WhereGet(k)
     return type(t) == "table" and t[k] == true
 end
 
-local function WhereSet(k, v)
+local function WhereSet(k, val)
     local c = KT()
     if not c then
         return
@@ -156,7 +156,7 @@ local function WhereSet(k, v)
         t = {}
         c.whereToShow = t
     end
-    t[k] = v and true or false
+    t[k] = val and true or false
     Refresh()
 end
 
@@ -169,16 +169,16 @@ local SIDE_X = { LEFT = -4, RIGHT = 4, TOP = 0, BOTTOM = 0 }
 
 -- A new side takes its own natural X offset while the old side's offsets are
 -- still untouched; custom offsets stay as they are.
-local function SetPosition(v)
+local function SetPosition(val)
     local c = KT()
     if not c then
         return
     end
     local old = Get("anchor", "LEFT")
-    if SIDE_X[v] and Get("offsetX", -4) == SIDE_X[old] and Get("offsetY", 0) == 0 then
-        c.offsetX = SIDE_X[v]
+    if SIDE_X[val] and Get("offsetX", -4) == SIDE_X[old] and Get("offsetY", 0) == 0 then
+        c.offsetX = SIDE_X[val]
     end
-    Set("anchor", v)
+    Set("anchor", val)
 end
 
 -- Which plates the icons sit on: the CludesUI plates while that module is
@@ -243,16 +243,16 @@ local markerValues
 local function MarkerValues()
     if not markerValues then
         markerValues = { _noLoc = true, ["0"] = CludesUI.L("None") }
-        for i = 1, 8 do
-            markerValues[tostring(i)] = _G["RAID_TARGET_" .. i]
+        for idx = 1, 8 do
+            markerValues[tostring(idx)] = _G["RAID_TARGET_" .. idx]
         end
         markerValues._menuOpts = {
             icon = function(key)
-                local i = tonumber(key)
-                if not i or i < 1 then
+                local idx = tonumber(key)
+                if not idx or idx < 1 then
                     return nil
                 end
-                local l, t = ((i - 1) % 4) * 0.25, math.floor((i - 1) / 4) * 0.25
+                local l, t = ((idx - 1) % 4) * 0.25, math.floor((idx - 1) / 4) * 0.25
                 return MARKER_ICONS, l, l + 0.25, t, t + 0.25
             end,
         }
@@ -269,7 +269,7 @@ end
 local ANNOUNCE_MAX = 80
 
 local function AnnounceDefault()
-    return ns.KT_AnnounceDefault and ns.KT_AnnounceDefault() or ""
+    return mod.KT_AnnounceDefault and mod.KT_AnnounceDefault() or ""
 end
 
 local function EditAnnounceText()
@@ -286,61 +286,61 @@ local function EditAnnounceText()
         showCount = true,
         allowEmpty = true,
         confirmText = "Save",
-        onConfirm = function(text)
-            text = strtrim(text or "")
-            if text == "" or text == AnnounceDefault() then
-                text = nil
+        onConfirm = function(textValue)
+            textValue = strtrim(textValue or "")
+            if textValue == "" or textValue == AnnounceDefault() then
+                textValue = nil
             end
-            Set("announceText", text)
+            Set("announceText", textValue)
         end,
     })
 end
 
-ns._KT_BuildPage = function(pageName, parent, yOffset)
+mod._KT_BuildPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, row, h
+    local posY = yOffset
+    local _, rowFrame, hgt
 
-    CludesUI:SetContentHeader(ns._KT_HeaderBuilder)
-    parent._showRowDivider = true
+    CludesUI:SetContentHeader(mod._KT_HeaderBuilder)
+    hostFrame._showRowDivider = true
 
     -- The experimental notice between the header preview and the settings, in
     -- the empty-selection warning's red. The page wrapper is a pool host, so a
     -- rebuild hands this font string back instead of making a new one.
     if not CludesUI._prebuilding then
         local pad = CludesUI.CONTENT_PAD
-        local warn = CludesUI.MakeFont(parent, 15, nil, 1, 0.4, 0.4)
+        local warn = CludesUI.MakeFont(hostFrame, 15, nil, 1, 0.4, 0.4)
         warn:SetJustifyH("CENTER")
         warn:SetWordWrap(true)
         warn:SetSpacing(4)
-        warn:SetWidth(parent:GetWidth() - pad * 2)
+        warn:SetWidth(hostFrame:GetWidth() - pad * 2)
         warn:SetText(
             CludesUI.L(
                 "Like all current kick trackers, this feature is experimental and may stop working if\nBlizzard decides to hotfix the workaround that makes this possible."
             )
         )
-        CludesUI.PP.Point(warn, "TOPLEFT", parent, "TOPLEFT", pad, y - 10)
-        y = y - 10 - math.ceil(warn:GetStringHeight()) - 2
+        CludesUI.PP.Point(warn, "TOPLEFT", hostFrame, "TOPLEFT", pad, posY - 10)
+        posY = posY - 10 - math.ceil(warn:GetStringHeight()) - 2
     end
 
-    _, h = W:SectionHeader(parent, "KICK TRACKER", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "KICK TRACKER", posY)
+    posY = posY - hgt
 
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Kick Tracker",
         tooltip = "Who in the group kicked each enemy and when their interrupt comes back, read from Blizzard's own damage meter (which must be on). Others' cooldowns follow their class, spec and talents, read before a key starts; yours follow your own talents.",
         getValue = On,
-        setValue = CludesUI.SectionToggleSetValue(function(v)
+        setValue = CludesUI.SectionToggleSetValue(function(val)
             -- The runtime alone: the section rebuild that follows builds
             -- the header again and paints its samples then.
             local c = KT()
             if not c then
                 return
             end
-            c.enabled = v and true or false
-            if ns.KT_Refresh then
-                ns.KT_Refresh()
+            c.enabled = val and true or false
+            if mod.KT_Refresh then
+                mod.KT_Refresh()
             end
         end),
     }, {
@@ -356,16 +356,16 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
         end,
         setValue = function() end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        local rgn = row._rightRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = rowFrame._rightRegion
+        if region._control then
+            region._control:Hide()
         end
         local whereDD, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+            region,
             220,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             WhereItems(),
             WhereGet,
             WhereSet,
@@ -376,51 +376,46 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             nil,
             { disabled = Off, disabledTooltip = REQ, emptyLabel = "All" }
         )
-        CludesUI.PanelPP.Point(whereDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = whereDD
-        rgn._lastInline = nil
+        CludesUI.PanelPP.Point(whereDD, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = whereDD
+        region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(whereRefresh)
     end
 
-    row, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "dropdown",
-            text = "Focus Announce",
-            tooltip = "Tells the party your focus marker at ready checks.",
-            disabled = Off,
-            disabledTooltip = REQ,
-            values = MarkerValues(),
-            order = MARKER_ORDER,
-            getValue = function()
-                return tostring(Get("focusMarker", 0))
-            end,
-            setValue = function(v)
-                Set("focusMarker", tonumber(v) or 0)
-            end,
-        },
-        {
-            type = "labeledButton",
-            text = "Edit Announce Text",
-            buttonText = "Edit",
-            width = 90,
-            tooltip = "Change the line Focus Announce sends: your own words, with {marker} where your raid marker goes.",
-            disabled = Off,
-            disabledTooltip = REQ,
-            onClick = EditAnnounceText,
-        }
-    )
-    y = y - h
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        type = "dropdown",
+        text = "Focus Announce",
+        tooltip = "Tells the party your focus marker at ready checks.",
+        disabled = Off,
+        disabledTooltip = REQ,
+        values = MarkerValues(),
+        order = MARKER_ORDER,
+        getValue = function()
+            return tostring(Get("focusMarker", 0))
+        end,
+        setValue = function(val)
+            Set("focusMarker", tonumber(val) or 0)
+        end,
+    }, {
+        type = "labeledButton",
+        text = "Edit Announce Text",
+        buttonText = "Edit",
+        width = 90,
+        tooltip = "Change the line Focus Announce sends: your own words, with {marker} where your raid marker goes.",
+        disabled = Off,
+        disabledTooltip = REQ,
+        onClick = EditAnnounceText,
+    })
+    posY = posY - hgt
     -- The red warning on the dropdown while the nameplate icons are on with
     -- no marker set (the standard empty-selection warning), with a dismiss
     -- button beside it that waves it off for good, account-wide.
     if not CludesUI._prebuilding then
-        local rgn = row._leftRegion
-        if rgn and rgn._control then
+        local region = rowFrame._leftRegion
+        if region and region._control then
             CludesUI.AttachEmptyFilterWarn(
-                rgn,
-                rgn._control,
+                region,
+                region._control,
                 CludesUI.L("Nameplate Kick Icons use this to auto-assign kicks when a mob is first marked."),
                 function()
                     return not PlatesOn()
@@ -441,16 +436,16 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
 
     -- The rest of the page exists only while the feature is on.
     if On() then
-        _, h = W:SectionHeader(parent, "NAMEPLATE ICON", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "NAMEPLATE ICON", posY)
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show on Nameplates",
             tooltip = "Kick icons with their cooldown on the kicked enemies' nameplates.",
             getValue = PlatesOn,
-            setValue = function(v)
-                Set("showPlates", v and true or false)
+            setValue = function(val)
+                Set("showPlates", val and true or false)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -464,13 +459,13 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("iconStyle", "kick")
             end,
-            setValue = function(v)
-                Set("iconStyle", v)
+            setValue = function(val)
+                Set("iconStyle", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -481,8 +476,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("size", 28)
             end,
-            setValue = function(v)
-                Set("size", v)
+            setValue = function(val)
+                Set("size", val)
             end,
         }, {
             type = "dropdown",
@@ -497,82 +492,79 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             end,
             setValue = SetPosition,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(
-                row._rightRegion,
-                {
-                    tip = "Position Offsets",
-                    title = "Position Offsets",
-                    disabled = PlatesOff,
-                    disabledTooltip = REQ_PLATES,
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            tooltip = "On CludesUI nameplates.",
-                            hidden = NoCUIPlates,
-                            get = function()
-                                return Get("offsetX", -4)
-                            end,
-                            set = function(v)
-                                Set("offsetX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            tooltip = "On CludesUI nameplates.",
-                            hidden = NoCUIPlates,
-                            get = function()
-                                return Get("offsetY", 0)
-                            end,
-                            set = function(v)
-                                Set("offsetY", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            tooltip = "On Blizzard's or another addon's nameplates.",
-                            hidden = CUIPlatesOn,
-                            get = function()
-                                return Get("otherOffsetX", 0)
-                            end,
-                            set = function(v)
-                                Set("otherOffsetX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            tooltip = "On Blizzard's or another addon's nameplates.",
-                            hidden = CUIPlatesOn,
-                            get = function()
-                                return Get("otherOffsetY", 0)
-                            end,
-                            set = function(v)
-                                Set("otherOffsetY", v)
-                            end,
-                        },
+            CludesUI.BuildInlineCog(rowFrame._rightRegion, {
+                tip = "Position Offsets",
+                title = "Position Offsets",
+                disabled = PlatesOff,
+                disabledTooltip = REQ_PLATES,
+                rows = {
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        tooltip = "On CludesUI nameplates.",
+                        hidden = NoCUIPlates,
+                        get = function()
+                            return Get("offsetX", -4)
+                        end,
+                        set = function(val)
+                            Set("offsetX", val)
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        tooltip = "On CludesUI nameplates.",
+                        hidden = NoCUIPlates,
+                        get = function()
+                            return Get("offsetY", 0)
+                        end,
+                        set = function(val)
+                            Set("offsetY", val)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        tooltip = "On Blizzard's or another addon's nameplates.",
+                        hidden = CUIPlatesOn,
+                        get = function()
+                            return Get("otherOffsetX", 0)
+                        end,
+                        set = function(val)
+                            Set("otherOffsetX", val)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        tooltip = "On Blizzard's or another addon's nameplates.",
+                        hidden = CUIPlatesOn,
+                        get = function()
+                            return Get("otherOffsetY", 0)
+                        end,
+                        set = function(val)
+                            Set("otherOffsetY", val)
+                        end,
+                    },
+                },
+            })
         end
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Cooldown Timer",
             tooltip = "The seconds left on the kicker's interrupt.",
@@ -581,8 +573,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("showTimer", true) == true
             end,
-            setValue = function(v)
-                Set("showTimer", v and true or false)
+            setValue = function(val)
+                Set("showTimer", val and true or false)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -598,11 +590,11 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             end,
             setValue = function() end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             -- Icon Effects: the checkbox dropdown over its three keys, in
             -- place of the row's placeholder dropdown.
-            local fxRgn = row._rightRegion
+            local fxRgn = rowFrame._rightRegion
             if fxRgn._control then
                 fxRgn._control:Hide()
             end
@@ -614,8 +606,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                 function(key)
                     return Get(key, key ~= "desaturate") == true
                 end,
-                function(key, v)
-                    Set(key, v and true or false)
+                function(key, val)
+                    Set(key, val and true or false)
                 end,
                 nil,
                 nil,
@@ -628,7 +620,7 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             fxRgn._control = fxDD
             fxRgn._lastInline = nil
             CludesUI.RegisterWidgetRefresh(fxRefresh)
-            CludesUI.BuildInlineCog(row._leftRegion, {
+            CludesUI.BuildInlineCog(rowFrame._leftRegion, {
                 tip = "Timer Settings",
                 title = "Cooldown Timer",
                 disabled = function()
@@ -644,8 +636,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                         get = function()
                             return Get("timerPos", "center")
                         end,
-                        set = function(v)
-                            Set("timerPos", v)
+                        set = function(val)
+                            Set("timerPos", val)
                         end,
                     },
                     {
@@ -657,8 +649,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                         get = function()
                             return Get("timerSize", 11)
                         end,
-                        set = function(v)
-                            Set("timerSize", v)
+                        set = function(val)
+                            Set("timerSize", val)
                         end,
                     },
                     {
@@ -670,8 +662,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                         get = function()
                             return Get("timerX", 0)
                         end,
-                        set = function(v)
-                            Set("timerX", v)
+                        set = function(val)
+                            Set("timerX", val)
                         end,
                     },
                     {
@@ -683,15 +675,15 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                         get = function()
                             return Get("timerY", 0)
                         end,
-                        set = function(v)
-                            Set("timerY", v)
+                        set = function(val)
+                            Set("timerY", val)
                         end,
                     },
                 },
             })
         end
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Above Overlapping Nameplates",
             tooltip = "The icons draw over every other nameplate, so an overlapping plate never hides one. When off, an icon stays inside its own nameplate, behind any plate that covers it.",
@@ -700,29 +692,29 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("aboveOverlap", true) ~= false
             end,
-            setValue = function(v)
-                Set("aboveOverlap", v and true or false)
+            setValue = function(val)
+                Set("aboveOverlap", val and true or false)
             end,
         }, CludesUI.BlankRowCfg())
-        y = y - h
+        posY = posY - hgt
 
         -- The Move in Unlock Mode button on the bars' first section, built
         -- whatever Show Bars says: its disabled state explains itself.
-        local hdr
-        hdr, h = W:SectionHeader(parent, "BARS", y)
-        y = y - h
+        local heading
+        heading, hgt = W:SectionHeader(hostFrame, "BARS", posY)
+        posY = posY - hgt
         CludesUI.BuildSectionUnlockJump(
-            hdr,
+            heading,
             { key = "EMT_KickBars", disabled = BarsOff, disabledTooltip = REQ_BARS }
         )
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Bars",
             tooltip = "A row per group member with an interrupt: the interrupt's icon, their name on a bar in their class color, and the seconds left while it is on cooldown.",
             getValue = BarsOn,
-            setValue = function(v)
-                Set("showBars", v and true or false)
+            setValue = function(val)
+                Set("showBars", val and true or false)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -737,13 +729,13 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("barWidth", 200)
             end,
-            setValue = function(v)
-                Set("barWidth", v)
+            setValue = function(val)
+                Set("barWidth", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Height",
             min = 6,
@@ -755,8 +747,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("barHeight", 22)
             end,
-            setValue = function(v)
-                Set("barHeight", v)
+            setValue = function(val)
+                Set("barHeight", val)
             end,
         }, {
             type = "slider",
@@ -770,17 +762,17 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("barSpacing", 2)
             end,
-            setValue = function(v)
-                Set("barSpacing", v)
+            setValue = function(val)
+                Set("barSpacing", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         local texValues, texOrder = {}, {}
-        if ns._MT_BuildBarTexDropdown then
-            texValues, texOrder = ns._MT_BuildBarTexDropdown()
+        if mod._MT_BuildBarTexDropdown then
+            texValues, texOrder = mod._MT_BuildBarTexDropdown()
         end
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "segmented",
             text = "Grow Direction",
             tooltip = "Which way the rows stack.",
@@ -791,8 +783,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("barGrowUp", false) == true and "UP" or "DOWN"
             end,
-            setValue = function(v)
-                Set("barGrowUp", v == "UP")
+            setValue = function(val)
+                Set("barGrowUp", val == "UP")
             end,
         }, {
             type = "dropdown",
@@ -804,13 +796,13 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("texture", "none")
             end,
-            setValue = function(v)
-                Set("texture", v)
+            setValue = function(val)
+                Set("texture", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "multiSwatch",
             text = "Background Color",
             tooltip = "Behind each row: a darkened version of the member's class color, or one custom color.",
@@ -845,11 +837,11 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                     tooltip = "Custom Color",
                     hasAlpha = true,
                     getValue = function()
-                        local col = Get("barBgColor", nil)
-                        return (col and col.r) or 0,
-                            (col and col.g) or 0,
-                            (col and col.b) or 0,
-                            (col and col.a) or 0.45
+                        local column = Get("barBgColor", nil)
+                        return (column and column.r) or 0,
+                            (column and column.g) or 0,
+                            (column and column.b) or 0,
+                            (column and column.a) or 0.45
                     end,
                     setValue = function(r, g, b, a)
                         local c = KT()
@@ -886,13 +878,13 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("barBorderSize", 0)
             end,
-            setValue = function(v)
-                Set("barBorderSize", v)
+            setValue = function(val)
+                Set("barBorderSize", val)
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Display Elements",
             tooltip = "The interrupt's icon, the member's name, the seconds left on the interrupt and the raid marker of the enemy they interrupted.",
@@ -913,17 +905,17 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             getValue = function()
                 return Get("barIncludeSelf", true) == true
             end,
-            setValue = function(v)
-                Set("barIncludeSelf", v and true or false)
+            setValue = function(val)
+                Set("barIncludeSelf", val and true or false)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
             -- Display Elements: the checkbox dropdown over its four keys, in
             -- place of the row's placeholder dropdown, and its cog beside it:
             -- the icon's side and one text size for the name and the timer
             -- (the Fonts page sets the two apart).
-            local elRgn = row._leftRegion
+            local elRgn = rowFrame._leftRegion
             if elRgn._control then
                 elRgn._control:Hide()
             end
@@ -935,8 +927,8 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
                 function(key)
                     return Get(key, true) == true
                 end,
-                function(key, v)
-                    Set(key, v and true or false)
+                function(key, val)
+                    Set(key, val and true or false)
                 end,
                 nil,
                 nil,
@@ -949,45 +941,42 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
             elRgn._control = elDD
             elRgn._lastInline = nil
             CludesUI.RegisterWidgetRefresh(elRefresh)
-            CludesUI.BuildInlineCog(
-                elRgn,
-                {
-                    tip = "Element Settings",
-                    title = "Display Elements",
-                    disabled = BarsOff,
-                    disabledTooltip = REQ_BARS,
-                    rows = {
-                        {
-                            type = "toggle",
-                            label = "Icon on Right",
-                            get = function()
-                                return Get("barIconOnRight", false) == true
-                            end,
-                            set = function(v)
-                                Set("barIconOnRight", v and true or false)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Text Size",
-                            min = 6,
-                            max = 24,
-                            step = 1,
-                            get = function()
-                                return Get("barNameSize", 11)
-                            end,
-                            set = function(v)
-                                Set("barNameSize", v)
-                                Set("barTimerSize", v)
-                            end,
-                        },
+            CludesUI.BuildInlineCog(elRgn, {
+                tip = "Element Settings",
+                title = "Display Elements",
+                disabled = BarsOff,
+                disabledTooltip = REQ_BARS,
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Icon on Right",
+                        get = function()
+                            return Get("barIconOnRight", false) == true
+                        end,
+                        set = function(val)
+                            Set("barIconOnRight", val and true or false)
+                        end,
                     },
-                }
-            )
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 6,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            return Get("barNameSize", 11)
+                        end,
+                        set = function(val)
+                            Set("barNameSize", val)
+                            Set("barTimerSize", val)
+                        end,
+                    },
+                },
+            })
         end
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
-    parent:SetHeight(math.abs(y - yOffset))
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
+    hostFrame:SetHeight(math.abs(posY - yOffset))
 end

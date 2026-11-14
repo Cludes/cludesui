@@ -8,20 +8,20 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  font, the icon crop, the slot widget and the PaletteView basics.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local floor, max = math.floor, math.max
+local floor, upper = math.floor, math.max
 local sin, pi = math.sin, math.pi
 local type = type
 
-local PA, QUESTION_MARK, SelectColor = I.PA, I.QUESTION_MARK, I.SelectColor
-local USABILITY_TINT = I.USABILITY_TINT
+local PA, QUESTION_MARK, SelectColor = Inner.PA, Inner.QUESTION_MARK, Inner.SelectColor
+local USABILITY_TINT = Inner.USABILITY_TINT
 
 -------------------------------------------------------------------------------
 --  Palette view  --  the renderer, instanced
@@ -162,10 +162,10 @@ local function ApplySlotVisual(widget, selected, armed)
     end
     widget.icon:SetDesaturated(tint ~= nil and tint[4] or false)
     local t = armed and ARM_BORDER or selected and SEL_BORDER or IDLE_BORDER
-    local base = widget.baseSize
-    if base then
+    local baseValue = widget.baseSize
+    if baseValue then
         local z = selected and SelectedZoom() or 1
-        widget:SetSize(base * z, base * z)
+        widget:SetSize(baseValue * z, baseValue * z)
     end
     if armed then
         local lr = r + (1 - r) * ARM_LIFT
@@ -202,9 +202,9 @@ end
 local FONT_KEY = "quickdraw"
 local fontStrings = {}
 
-local function ApplyModuleFont(fs)
-    local size = fs.eqdFontSize
-    if not size or not CludesUI.GetFontPath then
+local function ApplyModuleFont(fontStr)
+    local dim = fontStr.eqdFontSize
+    if not dim or not CludesUI.GetFontPath then
         return
     end
     -- Snapped to whole physical pixels. A font height is given in the string's
@@ -216,13 +216,13 @@ local function ApplyModuleFont(fs)
     -- were never the problem. PP.perfect is one physical pixel in WoW's
     -- 768-based coordinates, which is what turns a height into pixels and
     -- back. Whole pixels, and never rounded away to nothing.
-    local PP = CludesUI.PP
-    local eff = fs.GetEffectiveScale and fs:GetEffectiveScale()
-    if PP and PP.perfect and PP.perfect > 0 and eff and eff > 0 then
-        size = max(1, floor(size * eff / PP.perfect + 0.5)) * PP.perfect / eff
+    local Pix = CludesUI.PP
+    local eff = fontStr.GetEffectiveScale and fontStr:GetEffectiveScale()
+    if Pix and Pix.perfect and Pix.perfect > 0 and eff and eff > 0 then
+        dim = upper(1, floor(dim * eff / Pix.perfect + 0.5)) * Pix.perfect / eff
     end
     local flags
-    if fs.eqdIconText and CludesUI.GetIconTextOutlineFlag then
+    if fontStr.eqdIconText and CludesUI.GetIconTextOutlineFlag then
         flags = CludesUI.GetIconTextOutlineFlag(FONT_KEY)
     else
         flags = CludesUI.GetFontOutlineFlag(FONT_KEY) or ""
@@ -231,24 +231,24 @@ local function ApplyModuleFont(fs)
     -- carried by a FontObject, primed BEFORE the typeface call.
     if CludesUI.PrimeFontShadow then
         local useShadow = flags == "" and CludesUI.GetFontUseShadow()
-        CludesUI.PrimeFontShadow(fs, useShadow and true or false)
+        CludesUI.PrimeFontShadow(fontStr, useShadow and true or false)
     end
-    fs:SetFont(CludesUI.GetFontPath(FONT_KEY), size, flags)
+    fontStr:SetFont(CludesUI.GetFontPath(FONT_KEY), dim, flags)
 end
 
 -- Called once per string, right after it is created from its Blizzard font
 -- object, and again for every string whenever the font settings change.
-local function AdoptFontString(fs, iconText)
-    local _, size = fs:GetFont()
-    fs.eqdFontSize = size
-    fs.eqdIconText = iconText or nil
-    fontStrings[#fontStrings + 1] = fs
-    ApplyModuleFont(fs)
+local function AdoptFontString(fontStr, iconText)
+    local _, dim = fontStr:GetFont()
+    fontStr.eqdFontSize = dim
+    fontStr.eqdIconText = iconText or nil
+    fontStrings[#fontStrings + 1] = fontStr
+    ApplyModuleFont(fontStr)
 end
 
 local function RefreshFonts()
-    for i = 1, #fontStrings do
-        ApplyModuleFont(fontStrings[i])
+    for idx = 1, #fontStrings do
+        ApplyModuleFont(fontStrings[idx])
     end
 end
 
@@ -260,64 +260,64 @@ end
 -- the TEXTURE rather than the slot kind, so a nested menu entry borrowing
 -- its first child's marker icon stays whole too. Shared with the options
 -- picker's rows, which draw the same icons at list size.
-local function ApplyIconCrop(tex, icon)
+local function ApplyIconCrop(texture, glyph)
     -- Atlas-backed icons already have their own UVs and should not be cropped.
-    if type(icon) == "table" and icon.atlas then
-        tex:SetTexCoord(0, 1, 0, 1)
+    if type(glyph) == "table" and glyph.atlas then
+        texture:SetTexCoord(0, 1, 0, 1)
         return
     end
 
     if
-        type(icon) == "string"
+        type(glyph) == "string"
         and (
-            icon:find("RaidTargetingIcon", 1, true)
-            or icon:find("UI-GroupLoot-Pass-Up", 1, true)
-            -- The interface panel glyphs, which are drawn to the edge of their
-            -- own square the way the marker textures are. The crop is sized
-            -- for the border every spell icon carries and would cut into these.
-            or icon:find("micromenu", 1, true)
+            glyph:find("RaidTargetingIcon", 1, true)
+            or glyph:find("UI-GroupLoot-Pass-Up", 1, true)
+            -- The interface panel glyphs, which are drawn to the edge of their
+            -- own square the way the marker textures are. The crop is sized
+            -- for the border every spell icon carries and would cut into these.
+            or glyph:find("micromenu", 1, true)
         )
     then
-        tex:SetTexCoord(0, 1, 0, 1)
+        texture:SetTexCoord(0, 1, 0, 1)
     else
-        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     end
 end
-ns.ApplyIconCrop = ApplyIconCrop
+mod.ApplyIconCrop = ApplyIconCrop
 
 -- ns-hosted, NOT a file-scope local: as one file the module's main chunk sat
 -- at the Lua 5.1 200-local cap and this function was the 200th -- hosting it
 -- on ns restored the last slot of headroom. Paint-frequency callers; the ns
 -- lookup is free there.
-function ns.SetIconTexture(tex, icon)
-    if type(icon) == "table" and icon.atlas then
-        tex:SetAtlas(icon.atlas, true)
+function mod.SetIconTexture(texture, glyph)
+    if type(glyph) == "table" and glyph.atlas then
+        texture:SetAtlas(glyph.atlas, true)
     else
-        tex:SetTexture(icon or QUESTION_MARK)
+        texture:SetTexture(glyph or QUESTION_MARK)
     end
 end
 
-local function CreateSlotWidget(view, index)
-    local w = CreateFrame("Button", nil, view.frame, "BackdropTemplate")
-    w.index = index
+local function CreateSlotWidget(view, slotPos)
+    local wid = CreateFrame("Button", nil, view.frame, "BackdropTemplate")
+    wid.index = slotPos
     -- Our frame, so the backref is safe to carry. ApplySlotVisual reads the
     -- selection color through it: the color keys are per-menu appearance, and
     -- the widget is the only argument that function gets.
-    w.view = view
+    wid.view = view
 
-    w.bg = w:CreateTexture(nil, "BACKGROUND")
-    w.bg:SetTexture("Interface\\Buttons\\WHITE8X8")
-    w.bg:SetAllPoints(w)
+    wid.bg = wid:CreateTexture(nil, "BACKGROUND")
+    wid.bg:SetTexture("Interface\\Buttons\\WHITE8X8")
+    wid.bg:SetAllPoints(wid)
 
-    w.icon = w:CreateTexture(nil, "ARTWORK")
-    w.icon:SetAllPoints(w)
+    wid.icon = wid:CreateTexture(nil, "ARTWORK")
+    wid.icon:SetAllPoints(wid)
     -- The crop is applied per paint -- see ApplyIconCrop.
-    w.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    wid.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    w.cd = CreateFrame("Cooldown", nil, w, "CooldownFrameTemplate")
-    w.cd:SetAllPoints(w.icon)
-    w.cd:SetHideCountdownNumbers(false)
-    w.cd:SetDrawEdge(false)
+    wid.cd = CreateFrame("Cooldown", nil, wid, "CooldownFrameTemplate")
+    wid.cd:SetAllPoints(wid.icon)
+    wid.cd:SetHideCountdownNumbers(false)
+    wid.cd:SetDrawEdge(false)
 
     -- The suite's pixel-perfect border system, INSET: snap-managed strips at
     -- exactly borderSize PHYSICAL pixels whatever the scale chain (the
@@ -326,33 +326,33 @@ local function CreateSlotWidget(view, index)
     -- Per-state weight and color go through PP.UpdateBorder in
     -- ApplySlotVisual; the strips track the widget's rect, so a resized
     -- entry keeps its border without any re-anchor.
-    w.bhost = CreateFrame("Frame", nil, w)
-    w.bhost:SetAllPoints(w)
-    w.bhost:SetFrameLevel(w:GetFrameLevel() + 5)
-    CludesUI.PP.CreateBorder(w.bhost, 0, 0, 0, 0.9, 2, "OVERLAY", 7)
+    wid.bhost = CreateFrame("Frame", nil, wid)
+    wid.bhost:SetAllPoints(wid)
+    wid.bhost:SetFrameLevel(wid:GetFrameLevel() + 5)
+    CludesUI.PP.CreateBorder(wid.bhost, 0, 0, 0, 0.9, 2, "OVERLAY", 7)
 
     -- Stack size or charges, in the corner an action button writes them in.
     -- Its text may be a SECRET value (see SlotCount), so it is SHOWN and
     -- HIDDEN rather than written and cleared: a FontString carrying secret
     -- text refuses text access to tainted callers, and a refused clear would
     -- leave the previous entry's number standing.
-    w.count = w:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-    w.count:SetPoint("BOTTOMRIGHT", w, "BOTTOMRIGHT", -1, 2)
+    wid.count = wid:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    wid.count:SetPoint("BOTTOMRIGHT", wid, "BOTTOMRIGHT", -1, 2)
     -- Held on BOTH sides, which is the whole width clamp: anchored by one
     -- corner alone a wide count grows until it runs off the icon it belongs
     -- to, and a three-digit stack did. The text cannot be measured to shrink
     -- it instead -- it may be a secret value, and a secret FontString refuses
     -- text access to a tainted caller -- so the width is decided in advance
     -- and the client fits the number into it.
-    w.count:SetPoint("BOTTOMLEFT", w, "BOTTOMLEFT", 1, 2)
-    w.count:SetJustifyH("RIGHT")
+    wid.count:SetPoint("BOTTOMLEFT", wid, "BOTTOMLEFT", 1, 2)
+    wid.count:SetJustifyH("RIGHT")
     -- One line whatever it holds: a count wide enough to need the clamp above
     -- would otherwise wrap onto a second line and climb up the icon.
-    if w.count.SetWordWrap then
-        w.count:SetWordWrap(false)
+    if wid.count.SetWordWrap then
+        wid.count:SetWordWrap(false)
     end
-    w.count:Hide()
-    AdoptFontString(w.count, true)
+    wid.count:Hide()
+    AdoptFontString(wid.count, true)
 
     -- "This world marker is on the ground right now", in the corner the count
     -- does not use. Shown only by PaletteView:MarkerPip, which is also what
@@ -360,43 +360,43 @@ local function CreateSlotWidget(view, index)
     -- the widget holds a marker entry (see there); created here unconditionally
     -- because a widget is reused for whatever entry the next open puts in it.
     -- It draws under the border host.
-    w.markerPip = w:CreateTexture(nil, "OVERLAY", nil, 7)
-    w.markerPip:SetTexture("Interface\\Buttons\\WHITE8X8")
-    w.markerPip:SetPoint("TOPLEFT", w, "TOPLEFT", 2, -2)
-    w.markerPip:Hide()
+    wid.markerPip = wid:CreateTexture(nil, "OVERLAY", nil, 7)
+    wid.markerPip:SetTexture("Interface\\Buttons\\WHITE8X8")
+    wid.markerPip:SetPoint("TOPLEFT", wid, "TOPLEFT", 2, -2)
+    wid.markerPip:Hide()
 
     -- "This entry opens a menu", in the corner nothing else uses. Without it a
     -- nested entry is drawn exactly like a plain one until it arms, which is
     -- why the nest used to be previewed faintly instead -- and a preview drawn
     -- over the open nest's own children is what that cost.
-    w.nestDots = {}
+    wid.nestDots = {}
     for d = 1, 3 do
-        local t = w:CreateTexture(nil, "OVERLAY", nil, 7)
+        local t = wid:CreateTexture(nil, "OVERLAY", nil, 7)
         t:SetTexture("Interface\\Buttons\\WHITE8X8")
         t:Hide()
-        w.nestDots[d] = t
+        wid.nestDots[d] = t
     end
 
-    w.label = w:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    AdoptFontString(w.label)
-    w.label:SetPoint("TOP", w, "BOTTOM", 0, -2)
-    w.label:SetWidth(96)
-    w.label:SetWordWrap(false)
+    wid.label = wid:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    AdoptFontString(wid.label)
+    wid.label:SetPoint("TOP", wid, "BOTTOM", 0, -2)
+    wid.label:SetWidth(96)
+    wid.label:SetWordWrap(false)
 
     -- The "+" affordance for an interactive view's trailing placeholder entry.
     -- Created unconditionally; Layout is what decides whether it is ever shown.
     -- Drawn as the suite's picker add button (22pt "+", nudged 1px up) --
     -- ApplySlotVisual's placeholder branch is what colors it as one.
-    w.plus = w:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    AdoptFontString(w.plus)
-    w.plus.eqdFontSize = 22
-    ApplyModuleFont(w.plus)
-    w.plus:SetPoint("CENTER", 0, 1)
-    w.plus:SetText("+")
-    w.plus:Hide()
+    wid.plus = wid:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    AdoptFontString(wid.plus)
+    wid.plus.eqdFontSize = 22
+    ApplyModuleFont(wid.plus)
+    wid.plus:SetPoint("CENTER", 0, 1)
+    wid.plus:SetText("+")
+    wid.plus:Hide()
 
-    w:EnableMouse(false)
-    return w
+    wid:EnableMouse(false)
+    return wid
 end
 
 local PaletteView = {}
@@ -428,8 +428,8 @@ function PaletteView:Geom(shownOverride)
     end
     local radius, iconSize = p.radius or 100, p.iconSize or 40
     if self:LayoutMode() == "ARC" then
-        local shown = max(1, shownOverride or self.shownCount or 1)
-        if shown > 1 then
+        local isShown = upper(1, shownOverride or self.shownCount or 1)
+        if isShown > 1 then
             -- The chord between two neighbouring entries is 2R sin(step/2).
             -- Holding that to the separation two entries need and solving for R
             -- gives the smallest ring they do not overlap on. A half-step at or
@@ -443,10 +443,10 @@ function PaletteView:Geom(shownOverride)
             -- more than a pitch at the shipped sizes. A ring sized on the pitch
             -- alone therefore still touched at the four diagonals, and only
             -- there, which is exactly what a sixteen-entry ring showed.
-            local half = self:ArcGeom(shown) * 0.5
+            local half = self:ArcGeom(isShown) * 0.5
             if half > 0 and half < pi * 0.5 then
-                local need = max(iconSize + (p.fanGap or 10), iconSize * 2 ^ 0.5)
-                radius = max(radius, need / (2 * sin(half)))
+                local need = upper(iconSize + (p.fanGap or 10), iconSize * 2 ^ 0.5)
+                radius = upper(radius, need / (2 * sin(half)))
             end
         end
     end
@@ -480,8 +480,8 @@ end
 function PaletteView:ShownCount()
     return self.shownCount
 end
-function PaletteView:GetSlotWidget(index)
-    return self.widgets[index]
+function PaletteView:GetSlotWidget(slotPos)
+    return self.widgets[slotPos]
 end
 
 -- ARC | FAN | GRID. A view may pin its own mode (the options preview
@@ -517,11 +517,11 @@ function PaletteView:Pitch()
     return iconSize + ((p and p.fanGap) or 10)
 end
 
-I.AdoptFontString, I.ApplyIconCrop = AdoptFontString, ApplyIconCrop
-I.ApplyModuleFont, I.ApplySlotVisual = ApplyModuleFont, ApplySlotVisual
-I.CANCEL_BUTTON, I.CONFIRM_BUTTON = CANCEL_BUTTON, CONFIRM_BUTTON
-I.CreateSlotWidget, I.LATCH_TIMEOUT = CreateSlotWidget, LATCH_TIMEOUT
-I.OPEN_TIMEOUT, I.PaletteView, I.PaletteViewMeta = OPEN_TIMEOUT, PaletteView, PaletteViewMeta
-I.RefreshFonts, I.secureButtons, I.SelectedZoom = RefreshFonts, secureButtons, SelectedZoom
-I.views = views
-I.broken = false
+Inner.AdoptFontString, Inner.ApplyIconCrop = AdoptFontString, ApplyIconCrop
+Inner.ApplyModuleFont, Inner.ApplySlotVisual = ApplyModuleFont, ApplySlotVisual
+Inner.CANCEL_BUTTON, Inner.CONFIRM_BUTTON = CANCEL_BUTTON, CONFIRM_BUTTON
+Inner.CreateSlotWidget, Inner.LATCH_TIMEOUT = CreateSlotWidget, LATCH_TIMEOUT
+Inner.OPEN_TIMEOUT, Inner.PaletteView, Inner.PaletteViewMeta = OPEN_TIMEOUT, PaletteView, PaletteViewMeta
+Inner.RefreshFonts, Inner.secureButtons, Inner.SelectedZoom = RefreshFonts, secureButtons, SelectedZoom
+Inner.views = views
+Inner.broken = false

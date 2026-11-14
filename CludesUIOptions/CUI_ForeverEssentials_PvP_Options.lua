@@ -9,41 +9,41 @@ if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
     return
 end
 
-function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
-    local P = CludesUI._PvP
-    if not P then
+function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
+    local Prm = CludesUI._PvP
+    if not Prm then
         return 0
     end
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
-    local cfg = P.Cfg()
+    local posY = yOffset
+    local _, hgt
+    local conf = Prm.Cfg()
     local function Off()
-        return not P.Get("enabled")
+        return not Prm.Get("enabled")
     end
-    local function Tog(key, text, tip, off)
+    local function Tog(key, textValue, tipText, offset)
         return {
             type = "toggle",
-            text = text,
-            tooltip = tip,
-            disabled = off,
+            text = textValue,
+            tooltip = tipText,
+            disabled = offset,
             getValue = function()
-                return P.Get(key)
+                return Prm.Get(key)
             end,
-            setValue = function(v)
-                cfg[key] = v and true or false
-                P.Apply()
+            setValue = function(val)
+                conf[key] = val and true or false
+                Prm.Apply()
             end,
         }
     end
 
     CludesUI:ClearContentHeader()
 
-    _, h = W:SectionHeader(parent, "ENEMY PLAYERS", y)
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:SectionHeader(hostFrame, "ENEMY PLAYERS", posY)
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "enabled",
             "Detect Enemy Players",
@@ -56,15 +56,15 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
             Off
         )
     )
-    y = y - h
-    _, h = W:DualRow(parent, y, {
+    posY = posY - hgt
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "labeledButton",
         text = "Enemy List",
         buttonText = "Open",
         width = 90,
         tooltip = "Nearby, Last Hour, Kill on Sight and Ignore lists. Click a name to target it. /cpvp opens it too.",
         onClick = function()
-            P.Show()
+            Prm.Show()
         end,
     }, {
         type = "labeledButton",
@@ -73,11 +73,11 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
         width = 90,
         tooltip = "Every enemy you have met, searchable, with your wins and losses. /cpvp stats.",
         onClick = function()
-            P.Stats()
+            Prm.Stats()
         end,
     })
-    y = y - h
-    _, h = W:DualRow(parent, y, {
+    posY = posY - hgt
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Remove When Unseen For",
         min = 30,
@@ -87,10 +87,10 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
         disabled = Off,
         tooltip = "Seconds before an enemy who has not been seen leaves the Nearby list.",
         getValue = function()
-            return P.Get("removeAfter")
+            return Prm.Get("removeAfter")
         end,
-        setValue = function(v)
-            cfg.removeAfter = math.floor(v + 0.5)
+        setValue = function(val)
+            conf.removeAfter = math.floor(val + 0.5)
         end,
     }, {
         type = "slider",
@@ -101,26 +101,26 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
         isPercent = false,
         disabled = Off,
         getValue = function()
-            return P.Get("rows")
+            return Prm.Get("rows")
         end,
-        setValue = function(v)
-            cfg.rows = math.floor(v + 0.5)
+        setValue = function(val)
+            conf.rows = math.floor(val + 0.5)
         end,
     })
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog("battlegrounds", "Also in Battlegrounds", nil, Off),
         { type = "label", text = "" }
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:SectionHeader(parent, "ALERTS", y)
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:SectionHeader(hostFrame, "ALERTS", posY)
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "sound",
             "Alert Sound",
@@ -134,10 +134,10 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
             Off
         )
     )
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog("kosWarn", "Kill on Sight Warning", nil, Off),
         Tog(
             "kosGuildWarn",
@@ -146,10 +146,10 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
             Off
         )
     )
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "announceKoS",
             "Tell My Group About Kill on Sight",
@@ -158,13 +158,13 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
         ),
         { type = "label", text = "" }
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:SectionHeader(parent, "SHARING AND EXTRAS", y)
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:SectionHeader(hostFrame, "SHARING AND EXTRAS", posY)
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "share",
             "Share My Sightings",
@@ -178,10 +178,10 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
             Off
         )
     )
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "kosButton",
             "Kill on Sight Button",
@@ -195,13 +195,13 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
             Off
         )
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:SectionHeader(parent, "WATCH LIST, COMBAT MAP AND ZONES", y)
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:SectionHeader(hostFrame, "WATCH LIST, COMBAT MAP AND ZONES", posY)
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "watchWarn",
             "Warn When a Watched Player Is Near",
@@ -210,10 +210,10 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
         ),
         Tog("watchGroupWarn", "Warn When One Is in Your Group", nil, Off)
     )
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
+    posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Tog(
             "combatMap",
             "Combat Map",
@@ -229,14 +229,14 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
             tooltip = "Zones or subzones, separated by commas, where enemy detection stays off.",
             disabled = Off,
             getValue = function()
-                return P.Get("offZones")
+                return Prm.Get("offZones")
             end,
-            setValue = function(text)
-                cfg.offZones = text or ""
+            setValue = function(textValue)
+                conf.offZones = textValue or ""
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
 
-    return math.abs(y)
+    return math.abs(posY)
 end

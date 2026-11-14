@@ -169,30 +169,30 @@ end
 -- the English K tier still reads 12345 as "12.3K", while the CJK thousands tier
 -- just goes (the wan tier already starts at 10,000). A moved row is edited in
 -- place, so pass freshly built rows.
-local function TrimTiers(rows, threshold)
-    local out = {}
-    for i = 1, #rows do
-        local row = rows[i]
-        local bp = row.breakpoint
+local function TrimTiers(rowList, threshold)
+    local result = {}
+    for idx = 1, #rowList do
+        local rowFrame = rowList[idx]
+        local bp = rowFrame.breakpoint
         if bp >= threshold or bp <= 1 then
-            out[#out + 1] = row
-        elseif not out[1] or out[#out].breakpoint > threshold then
-            row.breakpoint = threshold
-            out[#out + 1] = row
+            result[#result + 1] = rowFrame
+        elseif not result[1] or result[#result].breakpoint > threshold then
+            rowFrame.breakpoint = threshold
+            result[#result + 1] = rowFrame
         end
     end
-    return out
+    return result
 end
 
 -- Precision "standard" on WoW Forever keeps its 10,000 cut; nil elsewhere.
 local STANDARD_THRESHOLD = CludesUI.IS_FOREVER and 10000 or nil
 local DEFAULT_THRESHOLD = CludesUI.IS_FOREVER and 10000 or 1000
 
-local function NewConfig(rows, threshold)
+local function NewConfig(rowList, threshold)
     if threshold then
-        rows = TrimTiers(rows, threshold)
+        rowList = TrimTiers(rowList, threshold)
     end
-    return { config = CreateAbbreviateConfig(rows) }
+    return { config = CreateAbbreviateConfig(rowList) }
 end
 
 -- Precision "standard" configs, built at most once per session -- plain
@@ -207,8 +207,8 @@ local function BuildConfig(forceEnglish)
     end
     if not cfgLocalized then
         local builder = localeBuilders[CludesUI.LOCALE]
-        local opts = builder and builder() or EnglishBreakpoints()
-        cfgLocalized = NewConfig(opts, STANDARD_THRESHOLD)
+        local options = builder and builder() or EnglishBreakpoints()
+        cfgLocalized = NewConfig(options, STANDARD_THRESHOLD)
     end
     return cfgLocalized
 end
@@ -227,9 +227,9 @@ local VALID_THRESHOLD = { [1000] = true, [10000] = true, [100000] = true }
 -- The active profile table, read only; nil until the saved variables and the
 -- active profile exist.
 local function ActiveProfile()
-    local db = CludesUIDB
-    local profiles = db and db.profiles
-    return profiles and profiles[db.activeProfile or "Default"]
+    local saved = CludesUIDB
+    local profiles = saved and saved.profiles
+    return profiles and profiles[saved.activeProfile or "Default"]
 end
 
 -- CludesUI.GetNumberFormatDB(create) -> table | nil
@@ -241,14 +241,14 @@ end
 --            types = { [valueType] = { precision = "standard"|"smart"|0|1|2,
 --                                      threshold = 1000|10000|100000 } } }
 function CludesUI.GetNumberFormatDB(create)
-    local active = ActiveProfile()
-    if not active then
+    local isActive = ActiveProfile()
+    if not isActive then
         return nil
     end
-    if create and not active.numberFormat then
-        active.numberFormat = {}
+    if create and not isActive.numberFormat then
+        isActive.numberFormat = {}
     end
-    return active.numberFormat
+    return isActive.numberFormat
 end
 
 -- nf -> glyphs (CJK units in use) | nil (K/M/B), western
@@ -261,8 +261,8 @@ end
 -- CludesUI.NumberFormatUsesGlyphs() -> boolean
 --   True when the active profile shows CJK units, which have no letter case.
 function CludesUI.NumberFormatUsesGlyphs()
-    local active = ActiveProfile()
-    return ActiveUnits(active and active.numberFormat) ~= nil
+    local isActive = ActiveProfile()
+    return ActiveUnits(isActive and isActive.numberFormat) ~= nil
 end
 
 -- nf, valueType -> precision, threshold (stored values validated, else the defaults)
@@ -282,8 +282,8 @@ end
 -- CludesUI.NumberFormatTypeSettings(valueType) -> precision, threshold
 --   What the engine applies for valueType under the active profile.
 function CludesUI.NumberFormatTypeSettings(valueType)
-    local active = ActiveProfile()
-    return TypeSettings(active and active.numberFormat, valueType)
+    local isActive = ActiveProfile()
+    return TypeSettings(isActive and isActive.numberFormat, valueType)
 end
 
 -- Unit bases, largest first: { base, upper, lower }.
@@ -303,20 +303,20 @@ local function BuildRows(precision, glyphs, lower)
     else
         units = WESTERN_UNITS
     end
-    local rows = {}
-    for i = 1, #units do
-        local base = units[i][1]
-        local abbr = (lower and units[i][3]) or units[i][2]
-        local cap = i > 1 and units[i - 1][1] or nil
+    local rowList = {}
+    for idx = 1, #units do
+        local baseValue = units[idx][1]
+        local abbr = (lower and units[idx][3]) or units[idx][2]
+        local cap = idx > 1 and units[idx - 1][1] or nil
         if precision == "smart" then
             for k = 2, 0, -1 do
-                local bp = base * 10 ^ k
+                local bp = baseValue * 10 ^ k
                 if not cap or bp < cap then
                     local d = 10 ^ (2 - k)
-                    rows[#rows + 1] = {
+                    rowList[#rowList + 1] = {
                         breakpoint = bp,
                         abbreviation = abbr,
-                        significandDivisor = base / d,
+                        significandDivisor = baseValue / d,
                         fractionDivisor = d,
                         abbreviationIsGlobal = false,
                     }
@@ -324,23 +324,23 @@ local function BuildRows(precision, glyphs, lower)
             end
         else
             local d = 10 ^ precision
-            rows[#rows + 1] = {
-                breakpoint = base,
+            rowList[#rowList + 1] = {
+                breakpoint = baseValue,
                 abbreviation = abbr,
-                significandDivisor = base / d,
+                significandDivisor = baseValue / d,
                 fractionDivisor = d,
                 abbreviationIsGlobal = false,
             }
         end
     end
-    rows[#rows + 1] = {
+    rowList[#rowList + 1] = {
         breakpoint = 1,
         abbreviation = "",
         significandDivisor = 1,
         fractionDivisor = 1,
         abbreviationIsGlobal = false,
     }
-    return rows
+    return rowList
 end
 
 -- The effective settings as one string, so a profile switch that keeps the same
@@ -349,12 +349,12 @@ end
 local TYPES = CludesUI.NUMBER_FORMAT_TYPES
 local lastSignature
 local function Signature()
-    local active = ActiveProfile()
-    local nf = active and active.numberFormat
+    local isActive = ActiveProfile()
+    local nf = isActive and isActive.numberFormat
     local _, western = ActiveUnits(nf)
     local parts = { western and "w" or "a", (nf and nf.case == "lower") and "l" or "u" }
-    for i = 1, #TYPES do
-        local precision, threshold = TypeSettings(nf, TYPES[i])
+    for idx = 1, #TYPES do
+        local precision, threshold = TypeSettings(nf, TYPES[idx])
         parts[#parts + 1] = precision .. "," .. threshold
     end
     return table.concat(parts, ";")
@@ -373,8 +373,8 @@ local cfgBySpec = {}
 -- Force English Units) over the Unit Style; Precision and threshold stay, the
 -- case only where the Unit Style lets the user set it (else upper, as on CJK).
 local function ResolveOptions(valueType, forceWestern)
-    local active = ActiveProfile()
-    local nf = active and active.numberFormat
+    local isActive = ActiveProfile()
+    local nf = isActive and isActive.numberFormat
     local precision, threshold = TypeSettings(nf, valueType)
     local glyphs, western = ActiveUnits(nf)
     local lower = nf ~= nil and nf.case == "lower" and not glyphs
@@ -384,12 +384,12 @@ local function ResolveOptions(valueType, forceWestern)
 
     if precision == "standard" then
         if western then
-            return BuildConfig(true), active ~= nil
+            return BuildConfig(true), isActive ~= nil
         end
         if valueType == "meter" then
-            return BuildConfig(false), active ~= nil
+            return BuildConfig(false), isActive ~= nil
         end
-        return false, active ~= nil
+        return false, isActive ~= nil
     end
 
     local key = (glyphs and CludesUI.LOCALE or "en")
@@ -398,12 +398,12 @@ local function ResolveOptions(valueType, forceWestern)
         .. ":"
         .. threshold
         .. (lower and ":l" or ":u")
-    local cfg = cfgBySpec[key]
-    if not cfg then
-        cfg = NewConfig(BuildRows(precision, glyphs, lower), threshold)
-        cfgBySpec[key] = cfg
+    local conf = cfgBySpec[key]
+    if not conf then
+        conf = NewConfig(BuildRows(precision, glyphs, lower), threshold)
+        cfgBySpec[key] = conf
     end
-    return cfg, true
+    return conf, true
 end
 
 -- The "meter" opts again as plain upvalues: AbbreviateNumber's warm path.
@@ -441,8 +441,8 @@ local NumberFormatOptions = CludesUI.NumberFormatOptions
 -- CludesUI.RegisterNumberFormatCallback(fn)
 --   fn() runs after every RefreshNumberFormat, for modules to redraw their text.
 local refreshCallbacks = {}
-function CludesUI.RegisterNumberFormatCallback(fn)
-    refreshCallbacks[#refreshCallbacks + 1] = fn
+function CludesUI.RegisterNumberFormatCallback(func)
+    refreshCallbacks[#refreshCallbacks + 1] = func
 end
 
 -- CludesUI.RefreshNumberFormat()
@@ -466,17 +466,17 @@ function CludesUI.RefreshNumberFormat()
         return
     end
     local handler = geterrorhandler()
-    for i = 1, #refreshCallbacks do
-        xpcall(refreshCallbacks[i], handler)
+    for idx = 1, #refreshCallbacks do
+        xpcall(refreshCallbacks[idx], handler)
     end
 end
 
 -- CludesUI.ResetNumberFormat()
 --   The active profile back to the default Number Format, then redrawn.
 function CludesUI.ResetNumberFormat()
-    local active = ActiveProfile()
-    if active then
-        active.numberFormat = nil
+    local isActive = ActiveProfile()
+    if isActive then
+        isActive.numberFormat = nil
     end
     CludesUI.RefreshNumberFormat()
 end
@@ -485,11 +485,11 @@ end
 --   Formats n as the "meter" value type (Damage Meters, Mythic+ summary).
 --   forceWestern: K/M/B whatever the Unit Style (Damage Meters' Force English
 --   Units); with Precision "standard" that is the old fixed English table.
-function CludesUI.AbbreviateNumber(n, forceWestern)
+function CludesUI.AbbreviateNumber(num, forceWestern)
     if forceWestern then
-        return AbbreviateNumbers(tonumber(n) or 0, meterOptsW or NumberFormatOptions("meter", true))
+        return AbbreviateNumbers(tonumber(num) or 0, meterOptsW or NumberFormatOptions("meter", true))
     end
-    return AbbreviateNumbers(tonumber(n) or 0, meterOpts or NumberFormatOptions("meter"))
+    return AbbreviateNumbers(tonumber(num) or 0, meterOpts or NumberFormatOptions("meter"))
 end
 
 -- CludesUI.AbbreviateValue(v, valueType) -> string
@@ -498,15 +498,15 @@ end
 --   format, on WoW Forever this file's table with its 10,000 cut. v goes straight
 --   to the C function, so a secret value stays secret-safe.
 local IS_FOREVER = CludesUI.IS_FOREVER
-function CludesUI.AbbreviateValue(v, valueType)
-    local opts = NumberFormatOptions(valueType)
-    if opts then
-        return AbbreviateNumbers(v, opts)
+function CludesUI.AbbreviateValue(val, valueType)
+    local options = NumberFormatOptions(valueType)
+    if options then
+        return AbbreviateNumbers(val, options)
     end
     if IS_FOREVER then
-        return AbbreviateNumbers(v, BuildConfig(false))
+        return AbbreviateNumbers(val, BuildConfig(false))
     end
-    return AbbreviateNumbers(v)
+    return AbbreviateNumbers(val)
 end
 
 -- CludesUI.IsZeroValue(v) -> bool
@@ -517,16 +517,16 @@ end
 --   The probe sits on its own hidden, parentless frame, outside Blizzard's tree.
 do
     local probe
-    function CludesUI.IsZeroValue(v)
-        if not issecretvalue(v) then
-            return v == 0
+    function CludesUI.IsZeroValue(val)
+        if not issecretvalue(val) then
+            return val == 0
         end
         if not probe then
-            local holder = CreateFrame("Frame")
-            holder:Hide()
-            probe = holder:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            local holderFrame = CreateFrame("Frame")
+            holderFrame:Hide()
+            probe = holderFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         end
-        probe:SetText(C_StringUtil.TruncateWhenZero(v))
+        probe:SetText(C_StringUtil.TruncateWhenZero(val))
         return not probe:GetText()
     end
 end
@@ -535,8 +535,8 @@ end
 --   The fixed Precision "standard" table, outside the Number Format (gold
 --   blocks, which keep their own K/M/B toggle). forceEnglish: true always
 --   uses K/M/B, else the client's own units.
-function CludesUI.AbbreviateNumberFixed(n, forceEnglish)
-    return AbbreviateNumbers(tonumber(n) or 0, BuildConfig(forceEnglish))
+function CludesUI.AbbreviateNumberFixed(num, forceEnglish)
+    return AbbreviateNumbers(tonumber(num) or 0, BuildConfig(forceEnglish))
 end
 
 --------------------------------------------------------------------------------
@@ -544,8 +544,8 @@ end
 --------------------------------------------------------------------------------
 if CludesUI.IS_FOREVER then
     -- For a module's own breakpoint table (Unit Frames' decimal bands).
-    CludesUI.ForeverAbbrevTiers = function(rows)
-        return TrimTiers(rows, 10000)
+    CludesUI.ForeverAbbrevTiers = function(rowList)
+        return TrimTiers(rowList, 10000)
     end
 
     -- CludesUI.ForeverAbbreviateNumbers(n, opts) / ForeverAbbreviateLargeNumbers(n, opts)
@@ -556,11 +556,11 @@ if CludesUI.IS_FOREVER then
     --   function, so a secret value stays secret-safe.
     local AbbreviateLargeNumbers = AbbreviateLargeNumbers
 
-    function CludesUI.ForeverAbbreviateNumbers(n, opts)
-        return AbbreviateNumbers(n, opts or BuildConfig(false))
+    function CludesUI.ForeverAbbreviateNumbers(num, options)
+        return AbbreviateNumbers(num, options or BuildConfig(false))
     end
 
-    function CludesUI.ForeverAbbreviateLargeNumbers(n, opts)
-        return AbbreviateLargeNumbers(n, opts or BuildConfig(false))
+    function CludesUI.ForeverAbbreviateLargeNumbers(num, options)
+        return AbbreviateLargeNumbers(num, options or BuildConfig(false))
     end
 end

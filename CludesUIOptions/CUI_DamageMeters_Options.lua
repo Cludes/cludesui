@@ -7,22 +7,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  All settings are live (no Edit Mode, no reload required), except the WoW
 --  Forever look's Border Style, latched with the look (reload popup).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIDamageMeters"] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIDamageMeters"] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
-local EDM = ns.EDM
+local EDM = mod.EDM
 -- Blizzard Style paints its own window colours and bar tracks, so those
 -- controls go inert under it; the Classic WoW UI box is tinted by the
 -- configured colours and its rows keep the plain track, so they stay live.
 local function DMBlizzArt()
     return CludesUI.BlizzStyle.Active("damagemeters") == "blizzard"
 end
-local function DMBlizzGate(cfg, keepRow)
+local function DMBlizzGate(conf, keepRow)
     if DMBlizzArt() then
-        return CludesUI.BlizzStyle.Gate("damagemeters", cfg, keepRow)
+        return CludesUI.BlizzStyle.Gate("damagemeters", conf, keepRow)
     end
-    return cfg
+    return conf
 end
 
 -- Page reuse: the frames this file builds go through the options frame pool
@@ -47,7 +47,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function DB()
+    local function SavedDB()
         local d = _G._CUDM_DB
         if d and d.profile and d.profile.dm then
             return d.profile.dm
@@ -55,10 +55,10 @@ initFrame:SetScript("OnEvent", function(self)
         return {}
     end
     local function Cfg(k)
-        return DB()[k]
+        return SavedDB()[k]
     end
-    local function Set(k, v)
-        DB()[k] = v
+    local function Set(k, val)
+        SavedDB()[k] = val
     end
 
     -- All settings are picked up on the next refresh cycle (0.3s combat,
@@ -67,8 +67,8 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Shared capture button for both damage meter hotkeys (reset data, show/hide
     -- windows). Returns the button so the caller can anchor its cog to it.
-    local function MakeKeybindButton(rgn, dbKey, tooltip)
-        local kbBtn, refresh = CludesUI.BuildKeybindButton(rgn, {
+    local function MakeKeybindButton(region, dbKey, tooltip)
+        local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
             w = 120,
             h = 26,
             pp = CludesUI.PP,
@@ -76,14 +76,14 @@ initFrame:SetScript("OnEvent", function(self)
             get = function()
                 return Cfg(dbKey)
             end,
-            set = function(v)
-                Set(dbKey, v)
-                if ns.ApplyDMKeybinds then
-                    ns.ApplyDMKeybinds()
+            set = function(val)
+                Set(dbKey, val)
+                if mod.ApplyDMKeybinds then
+                    mod.ApplyDMKeybinds()
                 end
             end,
         })
-        CludesUI.PP.Point(kbBtn, "RIGHT", rgn, "RIGHT", -10, 0)
+        CludesUI.PP.Point(kbBtn, "RIGHT", region, "RIGHT", -10, 0)
         CludesUI.RegisterWidgetRefresh(refresh)
         return kbBtn
     end
@@ -126,62 +126,62 @@ initFrame:SetScript("OnEvent", function(self)
     end
     matchTexValues._menuOpts = dmTexValues._menuOpts
 
-    local function BuildPage(_, parent, yOffset)
+    local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local PP = CludesUI.PP
-        local y = yOffset
-        local h, hdr
+        local Pix = CludesUI.PP
+        local posY = yOffset
+        local hgt, heading
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
         end
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         local function Refresh()
-            if ns.RefreshMeter then
-                ns.RefreshMeter()
+            if mod.RefreshMeter then
+                mod.RefreshMeter()
             end
         end
         local function ApplyHdr()
-            if ns.ApplyHeader then
-                ns.ApplyHeader()
+            if mod.ApplyHeader then
+                mod.ApplyHeader()
             end
         end
         local function ApplyBrd()
-            if ns.ApplyBorder then
-                ns.ApplyBorder()
+            if mod.ApplyBorder then
+                mod.ApplyBorder()
             end
         end
         local function ApplyWindowBrd()
-            if ns.ApplyWindowBorder then
-                ns.ApplyWindowBorder()
+            if mod.ApplyWindowBorder then
+                mod.ApplyWindowBorder()
             end
         end
         local function ApplyIconBrd()
-            if ns.ApplyIconBorder then
-                ns.ApplyIconBorder()
+            if mod.ApplyIconBorder then
+                mod.ApplyIconBorder()
             end
         end
 
         -- ── DISPLAY ─────────────────────────────────────────────────────
-        hdr, h = W:SectionHeader(parent, "DISPLAY", y)
-        y = y - h
+        heading, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+        posY = posY - hgt
         -- Every setting here is shared by all the windows, so the one button
         -- selects window 1, which always exists (its header button is New Window).
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "EDM_Win1" })
-        y = CludesUI.BlizzStyle.Note(parent, y, "damagemeters")
+        CludesUI.BuildSectionUnlockJump(heading, { key = "EDM_Win1" })
+        posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "damagemeters")
 
         -- Visibility (one control)
         local function VisApply()
             CludesUI.RequestVisibilityUpdate()
         end
         local visRow
-        visRow, h = CludesUI.BuildVisibilityRow(
+        visRow, hgt = CludesUI.BuildVisibilityRow(
             W,
-            parent,
-            y,
+            hostFrame,
+            posY,
             {
-                getStore = DB,
+                getStore = SavedDB,
                 legacyKey = "visibility",
                 caps = { partyIncludesRaid = false, luaDragonriding = true },
                 onChanged = VisApply,
@@ -203,11 +203,11 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return Cfg("refreshRate") or 1
                         end,
-                        setValue = function(v)
-                            Set("refreshRate", v)
+                        setValue = function(val)
+                            Set("refreshRate", val)
                         end,
-                        fmt = function(v)
-                            return format("%.2fs", v)
+                        fmt = function(val)
+                            return format("%.2fs", val)
                         end,
                     }
                 or {
@@ -220,23 +220,23 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("refreshRate") or 1
                     end,
-                    setValue = function(v)
-                        Set("refreshRate", v)
+                    setValue = function(val)
+                        Set("refreshRate", val)
                     end,
-                    fmt = function(v)
-                        return format("%.2fs", v)
+                    fmt = function(val)
+                        return format("%.2fs", val)
                     end,
                 }
             )
         )
         if not CludesUI._prebuilding then
-            local rgn = visRow._rightRegion
+            local region = visRow._rightRegion
             -- Forward-declared so the row's set() can close the popup before the page
             -- rebuild below tears down the button it's anchored to: RefreshPage(true)
             -- recreates this whole block's frames, and a still-open popup left anchored
             -- to the old (now orphaned) cog button drifts to wherever that frame lands.
             local unsafeCogShow
-            local _, _unsafeCogShow = CludesUI.BuildInlineCog(rgn, {
+            local _, _unsafeCogShow = CludesUI.BuildInlineCog(region, {
                 title = "Refresh Rate",
                 rows = {
                     {
@@ -246,10 +246,10 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("unsafeRefreshRate") == true
                         end,
-                        set = function(v)
-                            Set("unsafeRefreshRate", v)
-                            if not v then
-                                local floor = ns._REFRESH_RATE_FLOOR or 0.5
+                        set = function(val)
+                            Set("unsafeRefreshRate", val)
+                            if not val then
+                                local floor = mod._REFRESH_RATE_FLOOR or 0.5
                                 local r = Cfg("refreshRate")
                                 if r and r < floor then
                                     Set("refreshRate", floor)
@@ -262,18 +262,18 @@ initFrame:SetScript("OnEvent", function(self)
                         end,
                     },
                 },
-                anchorTo = rgn._control,
+                anchorTo = region._control,
             })
             unsafeCogShow = _unsafeCogShow
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Window Border Style (+ directions submenu) | Border Size (+ color)
         local windowTexValues, windowTexOrder = CludesUI.GetBorderTextureDropdown()
         local windowBorderRow
-        windowBorderRow, h = W:DualRow(
-            parent,
-            y,
+        windowBorderRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             CludesUI.BlizzStyle.Gate("damagemeters", {
                 type = "dropdown",
                 text = "Border Style",
@@ -282,14 +282,14 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("windowBorderTexture") or "solid"
                 end,
-                setValue = function(v)
-                    Set("windowBorderTexture", v)
+                setValue = function(val)
+                    Set("windowBorderTexture", val)
                     Set("windowBorderOffsetX", 0)
                     Set("windowBorderOffsetY", 0)
-                    local color, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+                    local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
                     Set("windowBorderColor", { r = color.r, g = color.g, b = color.b, a = 1 })
                     Set("windowBorderBehind", behind)
-                    local defaultSize = CludesUI.GetBorderDefaultSize("damagemeters", v)
+                    local defaultSize = CludesUI.GetBorderDefaultSize("damagemeters", val)
                     if defaultSize then
                         Set("windowBorderSize", defaultSize)
                     end
@@ -318,16 +318,16 @@ initFrame:SetScript("OnEvent", function(self)
                     getPx = function()
                         return Cfg("windowBorderSizePx")
                     end,
-                    setPx = function(v)
-                        Set("windowBorderSizePx", v)
+                    setPx = function(val)
+                        Set("windowBorderSizePx", val)
                     end,
                     apply = ApplyWindowBrd,
                 })
             )
         )
         if not CludesUI._prebuilding then
-            local rgn = windowBorderRow._leftRegion
-            local directionBtn = CludesUI.BuildInlineCog(rgn, {
+            local region = windowBorderRow._leftRegion
+            local directionBtn = CludesUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -336,8 +336,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("windowBorderIncludeHeader") ~= false
                         end,
-                        set = function(v)
-                            Set("windowBorderIncludeHeader", v)
+                        set = function(val)
+                            Set("windowBorderIncludeHeader", val)
                             ApplyWindowBrd()
                             CludesUI:RefreshPage()
                         end,
@@ -348,22 +348,22 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("windowBorderBehind") or false
                         end,
-                        set = function(v)
-                            Set("windowBorderBehind", v)
+                        set = function(val)
+                            Set("windowBorderBehind", val)
                             ApplyWindowBrd()
                         end,
                     },
                 },
-                anchorTo = rgn._control,
+                anchorTo = region._control,
             })
             if directionBtn then
                 CludesUI.BlizzStyle.BlockInline("damagemeters", directionBtn, 0.15)
             end
         end
         if not CludesUI._prebuilding then
-            local rgn, ctrl = windowBorderRow._rightRegion, windowBorderRow._rightRegion._control
-            local swatch, refreshSwatch = CludesUI.BuildColorSwatch(
-                rgn,
+            local region, ctrl = windowBorderRow._rightRegion, windowBorderRow._rightRegion._control
+            local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
+                region,
                 windowBorderRow:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("windowBorderColor") or {}
@@ -376,11 +376,11 @@ initFrame:SetScript("OnEvent", function(self)
                 true,
                 20
             )
-            PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(refreshSwatch)
-            CludesUI.BlizzStyle.BlockInline("damagemeters", swatch)
+            CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
         end
-        y = y - h
+        posY = posY - hgt
         -- Width Offset | Height Offset: only while a textured style is selected
         -- (a solid border has no outward offsets). Built during prebuild too so
         -- the y advance is identical whenever it is present. The window's offsets
@@ -407,24 +407,24 @@ initFrame:SetScript("OnEvent", function(self)
                     getX = function()
                         return Cfg("windowBorderOffsetX")
                     end,
-                    setX = function(v)
-                        Set("windowBorderOffsetX", v)
+                    setX = function(val)
+                        Set("windowBorderOffsetX", val)
                     end,
                     getY = function()
                         return Cfg("windowBorderOffsetY")
                     end,
-                    setY = function(v)
-                        Set("windowBorderOffsetY", v)
+                    setY = function(val)
+                        Set("windowBorderOffsetY", val)
                     end,
                     apply = ApplyWindowBrd,
                 })
-                _, h = W:DualRow(
-                    parent,
-                    y,
+                _, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgL),
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgR)
                 )
-                y = y - h
+                posY = posY - hgt
             end
         end
 
@@ -444,12 +444,12 @@ initFrame:SetScript("OnEvent", function(self)
                 values = { slim = "Slim", textured = "Slim Textured", heavy = "Heavy Bronze" },
                 order = { "slim", "textured", "heavy" },
                 getValue = function()
-                    local v = Cfg("foreverBorder")
-                    return (v == "slim" or v == "heavy") and v or "textured"
+                    local val = Cfg("foreverBorder")
+                    return (val == "slim" or val == "heavy") and val or "textured"
                 end,
-                setValue = function(v)
-                    Set("foreverBorder", v)
-                    if CludesUI.ForeverBorderKind(v) == ns.DMFvKind() then
+                setValue = function(val)
+                    Set("foreverBorder", val)
+                    if CludesUI.ForeverBorderKind(val) == mod.DMFvKind() then
                         return
                     end
                     CludesUI:ShowConfirmPopup({
@@ -462,7 +462,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         local bgRow
-        bgRow, h = W:DualRow(parent, y, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
+        bgRow, hgt = W:DualRow(hostFrame, posY, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
             type = "dropdown",
             text = "Background Texture",
             values = dmTexValues,
@@ -470,9 +470,9 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("bgTexture") or "none"
             end,
-            setValue = function(v)
-                Set("bgTexture", v)
-                ns.ApplyBackground()
+            setValue = function(val)
+                Set("bgTexture", val)
+                mod.ApplyBackground()
             end,
         }), {
             type = "slider",
@@ -483,19 +483,19 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("bgAlpha") or 0.75
             end,
-            setValue = function(v)
-                Set("bgAlpha", v)
-                if ns.ApplyBackground then
-                    ns.ApplyBackground()
+            setValue = function(val)
+                Set("bgAlpha", val)
+                if mod.ApplyBackground then
+                    mod.ApplyBackground()
                 end
             end,
         })
         -- Inline color swatch on Background Opacity
         do
-            local rgn = bgRow._rightRegion
-            local ctrl = rgn._control
+            local region = bgRow._rightRegion
+            local ctrl = region._control
             local bgSwatch, bgSwatchRefresh = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 bgRow:GetFrameLevel() + 3,
                 function()
                     return (Cfg("bgR") or 0), (Cfg("bgG") or 0), (Cfg("bgB") or 0)
@@ -504,14 +504,14 @@ initFrame:SetScript("OnEvent", function(self)
                     Set("bgR", r)
                     Set("bgG", g)
                     Set("bgB", b)
-                    if ns.ApplyBackground then
-                        ns.ApplyBackground()
+                    if mod.ApplyBackground then
+                        mod.ApplyBackground()
                     end
                 end,
                 false,
                 20
             )
-            PP.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(function()
                 bgSwatchRefresh()
             end)
@@ -519,19 +519,19 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.BlizzStyle.BlockInline("damagemeters", bgSwatch)
             end
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Always Show Player | Reset Data Keybind
         local rrRow
-        rrRow, h = W:DualRow(parent, y, {
+        rrRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Always Show Player",
             tooltip = "This will pin your bar to the window when it is not within the visible area",
             getValue = function()
                 return Cfg("showPinnedSelf") ~= false
             end,
-            setValue = function(v)
-                Set("showPinnedSelf", v)
+            setValue = function(val)
+                Set("showPinnedSelf", val)
                 Refresh()
             end,
         }, { type = "label", text = "Reset Data Keybind" })
@@ -546,8 +546,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("showPlayerMarker") == true
                         end,
-                        set = function(v)
-                            Set("showPlayerMarker", v)
+                        set = function(val)
+                            Set("showPlayerMarker", val)
                             Refresh()
                         end,
                     },
@@ -557,15 +557,15 @@ initFrame:SetScript("OnEvent", function(self)
         -- "(seconds)" suffix for Refresh Rate, which lives in the Visibility row's right
         -- slot -- not this row.
         do
-            local rgn = visRow._rightRegion
-            local suffix = rgn:CreateFontString(nil, "OVERLAY")
+            local region = visRow._rightRegion
+            local suffix = region:CreateFontString(nil, "OVERLAY")
             suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
             local rrLabel
             -- An idle pooled region keeps its last build's text: skip it.
-            local regions = { rgn:GetRegions() }
-            for i = 1, #regions do
-                local reg = regions[i]
+            local regions = { region:GetRegions() }
+            for idx = 1, #regions do
+                local reg = regions[idx]
                 if
                     reg
                     and reg.GetText
@@ -579,18 +579,21 @@ initFrame:SetScript("OnEvent", function(self)
             if rrLabel then
                 suffix:SetPoint("LEFT", rrLabel, "RIGHT", 5, 0)
             else
-                suffix:SetPoint("LEFT", rgn, "LEFT", 150, 0)
+                suffix:SetPoint("LEFT", region, "LEFT", 150, 0)
             end
             suffix:SetText(CludesUI.L("(seconds)"))
         end
 
         if not CludesUI._prebuilding then
-            local rgn = rrRow._rightRegion
-            local kbBtn =
-                MakeKeybindButton(rgn, "resetDataKey", "Left-click to set a keybind.\nRight-click to unbind.")
+            local region = rrRow._rightRegion
+            local kbBtn = MakeKeybindButton(
+                region,
+                "resetDataKey",
+                "Left-click to set a keybind.\nRight-click to unbind."
+            )
 
             -- Inline cog: hide reset button
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Reset Button",
                 rows = {
                     {
@@ -599,8 +602,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("hideResetButton") == true
                         end,
-                        set = function(v)
-                            Set("hideResetButton", v)
+                        set = function(val)
+                            Set("hideResetButton", val)
                             ApplyHdr()
                         end,
                     },
@@ -608,15 +611,15 @@ initFrame:SetScript("OnEvent", function(self)
                 anchorTo = kbBtn,
             })
         end
-        y = y - h
+        posY = posY - hgt
 
         -- ── HEADER ──────────────────────────────────────────────────────
-        _, h = W:SectionHeader(parent, "HEADER", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "HEADER", posY)
+        posY = posY - hgt
 
         -- Row 1: Header Height | Opacity (+ inline bg color swatch)
         local hdrRow1
-        hdrRow1, h = W:DualRow(parent, y, {
+        hdrRow1, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Header Height",
             min = 14,
@@ -625,8 +628,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("hdrHeight") or 22
             end,
-            setValue = function(v)
-                Set("hdrHeight", v)
+            setValue = function(val)
+                Set("hdrHeight", val)
                 ApplyHdr()
                 Refresh()
             end,
@@ -639,17 +642,17 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("hdrBgAlpha") or 1
             end,
-            setValue = function(v)
-                Set("hdrBgAlpha", v)
+            setValue = function(val)
+                Set("hdrBgAlpha", val)
                 ApplyHdr()
             end,
         })
         -- Inline color swatch on Opacity
         if not CludesUI._prebuilding then
-            local rgn = hdrRow1._rightRegion
-            local ctrl = rgn._control
+            local region = hdrRow1._rightRegion
+            local ctrl = region._control
             local hdrSwatch, hdrSwatchRefresh = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 hdrRow1:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("hdrBgColor")
@@ -665,19 +668,19 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(hdrSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(hdrSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(function()
                 hdrSwatchRefresh()
             end)
             CludesUI.BlizzStyle.BlockInline("damagemeters", hdrSwatch)
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Row 2: Header Bottom Border (+ inline swatch) | Icon Size (+ inline dual swatches)
         local hdrBorderRow
-        hdrBorderRow, h = W:DualRow(
-            parent,
-            y,
+        hdrBorderRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             -- Solid-only: a 0-4 px slider view over the same numeric key (no companion).
             CludesUI.BlizzStyle.Gate("damagemeters", {
                 type = "slider",
@@ -688,8 +691,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return tonumber(Cfg("hdrBottomBorderSize")) or 0
                 end,
-                setValue = function(v)
-                    Set("hdrBottomBorderSize", tonumber(v) or 0)
+                setValue = function(val)
+                    Set("hdrBottomBorderSize", tonumber(val) or 0)
                     ApplyHdr()
                 end,
             }),
@@ -702,8 +705,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("hdrIconSize") or 22
                 end,
-                setValue = function(v)
-                    Set("hdrIconSize", v)
+                setValue = function(val)
+                    Set("hdrIconSize", val)
                     ApplyHdr()
                 end,
             }
@@ -731,8 +734,8 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("hdrBottomSeparator") == true
                             end,
-                            set = function(v)
-                                Set("hdrBottomSeparator", v)
+                            set = function(val)
+                                Set("hdrBottomSeparator", val)
                                 ApplyHdr()
                             end,
                         },
@@ -741,9 +744,9 @@ initFrame:SetScript("OnEvent", function(self)
             )
         end
         if not CludesUI._prebuilding then
-            local rgn, ctrl = hdrBorderRow._leftRegion, hdrBorderRow._leftRegion._control
-            local swatch, refreshSwatch = CludesUI.BuildColorSwatch(
-                rgn,
+            local region, ctrl = hdrBorderRow._leftRegion, hdrBorderRow._leftRegion._control
+            local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
+                region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("hdrBottomBorderColor") or {}
@@ -756,18 +759,18 @@ initFrame:SetScript("OnEvent", function(self)
                 true,
                 20
             )
-            PP.Point(swatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(refreshSwatch)
-            CludesUI.BlizzStyle.BlockInline("damagemeters", swatch)
-            rgn._lastInline = swatch
+            CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
+            region._lastInline = colorSwatch
         end
         -- Inline dual swatches on Icon Size: right = Custom, left = Accent
         if not CludesUI._prebuilding then
-            local rgn = hdrBorderRow._rightRegion
-            local ctrl = rgn._control
+            local region = hdrBorderRow._rightRegion
+            local ctrl = region._control
 
             -- Inline cog: icon visibility
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Icon Visibility",
                 rows = {
                     {
@@ -776,8 +779,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("hdrMouseoverIcons") or false
                         end,
-                        set = function(v)
-                            Set("hdrMouseoverIcons", v)
+                        set = function(val)
+                            Set("hdrMouseoverIcons", val)
                             ApplyHdr()
                         end,
                     },
@@ -785,7 +788,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("iconColor")
@@ -797,21 +800,21 @@ initFrame:SetScript("OnEvent", function(self)
                 function(r, g, b)
                     Set("iconColorUseAccent", false)
                     Set("iconColor", { r = r, g = g, b = b })
-                    if ns.ApplyIconColor then
-                        ns.ApplyIconColor()
+                    if mod.ApplyIconColor then
+                        mod.ApplyIconColor()
                     end
                     CludesUI:RefreshPage()
                 end,
                 false,
                 20
             )
-            PP.Point(customSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
             local origIconClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("iconColorUseAccent") then
                     Set("iconColorUseAccent", false)
-                    if ns.ApplyIconColor then
-                        ns.ApplyIconColor()
+                    if mod.ApplyIconColor then
+                        mod.ApplyIconColor()
                     end
                     CludesUI:RefreshPage()
                     return
@@ -828,26 +831,26 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
                     return CludesUI.ResolveActiveAccent()
                 end,
                 function()
                     Set("iconColorUseAccent", true)
-                    if ns.ApplyIconColor then
-                        ns.ApplyIconColor()
+                    if mod.ApplyIconColor then
+                        mod.ApplyIconColor()
                     end
                     CludesUI:RefreshPage()
                 end,
                 false,
                 20
             )
-            PP.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
+            Pix.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
             accentSwatch:SetScript("OnClick", function()
                 Set("iconColorUseAccent", true)
-                if ns.ApplyIconColor then
-                    ns.ApplyIconColor()
+                if mod.ApplyIconColor then
+                    mod.ApplyIconColor()
                 end
                 CludesUI:RefreshPage()
             end)
@@ -857,7 +860,7 @@ initFrame:SetScript("OnEvent", function(self)
             accentSwatch:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            rgn._lastInline = accentSwatch
+            region._lastInline = accentSwatch
 
             -- Classic WoW UI paints every header icon with vanilla art that
             -- carries its own colours, and WoW Forever tints the glyphs its
@@ -884,11 +887,11 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.BlizzStyle.BlockInline("damagemeters", accentSwatch)
             end
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Row 3: Top Text Size (+ inline dual swatches)
         local hdrRow2
-        hdrRow2, h = W:DualRow(parent, y, {
+        hdrRow2, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Text Size",
             min = 8,
@@ -897,18 +900,18 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("hdrFontSize") or 11
             end,
-            setValue = function(v)
-                Set("hdrFontSize", v)
+            setValue = function(val)
+                Set("hdrFontSize", val)
                 ApplyHdr()
             end,
         }, { type = "label", text = "" })
         -- Inline dual swatches on Text Size: right = Custom, left = Accent
         if not CludesUI._prebuilding then
-            local rgn = hdrRow2._leftRegion
-            local ctrl = rgn._control
+            local region = hdrRow2._leftRegion
+            local ctrl = region._control
 
             -- Inline cog: header text X/Y offset
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Title Position",
                 rows = {
                     {
@@ -920,8 +923,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("hdrTextOffX") or 0
                         end,
-                        set = function(v)
-                            Set("hdrTextOffX", v)
+                        set = function(val)
+                            Set("hdrTextOffX", val)
                             ApplyHdr()
                         end,
                     },
@@ -934,8 +937,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("hdrTextOffY") or 0
                         end,
-                        set = function(v)
-                            Set("hdrTextOffY", v)
+                        set = function(val)
+                            Set("hdrTextOffY", val)
                             ApplyHdr()
                         end,
                     },
@@ -943,7 +946,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 hdrRow2:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("hdrTextColor")
@@ -961,7 +964,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(customSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
             local origHdrTextClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("hdrTextUseAccent") ~= false then
@@ -982,7 +985,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 hdrRow2:GetFrameLevel() + 3,
                 function()
                     return CludesUI.ResolveActiveAccent()
@@ -995,7 +998,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
+            Pix.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
             accentSwatch:SetScript("OnClick", function()
                 Set("hdrTextUseAccent", true)
                 ApplyHdr()
@@ -1007,7 +1010,7 @@ initFrame:SetScript("OnEvent", function(self)
             accentSwatch:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            rgn._lastInline = accentSwatch
+            region._lastInline = accentSwatch
 
             local function refreshHdrText()
                 updateCustom()
@@ -1019,16 +1022,16 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.RegisterWidgetRefresh(refreshHdrText)
             refreshHdrText()
         end
-        y = y - h
+        posY = posY - hgt
 
         -- ── BAR DESIGN ──────────────────────────────────────────────────
-        _, h = W:SectionHeader(parent, "BARS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "BARS", posY)
+        posY = posY - hgt
 
         -- Bar Texture | Bar Height
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             DMBlizzGate({
                 type = "dropdown",
                 text = "Bar Texture",
@@ -1037,11 +1040,11 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("barTexture") or "none"
                 end,
-                setValue = function(v)
-                    Set("barTexture", v)
+                setValue = function(val)
+                    Set("barTexture", val)
                     Refresh()
-                    if ns.ApplySpellHistory then
-                        ns.ApplySpellHistory()
+                    if mod.ApplySpellHistory then
+                        mod.ApplySpellHistory()
                     end
                 end,
             }),
@@ -1054,119 +1057,114 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("barHeight") or 18
                 end,
-                setValue = function(v)
-                    Set("barHeight", v)
+                setValue = function(val)
+                    Set("barHeight", val)
                     Refresh()
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
 
         -- Bar Color | Bar Fill Opacity
-        _, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "multiSwatch",
-                text = "Color",
-                swatches = {
-                    {
-                        tooltip = "Class Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                            if cc then
-                                return cc.r, cc.g, cc.b
-                            end
-                            return 0.96, 0.55, 0.73
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            Set("showClassColor", true)
-                            Refresh()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            return Cfg("showClassColor") ~= false and 1 or 0.3
-                        end,
-                    },
-                    {
-                        tooltip = "Custom Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local c = Cfg("barColor")
-                            if c then
-                                return c.r or 0.35, c.g or 0.55, c.b or 0.8
-                            end
-                            return 0.35, 0.55, 0.8
-                        end,
-                        setValue = function(r, g, b)
-                            Set("barColor", { r = r, g = g, b = b })
+        _, hgt = W:DualRow(hostFrame, posY, {
+            type = "multiSwatch",
+            text = "Color",
+            swatches = {
+                {
+                    tooltip = "Class Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 0.96, 0.55, 0.73
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        Set("showClassColor", true)
+                        Refresh()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        return Cfg("showClassColor") ~= false and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = Cfg("barColor")
+                        if c then
+                            return c.r or 0.35, c.g or 0.55, c.b or 0.8
+                        end
+                        return 0.35, 0.55, 0.8
+                    end,
+                    setValue = function(r, g, b)
+                        Set("barColor", { r = r, g = g, b = b })
+                        Set("showClassColor", false)
+                        Set("barColorUseAccent", false)
+                        Refresh()
+                        CludesUI:RefreshPage()
+                    end,
+                    onClick = function(self)
+                        if Cfg("showClassColor") ~= false or Cfg("barColorUseAccent") ~= false then
                             Set("showClassColor", false)
                             Set("barColorUseAccent", false)
                             Refresh()
                             CludesUI:RefreshPage()
-                        end,
-                        onClick = function(self)
-                            if Cfg("showClassColor") ~= false or Cfg("barColorUseAccent") ~= false then
-                                Set("showClassColor", false)
-                                Set("barColorUseAccent", false)
-                                Refresh()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            if Cfg("showClassColor") ~= false then
-                                return 0.15
-                            end
-                            return Cfg("barColorUseAccent") ~= false and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Accent Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            return CludesUI.ResolveActiveAccent()
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            Set("showClassColor", false)
-                            Set("barColorUseAccent", true)
-                            Refresh()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            if Cfg("showClassColor") ~= false then
-                                return 0.15
-                            end
-                            return Cfg("barColorUseAccent") ~= false and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        if Cfg("showClassColor") ~= false then
+                            return 0.15
+                        end
+                        return Cfg("barColorUseAccent") ~= false and 0.3 or 1
+                    end,
+                },
+                {
+                    tooltip = "Accent Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        return CludesUI.ResolveActiveAccent()
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        Set("showClassColor", false)
+                        Set("barColorUseAccent", true)
+                        Refresh()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        if Cfg("showClassColor") ~= false then
+                            return 0.15
+                        end
+                        return Cfg("barColorUseAccent") ~= false and 1 or 0.3
+                    end,
                 },
             },
-            {
-                type = "slider",
-                text = "Opacity",
-                min = 0,
-                max = 1,
-                step = 0.01,
-                getValue = function()
-                    return Cfg("barFillAlpha") or 1
-                end,
-                setValue = function(v)
-                    Set("barFillAlpha", v)
-                    Refresh()
-                end,
-            }
-        )
-        y = y - h
+        }, {
+            type = "slider",
+            text = "Opacity",
+            min = 0,
+            max = 1,
+            step = 0.01,
+            getValue = function()
+                return Cfg("barFillAlpha") or 1
+            end,
+            setValue = function(val)
+                Set("barFillAlpha", val)
+                Refresh()
+            end,
+        })
+        posY = posY - hgt
 
         -- Bar Spacing | Icon Style
-        local iconRow, h = W:DualRow(parent, y, {
+        local iconRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             pixel = true,
             text = "Spacing",
@@ -1176,8 +1174,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("barSpacing") or 2
             end,
-            setValue = function(v)
-                Set("barSpacing", v)
+            setValue = function(val)
+                Set("barSpacing", val)
                 Refresh()
             end,
         }, {
@@ -1188,23 +1186,23 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("iconStyle") or "spec"
             end,
-            setValue = function(v)
-                Set("iconStyle", v)
+            setValue = function(val)
+                Set("iconStyle", val)
                 ApplyIconBrd()
                 Refresh()
                 CludesUI:RefreshPage()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Icon crop and the optional seam use the existing Icon Style cog.
         if not CludesUI._prebuilding then
-            local rgn = iconRow._rightRegion
+            local region = iconRow._rightRegion
             local function ZoomKey()
-                local style = Cfg("iconStyle") or "spec"
-                return (style == "spec" or style == "blizzard") and "classIconZoom" or "spriteIconZoom"
+                local look = Cfg("iconStyle") or "spec"
+                return (look == "spec" or look == "blizzard") and "classIconZoom" or "spriteIconZoom"
             end
-            local rows = {
+            local rowList = {
                 {
                     type = "slider",
                     label = "Zoom",
@@ -1215,14 +1213,14 @@ initFrame:SetScript("OnEvent", function(self)
                         local key = ZoomKey()
                         return Cfg(key) or (key == "classIconZoom" and 0.06 or 0)
                     end,
-                    set = function(v)
-                        Set(ZoomKey(), v)
+                    set = function(val)
+                        Set(ZoomKey(), val)
                         Refresh()
                     end,
                 },
             }
             if CludesUI.GetBorderCompanion(Cfg("borderTexture"), "sepV") then
-                rows[#rows + 1] = CludesUI.BlizzStyle.Gate("damagemeters", {
+                rowList[#rowList + 1] = CludesUI.BlizzStyle.Gate("damagemeters", {
                     type = "toggle",
                     label = "Separator",
                     tooltip = "Adds a divider between each icon and its bar.",
@@ -1233,15 +1231,15 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("iconSeparator") == true
                     end,
-                    set = function(v)
-                        Set("iconSeparator", v)
+                    set = function(val)
+                        Set("iconSeparator", val)
                         Refresh()
                     end,
                 })
             end
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Icon Settings",
-                rows = rows,
+                rows = rowList,
                 chain = false,
                 disabled = function()
                     return Cfg("iconStyle") == "none"
@@ -1255,15 +1253,15 @@ initFrame:SetScript("OnEvent", function(self)
         -- so it is excluded from the Damage Meters border-style dropdown.
         local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
         texValues.shadow = nil
-        for i = #texOrder, 1, -1 do
-            if texOrder[i] == "shadow" then
-                table.remove(texOrder, i)
+        for idx = #texOrder, 1, -1 do
+            if texOrder[idx] == "shadow" then
+                table.remove(texOrder, idx)
             end
         end
         local bsRow
-        bsRow, h = W:DualRow(
-            parent,
-            y,
+        bsRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             CludesUI.BlizzStyle.Gate("damagemeters", {
                 type = "dropdown",
                 text = "Border Style",
@@ -1272,20 +1270,20 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("borderTexture") or "solid"
                 end,
-                setValue = function(v)
-                    Set("borderTexture", v)
+                setValue = function(val)
+                    Set("borderTexture", val)
                     Set("borderTextureOffset", nil)
                     Set("borderTextureOffsetY", nil)
                     Set("borderTextureShiftX", nil)
                     Set("borderTextureShiftY", nil)
-                    local selC = CludesUI.GetBorderSelectColor(v)
+                    local selC = CludesUI.GetBorderSelectColor(val)
                     if selC then
                         -- The style's select colour (Pixels grey).
                         Set("borderR", selC.r)
                         Set("borderG", selC.g)
                         Set("borderB", selC.b)
                         Set("borderA", 1)
-                    elseif v ~= "solid" then
+                    elseif val ~= "solid" then
                         Set("borderR", 1)
                         Set("borderG", 1)
                         Set("borderB", 1)
@@ -1296,7 +1294,7 @@ initFrame:SetScript("OnEvent", function(self)
                         Set("borderB", 0)
                         Set("borderA", 1)
                     end
-                    local defSz = CludesUI.GetBorderDefaultSize("damagemeters", v)
+                    local defSz = CludesUI.GetBorderDefaultSize("damagemeters", val)
                     if defSz then
                         Set("borderSize", defSz)
                     end
@@ -1327,14 +1325,14 @@ initFrame:SetScript("OnEvent", function(self)
                     getPx = function()
                         return Cfg("borderSizePx")
                     end,
-                    setPx = function(v)
-                        Set("borderSizePx", v)
+                    setPx = function(val)
+                        Set("borderSizePx", val)
                     end,
                     apply = ApplyBrd,
                 })
             )
         )
-        y = y - h
+        posY = posY - hgt
         -- Width Offset | Height Offset: only while a textured style is selected
         -- (a solid border has no outward offsets). Built during prebuild too so
         -- the y advance is identical whenever it is present.
@@ -1358,30 +1356,30 @@ initFrame:SetScript("OnEvent", function(self)
                     getX = function()
                         return Cfg("borderTextureOffset")
                     end,
-                    setX = function(v)
-                        Set("borderTextureOffset", v)
+                    setX = function(val)
+                        Set("borderTextureOffset", val)
                     end,
                     getY = function()
                         return Cfg("borderTextureOffsetY")
                     end,
-                    setY = function(v)
-                        Set("borderTextureOffsetY", v)
+                    setY = function(val)
+                        Set("borderTextureOffsetY", val)
                     end,
                     apply = ApplyBrd,
                 })
-                _, h = W:DualRow(
-                    parent,
-                    y,
+                _, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgL),
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgR)
                 )
-                y = y - h
+                posY = posY - hgt
             end
         end
         -- Inline cog for border options (left region)
         if not CludesUI._prebuilding then
-            local rgn = bsRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = bsRow._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -1391,17 +1389,17 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 10,
                         step = 1,
                         get = function()
-                            local v = Cfg("borderTextureShiftX")
-                            if v then
-                                return v
+                            local val = Cfg("borderTextureShiftX")
+                            if val then
+                                return val
                             end
-                            local tex = Cfg("borderTexture") or "solid"
+                            local texture = Cfg("borderTexture") or "solid"
                             local sz = Cfg("borderSize") or 1
-                            local _, _, dsx = CludesUI.GetBorderDefaults("damagemeters", tex, sz)
+                            local _, _, dsx = CludesUI.GetBorderDefaults("damagemeters", texture, sz)
                             return dsx
                         end,
-                        set = function(v)
-                            Set("borderTextureShiftX", v == 0 and nil or v)
+                        set = function(val)
+                            Set("borderTextureShiftX", val == 0 and nil or val)
                             ApplyBrd()
                         end,
                     },
@@ -1412,17 +1410,17 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 10,
                         step = 1,
                         get = function()
-                            local v = Cfg("borderTextureShiftY")
-                            if v then
-                                return v
+                            local val = Cfg("borderTextureShiftY")
+                            if val then
+                                return val
                             end
-                            local tex = Cfg("borderTexture") or "solid"
+                            local texture = Cfg("borderTexture") or "solid"
                             local sz = Cfg("borderSize") or 1
-                            local _, _, _, dsy = CludesUI.GetBorderDefaults("damagemeters", tex, sz)
+                            local _, _, _, dsy = CludesUI.GetBorderDefaults("damagemeters", texture, sz)
                             return dsy
                         end,
-                        set = function(v)
-                            Set("borderTextureShiftY", v == 0 and nil or v)
+                        set = function(val)
+                            Set("borderTextureShiftY", val == 0 and nil or val)
                             ApplyBrd()
                         end,
                     },
@@ -1432,8 +1430,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("customIconBorder") or false
                         end,
-                        set = function(v)
-                            Set("customIconBorder", v)
+                        set = function(val)
+                            Set("customIconBorder", val)
                             ApplyIconBrd()
                             -- force=true: the row is added/removed at build time,
                             -- so the fast refresh path is not enough
@@ -1447,8 +1445,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("borderFollowFill") or false
                         end,
-                        set = function(v)
-                            Set("borderFollowFill", v)
+                        set = function(val)
+                            Set("borderFollowFill", val)
                             ApplyBrd()
                             CludesUI:RefreshPage()
                         end,
@@ -1473,8 +1471,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("barSeparators") == true
                         end,
-                        set = function(v)
-                            Set("barSeparators", v)
+                        set = function(val)
+                            Set("barSeparators", val)
                             ApplyBrd()
                         end,
                     }),
@@ -1488,13 +1486,13 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("borderFollowFillIcon") or false
                         end,
-                        set = function(v)
-                            Set("borderFollowFillIcon", v)
+                        set = function(val)
+                            Set("borderFollowFillIcon", val)
                             ApplyBrd()
                         end,
                     },
                 },
-                anchorTo = rgn._control,
+                anchorTo = region._control,
             })
             -- Always visible: the popup hosts the Custom Icon Border toggle,
             -- which must stay reachable for the solid style too (the shift
@@ -1502,22 +1500,29 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- Inline color swatch on Border Size (right region)
         if not CludesUI._prebuilding then
-            local rgn = bsRow._rightRegion
-            local ctrl = rgn._control
-            local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, bsRow:GetFrameLevel() + 3, function()
-                return Cfg("borderR") or 0, Cfg("borderG") or 0, Cfg("borderB") or 0, Cfg("borderA") or 1
-            end, function(r, g, b, a)
-                Set("borderR", r)
-                Set("borderG", g)
-                Set("borderB", b)
-                Set("borderA", a)
-                ApplyBrd()
-            end, true, 20)
-            PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            local region = bsRow._rightRegion
+            local ctrl = region._control
+            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                region,
+                bsRow:GetFrameLevel() + 3,
+                function()
+                    return Cfg("borderR") or 0, Cfg("borderG") or 0, Cfg("borderB") or 0, Cfg("borderA") or 1
+                end,
+                function(r, g, b, a)
+                    Set("borderR", r)
+                    Set("borderG", g)
+                    Set("borderB", b)
+                    Set("borderA", a)
+                    ApplyBrd()
+                end,
+                true,
+                20
+            )
+            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(function()
                 updateSwatch()
             end)
-            CludesUI.BlizzStyle.BlockInline("damagemeters", swatch)
+            CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
         end
 
         -- Icon Border row: shown only while "Custom Icon Border" is enabled
@@ -1525,9 +1530,9 @@ initFrame:SetScript("OnEvent", function(self)
         -- block is skipped at build time; the toggle's set() rebuilds the page.
         if Cfg("customIconBorder") then
             local ibsRow
-            ibsRow, h = W:DualRow(
-                parent,
-                y,
+            ibsRow, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 {
                     type = "dropdown",
                     text = "Icon Border Style",
@@ -1536,20 +1541,20 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("iconBorderTexture") or "solid"
                     end,
-                    setValue = function(v)
-                        Set("iconBorderTexture", v)
+                    setValue = function(val)
+                        Set("iconBorderTexture", val)
                         Set("iconBorderTextureOffset", nil)
                         Set("iconBorderTextureOffsetY", nil)
                         Set("iconBorderTextureShiftX", nil)
                         Set("iconBorderTextureShiftY", nil)
-                        local selC = CludesUI.GetBorderSelectColor(v)
+                        local selC = CludesUI.GetBorderSelectColor(val)
                         if selC then
                             -- The style's select colour (Pixels grey).
                             Set("iconBorderR", selC.r)
                             Set("iconBorderG", selC.g)
                             Set("iconBorderB", selC.b)
                             Set("iconBorderA", 1)
-                        elseif v ~= "solid" then
+                        elseif val ~= "solid" then
                             Set("iconBorderR", 1)
                             Set("iconBorderG", 1)
                             Set("iconBorderB", 1)
@@ -1560,7 +1565,7 @@ initFrame:SetScript("OnEvent", function(self)
                             Set("iconBorderB", 0)
                             Set("iconBorderA", 1)
                         end
-                        local defSz = CludesUI.GetBorderDefaultSize("damagemeters_icon", v)
+                        local defSz = CludesUI.GetBorderDefaultSize("damagemeters_icon", val)
                         if defSz then
                             Set("iconBorderSize", defSz)
                         end
@@ -1587,13 +1592,13 @@ initFrame:SetScript("OnEvent", function(self)
                     getPx = function()
                         return Cfg("iconBorderSizePx")
                     end,
-                    setPx = function(v)
-                        Set("iconBorderSizePx", v)
+                    setPx = function(val)
+                        Set("iconBorderSizePx", val)
                     end,
                     apply = ApplyIconBrd,
                 })
             )
-            y = y - h
+            posY = posY - hgt
             -- Width Offset | Height Offset: only while a textured style is selected
             -- (a solid border has no outward offsets). Built during prebuild too so
             -- the y advance is identical whenever it is present.
@@ -1617,25 +1622,25 @@ initFrame:SetScript("OnEvent", function(self)
                         getX = function()
                             return Cfg("iconBorderTextureOffset")
                         end,
-                        setX = function(v)
-                            Set("iconBorderTextureOffset", v)
+                        setX = function(val)
+                            Set("iconBorderTextureOffset", val)
                         end,
                         getY = function()
                             return Cfg("iconBorderTextureOffsetY")
                         end,
-                        setY = function(v)
-                            Set("iconBorderTextureOffsetY", v)
+                        setY = function(val)
+                            Set("iconBorderTextureOffsetY", val)
                         end,
                         apply = ApplyIconBrd,
                     })
-                    _, h = W:DualRow(parent, y, ocfgL, ocfgR)
-                    y = y - h
+                    _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
+                    posY = posY - hgt
                 end
             end
             -- Inline cog for border options (left region)
             if not CludesUI._prebuilding then
-                local rgn = ibsRow._leftRegion
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
+                local region = ibsRow._leftRegion
+                local cogBtn = CludesUI.BuildInlineCog(region, {
                     title = "Border Options",
                     rows = {
                         {
@@ -1645,17 +1650,17 @@ initFrame:SetScript("OnEvent", function(self)
                             max = 10,
                             step = 1,
                             get = function()
-                                local v = Cfg("iconBorderTextureShiftX")
-                                if v then
-                                    return v
+                                local val = Cfg("iconBorderTextureShiftX")
+                                if val then
+                                    return val
                                 end
-                                local tex = Cfg("iconBorderTexture") or "solid"
+                                local texture = Cfg("iconBorderTexture") or "solid"
                                 local sz = Cfg("iconBorderSize") or 1
-                                local _, _, dsx = CludesUI.GetBorderDefaults("damagemeters_icon", tex, sz)
+                                local _, _, dsx = CludesUI.GetBorderDefaults("damagemeters_icon", texture, sz)
                                 return dsx
                             end,
-                            set = function(v)
-                                Set("iconBorderTextureShiftX", v == 0 and nil or v)
+                            set = function(val)
+                                Set("iconBorderTextureShiftX", val == 0 and nil or val)
                                 ApplyIconBrd()
                             end,
                         },
@@ -1666,26 +1671,27 @@ initFrame:SetScript("OnEvent", function(self)
                             max = 10,
                             step = 1,
                             get = function()
-                                local v = Cfg("iconBorderTextureShiftY")
-                                if v then
-                                    return v
+                                local val = Cfg("iconBorderTextureShiftY")
+                                if val then
+                                    return val
                                 end
-                                local tex = Cfg("iconBorderTexture") or "solid"
+                                local texture = Cfg("iconBorderTexture") or "solid"
                                 local sz = Cfg("iconBorderSize") or 1
-                                local _, _, _, dsy = CludesUI.GetBorderDefaults("damagemeters_icon", tex, sz)
+                                local _, _, _, dsy =
+                                    CludesUI.GetBorderDefaults("damagemeters_icon", texture, sz)
                                 return dsy
                             end,
-                            set = function(v)
-                                Set("iconBorderTextureShiftY", v == 0 and nil or v)
+                            set = function(val)
+                                Set("iconBorderTextureShiftY", val == 0 and nil or val)
                                 ApplyIconBrd()
                             end,
                         },
                     },
-                    anchorTo = rgn._control,
+                    anchorTo = region._control,
                 })
                 local function UpdateCogVis()
-                    local tex = Cfg("iconBorderTexture") or "solid"
-                    if tex == "solid" then
+                    local texture = Cfg("iconBorderTexture") or "solid"
+                    if texture == "solid" then
                         cogBtn:Hide()
                     else
                         cogBtn:Show()
@@ -1696,10 +1702,10 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- Inline color swatch on Border Size (right region)
             if not CludesUI._prebuilding then
-                local rgn = ibsRow._rightRegion
-                local ctrl = rgn._control
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                local region = ibsRow._rightRegion
+                local ctrl = region._control
+                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                    region,
                     ibsRow:GetFrameLevel() + 3,
                     function()
                         return Cfg("iconBorderR") or 0,
@@ -1717,7 +1723,7 @@ initFrame:SetScript("OnEvent", function(self)
                     true,
                     20
                 )
-                PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(function()
                     updateSwatch()
                 end)
@@ -1726,17 +1732,17 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Show Breakdown on Hover (+ inline cog) | Background (opacity + swatch)
         local bdRow
-        bdRow, h = W:DualRow(
-            parent,
-            y,
+        bdRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "toggle",
                 text = "Show Breakdown on Hover",
                 getValue = function()
                     return Cfg("showHoverTooltip") ~= false
                 end,
-                setValue = function(v)
-                    Set("showHoverTooltip", v)
+                setValue = function(val)
+                    Set("showHoverTooltip", val)
                 end,
             },
             DMBlizzGate({
@@ -1748,10 +1754,10 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("barBgAlpha") or 0
                 end,
-                setValue = function(v)
-                    Set("barBgAlpha", v)
-                    if ns.ApplyBarBg then
-                        ns.ApplyBarBg()
+                setValue = function(val)
+                    Set("barBgAlpha", val)
+                    if mod.ApplyBarBg then
+                        mod.ApplyBarBg()
                     end
                 end,
             })
@@ -1760,10 +1766,10 @@ initFrame:SetScript("OnEvent", function(self)
         -- Custom paints a fixed track color; class tints each bar's track with
         -- that player's class color. Mirrors the Left/Right Text Size swatches.
         if not CludesUI._prebuilding then
-            local rgn = bdRow._rightRegion
-            local ctrl = rgn._control
+            local region = bdRow._rightRegion
+            local ctrl = region._control
             local barBgSwatch, barBgSwatchRefresh = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 bdRow:GetFrameLevel() + 3,
                 function()
                     return (Cfg("barBgR") or 0), (Cfg("barBgG") or 0), (Cfg("barBgB") or 0)
@@ -1773,21 +1779,21 @@ initFrame:SetScript("OnEvent", function(self)
                     Set("barBgR", r)
                     Set("barBgG", g)
                     Set("barBgB", b)
-                    if ns.ApplyBarBg then
-                        ns.ApplyBarBg()
+                    if mod.ApplyBarBg then
+                        mod.ApplyBarBg()
                     end
                     CludesUI:RefreshPage()
                 end,
                 false,
                 20
             )
-            PP.Point(barBgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(barBgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             local origClick = barBgSwatch:GetScript("OnClick")
             barBgSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("barBgUseClassColor") then
                     Set("barBgUseClassColor", false)
-                    if ns.ApplyBarBg then
-                        ns.ApplyBarBg()
+                    if mod.ApplyBarBg then
+                        mod.ApplyBarBg()
                     end
                     CludesUI:RefreshPage()
                     return
@@ -1804,7 +1810,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local barBgClassSwatch, barBgClassRefresh = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 bdRow:GetFrameLevel() + 3,
                 function()
                     local clr = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
@@ -1815,19 +1821,19 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 function()
                     Set("barBgUseClassColor", true)
-                    if ns.ApplyBarBg then
-                        ns.ApplyBarBg()
+                    if mod.ApplyBarBg then
+                        mod.ApplyBarBg()
                     end
                     CludesUI:RefreshPage()
                 end,
                 false,
                 20
             )
-            PP.Point(barBgClassSwatch, "RIGHT", barBgSwatch, "LEFT", -8, 0)
+            Pix.Point(barBgClassSwatch, "RIGHT", barBgSwatch, "LEFT", -8, 0)
             barBgClassSwatch:SetScript("OnClick", function()
                 Set("barBgUseClassColor", true)
-                if ns.ApplyBarBg then
-                    ns.ApplyBarBg()
+                if mod.ApplyBarBg then
+                    mod.ApplyBarBg()
                 end
                 CludesUI:RefreshPage()
             end)
@@ -1859,8 +1865,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
         if not CludesUI._prebuilding then
-            local rgn = bdRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = bdRow._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 title = "Breakdown Settings",
                 rows = {
                     {
@@ -1871,8 +1877,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("breakdownBarTexture") or "match"
                         end,
-                        set = function(v)
-                            Set("breakdownBarTexture", v)
+                        set = function(val)
+                            Set("breakdownBarTexture", val)
                             Refresh()
                         end,
                     },
@@ -1885,8 +1891,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return (Cfg("hoverTooltipScale") or 100)
                         end,
-                        set = function(v)
-                            Set("hoverTooltipScale", v)
+                        set = function(val)
+                            Set("hoverTooltipScale", val)
                         end,
                     },
                     {
@@ -1902,8 +1908,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("breakdownAnchorPoint") or "row"
                         end,
-                        set = function(v)
-                            Set("breakdownAnchorPoint", v)
+                        set = function(val)
+                            Set("breakdownAnchorPoint", val)
                         end,
                     },
                     {
@@ -1913,23 +1919,23 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("showAllBreakdownSpells") ~= false
                         end,
-                        set = function(v)
-                            Set("showAllBreakdownSpells", v)
+                        set = function(val)
+                            Set("showAllBreakdownSpells", val)
                         end,
                     },
                 },
-                anchorTo = rgn._control,
+                anchorTo = region._control,
             })
         end
-        y = y - h
+        posY = posY - hgt
 
         -- ── BAR TEXT ────────────────────────────────────────────────────
-        _, h = W:SectionHeader(parent, "BAR TEXT", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "BAR TEXT", posY)
+        posY = posY - hgt
 
         -- Number Format | Hide Rank Numbers
         local hnRow
-        hnRow, h = W:DualRow(parent, y, {
+        hnRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Number Format",
             values = { [0] = "DPS", [1] = "Damage", [2] = "Damage (DPS)", [3] = "Damage | DPS" },
@@ -1937,8 +1943,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("numberFormat") or 2
             end,
-            setValue = function(v)
-                Set("numberFormat", v)
+            setValue = function(val)
+                Set("numberFormat", val)
                 Refresh()
             end,
         }, {
@@ -1948,21 +1954,21 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("hideNumbers") or false
             end,
-            setValue = function(v)
-                Set("hideNumbers", v)
+            setValue = function(val)
+                Set("hideNumbers", val)
                 Refresh()
             end,
         })
         do
-            local rgn = hnRow._rightRegion
-            local suffix = rgn:CreateFontString(nil, "OVERLAY")
+            local region = hnRow._rightRegion
+            local suffix = region:CreateFontString(nil, "OVERLAY")
             suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
             local hnLabel
             -- An idle pooled region keeps its last build's text: skip it.
-            local regions = { rgn:GetRegions() }
-            for i = 1, #regions do
-                local reg = regions[i]
+            local regions = { region:GetRegions() }
+            for idx = 1, #regions do
+                local reg = regions[idx]
                 if
                     reg
                     and reg.GetText
@@ -1976,15 +1982,15 @@ initFrame:SetScript("OnEvent", function(self)
             if hnLabel then
                 suffix:SetPoint("LEFT", hnLabel, "RIGHT", 5, 0)
             else
-                suffix:SetPoint("LEFT", rgn, "LEFT", 150, 0)
+                suffix:SetPoint("LEFT", region, "LEFT", 150, 0)
             end
             suffix:SetText("(1, 2, 3)")
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Left Text Size (+ inline custom/class swatches) | Right Text Size (+ inline custom/class swatches)
         local btRow
-        btRow, h = W:DualRow(parent, y, {
+        btRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Left Text Size",
             min = 8,
@@ -1994,8 +2000,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("leftFontSize") or Cfg("fontSize") or 11
             end,
-            setValue = function(v)
-                Set("leftFontSize", v)
+            setValue = function(val)
+                Set("leftFontSize", val)
                 Refresh()
             end,
         }, {
@@ -2008,15 +2014,15 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("rightFontSize") or Cfg("fontSize") or 11
             end,
-            setValue = function(v)
-                Set("rightFontSize", v)
+            setValue = function(val)
+                Set("rightFontSize", val)
                 Refresh()
             end,
         })
         -- Left text inline swatches
         if not CludesUI._prebuilding then
-            local rgn = btRow._leftRegion
-            local ctrl = rgn._control
+            local region = btRow._leftRegion
+            local ctrl = region._control
 
             -- Inline cog: left text X/Y offsets (live via ns.ApplyBarTextOffsets),
             -- headed by the Name Format (players' names; in combat other players'
@@ -2031,10 +2037,10 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("leftTextOffsetX") or 0
                     end,
-                    set = function(v)
-                        Set("leftTextOffsetX", v)
-                        if ns.ApplyBarTextOffsets then
-                            ns.ApplyBarTextOffsets()
+                    set = function(val)
+                        Set("leftTextOffsetX", val)
+                        if mod.ApplyBarTextOffsets then
+                            mod.ApplyBarTextOffsets()
                         end
                     end,
                 },
@@ -2047,29 +2053,29 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("leftTextOffsetY") or 0
                     end,
-                    set = function(v)
-                        Set("leftTextOffsetY", v)
-                        if ns.ApplyBarTextOffsets then
-                            ns.ApplyBarTextOffsets()
+                    set = function(val)
+                        Set("leftTextOffsetY", val)
+                        if mod.ApplyBarTextOffsets then
+                            mod.ApplyBarTextOffsets()
                         end
                     end,
                 },
             }
             local nameFormat = CludesUI.NameFormatCogRow(function()
                 return Cfg("nameFormat")
-            end, function(v)
-                Set("nameFormat", v)
-                ns.RefreshNames()
+            end, function(val)
+                Set("nameFormat", val)
+                mod.RefreshNames()
             end)
             nameFormat.tooltip = "Other players' names show in full during combat."
             table.insert(leftRows, 1, nameFormat)
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Left Text",
                 rows = leftRows,
             })
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 btRow:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("leftTextColor")
@@ -2087,7 +2093,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(customSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("leftTextUseClassColor") then
@@ -2108,7 +2114,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local classSwatch, updateClass = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 btRow:GetFrameLevel() + 3,
                 function()
                     local clr = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
@@ -2125,7 +2131,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
+            Pix.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
             classSwatch:SetScript("OnClick", function()
                 Set("leftTextUseClassColor", true)
                 Refresh()
@@ -2137,7 +2143,7 @@ initFrame:SetScript("OnEvent", function(self)
             classSwatch:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            rgn._lastInline = classSwatch
+            region._lastInline = classSwatch
 
             local function refreshLeft()
                 updateCustom()
@@ -2151,11 +2157,11 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- Right text inline swatches
         if not CludesUI._prebuilding then
-            local rgn = btRow._rightRegion
-            local ctrl = rgn._control
+            local region = btRow._rightRegion
+            local ctrl = region._control
 
             -- Inline cog: right text X/Y offsets (live via ns.ApplyBarTextOffsets)
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Right Text",
                 rows = {
                     {
@@ -2167,10 +2173,10 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("rightTextOffsetX") or 0
                         end,
-                        set = function(v)
-                            Set("rightTextOffsetX", v)
-                            if ns.ApplyBarTextOffsets then
-                                ns.ApplyBarTextOffsets()
+                        set = function(val)
+                            Set("rightTextOffsetX", val)
+                            if mod.ApplyBarTextOffsets then
+                                mod.ApplyBarTextOffsets()
                             end
                         end,
                     },
@@ -2183,10 +2189,10 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("rightTextOffsetY") or 0
                         end,
-                        set = function(v)
-                            Set("rightTextOffsetY", v)
-                            if ns.ApplyBarTextOffsets then
-                                ns.ApplyBarTextOffsets()
+                        set = function(val)
+                            Set("rightTextOffsetY", val)
+                            if mod.ApplyBarTextOffsets then
+                                mod.ApplyBarTextOffsets()
                             end
                         end,
                     },
@@ -2194,7 +2200,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 btRow:GetFrameLevel() + 3,
                 function()
                     local c = Cfg("rightTextColor")
@@ -2213,7 +2219,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(customSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("rightTextUseClassColor") or Cfg("rightTextUseThreatGradient") then
@@ -2235,7 +2241,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local classSwatch, updateClass = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 btRow:GetFrameLevel() + 3,
                 function()
                     local clr = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
@@ -2253,7 +2259,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
+            Pix.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
             classSwatch:SetScript("OnClick", function()
                 Set("rightTextUseClassColor", true)
                 Set("rightTextUseThreatGradient", false)
@@ -2279,8 +2285,8 @@ initFrame:SetScript("OnEvent", function(self)
             refreshRight()
 
             -- Value gradient: a swatch showing its colour scale, toggled by a click.
-            rgn._lastInline = classSwatch
-            CludesUI.BuildInlineSwatches(rgn, {
+            region._lastInline = classSwatch
+            CludesUI.BuildInlineSwatches(region, {
                 {
                     tooltip = "Colors each value on a green to red scale.",
                     gradient = { { 0, 1, 0 }, { 1, 1, 0 }, { 1, 0, 0 } },
@@ -2299,7 +2305,7 @@ initFrame:SetScript("OnEvent", function(self)
                 },
             }, { size = 20 })
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Force English Number Units (K/M/B) | (spacer)
         -- Only where the effective locale actually has its own abbreviation
@@ -2307,28 +2313,28 @@ initFrame:SetScript("OnEvent", function(self)
         -- CludesUI_NumberFormat.lua): every other locale already gets
         -- K/M/B and the toggle would be a no-op, so the row is skipped for them.
         if CludesUI.LocaleHasNumberAbbreviation() then
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Force English Units (K/M/B)",
                 tooltip = "Always use K/M/B instead of localized units.",
                 getValue = function()
                     return Cfg("forceEnglishUnits") or false
                 end,
-                setValue = function(v)
-                    Set("forceEnglishUnits", v)
-                    if ns.RebuildNumberFormat then
-                        ns.RebuildNumberFormat()
+                setValue = function(val)
+                    Set("forceEnglishUnits", val)
+                    if mod.RebuildNumberFormat then
+                        mod.RebuildNumberFormat()
                     end
                     Refresh()
                 end,
             }, { type = "spacer" })
-            y = y - h
+            posY = posY - hgt
         end
 
         -- ── STANDALONE COMBAT TIMER ──────────────────────────────────
-        hdr, h = W:SectionHeader(parent, "STANDALONE COMBAT TIMER", y)
-        y = y - h
-        CludesUI.BuildSectionUnlockJump(hdr, {
+        heading, hgt = W:SectionHeader(hostFrame, "STANDALONE COMBAT TIMER", posY)
+        posY = posY - hgt
+        CludesUI.BuildSectionUnlockJump(heading, {
             key = "EDM_CombatTimer",
             disabled = function()
                 return not Cfg("standaloneTimer")
@@ -2337,30 +2343,30 @@ initFrame:SetScript("OnEvent", function(self)
         })
 
         local function ApplySAT()
-            if ns.ApplySATimer then
-                ns.ApplySATimer()
+            if mod.ApplySATimer then
+                mod.ApplySATimer()
             end
         end
 
         -- Standalone Combat Timer (with inline cog) | Timer Text Color
         local satRow
-        satRow, h = W:DualRow(parent, y, {
+        satRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Standalone Combat Timer",
             getValue = function()
                 return Cfg("standaloneTimer") or false
             end,
-            setValue = CludesUI.SectionToggleSetValue(function(v)
-                Set("standaloneTimer", v)
+            setValue = CludesUI.SectionToggleSetValue(function(val)
+                Set("standaloneTimer", val)
                 ApplySAT()
                 -- Timer unlock element rides this toggle: (un)register live
-                if ns.RegisterDMUnlock then
-                    ns.RegisterDMUnlock()
+                if mod.RegisterDMUnlock then
+                    mod.RegisterDMUnlock()
                 end
-                if v and ns.ShowSATimerPreview then
-                    ns.ShowSATimerPreview()
-                elseif not v and ns.HideSATimerPreview then
-                    ns.HideSATimerPreview()
+                if val and mod.ShowSATimerPreview then
+                    mod.ShowSATimerPreview()
+                elseif not val and mod.HideSATimerPreview then
+                    mod.HideSATimerPreview()
                 end
             end),
         }, {
@@ -2426,9 +2432,9 @@ initFrame:SetScript("OnEvent", function(self)
         })
         -- Inline cog: focused visual controls for the standalone timer.
         if not CludesUI._prebuilding then
-            local rgn = satRow._leftRegion
+            local region = satRow._leftRegion
             local satFontValues, satFontOrder = CludesUI.BuildFontDropdownData()
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Standalone Timer Settings",
                 minWidth = 300,
                 rows = {
@@ -2440,8 +2446,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerFont") or "__global"
                         end,
-                        set = function(v)
-                            Set("standaloneTimerFont", v)
+                        set = function(val)
+                            Set("standaloneTimerFont", val)
                             ApplySAT()
                         end,
                     },
@@ -2454,8 +2460,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerSize") or 26
                         end,
-                        set = function(v)
-                            Set("standaloneTimerSize", v)
+                        set = function(val)
+                            Set("standaloneTimerSize", val)
                             ApplySAT()
                         end,
                     },
@@ -2472,8 +2478,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerOutline") or "INHERIT"
                         end,
-                        set = function(v)
-                            Set("standaloneTimerOutline", v)
+                        set = function(val)
+                            Set("standaloneTimerOutline", val)
                             ApplySAT()
                         end,
                     },
@@ -2487,14 +2493,15 @@ initFrame:SetScript("OnEvent", function(self)
                             if alignment then
                                 return alignment
                             end
-                            local anchor = Cfg("standaloneTimerAnchor") or "free"
-                            if anchor == "free" then
+                            local anchorFrame = Cfg("standaloneTimerAnchor") or "free"
+                            if anchorFrame == "free" then
                                 return Cfg("standaloneTimerAlignLeft") and "LEFT" or "RIGHT"
                             end
-                            return (anchor == "topleft" or anchor == "bottomleft") and "LEFT" or "RIGHT"
+                            return (anchorFrame == "topleft" or anchorFrame == "bottomleft") and "LEFT"
+                                or "RIGHT"
                         end,
-                        set = function(v)
-                            Set("standaloneTimerTextAlign", v)
+                        set = function(val)
+                            Set("standaloneTimerTextAlign", val)
                             ApplySAT()
                         end,
                     },
@@ -2504,8 +2511,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerDecimal") or false
                         end,
-                        set = function(v)
-                            Set("standaloneTimerDecimal", v)
+                        set = function(val)
+                            Set("standaloneTimerDecimal", val)
                             ApplySAT()
                         end,
                     },
@@ -2518,8 +2525,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerWidth") or 70
                         end,
-                        set = function(v)
-                            Set("standaloneTimerWidth", v)
+                        set = function(val)
+                            Set("standaloneTimerWidth", val)
                             ApplySAT()
                         end,
                     },
@@ -2532,8 +2539,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerHeight") or 32
                         end,
-                        set = function(v)
-                            Set("standaloneTimerHeight", v)
+                        set = function(val)
+                            Set("standaloneTimerHeight", val)
                             ApplySAT()
                         end,
                     },
@@ -2572,8 +2579,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerBorderSize") or 0
                         end,
-                        set = function(v)
-                            Set("standaloneTimerBorderSize", v)
+                        set = function(val)
+                            Set("standaloneTimerBorderSize", val)
                             ApplySAT()
                         end,
                     },
@@ -2585,35 +2592,35 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("standaloneTimerStrata") or "HIGH"
                         end,
-                        set = function(v)
-                            Set("standaloneTimerStrata", v)
+                        set = function(val)
+                            Set("standaloneTimerStrata", val)
                             ApplySAT()
                         end,
                     },
                 },
             })
         end
-        y = y - h
+        posY = posY - hgt
 
         -- Dependent rows: hidden entirely while the timer is disabled
         -- (SectionToggleSetValue on the master rebuilds the page).
         if Cfg("standaloneTimer") then
             -- Show Out of Combat (with inline cog) | Anchor to Windows
             local oocRow
-            oocRow, h = W:DualRow(parent, y, {
+            oocRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Show Out of Combat",
                 tooltip = "Keep the timer visible out of combat, showing the last fight's duration.",
                 getValue = function()
                     return Cfg("standaloneTimerShowOOC") or false
                 end,
-                setValue = function(v)
-                    Set("standaloneTimerShowOOC", v)
+                setValue = function(val)
+                    Set("standaloneTimerShowOOC", val)
                     ApplySAT()
                     -- Turning it OFF mid-session: resume the preview (it was
                     -- skipped at panel-open while Show OOC covered the display)
-                    if not v and ns.ShowSATimerPreview then
-                        ns.ShowSATimerPreview()
+                    if not val and mod.ShowSATimerPreview then
+                        mod.ShowSATimerPreview()
                     end
                 end,
             }, {
@@ -2630,15 +2637,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("standaloneTimerAnchor") or "free"
                 end,
-                setValue = function(v)
-                    Set("standaloneTimerAnchor", v)
+                setValue = function(val)
+                    Set("standaloneTimerAnchor", val)
                     ApplySAT()
                 end,
             })
             -- Inline cog on Show Out of Combat for the desaturation option
             if not CludesUI._prebuilding then
-                local rgn = oocRow._leftRegion
-                CludesUI.BuildInlineCog(rgn, {
+                local region = oocRow._leftRegion
+                CludesUI.BuildInlineCog(region, {
                     title = "Out of Combat Settings",
                     rows = {
                         {
@@ -2651,20 +2658,20 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("standaloneTimerDesatOOC") or false
                             end,
-                            set = function(v)
-                                Set("standaloneTimerDesatOOC", v)
+                            set = function(val)
+                                Set("standaloneTimerDesatOOC", val)
                                 ApplySAT()
                             end,
                         },
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
 
             -- "Hold Shift+Click..." label | Lock Position & Disable Click
-            _, h = W:DualRow(
-                parent,
-                y,
+            _, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 { type = "label", text = "Hold Shift+Click to Freely Move Standalone Timer" },
                 {
                     type = "toggle",
@@ -2673,43 +2680,43 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("standaloneTimerLocked") or false
                     end,
-                    setValue = function(v)
-                        Set("standaloneTimerLocked", v)
+                    setValue = function(val)
+                        Set("standaloneTimerLocked", val)
                         ApplySAT()
                     end,
                 }
             )
-            y = y - h
+            posY = posY - hgt
         end
 
         -- ── EXTRAS ───────────────────────────────────────────────────
-        _, h = W:SectionHeader(parent, "EXTRAS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
+        posY = posY - hgt
 
         -- Show Spell Tooltips | Show/Hide Windows Keybind (+ inline cog: what the keybind covers)
         local extrasRow
-        extrasRow, h = W:DualRow(parent, y, {
+        extrasRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Spell Tooltips on Hover",
             tooltip = "Show the game's spell tooltip when you hover a spell in a breakdown window.",
             getValue = function()
                 return Cfg("showSpellTooltips") ~= false
             end,
-            setValue = function(v)
-                Set("showSpellTooltips", v)
+            setValue = function(val)
+                Set("showSpellTooltips", val)
             end,
         }, { type = "label", text = "Show/Hide Windows Keybind" })
 
         if not CludesUI._prebuilding then
-            local rgn = extrasRow._rightRegion
+            local region = extrasRow._rightRegion
             local kbBtn = MakeKeybindButton(
-                rgn,
+                region,
                 "toggleWindowsKey",
                 "Hide and show every damage meter window at once. The state is not saved; a reload restores the configured visibility.\n\nThe bound key is taken over while it is set. Use the cog to include the combat timer and Spell History.\n\nLeft-click to set a keybind.\nRight-click to unbind."
             )
 
             -- Inline cog: which extra elements the keybind covers
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Keybind Scope",
                 rows = {
                     {
@@ -2718,10 +2725,10 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("toggleIncludeTimer") == true
                         end,
-                        set = function(v)
-                            Set("toggleIncludeTimer", v)
-                            if ns.ApplyDMToggleState then
-                                ns.ApplyDMToggleState()
+                        set = function(val)
+                            Set("toggleIncludeTimer", val)
+                            if mod.ApplyDMToggleState then
+                                mod.ApplyDMToggleState()
                             end
                         end,
                     },
@@ -2731,12 +2738,12 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("toggleIncludeSpellHistory") == true
                         end,
-                        set = function(v)
-                            Set("toggleIncludeSpellHistory", v)
+                        set = function(val)
+                            Set("toggleIncludeSpellHistory", val)
                             -- Forced: turning the option off has to reach Spell History
                             -- too, and by then the flag no longer asks for it
-                            if ns.ApplyDMToggleState then
-                                ns.ApplyDMToggleState(true)
+                            if mod.ApplyDMToggleState then
+                                mod.ApplyDMToggleState(true)
                             end
                         end,
                     },
@@ -2744,9 +2751,9 @@ initFrame:SetScript("OnEvent", function(self)
                 anchorTo = kbBtn,
             })
         end
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -2755,7 +2762,7 @@ initFrame:SetScript("OnEvent", function(self)
     local PAGE_SH = "Spell History"
 
     local function SHDB()
-        local d = DB()
+        local d = SavedDB()
         if not d.spellHistory then
             d.spellHistory = {}
         end
@@ -2771,18 +2778,18 @@ initFrame:SetScript("OnEvent", function(self)
     local shGrowOrder = { "LEFT", "RIGHT", "UP", "DOWN" }
 
     local function RefreshSH()
-        if ns.ApplySpellHistory then
-            ns.ApplySpellHistory()
+        if mod.ApplySpellHistory then
+            mod.ApplySpellHistory()
         end
     end
 
-    local function BuildSpellHistoryPage(pageName, parent, yOffset)
+    local function BuildSpellHistoryPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local PP = CludesUI.PP
-        local y = yOffset
-        local _, h, hdr
+        local Pix = CludesUI.PP
+        local posY = yOffset
+        local _, hgt, heading
 
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         local iconOff = function()
             return not SHDB().iconEnabled
@@ -2794,31 +2801,31 @@ initFrame:SetScript("OnEvent", function(self)
         -- =====================================================================
         --  ICON HISTORY
         -- =====================================================================
-        hdr, h = W:SectionHeader(parent, "ICON HISTORY", y)
-        y = y - h
+        heading, hgt = W:SectionHeader(hostFrame, "ICON HISTORY", posY)
+        posY = posY - hgt
         CludesUI.BuildSectionUnlockJump(
-            hdr,
+            heading,
             { key = "EDM_IconHistory", disabled = iconOff, disabledTooltip = "Icon History" }
         )
 
         -- Row 1: Enable Icon History | "Hold Shift+Click..." label
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Icon History",
             tooltip = "Shows a movable strip of recent spell icons. Shift-drag to reposition.",
             getValue = function()
                 return SHDB().iconEnabled
             end,
-            setValue = function(v)
-                SHDB().iconEnabled = v
+            setValue = function(val)
+                SHDB().iconEnabled = val
                 RefreshSH()
-                if ns.RegisterDMUnlock then
-                    ns.RegisterDMUnlock()
+                if mod.RegisterDMUnlock then
+                    mod.RegisterDMUnlock()
                 end
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Hold Shift+Click to Freely Move Icons" })
-        y = y - h
+        posY = posY - hgt
 
         -- Row 2: Grow Direction | Visibility Options
         local SH_ICON_VIS_ITEMS = {
@@ -2830,14 +2837,14 @@ initFrame:SetScript("OnEvent", function(self)
         }
         -- No delves on WoW Forever: the list drops its Delves entry there.
         if CludesUI.IS_FOREVER then
-            for i = #SH_ICON_VIS_ITEMS, 1, -1 do
-                if SH_ICON_VIS_ITEMS[i].key == "iconHideInDelve" then
-                    table.remove(SH_ICON_VIS_ITEMS, i)
+            for idx = #SH_ICON_VIS_ITEMS, 1, -1 do
+                if SH_ICON_VIS_ITEMS[idx].key == "iconHideInDelve" then
+                    table.remove(SH_ICON_VIS_ITEMS, idx)
                 end
             end
         end
         local iconVisRow
-        iconVisRow, h = W:DualRow(parent, y, {
+        iconVisRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Grow Direction",
             tooltip = "Direction the icon strip grows as new spells are cast.",
@@ -2848,8 +2855,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().growDirection or "LEFT"
             end,
-            setValue = function(v)
-                SHDB().growDirection = v
+            setValue = function(val)
+                SHDB().growDirection = val
                 RefreshSH()
             end,
         }, {
@@ -2864,34 +2871,34 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             setValue = function() end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            local rgn = iconVisRow._rightRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = iconVisRow._rightRegion
+            if region._control then
+                region._control:Hide()
             end
             local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn,
+                region,
                 210,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 SH_ICON_VIS_ITEMS,
                 function(k)
                     return SHDB()[k] or false
                 end,
-                function(k, v)
-                    SHDB()[k] = v
+                function(k, val)
+                    SHDB()[k] = val
                     RefreshSH()
                 end
             )
-            CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
-            rgn._lastInline = nil
+            CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = cbDD
+            region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
         -- Row 3: Icon Size (+ icon zoom cog) | Max Icons
         local shSizeRow
-        shSizeRow, h = W:DualRow(parent, y, {
+        shSizeRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Icon Size",
             min = 20,
@@ -2902,8 +2909,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().iconSize or 36
             end,
-            setValue = function(v)
-                SHDB().iconSize = v
+            setValue = function(val)
+                SHDB().iconSize = val
                 RefreshSH()
             end,
         }, {
@@ -2918,20 +2925,20 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().iconCount or 5
             end,
-            setValue = function(v)
-                SHDB().iconCount = v
+            setValue = function(val)
+                SHDB().iconCount = val
                 RefreshSH()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Inline cog on Icon Size: Icon Zoom (shared by the icon strip and the
         -- bar window, so it stays usable whenever either display is on).
         if not CludesUI._prebuilding then
-            local rgn = shSizeRow._leftRegion
+            local region = shSizeRow._leftRegion
             local shZoomOff = function()
                 return iconOff() and barOff()
             end
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Icon Zoom",
                 rows = {
                     {
@@ -2943,8 +2950,8 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return SHDB().iconZoom or 0.08
                         end,
-                        set = function(v)
-                            SHDB().iconZoom = v
+                        set = function(val)
+                            SHDB().iconZoom = val
                             RefreshSH()
                         end,
                     },
@@ -2955,7 +2962,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Row 4: Icon Spacing | Opacity
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             pixel = true,
             text = "Icon Spacing",
@@ -2967,8 +2974,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().iconSpacing or 1
             end,
-            setValue = function(v)
-                SHDB().iconSpacing = v
+            setValue = function(val)
+                SHDB().iconSpacing = val
                 RefreshSH()
             end,
         }, {
@@ -2982,12 +2989,12 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().iconOpacity or 1
             end,
-            setValue = function(v)
-                SHDB().iconOpacity = v
+            setValue = function(val)
+                SHDB().iconOpacity = val
                 RefreshSH()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Row 5: Animation Style | Fade-Out Time
         local shAnimValues = {
@@ -2996,7 +3003,7 @@ initFrame:SetScript("OnEvent", function(self)
             fly = "Fly In",
         }
         local shAnimOrder = { "none", "slide", "fly" }
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Animation Style",
             disabled = iconOff,
@@ -3006,8 +3013,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().iconAnimation or "slide"
             end,
-            setValue = function(v)
-                SHDB().iconAnimation = v
+            setValue = function(val)
+                SHDB().iconAnimation = val
             end,
         }, {
             type = "slider",
@@ -3021,18 +3028,18 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().iconFadeTime or 0
             end,
-            setValue = function(v)
-                SHDB().iconFadeTime = v
+            setValue = function(val)
+                SHDB().iconFadeTime = val
                 RefreshSH()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- =====================================================================
         --  BAR HISTORY
         -- =====================================================================
-        _, h = W:SectionHeader(parent, "BAR HISTORY", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "BAR HISTORY", posY)
+        posY = posY - hgt
 
         -- Row 1: Enable Bar History | Visibility Options
         local SH_BAR_VIS_ITEMS = {
@@ -3044,22 +3051,22 @@ initFrame:SetScript("OnEvent", function(self)
         }
         -- No delves on WoW Forever: the list drops its Delves entry there.
         if CludesUI.IS_FOREVER then
-            for i = #SH_BAR_VIS_ITEMS, 1, -1 do
-                if SH_BAR_VIS_ITEMS[i].key == "barHideInDelve" then
-                    table.remove(SH_BAR_VIS_ITEMS, i)
+            for idx = #SH_BAR_VIS_ITEMS, 1, -1 do
+                if SH_BAR_VIS_ITEMS[idx].key == "barHideInDelve" then
+                    table.remove(SH_BAR_VIS_ITEMS, idx)
                 end
             end
         end
         local barVisRow
-        barVisRow, h = W:DualRow(parent, y, {
+        barVisRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Bar History",
             tooltip = "Shows a standalone window with spell cast history as bars. Matches your Damage Meters styling.",
             getValue = function()
                 return SHDB().barEnabled
             end,
-            setValue = function(v)
-                SHDB().barEnabled = v
+            setValue = function(val)
+                SHDB().barEnabled = val
                 RefreshSH()
                 CludesUI:RefreshPage()
             end,
@@ -3075,34 +3082,34 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             setValue = function() end,
         })
-        y = y - h
+        posY = posY - hgt
         if not CludesUI._prebuilding then
-            local rgn = barVisRow._rightRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = barVisRow._rightRegion
+            if region._control then
+                region._control:Hide()
             end
             local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn,
+                region,
                 210,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 SH_BAR_VIS_ITEMS,
                 function(k)
                     return SHDB()[k] or false
                 end,
-                function(k, v)
-                    SHDB()[k] = v
+                function(k, val)
+                    SHDB()[k] = val
                     RefreshSH()
                 end
             )
-            CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
-            rgn._lastInline = nil
+            CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = cbDD
+            region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
         -- Row 2: Background Opacity (+ inline color swatch) | Hide Top Bar
         local bgRow
-        bgRow, h = W:DualRow(parent, y, {
+        bgRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Background Opacity",
             min = 0,
@@ -3113,8 +3120,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().bgAlpha or 0.25
             end,
-            setValue = function(v)
-                SHDB().bgAlpha = v
+            setValue = function(val)
+                SHDB().bgAlpha = val
                 RefreshSH()
             end,
         }, {
@@ -3125,62 +3132,69 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().hideTopBar
             end,
-            setValue = function(v)
-                SHDB().hideTopBar = v
+            setValue = function(val)
+                SHDB().hideTopBar = val
                 RefreshSH()
             end,
         })
-        y = y - h
+        posY = posY - hgt
         -- Background colour swatch on the opacity slider; none in the search
         -- pre-build (it indexes nothing, and the row is a stand-in there)
         if not CludesUI._prebuilding then
-            local rgn = bgRow._leftRegion
-            local ctrl = rgn._control
-            local swatch, swatchRefresh = CludesUI.BuildColorSwatch(rgn, bgRow:GetFrameLevel() + 3, function()
-                return (SHDB().bgR or 0), (SHDB().bgG or 0), (SHDB().bgB or 0)
-            end, function(r, g, b)
-                SHDB().bgR = r
-                SHDB().bgG = g
-                SHDB().bgB = b
-                RefreshSH()
-            end, false, 20)
-            PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            local region = bgRow._leftRegion
+            local ctrl = region._control
+            local colorSwatch, swatchRefresh = CludesUI.BuildColorSwatch(
+                region,
+                bgRow:GetFrameLevel() + 3,
+                function()
+                    return (SHDB().bgR or 0), (SHDB().bgG or 0), (SHDB().bgB or 0)
+                end,
+                function(r, g, b)
+                    SHDB().bgR = r
+                    SHDB().bgG = g
+                    SHDB().bgB = b
+                    RefreshSH()
+                end,
+                false,
+                20
+            )
+            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             -- Blizzard Style paints the stock window art (colour unused); the
             -- classic box is tinted by this colour.
             if DMBlizzArt() then
-                CludesUI.BlizzStyle.BlockInline("damagemeters", swatch)
+                CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
             end
-            local block = CreateFrame("Frame", nil, swatch)
-            block:SetAllPoints()
-            block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Bar History"))
+            local blockData = CreateFrame("Frame", nil, colorSwatch)
+            blockData:SetAllPoints()
+            blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            blockData:EnableMouse(true)
+            blockData:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
             end)
-            block:SetScript("OnLeave", function()
+            blockData:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             CludesUI.RegisterWidgetRefresh(function()
-                local off = barOff()
-                swatch:SetAlpha(off and 0.3 or 1)
-                if off then
-                    block:Show()
+                local offset = barOff()
+                colorSwatch:SetAlpha(offset and 0.3 or 1)
+                if offset then
+                    blockData:Show()
                 else
-                    block:Hide()
+                    blockData:Hide()
                 end
                 swatchRefresh()
             end)
             local initOff = barOff()
-            swatch:SetAlpha(initOff and 0.3 or 1)
+            colorSwatch:SetAlpha(initOff and 0.3 or 1)
             if initOff then
-                block:Show()
+                blockData:Show()
             else
-                block:Hide()
+                blockData:Hide()
             end
         end
 
         -- Row 3: Bar Height | Max Bars
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Height",
             min = 12,
@@ -3191,8 +3205,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().shBarHeight or 18
             end,
-            setValue = function(v)
-                SHDB().shBarHeight = v
+            setValue = function(val)
+                SHDB().shBarHeight = val
                 RefreshSH()
             end,
         }, {
@@ -3207,18 +3221,18 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return SHDB().maxBars or 5
             end,
-            setValue = function(v)
-                SHDB().maxBars = v
+            setValue = function(val)
+                SHDB().maxBars = val
                 RefreshSH()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Row 4: Bar Texture | Text Size (+ inline dual swatches)
         local textRow
-        textRow, h = W:DualRow(
-            parent,
-            y,
+        textRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             DMBlizzGate({
                 type = "dropdown",
                 text = "Bar Texture",
@@ -3229,8 +3243,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return SHDB().spellHistoryBarTexture or "match"
                 end,
-                setValue = function(v)
-                    SHDB().spellHistoryBarTexture = v
+                setValue = function(val)
+                    SHDB().spellHistoryBarTexture = val
                     RefreshSH()
                 end,
             }),
@@ -3245,128 +3259,123 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return SHDB().textSize or 11
                 end,
-                setValue = function(v)
-                    SHDB().textSize = v
+                setValue = function(val)
+                    SHDB().textSize = val
                     RefreshSH()
                 end,
             }
         )
-        y = y - h
+        posY = posY - hgt
 
         -- Row 5: Bar Color | Opacity
-        _, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "multiSwatch",
-                text = "Bar Color",
-                disabled = barOff,
-                disabledTooltip = "Bar History",
-                swatches = {
-                    {
-                        tooltip = "Class Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                            if cc then
-                                return cc.r, cc.g, cc.b
-                            end
-                            return 0.96, 0.55, 0.73
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            SHDB().barColorUseClass = true
-                            SHDB().barColorUseAccent = false
-                            RefreshSH()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            return SHDB().barColorUseClass and 1 or 0.3
-                        end,
-                    },
-                    {
-                        tooltip = "Custom Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            local c = SHDB().barColor
-                            if c then
-                                return c.r or 0.298, c.g or 0.565, c.b or 0.494
-                            end
-                            return 0.298, 0.565, 0.494
-                        end,
-                        setValue = function(r, g, b)
-                            SHDB().barColor = { r = r, g = g, b = b }
+        _, hgt = W:DualRow(hostFrame, posY, {
+            type = "multiSwatch",
+            text = "Bar Color",
+            disabled = barOff,
+            disabledTooltip = "Bar History",
+            swatches = {
+                {
+                    tooltip = "Class Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 0.96, 0.55, 0.73
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        SHDB().barColorUseClass = true
+                        SHDB().barColorUseAccent = false
+                        RefreshSH()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        return SHDB().barColorUseClass and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = SHDB().barColor
+                        if c then
+                            return c.r or 0.298, c.g or 0.565, c.b or 0.494
+                        end
+                        return 0.298, 0.565, 0.494
+                    end,
+                    setValue = function(r, g, b)
+                        SHDB().barColor = { r = r, g = g, b = b }
+                        SHDB().barColorUseClass = false
+                        SHDB().barColorUseAccent = false
+                        RefreshSH()
+                        CludesUI:RefreshPage()
+                    end,
+                    onClick = function(self)
+                        if SHDB().barColorUseClass or SHDB().barColorUseAccent then
                             SHDB().barColorUseClass = false
                             SHDB().barColorUseAccent = false
                             RefreshSH()
                             CludesUI:RefreshPage()
-                        end,
-                        onClick = function(self)
-                            if SHDB().barColorUseClass or SHDB().barColorUseAccent then
-                                SHDB().barColorUseClass = false
-                                SHDB().barColorUseAccent = false
-                                RefreshSH()
-                                CludesUI:RefreshPage()
-                                return
-                            end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
-                        end,
-                        refreshAlpha = function()
-                            if SHDB().barColorUseClass then
-                                return 0.15
-                            end
-                            return SHDB().barColorUseAccent and 0.3 or 1
-                        end,
-                    },
-                    {
-                        tooltip = "Accent Color",
-                        hasAlpha = false,
-                        getValue = function()
-                            return CludesUI.ResolveActiveAccent()
-                        end,
-                        setValue = function() end,
-                        onClick = function()
-                            SHDB().barColorUseClass = false
-                            SHDB().barColorUseAccent = true
-                            RefreshSH()
-                            CludesUI:RefreshPage()
-                        end,
-                        refreshAlpha = function()
-                            if SHDB().barColorUseClass then
-                                return 0.15
-                            end
-                            return SHDB().barColorUseAccent and 1 or 0.3
-                        end,
-                    },
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        if SHDB().barColorUseClass then
+                            return 0.15
+                        end
+                        return SHDB().barColorUseAccent and 0.3 or 1
+                    end,
+                },
+                {
+                    tooltip = "Accent Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        return CludesUI.ResolveActiveAccent()
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        SHDB().barColorUseClass = false
+                        SHDB().barColorUseAccent = true
+                        RefreshSH()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        if SHDB().barColorUseClass then
+                            return 0.15
+                        end
+                        return SHDB().barColorUseAccent and 1 or 0.3
+                    end,
                 },
             },
-            {
-                type = "slider",
-                text = "Opacity",
-                min = 0.1,
-                max = 1,
-                step = 0.01,
-                disabled = barOff,
-                disabledTooltip = "Bar History",
-                getValue = function()
-                    return SHDB().barOpacity or 1
-                end,
-                setValue = function(v)
-                    SHDB().barOpacity = v
-                    RefreshSH()
-                end,
-            }
-        )
-        y = y - h
+        }, {
+            type = "slider",
+            text = "Opacity",
+            min = 0.1,
+            max = 1,
+            step = 0.01,
+            disabled = barOff,
+            disabledTooltip = "Bar History",
+            getValue = function()
+                return SHDB().barOpacity or 1
+            end,
+            setValue = function(val)
+                SHDB().barOpacity = val
+                RefreshSH()
+            end,
+        })
+        posY = posY - hgt
 
         if not CludesUI._prebuilding then
-            local rgn = textRow._rightRegion
-            local ctrl = rgn._control
+            local region = textRow._rightRegion
+            local ctrl = region._control
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 textRow:GetFrameLevel() + 3,
                 function()
                     local c = SHDB().textColor
@@ -3384,7 +3393,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(customSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if SHDB().textColorUseAccent then
@@ -3405,7 +3414,7 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 textRow:GetFrameLevel() + 3,
                 function()
                     return CludesUI.ResolveActiveAccent()
@@ -3418,7 +3427,7 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 20
             )
-            PP.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
+            Pix.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
             accentSwatch:SetScript("OnClick", function()
                 SHDB().textColorUseAccent = true
                 RefreshSH()
@@ -3431,18 +3440,18 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
 
-            local function MakeSwatchBlock(swatch)
-                local block = CreateFrame("Frame", nil, swatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Bar History"))
+            local function MakeSwatchBlock(colorSwatch)
+                local blockData = CreateFrame("Frame", nil, colorSwatch)
+                blockData:SetAllPoints()
+                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                blockData:EnableMouse(true)
+                blockData:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
                 end)
-                block:SetScript("OnLeave", function()
+                blockData:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                return block
+                return blockData
             end
             local customBlock = MakeSwatchBlock(customSwatch)
             local accentBlock = MakeSwatchBlock(accentSwatch)
@@ -3450,11 +3459,11 @@ initFrame:SetScript("OnEvent", function(self)
             local function refreshTextSwatches()
                 updateCustom()
                 updateAccent()
-                local off = barOff()
+                local offset = barOff()
                 local useAccent = SHDB().textColorUseAccent
-                customSwatch:SetAlpha(off and 0.3 or (useAccent and 0.3 or 1))
-                accentSwatch:SetAlpha(off and 0.3 or (useAccent and 1 or 0.3))
-                if off then
+                customSwatch:SetAlpha(offset and 0.3 or (useAccent and 0.3 or 1))
+                accentSwatch:SetAlpha(offset and 0.3 or (useAccent and 1 or 0.3))
+                if offset then
                     customBlock:Show()
                     accentBlock:Show()
                 else
@@ -3466,7 +3475,7 @@ initFrame:SetScript("OnEvent", function(self)
             refreshTextSwatches()
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     CludesUI:RegisterModule("CludesUIDamageMeters", {
@@ -3474,7 +3483,7 @@ initFrame:SetScript("OnEvent", function(self)
         description = "Custom damage meter using Blizzard's built-in combat data.",
         searchTerms = "damage meters dps hps healing interrupts dispels spell history",
         pages = { "Damage Meters", PAGE_SH },
-        buildPage = function(pageName, p, yOffset)
+        buildPage = function(page, p, yOffset)
             -- This unconditionally forces every real damage-meter window (ns._windows,
             -- parented to UIParent) and the standalone timer preview live and
             -- mouse-interactive on screen -- not scoped to `p`/the hidden pre-build
@@ -3483,39 +3492,39 @@ initFrame:SetScript("OnEvent", function(self)
             -- BuildPage/ BuildSpellHistoryPage build purely onto `p`, so still index
             -- normally during the hidden pass.
             if not CludesUI._prebuilding then
-                ns._optionsOpen = true
-                if ns.ShowSATimerPreview and Cfg("standaloneTimer") then
-                    ns.ShowSATimerPreview()
+                mod._optionsOpen = true
+                if mod.ShowSATimerPreview and Cfg("standaloneTimer") then
+                    mod.ShowSATimerPreview()
                 end
-                if ns.ApplySpellHistory then
-                    ns.ApplySpellHistory()
+                if mod.ApplySpellHistory then
+                    mod.ApplySpellHistory()
                 end
-                for _, w in ipairs(ns._windows or {}) do
-                    if w.frame then
-                        w.frame:SetAlpha(1)
-                        w.frame:EnableMouse(true)
-                        w.frame:Show()
+                for _, wid in ipairs(mod._windows or {}) do
+                    if wid.frame then
+                        wid.frame:SetAlpha(1)
+                        wid.frame:EnableMouse(true)
+                        wid.frame:Show()
                     end
                 end
             end
-            if pageName == PAGE_SH then
-                return BuildSpellHistoryPage(pageName, p, yOffset)
+            if page == PAGE_SH then
+                return BuildSpellHistoryPage(page, p, yOffset)
             end
-            return BuildPage(pageName, p, yOffset)
+            return BuildPage(page, p, yOffset)
         end,
         onPageCacheRestore = function()
-            ns._optionsOpen = true
-            if ns.ShowSATimerPreview and Cfg("standaloneTimer") then
-                ns.ShowSATimerPreview()
+            mod._optionsOpen = true
+            if mod.ShowSATimerPreview and Cfg("standaloneTimer") then
+                mod.ShowSATimerPreview()
             end
-            if ns.ApplySpellHistory then
-                ns.ApplySpellHistory()
+            if mod.ApplySpellHistory then
+                mod.ApplySpellHistory()
             end
-            for _, w in ipairs(ns._windows or {}) do
-                if w.frame then
-                    w.frame:SetAlpha(1)
-                    w.frame:EnableMouse(true)
-                    w.frame:Show()
+            for _, wid in ipairs(mod._windows or {}) do
+                if wid.frame then
+                    wid.frame:SetAlpha(1)
+                    wid.frame:EnableMouse(true)
+                    wid.frame:Show()
                 end
             end
         end,
@@ -3528,17 +3537,17 @@ initFrame:SetScript("OnEvent", function(self)
         -- Mirrors RegisterOnHide below: SA Timer Preview + forced-visible
         -- meter windows, on module switch instead of just window close.
         onModuleLeave = function()
-            if ns.HideSATimerPreview then
-                ns.HideSATimerPreview()
+            if mod.HideSATimerPreview then
+                mod.HideSATimerPreview()
             end
-            ns._optionsOpen = false
-            for _, w in ipairs(ns._windows or {}) do
-                if w.UpdateVisibility then
-                    w.UpdateVisibility()
+            mod._optionsOpen = false
+            for _, wid in ipairs(mod._windows or {}) do
+                if wid.UpdateVisibility then
+                    wid.UpdateVisibility()
                 end
             end
-            if ns.ApplySpellHistory then
-                ns.ApplySpellHistory()
+            if mod.ApplySpellHistory then
+                mod.ApplySpellHistory()
             end
         end,
     })
@@ -3546,34 +3555,34 @@ initFrame:SetScript("OnEvent", function(self)
     -- Show preview when panel opens on DM page, hide when panel closes
     CludesUI:RegisterOnShow(function()
         if CludesUI:GetActiveModule() == "CludesUIDamageMeters" then
-            if ns.ShowSATimerPreview and Cfg("standaloneTimer") then
-                ns.ShowSATimerPreview()
+            if mod.ShowSATimerPreview and Cfg("standaloneTimer") then
+                mod.ShowSATimerPreview()
             end
-            ns._optionsOpen = true
-            for _, w in ipairs(ns._windows or {}) do
-                if w.frame then
-                    w.frame:SetAlpha(1)
-                    w.frame:EnableMouse(true)
-                    w.frame:Show()
+            mod._optionsOpen = true
+            for _, wid in ipairs(mod._windows or {}) do
+                if wid.frame then
+                    wid.frame:SetAlpha(1)
+                    wid.frame:EnableMouse(true)
+                    wid.frame:Show()
                 end
             end
-            if ns.ApplySpellHistory then
-                ns.ApplySpellHistory()
+            if mod.ApplySpellHistory then
+                mod.ApplySpellHistory()
             end
         end
     end)
     CludesUI:RegisterOnHide(function()
-        if ns.HideSATimerPreview then
-            ns.HideSATimerPreview()
+        if mod.HideSATimerPreview then
+            mod.HideSATimerPreview()
         end
-        ns._optionsOpen = false
-        for _, w in ipairs(ns._windows or {}) do
-            if w.UpdateVisibility then
-                w.UpdateVisibility()
+        mod._optionsOpen = false
+        for _, wid in ipairs(mod._windows or {}) do
+            if wid.UpdateVisibility then
+                wid.UpdateVisibility()
             end
         end
-        if ns.ApplySpellHistory then
-            ns.ApplySpellHistory()
+        if mod.ApplySpellHistory then
+            mod.ApplySpellHistory()
         end
     end)
 end)

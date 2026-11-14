@@ -149,9 +149,9 @@ do
         [8] = { 1 - d, 1, c, 1 - c },
     }
     LIVE_CUT = {}
-    for i = 5, 8 do
-        local cut, a, b = RING_CUT[i], LIVE_RUN[i][1] / RS, LIVE_RUN[i][2] / RS
-        LIVE_CUT[i] = i <= 6 and { a, b, cut[3], cut[4] } or { cut[1], cut[2], a, b }
+    for idx = 5, 8 do
+        local cut, a, b = RING_CUT[idx], LIVE_RUN[idx][1] / RS, LIVE_RUN[idx][2] / RS
+        LIVE_CUT[idx] = idx <= 6 and { a, b, cut[3], cut[4] } or { cut[1], cut[2], a, b }
     end
 end
 local EPS, min = 0.01, math.min -- an edge needs more than EPS of room
@@ -175,14 +175,14 @@ end
 -- in a box too small for two, the part up to the box's middle (its mask
 -- stays hung from the box's corner, so the cut keeps its shape).
 local function CutCorners(ring, cw, ch)
-    local L, T, W, H = ring.L, ring.T, ring.W, ring.H
-    local u, v = cw / RS, ch / RS
-    for i = 1, 4 do
-        local u1 = (i == 2 or i == 4) and 1 - u or 0
-        local v1 = i >= 3 and 1 - v or 0
-        local t = ring[i]
+    local L, T, Widgets, H = ring.L, ring.T, ring.W, ring.H
+    local u, val = cw / RS, ch / RS
+    for idx = 1, 4 do
+        local u1 = (idx == 2 or idx == 4) and 1 - u or 0
+        local v1 = idx >= 3 and 1 - val or 0
+        local t = ring[idx]
         t:SetSize(cw, ch)
-        t:SetTexCoord(L + W * u1, L + W * (u1 + u), T + H * v1, T + H * (v1 + v))
+        t:SetTexCoord(L + Widgets * u1, L + Widgets * (u1 + u), T + H * v1, T + H * (v1 + val))
     end
     ring.cw, ring.ch = cw, ch
 end
@@ -190,28 +190,28 @@ end
 -- Each piece shown while the ring is on and its box has taken a size: the
 -- corners always, an edge only with room between its corners.
 local function RingShow(ring)
-    local on = ring.on and ring.sized
-    for i = 1, 4 do
-        ring[i]:SetShown(on)
+    local enabled = ring.on and ring.sized
+    for idx = 1, 4 do
+        ring[idx]:SetShown(enabled)
     end
-    local x, y = on and ring.roomX, on and ring.roomY
-    ring[5]:SetShown(x)
-    ring[6]:SetShown(x)
-    ring[7]:SetShown(y)
-    ring[8]:SetShown(y)
+    local posX, posY = enabled and ring.roomX, enabled and ring.roomY
+    ring[5]:SetShown(posX)
+    ring[6]:SetShown(posX)
+    ring[7]:SetShown(posY)
+    ring[8]:SetShown(posY)
 end
 
 -- The box's OnSizeChanged (w x h: the art's rect, RM past the line's outer
 -- edge): the corners cut again only when their size changes (a box too
 -- small for two), and the pieces shown again only when an edge's room
 -- changes.
-local function RingLayout(box, w, h)
-    local ring = box._fvRing
-    local cw, ch = min(RC, w / 2), min(RC, h / 2)
+local function RingLayout(boxFrame, wid, hgt)
+    local ring = boxFrame._fvRing
+    local cw, ch = min(RC, wid / 2), min(RC, hgt / 2)
     if cw ~= ring.cw or ch ~= ring.ch then
         CutCorners(ring, cw, ch)
     end
-    local roomX, roomY = w - 2 * RC > EPS, h - 2 * RC > EPS
+    local roomX, roomY = wid - 2 * RC > EPS, hgt - 2 * RC > EPS
     if ring.sized and roomX == ring.roomX and roomY == ring.roomY then
         return
     end
@@ -225,71 +225,71 @@ end
 -- (the shipped file where the client has none), the corners, each masked
 -- unless additive, and the edges. Every piece stays hidden until the box
 -- first takes a size. Nil off the Forever client.
-function CludesUI.ForeverBorder(frame, layer, sub, add, src)
+function CludesUI.ForeverBorder(widget, layer, subFrame, add, source)
     if CludesUI.IS_FOREVER ~= true then
         return nil
     end
     local file, L, T, R, B = RING_FILE, RING_LO, RING_LO, RING_HI, RING_HI
     local cuts = RING_CUT
-    local info = src == "textured" and LiveInfo()
-    if info then
-        file = info.file or info.filename
-        L, T, R, B = info.leftTexCoord, info.topTexCoord, info.rightTexCoord, info.bottomTexCoord
+    local details = source == "textured" and LiveInfo()
+    if details then
+        file = details.file or details.filename
+        L, T, R, B = details.leftTexCoord, details.topTexCoord, details.rightTexCoord, details.bottomTexCoord
         cuts = LIVE_CUT
     end
-    local W, H = R - L, B - T
-    layer, sub = layer or "ARTWORK", sub or 0
-    local box = CreateFrame("Frame", nil, frame)
-    local ring = { box = box, on = true, L = L, T = T, W = W, H = H }
-    for i = 1, 8 do
-        local t = frame:CreateTexture(nil, layer, nil, sub)
+    local Widgets, H = R - L, B - T
+    layer, subFrame = layer or "ARTWORK", subFrame or 0
+    local boxFrame = CreateFrame("Frame", nil, widget)
+    local ring = { box = boxFrame, on = true, L = L, T = T, W = Widgets, H = H }
+    for idx = 1, 8 do
+        local t = widget:CreateTexture(nil, layer, nil, subFrame)
         t:SetTexture(file)
         if add then
             t:SetBlendMode("ADD")
         end
-        local at = RING_AT[i]
-        t:SetPoint(at[1], box, at[1], at[2], at[3])
+        local at = RING_AT[idx]
+        t:SetPoint(at[1], boxFrame, at[1], at[2], at[3])
         if at[4] then
-            local cut = cuts[i]
-            t:SetTexCoord(L + W * cut[1], L + W * cut[2], T + H * cut[3], T + H * cut[4])
-            t:SetPoint(at[4], box, at[4], at[5], at[6])
-            if i <= 6 then
+            local cut = cuts[idx]
+            t:SetTexCoord(L + Widgets * cut[1], L + Widgets * cut[2], T + H * cut[3], T + H * cut[4])
+            t:SetPoint(at[4], boxFrame, at[4], at[5], at[6])
+            if idx <= 6 then
                 t:SetHeight(RD)
             else
                 t:SetWidth(RD)
             end
         end
         t:Hide()
-        ring[i] = t
+        ring[idx] = t
     end
     CutCorners(ring, RC, RC)
     if not add then
-        for i = 1, 4 do
-            local m, p = frame:CreateMaskTexture(), RING_AT[i][1]
+        for idx = 1, 4 do
+            local m, p = widget:CreateMaskTexture(), RING_AT[idx][1]
             m:SetTexture(RING_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
             m:SetSize(2 * RC, 2 * RC)
-            m:SetPoint(p, box, p)
-            ring[i]:AddMaskTexture(m)
+            m:SetPoint(p, boxFrame, p)
+            ring[idx]:AddMaskTexture(m)
         end
     end
-    box._fvRing = ring
-    box:SetScript("OnSizeChanged", RingLayout)
+    boxFrame._fvRing = ring
+    boxFrame:SetScript("OnSizeChanged", RingLayout)
     return ring
 end
 
 -- The line's outer edge (the art reaches RM past it: its clear margin and
 -- outer shadow).
 function CludesUI.ForeverBorderSeat(ring, rel, tp, x1, y1, x2, y2)
-    local box = ring.box
-    box:ClearAllPoints()
-    box:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) - RM, (y1 or 0) + RM)
-    box:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) + RM, (y2 or 0) - RM)
+    local boxFrame = ring.box
+    boxFrame:ClearAllPoints()
+    boxFrame:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) - RM, (y1 or 0) + RM)
+    boxFrame:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) + RM, (y2 or 0) - RM)
 end
 
 function CludesUI.ForeverBorderPaint(ring, r, g, b, a, desat)
     desat = desat and true or false
-    for i = 1, 8 do
-        local t = ring[i]
+    for idx = 1, 8 do
+        local t = ring[idx]
         t:SetVertexColor(r, g, b, a or 1)
         t:SetDesaturated(desat)
     end
@@ -297,8 +297,8 @@ end
 
 -- Shown or hidden as a whole; an edge without room stays hidden either way
 -- (RingShow).
-function CludesUI.ForeverBorderShown(ring, shown)
-    ring.on = shown and true or false
+function CludesUI.ForeverBorderShown(ring, isShown)
+    ring.on = isShown and true or false
     RingShow(ring)
 end
 
@@ -307,14 +307,19 @@ end
 -- inner shadow, top to bottom), so the line runs 1 to 3 units above the
 -- piece's bottom. The caller anchors both ends and the bottom. Nil off the
 -- Forever client.
-function CludesUI.ForeverBorderDivider(frame, layer, sub)
+function CludesUI.ForeverBorderDivider(widget, layer, subFrame)
     if CludesUI.IS_FOREVER ~= true then
         return nil
     end
-    local t = frame:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
+    local t = widget:CreateTexture(nil, layer or "ARTWORK", nil, subFrame or 0)
     t:SetTexture(RING_FILE)
-    local cut, W = RING_CUT[5], RING_HI - RING_LO
-    t:SetTexCoord(RING_LO + W * cut[1], RING_LO + W * cut[2], RING_LO + W * cut[3], RING_LO + W * cut[4])
+    local cut, Widgets = RING_CUT[5], RING_HI - RING_LO
+    t:SetTexCoord(
+        RING_LO + Widgets * cut[1],
+        RING_LO + Widgets * cut[2],
+        RING_LO + Widgets * cut[3],
+        RING_LO + Widgets * cut[4]
+    )
     t:SetHeight(RD)
     return t
 end
@@ -395,14 +400,14 @@ local function HeavyInfo()
     if heavyInfo == nil then
         heavyInfo = false
         if CludesUI.IS_FOREVER == true then
-            local info = {}
+            local details = {}
             for key, name in pairs(HEAVY_ART) do
-                info[key] = C_Texture.GetAtlasInfo(name)
-                if not info[key] then
+                details[key] = C_Texture.GetAtlasInfo(name)
+                if not details[key] then
                     return false
                 end
             end
-            heavyInfo = info
+            heavyInfo = details
         end
     end
     return heavyInfo
@@ -413,25 +418,25 @@ function CludesUI.ForeverHeavyOK()
 end
 
 -- A piece's texcoords: fractions u1..u2, v1..v2 of its atlas box.
-local function HeavyCut(t, info, u1, u2, v1, v2)
-    local L, T = info.leftTexCoord, info.topTexCoord
-    local W, H = info.rightTexCoord - L, info.bottomTexCoord - T
-    t:SetTexCoord(L + W * u1, L + W * u2, T + H * v1, T + H * v2)
+local function HeavyCut(t, details, u1, u2, v1, v2)
+    local L, T = details.leftTexCoord, details.topTexCoord
+    local Widgets, H = details.rightTexCoord - L, details.bottomTexCoord - T
+    t:SetTexCoord(L + Widgets * u1, L + Widgets * u2, T + H * v1, T + H * v2)
 end
 
 -- Each piece shown while the frame is on, fits, has taken a size and (an
 -- edge strip) has room between its corners.
 local function HeavyShow(ring)
     local p = ring.p
-    local on = ring.on and ring.fit and ring.sized
-    p.tl:SetShown(on)
-    p.tr:SetShown(on)
-    p.bl:SetShown(on)
-    p.br:SetShown(on)
-    p.te:SetShown(on and ring.roomX)
-    p.be:SetShown(on and ring.roomX)
-    p.le:SetShown(on and ring.roomY)
-    p.re:SetShown(on and ring.roomY)
+    local enabled = ring.on and ring.fit and ring.sized
+    p.tl:SetShown(enabled)
+    p.tr:SetShown(enabled)
+    p.bl:SetShown(enabled)
+    p.br:SetShown(enabled)
+    p.te:SetShown(enabled and ring.roomX)
+    p.be:SetShown(enabled and ring.roomX)
+    p.le:SetShown(enabled and ring.roomY)
+    p.re:SetShown(enabled and ring.roomY)
 end
 
 -- The box's OnSizeChanged (w x h: the rim's outer edge): each corner cut at
@@ -439,31 +444,31 @@ end
 -- below the title bar (ring.top), the bottom corners no taller than the room
 -- under the top ones, and each edge strip repeating (texture wrap, one
 -- repeat per atlas length) over the room left between its corners.
-local function HeavyLayout(box, w, h)
-    local ring = box._fvHeavy
-    local I, p = heavyInfo, ring.p
-    local top = ring.top
-    local cw, th, bh0 = I.tl.width, I.tl.height, I.bl.height
-    local cl = min(cw, w / 2 + HML)
-    local cr = min(cw, w / 2 + HMR)
-    local bh = min(bh0, h + HMT + HMB - top)
-    local gx = w + HML + HMR - cl - cr
-    local gy = h + HMT + HMB - top - bh
-    p.tl:SetSize(cl, top)
-    HeavyCut(p.tl, I.tl, 0, cl / cw, 0, top / th)
-    p.tr:SetSize(cr, top)
-    HeavyCut(p.tr, I.tr, 1 - cr / cw, 1, 0, top / th)
+local function HeavyLayout(boxFrame, wid, hgt)
+    local ring = boxFrame._fvHeavy
+    local Inner, p = heavyInfo, ring.p
+    local topY = ring.top
+    local cw, th, bh0 = Inner.tl.width, Inner.tl.height, Inner.bl.height
+    local cl = min(cw, wid / 2 + HML)
+    local cr = min(cw, wid / 2 + HMR)
+    local bh = min(bh0, hgt + HMT + HMB - topY)
+    local gx = wid + HML + HMR - cl - cr
+    local gy = hgt + HMT + HMB - topY - bh
+    p.tl:SetSize(cl, topY)
+    HeavyCut(p.tl, Inner.tl, 0, cl / cw, 0, topY / th)
+    p.tr:SetSize(cr, topY)
+    HeavyCut(p.tr, Inner.tr, 1 - cr / cw, 1, 0, topY / th)
     p.bl:SetSize(cl, bh)
-    HeavyCut(p.bl, I.bl, 0, cl / cw, 1 - bh / bh0, 1)
+    HeavyCut(p.bl, Inner.bl, 0, cl / cw, 1 - bh / bh0, 1)
     p.br:SetSize(cr, bh)
-    HeavyCut(p.br, I.br, 1 - cr / cw, 1, 1 - bh / bh0, 1)
-    local te, be, le, re = I.te, I.be, I.le, I.re
-    p.te:SetHeight(top)
+    HeavyCut(p.br, Inner.br, 1 - cr / cw, 1, 1 - bh / bh0, 1)
+    local te, be, le, re = Inner.te, Inner.be, Inner.le, Inner.re
+    p.te:SetHeight(topY)
     p.te:SetTexCoord(
         0,
         gx / te.width,
         te.topTexCoord,
-        te.topTexCoord + (te.bottomTexCoord - te.topTexCoord) * top / te.height
+        te.topTexCoord + (te.bottomTexCoord - te.topTexCoord) * topY / te.height
     )
     p.be:SetHeight(bh)
     p.be:SetTexCoord(
@@ -493,19 +498,19 @@ end
 -- The frame on `frame` (a frame of ours drawn at the art's scale), seated by
 -- ForeverHeavySeat; its pieces stay hidden until the box first takes a size.
 -- Nil without the art.
-function CludesUI.ForeverHeavy(frame, layer, sub, add)
-    local I = HeavyInfo()
-    if not I then
+function CludesUI.ForeverHeavy(widget, layer, subFrame, add)
+    local Inner = HeavyInfo()
+    if not Inner then
         return nil
     end
-    local box = CreateFrame("Frame", nil, frame)
-    local ring = { box = box, k = frame:GetScale(), p = {}, on = true, fit = true, top = HTOP }
+    local boxFrame = CreateFrame("Frame", nil, widget)
+    local ring = { box = boxFrame, k = widget:GetScale(), p = {}, on = true, fit = true, top = HTOP }
     local p = ring.p
-    for key, info in pairs(I) do
-        local t = frame:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
+    for key, details in pairs(Inner) do
+        local t = widget:CreateTexture(nil, layer or "ARTWORK", nil, subFrame or 0)
         local along = (key == "te" or key == "be") and "h" or (key == "le" or key == "re") and "v" or nil
         t:SetTexture(
-            info.file or info.filename,
+            details.file or details.filename,
             along == "h" and "REPEAT" or "CLAMP",
             along == "v" and "REPEAT" or "CLAMP"
         )
@@ -520,10 +525,10 @@ function CludesUI.ForeverHeavy(frame, layer, sub, add)
         t:Hide()
         p[key] = t
     end
-    p.tl:SetPoint("TOPLEFT", box, "TOPLEFT", -HML, HMT)
-    p.tr:SetPoint("TOPRIGHT", box, "TOPRIGHT", HMR, HMT)
-    p.bl:SetPoint("BOTTOMLEFT", box, "BOTTOMLEFT", -HML, -HMB)
-    p.br:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", HMR, -HMB)
+    p.tl:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", -HML, HMT)
+    p.tr:SetPoint("TOPRIGHT", boxFrame, "TOPRIGHT", HMR, HMT)
+    p.bl:SetPoint("BOTTOMLEFT", boxFrame, "BOTTOMLEFT", -HML, -HMB)
+    p.br:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", HMR, -HMB)
     p.te:SetPoint("TOPLEFT", p.tl, "TOPRIGHT")
     p.te:SetPoint("TOPRIGHT", p.tr, "TOPLEFT")
     p.be:SetPoint("BOTTOMLEFT", p.bl, "BOTTOMRIGHT")
@@ -532,27 +537,27 @@ function CludesUI.ForeverHeavy(frame, layer, sub, add)
     p.le:SetPoint("BOTTOMLEFT", p.bl, "TOPLEFT")
     p.re:SetPoint("TOPRIGHT", p.tr, "BOTTOMRIGHT")
     p.re:SetPoint("BOTTOMRIGHT", p.br, "TOPRIGHT")
-    box._fvHeavy = ring
-    box:SetScript("OnSizeChanged", HeavyLayout)
+    boxFrame._fvHeavy = ring
+    boxFrame:SetScript("OnSizeChanged", HeavyLayout)
     return ring
 end
 
 -- The rim's outer edge (the pieces reach past it by the art's margins).
 function CludesUI.ForeverHeavySeat(ring, rel, tp, x1, y1, x2, y2)
-    local box, k = ring.box, ring.k
-    box:ClearAllPoints()
-    box:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) / k, (y1 or 0) / k)
-    box:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) / k, (y2 or 0) / k)
+    local boxFrame, k = ring.box, ring.k
+    boxFrame:ClearAllPoints()
+    boxFrame:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) / k, (y1 or 0) / k)
+    boxFrame:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) / k, (y2 or 0) / k)
 end
 
 -- A body under the rim: `tex` (a region on the ring's frame) from
 -- FOREVER_HEAVY.fill (art units) inside the rim's outer edge, that edge
 -- given as ForeverHeavySeat takes it.
-function CludesUI.ForeverHeavyFill(ring, tex, rel, tp, x1, y1, x2, y2)
+function CludesUI.ForeverHeavyFill(ring, texture, rel, tp, x1, y1, x2, y2)
     local k, f = ring.k, CludesUI.FOREVER_HEAVY.fill
-    tex:ClearAllPoints()
-    tex:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) / k + f, (y1 or 0) / k - f)
-    tex:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) / k - f, (y2 or 0) / k + f)
+    texture:ClearAllPoints()
+    texture:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) / k + f, (y1 or 0) / k - f)
+    texture:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) / k - f, (y2 or 0) / k + f)
 end
 
 function CludesUI.ForeverHeavyPaint(ring, r, g, b, a, desat)
@@ -563,30 +568,30 @@ function CludesUI.ForeverHeavyPaint(ring, r, g, b, a, desat)
     end
 end
 
-function CludesUI.ForeverHeavyShown(ring, shown)
-    ring.on = shown and true or false
+function CludesUI.ForeverHeavyShown(ring, isShown)
+    ring.on = isShown and true or false
     HeavyShow(ring)
 end
 
 -- A box (w x h at the rim's outer edge, in the frame's parent's units) that
 -- cannot hold the rim on both sides shows no frame.
-function CludesUI.ForeverHeavyFit(ring, w, h)
+function CludesUI.ForeverHeavyFit(ring, wid, hgt)
     local span = 2 * CludesUI.FOREVER_HEAVY.band * ring.k
-    ring.fit = w >= span and h >= span
+    ring.fit = wid >= span and hgt >= span
     HeavyShow(ring)
 end
 
 -- The top pieces cut below the window title bar they carry (on) or at the
 -- rim (off); a box already sized is laid out again at once.
-function CludesUI.ForeverHeavyTitle(ring, on)
-    local top = on and HTITLE or HTOP
-    if ring.top == top then
+function CludesUI.ForeverHeavyTitle(ring, enabled)
+    local topY = enabled and HTITLE or HTOP
+    if ring.top == topY then
         return
     end
-    ring.top = top
+    ring.top = topY
     if ring.sized then
-        local box = ring.box
-        HeavyLayout(box, box:GetWidth(), box:GetHeight())
+        local boxFrame = ring.box
+        HeavyLayout(boxFrame, boxFrame:GetWidth(), boxFrame:GetHeight())
     end
 end
 
@@ -599,26 +604,26 @@ end
 --  without its art, reads "slim" (ForeverBorder's shipped line). Nil off the
 --  Forever client.
 -------------------------------------------------------------------------------
-function CludesUI.ForeverBorderKind(v)
+function CludesUI.ForeverBorderKind(val)
     if CludesUI.IS_FOREVER ~= true then
         return nil
     end
-    if v == "heavy" and HeavyInfo() then
+    if val == "heavy" and HeavyInfo() then
         return "heavy"
     end
-    if (v == nil or v == "textured") and LiveInfo() then
+    if (val == nil or val == "textured") and LiveInfo() then
         return "textured"
     end
     return "slim"
 end
 
 if not CludesUI.IS_FOREVER then
-    function CludesUI.StockAtlas(tex, name, ...)
-        return tex:SetAtlas(name, ...)
+    function CludesUI.StockAtlas(texture, name, ...)
+        return texture:SetAtlas(name, ...)
     end
     CludesUI.StockAtlasInfo = C_Texture.GetAtlasInfo
-    function CludesUI.StockMask(mask, name, useSize)
-        return mask:SetAtlas(name, useSize)
+    function CludesUI.StockMask(maskTex, name, useSize)
+        return maskTex:SetAtlas(name, useSize)
     end
     return
 end
@@ -687,22 +692,22 @@ local ROWS = {
 
 -- Whether a sheet ships with this client (memo in the sheet's slot 5).
 local function Present(s)
-    local v = s[5]
-    if v == nil then
-        v = GetFileIDFromPath(s[2]) == s[1]
-        s[5] = v
+    local val = s[5]
+    if val == nil then
+        val = GetFileIDFromPath(s[2]) == s[1]
+        s[5] = val
     end
-    return v
+    return val
 end
 
-local function Info(s, l, r, t, b, w, h)
-    local W, H = s[3], s[4]
+local function Info(s, l, r, t, b, wid, hgt)
+    local Widgets, H = s[3], s[4]
     return {
         file = s[1],
-        width = w,
-        height = h,
-        leftTexCoord = l / W,
-        rightTexCoord = r / W,
+        width = wid,
+        height = hgt,
+        leftTexCoord = l / Widgets,
+        rightTexCoord = r / Widgets,
         topTexCoord = t / H,
         bottomTexCoord = b / H,
         tilesHorizontally = false,
@@ -718,12 +723,12 @@ local function HiRes()
     if hiRes ~= nil then
         return hiRes
     end
-    local i = C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Down")
-    local v = (i and i.file == AB2[1]) and true or false
+    local idx = C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Down")
+    local val = (idx and idx.file == AB2[1]) and true or false
     if IsLoggedIn() then
-        hiRes = v
+        hiRes = val
     end
-    return v
+    return val
 end
 
 -- name -> { 1x info or false, 2x info or false } | false (native atlas).
@@ -733,16 +738,20 @@ local function Resolve(name)
         return false
     end
     local e = false
-    local row = ROWS[strlower(name)]
-    if row then
-        local s1, s2 = row[1], row[6]
+    local rowFrame = ROWS[strlower(name)]
+    if rowFrame then
+        local s1, s2 = rowFrame[1], rowFrame[6]
         local native = C_Texture.GetAtlasInfo(name)
         local nf = native and native.file
         if nf ~= s1[1] and not (s2 and nf == s2[1]) then
-            local w = row[11] or (row[3] - row[2])
-            local h = row[12] or (row[5] - row[4])
-            local x1 = Present(s1) and Info(s1, row[2], row[3], row[4], row[5], w, h) or false
-            local x2 = s2 and Present(s2) and Info(s2, row[7], row[8], row[9], row[10], w, h) or false
+            local wid = rowFrame[11] or (rowFrame[3] - rowFrame[2])
+            local hgt = rowFrame[12] or (rowFrame[5] - rowFrame[4])
+            local x1 = Present(s1) and Info(s1, rowFrame[2], rowFrame[3], rowFrame[4], rowFrame[5], wid, hgt)
+                or false
+            local x2 = s2
+                    and Present(s2)
+                    and Info(s2, rowFrame[7], rowFrame[8], rowFrame[9], rowFrame[10], wid, hgt)
+                or false
             if x1 or x2 then
                 e = { x1, x2 }
             end
@@ -762,29 +771,29 @@ end
 -- Textures currently holding sheet coords (weak: never a prop on the frame).
 local drawn = setmetatable({}, { __mode = "k" })
 
-function CludesUI.StockAtlas(tex, name, ...)
+function CludesUI.StockAtlas(texture, name, ...)
     local e = resolved[name]
     if e == nil then
         e = Resolve(name)
     end
     if e then
-        local i = Pick(e)
+        local idx = Pick(e)
         local useSize, filterMode, _, wrapH, wrapV = ...
-        tex:SetTexture(i.file, wrapH, wrapV, filterMode)
-        tex:SetTexCoord(i.leftTexCoord, i.rightTexCoord, i.topTexCoord, i.bottomTexCoord)
+        texture:SetTexture(idx.file, wrapH, wrapV, filterMode)
+        texture:SetTexCoord(idx.leftTexCoord, idx.rightTexCoord, idx.topTexCoord, idx.bottomTexCoord)
         if useSize then
-            tex:SetSize(i.width, i.height)
+            texture:SetSize(idx.width, idx.height)
         end
-        drawn[tex] = true
+        drawn[texture] = true
         return
     end
     -- Back to an atlas: clear the sheet coords first (SetAtlas can keep
     -- custom coords, reading them inside the atlas box).
-    if drawn[tex] then
-        drawn[tex] = nil
-        tex:SetTexCoord(0, 1, 0, 1)
+    if drawn[texture] then
+        drawn[texture] = nil
+        texture:SetTexCoord(0, 1, 0, 1)
     end
-    return tex:SetAtlas(name, ...)
+    return texture:SetAtlas(name, ...)
 end
 
 function CludesUI.StockAtlasInfo(name)
@@ -871,15 +880,15 @@ local function MaskFile(name)
         return e
     end
     e = false
-    local row = type(name) == "string" and MASK_FILES[strlower(name)]
-    if row then
+    local rowFrame = type(name) == "string" and MASK_FILES[strlower(name)]
+    if rowFrame then
         local native = C_Texture.GetAtlasInfo(name)
         local nf = native and native.file
-        if nf ~= row[2] and not (row[4] and nf == row[4]) then
-            local f1 = GetFileIDFromPath(row[1]) == row[2] and row[2] or false
-            local f2 = row[3] and GetFileIDFromPath(row[3]) == row[4] and row[4] or false
+        if nf ~= rowFrame[2] and not (rowFrame[4] and nf == rowFrame[4]) then
+            local f1 = GetFileIDFromPath(rowFrame[1]) == rowFrame[2] and rowFrame[2] or false
+            local f2 = rowFrame[3] and GetFileIDFromPath(rowFrame[3]) == rowFrame[4] and rowFrame[4] or false
             if f1 or f2 then
-                e = { f1, f2, row[5], row[6] }
+                e = { f1, f2, rowFrame[5], rowFrame[6] }
             end
         end
     end
@@ -887,7 +896,7 @@ local function MaskFile(name)
     return e
 end
 
-function CludesUI.StockMask(mask, name, useSize)
+function CludesUI.StockMask(maskTex, name, useSize)
     local e = MaskFile(name)
     if e then
         local file
@@ -896,11 +905,11 @@ function CludesUI.StockMask(mask, name, useSize)
         else
             file = e[1] or e[2]
         end
-        mask:SetTexture(file, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        maskTex:SetTexture(file, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         if useSize then
-            mask:SetSize(e[3], e[4])
+            maskTex:SetSize(e[3], e[4])
         end
         return
     end
-    return mask:SetAtlas(name, useSize)
+    return maskTex:SetAtlas(name, useSize)
 end

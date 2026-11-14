@@ -14,7 +14,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  needs the rank before it (requiredSpellIDs); a Rogue poison also needs
 --  the Poisons skill at a level, which is shown, not checked.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local function Settings()
     CludesUIDB.foreverTraining = CludesUIDB.foreverTraining or {}
@@ -24,26 +24,26 @@ local function Settings()
     end
     return s
 end
-ns.TrainingSettings = Settings
+mod.TrainingSettings = Settings
 
-local function Known(id)
+local function Known(ident)
     if C_SpellBook and C_SpellBook.IsSpellKnown then
-        return C_SpellBook.IsSpellKnown(id)
+        return C_SpellBook.IsSpellKnown(ident)
     end
-    return IsSpellKnown and IsSpellKnown(id) or false
+    return IsSpellKnown and IsSpellKnown(ident) or false
 end
 
 --- "Name (Rank 3)" for a spell.
-function ns.TrainingSpellLabel(id)
-    local name = C_Spell.GetSpellName(id) or ("Spell " .. id)
-    local rank = C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(id)
+function mod.TrainingSpellLabel(ident)
+    local name = C_Spell.GetSpellName(ident) or ("Spell " .. ident)
+    local rank = C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(ident)
     if type(rank) == "string" and rank ~= "" then
         name = name .. " (" .. rank .. ")"
     end
     return name
 end
 
-function ns.TrainingMoney(copper)
+function mod.TrainingMoney(copper)
     if GetCoinTextureString then
         return GetCoinTextureString(copper)
     end
@@ -59,50 +59,50 @@ end
 --- flagged: you will have trained that one first. `needs` is set only when
 --- the missing spell comes from somewhere else (a talent, a quest, a spell
 --- every character starts with), since the trainer cannot sell it.
-function ns.TrainingPlan()
-    local _, class = UnitClass("player")
-    local data = ns.TrainingData and ns.TrainingData[class]
+function mod.TrainingPlan()
+    local _, classFile = UnitClass("player")
+    local payload = mod.TrainingData and mod.TrainingData[classFile]
     local plan = { now = {}, coming = {}, levels = {}, blocked = {}, nowCost = 0 }
-    if not data then
+    if not payload then
         return plan
     end
     local level = UnitLevel("player")
 
-    local order, sold = {}, {}
-    for lvl, rows in pairs(data) do
-        order[#order + 1] = lvl
-        for _, r in ipairs(rows) do
+    local sequence, sold = {}, {}
+    for lvl, rowList in pairs(payload) do
+        sequence[#sequence + 1] = lvl
+        for _, r in ipairs(rowList) do
             sold[r[1]] = true
         end
     end
-    table.sort(order)
+    table.sort(sequence)
 
     -- What the player can get: known spells, plus trainer spells reachable
     -- through them. `ready` holds what is trainable up to the current level,
     -- `later` what a coming level will make trainable.
     local ready, later, blockedBy = {}, {}, {}
-    local function Have(id, upTo)
-        return Known(id) or ready[id] or (upTo > level and later[id])
+    local function Have(ident, upTo)
+        return Known(ident) or ready[ident] or (upTo > level and later[ident])
     end
-    for _, lvl in ipairs(order) do
+    for _, lvl in ipairs(sequence) do
         local changed = true
         while changed do -- a rank can wait on one listed after it at the same level
             changed = false
-            for _, r in ipairs(data[lvl]) do
-                local id = r[1]
-                if not Known(id) and not ready[id] and not later[id] then
-                    local ok = true
+            for _, r in ipairs(payload[lvl]) do
+                local ident = r[1]
+                if not Known(ident) and not ready[ident] and not later[ident] then
+                    local success = true
                     for _, need in ipairs(r[3] or {}) do
                         if not Have(need, lvl) then
-                            ok = false
+                            success = false
                             break
                         end
                     end
-                    if ok then
+                    if success then
                         if lvl <= level then
-                            ready[id] = true
+                            ready[ident] = true
                         else
-                            later[id] = true
+                            later[ident] = true
                         end
                         changed = true
                     end
@@ -111,15 +111,15 @@ function ns.TrainingPlan()
         end
     end
     -- The first missing requirement that no trainer sells, for the label.
-    local function Root(id, seen)
+    local function Root(ident, seen)
         seen = seen or {}
-        if seen[id] then
+        if seen[ident] then
             return nil
         end
-        seen[id] = true
-        for lvl, rows in pairs(data) do
-            for _, r in ipairs(rows) do
-                if r[1] == id then
+        seen[ident] = true
+        for lvl, rowList in pairs(payload) do
+            for _, r in ipairs(rowList) do
+                if r[1] == ident then
                     for _, need in ipairs(r[3] or {}) do
                         if not Known(need) and not ready[need] and not later[need] then
                             if not sold[need] then
@@ -136,23 +136,23 @@ function ns.TrainingPlan()
         end
     end
 
-    for _, lvl in ipairs(order) do
-        for _, r in ipairs(data[lvl]) do
-            local id = r[1]
-            if not Known(id) then
-                local entry = { id = id, cost = r[2], level = lvl, skillLevel = r[5] }
-                if not ready[id] and not later[id] then
-                    blockedBy[id] = Root(id)
-                    entry.needs = blockedBy[id]
+    for _, lvl in ipairs(sequence) do
+        for _, r in ipairs(payload[lvl]) do
+            local ident = r[1]
+            if not Known(ident) then
+                local record = { id = ident, cost = r[2], level = lvl, skillLevel = r[5] }
+                if not ready[ident] and not later[ident] then
+                    blockedBy[ident] = Root(ident)
+                    record.needs = blockedBy[ident]
                 end
-                if ready[id] then
-                    plan.now[#plan.now + 1] = entry
-                    plan.nowCost = plan.nowCost + entry.cost
-                elseif lvl > level or entry.needs then
+                if ready[ident] then
+                    plan.now[#plan.now + 1] = record
+                    plan.nowCost = plan.nowCost + record.cost
+                elseif lvl > level or record.needs then
                     -- Waiting on a level, or on something the trainer cannot sell.
                     local at = lvl > level and lvl or 0
                     plan.coming[at] = plan.coming[at] or {}
-                    table.insert(plan.coming[at], entry)
+                    table.insert(plan.coming[at], record)
                 end
             end
         end
@@ -195,13 +195,13 @@ end
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_LEVEL_UP")
 ev:RegisterEvent("SPELLS_CHANGED")
-ev:SetScript("OnEvent", function(_, event, newLevel)
+ev:SetScript("OnEvent", function(_, evt, newLevel)
     RefreshPage()
-    if event ~= "PLAYER_LEVEL_UP" or not Settings().levelUpMessage then
+    if evt ~= "PLAYER_LEVEL_UP" or not Settings().levelUpMessage then
         return
     end
     C_Timer.After(2, function()
-        local plan = ns.TrainingPlan()
+        local plan = mod.TrainingPlan()
         local fresh, cost = 0, 0
         for _, e in ipairs(plan.now) do
             if e.level == newLevel then
@@ -215,9 +215,9 @@ ev:SetScript("OnEvent", function(_, event, newLevel)
                     newLevel,
                     fresh,
                     fresh == 1 and "" or "s",
-                    ns.TrainingMoney(cost),
+                    mod.TrainingMoney(cost),
                     #plan.now,
-                    ns.TrainingMoney(plan.nowCost)
+                    mod.TrainingMoney(plan.nowCost)
                 )
             )
         end

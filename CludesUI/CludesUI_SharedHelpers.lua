@@ -21,11 +21,11 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 function CludesUI.NewFrameData()
     local FFD = setmetatable({}, { __mode = "k" })
     return FFD,
-        function(frame)
-            local d = FFD[frame]
+        function(widget)
+            local d = FFD[widget]
             if not d then
                 d = {}
-                FFD[frame] = d
+                FFD[widget] = d
             end
             return d
         end
@@ -41,7 +41,7 @@ end
 -- restores them. `keys` = the module's slot keys (dotted paths one level
 -- deep into `p`, as the Style page's SLOT_KEYS). Callers bank only while
 -- none of the module's seed stamps is set; an existing slot is never touched.
-function CludesUI.BankEuiStyleSlot(p, keys)
+function CludesUI.BankEuiStyleSlot(p, keyList)
     if type(p) ~= "table" then
         return
     end
@@ -53,20 +53,20 @@ function CludesUI.BankEuiStyleSlot(p, keys)
         slots = {}
         p._styleSlots = slots
     end
-    local out = {}
-    for i = 1, #keys do
-        local path = keys[i]
-        local a, b = path:match("^([^.]+)%.(.+)$")
+    local result = {}
+    for idx = 1, #keyList do
+        local filePath = keyList[idx]
+        local a, b = filePath:match("^([^.]+)%.(.+)$")
         if a then
             local s = p[a]
             if type(s) == "table" then
-                out[path] = s[b]
+                result[filePath] = s[b]
             end
         else
-            out[path] = p[path]
+            result[filePath] = p[filePath]
         end
     end
-    slots.cui = out
+    slots.cui = result
 end
 
 -------------------------------------------------------------------------------
@@ -84,15 +84,15 @@ function CludesUI.RegisterSkin(name, applyFn)
         return
     end
     local reg = CludesUI._skinRegistry
-    for i = 1, #reg do
-        if reg[i].name == name then
+    for idx = 1, #reg do
+        if reg[idx].name == name then
             return
         end
     end
-    local entry = { name = name, apply = applyFn }
-    reg[#reg + 1] = entry
+    local record = { name = name, apply = applyFn }
+    reg[#reg + 1] = record
     if CludesUI._DispatchSkinRegistration then
-        CludesUI._DispatchSkinRegistration(entry)
+        CludesUI._DispatchSkinRegistration(record)
     end
     return true
 end
@@ -103,21 +103,21 @@ end
 --  instead of :Hide() so the frame stays in the layout engine with valid bounds.
 --  Sub-widgets (icons, text, glows) inside these frames still use :Hide()/:Show().
 -------------------------------------------------------------------------------
-function CludesUI.SetElementVisibility(frame, visible)
-    if not frame then
+function CludesUI.SetElementVisibility(widget, visible)
+    if not widget then
         return
     end
     if visible then
-        frame:SetAlpha(CludesUI._GetFFD(frame).restoreAlpha or 1)
-        frame:EnableMouse(CludesUI._GetFFD(frame).restoreMouse or false)
+        widget:SetAlpha(CludesUI._GetFFD(widget).restoreAlpha or 1)
+        widget:EnableMouse(CludesUI._GetFFD(widget).restoreMouse or false)
     else
-        local a = frame:GetAlpha()
+        local a = widget:GetAlpha()
         if not issecretvalue(a) and a > 0 then
-            CludesUI._GetFFD(frame).restoreAlpha = a
+            CludesUI._GetFFD(widget).restoreAlpha = a
         end
-        CludesUI._GetFFD(frame).restoreMouse = frame:IsMouseEnabled()
-        frame:SetAlpha(0)
-        frame:EnableMouse(false)
+        CludesUI._GetFFD(widget).restoreMouse = widget:IsMouseEnabled()
+        widget:SetAlpha(0)
+        widget:EnableMouse(false)
     end
 end
 
@@ -140,12 +140,12 @@ function CludesUI.SetEditModeChildInert(f, inert)
         f:SetAlpha(alpha)
     end
     if f.SetMouseClickEnabled then
-        local on = not inert
-        if f:IsMouseClickEnabled() ~= on then
-            f:SetMouseClickEnabled(on)
+        local enabled = not inert
+        if f:IsMouseClickEnabled() ~= enabled then
+            f:SetMouseClickEnabled(enabled)
         end
-        if f:IsMouseMotionEnabled() ~= on then
-            f:SetMouseMotionEnabled(on)
+        if f:IsMouseMotionEnabled() ~= enabled then
+            f:SetMouseMotionEnabled(enabled)
         end
     end
 end
@@ -157,14 +157,14 @@ end
 --  mark Edit Mode's anchor sweep and the frame's snap state as written by us.
 --  These call the saved C methods instead; any other frame uses its own.
 -------------------------------------------------------------------------------
-function CludesUI.ClearFramePoints(frame)
-    local clear = frame.ClearAllPointsBase or frame.ClearAllPoints
-    clear(frame)
+function CludesUI.ClearFramePoints(widget)
+    local clear = widget.ClearAllPointsBase or widget.ClearAllPoints
+    clear(widget)
 end
 
-function CludesUI.SetFramePoint(frame, point, relativeTo, relativePoint, x, y)
-    local setPoint = frame.SetPointBase or frame.SetPoint
-    setPoint(frame, point, relativeTo, relativePoint, x, y)
+function CludesUI.SetFramePoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
+    local setPoint = widget.SetPointBase or widget.SetPoint
+    setPoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
 end
 
 -- Edit Mode's SetScale override, called from our code, re-anchors the system
@@ -173,24 +173,24 @@ end
 -- keepPosition: an Edit Mode system's offsets are rescaled as the override
 -- does it, so the system keeps its spot (Edit Mode's save reads a moved
 -- system's anchor back from its geometry times its scale).
-function CludesUI.SetFrameScale(frame, scale, keepPosition)
-    local setScale = frame.SetScaleBase
+function CludesUI.SetFrameScale(widget, scale, keepPosition)
+    local setScale = widget.SetScaleBase
     if not setScale then
-        frame:SetScale(scale)
+        widget:SetScale(scale)
         return
     end
-    local old = keepPosition and frame:GetScale()
-    setScale(frame, scale)
+    local old = keepPosition and widget:GetScale()
+    setScale(widget, scale)
     if not old then
         return
     end
-    local new = frame:GetScale()
+    local new = widget:GetScale()
     if issecretvalue(old) or issecretvalue(new) or new == old or new <= 0 then
         return
     end
     local k = old / new
-    for i = 1, frame:GetNumPoints() do
-        local p, rel, rp, x, y = frame:GetPoint(i)
+    for idx = 1, widget:GetNumPoints() do
+        local p, rel, rp, x, y = widget:GetPoint(idx)
         if
             not (
                 issecretvalue(p)
@@ -200,7 +200,7 @@ function CludesUI.SetFrameScale(frame, scale, keepPosition)
                 or issecretvalue(y)
             )
         then
-            CludesUI.SetFramePoint(frame, p, rel, rp, x * k, y * k)
+            CludesUI.SetFramePoint(widget, p, rel, rp, x * k, y * k)
         end
     end
 end
@@ -215,9 +215,9 @@ end
 -- no such override (a plain Show undoes this), except on Blizzard's action
 -- bars, whose overrides keep their own shown state, which this leaves as it
 -- was.
-function CludesUI.HideFrame(frame)
-    local hide = frame.HideBase or frame.Hide
-    hide(frame)
+function CludesUI.HideFrame(widget)
+    local hide = widget.HideBase or widget.Hide
+    hide(widget)
 end
 
 -------------------------------------------------------------------------------
@@ -269,40 +269,40 @@ do
     local placerStates = setmetatable({}, { __mode = "k" })
     local PlacerRetry
 
-    local function PlacerRefused(frame)
-        local v = frame:IsForbidden()
-        if issecretvalue(v) or v then
+    local function PlacerRefused(widget)
+        local val = widget:IsForbidden()
+        if issecretvalue(val) or val then
             return true
         end
-        v = frame:IsProtected()
-        if issecretvalue(v) or v then
+        val = widget:IsProtected()
+        if issecretvalue(val) or val then
             return true
         end
-        if frame.IsAnchoringRestricted then
-            v = frame:IsAnchoringRestricted()
-            if issecretvalue(v) or v then
+        if widget.IsAnchoringRestricted then
+            val = widget:IsAnchoringRestricted()
+            if issecretvalue(val) or val then
                 return true
             end
         end
         return false
     end
 
-    local function PlacerSet(frame, point, relativeTo, relativePoint, x, y)
-        CludesUI.ClearFramePoints(frame)
-        CludesUI.SetFramePoint(frame, point, relativeTo, relativePoint, x, y)
+    local function PlacerSet(widget, anchorPoint, relativeTo, relativePoint, x, y)
+        CludesUI.ClearFramePoints(widget)
+        CludesUI.SetFramePoint(widget, anchorPoint, relativeTo, relativePoint, x, y)
     end
 
     -- False when SetPoint refused the anchor (an anchor loop): the frame was
     -- left with no points, and the error goes to the error handler. Either
     -- way no point of anyone else is left on the frame.
-    local function PlacerApply(frame, st, point, relativeTo, relativePoint, x, y)
+    local function PlacerApply(widget, st, anchorPoint, relativeTo, relativePoint, x, y)
         st.applying = true
-        local ok, err = pcall(PlacerSet, frame, point, relativeTo, relativePoint, x, y)
+        local success, err = pcall(PlacerSet, widget, anchorPoint, relativeTo, relativePoint, x, y)
         st.applying, st.over = false, false
-        if not ok then
+        if not success then
             geterrorhandler()(err)
         end
-        return ok
+        return success
     end
 
     -- Runs the state again when combat ends (one keyed entry in the core's
@@ -312,27 +312,27 @@ do
         CludesUI.CombatQueue.Defer("FramePlacerRetry", PlacerRetry)
     end
 
-    local function PlacerResolve(frame, st)
+    local function PlacerResolve(widget, st)
         st.owed = false
         if st.count == 0 and not st.placed then
             return
         end
-        if PlacerRefused(frame) then
+        if PlacerRefused(widget) then
             PlacerOwe(st)
             return
         end
         if st.count == 0 then
             -- A hand-back refused earlier: our anchor is still on the frame.
             st.placed = false
-            PlacerApply(frame, st, st.bp, st.br, st.brp, st.bx, st.by)
+            PlacerApply(widget, st, st.bp, st.br, st.brp, st.bx, st.by)
             return
         end
         if not st.placed then
             -- The frame holds Blizzard's anchor: kept for the owners and the hand-back.
-            if frame:GetNumPoints() ~= 1 then
+            if widget:GetNumPoints() ~= 1 then
                 return
             end
-            local p, r, rp, x, y = frame:GetPoint(1)
+            local p, r, rp, x, y = widget:GetPoint(1)
             if
                 issecretvalue(p)
                 or issecretvalue(r)
@@ -346,7 +346,7 @@ do
             if r == nil then
                 -- An anchor to the parent can read back with no relative
                 -- frame; an explicit nil would anchor to the screen instead.
-                r = frame:GetParent()
+                r = widget:GetParent()
                 if issecretvalue(r) then
                     PlacerOwe(st)
                     return
@@ -356,13 +356,13 @@ do
         end
         local fns = st.fns
         local later = false
-        local ok, p, r, rp, x, y
+        local success, p, r, rp, x, y
         for rank = 1, NUM_PLACER_RANKS do
-            local fn = fns[rank]
-            if fn then
+            local func = fns[rank]
+            if func then
                 -- An owner that errors passes, so it never stops the others.
-                ok, p, r, rp, x, y = pcall(fn, frame, st.bp, st.br, st.brp, st.bx, st.by)
-                if not ok then
+                success, p, r, rp, x, y = pcall(func, widget, st.bp, st.br, st.brp, st.bx, st.by)
+                if not success then
                     geterrorhandler()(p)
                     p = nil
                 elseif p == false then
@@ -388,7 +388,7 @@ do
             then
                 return
             end
-            if PlacerApply(frame, st, p, r, rp, x, y) then
+            if PlacerApply(widget, st, p, r, rp, x, y) then
                 st.placed = true
                 st.ap, st.ar, st.arp, st.ax, st.ay = p, r, rp, x, y
                 return
@@ -400,7 +400,7 @@ do
         end
         -- No owner wants a spot, or the owner's anchor was refused.
         st.placed = false
-        PlacerApply(frame, st, st.bp, st.br, st.brp, st.bx, st.by)
+        PlacerApply(widget, st, st.bp, st.br, st.brp, st.bx, st.by)
     end
 
     -- Shown exactly while a state is marked, so its OnUpdate runs only in a
@@ -410,10 +410,10 @@ do
 
     local function PlacerFlush()
         placerDriver:Hide()
-        for frame, st in pairs(placerStates) do
+        for widget, st in pairs(placerStates) do
             if st.dirty then
                 st.dirty = false
-                PlacerResolve(frame, st)
+                PlacerResolve(widget, st)
             end
         end
     end
@@ -442,20 +442,20 @@ do
         end
     end
 
-    local function PlacerNewState(frame)
+    local function PlacerNewState(widget)
         local st = { fns = {}, count = 0 }
-        placerStates[frame] = st
+        placerStates[widget] = st
         -- A write from anyone but us (ours run with st.applying set) that
         -- replaces or clears our anchor drops it, owners or not, so a waiting
         -- hand-back has nothing left to do; a SetPoint or SetAllPoints also
         -- asks for a placement while there are owners. A SetPoint on another
         -- point than ours leaves our anchor on the frame beside it (st.over):
         -- it stays ours, and the next placement or hand-back leaves one point.
-        hooksecurefunc(frame, "SetPoint", function(_, point)
+        hooksecurefunc(widget, "SetPoint", function(_, anchorPoint)
             if st.applying then
                 return
             end
-            if st.placed and point ~= st.ap then
+            if st.placed and anchorPoint ~= st.ap then
                 st.over = true
             else
                 st.placed, st.over = false, false
@@ -464,7 +464,7 @@ do
                 PlacerMark(st)
             end
         end)
-        hooksecurefunc(frame, "SetAllPoints", function()
+        hooksecurefunc(widget, "SetAllPoints", function()
             if st.applying then
                 return
             end
@@ -473,12 +473,12 @@ do
                 PlacerMark(st)
             end
         end)
-        hooksecurefunc(frame, "ClearAllPoints", function()
+        hooksecurefunc(widget, "ClearAllPoints", function()
             if not st.applying then
                 st.placed, st.over = false, false
             end
         end)
-        local column = frame.layoutParent
+        local column = widget.layoutParent
         if type(column) == "table" and type(column.Layout) == "function" and not placerColumns[column] then
             placerColumns[column] = true
             hooksecurefunc(column, "Layout", PlacerSettle)
@@ -486,29 +486,29 @@ do
         return st
     end
 
-    function CludesUI.SetFramePlacer(frame, owner, fn)
-        local rank = PLACER_RANKS[owner]
+    function CludesUI.SetFramePlacer(widget, ownerFrame, func)
+        local rank = PLACER_RANKS[ownerFrame]
         if
             not rank
-            or type(frame) ~= "table"
-            or not frame.IsForbidden
-            or (fn ~= nil and type(fn) ~= "function")
+            or type(widget) ~= "table"
+            or not widget.IsForbidden
+            or (func ~= nil and type(func) ~= "function")
         then
             return false
         end
-        local st = placerStates[frame]
-        if fn then
-            if st and st.fns[rank] == fn then
+        local st = placerStates[widget]
+        if func then
+            if st and st.fns[rank] == func then
                 return true
             end
-            if PlacerRefused(frame) then
+            if PlacerRefused(widget) then
                 return false
             end
-            st = st or PlacerNewState(frame)
+            st = st or PlacerNewState(widget)
             if not st.fns[rank] then
                 st.count = st.count + 1
             end
-            st.fns[rank] = fn
+            st.fns[rank] = func
             PlacerMark(st)
             return true
         end
@@ -524,18 +524,18 @@ do
             -- replaces or clears it drops placed), so Blizzard's recorded
             -- anchor is current. A frame refused right now keeps our anchor,
             -- still marked as ours, until the hand-back can run.
-            if PlacerRefused(frame) then
+            if PlacerRefused(widget) then
                 PlacerOwe(st)
             else
                 st.placed = false
-                PlacerApply(frame, st, st.bp, st.br, st.brp, st.bx, st.by)
+                PlacerApply(widget, st, st.bp, st.br, st.brp, st.bx, st.by)
             end
         end
         return true
     end
 
-    function CludesUI.RequestFramePlacement(frame)
-        local st = placerStates[frame]
+    function CludesUI.RequestFramePlacement(widget)
+        local st = placerStates[widget]
         if st and st.count > 0 then
             PlacerMark(st)
         end
@@ -551,40 +551,40 @@ end
 --  so it never needs the event state changed: wrap anything that flips it in Capture/Restore and only ever undo CUI's own writes.
 -------------------------------------------------------------------------------
 function CludesUI._BlizzCastBars()
-    local bars = CludesUI._blizzCastBarList
-    if bars then
-        return bars
+    local barList = CludesUI._blizzCastBarList
+    if barList then
+        return barList
     end
 
-    bars = {}
+    barList = {}
     if PlayerCastingBarFrame then
-        bars[#bars + 1] = { frame = PlayerCastingBarFrame, unit = "player" }
+        barList[#barList + 1] = { frame = PlayerCastingBarFrame, unit = "player" }
     end
     if PetCastingBarFrame then
-        bars[#bars + 1] = { frame = PetCastingBarFrame, unit = "pet" }
+        barList[#barList + 1] = { frame = PetCastingBarFrame, unit = "pet" }
     end
-    CludesUI._blizzCastBarList = bars
+    CludesUI._blizzCastBarList = barList
 
-    for i = 1, #bars do
-        local bar = bars[i]
+    for idx = 1, #barList do
+        local barFrame = barList[idx]
         -- An UnregisterAllEvents outside one of our own Capture/Restore windows is another
         -- addon claiming the frame: CUI drops its claim and records the claim as foreign.
         -- "Foreign" is tracked separately from "not ours" because those are very different states -- see RestoreBlizzCastBarEvents.
-        hooksecurefunc(bar.frame, "UnregisterAllEvents", function()
+        hooksecurefunc(barFrame.frame, "UnregisterAllEvents", function()
             if not CludesUI._blizzCastBarSnapshot then
-                bar.owned = false
-                bar.foreign = true
+                barFrame.owned = false
+                barFrame.foreign = true
             end
         end)
     end
-    return bars
+    return barList
 end
 
 function CludesUI.CaptureBlizzCastBarEvents()
-    local bars = CludesUI._BlizzCastBars()
+    local barList = CludesUI._BlizzCastBars()
     local snapshot = {}
-    for i = 1, #bars do
-        snapshot[i] = bars[i].frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
+    for idx = 1, #barList do
+        snapshot[idx] = barList[idx].frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
     end
     CludesUI._blizzCastBarSnapshot = snapshot
 end
@@ -596,21 +596,21 @@ function CludesUI.RestoreBlizzCastBarEvents()
     end
     CludesUI._blizzCastBarSnapshot = nil
 
-    local bars = CludesUI._blizzCastBarList
-    for i = 1, #bars do
-        local bar = bars[i]
-        local live = bar.frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
-        if live ~= snapshot[i] then
+    local barList = CludesUI._blizzCastBarList
+    for idx = 1, #barList do
+        local barFrame = barList[idx]
+        local live = barFrame.frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
+        if live ~= snapshot[idx] then
             if not live then
-                bar.owned = true
-            elseif bar.owned then
-                bar.owned = false
-            elseif bar.foreign then
+                barFrame.owned = true
+            elseif barFrame.owned then
+                barFrame.owned = false
+            elseif barFrame.foreign then
                 -- Another addon silenced this frame and we just re-registered it
                 -- on the way past; put it back the way we found it instead of
                 -- resurrecting Blizzard's cast bar next to theirs.
-                bar.frame:UnregisterAllEvents()
-                bar.frame:Hide()
+                barFrame.frame:UnregisterAllEvents()
+                barFrame.frame:Hide()
             else
                 -- Registered inside our own window with nobody claiming it.
                 -- That is CUI's own bookkeeping having lost track (a silence
@@ -653,20 +653,20 @@ local BLIZZ_CAST_EVENTS = {
 -- Covers the pet bar too: oUF silences both and only re-arms them from its Castbar element's
 -- Disable, so any release path that does not run that (the element was never enabled to begin with) leaves both dead.
 function CludesUI.RearmBlizzCastBars()
-    local bars = CludesUI._blizzCastBarList
-    if not bars then
+    local barList = CludesUI._blizzCastBarList
+    if not barList then
         return
     end
-    for i = 1, #bars do
-        local bar = bars[i]
-        if not bar.foreign and not bar.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
-            bar.owned = false
-            for j = 1, #BLIZZ_CAST_EVENTS do
-                bar.frame:RegisterUnitEvent(BLIZZ_CAST_EVENTS[j], bar.unit)
+    for idx = 1, #barList do
+        local barFrame = barList[idx]
+        if not barFrame.foreign and not barFrame.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
+            barFrame.owned = false
+            for jdx = 1, #BLIZZ_CAST_EVENTS do
+                barFrame.frame:RegisterUnitEvent(BLIZZ_CAST_EVENTS[jdx], barFrame.unit)
             end
-            bar.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-            if bar.unit == "pet" then
-                bar.frame:RegisterEvent("UNIT_PET")
+            barFrame.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+            if barFrame.unit == "pet" then
+                barFrame.frame:RegisterEvent("UNIT_PET")
             end
         end
     end
@@ -687,8 +687,8 @@ end
 --  Blizzard's player cast bar while they render their own. Centralized here so modules cooperate
 --  with each other and leave third-party visibility control alone once no CUI module is actively using a replacement bar.
 -------------------------------------------------------------------------------
-function CludesUI.SetPlayerCastBarSuppressed(owner, suppressed)
-    if not owner or owner == "" then
+function CludesUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
+    if not ownerFrame or ownerFrame == "" then
         return
     end
 
@@ -699,9 +699,9 @@ function CludesUI.SetPlayerCastBarSuppressed(owner, suppressed)
     end
 
     if suppressed then
-        owners[owner] = true
+        owners[ownerFrame] = true
     else
-        owners[owner] = nil
+        owners[ownerFrame] = nil
     end
 
     local blizzBar = PlayerCastingBarFrame
@@ -867,26 +867,26 @@ do
     local function isEnabled()
         return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false
     end
-    function CludesUI._HookSwiftmendIcon(tex)
-        if not tex or hooked[tex] then
+    function CludesUI._HookSwiftmendIcon(texture)
+        if not texture or hooked[texture] then
             -- Already hooked; just force bright if re-enabling
-            if tex and hooked[tex] and isEnabled() then
-                tex:SetVertexColor(1, 1, 1)
+            if texture and hooked[texture] and isEnabled() then
+                texture:SetVertexColor(1, 1, 1)
             end
             return
         end
-        hooked[tex] = true
+        hooked[texture] = true
         local vcGuard = false
-        hooksecurefunc(tex, "SetVertexColor", function(_, r, g, b)
+        hooksecurefunc(texture, "SetVertexColor", function(_, r, g, b)
             if not vcGuard and isEnabled() and not (r == 1 and g == 1 and b == 1) then
                 vcGuard = true
-                tex:SetVertexColor(1, 1, 1)
+                texture:SetVertexColor(1, 1, 1)
                 vcGuard = false
             end
         end)
         -- Force bright immediately (icon may already be dimmed before hook)
         if isEnabled() then
-            tex:SetVertexColor(1, 1, 1)
+            texture:SetVertexColor(1, 1, 1)
         end
     end
     CludesUI._SWIFTMEND_SPELL = 18562
@@ -942,7 +942,7 @@ function CludesUI.GetLevelDifficultyColor(level, attackable)
 end
 -- For a unit; nil when the level or attackability cannot be read (secret).
 -- includeFriendly: friendly units get their difficulty color too, not gold.
-function CludesUI.GetLevelColor(unit, level, includeFriendly)
+function CludesUI.GetLevelColor(unitToken, level, includeFriendly)
     local sv = issecretvalue
     if level == nil or (sv and sv(level)) then
         return nil
@@ -950,21 +950,21 @@ function CludesUI.GetLevelColor(unit, level, includeFriendly)
     if includeFriendly then
         return CludesUI.GetLevelDifficultyColor(level, true)
     end
-    local attackable = UnitCanAttack("player", unit)
+    local attackable = UnitCanAttack("player", unitToken)
     if sv and sv(attackable) then
         return nil
     end
     return CludesUI.GetLevelDifficultyColor(level, attackable)
 end
-function CludesUI.ColorText(text, r, g, b)
+function CludesUI.ColorText(textValue, r, g, b)
     if not r then
-        return text
+        return textValue
     end
     return ("|cff%02x%02x%02x%s|r"):format(
         math.floor(r * 255 + 0.5),
         math.floor(g * 255 + 0.5),
         math.floor(b * 255 + 0.5),
-        text
+        textValue
     )
 end
 
@@ -999,19 +999,19 @@ CludesUI.FACTION_ART_LABELS = {
 -- Returns that badge's file id, or nil. Callers pass it to SetFactionArt and memoize it.
 local HONOR_BADGE_RATIO = 30 / 50
 local honorBadgeFiles = {}
-function CludesUI.FactionBadgeFor(style, unit)
-    local art = CludesUI.FACTION_ART[style]
-    if not (art and art.badge and unit) then
+function CludesUI.FactionBadgeFor(look, unitToken)
+    local art = CludesUI.FACTION_ART[look]
+    if not (art and art.badge and unitToken) then
         return nil
     end
-    local level = UnitHonorLevel and UnitHonorLevel(unit)
+    local level = UnitHonorLevel and UnitHonorLevel(unitToken)
     if issecretvalue(level) or not level or level <= 0 then
         return nil
     end
     local file = honorBadgeFiles[level]
     if file == nil then
-        local info = C_PvP and C_PvP.GetHonorRewardInfo and C_PvP.GetHonorRewardInfo(level)
-        file = (info and info.badgeFileDataID) or false
+        local details = C_PvP and C_PvP.GetHonorRewardInfo and C_PvP.GetHonorRewardInfo(level)
+        file = (details and details.badgeFileDataID) or false
         honorBadgeFiles[level] = file
     end
     return file or nil
@@ -1019,68 +1019,68 @@ end
 
 -- The badge sits on a frame that follows the faction texture (textures cannot be parents);
 -- the texture's Show/Hide/alpha/desaturation are mirrored onto it.
-local function GetBadgeHost(tex)
-    local host = tex._honorBadgeHost
-    if host then
-        return host
+local function GetBadgeHost(texture)
+    local hostRegion = texture._honorBadgeHost
+    if hostRegion then
+        return hostRegion
     end
-    local par = tex:GetParent()
-    host = CreateFrame("Frame", nil, par)
-    host:SetAllPoints(tex)
-    host:SetFrameLevel(par:GetFrameLevel() + 1)
-    host:Hide()
-    host:SetAlpha(tex:GetAlpha())
-    local icon = host:CreateTexture(nil, "OVERLAY")
-    icon:SetPoint("CENTER")
-    icon:SetDesaturated(tex:IsDesaturated())
-    host.icon = icon
-    host:SetScript("OnSizeChanged", function(_, w)
-        local s = w * HONOR_BADGE_RATIO
-        icon:SetSize(s, s)
+    local par = texture:GetParent()
+    hostRegion = CreateFrame("Frame", nil, par)
+    hostRegion:SetAllPoints(texture)
+    hostRegion:SetFrameLevel(par:GetFrameLevel() + 1)
+    hostRegion:Hide()
+    hostRegion:SetAlpha(texture:GetAlpha())
+    local glyph = hostRegion:CreateTexture(nil, "OVERLAY")
+    glyph:SetPoint("CENTER")
+    glyph:SetDesaturated(texture:IsDesaturated())
+    hostRegion.icon = glyph
+    hostRegion:SetScript("OnSizeChanged", function(_, wid)
+        local s = wid * HONOR_BADGE_RATIO
+        glyph:SetSize(s, s)
     end)
-    hooksecurefunc(tex, "Hide", function()
-        host:Hide()
+    hooksecurefunc(texture, "Hide", function()
+        hostRegion:Hide()
     end)
-    hooksecurefunc(tex, "Show", function()
-        if host.wanted then
-            host:Show()
+    hooksecurefunc(texture, "Show", function()
+        if hostRegion.wanted then
+            hostRegion:Show()
         end
     end)
-    hooksecurefunc(tex, "SetAlpha", function(_, a)
-        host:SetAlpha(a)
+    hooksecurefunc(texture, "SetAlpha", function(_, a)
+        hostRegion:SetAlpha(a)
     end)
-    hooksecurefunc(tex, "SetDesaturated", function(_, d)
-        icon:SetDesaturated(d)
+    hooksecurefunc(texture, "SetDesaturated", function(_, d)
+        glyph:SetDesaturated(d)
     end)
-    tex._honorBadgeHost = host
-    return host
+    texture._honorBadgeHost = hostRegion
+    return hostRegion
 end
 
-local function SetBadge(tex, file)
-    local host = tex._honorBadgeHost
+local function SetBadge(texture, file)
+    local hostRegion = texture._honorBadgeHost
     if not file then
-        if host then
-            host.wanted = false
-            host:Hide()
+        if hostRegion then
+            hostRegion.wanted = false
+            hostRegion:Hide()
         end
         return
     end
-    host = host or GetBadgeHost(tex)
-    host.icon:SetTexture(file)
-    local w = tex:GetWidth()
-    if w and w > 0 then
-        local s = w * HONOR_BADGE_RATIO
-        host.icon:SetSize(s, s)
+    hostRegion = hostRegion or GetBadgeHost(texture)
+    hostRegion.icon:SetTexture(file)
+    local wid = texture:GetWidth()
+    if wid and wid > 0 then
+        local s = wid * HONOR_BADGE_RATIO
+        hostRegion.icon:SetSize(s, s)
     end
-    host.wanted = true
-    if tex:IsShown() then
-        host:Show()
+    hostRegion.wanted = true
+    if texture:IsShown() then
+        hostRegion:Show()
     end
 end
 
-function CludesUI.SetFactionArt(tex, style, faction, badgeFile)
-    SetBadge(tex, badgeFile)
-    local art = CludesUI.FACTION_ART[style] or CludesUI.FACTION_ART.pvp
+function CludesUI.SetFactionArt(texture, look, faction, badgeFile)
+    SetBadge(texture, badgeFile)
+    local art = CludesUI.FACTION_ART[look] or CludesUI.FACTION_ART.pvp
     -- The resolved atlas or file name is built once per style and faction and kept
     -- on the style's entry (art.Horde / art.Alliance).
     local name = art[faction]
@@ -1097,15 +1097,15 @@ function CludesUI.SetFactionArt(tex, style, faction, badgeFile)
     if art.atlas then
         -- SetAtlas keeps an earlier SetTexCoord (e.g. the Classic banner's crop)
         -- unless told to reset it, so clear it first and ask for the reset too.
-        tex:SetTexCoord(0, 1, 0, 1)
-        tex:SetAtlas(name, false, nil, true)
+        texture:SetTexCoord(0, 1, 0, 1)
+        texture:SetAtlas(name, false, nil, true)
     else
-        tex:SetTexture(name)
+        texture:SetTexture(name)
         local c = art.coords
         if c then
-            tex:SetTexCoord(c[1], c[2], c[3], c[4])
+            texture:SetTexCoord(c[1], c[2], c[3], c[4])
         else
-            tex:SetTexCoord(0, 1, 0, 1)
+            texture:SetTexCoord(0, 1, 0, 1)
         end
     end
 end
@@ -1118,13 +1118,13 @@ end
 local issecretvalue = issecretvalue or function()
     return false
 end
-function CludesUI.IsSecret(v)
-    return v ~= nil and issecretvalue(v)
+function CludesUI.IsSecret(val)
+    return val ~= nil and issecretvalue(val)
 end
-function CludesUI.PlainString(v)
+function CludesUI.PlainString(val)
     -- The secrecy test comes first: comparing a secret string raises.
-    if type(v) == "string" and not issecretvalue(v) and v ~= "" then
-        return v
+    if type(val) == "string" and not issecretvalue(val) and val ~= "" then
+        return val
     end
     return nil
 end
@@ -1145,17 +1145,17 @@ function CludesUI.PowerTextFormat(fmt)
 end
 -- A format dropdown's order list for this client: the same table, or on WoW
 -- Forever a copy without "smart".
-function CludesUI.PowerTextFormatOrder(order)
+function CludesUI.PowerTextFormatOrder(sequence)
     if not CludesUI.IS_FOREVER then
-        return order
+        return sequence
     end
-    local out = {}
-    for i = 1, #order do
-        if order[i] ~= "smart" then
-            out[#out + 1] = order[i]
+    local result = {}
+    for idx = 1, #sequence do
+        if sequence[idx] ~= "smart" then
+            result[#result + 1] = sequence[idx]
         end
     end
-    return out
+    return result
 end
 
 -------------------------------------------------------------------------------
@@ -1170,42 +1170,42 @@ end
 --  the parent's namespace never passes through a public slot.
 -------------------------------------------------------------------------------
 do
-    local function NewFanOut(list)
-        local has, cur = false, nil
-        setmetatable(list, {
-            __newindex = function(l, i, fn)
-                rawset(l, i, fn)
+    local function NewFanOut(entries)
+        local has, current = false, nil
+        setmetatable(entries, {
+            __newindex = function(l, idx, func)
+                rawset(l, idx, func)
                 if has then
-                    fn(cur)
+                    func(current)
                 end
             end,
         })
-        return function(v)
-            has, cur = true, v
-            for i = 1, #list do
-                list[i](v)
+        return function(val)
+            has, current = true, val
+            for idx = 1, #entries do
+                entries[idx](val)
             end
         end
     end
 
-    local function NewInternals(ns, field, t, setters, label)
-        local name = (label or "ns") .. "." .. field
+    local function NewInternals(mod, field, t, setters, labelText)
+        local name = (labelText or "ns") .. "." .. field
         if setters then
             for setter, listName in pairs(setters) do
-                local list = t[listName]
-                if type(list) ~= "table" then
+                local entries = t[listName]
+                if type(entries) ~= "table" then
                     error(name .. ": " .. setter .. " has no list " .. tostring(listName), 2)
                 end
-                t[setter] = NewFanOut(list)
+                t[setter] = NewFanOut(entries)
             end
         end
         t.broken = false
-        ns[field] = setmetatable(t, {
+        mod[field] = setmetatable(t, {
             __index = function(_, k)
                 error(name .. " has no entry " .. tostring(k), 2)
             end,
         })
-        return ns[field]
+        return mod[field]
     end
     CUI_NS.NewInternals = NewInternals
     CludesUI.NewInternals = NewInternals
@@ -1242,96 +1242,101 @@ do
     local placed = setmetatable({}, { __mode = "k" }) -- overlay -> its last offsets and size
 
     local function OverlayEnter(self)
-        local cfg = self._cuiPtCfg
-        if cfg and cfg.onEnter then
-            cfg.onEnter(self:GetParent())
+        local conf = self._cuiPtCfg
+        if conf and conf.onEnter then
+            conf.onEnter(self:GetParent())
         end
     end
     local function OverlayLeave(self)
-        local cfg = self._cuiPtCfg
-        if cfg and cfg.onLeave then
-            cfg.onLeave(self:GetParent())
+        local conf = self._cuiPtCfg
+        if conf and conf.onLeave then
+            conf.onLeave(self:GetParent())
         end
     end
 
     local Sync
-    Sync = function(owner, cfg)
-        local btn = overlays[owner]
-        if not btn and not cfg.wanted(owner) then
+    Sync = function(ownerFrame, conf)
+        local button = overlays[ownerFrame]
+        if not button and not conf.wanted(ownerFrame) then
             return
         end
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer(owner, function()
-                Sync(owner, cfg)
+            CludesUI.CombatQueue.Defer(ownerFrame, function()
+                Sync(ownerFrame, conf)
             end)
             return
         end
-        if not cfg.wanted(owner) then
-            pending[owner] = nil
-            btn:Hide()
+        if not conf.wanted(ownerFrame) then
+            pending[ownerFrame] = nil
+            button:Hide()
             return
         end
-        if not btn then
-            local name = owner:GetName()
-            btn = CreateFrame("Button", name and (name .. "PortraitClick"), owner, "SecureUnitButtonTemplate")
-            if cfg.parentUnit then
-                btn:SetAttribute("useparent-unit", true)
+        if not button then
+            local name = ownerFrame:GetName()
+            button = CreateFrame(
+                "Button",
+                name and (name .. "PortraitClick"),
+                ownerFrame,
+                "SecureUnitButtonTemplate"
+            )
+            if conf.parentUnit then
+                button:SetAttribute("useparent-unit", true)
             else
-                btn:SetAttribute("unit", owner:GetAttribute("unit"))
+                button:SetAttribute("unit", ownerFrame:GetAttribute("unit"))
             end
-            btn:SetAttribute("*type1", "target")
-            btn:SetAttribute("toggleForVehicle", true)
-            btn:RegisterForClicks("AnyUp")
-            CludesUI.AttachSecureUnitMenu(btn)
-            btn._cuiPtCfg = cfg
-            btn:HookScript("OnEnter", OverlayEnter)
-            btn:HookScript("OnLeave", OverlayLeave)
-            overlays[owner] = btn
-            if cfg.register then
-                cfg.register(btn)
+            button:SetAttribute("*type1", "target")
+            button:SetAttribute("toggleForVehicle", true)
+            button:RegisterForClicks("AnyUp")
+            CludesUI.AttachSecureUnitMenu(button)
+            button._cuiPtCfg = conf
+            button:HookScript("OnEnter", OverlayEnter)
+            button:HookScript("OnLeave", OverlayLeave)
+            overlays[ownerFrame] = button
+            if conf.register then
+                conf.register(button)
             end
             -- An owner never shown yet has no rect to measure: measure on its first show.
-            owner:HookScript("OnShow", function(o)
+            ownerFrame:HookScript("OnShow", function(o)
                 local c = pending[o]
                 if c then
                     Sync(o, c)
                 end
             end)
         end
-        local bd = cfg.backdrop(owner)
-        local fl, ft = owner:GetLeft(), owner:GetTop()
-        local bl, bt = bd:GetLeft(), bd:GetTop()
+        local edge = conf.backdrop(ownerFrame)
+        local fl, ft = ownerFrame:GetLeft(), ownerFrame:GetTop()
+        local bl, bt = edge:GetLeft(), edge:GetTop()
         if not (fl and ft and bl and bt) then
-            pending[owner] = cfg
-            btn:Hide()
+            pending[ownerFrame] = conf
+            button:Hide()
             return true
         end
-        pending[owner] = nil
+        pending[ownerFrame] = nil
         -- Placed again only when the portrait moved or resized against the owner.
-        local k = bd:GetEffectiveScale() / owner:GetEffectiveScale()
+        local k = edge:GetEffectiveScale() / ownerFrame:GetEffectiveScale()
         local x, y = bl * k - fl, bt * k - ft
-        local w, h = bd:GetWidth() * k, bd:GetHeight() * k
-        local r = placed[btn]
+        local wid, hgt = edge:GetWidth() * k, edge:GetHeight() * k
+        local r = placed[button]
         if not r then
             r = {}
-            placed[btn] = r
+            placed[button] = r
         end
-        if r.x ~= x or r.y ~= y or r.w ~= w or r.h ~= h then
-            r.x, r.y, r.w, r.h = x, y, w, h
-            btn:ClearAllPoints()
-            btn:SetPoint("TOPLEFT", owner, "TOPLEFT", x, y)
-            btn:SetSize(w, h)
+        if r.x ~= x or r.y ~= y or r.w ~= wid or r.h ~= hgt then
+            r.x, r.y, r.w, r.h = x, y, wid, hgt
+            button:ClearAllPoints()
+            button:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", x, y)
+            button:SetSize(wid, hgt)
         end
         -- The layer is read back from the overlay: a strata change on the owner moves it too.
-        local strata = bd:GetFrameStrata()
-        if btn:GetFrameStrata() ~= strata then
-            btn:SetFrameStrata(strata)
+        local strata = edge:GetFrameStrata()
+        if button:GetFrameStrata() ~= strata then
+            button:SetFrameStrata(strata)
         end
-        local level = bd:GetFrameLevel() + 1
-        if btn:GetFrameLevel() ~= level then
-            btn:SetFrameLevel(level)
+        local level = edge:GetFrameLevel() + 1
+        if button:GetFrameLevel() ~= level then
+            button:SetFrameLevel(level)
         end
-        btn:Show()
+        button:Show()
         return true
     end
     CludesUI.SyncPortraitClick = Sync
@@ -1352,8 +1357,8 @@ do
         else
             lastAlpha = ui
         end
-        for i = 1, #listeners do
-            listeners[i]()
+        for idx = 1, #listeners do
+            listeners[idx]()
         end
     end
     function CludesUI.UIScaledAlpha(a)
@@ -1366,17 +1371,17 @@ do
         end
         return a * ui
     end
-    function CludesUI.OnUIAlphaChanged(fn)
+    function CludesUI.OnUIAlphaChanged(func)
         if not listeners then
             listeners = {}
             hooksecurefunc(UIParent, "SetAlpha", Notify)
         end
-        for i = 1, #listeners do
-            if listeners[i] == fn then
+        for idx = 1, #listeners do
+            if listeners[idx] == func then
                 return
             end
         end
-        listeners[#listeners + 1] = fn
+        listeners[#listeners + 1] = func
     end
 end
 
@@ -1391,44 +1396,44 @@ end
 do
     local floor, format = math.floor, string.format
 
-    function CludesUI.SetCraftBatch(f, on, spellID, castID, castDur)
+    function CludesUI.SetCraftBatch(f, enabled, spellId, castID, castDur)
         local getLeft = C_TradeSkillUI and C_TradeSkillUI.GetRemainingRecasts
-        if not (on and getLeft) then
+        if not (enabled and getLeft) then
             f._craftExtra, f._craftLeft = nil, nil
             return
         end
-        local left = getLeft() or 0
+        local leftX = getLeft() or 0
         if castID and castID == f._craftCast then
-            left = f._craftLeft or left
-        elseif f._craftLeft and spellID == f._craftSpell and left == f._craftLeft - 1 then
+            leftX = f._craftLeft or leftX
+        elseif f._craftLeft and spellId == f._craftSpell and leftX == f._craftLeft - 1 then
             f._craftDone = f._craftDone + 1
         else
             f._craftDone = 0
         end
-        f._craftLeft, f._craftSpell, f._craftCast = left, spellID, castID
-        if left == 0 and f._craftDone == 0 then
+        f._craftLeft, f._craftSpell, f._craftCast = leftX, spellId, castID
+        if leftX == 0 and f._craftDone == 0 then
             f._craftExtra = nil
             return
         end
         local done = f._craftDone
-        local total = floor((done + 1 + left) * castDur)
-        f._craftExtra = left * castDur
-        f._craftTotal = total
-        f._craftTotalSuffix = format(" / %d:%02d", floor(total / 60), total % 60)
-        f._craftCountSuffix = format(" (%d/%d)", done + 1, done + 1 + left)
+        local sum = floor((done + 1 + leftX) * castDur)
+        f._craftExtra = leftX * castDur
+        f._craftTotal = sum
+        f._craftTotalSuffix = format(" / %d:%02d", floor(sum / 60), sum % 60)
+        f._craftCountSuffix = format(" (%d/%d)", done + 1, done + 1 + leftX)
         f._craftSecs = nil
     end
 
     -- Whole batch left (or elapsed / total), repainted once per second.
-    function CludesUI.SetCraftTimerText(f, fs, remaining, totalMode)
-        local left = (remaining > 0 and remaining or 0) + f._craftExtra
-        local secs = floor(totalMode and (f._craftTotal - left) or left)
+    function CludesUI.SetCraftTimerText(f, fontStr, remaining, totalMode)
+        local leftX = (remaining > 0 and remaining or 0) + f._craftExtra
+        local secs = floor(totalMode and (f._craftTotal - leftX) or leftX)
         if secs < 0 then
             secs = 0
         end
         if secs ~= f._craftSecs then
             f._craftSecs = secs
-            fs:SetText(
+            fontStr:SetText(
                 format("%d:%02d", floor(secs / 60), secs % 60) .. (totalMode and f._craftTotalSuffix or "")
             )
         end
@@ -1466,22 +1471,22 @@ do
     -- fs's face, size and flags. A string on one of our families gives its roman
     -- member's (the chosen font, whatever script the text holds), true, and
     -- whether the family carries a shadow; any other string its own GetFont.
-    local function FontOf(fs)
-        local fo = fs:GetFontObject()
-        local set = CludesUI._fontFamilySet
-        if fo and set and set[fo] and fo.GetFontObjectForAlphabet then
+    local function FontOf(fontStr)
+        local fo = fontStr:GetFontObject()
+        local group = CludesUI._fontFamilySet
+        if fo and group and group[fo] and fo.GetFontObjectForAlphabet then
             local roman = fo:GetFontObjectForAlphabet("roman")
-            local face, size, flags
+            local face, dim, flags
             if roman then
-                face, size, flags = roman:GetFont()
+                face, dim, flags = roman:GetFont()
             end
             if face then
                 local _, _, _, sa = fo:GetShadowColor()
-                return face, size, flags, true, (sa or 0) > 0
+                return face, dim, flags, true, (sa or 0) > 0
             end
         end
-        local face, size, flags = fs:GetFont()
-        return face, size, flags, false, false
+        local face, dim, flags = fontStr:GetFont()
+        return face, dim, flags, false, false
     end
 
     -- Two measuring strings: a plain SetFont pins a string's face, so the one that
@@ -1507,45 +1512,45 @@ do
     end
 
     -- Width of a clean string in fs's font face (at size, or fs's own size).
-    local function Measure(fs, str, size)
-        local font, cur, flags, isFam, shadow = FontOf(fs)
+    local function Measure(fontStr, str, dim)
+        local font, current, flags, isFam, shadow = FontOf(fontStr)
         if not font then
             return 0
         end
-        local fam = isFam and CludesUI.GetFontFamily(font, size or cur, flags, shadow)
+        local fam = isFam and CludesUI.GetFontFamily(font, dim or current, flags, shadow)
         local m = MeasureString(fam)
         if fam then
             m:SetFontObject(fam)
         else
-            m:SetFont(font, size or cur, flags)
+            m:SetFont(font, dim or current, flags)
         end
         m:SetText(str)
         return m:GetUnboundedStringWidth() or 0
     end
     CludesUI.MeasureCastText = Measure
 
-    function CludesUI.FitCastName(fs, str, baseSize)
-        local font, cur, flags, isFam, shadow = FontOf(fs)
+    function CludesUI.FitCastName(fontStr, str, baseSize)
+        local font, current, flags, isFam, shadow = FontOf(fontStr)
         if not font then
             return
         end
-        local size = baseSize
-        local room = fs:GetWidth()
+        local dim = baseSize
+        local room = fontStr:GetWidth()
         if str and not issecretvalue(str) and str ~= "" and room and not issecretvalue(room) and room > 1 then
-            local w = Measure(fs, str, baseSize)
+            local wid = Measure(fontStr, str, baseSize)
             -- 1px slack: glyph hinting can round a scaled string up a pixel.
-            if w and w > room - 1 then
-                size = floor(baseSize * (room - 1) / w * 2) / 2
-                if size < MIN_SIZE then
-                    size = MIN_SIZE
+            if wid and wid > room - 1 then
+                dim = floor(baseSize * (room - 1) / wid * 2) / 2
+                if dim < MIN_SIZE then
+                    dim = MIN_SIZE
                 end
             end
         end
-        if cur ~= size then
+        if current ~= dim then
             if isFam then
-                CludesUI.SetFontFamily(fs, font, size, flags, shadow)
+                CludesUI.SetFontFamily(fontStr, font, dim, flags, shadow)
             else
-                fs:SetFont(font, size, flags)
+                fontStr:SetFont(font, dim, flags)
             end
         end
     end
@@ -1558,15 +1563,15 @@ end
 --  the FlipBook. `duration` is one loop in seconds (Blizzard: 1.5). Build once
 --  per frame of ours: it sets the frame's OnShow and OnHide scripts.
 -------------------------------------------------------------------------------
-function CludesUI.AddRestFlipbook(frame, tex, duration)
-    tex:SetAtlas("UI-HUD-UnitFrame-Player-Rest-Flipbook")
-    local anim = frame:CreateAnimationGroup()
+function CludesUI.AddRestFlipbook(widget, texture, duration)
+    texture:SetAtlas("UI-HUD-UnitFrame-Player-Rest-Flipbook")
+    local anim = widget:CreateAnimationGroup()
     anim:SetLooping("REPEAT")
     if anim.SetToFinalAlpha then
         anim:SetToFinalAlpha(true)
     end
     local flip = anim:CreateAnimation("FlipBook")
-    flip:SetTarget(tex)
+    flip:SetTarget(texture)
     flip:SetDuration(duration or 1.5)
     flip:SetOrder(1)
     if flip.SetSmoothing then
@@ -1577,10 +1582,10 @@ function CludesUI.AddRestFlipbook(frame, tex, duration)
     flip:SetFlipBookFrames(42)
     flip:SetFlipBookFrameWidth(0)
     flip:SetFlipBookFrameHeight(0)
-    frame:SetScript("OnShow", function()
+    widget:SetScript("OnShow", function()
         anim:Play()
     end)
-    frame:SetScript("OnHide", function()
+    widget:SetScript("OnHide", function()
         anim:Stop()
     end)
     return anim
@@ -1610,14 +1615,14 @@ do
         local groups = C_Traits.GetGroupDisplayInfoByTreeID(treeID)
         table.sort(groups, ByOrder)
         local trees, byGroup = {}, {}
-        for i, g in ipairs(groups) do
-            trees[i] = { groupID = g.groupID, name = g.displayName, nodes = {} }
-            byGroup[g.groupID] = trees[i]
+        for idx, g in ipairs(groups) do
+            trees[idx] = { groupID = g.groupID, name = g.displayName, nodes = {} }
+            byGroup[g.groupID] = trees[idx]
         end
         for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID)) do
-            local info = C_Traits.GetNodeInfo(configID, nodeID)
-            if info and info.isVisible and info.entryIDs[1] then
-                for _, groupID in ipairs(info.groupIDs) do
+            local details = C_Traits.GetNodeInfo(configID, nodeID)
+            if details and details.isVisible and details.entryIDs[1] then
+                for _, groupID in ipairs(details.groupIDs) do
                     local t = byGroup[groupID]
                     if t then
                         t.nodes[#t.nodes + 1] = nodeID
@@ -1639,15 +1644,15 @@ do
     local function GridAxis(values)
         table.sort(values)
         local n = 0
-        for i = 2, #values do
-            local d = values[i] - values[i - 1]
+        for idx = 2, #values do
+            local d = values[idx] - values[idx - 1]
             if d > 0 then
                 n = n + 1
                 gaps[n] = d
             end
         end
-        for i = #gaps, n + 1, -1 do
-            gaps[i] = nil
+        for idx = #gaps, n + 1, -1 do
+            gaps[idx] = nil
         end
         local first = values[1] or 0
         if n == 0 then
@@ -1656,20 +1661,20 @@ do
         table.sort(gaps)
         local least = gaps[math.floor(n / 2) + 1] / 4
         local step
-        for i = 1, n do
-            if gaps[i] > least then
-                step = gaps[i]
+        for idx = 1, n do
+            if gaps[idx] > least then
+                step = gaps[idx]
                 break
             end
         end
         -- Lines follow each other a few steps apart at most; past a bigger jump
         -- the rest lie off the grid (see Line).
         local last = first
-        for i = 2, #values do
-            if values[i] - values[i - 1] > 4 * step then
+        for idx = 2, #values do
+            if values[idx] - values[idx - 1] > 4 * step then
                 break
             end
-            last = values[i]
+            last = values[idx]
         end
         return first, step, last
     end
@@ -1677,38 +1682,38 @@ do
     -- A position's line (from 0) on one axis. A node far beyond the others whose
     -- tenth falls on the grid is read there: an extra zero in the game's data
     -- (the hunter's and priest's trees have such nodes).
-    local function Line(v, first, step, last)
-        if v > last + 4 * step then
-            local t = v / 10
+    local function Line(val, first, step, last)
+        if val > last + 4 * step then
+            local t = val / 10
             local k = (t - first) / step
             local r = math.floor(k + 0.5)
             if r >= 0 and t <= last + step / 4 and math.abs(k - r) < 0.25 then
-                v = t
+                val = t
             end
         end
-        return math.floor((v - first) / step + 0.5)
+        return math.floor((val - first) / step + 0.5)
     end
 
     -- Each talent's column and row (from 0) in its tree, from the node
     -- positions: cells[nodeID] = { col, row, info } and the row count.
     function CludesUI.TalentTreeGrid(configID, nodes)
         local xs, ys, infos = {}, {}, {}
-        for i, nodeID in ipairs(nodes) do
-            local info = C_Traits.GetNodeInfo(configID, nodeID)
-            infos[nodeID] = info
-            xs[i], ys[i] = info.posX, info.posY
+        for idx, nodeID in ipairs(nodes) do
+            local details = C_Traits.GetNodeInfo(configID, nodeID)
+            infos[nodeID] = details
+            xs[idx], ys[idx] = details.posX, details.posY
         end
         local x0, dx, xLast = GridAxis(xs)
         local y0, dy, yLast = GridAxis(ys)
-        local cells, rows = {}, 0
+        local cells, rowList = {}, 0
         for _, nodeID in ipairs(nodes) do
-            local info = infos[nodeID]
-            local col = Line(info.posX, x0, dx, xLast)
-            local row = Line(info.posY, y0, dy, yLast)
-            cells[nodeID] = { col = col, row = row, info = info }
-            rows = math.max(rows, row)
+            local details = infos[nodeID]
+            local col = Line(details.posX, x0, dx, xLast)
+            local rowFrame = Line(details.posY, y0, dy, yLast)
+            cells[nodeID] = { col = col, row = rowFrame, info = details }
+            rowList = math.max(rowList, rowFrame)
         end
-        return cells, rows + 1
+        return cells, rowList + 1
     end
 end
 
@@ -1744,19 +1749,19 @@ do
             st = false
             -- Guarded: a saved nodeID can outlive a talent-tree rework in a patch.
             -- Runs on a cache miss only (once per node per talent change).
-            local ok, info
+            local success, details
             if configID then
-                ok, info = pcall(C_Traits.GetNodeInfo, configID, nodeID)
+                success, details = pcall(C_Traits.GetNodeInfo, configID, nodeID)
             end
-            if ok and info then
+            if success and details then
                 -- Committed state only: activeRank/activeEntry also count picks staged
                 -- in the talent UI and never applied. A granted rank (activeRank above
                 -- ranksPurchased) cannot be staged, so it counts as taken as well.
-                local committed = info.entryIDsWithCommittedRanks
+                local committed = details.entryIDsWithCommittedRanks
                 if committed and #committed > 0 then
                     st = committed[1]
-                elseif (info.activeRank or 0) > (info.ranksPurchased or 0) then
-                    st = (info.activeEntry and info.activeEntry.entryID) or true
+                elseif (details.activeRank or 0) > (details.ranksPurchased or 0) then
+                    st = (details.activeEntry and details.activeEntry.entryID) or true
                 end
             end
             nodeState[nodeID] = st
@@ -1788,8 +1793,8 @@ do
         if configID == nil then
             configID = C_ClassTalents.GetActiveConfigID()
         end
-        for i = 1, #conds do
-            local c = conds[i]
+        for idx = 1, #conds do
+            local c = conds[idx]
             if type(c) == "table" and c.nodeID then
                 if IsTaken(c.nodeID, c.entryID, configID or nil) ~= (c.taken ~= false) then
                     return false

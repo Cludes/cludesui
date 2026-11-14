@@ -10,7 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Loads after the main file and CUI_ActionBars_ButtonArt.lua and reads them
 --  through ns only.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, pairs, pcall = ipairs, pairs, pcall
@@ -18,25 +18,26 @@ local max = math.max
 local InCombatLockdown = InCombatLockdown
 local C_Timer_After = C_Timer.After
 local GetBindingKey = GetBindingKey
-local EFD = ns.EFD
+local EFD = mod.EFD
 
-local EAB, EAB_VTABLE, BAR_LOOKUP = ns.EAB, ns.EAB_VTABLE, ns.BAR_LOOKUP
-local ResolveBorderThickness, barButtons = ns.ResolveBorderThickness, ns.barButtons
-local I = ns._internals
-local BAR_CONFIG, BINDING_MAP, FONT_PATH = I.BAR_CONFIG, I.BINDING_MAP, I.FONT_PATH
-local NUM_ACTIONBAR_BUTTONS = I.NUM_ACTIONBAR_BUTTONS
-local barFrames, buttonToBar, _fadeAlpha = I.barFrames, I.buttonToBar, I._fadeAlpha
-local _gridState, _quickKeybindState = I._gridState, I._quickKeybindState
-local LayoutBar, SyncPagingAlpha, FormatHotkeyText = I.LayoutBar, I.SyncPagingAlpha, I.FormatHotkeyText
-local ApplyButtonBorders, ApplyShapeToButton = I.ApplyButtonBorders, I.ApplyShapeToButton
-local SafeEnableMouse, SafeEnableMouseMotionOnly = I.SafeEnableMouse, I.SafeEnableMouseMotionOnly
-local ShouldQuickKeybindSurfaceBar = I.ShouldQuickKeybindSurfaceBar
-local SHOWGRID, SetShowGridInsecure = I.SHOWGRID, I.SetShowGridInsecure
+local ABAR, EAB_VTABLE, BAR_LOOKUP = mod.EAB, mod.EAB_VTABLE, mod.BAR_LOOKUP
+local ResolveBorderThickness, barButtons = mod.ResolveBorderThickness, mod.barButtons
+local Inner = mod._internals
+local BAR_CONFIG, BINDING_MAP, FONT_PATH = Inner.BAR_CONFIG, Inner.BINDING_MAP, Inner.FONT_PATH
+local NUM_ACTIONBAR_BUTTONS = Inner.NUM_ACTIONBAR_BUTTONS
+local barFrames, buttonToBar, _fadeAlpha = Inner.barFrames, Inner.buttonToBar, Inner._fadeAlpha
+local _gridState, _quickKeybindState = Inner._gridState, Inner._quickKeybindState
+local LayoutBar, SyncPagingAlpha, FormatHotkeyText =
+    Inner.LayoutBar, Inner.SyncPagingAlpha, Inner.FormatHotkeyText
+local ApplyButtonBorders, ApplyShapeToButton = Inner.ApplyButtonBorders, Inner.ApplyShapeToButton
+local SafeEnableMouse, SafeEnableMouseMotionOnly = Inner.SafeEnableMouse, Inner.SafeEnableMouseMotionOnly
+local ShouldQuickKeybindSurfaceBar = Inner.ShouldQuickKeybindSurfaceBar
+local SHOWGRID, SetShowGridInsecure = Inner.SHOWGRID, Inner.SetShowGridInsecure
 
 -------------------------------------------------------------------------------
 --  EAB Methods Apply functions called by the options UI
 -------------------------------------------------------------------------------
-function EAB:ApplyBordersForBar(barKey)
+function ABAR:ApplyBordersForBar(barId)
     if not self.db then
         return
     end
@@ -44,21 +45,21 @@ function EAB:ApplyBordersForBar(barKey)
     -- settings): re-push the bar's matches when it moved. At entry so the look
     -- and square-icon returns below report too; the re-push is deferred.
     if CludesUI.MatchPadChanged then
-        CludesUI.MatchPadChanged(barKey)
+        CludesUI.MatchPadChanged(barId)
     end
     if not self.db.profile.squareIcons then
         return
     end
-    if ns.AB_Style() ~= "cui" then
+    if mod.AB_Style() ~= "cui" then
         return
     end
-    local s = self.db.profile.bars[barKey]
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
     local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local sz, px = ResolveBorderThickness(s)
-    local on = sz > 0
+    local enabled = sz > 0
     local cr, cg, cb, ca = c.r, c.g, c.b, c.a or 1
     if s.borderClassColor then
         local _, classToken = UnitClass("player")
@@ -78,17 +79,17 @@ function EAB:ApplyBordersForBar(barKey)
     local thicknessKey = s.borderThickness or "thin"
     local behind = s.borderBehind
     local above = s.borderAboveEffects
-    local buttons = barButtons[barKey]
+    local buttons = barButtons[barId]
     if not buttons then
         return
     end
-    for i = 1, #buttons do
-        local btn = buttons[i]
-        if btn then
-            EFD(btn).barKey = barKey
+    for idx = 1, #buttons do
+        local button = buttons[idx]
+        if button then
+            EFD(button).barKey = barId
             ApplyButtonBorders(
-                btn,
-                on,
+                button,
+                enabled,
                 cr,
                 cg,
                 cb,
@@ -109,30 +110,30 @@ function EAB:ApplyBordersForBar(barKey)
         end
     end
     -- Match Bar Border copies follow the bar border (one boolean read while off).
-    ns._ixBarSync(barKey)
+    mod._ixBarSync(barId)
 end
 
-function EAB:ApplyBorders()
+function ABAR:ApplyBorders()
     if not self.db then
         return
     end
-    for _, info in ipairs(BAR_CONFIG) do
-        self:ApplyBordersForBar(info.key)
+    for _, details in ipairs(BAR_CONFIG) do
+        self:ApplyBordersForBar(details.key)
     end
 end
 
-function EAB:ApplyShapesForBar(barKey)
+function ABAR:ApplyShapesForBar(barId)
     if InCombatLockdown() then
-        ns._eabApplyDeferred = true
+        mod._eabApplyDeferred = true
         return
     end
     if not self.db then
         return
     end
-    if ns.AB_Style() ~= "cui" then
+    if mod.AB_Style() ~= "cui" then
         return
     end
-    local s = self.db.profile.bars[barKey]
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
@@ -151,79 +152,79 @@ function EAB:ApplyShapesForBar(barKey)
             end
         end
     end
-    local buttons = barButtons[barKey]
+    local buttons = barButtons[barId]
     if not buttons then
         return
     end
-    for i = 1, #buttons do
-        local btn = buttons[i]
-        if btn then
-            ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brdSz, zoom)
+    for idx = 1, #buttons do
+        local button = buttons[idx]
+        if button then
+            ApplyShapeToButton(button, shape, brdOn, brdR, brdG, brdB, brdA, brdSz, zoom)
         end
     end
-    LayoutBar(barKey)
+    LayoutBar(barId)
     -- A shape change moves the bar in or out of Match Bar Border eligibility;
     -- the copies' style inputs all go through ApplyBordersForBar's own sync.
-    ns._ixBarSync(barKey, true)
+    mod._ixBarSync(barId, true)
 end
 
-function EAB:ApplyShapes()
+function ABAR:ApplyShapes()
     if not self.db then
         return
     end
-    for _, info in ipairs(BAR_CONFIG) do
-        self:ApplyShapesForBar(info.key)
+    for _, details in ipairs(BAR_CONFIG) do
+        self:ApplyShapesForBar(details.key)
     end
 end
 
-function EAB:ApplyPaddingForBar(barKey)
-    LayoutBar(barKey)
+function ABAR:ApplyPaddingForBar(barId)
+    LayoutBar(barId)
 end
 
-function EAB:ApplyButtonSizeForBar(barKey)
-    LayoutBar(barKey)
+function ABAR:ApplyButtonSizeForBar(barId)
+    LayoutBar(barId)
 end
 
-function EAB:ApplyIconRowOverrides(barKey)
-    LayoutBar(barKey)
-    self:ApplyAlwaysShowButtons(barKey)
+function ABAR:ApplyIconRowOverrides(barId)
+    LayoutBar(barId)
+    self:ApplyAlwaysShowButtons(barId)
 end
 
-function EAB:ApplyBarOpacity(barKey)
-    local s = self.db.profile.bars[barKey]
+function ABAR:ApplyBarOpacity(barId)
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
-    local frame = barFrames[barKey]
-    if not frame then
+    local widget = barFrames[barId]
+    if not widget then
         return
     end
     -- In mouseover mode the hover system owns alpha (0 when unhovered,
     -- mouseoverAlpha when hovered). Don't override it here.
     if not s.mouseoverEnabled then
         local a = s.mouseoverAlpha or 1
-        frame:SetAlpha(a)
-        _fadeAlpha[frame] = a
-        if barKey == "MainBar" then
+        widget:SetAlpha(a)
+        _fadeAlpha[widget] = a
+        if barId == "MainBar" then
             SyncPagingAlpha(s.mouseoverAlpha or 1)
         end
     end
 end
 
-function EAB:BarSupportsOrientation(barKey)
-    local info = BAR_LOOKUP[barKey]
-    return info and info.count ~= nil or false
+function ABAR:BarSupportsOrientation(barId)
+    local details = BAR_LOOKUP[barId]
+    return details and details.count ~= nil or false
 end
 
-function EAB:GetOrientationForBar(barKey)
-    local s = self.db.profile.bars[barKey]
+function ABAR:GetOrientationForBar(barId)
+    local s = self.db.profile.bars[barId]
     if not s then
         return true
     end
     return s.orientation ~= "vertical"
 end
 
-function EAB:LayoutAnchoredBarsFrom(targetKey, depth)
+function ABAR:LayoutAnchoredBarsFrom(targetKey, depth)
     if not targetKey or (depth or 0) > 12 then
         return
     end
@@ -245,8 +246,8 @@ function EAB:LayoutAnchoredBarsFrom(targetKey, depth)
     end
 end
 
-function EAB:SetOrientationForBar(barKey, isHorizontal)
-    local s = self.db.profile.bars[barKey]
+function ABAR:SetOrientationForBar(barId, isHorizontal)
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
@@ -264,18 +265,18 @@ function EAB:SetOrientationForBar(barKey, isHorizontal)
             s.growDirection = "up"
         end
     end
-    LayoutBar(barKey)
-    self:LayoutAnchoredBarsFrom(barKey, 0)
+    LayoutBar(barId)
+    self:LayoutAnchoredBarsFrom(barId, 0)
 end
 
-function EAB:SetGrowDirectionForBar(barKey, dir)
-    local s = self.db.profile.bars[barKey]
+function ABAR:SetGrowDirectionForBar(barId, dir)
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
     s.growDirection = dir or "up"
-    LayoutBar(barKey)
-    self:LayoutAnchoredBarsFrom(barKey, 0)
+    LayoutBar(barId)
+    self:LayoutAnchoredBarsFrom(barId, 0)
 end
 
 -------------------------------------------------------------------------------
@@ -289,51 +290,51 @@ end
 -- keybind placement) and JustifyH does the alignment, so it holds regardless
 -- of the font string's own width. Shared with
 -- the options preview, hence on EAB not a local.
-EAB.TEXT_ANCHOR_ORDER = { "TOPLEFT", "TOP", "TOPRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
+ABAR.TEXT_ANCHOR_ORDER = { "TOPLEFT", "TOP", "TOPRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 -- The spacing each stock placement carries (keybind -1/-3, charges -1/+4,
 -- macro +1/+4). It lives in a text's offset boxes while a position is set: a
 -- position pick swaps the old corner's spacing for the new one's and keeps the
 -- user's own nudge on top, so no pick ever moves the text by the spacing alone.
 -- Not applied on the drawing side: there, 0/0 is the corner itself.
-EAB.TEXT_INSET_X = 1
-EAB.TEXT_INSET_Y = { keybind = 3, count = 4, macro = 4 }
+ABAR.TEXT_INSET_X = 1
+ABAR.TEXT_INSET_Y = { keybind = 3, count = 4, macro = 4 }
 
 -- Offsets that reproduce a text's stock spacing at the position just picked.
 -- 0/0 for a position PlaceButtonText does not know (hand-edited, or from a newer
 -- build): that text draws at the stock placement, which carries its own spacing.
-function EAB.StockTextOffsets(kind, anchor)
-    if not EAB.TEXT_ANCHOR_JUSTIFY[anchor] then
+function ABAR.StockTextOffsets(kindOf, anchorFrame)
+    if not ABAR.TEXT_ANCHOR_JUSTIFY[anchorFrame] then
         return 0, 0
     end
-    local x = 0
-    if anchor:find("LEFT", 1, true) then
-        x = EAB.TEXT_INSET_X
-    elseif anchor:find("RIGHT", 1, true) then
-        x = -EAB.TEXT_INSET_X
+    local posX = 0
+    if anchorFrame:find("LEFT", 1, true) then
+        posX = ABAR.TEXT_INSET_X
+    elseif anchorFrame:find("RIGHT", 1, true) then
+        posX = -ABAR.TEXT_INSET_X
     end
-    local y = EAB.TEXT_INSET_Y[kind] or 0
-    if anchor:find("TOP", 1, true) then
-        y = -y
+    local posY = ABAR.TEXT_INSET_Y[kindOf] or 0
+    if anchorFrame:find("TOP", 1, true) then
+        posY = -posY
     end
-    return x, y
+    return posX, posY
 end
 
 -- Writes a button-shape preset's keybind / charges offsets onto bar settings `bs`.
 -- The preset values are relative to the stock placement; a text with a position
 -- also carries that corner's stock spacing, as a position pick gives it.
-function EAB.ApplyShapeTextOffsets(bs, kbX, kbY, ctX, ctY)
+function ABAR.ApplyShapeTextOffsets(bs, kbX, kbY, ctX, ctY)
     local ax, ay = 0, 0
     if bs.keybindAnchor then
-        ax, ay = EAB.StockTextOffsets("keybind", bs.keybindAnchor)
+        ax, ay = ABAR.StockTextOffsets("keybind", bs.keybindAnchor)
     end
     bs.keybindOffsetX, bs.keybindOffsetY = kbX + ax, kbY + ay
     ax, ay = 0, 0
     if bs.countAnchor then
-        ax, ay = EAB.StockTextOffsets("count", bs.countAnchor)
+        ax, ay = ABAR.StockTextOffsets("count", bs.countAnchor)
     end
     bs.countOffsetX, bs.countOffsetY = ctX + ax, ctY + ay
 end
-EAB.TEXT_ANCHOR_JUSTIFY = {
+ABAR.TEXT_ANCHOR_JUSTIFY = {
     TOPLEFT = "LEFT",
     TOP = "CENTER",
     TOPRIGHT = "RIGHT",
@@ -341,8 +342,8 @@ EAB.TEXT_ANCHOR_JUSTIFY = {
     BOTTOM = "CENTER",
     BOTTOMRIGHT = "RIGHT",
 }
-function EAB.PlaceButtonText(fs, parent, anchor, ox, oy)
-    local justify = anchor and EAB.TEXT_ANCHOR_JUSTIFY[anchor]
+function ABAR.PlaceButtonText(fontStr, hostFrame, anchorFrame, ox, oy)
+    local justify = anchorFrame and ABAR.TEXT_ANCHOR_JUSTIFY[anchorFrame]
     if not justify then
         return false
     end
@@ -350,44 +351,44 @@ function EAB.PlaceButtonText(fs, parent, anchor, ox, oy)
     -- boxes are the only thing between the text and the edge, and they read the
     -- same at all six positions. The spacing the three stock placements carry
     -- (EAB.TEXT_INSET_*) rides in those boxes (see EAB.TEXT_INSET_X).
-    local edge = (anchor:find("TOP", 1, true) and "TOP") or "BOTTOM"
-    local y = oy or 0
+    local edge = (anchorFrame:find("TOP", 1, true) and "TOP") or "BOTTOM"
+    local posY = oy or 0
     ox = ox or 0
-    fs:ClearAllPoints()
-    fs:SetPoint(edge .. "LEFT", parent, edge .. "LEFT", ox, y)
-    fs:SetPoint(edge .. "RIGHT", parent, edge .. "RIGHT", ox, y)
-    local prevJustify = fs:GetJustifyH()
-    fs:SetJustifyH(justify)
+    fontStr:ClearAllPoints()
+    fontStr:SetPoint(edge .. "LEFT", hostFrame, edge .. "LEFT", ox, posY)
+    fontStr:SetPoint(edge .. "RIGHT", hostFrame, edge .. "RIGHT", ox, posY)
+    local prevJustify = fontStr:GetJustifyH()
+    fontStr:SetJustifyH(justify)
     -- A justification change alone does not re-lay the string out (SetPoint with
     -- unchanged values and SetText with unchanged text are no-ops), so only then
     -- clear and restore the text. issecretvalue first: a secret count must not be
     -- compared.
     if prevJustify ~= justify then
-        local text = fs:GetText()
-        if (issecretvalue and issecretvalue(text)) or (text and text ~= "") then
-            fs:SetText("")
-            fs:SetText(text)
+        local textValue = fontStr:GetText()
+        if (issecretvalue and issecretvalue(textValue)) or (textValue and textValue ~= "") then
+            fontStr:SetText("")
+            fontStr:SetText(textValue)
         end
     end
     return true
 end
 
-function EAB:ApplyFontsForBar(barKey)
-    local s = self.db.profile.bars[barKey]
+function ABAR:ApplyFontsForBar(barId)
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
-    local buttons = barButtons[barKey]
+    local buttons = barButtons[barId]
     if not buttons then
         return
     end
-    local fontPath = CludesUI.GetFontPath("actionBars") or FONT_PATH
+    local fontFile = CludesUI.GetFontPath("actionBars") or FONT_PATH
     local hideKB = s.hideKeybind
     local kbSize = s.keybindFontSize or 12
     -- Stance/pet bar buttons are smaller (30px vs 45px) shrink keybind text
     -- by 2px so it doesn't overwhelm the icon.
-    local info = BAR_LOOKUP[barKey]
-    if info and (info.isStance or info.isPetBar) then
+    local details = BAR_LOOKUP[barId]
+    if details and (details.isStance or details.isPetBar) then
         kbSize = max(kbSize - 2, 6)
     end
     local kbColor = s.keybindFontColor or { r = 1, g = 1, b = 1 }
@@ -401,7 +402,7 @@ function EAB:ApplyFontsForBar(barKey)
     local ctAnchor = s.countAnchor
     local hideMacro = s.hideMacroText
     local macroSize = s.macroFontSize or 12
-    if info and (info.isStance or info.isPetBar) then
+    if details and (details.isStance or details.isPetBar) then
         macroSize = max(macroSize - 2, 6)
     end
     local macroColor = s.macroFontColor or { r = 1, g = 1, b = 1 }
@@ -410,14 +411,14 @@ function EAB:ApplyFontsForBar(barKey)
     local macroAnchor = s.macroAnchor
     local RANGE_INDICATOR = RANGE_INDICATOR or "\226\128\162"
 
-    for i = 1, #buttons do
-        local btn = buttons[i]
-        if not btn then
+    for idx = 1, #buttons do
+        local button = buttons[idx]
+        if not button then
             break
         end
 
         -- Keybind text
-        local hk = btn.HotKey
+        local hk = button.HotKey
         if hk then
             if hideKB then
                 hk:SetText("")
@@ -425,68 +426,68 @@ function EAB:ApplyFontsForBar(barKey)
             else
                 -- Get binding text
                 local bindingAction
-                local info = BAR_LOOKUP[barKey]
-                if info and not info.isStance and not info.isPetBar then
-                    if barKey == "MainBar" then
-                        bindingAction = "ACTIONBUTTON" .. i
+                local details = BAR_LOOKUP[barId]
+                if details and not details.isStance and not details.isPetBar then
+                    if barId == "MainBar" then
+                        bindingAction = "ACTIONBUTTON" .. idx
                     else
-                        local bindPrefix = BINDING_MAP[barKey]
+                        local bindPrefix = BINDING_MAP[barId]
                         if bindPrefix then
-                            bindingAction = bindPrefix .. i
+                            bindingAction = bindPrefix .. idx
                         end
                     end
-                elseif info and info.isStance then
-                    bindingAction = "SHAPESHIFTBUTTON" .. i
-                elseif info and info.isPetBar then
-                    bindingAction = "BONUSACTIONBUTTON" .. i
+                elseif details and details.isStance then
+                    bindingAction = "SHAPESHIFTBUTTON" .. idx
+                elseif details and details.isPetBar then
+                    bindingAction = "BONUSACTIONBUTTON" .. idx
                 end
 
                 local key1 = bindingAction and GetBindingKey(bindingAction)
-                local text = key1 and FormatHotkeyText(key1) or ""
-                if text == RANGE_INDICATOR or text == "\226\128\162" then
-                    text = ""
+                local textValue = key1 and FormatHotkeyText(key1) or ""
+                if textValue == RANGE_INDICATOR or textValue == "\226\128\162" then
+                    textValue = ""
                 end
-                hk:SetText(text)
+                hk:SetText(textValue)
                 hk:Show()
-                CludesUI.ApplyIconTextFont(hk, fontPath, kbSize, "actionBars")
+                CludesUI.ApplyIconTextFont(hk, fontFile, kbSize, "actionBars")
                 hk:SetTextColor(kbColor.r, kbColor.g, kbColor.b)
                 -- Anchor unset (the default) = the stock placement below; the
                 -- nil test is the whole cost of the feature while it is off.
-                if not (kbAnchor and EAB.PlaceButtonText(hk, btn, kbAnchor, kbOX, kbOY)) then
+                if not (kbAnchor and ABAR.PlaceButtonText(hk, button, kbAnchor, kbOX, kbOY)) then
                     hk:ClearAllPoints()
-                    hk:SetPoint("TOPRIGHT", btn, "TOPRIGHT", -1 + kbOX, -3 + kbOY)
-                    hk:SetPoint("TOPLEFT", btn, "TOPLEFT", 4 + kbOX, -3 + kbOY)
+                    hk:SetPoint("TOPRIGHT", button, "TOPRIGHT", -1 + kbOX, -3 + kbOY)
+                    hk:SetPoint("TOPLEFT", button, "TOPLEFT", 4 + kbOX, -3 + kbOY)
                     hk:SetJustifyH("RIGHT")
                 end
             end
         end
 
         -- Count / charges text
-        local ct = btn.Count
+        local ct = button.Count
         if ct then
-            CludesUI.ApplyIconTextFont(ct, fontPath, ctSize, "actionBars")
+            CludesUI.ApplyIconTextFont(ct, fontFile, ctSize, "actionBars")
             ct:SetTextColor(ctColor.r, ctColor.g, ctColor.b)
-            if not (ctAnchor and EAB.PlaceButtonText(ct, btn, ctAnchor, ctOX, ctOY)) then
+            if not (ctAnchor and ABAR.PlaceButtonText(ct, button, ctAnchor, ctOX, ctOY)) then
                 ct:ClearAllPoints()
-                ct:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1 + ctOX, 4 + ctOY)
+                ct:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + ctOX, 4 + ctOY)
                 ct:SetJustifyH("RIGHT")
             end
         end
 
         -- Macro name text
-        local nm = btn.Name
+        local nm = button.Name
         if nm then
             if hideMacro then
                 nm:SetAlpha(0)
             else
                 nm:SetAlpha(1)
                 CludesUI.PrimeFontShadow(nm, false)
-                nm:SetFont(fontPath, macroSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+                nm:SetFont(fontFile, macroSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
                 nm:SetTextColor(macroColor.r, macroColor.g, macroColor.b)
-                if not (macroAnchor and EAB.PlaceButtonText(nm, btn, macroAnchor, macroOX, macroOY)) then
+                if not (macroAnchor and ABAR.PlaceButtonText(nm, button, macroAnchor, macroOX, macroOY)) then
                     nm:ClearAllPoints()
-                    nm:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 1 + macroOX, 4 + macroOY)
-                    nm:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1 + macroOX, 4 + macroOY)
+                    nm:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 1 + macroOX, 4 + macroOY)
+                    nm:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + macroOX, 4 + macroOY)
                     nm:SetJustifyH("CENTER")
                 end
             end
@@ -494,9 +495,9 @@ function EAB:ApplyFontsForBar(barKey)
     end
 end
 
-function EAB:ApplyFonts()
-    for _, info in ipairs(BAR_CONFIG) do
-        self:ApplyFontsForBar(info.key)
+function ABAR:ApplyFonts()
+    for _, details in ipairs(BAR_CONFIG) do
+        self:ApplyFontsForBar(details.key)
     end
     self:ApplyCooldownFonts()
 end
@@ -507,17 +508,17 @@ end
 -- transitions, drag-and-drop, and usability flips until the next full
 -- ApplyFonts. Re-applies ONLY the color -- no fonts, no anchors -- and does no
 -- button work at all for bars on the default white.
-function EAB:ReapplyHotkeyColors()
-    local bars = self.db and self.db.profile and self.db.profile.bars
-    if not bars then
+function ABAR:ReapplyHotkeyColors()
+    local barList = self.db and self.db.profile and self.db.profile.bars
+    if not barList then
         return
     end
-    for barKey, buttons in pairs(barButtons) do
-        local s = bars[barKey]
+    for barId, buttons in pairs(barButtons) do
+        local s = barList[barId]
         local c = s and not s.hideKeybind and s.keybindFontColor
         if c and (c.r ~= 1 or c.g ~= 1 or c.b ~= 1) then
-            for i = 1, #buttons do
-                local hk = buttons[i] and buttons[i].HotKey
+            for idx = 1, #buttons do
+                local hk = buttons[idx] and buttons[idx].HotKey
                 if hk then
                     hk:SetTextColor(c.r, c.g, c.b)
                 end
@@ -530,15 +531,15 @@ end
 -- ACTIONBAR_SLOT_CHANGED per second while mouseover-conditional macros
 -- re-resolve, and the pending flag coalesces the burst into one next-frame
 -- pass. State lives on EAB.
-function EAB:QueueHotkeyColorReassert()
+function ABAR:QueueHotkeyColorReassert()
     if self._kbColorPending then
         return
     end
     self._kbColorPending = true
     self._kbColorRunner = self._kbColorRunner
         or function()
-            EAB._kbColorPending = false
-            EAB:ReapplyHotkeyColors()
+            ABAR._kbColorPending = false
+            ABAR:ReapplyHotkeyColors()
         end
     C_Timer_After(0, self._kbColorRunner)
 end
@@ -566,18 +567,18 @@ function EAB_VTABLE.CooldownFonts.EffectiveSize(cdFrame, cdSize, cdFit)
     if not cdFit then
         return cdSize
     end
-    local host = cdFrame and (cdFrame:GetParent() or cdFrame)
-    if not (host and host.GetWidth and host.GetHeight) then
+    local hostRegion = cdFrame and (cdFrame:GetParent() or cdFrame)
+    if not (hostRegion and hostRegion.GetWidth and hostRegion.GetHeight) then
         return cdSize
     end
-    local w, h = host:GetWidth(), host:GetHeight()
-    if not w or not h or w <= 0 or h <= 0 then
+    local wid, hgt = hostRegion:GetWidth(), hostRegion:GetHeight()
+    if not wid or not hgt or wid <= 0 or hgt <= 0 then
         return cdSize -- not laid out yet; re-applied on the next layout pass
     end
     -- Smaller dimension, not width: buttonWidth and buttonHeight are separate
     -- settings, so a wide short button still overflows vertically. The tighter
     -- axis is the one that constrains.
-    local dim = (w < h) and w or h
+    local dim = (wid < hgt) and wid or hgt
     local cap = math.floor(dim * 0.40)
     if cap < 5 then
         cap = 5
@@ -585,7 +586,7 @@ function EAB_VTABLE.CooldownFonts.EffectiveSize(cdFrame, cdSize, cdFit)
     return (cdSize > cap) and cap or cdSize
 end
 
-function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontPath, cdSize, cdOX, cdOY, cdColor, cdFit)
+function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
     if not cdFrame then
         return false
     end
@@ -601,7 +602,7 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontPath, cdSize, cdOX, 
     local cr, cg, cb = cdColor.r, cdColor.g, cdColor.b
     if
         stamp
-        and stamp[1] == fontPath
+        and stamp[1] == fontFile
         and stamp[2] == eff
         and stamp[3] == cdOX
         and stamp[4] == cdOY
@@ -614,13 +615,13 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontPath, cdSize, cdOX, 
 
     local regions = { cdFrame:GetRegions() }
     for ri = 1, #regions do
-        local region = regions[ri]
-        if region and region.GetObjectType and region:GetObjectType() == "FontString" then
-            CludesUI.ApplyIconTextFont(region, fontPath, eff, "actionBars")
-            region:SetTextColor(cr, cg, cb)
-            region:ClearAllPoints()
-            region:SetPoint("CENTER", cdFrame, "CENTER", cdOX, cdOY)
-            cdfd.cdFontStamp = { fontPath, eff, cdOX, cdOY, cr, cg, cb }
+        local regionFrame = regions[ri]
+        if regionFrame and regionFrame.GetObjectType and regionFrame:GetObjectType() == "FontString" then
+            CludesUI.ApplyIconTextFont(regionFrame, fontFile, eff, "actionBars")
+            regionFrame:SetTextColor(cr, cg, cb)
+            regionFrame:ClearAllPoints()
+            regionFrame:SetPoint("CENTER", cdFrame, "CENTER", cdOX, cdOY)
+            cdfd.cdFontStamp = { fontFile, eff, cdOX, cdOY, cr, cg, cb }
             return true
         end
     end
@@ -628,20 +629,20 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontPath, cdSize, cdOX, 
     return false
 end
 
-function EAB_VTABLE.CooldownFonts.ApplyToButton(btn, fontPath, cdSize, cdOX, cdOY, cdColor, cdFit)
-    if not btn then
+function EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
+    if not button then
         return
     end
 
     local applied =
-        EAB_VTABLE.CooldownFonts.ApplyToFrame(btn.cooldown, fontPath, cdSize, cdOX, cdOY, cdColor, cdFit)
+        EAB_VTABLE.CooldownFonts.ApplyToFrame(button.cooldown, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
     -- Retry when EITHER frame failed: the charge cooldown's FontString is
     -- created later than the main one's, so a main-only gate would strand the
     -- recharge countdown in Blizzard's default font permanently.
-    local appliedCharge = not btn.chargeCooldown
+    local appliedCharge = not button.chargeCooldown
         or EAB_VTABLE.CooldownFonts.ApplyToFrame(
-            btn.chargeCooldown,
-            fontPath,
+            button.chargeCooldown,
+            fontFile,
             cdSize,
             cdOX,
             cdOY,
@@ -655,10 +656,10 @@ function EAB_VTABLE.CooldownFonts.ApplyToButton(btn, fontPath, cdSize, cdOX, cdO
     -- Some cooldown frames create their countdown FontString lazily on the
     -- first update after SetCooldown(). Retry once on the next frame.
     C_Timer_After(0, function()
-        EAB_VTABLE.CooldownFonts.ApplyToFrame(btn.cooldown, fontPath, cdSize, cdOX, cdOY, cdColor, cdFit)
+        EAB_VTABLE.CooldownFonts.ApplyToFrame(button.cooldown, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
         EAB_VTABLE.CooldownFonts.ApplyToFrame(
-            btn.chargeCooldown,
-            fontPath,
+            button.chargeCooldown,
+            fontFile,
             cdSize,
             cdOX,
             cdOY,
@@ -668,32 +669,32 @@ function EAB_VTABLE.CooldownFonts.ApplyToButton(btn, fontPath, cdSize, cdOX, cdO
     end)
 end
 
-function EAB:ApplyCooldownFontsForBar(barKey)
-    local s = self.db.profile.bars[barKey]
+function ABAR:ApplyCooldownFontsForBar(barId)
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
-    local buttons = barButtons[barKey]
+    local buttons = barButtons[barId]
     if not buttons then
         return
     end
-    local fontPath, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(s)
+    local fontFile, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(s)
 
     C_Timer.After(0, function()
-        for i = 1, #buttons do
-            local btn = buttons[i]
-            if not btn then
+        for idx = 1, #buttons do
+            local button = buttons[idx]
+            if not button then
                 break
             end
-            EAB_VTABLE.CooldownFonts.ApplyToButton(btn, fontPath, cdSize, cdOX, cdOY, cdColor, cdFit)
+            EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
         end
     end)
 end
 
-function EAB:ApplyCooldownFonts()
+function ABAR:ApplyCooldownFonts()
     EAB_VTABLE.CooldownFonts.HookAll()
-    for _, info in ipairs(BAR_CONFIG) do
-        self:ApplyCooldownFontsForBar(info.key)
+    for _, details in ipairs(BAR_CONFIG) do
+        self:ApplyCooldownFontsForBar(details.key)
     end
 end
 
@@ -703,24 +704,24 @@ end
 -- CludesUI style only. changedOnly (ApplyAll: profile / spec switches,
 -- imports) repaints only when the value differs from the one last painted;
 -- the first pass just records it, as button setup painted from it.
-function EAB:ApplyEquippedBorder(changedOnly)
-    local on = self.db.profile.showEquippedBorder and true or false
-    local was = ns._eabEqBorderOn
-    ns._eabEqBorderOn = on
-    if changedOnly and (was == nil or was == on) then
+function ABAR:ApplyEquippedBorder(changedOnly)
+    local enabled = self.db.profile.showEquippedBorder and true or false
+    local was = mod._eabEqBorderOn
+    mod._eabEqBorderOn = enabled
+    if changedOnly and (was == nil or was == enabled) then
         return
     end
-    if ns.AB_Style() ~= "cui" then
+    if mod.AB_Style() ~= "cui" then
         return
     end
-    for _, info in ipairs(BAR_CONFIG) do
-        local btns = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local btns = barButtons[details.key]
         if btns then
-            for _, btn in ipairs(btns) do
-                local bd = btn.Border
-                if bd and EFD(btn).squared then
-                    if on then
-                        ns.AB_SyncEquippedBorder(btn, btn:GetAttribute("action"))
+            for _, button in ipairs(btns) do
+                local bd = button.Border
+                if bd and EFD(button).squared then
+                    if enabled then
+                        mod.AB_SyncEquippedBorder(button, button:GetAttribute("action"))
                     else
                         bd:Hide()
                         bd:SetAlpha(0)
@@ -736,24 +737,24 @@ end
 -- applies on click instead of waiting for the next count event. Alpha only --
 -- the count TEXT stays whatever its owners last wrote. Cold path: options
 -- clicks only.
-function EAB:RefreshCountVisibility(barKey)
+function ABAR:RefreshCountVisibility(barId)
     if not (C_ActionBar and C_ActionBar.GetActionDisplayCount) then
         return
     end
-    for _, info in ipairs(BAR_CONFIG) do
-        if not info.isStance and not info.isPetBar and (barKey == nil or info.key == barKey) then
-            local btns = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        if not details.isStance and not details.isPetBar and (barId == nil or details.key == barId) then
+            local btns = barButtons[details.key]
             if btns then
-                for _, btn in ipairs(btns) do
-                    if btn.Count then
-                        local action = btn:GetAttribute("action")
+                for _, button in ipairs(btns) do
+                    if button.Count then
+                        local action = button:GetAttribute("action")
                         if action and HasAction(action) then
                             -- The count alpha finds the bar by this key.
-                            local fd = EFD(btn)
-                            fd.barKey = info.key
-                            ns._EABZeroCountAlpha(
+                            local fd = EFD(button)
+                            fd.barKey = details.key
+                            mod._EABZeroCountAlpha(
                                 fd,
-                                btn.Count,
+                                button.Count,
                                 C_ActionBar.GetActionDisplayCount(action),
                                 action
                             )
@@ -765,17 +766,17 @@ function EAB:RefreshCountVisibility(barKey)
     end
 end
 
-function EAB:RefreshAllCounts()
+function ABAR:RefreshAllCounts()
     self:RefreshCountVisibility()
 end
 
 -- Re-apply "Alpha on Cooldown" across every action button: on setting change (immediate
 -- feedback plus a clean restore to full alpha at 100) and on the main apply. Same
 -- secret-safe curve detection as the live ACTIONBAR_UPDATE_COOLDOWN handler.
-function EAB:ApplyCDAlphaAll()
+function ABAR:ApplyCDAlphaAll()
     local pdb = self.db and self.db.profile
     local cdAlpha = (pdb and pdb.alphaWhenOnCD) or 100
-    local on = cdAlpha ~= 100
+    local enabled = cdAlpha ~= 100
     -- This used to carry its own copy of the on-cooldown test, and the copy
     -- drifted: it treated ANY charge spell as being on a real cooldown, so
     -- touching the slider (or any full apply) during a GCD dimmed every charge
@@ -783,16 +784,16 @@ function EAB:ApplyCDAlphaAll()
     -- which owns the GCD threshold and the charge rules in one place. Restore
     -- to full alpha first so setting the slider back to 100 -- and every button
     -- the classifier declines to dim -- lands on a clean icon.
-    for _, info in ipairs(BAR_CONFIG) do
-        if not info.isStance and not info.isPetBar then
-            local btns = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        if not details.isStance and not details.isPetBar then
+            local btns = barButtons[details.key]
             if btns then
-                for _, btn in ipairs(btns) do
-                    local icon = btn and btn.icon
-                    if icon then
-                        icon:SetAlpha(1)
-                        if on and EAB._RefreshCooldownVisuals then
-                            EAB._RefreshCooldownVisuals(btn)
+                for _, button in ipairs(btns) do
+                    local glyph = button and button.icon
+                    if glyph then
+                        glyph:SetAlpha(1)
+                        if enabled and ABAR._RefreshCooldownVisuals then
+                            ABAR._RefreshCooldownVisuals(button)
                         end
                     end
                 end
@@ -801,7 +802,7 @@ function EAB:ApplyCDAlphaAll()
     end
 end
 
-function EAB:ApplySlotBackgroundColor()
+function ABAR:ApplySlotBackgroundColor()
     local pdb = self.db and self.db.profile
     if not pdb then
         return
@@ -812,11 +813,11 @@ function EAB:ApplySlotBackgroundColor()
         a = 50
     end
     a = a / 100
-    for _, info in ipairs(BAR_CONFIG) do
-        local btns = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local btns = barButtons[details.key]
         if btns then
-            for _, btn in ipairs(btns) do
-                local bfd = btn and EFD(btn)
+            for _, button in ipairs(btns) do
+                local bfd = button and EFD(button)
                 if bfd and bfd.slotBG then
                     bfd.slotBG:SetColorTexture(c.r or 0.15, c.g or 0.15, c.b or 0.15, a)
                 end
@@ -828,18 +829,18 @@ end
 -- Custom cooldown-swipe color + opacity on every button's cooldown. Cheap and
 -- idempotent (SetSwipeColor persists on the frame), so it runs on the main apply
 -- and on setting change. Defaults mirror the Blizzard look.
-function EAB:ApplyCooldownSwipeColor()
+function ABAR:ApplyCooldownSwipeColor()
     local pdb = self.db and self.db.profile
     if not pdb then
         return
     end
     local c = pdb.cdSwipeColor or { r = 0, g = 0, b = 0 }
     local a = (pdb.cdSwipeAlpha or 80) / 100
-    for _, info in ipairs(BAR_CONFIG) do
-        local btns = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local btns = barButtons[details.key]
         if btns then
-            for _, btn in ipairs(btns) do
-                local cd = btn and btn.cooldown
+            for _, button in ipairs(btns) do
+                local cd = button and button.cooldown
                 if cd and cd.SetSwipeColor then
                     pcall(cd.SetSwipeColor, cd, c.r or 0, c.g or 0, c.b or 0, a)
                 end
@@ -853,18 +854,18 @@ end
 -------------------------------------------------------------------------------
 local barBackgrounds = {} -- [barKey] = { fill = Texture, border = Frame }
 
-function EAB:ApplyBackgroundForBar(barKey)
-    local s = self.db.profile.bars[barKey]
+function ABAR:ApplyBackgroundForBar(barId)
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
-    local frame = barFrames[barKey]
-    if not frame then
+    local widget = barFrames[barId]
+    if not widget then
         return
     end
 
     if not s.bgEnabled then
-        local background = barBackgrounds[barKey]
+        local background = barBackgrounds[barId]
         if background then
             background.fill:Hide()
             if CludesUI and CludesUI.ApplyBorderStyle then
@@ -876,14 +877,14 @@ function EAB:ApplyBackgroundForBar(barKey)
         return
     end
 
-    local background = barBackgrounds[barKey]
+    local background = barBackgrounds[barId]
     if not background then
-        local fill = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
-        local border = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+        local fillTex = widget:CreateTexture(nil, "BACKGROUND", nil, -1)
+        local border = CreateFrame("Frame", nil, widget, "BackdropTemplate")
         border:EnableMouse(false)
-        border:SetFrameLevel(math.max(0, frame:GetFrameLevel()))
-        background = { fill = fill, border = border }
-        barBackgrounds[barKey] = background
+        border:SetFrameLevel(math.max(0, widget:GetFrameLevel()))
+        background = { fill = fillTex, border = border }
+        barBackgrounds[barId] = background
     end
 
     local c = s.bgColor or { r = 0, g = 0, b = 0, a = 0.5 }
@@ -898,33 +899,35 @@ function EAB:ApplyBackgroundForBar(barKey)
     local directionX = s.bgExpandDirectionX or "right"
     local directionY = s.bgExpandDirectionY or "up"
     local iconPadding = s.buttonPadding or 0
-    local growX = (multiplierX - 1) * ((frame:GetWidth() or 0) + iconPadding)
-    local growY = (multiplierY - 1) * ((frame:GetHeight() or 0) + iconPadding)
-    local left, right, top, bottom = -padX, padX, padY, -padY
+    local growX = (multiplierX - 1) * ((widget:GetWidth() or 0) + iconPadding)
+    local growY = (multiplierY - 1) * ((widget:GetHeight() or 0) + iconPadding)
+    local leftX, right, topY, bottom = -padX, padX, padY, -padY
     if directionX == "left" then
-        left = left - growX
+        leftX = leftX - growX
     else
         right = right + growX
     end
     if directionY == "down" then
         bottom = bottom - growY
     else
-        top = top + growY
+        topY = topY + growY
     end
     background.fill:ClearAllPoints()
-    background.fill:SetPoint("TOPLEFT", frame, "TOPLEFT", left, top)
-    background.fill:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", right, bottom)
+    background.fill:SetPoint("TOPLEFT", widget, "TOPLEFT", leftX, topY)
+    background.fill:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", right, bottom)
     background.fill:Show()
 
     local border = background.border
-    border:SetFrameLevel(s.bgBorderBehind and math.max(0, frame:GetFrameLevel() - 1) or frame:GetFrameLevel())
+    border:SetFrameLevel(
+        s.bgBorderBehind and math.max(0, widget:GetFrameLevel() - 1) or widget:GetFrameLevel()
+    )
     border:ClearAllPoints()
-    border:SetPoint("TOPLEFT", frame, "TOPLEFT", left, top)
-    border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", right, bottom)
+    border:SetPoint("TOPLEFT", widget, "TOPLEFT", leftX, topY)
+    border:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", right, bottom)
     if CludesUI and CludesUI.ApplyBorderStyle then
         local bc = s.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
         local thicknessKey = s.bgBorderThickness or "none"
-        local thickness = ns.BORDER_THICKNESS and ns.BORDER_THICKNESS[thicknessKey]
+        local thickness = mod.BORDER_THICKNESS and mod.BORDER_THICKNESS[thicknessKey]
         local borderSize = thickness and thickness.regular or 0
         -- Exact size (bgBorderThicknessPx) while it pairs with this step and texture; nil = legacy path.
         local bgPx = CludesUI.BorderPx(s.bgBorderThicknessPx, borderSize, s.bgBorderTexture)
@@ -953,9 +956,9 @@ end
 -------------------------------------------------------------------------------
 --  Blizzard Icon Background (per-button slot texture)
 -------------------------------------------------------------------------------
-function EAB:ApplyIconBackgroundForBar(barKey)
+function ABAR:ApplyIconBackgroundForBar(barId)
     local pr = self.db.profile
-    local buttons = barButtons[barKey]
+    local buttons = barButtons[barId]
     if not buttons then
         return
     end
@@ -964,16 +967,16 @@ function EAB:ApplyIconBackgroundForBar(barKey)
     -- OFF and the hook rides every event every button receives, so the
     -- disabled path must cost one boolean. This apply pass owns the visuals
     -- on every settings edge, so the flag can't go stale.
-    ns._iconBgOn = show
+    mod._iconBgOn = show
     local alpha = pr.blizzIconBgAlpha or 1
-    local blizzStyle = ns.AB_Style() ~= "cui"
+    local blizzStyle = mod.AB_Style() ~= "cui"
     local inset = blizzStyle and 0 or 4
-    for i = 1, #buttons do
-        local btn = buttons[i]
-        if not btn then
+    for idx = 1, #buttons do
+        local button = buttons[idx]
+        if not button then
             break
         end
-        local bfd = EFD(btn)
+        local bfd = EFD(button)
         if not show then
             -- Disabled (the default): build nothing. Only a clip left over
             -- from an earlier ON has anything to hide; every other reader of
@@ -983,24 +986,24 @@ function EAB:ApplyIconBackgroundForBar(barKey)
             end
         else
             -- Only show icon background on empty slots
-            local okHA, hasAction = pcall(btn.HasAction, btn)
+            local okHA, hasAction = pcall(button.HasAction, button)
             hasAction = okHA and hasAction
             if not bfd.iconBgClip then
-                local clip = CreateFrame("Frame", nil, btn)
-                clip:SetAllPoints(btn)
+                local clip = CreateFrame("Frame", nil, button)
+                clip:SetAllPoints(button)
                 clip:SetClipsChildren(true)
-                clip:SetFrameLevel(math.max(1, btn:GetFrameLevel() - 1))
+                clip:SetFrameLevel(math.max(1, button:GetFrameLevel() - 1))
                 clip:EnableMouse(false)
-                local bg = clip:CreateTexture(nil, "BACKGROUND", nil, -1)
+                local backdrop = clip:CreateTexture(nil, "BACKGROUND", nil, -1)
                 -- Built once; the look is reload-gated, so the stock looks
                 -- take the retail slot art here for the session.
                 if blizzStyle then
-                    ns.AB_StockAtlas(bg, "UI-HUD-ActionBar-IconFrame-Slot")
+                    mod.AB_StockAtlas(backdrop, "UI-HUD-ActionBar-IconFrame-Slot")
                 else
-                    bg:SetAtlas("UI-HUD-ActionBar-IconFrame-Slot")
+                    backdrop:SetAtlas("UI-HUD-ActionBar-IconFrame-Slot")
                 end
                 bfd.iconBgClip = clip
-                bfd.iconBg = bg
+                bfd.iconBg = backdrop
             end
             -- Auto-update on button events. ACTIONBAR_SLOT_CHANGED is not
             -- delivered to buttons (central dispatcher owns it and syncs the
@@ -1012,11 +1015,11 @@ function EAB:ApplyIconBackgroundForBar(barKey)
             -- the button frame, so the hook never stacks.
             if not bfd.iconBgHooked then
                 bfd.iconBgHooked = true
-                btn:HookScript("OnEvent", function(self)
+                button:HookScript("OnEvent", function(self)
                     -- Feature gate FIRST: turned off later in the session, the
                     -- hook must cost one boolean. The apply pass hides a
                     -- freshly-disabled clip on the settings edge, never this hook.
-                    if not ns._iconBgOn then
+                    if not mod._iconBgOn then
                         return
                     end
                     local sfd = EFD(self)
@@ -1028,8 +1031,8 @@ function EAB:ApplyIconBackgroundForBar(barKey)
                 end)
             end
             bfd.iconBg:ClearAllPoints()
-            bfd.iconBg:SetPoint("TOPLEFT", btn, "TOPLEFT", -inset, inset)
-            bfd.iconBg:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", inset, -inset)
+            bfd.iconBg:SetPoint("TOPLEFT", button, "TOPLEFT", -inset, inset)
+            bfd.iconBg:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", inset, -inset)
             bfd.iconBg:SetAlpha(alpha)
             -- Apply custom shape mask if active (shapes run before this)
             if bfd.shapeMask and bfd.shapeApplied then
@@ -1043,21 +1046,21 @@ end
 -------------------------------------------------------------------------------
 --  Always Show Buttons
 -------------------------------------------------------------------------------
-function EAB:ApplyAlwaysShowButtons(barKey)
+function ABAR:ApplyAlwaysShowButtons(barId)
     -- Hard-dormant bars skip the whole pass; the dormancy reveal reconcile
     -- runs it once when a settings edge brings the bar back.
-    if ns._eabBarNever[barKey] then
+    if mod._eabBarNever[barId] then
         return
     end
-    local s = self.db.profile.bars[barKey]
+    local s = self.db.profile.bars[barId]
     if not s then
         return
     end
-    local info = BAR_LOOKUP[barKey]
-    if not info then
+    local details = BAR_LOOKUP[barId]
+    if not details then
         return
     end
-    local buttons = barButtons[barKey]
+    local buttons = barButtons[barId]
     if not buttons then
         return
     end
@@ -1066,21 +1069,21 @@ function EAB:ApplyAlwaysShowButtons(barKey)
         showEmpty = true
     end
     -- Stance bar always hides empty slots (count is dynamic per class)
-    if info.isStance then
+    if details.isStance then
         showEmpty = false
     end
 
     -- Respect icon cutoff (hoisted above the grid half so the signature
     -- below sees every input)
-    local numIcons = s.overrideNumIcons or s.numIcons or info.count
+    local numIcons = s.overrideNumIcons or s.numIcons or details.count
     if numIcons < 1 then
-        numIcons = info.count
+        numIcons = details.count
     end
-    if numIcons > info.count then
-        numIcons = info.count
+    if numIcons > details.count then
+        numIcons = details.count
     end
-    if info.isStance then
-        numIcons = GetNumShapeshiftForms() or info.count
+    if details.isStance then
+        numIcons = GetNumShapeshiftForms() or details.count
     end
     if numIcons < 1 then
         numIcons = 1
@@ -1100,20 +1103,20 @@ function EAB:ApplyAlwaysShowButtons(barKey)
         + (quickKeybindVisible and 2 or 0)
         + (clickable and 4 or 0)
         + numIcons * 8
-    local asbSt = ns._asbStamp
+    local asbSt = mod._asbStamp
     if not asbSt then
         asbSt = {}
-        ns._asbStamp = asbSt
+        mod._asbStamp = asbSt
     end
-    if showEmpty and asbSt[barKey] == asbSig and not _gridState.shown and not InCombatLockdown() then
+    if showEmpty and asbSt[barId] == asbSig and not _gridState.shown and not InCombatLockdown() then
         return
     end
 
     -- Update the SHOWGRID.ALWAYS flag on managed action buttons
-    if not InCombatLockdown() and not info.isStance and not info.isPetBar then
-        for _, btn in ipairs(buttons) do
-            if btn then
-                SetShowGridInsecure(btn, showEmpty, SHOWGRID.ALWAYS)
+    if not InCombatLockdown() and not details.isStance and not details.isPetBar then
+        for _, button in ipairs(buttons) do
+            if button then
+                SetShowGridInsecure(button, showEmpty, SHOWGRID.ALWAYS)
                 -- Heal transient drag/spellbook bits. A COMBAT drag reveals
                 -- empty slots through the secure path (which honors these bits),
                 -- but its HIDEGRID can land while the insecure handler is
@@ -1121,8 +1124,8 @@ function EAB:ApplyAlwaysShowButtons(barKey)
                 -- visible after combat. Runs from the post-drag re-assert and
                 -- the regen-deferred ApplyAll, both outside any live drag.
                 if not _gridState.shown then
-                    SetShowGridInsecure(btn, false, SHOWGRID.GAME_EVENT)
-                    SetShowGridInsecure(btn, false, SHOWGRID.SPELLBOOK)
+                    SetShowGridInsecure(button, false, SHOWGRID.GAME_EVENT)
+                    SetShowGridInsecure(button, false, SHOWGRID.SPELLBOOK)
                 end
             end
         end
@@ -1136,19 +1139,19 @@ function EAB:ApplyAlwaysShowButtons(barKey)
     end
     -- The loop below rewrites the pet buttons from live state: drop the pet
     -- handler's shape memo so its next full pass lays them out again.
-    if info.isPetBar then
-        ns._eabPetLayoutSig = nil
+    if details.isPetBar then
+        mod._eabPetLayoutSig = nil
     end
     local lastVisible = 0
-    for i = 1, numIcons do
-        local btn = buttons[i]
-        if btn then
-            if info.nativeMainBar then
-                EAB_VTABLE.MainBarPageSync.SetButtonConfig(btn, true, showEmpty)
+    for idx = 1, numIcons do
+        local button = buttons[idx]
+        if button then
+            if details.nativeMainBar then
+                EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, true, showEmpty)
             end
-            local visible = showEmpty or quickKeybindVisible or not ns.AB_EmptySlot(btn, info)
+            local visible = showEmpty or quickKeybindVisible or not mod.AB_EmptySlot(button, details)
 
-            local bfd = EFD(btn)
+            local bfd = EFD(button)
             if bfd.slotBG then
                 bfd.slotBG:SetShown(visible)
             end
@@ -1168,65 +1171,65 @@ function EAB:ApplyAlwaysShowButtons(barKey)
             -- custom-paged bar 2-10 leaves the slot statehidden for the whole
             -- fight.
             if not InCombatLockdown() then
-                btn:SetAttributeNoHandler("eab-withincutoff", 1)
-                btn:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
-                btn:SetAttributeNoHandler("eab-click", clickable and 1 or 0)
+                button:SetAttributeNoHandler("eab-withincutoff", 1)
+                button:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
+                button:SetAttributeNoHandler("eab-click", clickable and 1 or 0)
             end
             if not visible then
-                btn:SetAlpha(0)
+                button:SetAlpha(0)
                 -- Invisible empty slots must not catch mouse events; statehidden
                 -- makes the secure UpdateShown snippet keep them hidden.
-                SafeEnableMouse(btn, false)
+                SafeEnableMouse(button, false)
                 if not InCombatLockdown() then
-                    btn:SetAttributeNoHandler("statehidden", true)
-                    btn:Hide()
-                    ns._eabMarkParked(btn, info, true)
+                    button:SetAttributeNoHandler("statehidden", true)
+                    button:Hide()
+                    mod._eabMarkParked(button, details, true)
                 else
-                    ns._eabMarkParked(btn, info)
+                    mod._eabMarkParked(button, details)
                 end
             else
                 if not InCombatLockdown() then
-                    btn:SetAttributeNoHandler("statehidden", nil)
-                    btn:SetAttribute("showgrid", 1)
-                    btn:Show()
+                    button:SetAttributeNoHandler("statehidden", nil)
+                    button:SetAttribute("showgrid", 1)
+                    button:Show()
                 end
                 -- Always restore button alpha to 1. The bar frame's own
                 -- alpha (via mouseover fade) handles overall visibility.
-                btn:SetAlpha(1)
+                button:SetAlpha(1)
                 bfd.parkA0 = nil
                 -- Restore mouse state based on bar's click-through setting.
                 -- When click-through is on but mouseover is enabled, keep
                 -- mouse motion so OnEnter/OnLeave still fire for hover fade.
                 if clickable then
-                    SafeEnableMouse(btn, true)
+                    SafeEnableMouse(button, true)
                 elseif s.mouseoverEnabled then
-                    SafeEnableMouseMotionOnly(btn, true)
+                    SafeEnableMouseMotionOnly(button, true)
                 else
-                    SafeEnableMouse(btn, false)
+                    SafeEnableMouse(button, false)
                 end
-                lastVisible = i
+                lastVisible = idx
             end
         end
     end
     -- Hide buttons beyond cutoff
-    for i = numIcons + 1, #buttons do
-        local btn = buttons[i]
-        if btn then
-            if info.nativeMainBar then
-                EAB_VTABLE.MainBarPageSync.SetButtonConfig(btn, false, showEmpty)
+    for idx = numIcons + 1, #buttons do
+        local button = buttons[idx]
+        if button then
+            if details.nativeMainBar then
+                EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, false, showEmpty)
             end
-            btn:SetAlpha(0)
-            SafeEnableMouse(btn, false)
+            button:SetAlpha(0)
+            SafeEnableMouse(button, false)
             if not InCombatLockdown() then
                 -- Cutoff buttons are excluded from the secure drag reveal:
                 -- revealing them would paint slots the user configured away.
-                btn:SetAttributeNoHandler("eab-withincutoff", 0)
-                btn:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
-                btn:SetAttributeNoHandler("statehidden", true)
-                btn:Hide()
-                ns._eabMarkParked(btn, info, true)
+                button:SetAttributeNoHandler("eab-withincutoff", 0)
+                button:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
+                button:SetAttributeNoHandler("statehidden", true)
+                button:Hide()
+                mod._eabMarkParked(button, details, true)
             else
-                ns._eabMarkParked(btn, info)
+                mod._eabMarkParked(button, details)
             end
         end
     end
@@ -1234,9 +1237,9 @@ function EAB:ApplyAlwaysShowButtons(barKey)
     -- Stamp only fully-applied passes: a combat pass skipped its secure
     -- writes and must not suppress the healing re-run.
     if not InCombatLockdown() then
-        asbSt[barKey] = asbSig
+        asbSt[barId] = asbSig
     else
-        asbSt[barKey] = nil
+        asbSt[barId] = nil
     end
 
     -- Frame size stays as LayoutBar left it: the mouseover OnEnter handler
@@ -1256,65 +1259,65 @@ end
 -- A combat pass (every page flip and spell swap) owes the main bar's own
 -- AlwaysShow pass once combat ends, never a full ApplyAll: the regen handler
 -- runs it from ns._eabMainBarAsbOwed.
-function EAB_VTABLE.MainBarPageSync.SetButtonConfig(btn, withinCutoff, showEmpty)
-    if not btn then
+function EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, withinCutoff, showEmpty)
+    if not button then
         return
     end
     if InCombatLockdown() then
-        ns._eabMainBarAsbOwed = true
+        mod._eabMainBarAsbOwed = true
         return
     end
-    btn:SetAttributeNoHandler("eab-withincutoff", withinCutoff and 1 or 0)
-    btn:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
+    button:SetAttributeNoHandler("eab-withincutoff", withinCutoff and 1 or 0)
+    button:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
 end
 
 function EAB_VTABLE.MainBarPageSync.Queue()
-    local state = EAB_VTABLE.MainBarPageSync
-    if state.pending then
+    local status = EAB_VTABLE.MainBarPageSync
+    if status.pending then
         return
     end
-    state.pending = true
+    status.pending = true
     C_Timer_After(0, function()
-        state.pending = false
+        status.pending = false
         if InCombatLockdown() then
-            ns._eabMainBarAsbOwed = true
+            mod._eabMainBarAsbOwed = true
             return
         end
-        if not EAB or not EAB.db then
+        if not ABAR or not ABAR.db then
             return
         end
-        EAB:ApplyAlwaysShowButtons("MainBar")
+        ABAR:ApplyAlwaysShowButtons("MainBar")
     end)
 end
 
 function EAB_VTABLE.MainBarPageSync.InstallAll()
     if InCombatLockdown() then
-        ns._eabApplyDeferred = true
+        mod._eabApplyDeferred = true
         return
     end
     local buttons = barButtons["MainBar"]
     if not buttons then
         return
     end
-    for _, btn in ipairs(buttons) do
-        EAB_VTABLE.MainBarPageSync.InstallButton(btn)
+    for _, button in ipairs(buttons) do
+        EAB_VTABLE.MainBarPageSync.InstallButton(button)
     end
 end
 
-function EAB_VTABLE.MainBarPageSync.InstallButton(btn)
-    if not btn or btn:GetAttribute("_eabPageSyncInstalled") or InCombatLockdown() then
+function EAB_VTABLE.MainBarPageSync.InstallButton(button)
+    if not button or button:GetAttribute("_eabPageSyncInstalled") or InCombatLockdown() then
         return
     end
 
     -- Bake the base index directly into the snippet as a literal so it
     -- doesn't depend on attribute reads in the restricted environment.
-    local info = buttonToBar[btn]
-    local baseIdx = info and info.index or 1
+    local details = buttonToBar[button]
+    local baseIdx = details and details.index or 1
 
     -- Only the slot arithmetic is interpolated. The body is concatenated raw:
     -- it contains a modulo, and string.format eats a bare "%" as a broken
     -- conversion spec.
-    btn:SetAttributeNoHandler("_childupdate-eab-page", ([[
+    button:SetAttributeNoHandler("_childupdate-eab-page", ([[
         local page = tonumber(message) or 1
         local slot = %d + (page - 1) * %d
         self:SetAttribute("action", slot)
@@ -1341,7 +1344,7 @@ function EAB_VTABLE.MainBarPageSync.InstallButton(btn)
                 self:SetAttribute("statehidden", nil)
                 changed = true
             end
-    ]] .. ns._eabPageUnparkSnippet .. [[
+    ]] .. mod._eabPageUnparkSnippet .. [[
             self:Show(true)
         else
             if not hidden then
@@ -1357,5 +1360,5 @@ function EAB_VTABLE.MainBarPageSync.InstallButton(btn)
         end
     ]])
 
-    btn:SetAttributeNoHandler("_eabPageSyncInstalled", true)
+    button:SetAttributeNoHandler("_eabPageSyncInstalled", true)
 end

@@ -8,17 +8,18 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and the reagent bag window.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local CUI = CludesUI
 
-local BP, CurrencyOrder, SetBagFont, FOOTER_H = I.BP, I.CurrencyOrder, I.SetBagFont, I.FOOTER_H
+local BP, CurrencyOrder, SetBagFont, FOOTER_H =
+    Inner.BP, Inner.CurrencyOrder, Inner.SetBagFont, Inner.FOOTER_H
 
 -------------------------------------------------------------------------------
 --  Gold tracking + Footer
@@ -28,13 +29,13 @@ local GoldLedger = CludesUI.GetGoldLedger()
 local function FormatNumberWithCommas(num)
     local str = tostring(math.floor(num))
     local result = ""
-    local count = 0
+    local total = 0
     for i = #str, 1, -1 do
-        if count > 0 and count % 3 == 0 then
+        if total > 0 and total % 3 == 0 then
             result = "," .. result
         end
         result = str:sub(i, i) .. result
-        count = count + 1
+        total = total + 1
     end
     return result
 end
@@ -120,12 +121,12 @@ local function GetGoldTooltip()
     f._fadeOutAG = fadeOutAG
     f._fadeOut = fadeOut
 
-    local title = f:CreateFontString(nil, "OVERLAY")
-    title:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
-    title:SetTextColor(0.80, 0.80, 0.80, 1)
-    title:SetPoint("TOP", f, "TOP", 0, -GOLD_PAD)
-    title:SetText(CludesUI.L("Gold Summary"))
-    f._title = title
+    local titleText = f:CreateFontString(nil, "OVERLAY")
+    titleText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    titleText:SetTextColor(0.80, 0.80, 0.80, 1)
+    titleText:SetPoint("TOP", f, "TOP", 0, -GOLD_PAD)
+    titleText:SetText(CludesUI.L("Gold Summary"))
+    f._title = titleText
 
     local hint = f:CreateFontString(nil, "OVERLAY")
     hint:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
@@ -137,26 +138,26 @@ local function GetGoldTooltip()
     return f
 end
 
-local function EnsureGoldRows(count)
-    local fontPath = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
+local function EnsureGoldRows(total)
+    local fontFile = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
     local fontFlags = (CludesUI.GetFontOutlineFlag("bags")) or ""
     local tt = GetGoldTooltip()
-    for i = 1, count do
+    for i = 1, total do
         if not _goldTTRows[i] then
             _goldTTRows[i] = {}
-            for col = 0, 1 do
-                local fs = tt:CreateFontString(nil, "OVERLAY")
-                fs:SetFont(fontPath, 11, fontFlags)
-                fs:SetJustifyH(col == 0 and "LEFT" or "RIGHT")
-                _goldTTRows[i][col] = fs
+            for column = 0, 1 do
+                local fontStr = tt:CreateFontString(nil, "OVERLAY")
+                fontStr:SetFont(fontFile, 11, fontFlags)
+                fontStr:SetJustifyH(column == 0 and "LEFT" or "RIGHT")
+                _goldTTRows[i][column] = fontStr
             end
         end
     end
-    tt._title:SetFont(fontPath, 11, fontFlags)
-    tt._hint:SetFont(fontPath, 10, fontFlags)
-    for i = 1, count do
-        for col = 0, 1 do
-            _goldTTRows[i][col]:SetFont(fontPath, 11, fontFlags)
+    tt._title:SetFont(fontFile, 11, fontFlags)
+    tt._hint:SetFont(fontFile, 10, fontFlags)
+    for i = 1, total do
+        for column = 0, 1 do
+            _goldTTRows[i][column]:SetFont(fontFile, 11, fontFlags)
         end
     end
 end
@@ -171,7 +172,7 @@ local function StripRealm(name)
     return name
 end
 
-local function ShowGoldTooltip(anchor)
+local function ShowGoldTooltip(anchorFrame)
     if not GoldLedger.IsTracking() then
         return
     end
@@ -179,9 +180,9 @@ local function ShowGoldTooltip(anchor)
     local ledger = GoldLedger.Data()
     local totalGold = 0
     local charList = {}
-    for charID, data in pairs(ledger.chars) do
-        charList[#charList + 1] = { id = charID, data = data }
-        totalGold = totalGold + data.money
+    for charID, payload in pairs(ledger.chars) do
+        charList[#charList + 1] = { id = charID, data = payload }
+        totalGold = totalGold + payload.money
     end
     table.sort(charList, function(a, b)
         return (a.data.name or a.id) < (b.data.name or b.id)
@@ -207,13 +208,13 @@ local function ShowGoldTooltip(anchor)
     local tt = GetGoldTooltip()
 
     local colWidths = { 0, 0 }
-    for r, entry in ipairs(charList) do
+    for r, record in ipairs(charList) do
         local nameFS = _goldTTRows[r][0]
         local goldFS = _goldTTRows[r][1]
-        local cc = RAID_CLASS_COLORS[entry.data.class] or { r = 1, g = 1, b = 1 }
+        local cc = RAID_CLASS_COLORS[record.data.class] or { r = 1, g = 1, b = 1 }
         local hex = string.format("%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255)
-        nameFS:SetText("|cff" .. hex .. StripRealm(entry.data.name or entry.id) .. "|r")
-        goldFS:SetText(FormatGoldOnly(entry.data.money))
+        nameFS:SetText("|cff" .. hex .. StripRealm(record.data.name or record.id) .. "|r")
+        goldFS:SetText(FormatGoldOnly(record.data.money))
         goldFS:SetTextColor(1, 1, 1, 1)
         nameFS:Show()
         goldFS:Show()
@@ -274,15 +275,15 @@ local function ShowGoldTooltip(anchor)
     local totalW = col2X + colWidths[2] + GOLD_PAD
 
     for r = 1, rowCount do
-        local y = -(titleTop + (r - 1) * GOLD_ROW_H)
+        local posY = -(titleTop + (r - 1) * GOLD_ROW_H)
         -- Add gap before total row
         if r == totalRow then
-            y = y - 4
+            posY = posY - 4
         end
         _goldTTRows[r][0]:ClearAllPoints()
-        _goldTTRows[r][0]:SetPoint("TOPLEFT", tt, "TOPLEFT", col1X, y)
+        _goldTTRows[r][0]:SetPoint("TOPLEFT", tt, "TOPLEFT", col1X, posY)
         _goldTTRows[r][1]:ClearAllPoints()
-        _goldTTRows[r][1]:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -GOLD_PAD, y)
+        _goldTTRows[r][1]:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -GOLD_PAD, posY)
     end
 
     local lastRowY = titleTop + (rowCount - 1) * GOLD_ROW_H + 4 + GOLD_ROW_H + 6
@@ -296,7 +297,7 @@ local function ShowGoldTooltip(anchor)
 
     tt:SetSize(totalW, totalH)
     tt:ClearAllPoints()
-    tt:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 4)
+    tt:SetPoint("BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 4)
 
     tt._fadeOutAG:Stop()
     tt._fadeInAG:Stop()
@@ -362,8 +363,8 @@ local function CreateFooter()
     end
 
     -- Disable mouse on all SmallMoneyFrameTemplate children so our hitbox catches events
-    for _, child in pairs({ money:GetChildren() }) do
-        child:EnableMouse(false)
+    for _, childFrame in pairs({ money:GetChildren() }) do
+        childFrame:EnableMouse(false)
     end
     local moneyHitbox = CreateFrame("Frame", nil, footer)
     moneyHitbox:SetPoint("BOTTOMRIGHT", money, "BOTTOMRIGHT", 5, -5)
@@ -377,11 +378,11 @@ local function CreateFooter()
     moneyHitbox:SetScript("OnLeave", function()
         HideGoldTooltip()
     end)
-    moneyHitbox:SetScript("OnMouseDown", function(self, button)
+    moneyHitbox:SetScript("OnMouseDown", function(self, btnFrame)
         if not GoldLedger.IsTracking() then
             return
         end
-        if button == "RightButton" and IsControlKeyDown() then
+        if btnFrame == "RightButton" and IsControlKeyDown() then
             ResetAllGoldData()
             HideGoldTooltip()
             return
@@ -389,15 +390,15 @@ local function CreateFooter()
     end)
 
     -- Top-edge separator (1px physical pixel)
-    local PP = CUI and CUI.PP
-    local px = (PP and PP.mult) or 1
+    local Pix = CUI and CUI.PP
+    local px = (Pix and Pix.mult) or 1
     local ftrSep = footer:CreateTexture(nil, "ARTWORK")
     ftrSep:SetHeight(px)
     ftrSep:SetPoint("TOPLEFT", footer, "TOPLEFT", 0, 0)
     ftrSep:SetPoint("TOPRIGHT", footer, "TOPRIGHT", 0, 0)
     ftrSep:SetColorTexture(0.15, 0.15, 0.15, 1)
-    if ns.BagsForever() then
-        ns.SkinForeverBagFooter(footer, footer.bg, ftrSep)
+    if mod.BagsForever() then
+        mod.SkinForeverBagFooter(footer, footer.bg, ftrSep)
         money:SetHeight(16)
     end
 
@@ -415,17 +416,17 @@ local function UpdateCurrencyDisplays(footerWidth)
     for _, d in ipairs(pool.displays) do
         d:Hide()
     end
-    for _, h in ipairs(pool.hitboxes) do
-        h:Hide()
+    for _, hgt in ipairs(pool.hitboxes) do
+        hgt:Hide()
     end
 
     -- Build tracked list from internal order table (decoupled from Blizzard)
     local tracked = {}
     local orderDB = CurrencyOrder()
     if orderDB and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
-        for cID, order in pairs(orderDB) do
-            if type(order) == "number" then
-                tracked[#tracked + 1] = { currencyTypesID = cID, order = order }
+        for cID, sequence in pairs(orderDB) do
+            if type(sequence) == "number" then
+                tracked[#tracked + 1] = { currencyTypesID = cID, order = sequence }
             end
         end
         table.sort(tracked, function(a, b)
@@ -471,15 +472,15 @@ local function UpdateCurrencyDisplays(footerWidth)
     local currentX = leftOffset
     local currencyLayout = {}
 
-    for i, info in ipairs(tracked) do
+    for i, details in ipairs(tracked) do
         local display = pool.displays[i]
-        local fullInfo = C_CurrencyInfo.GetCurrencyInfo(info.currencyTypesID)
-        local icon = fullInfo and fullInfo.iconFileID or info.iconFileID
+        local fullInfo = C_CurrencyInfo.GetCurrencyInfo(details.currencyTypesID)
+        local glyph = fullInfo and fullInfo.iconFileID or details.iconFileID
         local quantity = fullInfo and fullInfo.quantity or 0
         local discovered = fullInfo and fullInfo.discovered
         local name = fullInfo and fullInfo.name or ""
-        if icon and (discovered ~= false) then
-            display:SetText("|T" .. tostring(icon) .. ":17:17:0:0:64:64:5:59:5:59|t " .. quantity)
+        if glyph and (discovered ~= false) then
+            display:SetText("|T" .. tostring(glyph) .. ":17:17:0:0:64:64:5:59:5:59|t " .. quantity)
             local itemWidth = display:GetStringWidth() + padding
             if currentX + itemWidth > leftOffset + availableWidth and currentX > leftOffset then
                 currentRow = currentRow + 1
@@ -489,7 +490,7 @@ local function UpdateCurrencyDisplays(footerWidth)
                 idx = i,
                 row = currentRow,
                 x = currentX,
-                currencyID = info.currencyTypesID,
+                currencyID = details.currencyTypesID,
             }
             currentX = currentX + itemWidth
         end
@@ -554,19 +555,19 @@ local function CreateReagentBagUI()
     if CUI_BagsReagent.Header then
         return
     end
-    local header = CreateFrame("Frame", nil, CUI_BagsReagent)
-    header:SetPoint("TOPLEFT", 1, -1)
-    header:SetPoint("TOPRIGHT", -1, -1)
-    header:SetHeight(35)
-    header.bg = header:CreateTexture(nil, "BACKGROUND")
-    header.bg:SetAllPoints()
-    header.bg:SetColorTexture(0, 0, 0, 0.5)
-    header.title = header:CreateFontString(nil, "OVERLAY")
-    SetBagFont(header.title, 13)
-    header.title:SetPoint("LEFT", 15, 0)
-    header.title:SetText(CludesUI.L("REAGENTS"))
-    header.title:SetTextColor(1, 1, 1)
-    local close = CreateFrame("Button", nil, header)
+    local headerFrame = CreateFrame("Frame", nil, CUI_BagsReagent)
+    headerFrame:SetPoint("TOPLEFT", 1, -1)
+    headerFrame:SetPoint("TOPRIGHT", -1, -1)
+    headerFrame:SetHeight(35)
+    headerFrame.bg = headerFrame:CreateTexture(nil, "BACKGROUND")
+    headerFrame.bg:SetAllPoints()
+    headerFrame.bg:SetColorTexture(0, 0, 0, 0.5)
+    headerFrame.title = headerFrame:CreateFontString(nil, "OVERLAY")
+    SetBagFont(headerFrame.title, 13)
+    headerFrame.title:SetPoint("LEFT", 15, 0)
+    headerFrame.title:SetText(CludesUI.L("REAGENTS"))
+    headerFrame.title:SetTextColor(1, 1, 1)
+    local close = CreateFrame("Button", nil, headerFrame)
     close:SetSize(20, 20)
     close:SetPoint("RIGHT", -5, 0)
     close.icon = close:CreateTexture(nil, "OVERLAY")
@@ -582,18 +583,18 @@ local function CreateReagentBagUI()
     close:SetScript("OnClick", function()
         CUI_BagsReagent:Hide()
     end)
-    if ns.BagsForever() then
-        ns.LayoutForeverBagHeader(header, 35)
-        header.bg:Hide()
-        ns.AddForeverBagPortrait(header, CUI.ClientIcon(3622222))
-        ns.SkinForeverBagTitle(header.title)
-        ns.PositionForeverBagClose(close)
+    if mod.BagsForever() then
+        mod.LayoutForeverBagHeader(headerFrame, 35)
+        headerFrame.bg:Hide()
+        mod.AddForeverBagPortrait(headerFrame, CUI.ClientIcon(3622222))
+        mod.SkinForeverBagTitle(headerFrame.title)
+        mod.PositionForeverBagClose(close)
     end
     -- Controller cursor: Cancel finds the close button.
     if CUI.PadCP() then
         CUI_BagsReagent.CloseButton = close
     end
-    CUI_BagsReagent.Header = header
+    CUI_BagsReagent.Header = headerFrame
     local footer = CreateFrame("Frame", nil, CUI_BagsReagent)
     footer:SetPoint("BOTTOMLEFT", 1, 1)
     footer:SetPoint("BOTTOMRIGHT", -1, 1)
@@ -601,9 +602,9 @@ local function CreateReagentBagUI()
     CUI_BagsReagent.Footer = footer
 end
 
-I.CreateFooter, I.CreateReagentBagUI = CreateFooter, CreateReagentBagUI
-I.GoldLedger, I.OnGoldChanged = GoldLedger, OnGoldChanged
-I.SyncBagFrameToFooter, I.UpdateBagMoneyDisplay = SyncBagFrameToFooter, UpdateBagMoneyDisplay
-I.UpdateCurrencyDisplays = UpdateCurrencyDisplays
-I.PositionBagMoney = PositionBagMoney
-I.broken = false
+Inner.CreateFooter, Inner.CreateReagentBagUI = CreateFooter, CreateReagentBagUI
+Inner.GoldLedger, Inner.OnGoldChanged = GoldLedger, OnGoldChanged
+Inner.SyncBagFrameToFooter, Inner.UpdateBagMoneyDisplay = SyncBagFrameToFooter, UpdateBagMoneyDisplay
+Inner.UpdateCurrencyDisplays = UpdateCurrencyDisplays
+Inner.PositionBagMoney = PositionBagMoney
+Inner.broken = false

@@ -8,21 +8,21 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  bind text, border color and the item overlay icons.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
 local CUI = CludesUI
 
-local _bankRouted, BP, GetFont, IsGearItem = I._bankRouted, I.BP, I.GetFont, I.IsGearItem
-local NormalizePinKey, PinnedItems, bagSlots = I.NormalizePinKey, I.PinnedItems, I.bagSlots
-local itemSlots, reagentSlots = I.itemSlots, I.reagentSlots
-local CreateInsetBorder, SetInsetBorderColor = I.CreateInsetBorder, I.SetInsetBorderColor
+local _bankRouted, BP, GetFont, IsGearItem = Inner._bankRouted, Inner.BP, Inner.GetFont, Inner.IsGearItem
+local NormalizePinKey, PinnedItems, bagSlots = Inner.NormalizePinKey, Inner.PinnedItems, Inner.bagSlots
+local itemSlots, reagentSlots = Inner.itemSlots, Inner.reagentSlots
+local CreateInsetBorder, SetInsetBorderColor = Inner.CreateInsetBorder, Inner.SetInsetBorderColor
 
 -------------------------------------------------------------------------------
 --  Drag-to-drop: template handles pickup, we handle drop on mouse release
@@ -46,8 +46,8 @@ _itemDragFrame:SetScript("OnUpdate", function(self)
         if btn:IsShown() and btn:GetParent():IsShown() then
             local es = btn:GetEffectiveScale()
             local cx, cy = rawCx / es, rawCy / es
-            local l, b, w, h = btn:GetRect()
-            if l and b and cx >= l and cx <= l + w and cy >= b and cy <= b + h then
+            local l, b, wid, hgt = btn:GetRect()
+            if l and b and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
                 local destBag = btn:GetParent():GetID()
                 local destSlot = btn:GetID()
                 if destSlot > 0 then
@@ -64,8 +64,8 @@ _itemDragFrame:SetScript("OnUpdate", function(self)
             if btn:IsShown() and btn:GetParent():IsShown() then
                 local es = btn:GetEffectiveScale()
                 local cx, cy = rawCx / es, rawCy / es
-                local l, b, w, h = btn:GetRect()
-                if l and b and cx >= l and cx <= l + w and cy >= b and cy <= b + h then
+                local l, b, wid, hgt = btn:GetRect()
+                if l and b and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
                     local destBag = btn:GetParent():GetID()
                     local destSlot = btn:GetID()
                     if destSlot > 0 then
@@ -84,8 +84,8 @@ end)
 -------------------------------------------------------------------------------
 -- Middle-click: unassign an assigned item, else toggle its pin. Shared by the
 -- grid slots and the list rows (ns.SlotMiddleClick).
-local function SlotMiddleClick(self, button)
-    if button ~= "MiddleButton" then
+local function SlotMiddleClick(self, btnFrame)
+    if btnFrame ~= "MiddleButton" then
         return
     end
     local bagID = self:GetParent():GetID()
@@ -93,14 +93,14 @@ local function SlotMiddleClick(self, button)
     if not bagID or not slotID or slotID == 0 then
         return
     end
-    local info = C_Container.GetContainerItemInfo(bagID, slotID)
-    if not info or not info.itemID then
+    local details = C_Container.GetContainerItemInfo(bagID, slotID)
+    if not details or not details.itemID then
         return
     end
     -- If this item has a custom category assignment, middle-click unassigns it
     local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
-    if assignments and assignments[info.itemID] then
-        CUI_CategoryManager:UnassignItem(info.itemID)
+    if assignments and assignments[details.itemID] then
+        CUI_CategoryManager:UnassignItem(details.itemID)
         if CUI_Bags.RefreshInventory then
             CUI_Bags:RefreshInventory()
         end
@@ -121,24 +121,24 @@ local function SlotMiddleClick(self, button)
     -- originally meant, so the honest self-heal is "this interaction
     -- resolves the ambiguity," not "this interaction guesses which track
     -- it was." Re-pin afterward to set a precise, track-specific entry.
-    local pinKey = NormalizePinKey(itemLink, info.itemID)
-    local legacyCur = pinned[info.itemID] or 0
-    local cur = pinned[pinKey] or 0
-    if legacyCur > 0 and cur == 0 then
-        cur = legacyCur
+    local pinKey = NormalizePinKey(itemLink, details.itemID)
+    local legacyCur = pinned[details.itemID] or 0
+    local current = pinned[pinKey] or 0
+    if legacyCur > 0 and current == 0 then
+        current = legacyCur
     end
-    pinned[info.itemID] = nil
+    pinned[details.itemID] = nil
     if isGear then
         -- Gear: per-stack count toggle
-        if cur > 0 then
-            cur = cur - 1
-            pinned[pinKey] = cur > 0 and cur or nil
+        if current > 0 then
+            current = current - 1
+            pinned[pinKey] = current > 0 and current or nil
         else
-            pinned[pinKey] = cur + 1
+            pinned[pinKey] = current + 1
         end
     else
         -- Non-gear: pin/unpin all stacks at once
-        if cur > 0 then
+        if current > 0 then
             pinned[pinKey] = nil
         else
             pinned[pinKey] = 999
@@ -148,14 +148,14 @@ local function SlotMiddleClick(self, button)
         CUI_Bags:RefreshInventory()
     end
 end
-ns.SlotMiddleClick = SlotMiddleClick
+mod.SlotMiddleClick = SlotMiddleClick
 
 -- Right-click deposit routing: with a bank tab selected, queue the transfer instead of
 -- Blizzard's default first-free-slot routing (queue handles locked items/allocation so rapid
 -- clicks don't collide). State lives in an EXTERNAL weak table, never on the frame: PreClick
 -- custom keys taint the secure chain -> ADDON_ACTION_FORBIDDEN. Shared by grid slots and list rows.
-function ns.BankRoutePreClick(self, button)
-    if button ~= "RightButton" then
+function mod.BankRoutePreClick(self, btnFrame)
+    if btnFrame ~= "RightButton" then
         return
     end
     local bank = _G.CUI_BankFrame
@@ -171,23 +171,23 @@ function ns.BankRoutePreClick(self, button)
     if not srcBag or not srcSlot or srcSlot == 0 then
         return
     end
-    local info = C_Container.GetContainerItemInfo(srcBag, srcSlot)
-    if not info then
+    local details = C_Container.GetContainerItemInfo(srcBag, srcSlot)
+    if not details then
         return
     end
     bank:QueueTransfer(srcBag, srcSlot)
     _bankRouted[self] = true
 end
-function ns.BankRouteOnClick(self, button)
-    if button == "RightButton" and _bankRouted[self] then
+function mod.BankRouteOnClick(self, btnFrame)
+    if btnFrame == "RightButton" and _bankRouted[self] then
         _bankRouted[self] = nil
         ClearCursor()
     end
 end
 
-local function GetOrCreateReagentSlot(idx)
-    if reagentSlots[idx] then
-        return reagentSlots[idx]
+local function GetOrCreateReagentSlot(position)
+    if reagentSlots[position] then
+        return reagentSlots[position]
     end
     -- Never create a secure button during combat (taint). See GetOrCreateSlot.
     if InCombatLockdown() then
@@ -196,9 +196,9 @@ local function GetOrCreateReagentSlot(idx)
     end
 
     local slotParent = CreateFrame("Frame", nil, CUI_BagsReagent)
-    ns.SizeSlot(slotParent)
+    mod.SizeSlot(slotParent)
     local btn = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
-    ns.PinItemButton(btn, CUI_BagsReagent)
+    mod.PinItemButton(btn, CUI_BagsReagent)
     btn:SetAllPoints(slotParent)
     btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     btn:RegisterForDrag("LeftButton")
@@ -220,7 +220,7 @@ local function GetOrCreateReagentSlot(idx)
         btn.newitemglowAnim:Stop()
     end
 
-    ns.SizeSlot(btn)
+    mod.SizeSlot(btn)
     if btn.icon then
         local z = BP().bagItemIconZoom or 0.08
         btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
@@ -257,7 +257,7 @@ local function GetOrCreateReagentSlot(idx)
         btn.IconMask:ClearAllPoints()
         btn.IconMask:SetSize(0.001, 0.001)
     end
-    ns.UnmaskItemButton(btn)
+    mod.UnmaskItemButton(btn)
 
     if btn.Cooldown then
         local cdText = btn.Cooldown:GetRegions()
@@ -297,10 +297,10 @@ local function GetOrCreateReagentSlot(idx)
     btn.ItemLevelText:SetText("")
 
     btn:HookScript("PostClick", function(self)
-        CUI_Bags.ShowStackSplitter(self, ns.SplitTargetBags(5), CUI_BagsReagent)
+        CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(5), CUI_BagsReagent)
     end)
 
-    reagentSlots[idx] = btn
+    reagentSlots[position] = btn
     return btn
 end
 
@@ -312,9 +312,9 @@ end
 -- /reload in combat, StartAddon, and PLAYER_REGEN_ENABLED.
 function CUI_Bags:WarmSlotPool(msBudget)
     local t0 = msBudget and debugprofilestop()
-    local total = 0
+    local sum = 0
     for bag = 0, 5 do
-        total = total + (C_Container.GetContainerNumSlots(bag) or 0)
+        sum = sum + (C_Container.GetContainerNumSlots(bag) or 0)
     end
     -- Only the pool for the latched display mode is built; mode unknown
     -- (profile not loaded yet) builds neither and retries at combat end.
@@ -326,21 +326,21 @@ function CUI_Bags:WarmSlotPool(msBudget)
         local pinned = PinnedItems()
         if pinned then
             for _ in pairs(pinned) do
-                total = total + 1
+                sum = sum + 1
             end
         end
         if CUI_Bags._recentItems then
             for _ in pairs(CUI_Bags._recentItems) do
-                total = total + 1
+                sum = sum + 1
             end
         end
-        if not ns.WarmListRows(total, t0, msBudget) then
+        if not mod.WarmListRows(sum, t0, msBudget) then
             return false
         end
     else
-        for i = 1, total do
+        for i = 1, sum do
             if not itemSlots[i] then
-                local b = ns.GetOrCreateSlot(i)
+                local b = mod.GetOrCreateSlot(i)
                 if not b then
                     CUI_Bags._poolShort = true
                     return false
@@ -370,12 +370,12 @@ function CUI_Bags:WarmSlotPool(msBudget)
     return true
 end
 
-local function GetOrCreateBagSlot(idx)
-    if bagSlots[idx] then
-        return bagSlots[idx]
+local function GetOrCreateBagSlot(position)
+    if bagSlots[position] then
+        return bagSlots[position]
     end
     local slotParent = CreateFrame("Frame", nil, CUI_BagsWindow)
-    ns.SizeSlot(slotParent)
+    mod.SizeSlot(slotParent)
     local btn = CreateFrame("Button", nil, slotParent)
     btn:SetAllPoints(slotParent)
     btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -433,18 +433,18 @@ local function GetOrCreateBagSlot(idx)
         end
         local bTotal = C_Container.GetContainerNumSlots(bagIdx)
         local bFree = C_Container.GetContainerNumFreeSlots(bagIdx)
-        local tip = bName
+        local tipText = bName
         if bTotal > 0 then
-            tip = tip .. "  (" .. (bTotal - bFree) .. "/" .. bTotal .. ")"
+            tipText = tipText .. "  (" .. (bTotal - bFree) .. "/" .. bTotal .. ")"
         end
-        CUI.ShowWidgetTooltip(self, tip)
+        CUI.ShowWidgetTooltip(self, tipText)
     end)
     btn:SetScript("OnLeave", function(self)
         SetInsetBorderColor(self, self._bdrR, self._bdrG, self._bdrB, 1)
         CUI.HideWidgetTooltip()
     end)
 
-    bagSlots[idx] = btn
+    bagSlots[position] = btn
     return btn
 end
 
@@ -452,45 +452,45 @@ end
 --  Fast font size update (options sliders): no full RefreshInventory
 -------------------------------------------------------------------------------
 local function RefreshTextSizes()
-    local fontPath = GetFont()
+    local fontFile = GetFont()
     local countSize = BP().bagCountFontSize or 11
     local ilvlSize = BP().itemlevelFontSize or 12
     local bindTypeSize = BP().bagBindTypeFontSize or 11
     for _, btn in pairs(itemSlots) do
         if btn.Count then
-            CludesUI.ApplyIconTextFont(btn.Count, fontPath, countSize, "bags")
+            CludesUI.ApplyIconTextFont(btn.Count, fontFile, countSize, "bags")
         end
         if btn.ItemLevelText then
             btn.ItemLevelText:SetFont(
-                fontPath,
+                fontFile,
                 ilvlSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
         if btn.KeystoneText then
             btn.KeystoneText:SetFont(
-                fontPath,
+                fontFile,
                 countSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
         if btn.KeystoneDungeonText then
             btn.KeystoneDungeonText:SetFont(
-                fontPath,
+                fontFile,
                 math.max(countSize - 2, 7),
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
         if btn.BindTypeText then
             btn.BindTypeText:SetFont(
-                fontPath,
+                fontFile,
                 bindTypeSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
         if btn.SetNameText then
             btn.SetNameText:SetFont(
-                fontPath,
+                fontFile,
                 BP().bagSetNameFontSize or 9,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
@@ -498,7 +498,7 @@ local function RefreshTextSizes()
     end
     for _, btn in pairs(reagentSlots) do
         if btn.Count then
-            CludesUI.ApplyIconTextFont(btn.Count, fontPath, countSize, "bags")
+            CludesUI.ApplyIconTextFont(btn.Count, fontFile, countSize, "bags")
         end
         if btn.ItemLevelText then
             btn.ItemLevelText:SetFont(
@@ -538,22 +538,22 @@ CUI_Bags.RefreshIconZoom = RefreshIconZoom
 --  Bind type text (shared by bags and bank render paths)
 -------------------------------------------------------------------------------
 -- WuE items report bindType == OnEquip (no dedicated enum): check WuE first.
-function CUI_Bags.SetBindTypeText(fs, isWuE, bindType, quality)
+function CUI_Bags.SetBindTypeText(fontStr, isWuE, bindType, quality)
     local c
     if isWuE then
         c = ITEM_QUALITY_COLORS[7] -- Heirloom color (no quality enum for WuE)
-        fs:SetText(CludesUI.L("WuE"))
+        fontStr:SetText(CludesUI.L("WuE"))
     elseif bindType == Enum.ItemBind.OnEquip then
         c = ITEM_QUALITY_COLORS[quality]
-        fs:SetText(CludesUI.L("BoE"))
+        fontStr:SetText(CludesUI.L("BoE"))
     else
-        fs:SetText("")
+        fontStr:SetText("")
         return
     end
     if c then
-        fs:SetTextColor(c.r, c.g, c.b)
+        fontStr:SetTextColor(c.r, c.g, c.b)
     else
-        fs:SetTextColor(1, 1, 1)
+        fontStr:SetTextColor(1, 1, 1)
     end
 end
 
@@ -623,12 +623,12 @@ do
                     i = i + #d
                 end
             elseif c:find("^%a") then
-                local w = s:match("^%a+", i)
-                i = i + #w
-                if w == "and" or w == "or" or w == "not" then
-                    toks[#toks + 1] = { k = w }
-                elseif BIND_KEYWORDS[w] then
-                    toks[#toks + 1] = { k = "kw", v = w }
+                local wid = s:match("^%a+", i)
+                i = i + #wid
+                if wid == "and" or wid == "or" or wid == "not" then
+                    toks[#toks + 1] = { k = wid }
+                elseif BIND_KEYWORDS[wid] then
+                    toks[#toks + 1] = { k = "kw", v = wid }
                 else
                     return nil
                 end
@@ -639,8 +639,8 @@ do
         return toks
     end
 
-    local function ParseBindQuery(text)
-        local toks = Tokenize(strtrim(text or ""):lower())
+    local function ParseBindQuery(textValue)
+        local toks = Tokenize(strtrim(textValue or ""):lower())
         if not toks or #toks == 0 then
             return nil
         end
@@ -740,7 +740,7 @@ do
     -- One location reused for every slot: a keyword pass visits every item on
     -- each refresh, and CreateFromBagAndSlot builds a new mixin table per call.
     local loc = ItemLocation:CreateEmpty()
-    local GetItemLevelAtLocation = I.GetItemLevelAtLocation
+    local GetItemLevelAtLocation = Inner.GetItemLevelAtLocation
 
     -- The level the slot shows: the item's current level at its location.
     local function ItemLevelMatches(q)
@@ -771,16 +771,16 @@ do
     end
 
     local function TermMatches(q)
-        local k = q.kw
+        local key = q.kw
         local match = false
-        if k == "bop" then
+        if key == "bop" then
             match = curBindType == Enum.ItemBind.OnAcquire
-        elseif k == "boa" then
+        elseif key == "boa" then
             match = curBindType == Enum.ItemBind.ToWoWAccount
-        elseif k == "soulbound" then
+        elseif key == "soulbound" then
             -- Account-bound items are bound too, but are not soulbound.
             match = curBound and not curIsAccount
-        elseif k == "warbound" then
+        elseif key == "warbound" then
             -- Either account bind type (Bind to Account, Binds to Warband) once
             -- bound.
             match = curBound and curIsAccount
@@ -790,7 +790,7 @@ do
             if curWue == nil then
                 curWue = C_Item.IsBoundToAccountUntilEquip(loc) and true or false
             end
-            if k == "wue" then
+            if key == "wue" then
                 match = curWue
             else
                 match = not curWue and curBindType == Enum.ItemBind.OnEquip
@@ -834,21 +834,21 @@ do
         if BP().detachReagentBag and CUI_BagsReagent:IsVisible() then
             CUI_BagsReagent:RefreshInventory()
         end
-        ns.RefreshOpenBank()
+        mod.RefreshOpenBank()
     end
 
     -- The game's item search is client-wide and has no getter, so this is its
     -- one writer and keeps the text it last applied: a search box asking for
     -- that same text has nothing to change or repaint.
-    function CUI_Bags.SetSearchText(text)
-        CUI_Bags._bindKeyword = ParseBindQuery(text)
-        CUI_Bags._appliedSearch = text
+    function CUI_Bags.SetSearchText(textValue)
+        CUI_Bags._bindKeyword = ParseBindQuery(textValue)
+        CUI_Bags._appliedSearch = textValue
         if not searchWatch then
             searchWatch = CreateFrame("Frame")
             searchWatch:SetScript("OnEvent", OnSearchUpdate)
         end
         searchWatch:RegisterEvent("INVENTORY_SEARCH_UPDATE")
-        C_Container.SetItemSearch(text)
+        C_Container.SetItemSearch(textValue)
     end
 
     -- Text changes of a search box (the bags and the bank each have one):
@@ -859,7 +859,7 @@ do
     -- windows repaint when the game reports it, see SetSearchText). Returns
     -- the box's change handler.
     local SEARCH_DEBOUNCE = 0.1
-    function CUI_Bags.WatchSearchBox(box, apply)
+    function CUI_Bags.WatchSearchBox(boxFrame, apply)
         local armed, lastKeyAt = false, 0
         local function flush()
             local wait = lastKeyAt + SEARCH_DEBOUNCE - GetTime()
@@ -868,9 +868,9 @@ do
                 return
             end
             armed = false
-            local text = box:GetText()
-            if text ~= CUI_Bags._appliedSearch then
-                apply(text)
+            local textValue = boxFrame:GetText()
+            if textValue ~= CUI_Bags._appliedSearch then
+                apply(textValue)
             end
         end
         return function(userInput)
@@ -882,9 +882,9 @@ do
                 end
                 return
             end
-            local text = box:GetText()
-            if text ~= CUI_Bags._appliedSearch then
-                apply(text)
+            local textValue = boxFrame:GetText()
+            if textValue ~= CUI_Bags._appliedSearch then
+                apply(textValue)
             end
         end
     end
@@ -898,22 +898,22 @@ do
     end
 
     -- Overrides info.isFiltered for the active expression; no-op when none is active.
-    function CUI_Bags.ApplyBindKeyword(info, bag, slot)
+    function CUI_Bags.ApplyBindKeyword(details, bag, slotIndex)
         local q = CUI_Bags._bindKeyword
-        if not q or not info then
+        if not q or not details then
             return
         end
         local match = false
-        loc:SetBagAndSlot(bag, slot)
+        loc:SetBagAndSlot(bag, slotIndex)
         if C_Item.DoesItemExist(loc) then
-            curLink, curBound = info.hyperlink, info.isBound
+            curLink, curBound = details.hyperlink, details.isBound
             curBindType = curLink and select(14, GetItemInfo(curLink))
             curIsAccount = curBindType == Enum.ItemBind.ToWoWAccount
                 or curBindType == Enum.ItemBind.ToBnetAccount
             curWue, curIlvl = nil, nil
             match = Eval(q)
         end
-        info.isFiltered = not match
+        details.isFiltered = not match
     end
 end
 
@@ -922,10 +922,10 @@ end
 -------------------------------------------------------------------------------
 -- Quality Item Border: the item's quality color while the option is on (every
 -- display), else the neutral grey an unknown quality gets.
-function ns.QualityBorderColor(quality)
+function mod.QualityBorderColor(quality)
     local c
     if BP().bagQualityBorder ~= false then
-        if ns.BagsForever() and ColorManager and ColorManager.GetColorDataForBagItemQuality then
+        if mod.BagsForever() and ColorManager and ColorManager.GetColorDataForBagItemQuality then
             c = ColorManager.GetColorDataForBagItemQuality(quality)
         else
             c = ITEM_QUALITY_COLORS[quality]
@@ -958,16 +958,16 @@ function CUI_Bags.UnregisterItemOverlayIcon(name)
     CUI_Bags.itemOverlayIcons[name] = nil
 end
 
-function CUI_Bags.RunItemOverlays(btn, data)
+function CUI_Bags.RunItemOverlays(btn, payload)
     local fns = CUI_Bags.itemOverlayIcons
     if next(fns) == nil then
         return
     end
-    for _, fn in pairs(fns) do
-        securecallfunction(fn, btn, data)
+    for _, func in pairs(fns) do
+        securecallfunction(func, btn, payload)
     end
 end
 
-I._itemDragFrame, I.GetOrCreateBagSlot = _itemDragFrame, GetOrCreateBagSlot
-I.GetOrCreateReagentSlot = GetOrCreateReagentSlot
-I.broken = false
+Inner._itemDragFrame, Inner.GetOrCreateBagSlot = _itemDragFrame, GetOrCreateBagSlot
+Inner.GetOrCreateReagentSlot = GetOrCreateReagentSlot
+Inner.broken = false

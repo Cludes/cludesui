@@ -8,21 +8,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  bars and data bars.
 --  Loads after CUI_ActionBars_Layout.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, pairs = ipairs, pairs
 local C_Timer_After = C_Timer.After
 
-local EAB, EAB_VTABLE, barButtons = ns.EAB, ns.EAB_VTABLE, ns.barButtons
-local I = ns._internals
+local ABAR, EAB_VTABLE, barButtons = mod.EAB, mod.EAB_VTABLE, mod.barButtons
+local Inner = mod._internals
 local _gridState, _quickKeybindState, ALL_BARS, FadeTo =
-    I._gridState, I._quickKeybindState, I.ALL_BARS, I.FadeTo
-local StopFade = I.StopFade
-local barFrames, blizzMovableHolders, dataBarFrames = I.barFrames, I.blizzMovableHolders, I.dataBarFrames
-local extraBarHolders, GetEABFlyout = I.extraBarHolders, I.GetEABFlyout
-local SyncPagingAlpha = I.SyncPagingAlpha
-local BAR_LOOKUP, _dragState, _fadeAlpha = I.BAR_LOOKUP, I._dragState, I._fadeAlpha
+    Inner._gridState, Inner._quickKeybindState, Inner.ALL_BARS, Inner.FadeTo
+local StopFade = Inner.StopFade
+local barFrames, blizzMovableHolders, dataBarFrames =
+    Inner.barFrames, Inner.blizzMovableHolders, Inner.dataBarFrames
+local extraBarHolders, GetEABFlyout = Inner.extraBarHolders, Inner.GetEABFlyout
+local SyncPagingAlpha = Inner.SyncPagingAlpha
+local BAR_LOOKUP, _dragState, _fadeAlpha = Inner.BAR_LOOKUP, Inner._dragState, Inner._fadeAlpha
 local abs = math.abs
 
 -------------------------------------------------------------------------------
@@ -34,37 +35,37 @@ local hoverStates = {} -- shared by action bars, data bars, and extra bars
 -- it hovered and fades in, leaving schedules a guarded fade-out on the next
 -- frame. Per-bar attach functions only provide edge-case policies that differ
 -- between action bars, data bars, and Blizzard-owned extra bars.
-function EAB_VTABLE.Hover.GetSettings(barKey)
-    return EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars[barKey]
+function EAB_VTABLE.Hover.GetSettings(barId)
+    return ABAR.db and ABAR.db.profile and ABAR.db.profile.bars and ABAR.db.profile.bars[barId]
 end
 
-function EAB_VTABLE.Hover.GetState(barKey, frame)
-    local state = hoverStates[barKey]
-    if not state then
-        state = { frame = frame, isHovered = false, fadeDir = nil }
-        hoverStates[barKey] = state
+function EAB_VTABLE.Hover.GetState(barId, widget)
+    local status = hoverStates[barId]
+    if not status then
+        status = { frame = widget, isHovered = false, fadeDir = nil }
+        hoverStates[barId] = status
     else
-        state.frame = frame or state.frame
+        status.frame = widget or status.frame
     end
-    return state
+    return status
 end
 
 -- The frame a bar's alpha lives on: ours, or for an extra bar (the micro menu,
 -- the bag bar) the Blizzard frame itself, which is what AttachExtraBarHoverHooks
 -- fades. Shared by the mouseover refresh and the Advanced Fade layer.
-local function BarAlphaFrame(key, info)
-    local frame = barFrames[key]
-        or (info.isDataBar and dataBarFrames[key])
-        or (info.isBlizzardMovable and blizzMovableHolders[key])
+local function BarAlphaFrame(key, details)
+    local widget = barFrames[key]
+        or (details.isDataBar and dataBarFrames[key])
+        or (details.isBlizzardMovable and blizzMovableHolders[key])
         or extraBarHolders[key]
-        or (info.visibilityOnly and info.frameName and _G[info.frameName])
-    if frame and info.visibilityOnly and not info.isDataBar and not info.isBlizzardMovable then
-        local blizzFrame = info.frameName and _G[info.frameName]
+        or (details.visibilityOnly and details.frameName and _G[details.frameName])
+    if widget and details.visibilityOnly and not details.isDataBar and not details.isBlizzardMovable then
+        local blizzFrame = details.frameName and _G[details.frameName]
         if blizzFrame then
-            frame = blizzFrame
+            widget = blizzFrame
         end
     end
-    return frame
+    return widget
 end
 
 -------------------------------------------------------------------------------
@@ -89,16 +90,16 @@ end
 -- The hooks' gate asks the same question.
 EAB_VTABLE.Hover.HasCustomFade = EAB_VTABLE.Hover.AdvancedFadeEnabled
 -- For the options page (Bar Opacity repaints the layer of a bar that has it on).
-EAB.AdvancedFadeOn = EAB_VTABLE.Hover.AdvancedFadeEnabled
+ABAR.AdvancedFadeOn = EAB_VTABLE.Hover.AdvancedFadeEnabled
 
-function EAB_VTABLE.Hover.AdvancedFadeHovered(state)
-    return state and (state.isHovered == true or state.fadeDir == "in") or false
+function EAB_VTABLE.Hover.AdvancedFadeHovered(status)
+    return status and (status.isHovered == true or status.fadeDir == "in") or false
 end
 
 -- Any picked condition that holds reveals the bar. The group, instance, mount
 -- and skyriding probes are the visibility lanes' own, so a condition reads
 -- exactly as the same lane does on the Visibility row.
-function EAB_VTABLE.Hover.CustomFadeConditionMet(barKey, s)
+function EAB_VTABLE.Hover.CustomFadeConditionMet(barId, s)
     if not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
         return false
     end
@@ -107,7 +108,7 @@ function EAB_VTABLE.Hover.CustomFadeConditionMet(barKey, s)
         return false
     end
 
-    if c.mouseover and EAB_VTABLE.Hover.AdvancedFadeHovered(hoverStates[barKey]) then
+    if c.mouseover and EAB_VTABLE.Hover.AdvancedFadeHovered(hoverStates[barId]) then
         return true
     end
     if c.combat and CludesUI.IsInCombat() then
@@ -139,24 +140,24 @@ function EAB_VTABLE.Hover.CustomFadeConditionMet(barKey, s)
     return false
 end
 
-function EAB_VTABLE.Hover.CustomFadeFrame(barKey)
-    local info = BAR_LOOKUP[barKey]
-    if not info or info.noManagedVisibility then
-        return nil, info
+function EAB_VTABLE.Hover.CustomFadeFrame(barId)
+    local details = BAR_LOOKUP[barId]
+    if not details or details.noManagedVisibility then
+        return nil, details
     end
-    return BarAlphaFrame(barKey, info), info
+    return BarAlphaFrame(barId, details), details
 end
 
-function EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, animate, force)
-    local s = EAB_VTABLE.Hover.GetSettings(barKey)
+function EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, animate, force)
+    local s = EAB_VTABLE.Hover.GetSettings(barId)
     if not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
         return false
     end
 
     -- Temporary surfacing modes remain authoritative over alpha rules.
-    local spellbookForced = (_gridState._sbNeverForced and _gridState._sbNeverForced[barKey])
-        or (_gridState._sbMoForced and _gridState._sbMoForced[barKey])
-    local myslotForced = EAB.db and EAB.db.profile and EAB.db.profile._myslotVisBackup
+    local spellbookForced = (_gridState._sbNeverForced and _gridState._sbNeverForced[barId])
+        or (_gridState._sbMoForced and _gridState._sbMoForced[barId])
+    local myslotForced = ABAR.db and ABAR.db.profile and ABAR.db.profile._myslotVisBackup
     if
         _gridState.shown
         or _dragState.visible
@@ -164,18 +165,18 @@ function EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, animate, force)
         or spellbookForced
         or myslotForced
     then
-        local st = hoverStates[barKey]
+        local st = hoverStates[barId]
         if st then
             st.customFadeTarget = nil
         end
         return false
     end
 
-    local frame = EAB_VTABLE.Hover.CustomFadeFrame(barKey)
-    if not frame then
+    local widget = EAB_VTABLE.Hover.CustomFadeFrame(barId)
+    if not widget then
         return false
     end
-    local state = hoverStates[barKey]
+    local status = hoverStates[barId]
 
     -- Visibility comes first. While it gates the bar on Mouseover, the hidden
     -- side stays the mouseover fade's: the layer only moves the alpha of a bar
@@ -184,71 +185,71 @@ function EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, animate, force)
         CludesUI.VisWantsMouseover(s, "barVisibility", nil, CludesUI.VIS_CAPS_DEFAULT)
     local hoverHidden = false
     if visibilityWantsHover then
-        local over = EAB_VTABLE.Hover.AdvancedFadeHovered(state)
-        if not over and EAB.db.profile.mouseoverShowAll then
-            over = ns.AnyMouseoverBarHovered()
+        local over = EAB_VTABLE.Hover.AdvancedFadeHovered(status)
+        if not over and ABAR.db.profile.mouseoverShowAll then
+            over = mod.AnyMouseoverBarHovered()
         end
         hoverHidden = not over
     end
 
     -- Visibility's Mouseover mode parks the real Bar Opacity in _savedBarAlpha
     -- (mouseoverAlpha reads 0 then), so that is the resting alpha to start from.
-    local base
+    local baseValue
     if s.mouseoverEnabled and s._savedBarAlpha ~= nil then
-        base = s._savedBarAlpha
+        baseValue = s._savedBarAlpha
     else
-        base = s.mouseoverAlpha or 1
+        baseValue = s.mouseoverAlpha or 1
     end
 
-    local target = base
-    if EAB_VTABLE.Hover.CustomFadeConditionMet(barKey, s) then
-        target = s.fadeMaxAlpha
-        if target == nil then
-            target = 1
+    local targetUnit = baseValue
+    if EAB_VTABLE.Hover.CustomFadeConditionMet(barId, s) then
+        targetUnit = s.fadeMaxAlpha
+        if targetUnit == nil then
+            targetUnit = 1
         end
     end
     if hoverHidden then
-        target = 0
+        targetUnit = 0
     end
-    if target < 0 then
-        target = 0
-    elseif target > 1 then
-        target = 1
-    end
-
-    if state and not force and state.customFadeTarget == target then
-        return true
-    end
-    if state then
-        state.customFadeTarget = target
+    if targetUnit < 0 then
+        targetUnit = 0
+    elseif targetUnit > 1 then
+        targetUnit = 1
     end
 
-    local current = _fadeAlpha[frame] or 1
-    if current == target then
+    if status and not force and status.customFadeTarget == targetUnit then
         return true
     end
-    StopFade(frame, current)
-    if animate and abs(current - target) >= 0.01 then
+    if status then
+        status.customFadeTarget = targetUnit
+    end
+
+    local current = _fadeAlpha[widget] or 1
+    if current == targetUnit then
+        return true
+    end
+    StopFade(widget, current)
+    if animate and abs(current - targetUnit) >= 0.01 then
         local duration = hoverHidden and (s.mouseoverSpeed or 0.15)
-            or ((target > current) and (s.fadeInSpeed or 0.15) or (s.fadeOutSpeed or 0.15))
+            or ((targetUnit > current) and (s.fadeInSpeed or 0.15) or (s.fadeOutSpeed or 0.15))
         if duration < 0.01 then
             duration = 0.01
         end
-        FadeTo(frame, target, duration)
+        FadeTo(widget, targetUnit, duration)
     else
-        StopFade(frame, target)
+        StopFade(widget, targetUnit)
     end
-    if barKey == "MainBar" then
-        SyncPagingAlpha(target)
+    if barId == "MainBar" then
+        SyncPagingAlpha(targetUnit)
     end
     return true
 end
 
-function EAB:RefreshCustomFadeGate()
+function ABAR:RefreshCustomFadeGate()
     local any = false
     if self.db and self.db.profile and self.db.profile.bars then
-        for _, info in ipairs(ALL_BARS) do
-            if EAB_VTABLE.Hover.HasCustomFade(self.db.profile.bars[info.key]) then
+        for _, details in ipairs(ALL_BARS) do
+            if EAB_VTABLE.Hover.HasCustomFade(self.db.profile.bars[details.key]) then
                 any = true
                 break
             end
@@ -268,22 +269,22 @@ function EAB:RefreshCustomFadeGate()
     return any
 end
 
-function EAB:RefreshCustomFadeForBar(barKey, animate)
+function ABAR:RefreshCustomFadeForBar(barId, animate)
     self:RefreshCustomFadeGate()
-    return EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, animate, true)
+    return EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, animate, true)
 end
 
-function EAB:RefreshAllCustomFade(animate, force)
+function ABAR:RefreshAllCustomFade(animate, force)
     local any = self:RefreshCustomFadeGate()
     if not any and not force then
         return
     end
-    for _, info in ipairs(ALL_BARS) do
-        local s = self.db.profile.bars[info.key]
+    for _, details in ipairs(ALL_BARS) do
+        local s = self.db.profile.bars[details.key]
         -- Only bars with a condition checked; force repaints even a bar whose
         -- last target still stands, never a native bar.
         if EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
-            EAB_VTABLE.Hover.RefreshCustomFadeBar(info.key, animate, force and true or false)
+            EAB_VTABLE.Hover.RefreshCustomFadeBar(details.key, animate, force and true or false)
         end
     end
 end
@@ -291,56 +292,56 @@ end
 -- The one-time handoff when a bar is left with no condition checked: stops an
 -- Advanced Fade still in flight and paints the alpha the mouseover fade would
 -- show this instant. No saved Visibility or Opacity setting is touched.
-function EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(barKey)
-    local s = EAB_VTABLE.Hover.GetSettings(barKey)
+function EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(barId)
+    local s = EAB_VTABLE.Hover.GetSettings(barId)
     if not s then
         return
     end
-    local frame = EAB_VTABLE.Hover.CustomFadeFrame(barKey)
-    if not frame then
+    local widget = EAB_VTABLE.Hover.CustomFadeFrame(barId)
+    if not widget then
         return
     end
 
-    local state = hoverStates[barKey]
-    local over = EAB_VTABLE.Hover.AdvancedFadeHovered(state)
-    if not over and EAB.db.profile.mouseoverShowAll then
-        over = ns.AnyMouseoverBarHovered()
+    local status = hoverStates[barId]
+    local over = EAB_VTABLE.Hover.AdvancedFadeHovered(status)
+    if not over and ABAR.db.profile.mouseoverShowAll then
+        over = mod.AnyMouseoverBarHovered()
     end
-    local target, wantsHover = EAB_VTABLE.Hover.RestingAlpha(barKey, s)
+    local targetUnit, wantsHover = EAB_VTABLE.Hover.RestingAlpha(barId, s)
     if wantsHover and over then
-        target = s._savedBarAlpha or 1
+        targetUnit = s._savedBarAlpha or 1
     end
 
-    StopFade(frame, target)
-    if state then
-        state.customFadeTarget = nil
+    StopFade(widget, targetUnit)
+    if status then
+        status.customFadeTarget = nil
         if s.mouseoverEnabled and over then
-            state.fadeDir = "in"
-        elseif s.mouseoverEnabled and target == 0 then
-            state.fadeDir = "out"
+            status.fadeDir = "in"
+        elseif s.mouseoverEnabled and targetUnit == 0 then
+            status.fadeDir = "out"
         else
-            state.fadeDir = nil
+            status.fadeDir = nil
         end
     end
-    if barKey == "MainBar" then
-        SyncPagingAlpha(target)
+    if barId == "MainBar" then
+        SyncPagingAlpha(targetUnit)
     end
 end
 
 -- A change to a bar's conditions (or a copy of them) rebuilds no Visibility
 -- driver and writes no other setting: a first condition arms the layer's
 -- hooks, a bar left with none runs the one-time alpha handoff above.
-function EAB:RefreshAdvancedFadeEnabled(changed)
+function ABAR:RefreshAdvancedFadeEnabled(changed)
     if type(changed) == "string" then
         local s = self.db.profile.bars[changed]
         if s and not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
             EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(changed)
         end
     elseif type(changed) == "table" then
-        for _, barKey in ipairs(changed) do
-            local s = self.db.profile.bars[barKey]
+        for _, barId in ipairs(changed) do
+            local s = self.db.profile.bars[barId]
             if s and not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
-                EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(barKey)
+                EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(barId)
             end
         end
     end
@@ -363,8 +364,8 @@ end
 -- _savedBarAlpha is load-bearing: ApplyMode parks mouseoverAlpha at 0 and stashes the real
 -- value there while a mouseover selection is stored, so the shown branch would paint 0.
 -- On the vtable, not a chunk local.
-function EAB_VTABLE.Hover.RestingAlpha(barKey, s)
-    s = s or EAB_VTABLE.Hover.GetSettings(barKey)
+function EAB_VTABLE.Hover.RestingAlpha(barId, s)
+    s = s or EAB_VTABLE.Hover.GetSettings(barId)
     if not s then
         return 1, false
     end
@@ -384,23 +385,23 @@ end
 -- already fading/faded O(1) table reads, so a sweep across a bar's 12 buttons
 -- costs 12 memo hits and one real fade. On the vtable,
 -- not a chunk local.
-function EAB_VTABLE.Hover.FadeInOne(barKey, state)
-    local s = EAB_VTABLE.Hover.GetSettings(barKey)
-    if s and s.mouseoverEnabled and state and state.fadeDir ~= "in" then
+function EAB_VTABLE.Hover.FadeInOne(barId, status)
+    local s = EAB_VTABLE.Hover.GetSettings(barId)
+    if s and s.mouseoverEnabled and status and status.fadeDir ~= "in" then
         local targetAlpha = s._savedBarAlpha or 1
-        state.fadeDir = "in"
-        StopFade(state.frame)
+        status.fadeDir = "in"
+        StopFade(status.frame)
         -- The shared per-frame fader starts a show-all edge on every bar in
         -- the same frame (lockstep, no ripple).
-        FadeTo(state.frame, targetAlpha, s.mouseoverSpeed or 0.15)
-        if barKey == "MainBar" then
+        FadeTo(status.frame, targetAlpha, s.mouseoverSpeed or 0.15)
+        if barId == "MainBar" then
             SyncPagingAlpha(targetAlpha)
         end
     end
 end
 
-function EAB_VTABLE.Hover.FadeIn(barKey, state)
-    EAB_VTABLE.Hover.FadeInOne(barKey, state)
+function EAB_VTABLE.Hover.FadeIn(barId, status)
+    EAB_VTABLE.Hover.FadeInOne(barId, status)
     -- "Show All Bars on Mouseover": bring other bars along, all starting THIS
     -- frame in lockstep. Cheap because every fade rides the shared fader (a
     -- table write per bar). Iterative, not recursive: no reentrancy latch to get stuck.
@@ -408,38 +409,38 @@ function EAB_VTABLE.Hover.FadeIn(barKey, state)
     -- same OnEnter onto every bar regardless of its own visibility mode, so
     -- without this check hovering an Always-visible bar broadcast the same
     -- as hovering a real Mouseover one (tooltip promises the latter only).
-    local s = EAB_VTABLE.Hover.GetSettings(barKey)
-    if s and s.mouseoverEnabled and EAB.db.profile.mouseoverShowAll then
+    local s = EAB_VTABLE.Hover.GetSettings(barId)
+    if s and s.mouseoverEnabled and ABAR.db.profile.mouseoverShowAll then
         local FadeInOne = EAB_VTABLE.Hover.FadeInOne
         for otherKey, otherState in pairs(hoverStates) do
-            if otherKey ~= barKey then
+            if otherKey ~= barId then
                 FadeInOne(otherKey, otherState)
             end
         end
     end
 end
 
-function EAB_VTABLE.Hover.FadeOut(barKey, state)
+function EAB_VTABLE.Hover.FadeOut(barId, status)
     if _gridState.shown then
         return
     end -- keep bars visible during spell drag
-    local s = EAB_VTABLE.Hover.GetSettings(barKey)
-    if s and s.mouseoverEnabled and state and state.fadeDir ~= "out" then
+    local s = EAB_VTABLE.Hover.GetSettings(barId)
+    if s and s.mouseoverEnabled and status and status.fadeDir ~= "out" then
         -- Fade back to the bar's RESTING alpha, not a hardcoded 0: under Any a passing
         -- disjunct keeps the bar visible with no hover involved, and fading it away here
         -- would leave it wrong until the next visibility refresh.
-        local resting = EAB_VTABLE.Hover.RestingAlpha(barKey, s)
-        state.fadeDir = "out"
-        StopFade(state.frame)
-        FadeTo(state.frame, resting, s.mouseoverSpeed or 0.15)
-        if barKey == "MainBar" then
+        local resting = EAB_VTABLE.Hover.RestingAlpha(barId, s)
+        status.fadeDir = "out"
+        StopFade(status.frame)
+        FadeTo(status.frame, resting, s.mouseoverSpeed or 0.15)
+        if barId == "MainBar" then
             SyncPagingAlpha(resting)
         end
     end
 end
 
 -- Check if any mouseover-enabled bar is currently hovered.
-function ns.AnyMouseoverBarHovered()
+function mod.AnyMouseoverBarHovered()
     for otherKey, otherState in pairs(hoverStates) do
         if otherState.isHovered then
             local os = EAB_VTABLE.Hover.GetSettings(otherKey)
@@ -451,8 +452,8 @@ function ns.AnyMouseoverBarHovered()
     return false
 end
 
-function EAB_VTABLE.Hover.ScheduleFadeOut(barKey, state, opts)
-    opts = opts or {}
+function EAB_VTABLE.Hover.ScheduleFadeOut(barId, status, options)
+    options = options or {}
 
     -- The bar frame and every button hook OnLeave, so one mouse sweep across a
     -- 12-button bar lands here 12+ times. Coalesced: one pending timer per bar covers
@@ -460,135 +461,135 @@ function EAB_VTABLE.Hover.ScheduleFadeOut(barKey, state, opts)
     -- CUI_ActionBars_Range.lua) instead of a timer+closure
     -- per OnLeave each running the O(bars) hovered scan. Callback built once per state
     -- and reused; opts is stable per bar (one BuildHandlers call).
-    if state.foPending then
+    if status.foPending then
         return
     end
-    state.foPending = true
-    local cb = state.foCb
+    status.foPending = true
+    local cb = status.foCb
     if not cb then
         cb = function()
-            state.foPending = false
-            if opts.isStillHovered and opts.isStillHovered(state) then
-                if opts.markHoveredWhileActive then
-                    state.isHovered = true
+            status.foPending = false
+            if options.isStillHovered and options.isStillHovered(status) then
+                if options.markHoveredWhileActive then
+                    status.isHovered = true
                 end
                 return
             end
-            if state.isHovered then
+            if status.isHovered then
                 return
             end
             -- Ground truth: Enter/Leave interleaves between a bar frame and
             -- its children can leave isHovered false while the cursor never
             -- left the bar (fade flicker per twitch). One C call settles it.
-            if state.frame and state.frame:IsMouseOver() then
-                state.isHovered = true
+            if status.frame and status.frame:IsMouseOver() then
+                status.isHovered = true
                 return
             end
             if _quickKeybindState.open then
                 return
             end
-            if opts.blockFadeOut and opts.blockFadeOut(state) then
+            if options.blockFadeOut and options.blockFadeOut(status) then
                 return
             end
             -- When showing all bars together, keep visible while any bar is hovered
-            if EAB.db.profile.mouseoverShowAll and ns.AnyMouseoverBarHovered() then
+            if ABAR.db.profile.mouseoverShowAll and mod.AnyMouseoverBarHovered() then
                 return
             end
-            EAB_VTABLE.Hover.FadeOut(barKey, state)
+            EAB_VTABLE.Hover.FadeOut(barId, status)
             -- Broadcast fade-out to all other mouseover bars, lockstep
             -- (cheap via the shared fader, same as the fade-in broadcast).
-            if EAB.db.profile.mouseoverShowAll then
+            if ABAR.db.profile.mouseoverShowAll then
                 for otherKey, otherState in pairs(hoverStates) do
-                    if otherKey ~= barKey and not otherState.isHovered then
+                    if otherKey ~= barId and not otherState.isHovered then
                         EAB_VTABLE.Hover.FadeOut(otherKey, otherState)
                     end
                 end
             end
         end
-        state.foCb = cb
+        status.foCb = cb
     end
     C_Timer_After(0.1, cb)
 end
 
-function EAB_VTABLE.Hover.BuildHandlers(barKey, state, opts)
-    opts = opts or {}
+function EAB_VTABLE.Hover.BuildHandlers(barId, status, options)
+    options = options or {}
 
     local function OnEnter(self)
-        if opts.canEnter and not opts.canEnter(self, state) then
+        if options.canEnter and not options.canEnter(self, status) then
             return
         end
-        state.isHovered = true
-        EAB_VTABLE.Hover.FadeIn(barKey, state)
+        status.isHovered = true
+        EAB_VTABLE.Hover.FadeIn(barId, status)
     end
 
     local function OnLeave()
-        state.isHovered = false
-        EAB_VTABLE.Hover.ScheduleFadeOut(barKey, state, opts)
+        status.isHovered = false
+        EAB_VTABLE.Hover.ScheduleFadeOut(barId, status, options)
     end
 
     return OnEnter, OnLeave
 end
 
-local function AttachDataBarHoverHooks(barKey)
-    if hoverStates[barKey] then
+local function AttachDataBarHoverHooks(barId)
+    if hoverStates[barId] then
         return
     end
 
-    local frame = dataBarFrames[barKey]
-    if not frame then
+    local widget = dataBarFrames[barId]
+    if not widget then
         return
     end
 
-    local state = EAB_VTABLE.Hover.GetState(barKey, frame)
-    local OnEnter, OnLeave = EAB_VTABLE.Hover.BuildHandlers(barKey, state)
+    local status = EAB_VTABLE.Hover.GetState(barId, widget)
+    local OnEnter, OnLeave = EAB_VTABLE.Hover.BuildHandlers(barId, status)
 
-    frame:HookScript("OnEnter", OnEnter)
-    frame:HookScript("OnLeave", OnLeave)
+    widget:HookScript("OnEnter", OnEnter)
+    widget:HookScript("OnLeave", OnLeave)
 end
 
-local function AttachHoverHooks(barKey)
+local function AttachHoverHooks(barId)
     -- Idempotency (same guard as both sibling attach functions): HookScript
     -- stacks and can never be unhooked, so a second pass would permanently
     -- double every hover handler on the bar and its 12 buttons.
-    if hoverStates[barKey] then
+    if hoverStates[barId] then
         return
     end
 
-    local frame = barFrames[barKey]
-    local buttons = barButtons[barKey]
-    if not frame or not buttons then
+    local widget = barFrames[barId]
+    local buttons = barButtons[barId]
+    if not widget or not buttons then
         return
     end
 
-    local state = EAB_VTABLE.Hover.GetState(barKey, frame)
+    local status = EAB_VTABLE.Hover.GetState(barId, widget)
 
     local function CanEnter(self)
         -- Skip hidden empty buttons (alwaysShowButtons off)
-        local s = EAB.db.profile.bars[barKey]
+        local s = ABAR.db.profile.bars[barId]
         if s then
             local showEmpty = s.alwaysShowButtons
             if showEmpty == nil then
                 showEmpty = true
             end
             if not showEmpty then
-                if self ~= frame then
+                if self ~= widget then
                     -- Individual button: skip a parked empty slot (our own
                     -- record, never GetAlpha: another addon may fade the button).
-                    if ns._eabParked(self) then
+                    if mod._eabParked(self) then
                         return false
                     end
                 else
                     -- Bar frame itself (gaps between buttons): allow only if the
                     -- cursor is within pad of a shown button that is not parked.
                     local cx, cy = GetCursorPosition()
-                    local scale = frame:GetEffectiveScale()
+                    local scale = widget:GetEffectiveScale()
                     cx, cy = cx / scale, cy / scale
                     local pad = (s.buttonPadding or 2) + 2
                     local nearVisible = false
-                    for i = 1, #buttons do
-                        local btn = buttons[i]
-                        if btn and btn:IsShown() and not ns._eabParked(btn) then
-                            local bl, bb, bw, bh = btn:GetRect()
+                    for idx = 1, #buttons do
+                        local button = buttons[idx]
+                        if button and button:IsShown() and not mod._eabParked(button) then
+                            local bl, bb, bw, bh = button:GetRect()
                             if
                                 bl
                                 and cx >= bl - pad
@@ -610,7 +611,7 @@ local function AttachHoverHooks(barKey)
         return true
     end
 
-    local OnEnter, OnLeave = EAB_VTABLE.Hover.BuildHandlers(barKey, state, {
+    local OnEnter, OnLeave = EAB_VTABLE.Hover.BuildHandlers(barId, status, {
         canEnter = CanEnter,
         blockFadeOut = function()
             -- Keep bar visible while a spell flyout spawned from this bar is open.
@@ -618,13 +619,13 @@ local function AttachHoverHooks(barKey)
         end,
     })
 
-    frame:HookScript("OnEnter", OnEnter)
-    frame:HookScript("OnLeave", OnLeave)
-    for i = 1, #buttons do
-        local btn = buttons[i]
-        if btn then
-            btn:HookScript("OnEnter", OnEnter)
-            btn:HookScript("OnLeave", OnLeave)
+    widget:HookScript("OnEnter", OnEnter)
+    widget:HookScript("OnLeave", OnLeave)
+    for idx = 1, #buttons do
+        local button = buttons[idx]
+        if button then
+            button:HookScript("OnEnter", OnEnter)
+            button:HookScript("OnLeave", OnLeave)
         end
     end
 end
@@ -632,47 +633,47 @@ end
 -- onlyHoverGated: visit ONLY the bars whose hover gate can move on a state edge (Match
 -- Any plus mouseover). The edge-driven caller passes it so a target change does not drag
 -- every other bar through a StopFade/SetAlpha it cannot need.
-function EAB:RefreshMouseover(onlyHoverGated)
-    for _, info in ipairs(ALL_BARS) do
-        local key = info.key
+function ABAR:RefreshMouseover(onlyHoverGated)
+    for _, details in ipairs(ALL_BARS) do
+        local key = details.key
         local s = self.db.profile.bars[key]
         if s and (not onlyHoverGated or (s.mouseoverEnabled and s.visibilityMatch == "any")) then
-            local frame = BarAlphaFrame(key, info)
-            if frame then
-                if info.noManagedVisibility then
+            local widget = BarAlphaFrame(key, details)
+            if widget then
+                if details.noManagedVisibility then
                     -- Position-only Blizzard-owned eye (QueueStatus): CUI no longer
                     -- controls its visibility, so never fade or alpha-hide it --
                     -- force full opacity regardless of stale mouseover settings.
-                    StopFade(frame, 1)
+                    StopFade(widget, 1)
                 elseif s.mouseoverEnabled then
-                    if info.isDataBar then
+                    if details.isDataBar then
                         AttachDataBarHoverHooks(key)
                     end
                     -- Ensure extra bars have hover hooks attached (may not have been
                     -- set up at load time if mouseover was disabled then)
-                    if info.visibilityOnly and not info.isDataBar and not info.isBlizzardMovable then
-                        ns.AttachExtraBarHoverHooks(info)
+                    if details.visibilityOnly and not details.isDataBar and not details.isBlizzardMovable then
+                        mod.AttachExtraBarHoverHooks(details)
                     end
-                    local state = hoverStates[key]
+                    local status = hoverStates[key]
                     -- A bar the cursor is sitting on keeps what the hover gave it. This
                     -- used to be safe by accident (the function only ran on settings
                     -- changes); it now also runs on combat/group/mount edges, where
                     -- repainting would yank a hovered bar invisible mid-hover.
-                    if not (state and state.isHovered) then
+                    if not (status and status.isHovered) then
                         local resting = EAB_VTABLE.Hover.RestingAlpha(key, s)
-                        StopFade(frame, resting)
-                        if state then
-                            state.fadeDir = (resting == 0) and "out" or nil
+                        StopFade(widget, resting)
+                        if status then
+                            status.fadeDir = (resting == 0) and "out" or nil
                         end
                         if key == "MainBar" then
                             SyncPagingAlpha(resting)
                         end
                     end
                 else
-                    StopFade(frame, s.mouseoverAlpha or 1)
-                    local state = hoverStates[key]
-                    if state then
-                        state.fadeDir = nil
+                    StopFade(widget, s.mouseoverAlpha or 1)
+                    local status = hoverStates[key]
+                    if status then
+                        status.fadeDir = nil
                     end
                     if key == "MainBar" then
                         SyncPagingAlpha(s.mouseoverAlpha or 1)
@@ -686,43 +687,43 @@ end
 -- The Advanced Fade hooks are installed once, the first time a bar has a
 -- condition checked; a session whose bars never pick one runs the alpha
 -- functions above with no hook on them at all.
-function EAB:EnsureAdvancedFadeHooks()
+function ABAR:EnsureAdvancedFadeHooks()
     if self._advancedFadeHooksInstalled then
         return
     end
     self._advancedFadeHooksInstalled = true
 
-    hooksecurefunc(EAB, "ApplyBarOpacity", function(_, barKey)
-        if EAB._anyCustomFade then
-            EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, false, true)
+    hooksecurefunc(ABAR, "ApplyBarOpacity", function(_, barId)
+        if ABAR._anyCustomFade then
+            EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, false, true)
         end
     end)
 
-    hooksecurefunc(EAB_VTABLE.Hover, "FadeInOne", function(barKey)
-        if EAB._anyCustomFade then
-            EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, true, true)
+    hooksecurefunc(EAB_VTABLE.Hover, "FadeInOne", function(barId)
+        if ABAR._anyCustomFade then
+            EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, true, true)
         end
     end)
 
-    hooksecurefunc(EAB_VTABLE.Hover, "FadeOut", function(barKey)
-        if EAB._anyCustomFade then
-            EAB_VTABLE.Hover.RefreshCustomFadeBar(barKey, true, true)
+    hooksecurefunc(EAB_VTABLE.Hover, "FadeOut", function(barId)
+        if ABAR._anyCustomFade then
+            EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, true, true)
         end
     end)
 
-    hooksecurefunc(EAB, "RefreshMouseover", function(self)
+    hooksecurefunc(ABAR, "RefreshMouseover", function(self)
         if self._anyCustomFade then
             self:RefreshAllCustomFade(false, true)
         end
     end)
 
     self._advancedFadeUpdater = function()
-        if EAB._anyCustomFade then
-            EAB:RefreshAllCustomFade(true, false)
+        if ABAR._anyCustomFade then
+            ABAR:RefreshAllCustomFade(true, false)
         end
     end
 end
 
 -- Entry points the files after this one re-import by name.
-I.hoverStates, I.AttachDataBarHoverHooks, I.AttachHoverHooks =
+Inner.hoverStates, Inner.AttachDataBarHoverHooks, Inner.AttachHoverHooks =
     hoverStates, AttachDataBarHoverHooks, AttachHoverHooks

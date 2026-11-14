@@ -17,7 +17,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- the setter rebuilt the page and dressed its frames again for a new use.
     local CreateFrame = CludesUI._Pool.CreateFrame
     local PoolGen = CludesUI._Pool.Gen
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local SolidTex = CludesUI.SolidTex
     local MakeFont = CludesUI.MakeFont
     local MakeRoundedBorder = CludesUI.MakeRoundedBorder
@@ -78,12 +78,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- drop every click, so clicks (and motion, for the value box's text cursor)
     -- propagate to the controls beneath. Never shown mid-drag or while disabled
     -- (the disabled tooltip covers that); a press hides it.
-    local function AttachSliderTooltip(region, label, cfg, trackFrame, thumb, valBox)
-        local own = type(cfg.tooltipOnControl) == "string" and cfg.tooltipOnControl
-        if not (own or (cfg.tooltip and cfg.tooltipOnControl)) then
+    local function AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, thumb, valBox)
+        local own = type(conf.tooltipOnControl) == "string" and conf.tooltipOnControl
+        if not (own or (conf.tooltip and conf.tooltipOnControl)) then
             return
         end
-        local hit = CreateFrame("Frame", nil, region)
+        local hit = CreateFrame("Frame", nil, regionFrame)
         -- Starts half a thumb before the track: the thumb overhangs it at the minimum.
         local overhang = thumb and thumb:GetWidth() / 2 or 0
         hit:SetPoint("TOPLEFT", trackFrame, "LEFT", -overhang, valBox:GetHeight() / 2)
@@ -93,10 +93,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         hit:SetMouseClickEnabled(false)
         CludesUI.PadHint(hit, "nodeignore")
         hit:SetScript("OnEnter", function()
-            if CludesUI._sliderDragging or (cfg.disabled and cfg.disabled()) then
+            if CludesUI._sliderDragging or (conf.disabled and conf.disabled()) then
                 return
             end
-            ShowWidgetTooltip(hit, own or LabelTooltipText(region, label, cfg.tooltip), cfg.tooltipOpts)
+            ShowWidgetTooltip(
+                hit,
+                own or LabelTooltipText(regionFrame, labelText, conf.tooltip),
+                conf.tooltipOpts
+            )
         end)
         local function Hide()
             HideWidgetTooltip()
@@ -112,44 +116,44 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     end
 
     -- Button  (execute action, matches the reset/reload button style)
-    function WidgetFactory:Button(parent, text, yOffset, onClick)
+    function WidgetFactory:Button(hostFrame, textValue, yOffset, onClick)
         local ROW_H = 50
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        RowBg(frame, parent)
-        TagOptionRow(frame, parent, text)
-        local btn = CreateFrame("Button", nil, frame)
-        PP.Size(btn, 200, 32)
-        PP.Point(btn, "LEFT", frame, "LEFT", 20, 0)
-        btn:SetFrameLevel(frame:GetFrameLevel() + 1)
-        MakeStyledButton(btn, text, 13, RB_COLOURS, onClick)
-        return frame, ROW_H
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        RowBg(widget, hostFrame)
+        TagOptionRow(widget, hostFrame, textValue)
+        local btn = CreateFrame("Button", nil, widget)
+        Pix.Size(btn, 200, 32)
+        Pix.Point(btn, "LEFT", widget, "LEFT", 20, 0)
+        btn:SetFrameLevel(widget:GetFrameLevel() + 1)
+        MakeStyledButton(btn, textValue, 13, RB_COLOURS, onClick)
+        return widget, ROW_H
     end
 
     -- WideButton  (centered, no row background, customizable width -- for prominent actions)
-    function WidgetFactory:WideButton(parent, text, yOffset, onClick, btnWidth)
+    function WidgetFactory:WideButton(hostFrame, textValue, yOffset, onClick, btnWidth)
         btnWidth = btnWidth or 450
         local BTN_H = 42
         local ROW_H = BTN_H + 20
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        TagOptionRow(frame, parent, text)
-        local btn = CreateFrame("Button", nil, frame)
-        PP.Size(btn, btnWidth, BTN_H)
-        PP.Point(btn, "CENTER", frame, "CENTER", 0, 0)
-        btn:SetFrameLevel(frame:GetFrameLevel() + 1)
-        MakeStyledButton(btn, text, 14, WB_COLOURS, onClick)
-        return frame, ROW_H
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        TagOptionRow(widget, hostFrame, textValue)
+        local btn = CreateFrame("Button", nil, widget)
+        Pix.Size(btn, btnWidth, BTN_H)
+        Pix.Point(btn, "CENTER", widget, "CENTER", 0, 0)
+        btn:SetFrameLevel(widget:GetFrameLevel() + 1)
+        MakeStyledButton(btn, textValue, 14, WB_COLOURS, onClick)
+        return widget, ROW_H
     end
 
     -- Spec Overrides capture: append an extra accessor to a region/row's capture config so inline extras (swatches, cog fields, inline toggles) built outside the factory capture TOGETHER with the slot's main setting as one override. acc = { type, text, getValue, setValue, step/values/order/hasAlpha }.
-    function CludesUI.AddCaptureAccessor(region, acc)
-        if not (region and acc and acc.getValue and acc.setValue) then
+    function CludesUI.AddCaptureAccessor(regionFrame, acc)
+        if not (regionFrame and acc and acc.getValue and acc.setValue) then
             return
         end
-        local cc = region._captureCfg
+        local cc = regionFrame._captureCfg
         -- Dedupe by getValue identity: factory paths stash some controls themselves (colorpicker halves, multiSwatch rows) and BuildColorSwatch self-registers, so the same accessor must never join twice.
         if cc then
             if cc.getValue == acc.getValue then
@@ -164,12 +168,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end
         if not cc then
-            region._captureCfg = { type = "multi", text = acc.text, accessors = { acc } }
+            regionFrame._captureCfg = { type = "multi", text = acc.text, accessors = { acc } }
         elseif cc.accessors then
             cc.accessors[#cc.accessors + 1] = acc
         else
             -- Promote a single-accessor widget cfg to a grouped slot cfg.
-            region._captureCfg = { type = "multi", text = cc.text, accessors = { cc, acc } }
+            regionFrame._captureCfg = { type = "multi", text = cc.text, accessors = { cc, acc } }
         end
     end
 
@@ -180,24 +184,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- plainMouse (with mouse: an armed bare left/right click binds too, so unbind
     -- is a right-click from rest), canArm (returns false to refuse arming).
     -- Returns btn, refresh.
-    function CludesUI.BuildKeybindButton(parent, opts)
-        local btn = CreateFrame("Button", nil, parent)
-        local pp = opts.pp or PP
-        pp.Size(btn, opts.w, opts.h)
-        btn:SetFrameLevel(parent:GetFrameLevel() + (opts.level or 2))
-        if opts.mouse then
+    function CludesUI.BuildKeybindButton(hostFrame, options)
+        local btn = CreateFrame("Button", nil, hostFrame)
+        local pp = options.pp or Pix
+        pp.Size(btn, options.w, options.h)
+        btn:SetFrameLevel(hostFrame:GetFrameLevel() + (options.level or 2))
+        if options.mouse then
             btn:RegisterForClicks("AnyUp")
         else
             btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         end
-        local bg = SolidTex(btn, "BACKGROUND", DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
-        bg:SetAllPoints()
-        btn._border = MakeRoundedBorder(btn, 1, 1, 1, DD_BRD_A, bg)
-        local lbl = MakeFont(btn, opts.font or 12, nil, 1, 1, 1)
-        lbl:SetAlpha(DD_TXT_A)
-        lbl:SetPoint("CENTER")
+        local backdrop = SolidTex(btn, "BACKGROUND", DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
+        backdrop:SetAllPoints()
+        btn._border = MakeRoundedBorder(btn, 1, 1, 1, DD_BRD_A, backdrop)
+        local labelFS = MakeFont(btn, options.font or 12, nil, 1, 1, 1)
+        labelFS:SetAlpha(DD_TXT_A)
+        labelFS:SetPoint("CENTER")
 
-        local disabled = opts.disabled
+        local disabled = options.disabled
         local listening = false
         -- Controller buttons: padArmed while they are captured; padHeld is the button
         -- whose press ended capture, kept captured until its release.
@@ -211,7 +215,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             -- OnLeave keeps the hover look while armed; drop it once capture ends.
             if not btn:IsMouseOver() then
-                bg:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
+                backdrop:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
                 btn._border:SetColor(1, 1, 1, DD_BRD_A)
             end
         end
@@ -228,24 +232,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         local function Refresh()
             if disabled then
-                local off = disabled()
+                local offset = disabled()
                 -- Mouse stays on so the disabled tooltip can show; OnClick refuses.
-                btn:SetAlpha(off and 0.3 or 1)
-                if parent._label then
-                    parent._label:SetAlpha(off and 0.3 or 1)
+                btn:SetAlpha(offset and 0.3 or 1)
+                if hostFrame._label then
+                    hostFrame._label:SetAlpha(offset and 0.3 or 1)
                 end
-                if off and listening then
+                if offset and listening then
                     Stop()
                 end
             end
             if not listening then
-                lbl:SetText(FormatKey(opts.get()))
+                labelFS:SetText(FormatKey(options.get()))
             end
         end
         local function Commit(chord)
             Stop()
             local gen = PoolGen(btn)
-            opts.set(chord)
+            options.set(chord)
             -- A setter that rebuilt the page dressed this button again (page
             -- reuse): that dress painted itself, so this one paints nothing more.
             if PoolGen(btn) ~= gen then
@@ -254,36 +258,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             Refresh()
         end
 
-        btn:SetScript("OnClick", function(self, button)
+        btn:SetScript("OnClick", function(self, btnFrame)
             if disabled and disabled() then
                 return
             end
             -- OnKeyDown never sees mouse buttons; plain left/right keep arm/unbind
             -- unless plainMouse.
             if
-                opts.mouse
+                options.mouse
                 and listening
                 and (
-                    (button ~= "LeftButton" and button ~= "RightButton")
+                    (btnFrame ~= "LeftButton" and btnFrame ~= "RightButton")
                     or IsModifierKeyDown()
-                    or opts.plainMouse
+                    or options.plainMouse
                 )
             then
-                Commit(CreateKeyChordStringUsingMetaKeyState(GetConvertedKeyOrButton(button)))
+                Commit(CreateKeyChordStringUsingMetaKeyState(GetConvertedKeyOrButton(btnFrame)))
                 return
             end
-            if button == "RightButton" then
+            if btnFrame == "RightButton" then
                 Commit(nil)
                 return
             end
-            if button ~= "LeftButton" or listening then
+            if btnFrame ~= "LeftButton" or listening then
                 return
             end
-            if opts.canArm and not opts.canArm() then
+            if options.canArm and not options.canArm() then
                 return
             end
             listening = true
-            lbl:SetText(CludesUI.L("Press a key..."))
+            labelFS:SetText(CludesUI.L("Press a key..."))
             self:EnableKeyboard(true)
             -- Controller in use: its buttons are captured too, only while armed (Stop turns it off).
             if CludesUI.PadInUse() then
@@ -365,18 +369,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         btn:SetScript("OnEnter", function(self)
             if disabled and disabled() then
-                local tip = opts.disabledTip
-                if type(tip) == "function" then
-                    tip = tip()
+                local tipText = options.disabledTip
+                if type(tipText) == "function" then
+                    tipText = tipText()
                 end
-                ShowWidgetTooltip(self, DisabledTooltip(tip))
+                ShowWidgetTooltip(self, DisabledTooltip(tipText))
                 return
             end
-            bg:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_HA)
+            backdrop:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_HA)
             btn._border:SetColor(1, 1, 1, 0.3)
             ShowWidgetTooltip(
                 self,
-                opts.tooltip or CludesUI.L("Left-click to set a keybind.\nRight-click to unbind.")
+                options.tooltip or CludesUI.L("Left-click to set a keybind.\nRight-click to unbind.")
             )
         end)
         btn:SetScript("OnLeave", function()
@@ -384,7 +388,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if listening then
                 return
             end
-            bg:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
+            backdrop:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
             btn._border:SetColor(1, 1, 1, DD_BRD_A)
         end)
         btn:SetScript("OnHide", function()
@@ -399,7 +403,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 btn:EnableGamePadButton(false)
             end
             -- Hidden is never hovered: always come back in the resting look.
-            bg:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
+            backdrop:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
             btn._border:SetColor(1, 1, 1, DD_BRD_A)
             HideWidgetTooltip()
         end)
@@ -416,11 +420,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- A row's hint: the first sentence of its tooltip, shown in small dim text under
     -- the setting's name (the whole tooltip still shows on hover). nil when the
     -- tooltip is not plain text or has nothing to show.
-    local function RowHintText(tip)
-        if type(tip) ~= "string" then
+    local function RowHintText(tipText)
+        if type(tipText) ~= "string" then
             return nil
         end
-        local s = CludesUI.L(tip):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
+        local s = CludesUI.L(tipText):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
         s = s:match("^[^\n]+") or ""
         s = (s:match("^(.-[%.%!%?])%s") or s):gsub("^%s+", ""):gsub("%s+$", "")
         if s == "" then
@@ -429,70 +433,70 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return s
     end
 
-    function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
+    function WidgetFactory:DualRow(hostFrame, yOffset, leftCfg, rightCfg)
         local ROW_H = 50
         local SIDE_PAD = 20 -- padding inside each half
         -- Blizzard Style: a row whose every control is gated for the active style is built (callers still hang cogs and sync icons on its regions) but hidden, takes no row background or search entry, and returns no height, so the page reads as if it were not there.
         local BS = CludesUI.BlizzStyle
         local hiddenRow = BS and BS.RowHidden and BS.RowHidden(leftCfg, rightCfg)
-        local frame = CreateFrame("Frame", nil, parent)
-        local totalW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(frame, totalW, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
+        Pix.Size(widget, totalW, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         if not rightCfg then
-            frame._skipRowDivider = true
+            widget._skipRowDivider = true
         end
         if not hiddenRow then
-            RowBg(frame, parent)
+            RowBg(widget, hostFrame)
             -- Search metadata: combined label on the frame (inline page search), one global-index entry per slot.
             local dualLabel = (leftCfg and leftCfg.text or "")
             if rightCfg and rightCfg.text then
                 dualLabel = dualLabel .. " " .. rightCfg.text
             end
-            TagOptionRow(frame, parent, dualLabel, nil, true)
-            IndexSlotForSearch(parent, leftCfg and leftCfg.text, leftCfg and leftCfg.tooltip)
-            IndexSlotForSearch(parent, rightCfg and rightCfg.text, rightCfg and rightCfg.tooltip)
+            TagOptionRow(widget, hostFrame, dualLabel, nil, true)
+            IndexSlotForSearch(hostFrame, leftCfg and leftCfg.text, leftCfg and leftCfg.tooltip)
+            IndexSlotForSearch(hostFrame, rightCfg and rightCfg.text, rightCfg and rightCfg.tooltip)
         end
 
         -- Half regions: invisible, anchoring only
         local fullWidth = not rightCfg
         local halfW = math.floor(totalW / 2)
-        local leftRegion = CreateFrame("Frame", nil, frame)
+        local leftRegion = CreateFrame("Frame", nil, widget)
         leftRegion:SetSize(fullWidth and totalW or halfW, ROW_H)
-        leftRegion:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+        leftRegion:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
 
-        local rightRegion = CreateFrame("Frame", nil, frame)
+        local rightRegion = CreateFrame("Frame", nil, widget)
         rightRegion:SetSize(halfW, ROW_H)
-        rightRegion:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+        rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
-        local function BuildHalf(region, cfg)
-            if not cfg then
+        local function BuildHalf(regionFrame, conf)
+            if not conf then
                 return
             end
-            local t = cfg.type
+            local t = conf.type
             -- Spec Overrides capture: expose the widget config so the capture overlay can identify settings. A slot is ONE setting: multiSwatch slots capture all their swatches together, inline extras join via AddCaptureAccessor. cfg.noCapture opts a widget out (used by the Spec Overrides page's own mirrored editors).
-            if cfg.noCapture then
-                region._captureCfg = nil
-                region._noCapture = true
-            elseif t == "segmented" and cfg.getValue and cfg.setValue then
-                region._captureCfg = {
+            if conf.noCapture then
+                regionFrame._captureCfg = nil
+                regionFrame._noCapture = true
+            elseif t == "segmented" and conf.getValue and conf.setValue then
+                regionFrame._captureCfg = {
                     type = "dropdown",
-                    text = cfg.text,
-                    values = cfg.values,
-                    order = cfg.order,
-                    getValue = cfg.getValue,
-                    setValue = cfg.setValue,
+                    text = conf.text,
+                    values = conf.values,
+                    order = conf.order,
+                    getValue = conf.getValue,
+                    setValue = conf.setValue,
                 }
-            elseif cfg.getValue and cfg.setValue then
-                region._captureCfg = cfg
-            elseif t == "multiSwatch" and cfg.swatches then
+            elseif conf.getValue and conf.setValue then
+                regionFrame._captureCfg = conf
+            elseif t == "multiSwatch" and conf.swatches then
                 local accs = {}
-                for i = 1, #cfg.swatches do
-                    local sc = cfg.swatches[i]
+                for i = 1, #conf.swatches do
+                    local sc = conf.swatches[i]
                     if sc.getValue and sc.setValue then
                         accs[#accs + 1] = {
                             type = "colorpicker",
-                            text = sc.tooltip or cfg.text,
+                            text = sc.tooltip or conf.text,
                             hasAlpha = sc.hasAlpha,
                             getValue = sc.getValue,
                             setValue = sc.setValue,
@@ -500,64 +504,74 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end
                 if #accs > 0 then
-                    region._captureCfg = { type = "multi", text = cfg.text, accessors = accs }
+                    regionFrame._captureCfg = { type = "multi", text = conf.text, accessors = accs }
                 end
             end
             -- Empty half-space placeholder for dual/third rows.
             if t == "spacer" then
-                region._control = nil
+                regionFrame._control = nil
                 return
             end
             -- Label (every type has one). Single-line so the right-edge clamp (QueueLabelClamp) ellipsizes instead of wrapping.
-            local label = MakeFont(region, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
-            PP.Point(label, "LEFT", region, "LEFT", SIDE_PAD, 0)
-            label:SetJustifyH("LEFT")
-            label:SetWordWrap(false)
-            label:SetMaxLines(1)
-            label:SetText(CludesUI.L(cfg.text or ""))
-            region._label = label
-            region._cfg = cfg
-            region._labelHasHit = (cfg.tooltip or cfg.disabledTooltip) and true or false
+            local labelText = MakeFont(regionFrame, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
+            Pix.Point(labelText, "LEFT", regionFrame, "LEFT", SIDE_PAD, 0)
+            labelText:SetJustifyH("LEFT")
+            labelText:SetWordWrap(false)
+            labelText:SetMaxLines(1)
+            labelText:SetText(CludesUI.L(conf.text or ""))
+            regionFrame._label = labelText
+            regionFrame._cfg = conf
+            regionFrame._labelHasHit = (conf.tooltip or conf.disabledTooltip) and true or false
 
             -- Hint line under the name (RowHintText). The name moves up to make room;
             -- the label clamp sizes the hint to stop short of the control.
-            local hintText = t ~= "button" and RowHintText(cfg.tooltip)
-            region._labelDY, region._hint = nil, nil
+            local hintText = t ~= "button" and RowHintText(conf.tooltip)
+            regionFrame._labelDY, regionFrame._hint = nil, nil
             if hintText then
-                label:ClearAllPoints()
-                PP.Point(label, "LEFT", region, "LEFT", SIDE_PAD, 7)
-                region._labelDY = 7
-                local hint =
-                    MakeFont(region, 11, nil, CludesUI.TEXT_DIM_R, CludesUI.TEXT_DIM_G, CludesUI.TEXT_DIM_B)
+                labelText:ClearAllPoints()
+                Pix.Point(labelText, "LEFT", regionFrame, "LEFT", SIDE_PAD, 7)
+                regionFrame._labelDY = 7
+                local hint = MakeFont(
+                    regionFrame,
+                    11,
+                    nil,
+                    CludesUI.TEXT_DIM_R,
+                    CludesUI.TEXT_DIM_G,
+                    CludesUI.TEXT_DIM_B
+                )
                 hint:SetAlpha(0.85)
-                hint:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+                hint:SetPoint("TOPLEFT", labelText, "BOTTOMLEFT", 0, -2)
                 hint:SetJustifyH("LEFT")
                 hint:SetWordWrap(false)
                 hint:SetMaxLines(1)
-                hint:SetWidth(math.max(40, (region:GetWidth() or 200) * 0.45))
+                hint:SetWidth(math.max(40, (regionFrame:GetWidth() or 200) * 0.45))
                 hint:SetText(hintText)
-                region._hint = hint
+                regionFrame._hint = hint
             end
 
             -- Label tooltip. For dropdowns the hitFrame is created after the dropdown button so it can check whether the menu is open.
             -- A half-row button hides its label (the button explains its own lock, below).
-            if (cfg.tooltip or cfg.disabledTooltip) and t ~= "dropdown" and t ~= "button" then
-                local ttOpts = cfg.tooltipOpts
-                local hitFrame = CreateFrame("Frame", nil, region)
-                hitFrame:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-                hitFrame:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
-                hitFrame:SetFrameLevel(region:GetFrameLevel() + 10)
+            if (conf.tooltip or conf.disabledTooltip) and t ~= "dropdown" and t ~= "button" then
+                local ttOpts = conf.tooltipOpts
+                local hitFrame = CreateFrame("Frame", nil, regionFrame)
+                hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
+                hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
+                hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
                 hitFrame:SetScript("OnEnter", function()
-                    if cfg.disabled and cfg.disabled() and cfg.disabledTooltip then
-                        local tt = ResolveDisabledTip(cfg)
+                    if conf.disabled and conf.disabled() and conf.disabledTooltip then
+                        local tt = ResolveDisabledTip(conf)
                         if tt then
-                            ShowWidgetTooltip(label, tt)
+                            ShowWidgetTooltip(labelText, tt)
                         end
-                    elseif cfg.tooltip then
-                        ShowWidgetTooltip(label, LabelTooltipText(region, label, cfg.tooltip), ttOpts)
-                    elseif region._labelTruncated then
+                    elseif conf.tooltip then
+                        ShowWidgetTooltip(
+                            labelText,
+                            LabelTooltipText(regionFrame, labelText, conf.tooltip),
+                            ttOpts
+                        )
+                    elseif regionFrame._labelTruncated then
                         -- Truncated label whose hit exists only for the disabled tooltip: reveal the full text while enabled.
-                        ShowWidgetTooltip(label, label:GetText())
+                        ShowWidgetTooltip(labelText, labelText:GetText())
                     end
                 end)
                 hitFrame:SetScript("OnLeave", function()
@@ -565,9 +579,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 -- Clicks pass through by default so controls stay interactive; intercepted while disabled to block interaction.
                 hitFrame:SetMouseClickEnabled(false)
-                if cfg.disabled and cfg.disabledTooltip then
+                if conf.disabled and conf.disabledTooltip then
                     local function UpdateHitMouse()
-                        hitFrame:SetMouseClickEnabled(cfg.disabled() and true or false)
+                        hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
                     end
                     RegisterWidgetRefresh(UpdateHitMouse)
                     UpdateHitMouse()
@@ -580,16 +594,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local controlAnchor -- main control frame for inline element anchoring
 
             local function ApplyDisabledState()
-                if not cfg.disabled then
+                if not conf.disabled then
                     return
                 end
-                local off = cfg.disabled()
-                label:SetAlpha(off and 0.3 or 1)
-                if region._hint then
-                    region._hint:SetAlpha(off and 0.3 or 0.85)
+                local offset = conf.disabled()
+                labelText:SetAlpha(offset and 0.3 or 1)
+                if regionFrame._hint then
+                    regionFrame._hint:SetAlpha(offset and 0.3 or 0.85)
                 end
                 if controlFrame then
-                    if off then
+                    if offset then
                         controlFrame:EnableMouse(false)
                         controlFrame:SetAlpha(0.3)
                     else
@@ -601,10 +615,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             if t == "slider" then
                 local defaultTrackW = isRussian and 120 or 160
-                local scfg = PixelizeSliderCfg(cfg)
+                local scfg = PixelizeSliderCfg(conf)
                 local trackFrame, valBox, _, slThumb = BuildSliderCore(
-                    region,
-                    cfg.trackWidth or defaultTrackW,
+                    regionFrame,
+                    conf.trackWidth or defaultTrackW,
                     4,
                     14,
                     40,
@@ -617,36 +631,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     scfg.getValue,
                     scfg.setValue,
                     true,
-                    cfg.snapPoints,
-                    cfg.valueSnap
+                    conf.snapPoints,
+                    conf.valueSnap
                 )
-                PP.Point(valBox, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                PP.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
+                Pix.Point(valBox, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
                 controlFrame = nil -- slider owns its disabled state; keep the generic handler off its mouse
-                AddControlDisabledTooltip(trackFrame, cfg)
+                AddControlDisabledTooltip(trackFrame, conf)
                 RegisterWidgetRefresh(function()
-                    if cfg.disabled then
-                        local off = cfg.disabled()
-                        label:SetAlpha(off and 0.3 or 1)
-                        trackFrame:SetAlpha(off and 0.3 or 1)
-                        valBox:EnableMouse(not off)
-                        valBox:SetAlpha(off and 0.3 or 1)
+                    if conf.disabled then
+                        local offset = conf.disabled()
+                        labelText:SetAlpha(offset and 0.3 or 1)
+                        trackFrame:SetAlpha(offset and 0.3 or 1)
+                        valBox:EnableMouse(not offset)
+                        valBox:SetAlpha(offset and 0.3 or 1)
                         if slThumb then
-                            slThumb._sliderDisabled = off
+                            slThumb._sliderDisabled = offset
                         end
                     end
                 end)
-                if cfg.disabled then
-                    local off = cfg.disabled()
-                    label:SetAlpha(off and 0.3 or 1)
-                    trackFrame:SetAlpha(off and 0.3 or 1)
-                    valBox:EnableMouse(not off)
-                    valBox:SetAlpha(off and 0.3 or 1)
+                if conf.disabled then
+                    local offset = conf.disabled()
+                    labelText:SetAlpha(offset and 0.3 or 1)
+                    trackFrame:SetAlpha(offset and 0.3 or 1)
+                    valBox:EnableMouse(not offset)
+                    valBox:SetAlpha(offset and 0.3 or 1)
                     if slThumb then
-                        slThumb._sliderDisabled = off
+                        slThumb._sliderDisabled = offset
                     end
                 end
-                AttachSliderTooltip(region, label, cfg, trackFrame, slThumb, valBox)
+                AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, slThumb, valBox)
                 controlAnchor = trackFrame
             elseif t == "segmented" then
                 -- A choice of two or three, as a row of square buttons: the same
@@ -654,46 +668,46 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- setValue, disabled, tooltip), every option in view at once.
                 -- Opt-in per row: a dropdown with many or long options stays one.
                 local function Pick(key)
-                    if cfg.disabled and cfg.disabled() then
+                    if conf.disabled and conf.disabled() then
                         return
                     end
-                    if cfg.getValue() == key then
+                    if conf.getValue() == key then
                         return
                     end
                     -- Spec Overrides capture and the changed flag, as the other controls report a write.
-                    local snap = CludesUI._SOAttribution(region)
-                    cfg.setValue(key)
-                    CludesUI._NotifySettingWrite(region, snap)
+                    local snap = CludesUI._SOAttribution(regionFrame)
+                    conf.setValue(key)
+                    CludesUI._NotifySettingWrite(regionFrame, snap)
                     CludesUI._settingsChanged = true
                 end
                 local segFrame, _, segRefresh = CludesUI.BuildSegmentedControl({
-                    parent = region,
+                    parent = regionFrame,
                     square = true,
                     autoWidth = true,
                     height = 26,
-                    keys = cfg.order,
-                    labels = cfg.values,
+                    keys = conf.order,
+                    labels = conf.values,
                     getChecked = function(key)
-                        return cfg.getValue() == key
+                        return conf.getValue() == key
                     end,
-                    isDisabled = cfg.disabled and function()
-                        return cfg.disabled() and true or false
+                    isDisabled = conf.disabled and function()
+                        return conf.disabled() and true or false
                     end or nil,
                     onToggle = function(key)
-                        local g = PoolGen(region)
+                        local g = PoolGen(regionFrame)
                         Pick(key)
                         -- A setter that rebuilt the page dressed this region again: its new build paints.
-                        if PoolGen(region) == g and region._segRefresh then
-                            region._segRefresh()
+                        if PoolGen(regionFrame) == g and regionFrame._segRefresh then
+                            regionFrame._segRefresh()
                         end
                     end,
                 })
-                PP.Point(segFrame, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                segFrame:SetFrameLevel(frame:GetFrameLevel() + 2)
-                region._segRefresh = segRefresh
+                Pix.Point(segFrame, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                segFrame:SetFrameLevel(widget:GetFrameLevel() + 2)
+                regionFrame._segRefresh = segRefresh
                 controlFrame = segFrame
                 controlAnchor = segFrame
-                AddControlDisabledTooltip(segFrame, cfg)
+                AddControlDisabledTooltip(segFrame, conf)
                 RegisterWidgetRefresh(function()
                     if segRefresh then
                         segRefresh()
@@ -702,18 +716,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 ApplyDisabledState()
             elseif t == "dropdown" then
-                local DD_W = cfg.dropdownWidth or 170
+                local DD_W = conf.dropdownWidth or 170
                 -- Bridge itemDisabled/itemDisabledTooltip into disabledValuesFn
-                local ddDisabledFn = cfg.disabledValues
-                if not ddDisabledFn and cfg.itemDisabled then
-                    ddDisabledFn = function(v)
-                        if cfg.itemDisabled(v) then
-                            if cfg.itemDisabledTooltip then
-                                local tip = cfg.itemDisabledTooltip(v)
+                local ddDisabledFn = conf.disabledValues
+                if not ddDisabledFn and conf.itemDisabled then
+                    ddDisabledFn = function(val)
+                        if conf.itemDisabled(val) then
+                            if conf.itemDisabledTooltip then
+                                local tipText = conf.itemDisabledTooltip(val)
                                 -- cfg.itemRequireState: "disabled" flips the wrapper's verb
                                 -- for a bare requirement noun (nil = "enabled", as before).
-                                if tip then
-                                    return DisabledTooltip(tip, cfg.itemRequireState)
+                                if tipText then
+                                    return DisabledTooltip(tipText, conf.itemRequireState)
                                 end
                             end
                             return true
@@ -722,44 +736,50 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end
                 local ddBtn, ddLbl = BuildDropdownControl(
-                    region,
+                    regionFrame,
                     DD_W,
-                    frame:GetFrameLevel() + 2,
-                    cfg.values,
-                    cfg.order,
-                    cfg.getValue,
-                    cfg.setValue,
+                    widget:GetFrameLevel() + 2,
+                    conf.values,
+                    conf.order,
+                    conf.getValue,
+                    conf.setValue,
                     ddDisabledFn
                 )
-                PP.Point(ddBtn, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
+                Pix.Point(ddBtn, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 controlFrame = ddBtn
                 controlAnchor = ddBtn
-                if cfg.labelOnlyDisabled then
-                    AddControlDisabledTooltip(label, cfg)
+                if conf.labelOnlyDisabled then
+                    AddControlDisabledTooltip(labelText, conf)
                 else
-                    AddControlDisabledTooltip(ddBtn, cfg)
+                    AddControlDisabledTooltip(ddBtn, conf)
                 end
                 -- Tooltip config on the button: WireDropdownScripts and the pre-menu hover scripts read ddBtn._ttText/_ttOpts.
-                if cfg.tooltip or (cfg.disabledTooltip and cfg.disabled) then
-                    if cfg.tooltip then
-                        ddBtn._ttText = cfg.tooltip
-                        ddBtn._ttOpts = cfg.tooltipOpts
+                if conf.tooltip or (conf.disabledTooltip and conf.disabled) then
+                    if conf.tooltip then
+                        ddBtn._ttText = conf.tooltip
+                        ddBtn._ttOpts = conf.tooltipOpts
                     end
-                    local ttOpts = cfg.tooltipOpts
-                    local hitFrame = CreateFrame("Frame", nil, region)
-                    hitFrame:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-                    hitFrame:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
-                    hitFrame:SetFrameLevel(region:GetFrameLevel() + 10)
+                    local ttOpts = conf.tooltipOpts
+                    local hitFrame = CreateFrame("Frame", nil, regionFrame)
+                    hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
+                    hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
+                    hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
                     hitFrame:SetScript("OnEnter", function()
-                        if cfg.disabled and cfg.disabled() and cfg.disabledTooltip then
-                            local tt = ResolveDisabledTip(cfg)
+                        if conf.disabled and conf.disabled() and conf.disabledTooltip then
+                            local tt = ResolveDisabledTip(conf)
                             if tt then
-                                ShowWidgetTooltip(label, tt)
+                                ShowWidgetTooltip(labelText, tt)
                             end
-                        elseif cfg.tooltip and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
-                            ShowWidgetTooltip(label, LabelTooltipText(region, label, cfg.tooltip), ttOpts)
-                        elseif region._labelTruncated and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
-                            ShowWidgetTooltip(label, label:GetText())
+                        elseif conf.tooltip and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
+                            ShowWidgetTooltip(
+                                labelText,
+                                LabelTooltipText(regionFrame, labelText, conf.tooltip),
+                                ttOpts
+                            )
+                        elseif
+                            regionFrame._labelTruncated and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown())
+                        then
+                            ShowWidgetTooltip(labelText, labelText:GetText())
                         end
                     end)
                     hitFrame:SetScript("OnLeave", function()
@@ -767,55 +787,55 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end)
                     hitFrame:SetMouseClickEnabled(false)
                     -- Intercept clicks over the label area while disabled
-                    if cfg.disabled and cfg.disabledTooltip then
+                    if conf.disabled and conf.disabledTooltip then
                         local function UpdateHitMouse()
-                            hitFrame:SetMouseClickEnabled(cfg.disabled() and true or false)
+                            hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
                         end
                         RegisterWidgetRefresh(UpdateHitMouse)
                         UpdateHitMouse()
                     end
                 end
-                if cfg.labelOnlyDisabled and cfg.disabled then
+                if conf.labelOnlyDisabled and conf.disabled then
                     local function ApplyLabelOnly()
-                        local off = cfg.disabled()
-                        label:SetAlpha(1)
+                        local offset = conf.disabled()
+                        labelText:SetAlpha(1)
                     end
                     RegisterWidgetRefresh(function()
-                        ddLbl:SetText(DDResolveLabel(cfg.values, cfg.order or {}, cfg.getValue()))
+                        ddLbl:SetText(DDResolveLabel(conf.values, conf.order or {}, conf.getValue()))
                         ApplyLabelOnly()
                     end)
                     ApplyLabelOnly()
                 else
                     RegisterWidgetRefresh(function()
-                        ddLbl:SetText(DDResolveLabel(cfg.values, cfg.order or {}, cfg.getValue()))
+                        ddLbl:SetText(DDResolveLabel(conf.values, conf.order or {}, conf.getValue()))
                         ApplyDisabledState()
                     end)
                     ApplyDisabledState()
                 end
             elseif t == "toggle" then
                 local toggle, _, tgSnap =
-                    BuildToggleControl(region, frame:GetFrameLevel() + 2, cfg.getValue, cfg.setValue)
-                toggle:SetPoint("RIGHT", region, "RIGHT", -SIDE_PAD, 0)
+                    BuildToggleControl(regionFrame, widget:GetFrameLevel() + 2, conf.getValue, conf.setValue)
+                toggle:SetPoint("RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 controlFrame = toggle
                 controlAnchor = toggle
-                AddControlDisabledTooltip(toggle, cfg)
+                AddControlDisabledTooltip(toggle, conf)
                 RegisterWidgetRefresh(function()
                     tgSnap()
                     ApplyDisabledState()
                 end)
                 ApplyDisabledState()
             elseif t == "colorpicker" then
-                local swatch, _updateSwatch = BuildColorSwatch(
-                    region,
-                    frame:GetFrameLevel() + 2,
-                    cfg.getValue,
-                    cfg.setValue,
-                    cfg.hasAlpha
+                local colorSwatch, _updateSwatch = BuildColorSwatch(
+                    regionFrame,
+                    widget:GetFrameLevel() + 2,
+                    conf.getValue,
+                    conf.setValue,
+                    conf.hasAlpha
                 )
-                PP.Point(swatch, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                controlFrame = swatch
-                controlAnchor = swatch
-                AddControlDisabledTooltip(swatch, cfg)
+                Pix.Point(colorSwatch, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                controlFrame = colorSwatch
+                controlAnchor = colorSwatch
+                AddControlDisabledTooltip(colorSwatch, conf)
                 RegisterWidgetRefresh(function()
                     _updateSwatch()
                     ApplyDisabledState()
@@ -823,29 +843,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 ApplyDisabledState()
             elseif t == "button" then
                 -- Half-row button: label hidden, the button IS the content
-                label:Hide()
-                local btn = CreateFrame("Button", nil, region)
-                PP.Size(btn, cfg.width or 180, 32)
-                PP.Point(btn, "CENTER", region, "CENTER", 0, 0)
-                btn:SetFrameLevel(frame:GetFrameLevel() + 2)
-                MakeStyledButton(btn, cfg.text or "", 13, RB_COLOURS, cfg.onClick)
+                labelText:Hide()
+                local btn = CreateFrame("Button", nil, regionFrame)
+                Pix.Size(btn, conf.width or 180, 32)
+                Pix.Point(btn, "CENTER", regionFrame, "CENTER", 0, 0)
+                btn:SetFrameLevel(widget:GetFrameLevel() + 2)
+                MakeStyledButton(btn, conf.text or "", 13, RB_COLOURS, conf.onClick)
                 controlFrame = btn
                 controlAnchor = btn
-                AddControlDisabledTooltip(btn, cfg)
+                AddControlDisabledTooltip(btn, conf)
                 RegisterWidgetRefresh(function()
                     ApplyDisabledState()
                 end)
                 ApplyDisabledState()
             elseif t == "labeledButton" then
                 -- Standard left label, button anchored right
-                local btn = CreateFrame("Button", nil, region)
-                PP.Size(btn, cfg.width or 180, 32)
-                PP.Point(btn, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                btn:SetFrameLevel(frame:GetFrameLevel() + 2)
-                MakeStyledButton(btn, cfg.buttonText or cfg.text or "", 13, RB_COLOURS, cfg.onClick)
+                local btn = CreateFrame("Button", nil, regionFrame)
+                Pix.Size(btn, conf.width or 180, 32)
+                Pix.Point(btn, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                btn:SetFrameLevel(widget:GetFrameLevel() + 2)
+                MakeStyledButton(btn, conf.buttonText or conf.text or "", 13, RB_COLOURS, conf.onClick)
                 controlFrame = btn
                 controlAnchor = btn
-                AddControlDisabledTooltip(btn, cfg)
+                AddControlDisabledTooltip(btn, conf)
                 RegisterWidgetRefresh(function()
                     ApplyDisabledState()
                 end)
@@ -854,29 +874,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- Label + N swatches laid out right-to-left from the right edge
                 local SWATCH_SZ = 24
                 local SWATCH_GAP = 8
-                local swatches = cfg.swatches or {}
+                local swatches = conf.swatches or {}
                 local anchorX = -SIDE_PAD
                 local leftmostSwatch
                 for i = #swatches, 1, -1 do
                     local sc = swatches[i]
-                    local swatch, updateSwatch = BuildColorSwatch(
-                        region,
-                        frame:GetFrameLevel() + 2,
+                    local colorSwatch, updateSwatch = BuildColorSwatch(
+                        regionFrame,
+                        widget:GetFrameLevel() + 2,
                         sc.getValue,
                         sc.setValue,
                         sc.hasAlpha
                     )
-                    PP.Point(swatch, "RIGHT", region, "RIGHT", anchorX, 0)
+                    Pix.Point(colorSwatch, "RIGHT", regionFrame, "RIGHT", anchorX, 0)
                     anchorX = anchorX - SWATCH_SZ - SWATCH_GAP
-                    leftmostSwatch = swatch
+                    leftmostSwatch = colorSwatch
                     -- Optional click override (e.g. class color toggle)
                     if sc.onClick then
-                        swatch._eabOrigClick = swatch:GetScript("OnClick")
-                        swatch:SetScript("OnClick", sc.onClick)
+                        colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
+                        colorSwatch:SetScript("OnClick", sc.onClick)
                     end
                     -- Effective disabled = row-level cfg.disabled OR per-swatch sc.disabled
                     local function SwatchEffectiveDisabled()
-                        if cfg.disabled and cfg.disabled() then
+                        if conf.disabled and conf.disabled() then
                             return true
                         end
                         if sc.disabled ~= nil then
@@ -888,16 +908,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         return false
                     end
                     -- Overlay greys out and blocks the swatch while disabled
-                    if cfg.disabled or sc.disabled then
-                        local swatchBlock = CreateFrame("Frame", nil, swatch)
+                    if conf.disabled or sc.disabled then
+                        local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
                         swatchBlock:SetAllPoints()
-                        swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                        swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
                         swatchBlock:EnableMouse(true)
                         swatchBlock:SetScript("OnEnter", function()
-                            local src = (sc.disabledTooltip ~= nil) and sc or cfg
-                            local tip = ResolveDisabledTip(src)
-                            if tip then
-                                ShowWidgetTooltip(swatch, tip)
+                            local source = (sc.disabledTooltip ~= nil) and sc or conf
+                            local tipText = ResolveDisabledTip(source)
+                            if tipText then
+                                ShowWidgetTooltip(colorSwatch, tipText)
                             end
                         end)
                         swatchBlock:SetScript("OnLeave", function()
@@ -905,10 +925,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end)
                         local function UpdateSwatchDisabled()
                             if SwatchEffectiveDisabled() then
-                                swatch:SetAlpha(0.3)
+                                colorSwatch:SetAlpha(0.3)
                                 swatchBlock:Show()
                             else
-                                swatch:SetAlpha(1)
+                                colorSwatch:SetAlpha(1)
                                 swatchBlock:Hide()
                             end
                         end
@@ -916,16 +936,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         RegisterWidgetRefresh(UpdateSwatchDisabled)
                     end
                     if sc.tooltip then
-                        swatch:HookScript("OnEnter", function()
-                            ShowWidgetTooltip(swatch, sc.tooltip)
+                        colorSwatch:HookScript("OnEnter", function()
+                            ShowWidgetTooltip(colorSwatch, sc.tooltip)
                         end)
-                        swatch:HookScript("OnLeave", function()
+                        colorSwatch:HookScript("OnLeave", function()
                             HideWidgetTooltip()
                         end)
                     end
                     -- Per-swatch alpha refresh (dim inactive, bright active)
                     if sc.refreshAlpha then
-                        local _sw, _ra = swatch, sc.refreshAlpha
+                        local _sw, _ra = colorSwatch, sc.refreshAlpha
                         local function UpdateAlpha()
                             -- The disabled handler owns alpha while disabled
                             if SwatchEffectiveDisabled() then
@@ -952,49 +972,49 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- cfg.inputStyle == "popup" restyles it like the ShowInputPopup field
                 -- (near-black fill, subtle border, left-justified) and supports
                 -- cfg.placeholder ghost text while empty.
-                local isPopupStyle = cfg.inputStyle == "popup"
-                local boxW = cfg.inputWidth or 64
-                local box = CreateFrame("EditBox", nil, region)
-                box:SetSize(boxW, isPopupStyle and 28 or 22)
-                PP.Point(box, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                box:SetAutoFocus(false)
-                box:SetTextColor(1, 1, 1, 0.9)
-                local boxBg = box:CreateTexture(nil, "BACKGROUND")
+                local isPopupStyle = conf.inputStyle == "popup"
+                local boxW = conf.inputWidth or 64
+                local boxFrame = CreateFrame("EditBox", nil, regionFrame)
+                boxFrame:SetSize(boxW, isPopupStyle and 28 or 22)
+                Pix.Point(boxFrame, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                boxFrame:SetAutoFocus(false)
+                boxFrame:SetTextColor(1, 1, 1, 0.9)
+                local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 if isPopupStyle then
                     -- cfg.inputJustify == "CENTER" centers the text and placeholder (default left).
-                    local centered = cfg.inputJustify == "CENTER"
-                    box:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
-                    box:SetJustifyH(centered and "CENTER" or "LEFT")
-                    box:SetTextInsets(10, 10, 0, 0)
+                    local centered = conf.inputJustify == "CENTER"
+                    boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
+                    boxFrame:SetJustifyH(centered and "CENTER" or "LEFT")
+                    boxFrame:SetTextInsets(10, 10, 0, 0)
                     boxBg:SetColorTexture(0, 0, 0, 0.5)
-                    MakeRoundedBorder(box, 1, 1, 1, 0.2, boxBg)
-                    if cfg.placeholder then
-                        local ph = box:CreateFontString(nil, "ARTWORK")
+                    MakeRoundedBorder(boxFrame, 1, 1, 1, 0.2, boxBg)
+                    if conf.placeholder then
+                        local ph = boxFrame:CreateFontString(nil, "ARTWORK")
                         ph:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
                         ph:SetTextColor(0.7, 0.7, 0.7, 0.45)
                         if centered then
-                            ph:SetPoint("CENTER", box, "CENTER", 0, 0)
+                            ph:SetPoint("CENTER", boxFrame, "CENTER", 0, 0)
                         else
-                            ph:SetPoint("LEFT", box, "LEFT", 10, 0)
+                            ph:SetPoint("LEFT", boxFrame, "LEFT", 10, 0)
                         end
-                        ph:SetText(CludesUI.L(cfg.placeholder))
-                        box:SetScript("OnTextChanged", function(self)
+                        ph:SetText(CludesUI.L(conf.placeholder))
+                        boxFrame:SetScript("OnTextChanged", function(self)
                             ph:SetShown((self:GetText() or "") == "")
                         end)
                     end
                 else
-                    box:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
-                    box:SetJustifyH("CENTER")
-                    box:SetTextInsets(4, 4, 0, 0)
+                    boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
+                    boxFrame:SetJustifyH("CENTER")
+                    boxFrame:SetTextInsets(4, 4, 0, 0)
                     boxBg:SetColorTexture(0.12, 0.12, 0.12, 0.85)
-                    CludesUI.RoundBody(box, boxBg)
+                    CludesUI.RoundBody(boxFrame, boxBg)
                 end
                 local function RefreshInput()
-                    if box:HasFocus() then
+                    if boxFrame:HasFocus() then
                         return
                     end
-                    box:SetText((cfg.getValue and cfg.getValue()) or "")
+                    boxFrame:SetText((conf.getValue and conf.getValue()) or "")
                 end
                 local committing = false
                 -- A setter that rebuilds the page can dress this box again for
@@ -1006,19 +1026,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         return
                     end
                     committing = true
-                    local gen = PoolGen(box)
-                    box:ClearFocus()
-                    if cfg.setValue then
-                        cfg.setValue(box:GetText())
+                    local gen = PoolGen(boxFrame)
+                    boxFrame:ClearFocus()
+                    if conf.setValue then
+                        conf.setValue(boxFrame:GetText())
                     end
-                    if PoolGen(box) == gen then
+                    if PoolGen(boxFrame) == gen then
                         RefreshInput()
                     end
                     committing = false
                 end
-                box:SetScript("OnEnterPressed", CommitInput)
-                box:SetScript("OnEditFocusLost", CommitInput)
-                box:SetScript("OnEscapePressed", function(self)
+                boxFrame:SetScript("OnEnterPressed", CommitInput)
+                boxFrame:SetScript("OnEditFocusLost", CommitInput)
+                boxFrame:SetScript("OnEscapePressed", function(self)
                     local gen = PoolGen(self)
                     self:ClearFocus()
                     if PoolGen(self) == gen then
@@ -1026,18 +1046,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end)
                 RefreshInput()
-                controlFrame = box
-                controlAnchor = box
-                AddControlDisabledTooltip(box, cfg)
+                controlFrame = boxFrame
+                controlAnchor = boxFrame
+                AddControlDisabledTooltip(boxFrame, conf)
                 RegisterWidgetRefresh(function()
                     RefreshInput()
                     ApplyDisabledState()
                 end)
                 ApplyDisabledState()
             end
-            region._control = controlAnchor or controlFrame
+            regionFrame._control = controlAnchor or controlFrame
             -- Truncation is deferred (QueueLabelClamp) and the right bound applies ONLY on actual overflow: a bound stretches the label's rect, so anything anchored to its RIGHT edge (e.g. "(Applies to ...)" subtitles) would slide to the far side of the slot on short labels.
-            QueueLabelClamp(region)
+            QueueLabelClamp(regionFrame)
         end
 
         BuildHalf(leftRegion, leftCfg)
@@ -1059,11 +1079,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- 1px center divider (global BORDER style)
         if not fullWidth then
-            local div = frame:CreateTexture(nil, "ARTWORK")
+            local div = widget:CreateTexture(nil, "ARTWORK")
             div:SetColorTexture(BORDER_R, BORDER_G, BORDER_B, 0.05)
             div:SetWidth(1)
-            div:SetPoint("TOP", frame, "TOP", 0, 0)
-            div:SetPoint("BOTTOM", frame, "BOTTOM", 0, 0)
+            div:SetPoint("TOP", widget, "TOP", 0, 0)
+            div:SetPoint("BOTTOM", widget, "BOTTOM", 0, 0)
         end
 
         -- Widget cfg on the regions lets sync icons check disabled state
@@ -1071,95 +1091,99 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         rightRegion._widgetCfg = rightCfg
 
         -- Half regions exposed so callers can anchor child elements
-        frame._leftRegion = leftRegion
-        frame._rightRegion = rightRegion
+        widget._leftRegion = leftRegion
+        widget._rightRegion = rightRegion
 
         if hiddenRow then
             -- The inline page search re-shows and re-anchors every row it has
             -- collected whenever it resets; keep this one out of its hands.
-            frame._searchIgnore = true
-            frame:Hide()
-            return frame, 0
+            widget._searchIgnore = true
+            widget:Hide()
+            return widget, 0
         end
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- TripleRow: three widgets on one full-width row, 1px dividers at the splits. Each column uses the DualRow cfg format.
-    function WidgetFactory:TripleRow(parent, yOffset, leftCfg, midCfg, rightCfg, splits)
+    function WidgetFactory:TripleRow(hostFrame, yOffset, leftCfg, midCfg, rightCfg, splits)
         local ROW_H = (splits and splits.rowHeight) or 50
         local SIDE_PAD = 20
-        local frame = CreateFrame("Frame", nil, parent)
-        local totalW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(frame, totalW, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        frame._skipRowDivider = true
-        RowBg(frame, parent)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
+        Pix.Size(widget, totalW, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        widget._skipRowDivider = true
+        RowBg(widget, hostFrame)
         -- Search metadata: combined label on the frame, one global-index entry per slot
         local triLabel = (leftCfg and leftCfg.text or "")
             .. " "
             .. (midCfg and midCfg.text or "")
             .. " "
             .. (rightCfg and rightCfg.text or "")
-        TagOptionRow(frame, parent, triLabel, nil, true)
-        IndexSlotForSearch(parent, leftCfg and leftCfg.text, leftCfg and leftCfg.tooltip)
-        IndexSlotForSearch(parent, midCfg and midCfg.text, midCfg and midCfg.tooltip)
-        IndexSlotForSearch(parent, rightCfg and rightCfg.text, rightCfg and rightCfg.tooltip)
+        TagOptionRow(widget, hostFrame, triLabel, nil, true)
+        IndexSlotForSearch(hostFrame, leftCfg and leftCfg.text, leftCfg and leftCfg.tooltip)
+        IndexSlotForSearch(hostFrame, midCfg and midCfg.text, midCfg and midCfg.tooltip)
+        IndexSlotForSearch(hostFrame, rightCfg and rightCfg.text, rightCfg and rightCfg.tooltip)
 
         -- Custom or default 44% / 28% / 28% split
         local leftW = math.floor(totalW * ((splits and splits[1]) or 0.44))
         local midW = math.floor(totalW * ((splits and splits[2]) or 0.28))
         local rightW = totalW - leftW - midW
 
-        local leftRegion = CreateFrame("Frame", nil, frame)
+        local leftRegion = CreateFrame("Frame", nil, widget)
         leftRegion:SetSize(leftW, ROW_H)
-        leftRegion:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+        leftRegion:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
 
-        local midRegion = CreateFrame("Frame", nil, frame)
+        local midRegion = CreateFrame("Frame", nil, widget)
         midRegion:SetSize(midW, ROW_H)
         midRegion:SetPoint("TOPLEFT", leftRegion, "TOPRIGHT", 0, 0)
 
-        local rightRegion = CreateFrame("Frame", nil, frame)
+        local rightRegion = CreateFrame("Frame", nil, widget)
         rightRegion:SetSize(rightW, ROW_H)
-        rightRegion:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+        rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
-        local function BuildThird(region, cfg)
-            if not cfg then
+        local function BuildThird(regionFrame, conf)
+            if not conf then
                 return
             end
-            local t = cfg.type
+            local t = conf.type
             -- Spec Overrides capture: see DualRow BuildHalf.
-            if cfg.noCapture then
-                region._noCapture = true
-            elseif cfg.getValue and cfg.setValue then
-                region._captureCfg = cfg
+            if conf.noCapture then
+                regionFrame._noCapture = true
+            elseif conf.getValue and conf.setValue then
+                regionFrame._captureCfg = conf
             end
-            local label = MakeFont(region, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
-            PP.Point(label, "LEFT", region, "LEFT", SIDE_PAD, 0)
-            label:SetJustifyH("LEFT")
-            label:SetWordWrap(false)
-            label:SetMaxLines(1)
-            label:SetText(CludesUI.L(cfg.text or ""))
-            region._label = label
-            region._cfg = cfg
-            region._labelHasHit = (cfg.tooltip or cfg.disabledTooltip) and true or false
+            local labelText = MakeFont(regionFrame, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
+            Pix.Point(labelText, "LEFT", regionFrame, "LEFT", SIDE_PAD, 0)
+            labelText:SetJustifyH("LEFT")
+            labelText:SetWordWrap(false)
+            labelText:SetMaxLines(1)
+            labelText:SetText(CludesUI.L(conf.text or ""))
+            regionFrame._label = labelText
+            regionFrame._cfg = conf
+            regionFrame._labelHasHit = (conf.tooltip or conf.disabledTooltip) and true or false
 
-            if (cfg.tooltip or cfg.disabledTooltip) and t ~= "dropdown" then
-                local ttOpts = cfg.tooltipOpts
-                local hitFrame = CreateFrame("Frame", nil, region)
-                hitFrame:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-                hitFrame:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
-                hitFrame:SetFrameLevel(region:GetFrameLevel() + 10)
+            if (conf.tooltip or conf.disabledTooltip) and t ~= "dropdown" then
+                local ttOpts = conf.tooltipOpts
+                local hitFrame = CreateFrame("Frame", nil, regionFrame)
+                hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
+                hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
+                hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
                 hitFrame:SetScript("OnEnter", function()
-                    if cfg.disabled and cfg.disabled() and cfg.disabledTooltip then
-                        local tt = ResolveDisabledTip(cfg)
+                    if conf.disabled and conf.disabled() and conf.disabledTooltip then
+                        local tt = ResolveDisabledTip(conf)
                         if tt then
-                            ShowWidgetTooltip(label, tt)
+                            ShowWidgetTooltip(labelText, tt)
                         end
-                    elseif cfg.tooltip then
-                        ShowWidgetTooltip(label, LabelTooltipText(region, label, cfg.tooltip), ttOpts)
-                    elseif region._labelTruncated then
+                    elseif conf.tooltip then
+                        ShowWidgetTooltip(
+                            labelText,
+                            LabelTooltipText(regionFrame, labelText, conf.tooltip),
+                            ttOpts
+                        )
+                    elseif regionFrame._labelTruncated then
                         -- Truncated label whose hit exists only for the disabled tooltip: reveal the full text while enabled.
-                        ShowWidgetTooltip(label, label:GetText())
+                        ShowWidgetTooltip(labelText, labelText:GetText())
                     end
                 end)
                 hitFrame:SetScript("OnLeave", function()
@@ -1167,9 +1191,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 -- Clicks pass through by default so controls stay interactive; intercepted while disabled to block interaction.
                 hitFrame:SetMouseClickEnabled(false)
-                if cfg.disabled and cfg.disabledTooltip then
+                if conf.disabled and conf.disabledTooltip then
                     local function UpdateHitMouse()
-                        hitFrame:SetMouseClickEnabled(cfg.disabled() and true or false)
+                        hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
                     end
                     RegisterWidgetRefresh(UpdateHitMouse)
                     UpdateHitMouse()
@@ -1178,13 +1202,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             local controlFrame, controlAnchor
             local function ApplyDisabledState()
-                if not cfg.disabled then
+                if not conf.disabled then
                     return
                 end
-                local off = cfg.disabled()
-                label:SetAlpha(off and 0.3 or 1)
+                local offset = conf.disabled()
+                labelText:SetAlpha(offset and 0.3 or 1)
                 if controlFrame then
-                    if off then
+                    if offset then
                         controlFrame:EnableMouse(false)
                         controlFrame:SetAlpha(0.3)
                     else
@@ -1196,10 +1220,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             if t == "slider" then
                 local defaultTrackW = isRussian and 100 or 130
-                local scfg = PixelizeSliderCfg(cfg)
+                local scfg = PixelizeSliderCfg(conf)
                 local trackFrame, valBox, _, slThumb = BuildSliderCore(
-                    region,
-                    cfg.trackWidth or defaultTrackW,
+                    regionFrame,
+                    conf.trackWidth or defaultTrackW,
                     4,
                     14,
                     40,
@@ -1212,48 +1236,48 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     scfg.getValue,
                     scfg.setValue,
                     true,
-                    cfg.snapPoints,
-                    cfg.valueSnap
+                    conf.snapPoints,
+                    conf.valueSnap
                 )
-                PP.Point(valBox, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                PP.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
+                Pix.Point(valBox, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
                 RegisterWidgetRefresh(function()
-                    if cfg.disabled then
-                        local off = cfg.disabled()
-                        label:SetAlpha(off and 0.3 or 1)
-                        trackFrame:SetAlpha(off and 0.3 or 1)
-                        valBox:EnableMouse(not off)
-                        valBox:SetAlpha(off and 0.3 or 1)
+                    if conf.disabled then
+                        local offset = conf.disabled()
+                        labelText:SetAlpha(offset and 0.3 or 1)
+                        trackFrame:SetAlpha(offset and 0.3 or 1)
+                        valBox:EnableMouse(not offset)
+                        valBox:SetAlpha(offset and 0.3 or 1)
                         if slThumb then
-                            slThumb._sliderDisabled = off
+                            slThumb._sliderDisabled = offset
                         end
                     end
                 end)
-                if cfg.disabled then
-                    local off = cfg.disabled()
-                    label:SetAlpha(off and 0.3 or 1)
-                    trackFrame:SetAlpha(off and 0.3 or 1)
-                    valBox:EnableMouse(not off)
-                    valBox:SetAlpha(off and 0.3 or 1)
+                if conf.disabled then
+                    local offset = conf.disabled()
+                    labelText:SetAlpha(offset and 0.3 or 1)
+                    trackFrame:SetAlpha(offset and 0.3 or 1)
+                    valBox:EnableMouse(not offset)
+                    valBox:SetAlpha(offset and 0.3 or 1)
                     if slThumb then
-                        slThumb._sliderDisabled = off
+                        slThumb._sliderDisabled = offset
                     end
                 end
-                AttachSliderTooltip(region, label, cfg, trackFrame, slThumb, valBox)
+                AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, slThumb, valBox)
                 controlAnchor = trackFrame
             elseif t == "dropdown" then
-                local DD_W = cfg.dropdownWidth or 170
+                local DD_W = conf.dropdownWidth or 170
                 -- Bridge itemDisabled/itemDisabledTooltip into disabledValuesFn
-                local ddDisabledFn = cfg.disabledValues
-                if not ddDisabledFn and cfg.itemDisabled then
-                    ddDisabledFn = function(v)
-                        if cfg.itemDisabled(v) then
-                            if cfg.itemDisabledTooltip then
-                                local tip = cfg.itemDisabledTooltip(v)
+                local ddDisabledFn = conf.disabledValues
+                if not ddDisabledFn and conf.itemDisabled then
+                    ddDisabledFn = function(val)
+                        if conf.itemDisabled(val) then
+                            if conf.itemDisabledTooltip then
+                                local tipText = conf.itemDisabledTooltip(val)
                                 -- cfg.itemRequireState: "disabled" flips the wrapper's verb
                                 -- for a bare requirement noun (nil = "enabled", as before).
-                                if tip then
-                                    return DisabledTooltip(tip, cfg.itemRequireState)
+                                if tipText then
+                                    return DisabledTooltip(tipText, conf.itemRequireState)
                                 end
                             end
                             return true
@@ -1262,72 +1286,78 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end
                 local ddBtn, ddLbl = BuildDropdownControl(
-                    region,
+                    regionFrame,
                     DD_W,
-                    frame:GetFrameLevel() + 2,
-                    cfg.values,
-                    cfg.order,
-                    cfg.getValue,
-                    cfg.setValue,
+                    widget:GetFrameLevel() + 2,
+                    conf.values,
+                    conf.order,
+                    conf.getValue,
+                    conf.setValue,
                     ddDisabledFn
                 )
-                PP.Point(ddBtn, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
+                Pix.Point(ddBtn, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 controlFrame = ddBtn
-                if cfg.labelOnlyDisabled then
-                    AddControlDisabledTooltip(label, cfg)
+                if conf.labelOnlyDisabled then
+                    AddControlDisabledTooltip(labelText, conf)
                 else
-                    AddControlDisabledTooltip(ddBtn, cfg)
+                    AddControlDisabledTooltip(ddBtn, conf)
                 end
-                if cfg.tooltip or (cfg.disabledTooltip and cfg.disabled) then
-                    if cfg.tooltip then
-                        ddBtn._ttText = cfg.tooltip
-                        ddBtn._ttOpts = cfg.tooltipOpts
+                if conf.tooltip or (conf.disabledTooltip and conf.disabled) then
+                    if conf.tooltip then
+                        ddBtn._ttText = conf.tooltip
+                        ddBtn._ttOpts = conf.tooltipOpts
                     end
-                    local ttOpts = cfg.tooltipOpts
-                    local hitFrame = CreateFrame("Frame", nil, region)
-                    hitFrame:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-                    hitFrame:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
-                    hitFrame:SetFrameLevel(region:GetFrameLevel() + 10)
+                    local ttOpts = conf.tooltipOpts
+                    local hitFrame = CreateFrame("Frame", nil, regionFrame)
+                    hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
+                    hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
+                    hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
                     hitFrame:SetScript("OnEnter", function()
-                        if cfg.disabled and cfg.disabled() and cfg.disabledTooltip then
-                            local tt = ResolveDisabledTip(cfg)
+                        if conf.disabled and conf.disabled() and conf.disabledTooltip then
+                            local tt = ResolveDisabledTip(conf)
                             if tt then
-                                ShowWidgetTooltip(label, tt)
+                                ShowWidgetTooltip(labelText, tt)
                             end
-                        elseif cfg.tooltip and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
-                            ShowWidgetTooltip(label, LabelTooltipText(region, label, cfg.tooltip), ttOpts)
-                        elseif region._labelTruncated and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
-                            ShowWidgetTooltip(label, label:GetText())
+                        elseif conf.tooltip and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
+                            ShowWidgetTooltip(
+                                labelText,
+                                LabelTooltipText(regionFrame, labelText, conf.tooltip),
+                                ttOpts
+                            )
+                        elseif
+                            regionFrame._labelTruncated and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown())
+                        then
+                            ShowWidgetTooltip(labelText, labelText:GetText())
                         end
                     end)
                     hitFrame:SetScript("OnLeave", function()
                         HideWidgetTooltip()
                     end)
                     hitFrame:SetMouseClickEnabled(false)
-                    if cfg.disabled and cfg.disabledTooltip then
+                    if conf.disabled and conf.disabledTooltip then
                         local function UpdateHitMouse()
-                            hitFrame:SetMouseClickEnabled(cfg.disabled() and true or false)
+                            hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
                         end
                         RegisterWidgetRefresh(UpdateHitMouse)
                         UpdateHitMouse()
                     end
                 end
-                if cfg.labelOnlyDisabled and cfg.disabled then
+                if conf.labelOnlyDisabled and conf.disabled then
                     local function ApplyLabelOnly()
-                        local off = cfg.disabled()
-                        label:SetAlpha(1)
+                        local offset = conf.disabled()
+                        labelText:SetAlpha(1)
                         -- Gray the button label when the current value is disabled,
                         -- through the text colour's alpha (the label's resting alpha);
                         -- _valueDimA keeps the hover colours on that alpha too.
-                        if cfg.disabledValues then
-                            local curVal = cfg.getValue()
-                            local dimA = cfg.disabledValues(curVal) and 0.15 or nil
+                        if conf.disabledValues then
+                            local curVal = conf.getValue()
+                            local dimA = conf.disabledValues(curVal) and 0.15 or nil
                             ddBtn._valueDimA = dimA
                             ddLbl:SetTextColor(1, 1, 1, dimA or DD_TXT_A)
                         end
                     end
                     RegisterWidgetRefresh(function()
-                        ddLbl:SetText(DDResolveLabel(cfg.values, cfg.order or {}, cfg.getValue()))
+                        ddLbl:SetText(DDResolveLabel(conf.values, conf.order or {}, conf.getValue()))
                         ApplyLabelOnly()
                         if ddBtn._ddRefresh then
                             ddBtn._ddRefresh()
@@ -1336,7 +1366,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     ApplyLabelOnly()
                 else
                     RegisterWidgetRefresh(function()
-                        ddLbl:SetText(DDResolveLabel(cfg.values, cfg.order or {}, cfg.getValue()))
+                        ddLbl:SetText(DDResolveLabel(conf.values, conf.order or {}, conf.getValue()))
                         ApplyDisabledState()
                         if ddBtn._ddRefresh then
                             ddBtn._ddRefresh()
@@ -1346,25 +1376,25 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             elseif t == "toggle" then
                 local toggle, _, tgSnap =
-                    BuildToggleControl(region, frame:GetFrameLevel() + 2, cfg.getValue, cfg.setValue)
-                toggle:SetPoint("RIGHT", region, "RIGHT", -SIDE_PAD, 0)
+                    BuildToggleControl(regionFrame, widget:GetFrameLevel() + 2, conf.getValue, conf.setValue)
+                toggle:SetPoint("RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 controlFrame = toggle
-                AddControlDisabledTooltip(toggle, cfg)
+                AddControlDisabledTooltip(toggle, conf)
                 RegisterWidgetRefresh(function()
                     tgSnap()
                     ApplyDisabledState()
                 end)
                 ApplyDisabledState()
             elseif t == "colorpicker" then
-                local swatch, _updateSwatch = BuildColorSwatch(
-                    region,
-                    frame:GetFrameLevel() + 2,
-                    cfg.getValue,
-                    cfg.setValue,
-                    cfg.hasAlpha
+                local colorSwatch, _updateSwatch = BuildColorSwatch(
+                    regionFrame,
+                    widget:GetFrameLevel() + 2,
+                    conf.getValue,
+                    conf.setValue,
+                    conf.hasAlpha
                 )
-                PP.Point(swatch, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                controlFrame = swatch
+                Pix.Point(colorSwatch, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                controlFrame = colorSwatch
                 RegisterWidgetRefresh(function()
                     _updateSwatch()
                     ApplyDisabledState()
@@ -1372,24 +1402,25 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 ApplyDisabledState()
             elseif t == "checkbox" then
                 -- Generic label hidden: the checkbox draws its own label + box
-                label:Hide()
-                local btn = CreateFrame("Button", nil, region)
-                btn:SetSize(region:GetWidth(), ROW_H)
-                btn:SetAllPoints(region)
-                btn:SetFrameLevel(frame:GetFrameLevel() + 2)
+                labelText:Hide()
+                local btn = CreateFrame("Button", nil, regionFrame)
+                btn:SetSize(regionFrame:GetWidth(), ROW_H)
+                btn:SetAllPoints(regionFrame)
+                btn:SetFrameLevel(widget:GetFrameLevel() + 2)
 
-                local box, check, boxBorder, cbApply = BuildCheckboxControl(btn, frame:GetFrameLevel() + 2)
-                box:SetPoint("LEFT", btn, "LEFT", SIDE_PAD, 0)
+                local boxFrame, check, boxBorder, cbApply =
+                    BuildCheckboxControl(btn, widget:GetFrameLevel() + 2)
+                boxFrame:SetPoint("LEFT", btn, "LEFT", SIDE_PAD, 0)
 
                 local cbLabel = MakeFont(btn, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
-                cbLabel:SetPoint("LEFT", box, "RIGHT", 10, 0)
-                cbLabel:SetText(CludesUI.L(cfg.text or ""))
+                cbLabel:SetPoint("LEFT", boxFrame, "RIGHT", 10, 0)
+                cbLabel:SetText(CludesUI.L(conf.text or ""))
 
                 local isHovering = false
                 local function ApplyCBVisual()
-                    local on = cfg.getValue()
-                    cbApply(on, isHovering)
-                    if on then
+                    local enabled = conf.getValue()
+                    cbApply(enabled, isHovering)
+                    if enabled then
                         cbLabel:SetTextColor(TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B, 1)
                     else
                         local a = isHovering and 1 or 0.8
@@ -1400,8 +1431,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                 btn:SetScript("OnClick", function()
                     local gen = PoolGen(btn)
-                    local v = not cfg.getValue()
-                    cfg.setValue(v)
+                    local val = not conf.getValue()
+                    conf.setValue(val)
                     CludesUI._settingsChanged = true
                     -- A setter that rebuilt the page dressed this checkbox again
                     -- (page reuse): that dress painted itself.
@@ -1426,32 +1457,32 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 ApplyDisabledState()
             elseif t == "button" then
-                label:Hide()
-                local btn = CreateFrame("Button", nil, region)
-                PP.Size(btn, cfg.width or 140, 32)
-                PP.Point(btn, "CENTER", region, "CENTER", 0, 0)
-                btn:SetFrameLevel(frame:GetFrameLevel() + 2)
-                MakeStyledButton(btn, cfg.text or "", 13, RB_COLOURS, cfg.onClick)
+                labelText:Hide()
+                local btn = CreateFrame("Button", nil, regionFrame)
+                Pix.Size(btn, conf.width or 140, 32)
+                Pix.Point(btn, "CENTER", regionFrame, "CENTER", 0, 0)
+                btn:SetFrameLevel(widget:GetFrameLevel() + 2)
+                MakeStyledButton(btn, conf.text or "", 13, RB_COLOURS, conf.onClick)
                 controlFrame = btn
                 RegisterWidgetRefresh(function()
                     ApplyDisabledState()
                 end)
                 ApplyDisabledState()
             elseif t == "labeledButton" then
-                local btn = CreateFrame("Button", nil, region)
-                PP.Size(btn, cfg.width or 140, 32)
-                PP.Point(btn, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
-                btn:SetFrameLevel(frame:GetFrameLevel() + 2)
-                MakeStyledButton(btn, cfg.buttonText or cfg.text or "", 13, RB_COLOURS, cfg.onClick)
+                local btn = CreateFrame("Button", nil, regionFrame)
+                Pix.Size(btn, conf.width or 140, 32)
+                Pix.Point(btn, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                btn:SetFrameLevel(widget:GetFrameLevel() + 2)
+                MakeStyledButton(btn, conf.buttonText or conf.text or "", 13, RB_COLOURS, conf.onClick)
                 controlFrame = btn
                 RegisterWidgetRefresh(function()
                     ApplyDisabledState()
                 end)
                 ApplyDisabledState()
             end
-            region._control = controlAnchor or controlFrame
+            regionFrame._control = controlAnchor or controlFrame
             -- Truncation is deferred (QueueLabelClamp) and the right bound applies ONLY on actual overflow: a bound stretches the label's rect, so anything anchored to its RIGHT edge (e.g. "(Applies to ...)" subtitles) would slide to the far side of the slot on short labels.
-            QueueLabelClamp(region)
+            QueueLabelClamp(regionFrame)
         end
 
         BuildThird(leftRegion, leftCfg)
@@ -1479,15 +1510,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- 1px column-boundary dividers (RowBg center-divider style)
         for _, rgn in ipairs({ leftRegion, midRegion }) do
-            local div = frame:CreateTexture(nil, "ARTWORK")
+            local div = widget:CreateTexture(nil, "ARTWORK")
             div:SetColorTexture(1, 1, 1, 0.06)
             if div.SetSnapToPixelGrid then
                 div:SetSnapToPixelGrid(false)
                 div:SetTexelSnappingBias(0)
             end
             div:SetWidth(1)
-            PP.Point(div, "TOP", rgn, "TOPRIGHT", 0, 0)
-            PP.Point(div, "BOTTOM", rgn, "BOTTOMRIGHT", 0, 0)
+            Pix.Point(div, "TOP", rgn, "TOPRIGHT", 0, 0)
+            Pix.Point(div, "BOTTOM", rgn, "BOTTOMRIGHT", 0, 0)
         end
 
         leftRegion._widgetCfg = leftCfg
@@ -1496,91 +1527,91 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         rightRegion._widgetCfg = rightCfg
 
-        frame._leftRegion = leftRegion
-        frame._midRegion = midRegion
-        frame._rightRegion = rightRegion
+        widget._leftRegion = leftRegion
+        widget._midRegion = midRegion
+        widget._rightRegion = rightRegion
 
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- MultiSwatchRow: label left, N full-size color swatches right with tooltips.
     -- cfg = { text = "Row Label", swatches = {
     --   { tooltip = "Swatch 1", getValue = fn, setValue = fn, hasAlpha = bool }, ... } }
-    function WidgetFactory:MultiSwatchRow(parent, yOffset, cfg)
+    function WidgetFactory:MultiSwatchRow(hostFrame, yOffset, conf)
         local ROW_H = 50
         local SIDE_PAD = 20
         local SWATCH_GAP = 8
-        local frame = CreateFrame("Frame", nil, parent)
-        local totalW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(frame, totalW, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        frame._skipRowDivider = true
-        RowBg(frame, parent)
-        TagOptionRow(frame, parent, cfg.text or "")
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
+        Pix.Size(widget, totalW, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        widget._skipRowDivider = true
+        RowBg(widget, hostFrame)
+        TagOptionRow(widget, hostFrame, conf.text or "")
 
-        local label = MakeFont(frame, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
-        PP.Point(label, "LEFT", frame, "LEFT", SIDE_PAD, 0)
-        label:SetText(CludesUI.L(cfg.text or ""))
+        local labelText = MakeFont(widget, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
+        Pix.Point(labelText, "LEFT", widget, "LEFT", SIDE_PAD, 0)
+        labelText:SetText(CludesUI.L(conf.text or ""))
 
         -- Swatches build right-to-left from the right edge
-        local swatches = cfg.swatches or {}
-        if cfg.noCapture then
-            frame._noCapture = true
+        local swatches = conf.swatches or {}
+        if conf.noCapture then
+            widget._noCapture = true
         end
         local anchorX = -SIDE_PAD
         for i = #swatches, 1, -1 do
             local sc = swatches[i]
-            local swatch, updateSwatch =
-                BuildColorSwatch(frame, frame:GetFrameLevel() + 2, sc.getValue, sc.setValue, sc.hasAlpha)
-            PP.Point(swatch, "RIGHT", frame, "RIGHT", anchorX, 0)
+            local colorSwatch, updateSwatch =
+                BuildColorSwatch(widget, widget:GetFrameLevel() + 2, sc.getValue, sc.setValue, sc.hasAlpha)
+            Pix.Point(colorSwatch, "RIGHT", widget, "RIGHT", anchorX, 0)
             anchorX = anchorX - 24 - SWATCH_GAP
 
             if sc.disabled then
-                local swatchBlock = CreateFrame("Frame", nil, swatch)
+                local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
                 swatchBlock:SetAllPoints()
-                swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
                 swatchBlock:EnableMouse(true)
                 if sc.disabledTooltip then
                     swatchBlock:SetScript("OnEnter", function()
-                        ShowWidgetTooltip(swatch, sc.disabledTooltip)
+                        ShowWidgetTooltip(colorSwatch, sc.disabledTooltip)
                     end)
                     swatchBlock:SetScript("OnLeave", function()
                         HideWidgetTooltip()
                     end)
                 end
                 if sc.tooltip then -- normal tooltip while enabled
-                    swatch:HookScript("OnEnter", function()
-                        ShowWidgetTooltip(swatch, sc.tooltip)
+                    colorSwatch:HookScript("OnEnter", function()
+                        ShowWidgetTooltip(colorSwatch, sc.tooltip)
                     end)
-                    swatch:HookScript("OnLeave", function()
+                    colorSwatch:HookScript("OnLeave", function()
                         HideWidgetTooltip()
                     end)
                 end
                 RegisterWidgetRefresh(function()
                     updateSwatch()
-                    local off = sc.disabled()
-                    if off then
-                        swatch:SetAlpha(0.3)
+                    local offset = sc.disabled()
+                    if offset then
+                        colorSwatch:SetAlpha(0.3)
                         swatchBlock:Show()
                     else
-                        swatch:SetAlpha(1)
+                        colorSwatch:SetAlpha(1)
                         swatchBlock:Hide()
                     end
                 end)
-                local off = sc.disabled()
-                if off then
-                    swatch:SetAlpha(0.3)
+                local offset = sc.disabled()
+                if offset then
+                    colorSwatch:SetAlpha(0.3)
                     swatchBlock:Show()
                 else
-                    swatch:SetAlpha(1)
+                    colorSwatch:SetAlpha(1)
                     swatchBlock:Hide()
                 end
             else
                 if sc.tooltip then
-                    swatch:HookScript("OnEnter", function()
-                        ShowWidgetTooltip(swatch, sc.tooltip)
+                    colorSwatch:HookScript("OnEnter", function()
+                        ShowWidgetTooltip(colorSwatch, sc.tooltip)
                     end)
-                    swatch:HookScript("OnLeave", function()
+                    colorSwatch:HookScript("OnLeave", function()
                         HideWidgetTooltip()
                     end)
                 end
@@ -1598,36 +1629,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if sc.getValue and sc.setValue then
                     accs[#accs + 1] = {
                         type = "colorpicker",
-                        text = sc.tooltip or cfg.text,
+                        text = sc.tooltip or conf.text,
                         hasAlpha = sc.hasAlpha,
                         getValue = sc.getValue,
                         setValue = sc.setValue,
                     }
                 end
             end
-            if #accs > 0 and not cfg.noCapture then
-                frame._captureCfg = { type = "multi", text = cfg.text, accessors = accs }
+            if #accs > 0 and not conf.noCapture then
+                widget._captureCfg = { type = "multi", text = conf.text, accessors = accs }
             end
         end
 
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- DropdownWithOffsets: dropdown left, X and Y mini-sliders side by side right.
     -- dropdownCfg: DualRow dropdown cfg (text, values, order, getValue, setValue,
     --              disabledValues, disabled).
     -- xSliderCfg / ySliderCfg: { text, min, max, step, getValue, setValue, disabled }
-    function WidgetFactory:DropdownWithOffsets(parent, yOffset, dropdownCfg, xSliderCfg, ySliderCfg)
+    function WidgetFactory:DropdownWithOffsets(hostFrame, yOffset, dropdownCfg, xSliderCfg, ySliderCfg)
         local ROW_H = 50
         local SIDE_PAD = 20
-        local frame = CreateFrame("Frame", nil, parent)
-        local totalW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(frame, totalW, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        RowBg(frame, parent)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
+        Pix.Size(widget, totalW, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        RowBg(widget, hostFrame)
         TagOptionRow(
-            frame,
-            parent,
+            widget,
+            hostFrame,
             (dropdownCfg and dropdownCfg.text or "")
                 .. " "
                 .. (xSliderCfg and xSliderCfg.text or "")
@@ -1636,48 +1667,48 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             nil,
             true
         )
-        IndexSlotForSearch(parent, dropdownCfg and dropdownCfg.text, dropdownCfg and dropdownCfg.tooltip)
-        IndexSlotForSearch(parent, xSliderCfg and xSliderCfg.text, xSliderCfg and xSliderCfg.tooltip)
-        IndexSlotForSearch(parent, ySliderCfg and ySliderCfg.text, ySliderCfg and ySliderCfg.tooltip)
+        IndexSlotForSearch(hostFrame, dropdownCfg and dropdownCfg.text, dropdownCfg and dropdownCfg.tooltip)
+        IndexSlotForSearch(hostFrame, xSliderCfg and xSliderCfg.text, xSliderCfg and xSliderCfg.tooltip)
+        IndexSlotForSearch(hostFrame, ySliderCfg and ySliderCfg.text, ySliderCfg and ySliderCfg.tooltip)
 
         local halfW = math.floor(totalW / 2)
 
         -- Left half: label + dropdown (as in a DualRow dropdown half)
-        local leftRegion = CreateFrame("Frame", nil, frame)
+        local leftRegion = CreateFrame("Frame", nil, widget)
         leftRegion:SetSize(halfW, ROW_H)
-        leftRegion:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+        leftRegion:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
 
         local ddLabel = MakeFont(leftRegion, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
-        PP.Point(ddLabel, "LEFT", leftRegion, "LEFT", SIDE_PAD, 0)
+        Pix.Point(ddLabel, "LEFT", leftRegion, "LEFT", SIDE_PAD, 0)
         ddLabel:SetText(CludesUI.L(dropdownCfg.text or ""))
 
         local DD_W = 170
         local ddBtn, ddLbl = BuildDropdownControl(
             leftRegion,
             DD_W,
-            frame:GetFrameLevel() + 2,
+            widget:GetFrameLevel() + 2,
             dropdownCfg.values,
             dropdownCfg.order,
             dropdownCfg.getValue,
             dropdownCfg.setValue,
             dropdownCfg.disabledValues
         )
-        PP.Point(ddBtn, "RIGHT", leftRegion, "RIGHT", -SIDE_PAD, 0)
+        Pix.Point(ddBtn, "RIGHT", leftRegion, "RIGHT", -SIDE_PAD, 0)
 
         local function ApplyDDDisabled()
             if not dropdownCfg.disabled then
                 return
             end
-            local off = dropdownCfg.disabled()
-            ddLabel:SetAlpha(off and 0.3 or 1)
-            ddBtn:EnableMouse(not off)
-            ddBtn:SetAlpha(off and 0.3 or 1)
+            local offset = dropdownCfg.disabled()
+            ddLabel:SetAlpha(offset and 0.3 or 1)
+            ddBtn:EnableMouse(not offset)
+            ddBtn:SetAlpha(offset and 0.3 or 1)
         end
 
         -- Right half: X and Y mini-sliders on one line
-        local rightRegion = CreateFrame("Frame", nil, frame)
+        local rightRegion = CreateFrame("Frame", nil, widget)
         rightRegion:SetSize(halfW, ROW_H)
-        rightRegion:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+        rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
         local MINI_TRACK_W = 120
         local MINI_VALBOX_W = 30
@@ -1712,35 +1743,35 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             )
 
             if isLeft then
-                PP.Point(axisLabel, "LEFT", rightRegion, "LEFT", 4, 0)
-                PP.Point(trackFrame, "LEFT", axisLabel, "RIGHT", 6, 0)
-                PP.Point(valBox, "LEFT", trackFrame, "RIGHT", 6, 0)
+                Pix.Point(axisLabel, "LEFT", rightRegion, "LEFT", 4, 0)
+                Pix.Point(trackFrame, "LEFT", axisLabel, "RIGHT", 6, 0)
+                Pix.Point(valBox, "LEFT", trackFrame, "RIGHT", 6, 0)
             else
-                PP.Point(valBox, "RIGHT", rightRegion, "RIGHT", -4, 0)
-                PP.Point(trackFrame, "RIGHT", valBox, "LEFT", -6, 0)
-                PP.Point(axisLabel, "RIGHT", trackFrame, "LEFT", -6, 0)
+                Pix.Point(valBox, "RIGHT", rightRegion, "RIGHT", -4, 0)
+                Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -6, 0)
+                Pix.Point(axisLabel, "RIGHT", trackFrame, "LEFT", -6, 0)
             end
 
             RegisterWidgetRefresh(function()
                 if slCfg.disabled then
-                    local off = slCfg.disabled()
-                    axisLabel:SetAlpha(off and 0.2 or 0.6)
-                    trackFrame:SetAlpha(off and 0.3 or 1)
-                    valBox:EnableMouse(not off)
-                    valBox:SetAlpha(off and 0.3 or 1)
+                    local offset = slCfg.disabled()
+                    axisLabel:SetAlpha(offset and 0.2 or 0.6)
+                    trackFrame:SetAlpha(offset and 0.3 or 1)
+                    valBox:EnableMouse(not offset)
+                    valBox:SetAlpha(offset and 0.3 or 1)
                     if slThumb then
-                        slThumb._sliderDisabled = off
+                        slThumb._sliderDisabled = offset
                     end
                 end
             end)
             if slCfg.disabled then
-                local off = slCfg.disabled()
-                axisLabel:SetAlpha(off and 0.2 or 0.6)
-                trackFrame:SetAlpha(off and 0.3 or 1)
-                valBox:EnableMouse(not off)
-                valBox:SetAlpha(off and 0.3 or 1)
+                local offset = slCfg.disabled()
+                axisLabel:SetAlpha(offset and 0.2 or 0.6)
+                trackFrame:SetAlpha(offset and 0.3 or 1)
+                valBox:EnableMouse(not offset)
+                valBox:SetAlpha(offset and 0.3 or 1)
                 if slThumb then
-                    slThumb._sliderDisabled = off
+                    slThumb._sliderDisabled = offset
                 end
             end
         end
@@ -1749,11 +1780,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         BuildMiniSlider(ySliderCfg, "RIGHT")
 
         -- 1px center divider between dropdown and sliders
-        local div = frame:CreateTexture(nil, "ARTWORK")
+        local div = widget:CreateTexture(nil, "ARTWORK")
         div:SetColorTexture(BORDER_R, BORDER_G, BORDER_B, 0.05)
         div:SetWidth(1)
-        div:SetPoint("TOP", frame, "TOP", 0, 0)
-        div:SetPoint("BOTTOM", frame, "BOTTOM", 0, 0)
+        div:SetPoint("TOP", widget, "TOP", 0, 0)
+        div:SetPoint("BOTTOM", widget, "BOTTOM", 0, 0)
 
         RegisterWidgetRefresh(function()
             ddLbl:SetText(DDResolveLabel(dropdownCfg.values, dropdownCfg.order or {}, dropdownCfg.getValue()))
@@ -1762,45 +1793,45 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         ApplyDDDisabled()
 
         -- Regions exposed for eye icon anchoring
-        frame._leftRegion = leftRegion
-        frame._rightRegion = rightRegion
+        widget._leftRegion = leftRegion
+        widget._rightRegion = rightRegion
         -- Slot-level search labels drive per-slot highlighting
         leftRegion._slotLabel = dropdownCfg and dropdownCfg.text or ""
         rightRegion._slotLabel = (xSliderCfg and xSliderCfg.text or "")
             .. " "
             .. (ySliderCfg and ySliderCfg.text or "")
 
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- WideDualButton: two centered buttons side by side (each 100px narrower and 5px shorter than WideButton)
-    function WidgetFactory:WideDualButton(parent, text1, text2, yOffset, onClick1, onClick2, btnWidth)
+    function WidgetFactory:WideDualButton(hostFrame, text1, text2, yOffset, onClick1, onClick2, btnWidth)
         btnWidth = btnWidth or DUAL_ITEM_W
         local BTN_H = 37
         local ROW_H = BTN_H + 20
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        TagOptionRow(frame, parent, (text1 or "") .. " " .. (text2 or ""), nil, true)
-        IndexSlotForSearch(parent, text1)
-        IndexSlotForSearch(parent, text2)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        TagOptionRow(widget, hostFrame, (text1 or "") .. " " .. (text2 or ""), nil, true)
+        IndexSlotForSearch(hostFrame, text1)
+        IndexSlotForSearch(hostFrame, text2)
         local halfGap = DUAL_GAP / 2
-        for i, info in ipairs({
+        for i, details in ipairs({
             { text1, -(btnWidth / 2 + halfGap), onClick1 },
             { text2, (btnWidth / 2 + halfGap), onClick2 },
         }) do
-            local btn = CreateFrame("Button", nil, frame)
-            PP.Size(btn, btnWidth, BTN_H)
-            PP.Point(btn, "CENTER", frame, "CENTER", info[2], 0)
-            btn:SetFrameLevel(frame:GetFrameLevel() + 1)
-            MakeStyledButton(btn, info[1], 14, WB_COLOURS, info[3])
+            local btn = CreateFrame("Button", nil, widget)
+            Pix.Size(btn, btnWidth, BTN_H)
+            Pix.Point(btn, "CENTER", widget, "CENTER", details[2], 0)
+            btn:SetFrameLevel(widget:GetFrameLevel() + 1)
+            MakeStyledButton(btn, details[1], 14, WB_COLOURS, details[3])
         end
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- WideTripleButton: three centered buttons side by side, for action rows. disabledOpts (optional): keyed by button index 1..3, e.g. { [3] = { disabled = true, tooltip = "why it's off" } }. A disabled button is dimmed, ignores hover highlight + clicks, and shows its tooltip on hover. Evaluated at build time (callers rebuild on RefreshPage).
     function WidgetFactory:WideTripleButton(
-        parent,
+        hostFrame,
         text1,
         text2,
         text3,
@@ -1814,21 +1845,27 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         btnWidth = btnWidth or 205
         local BTN_H = 37
         local ROW_H = BTN_H + 20
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        TagOptionRow(frame, parent, (text1 or "") .. " " .. (text2 or "") .. " " .. (text3 or ""), nil, true)
-        IndexSlotForSearch(parent, text1)
-        IndexSlotForSearch(parent, text2)
-        IndexSlotForSearch(parent, text3)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        TagOptionRow(
+            widget,
+            hostFrame,
+            (text1 or "") .. " " .. (text2 or "") .. " " .. (text3 or ""),
+            nil,
+            true
+        )
+        IndexSlotForSearch(hostFrame, text1)
+        IndexSlotForSearch(hostFrame, text2)
+        IndexSlotForSearch(hostFrame, text3)
         local gap = DUAL_GAP
         local offsets = { -(btnWidth + gap), 0, (btnWidth + gap) }
-        for i, info in ipairs({ { text1, onClick1 }, { text2, onClick2 }, { text3, onClick3 } }) do
-            local btn = CreateFrame("Button", nil, frame)
-            PP.Size(btn, btnWidth, BTN_H)
-            PP.Point(btn, "CENTER", frame, "CENTER", offsets[i], 0)
-            btn:SetFrameLevel(frame:GetFrameLevel() + 1)
-            MakeStyledButton(btn, info[1], 12, WB_COLOURS, info[2])
+        for i, details in ipairs({ { text1, onClick1 }, { text2, onClick2 }, { text3, onClick3 } }) do
+            local btn = CreateFrame("Button", nil, widget)
+            Pix.Size(btn, btnWidth, BTN_H)
+            Pix.Point(btn, "CENTER", widget, "CENTER", offsets[i], 0)
+            btn:SetFrameLevel(widget:GetFrameLevel() + 1)
+            MakeStyledButton(btn, details[1], 12, WB_COLOURS, details[2])
             local dopt = disabledOpts and disabledOpts[i]
             if dopt and dopt.disabled then
                 btn:SetAlpha(0.4)
@@ -1843,32 +1880,32 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 btn:SetScript("OnClick", nil)
             end
         end
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- WideDropdown: centered, no row background, title above; prominent selectors.
     -- Its menu is built on the first click, as BuildDropdownControl's: a page
     -- build makes none.
     function WidgetFactory:WideDropdown(
-        parent,
-        title,
+        hostFrame,
+        titleText,
         yOffset,
         values,
         getValue,
         setValue,
-        order,
+        sequence,
         btnWidth,
         disabledValuesFn
     )
         btnWidth = btnWidth or 450
         local BTN_H, TITLE_H, GAP = 38, 20, 12
         local ROW_H = TITLE_H + GAP + BTN_H + 5
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        TagOptionRow(frame, parent, title)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        TagOptionRow(widget, hostFrame, titleText)
         local titleLabel = MakeFont(
-            frame,
+            widget,
             13,
             nil,
             CludesUI.TEXT_SECTION_R,
@@ -1876,33 +1913,33 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             CludesUI.TEXT_SECTION_B,
             CludesUI.TEXT_SECTION_A
         )
-        PP.Point(titleLabel, "TOP", frame, "TOP", 0, 0)
-        titleLabel:SetText(CludesUI.L(title))
-        local ddBtn = CreateFrame("Button", nil, frame)
-        PP.Size(ddBtn, btnWidth, BTN_H)
-        PP.Point(ddBtn, "TOP", titleLabel, "BOTTOM", 0, -GAP)
-        ddBtn:SetFrameLevel(frame:GetFrameLevel() + 1)
-        local bg = SolidTex(ddBtn, "BACKGROUND", DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
-        bg:SetAllPoints()
-        local brd = MakeRoundedBorder(ddBtn, 1, 1, 1, DD_BRD_A, bg)
+        Pix.Point(titleLabel, "TOP", widget, "TOP", 0, 0)
+        titleLabel:SetText(CludesUI.L(titleText))
+        local ddBtn = CreateFrame("Button", nil, widget)
+        Pix.Size(ddBtn, btnWidth, BTN_H)
+        Pix.Point(ddBtn, "TOP", titleLabel, "BOTTOM", 0, -GAP)
+        ddBtn:SetFrameLevel(widget:GetFrameLevel() + 1)
+        local backdrop = SolidTex(ddBtn, "BACKGROUND", DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
+        backdrop:SetAllPoints()
+        local brd = MakeRoundedBorder(ddBtn, 1, 1, 1, DD_BRD_A, backdrop)
         -- Resting alpha on the text colour, the channel the hover colours write.
         local ddLbl = MakeFont(ddBtn, 13, nil, 1, 1, 1, DD_TXT_A)
         ddLbl:SetPoint("LEFT", ddBtn, "LEFT", 14, 0)
-        local arrow = MakeDropdownArrow(ddBtn, 14, PP)
-        if not order then
-            order = {}
+        local arrow = MakeDropdownArrow(ddBtn, 14, Pix)
+        if not sequence then
+            sequence = {}
             for key in pairs(values) do
-                order[#order + 1] = key
+                sequence[#sequence + 1] = key
             end
         end
-        ddLbl:SetText(DDResolveLabel(values, order, getValue()))
+        ddLbl:SetText(DDResolveLabel(values, sequence, getValue()))
         -- Light hover scripts until the first click builds the menu (the shared
         -- lazy dropdown wiring of BuildDropdownControl).
-        WireLazyDropdown(ddBtn, ddLbl, bg, brd, WD_DD_COLOURS, function()
+        WireLazyDropdown(ddBtn, ddLbl, backdrop, brd, WD_DD_COLOURS, function()
             local m, _, refresh = BuildDropdownMenu(
                 ddBtn,
                 btnWidth,
-                order,
+                sequence,
                 values,
                 getValue,
                 setValue,
@@ -1913,7 +1950,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             return m, refresh
         end)
         RegisterWidgetRefresh(function()
-            ddLbl:SetText(DDResolveLabel(values, order, getValue()))
+            ddLbl:SetText(DDResolveLabel(values, sequence, getValue()))
             if disabledValuesFn then
                 -- A disabled current value rests greyed; _valueDimA keeps the
                 -- hover colours on that alpha too.
@@ -1922,20 +1959,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 ddLbl:SetTextColor(1, 1, 1, dimA or DD_TXT_A)
             end
         end)
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- TripleDropdown: 3 normal-sized dropdowns side by side, centered, each with a small title above
-    function WidgetFactory:TripleDropdown(parent, configs, yOffset)
+    function WidgetFactory:TripleDropdown(hostFrame, configs, yOffset)
         local DD_W, DD_H, TITLE_H, GAP_Y = TRIPLE_ITEM_W, 30, 16, 6
         local ROW_H = TITLE_H + GAP_Y + DD_H + 12
-        local frame = CreateFrame("Frame", nil, parent)
-        local frameW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(frame, frameW, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        local frameW = hostFrame:GetWidth() - CONTENT_PAD * 2
+        Pix.Size(widget, frameW, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
         TagOptionRow(
-            frame,
-            parent,
+            widget,
+            hostFrame,
             (configs[1] and configs[1][1] or "")
                 .. " "
                 .. (configs[2] and configs[2][1] or "")
@@ -1944,15 +1981,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             nil,
             true
         )
-        IndexSlotForSearch(parent, configs[1] and configs[1][1])
-        IndexSlotForSearch(parent, configs[2] and configs[2][1])
-        IndexSlotForSearch(parent, configs[3] and configs[3][1])
+        IndexSlotForSearch(hostFrame, configs[1] and configs[1][1])
+        IndexSlotForSearch(hostFrame, configs[2] and configs[2][1])
+        IndexSlotForSearch(hostFrame, configs[3] and configs[3][1])
         local totalW = DD_W * 3 + TRIPLE_GAP * 2
         local startX = (frameW - totalW) / 2
-        for idx, cfg in ipairs(configs) do
-            local col = startX + (idx - 1) * (DD_W + TRIPLE_GAP)
+        for position, conf in ipairs(configs) do
+            local column = startX + (position - 1) * (DD_W + TRIPLE_GAP)
             local titleLbl = MakeFont(
-                frame,
+                widget,
                 11,
                 nil,
                 CludesUI.TEXT_SECTION_R,
@@ -1960,47 +1997,47 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 CludesUI.TEXT_SECTION_B,
                 CludesUI.TEXT_SECTION_A
             )
-            PP.Point(titleLbl, "TOP", frame, "TOPLEFT", col + DD_W / 2, 0)
-            titleLbl:SetText(CludesUI.L(cfg.title))
+            Pix.Point(titleLbl, "TOP", widget, "TOPLEFT", column + DD_W / 2, 0)
+            titleLbl:SetText(CludesUI.L(conf.title))
             local ddBtn, ddLbl = BuildDropdownControl(
-                frame,
+                widget,
                 DD_W,
-                frame:GetFrameLevel() + 1,
-                cfg.values,
-                cfg.order,
-                cfg.getValue,
-                cfg.setValue
+                widget:GetFrameLevel() + 1,
+                conf.values,
+                conf.order,
+                conf.getValue,
+                conf.setValue
             )
-            PP.Point(ddBtn, "TOPLEFT", frame, "TOPLEFT", col, -(TITLE_H + GAP_Y))
+            Pix.Point(ddBtn, "TOPLEFT", widget, "TOPLEFT", column, -(TITLE_H + GAP_Y))
             RegisterWidgetRefresh(function()
-                ddLbl:SetText(DDResolveLabel(cfg.values, cfg.order or {}, cfg.getValue()))
+                ddLbl:SetText(DDResolveLabel(conf.values, conf.order or {}, conf.getValue()))
             end)
         end
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- TripleSlider: three mini-sliders side by side, mirroring TripleDropdown columns. configs = exactly 3 x { title (unused), minVal, maxVal, step, getValue, setValue }
-    function WidgetFactory:TripleSlider(parent, configs, yOffset)
+    function WidgetFactory:TripleSlider(hostFrame, configs, yOffset)
         local SL_W, SL_H = TRIPLE_ITEM_W, 26
         local ROW_H = SL_H + 12
-        local frame = CreateFrame("Frame", nil, parent)
-        local frameW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(frame, frameW, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
-        TagOptionRow(frame, parent, "")
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        local frameW = hostFrame:GetWidth() - CONTENT_PAD * 2
+        Pix.Size(widget, frameW, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        TagOptionRow(widget, hostFrame, "")
         local totalW = SL_W * 3 + TRIPLE_GAP * 2
         local startX = (frameW - totalW) / 2
-        for idx, cfg in ipairs(configs) do
-            local col = startX + (idx - 1) * (SL_W + TRIPLE_GAP)
-            local minVal = cfg.minVal or 16
-            local maxVal = cfg.maxVal or 40
-            local step = cfg.step or 1
+        for position, conf in ipairs(configs) do
+            local column = startX + (position - 1) * (SL_W + TRIPLE_GAP)
+            local minVal = conf.minVal or 16
+            local maxVal = conf.maxVal or 40
+            local step = conf.step or 1
             local INPUT_W = 36
             local TRACK_W = SL_W - INPUT_W - 16
-            local slRow = CreateFrame("Frame", nil, frame)
-            PP.Size(slRow, SL_W, SL_H)
-            PP.Point(slRow, "TOPLEFT", frame, "TOPLEFT", col, -((ROW_H - SL_H) / 2))
-            slRow:SetFrameLevel(frame:GetFrameLevel() + 1)
+            local slRow = CreateFrame("Frame", nil, widget)
+            Pix.Size(slRow, SL_W, SL_H)
+            Pix.Point(slRow, "TOPLEFT", widget, "TOPLEFT", column, -((ROW_H - SL_H) / 2))
+            slRow:SetFrameLevel(widget:GetFrameLevel() + 1)
             local trackFrame, valBox = BuildSliderCore(
                 slRow,
                 TRACK_W,
@@ -2013,23 +2050,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 minVal,
                 maxVal,
                 step,
-                cfg.getValue,
-                cfg.setValue,
+                conf.getValue,
+                conf.setValue,
                 true
             )
-            PP.Point(valBox, "RIGHT", slRow, "RIGHT", 0, 0)
-            PP.Point(trackFrame, "LEFT", slRow, "LEFT", 4, 0)
+            Pix.Point(valBox, "RIGHT", slRow, "RIGHT", 0, 0)
+            Pix.Point(trackFrame, "LEFT", slRow, "LEFT", 4, 0)
         end
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     -- Spacer
-    function WidgetFactory:Spacer(parent, yOffset, height)
+    function WidgetFactory:Spacer(hostFrame, yOffset, height)
         height = height or 16
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth(), height)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", 0, yOffset)
-        frame._isSpacer = true
-        return frame, height
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth(), height)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", 0, yOffset)
+        widget._isSpacer = true
+        return widget, height
     end
 end -- end deferred init

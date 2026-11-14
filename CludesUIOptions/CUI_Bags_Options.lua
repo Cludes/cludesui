@@ -13,7 +13,7 @@ end -- module disabled: no options page
 
 -- DB creation + login seeding live in CludesUIBags_DB.lua (resident; this
 -- file is LoadOnDemand and only builds the options page).
-local db = CludesUI._bagsDB
+local saved = CludesUI._bagsDB
 
 -- Page reuse: the frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
@@ -35,12 +35,12 @@ initFrame:SetScript("OnEvent", function(self)
         description = "Enhanced inventory system with sidebar categories, item levels, and quality borders.",
         searchTerms = "bags inventory items slots reagent categories columns sidebar",
         pages = { "Bags", "Bank" },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == "Bank" then
+        buildPage = function(page, hostFrame, yOffset)
+            if page == "Bank" then
                 local okB, resB = pcall(function()
                     local W = CludesUI.Widgets
-                    local y = yOffset
-                    local h, _
+                    local posY = yOffset
+                    local hgt, _
                     -- The Bags module namespace: its bank display resolver
                     local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
 
@@ -53,13 +53,13 @@ initFrame:SetScript("OnEvent", function(self)
 
                     -- Info label
                     do
-                        local fontPath = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
-                        local infoFrame = CreateFrame("Frame", nil, parent)
-                        infoFrame:SetSize(parent:GetWidth(), 34)
-                        infoFrame:SetPoint("TOP", parent, "TOP", 0, y - 10)
+                        local fontFile = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
+                        local infoFrame = CreateFrame("Frame", nil, hostFrame)
+                        infoFrame:SetSize(hostFrame:GetWidth(), 34)
+                        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, posY - 10)
                         infoFrame._isSpacer = true
                         local line1 = infoFrame:CreateFontString(nil, "OVERLAY")
-                        line1:SetFont(fontPath, 15, "")
+                        line1:SetFont(fontFile, 15, "")
                         line1:SetTextColor(1, 1, 1, 0.75)
                         line1:SetPoint("TOP", infoFrame, "TOP", 0, 0)
                         line1:SetJustifyH("CENTER")
@@ -69,7 +69,7 @@ initFrame:SetScript("OnEvent", function(self)
                             )
                         )
                         local line2 = infoFrame:CreateFontString(nil, "OVERLAY")
-                        line2:SetFont(fontPath, 15, "")
+                        line2:SetFont(fontFile, 15, "")
                         line2:SetTextColor(1, 1, 1, 0.75)
                         line2:SetPoint("TOP", line1, "BOTTOM", 0, -2)
                         line2:SetJustifyH("CENTER")
@@ -78,28 +78,28 @@ initFrame:SetScript("OnEvent", function(self)
                                 "Window scale, icon zoom and item level settings are shared with the Bags page."
                             )
                         )
-                        y = y - 50
+                        posY = posY - 50
                     end
 
-                    _, h = W:SectionHeader(parent, "DISPLAY", y)
-                    y = y - h
+                    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+                    posY = posY - hgt
 
                     -- Bank Display: a view over bankListView + bankCompactView (List wins when both are set)
-                    _, h = W:DualRow(parent, y, {
+                    _, hgt = W:DualRow(hostFrame, posY, {
                         type = "segmented",
                         text = "Bank Display",
                         tooltip = "How items are arranged in the bank window.",
                         values = { grid = "Grid", list = "List", compact = "Compact" },
                         order = { "grid", "list", "compact" },
                         getValue = function()
-                            return BagsNS.BankDisplayMode(db.profile)
+                            return BagsNS.BankDisplayMode(saved.profile)
                         end,
-                        setValue = function(v)
-                            if v == BagsNS.BankDisplayMode(db.profile) then
+                        setValue = function(val)
+                            if val == BagsNS.BankDisplayMode(saved.profile) then
                                 return
                             end
-                            db.profile.bankListView = (v == "list")
-                            db.profile.bankCompactView = (v == "compact")
+                            saved.profile.bankListView = (val == "list")
+                            saved.profile.bankCompactView = (val == "compact")
                             -- Bags page rows depend on this; rebuild it on next visit
                             CludesUI:InvalidateModulePageCache("CludesUIBags")
                             -- Hide Empty Slots When Grouped greys in List View
@@ -113,21 +113,21 @@ initFrame:SetScript("OnEvent", function(self)
                             })
                         end,
                     }, CludesUI.BlankRowCfg())
-                    y = y - h
+                    posY = posY - hgt
 
-                    _, h = W:SectionHeader(parent, "GROUPING", y)
-                    y = y - h
+                    _, hgt = W:SectionHeader(hostFrame, "GROUPING", posY)
+                    posY = posY - hgt
 
                     -- Nest by Expansion | Group by Category
-                    _, h = W:DualRow(parent, y, {
+                    _, hgt = W:DualRow(hostFrame, posY, {
                         type = "toggle",
                         text = "Nest by Expansion",
                         tooltip = "In the OneBank and OneWarbank views, split the grid under expansion headers, newest first. Per-tab views are unaffected.",
                         getValue = function()
-                            return db.profile.bankNestByExpansion == true
+                            return saved.profile.bankNestByExpansion == true
                         end,
-                        setValue = function(v)
-                            db.profile.bankNestByExpansion = v and true or false
+                        setValue = function(val)
+                            saved.profile.bankNestByExpansion = val and true or false
                             RefreshBank()
                             CludesUI:RefreshPage()
                         end,
@@ -136,28 +136,28 @@ initFrame:SetScript("OnEvent", function(self)
                         text = "Group by Category",
                         tooltip = "Split items by category -- Armor, Consumables, Professions and so on -- using the same category list, order and renames as the All Items bag view. Nests inside the expansion headers when Nest by Expansion is also on. Categories that split further do so automatically: gear by equipment slot, Professions and Trade Goods by profession and material type.",
                         getValue = function()
-                            return db.profile.bankGroupByCategory == true
+                            return saved.profile.bankGroupByCategory == true
                         end,
-                        setValue = function(v)
-                            db.profile.bankGroupByCategory = v and true or false
+                        setValue = function(val)
+                            saved.profile.bankGroupByCategory = val and true or false
                             RefreshBank()
                             CludesUI:RefreshPage()
                         end,
                     })
-                    y = y - h
+                    posY = posY - hgt
 
-                    _, h = W:SectionHeader(parent, "SIDEBAR", y)
-                    y = y - h
+                    _, hgt = W:SectionHeader(hostFrame, "SIDEBAR", posY)
+                    posY = posY - hgt
 
-                    _, h = W:DualRow(parent, y, {
+                    _, hgt = W:DualRow(hostFrame, posY, {
                         type = "toggle",
                         text = "Category Sidebar",
                         tooltip = "List item categories in the bank sidebar the way the bags sidebar does -- groups such as The Armory with Weapons and Armor under them. Selecting one filters the grid to that category. Categories that split further list their parts as a third level while selected: Professions by profession, Armor by equipment slot, Trade Goods by material. Spans your character bank and warband together, so a category shows everything you own.",
                         getValue = function()
-                            return db.profile.bankCategorySidebar == true
+                            return saved.profile.bankCategorySidebar == true
                         end,
-                        setValue = function(v)
-                            db.profile.bankCategorySidebar = v and true or false
+                        setValue = function(val)
+                            saved.profile.bankCategorySidebar = val and true or false
                             RefreshBank()
                             CludesUI:RefreshPage()
                         end,
@@ -166,60 +166,62 @@ initFrame:SetScript("OnEvent", function(self)
                         text = "Hide Bank Tabs in Sidebar",
                         tooltip = "Drop the individual Tab 1 / Tab 2 / Warbank Tab entries once the category list is doing the navigating. The consolidated views stay. Note that right-clicking a tab entry is the only way to rename a tab or change its deposit filters, so leave this off if you still need that.",
                         disabled = function()
-                            return db.profile.bankCategorySidebar ~= true
+                            return saved.profile.bankCategorySidebar ~= true
                         end,
                         disabledTooltip = "Turn on Category Sidebar first, or the sidebar would have nothing left to navigate with.",
                         getValue = function()
-                            return db.profile.bankHideTabsInSidebar == true
+                            return saved.profile.bankHideTabsInSidebar == true
                         end,
-                        setValue = function(v)
-                            db.profile.bankHideTabsInSidebar = v and true or false
+                        setValue = function(val)
+                            saved.profile.bankHideTabsInSidebar = val and true or false
                             RefreshBank()
                         end,
                     })
-                    y = y - h
+                    posY = posY - hgt
 
-                    _, h = W:DualRow(parent, y, {
+                    _, hgt = W:DualRow(hostFrame, posY, {
                         type = "toggle",
                         text = "Hide Empty Slots When Grouped",
                         tooltip = "While either grouping toggle is on, drop the trailing block of empty slots so the view only shows items. Turn this off to keep the free slots visible for depositing.",
                         disabled = function()
-                            return db.profile.bankListView == true
-                                or not (db.profile.bankNestByExpansion or db.profile.bankGroupByCategory)
+                            return saved.profile.bankListView == true
+                                or not (
+                                    saved.profile.bankNestByExpansion or saved.profile.bankGroupByCategory
+                                )
                         end,
                         disabledTooltip = function()
-                            if db.profile.bankListView == true then
+                            if saved.profile.bankListView == true then
                                 return "The List View never shows empty slots."
                             end
                             return "Turn on Nest by Expansion or Group by Category first; the flat view has nowhere to move empty slots to."
                         end,
                         rawTooltip = true,
                         getValue = function()
-                            return db.profile.bankHideEmptyWhenNested == true
+                            return saved.profile.bankHideEmptyWhenNested == true
                         end,
-                        setValue = function(v)
-                            db.profile.bankHideEmptyWhenNested = v and true or false
+                        setValue = function(val)
+                            saved.profile.bankHideEmptyWhenNested = val and true or false
                             RefreshBank()
                         end,
                     }, CludesUI.BlankRowCfg())
-                    y = y - h
+                    posY = posY - hgt
 
                     -- auto deposit/withdraw (not on wow forever: no warband bank there).
                     -- account-wide, so a shared profile never moves anyone's gold
                     local AutoGold = BagsNS and BagsNS.AutoGold
                     if AutoGold then
-                        _, h = W:SectionHeader(parent, "WARBAND GOLD", y)
-                        y = y - h
+                        _, hgt = W:SectionHeader(hostFrame, "WARBAND GOLD", posY)
+                        posY = posY - hgt
                         local goldRow
-                        goldRow, h = W:DualRow(parent, y, {
+                        goldRow, hgt = W:DualRow(hostFrame, posY, {
                             type = "toggle",
                             text = "Auto Deposit/Withdraw",
                             tooltip = "When you open the bank, gold moves between this character and your warband bank so the character keeps the Amount. Gold above it is deposited, and gold missing is withdrawn, as far as the warband bank holds it. Applies to all characters.",
                             getValue = function()
                                 return AutoGold.Enabled()
                             end,
-                            setValue = function(v)
-                                AutoGold.Set("bagAutoGold", v and true or nil)
+                            setValue = function(val)
+                                AutoGold.Set("bagAutoGold", val and true or nil)
                                 CludesUI:RefreshPage()
                             end,
                         }, {
@@ -238,13 +240,13 @@ initFrame:SetScript("OnEvent", function(self)
                                 local g = AutoGold.Target()
                                 return g and tostring(g) or ""
                             end,
-                            setValue = function(text)
+                            setValue = function(textValue)
                                 -- Digits only, so 5,000 and 5000g read as 5000; empty clears it.
-                                local g = tonumber((text or ""):gsub("%D", ""), 10)
+                                local g = tonumber((textValue or ""):gsub("%D", ""), 10)
                                 AutoGold.Set("bagAutoGoldAmount", g and math.min(g, 9999999) or nil)
                             end,
                         })
-                        y = y - h
+                        posY = posY - hgt
                         if not CludesUI._prebuilding then
                             CludesUI.BuildInlineCog(goldRow._leftRegion, {
                                 title = "Auto Deposit/Withdraw",
@@ -260,8 +262,8 @@ initFrame:SetScript("OnEvent", function(self)
                                         get = function()
                                             return AutoGold.ChatEnabled()
                                         end,
-                                        set = function(v)
-                                            AutoGold.Set("bagAutoGoldChat", v and true or nil)
+                                        set = function(val)
+                                            AutoGold.Set("bagAutoGoldChat", val and true or nil)
                                         end,
                                     },
                                 },
@@ -272,9 +274,9 @@ initFrame:SetScript("OnEvent", function(self)
                     -- offline bank. account-wide, like the data it saves
                     local Offline = BagsNS and BagsNS.Offline
                     if Offline then
-                        _, h = W:SectionHeader(parent, "OFFLINE BANK", y)
-                        y = y - h
-                        _, h = W:DualRow(parent, y, {
+                        _, hgt = W:SectionHeader(hostFrame, "OFFLINE BANK", posY)
+                        posY = posY - hgt
+                        _, hgt = W:DualRow(hostFrame, posY, {
                             type = "toggle",
                             text = "Offline Bank",
                             tooltip = CludesUI.IS_FOREVER
@@ -283,8 +285,8 @@ initFrame:SetScript("OnEvent", function(self)
                             getValue = function()
                                 return Offline.Enabled()
                             end,
-                            setValue = function(v)
-                                Offline.Set("bagOfflineBank", v)
+                            setValue = function(val)
+                                Offline.Set("bagOfflineBank", val)
                             end,
                         }, {
                             type = "toggle",
@@ -295,16 +297,16 @@ initFrame:SetScript("OnEvent", function(self)
                             getValue = function()
                                 return Offline.CountsEnabled()
                             end,
-                            setValue = function(v)
-                                Offline.Set("bagTooltipCounts", v)
+                            setValue = function(val)
+                                Offline.Set("bagTooltipCounts", val)
                             end,
                         })
-                        y = y - h
+                        posY = posY - hgt
                     end
 
-                    _, h = W:Spacer(parent, y, 20)
-                    y = y - h
-                    return math.abs(y)
+                    _, hgt = W:Spacer(hostFrame, posY, 20)
+                    posY = posY - hgt
+                    return math.abs(posY)
                 end) -- end pcall
                 if not okB then
                     print("|cffff0000[Bank Options ERROR]|r " .. tostring(resB))
@@ -312,15 +314,15 @@ initFrame:SetScript("OnEvent", function(self)
                 return okB and resB or 0
             end
 
-            if pageName ~= "Bags" then
+            if page ~= "Bags" then
                 return
             end
 
-            local ok, result = pcall(function()
+            local success, result = pcall(function()
                 local W = CludesUI.Widgets
-                local PP = CludesUI.PanelPP
-                local y = yOffset
-                local h, _
+                local Pix = CludesUI.PanelPP
+                local posY = yOffset
+                local hgt, _
 
                 local function ResetAndRefreshBagLayout()
                     local bags = _G.CUI_Bags
@@ -357,18 +359,18 @@ initFrame:SetScript("OnEvent", function(self)
                 local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
                 -- Bag Style value: "grid" | "list" | "compact" (any other saved value reads as Grid)
                 local function BagDisplayValue()
-                    local m = db.profile.bagDisplayMode
+                    local m = saved.profile.bagDisplayMode
                     return (m == "list" or m == "compact") and m or "grid"
                 end
                 -- The Display sections are only built while the bags or the bank use
                 -- that display: Grid and Compact share one, List has its own.
                 local bagList = BagDisplayValue() == "list"
-                local anyGrid = not bagList or db.profile.bankListView ~= true
-                local anyList = bagList or db.profile.bankListView == true
+                local anyGrid = not bagList or saved.profile.bankListView ~= true
+                local anyList = bagList or saved.profile.bankListView == true
                 -- Slot Size, Slot Spacing and Slot Background only draw in Grid and
                 -- Compact: they grey out while the bags and the bank both use List
                 local function NoSlotGrid()
-                    return BagDisplayValue() == "list" and BagsNS.BankDisplayMode(db.profile) == "list"
+                    return BagDisplayValue() == "list" and BagsNS.BankDisplayMode(saved.profile) == "list"
                 end
                 local NO_SLOT_GRID =
                     "This option requires the Grid or Compact display in the bags or the bank"
@@ -376,8 +378,8 @@ initFrame:SetScript("OnEvent", function(self)
                 ---------------------------------------------------------------------------
                 --  LAYOUT
                 ---------------------------------------------------------------------------
-                _, h = W:SectionHeader(parent, "LAYOUT", y)
-                y = y - h
+                _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+                posY = posY - hgt
 
                 -- Bag Style | Default Selected Bag | Window Scale | Frame Strata |
                 -- Slot Size | Slot Spacing | Auto-Size to Fit (not in List) |
@@ -391,11 +393,11 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return BagDisplayValue()
                         end,
-                        setValue = function(v)
-                            if v == BagDisplayValue() then
+                        setValue = function(val)
+                            if val == BagDisplayValue() then
                                 return
                             end
-                            db.profile.bagDisplayMode = v
+                            saved.profile.bagDisplayMode = val
                             CludesUI:RefreshPage(true)
                             CludesUI:ShowConfirmPopup({
                                 title = "Reload Required",
@@ -413,14 +415,14 @@ initFrame:SetScript("OnEvent", function(self)
                         values = { all = "All Items", onebag = "OneBag", multibag = "MultiBag" },
                         order = { "all", "onebag", "multibag" },
                         getValue = function()
-                            local t = db.profile.bagDefaultBagType
+                            local t = saved.profile.bagDefaultBagType
                             if t == "all" or t == "onebag" or t == "multibag" then
                                 return t
                             end
-                            return db.profile.bagDefaultOneBag and "onebag" or "all"
+                            return saved.profile.bagDefaultOneBag and "onebag" or "all"
                         end,
-                        setValue = function(v)
-                            db.profile.bagDefaultBagType = v
+                        setValue = function(val)
+                            saved.profile.bagDefaultBagType = val
                             if _G.CUI_Bags and _G.CUI_Bags:IsVisible() and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
                             end
@@ -434,11 +436,11 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 150,
                         step = 5,
                         getValue = function()
-                            return math.floor((db.profile.bagScale or 1) * 100 + 0.5)
+                            return math.floor((saved.profile.bagScale or 1) * 100 + 0.5)
                         end,
-                        setValue = function(v)
-                            db.profile.bagScale = v / 100
-                            local s = v / 100
+                        setValue = function(val)
+                            saved.profile.bagScale = val / 100
+                            local s = val / 100
                             if _G.CUI_Bags then
                                 _G.CUI_Bags:SetScale(s)
                             end
@@ -464,8 +466,8 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return BagsNS.BagFrameStrata()
                         end,
-                        setValue = function(v)
-                            db.profile.bagFrameStrata = v
+                        setValue = function(val)
+                            saved.profile.bagFrameStrata = val
                             if _G.CUI_Bags and _G.CUI_Bags.ApplyWindowLayering then
                                 _G.CUI_Bags:ApplyWindowLayering()
                             end
@@ -481,10 +483,10 @@ initFrame:SetScript("OnEvent", function(self)
                         disabled = NoSlotGrid,
                         disabledTooltip = NO_SLOT_GRID,
                         getValue = function()
-                            return db.profile.bagSlotSize or 34
+                            return saved.profile.bagSlotSize or 34
                         end,
-                        setValue = function(v)
-                            db.profile.bagSlotSize = v
+                        setValue = function(val)
+                            saved.profile.bagSlotSize = val
                             RelayoutSoon()
                         end,
                     },
@@ -498,10 +500,10 @@ initFrame:SetScript("OnEvent", function(self)
                         disabled = NoSlotGrid,
                         disabledTooltip = NO_SLOT_GRID,
                         getValue = function()
-                            return db.profile.bagSlotSpacing or 4
+                            return saved.profile.bagSlotSpacing or 4
                         end,
-                        setValue = function(v)
-                            db.profile.bagSlotSpacing = v
+                        setValue = function(val)
+                            saved.profile.bagSlotSpacing = val
                             RelayoutSoon()
                         end,
                     },
@@ -512,14 +514,14 @@ initFrame:SetScript("OnEvent", function(self)
                         type = "toggle",
                         text = "Auto-Size to Fit",
                         -- WoW Forever and the Compact display fit the content, with no normal-size floor
-                        tooltip = (CludesUI.IS_FOREVER or db.profile.bagDisplayMode == "compact")
+                        tooltip = (CludesUI.IS_FOREVER or saved.profile.bagDisplayMode == "compact")
                                 and "Grow the bag window (more columns + taller, keeping its shape) so all of the active tab's slots are visible without scrolling. It only grows while open -- switching to a bigger tab enlarges it, smaller tabs keep the size -- and resets when you close the bags."
                             or "Grow the bag window (more columns + taller, keeping its shape) so all of the active tab's slots are visible without scrolling. It only grows while open -- switching to a bigger tab enlarges it, smaller tabs keep the size -- and resets when you close the bags. Never smaller than your normal size.",
                         getValue = function()
-                            return db.profile.bagAutoSize == true
+                            return saved.profile.bagAutoSize == true
                         end,
-                        setValue = function(v)
-                            db.profile.bagAutoSize = v
+                        setValue = function(val)
+                            saved.profile.bagAutoSize = val
                             ResetAndRefreshBagLayout()
                         end,
                     }
@@ -540,14 +542,14 @@ initFrame:SetScript("OnEvent", function(self)
                     hasAlpha = true,
                     tooltip = "The tint over the bag and bank window backgrounds. Its opacity sets how strong the tint is.",
                     getValue = function()
-                        local c = db.profile.bagBgColor
+                        local c = saved.profile.bagBgColor
                         if c then
                             return c.r, c.g, c.b, c.a or 0.25
                         end
                         return 0, 0, 0, 0.25
                     end,
                     setValue = function(r, g, b, a)
-                        db.profile.bagBgColor = { r = r, g = g, b = b, a = a }
+                        saved.profile.bagBgColor = { r = r, g = g, b = b, a = a }
                         ApplyBackgrounds()
                     end,
                 }
@@ -559,10 +561,10 @@ initFrame:SetScript("OnEvent", function(self)
                     step = 5,
                     tooltip = "How see-through the bag and bank window backgrounds are. Items, the header and the sidebar stay as they are.",
                     getValue = function()
-                        return db.profile.bagBgOpacity or 100
+                        return saved.profile.bagBgOpacity or 100
                     end,
-                    setValue = function(v)
-                        db.profile.bagBgOpacity = v
+                    setValue = function(val)
+                        saved.profile.bagBgOpacity = val
                         ApplyBackgrounds()
                     end,
                 }
@@ -574,40 +576,45 @@ initFrame:SetScript("OnEvent", function(self)
                     disabled = NoSlotGrid,
                     disabledTooltip = NO_SLOT_GRID,
                     getValue = function()
-                        local c = db.profile.bagSlotBgColor
+                        local c = saved.profile.bagSlotBgColor
                         if c then
                             return c.r, c.g, c.b, c.a or 1
                         end
                         return 1, 1, 1, 1
                     end,
                     setValue = function(r, g, b, a)
-                        db.profile.bagSlotBgColor = { r = r, g = g, b = b, a = a }
+                        saved.profile.bagSlotBgColor = { r = r, g = g, b = b, a = a }
                         -- the picker fires every frame while dragging: retint, don't re-lay out
                         BagsNS.RetintSlotBackgrounds()
                     end,
                 }
                 for i = 1, #layoutSlots, 2 do
-                    _, h = W:DualRow(parent, y, layoutSlots[i], layoutSlots[i + 1] or CludesUI.BlankRowCfg())
-                    y = y - h
+                    _, hgt = W:DualRow(
+                        hostFrame,
+                        posY,
+                        layoutSlots[i],
+                        layoutSlots[i + 1] or CludesUI.BlankRowCfg()
+                    )
+                    posY = posY - hgt
                 end
 
                 ---------------------------------------------------------------------------
                 --  CATEGORIES
                 ---------------------------------------------------------------------------
-                _, h = W:SectionHeader(parent, "CATEGORIES", y)
-                y = y - h
+                _, hgt = W:SectionHeader(hostFrame, "CATEGORIES", posY)
+                posY = posY - hgt
 
                 -- Show Pinned Items | Show Recent Items (each with inline cog for OneBag)
                 local pinRecRow
-                pinRecRow, h = W:DualRow(parent, y, {
+                pinRecRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Show Pinned Items",
                     tooltip = "Show the Pinned Items category in the sidebar and content grid.",
                     getValue = function()
-                        return db.profile.bagShowPinnedItems ~= false
+                        return saved.profile.bagShowPinnedItems ~= false
                     end,
-                    setValue = function(v)
-                        db.profile.bagShowPinnedItems = v
+                    setValue = function(val)
+                        saved.profile.bagShowPinnedItems = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
@@ -618,24 +625,24 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Show Recent Items",
                     tooltip = "Show the Recent Items category in the sidebar and content grid for newly acquired items.",
                     getValue = function()
-                        return db.profile.bagShowRecentItems ~= false
+                        return saved.profile.bagShowRecentItems ~= false
                     end,
-                    setValue = function(v)
-                        db.profile.bagShowRecentItems = v
+                    setValue = function(val)
+                        saved.profile.bagShowRecentItems = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
                         CludesUI:RefreshPage()
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Inline cog for Show Pinned Items
                 if not CludesUI._prebuilding then
                     CludesUI.BuildInlineCog(pinRecRow._leftRegion, {
                         chain = false,
                         disabled = function()
-                            return db.profile.bagShowPinnedItems == false
+                            return saved.profile.bagShowPinnedItems == false
                         end,
                         disabledTooltip = "Show Pinned Items",
                         title = "Pinned Items Options",
@@ -644,10 +651,10 @@ initFrame:SetScript("OnEvent", function(self)
                                 type = "toggle",
                                 label = "Show in OneBag/MultiBag",
                                 get = function()
-                                    return db.profile.bagPinnedInOneBag ~= false
+                                    return saved.profile.bagPinnedInOneBag ~= false
                                 end,
-                                set = function(v)
-                                    db.profile.bagPinnedInOneBag = v
+                                set = function(val)
+                                    saved.profile.bagPinnedInOneBag = val
                                     if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                         _G.CUI_Bags:RefreshInventory()
                                     end
@@ -658,10 +665,10 @@ initFrame:SetScript("OnEvent", function(self)
                                 label = "Hide Items in Their Categories",
                                 tooltip = "Pinned items show only in Pinned Items, not in their categories or Recent Items.",
                                 get = function()
-                                    return db.profile.bagHidePinnedInCategories == true
+                                    return saved.profile.bagHidePinnedInCategories == true
                                 end,
-                                set = function(v)
-                                    db.profile.bagHidePinnedInCategories = v
+                                set = function(val)
+                                    saved.profile.bagHidePinnedInCategories = val
                                     if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                         _G.CUI_Bags:RefreshInventory()
                                     end
@@ -672,14 +679,14 @@ initFrame:SetScript("OnEvent", function(self)
                                 label = "Dim Items in OneBag/MultiBag",
                                 tooltip = "Dims pinned items in their bag slots, since they also show in Pinned Items.",
                                 disabled = function()
-                                    return db.profile.bagPinnedInOneBag == false
+                                    return saved.profile.bagPinnedInOneBag == false
                                 end,
                                 disabledTooltip = "Show in OneBag/MultiBag",
                                 get = function()
-                                    return db.profile.bagDimPinnedInOneBag == true
+                                    return saved.profile.bagDimPinnedInOneBag == true
                                 end,
-                                set = function(v)
-                                    db.profile.bagDimPinnedInOneBag = v
+                                set = function(val)
+                                    saved.profile.bagDimPinnedInOneBag = val
                                     if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                         _G.CUI_Bags:RefreshInventory()
                                     end
@@ -693,11 +700,11 @@ initFrame:SetScript("OnEvent", function(self)
                                 get = function()
                                     return not (CludesUIDB and CludesUIDB.bagPinsPerCharacter == false)
                                 end,
-                                set = function(v)
+                                set = function(val)
                                     if not CludesUIDB then
                                         return
                                     end
-                                    if v then
+                                    if val then
                                         CludesUIDB.bagPinsPerCharacter = nil
                                     else
                                         CludesUIDB.bagPinsPerCharacter = false
@@ -716,7 +723,7 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUI.BuildInlineCog(pinRecRow._rightRegion, {
                         chain = false,
                         disabled = function()
-                            return db.profile.bagShowRecentItems == false
+                            return saved.profile.bagShowRecentItems == false
                         end,
                         disabledTooltip = "Show Recent Items",
                         title = "Recent Items Options",
@@ -725,10 +732,10 @@ initFrame:SetScript("OnEvent", function(self)
                                 type = "toggle",
                                 label = "Show in OneBag/MultiBag",
                                 get = function()
-                                    return db.profile.bagRecentInOneBag == true
+                                    return saved.profile.bagRecentInOneBag == true
                                 end,
-                                set = function(v)
-                                    db.profile.bagRecentInOneBag = v
+                                set = function(val)
+                                    saved.profile.bagRecentInOneBag = val
                                     if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                         _G.CUI_Bags:RefreshInventory()
                                     end
@@ -738,10 +745,10 @@ initFrame:SetScript("OnEvent", function(self)
                                 type = "toggle",
                                 label = "Show Clear Button",
                                 get = function()
-                                    return db.profile.bagShowRecentClear == true
+                                    return saved.profile.bagShowRecentClear == true
                                 end,
-                                set = function(v)
-                                    db.profile.bagShowRecentClear = v
+                                set = function(val)
+                                    saved.profile.bagShowRecentClear = val
                                     if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                         _G.CUI_Bags:RefreshInventory()
                                     end
@@ -753,21 +760,21 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Enabled Categories | Hide Categories with 0 Items
                 local catRow
-                catRow, h = W:DualRow(parent, y, { type = "label", text = "Enabled Categories" }, {
+                catRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Enabled Categories" }, {
                     type = "toggle",
                     text = "Hide Categories with 0 Items",
                     tooltip = "Hide sidebar categories that have no items in them.",
                     getValue = function()
-                        return db.profile.bagHideEmptyCategories ~= false
+                        return saved.profile.bagHideEmptyCategories ~= false
                     end,
-                    setValue = function(v)
-                        db.profile.bagHideEmptyCategories = v
+                    setValue = function(val)
+                        saved.profile.bagHideEmptyCategories = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Enabled Categories dropdown (left side)
                 if not CludesUI._prebuilding then
@@ -777,19 +784,20 @@ initFrame:SetScript("OnEvent", function(self)
                         local catItems = {}
                         if _G.CUI_CategoryManager then
                             local cats = _G.CUI_CategoryManager:GetCategories()
-                            for ci, cat in ipairs(cats) do
+                            for ci, category in ipairs(cats) do
                                 -- isEquipSet excluded: per-character keys, governed by the split toggle instead
                                 -- isVirtual excluded: runtime-only, its addon owns it (a saved key would outlive it)
                                 if
-                                    not cat.isCatchAll
-                                    and not cat.isPinned
-                                    and not cat.isRecent
-                                    and not cat.isReagentBag
-                                    and not cat.isSpecialBag
-                                    and not cat.isEquipSet
-                                    and not cat.isVirtual
+                                    not category.isCatchAll
+                                    and not category.isPinned
+                                    and not category.isRecent
+                                    and not category.isReagentBag
+                                    and not category.isSpecialBag
+                                    and not category.isEquipSet
+                                    and not category.isVirtual
                                 then
-                                    catItems[#catItems + 1] = { key = cat._defaultName, label = cat.name }
+                                    catItems[#catItems + 1] =
+                                        { key = category._defaultName, label = category.name }
                                 end
                             end
                         end
@@ -804,17 +812,17 @@ initFrame:SetScript("OnEvent", function(self)
                             leftRgn:GetFrameLevel() + 2,
                             BuildCatItems,
                             function(defName)
-                                local dc = db.profile.bagDisabledCategories
+                                local dc = saved.profile.bagDisabledCategories
                                 return not (dc and dc[defName])
                             end,
-                            function(defName, v)
-                                if not db.profile.bagDisabledCategories then
-                                    db.profile.bagDisabledCategories = {}
+                            function(defName, val)
+                                if not saved.profile.bagDisabledCategories then
+                                    saved.profile.bagDisabledCategories = {}
                                 end
-                                if v then
-                                    db.profile.bagDisabledCategories[defName] = nil
+                                if val then
+                                    saved.profile.bagDisabledCategories[defName] = nil
                                 else
-                                    db.profile.bagDisabledCategories[defName] = true
+                                    saved.profile.bagDisabledCategories[defName] = true
                                 end
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     C_Timer.After(0.1, function()
@@ -829,7 +837,7 @@ initFrame:SetScript("OnEvent", function(self)
                             10,
                             true
                         )
-                        PP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
+                        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
                         leftRgn._control = cbDD
                         leftRgn._lastInline = nil
                         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
@@ -837,15 +845,15 @@ initFrame:SetScript("OnEvent", function(self)
                 end
 
                 -- Hide 'Add Category' Tab | Split Set Gear by Set
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Hide 'Add Category' Tab",
                     tooltip = "Hides the Add Category button at the bottom of the bag sidebar.",
                     getValue = function()
-                        return db.profile.bagHideAddCategory or false
+                        return saved.profile.bagHideAddCategory or false
                     end,
-                    setValue = function(v)
-                        db.profile.bagHideAddCategory = v
+                    setValue = function(val)
+                        saved.profile.bagHideAddCategory = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
@@ -855,10 +863,10 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Split Set Gear by Set",
                     tooltip = "Show one sub-category per equipment set (named after the set) nested under Item Set Gear. Gear in several sets goes to the first one.",
                     getValue = function()
-                        return db.profile.bagSplitSetGearBySet == true
+                        return saved.profile.bagSplitSetGearBySet == true
                     end,
-                    setValue = function(v)
-                        db.profile.bagSplitSetGearBySet = v
+                    setValue = function(val)
+                        saved.profile.bagSplitSetGearBySet = val
                         -- Re-resolves the selected view by stable key (indices shift)
                         if _G.CUI_Bags and _G.CUI_Bags.InvalidateSetCategories then
                             _G.CUI_Bags.InvalidateSetCategories()
@@ -873,10 +881,10 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Category Title Size (also on the Fonts page) | Hide Sidebar Icons When Collapsed
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "slider",
                     text = "Category Title Size",
                     min = 8,
@@ -884,10 +892,10 @@ initFrame:SetScript("OnEvent", function(self)
                     step = 1,
                     tooltip = "Font size for the category titles above your items.",
                     getValue = function()
-                        return db.profile.bagCatTitleSize or 11
+                        return saved.profile.bagCatTitleSize or 11
                     end,
-                    setValue = function(v)
-                        db.profile.bagCatTitleSize = v
+                    setValue = function(val)
+                        saved.profile.bagCatTitleSize = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
@@ -897,23 +905,23 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Hide Sidebar Icons When Collapsed",
                     tooltip = "Hides a collapsed sidebar; its expand arrow sits by the Inventory title.",
                     getValue = function()
-                        return db.profile.bagHideSidebarIconsCollapsed == true
+                        return saved.profile.bagHideSidebarIconsCollapsed == true
                     end,
-                    setValue = function(v)
-                        db.profile.bagHideSidebarIconsCollapsed = v and true or false
+                    setValue = function(val)
+                        saved.profile.bagHideSidebarIconsCollapsed = val and true or false
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 if anyGrid then
                     ---------------------------------------------------------------------------
                     --  DISPLAY (GRID / COMPACT)
                     ---------------------------------------------------------------------------
-                    _, h = W:SectionHeader(parent, "DISPLAY (GRID / COMPACT)", y)
-                    y = y - h
+                    _, hgt = W:SectionHeader(hostFrame, "DISPLAY (GRID / COMPACT)", posY)
+                    posY = posY - hgt
 
                     -- Show Item Level: Never / Default Colors / Custom Colored (+ the Gear
                     -- Track Rank cog and an inline swatch left of it, live only under
@@ -921,27 +929,27 @@ initFrame:SetScript("OnEvent", function(self)
                     -- showItemlevelInBags (false = Never) and itemlevelUseCustomColor
                     -- (Custom Colored); viewing the page writes nothing.
                     local function IlvlMode()
-                        if db.profile.showItemlevelInBags == false then
+                        if saved.profile.showItemlevelInBags == false then
                             return "never"
                         end
-                        return db.profile.itemlevelUseCustomColor and "custom" or "default"
+                        return saved.profile.itemlevelUseCustomColor and "custom" or "default"
                     end
                     local ilvlRow
-                    ilvlRow, h = W:DualRow(parent, y, {
+                    ilvlRow, hgt = W:DualRow(hostFrame, posY, {
                         type = "dropdown",
                         text = "Show Item Level",
                         tooltip = "Display item levels on equipment items in the inventory, in their usual colors or in one color of your choice.",
                         values = { never = "Never", default = "Default Colors", custom = "Custom Colored" },
                         order = { "never", "default", "custom" },
                         getValue = IlvlMode,
-                        setValue = function(v)
-                            local p = db.profile
-                            p.showItemlevelInBags = v ~= "never"
-                            if v ~= "never" then
-                                p.itemlevelUseCustomColor = v == "custom"
+                        setValue = function(val)
+                            local p = saved.profile
+                            p.showItemlevelInBags = val ~= "never"
+                            if val ~= "never" then
+                                p.itemlevelUseCustomColor = val == "custom"
                             end
                             -- The first Custom Colored pick starts from white.
-                            if v == "custom" and not p.itemlevelCustomColor then
+                            if val == "custom" and not p.itemlevelCustomColor then
                                 p.itemlevelCustomColor = { r = 1, g = 1, b = 1 }
                             end
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
@@ -957,10 +965,10 @@ initFrame:SetScript("OnEvent", function(self)
                         step = 1,
                         tooltip = "Font size for item level numbers on equipment items.",
                         getValue = function()
-                            return db.profile.itemlevelFontSize or 12
+                            return saved.profile.itemlevelFontSize or 12
                         end,
-                        setValue = function(v)
-                            db.profile.itemlevelFontSize = v
+                        setValue = function(val)
+                            saved.profile.itemlevelFontSize = val
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then
                                 _G.CUI_Bags:RefreshTextSizes()
                             end
@@ -970,16 +978,16 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                         end,
                     })
-                    y = y - h
+                    posY = posY - hgt
 
                     -- Show Item Level's inlines: the cog nearest the control (Show Gear
                     -- Track Rank, live while item levels show: the rank only renders
                     -- beside them), then the Custom Colored swatch left of it.
                     if not CludesUI._prebuilding then
-                        local rgn = ilvlRow._leftRegion
-                        CludesUI.BuildInlineCog(rgn, {
+                        local region = ilvlRow._leftRegion
+                        CludesUI.BuildInlineCog(region, {
                             disabled = function()
-                                return db.profile.showItemlevelInBags == false
+                                return saved.profile.showItemlevelInBags == false
                             end,
                             disabledTooltip = "Show Item Level",
                             title = "Item Level Options",
@@ -988,10 +996,10 @@ initFrame:SetScript("OnEvent", function(self)
                                     type = "toggle",
                                     label = "Show Gear Track Rank",
                                     get = function()
-                                        return db.profile.bagShowTrackRank or false
+                                        return saved.profile.bagShowTrackRank or false
                                     end,
-                                    set = function(v)
-                                        db.profile.bagShowTrackRank = v
+                                    set = function(val)
+                                        saved.profile.bagShowTrackRank = val
                                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                             _G.CUI_Bags:RefreshInventory()
                                         end
@@ -1000,18 +1008,18 @@ initFrame:SetScript("OnEvent", function(self)
                             },
                         })
 
-                        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                            rgn,
-                            rgn:GetFrameLevel() + 5,
+                        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                            region,
+                            region:GetFrameLevel() + 5,
                             function()
-                                local c = db.profile.itemlevelCustomColor
+                                local c = saved.profile.itemlevelCustomColor
                                 if c then
                                     return c.r, c.g, c.b, 1
                                 end
                                 return 1, 1, 1, 1
                             end,
                             function(r, g, b)
-                                db.profile.itemlevelCustomColor = { r = r, g = g, b = b }
+                                saved.profile.itemlevelCustomColor = { r = r, g = g, b = b }
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1019,15 +1027,15 @@ initFrame:SetScript("OnEvent", function(self)
                             false,
                             20
                         )
-                        swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                        rgn._lastInline = swatch
-                        local swatchBlock = CreateFrame("Frame", nil, swatch)
+                        colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                        region._lastInline = colorSwatch
+                        local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
                         swatchBlock:SetAllPoints()
-                        swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                        swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
                         swatchBlock:EnableMouse(true)
                         swatchBlock:SetScript("OnEnter", function()
                             CludesUI.ShowWidgetTooltip(
-                                swatch,
+                                colorSwatch,
                                 CludesUI.DisabledTooltip(
                                     "This option requires Show Item Level to be set to Custom Colored"
                                 )
@@ -1037,9 +1045,9 @@ initFrame:SetScript("OnEvent", function(self)
                             CludesUI.HideWidgetTooltip()
                         end)
                         local function UpdateIlvlSwatch()
-                            local off = IlvlMode() ~= "custom"
-                            swatch:SetAlpha(off and 0.3 or 1)
-                            swatchBlock:SetShown(off)
+                            local offset = IlvlMode() ~= "custom"
+                            colorSwatch:SetAlpha(offset and 0.3 or 1)
+                            swatchBlock:SetShown(offset)
                         end
                         UpdateIlvlSwatch()
                         CludesUI.RegisterWidgetRefresh(UpdateIlvlSwatch)
@@ -1048,15 +1056,15 @@ initFrame:SetScript("OnEvent", function(self)
 
                     -- Show BoE / Warbound Text (+ inline cog: Text Size) | Item Count Text Size
                     local bindRow
-                    bindRow, h = W:DualRow(parent, y, {
+                    bindRow, hgt = W:DualRow(hostFrame, posY, {
                         type = "toggle",
                         text = "Show BoE / Warbound Text",
                         tooltip = "Display Binds on Equipped / Warbound until Equipped on equipment items in your bags and bank.",
                         getValue = function()
-                            return db.profile.bagDisplayBindType
+                            return saved.profile.bagDisplayBindType
                         end,
-                        setValue = function(v)
-                            db.profile.bagDisplayBindType = v
+                        setValue = function(val)
+                            saved.profile.bagDisplayBindType = val
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
                             end
@@ -1074,10 +1082,10 @@ initFrame:SetScript("OnEvent", function(self)
                         step = 1,
                         tooltip = "Font size for stack counts, keystone levels, and dungeon abbreviations.",
                         getValue = function()
-                            return db.profile.bagCountFontSize or 11
+                            return saved.profile.bagCountFontSize or 11
                         end,
-                        setValue = function(v)
-                            db.profile.bagCountFontSize = v
+                        setValue = function(val)
+                            saved.profile.bagCountFontSize = val
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then
                                 _G.CUI_Bags:RefreshTextSizes()
                             end
@@ -1087,7 +1095,7 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                         end,
                     })
-                    y = y - h
+                    posY = posY - hgt
 
                     -- Inline cog (RESIZE) on Show BoE / Warbound Text: text size
                     -- Skipped during the hidden search pre-build: that pass swaps the
@@ -1100,7 +1108,7 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI.BuildInlineCog(bindRow._leftRegion, {
                             chain = false,
                             disabled = function()
-                                return not db.profile.bagDisplayBindType
+                                return not saved.profile.bagDisplayBindType
                             end,
                             disabledTooltip = "Show BoE / Warbound Text",
                             title = "BoE / Warbound Text Options",
@@ -1112,10 +1120,10 @@ initFrame:SetScript("OnEvent", function(self)
                                     max = 16,
                                     step = 1,
                                     get = function()
-                                        return db.profile.bagBindTypeFontSize or 11
+                                        return saved.profile.bagBindTypeFontSize or 11
                                     end,
-                                    set = function(v)
-                                        db.profile.bagBindTypeFontSize = v
+                                    set = function(val)
+                                        saved.profile.bagBindTypeFontSize = val
                                         if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then
                                             _G.CUI_Bags:RefreshTextSizes()
                                         end
@@ -1133,15 +1141,15 @@ initFrame:SetScript("OnEvent", function(self)
                     -- bags only, so not built while only the bank uses this display
                     if not bagList then
                         local setNameRow
-                        setNameRow, h = W:DualRow(parent, y, {
+                        setNameRow, hgt = W:DualRow(hostFrame, posY, {
                             type = "toggle",
                             text = "Show Set Name on Gear",
                             tooltip = "Display the equipment set's name at the bottom of bag items that belong to one of your equipment sets.",
                             getValue = function()
-                                return db.profile.bagShowSetGearName == true
+                                return saved.profile.bagShowSetGearName == true
                             end,
-                            setValue = function(v)
-                                db.profile.bagShowSetGearName = v
+                            setValue = function(val)
+                                saved.profile.bagShowSetGearName = val
                                 if _G.CUI_Bags and _G.CUI_Bags.UpdateSetEventRegistration then
                                     _G.CUI_Bags.UpdateSetEventRegistration()
                                 end
@@ -1155,23 +1163,23 @@ initFrame:SetScript("OnEvent", function(self)
                             text = "Nest by Expansion",
                             tooltip = "In the All Items bag view, show each category's items under indented expansion sub-headers (newest expansions first), even when everything in that category is from one expansion.",
                             getValue = function()
-                                return db.profile.bagNestByExpansion == true
+                                return saved.profile.bagNestByExpansion == true
                             end,
-                            setValue = function(v)
-                                db.profile.bagNestByExpansion = v and true or false
+                            setValue = function(val)
+                                saved.profile.bagNestByExpansion = val and true or false
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
                             end,
                         })
-                        y = y - h
+                        posY = posY - hgt
 
                         -- Inline cog (RESIZE) on Show Set Name on Gear: text size
                         if not CludesUI._prebuilding then
                             CludesUI.BuildInlineCog(setNameRow._leftRegion, {
                                 chain = false,
                                 disabled = function()
-                                    return db.profile.bagShowSetGearName ~= true
+                                    return saved.profile.bagShowSetGearName ~= true
                                 end,
                                 disabledTooltip = "Show Set Name on Gear",
                                 title = "Set Name Text Options",
@@ -1183,10 +1191,10 @@ initFrame:SetScript("OnEvent", function(self)
                                         max = 14,
                                         step = 1,
                                         get = function()
-                                            return db.profile.bagSetNameFontSize or 9
+                                            return saved.profile.bagSetNameFontSize or 9
                                         end,
-                                        set = function(v)
-                                            db.profile.bagSetNameFontSize = v
+                                        set = function(val)
+                                            saved.profile.bagSetNameFontSize = val
                                             if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then
                                                 _G.CUI_Bags:RefreshTextSizes()
                                             end
@@ -1202,8 +1210,8 @@ initFrame:SetScript("OnEvent", function(self)
                     ---------------------------------------------------------------------------
                     --  DISPLAY (LIST)
                     ---------------------------------------------------------------------------
-                    _, h = W:SectionHeader(parent, "DISPLAY (LIST)", y)
-                    y = y - h
+                    _, hgt = W:SectionHeader(hostFrame, "DISPLAY (LIST)", posY)
+                    posY = posY - hgt
 
                     -- Left Gap | Right Gap | Row Height | Text Size | Round Icons |
                     -- Section Gold Value | Split by Type | Hide Row Stripes, two per row.
@@ -1218,10 +1226,10 @@ initFrame:SetScript("OnEvent", function(self)
                             step = 1,
                             tooltip = "Empty space between this side of the bag and bank lists and their rows.",
                             getValue = function()
-                                return db.profile.bagListGapL or 15
+                                return saved.profile.bagListGapL or 15
                             end,
-                            setValue = function(v)
-                                db.profile.bagListGapL = v
+                            setValue = function(val)
+                                saved.profile.bagListGapL = val
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1239,10 +1247,10 @@ initFrame:SetScript("OnEvent", function(self)
                             step = 1,
                             tooltip = "Empty space between this side of the bag and bank lists and their rows.",
                             getValue = function()
-                                return db.profile.bagListGapR or 23
+                                return saved.profile.bagListGapR or 23
                             end,
-                            setValue = function(v)
-                                db.profile.bagListGapR = v
+                            setValue = function(val)
+                                saved.profile.bagListGapR = val
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1260,10 +1268,10 @@ initFrame:SetScript("OnEvent", function(self)
                             step = 1,
                             tooltip = "Height of each row in the bag and bank lists. Icons shrink to fit short rows.",
                             getValue = function()
-                                return db.profile.bagListRowHeight or 24
+                                return saved.profile.bagListRowHeight or 24
                             end,
-                            setValue = function(v)
-                                db.profile.bagListRowHeight = v
+                            setValue = function(val)
+                                saved.profile.bagListRowHeight = val
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1282,10 +1290,10 @@ initFrame:SetScript("OnEvent", function(self)
                             step = 1,
                             tooltip = "Text size of the bag and bank lists.",
                             getValue = function()
-                                return db.profile.bagListFontSize or 11
+                                return saved.profile.bagListFontSize or 11
                             end,
-                            setValue = function(v)
-                                db.profile.bagListFontSize = v
+                            setValue = function(val)
+                                saved.profile.bagListFontSize = val
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1300,10 +1308,10 @@ initFrame:SetScript("OnEvent", function(self)
                             text = "Round Icons",
                             tooltip = "Show the item icons in the bag and bank lists as circles instead of squares.",
                             getValue = function()
-                                return db.profile.bagListRoundIcons == true
+                                return saved.profile.bagListRoundIcons == true
                             end,
-                            setValue = function(v)
-                                db.profile.bagListRoundIcons = v and true or false
+                            setValue = function(val)
+                                saved.profile.bagListRoundIcons = val and true or false
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1321,10 +1329,10 @@ initFrame:SetScript("OnEvent", function(self)
                             text = "Section Gold Value",
                             tooltip = "Show the total vendor sell price of each section's items next to its count in the bag list.",
                             getValue = function()
-                                return db.profile.bagListSectionValue == true
+                                return saved.profile.bagListSectionValue == true
                             end,
-                            setValue = function(v)
-                                db.profile.bagListSectionValue = v and true or false
+                            setValue = function(val)
+                                saved.profile.bagListSectionValue = val and true or false
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1342,10 +1350,10 @@ initFrame:SetScript("OnEvent", function(self)
                         text = "Hide Row Stripes",
                         tooltip = "Remove the shading on every other row in the bag and bank lists.",
                         getValue = function()
-                            return db.profile.bagListHideStripes == true
+                            return saved.profile.bagListHideStripes == true
                         end,
-                        setValue = function(v)
-                            db.profile.bagListHideStripes = v and true or false
+                        setValue = function(val)
+                            saved.profile.bagListHideStripes = val and true or false
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
                             end
@@ -1357,12 +1365,16 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                     local splitRow, splitLeft
                     for i = 1, #listSlots, 2 do
-                        local row
-                        row, h =
-                            W:DualRow(parent, y, listSlots[i], listSlots[i + 1] or CludesUI.BlankRowCfg())
-                        y = y - h
+                        local rowFrame
+                        rowFrame, hgt = W:DualRow(
+                            hostFrame,
+                            posY,
+                            listSlots[i],
+                            listSlots[i + 1] or CludesUI.BlankRowCfg()
+                        )
+                        posY = posY - hgt
                         if splitSlot == i or splitSlot == i + 1 then
-                            splitRow, splitLeft = row, splitSlot == i
+                            splitRow, splitLeft = rowFrame, splitSlot == i
                         end
                     end
 
@@ -1380,10 +1392,10 @@ initFrame:SetScript("OnEvent", function(self)
                             splitRgn:GetFrameLevel() + 2,
                             SPLIT_TYPES,
                             function(key)
-                                return db.profile[key] == true
+                                return saved.profile[key] == true
                             end,
-                            function(key, v)
-                                db.profile[key] = v and true or false
+                            function(key, val)
+                                saved.profile[key] = val and true or false
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end
@@ -1391,7 +1403,7 @@ initFrame:SetScript("OnEvent", function(self)
                             nil,
                             10
                         )
-                        PP.Point(splitDD, "RIGHT", splitRgn, "RIGHT", -20, 0)
+                        Pix.Point(splitDD, "RIGHT", splitRgn, "RIGHT", -20, 0)
                         splitRgn._control = splitDD
                         splitRgn._lastInline = nil
                         CludesUI.RegisterWidgetRefresh(splitDDRefresh)
@@ -1401,20 +1413,20 @@ initFrame:SetScript("OnEvent", function(self)
                 ---------------------------------------------------------------------------
                 --  EXTRAS (every display)
                 ---------------------------------------------------------------------------
-                _, h = W:SectionHeader(parent, "EXTRAS", y)
-                y = y - h
+                _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
+                posY = posY - hgt
 
                 -- Merge Duplicate Items | Group Gear by Slot (+ inline cog: Compact Slot Groups)
                 local gearRow
-                gearRow, h = W:DualRow(parent, y, {
+                gearRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Merge Duplicate Items",
                     tooltip = "Show copies of the same item in separate bag slots as one icon or row, with their counts added together. Gear is never merged, and OneBag and MultiBag always show every slot. Merging pauses while the mail, trade, auction house, vendor, bank or guild bank window is open.",
                     getValue = function()
-                        return db.profile.bagMergeDuplicates ~= false
+                        return saved.profile.bagMergeDuplicates ~= false
                     end,
-                    setValue = function(v)
-                        db.profile.bagMergeDuplicates = v and true or false
+                    setValue = function(val)
+                        saved.profile.bagMergeDuplicates = val and true or false
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
@@ -1424,30 +1436,30 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Group Gear by Slot",
                     tooltip = "In The Armory and the Weapons / Trinkets, Armor, and Item Set Gear category views, group items under equip-slot sub-headers (Head, Shoulders, Chest, Cosmetic, ...). Does not add sidebar views.",
                     disabled = function()
-                        local dc = db.profile.bagDisabledCategories
+                        local dc = saved.profile.bagDisabledCategories
                         return dc and dc["Armor"] == true
                     end,
                     disabledTooltip = "Armor",
                     getValue = function()
-                        return db.profile.bagArmoryGroupBySlot == true
+                        return saved.profile.bagArmoryGroupBySlot == true
                     end,
-                    setValue = function(v)
-                        db.profile.bagArmoryGroupBySlot = v and true or false
+                    setValue = function(val)
+                        saved.profile.bagArmoryGroupBySlot = val and true or false
                         ResetAndRefreshBagLayout()
                         CludesUI:RefreshPage()
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Inline cog for Group Gear by Slot: Compact Slot Groups. Grid display
                 -- only, so not built for any other Bag Style.
                 if not CludesUI._prebuilding and BagDisplayValue() == "grid" then
                     local function SlotCogState()
-                        local dc = db.profile.bagDisabledCategories
+                        local dc = saved.profile.bagDisabledCategories
                         if dc and dc["Armor"] == true then
                             return true, "Armor"
                         end
-                        if db.profile.bagArmoryGroupBySlot ~= true then
+                        if saved.profile.bagArmoryGroupBySlot ~= true then
                             return true, "Group Gear by Slot"
                         end
                         return false
@@ -1469,10 +1481,10 @@ initFrame:SetScript("OnEvent", function(self)
                                 label = "Compact Slot Groups",
                                 tooltip = "Place smaller Armory slot groups beside each other and fill the unused end of each row with empty-slot blocks. Large groups still use full rows.",
                                 get = function()
-                                    return db.profile.bagCompactArmorySlotGroups == true
+                                    return saved.profile.bagCompactArmorySlotGroups == true
                                 end,
-                                set = function(v)
-                                    db.profile.bagCompactArmorySlotGroups = v and true or false
+                                set = function(val)
+                                    saved.profile.bagCompactArmorySlotGroups = val and true or false
                                     ResetAndRefreshBagLayout()
                                 end,
                             },
@@ -1482,40 +1494,35 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Junk Item Visuals | Quality Item Border
                 local junkRow
-                junkRow, h = W:DualRow(
-                    parent,
-                    y,
-                    {
-                        type = "label",
-                        text = "Junk Item Visuals",
-                        tooltip = "Choose how junk items look in the bags and bank.",
-                    },
-                    {
-                        type = "toggle",
-                        text = "Quality Item Border",
-                        tooltip = "Draw a border in the item's quality color around item icons in the bags and bank. Round list icons have no border.",
-                        getValue = function()
-                            return db.profile.bagQualityBorder ~= false
-                        end,
-                        setValue = function(v)
-                            db.profile.bagQualityBorder = v and true or false
-                            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
-                                _G.CUI_Bags:RefreshInventory()
-                            end
-                            if _G.CUI_BagsReagent and _G.CUI_BagsReagent.RefreshInventory then
-                                _G.CUI_BagsReagent:RefreshInventory()
-                            end
-                            if _G.CUI_BagsWindow and _G.CUI_BagsWindow.RefreshBags then
-                                _G.CUI_BagsWindow:RefreshBags()
-                            end
-                            local bank = _G.CUI_BankFrame
-                            if bank and bank.RefreshBank then
-                                bank:RefreshBank()
-                            end
-                        end,
-                    }
-                )
-                y = y - h
+                junkRow, hgt = W:DualRow(hostFrame, posY, {
+                    type = "label",
+                    text = "Junk Item Visuals",
+                    tooltip = "Choose how junk items look in the bags and bank.",
+                }, {
+                    type = "toggle",
+                    text = "Quality Item Border",
+                    tooltip = "Draw a border in the item's quality color around item icons in the bags and bank. Round list icons have no border.",
+                    getValue = function()
+                        return saved.profile.bagQualityBorder ~= false
+                    end,
+                    setValue = function(val)
+                        saved.profile.bagQualityBorder = val and true or false
+                        if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
+                            _G.CUI_Bags:RefreshInventory()
+                        end
+                        if _G.CUI_BagsReagent and _G.CUI_BagsReagent.RefreshInventory then
+                            _G.CUI_BagsReagent:RefreshInventory()
+                        end
+                        if _G.CUI_BagsWindow and _G.CUI_BagsWindow.RefreshBags then
+                            _G.CUI_BagsWindow:RefreshBags()
+                        end
+                        local bank = _G.CUI_BankFrame
+                        if bank and bank.RefreshBank then
+                            bank:RefreshBank()
+                        end
+                    end,
+                })
+                posY = posY - hgt
 
                 -- Junk Item Visuals dropdown (left side). The coin badge is drawn
                 -- only by the bag window's Grid and Compact displays, so the List
@@ -1542,10 +1549,10 @@ initFrame:SetScript("OnEvent", function(self)
                         junkRgn:GetFrameLevel() + 2,
                         JUNK_VISUALS,
                         function(key)
-                            return db.profile[key] == true
+                            return saved.profile[key] == true
                         end,
-                        function(key, v)
-                            db.profile[key] = v and true or false
+                        function(key, val)
+                            saved.profile[key] = val and true or false
                             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                 _G.CUI_Bags:RefreshInventory()
                             end
@@ -1557,7 +1564,7 @@ initFrame:SetScript("OnEvent", function(self)
                         nil,
                         10
                     )
-                    PP.Point(junkDD, "RIGHT", junkRgn, "RIGHT", -20, 0)
+                    Pix.Point(junkDD, "RIGHT", junkRgn, "RIGHT", -20, 0)
                     junkRgn._control = junkDD
                     junkRgn._lastInline = nil
                     CludesUI.RegisterWidgetRefresh(junkDDRefresh)
@@ -1565,27 +1572,22 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Bag Top Bar Icons (+ inline cog: Sort to Bottom) | Gold Tracking and History
                 local iconsRow
-                iconsRow, h = W:DualRow(
-                    parent,
-                    y,
-                    {
-                        type = "label",
-                        text = "Bag Top Bar Icons",
-                        tooltip = "Choose which icons show in the bag window's top bar; the Junk Icon is the Junk Marker.",
-                    },
-                    {
-                        type = "toggle",
-                        text = "Gold Tracking and History",
-                        tooltip = "Track and display gold amounts from all your characters on hover.",
-                        getValue = function()
-                            return CludesUI.GetGoldLedger().IsTracking()
-                        end,
-                        setValue = function(v)
-                            CludesUI.GetGoldLedger().SetTracking(v)
-                        end,
-                    }
-                )
-                y = y - h
+                iconsRow, hgt = W:DualRow(hostFrame, posY, {
+                    type = "label",
+                    text = "Bag Top Bar Icons",
+                    tooltip = "Choose which icons show in the bag window's top bar; the Junk Icon is the Junk Marker.",
+                }, {
+                    type = "toggle",
+                    text = "Gold Tracking and History",
+                    tooltip = "Track and display gold amounts from all your characters on hover.",
+                    getValue = function()
+                        return CludesUI.GetGoldLedger().IsTracking()
+                    end,
+                    setValue = function(val)
+                        CludesUI.GetGoldLedger().SetTracking(val)
+                    end,
+                })
+                posY = posY - hgt
 
                 -- Bag Top Bar Icons dropdown (left side), its Sort Options cog to the left
                 if not CludesUI._prebuilding then
@@ -1602,10 +1604,10 @@ initFrame:SetScript("OnEvent", function(self)
                         leftRgn:GetFrameLevel() + 2,
                         TOP_BAR_ICONS,
                         function(key)
-                            return db.profile[key] ~= false
+                            return saved.profile[key] ~= false
                         end,
-                        function(key, v)
-                            db.profile[key] = v and true or false
+                        function(key, val)
+                            saved.profile[key] = val and true or false
                             local bags = _G.CUI_Bags
                             if bags and bags.SyncHeaderIcons then
                                 if key == "bagShowJunkIcon" then
@@ -1631,14 +1633,14 @@ initFrame:SetScript("OnEvent", function(self)
                         nil,
                         10
                     )
-                    PP.Point(iconsDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
+                    Pix.Point(iconsDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
                     leftRgn._control = iconsDD
                     leftRgn._lastInline = nil
                     CludesUI.RegisterWidgetRefresh(iconsDDRefresh)
 
                     CludesUI.BuildInlineCog(leftRgn, {
                         disabled = function()
-                            return db.profile.bagShowSortIcon == false
+                            return saved.profile.bagShowSortIcon == false
                         end,
                         disabledTooltip = "Sort Icon",
                         title = "Sort Options",
@@ -1648,12 +1650,12 @@ initFrame:SetScript("OnEvent", function(self)
                                 label = "Sort to Bottom",
                                 tooltip = "Sorting normally packs your items into the first free slots, at the top of the grid. Turn this on to pack them into the last slots instead, so the empty slots end up at the top. The item order itself does not change. This affects the OneBag, MultiBag and bank views -- category views fill their own grid with no gaps, so there is nothing to move. MultiBag and the bank use Blizzard's own sorting, so while this is on it also flips Blizzard's cleanup direction; turning it back off restores the direction you had.",
                                 get = function()
-                                    return db.profile.bagSortToBottom == true
+                                    return saved.profile.bagSortToBottom == true
                                 end,
-                                set = function(v)
-                                    v = v and true or false
-                                    local p = db.profile
-                                    if v == (p.bagSortToBottom == true) then
+                                set = function(val)
+                                    val = val and true or false
+                                    local p = saved.profile
+                                    if val == (p.bagSortToBottom == true) then
                                         return
                                     end
                                     -- MultiBag and the bank sort through Blizzard, whose
@@ -1665,7 +1667,7 @@ initFrame:SetScript("OnEvent", function(self)
                                         C_Container.SetSortBagsRightToLeft
                                         and C_Container.GetSortBagsRightToLeft
                                     then
-                                        if v then
+                                        if val then
                                             p.bagSortBlizzRTLWas = C_Container.GetSortBagsRightToLeft()
                                                     and true
                                                 or false
@@ -1675,7 +1677,7 @@ initFrame:SetScript("OnEvent", function(self)
                                             p.bagSortBlizzRTLWas = nil
                                         end
                                     end
-                                    p.bagSortToBottom = v
+                                    p.bagSortToBottom = val
                                 end,
                             },
                         },
@@ -1684,7 +1686,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Enabled Currencies | Icon Zoom
                 local currRow
-                currRow, h = W:DualRow(parent, y, { type = "label", text = "Enabled Currencies" }, {
+                currRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Enabled Currencies" }, {
                     type = "slider",
                     text = "Icon Zoom",
                     min = 0,
@@ -1692,10 +1694,10 @@ initFrame:SetScript("OnEvent", function(self)
                     step = 0.01,
                     tooltip = "Crops the border of every item icon in bags and bank. 0 shows the full icon.",
                     getValue = function()
-                        return db.profile.bagItemIconZoom or 0.08
+                        return saved.profile.bagItemIconZoom or 0.08
                     end,
-                    setValue = function(v)
-                        db.profile.bagItemIconZoom = v
+                    setValue = function(val)
+                        saved.profile.bagItemIconZoom = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshIconZoom then
                             _G.CUI_Bags:RefreshIconZoom()
                         end
@@ -1705,7 +1707,7 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Enabled Currencies dropdown (left side)
                 if not CludesUI._prebuilding then
@@ -1714,33 +1716,34 @@ initFrame:SetScript("OnEvent", function(self)
                         -- Expand all collapsed headers so we can see every currency,
                         -- then restore them after scanning.
                         local collapsedHeaders = {}
-                        local idx = 1
-                        while idx <= C_CurrencyInfo.GetCurrencyListSize() do
-                            local info = C_CurrencyInfo.GetCurrencyListInfo(idx)
-                            if info and info.isHeader and not info.isHeaderExpanded then
-                                collapsedHeaders[#collapsedHeaders + 1] = idx
-                                C_CurrencyInfo.ExpandCurrencyList(idx, true)
+                        local position = 1
+                        while position <= C_CurrencyInfo.GetCurrencyListSize() do
+                            local details = C_CurrencyInfo.GetCurrencyListInfo(position)
+                            if details and details.isHeader and not details.isHeaderExpanded then
+                                collapsedHeaders[#collapsedHeaders + 1] = position
+                                C_CurrencyInfo.ExpandCurrencyList(position, true)
                             end
-                            idx = idx + 1
+                            position = position + 1
                         end
 
                         local listSize = C_CurrencyInfo.GetCurrencyListSize()
                         for i = 1, listSize do
-                            local info = C_CurrencyInfo.GetCurrencyListInfo(i)
-                            if info then
-                                if info.isHeader then
-                                    currencyItems[#currencyItems + 1] = { isHeader = true, label = info.name }
+                            local details = C_CurrencyInfo.GetCurrencyListInfo(i)
+                            if details then
+                                if details.isHeader then
+                                    currencyItems[#currencyItems + 1] =
+                                        { isHeader = true, label = details.name }
                                 else
-                                    local link = C_CurrencyInfo.GetCurrencyListLink(i)
-                                    if link then
-                                        local cID = C_CurrencyInfo.GetCurrencyIDFromLink(link)
+                                    local itemLink = C_CurrencyInfo.GetCurrencyListLink(i)
+                                    if itemLink then
+                                        local cID = C_CurrencyInfo.GetCurrencyIDFromLink(itemLink)
                                         if cID then
                                             local cInfo = C_CurrencyInfo.GetCurrencyInfo(cID)
-                                            local cName = cInfo and cInfo.name or info.name
+                                            local cName = cInfo and cInfo.name or details.name
                                             currencyItems[#currencyItems + 1] = {
                                                 key = cID,
                                                 label = cName,
-                                                icon = (cInfo and cInfo.iconFileID) or info.iconFileID,
+                                                icon = (cInfo and cInfo.iconFileID) or details.iconFileID,
                                             }
                                         end
                                     end
@@ -1765,9 +1768,9 @@ initFrame:SetScript("OnEvent", function(self)
                         local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
                         if co then
                             local listed = {}
-                            for _, item in ipairs(currencyItems) do
-                                if item.key then
-                                    listed[item.key] = true
+                            for _, itemInfo in ipairs(currencyItems) do
+                                if itemInfo.key then
+                                    listed[itemInfo.key] = true
                                 end
                             end
                             local retired = {}
@@ -1781,20 +1784,20 @@ initFrame:SetScript("OnEvent", function(self)
                                 -- Top of the menu: a leftover seasonal currency is
                                 -- exactly what this dropdown gets opened to remove,
                                 -- so it never hides under the live headers.
-                                local block = {
+                                local blockData = {
                                     { isHeader = true, label = CludesUI.L("Retired") },
                                 }
                                 for _, cID in ipairs(retired) do
                                     local cInfo = C_CurrencyInfo.GetCurrencyInfo
                                         and C_CurrencyInfo.GetCurrencyInfo(cID)
-                                    block[#block + 1] = {
+                                    blockData[#blockData + 1] = {
                                         key = cID,
                                         label = (cInfo and cInfo.name) or ("Currency " .. cID),
                                         icon = cInfo and cInfo.iconFileID,
                                     }
                                 end
-                                for i = #block, 1, -1 do
-                                    table.insert(currencyItems, 1, block[i])
+                                for i = #blockData, 1, -1 do
+                                    table.insert(currencyItems, 1, blockData[i])
                                 end
                             end
                         end
@@ -1816,12 +1819,12 @@ initFrame:SetScript("OnEvent", function(self)
                                 local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
                                 return co and co[cID] and true or false
                             end,
-                            function(cID, v)
+                            function(cID, val)
                                 local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
                                 if not co then
                                     return
                                 end
-                                if v then
+                                if val then
                                     local maxOrder = 0
                                     for _, ord in pairs(co) do
                                         if type(ord) == "number" and ord > maxOrder then
@@ -1844,7 +1847,7 @@ initFrame:SetScript("OnEvent", function(self)
                             10,
                             true
                         )
-                        PP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
+                        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
                         leftRgn._control = cbDD
                         leftRgn._lastInline = nil
                         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
@@ -1852,82 +1855,82 @@ initFrame:SetScript("OnEvent", function(self)
                 end
 
                 -- Stack Splitter
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Stack Splitter",
                     tooltip = "Also use the split dialog with Auto Split in OneBag, MultiBag, the reagent bag, the bank and the guild bank, replacing Blizzard's split popup there. All Items and category views always use it.",
                     getValue = function()
-                        return db.profile.bagStackSplitter == true
+                        return saved.profile.bagStackSplitter == true
                     end,
-                    setValue = function(v)
-                        db.profile.bagStackSplitter = v and true or false
+                    setValue = function(val)
+                        saved.profile.bagStackSplitter = val and true or false
                     end,
                 }, {
                     type = "toggle",
                     text = "Open Bags with Character Window",
                     tooltip = "The bags automatically open when the character window is opened and close again when the character window is closed.",
                     getValue = function()
-                        return db.profile.bagOpenWithCharacter == true
+                        return saved.profile.bagOpenWithCharacter == true
                     end,
-                    setValue = function(v)
-                        db.profile.bagOpenWithCharacter = v and true or false
+                    setValue = function(val)
+                        saved.profile.bagOpenWithCharacter = val and true or false
                         BagsNS.ToggleBagsWithCharacterFrame()
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Auto Open Bags | Auto Close Bags: absent or true = selected
                 local autoRow
-                autoRow, h = W:DualRow(
-                    parent,
-                    y,
+                autoRow, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     { type = "label", text = "Auto Open Bags" },
                     { type = "label", text = "Auto Close Bags" }
                 )
-                y = y - h
-                local function AutoWindowsDropdown(rgn, setting)
+                posY = posY - hgt
+                local function AutoWindowsDropdown(region, setting)
                     local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        rgn,
+                        region,
                         210,
-                        rgn:GetFrameLevel() + 2,
+                        region:GetFrameLevel() + 2,
                         BagsNS.BAG_AUTO_WINDOWS,
                         function(key)
                             return BagsNS.BagAutoWindowOn(setting, key)
                         end,
-                        function(key, v)
-                            local t = db.profile[setting]
+                        function(key, val)
+                            local t = saved.profile[setting]
                             if not t then
                                 t = {}
-                                db.profile[setting] = t
+                                saved.profile[setting] = t
                             end
-                            if v then
+                            if val then
                                 t[key] = nil
                             else
                                 t[key] = false
                             end
                         end
                     )
-                    PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-                    rgn._control = cbDD
-                    rgn._lastInline = nil
+                    Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+                    region._control = cbDD
+                    region._lastInline = nil
                     CludesUI.RegisterWidgetRefresh(cbDDRefresh)
                 end
                 AutoWindowsDropdown(autoRow._leftRegion, "bagAutoOpenWindows")
                 AutoWindowsDropdown(autoRow._rightRegion, "bagAutoCloseWindows")
 
                 -- Slot Count Format | Separate Reagent Slots
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Slot Count Format",
                     tooltip = "Show used or free inventory slots.",
                     values = { used_total = "Used / Total", free_total = "Free / Total", free = "Free" },
                     order = { "used_total", "free_total", "free" },
                     getValue = function()
-                        local v = db.profile.bagSlotCountFormat
-                        return (v == "free_total" or v == "free") and v or "used_total"
+                        local val = saved.profile.bagSlotCountFormat
+                        return (val == "free_total" or val == "free") and val or "used_total"
                     end,
-                    setValue = function(v)
-                        db.profile.bagSlotCountFormat = v
+                    setValue = function(val)
+                        saved.profile.bagSlotCountFormat = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
@@ -1937,25 +1940,25 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Separate Reagent Slots",
                     tooltip = "Show reagent bag slots on a separate line.",
                     getValue = function()
-                        return db.profile.bagSeparateReagentSlots == true
+                        return saved.profile.bagSeparateReagentSlots == true
                     end,
-                    setValue = function(v)
-                        db.profile.bagSeparateReagentSlots = v
+                    setValue = function(val)
+                        saved.profile.bagSeparateReagentSlots = val
                         if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                             _G.CUI_Bags:RefreshInventory()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
-                _, h = W:Spacer(parent, y, 20)
-                y = y - h
-                return math.abs(y)
+                _, hgt = W:Spacer(hostFrame, posY, 20)
+                posY = posY - hgt
+                return math.abs(posY)
             end) -- end pcall
-            if not ok then
+            if not success then
                 print("|cffff0000[Bags Options ERROR]|r " .. tostring(result))
             end
-            return ok and result or 0
+            return success and result or 0
         end,
         onReset = function()
             -- Wipe per-profile data and re-apply defaults

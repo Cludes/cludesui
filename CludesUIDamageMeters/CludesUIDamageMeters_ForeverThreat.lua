@@ -14,53 +14,53 @@ end
 --  wherever it is not offered. The other Damage Meters files reach this file
 --  only through nil-guarded ns hooks.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 local THREAT = "threat"
 
 -- Icons: the target crosshair glyph (on its plate under the WoW Forever look)
 -- and the vanilla taunt icon under Classic WoW UI.
 do
     local enemy = Enum.DamageMeterType.EnemyDamageTaken
-    ns._DM_TYPE_ICONS[THREAT] = ns._DM_TYPE_ICONS[enemy]
-    local fv = ns.DM_HDR_ART.forever
+    mod._DM_TYPE_ICONS[THREAT] = mod._DM_TYPE_ICONS[enemy]
+    local fv = mod.DM_HDR_ART.forever
     fv.types[THREAT] = fv.types[enemy]
-    ns.DM_HDR_ART.classic.types[THREAT] =
+    mod.DM_HDR_ART.classic.types[THREAT] =
         { file = "Interface\\Icons\\Spell_Nature_Reincarnation", crop = 0.08, scale = 0.85 }
 end
 
 -- Repaints every shown Threat window after the list rebuilt (a hidden one
 -- repaints on its show).
-function ns.DMThreatNotify()
-    for _, w in ipairs(ns._windows) do
-        if w.curDMType == THREAT and w.frame and w.frame:IsVisible() then
-            w.Refresh()
+function mod.DMThreatNotify()
+    for _, wid in ipairs(mod._windows) do
+        if wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then
+            wid.Refresh()
         end
     end
 end
 
 -- The session a visible Threat window paints. The first one starts the feed.
-function ns.DMThreatSession()
+function mod.DMThreatSession()
     local feed = CludesUI._ThreatFeed
     if not feed then
         return nil
     end
     if not feed.IsActive() then
-        feed.Start(ns.DMThreatNotify)
+        feed.Start(mod.DMThreatNotify)
     end
     -- The value text follows the meter's Force English Units, as every type's does.
-    local db = ns.EDM.DB()
-    return feed.Session(db and db.forceEnglishUnits == true)
+    local saved = mod.EDM.DB()
+    return feed.Session(saved and saved.forceEnglishUnits == true)
 end
 
 -- Stops the feed once no Threat window is on screen; `except` is a window in
 -- the middle of hiding.
-function ns.DMThreatSync(except)
+function mod.DMThreatSync(except)
     local feed = CludesUI._ThreatFeed
     if not (feed and feed.IsActive()) then
         return
     end
-    for _, w in ipairs(ns._windows) do
-        if w ~= except and w.curDMType == THREAT and w.frame and w.frame:IsVisible() then
+    for _, wid in ipairs(mod._windows) do
+        if wid ~= except and wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then
             return
         end
     end
@@ -70,21 +70,21 @@ end
 -- The list's own settings (tracked unit, displayed value, pets) head a
 -- Threat window's settings menu, and the clock and segment rows (noThreat)
 -- leave it.
-function ns.DMThreatMenu(items)
+function mod.DMThreatMenu(itemList)
     local feed = CludesUI._ThreatFeed
     if not feed then
         return
     end
-    for i = #items, 1, -1 do
-        local e = items[i]
+    for idx = #itemList, 1, -1 do
+        local e = itemList[idx]
         if type(e) == "table" and e.noThreat then
-            table.remove(items, i)
+            table.remove(itemList, idx)
         end
     end
     local head = feed.MenuItems({})
     head[#head + 1] = "---"
-    for i = #head, 1, -1 do
-        table.insert(items, 1, head[i])
+    for idx = #head, 1, -1 do
+        table.insert(itemList, 1, head[idx])
     end
 end
 
@@ -95,6 +95,6 @@ boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
     if CludesUI._ThreatFeed then
-        ns._DM_TYPE_NAMES[THREAT] = "Threat"
+        mod._DM_TYPE_NAMES[THREAT] = "Threat"
     end
 end)

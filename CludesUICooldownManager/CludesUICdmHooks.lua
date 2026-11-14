@@ -19,21 +19,21 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --    - All per-frame data in external weak-keyed tables
 --    - Unclaimed frames: SetAlpha(0). Claimed: SetAlpha(1).
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
-local cdmBarIcons = ns.cdmBarIcons
-local MAIN_BAR_KEYS = ns.MAIN_BAR_KEYS
+local cdmBarIcons = mod.cdmBarIcons
+local MAIN_BAR_KEYS = mod.MAIN_BAR_KEYS
 
 local floor = math.floor
 local GetTime = GetTime
 local _, _playerClass = UnitClass("player")
 local _isDruid = (_playerClass == "DRUID")
 
-ns._spellOrderDirty = true -- start dirty so first reanchor builds caches
+mod._spellOrderDirty = true -- start dirty so first reanchor builds caches
 
 -- Per-frame decoration state (weak-keyed; FD(frame) makes a frame's record)
 local hookFrameData, FD = CludesUI.NewFrameData()
-ns._hookFrameData = hookFrameData
+mod._hookFrameData = hookFrameData
 
 -- Glow at Stacks (per-spell): REPLACES the Buff Glow for icons with a stack
 -- comparison, using the spell's effective Buff Glow style (resolved in
@@ -47,8 +47,8 @@ ns._hookFrameData = hookFrameData
 -- glow directly. Zero cost unless a spell enables the toggle: no frames, no
 -- reads.
 do
-    local function StackGlowSize(icon)
-        local width, height = icon:GetWidth(), icon:GetHeight()
+    local function StackGlowSize(glyph)
+        local width, height = glyph:GetWidth(), glyph:GetHeight()
         if not width or width < 5 then
             width = 36
         end
@@ -62,31 +62,31 @@ do
     -- gate exactly, so a FULL fill puts the open mask over the whole glow --
     -- flipbook/pixel textures overhang the icon edges.
     local function SizeStackGlowMask(st, width, height)
-        local w, h = width + st.pad * 2, height + st.pad * 2
-        st.mask:SetSize(w, h)
+        local wid, hgt = width + st.pad * 2, height + st.pad * 2
+        st.mask:SetSize(wid, hgt)
         if st.mask2 then
-            st.mask2:SetSize(w, h)
+            st.mask2:SetSize(wid, hgt)
         end
     end
 
-    local function NewStackGlowGate(icon, pad)
-        local gate = CreateFrame("StatusBar", nil, icon)
-        gate:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-        gate:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+    local function NewStackGlowGate(glyph, pad)
+        local gate = CreateFrame("StatusBar", nil, glyph)
+        gate:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
+        gate:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
         gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-        local fill = gate:GetStatusBarTexture()
-        if fill then
-            fill:SetAlpha(0)
+        local fillTex = gate:GetStatusBarTexture()
+        if fillTex then
+            fillTex:SetAlpha(0)
         end
         gate:EnableMouse(false)
-        local mask = gate:CreateMaskTexture()
-        mask:SetTexture(
+        local maskTex = gate:CreateMaskTexture()
+        maskTex:SetTexture(
             "Interface\\Buttons\\WHITE8x8",
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE",
             "NEAREST"
         )
-        return gate, mask, fill
+        return gate, maskTex, fillTex
     end
 
     local function StackGlowMatches(value, operator, threshold)
@@ -115,21 +115,21 @@ do
     -- gate's source there. Secret probes come FIRST everywhere: even a
     -- boolean or `~= nil` test on a secret is a hard error.
     -- Returns a plain number, a SECRET number, or nil (unknown).
-    local function ReadBuffApplications(frame)
-        local iid = frame.auraInstanceID
+    local function ReadBuffApplications(widget)
+        local iid = widget.auraInstanceID
         if not (issecretvalue and issecretvalue(iid)) and iid then
-            local unit = frame.auraDataUnit
-            if not (issecretvalue and issecretvalue(unit)) and unit then
-                local ok, data = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unit, iid)
-                if ok and data then
-                    local a = data.applications
+            local unitToken = widget.auraDataUnit
+            if not (issecretvalue and issecretvalue(unitToken)) and unitToken then
+                local success, payload = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unitToken, iid)
+                if success and payload then
+                    local a = payload.applications
                     if (issecretvalue and issecretvalue(a)) or a ~= nil then
                         return a
                     end
                 end
             end
         end
-        local ad = frame.auraDataCached
+        local ad = widget.auraDataCached
         -- The whole cached aura can be a secret table (restricted unit
         -- auras): indexing it is a hard error, so it reads as unknown.
         if issecretvalue and issecretvalue(ad) then
@@ -143,13 +143,13 @@ do
     end
     -- Exported for the aura active-cache below (Bar Glows stack threshold):
     -- same secret-safe applications read, off whatever pool frame is active.
-    ns._ReadBuffApplications = ReadBuffApplications
+    mod._ReadBuffApplications = ReadBuffApplications
 
     local function StartStackGlow(st, width, height)
         -- Both gate masks go over as data: the combat replay of Show Glows Only
         -- in Combat restarts from the recorded opts, so a mask bound out here
         -- would be missing on every texture that replay creates fresh.
-        ns.StartNativeGlow(st.glow, st.style, st.r, st.g, st.b, {
+        mod.StartNativeGlow(st.glow, st.style, st.r, st.g, st.b, {
             owner = st.icon,
             width = width,
             height = height,
@@ -166,7 +166,7 @@ do
 
     local function StopStackGlow(st)
         if st.started then
-            ns.StopNativeGlow(st.glow)
+            mod.StopNativeGlow(st.glow)
             st.started = nil
         end
         -- Unconditional: the wrapper is created at alpha 1, so anything an
@@ -182,8 +182,8 @@ do
         end
     end
 
-    local function StackGlowOnHide(icon)
-        local fd = hookFrameData[icon]
+    local function StackGlowOnHide(glyph)
+        local fd = hookFrameData[glyph]
         local st = fd and fd.stackGlow
         if st then
             StopStackGlow(st)
@@ -193,13 +193,13 @@ do
     -- (Re)configure or retire an icon's threshold controller. Called from
     -- RefreshCDMIconAppearance with everything pre-resolved; called with only
     -- the icon to tear down (toggle off, frame pooled onto a non-buff spell).
-    function ns.StackGlow_Configure(icon, threshold, operator, style, r, g, b, settings)
-        local fd = icon and hookFrameData[icon]
+    function mod.StackGlow_Configure(glyph, threshold, operator, look, r, g, b, prefs)
+        local fd = glyph and hookFrameData[glyph]
         if not fd then
             return
         end
         local st = fd.stackGlow
-        threshold, style = tonumber(threshold), tonumber(style)
+        threshold, look = tonumber(threshold), tonumber(look)
         if
             operator ~= "lt"
             and operator ~= "lte"
@@ -209,39 +209,39 @@ do
         then
             operator = "gte"
         end
-        if not (threshold and threshold >= 1 and style and style >= 1) then
+        if not (threshold and threshold >= 1 and look and look >= 1) then
             if st and st.threshold then
                 st.threshold = nil
                 StopStackGlow(st)
-                ns._btDirty = true
-                if ns.ArmBuffTicker then
-                    ns.ArmBuffTicker()
+                mod._btDirty = true
+                if mod.ArmBuffTicker then
+                    mod.ArmBuffTicker()
                 end
             end
             return
         end
         threshold = math.floor(threshold)
-        local lines = (settings and settings.buffGlowLines) or 8
-        local thickness = (settings and settings.buffGlowThickness) or 2
-        local speed = (settings and settings.buffGlowSpeed) or 4
-        local background = (settings and settings.buffGlowBackground) or false
-        local bgR = background and (settings.buffGlowBackgroundR or 0) or nil
-        local bgG = background and (settings.buffGlowBackgroundG or 0) or nil
-        local bgB = background and (settings.buffGlowBackgroundB or 0) or nil
+        local lines = (prefs and prefs.buffGlowLines) or 8
+        local thickness = (prefs and prefs.buffGlowThickness) or 2
+        local speed = (prefs and prefs.buffGlowSpeed) or 4
+        local background = (prefs and prefs.buffGlowBackground) or false
+        local bgR = background and (prefs.buffGlowBackgroundR or 0) or nil
+        local bgG = background and (prefs.buffGlowBackgroundG or 0) or nil
+        local bgB = background and (prefs.buffGlowBackgroundB or 0) or nil
 
         if not st then
-            st = { icon = icon }
+            st = { icon = glyph }
             fd.stackGlow = st
             -- The gate oversizes the icon so a FULL fill (and therefore the
             -- open mask) covers the glow textures' overhang past the icon
             -- edges (flipbook/pixel padding); proportional so big icons keep
             -- their fringe too.
-            local pad = math.ceil(math.max(StackGlowSize(icon)) * 0.4)
+            local pad = math.ceil(math.max(StackGlowSize(glyph)) * 0.4)
             if pad < 12 then
                 pad = 12
             end
             st.pad = pad
-            st.gate, st.mask, st.fill = NewStackGlowGate(icon, pad)
+            st.gate, st.mask, st.fill = NewStackGlowGate(glyph, pad)
 
             -- The mask rides the (alpha-0) fill's edge at a FIXED
             -- gate-sized rect instead of shadowing the fill rect: at value =
@@ -250,17 +250,17 @@ do
             -- the comparison. Lower bounds park it left and open at max;
             -- upper bounds open at min and park it right. Equality intersects
             -- one of each. NEAREST avoids a leaking edge texel.
-            SizeStackGlowMask(st, StackGlowSize(icon))
+            SizeStackGlowMask(st, StackGlowSize(glyph))
 
-            st.glow = CreateFrame("Frame", nil, icon)
-            st.glow:SetAllPoints(icon)
+            st.glow = CreateFrame("Frame", nil, glyph)
+            st.glow:SetAllPoints(glyph)
             st.glow:EnableMouse(false)
-            icon:HookScript("OnHide", StackGlowOnHide)
+            glyph:HookScript("OnHide", StackGlowOnHide)
         end
 
         local changed = st.threshold ~= threshold
             or st.operator ~= operator
-            or st.style ~= style
+            or st.style ~= look
             or st.r ~= r
             or st.g ~= g
             or st.b ~= b
@@ -271,7 +271,7 @@ do
             or st.bgR ~= bgR
             or st.bgG ~= bgG
             or st.bgB ~= bgB
-        st.threshold, st.operator, st.style = threshold, operator, style
+        st.threshold, st.operator, st.style = threshold, operator, look
         st.r, st.g, st.b = r, g, b
         st.lines, st.thickness, st.speed = lines, thickness, speed
         st.background, st.bgR, st.bgG, st.bgB = background, bgR, bgG, bgB
@@ -286,8 +286,8 @@ do
             st.openValue = upper and edge - 1 or edge
 
             if operator == "eq" and not st.gate2 then
-                st.gate2, st.mask2, st.fill2 = NewStackGlowGate(icon, st.pad)
-                SizeStackGlowMask(st, StackGlowSize(icon))
+                st.gate2, st.mask2, st.fill2 = NewStackGlowGate(glyph, st.pad)
+                SizeStackGlowMask(st, StackGlowSize(glyph))
             end
             if st.gate2 then
                 local equality = operator == "eq"
@@ -298,26 +298,26 @@ do
             end
             StopStackGlow(st)
         end
-        ns._btDirty = true
-        if ns.ArmBuffTicker then
-            ns.ArmBuffTicker()
+        mod._btDirty = true
+        if mod.ArmBuffTicker then
+            mod.ArmBuffTicker()
         end
     end
 
     -- Buff-tick feed for thresholded icons (the normal buff glow is suppressed
     -- for them). Plain counts decide in Lua; secret counts go straight to the
     -- gate and the engine's clamp + the mask decide what renders.
-    function ns.StackGlow_Feed(icon, active)
-        local fd = icon and hookFrameData[icon]
+    function mod.StackGlow_Feed(glyph, isActive)
+        local fd = glyph and hookFrameData[glyph]
         local st = fd and fd.stackGlow
         if not (st and st.threshold) then
             return
         end
-        if not active then
+        if not isActive then
             StopStackGlow(st)
             return
         end
-        local applications = ReadBuffApplications(icon)
+        local applications = ReadBuffApplications(glyph)
         local secret = issecretvalue and issecretvalue(applications)
         if not secret then
             -- Unknown count on an active buff fails OPEN; known counts use the
@@ -333,8 +333,8 @@ do
         if st.gate2 then
             st.gate2:SetValue(st.operator == "eq" and applications or 1)
         end
-        st.glow:SetFrameLevel(icon:GetFrameLevel() + 16)
-        local width, height = StackGlowSize(icon)
+        st.glow:SetFrameLevel(glyph:GetFrameLevel() + 16)
+        local width, height = StackGlowSize(glyph)
         if
             not st.started
             or math.abs(width - (st.width or 0)) > 0.01
@@ -351,12 +351,12 @@ do
             if pad ~= st.pad then
                 st.pad = pad
                 st.gate:ClearAllPoints()
-                st.gate:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-                st.gate:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+                st.gate:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
+                st.gate:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
                 if st.gate2 then
                     st.gate2:ClearAllPoints()
-                    st.gate2:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-                    st.gate2:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+                    st.gate2:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
+                    st.gate2:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
                 end
             end
             SizeStackGlowMask(st, width, height)
@@ -369,11 +369,11 @@ end
 -- only (re)starts a glow when fd.buffGlowActive is false, so live option edits
 -- (color, pixel Lines/Thickness/Speed) never reach an already-glowing icon.
 -- Used by the custom aura preview while CDM Bars options are open.
-function ns.RefreshBuffGlows()
+function mod.RefreshBuffGlows()
     for _, icons in pairs(cdmBarIcons) do
         for fi = 1, #icons do
-            local frame = icons[fi]
-            local fd = frame and hookFrameData[frame]
+            local widget = icons[fi]
+            local fd = widget and hookFrameData[widget]
             if fd and fd.buffGlowActive then
                 fd.buffGlowActive = false
             end
@@ -408,12 +408,12 @@ end
 -- clears auraInstanceID before hiding the icon, while a bar merely being hidden
 -- leaves it set -- so a visibility toggle mid-pandemic keeps its glow. The bias is
 -- deliberate: a suppressed glow costs a tick, a wrong one is what was reported.
-function ns._PandemicIconHide(self)
+function mod._PandemicIconHide(self)
     local fd = hookFrameData[self]
     if fd then
         if fd.pandemicGlowActive then
             if fd.pandemicOverlay then
-                ns.StopNativeGlow(fd.pandemicOverlay)
+                mod.StopNativeGlow(fd.pandemicOverlay)
             end
             fd.pandemicGlowActive = false
         end
@@ -426,22 +426,22 @@ function ns._PandemicIconHide(self)
             fd._panStale = true
         end
     end
-    if ns._pandemicState then
-        ns._pandemicState[self] = nil
+    if mod._pandemicState then
+        mod._pandemicState[self] = nil
     end
 end
 
 -- Blizzard recomputed the pandemic window, so the flag describes the aura that is
 -- on the icon NOW. Runs on every application that carries time over, well before
 -- the window itself opens.
-function ns._PandemicWindowSet(self)
+function mod._PandemicWindowSet(self)
     local fd = hookFrameData[self]
     if fd then
         fd._panStale = nil
     end
 end
 
-ns.FD = FD
+mod.FD = FD
 
 -------------------------------------------------------------------------------
 --  Show When Missing: "Also Show Below N Seconds" (per-icon, off by default).
@@ -457,22 +457,22 @@ do
     -- unknown or secret. The cached aura can itself be a SECRET TABLE:
     -- Blizzard fills it from aura queries that hide the whole aura while the
     -- unit's auras are restricted, and indexing one is a hard error.
-    local function ReadExpiration(frame)
-        local td = frame.totemData
-        local src = td or frame.auraDataCached
-        if issecretvalue(src) or not src then
+    local function ReadExpiration(widget)
+        local td = widget.totemData
+        local source = td or widget.auraDataCached
+        if issecretvalue(source) or not source then
             return nil
         end
-        local exp = src.expirationTime
+        local exp = source.expirationTime
         -- Secret probe first: any other test on a secret is a hard error.
         if issecretvalue(exp) or type(exp) ~= "number" or exp <= 0 then
             return nil
         end
         local rate
         if td then
-            rate = src.modRate
+            rate = source.modRate
         else
-            rate = src.timeMod
+            rate = source.timeMod
         end
         if issecretvalue(rate) or type(rate) ~= "number" or rate <= 0 then
             rate = 1
@@ -480,7 +480,7 @@ do
         return exp, rate
     end
     -- The WoW Forever anti-clip glow reads it too (CUI_CDM_ForeverAntiClip.lua).
-    ns.ReadAuraExpiration = ReadExpiration
+    mod.ReadAuraExpiration = ReadExpiration
 
     local function Disarm(fc)
         if fc._missingTimer then
@@ -494,7 +494,7 @@ do
 
     -- One timer per icon, memoized on the aura's expiration (a new N disarms
     -- first, in ns.MissingShowBelow).
-    local function Arm(frame, fc, exp, delay)
+    local function Arm(widget, fc, exp, delay)
         if fc._missingTimer and fc._missingExp == exp then
             return
         end
@@ -502,14 +502,14 @@ do
         fc._missingExp = exp
         fc._missingTimer = C_Timer.NewTimer(delay, function()
             fc._missingTimer = nil
-            Deadline(frame, fc, exp)
+            Deadline(widget, fc, exp)
         end)
     end
 
     -- From the reanchor pass, a deadline or the buff ticker, for a Show When
     -- Missing buff; seconds nil = option off. Returns true while the buff
     -- should show, with the timer armed for its next change.
-    function ns.MissingShowBelow(frame, fc, seconds)
+    function mod.MissingShowBelow(widget, fc, seconds)
         if not seconds or seconds <= 0 then
             if fc._missingTimer or fc._missingLow or fc._missingN then
                 Disarm(fc)
@@ -519,63 +519,63 @@ do
         end
         -- Runtime session gate: the per-pass checks for gone buffs start
         -- once any icon uses the option.
-        ns._cdmAnyMissingBelow = true
+        mod._cdmAnyMissingBelow = true
         if fc._missingN ~= seconds then
             Disarm(fc)
             fc._missingN = seconds
         end
-        local exp, rate = ReadExpiration(frame)
+        local exp, rate = ReadExpiration(widget)
         if not exp then
             Disarm(fc)
             fc._missingLow = nil
             return false
         end
-        local left = (exp - GetTime()) / rate
-        if left <= seconds then
+        local leftX = (exp - GetTime()) / rate
+        if leftX <= seconds then
             -- Showing. Re-check once this aura would have ended: refreshed, it
             -- hides again; gone, Blizzard's hide edge has the last word (an
             -- expired one never re-arms).
             fc._missingLow = seconds
-            if left > 0 then
-                Arm(frame, fc, exp, left * rate + 0.2)
+            if leftX > 0 then
+                Arm(widget, fc, exp, leftX * rate + 0.2)
             else
                 Disarm(fc)
             end
             return true
         end
         fc._missingLow = nil
-        Arm(frame, fc, exp, (left - seconds) * rate)
+        Arm(widget, fc, exp, (leftX - seconds) * rate)
         return false
     end
 
     -- Re-check one icon and flip it when its state changed.
-    local function Recheck(frame, fc)
-        local show = ns.MissingShowBelow(frame, fc, fc._missingN)
+    local function Recheck(widget, fc)
+        local show = mod.MissingShowBelow(widget, fc, fc._missingN)
         if show == (fc._missingActiveHidden and true or false) then
-            ns.MissingFlip(frame, fc, not show)
+            mod.MissingFlip(widget, fc, not show)
         end
     end
 
     -- A deadline: the same aura on a shown, routed frame flips in place; any
     -- other change goes back to the full reanchor pass.
-    Deadline = function(frame, fc, exp)
-        if fc._missingN and fc.barKey and frame:IsShown() and ReadExpiration(frame) == exp then
-            Recheck(frame, fc)
+    Deadline = function(widget, fc, exp)
+        if fc._missingN and fc.barKey and widget:IsShown() and ReadExpiration(widget) == exp then
+            Recheck(widget, fc)
         else
             fc._missingExp = nil
-            ns.QueueReanchor()
+            mod.QueueReanchor()
         end
     end
 
     -- Buff ticker (armed by the aura change): a refresh, a shorter
     -- re-application or a time that now reads secret re-checks the icon at
     -- once instead of at its old deadline.
-    function ns.MissingRecheck(frame, fc)
-        local exp = ReadExpiration(frame)
+    function mod.MissingRecheck(widget, fc)
+        local exp = ReadExpiration(widget)
         if exp and exp == fc._missingExp then
             return
         end
-        Recheck(frame, fc)
+        Recheck(widget, fc)
     end
 end
 -------------------------------------------------------------------------------
@@ -595,28 +595,28 @@ local _spellPowerCostCache = {}
 local function InvalidateSpellPowerCostCache()
     wipe(_spellPowerCostCache)
 end
-ns.InvalidateSpellPowerCostCache = InvalidateSpellPowerCostCache
+mod.InvalidateSpellPowerCostCache = InvalidateSpellPowerCostCache
 
 do
-    local _pccInvalidateFrame = ns.TakeShell()
+    local _pccInvalidateFrame = mod.TakeShell()
     _pccInvalidateFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     _pccInvalidateFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     _pccInvalidateFrame:SetScript("OnEvent", InvalidateSpellPowerCostCache)
 end
 
-local function HasEnoughResources(spellID)
+local function HasEnoughResources(spellId)
     if not (C_Spell and C_Spell.GetSpellPowerCost) then
         return true
     end
     -- nil = not yet checked, false = no cost (always enough), table = cost list.
-    local cached = _spellPowerCostCache[spellID]
+    local cached = _spellPowerCostCache[spellId]
     if cached == nil then
-        local costs = C_Spell.GetSpellPowerCost(spellID)
+        local costs = C_Spell.GetSpellPowerCost(spellId)
         if not costs or #costs == 0 then
-            _spellPowerCostCache[spellID] = false -- no resource gate
+            _spellPowerCostCache[spellId] = false -- no resource gate
             return true
         end
-        _spellPowerCostCache[spellID] = costs
+        _spellPowerCostCache[spellId] = costs
         cached = costs
     elseif cached == false then
         return true -- no resource gate, cached
@@ -635,11 +635,11 @@ local function HasEnoughResources(spellID)
                 cost = math.max(cost, (c.costPercent / 100) * maxP)
             end
             if cost > 0 then
-                local cur = UnitPower("player", powerType)
-                if issecretvalue and issecretvalue(cur) then
+                local current = UnitPower("player", powerType)
+                if issecretvalue and issecretvalue(current) then
                     return true
                 end
-                if cur < cost then
+                if current < cost then
                     return false
                 end
             end
@@ -647,12 +647,12 @@ local function HasEnoughResources(spellID)
     end
     return true
 end
-ns.HasEnoughResources = HasEnoughResources
+mod.HasEnoughResources = HasEnoughResources
 
 -- True once real UNIT_POWER_FREQUENT data arrives after PEW: at login
 -- IsSpellUsable/GetSpellPowerCost can read stale/empty (0 cost = "enough"),
 -- so glow decisions stay untrusted until then; listener re-fires QueueCDGlowUpdate.
-ns._cdGlowPowerConfirmed = true
+mod._cdGlowPowerConfirmed = true
 
 -------------------------------------------------------------------------------
 --  Constants
@@ -692,7 +692,7 @@ local function IsCDMSettingsOpen()
 end
 
 -- Main-chunk locals the CUI_CDM_Hook*.lua files re-import by name.
-CludesUI.NewInternals(ns, "_hookInternals", {
+CludesUI.NewInternals(mod, "_hookInternals", {
     _isDruid = _isDruid,
     FD = FD,
     GetViewerFrame = GetViewerFrame,

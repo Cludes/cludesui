@@ -10,13 +10,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  when it ends. /raidlead break 0 ends it for everyone. Players without
 --  CludesUI see nothing from it, so say the break in chat as well.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
-local W, H = 260, 22
+local Widgets, H = 260, 22
 local MAX_MINUTES = 60
 
-function ns.BreakSettings()
-    local p = ns.RaidLeadDB()
+function mod.BreakSettings()
+    local p = mod.RaidLeadDB()
     p.breakTimer = p.breakTimer or {}
     local s = p.breakTimer
     if s.enabled == nil then
@@ -28,40 +28,40 @@ function ns.BreakSettings()
     return s
 end
 
-local function Say(text)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text)
+local function Say(textValue)
+    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
 end
 
-local bar, label, ticker
+local barFrame, labelText, ticker
 local current -- { ends, total, from, warned }
 
 local function Build()
-    if bar then
+    if barFrame then
         return
     end
-    bar = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
-    bar:SetSize(W, H)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    barFrame = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
+    barFrame:SetSize(Widgets, H)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local ar, ag, ab = CludesUI.Kit.Accent()
-    bar:GetStatusBarTexture():SetVertexColor(ar, ag, ab, 0.9)
-    CludesUI.Kit.Panel(bar, 0.85)
-    label = bar:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(label, 13, nil)
-    label:SetPoint("CENTER")
-    bar:Hide()
-    ns.ApplyBreakPosition()
+    barFrame:GetStatusBarTexture():SetVertexColor(ar, ag, ab, 0.9)
+    CludesUI.Kit.Panel(barFrame, 0.85)
+    labelText = barFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(labelText, 13, nil)
+    labelText:SetPoint("CENTER")
+    barFrame:Hide()
+    mod.ApplyBreakPosition()
 end
 
-function ns.ApplyBreakPosition()
-    if not bar or InCombatLockdown() then
+function mod.ApplyBreakPosition()
+    if not barFrame or InCombatLockdown() then
         return
     end
-    local p = ns.BreakSettings().pos
-    bar:ClearAllPoints()
+    local p = mod.BreakSettings().pos
+    barFrame:ClearAllPoints()
     if p then
-        bar:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        barFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        bar:SetPoint("TOP", UIParent, "TOP", 0, -130)
+        barFrame:SetPoint("TOP", UIParent, "TOP", 0, -130)
     end
 end
 
@@ -71,8 +71,8 @@ local function Stop()
         ticker:Cancel()
         ticker = nil
     end
-    if bar then
-        bar:Hide()
+    if barFrame then
+        barFrame:Hide()
     end
 end
 
@@ -80,33 +80,33 @@ local function Update()
     if not current then
         return
     end
-    local left = current.ends - GetTime()
-    if left <= 0 then
+    local leftX = current.ends - GetTime()
+    if leftX <= 0 then
         Stop()
         Say("the break is over.")
-        if ns.BreakSettings().sound then
+        if mod.BreakSettings().sound then
             PlaySound(SOUNDKIT.RAID_WARNING, "Master")
         end
         return
     end
-    if left <= 60 and not current.warned then
+    if leftX <= 60 and not current.warned then
         current.warned = true
         if current.total > 90 then
             Say("one minute of break left.")
         end
     end
-    bar:SetValue(left)
-    label:SetText(
+    barFrame:SetValue(leftX)
+    labelText:SetText(
         ("Break  %s%s"):format(
-            ns.FormatDuration(left),
+            mod.FormatDuration(leftX),
             current.from and ("  |cff9aa6b2" .. current.from .. "|r") or ""
         )
     )
 end
 
 --- Shows a break of `seconds` (0 ends it). `from` is who started it.
-function ns.ReceiveBreak(seconds, from)
-    if not ns.BreakSettings().enabled then
+function mod.ReceiveBreak(seconds, from)
+    if not mod.BreakSettings().enabled then
         return
     end
     seconds = math.floor(tonumber(seconds) or 0)
@@ -120,8 +120,8 @@ function ns.ReceiveBreak(seconds, from)
     seconds = math.min(seconds, MAX_MINUTES * 60)
     Build()
     current = { ends = GetTime() + seconds, total = seconds, from = from }
-    bar:SetMinMaxValues(0, seconds)
-    bar:Show()
+    barFrame:SetMinMaxValues(0, seconds)
+    barFrame:Show()
     if ticker then
         ticker:Cancel()
     end
@@ -130,7 +130,7 @@ function ns.ReceiveBreak(seconds, from)
 end
 
 --- Starts (minutes > 0) or ends (0) a break for the group.
-function ns.StartBreak(minutes)
+function mod.StartBreak(minutes)
     minutes = tonumber(minutes)
     if not minutes or minutes < 0 or minutes > MAX_MINUTES then
         return Say("give the break in minutes, 1 to " .. MAX_MINUTES .. ", or 0 to end it.")
@@ -140,8 +140,8 @@ function ns.StartBreak(minutes)
     end
     local seconds = math.floor(minutes * 60 + 0.5)
     -- In a group the message comes back to us too, which starts our own bar.
-    if not (ns.SendBreak and ns.SendBreak(seconds)) then
-        ns.ReceiveBreak(seconds, nil)
+    if not (mod.SendBreak and mod.SendBreak(seconds)) then
+        mod.ReceiveBreak(seconds, nil)
     end
 end
 
@@ -163,24 +163,24 @@ ev:SetScript("OnEvent", function()
             noAnchorTarget = true,
             noResize = true,
             isHidden = function()
-                return not ns.BreakSettings().enabled
+                return not mod.BreakSettings().enabled
             end,
             getFrame = function()
-                return bar
+                return barFrame
             end,
             getSize = function()
-                return W, H
+                return Widgets, H
             end,
-            savePos = function(_, point, relPoint, x, y)
-                ns.BreakSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                mod.BreakSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
             loadPos = function()
-                return ns.BreakSettings().pos
+                return mod.BreakSettings().pos
             end,
             clearPos = function()
-                ns.BreakSettings().pos = nil
+                mod.BreakSettings().pos = nil
             end,
-            applyPos = ns.ApplyBreakPosition,
+            applyPos = mod.ApplyBreakPosition,
         }),
     }, "CludesUIRaidLead")
 end)

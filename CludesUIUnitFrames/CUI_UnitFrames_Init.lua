@@ -10,27 +10,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  file and CUI_UnitFrames_Visibility.lua through ns and ns._internals; db is
 --  set through I.dbSetters.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local issecretvalue = issecretvalue
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local CLASS_FULL_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
 
-local I = ns._internals
-local frames, GetSettingsForUnit, UnsnapTex, SetFSFont =
-    I.frames, I.GetSettingsForUnit, I.UnsnapTex, I.SetFSFont
+local Inner = mod._internals
+local frameList, GetSettingsForUnit, UnsnapTex, SetFSFont =
+    Inner.frames, Inner.GetSettingsForUnit, Inner.UnsnapTex, Inner.SetFSFont
 local ApplyFramePosition, ReloadFrames, ApplyBlizzCastbarState =
-    I.ApplyFramePosition, I.ReloadFrames, I.ApplyBlizzCastbarState
+    Inner.ApplyFramePosition, Inner.ReloadFrames, Inner.ApplyBlizzCastbarState
 local ApplyAbsorbStyle, ApplyClassColor, ApplyDetachedPortraitShape =
-    I.ApplyAbsorbStyle, I.ApplyClassColor, I.ApplyDetachedPortraitShape
+    Inner.ApplyAbsorbStyle, Inner.ApplyClassColor, Inner.ApplyDetachedPortraitShape
 local CreateCustomClassPower, DestroyCustomClassPower, IsKickCastbarUnit =
-    I.CreateCustomClassPower, I.DestroyCustomClassPower, I.IsKickCastbarUnit
+    Inner.CreateCustomClassPower, Inner.DestroyCustomClassPower, Inner.IsKickCastbarUnit
 local StyleFullFrame, StyleFocusFrame, StyleSimpleFrame, StyleBossFrame =
-    I.StyleFullFrame, I.StyleFocusFrame, I.StyleSimpleFrame, I.StyleBossFrame
-local UnitFrame_OnEnter, UnitFrame_OnLeave = I.UnitFrame_OnEnter, I.UnitFrame_OnLeave
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+    Inner.StyleFullFrame, Inner.StyleFocusFrame, Inner.StyleSimpleFrame, Inner.StyleBossFrame
+local UnitFrame_OnEnter, UnitFrame_OnLeave = Inner.UnitFrame_OnEnter, Inner.UnitFrame_OnLeave
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 local function InitializeFrames()
@@ -39,7 +39,7 @@ local function InitializeFrames()
     -- at login while nothing changed.
     CludesUI.SyncUFColors()
 
-    local classPowerStyle = db.profile.player.classPowerStyle or "none"
+    local classPowerStyle = saved.profile.player.classPowerStyle or "none"
     -- Forever has no Blizzard class resource bar to adopt (see the ComboFrame
     -- note below) and the options page greys that entry out there: a stored
     -- "blizzard" builds as the modern style (ns.UF_ForeverCPStyle), and the
@@ -50,14 +50,14 @@ local function InitializeFrames()
     -- migrated here. Under the WoW Forever style that entry is the combo
     -- point arc on our target or player frame (Combo Points;
     -- ns.UF_ApplyForeverComboArc) and stands.
-    if ns.UF_ForeverCPStyle then
-        classPowerStyle = ns.UF_ForeverCPStyle(classPowerStyle)
+    if mod.UF_ForeverCPStyle then
+        classPowerStyle = mod.UF_ForeverCPStyle(classPowerStyle)
     end
     -- Per-unit frame source, resolved once for this build. When a unit is set to
     -- "blizzard" (leave Blizzard's default frame) or "hidden", the CludesUI frame is
     -- not spawned at all -- the ONLY way to keep Blizzard's own frame alive, since
     -- oUF:Spawn() permanently disables it.
-    local playerFrameSource = ns.GetUnitFrameSource("player")
+    local playerFrameSource = mod.GetUnitFrameSource("player")
     -- Per-class Blizzard class power bar frame names
     local BLIZZARD_CP_FRAMES = {
         DEATHKNIGHT = "RuneFrame",
@@ -83,16 +83,16 @@ local function InitializeFrames()
             savedClassPowerBar = cpFrame
             -- A Blizzard parent only: another owner's frame (Resource Bars' Blizzard
             -- Class Resource Art host) must never become the hand-back target.
-            local cur = cpFrame:GetParent()
-            _blizzCPState.origParent = (cur == cpFrame.layoutParent or cur == PlayerFrame) and cur
+            local current = cpFrame:GetParent()
+            _blizzCPState.origParent = (current == cpFrame.layoutParent or current == PlayerFrame) and current
                 or (cpFrame.layoutParent or PlayerFrame)
             cpFrame:SetParent(UIParent)
         end
     end
 
-    local enabled = db.profile.enabledFrames
+    local enabled = saved.profile.enabledFrames
 
-    local function SetupUnitMenu(frame, unit)
+    local function SetupUnitMenu(widget, unitToken)
         -- Register ALL mouse buttons (matches raid/party's "AnyUp"), not just
         -- left/right. These frames bind nothing to middle/thumb themselves, so
         -- an unbound middle/thumb click still does nothing here -- but Blizzard's
@@ -102,17 +102,17 @@ local function InitializeFrames()
         -- registration silently ate those clicks whenever CUI's own click-cast
         -- engine wasn't the one driving RegisterForClicks (i.e. CUI's engine
         -- disabled, native/Clique click-casting relied on instead).
-        frame:RegisterForClicks("AnyUp")
+        widget:RegisterForClicks("AnyUp")
         -- 12.0.7 gates SecureUnitButton's togglemenu; route right-click securely
         -- through a SecureActionButton proxy so the menu (and its protected items
         -- like Set Focus) work without taint.
         if CludesUI.AttachSecureUnitMenu then
-            CludesUI.AttachSecureUnitMenu(frame)
+            CludesUI.AttachSecureUnitMenu(widget)
         else
-            frame:SetAttribute("*type2", "togglemenu")
+            widget:SetAttribute("*type2", "togglemenu")
         end
-        frame:HookScript("OnEnter", UnitFrame_OnEnter)
-        frame:HookScript("OnLeave", UnitFrame_OnLeave)
+        widget:HookScript("OnEnter", UnitFrame_OnEnter)
+        widget:HookScript("OnLeave", UnitFrame_OnLeave)
         -- Expose to click-casting via the standard global table. CUI unit frames
         -- replace the Blizzard ones, which the click-cast engine registers by name --
         -- but those are hidden, so the engine never reaches the visible frames.
@@ -124,7 +124,7 @@ local function InitializeFrames()
         if type(ClickCastFrames) ~= "table" then
             ClickCastFrames = {}
         end
-        ClickCastFrames[frame] = true
+        ClickCastFrames[widget] = true
         -- NO ping mixin here, deliberately (three field rounds, 2026-08-24):
         -- an addon-installed PingableType mixin CANNOT serve secret-content
         -- units. Reading our tainted GetIsPingable inside PingManager's
@@ -144,9 +144,9 @@ local function InitializeFrames()
         -- Spawning enables the Castbar element, which silences Blizzard's
         -- player/pet cast bars. Keep whatever a standalone cast bar addon set.
         CludesUI.CaptureBlizzCastBarEvents()
-        frames.player = ns.Engine.SpawnUnitFrame("player", "CludesUIUnitFrames_Player")
-        StyleFullFrame(frames.player, "player")
-        ns.UF_AttachEngineFrame(frames.player, "player")
+        frameList.player = mod.Engine.SpawnUnitFrame("player", "CludesUIUnitFrames_Player")
+        StyleFullFrame(frameList.player, "player")
+        mod.UF_AttachEngineFrame(frameList.player, "player")
         CludesUI.RestoreBlizzCastBarEvents()
     elseif playerFrameSource == "hidden" then
         -- Wrapped for the same reason as the spawn above: the suppression
@@ -155,7 +155,7 @@ local function InitializeFrames()
         -- frame -- CUI would mark its own silence as somebody else's and
         -- never hand the bar back.
         CludesUI.CaptureBlizzCastBarEvents()
-        ns.Engine.HideBlizzardUnitFrame("player")
+        mod.Engine.HideBlizzardUnitFrame("player")
         CludesUI.RestoreBlizzCastBarEvents()
     end
 
@@ -168,20 +168,20 @@ local function InitializeFrames()
     -- existence. The wrapper is inserted between the player frame and whatever parent
     -- oUF originally gave it (PetBattleFrameHider), so the pet-battle state driver
     -- chain continues to work.
-    if frames.player then
-        local origParent = frames.player:GetParent() or UIParent
+    if frameList.player then
+        local origParent = frameList.player:GetParent() or UIParent
         local playerVisWrap = CreateFrame("Frame", nil, origParent)
         playerVisWrap:SetAllPoints(origParent)
-        playerVisWrap:SetFrameStrata(frames.player:GetFrameStrata())
-        frames.player:SetParent(playerVisWrap)
-        frames.player._visWrap = playerVisWrap
+        playerVisWrap:SetFrameStrata(frameList.player:GetFrameStrata())
+        frameList.player:SetParent(playerVisWrap)
+        frameList.player._visWrap = playerVisWrap
 
-        ApplyFramePosition(frames.player, "player")
-        SetupUnitMenu(frames.player, "player")
+        ApplyFramePosition(frameList.player, "player")
+        SetupUnitMenu(frameList.player, "player")
 
         if enabled.player == false then
-            frames.player:Hide()
-            frames.player:SetAttribute("unit", nil)
+            frameList.player:Hide()
+            frameList.player:SetAttribute("unit", nil)
         end
     end
 
@@ -191,28 +191,28 @@ local function InitializeFrames()
     -- Rested indicator on player health bar top-left: "ZZZ" text, or
     -- Blizzard's animated player frame rest icon when Animated is on.
     do
-        local pf = frames.player
-        if pf and pf.Health then
-            if not pf._restHolder then
-                pf._restHolder = CreateFrame("Frame", nil, pf.Health)
-                local restText = pf._restHolder:CreateFontString(nil, "OVERLAY")
+        local popFrame = frameList.player
+        if popFrame and popFrame.Health then
+            if not popFrame._restHolder then
+                popFrame._restHolder = CreateFrame("Frame", nil, popFrame.Health)
+                local restText = popFrame._restHolder:CreateFontString(nil, "OVERLAY")
                 SetFSFont(restText, 9)
                 restText:SetTextColor(1, 1, 1)
                 restText:SetText("ZZZ")
                 restText:Hide()
-                pf._restText = restText
+                popFrame._restText = restText
 
-                local function PlaceRest(region)
+                local function PlaceRest(regionFrame)
                     local rx = (CludesUIDB and CludesUIDB.restedIndicatorXOffset) or 0
                     local ry = (CludesUIDB and CludesUIDB.restedIndicatorYOffset) or 0
-                    region:ClearAllPoints()
-                    region:SetPoint("TOPLEFT", pf.Health, "TOPLEFT", 3 + rx, -2 + ry)
+                    regionFrame:ClearAllPoints()
+                    regionFrame:SetPoint("TOPLEFT", popFrame.Health, "TOPLEFT", 3 + rx, -2 + ry)
                 end
                 -- Places the text, and the animated icon once built, at the cog's X/Y
                 -- offsets (and the icon at its Size).
-                pf._restPlace = function()
-                    PlaceRest(pf._restText)
-                    local a = pf._restAnim
+                popFrame._restPlace = function()
+                    PlaceRest(popFrame._restText)
+                    local a = popFrame._restAnim
                     if a then
                         local size = (CludesUIDB and CludesUIDB.restedIndicatorAnimatedSize) or 24
                         a:SetSize(size, size)
@@ -222,13 +222,13 @@ local function InitializeFrames()
 
                 -- Shows the style the settings pick (or neither) and hides the other.
                 -- The animated icon is built the first time it is needed.
-                pf._restUpdate = function()
-                    local db = CludesUIDB
-                    local enabled = db and db.showRestedIndicator == true or false
+                popFrame._restUpdate = function()
+                    local saved = CludesUIDB
+                    local enabled = saved and saved.showRestedIndicator == true or false
                     -- Rest changes are listened to only while the indicator is on.
-                    if enabled ~= pf._restListening then
-                        pf._restListening = enabled
-                        local ef = pf._restEventFrame
+                    if enabled ~= popFrame._restListening then
+                        popFrame._restListening = enabled
+                        local ef = popFrame._restEventFrame
                         if enabled then
                             ef:RegisterEvent("PLAYER_UPDATE_RESTING")
                             ef:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -237,36 +237,36 @@ local function InitializeFrames()
                         end
                     end
                     local on = enabled and IsResting() or false
-                    local animated = db and db.restedIndicatorAnimated == true or false
-                    if on and animated and not pf._restAnim then
+                    local animated = saved and saved.restedIndicatorAnimated == true or false
+                    if on and animated and not popFrame._restAnim then
                         -- On the unit frame, not the health bar: the bar sits in the frame's
                         -- bar clip, which would cut off the z's as they float up past its edge.
                         -- Its level keeps it above that clip, which draws as one group.
-                        local restAnim = CreateFrame("Frame", nil, pf)
-                        restAnim:SetFrameLevel(((pf._barClip or pf):GetFrameLevel()) + 10)
+                        local restAnim = CreateFrame("Frame", nil, popFrame)
+                        restAnim:SetFrameLevel(((popFrame._barClip or popFrame):GetFrameLevel()) + 10)
                         restAnim:Hide()
                         local restTex = restAnim:CreateTexture(nil, "OVERLAY")
                         restTex:SetAllPoints(restAnim)
                         CludesUI.AddRestFlipbook(restAnim, restTex)
-                        pf._restAnim = restAnim
-                        pf._restPlace()
+                        popFrame._restAnim = restAnim
+                        popFrame._restPlace()
                     end
-                    pf._restText:SetShown(on and not animated)
-                    if pf._restAnim then
-                        pf._restAnim:SetShown(on and animated)
+                    popFrame._restText:SetShown(on and not animated)
+                    if popFrame._restAnim then
+                        popFrame._restAnim:SetShown(on and animated)
                     end
                 end
 
                 -- Its events are registered by _restUpdate while the indicator is on.
-                pf._restEventFrame = CreateFrame("Frame", nil, pf)
-                pf._restEventFrame:SetScript("OnEvent", function()
-                    pf._restUpdate()
+                popFrame._restEventFrame = CreateFrame("Frame", nil, popFrame)
+                popFrame._restEventFrame:SetScript("OnEvent", function()
+                    popFrame._restUpdate()
                 end)
             end
-            pf._restHolder:SetAllPoints(pf.Health)
-            pf._restHolder:SetFrameLevel(pf.Health:GetFrameLevel() + 5)
-            pf._restPlace()
-            pf._restUpdate()
+            popFrame._restHolder:SetAllPoints(popFrame.Health)
+            popFrame._restHolder:SetFrameLevel(popFrame.Health:GetFrameLevel() + 5)
+            popFrame._restPlace()
+            popFrame._restUpdate()
         end
     end
 
@@ -276,11 +276,11 @@ local function InitializeFrames()
 
     -- Re-apply after zone changes and after Edit Mode closes, both of which
     -- can cause Blizzard to reparent or re-hide the cast bar.
-    if not frames._cbSuppressFrame then
-        frames._cbSuppressFrame = CreateFrame("Frame")
-        frames._cbSuppressFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        frames._cbSuppressFrame:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
-        frames._cbSuppressFrame:SetScript("OnEvent", function()
+    if not frameList._cbSuppressFrame then
+        frameList._cbSuppressFrame = CreateFrame("Frame")
+        frameList._cbSuppressFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        frameList._cbSuppressFrame:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
+        frameList._cbSuppressFrame:SetScript("OnEvent", function()
             -- Deferred: EDIT_MODE_LAYOUTS_UPDATED dispatches from inside Edit Mode's own
             -- operations; applying suppression state there writes cast bar state
             -- mid-pass (same taint mechanism as the DisableBlizzard override above).
@@ -295,8 +295,8 @@ local function InitializeFrames()
                 -- WoW Forever: Blizzard's own combo points stay up while Edit
                 -- Mode is open; a Combo Points spot picked meanwhile takes
                 -- them down once it closes.
-                if ns._ufComboFrameKept and ns.UF_ComboLocation() ~= "target" then
-                    C_Timer.After(0, ns.UF_ApplyForeverComboArc)
+                if mod._ufComboFrameKept and mod.UF_ComboLocation() ~= "target" then
+                    C_Timer.After(0, mod.UF_ApplyForeverComboArc)
                 end
             end)
         end
@@ -304,30 +304,30 @@ local function InitializeFrames()
 
     -- Resize frame and portrait to account for class power pips above health bar
     local function ResizeFrameForClassPower(cpAboveH)
-        local frame = frames.player
-        if not frame then
+        local widget = frameList.player
+        if not widget then
             return
         end
         -- A stock style's kit owns the frame size, the portrait and the health
         -- offsets (ns.UF_ApplyBlizzardLayout). In combat this would park the
         -- CludesUI size for regen with no stock pass after it.
-        if ns.UF_Blizz() then
+        if mod.UF_Blizz() then
             return
         end
-        local settings = GetSettingsForUnit("player")
-        local ppPos = settings.powerPosition or "below"
+        local prefs = GetSettingsForUnit("player")
+        local ppPos = prefs.powerPosition or "below"
         local ppIsAtt = (ppPos == "below" or ppPos == "above")
-        local ppExtra = ppIsAtt and settings.powerHeight or 0
-        local baseH = settings.healthHeight + ppExtra
-        local btbPos2 = settings.btbPosition or "bottom"
+        local ppExtra = ppIsAtt and prefs.powerHeight or 0
+        local baseH = prefs.healthHeight + ppExtra
+        local btbPos2 = prefs.btbPosition or "bottom"
         local btbIsAtt = (btbPos2 == "top" or btbPos2 == "bottom")
-        local btbExtra = (settings.bottomTextBar and btbIsAtt) and (settings.bottomTextBarHeight or 16) or 0
+        local btbExtra = (prefs.bottomTextBar and btbIsAtt) and (prefs.bottomTextBarHeight or 16) or 0
         local totalH = baseH + cpAboveH + btbExtra
 
-        local pStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
-        local showPortrait = pStyle ~= "none" and settings.showPortrait ~= false
+        local pStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
+        local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
         local isAttached = pStyle == "attached"
-        local pSizeAdj = settings.portraitSize or 0
+        local pSizeAdj = prefs.portraitSize or 0
         if not isAttached then
             pSizeAdj = pSizeAdj + 10
         end
@@ -336,7 +336,7 @@ local function InitializeFrames()
             adjPortraitH = 8
         end
 
-        local pSide = settings.portraitSide or "left"
+        local pSide = prefs.portraitSide or "left"
         local effectiveSide = pSide
         if isAttached and pSide == "top" then
             effectiveSide = "left"
@@ -345,93 +345,93 @@ local function InitializeFrames()
         local totalWidth
         local portraitW = 0
         if not showPortrait then
-            totalWidth = settings.frameWidth
+            totalWidth = prefs.frameWidth
         elseif isAttached then
-            totalWidth = adjPortraitH + settings.frameWidth
+            totalWidth = adjPortraitH + prefs.frameWidth
             portraitW = adjPortraitH
         else
-            totalWidth = settings.frameWidth
+            totalWidth = prefs.frameWidth
         end
 
         if not InCombatLockdown() then
-            PP.Size(frame, totalWidth, totalH)
+            Pix.Size(widget, totalWidth, totalH)
         else
-            frame._pendingSize = { totalWidth, totalH }
-            ns.CombatQueue.Defer("PlayerClassPowerSize", function()
-                if frame._pendingSize and not InCombatLockdown() then
-                    PP.Size(frame, frame._pendingSize[1], frame._pendingSize[2])
+            widget._pendingSize = { totalWidth, totalH }
+            mod.CombatQueue.Defer("PlayerClassPowerSize", function()
+                if widget._pendingSize and not InCombatLockdown() then
+                    Pix.Size(widget, widget._pendingSize[1], widget._pendingSize[2])
                 end
-                frame._pendingSize = nil
+                widget._pendingSize = nil
             end)
         end
 
         -- Update health bar xOffset when portrait width changes
-        if frame.Health then
+        if widget.Health then
             local newXOff = (showPortrait and isAttached and effectiveSide == "left") and portraitW or 0
             local newRightInset = (showPortrait and isAttached and effectiveSide == "right") and portraitW
                 or 0
-            frame.Health._xOffset = newXOff
-            frame.Health._rightInset = newRightInset
+            widget.Health._xOffset = newXOff
+            widget.Health._rightInset = newRightInset
         end
 
         if
-            frame.Portrait
-            and frame.Portrait.backdrop
+            widget.Portrait
+            and widget.Portrait.backdrop
             and showPortrait
-            and not frame.Portrait.backdrop._isInside
+            and not widget.Portrait.backdrop._isInside
         then
-            PP.Size(frame.Portrait.backdrop, adjPortraitH, adjPortraitH)
+            Pix.Size(widget.Portrait.backdrop, adjPortraitH, adjPortraitH)
             -- The same anchors the reload pass gives the backdrop (a top text bar
             -- pushes an attached one down; a detached one floats off the health
             -- bar's edge): a backdrop cleared and left with no anchor renders
             -- nowhere until the next reload pass.
-            frame.Portrait.backdrop:ClearAllPoints()
-            local pBtbTopOff = (btbPos2 == "top" and settings.bottomTextBar)
-                    and (settings.bottomTextBarHeight or 16)
+            widget.Portrait.backdrop:ClearAllPoints()
+            local pBtbTopOff = (btbPos2 == "top" and prefs.bottomTextBar)
+                    and (prefs.bottomTextBarHeight or 16)
                 or 0
             if isAttached then
                 if effectiveSide == "left" then
-                    PP.Point(frame.Portrait.backdrop, "TOPLEFT", frame, "TOPLEFT", 0, -pBtbTopOff)
+                    Pix.Point(widget.Portrait.backdrop, "TOPLEFT", widget, "TOPLEFT", 0, -pBtbTopOff)
                 else
-                    PP.Point(frame.Portrait.backdrop, "TOPRIGHT", frame, "TOPRIGHT", 0, -pBtbTopOff)
+                    Pix.Point(widget.Portrait.backdrop, "TOPRIGHT", widget, "TOPRIGHT", 0, -pBtbTopOff)
                 end
             else
-                local pXOff = settings.portraitX or 0
-                local pYOff = (settings.portraitY or 0) + 5
+                local pXOff = prefs.portraitX or 0
+                local pYOff = (prefs.portraitY or 0) + 5
                 if effectiveSide == "top" then
-                    frame.Portrait.backdrop:SetPoint(
+                    widget.Portrait.backdrop:SetPoint(
                         "BOTTOM",
-                        frame.Health or frame,
+                        widget.Health or widget,
                         "TOP",
                         pXOff,
                         15 + pYOff
                     )
                 elseif effectiveSide == "left" then
-                    frame.Portrait.backdrop:SetPoint(
+                    widget.Portrait.backdrop:SetPoint(
                         "TOPRIGHT",
-                        frame.Health or frame,
+                        widget.Health or widget,
                         "TOPLEFT",
                         -15 + pXOff,
                         pYOff
                     )
                 else
-                    frame.Portrait.backdrop:SetPoint(
+                    widget.Portrait.backdrop:SetPoint(
                         "TOPLEFT",
-                        frame.Health or frame,
+                        widget.Health or widget,
                         "TOPRIGHT",
                         15 + pXOff,
                         pYOff
                     )
                 end
             end
-            if frame.Portrait.backdrop._2d then
-                UnsnapTex(frame.Portrait.backdrop._2d)
+            if widget.Portrait.backdrop._2d then
+                UnsnapTex(widget.Portrait.backdrop._2d)
             end
-            if frame:IsElementEnabled("Portrait") and frame.Portrait.ForceUpdate then
-                frame.Portrait:ForceUpdate()
+            if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
+                widget.Portrait:ForceUpdate()
             end
             -- The detached portrait moved: move its click overlay with it.
-            ns.UF_SyncPortraitClick(frame)
+            mod.UF_SyncPortraitClick(widget)
         end
     end
 
@@ -442,229 +442,231 @@ local function InitializeFrames()
     -- UIParent-parented bars).
     local _cpExpectedParent = nil
 
-    local function PositionClassPowerBar(bar)
-        if not bar or not frames.player then
+    local function PositionClassPowerBar(barFrame)
+        if not barFrame or not frameList.player then
             return
         end
-        bar:ClearAllPoints()
+        barFrame:ClearAllPoints()
         -- Stock styles: the health bar keeps the kit's spot (the stock pass
         -- places it, and skips in combat), so only the pips move here.
-        local stock = ns.UF_Blizz()
-        local style = db.profile.player.classPowerStyle or "none"
-        if ns.UF_ForeverCPStyle then
-            style = ns.UF_ForeverCPStyle(style)
+        local stock = mod.UF_Blizz()
+        local look = saved.profile.player.classPowerStyle or "none"
+        if mod.UF_ForeverCPStyle then
+            look = mod.UF_ForeverCPStyle(look)
         end
-        local position = db.profile.player.classPowerPosition or "top"
-        local offsetX = db.profile.player.classPowerBarX or 0
-        local offsetY = db.profile.player.classPowerBarY or 0
+        local position = saved.profile.player.classPowerPosition or "top"
+        local offsetX = saved.profile.player.classPowerBarX or 0
+        local offsetY = saved.profile.player.classPowerBarY or 0
 
         -- Stop castbar watcher by default; only re-enabled in the "bottom" branch
-        ns._cpWatchFn = nil
-        ns._cpWatchTick.Stop()
-        ns._cpCastWatcher:Hide()
+        mod._cpWatchFn = nil
+        mod._cpWatchTick.Stop()
+        mod._cpCastWatcher:Hide()
 
-        if style == "modern" and position == "above" then
+        if look == "modern" and position == "above" then
             -- Above health bar, inside the frame -- pips stretch to fill health bar width
             -- Bottom of pips flush with top of health bar, top of pips flush with top of border
-            _cpExpectedParent = frames.player
-            bar:SetParent(frames.player)
-            local anchorFrame = frames.player.Health
-            local pipH = bar._pipH or 3
+            _cpExpectedParent = frameList.player
+            barFrame:SetParent(frameList.player)
+            local anchorFrame = frameList.player.Health
+            local pipH = barFrame._pipH or 3
             -- Resize frame/portrait BEFORE anchoring health bar so _xOffset is correct
             ResizeFrameForClassPower(pipH)
             local btbOff = 0
-            local btbPos2 = db.profile.player.btbPosition or "bottom"
-            if btbPos2 == "top" and db.profile.player.bottomTextBar then
-                btbOff = db.profile.player.bottomTextBarHeight or 16
+            local btbPos2 = saved.profile.player.btbPosition or "bottom"
+            if btbPos2 == "top" and saved.profile.player.bottomTextBar then
+                btbOff = saved.profile.player.bottomTextBarHeight or 16
             end
             local cpPush = pipH + btbOff
             if not stock then
                 anchorFrame:ClearAllPoints()
                 anchorFrame:SetPoint(
                     "TOPLEFT",
-                    frames.player,
+                    frameList.player,
                     "TOPLEFT",
                     anchorFrame._xOffset or 0,
-                    PP.Scale(-cpPush)
+                    Pix.Scale(-cpPush)
                 )
-                anchorFrame:SetPoint("RIGHT", frames.player, "RIGHT", -(anchorFrame._rightInset or 0), 0)
+                anchorFrame:SetPoint("RIGHT", frameList.player, "RIGHT", -(anchorFrame._rightInset or 0), 0)
             end
-            PP.Point(bar, "BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, 0)
-            PP.Point(bar, "BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
-            local fw = db.profile.player.frameWidth or 181
-            if bar._repositionForWidth then
-                bar._repositionForWidth(fw)
+            Pix.Point(barFrame, "BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, 0)
+            Pix.Point(barFrame, "BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
+            local fw = saved.profile.player.frameWidth or 181
+            if barFrame._repositionForWidth then
+                barFrame._repositionForWidth(fw)
             end
             -- Show 1px bottom border matching frame border color
-            if bar._bottomBdrFrame then
-                local bdrC = db.profile.player.borderColor or { r = 0, g = 0, b = 0 }
-                bar._bottomBdr:SetColorTexture(bdrC.r, bdrC.g, bdrC.b, 1)
-                bar._bottomBdrFrame:Show()
+            if barFrame._bottomBdrFrame then
+                local bdrC = saved.profile.player.borderColor or { r = 0, g = 0, b = 0 }
+                barFrame._bottomBdr:SetColorTexture(bdrC.r, bdrC.g, bdrC.b, 1)
+                barFrame._bottomBdrFrame:Show()
             end
-            if ns.UF_Blizz() then
-                ns.UF_ApplyBlizzardLayout(frames.player, "player")
+            if mod.UF_Blizz() then
+                mod.UF_ApplyBlizzardLayout(frameList.player, "player")
             end
-        elseif style == "modern" and position == "top" then
+        elseif look == "modern" and position == "top" then
             -- "top" floats above the frame (like "bottom" floats below) -- does NOT become part of the frame
-            _cpExpectedParent = frames.player
-            bar:SetParent(frames.player)
+            _cpExpectedParent = frameList.player
+            barFrame:SetParent(frameList.player)
             ResizeFrameForClassPower(0)
             -- Reset health bar to normal position
-            if frames.player.Health and not stock then
+            if frameList.player.Health and not stock then
                 local btbOff = 0
-                local btbPos2 = db.profile.player.btbPosition or "bottom"
-                if btbPos2 == "top" and db.profile.player.bottomTextBar then
-                    btbOff = db.profile.player.bottomTextBarHeight or 16
+                local btbPos2 = saved.profile.player.btbPosition or "bottom"
+                if btbPos2 == "top" and saved.profile.player.bottomTextBar then
+                    btbOff = saved.profile.player.bottomTextBarHeight or 16
                 end
-                frames.player.Health:ClearAllPoints()
-                frames.player.Health:SetPoint(
+                frameList.player.Health:ClearAllPoints()
+                frameList.player.Health:SetPoint(
                     "TOPLEFT",
-                    frames.player,
+                    frameList.player,
                     "TOPLEFT",
-                    frames.player.Health._xOffset or 0,
-                    PP.Scale(-btbOff)
+                    frameList.player.Health._xOffset or 0,
+                    Pix.Scale(-btbOff)
                 )
-                frames.player.Health:SetPoint(
+                frameList.player.Health:SetPoint(
                     "RIGHT",
-                    frames.player,
+                    frameList.player,
                     "RIGHT",
-                    -(frames.player.Health._rightInset or 0),
+                    -(frameList.player.Health._rightInset or 0),
                     0
                 )
             end
             -- Center on health bar (ignores portrait)
-            PP.Point(bar, "BOTTOM", frames.player.Health, "TOP", offsetX, offsetY)
-            if bar._bottomBdrFrame then
-                bar._bottomBdrFrame:Hide()
+            Pix.Point(barFrame, "BOTTOM", frameList.player.Health, "TOP", offsetX, offsetY)
+            if barFrame._bottomBdrFrame then
+                barFrame._bottomBdrFrame:Hide()
             end
-            if ns.UF_Blizz() then
-                ns.UF_ApplyBlizzardLayout(frames.player, "player")
+            if mod.UF_Blizz() then
+                mod.UF_ApplyBlizzardLayout(frameList.player, "player")
             end
-        elseif not db.profile.player.lockClassPowerToFrame then
+        elseif not saved.profile.player.lockClassPowerToFrame then
             -- Reset health bar to normal position
-            if frames.player.Health and not stock then
+            if frameList.player.Health and not stock then
                 local btbOff = 0
-                local btbPos2 = db.profile.player.btbPosition or "bottom"
-                if btbPos2 == "top" and db.profile.player.bottomTextBar then
-                    btbOff = db.profile.player.bottomTextBarHeight or 16
+                local btbPos2 = saved.profile.player.btbPosition or "bottom"
+                if btbPos2 == "top" and saved.profile.player.bottomTextBar then
+                    btbOff = saved.profile.player.bottomTextBarHeight or 16
                 end
-                frames.player.Health:ClearAllPoints()
-                frames.player.Health:SetPoint(
+                frameList.player.Health:ClearAllPoints()
+                frameList.player.Health:SetPoint(
                     "TOPLEFT",
-                    frames.player,
+                    frameList.player,
                     "TOPLEFT",
-                    frames.player.Health._xOffset or 0,
-                    PP.Scale(-btbOff)
+                    frameList.player.Health._xOffset or 0,
+                    Pix.Scale(-btbOff)
                 )
-                frames.player.Health:SetPoint(
+                frameList.player.Health:SetPoint(
                     "RIGHT",
-                    frames.player,
+                    frameList.player,
                     "RIGHT",
-                    -(frames.player.Health._rightInset or 0),
+                    -(frameList.player.Health._rightInset or 0),
                     0
                 )
             end
             _cpExpectedParent = UIParent
-            bar:SetParent(UIParent)
-            local pos = db.profile.positions.classPower
-            if pos then
-                PP.Point(bar, pos.point, UIParent, pos.point, pos.x, pos.y)
+            barFrame:SetParent(UIParent)
+            local place = saved.profile.positions.classPower
+            if place then
+                Pix.Point(barFrame, place.point, UIParent, place.point, place.x, place.y)
             else
-                PP.Point(bar, "CENTER", UIParent, "CENTER", 0, -220)
+                Pix.Point(barFrame, "CENTER", UIParent, "CENTER", 0, -220)
             end
             ResizeFrameForClassPower(0)
-            if bar._bottomBdrFrame then
-                bar._bottomBdrFrame:Hide()
+            if barFrame._bottomBdrFrame then
+                barFrame._bottomBdrFrame:Hide()
             end
-            if ns.UF_Blizz() then
-                ns.UF_ApplyBlizzardLayout(frames.player, "player")
+            if mod.UF_Blizz() then
+                mod.UF_ApplyBlizzardLayout(frameList.player, "player")
             end
         else
             -- Reset health bar to normal position
-            if frames.player.Health and not stock then
+            if frameList.player.Health and not stock then
                 local btbOff = 0
-                local btbPos2 = db.profile.player.btbPosition or "bottom"
-                if btbPos2 == "top" and db.profile.player.bottomTextBar then
-                    btbOff = db.profile.player.bottomTextBarHeight or 16
+                local btbPos2 = saved.profile.player.btbPosition or "bottom"
+                if btbPos2 == "top" and saved.profile.player.bottomTextBar then
+                    btbOff = saved.profile.player.bottomTextBarHeight or 16
                 end
-                frames.player.Health:ClearAllPoints()
-                frames.player.Health:SetPoint(
+                frameList.player.Health:ClearAllPoints()
+                frameList.player.Health:SetPoint(
                     "TOPLEFT",
-                    frames.player,
+                    frameList.player,
                     "TOPLEFT",
-                    frames.player.Health._xOffset or 0,
-                    PP.Scale(-btbOff)
+                    frameList.player.Health._xOffset or 0,
+                    Pix.Scale(-btbOff)
                 )
-                frames.player.Health:SetPoint(
+                frameList.player.Health:SetPoint(
                     "RIGHT",
-                    frames.player,
+                    frameList.player,
                     "RIGHT",
-                    -(frames.player.Health._rightInset or 0),
+                    -(frameList.player.Health._rightInset or 0),
                     0
                 )
             end
             -- "bottom" position -- flush with bottom of frame; shifts below castbar when visible (unless user set Y offset)
-            _cpExpectedParent = frames.player
-            bar:SetParent(frames.player)
-            if bar._bottomBdrFrame then
-                bar._bottomBdrFrame:Hide()
+            _cpExpectedParent = frameList.player
+            barFrame:SetParent(frameList.player)
+            if barFrame._bottomBdrFrame then
+                barFrame._bottomBdrFrame:Hide()
             end
             local function AnchorBottom()
-                bar:ClearAllPoints()
+                barFrame:ClearAllPoints()
                 local baseY = -1 + offsetY
                 if offsetY == 0 then
-                    local castbarBg = frames.player.Castbar and frames.player.Castbar:GetParent()
+                    local castbarBg = frameList.player.Castbar and frameList.player.Castbar:GetParent()
                     local castVisible = castbarBg
                         and castbarBg:IsShown()
-                        and db.profile.player.showPlayerCastbar
+                        and saved.profile.player.showPlayerCastbar
                     if castVisible then
                         local ch = castbarBg:GetHeight()
                         -- Secret while the holder rides the Blizzard Style aura block.
                         if issecretvalue(ch) then
-                            ch = db.profile.player.playerCastbarHeight or 14
+                            ch = saved.profile.player.playerCastbarHeight or 14
                         end
                         baseY = -1 - ch
                     end
                 end
-                PP.Point(bar, "TOP", frames.player, "BOTTOM", offsetX, baseY)
+                Pix.Point(barFrame, "TOP", frameList.player, "BOTTOM", offsetX, baseY)
             end
             AnchorBottom()
             -- Stock styles: the stock pass re-seats the kit.
-            if ns.UF_Blizz() then
-                ns.UF_ApplyBlizzardLayout(frames.player, "player")
+            if mod.UF_Blizz() then
+                mod.UF_ApplyBlizzardLayout(frameList.player, "player")
             end
             -- Only run the castbar watcher if the player castbar is enabled
-            if db.profile.player.showPlayerCastbar then
+            if saved.profile.player.showPlayerCastbar then
                 -- Shared child-born shell (see ns._cpCastWatcher): a frame created
                 -- here would be born in whatever context triggered this rebuild and
                 -- could bill the parent for the 10 Hz poll below. It rides the bar,
                 -- so its ticker pauses while the bar is hidden; its state lives in
                 -- this closure, never on the bar (Blizzard's own frame under the
                 -- Blizzard style).
-                local watcher = ns._cpCastWatcher
-                if watcher:GetParent() ~= bar then
-                    watcher:SetParent(bar)
+                local watcher = mod._cpCastWatcher
+                if watcher:GetParent() ~= barFrame then
+                    watcher:SetParent(barFrame)
                 end
-                local playerFrame = frames.player
+                local playerFrame = frameList.player
                 local lastCastVis
                 -- 10 Hz body on the shared anim ticker (see ns._cpWatchTick).
-                ns._cpWatchFn = function()
+                mod._cpWatchFn = function()
                     local cb = playerFrame and playerFrame.Castbar
                     local castbarBg = cb and cb:GetParent()
-                    local nowVis = castbarBg and castbarBg:IsShown() and db.profile.player.showPlayerCastbar
+                    local nowVis = castbarBg
+                        and castbarBg:IsShown()
+                        and saved.profile.player.showPlayerCastbar
                     if nowVis ~= lastCastVis then
                         lastCastVis = nowVis
                         AnchorBottom()
                     end
                 end
                 watcher:Show()
-                ns._cpWatchTick.Start()
+                mod._cpWatchTick.Start()
             end
             ResizeFrameForClassPower(0)
         end
-        bar:SetFrameStrata(frames.player:GetFrameStrata())
-        bar:SetFrameLevel(frames.player:GetFrameLevel() + 5)
-        bar:Show()
+        barFrame:SetFrameStrata(frameList.player:GetFrameStrata())
+        barFrame:SetFrameLevel(frameList.player:GetFrameLevel() + 5)
+        barFrame:Show()
     end
 
     -- Hook Blizzard class power bar so form/spec changes can't steal it back. Hooks
@@ -699,7 +701,7 @@ local function InitializeFrames()
                 end)
                 return
             end
-            local wanted = _cpExpectedParent or frames.player or UIParent
+            local wanted = _cpExpectedParent or frameList.player or UIParent
             if self:GetParent() ~= wanted or (self:GetNumPoints() or 0) == 0 then
                 _cpSetParentGuard = true
                 PositionClassPowerBar(self)
@@ -719,7 +721,7 @@ local function InitializeFrames()
             if not _blizzCPActive or _cpSetParentGuard or _cpReassertQueued then
                 return
             end
-            local wanted = _cpExpectedParent or frames.player or UIParent
+            local wanted = _cpExpectedParent or frameList.player or UIParent
             if newParent ~= wanted then
                 _cpReassertQueued = true
                 C_Timer.After(0, function()
@@ -757,30 +759,30 @@ local function InitializeFrames()
     -- Blizzard's SetParent/Hide hooks with no rebuild behind it, and stamping
     -- there would suppress the rebuild this exists to trigger. frames.player
     -- guard matches _toggleClassPower.
-    if frames.player then
-        frames._classPowerBuiltStyle = classPowerStyle
+    if frameList.player then
+        frameList._classPowerBuiltStyle = classPowerStyle
     end
-    if classPowerStyle ~= "none" and frames.player then
+    if classPowerStyle ~= "none" and frameList.player then
         if classPowerStyle == "blizzard" then
             if savedClassPowerBar then
                 _blizzCPActive = true
                 -- Runtime ownership mirrored on ns for Resource Bars (ns.UF_OwnsBlizzClassPower).
-                ns._ufBlizzCPHeld = true
+                mod._ufBlizzCPHeld = true
                 savedClassPowerBar.ignoreFramePositionManager = true
                 HookBlizzardClassPower(savedClassPowerBar)
                 PositionClassPowerBar(savedClassPowerBar)
-                frames._classPowerBar = savedClassPowerBar
+                frameList._classPowerBar = savedClassPowerBar
             end
         else
             -- Modern custom style
             DestroyCustomClassPower()
-            local custom = CreateCustomClassPower(frames.player, classPowerStyle)
+            local custom = CreateCustomClassPower(frameList.player, classPowerStyle)
             if custom then
-                frames._customClassPower = custom
-                frames._classPowerBar = custom
+                frameList._customClassPower = custom
+                frameList._classPowerBar = custom
                 PositionClassPowerBar(custom)
-                if ns._WCUF_Sync then
-                    ns._WCUF_Sync(custom)
+                if mod._WCUF_Sync then
+                    mod._WCUF_Sync(custom)
                 end
             else
                 -- Spec has no class resource: reset frame sizing
@@ -791,62 +793,62 @@ local function InitializeFrames()
 
     -- Live toggle for class power bar (no reload needed)
     -- Called with the style string: "none", "modern", or "blizzard"
-    frames._toggleClassPower = function(style)
+    frameList._toggleClassPower = function(look)
         -- Class power is a player-frame feature; if the player is on Blizzard's
         -- default frame (or hidden), there is no CUI frame to attach it to.
-        if not frames.player then
+        if not frameList.player then
             return
         end
-        style = style or db.profile.player.classPowerStyle or "none"
+        look = look or saved.profile.player.classPowerStyle or "none"
         -- What is actually BUILT right now. Read by the reload pass below to
         -- notice a style that changed through a path which never calls this
         -- function (see the reload hook).
         -- Resource Bars' Blizzard Class Resource Art defers to this style for
         -- Blizzard's class resource frame; it re-judges when the built style
         -- crosses "blizzard" (below) instead of waiting for its next rebuild.
-        local wasBlizz = frames._classPowerBuiltStyle == "blizzard"
-        frames._classPowerBuiltStyle = style
+        local wasBlizz = frameList._classPowerBuiltStyle == "blizzard"
+        frameList._classPowerBuiltStyle = look
         -- Keep showClassPowerBar in sync with style
-        db.profile.player.showClassPowerBar = (style ~= "none")
-        db.profile.player.classPowerStyle = style
+        saved.profile.player.showClassPowerBar = (look ~= "none")
+        saved.profile.player.classPowerStyle = look
         -- WoW Forever: the saved style stays as given; its effective style
         -- (ns.UF_ForeverCPStyle) is what builds and what the marker records.
-        if ns.UF_ForeverCPStyle then
-            style = ns.UF_ForeverCPStyle(style)
-            frames._classPowerBuiltStyle = style
+        if mod.UF_ForeverCPStyle then
+            look = mod.UF_ForeverCPStyle(look)
+            frameList._classPowerBuiltStyle = look
         end
         -- WoW Forever: the "Blizzard" entry is the combo point arc on the
         -- frame Combo Points names (returns at once everywhere else).
-        ns.UF_ApplyForeverComboArc()
+        mod.UF_ApplyForeverComboArc()
 
         -- Clean up existing
         _blizzCPActive = false
-        ns._ufBlizzCPHeld = false
-        if frames._customClassPower then
+        mod._ufBlizzCPHeld = false
+        if frameList._customClassPower then
             DestroyCustomClassPower()
-            frames._classPowerBar = nil
-        elseif frames._classPowerBar then
+            frameList._classPowerBar = nil
+        elseif frameList._classPowerBar then
             -- The cast bar watcher may ride this bar: stop it before the bar goes
             -- back, so it never re-anchors a frame we no longer own.
-            ns._cpWatchFn = nil
-            ns._cpWatchTick.Stop()
-            ns._cpCastWatcher:Hide()
+            mod._cpWatchFn = nil
+            mod._cpWatchTick.Stop()
+            mod._cpCastWatcher:Hide()
             -- Handed on to Resource Bars' Blizzard Class Resource Art: left shown, so
             -- it appears there at once (Blizzard only re-shows it from its own Setup).
-            if not (style ~= "blizzard" and _G._CURB_BlizzArtWanted and _G._CURB_BlizzArtWanted()) then
-                frames._classPowerBar:Hide()
+            if not (look ~= "blizzard" and _G._CURB_BlizzArtWanted and _G._CURB_BlizzArtWanted()) then
+                frameList._classPowerBar:Hide()
             end
-            frames._classPowerBar:ClearAllPoints()
-            frames._classPowerBar.ignoreFramePositionManager = nil
+            frameList._classPowerBar:ClearAllPoints()
+            frameList._classPowerBar.ignoreFramePositionManager = nil
             local origParent = _blizzCPState.origParent or PlayerFrame or UIParent
-            frames._classPowerBar:SetParent(origParent)
-            frames._classPowerBar = nil
+            frameList._classPowerBar:SetParent(origParent)
+            frameList._classPowerBar = nil
         end
         -- Handed Blizzard's class resource frame back: Resource Bars' Blizzard
         -- Class Resource Art (if on) claims it now rather than at its next rebuild.
         if
             wasBlizz
-            and style ~= "blizzard"
+            and look ~= "blizzard"
             and _G._CURB_BlizzArtWanted
             and _G._CURB_BlizzArtWanted()
             and _G._CURB_Apply
@@ -854,27 +856,27 @@ local function InitializeFrames()
             _G._CURB_Apply()
         end
 
-        if style == "none" then
+        if look == "none" then
             -- Reset health bar to normal position (a stock style's kit owns it)
-            if frames.player and frames.player.Health and not ns.UF_Blizz() then
+            if frameList.player and frameList.player.Health and not mod.UF_Blizz() then
                 local btbOff = 0
-                local btbPos2 = db.profile.player.btbPosition or "bottom"
-                if btbPos2 == "top" and db.profile.player.bottomTextBar then
-                    btbOff = db.profile.player.bottomTextBarHeight or 16
+                local btbPos2 = saved.profile.player.btbPosition or "bottom"
+                if btbPos2 == "top" and saved.profile.player.bottomTextBar then
+                    btbOff = saved.profile.player.bottomTextBarHeight or 16
                 end
-                frames.player.Health:ClearAllPoints()
-                frames.player.Health:SetPoint(
+                frameList.player.Health:ClearAllPoints()
+                frameList.player.Health:SetPoint(
                     "TOPLEFT",
-                    frames.player,
+                    frameList.player,
                     "TOPLEFT",
-                    frames.player.Health._xOffset or 0,
-                    PP.Scale(-btbOff)
+                    frameList.player.Health._xOffset or 0,
+                    Pix.Scale(-btbOff)
                 )
-                frames.player.Health:SetPoint(
+                frameList.player.Health:SetPoint(
                     "RIGHT",
-                    frames.player,
+                    frameList.player,
                     "RIGHT",
-                    -(frames.player.Health._rightInset or 0),
+                    -(frameList.player.Health._rightInset or 0),
                     0
                 )
             end
@@ -882,24 +884,25 @@ local function InitializeFrames()
             return
         end
 
-        if style == "blizzard" then
+        if look == "blizzard" then
             local _, classFile = UnitClass("player")
             local frameName = BLIZZARD_CP_FRAMES[classFile]
             local cpFrame = frameName and _G[frameName]
             if cpFrame then
                 -- A Blizzard parent only (see the login takeover above).
-                local cur = cpFrame:GetParent()
-                _blizzCPState.origParent = (cur == cpFrame.layoutParent or cur == PlayerFrame) and cur
+                local current = cpFrame:GetParent()
+                _blizzCPState.origParent = (current == cpFrame.layoutParent or current == PlayerFrame)
+                        and current
                     or (cpFrame.layoutParent or PlayerFrame)
                 _blizzCPActive = true
-                ns._ufBlizzCPHeld = true
+                mod._ufBlizzCPHeld = true
                 cpFrame.ignoreFramePositionManager = true
                 HookBlizzardClassPower(cpFrame)
                 cpFrame:SetParent(UIParent)
-                frames._classPowerBar = cpFrame
+                frameList._classPowerBar = cpFrame
             end
-            if frames._classPowerBar and frames.player then
-                PositionClassPowerBar(frames._classPowerBar)
+            if frameList._classPowerBar and frameList.player then
+                PositionClassPowerBar(frameList._classPowerBar)
             end
             -- Took Blizzard's class resource frame: Resource Bars' Blizzard Class
             -- Resource Art stands down now rather than at its next rebuild.
@@ -908,13 +911,13 @@ local function InitializeFrames()
             end
         else
             -- Modern
-            local custom = CreateCustomClassPower(frames.player, style)
+            local custom = CreateCustomClassPower(frameList.player, look)
             if custom then
-                frames._customClassPower = custom
-                frames._classPowerBar = custom
+                frameList._customClassPower = custom
+                frameList._classPowerBar = custom
                 PositionClassPowerBar(custom)
-                if ns._WCUF_Sync then
-                    ns._WCUF_Sync(custom)
+                if mod._WCUF_Sync then
+                    mod._WCUF_Sync(custom)
                 end
             else
                 -- Spec has no class resource: reset frame sizing
@@ -933,29 +936,29 @@ local function InitializeFrames()
         cpSpecWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
         cpSpecWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     end
-    cpSpecWatcher:SetScript("OnEvent", function(_, event, unit)
-        if event == "PLAYER_ENTERING_WORLD" then
+    cpSpecWatcher:SetScript("OnEvent", function(_, evt, unitToken)
+        if evt == "PLAYER_ENTERING_WORLD" then
             cpSpecInitDone = true
             cpSpecWatcher:UnregisterEvent("PLAYER_ENTERING_WORLD")
             return
         end
-        if unit ~= "player" then
+        if unitToken ~= "player" then
             return
         end
         if not cpSpecInitDone then
             return
         end
         DestroyCustomClassPower()
-        if frames._classPowerBar then
-            frames._classPowerBar.ignoreFramePositionManager = nil
+        if frameList._classPowerBar then
+            frameList._classPowerBar.ignoreFramePositionManager = nil
         end
-        frames._classPowerBar = nil
+        frameList._classPowerBar = nil
         C_Timer.After(0.1, function()
-            if ns.ReloadFrames then
-                ns.ReloadFrames()
+            if mod.ReloadFrames then
+                mod.ReloadFrames()
             end
-            if frames._toggleClassPower then
-                frames._toggleClassPower()
+            if frameList._toggleClassPower then
+                frameList._toggleClassPower()
             end
         end)
     end)
@@ -990,35 +993,35 @@ local function InitializeFrames()
     -- mechanism as the DisableBlizzard override above). While Edit Mode is open the
     -- re-hide waits for it to close.
     local _DeferredRehide
-    _DeferredRehide = function(frame)
-        _rehidePending[frame] = nil
-        if not frame:IsShown() then
+    _DeferredRehide = function(widget)
+        _rehidePending[widget] = nil
+        if not widget:IsShown() then
             return
         end
         if EditModeManagerFrame and EditModeManagerFrame:IsShown() then
-            _rehidePending[frame] = true
+            _rehidePending[widget] = true
             C_Timer.After(0.25, function()
-                _DeferredRehide(frame)
+                _DeferredRehide(widget)
             end)
         elseif InCombatLockdown() then
-            ns.CombatQueue.Defer("SuppressedChildRehide", RehideSuppressedChildren)
+            mod.CombatQueue.Defer("SuppressedChildRehide", RehideSuppressedChildren)
         else
-            frame:Hide()
+            widget:Hide()
         end
     end
-    local function SuppressBlizzardChildFrame(frame)
-        if not frame then
+    local function SuppressBlizzardChildFrame(widget)
+        if not widget then
             return
         end
-        frame:UnregisterAllEvents()
+        widget:UnregisterAllEvents()
         if not InCombatLockdown() then
-            frame:Hide()
+            widget:Hide()
         end
         _suppressedChildren = _suppressedChildren or {}
         _rehidePending = _rehidePending or {}
-        if not _suppressedChildren[frame] then
-            _suppressedChildren[frame] = true
-            frame:HookScript("OnShow", function(self)
+        if not _suppressedChildren[widget] then
+            _suppressedChildren[widget] = true
+            widget:HookScript("OnShow", function(self)
                 if not _rehidePending[self] then
                     _rehidePending[self] = true
                     C_Timer.After(0, function()
@@ -1029,15 +1032,15 @@ local function InitializeFrames()
         end
     end
 
-    local targetFrameSource = ns.GetUnitFrameSource("target")
+    local targetFrameSource = mod.GetUnitFrameSource("target")
     if targetFrameSource == "cui" then
-        frames.target = ns.Engine.SpawnUnitFrame("target", "CludesUIUnitFrames_Target")
-        StyleFullFrame(frames.target, "target")
-        ns.UF_AttachEngineFrame(frames.target, "target")
-        ApplyFramePosition(frames.target, "target")
-        SetupUnitMenu(frames.target, "target")
+        frameList.target = mod.Engine.SpawnUnitFrame("target", "CludesUIUnitFrames_Target")
+        StyleFullFrame(frameList.target, "target")
+        mod.UF_AttachEngineFrame(frameList.target, "target")
+        ApplyFramePosition(frameList.target, "target")
+        SetupUnitMenu(frameList.target, "target")
     elseif targetFrameSource == "hidden" then
-        ns.Engine.HideBlizzardUnitFrame("target")
+        mod.Engine.HideBlizzardUnitFrame("target")
     end
 
     -- Forever combo points belong to the target, and Blizzard draws them with the
@@ -1059,29 +1062,29 @@ local function InitializeFrames()
             targetFrameSource ~= "blizzard"
             or (classPowerStyle ~= "none" and classPowerStyle ~= "blizzard")
         then
-            ns.UF_HideBlizzardFrame(_G.ComboFrame)
+            mod.UF_HideBlizzardFrame(_G.ComboFrame)
         elseif
             classPowerStyle == "blizzard"
             and playerFrameSource == "cui"
-            and ns.UF_ComboClass()
-            and ns.UF_ComboLocation() ~= "target"
+            and mod.UF_ComboClass()
+            and mod.UF_ComboLocation() ~= "target"
         then
-            ns.UF_HideBlizzardFrame(_G.ComboFrame)
-            ns._ufComboFrameByLoc = true
+            mod.UF_HideBlizzardFrame(_G.ComboFrame)
+            mod._ufComboFrameByLoc = true
         else
-            ns._ufComboFrameKept = true
+            mod._ufComboFrameKept = true
         end
     end
 
-    local focusFrameSource = ns.GetUnitFrameSource("focus")
+    local focusFrameSource = mod.GetUnitFrameSource("focus")
     if focusFrameSource == "cui" then
-        frames.focus = ns.Engine.SpawnUnitFrame("focus", "CludesUIUnitFrames_Focus")
-        StyleFocusFrame(frames.focus, "focus")
-        ns.UF_AttachEngineFrame(frames.focus, "focus")
-        ApplyFramePosition(frames.focus, "focus")
-        SetupUnitMenu(frames.focus, "focus")
+        frameList.focus = mod.Engine.SpawnUnitFrame("focus", "CludesUIUnitFrames_Focus")
+        StyleFocusFrame(frameList.focus, "focus")
+        mod.UF_AttachEngineFrame(frameList.focus, "focus")
+        ApplyFramePosition(frameList.focus, "focus")
+        SetupUnitMenu(frameList.focus, "focus")
     elseif focusFrameSource == "hidden" then
-        ns.Engine.HideBlizzardUnitFrame("focus")
+        mod.Engine.HideBlizzardUnitFrame("focus")
     end
 
     -- Combat indicator overlay on the player + target frames. Each shows its OWN
@@ -1093,27 +1096,27 @@ local function InitializeFrames()
         { unit = "player", defStyle = "standard" },
         { unit = "target", defStyle = "none" },
     }) do
-        local pf = frames[ciDef.unit]
-        if pf then
+        local popFrame = frameList[ciDef.unit]
+        if popFrame then
             local ciUnit = ciDef.unit
             local ciDefStyle = ciDef.defStyle
-            local ps = db.profile[ciUnit]
+            local ps = saved.profile[ciUnit]
             local COMBAT_MEDIA = "Interface\\AddOns\\CludesUI\\media\\combat\\"
 
             -- Create holder + texture ONCE, reuse on subsequent calls
-            if not pf._combatHolder then
-                pf._combatHolder = CreateFrame("Frame", nil, pf)
-                pf._combatHolder:SetAllPoints(pf)
-                pf._combatIndicator = pf._combatHolder:CreateTexture(nil, "OVERLAY", nil, 7)
-                pf._combatIndicator:Hide()
+            if not popFrame._combatHolder then
+                popFrame._combatHolder = CreateFrame("Frame", nil, popFrame)
+                popFrame._combatHolder:SetAllPoints(popFrame)
+                popFrame._combatIndicator = popFrame._combatHolder:CreateTexture(nil, "OVERLAY", nil, 7)
+                popFrame._combatIndicator:Hide()
             end
-            pf._combatHolder:SetFrameLevel(pf:GetFrameLevel() + 20)
-            local combat = pf._combatIndicator
+            popFrame._combatHolder:SetFrameLevel(popFrame:GetFrameLevel() + 20)
+            local combat = popFrame._combatIndicator
 
             -- Helper: resolve which texture file + coords to use
             local function ApplyCombatTexture()
-                local style = ps.combatIndicatorStyle or ciDefStyle
-                if style == "none" then
+                local look = ps.combatIndicatorStyle or ciDefStyle
+                if look == "none" then
                     combat:Hide()
                     return
                 end
@@ -1122,7 +1125,7 @@ local function InitializeFrames()
                 local sz = ps.combatIndicatorSize or 22
                 local ox = ps.combatIndicatorX or 0
                 local oy = ps.combatIndicatorY or 0
-                local pos = ps.combatIndicatorPosition or "healthbar"
+                local place = ps.combatIndicatorPosition or "healthbar"
 
                 combat:SetSize(sz, sz)
                 combat:ClearAllPoints()
@@ -1130,19 +1133,19 @@ local function InitializeFrames()
                 -- "healthbar" is the stored value shown as "Center" in the dropdown;
                 -- "center" is a render alias for it. Portrait with no portrait shown
                 -- takes the health bar's top-left corner (ns.UF_PortraitShown).
-                local bd = pf.Portrait and pf.Portrait.backdrop
-                if pos == "portrait" and bd and ns.UF_PortraitShown(ps) then
-                    combat:SetPoint("CENTER", bd, "CENTER", ox, oy)
-                elseif pos == "textbar" then
-                    combat:SetPoint("CENTER", pf._btb or pf, "CENTER", ox, oy)
-                elseif pos == "healthbar" or pos == "center" then
-                    combat:SetPoint("CENTER", pf.Health or pf, "CENTER", ox, oy)
+                local edge = popFrame.Portrait and popFrame.Portrait.backdrop
+                if place == "portrait" and edge and mod.UF_PortraitShown(ps) then
+                    combat:SetPoint("CENTER", edge, "CENTER", ox, oy)
+                elseif place == "textbar" then
+                    combat:SetPoint("CENTER", popFrame._btb or popFrame, "CENTER", ox, oy)
+                elseif place == "healthbar" or place == "center" then
+                    combat:SetPoint("CENTER", popFrame.Health or popFrame, "CENTER", ox, oy)
                 else
-                    local anchor = (pos == "topright" and "TOPRIGHT")
-                        or (pos == "bottomleft" and "BOTTOMLEFT")
-                        or (pos == "bottomright" and "BOTTOMRIGHT")
+                    local anchor = (place == "topright" and "TOPRIGHT")
+                        or (place == "bottomleft" and "BOTTOMLEFT")
+                        or (place == "bottomright" and "BOTTOMRIGHT")
                         or "TOPLEFT"
-                    combat:SetPoint(anchor, pf.Health or pf, anchor, ox, oy)
+                    combat:SetPoint(anchor, popFrame.Health or popFrame, anchor, ox, oy)
                 end
 
                 -- Determine texture file (always use -custom / white base).
@@ -1155,15 +1158,15 @@ local function InitializeFrames()
                 -- All custom combat icons (Arcade/Dungeoneer/Classic/Cross/Circle/Square =
                 -- combat0..5) are shown exactly as authored: no class theming, no tint, no
                 -- desaturation. Standard/Class Theme below are tinted by the colour mode.
-                if style:find("^combat%d") then
-                    combat:SetTexture(COMBAT_MEDIA .. style .. ".tga")
+                if look:find("^combat%d") then
+                    combat:SetTexture(COMBAT_MEDIA .. look .. ".tga")
                     combat:SetTexCoord(0, 1, 0, 1)
                     if combat.SetDesaturated then
                         combat:SetDesaturated(false)
                     end
                     combat:SetVertexColor(1, 1, 1, 1)
                 else
-                    if style == "class" then
+                    if look == "class" then
                         combat:SetTexture(COMBAT_MEDIA .. "combat-indicator-class-custom.png")
                         local coords = classToken and CLASS_FULL_COORDS[classToken]
                         if coords then
@@ -1189,25 +1192,25 @@ local function InitializeFrames()
                     end
                 end
             end
-            pf._applyCombatTexture = ApplyCombatTexture
+            popFrame._applyCombatTexture = ApplyCombatTexture
 
             -- Event frame for combat state changes (reuse existing)
-            if not pf._combatEventFrame then
-                pf._combatEventFrame = CreateFrame("Frame", nil, pf)
+            if not popFrame._combatEventFrame then
+                popFrame._combatEventFrame = CreateFrame("Frame", nil, popFrame)
                 if ciUnit == "player" then
-                    pf._combatEventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-                    pf._combatEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+                    popFrame._combatEventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+                    popFrame._combatEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
                 else
                     -- UNIT_FLAGS fires on the unit's combat flag flips; target
                     -- change re-evaluates for the new unit.
-                    pf._combatEventFrame:RegisterUnitEvent("UNIT_FLAGS", ciUnit)
-                    pf._combatEventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+                    popFrame._combatEventFrame:RegisterUnitEvent("UNIT_FLAGS", ciUnit)
+                    popFrame._combatEventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
                 end
             end
-            local combatFrame = pf._combatEventFrame
+            local combatFrame = popFrame._combatEventFrame
             combatFrame:SetScript("OnEvent", function()
-                local style = ps.combatIndicatorStyle or ciDefStyle
-                if style ~= "none" and UnitAffectingCombat(ciUnit) then
+                local look = ps.combatIndicatorStyle or ciDefStyle
+                if look ~= "none" and UnitAffectingCombat(ciUnit) then
                     ApplyCombatTexture()
                     combat:Show()
                 else
@@ -1216,8 +1219,8 @@ local function InitializeFrames()
             end)
 
             -- Set correct initial state
-            local style = ps.combatIndicatorStyle or ciDefStyle
-            if style ~= "none" and UnitAffectingCombat(ciUnit) then
+            local look = ps.combatIndicatorStyle or ciDefStyle
+            if look ~= "none" and UnitAffectingCombat(ciUnit) then
                 ApplyCombatTexture()
                 combat:Show()
             end
@@ -1236,39 +1239,39 @@ local function InitializeFrames()
             if not (uf and uf._leaderIndicator and s) then
                 return
             end
-            local tex = uf._leaderIndicator
+            local texture = uf._leaderIndicator
             if s.leaderIndicatorEnabled == false then
-                tex:Hide()
+                texture:Hide()
                 return
             end
             -- The oUF unit token can still be unassigned when the setup-time
             -- refresh runs (login/reload timing), and the API rejects a nil
             -- unit outright. Hide and stand down: the leader/roster/target
             -- events below re-run this refresh once the unit exists.
-            local unit = uf._cuiUnit
-            if not unit or (issecretvalue and issecretvalue(unit)) then
-                tex:Hide()
+            local unitToken = uf._cuiUnit
+            if not unitToken or (issecretvalue and issecretvalue(unitToken)) then
+                texture:Hide()
                 return
             end
-            local isLeader = UnitIsGroupLeader(unit)
-            local isAssist = UnitIsGroupAssistant(unit)
+            local isLeader = UnitIsGroupLeader(unitToken)
+            local isAssist = UnitIsGroupAssistant(unitToken)
             -- Icon Style: Blizzard's crown/assistant art or the Pixels pair.
-            local art = ns.UF_LEADER_ART[s.leaderIndicatorStyle] or ns.UF_LEADER_ART.blizzard
+            local art = mod.UF_LEADER_ART[s.leaderIndicatorStyle] or mod.UF_LEADER_ART.blizzard
             -- Secrecy check MUST run before any truthiness test: boolean-testing
             -- a secret errors, so "value and not issecretvalue(value)" crashes.
             if not issecretvalue(isLeader) and isLeader then
-                tex:SetTexture(art.leader)
-                tex:Show()
+                texture:SetTexture(art.leader)
+                texture:Show()
             elseif not issecretvalue(isAssist) and isAssist then
-                tex:SetTexture(art.assist)
-                tex:Show()
+                texture:SetTexture(art.assist)
+                texture:Show()
             else
-                tex:Hide()
+                texture:Hide()
             end
         end
 
-        local function _setupLeaderIndicator(uf, settings)
-            if not (uf and uf.Health and settings) then
+        local function _setupLeaderIndicator(uf, prefs)
+            if not (uf and uf.Health and prefs) then
                 return
             end
             if not uf._leaderIndicator then
@@ -1283,27 +1286,27 @@ local function InitializeFrames()
                 uf._leaderIndicator = leaderTex
                 _leaderUnits[#_leaderUnits + 1] = uf
             end
-            uf._leaderSettings = settings
+            uf._leaderSettings = prefs
 
             local function ApplyLeaderIndicator()
-                local sz = settings.leaderIndicatorSize or 16
-                local pos = settings.leaderIndicatorPosition or "topleft"
-                local ox = settings.leaderIndicatorX or 0
-                local oy = settings.leaderIndicatorY or 0
+                local sz = prefs.leaderIndicatorSize or 16
+                local place = prefs.leaderIndicatorPosition or "topleft"
+                local ox = prefs.leaderIndicatorX or 0
+                local oy = prefs.leaderIndicatorY or 0
                 local leader = uf._leaderIndicator
                 leader:SetSize(sz, sz)
                 leader:ClearAllPoints()
                 if
-                    pos == "portrait"
+                    place == "portrait"
                     and uf.Portrait
                     and uf.Portrait.backdrop
-                    and ns.UF_PortraitShown(settings)
+                    and mod.UF_PortraitShown(prefs)
                 then
                     leader:SetPoint("CENTER", uf.Portrait.backdrop, "CENTER", ox, oy)
                 else
-                    local anchor = (pos == "topright" and "TOPRIGHT")
-                        or (pos == "bottomleft" and "BOTTOMLEFT")
-                        or (pos == "bottomright" and "BOTTOMRIGHT")
+                    local anchor = (place == "topright" and "TOPRIGHT")
+                        or (place == "bottomleft" and "BOTTOMLEFT")
+                        or (place == "bottomright" and "BOTTOMRIGHT")
                         or "TOPLEFT"
                     leader:SetPoint(anchor, uf.Health or uf, anchor, ox, oy)
                 end
@@ -1313,8 +1316,8 @@ local function InitializeFrames()
             ApplyLeaderIndicator()
         end
 
-        _setupLeaderIndicator(frames.player, db.profile.player)
-        _setupLeaderIndicator(frames.target, db.profile.target)
+        _setupLeaderIndicator(frameList.player, saved.profile.player)
+        _setupLeaderIndicator(frameList.target, saved.profile.target)
 
         if #_leaderUnits > 0 then
             local leaderEvents = CreateFrame("Frame")
@@ -1323,8 +1326,8 @@ local function InitializeFrames()
             leaderEvents:RegisterEvent("PLAYER_TARGET_CHANGED")
             leaderEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
             leaderEvents:SetScript("OnEvent", function()
-                for i = 1, #_leaderUnits do
-                    _leaderRefresh(_leaderUnits[i])
+                for idx = 1, #_leaderUnits do
+                    _leaderRefresh(_leaderUnits[idx])
                 end
             end)
         end
@@ -1355,15 +1358,15 @@ local function InitializeFrames()
             if not (uf and uf._eliteIndicator and s) then
                 return
             end
-            local tex = uf._eliteIndicator
+            local texture = uf._eliteIndicator
             -- Dragon texture: exists only once its style was first used.
             local dragon = uf._eliteDragon
             if
                 s.eliteIndicatorEnabled ~= true
-                or ns.UF_DragonLegacy(s)
+                or mod.UF_DragonLegacy(s)
                 or (not s.eliteIndicatorShowInInstances and IsInInstance())
             then
-                tex:Hide()
+                texture:Hide()
                 if dragon then
                     dragon:Hide()
                 end
@@ -1373,12 +1376,12 @@ local function InitializeFrames()
             if uf._eliteDragonOn then
                 -- Classification art, or the Player art on a player target;
                 -- both probes are secrecy-checked before any use.
-                tex:Hide()
-                local file = (not issecretvalue(c)) and ns.UF_ELITE_DRAGON_ART[c] or nil
+                texture:Hide()
+                local file = (not issecretvalue(c)) and mod.UF_ELITE_DRAGON_ART[c] or nil
                 if not file then
                     local isPlayer = UnitIsPlayer(uf._cuiUnit)
                     if not issecretvalue(isPlayer) and isPlayer then
-                        file = ns.UF_ELITE_DRAGON_ART.player
+                        file = mod.UF_ELITE_DRAGON_ART.player
                     end
                 end
                 if file then
@@ -1396,10 +1399,10 @@ local function InitializeFrames()
             -- leader checks above.
             local atlas = (not issecretvalue(c)) and _eliteAtlas(c) or nil
             if atlas then
-                tex:SetAtlas(atlas)
-                tex:Show()
+                texture:SetAtlas(atlas)
+                texture:Show()
             else
-                tex:Hide()
+                texture:Hide()
             end
         end
 
@@ -1407,9 +1410,9 @@ local function InitializeFrames()
         -- (zero cost while off) and re-armed from every settings apply.
         local function _eliteArmEvents()
             local on = false
-            for i = 1, #_eliteFrames do
-                local s = _eliteFrames[i]._eliteSettings
-                if s and s.eliteIndicatorEnabled == true and not ns.UF_DragonLegacy(s) then
+            for idx = 1, #_eliteFrames do
+                local s = _eliteFrames[idx]._eliteSettings
+                if s and s.eliteIndicatorEnabled == true and not mod.UF_DragonLegacy(s) then
                     on = true
                     break
                 end
@@ -1418,8 +1421,8 @@ local function InitializeFrames()
                 if not eliteEvents then
                     eliteEvents = CreateFrame("Frame")
                     eliteEvents:SetScript("OnEvent", function()
-                        for i = 1, #_eliteFrames do
-                            _eliteRefresh(_eliteFrames[i])
+                        for idx = 1, #_eliteFrames do
+                            _eliteRefresh(_eliteFrames[idx])
                         end
                     end)
                 end
@@ -1431,69 +1434,69 @@ local function InitializeFrames()
             end
         end
 
-        local function _setupEliteIndicator(uf, settings)
-            if not (uf and uf.Health and settings) then
+        local function _setupEliteIndicator(uf, prefs)
+            if not (uf and uf.Health and prefs) then
                 return
             end
             if not uf._eliteIndicator then
                 -- Same parent and layer choice as the leader crown above.
                 local par = uf._textOverlay or uf
-                local tex = par:CreateTexture(nil, "OVERLAY", nil, 7)
-                tex:Hide()
-                uf._eliteIndicator = tex
+                local texture = par:CreateTexture(nil, "OVERLAY", nil, 7)
+                texture:Hide()
+                uf._eliteIndicator = texture
                 _eliteFrames[#_eliteFrames + 1] = uf
             end
-            uf._eliteSettings = settings
+            uf._eliteSettings = prefs
 
             local function ApplyEliteIndicator()
-                local sz = settings.eliteIndicatorSize or 16
-                local pos = settings.eliteIndicatorPosition or "topleft"
-                local ox = settings.eliteIndicatorX or 0
-                local oy = settings.eliteIndicatorY or 0
-                local tex = uf._eliteIndicator
-                tex:SetSize(sz, sz)
-                tex:ClearAllPoints()
+                local sz = prefs.eliteIndicatorSize or 16
+                local place = prefs.eliteIndicatorPosition or "topleft"
+                local ox = prefs.eliteIndicatorX or 0
+                local oy = prefs.eliteIndicatorY or 0
+                local texture = uf._eliteIndicator
+                texture:SetSize(sz, sz)
+                texture:ClearAllPoints()
                 if
-                    pos == "portrait"
+                    place == "portrait"
                     and uf.Portrait
                     and uf.Portrait.backdrop
-                    and ns.UF_PortraitShown(settings)
+                    and mod.UF_PortraitShown(prefs)
                 then
-                    tex:SetPoint("CENTER", uf.Portrait.backdrop, "CENTER", ox, oy)
+                    texture:SetPoint("CENTER", uf.Portrait.backdrop, "CENTER", ox, oy)
                 else
-                    local anchor = (pos == "topright" and "TOPRIGHT")
-                        or (pos == "bottomleft" and "BOTTOMLEFT")
-                        or (pos == "bottomright" and "BOTTOMRIGHT")
+                    local anchor = (place == "topright" and "TOPRIGHT")
+                        or (place == "bottomleft" and "BOTTOMLEFT")
+                        or (place == "bottomright" and "BOTTOMRIGHT")
                         or "TOPLEFT"
-                    tex:SetPoint(anchor, uf.Health or uf, anchor, ox, oy)
+                    texture:SetPoint(anchor, uf.Health or uf, anchor, ox, oy)
                 end
                 -- Style "pixelsDragon": its own texture on a holder one level
                 -- above the portrait backdrop (under the text layer), centred on
                 -- and sized from the portrait. Needs a shown portrait; without
                 -- one, and under a stock style, the badge above stands in.
                 -- Built on first use.
-                local bd = uf.Portrait and uf.Portrait.backdrop
-                local onPortrait = settings.eliteIndicatorEnabled == true
-                    and not ns.UF_Blizz()
-                    and bd
-                    and bd:IsShown()
-                local useDragon = onPortrait and settings.eliteIndicatorStyle == "pixelsDragon"
+                local edge = uf.Portrait and uf.Portrait.backdrop
+                local onPortrait = prefs.eliteIndicatorEnabled == true
+                    and not mod.UF_Blizz()
+                    and edge
+                    and edge:IsShown()
+                local useDragon = onPortrait and prefs.eliteIndicatorStyle == "pixelsDragon"
                 if useDragon then
-                    local holder = uf._eliteDragonHolder
-                    if not holder then
-                        holder = CreateFrame("Frame", nil, bd)
-                        holder:SetAllPoints(bd)
-                        uf._eliteDragonHolder = holder
+                    local holderFrame = uf._eliteDragonHolder
+                    if not holderFrame then
+                        holderFrame = CreateFrame("Frame", nil, edge)
+                        holderFrame:SetAllPoints(edge)
+                        uf._eliteDragonHolder = holderFrame
                     end
-                    ns.UF_LiftDragonHolder(holder, bd)
+                    mod.UF_LiftDragonHolder(holderFrame, edge)
                     local dragon = uf._eliteDragon
                     if not dragon then
-                        dragon = holder:CreateTexture(nil, "OVERLAY")
-                        dragon:SetPoint("CENTER", bd, "CENTER", 0, 0)
+                        dragon = holderFrame:CreateTexture(nil, "OVERLAY")
+                        dragon:SetPoint("CENTER", edge, "CENTER", 0, 0)
                         dragon:Hide()
                         uf._eliteDragon = dragon
                     end
-                    local d = bd:GetHeight() * ns.UF_ELITE_DRAGON_SCALE
+                    local d = edge:GetHeight() * mod.UF_ELITE_DRAGON_SCALE
                     dragon:SetSize(d, d)
                 end
                 uf._eliteDragonOn = useDragon and true or false
@@ -1504,12 +1507,12 @@ local function InitializeFrames()
             ApplyEliteIndicator()
         end
 
-        _setupEliteIndicator(frames.target, db.profile.target)
+        _setupEliteIndicator(frameList.target, saved.profile.target)
     end
 
     -- Portrait Dragon (Player Frame Dragon, Elite Enemy Dragon): nothing is
     -- built, and no event registered, while every frame's is off.
-    ns.UF_ApplyPortraitDragons()
+    mod.UF_ApplyPortraitDragons()
 
     -- Faction indicator (Horde/Alliance badge on the target and player frames), driven
     -- like the elite badge above. Mode "always" shows any Horde/Alliance unit;
@@ -1529,34 +1532,39 @@ local function InitializeFrames()
             if not (uf and uf._factionIndicator and s) then
                 return
             end
-            local tex = uf._factionIndicator
-            local mode = s.factionIndicatorMode or "off"
+            local texture = uf._factionIndicator
+            local modeName = s.factionIndicatorMode or "off"
             -- The frame's base unit, not its live token: the player frame swaps to
             -- "vehicle" on a ride, but this badge (like Blizzard's PvP icon) and
             -- the UNIT_FACTION registration below are about the player.
-            local unit = uf._cuiBaseUnit
-            if mode == "off" or not unit or issecretvalue(unit) or not UnitExists(unit) then
-                tex:Hide()
+            local unitToken = uf._cuiBaseUnit
+            if
+                modeName == "off"
+                or not unitToken
+                or issecretvalue(unitToken)
+                or not UnitExists(unitToken)
+            then
+                texture:Hide()
                 return
             end
             if s.factionIndicatorPlayersOnly then
-                local isPlayer = UnitIsPlayer(unit)
+                local isPlayer = UnitIsPlayer(unitToken)
                 if issecretvalue(isPlayer) or not isPlayer then
-                    tex:Hide()
+                    texture:Hide()
                     return
                 end
             end
             -- Secrecy check MUST run before the lookup and comparisons, same rule
             -- as the leader checks above.
-            local fac = UnitFactionGroup(unit)
+            local fac = UnitFactionGroup(unitToken)
             local atlas = (not issecretvalue(fac)) and (fac == "Horde" or fac == "Alliance")
             -- Mercenary mode: the player fights for the other faction, so the
             -- player's own badge shows that side (as Blizzard's player frame
             -- does) and "opposite" compares against it.
-            if atlas and unit == "player" and UnitIsMercenary("player") then
+            if atlas and unitToken == "player" and UnitIsMercenary("player") then
                 fac = (fac == "Horde") and "Alliance" or "Horde"
             end
-            if atlas and mode == "opposite" and unit ~= "player" then
+            if atlas and modeName == "opposite" and unitToken ~= "player" then
                 local mine = UnitFactionGroup("player")
                 if issecretvalue(mine) then
                     atlas = nil
@@ -1578,7 +1586,7 @@ local function InitializeFrames()
                 local pvpMode = s.factionIndicatorPvP or "dim"
                 if pvpMode ~= "ignore" then
                     -- Unreadable counts as flagged: never hide or grey on a guess.
-                    local pvp = UnitIsPVP(unit)
+                    local pvp = UnitIsPVP(unitToken)
                     local unflagged = not issecretvalue(pvp) and not pvp
                     if unflagged and pvpMode == "only" then
                         atlas = nil
@@ -1590,22 +1598,23 @@ local function InitializeFrames()
                 -- Paint only on a real change: faction, style, dim and the honor
                 -- badge are the paint's only inputs (the texture is ours, so the
                 -- memo lives on it).
-                local style = s.factionIndicatorStyle or "pvp"
-                local badge = CludesUI.FactionBadgeFor(style, unit)
+                local look = s.factionIndicatorStyle or "pvp"
+                local badge = CludesUI.FactionBadgeFor(look, unitToken)
                 if
-                    tex._facFac ~= fac
-                    or tex._facStyle ~= style
-                    or tex._facDim ~= dim
-                    or tex._facBadge ~= badge
+                    texture._facFac ~= fac
+                    or texture._facStyle ~= look
+                    or texture._facDim ~= dim
+                    or texture._facBadge ~= badge
                 then
-                    tex._facFac, tex._facStyle, tex._facDim, tex._facBadge = fac, style, dim, badge
-                    CludesUI.SetFactionArt(tex, style, fac, badge)
-                    tex:SetDesaturated(dim)
-                    tex:SetAlpha(dim and 0.6 or 1)
+                    texture._facFac, texture._facStyle, texture._facDim, texture._facBadge =
+                        fac, look, dim, badge
+                    CludesUI.SetFactionArt(texture, look, fac, badge)
+                    texture:SetDesaturated(dim)
+                    texture:SetAlpha(dim and 0.6 or 1)
                 end
-                tex:Show()
+                texture:Show()
             else
-                tex:Hide()
+                texture:Hide()
             end
         end
 
@@ -1613,8 +1622,8 @@ local function InitializeFrames()
         -- while off) and re-armed from every settings apply.
         local function _factionArmEvents()
             local on, targetOn = false, false
-            for i = 1, #_factionFrames do
-                local uf = _factionFrames[i]
+            for idx = 1, #_factionFrames do
+                local uf = _factionFrames[idx]
                 local s = uf._factionSettings
                 if s and (s.factionIndicatorMode or "off") ~= "off" then
                     on = true
@@ -1629,10 +1638,10 @@ local function InitializeFrames()
                     -- Routed by event: a target change or a target flip touches only
                     -- the target badge; the player's own flip and a world load touch
                     -- both (Opposite compares against the player's faction).
-                    factionEvents:SetScript("OnEvent", function(_, event, unit)
-                        local all = event == "PLAYER_ENTERING_WORLD" or unit == "player"
-                        for i = 1, #_factionFrames do
-                            local uf = _factionFrames[i]
+                    factionEvents:SetScript("OnEvent", function(_, evt, unitToken)
+                        local all = evt == "PLAYER_ENTERING_WORLD" or unitToken == "player"
+                        for idx = 1, #_factionFrames do
+                            local uf = _factionFrames[idx]
                             if all or uf._cuiBaseUnit == "target" then
                                 _factionRefresh(uf)
                             end
@@ -1656,48 +1665,48 @@ local function InitializeFrames()
             end
         end
 
-        local function _setupFactionIndicator(uf, settings)
-            if not (uf and uf.Health and settings) then
+        local function _setupFactionIndicator(uf, prefs)
+            if not (uf and uf.Health and prefs) then
                 return
             end
             if not uf._factionIndicator then
                 -- Same parent and layer choice as the leader crown above.
                 local par = uf._textOverlay or uf
-                local tex = par:CreateTexture(nil, "OVERLAY", nil, 7)
-                tex:Hide()
-                uf._factionIndicator = tex
+                local texture = par:CreateTexture(nil, "OVERLAY", nil, 7)
+                texture:Hide()
+                uf._factionIndicator = texture
                 _factionFrames[#_factionFrames + 1] = uf
             end
-            uf._factionSettings = settings
+            uf._factionSettings = prefs
 
             local function ApplyFactionIndicator()
                 -- Re-read by unit key: a profile switch (RepointAllDBs) swaps
                 -- db.profile, so the table captured at setup would go stale.
-                settings = db.profile[uf._cuiBaseUnit] or settings
-                uf._factionSettings = settings
-                local sz = settings.factionIndicatorSize or 18
-                local pos = settings.factionIndicatorPosition or "topright"
-                local ox = settings.factionIndicatorX or 0
-                local oy = settings.factionIndicatorY or 0
-                local tex = uf._factionIndicator
-                tex:SetSize(sz, sz)
-                tex:ClearAllPoints()
+                prefs = saved.profile[uf._cuiBaseUnit] or prefs
+                uf._factionSettings = prefs
+                local sz = prefs.factionIndicatorSize or 18
+                local place = prefs.factionIndicatorPosition or "topright"
+                local ox = prefs.factionIndicatorX or 0
+                local oy = prefs.factionIndicatorY or 0
+                local texture = uf._factionIndicator
+                texture:SetSize(sz, sz)
+                texture:ClearAllPoints()
                 -- Never centred on a hidden backdrop (ns.UF_PortraitShown).
                 if
-                    pos == "portrait"
-                    and ns.UF_PortraitShown(settings)
+                    place == "portrait"
+                    and mod.UF_PortraitShown(prefs)
                     and uf.Portrait
                     and uf.Portrait.backdrop
                 then
-                    tex:SetPoint("CENTER", uf.Portrait.backdrop, "CENTER", ox, oy)
+                    texture:SetPoint("CENTER", uf.Portrait.backdrop, "CENTER", ox, oy)
                 else
-                    local anchor = (pos == "topleft" and "TOPLEFT")
-                        or (pos == "bottomleft" and "BOTTOMLEFT")
-                        or (pos == "bottomright" and "BOTTOMRIGHT")
+                    local anchor = (place == "topleft" and "TOPLEFT")
+                        or (place == "bottomleft" and "BOTTOMLEFT")
+                        or (place == "bottomright" and "BOTTOMRIGHT")
                         or "TOPRIGHT"
                     -- Corners of the whole frame (portrait included), so "Top Left"
                     -- is the frame's top-left whichever side the portrait is on.
-                    tex:SetPoint(anchor, uf, anchor, ox, oy)
+                    texture:SetPoint(anchor, uf, anchor, ox, oy)
                 end
                 _factionArmEvents()
                 _factionRefresh(uf)
@@ -1706,28 +1715,28 @@ local function InitializeFrames()
             ApplyFactionIndicator()
         end
 
-        _setupFactionIndicator(frames.player, db.profile.player)
-        _setupFactionIndicator(frames.target, db.profile.target)
+        _setupFactionIndicator(frameList.player, saved.profile.player)
+        _setupFactionIndicator(frameList.target, saved.profile.target)
     end
 
-    local petFrameSource = ns.GetUnitFrameSource("pet")
+    local petFrameSource = mod.GetUnitFrameSource("pet")
     if petFrameSource == "cui" then
-        frames.pet = ns.Engine.SpawnUnitFrame("pet", "CludesUIUnitFrames_Pet")
-        StyleSimpleFrame(frames.pet, "pet")
-        ns.UF_AttachEngineFrame(frames.pet, "pet")
-        ApplyFramePosition(frames.pet, "pet")
-        SetupUnitMenu(frames.pet, "pet")
+        frameList.pet = mod.Engine.SpawnUnitFrame("pet", "CludesUIUnitFrames_Pet")
+        StyleSimpleFrame(frameList.pet, "pet")
+        mod.UF_AttachEngineFrame(frameList.pet, "pet")
+        ApplyFramePosition(frameList.pet, "pet")
+        SetupUnitMenu(frameList.pet, "pet")
     elseif petFrameSource == "hidden" then
-        ns.Engine.HideBlizzardUnitFrame("pet")
+        mod.Engine.HideBlizzardUnitFrame("pet")
     end
 
-    local totFrameSource = ns.GetUnitFrameSource("targettarget")
+    local totFrameSource = mod.GetUnitFrameSource("targettarget")
     if totFrameSource == "cui" then
-        frames.targettarget = ns.Engine.SpawnUnitFrame("targettarget", "CludesUIUnitFrames_TargetTarget")
-        StyleSimpleFrame(frames.targettarget, "targettarget")
-        ns.UF_AttachEngineFrame(frames.targettarget, "targettarget", true)
-        ApplyFramePosition(frames.targettarget, "targettarget")
-        SetupUnitMenu(frames.targettarget, "targettarget")
+        frameList.targettarget = mod.Engine.SpawnUnitFrame("targettarget", "CludesUIUnitFrames_TargetTarget")
+        StyleSimpleFrame(frameList.targettarget, "targettarget")
+        mod.UF_AttachEngineFrame(frameList.targettarget, "targettarget", true)
+        ApplyFramePosition(frameList.targettarget, "targettarget")
+        SetupUnitMenu(frameList.targettarget, "targettarget")
     end
     -- Blizzard's target-of-target is a child of TargetFrame. When the target frame
     -- itself is CUI or hidden, TargetFrame is already disabled so the child is gone
@@ -1735,17 +1744,17 @@ local function InitializeFrames()
     -- the user does NOT want Blizzard's ToT (CUI or hidden) -- else both would show,
     -- or while TargetFrame is kept shown for the WoW Forever gamepad target menu
     -- (ns.UF_TargetMenuOwner): the child, a clickable unit button, would take clicks.
-    if (totFrameSource ~= "blizzard" and targetFrameSource == "blizzard") or ns.UF_TargetMenuOwner then
+    if (totFrameSource ~= "blizzard" and targetFrameSource == "blizzard") or mod.UF_TargetMenuOwner then
         SuppressBlizzardChildFrame(TargetFrame and TargetFrame.totFrame)
     end
 
-    local ftFrameSource = ns.GetUnitFrameSource("focustarget")
+    local ftFrameSource = mod.GetUnitFrameSource("focustarget")
     if ftFrameSource == "cui" then
-        frames.focustarget = ns.Engine.SpawnUnitFrame("focustarget", "CludesUIUnitFrames_FocusTarget")
-        StyleSimpleFrame(frames.focustarget, "focustarget")
-        ns.UF_AttachEngineFrame(frames.focustarget, "focustarget", true)
-        ApplyFramePosition(frames.focustarget, "focustarget")
-        SetupUnitMenu(frames.focustarget, "focustarget")
+        frameList.focustarget = mod.Engine.SpawnUnitFrame("focustarget", "CludesUIUnitFrames_FocusTarget")
+        StyleSimpleFrame(frameList.focustarget, "focustarget")
+        mod.UF_AttachEngineFrame(frameList.focustarget, "focustarget", true)
+        ApplyFramePosition(frameList.focustarget, "focustarget")
+        SetupUnitMenu(frameList.focustarget, "focustarget")
     end
     -- Same as target-of-target: FocusFrame's native focus-target is a child of
     -- FocusFrame, so it only needs suppressing when focus uses Blizzard's live frame
@@ -1754,23 +1763,23 @@ local function InitializeFrames()
         SuppressBlizzardChildFrame(FocusFrame and FocusFrame.totFrame)
     end
 
-    local bossFrameSource = ns.GetUnitFrameSource("boss")
+    local bossFrameSource = mod.GetUnitFrameSource("boss")
     if bossFrameSource == "cui" then
-        local bossPos = db.profile.positions.boss
+        local bossPos = saved.profile.positions.boss
 
-        local spacing = ns.UF_BossSpacing()
-        local bossStackDir = db.profile.boss and db.profile.boss.bossStackDirection or "down"
-        for i = 1, 5 do
-            local bossUnit = "boss" .. i
-            local bossFrame = ns.Engine.SpawnUnitFrame(bossUnit, "CludesUIUnitFrames_Boss" .. i)
+        local spacing = mod.UF_BossSpacing()
+        local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection or "down"
+        for idx = 1, 5 do
+            local bossUnit = "boss" .. idx
+            local bossFrame = mod.Engine.SpawnUnitFrame(bossUnit, "CludesUIUnitFrames_Boss" .. idx)
             StyleBossFrame(bossFrame, bossUnit)
-            ns.UF_AttachEngineFrame(bossFrame, bossUnit)
-            frames[bossUnit] = bossFrame
+            mod.UF_AttachEngineFrame(bossFrame, bossUnit)
+            frameList[bossUnit] = bossFrame
 
             -- boss1 anchors to UIParent; boss2..5 chain off boss1 with spacing.
             -- This keeps the whole stack moving together when unlock mode drags
             -- boss1 -- the only draggable boss frame.
-            if i == 1 then
+            if idx == 1 then
                 if bossPos then
                     bossFrame:ClearAllPoints()
                     bossFrame:SetPoint(
@@ -1782,7 +1791,7 @@ local function InitializeFrames()
                     )
                 end
             else
-                local prev = frames["boss" .. (i - 1)]
+                local prev = frameList["boss" .. (idx - 1)]
                 if prev then
                     bossFrame:ClearAllPoints()
                     if bossStackDir == "up" then
@@ -1798,15 +1807,15 @@ local function InitializeFrames()
     elseif bossFrameSource == "hidden" then
         -- Suppressing boss1 takes the whole BossTargetFrameContainer with it
         -- (and all five Boss*TargetFrame children).
-        ns.Engine.HideBlizzardUnitFrame("boss1")
+        mod.Engine.HideBlizzardUnitFrame("boss1")
     end
 
     -- Kill Blizzard's boss frames for every source except "blizzard" (where the
     -- user wants them). For "cui" oUF already disabled them at spawn; this pass
     -- is belt-and-suspenders and also runs for "hidden".
     if bossFrameSource ~= "blizzard" then
-        for i = 1, 5 do
-            local blizzBoss = _G["Boss" .. i .. "TargetFrame"]
+        for idx = 1, 5 do
+            local blizzBoss = _G["Boss" .. idx .. "TargetFrame"]
             if blizzBoss then
                 blizzBoss:UnregisterAllEvents()
                 blizzBoss:Hide()
@@ -1815,9 +1824,9 @@ local function InitializeFrames()
     end
 
     -- Apply user-selected frame strata to all unit frames
-    local ufStrata = db.profile.frameStrata or "MEDIUM"
-    for unitKey, frame in pairs(frames) do
-        if type(frame) == "table" and frame.SetFrameStrata then
+    local ufStrata = saved.profile.frameStrata or "MEDIUM"
+    for unitKey, widget in pairs(frameList) do
+        if type(widget) == "table" and widget.SetFrameStrata then
             -- Any unit with its own settings table can override the global
             -- strata; nil (the default) means "follow the global value". See
             -- the matching comment in the other frameStrata-apply pass for why
@@ -1827,24 +1836,24 @@ local function InitializeFrames()
             if us and us.frameStrata then
                 strata = us.frameStrata
             end
-            frame:SetFrameStrata(strata)
-            if frame.BottomTextBar and frame.BottomTextBar._isDetached then
-                if db.profile.enableCustomBarStratas then
-                    frame.BottomTextBar:SetFrameStrata(db.profile.detachedTextBarStrata or "DIALOG")
+            widget:SetFrameStrata(strata)
+            if widget.BottomTextBar and widget.BottomTextBar._isDetached then
+                if saved.profile.enableCustomBarStratas then
+                    widget.BottomTextBar:SetFrameStrata(saved.profile.detachedTextBarStrata or "DIALOG")
                 else
-                    frame.BottomTextBar:SetFrameStrata(strata)
+                    widget.BottomTextBar:SetFrameStrata(strata)
                 end
             end
             -- Same re-lift for a detached power bar -- see the matching comment
             -- in the other frameStrata-apply pass above for why this is needed.
-            if frame.Power then
+            if widget.Power then
                 local us2 = GetSettingsForUnit(unitKey)
-                local ppPos = ns.UF_PowerPos(us2)
+                local ppPos = mod.UF_PowerPos(us2)
                 if ppPos == "detached_top" or ppPos == "detached_bottom" then
-                    if db.profile.enableCustomBarStratas then
-                        frame.Power:SetFrameStrata(db.profile.detachedPowerStrata or "HIGH")
+                    if saved.profile.enableCustomBarStratas then
+                        widget.Power:SetFrameStrata(saved.profile.detachedPowerStrata or "HIGH")
                     else
-                        frame.Power:SetFrameStrata("MEDIUM")
+                        widget.Power:SetFrameStrata("MEDIUM")
                     end
                 end
             end
@@ -1852,10 +1861,10 @@ local function InitializeFrames()
             -- the frame's strata. Lift to HIGH so it never hides behind other MEDIUM-
             -- strata frames, unless "Raise Cast Bar Strata (All)" is off, in which case
             -- it's explicitly left at the frame's strata.
-            if frame.Castbar and (unitKey == "player" or IsKickCastbarUnit(unitKey)) then
-                local cbg = frame.Castbar:GetParent()
+            if widget.Castbar and (unitKey == "player" or IsKickCastbarUnit(unitKey)) then
+                local cbg = widget.Castbar:GetParent()
                 if cbg then
-                    if db.profile.raiseCastbarStrata ~= false then
+                    if saved.profile.raiseCastbarStrata ~= false then
                         cbg:SetFrameStrata("HIGH")
                     else
                         cbg:SetFrameStrata(strata)
@@ -1864,19 +1873,19 @@ local function InitializeFrames()
             end
             -- SetFrameStrata re-stacks children; lift the raid marker holder back
             -- above the text overlay so the marker is never hidden behind name/health text.
-            if frame._raidMarkerHolder and frame._textOverlay then
-                frame._raidMarkerHolder:SetFrameLevel(frame._textOverlay:GetFrameLevel() + 5)
+            if widget._raidMarkerHolder and widget._textOverlay then
+                widget._raidMarkerHolder:SetFrameLevel(widget._textOverlay:GetFrameLevel() + 5)
             end
             -- Same for the dragon holders: the Portrait Dragon's carries its own
             -- strata and level (kept by its apply), the Pixels Dragon's rides
             -- one level over the portrait.
-            local bd = frame.Portrait and frame.Portrait.backdrop
-            local wh = bd and bd._winglessHolder
+            local edge = widget.Portrait and widget.Portrait.backdrop
+            local wh = edge and edge._winglessHolder
             if wh and wh._on then
-                ns.UF_LiftDragonHolder(wh, bd, wh._strata, wh._level)
+                mod.UF_LiftDragonHolder(wh, edge, wh._strata, wh._level)
             end
-            if bd and frame._eliteDragonHolder and frame._eliteDragonOn then
-                ns.UF_LiftDragonHolder(frame._eliteDragonHolder, bd)
+            if edge and widget._eliteDragonHolder and widget._eliteDragonOn then
+                mod.UF_LiftDragonHolder(widget._eliteDragonHolder, edge)
             end
         end
     end
@@ -1884,16 +1893,16 @@ local function InitializeFrames()
     -- Disable oUF elements for frames where features are initially off.
     -- Portrait backdrop is already hidden by style functions, but oUF
     -- auto-enables the element at spawn time since frame.Portrait is always set.
-    for unit, frame in pairs(frames) do
-        if type(frame) ~= "table" or not frame.Portrait then -- skip non-frame entries
-        elseif frame.Portrait.backdrop then
-            local settings = GetSettingsForUnit(unit)
+    for unitToken, widget in pairs(frameList) do
+        if type(widget) ~= "table" or not widget.Portrait then -- skip non-frame entries
+        elseif widget.Portrait.backdrop then
+            local prefs = GetSettingsForUnit(unitToken)
             if
-                settings.showPortrait == false
-                or (settings.portraitStyle or db.profile.portraitStyle or "attached") == "none"
+                prefs.showPortrait == false
+                or (prefs.portraitStyle or saved.profile.portraitStyle or "attached") == "none"
             then
-                if frame:IsElementEnabled("Portrait") then
-                    frame:DisableElement("Portrait")
+                if widget:IsElementEnabled("Portrait") then
+                    widget:DisableElement("Portrait")
                 end
             end
         end
@@ -1903,11 +1912,11 @@ local function InitializeFrames()
     -- Leave the oUF HealthPrediction element enabled so events keep flowing
     -- and the calculator stays in sync.
     for _, uKey in ipairs({ "player", "target", "focus" }) do
-        local f = frames[uKey]
+        local f = frameList[uKey]
         if f and f.HealthPrediction and f.HealthPrediction.damageAbsorb then
-            local absStyle = db.profile[uKey] and db.profile[uKey].showPlayerAbsorb
+            local absStyle = saved.profile[uKey] and saved.profile[uKey].showPlayerAbsorb
             if absStyle and absStyle ~= "none" then
-                ApplyAbsorbStyle(f.HealthPrediction.damageAbsorb, absStyle, db.profile[uKey])
+                ApplyAbsorbStyle(f.HealthPrediction.damageAbsorb, absStyle, saved.profile[uKey])
                 f.HealthPrediction.damageAbsorb:Show()
                 if f.HealthPrediction.damageAbsorb._forward then
                     f.HealthPrediction.damageAbsorb._forward:Show()
@@ -1929,10 +1938,10 @@ local function InitializeFrames()
     -- Boss frames: same absorb refresh, styled from the TARGET donor block
     -- and gated by the "Show on Boss Frames" toggle (nil = enabled).
     do
-        local bossOff = db.profile.boss and db.profile.boss.showAbsorbs == false
-        local donor = db.profile.target
-        for i = 1, 5 do
-            local f = frames["boss" .. i]
+        local bossOff = saved.profile.boss and saved.profile.boss.showAbsorbs == false
+        local donor = saved.profile.target
+        for idx = 1, 5 do
+            local f = frameList["boss" .. idx]
             if f and f.HealthPrediction and f.HealthPrediction.damageAbsorb then
                 local absStyle
                 if not bossOff and donor then
@@ -1958,50 +1967,50 @@ local function InitializeFrames()
     end
 
     -- Player castbar: disable oUF element if not wanted (always created now)
-    if frames.player and frames.player.Castbar then
-        if not db.profile.player.showPlayerCastbar then
-            ns.SetCastbarElement(frames.player, false)
-            frames.player.Castbar:Hide()
-            local castbarBg = frames.player.Castbar:GetParent()
+    if frameList.player and frameList.player.Castbar then
+        if not saved.profile.player.showPlayerCastbar then
+            mod.SetCastbarElement(frameList.player, false)
+            frameList.player.Castbar:Hide()
+            local castbarBg = frameList.player.Castbar:GetParent()
             if castbarBg then
                 castbarBg:Hide()
             end
-        elseif db.profile.player.showPlayerCastIcon == false and frames.player.Castbar._iconFrame then
-            frames.player.Castbar._iconFrame:Hide()
+        elseif saved.profile.player.showPlayerCastIcon == false and frameList.player.Castbar._iconFrame then
+            frameList.player.Castbar._iconFrame:Hide()
         end
     end
     -- Hide While Using Gamepad: settle the flag and the pad watch.
-    ns.UF_ApplyGamepadCastbar()
+    mod.UF_ApplyGamepadCastbar()
 
     -- Target castbar: disable oUF element if not wanted
-    if frames.target and frames.target.Castbar then
-        if db.profile.target.showCastbar == false then
-            if frames.target:IsElementEnabled("Castbar") then
-                frames.target:DisableElement("Castbar")
+    if frameList.target and frameList.target.Castbar then
+        if saved.profile.target.showCastbar == false then
+            if frameList.target:IsElementEnabled("Castbar") then
+                frameList.target:DisableElement("Castbar")
             end
-            frames.target.Castbar:Hide()
-            local castbarBg = frames.target.Castbar:GetParent()
+            frameList.target.Castbar:Hide()
+            local castbarBg = frameList.target.Castbar:GetParent()
             if castbarBg then
                 castbarBg:Hide()
             end
-        elseif db.profile.target.showCastIcon == false and frames.target.Castbar._iconFrame then
-            frames.target.Castbar._iconFrame:Hide()
+        elseif saved.profile.target.showCastIcon == false and frameList.target.Castbar._iconFrame then
+            frameList.target.Castbar._iconFrame:Hide()
         end
     end
 
     -- Focus castbar: disable oUF element if not wanted
-    if frames.focus and frames.focus.Castbar then
-        if db.profile.focus.showCastbar == false then
-            if frames.focus:IsElementEnabled("Castbar") then
-                frames.focus:DisableElement("Castbar")
+    if frameList.focus and frameList.focus.Castbar then
+        if saved.profile.focus.showCastbar == false then
+            if frameList.focus:IsElementEnabled("Castbar") then
+                frameList.focus:DisableElement("Castbar")
             end
-            frames.focus.Castbar:Hide()
-            local castbarBg = frames.focus.Castbar:GetParent()
+            frameList.focus.Castbar:Hide()
+            local castbarBg = frameList.focus.Castbar:GetParent()
             if castbarBg then
                 castbarBg:Hide()
             end
-        elseif db.profile.focus.showCastIcon == false and frames.focus.Castbar._iconFrame then
-            frames.focus.Castbar._iconFrame:Hide()
+        elseif saved.profile.focus.showCastIcon == false and frameList.focus.Castbar._iconFrame then
+            frameList.focus.Castbar._iconFrame:Hide()
         end
     end
 
@@ -2011,7 +2020,7 @@ local function InitializeFrames()
     -- Companion mini frame for each main frame: the mini inherits its parent's FULL
     -- effective visibility (modes, multi-selections, hide options, fade, mouseover
     -- reveals, Never/disabled).
-    ns.UF_MINI_OF = { player = "pet", target = "targettarget", focus = "focustarget" }
+    mod.UF_MINI_OF = { player = "pet", target = "targettarget", focus = "focustarget" }
 
     local _ufInCombat = InCombatLockdown()
     local function UpdateFrameVisibility()
@@ -2025,11 +2034,11 @@ local function InitializeFrames()
         -- One state table per pass for the multi-select visibility engine
         local visState = { inCombat = _ufInCombat, inRaid = inRaid, inParty = inParty }
         for _, unitKey in ipairs({ "player", "target", "focus" }) do
-            local s = db.profile[unitKey]
-            local frame = frames[unitKey]
+            local s = saved.profile[unitKey]
+            local widget = frameList[unitKey]
             -- Visibility "never" no longer clears enabledFrames, so a frame hidden that
             -- way stays on this path and is hidden below, reversibly.
-            if frame and not ns.VisUnitDisabled(db.profile, unitKey) and s then
+            if widget and not mod.VisUnitDisabled(saved.profile, unitKey) and s then
                 local hiddenByOpts = CludesUI.CheckVisibilityOptions(s)
                 local vis = s.barVisibility or "always"
 
@@ -2088,7 +2097,7 @@ local function InitializeFrames()
                 local visNever = (visOv or vis) == "never"
                 -- Health cannot be a secure macro condition. Keep the unit watch
                 -- active and let the secret-safe alpha curve reveal injured units.
-                if ns.HealthVisibilityEnabled(s, frame) then
+                if mod.HealthVisibilityEnabled(s, widget) then
                     visTail = nil
                 end
                 local wantDriver
@@ -2101,15 +2110,15 @@ local function InitializeFrames()
                 elseif visTail then
                     wantDriver = "[@" .. unitKey .. ",noexists] hide; " .. visTail
                 end
-                if frame._cuiVisDriver ~= wantDriver and not isLocked then
+                if widget._cuiVisDriver ~= wantDriver and not isLocked then
                     if wantDriver then
-                        UnregisterUnitWatch(frame)
-                        RegisterAttributeDriver(frame, "state-visibility", wantDriver)
+                        UnregisterUnitWatch(widget)
+                        RegisterAttributeDriver(widget, "state-visibility", wantDriver)
                     else
-                        UnregisterAttributeDriver(frame, "state-visibility")
-                        RegisterUnitWatch(frame)
+                        UnregisterAttributeDriver(widget, "state-visibility")
+                        RegisterUnitWatch(widget)
                     end
-                    frame._cuiVisDriver = wantDriver
+                    widget._cuiVisDriver = wantDriver
                 end
 
                 -- Combat-sensitive and mouseover modes use SetAlpha to show/hide
@@ -2118,17 +2127,17 @@ local function InitializeFrames()
                 -- we drive alpha on a non-secure wrapper (_visWrap) so nothing touching
                 -- the inner frame's alpha (oUF updates, secure templates) can fight us --
                 -- alpha inherits down the parent chain so wrapper alpha 0 always wins.
-                local alphaTarget = frame._visWrap or frame
+                local alphaTarget = widget._visWrap or widget
                 -- Shared with both hover handlers. Forces 0 for the visHide* overrides too,
                 -- so the frame looks hidden while the secure bucket below stays untouched:
                 -- a dismount inside a lockdown would otherwise hide it permanently.
                 -- _ufInCombat leads InCombatLockdown() on regen, so the ooc fade is instant.
-                local bodyAlpha, hoverGated = ns.ResolveVisResting(s, frame, ext, hiddenByOpts, _ufInCombat)
+                local bodyAlpha, hoverGated = mod.ResolveVisResting(s, widget, ext, hiddenByOpts, _ufInCombat)
                 if s.showWhenHealthMissing and not hiddenByOpts then
-                    bodyAlpha = ns.HealthVisibilityAlpha(s, frame, bodyAlpha, hoverGated, _ufInCombat)
+                    bodyAlpha = mod.HealthVisibilityAlpha(s, widget, bodyAlpha, hoverGated, _ufInCombat)
                 else
                     -- Off, or a Visibility Option hides it: health ticks must not reveal.
-                    frame._healthVisLive = nil
+                    widget._healthVisLive = nil
                 end
                 alphaTarget:SetAlpha(bodyAlpha)
 
@@ -2137,9 +2146,9 @@ local function InitializeFrames()
                 -- (engine-owned, in_combat, out_of_combat, mouseover, hide-opts) would
                 -- otherwise leave a floating portrait over an invisible frame. Hover
                 -- handlers mirror it too when they reveal a mouseover frame.
-                local bd3d = frame.Portrait and frame.Portrait.backdrop and frame.Portrait.backdrop._3d
+                local bd3d = widget.Portrait and widget.Portrait.backdrop and widget.Portrait.backdrop._3d
                 if bd3d then
-                    ns.UF_SetModelAlpha(bd3d, bodyAlpha)
+                    mod.UF_SetModelAlpha(bd3d, bodyAlpha)
                 end
 
                 -- A class resource bar unlocked from the frame is parented to UIParent
@@ -2150,11 +2159,11 @@ local function InitializeFrames()
                 -- and for the "blizzard" style the bar is Blizzard's own frame. A bar
                 -- locked to the frame is its child, so the Show When Health Missing
                 -- reveal makes its alpha read secret: it is written blind then.
-                if unitKey == "player" and frames._classPowerBar then
+                if unitKey == "player" and frameList._classPowerBar then
                     local cpWant = visNever and 0 or 1
-                    local cpHave = frames._classPowerBar:GetAlpha()
+                    local cpHave = frameList._classPowerBar:GetAlpha()
                     if issecretvalue(cpHave) or cpHave ~= cpWant then
-                        frames._classPowerBar:SetAlpha(cpWant)
+                        frameList._classPowerBar:SetAlpha(cpWant)
                     end
                 end
 
@@ -2162,7 +2171,7 @@ local function InitializeFrames()
                 -- When a condition driver is registered it owns Show/Hide
                 -- entirely -- a manual toggle would de-sync it until its
                 -- next re-evaluation -- so this whole bucket steps aside.
-                if not isLocked and not frame._cuiVisDriver then
+                if not isLocked and not widget._cuiVisDriver then
                     local shouldShow
                     if visNever then
                         -- Ahead of the engine verdict: Never is exclusive, but under
@@ -2170,7 +2179,7 @@ local function InitializeFrames()
                         -- answers false rather than nil, which would keep the frame
                         -- secure-Shown at alpha 0 and still eating clicks.
                         shouldShow = false
-                    elseif ns.HealthVisibilityEnabled(s, frame) then
+                    elseif mod.HealthVisibilityEnabled(s, widget) then
                         shouldShow = true
                     elseif ext ~= nil then
                         -- Engine-owned: frame stays secure-Shown; the alpha
@@ -2192,63 +2201,65 @@ local function InitializeFrames()
                     end
 
                     if shouldShow then
-                        if not frame:IsShown() and UnitExists(unitKey) then
-                            frame:SetAttribute("unit", unitKey)
+                        if not widget:IsShown() and UnitExists(unitKey) then
+                            widget:SetAttribute("unit", unitKey)
                             -- Re-enable the engine elements that were disabled on hide.
                             -- Castbar is handled separately below to respect the
                             -- user's show/hide setting -- never blindly re-enable it.
                             for _, elem in ipairs({ "Health", "Power", "Portrait", "HealthPrediction" }) do
-                                if frame[elem] and not frame:IsElementEnabled(elem) then
-                                    frame:EnableElement(elem)
+                                if widget[elem] and not widget:IsElementEnabled(elem) then
+                                    widget:EnableElement(elem)
                                 end
                             end
                             -- Restore castbar state based on saved setting
-                            if frame.Castbar then
+                            if widget.Castbar then
                                 local wantsCastbar
                                 if unitKey == "player" then
                                     -- Hide While Using Gamepad keeps it off (ns.UF_ApplyGamepadCastbar).
-                                    wantsCastbar = s.showPlayerCastbar and not ns._ufCastPadHidden
+                                    wantsCastbar = s.showPlayerCastbar and not mod._ufCastPadHidden
                                 else
                                     wantsCastbar = s.showCastbar ~= false
                                 end
                                 if wantsCastbar then
-                                    ns.SetCastbarElement(frame, true)
+                                    mod.SetCastbarElement(widget, true)
                                 else
-                                    ns.SetCastbarElement(frame, false)
-                                    frame.Castbar:Hide()
-                                    local castbarBg = frame.Castbar:GetParent()
+                                    mod.SetCastbarElement(widget, false)
+                                    widget.Castbar:Hide()
+                                    local castbarBg = widget.Castbar:GetParent()
                                     if castbarBg then
                                         castbarBg:Hide()
                                     end
                                 end
                             end
-                            frame:Show()
+                            widget:Show()
                             -- Full engine repaint: the SetAttribute above reuses
                             -- the same unit token, so the attribute hook sees no
                             -- change and never repaints on its own.
-                            ns.Engine.RepaintAll(frame, "GroupVisibility")
+                            mod.Engine.RepaintAll(widget, "GroupVisibility")
                         end
                     else
-                        if frame:IsShown() then
+                        if widget:IsShown() then
                             -- Disable the engine elements before hiding to prevent a
                             -- single-frame flash when the unit attribute is cleared
                             for _, elem in ipairs({ "Health", "Power", "Portrait", "HealthPrediction" }) do
-                                if frame[elem] and frame:IsElementEnabled(elem) then
-                                    frame:DisableElement(elem)
+                                if widget[elem] and widget:IsElementEnabled(elem) then
+                                    widget:DisableElement(elem)
                                 end
                             end
-                            ns.SetCastbarElement(frame, false)
-                            frame:Hide()
-                            frame:SetAttribute("unit", nil)
+                            mod.SetCastbarElement(widget, false)
+                            widget:Hide()
+                            widget:SetAttribute("unit", nil)
                         end
                     end
                 end
 
-                local mini = frames[ns.UF_MINI_OF[unitKey]]
+                local mini = frameList[mod.UF_MINI_OF[unitKey]]
                 -- Always Show Pet Frame: the pet opts out of every parent
                 -- visibility inheritance in this pass -- its own unit watch
                 -- alone owns Show/Hide (visible whenever a pet exists).
-                local miniAlways = (unitKey == "player") and db.profile.pet and db.profile.pet.alwaysShow
+                local miniAlways = (unitKey == "player")
+                    and saved.profile.pet
+                    and saved.profile.pet.alwaysShow
 
                 -- The companion mini frame gets its own condition driver
                 -- (parent conditions + its own unit existence), so a
@@ -2261,7 +2272,7 @@ local function InitializeFrames()
                         -- disabled-parent branch below does.
                         miniWant = "hide"
                     elseif (not miniAlways) and visTail then
-                        miniWant = "[@" .. ns.UF_MINI_OF[unitKey] .. ",noexists] hide; " .. visTail
+                        miniWant = "[@" .. mod.UF_MINI_OF[unitKey] .. ",noexists] hide; " .. visTail
                     end
                     if mini._cuiVisDriver ~= miniWant and not isLocked then
                         if miniWant then
@@ -2286,24 +2297,26 @@ local function InitializeFrames()
                 if mini then
                     if miniAlways then
                         mini:SetAlpha(1)
-                    elseif frame:IsShown() then
+                    elseif widget:IsShown() then
                         mini:SetAlpha(bodyAlpha)
                     else
                         mini:SetAlpha(0)
                     end
                 end
-            elseif frame then
+            elseif widget then
                 -- Parent disabled (the "Enable X Frame" toggles): a leftover condition
                 -- driver must not keep re-showing the frame, so pin it to a constant
                 -- hide. Frames that never had a driver keep the legacy disabled path
                 -- untouched. The mini inherits both.
-                if not isLocked and frame._cuiVisDriver and frame._cuiVisDriver ~= "hide" then
-                    RegisterAttributeDriver(frame, "state-visibility", "hide")
-                    frame._cuiVisDriver = "hide"
+                if not isLocked and widget._cuiVisDriver and widget._cuiVisDriver ~= "hide" then
+                    RegisterAttributeDriver(widget, "state-visibility", "hide")
+                    widget._cuiVisDriver = "hide"
                 end
-                local mini = frames[ns.UF_MINI_OF[unitKey]]
+                local mini = frameList[mod.UF_MINI_OF[unitKey]]
                 if mini then
-                    local miniAlways = (unitKey == "player") and db.profile.pet and db.profile.pet.alwaysShow
+                    local miniAlways = (unitKey == "player")
+                        and saved.profile.pet
+                        and saved.profile.pet.alwaysShow
                     if miniAlways then
                         -- Always Show Pet Frame survives a disabled player
                         -- frame: unpin any driver so the pet's own unit
@@ -2324,44 +2337,44 @@ local function InitializeFrames()
                 end
             end
         end
-        ns.SyncHealthVisibilityEvents()
+        mod.SyncHealthVisibilityEvents()
     end
-    ns.UpdateFrameVisibility = UpdateFrameVisibility
+    mod.UpdateFrameVisibility = UpdateFrameVisibility
 
-    if not frames._visFrame then
-        frames._visFrame = CreateFrame("Frame")
-        frames._visFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-        frames._visFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        frames._visFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        frames._visFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        frames._visFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
-        frames._visFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+    if not frameList._visFrame then
+        frameList._visFrame = CreateFrame("Frame")
+        frameList._visFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        frameList._visFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        frameList._visFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        frameList._visFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        frameList._visFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
+        frameList._visFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         -- Resting: IsResting() has no dedicated poll, so without this the Resting
         -- axis only re-evaluated when some unrelated event above happened to fire.
-        frames._visFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
+        frameList._visFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
         -- Vehicle edges for the In Vehicle axis (player-filtered; same reasoning).
-        frames._visFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
-        frames._visFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
-        frames._visFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-        frames._visFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+        frameList._visFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
+        frameList._visFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
+        frameList._visFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+        frameList._visFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
         -- The focus-target mini mirrors the focus frame's alpha below, so a
         -- focus set while the pass last saw that frame hidden left the mini at
         -- alpha 0 until some other trigger ran. Same deferral as target changes.
-        frames._visFrame:RegisterEvent("PLAYER_FOCUS_CHANGED")
+        frameList._visFrame:RegisterEvent("PLAYER_FOCUS_CHANGED")
         -- Dragonriding visibility modes: capability edge plus the airborne
         -- edge (probed at load in CludesUI_Visibility.lua)
-        frames._visFrame:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED")
+        frameList._visFrame:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED")
         if CludesUI._hasGlidingEvent then
-            frames._visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED")
+            frameList._visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED")
         end
     end
-    frames._visFrame:SetScript("OnEvent", function(_, event)
-        if event == "PLAYER_REGEN_DISABLED" then
+    frameList._visFrame:SetScript("OnEvent", function(_, evt)
+        if evt == "PLAYER_REGEN_DISABLED" then
             _ufInCombat = true
             -- Alpha-only update (SetAlpha is not restricted during lockdown).
             -- Show/Hide paths inside UpdateFrameVisibility are guarded by isLocked.
             UpdateFrameVisibility()
-        elseif event == "PLAYER_REGEN_ENABLED" then
+        elseif evt == "PLAYER_REGEN_ENABLED" then
             _ufInCombat = false
             UpdateFrameVisibility()
         else
@@ -2375,25 +2388,25 @@ local function InitializeFrames()
     --  Portrait border color: update when target/focus unit changes
     --  so "class color" mode reflects the new unit's color.
     ---------------------------------------------------------------------------
-    if not frames._portraitBorderUpdater then
-        frames._portraitBorderUpdater = CreateFrame("Frame")
-        frames._portraitBorderUpdater:RegisterEvent("PLAYER_TARGET_CHANGED")
-        frames._portraitBorderUpdater:RegisterEvent("PLAYER_FOCUS_CHANGED")
+    if not frameList._portraitBorderUpdater then
+        frameList._portraitBorderUpdater = CreateFrame("Frame")
+        frameList._portraitBorderUpdater:RegisterEvent("PLAYER_TARGET_CHANGED")
+        frameList._portraitBorderUpdater:RegisterEvent("PLAYER_FOCUS_CHANGED")
     end
-    frames._portraitBorderUpdater:SetScript("OnEvent", function(_, event)
-        local unitKey = (event == "PLAYER_TARGET_CHANGED") and "target" or "focus"
-        local frame = frames[unitKey]
-        if frame and (unitKey == "target" or unitKey == "focus") then
-            ns.UF_RecolorTexts(frame, unitKey, db.profile[unitKey])
+    frameList._portraitBorderUpdater:SetScript("OnEvent", function(_, evt)
+        local unitKey = (evt == "PLAYER_TARGET_CHANGED") and "target" or "focus"
+        local widget = frameList[unitKey]
+        if widget and (unitKey == "target" or unitKey == "focus") then
+            mod.UF_RecolorTexts(widget, unitKey, saved.profile[unitKey])
         end
-        if not frame or not frame.Portrait then
+        if not widget or not widget.Portrait then
             return
         end
-        local backdrop = frame.Portrait.backdrop
+        local backdrop = widget.Portrait.backdrop
         if not backdrop then
             return
         end
-        local uSettings = db.profile[unitKey]
+        local uSettings = saved.profile[unitKey]
         -- Refresh detached portrait border class color
         if uSettings and uSettings.detachedPortraitClassColor then
             ApplyDetachedPortraitShape(backdrop, uSettings, unitKey)
@@ -2413,19 +2426,19 @@ local function InitializeFrames()
     --  that gate always honors. 2D only -- a PlayerModel does not read portrait
     --  art, and repainting one costs a ClearModel + SetUnit reload.
     ---------------------------------------------------------------------------
-    if not frames._portraitArtUpdater then
-        frames._portraitArtUpdater = CreateFrame("Frame")
-        frames._portraitArtUpdater:RegisterEvent("PORTRAITS_UPDATED")
+    if not frameList._portraitArtUpdater then
+        frameList._portraitArtUpdater = CreateFrame("Frame")
+        frameList._portraitArtUpdater:RegisterEvent("PORTRAITS_UPDATED")
     end
-    frames._portraitArtUpdater:SetScript("OnEvent", function()
-        for _, frame in pairs(frames) do
-            if type(frame) == "table" and frame.__eventless and frame.IsElementEnabled then
-                local p = frame.Portrait
+    frameList._portraitArtUpdater:SetScript("OnEvent", function()
+        for _, widget in pairs(frameList) do
+            if type(widget) == "table" and widget.__eventless and widget.IsElementEnabled then
+                local p = widget.Portrait
                 if
                     p
                     and p.ForceUpdate
                     and not p:IsObjectType("PlayerModel")
-                    and frame:IsElementEnabled("Portrait")
+                    and widget:IsElementEnabled("Portrait")
                 then
                     p:ForceUpdate()
                 end
@@ -2440,14 +2453,14 @@ local function InitializeFrames()
     -- falls back to white/reaction-nil and never recovers. Re-apply on the parent's
     -- target change and on its UNIT_TARGET, and on UNIT_PET for the pet frame.
     local function ReapplyFrameTextClassColors(unitKey)
-        local frame = frames[unitKey]
-        local s = frame and db.profile[unitKey]
+        local widget = frameList[unitKey]
+        local s = widget and saved.profile[unitKey]
         if not s then
             return
         end
-        if frame.LeftText and s.leftTextClassColor ~= nil then
+        if widget.LeftText and s.leftTextClassColor ~= nil then
             ApplyClassColor(
-                frame.LeftText,
+                widget.LeftText,
                 unitKey,
                 s.leftTextClassColor,
                 s.leftTextColorR,
@@ -2455,9 +2468,9 @@ local function InitializeFrames()
                 s.leftTextColorB
             )
         end
-        if frame.RightText and s.rightTextClassColor ~= nil then
+        if widget.RightText and s.rightTextClassColor ~= nil then
             ApplyClassColor(
-                frame.RightText,
+                widget.RightText,
                 unitKey,
                 s.rightTextClassColor,
                 s.rightTextColorR,
@@ -2465,9 +2478,9 @@ local function InitializeFrames()
                 s.rightTextColorB
             )
         end
-        if frame.CenterText and s.centerTextClassColor ~= nil then
+        if widget.CenterText and s.centerTextClassColor ~= nil then
             ApplyClassColor(
-                frame.CenterText,
+                widget.CenterText,
                 unitKey,
                 s.centerTextClassColor,
                 s.centerTextColorR,
@@ -2476,19 +2489,19 @@ local function InitializeFrames()
             )
         end
     end
-    if not frames._miniTextClassUpdater then
-        frames._miniTextClassUpdater = CreateFrame("Frame")
-        frames._miniTextClassUpdater:RegisterEvent("PLAYER_TARGET_CHANGED")
-        frames._miniTextClassUpdater:RegisterEvent("PLAYER_FOCUS_CHANGED")
-        frames._miniTextClassUpdater:RegisterUnitEvent("UNIT_TARGET", "target", "focus")
-        frames._miniTextClassUpdater:RegisterUnitEvent("UNIT_PET", "player")
+    if not frameList._miniTextClassUpdater then
+        frameList._miniTextClassUpdater = CreateFrame("Frame")
+        frameList._miniTextClassUpdater:RegisterEvent("PLAYER_TARGET_CHANGED")
+        frameList._miniTextClassUpdater:RegisterEvent("PLAYER_FOCUS_CHANGED")
+        frameList._miniTextClassUpdater:RegisterUnitEvent("UNIT_TARGET", "target", "focus")
+        frameList._miniTextClassUpdater:RegisterUnitEvent("UNIT_PET", "player")
     end
-    frames._miniTextClassUpdater:SetScript("OnEvent", function(_, event, arg1)
-        if event == "PLAYER_TARGET_CHANGED" then
+    frameList._miniTextClassUpdater:SetScript("OnEvent", function(_, evt, arg1)
+        if evt == "PLAYER_TARGET_CHANGED" then
             ReapplyFrameTextClassColors("targettarget")
-        elseif event == "PLAYER_FOCUS_CHANGED" then
+        elseif evt == "PLAYER_FOCUS_CHANGED" then
             ReapplyFrameTextClassColors("focustarget")
-        elseif event == "UNIT_PET" then
+        elseif evt == "UNIT_PET" then
             ReapplyFrameTextClassColors("pet")
         elseif arg1 == "target" then
             ReapplyFrameTextClassColors("targettarget")
@@ -2501,16 +2514,16 @@ local function InitializeFrames()
     -- player's target changes or boss units (dis)appear. Hover is handled by the
     -- OnEnter/OnLeave hooks; this only tracks target. Both borders default off, so
     -- this is a cheap no-op unless the user enabled one. On ns for the 200-local cap.
-    ns.UpdateBossTargetBorders = function()
-        local s = db.profile.boss
-        for i = 1, 5 do
-            local bUnit = "boss" .. i
-            local f = frames[bUnit]
+    mod.UpdateBossTargetBorders = function()
+        local s = saved.profile.boss
+        for idx = 1, 5 do
+            local bUnit = "boss" .. idx
+            local f = frameList[bUnit]
             if f then
                 if f.unifiedBorder then
                     local isT = UnitIsUnit(bUnit, "target")
                     f._isTarget = (not issecretvalue(isT) and isT) and true or false
-                    ns.ApplyBossBorderState(f)
+                    mod.ApplyBossBorderState(f)
                 end
                 if s then
                     if f.LeftText and s.leftTextClassColor ~= nil then
@@ -2547,45 +2560,45 @@ local function InitializeFrames()
             end
         end
     end
-    if not frames._bossTargetBorderUpdater then
-        frames._bossTargetBorderUpdater = CreateFrame("Frame")
-        frames._bossTargetBorderUpdater:RegisterEvent("PLAYER_TARGET_CHANGED")
-        frames._bossTargetBorderUpdater:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
-        frames._bossTargetBorderUpdater:RegisterEvent("UNIT_TARGETABLE_CHANGED")
-        frames._bossTargetBorderUpdater:RegisterEvent("PLAYER_ENTERING_WORLD")
+    if not frameList._bossTargetBorderUpdater then
+        frameList._bossTargetBorderUpdater = CreateFrame("Frame")
+        frameList._bossTargetBorderUpdater:RegisterEvent("PLAYER_TARGET_CHANGED")
+        frameList._bossTargetBorderUpdater:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
+        frameList._bossTargetBorderUpdater:RegisterEvent("UNIT_TARGETABLE_CHANGED")
+        frameList._bossTargetBorderUpdater:RegisterEvent("PLAYER_ENTERING_WORLD")
     end
-    frames._bossTargetBorderUpdater:SetScript("OnEvent", ns.UpdateBossTargetBorders)
-    ns.UpdateBossTargetBorders()
+    frameList._bossTargetBorderUpdater:SetScript("OnEvent", mod.UpdateBossTargetBorders)
+    mod.UpdateBossTargetBorders()
 
     -- Deferred normalization: some late-login updates can re-anchor power bars
     -- after frame construction. Re-apply two-point attached anchors once more.
     -- Not under Blizzard Style: its layout pass owns the power bar geometry
     -- (a health-width re-anchor here would undo the stock bar placement).
     C_Timer.After(0, function()
-        if ns.UF_Blizz() then
+        if mod.UF_Blizz() then
             return
         end
         for _, unitKey in ipairs({ "player", "target", "focus", "pet" }) do
-            local frame = frames[unitKey]
-            if frame and frame.Power and frame.Health then
+            local widget = frameList[unitKey]
+            if widget and widget.Power and widget.Health then
                 local s = GetSettingsForUnit(unitKey)
                 if s then
                     local ppPos = s.powerPosition or "below"
                     if ppPos == "below" or ppPos == "above" then
-                        frame.Power:ClearAllPoints()
+                        widget.Power:ClearAllPoints()
                         if ppPos == "above" then
-                            PP.Point(frame.Power, "BOTTOMLEFT", frame.Health, "TOPLEFT", 0, 0)
-                            PP.Point(frame.Power, "BOTTOMRIGHT", frame.Health, "TOPRIGHT", 0, 0)
+                            Pix.Point(widget.Power, "BOTTOMLEFT", widget.Health, "TOPLEFT", 0, 0)
+                            Pix.Point(widget.Power, "BOTTOMRIGHT", widget.Health, "TOPRIGHT", 0, 0)
                         else
-                            PP.Point(frame.Power, "TOPLEFT", frame.Health, "BOTTOMLEFT", 0, 0)
-                            PP.Point(frame.Power, "TOPRIGHT", frame.Health, "BOTTOMRIGHT", 0, 0)
+                            Pix.Point(widget.Power, "TOPLEFT", widget.Health, "BOTTOMLEFT", 0, 0)
+                            Pix.Point(widget.Power, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
                         end
                     end
                 end
             end
         end
-        for i = 1, 5 do
-            local bf = frames["boss" .. i]
+        for idx = 1, 5 do
+            local bf = frameList["boss" .. idx]
             if bf and bf.Power and bf.Health then
                 local s = GetSettingsForUnit("boss")
                 if s then
@@ -2593,11 +2606,11 @@ local function InitializeFrames()
                     if ppPos == "below" or ppPos == "above" then
                         bf.Power:ClearAllPoints()
                         if ppPos == "above" then
-                            PP.Point(bf.Power, "BOTTOMLEFT", bf.Health, "TOPLEFT", 0, 0)
-                            PP.Point(bf.Power, "BOTTOMRIGHT", bf.Health, "TOPRIGHT", 0, 0)
+                            Pix.Point(bf.Power, "BOTTOMLEFT", bf.Health, "TOPLEFT", 0, 0)
+                            Pix.Point(bf.Power, "BOTTOMRIGHT", bf.Health, "TOPRIGHT", 0, 0)
                         else
-                            PP.Point(bf.Power, "TOPLEFT", bf.Health, "BOTTOMLEFT", 0, 0)
-                            PP.Point(bf.Power, "TOPRIGHT", bf.Health, "BOTTOMRIGHT", 0, 0)
+                            Pix.Point(bf.Power, "TOPLEFT", bf.Health, "BOTTOMLEFT", 0, 0)
+                            Pix.Point(bf.Power, "TOPRIGHT", bf.Health, "BOTTOMRIGHT", 0, 0)
                         end
                     end
                 end
@@ -2612,10 +2625,10 @@ local function InitializeFrames()
     -- back its frame work: the throttle pass at combat end applies it
     -- (ns.ReloadFrames exists by then, set a frame later by SetupOptionsPanel).
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("ReloadFrames", function()
-            ns.ReloadFrames()
+        mod.CombatQueue.Defer("ReloadFrames", function()
+            mod.ReloadFrames()
         end)
     end
 end
 
-I.InitializeFrames = InitializeFrames
+Inner.InitializeFrames = InitializeFrames

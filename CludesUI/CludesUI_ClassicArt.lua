@@ -69,12 +69,12 @@ local RIM_L, RIM_R, RIM_T, RIM_B = 3.5, 3.5, 6, 5
 -- The frame's visible rim beyond a bar's rect at scale k, for size matching
 -- (a matched element lines up with the rim, not the art's margin): extra
 -- width, extra height.
-function CF.Pad(k, vertical)
-    k = k or 1
+function CF.Pad(key, vertical)
+    key = key or 1
     if vertical then
-        return (RIM_T + RIM_B) * k, (RIM_L + RIM_R) * k
+        return (RIM_T + RIM_B) * key, (RIM_L + RIM_R) * key
     end
-    return (RIM_L + RIM_R) * k, (RIM_T + RIM_B) * k
+    return (RIM_L + RIM_R) * key, (RIM_T + RIM_B) * key
 end
 
 -- Piece indices.
@@ -83,23 +83,23 @@ local N = 9
 
 -- Nine textures on `parent` at layer/sublevel, created once; keep the table
 -- and hand it back to Seat.
-function CF.Create(parent, layer, sub)
+function CF.Create(hostFrame, layer, subFrame)
     local p = {}
-    for i = 1, N do
-        local t = parent:CreateTexture(nil, layer or "OVERLAY", nil, sub or 2)
+    for idx = 1, N do
+        local t = hostFrame:CreateTexture(nil, layer or "OVERLAY", nil, subFrame or 2)
         t:SetTexture(FILE)
         if t.SetSnapToPixelGrid then
             t:SetSnapToPixelGrid(false)
             t:SetTexelSnappingBias(0)
         end
-        p[i] = t
+        p[idx] = t
     end
     return p
 end
 
-function CF.SetShown(p, shown)
-    for i = 1, N do
-        p[i]:SetShown(shown and true or false)
+function CF.SetShown(p, isShown)
+    for idx = 1, N do
+        p[idx]:SetShown(isShown and true or false)
     end
 end
 
@@ -115,37 +115,37 @@ end
 
 -- Lays the frame round `rect` at scale k (1 = the sheet's pixels). Memoized
 -- on rect, k and orientation; every layout pass may call it.
-function CF.Seat(p, rect, k, vertical)
+function CF.Seat(p, rect, key, vertical)
     if not (p and rect) then
         return
     end
-    k = k or 1
+    key = key or 1
     vertical = vertical and true or false
-    if p._rect == rect and p._k == k and p._vert == vertical then
+    if p._rect == rect and p._k == key and p._vert == vertical then
         return
     end
-    p._rect, p._k, p._vert = rect, k, vertical
-    for i = 1, N do
-        p[i]:ClearAllPoints()
+    p._rect, p._k, p._vert = rect, key, vertical
+    for idx = 1, N do
+        p[idx]:ClearAllPoints()
     end
-    local cap, top, bot = CAP * k, TOP * k, BOT * k
+    local cap, topY, bot = CAP * key, TOP * key, BOT * key
     if not vertical then
         Coords(p[TL], X0, X1, Y0, Y1)
-        p[TL]:SetSize(cap, top)
-        p[TL]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_L * k, OVER_T * k)
+        p[TL]:SetSize(cap, topY)
+        p[TL]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_L * key, OVER_T * key)
         Coords(p[TR], X2, X3, Y0, Y1)
-        p[TR]:SetSize(cap, top)
-        p[TR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_R * k, OVER_T * k)
+        p[TR]:SetSize(cap, topY)
+        p[TR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_R * key, OVER_T * key)
         Coords(p[T], X1, X2, Y0, Y1)
-        p[T]:SetHeight(top)
+        p[T]:SetHeight(topY)
         p[T]:SetPoint("TOPLEFT", p[TL], "TOPRIGHT", 0, 0)
         p[T]:SetPoint("TOPRIGHT", p[TR], "TOPLEFT", 0, 0)
         Coords(p[BL], X0, X1, Y2, Y3)
         p[BL]:SetSize(cap, bot)
-        p[BL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_L * k, -OVER_B * k)
+        p[BL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_L * key, -OVER_B * key)
         Coords(p[BR], X2, X3, Y2, Y3)
         p[BR]:SetSize(cap, bot)
-        p[BR]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_R * k, -OVER_B * k)
+        p[BR]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_R * key, -OVER_B * key)
         Coords(p[B], X1, X2, Y2, Y3)
         p[B]:SetHeight(bot)
         p[B]:SetPoint("BOTTOMLEFT", p[BL], "BOTTOMRIGHT", 0, 0)
@@ -165,21 +165,21 @@ function CF.Seat(p, rect, k, vertical)
         -- its bottom band along the right (width bot), its right cap sits at
         -- the bar's top and its left cap at the bottom (height cap).
         Coords(p[TR], X2, X3, Y0, Y1, true)
-        p[TR]:SetSize(top, cap)
-        p[TR]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_T * k, OVER_R * k)
+        p[TR]:SetSize(topY, cap)
+        p[TR]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_T * key, OVER_R * key)
         Coords(p[TL], X0, X1, Y0, Y1, true)
-        p[TL]:SetSize(top, cap)
-        p[TL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_T * k, -OVER_L * k)
+        p[TL]:SetSize(topY, cap)
+        p[TL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_T * key, -OVER_L * key)
         Coords(p[T], X1, X2, Y0, Y1, true)
-        p[T]:SetWidth(top)
+        p[T]:SetWidth(topY)
         p[T]:SetPoint("TOPLEFT", p[TR], "BOTTOMLEFT", 0, 0)
         p[T]:SetPoint("BOTTOMLEFT", p[TL], "TOPLEFT", 0, 0)
         Coords(p[BR], X2, X3, Y2, Y3, true)
         p[BR]:SetSize(bot, cap)
-        p[BR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_B * k, OVER_R * k)
+        p[BR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_B * key, OVER_R * key)
         Coords(p[BL], X0, X1, Y2, Y3, true)
         p[BL]:SetSize(bot, cap)
-        p[BL]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_B * k, -OVER_L * k)
+        p[BL]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_B * key, -OVER_L * key)
         Coords(p[B], X1, X2, Y2, Y3, true)
         p[B]:SetWidth(bot)
         p[B]:SetPoint("TOPRIGHT", p[BR], "BOTTOMRIGHT", 0, 0)
@@ -195,7 +195,7 @@ function CF.Seat(p, rect, k, vertical)
         p[C]:SetPoint("TOPLEFT", p[R], "BOTTOMLEFT", 0, 0)
         p[C]:SetPoint("BOTTOMRIGHT", p[L], "TOPRIGHT", 0, 0)
     end
-    for i = 1, N do
-        p[i]:Show()
+    for idx = 1, N do
+        p[idx]:Show()
     end
 end

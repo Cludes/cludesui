@@ -7,32 +7,33 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The GCD bar.
 --  Reads the earlier Resource Bars files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 
-local CLASS_COLORS, ERB, SnapXY, ApplyBarFlat = I.CLASS_COLORS, I.ERB, I.SnapXY, I.ApplyBarFlat
-local ApplyBarGradient, ApplyBarOrientation = I.ApplyBarGradient, I.ApplyBarOrientation
-local OrientedSize, SPARK_TEX, SetGCDBarFrame = I.OrientedSize, I.SPARK_TEX, I.SetGCDBarFrame
-local SetUpdateGCDBar = I.SetUpdateGCDBar
+local CLASS_COLORS, ERB, SnapXY, ApplyBarFlat =
+    Inner.CLASS_COLORS, Inner.ERB, Inner.SnapXY, Inner.ApplyBarFlat
+local ApplyBarGradient, ApplyBarOrientation = Inner.ApplyBarGradient, Inner.ApplyBarOrientation
+local OrientedSize, SPARK_TEX, SetGCDBarFrame = Inner.OrientedSize, Inner.SPARK_TEX, Inner.SetGCDBarFrame
+local SetUpdateGCDBar = Inner.SetUpdateGCDBar
 
 local gcdBarFrame
-I.gcdBarFrameSetters[#I.gcdBarFrameSetters + 1] = function(v)
-    gcdBarFrame = v
+Inner.gcdBarFrameSetters[#Inner.gcdBarFrameSetters + 1] = function(val)
+    gcdBarFrame = val
 end
 local cachedClass
-I.cachedClassSetters[#I.cachedClassSetters + 1] = function(v)
-    cachedClass = v
+Inner.cachedClassSetters[#Inner.cachedClassSetters + 1] = function(val)
+    cachedClass = val
 end
 local UpdateGCDBar
-I.UpdateGCDBarSetters[#I.UpdateGCDBarSetters + 1] = function(v)
-    UpdateGCDBar = v
+Inner.UpdateGCDBarSetters[#Inner.UpdateGCDBarSetters + 1] = function(val)
+    UpdateGCDBar = val
 end
 
 local BuildGCDBar
@@ -48,13 +49,13 @@ local BuildGCDBar
 -- direction PAINTS the desired state (RemainingTime of a finished cooldown
 -- paints empty, ElapsedTime paints full). SetValue keeps the value channel
 -- and the no-timer Lua fill path coherent.
-ns.GCDIdleFill = function(g)
-    local bar = gcdBarFrame and gcdBarFrame._bar
-    if not bar then
+mod.GCDIdleFill = function(g)
+    local barFrame = gcdBarFrame and gcdBarFrame._bar
+    if not barFrame then
         return
     end
     local wantFull = g.idleShowFill == true
-    if bar.SetTimerDuration and Enum and Enum.StatusBarTimerDirection then
+    if barFrame.SetTimerDuration and Enum and Enum.StatusBarTimerDirection then
         -- Fetch a FRESH object here: after a CANCELLED cast the GCD is
         -- refunded and the stored handle goes stale -- a RemainingTime
         -- re-arm on it plays out the original countdown (a slow un-fill
@@ -65,22 +66,22 @@ ns.GCDIdleFill = function(g)
         local fresh = C_Spell
             and C_Spell.GetSpellCooldownDuration
             and C_Spell.GetSpellCooldownDuration(CludesUI.GCD_SPELL)
-        local obj
+        local object
         if wantFull then
-            obj = gcdBarFrame._gcdDurObj or fresh
+            object = gcdBarFrame._gcdDurObj or fresh
         else
-            obj = fresh or gcdBarFrame._gcdDurObj
+            object = fresh or gcdBarFrame._gcdDurObj
         end
-        if obj then
-            bar:SetTimerDuration(
-                obj,
+        if object then
+            barFrame:SetTimerDuration(
+                object,
                 nil,
                 wantFull and Enum.StatusBarTimerDirection.ElapsedTime
                     or Enum.StatusBarTimerDirection.RemainingTime
             )
         end
     end
-    bar:SetValue(wantFull and 1 or 0)
+    barFrame:SetValue(wantFull and 1 or 0)
 end
 
 BuildGCDBar = function()
@@ -102,41 +103,41 @@ BuildGCDBar = function()
 
     if not gcdBarFrame then
         -- Adopt the file-scope shell (attribution; see the note in CUI_ResourceBars_Frames.lua).
-        SetGCDBarFrame(ns.GCDShell)
+        SetGCDBarFrame(mod.GCDShell)
         gcdBarFrame:SetFrameStrata(g.frameStrata or "MEDIUM")
         gcdBarFrame:SetFrameLevel(15)
 
-        local bg = gcdBarFrame:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        gcdBarFrame._bg = bg
+        local backdrop = gcdBarFrame:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        gcdBarFrame._bg = backdrop
 
         local bdrFrame = CreateFrame("Frame", nil, gcdBarFrame)
         bdrFrame:SetAllPoints(gcdBarFrame)
         bdrFrame:SetFrameLevel(gcdBarFrame:GetFrameLevel() + 5)
         gcdBarFrame._border = bdrFrame
-        local PP = CludesUI and CludesUI.PP
-        if PP then
-            PP.CreateBorder(bdrFrame, 0, 0, 0, 1, 1)
+        local Pix = CludesUI and CludesUI.PP
+        if Pix then
+            Pix.CreateBorder(bdrFrame, 0, 0, 0, 1, 1)
         end
 
         local clipFrame = CreateFrame("Frame", nil, gcdBarFrame)
         clipFrame:SetClipsChildren(true)
         gcdBarFrame._barClip = clipFrame
 
-        local bar = CreateFrame("StatusBar", "ERB_GCDBar", clipFrame)
-        bar:SetMinMaxValues(0, 1)
-        bar:SetValue(0)
-        gcdBarFrame._bar = bar
+        local barFrame = CreateFrame("StatusBar", "ERB_GCDBar", clipFrame)
+        barFrame:SetMinMaxValues(0, 1)
+        barFrame:SetValue(0)
+        gcdBarFrame._bar = barFrame
         -- Native smoothing, applied via SetValue(progress, _castInterp).
-        bar._castInterp = Enum
+        barFrame._castInterp = Enum
             and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
 
         -- Spark (same texture/approach as the cast bar)
         local sparkFrame = CreateFrame("Frame", nil, clipFrame)
-        sparkFrame:SetAllPoints(bar)
+        sparkFrame:SetAllPoints(barFrame)
         -- One over the fill (18): Draw Above GCD Bar lifts the power border to 19.
-        sparkFrame:SetFrameLevel(bar:GetFrameLevel() + 1)
+        sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 1)
         local spark = sparkFrame:CreateTexture(nil, "OVERLAY", nil, 1)
         spark:SetTexture(SPARK_TEX)
         spark:SetBlendMode("ADD")
@@ -149,13 +150,13 @@ BuildGCDBar = function()
         -- capture allocates no closure beyond the pcall body. The object is
         -- kept on the frame: the idle render re-arms it to repaint (see
         -- ns.GCDIdleFill).
-        local function armNativeGCD(bar, deplete)
+        local function armNativeGCD(barFrame, deplete)
             local durObj = C_Spell.GetSpellCooldownDuration(CludesUI.GCD_SPELL)
             if not durObj then
                 return
             end
             gcdBarFrame._gcdDurObj = durObj
-            bar:SetTimerDuration(
+            barFrame:SetTimerDuration(
                 durObj,
                 nil,
                 deplete and Enum.StatusBarTimerDirection.RemainingTime
@@ -179,21 +180,25 @@ BuildGCDBar = function()
             -- zero Lua per frame, queue-proof (re-arms land on the same
             -- timeline, so they are idempotent), and secret-proof (the
             -- object is never read).
-            local bar = self._bar
-            local canNative = bar
-                and bar.SetTimerDuration
+            local barFrame = self._bar
+            local canNative = barFrame
+                and barFrame.SetTimerDuration
                 and Enum
                 and Enum.StatusBarTimerDirection
                 and C_Spell
                 and C_Spell.GetSpellCooldownDuration
-            local ok, elapsed, dur = pcall(function()
+            local success, elapsed, dur = pcall(function()
                 local d, s = cd.duration, cd.startTime
                 if d and d > 0 and d <= 1.6 and s and s > 0 then
                     return GetTime() - s, d
                 end
                 return nil
             end)
-            if ok and elapsed and not (issecretvalue and (issecretvalue(elapsed) or issecretvalue(dur))) then
+            if
+                success
+                and elapsed
+                and not (issecretvalue and (issecretvalue(elapsed) or issecretvalue(dur)))
+            then
                 local actualStart = GetTime() - elapsed
                 -- (Re)start whenever this is a genuinely NEWER GCD than the one we
                 -- last captured. Do NOT gate on how far the GCD has elapsed:
@@ -217,14 +222,14 @@ BuildGCDBar = function()
                     -- the Lua fill only draws when it is not.
                     self._gcdStart = GetTime()
                     self._gcdDur = math.max(dur - elapsed, 0.05)
-                    self._nativeGCD = canNative and armNativeGCD(bar, gc.depleteFill) or nil
+                    self._nativeGCD = canNative and armNativeGCD(barFrame, gc.depleteFill) or nil
                     -- Show the bar THIS frame: waiting for the next tick (or
                     -- the central dispatcher) stacked visible latency on top
                     -- of the event edge.
-                    ns.GCDTick.Start()
+                    mod.GCDTick.Start()
                     UpdateGCDBar()
                 end
-            elseif not ok and canNative then
+            elseif not success and canNative then
                 -- Secret cooldown values (instanced combat): the readable
                 -- gate cannot run, and gating this channel on guesses is
                 -- the exact trap the action bar swipe work documented --
@@ -237,7 +242,7 @@ BuildGCDBar = function()
                     -- window (armNative keeps the engine honest); it never
                     -- opens visibility on its own.
                     if self._gcdStart then
-                        armNativeGCD(bar, gc.depleteFill)
+                        armNativeGCD(barFrame, gc.depleteFill)
                     end
                     return
                 end
@@ -246,13 +251,13 @@ BuildGCDBar = function()
                 if not cd.isActive then
                     return
                 end
-                if armNativeGCD(bar, gc.depleteFill) then
+                if armNativeGCD(barFrame, gc.depleteFill) then
                     self._nativeGCD = true
                     self._gcdStart = GetTime()
                     self._gcdDur = 1.6
                     self._gcdUnread = true
                     self._gcdActualStart = nil
-                    ns.GCDTick.Start()
+                    mod.GCDTick.Start()
                     UpdateGCDBar()
                 end
             end
@@ -267,14 +272,14 @@ BuildGCDBar = function()
         -- may arm the bar; see the SPELL_UPDATE_COOLDOWN edge below.
         local castKind = {}
 
-        gcdBarFrame:SetScript("OnEvent", function(self, event, unit, arg2, arg3, arg4)
+        gcdBarFrame:SetScript("OnEvent", function(self, evt, unitToken, arg2, arg3, arg4)
             local gc = ERB.db.profile.gcdBar
             if not gc or not gc.enabled then
                 return
             end
             -- UNIT_SPELLCAST_SENT carries an extra target argument, so its
             -- spellID sits one slot further along than the other cast events'.
-            local spellID = (event == "UNIT_SPELLCAST_SENT") and arg4 or arg3
+            local spellId = (evt == "UNIT_SPELLCAST_SENT") and arg4 or arg3
 
             -- Press-parity edge (the action bar swipe lesson): the client
             -- PREDICTS the GCD and fires SPELL_UPDATE_COOLDOWN the moment
@@ -282,12 +287,12 @@ BuildGCDBar = function()
             -- the queued cast actually fires. SUCCEEDED only lands after
             -- the server ack, so arming from it alone opened every fill a
             -- tenth of the way in. Same-frame collapse absorbs the storm.
-            if event == "SPELL_UPDATE_COOLDOWN" then
-                local now = GetTime()
-                if self._gcdCapStamp == now then
+            if evt == "SPELL_UPDATE_COOLDOWN" then
+                local nowTime = GetTime()
+                if self._gcdCapStamp == nowTime then
                     return
                 end
-                self._gcdCapStamp = now
+                self._gcdCapStamp = nowTime
                 if gc.instantOnly then
                     -- Hard casts and channels predict a GCD at the press too,
                     -- and this edge IS the press: UNIT_SPELLCAST_START only
@@ -300,7 +305,7 @@ BuildGCDBar = function()
                     -- cast of a spell is late rather than wrong.
                     local sent = self._sentSpellID
                     self._sentSpellID = nil -- one press edge per send
-                    if not (sent and castKind[sent] == "instant" and (now - (self._sentAt or 0)) < 1) then
+                    if not (sent and castKind[sent] == "instant" and (nowTime - (self._sentAt or 0)) < 1) then
                         return
                     end
                     -- An off-GCD press landing mid-cast must not open the bar
@@ -312,28 +317,28 @@ BuildGCDBar = function()
                 captureGCD(self, gc, true)
                 return
             end
-            if unit ~= "player" then
+            if unitToken ~= "player" then
                 return
             end
 
-            if event == "UNIT_SPELLCAST_SENT" then
+            if evt == "UNIT_SPELLCAST_SENT" then
                 -- Press-time bookkeeping for the edge above. Recording only --
                 -- this event never shows the bar.
-                self._sentSpellID = spellID
+                self._sentSpellID = spellId
                 self._sentAt = GetTime()
                 return
             end
 
             -- Stop events: clear the bar the moment the GCD is no longer active.
             if
-                event == "UNIT_SPELLCAST_FAILED"
-                or event == "UNIT_SPELLCAST_INTERRUPTED"
-                or event == "UNIT_SPELLCAST_STOP"
+                evt == "UNIT_SPELLCAST_FAILED"
+                or evt == "UNIT_SPELLCAST_INTERRUPTED"
+                or evt == "UNIT_SPELLCAST_STOP"
             then
                 local cd = getCD and getCD(CludesUI.GCD_SPELL)
                 local stillActive = false
                 if cd and cd.startTime then
-                    local ok, act = pcall(function()
+                    local success, act = pcall(function()
                         local d, s = cd.duration, cd.startTime
                         return (d and d > 0 and d <= 1.6 and s and s > 0) and true or false
                     end)
@@ -342,7 +347,7 @@ BuildGCDBar = function()
                     -- assume the GCD is still active and keep the bar. Otherwise a
                     -- single secret read on one of the many FAILED events that
                     -- spamming generates would wrongly wipe a running GCD.
-                    stillActive = (not ok) or act
+                    stillActive = (not success) or act
                 end
                 if not stillActive then
                     self._gcdStart = nil
@@ -351,42 +356,42 @@ BuildGCDBar = function()
                     -- Paint the idle state NOW: a cancelled cast refunds the
                     -- GCD, and waiting for the next tick leaves the dead fill
                     -- on screen for up to one tick.
-                    ns.GCDIdleFill(gc)
+                    mod.GCDIdleFill(gc)
                 end
                 self._realCastSpellID = nil -- the cast ended; clear the hard-cast flag
                 return
             end
 
             if
-                event == "UNIT_SPELLCAST_START"
-                or event == "UNIT_SPELLCAST_CHANNEL_START"
-                or event == "UNIT_SPELLCAST_EMPOWER_START"
+                evt == "UNIT_SPELLCAST_START"
+                or evt == "UNIT_SPELLCAST_CHANNEL_START"
+                or evt == "UNIT_SPELLCAST_EMPOWER_START"
             then
                 -- Remember this spell had a cast time/channel/empower so the
                 -- succeeded it fires can be skipped under instant-only.
                 -- Channels/empowers fire succeeded on start.
                 -- verify there's an actual cast time, a spell made instant
                 -- (e.g. Swiftness Regrowth) will count as instant cast
-                if event ~= "UNIT_SPELLCAST_START" then
-                    self._realCastSpellID = spellID
-                    if spellID then
-                        castKind[spellID] = "hard"
+                if evt ~= "UNIT_SPELLCAST_START" then
+                    self._realCastSpellID = spellId
+                    if spellId then
+                        castKind[spellId] = "hard"
                     end
                 else
                     local _, _, _, st, et = UnitCastingInfo("player")
                     if st and et and et > st then
-                        self._realCastSpellID = spellID
-                        if spellID then
-                            castKind[spellID] = "hard"
+                        self._realCastSpellID = spellId
+                        if spellId then
+                            castKind[spellId] = "hard"
                         end
                     end
                 end
                 if gc.instantOnly then
                     return
                 end -- instant-only: don't fill for hard casts
-            elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+            elseif evt == "UNIT_SPELLCAST_SUCCEEDED" then
                 -- instant-only: skip the succeeded that matches spellID
-                if gc.instantOnly and spellID and spellID == self._realCastSpellID then
+                if gc.instantOnly and spellId and spellId == self._realCastSpellID then
                     self._realCastSpellID = nil
                     return
                 end
@@ -394,11 +399,11 @@ BuildGCDBar = function()
                 return
             end
 
-            if gc.instantOnly and event == "UNIT_SPELLCAST_SUCCEEDED" then
+            if gc.instantOnly and evt == "UNIT_SPELLCAST_SUCCEEDED" then
                 -- A channel's succeeded can fire before its channel_start.
                 -- Defer the capture one frame and skip it if channeling.
                 -- Avoids a 1-frame flash on channel start
-                local succeededID = spellID
+                local succeededID = spellId
                 C_Timer.After(0, function()
                     if UnitChannelInfo and UnitChannelInfo("player") then
                         return
@@ -442,14 +447,14 @@ BuildGCDBar = function()
 
     -- Size (orientation swaps width/height for vertical) + position
     local ori = g.orientation or "HORIZONTAL"
-    local w, h = OrientedSize(g.width, g.height, ori)
+    local wid, hgt = OrientedSize(g.width, g.height, ori)
     gcdBarFrame:SetFrameStrata(g.frameStrata or "MEDIUM")
 
     if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_GCDBar", gcdBarFrame) then
         -- Override anchor owns position; only update size
-        gcdBarFrame:SetSize(w, h)
+        gcdBarFrame:SetSize(wid, hgt)
     elseif g.unlockPos and g.unlockPos.point then
-        gcdBarFrame:SetSize(w, h)
+        gcdBarFrame:SetSize(wid, hgt)
         if not CludesUI._unlockActive then
             local anchored = CludesUI.IsUnlockAnchored("ERB_GCDBar")
             if not (anchored and gcdBarFrame:GetLeft()) then
@@ -464,7 +469,7 @@ BuildGCDBar = function()
             end
         end
     else
-        gcdBarFrame:SetSize(w, h)
+        gcdBarFrame:SetSize(wid, hgt)
         if not CludesUI._unlockActive then
             gcdBarFrame:ClearAllPoints()
             gcdBarFrame:SetPoint("CENTER", UIParent, "CENTER", g.anchorX or 0, g.anchorY or 0)
@@ -477,7 +482,7 @@ BuildGCDBar = function()
         gcdBarFrame._border:SetFrameLevel(g.borderBehind and math.max(0, pl - 1) or (pl + 5))
         -- Lost-rect recovery and Extend Top / Extend Bottom, see the cast bar border above
         -- (no stock style on this bar).
-        ns.ERB_AnchorBorderHost(gcdBarFrame._border, gcdBarFrame, ns.ERB_BorderExtents(g))
+        mod.ERB_AnchorBorderHost(gcdBarFrame._border, gcdBarFrame, mod.ERB_BorderExtents(g))
         CludesUI.ApplyBorderStyle(
             gcdBarFrame._border,
             bs,
@@ -499,10 +504,10 @@ BuildGCDBar = function()
     -- Bottom Separator above the border; none on a Solid border (no stock style
     -- on this bar; inert unless it was ever on).
     if g.edgeSep or gcdBarFrame._erbSep then
-        ns.ERB_Separators(
+        mod.ERB_Separators(
             gcdBarFrame,
             g,
-            (g.edgeSep and ns.ERB_Textured(g)) and true or false,
+            (g.edgeSep and mod.ERB_Textured(g)) and true or false,
             gcdBarFrame:GetFrameLevel() + 7
         )
     end
@@ -511,24 +516,24 @@ BuildGCDBar = function()
     -- border; with no border there's nothing to clip to, so skip it -- otherwise
     -- it eats the whole height of very thin bars (height 1-2 -> nothing visible).
     local clipFrame = gcdBarFrame._barClip
-    local bar = gcdBarFrame._bar
-    local bdrInset = ((g.borderSize or 0) > 0 and PP and PP.mult) or 0
+    local barFrame = gcdBarFrame._bar
+    local bdrInset = ((g.borderSize or 0) > 0 and Pix and Pix.mult) or 0
     clipFrame:ClearAllPoints()
     clipFrame:SetPoint("TOPLEFT", gcdBarFrame, "TOPLEFT", bdrInset, -bdrInset)
     clipFrame:SetPoint("BOTTOMRIGHT", gcdBarFrame, "BOTTOMRIGHT", -bdrInset, bdrInset)
     clipFrame:SetFrameLevel(gcdBarFrame:GetFrameLevel() + 1)
-    bar:ClearAllPoints()
-    bar:SetAllPoints(clipFrame)
+    barFrame:ClearAllPoints()
+    barFrame:SetAllPoints(clipFrame)
 
     -- Texture + background
     local texPath =
         CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, "Interface\\Buttons\\WHITE8x8")
-    bar:SetStatusBarTexture(texPath)
+    barFrame:SetStatusBarTexture(texPath)
     gcdBarFrame._bg:SetTexture(nil)
     gcdBarFrame._bg:SetColorTexture(g.bgR, g.bgG, g.bgB, g.bgA)
     -- Textured Background.
     if g.textureBg or gcdBarFrame._bg._erbBgTex then
-        ns.ERB_BgTexture(
+        mod.ERB_BgTexture(
             gcdBarFrame._bg,
             g.textureBg and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, nil),
             g.bgR,
@@ -538,16 +543,16 @@ BuildGCDBar = function()
         )
     end
 
-    ApplyBarOrientation(bar, ori)
+    ApplyBarOrientation(barFrame, ori)
     -- HORIZONTAL_LEFT = horizontal, but the fill grows right->left (reverse).
     -- ApplyBarOrientation treats any non-vertical key as normal horizontal, so
     -- flip reverse-fill here for the left variant.
     if ori == "HORIZONTAL_LEFT" then
-        bar:SetReverseFill(true)
+        barFrame:SetReverseFill(true)
     end
 
     -- Fill color / gradient
-    local fillTex = bar:GetStatusBarTexture()
+    local fillTex = barFrame:GetStatusBarTexture()
     local fR, fG, fB, fA = g.fillR, g.fillG, g.fillB, g.fillA
     if g.classColored then
         local cc = CLASS_COLORS[cachedClass]
@@ -579,16 +584,16 @@ BuildGCDBar = function()
         if g.showSpark then
             spark:ClearAllPoints()
             if ori == "VERTICAL_UP" then
-                spark:SetSize(w, 8)
+                spark:SetSize(wid, 8)
                 spark:SetPoint("CENTER", fillTex, "TOP", 0, 0)
             elseif ori == "VERTICAL_DOWN" then
-                spark:SetSize(w, 8)
+                spark:SetSize(wid, 8)
                 spark:SetPoint("CENTER", fillTex, "BOTTOM", 0, 0)
             elseif ori == "HORIZONTAL_LEFT" then
-                spark:SetSize(8, h)
+                spark:SetSize(8, hgt)
                 spark:SetPoint("CENTER", fillTex, "LEFT", 0, 0)
             else
-                spark:SetSize(8, h)
+                spark:SetSize(8, hgt)
                 spark:SetPoint("CENTER", fillTex, "RIGHT", 0, 0)
             end
             spark:Show()
@@ -605,10 +610,10 @@ BuildGCDBar = function()
         -- the next arm.
         CludesUI.SetElementVisibility(gcdBarFrame, true)
     elseif g.alwaysShow and not (g.instanceOnly and not IsInInstance()) then
-        ns.GCDIdleFill(g)
+        mod.GCDIdleFill(g)
         CludesUI.SetElementVisibility(gcdBarFrame, true)
     else
-        ns.GCDIdleFill(g)
+        mod.GCDIdleFill(g)
         CludesUI.SetElementVisibility(gcdBarFrame, false)
     end
 end
@@ -624,10 +629,10 @@ SetUpdateGCDBar(function(_dt)
 
     -- Frame stays shown; visibility is via alpha to avoid the Hide->Show fill
     -- flash. (Re-showing a hidden StatusBar renders its fill full for a frame.)
-    local bar = gcdBarFrame._bar
+    local barFrame = gcdBarFrame._bar
 
     if g.instanceOnly and not IsInInstance() then
-        ns.GCDIdleFill(g)
+        mod.GCDIdleFill(g)
         gcdBarFrame._barActive = nil
         gcdBarFrame._nativeGCD = nil
         CludesUI.SetElementVisibility(gcdBarFrame, false)
@@ -669,7 +674,7 @@ SetUpdateGCDBar(function(_dt)
         -- No GCD running: invisible unless Always Show is on. Idle fill is
         -- empty (background) by default, full when Show Fill Color When
         -- Idle is on.
-        ns.GCDIdleFill(g)
+        mod.GCDIdleFill(g)
         gcdBarFrame._barActive = nil
         gcdBarFrame._nativeGCD = nil
         local visible = false
@@ -691,15 +696,15 @@ SetUpdateGCDBar(function(_dt)
     local progress = elapsed / dur
     local value = g.depleteFill and (1 - progress) or progress
     if gcdBarFrame._barActive then
-        bar:SetValue(value, bar._castInterp)
+        barFrame:SetValue(value, barFrame._castInterp)
     else
         -- First frame of a fresh GCD: snap to the start value (no interpolation).
         -- Otherwise deplete mode would briefly ease UP from the empty idle state
         -- before reversing, flashing a fill at the start of every GCD.
-        bar:SetValue(value)
+        barFrame:SetValue(value)
         gcdBarFrame._barActive = true
     end
 end)
 
-I.BuildGCDBar = BuildGCDBar
-I.broken = false
+Inner.BuildGCDBar = BuildGCDBar
+Inner.broken = false

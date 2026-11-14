@@ -3,11 +3,11 @@ if CUI_CLIENT_BLOCKED then
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Title Line is the same code as the standalone TitleLine addon. If that addon is
 -- switched on, it runs and this module stays out of its way.
-local _, ns = ...
-local state = C_AddOns and C_AddOns.GetAddOnEnableState and C_AddOns.GetAddOnEnableState("TitleLine")
-ns.standalone = (C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("TitleLine"))
-    or (type(state) == "number" and state > 0)
+local _, mod = ...
+local status = C_AddOns and C_AddOns.GetAddOnEnableState and C_AddOns.GetAddOnEnableState("TitleLine")
+mod.standalone = (C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("TitleLine"))
+    or (type(status) == "number" and status > 0)
     or false
-if not ns.standalone then
-    CludesUI._ModuleNS["CludesUITitleLine"] = ns
+if not mod.standalone then
+    CludesUI._ModuleNS["CludesUITitleLine"] = mod
 end

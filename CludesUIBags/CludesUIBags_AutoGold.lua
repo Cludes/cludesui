@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- (CludesUIDB.bagAutoGold / .bagAutoGoldAmount / .bagAutoGoldChat), so a
 -- shared profile never moves anyone's gold. Off: nothing registered.
 local CUI = CludesUI
-local ns = select(2, ...)
+local mod = select(2, ...)
 if CUI.IS_FOREVER then
     return
 end -- no warband bank there
@@ -18,7 +18,7 @@ local function Acct()
 end
 
 local AutoGold = {}
-ns.AutoGold = AutoGold
+mod.AutoGold = AutoGold
 
 -- The gold to keep on hand, or nil while the box is empty.
 function AutoGold.Target()
@@ -43,20 +43,20 @@ function AutoGold.Set(key, value)
 end
 
 -- Opt-in chat line; CludesUI.Print stays quiet where chat output could taint.
-local function Announce(text)
-    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text)
+local function Announce(textValue)
+    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. textValue)
 end
 local function Coins(copper)
     return C_CurrencyInfo.GetCoinTextureString(copper)
 end
 
 local function Balance()
-    local target = AutoGold.Target()
-    if not target then
+    local targetUnit = AutoGold.Target()
+    if not targetUnit then
         return
     end
     local bankType = Enum.BankType.Account
-    local diff = GetMoney() - target * COPPER_PER_GOLD
+    local diff = GetMoney() - targetUnit * COPPER_PER_GOLD
     if diff > 0 then
         if C_Bank.CanDepositMoney(bankType) then
             C_Bank.DepositMoney(bankType, diff)
@@ -82,12 +82,12 @@ local listening = false
 
 -- Listens for the bank only while the toggle is on and an amount is set.
 function AutoGold.Sync()
-    local on = AutoGold.Enabled() and AutoGold.Target() ~= nil
-    if on == listening then
+    local enabled = AutoGold.Enabled() and AutoGold.Target() ~= nil
+    if enabled == listening then
         return
     end
-    listening = on
-    if on then
+    listening = enabled
+    if enabled then
         ev:RegisterEvent("BANKFRAME_OPENED")
     else
         ev:UnregisterEvent("BANKFRAME_OPENED")

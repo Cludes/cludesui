@@ -4,30 +4,30 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Profession.lua
 -- Profession block factories (primary and secondary).
 
-local ADDON_NAME, ns = ...
-local L = ns.L
-local MEDIA = ns.MEDIA
-local K = ns.BlockKit
+local ADDON_NAME, mod = ...
+local L = mod.L
+local MEDIA = mod.MEDIA
+local Keys = mod.BlockKit
 
 -- Upvalues
 local _G = _G
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 local floor = math.floor
-local max = math.max
+local upper = math.max
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
-local ParkSecureFrame = K.ParkSecureFrame
+local ICON_GAP = Keys.ICON_GAP
+local CONTENT_BASE = Keys.CONTENT_BASE
+local InstKey = Keys.InstKey
+local MakeEventFrame = Keys.MakeEventFrame
+local RegisterInstEvents = Keys.RegisterInstEvents
+local UnregisterInstEvents = Keys.UnregisterInstEvents
+local VSlotW = Keys.VSlotW
+local MaybeRelayout = Keys.MaybeRelayout
+local AttachTextOffset = Keys.AttachTextOffset
+local BlockColorOf = Keys.BlockColorOf
+local IconColorOf = Keys.IconColorOf
+local ParkSecureFrame = Keys.ParkSecureFrame
 
 -------------------------------------------------------------------------------
 --  PROFESSION (SECURE right-click passthrough to ProfessionMicroButton)
@@ -55,10 +55,10 @@ local profIcons = {
 -- First Aid when available (right-click = Basic Campfire, a secure spell cast).
 local CAMPFIRE_SPELL = 818 -- Basic Campfire
 local SECONDARY_SLOT = { [185] = 1, [356] = 2, [129] = 3 } -- Cooking, Fishing, First Aid
-local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
-    local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
-    inst.events = { "TRADE_SKILL_DETAILS_UPDATE", "SPELLS_CHANGED", "SKILL_LINES_CHANGED" }
+local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, secondary)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    instance.key = InstKey(barCtx, blockCfg)
+    instance.events = { "TRADE_SKILL_DETAILS_UPDATE", "SPELLS_CHANGED", "SKILL_LINES_CHANGED" }
 
     local MEDIA_PROF = MEDIA .. "profession\\"
     local entries = { { data = {} }, { data = {} } }
@@ -72,27 +72,27 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
 
     local built = false
     local function UpdateProfValues(...)
-        for _, entry in ipairs(entries) do
-            entry.data.idx = nil
+        for _, record in ipairs(entries) do
+            record.data.idx = nil
         end
         -- Secondary professions are identified by skill line, not the position
         -- returned by GetProfessions (First Aid need not occupy the sixth slot).
-        local count = secondary and select("#", ...) or 2
-        for i = 1, count do
-            local index = select(i, ...)
-            if index then
-                local name, icon, rank, maxRank, _, _, id = GetProfessionInfo(index)
+        local total = secondary and select("#", ...) or 2
+        for i = 1, total do
+            local slotPos = select(i, ...)
+            if slotPos then
+                local name, glyph, rank, maxRank, _, _, ident = GetProfessionInfo(slotPos)
                 local slotIndex = i
                 if secondary then
-                    slotIndex = SECONDARY_SLOT[id]
+                    slotIndex = SECONDARY_SLOT[ident]
                 end
                 -- First Aid (slot 3) has an entry only on WoW Forever.
-                local entry = slotIndex and entries[slotIndex]
-                if entry then
-                    local data = entry.data
-                    data.idx = index
-                    data.name, data.icon, data.id = name or "", icon, id
-                    data.rank, data.maxRank = rank or 0, maxRank or 0
+                local record = slotIndex and entries[slotIndex]
+                if record then
+                    local payload = record.data
+                    payload.idx = slotPos
+                    payload.name, payload.icon, payload.id = name or "", glyph, ident
+                    payload.rank, payload.maxRank = rank or 0, maxRank or 0
                 end
             end
         end
@@ -105,7 +105,7 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
         end
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local iconSize = fontSize + 8
         local isSide = barCtx.IsVertical()
         local s = blockCfg.settings or {}
@@ -124,7 +124,7 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
         if custom then
             profIcon:SetTexCoord(0, 1, 0, 1)
         else
-            K.CropStockIcon(profIcon)
+            Keys.CropStockIcon(profIcon)
         end
         if showIcon then
             profIcon:SetSize(iconSize, iconSize)
@@ -139,13 +139,13 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
         end
 
         -- Font derives from CONTENT_BASE like every other block: the bar Height setting must never resize content.
-        ns.SetFont(profText, fontSize, barCfg)
+        mod.SetFont(profText, fontSize, barCfg)
         profText:SetTextColor(pbr, pbg, pbb, 1)
         profText:SetText(valuesOnly and (profData.rank .. "/" .. profData.maxRank) or (profData.name or ""))
 
         if isSide then
-            local frameW = VSlotW(inst)
-            local innerW = max(30, frameW - 8)
+            local frameW = VSlotW(instance)
+            local innerW = upper(30, frameW - 8)
             local totalH = 8 + iconSize + 2
 
             profIcon:ClearAllPoints()
@@ -155,17 +155,17 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                 totalH = 8 + 2
             end
 
-            ns.SetWrappedText(profText, innerW, "CENTER")
+            mod.SetWrappedText(profText, innerW, "CENTER")
             profText:ClearAllPoints()
             if showIcon then
                 profText:SetPoint("TOP", profIcon, "BOTTOM", 0, -2)
             else
                 profText:SetPoint("TOP", profFrame, "TOP", 0, -4)
             end
-            totalH = totalH + ns.SnapToPixelGrid(profText:GetStringHeight())
+            totalH = totalH + mod.SnapToPixelGrid(profText:GetStringHeight())
 
             if showBar then
-                local ar, ag, ab = ns.GetAccent()
+                local ar, ag, ab = mod.GetAccent()
                 local bH = 3
                 profBar:Show()
                 profBar:SetMinMaxValues(1, profData.maxRank)
@@ -180,10 +180,10 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                 profBar:Hide()
             end
 
-            profFrame:SetSize(frameW, max(totalH, barH))
+            profFrame:SetSize(frameW, upper(totalH, barH))
             profFrame:Show()
         else
-            ns.ResetInlineText(profText, "LEFT")
+            mod.ResetInlineText(profText, "LEFT")
             profIcon:ClearAllPoints()
             profIcon:SetPoint("LEFT", profFrame, "LEFT", 0, 0)
 
@@ -205,15 +205,15 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                 else
                     profText:SetPoint("TOPLEFT", profFrame, "LEFT", 0, halfBand)
                 end
-                local ar, ag, ab = ns.GetAccent()
+                local ar, ag, ab = mod.GetAccent()
                 profBar:SetMinMaxValues(1, profData.maxRank)
                 profBar:SetValue(profData.rank)
                 profBar:SetStatusBarColor(ar, ag, ab, 1)
                 profBarBg:SetColorTexture(0.15, 0.15, 0.15, 0.6)
                 -- Icon left; text top-right; bar bottom-right, sharing the text's
                 -- left edge and tracking TEXT width, bottom-aligned to the icon (same recipe as xprep).
-                local textW = max(profText:GetStringWidth(), 20)
-                local bH = max(2, iconSize - fontSize - 3)
+                local textW = upper(profText:GetStringWidth(), 20)
+                local bH = upper(2, iconSize - fontSize - 3)
                 profBar:SetSize(textW, bH)
                 profBar:ClearAllPoints()
                 if showIcon then
@@ -222,7 +222,7 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                     profBar:SetPoint("BOTTOMLEFT", profFrame, "LEFT", 0, -halfBand)
                 end
             end
-            local textW = max(profText:GetStringWidth(), 20)
+            local textW = upper(profText:GetStringWidth(), 20)
             local effIcon = showIcon and (iconSize + ICON_GAP) or 0
             profFrame:SetSize(effIcon + textW, barH)
             profFrame:Show()
@@ -255,7 +255,7 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
         built = true
 
         local function MakeProfFrame(name)
-            local f = CreateFrame("Button", name, content, "SecureActionButtonTemplate")
+            local f = CreateFrame("Button", name, contentFrame, "SecureActionButtonTemplate")
             f:SetSize(1, barCtx.GetThickness())
             f:EnableMouse(true)
             f:RegisterForClicks("AnyUp")
@@ -268,48 +268,48 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                 f:SetAttribute("*type2", "click")
                 f:SetAttribute("*clickbutton2", _G.ProfessionMicroButton)
             end
-            local icon = f:CreateTexture(nil, "OVERLAY")
-            local text = f:CreateFontString(nil, "OVERLAY")
-            local bar = CreateFrame("StatusBar", nil, f)
-            bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-            local bg = bar:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            return f, icon, text, bar, bg
+            local glyph = f:CreateTexture(nil, "OVERLAY")
+            local textValue = f:CreateFontString(nil, "OVERLAY")
+            local barFrame = CreateFrame("StatusBar", nil, f)
+            barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+            local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            return f, glyph, textValue, barFrame, backdrop
         end
 
-        for i, entry in ipairs(entries) do
-            entry.frame, entry.icon, entry.text, entry.bar, entry.bg =
-                MakeProfFrame("CludesUIDataBarsProf" .. i .. "_" .. inst.key)
-            AttachTextOffset(inst, entry.text)
-            local frame = entry.frame
+        for i, record in ipairs(entries) do
+            record.frame, record.icon, record.text, record.bar, record.bg =
+                MakeProfFrame("CludesUIDataBarsProf" .. i .. "_" .. instance.key)
+            AttachTextOffset(instance, record.text)
+            local widget = record.frame
             -- HookScript, NOT SetScript: SetScript("OnClick") would overwrite SecureActionButton_OnClick
             -- and kill the secure *clickbutton2 passthrough to ProfessionMicroButton (right-click).
-            frame:HookScript("OnClick", function(_, button)
-                if button == "LeftButton" then
-                    OpenProf(entry.data)
+            widget:HookScript("OnClick", function(_, btnFrame)
+                if btnFrame == "LeftButton" then
+                    OpenProf(record.data)
                 end
             end)
-            frame:SetScript("OnEnter", function(f)
-                local txt, ic = entry.text, entry.icon
-                local ar, ag, ab = ns.GetAccent()
+            widget:SetScript("OnEnter", function(f)
+                local txt, ic = record.text, record.icon
+                local ar, ag, ab = mod.GetAccent()
                 txt:SetTextColor(ar, ag, ab, 1)
                 if ic then
                     ic:SetVertexColor(ar, ag, ab, 1)
                 end
-                ns.Tip_Begin(f)
-                local title
+                mod.Tip_Begin(f)
+                local titleText
                 if secondary then
-                    title = SECONDARY_SKILLS or "Secondary Professions"
+                    titleText = SECONDARY_SKILLS or "Secondary Professions"
                 else
-                    title = TRADE_SKILLS or "Professions"
+                    titleText = TRADE_SKILLS or "Professions"
                 end
-                ns.Tip_AddLine(title, 1, 1, 1)
-                ns.Tip_AddLine(" ")
+                mod.Tip_AddLine(titleText, 1, 1, 1)
+                mod.Tip_AddLine(" ")
                 local function AddLine(p)
                     if not p or not p.name then
                         return
                     end
-                    ns.Tip_AddDouble(
+                    mod.Tip_AddDouble(
                         p.name,
                         CludesUI.COLOR_CODES.WHITE .. p.rank .. "|r / " .. p.maxRank,
                         1,
@@ -320,22 +320,22 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                         1
                     )
                 end
-                for _, row in ipairs(entries) do
-                    if row.data.idx then
-                        AddLine(row.data)
+                for _, rowFrame in ipairs(entries) do
+                    if rowFrame.data.idx then
+                        AddLine(rowFrame.data)
                     end
                 end
-                ns.Tip_AddLine(" ")
+                mod.Tip_AddLine(" ")
                 local rightLabel = L["OPEN_PROFESSION_BOOK"]
                 if secondary then
                     rightLabel = L["START_CAMPFIRE"]
                 end
-                ns.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_PROFESSION"], 1, 1, 1, 1, 1, 1)
-                ns.Tip_AddDouble(L["RIGHT_CLICK"], rightLabel, 1, 1, 1, 1, 1, 1)
-                ns.Tip_Show()
+                mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_PROFESSION"], 1, 1, 1, 1, 1, 1)
+                mod.Tip_AddDouble(L["RIGHT_CLICK"], rightLabel, 1, 1, 1, 1, 1, 1)
+                mod.Tip_Show()
             end)
-            frame:SetScript("OnLeave", function(f)
-                local txt, ic = entry.text, entry.icon
+            widget:SetScript("OnLeave", function(f)
+                local txt, ic = record.text, record.icon
                 local br, bgr, bb = BlockColorOf(blockCfg)
                 txt:SetTextColor(br, bgr, bb, 1)
                 -- Icon restores through ICON color (accent by default for professions), NOT the text color, which paints it white.
@@ -343,38 +343,38 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
                     local ir, ig, ib = IconColorOf(blockCfg)
                     ic:SetVertexColor(ir, ig, ib, 1)
                 end
-                ns.Tip_Hide(f)
+                mod.Tip_Hide(f)
             end)
         end
     end
 
     if InCombatLockdown() then
-        ns.DeferUntilOOC("edbbuild:" .. inst.key, function()
-            if inst._dead then
+        mod.DeferUntilOOC("edbbuild:" .. instance.key, function()
+            if instance._dead then
                 return
             end
             Build()
-            inst:Refresh()
+            instance:Refresh()
         end)
     else
         Build()
     end
 
     -- Built once: combat refreshes (Forever skill-ups) reuse the key and callback.
-    local deferKey = "edbprof:" .. inst.key
+    local deferKey = "edbprof:" .. instance.key
     local function DeferredRefresh()
-        if not inst._dead then
-            inst:Refresh()
+        if not instance._dead then
+            instance:Refresh()
         end
     end
 
-    function inst:Refresh()
+    function instance:Refresh()
         if not built then
             return
         end
         -- Secure frames: a refresh skipped in combat runs once on regen.
         if InCombatLockdown() then
-            ns.DeferUntilOOC(deferKey, DeferredRefresh)
+            mod.DeferUntilOOC(deferKey, DeferredRefresh)
             return
         end
         UpdateProfValues(GetProfessions())
@@ -385,91 +385,91 @@ local function MakeProfessionBlock(blockCfg, slot, content, barCtx, secondary)
         if isSide then
             gap = 4
         end
-        for _, entry in ipairs(entries) do
-            local frame = entry.frame
-            StyleProfFrame(entry.data, frame, entry.icon, entry.text, entry.bar, entry.bg)
-            if entry.data.idx then
-                frame:ClearAllPoints()
+        for _, record in ipairs(entries) do
+            local widget = record.frame
+            StyleProfFrame(record.data, widget, record.icon, record.text, record.bar, record.bg)
+            if record.data.idx then
+                widget:ClearAllPoints()
                 if isSide then
                     if previous then
-                        frame:SetPoint("TOP", previous, "BOTTOM", 0, -gap)
+                        widget:SetPoint("TOP", previous, "BOTTOM", 0, -gap)
                     else
-                        frame:SetPoint("TOP", content, "TOP", 0, 0)
+                        widget:SetPoint("TOP", contentFrame, "TOP", 0, 0)
                     end
-                    extent = extent + frame:GetHeight()
+                    extent = extent + widget:GetHeight()
                 else
                     if previous then
-                        frame:SetPoint("LEFT", previous, "RIGHT", gap, 0)
+                        widget:SetPoint("LEFT", previous, "RIGHT", gap, 0)
                     else
-                        frame:SetPoint("LEFT", content, "LEFT", 0, 0)
+                        widget:SetPoint("LEFT", contentFrame, "LEFT", 0, 0)
                     end
-                    extent = extent + frame:GetWidth()
+                    extent = extent + widget:GetWidth()
                 end
                 if previous then
                     extent = extent + gap
                 end
-                previous = frame
+                previous = widget
             end
         end
         if isSide then
-            content:SetSize(VSlotW(inst), max(extent, 1))
+            contentFrame:SetSize(VSlotW(instance), upper(extent, 1))
         else
-            content:SetSize(max(extent, 1), barH)
+            contentFrame:SetSize(upper(extent, 1), barH)
         end
         if previous then
-            content:Show()
+            contentFrame:Show()
         else
-            content:Hide()
+            contentFrame:Hide()
         end
-        MaybeRelayout(inst)
+        MaybeRelayout(instance)
     end
 
-    inst.eventFrame = MakeEventFrame(inst, function(self)
+    instance.eventFrame = MakeEventFrame(instance, function(self)
         self:Refresh()
     end)
 
-    function inst:Enable()
-        content:Show()
+    function instance:Enable()
+        contentFrame:Show()
         RegisterInstEvents(self)
     end
 
-    function inst:Disable()
+    function instance:Disable()
         UnregisterInstEvents(self)
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    function inst:GetAutoLength()
+    function instance:GetAutoLength()
         if not built then
             return 40
         end
-        if not content:IsShown() then
+        if not contentFrame:IsShown() then
             return 0
         end
         if barCtx.IsVertical() then
             local barH = barCtx.GetThickness()
-            return max(content:GetHeight(), barH, 50)
+            return upper(contentFrame:GetHeight(), barH, 50)
         end
-        return max(content:GetWidth() or 80, 30)
+        return upper(contentFrame:GetWidth() or 80, 30)
     end
 
-    function inst:Destroy()
+    function instance:Destroy()
         self._dead = true
         UnregisterInstEvents(self)
-        for i, entry in ipairs(entries) do
-            if entry.frame then
-                ParkSecureFrame(entry.frame, self.key .. "_prof" .. i)
+        for i, record in ipairs(entries) do
+            if record.frame then
+                ParkSecureFrame(record.frame, self.key .. "_prof" .. i)
             end
         end
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    return inst
+    return instance
 end
 
-ns.BlockFactories.profession = function(blockCfg, slot, content, barCtx)
-    return MakeProfessionBlock(blockCfg, slot, content, barCtx, false)
+mod.BlockFactories.profession = function(blockCfg, slot, contentFrame, barCtx)
+    return MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, false)
 end
 
-ns.BlockFactories.profession2 = function(blockCfg, slot, content, barCtx)
-    return MakeProfessionBlock(blockCfg, slot, content, barCtx, true)
+mod.BlockFactories.profession2 = function(blockCfg, slot, contentFrame, barCtx)
+    return MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, true)
 end

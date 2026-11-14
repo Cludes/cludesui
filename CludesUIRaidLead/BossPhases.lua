@@ -15,7 +15,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  DelayAllReminders, EncounterRegister, EncounterFunction and
 --  GetActiveEncounterTimelineEventCount.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local function Near(a, b, by)
     if ApproximatelyEqual then
@@ -24,8 +24,8 @@ local function Near(a, b, by)
     return math.abs(a - b) <= by
 end
 
-local P = {}
-ns.BossPhases = P
+local Prm = {}
+mod.BossPhases = Prm
 
 local function NextPhase(num)
     return num + 1
@@ -40,14 +40,14 @@ do
         [15] = { { time = 6, phase = NextPhase } },
         [16] = { { time = 6, phase = NextPhase } },
     }
-    P[3182] = {
-        detect = function(self, e, info)
-            local now = GetTime()
+    Prm[3182] = {
+        detect = function(self, e, details)
+            local nowTime = GetTime()
             if
                 e == "ENCOUNTER_TIMELINE_EVENT_REMOVED"
-                or not info
+                or not details
                 or not self.PhaseSwapTime
-                or not (now > self.PhaseSwapTime + 5)
+                or not (nowTime > self.PhaseSwapTime + 5)
                 or not self.EncounterID
                 or not self.Phase
             then
@@ -57,27 +57,27 @@ do
             if not difficultyID or not detectedDurations[difficultyID] then
                 return
             end
-            table.insert(self.Timelines, now)
-            if self.Phase >= 2 and Near(info.duration, 40, 0.2) then
-                local diff = now - self.PhaseSwapTime
+            table.insert(self.Timelines, nowTime)
+            if self.Phase >= 2 and Near(details.duration, 40, 0.2) then
+                local diff = nowTime - self.PhaseSwapTime
                 local offset = diff - 7.1
                 if diff <= 20 and offset > 0.3 then -- the bird landed late: every timer moves with it
                     self:DelayAllReminders(offset)
                 end
             end
             for _, phaseinfo in ipairs(detectedDurations[difficultyID]) do
-                if info.duration == phaseinfo.time then
-                    local count = 0
-                    for _, v in ipairs(self.Timelines) do
-                        if now < v + 0.1 then
-                            count = count + 1
+                if details.duration == phaseinfo.time then
+                    local total = 0
+                    for _, val in ipairs(self.Timelines) do
+                        if nowTime < val + 0.1 then
+                            total = total + 1
                         end
                     end
                     local newphase = phaseinfo.phase(self.Phase)
-                    if newphase > self.Phase and count <= 1 then
+                    if newphase > self.Phase and total <= 1 then
                         self.Phase = newphase
                         self:StartReminders(self.Phase)
-                        self.PhaseSwapTime = now
+                        self.PhaseSwapTime = nowTime
                         break
                     end
                 end
@@ -95,14 +95,14 @@ do
         [15] = { { time = 151.36, phase = NextPhase } },
         [16] = { { time = 120, phase = NextPhase } },
     }
-    P[3306] = {
-        detect = function(self, e, info)
-            local now = GetTime()
+    Prm[3306] = {
+        detect = function(self, e, details)
+            local nowTime = GetTime()
             if
                 e == "ENCOUNTER_TIMELINE_EVENT_REMOVED"
-                or not info
+                or not details
                 or not self.PhaseSwapTime
-                or not (now > self.PhaseSwapTime + 5)
+                or not (nowTime > self.PhaseSwapTime + 5)
                 or not self.EncounterID
                 or not self.Phase
             then
@@ -113,12 +113,12 @@ do
                 return
             end
             local phaseinfo = detectedDurations[difficultyID][1]
-            if phaseinfo and info.duration >= phaseinfo.time then
+            if phaseinfo and details.duration >= phaseinfo.time then
                 local newphase = phaseinfo.phase(self.Phase)
                 if newphase > self.Phase then
                     self.Phase = newphase
                     self:StartReminders(self.Phase)
-                    self.PhaseSwapTime = now
+                    self.PhaseSwapTime = nowTime
                 end
             end
         end,
@@ -186,24 +186,27 @@ do
     }
     local RequiredTimers = { 2, 4, false, 4 }
 
-    local function MythicPhaseDetect(self, e, info)
-        local now = GetTime()
-        if (not info) or not self.PhaseSwapTime or not (now > self.PhaseSwapTime + 5) then
+    local function MythicPhaseDetect(self, e, details)
+        local nowTime = GetTime()
+        if (not details) or not self.PhaseSwapTime or not (nowTime > self.PhaseSwapTime + 5) then
             return
         end
         if e == "ENCOUNTER_TIMELINE_EVENT_REMOVED" then
-            table.insert(self.RemovedTimelines, now)
+            table.insert(self.RemovedTimelines, nowTime)
         else
             if
                 self.Phase >= 2
-                or (self.Phase == 1 and (info.duration == 1.5 or info.duration == 25 or info.duration == 6))
+                or (
+                    self.Phase == 1
+                    and (details.duration == 1.5 or details.duration == 25 or details.duration == 6)
+                )
             then
-                table.insert(self.Timelines, now)
+                table.insert(self.Timelines, nowTime)
             end
         end
         local addedcount = 0
-        for _, v in ipairs(self.Timelines) do
-            if now < v + 0.3 then
+        for _, val in ipairs(self.Timelines) do
+            if nowTime < val + 0.3 then
                 addedcount = addedcount + 1
             end
         end
@@ -212,34 +215,34 @@ do
             self:StartReminders(self.Phase)
             self.Timelines = {}
             self.RemovedTimelines = {}
-            self.PhaseSwapTime = now
+            self.PhaseSwapTime = nowTime
             return
         end
         if
             self.Phase == 3
-            and (addedcount >= 8 or (e == "ENCOUNTER_TIMELINE_EVENT_ADDED" and info.duration == 60))
+            and (addedcount >= 8 or (e == "ENCOUNTER_TIMELINE_EVENT_ADDED" and details.duration == 60))
         then
             self.Phase = 5
             self:StartReminders(self.Phase)
             self.Timelines = {}
             self.RemovedTimelines = {}
-            self.PhaseSwapTime = now
+            self.PhaseSwapTime = nowTime
         end
     end
 
-    P[3181] = {
-        detect = function(self, e, info)
-            local now = GetTime()
+    Prm[3181] = {
+        detect = function(self, e, details)
+            local nowTime = GetTime()
             local difficultyID = self:DifficultyCheck({ 14, 15, 16 })
             if difficultyID and difficultyID == 16 then
-                MythicPhaseDetect(self, e, info)
+                MythicPhaseDetect(self, e, details)
                 return
             end
             if
                 e == "ENCOUNTER_TIMELINE_EVENT_REMOVED"
-                or not info
+                or not details
                 or not self.PhaseSwapTime
-                or not (now > self.PhaseSwapTime + 5)
+                or not (nowTime > self.PhaseSwapTime + 5)
                 or not self.EncounterID
                 or not self.Phase
             then
@@ -249,12 +252,12 @@ do
                 return
             end
             local phaseinfo = detectedDurations[difficultyID][self.Phase]
-            if phaseinfo and info.duration == phaseinfo.time then
+            if phaseinfo and details.duration == phaseinfo.time then
                 local newphase = phaseinfo.phase(self.Phase)
                 if newphase > self.Phase then
                     self.Phase = newphase
                     self:StartReminders(self.Phase)
-                    self.PhaseSwapTime = now
+                    self.PhaseSwapTime = nowTime
                 end
             end
         end,
@@ -308,12 +311,12 @@ do
             },
         },
     }
-    P[3183] = {
+    Prm[3183] = {
         engage = true,
-        detect = function(self, e, info)
-            local now = GetTime()
+        detect = function(self, e, details)
+            local nowTime = GetTime()
             if e == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" and self.Phase == 4 then
-                if (not self.PhaseSwapTime) or not (now > self.PhaseSwapTime + 20) then
+                if (not self.PhaseSwapTime) or not (nowTime > self.PhaseSwapTime + 20) then
                     return
                 end
                 if not UnitExists("boss2") then
@@ -325,9 +328,9 @@ do
             end
             if
                 e == "ENCOUNTER_TIMELINE_EVENT_REMOVED"
-                or not info
+                or not details
                 or not self.PhaseSwapTime
-                or not (now > self.PhaseSwapTime + 5)
+                or not (nowTime > self.PhaseSwapTime + 5)
                 or not self.EncounterID
                 or not self.Phase
             then
@@ -338,12 +341,12 @@ do
                 return
             end
             local phaseinfo = detectedDurations[difficultyID][self.Phase]
-            if phaseinfo and Near(info.duration, phaseinfo.time, 0.2) then
+            if phaseinfo and Near(details.duration, phaseinfo.time, 0.2) then
                 local newphase = phaseinfo.phase(self.Phase)
                 if newphase > self.Phase then
                     self.Phase = newphase
                     self:StartReminders(self.Phase)
-                    self.PhaseSwapTime = now
+                    self.PhaseSwapTime = nowTime
                 end
             end
         end,
@@ -355,27 +358,31 @@ end
 -------------------------------------------------------------------------------
 do
     local detectedDurations = {
-        [14] = { {
-            time = 8,
-            phase = function()
-                return 2
-            end,
-        } },
-        [15] = { {
-            time = 8,
-            phase = function()
-                return 2
-            end,
-        } },
+        [14] = {
+            {
+                time = 8,
+                phase = function()
+                    return 2
+                end,
+            },
+        },
+        [15] = {
+            {
+                time = 8,
+                phase = function()
+                    return 2
+                end,
+            },
+        },
     }
-    P[3178] = {
-        detect = function(self, e, info)
-            local now = GetTime()
+    Prm[3178] = {
+        detect = function(self, e, details)
+            local nowTime = GetTime()
             if
                 e == "ENCOUNTER_TIMELINE_EVENT_REMOVED"
-                or not info
+                or not details
                 or not self.PhaseSwapTime
-                or not (now > self.PhaseSwapTime + 5)
+                or not (nowTime > self.PhaseSwapTime + 5)
                 or not self.EncounterID
                 or not self.Phase
             then
@@ -385,7 +392,7 @@ do
             local phaseinfo = difficultyID
                 and detectedDurations[difficultyID]
                 and detectedDurations[difficultyID][self.Phase]
-            if phaseinfo and info.duration == phaseinfo.time then
+            if phaseinfo and details.duration == phaseinfo.time then
                 if self.VaelgorPhaseTimer then
                     self.VaelgorPhaseTimer:Cancel()
                 end
@@ -397,7 +404,7 @@ do
                     if newphase > self.Phase then
                         self.Phase = newphase
                         self:StartReminders(self.Phase)
-                        self.PhaseSwapTime = now
+                        self.PhaseSwapTime = nowTime
                     end
                 end)
             end
@@ -408,23 +415,23 @@ end
 -------------------------------------------------------------------------------
 --  Entombed Sentinels (3445): eight timers at once start the next phase.
 -------------------------------------------------------------------------------
-P[3445] = {
-    detect = function(self, e, info)
-        local now = GetTime()
+Prm[3445] = {
+    detect = function(self, e, details)
+        local nowTime = GetTime()
         if
             e ~= "ENCOUNTER_TIMELINE_EVENT_ADDED"
-            or not info
+            or not details
             or not self.PhaseSwapTime
-            or not (now > self.PhaseSwapTime + 5)
+            or not (nowTime > self.PhaseSwapTime + 5)
             or not self.EncounterID
             or not self.Phase
         then
             return
         end
-        table.insert(self.Timelines, now)
+        table.insert(self.Timelines, nowTime)
         local addedcount = 0
         for _, timestamp in ipairs(self.Timelines) do
-            if now < timestamp + 0.3 then
+            if nowTime < timestamp + 0.3 then
                 addedcount = addedcount + 1
             end
         end
@@ -432,7 +439,7 @@ P[3445] = {
             self.Phase = self.Phase + 1
             self:StartReminders(self.Phase)
             self.Timelines = {}
-            self.PhaseSwapTime = now
+            self.PhaseSwapTime = nowTime
         end
     end,
 }
@@ -443,26 +450,32 @@ P[3445] = {
 -------------------------------------------------------------------------------
 do
     local detectedDurations = {
-        [14] = { [1] = {
-            time = 70,
-            phase = function()
-                return 2
-            end,
-        } },
-        [15] = { [1] = {
-            time = 70,
-            phase = function()
-                return 2
-            end,
-        } },
-        [16] = { [1] = {
-            time = 70,
-            phase = function()
-                return 2
-            end,
-        } },
+        [14] = {
+            [1] = {
+                time = 70,
+                phase = function()
+                    return 2
+                end,
+            },
+        },
+        [15] = {
+            [1] = {
+                time = 70,
+                phase = function()
+                    return 2
+                end,
+            },
+        },
+        [16] = {
+            [1] = {
+                time = 70,
+                phase = function()
+                    return 2
+                end,
+            },
+        },
     }
-    P[3429] = {
+    Prm[3429] = {
         start = function(self)
             self:EncounterRegister("CoiledAltarPhaseDetect", "UNIT_SPELLCAST_CHANNEL_START", true, "boss2")
             self:EncounterFunction("CoiledAltarPhaseDetect", function(_, e)
@@ -475,13 +488,13 @@ do
                 self.PhaseSwapTime = GetTime()
             end)
         end,
-        detect = function(self, e, info)
-            local now = GetTime()
+        detect = function(self, e, details)
+            local nowTime = GetTime()
             if
                 e ~= "ENCOUNTER_TIMELINE_EVENT_ADDED"
-                or not info
+                or not details
                 or not self.PhaseSwapTime
-                or not (now > self.PhaseSwapTime + 5)
+                or not (nowTime > self.PhaseSwapTime + 5)
                 or not self.EncounterID
                 or not self.Phase
             then
@@ -492,10 +505,10 @@ do
                 return
             end
             if self.Phase == 2.5 then
-                table.insert(self.Timelines, now)
+                table.insert(self.Timelines, nowTime)
                 local addedcount = 0
                 for _, timestamp in ipairs(self.Timelines) do
-                    if now < timestamp + 0.3 then
+                    if nowTime < timestamp + 0.3 then
                         addedcount = addedcount + 1
                     end
                 end
@@ -504,21 +517,21 @@ do
                 end
                 self.Phase = 3
                 self:StartReminders(self.Phase)
-                self.PhaseSwapTime = now
+                self.PhaseSwapTime = nowTime
                 return
             end
             local phaseinfo = detectedDurations[difficultyID][self.Phase]
             if not phaseinfo then
                 return
             end
-            if Near(info.duration, phaseinfo.time, 0.2) then
+            if Near(details.duration, phaseinfo.time, 0.2) then
                 local newphase = phaseinfo.phase(self.Phase)
                 if newphase <= self.Phase then
                     return
                 end
                 self.Phase = newphase
                 self:StartReminders(self.Phase)
-                self.PhaseSwapTime = now
+                self.PhaseSwapTime = nowTime
             end
         end,
     }
@@ -528,25 +541,25 @@ end
 --  The Lost Explorers (3497): four timers at once, one of them 11, 13 or 16
 --  seconds, at least 40 (then 100) seconds after the last change.
 -------------------------------------------------------------------------------
-P[3497] = {
-    detect = function(self, e, info)
-        local now = GetTime()
+Prm[3497] = {
+    detect = function(self, e, details)
+        local nowTime = GetTime()
         local requiredDiff = self.Phase == 1 and 40 or 100
         if
             e ~= "ENCOUNTER_TIMELINE_EVENT_ADDED"
-            or not info
+            or not details
             or not self.PhaseSwapTime
-            or not (now > self.PhaseSwapTime + requiredDiff)
+            or not (nowTime > self.PhaseSwapTime + requiredDiff)
             or not self.EncounterID
             or not self.Phase
         then
             return
         end
-        table.insert(self.Timelines, { timestamp = now, duration = info.duration })
+        table.insert(self.Timelines, { timestamp = nowTime, duration = details.duration })
         local addedcount = 0
         local hasRequiredDuration = false
         for _, timelineInfo in ipairs(self.Timelines) do
-            if now < timelineInfo.timestamp + 0.3 then
+            if nowTime < timelineInfo.timestamp + 0.3 then
                 addedcount = addedcount + 1
                 if
                     Near(timelineInfo.duration, 16, 0.2)
@@ -561,7 +574,7 @@ P[3497] = {
             self.Phase = self.Phase + 1
             self:StartReminders(self.Phase)
             self.Timelines = {}
-            self.PhaseSwapTime = now
+            self.PhaseSwapTime = nowTime
         end
     end,
 }
@@ -569,7 +582,7 @@ P[3497] = {
 -------------------------------------------------------------------------------
 --  Nek'zali the Soulcoiler (3470): read from the bosses' casts.
 -------------------------------------------------------------------------------
-P[3470] = {
+Prm[3470] = {
     start = function(self)
         self.NekzaliBoss1SpellcastStartTimes = {}
         self.NekzaliBoss1ValidCastSequence = false
@@ -580,14 +593,14 @@ P[3470] = {
             "boss1"
         )
         self:EncounterFunction("NekzaliPhaseDetect", function(_, e)
-            local now = GetTime()
+            local nowTime = GetTime()
             if e == "UNIT_SPELLCAST_START" and self.Phase == 1 then
-                self.NekzaliBoss1SpellcastStartTimes[#self.NekzaliBoss1SpellcastStartTimes + 1] = now
+                self.NekzaliBoss1SpellcastStartTimes[#self.NekzaliBoss1SpellcastStartTimes + 1] = nowTime
                 return
             end
             if e == "UNIT_SPELLCAST_SUCCEEDED" then
                 for _, startTime in ipairs(self.NekzaliBoss1SpellcastStartTimes) do
-                    if Near(now - startTime, 1.5, 0.2) then
+                    if Near(nowTime - startTime, 1.5, 0.2) then
                         self.NekzaliBoss1ValidCastSequence = true
                         break
                     end

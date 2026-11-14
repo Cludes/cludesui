@@ -42,7 +42,7 @@ local KIND_ATLAS = {
     portal = "mageportalalliance",
 }
 
-local data, provider, layer, waiter, taxiWatch
+local payload, provider, layer, waiter, taxiWatch
 local added = false
 local pins, used = {}, 0
 local shownKey -- what the pins show (map and toggles); nil when cleared
@@ -65,22 +65,26 @@ end
 -- in the pins' own (scaled) units, as Anchor sets them.
 local function PinOnEnter(self)
     local canvas = layer:GetParent()
-    local w, h = canvas:GetSize()
+    local wid, hgt = canvas:GetSize()
     local cs = canvas:GetScale()
-    local tip = PinTip(self)
-    for i = 1, used do
-        local p = pins[i]
+    local tipText = PinTip(self)
+    for idx = 1, used do
+        local p = pins[idx]
         if p ~= self then
             local reach = (p.size + self.size) / 2
-            if math.abs(p.x - self.x) * w * cs < reach and math.abs(p.y - self.y) * h * cs < reach then
-                tip = tip .. "\n\n" .. PinTip(p)
+            if math.abs(p.x - self.x) * wid * cs < reach and math.abs(p.y - self.y) * hgt * cs < reach then
+                tipText = tipText .. "\n\n" .. PinTip(p)
             end
         end
     end
     if C_Map.CanSetUserWaypointOnMap(self.linkMap) then
-        tip = tip .. "\n\n" .. CludesUI.COLOR_CODES.DIM .. CludesUI.L("Click to link it in chat.") .. "|r"
+        tipText = tipText
+            .. "\n\n"
+            .. CludesUI.COLOR_CODES.DIM
+            .. CludesUI.L("Click to link it in chat.")
+            .. "|r"
     end
-    CludesUI.ShowWidgetTooltip(self, tip)
+    CludesUI.ShowWidgetTooltip(self, tipText)
 end
 
 local function PinOnLeave()
@@ -89,35 +93,35 @@ end
 
 -- A pin's name for its link: the first line of its tooltip, without icons
 -- or colors ("Boat to Menethil Harbor").
-local function PinLabel(tip)
-    local line = tip:match("^[^\n]*")
-    line = line:gsub("|A.-|a", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-    return strtrim(line)
+local function PinLabel(tipText)
+    local lineTex = tipText:match("^[^\n]*")
+    lineTex = lineTex:gsub("|A.-|a", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    return strtrim(lineTex)
 end
 
 -- The link C_Map.GetUserWaypointHyperlink builds, as /way prints it: x, y
 -- (0..1 here) travel as 0..10000. Clicked in chat, Blizzard places the pin.
 local hintedClick = false
-local function PrintLink(mapID, x, y, label, atlas)
+local function PrintLink(mapID, posX, posY, labelText, atlas)
     local CC = CludesUI.COLOR_CODES
-    local icon = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
-    local link = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
+    local glyph = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
+    local itemLink = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
         mapID,
-        math.floor(x * 10000 + 0.5),
-        math.floor(y * 10000 + 0.5),
+        math.floor(posX * 10000 + 0.5),
+        math.floor(posY * 10000 + 0.5),
         MAP_PIN_HYPERLINK
     )
     CludesUI.Print(
         CC.BRAND
             .. "CludesUI:|r "
-            .. link
+            .. itemLink
             .. " "
-            .. icon
+            .. glyph
             .. CC.WHITE
-            .. label
+            .. labelText
             .. "|r "
             .. CC.DIM
-            .. ("%.1f, %.1f"):format(x * 100, y * 100)
+            .. ("%.1f, %.1f"):format(posX * 100, posY * 100)
             .. "|r"
     )
     if not hintedClick then
@@ -135,14 +139,14 @@ end
 -- A left click on a pin: its link in chat, led by its icon, kind and name, on
 -- the zone it stands in (world and continent maps take no pin). A line
 -- printed in combat taints chat history, so it waits for the end of combat.
-local function PinOnMouseUp(self, button)
-    if button ~= "LeftButton" or not C_Map.CanSetUserWaypointOnMap(self.linkMap) then
+local function PinOnMouseUp(self, btnFrame)
+    if btnFrame ~= "LeftButton" or not C_Map.CanSetUserWaypointOnMap(self.linkMap) then
         return
     end
-    local mapID, x, y, atlas = self.linkMap, self.linkX, self.linkY, self.atlas
-    local label = self.link or PinLabel(self.tip)
+    local mapID, posX, posY, atlas = self.linkMap, self.linkX, self.linkY, self.atlas
+    local labelText = self.link or PinLabel(self.tip)
     local function Print()
-        PrintLink(mapID, x, y, label, atlas)
+        PrintLink(mapID, posX, posY, labelText, atlas)
     end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("MapTravelLink", Print)
@@ -152,8 +156,8 @@ local function PinOnMouseUp(self, button)
 end
 
 local function Clear()
-    for i = 1, used do
-        pins[i]:Hide()
+    for idx = 1, used do
+        pins[idx]:Hide()
     end
     used = 0
     shownKey = nil
@@ -162,8 +166,8 @@ end
 -- Right clicks pass through every pin to the map. SetPassThroughButtons is
 -- protected in combat: set once per pin, a pin made in combat waits for its end.
 local function PassRightClicks()
-    for i = 1, #pins do
-        local p = pins[i]
+    for idx = 1, #pins do
+        local p = pins[idx]
         if not p.passes then
             p:SetPassThroughButtons("RightButton")
             p.passes = true
@@ -200,21 +204,21 @@ end
 -- zoom; their offsets are in their own (scaled) units.
 local function Anchor(p)
     local canvas = layer:GetParent()
-    local w, h = canvas:GetSize()
+    local wid, hgt = canvas:GetSize()
     local cs = canvas:GetScale()
     p:SetScale(1 / cs)
     p:ClearAllPoints()
-    p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * w * cs, -p.y * h * cs)
+    p:SetPoint("CENTER", canvas, "TOPLEFT", p.x * wid * cs, -p.y * hgt * cs)
 end
 
 -- A pin at (x, y) of the canvas (0..1); count > 1 shows as a badge. link: its
 -- kind and name for the chat line ("Dungeon: The Deadmines"). Its chat link
 -- points at the shown map; a pin drawn from a zone onto a wider map points
 -- back at the zone (the caller sets linkMap, linkX, linkY).
-local function Place(x, y, atlas, size, tip, rotation, count, link)
+local function Place(posX, posY, atlas, dim, tipText, rotation, total, itemLink)
     local p = NextPin()
-    p.x, p.y, p.size = x, y, size
-    p:SetSize(size, size)
+    p.x, p.y, p.size = posX, posY, dim
+    p:SetSize(dim, dim)
     Anchor(p)
     if atlas:find("\\", 1, true) then
         p.tex:SetTexture(atlas)
@@ -222,23 +226,23 @@ local function Place(x, y, atlas, size, tip, rotation, count, link)
         p.tex:SetAtlas(atlas)
     end
     p.tex:SetRotation(rotation or 0)
-    p.count:SetText(count and count > 1 and count or "")
-    p.tip, p.link, p.atlas = tip, link, atlas
-    p.linkMap, p.linkX, p.linkY = shownMap, x, y
+    p.count:SetText(total and total > 1 and total or "")
+    p.tip, p.link, p.atlas = tipText, itemLink, atlas
+    p.linkMap, p.linkX, p.linkY = shownMap, posX, posY
     p:Show()
     return p
 end
 
 -- A zoom: the same pins, rescaled (rebuilding them would drop the tooltip).
 local function Rescale()
-    for i = 1, used do
-        Anchor(pins[i])
+    for idx = 1, used do
+        Anchor(pins[idx])
     end
 end
 
 local function ZoneName(uiMapID)
-    local info = C_Map.GetMapInfo(uiMapID)
-    return info and info.name or ""
+    local details = C_Map.GetMapInfo(uiMapID)
+    return details and details.name or ""
 end
 
 local function TransportTip(t)
@@ -261,27 +265,27 @@ local function TransportTip(t)
 end
 
 -- The instance's name, the entrance or wings it opens on, then its kind.
-local function InstanceTip(i)
-    local tip = GetRealZoneText(i[3])
-    if i[5] then
-        tip = tip .. "\n|cffffffff" .. CludesUI.L(i[5]) .. "|r"
+local function InstanceTip(idx)
+    local tipText = GetRealZoneText(idx[3])
+    if idx[5] then
+        tipText = tipText .. "\n|cffffffff" .. CludesUI.L(idx[5]) .. "|r"
     end
-    return tip .. "\n" .. (i[4] and CludesUI.L("Raid") or CludesUI.L("Dungeon"))
+    return tipText .. "\n" .. (idx[4] and CludesUI.L("Raid") or CludesUI.L("Dungeon"))
 end
 
 -- Its chat line: "Dungeon: The Deadmines (Main Entrance)".
-local function InstanceLink(i)
-    local name = GetRealZoneText(i[3])
-    if i[5] then
-        name = name .. " (" .. CludesUI.L(i[5]) .. ")"
+local function InstanceLink(idx)
+    local name = GetRealZoneText(idx[3])
+    if idx[5] then
+        name = name .. " (" .. CludesUI.L(idx[5]) .. ")"
     end
-    return i[4] and CludesUI.Lf("Raid: %s", name) or CludesUI.Lf("Dungeon: %s", name)
+    return idx[4] and CludesUI.Lf("Raid: %s", name) or CludesUI.Lf("Dungeon: %s", name)
 end
 
 -- The arrow's angle toward the destination zone's middle, read on the continent.
-local function ExitRotation(zone, x, y, dest)
-    local info = C_Map.GetMapInfo(zone)
-    local continent = info and info.parentMapID
+local function ExitRotation(zone, posX, posY, dest)
+    local details = C_Map.GetMapInfo(zone)
+    local continent = details and details.parentMapID
     if not continent or continent == 0 then
         return 0
     end
@@ -290,7 +294,7 @@ local function ExitRotation(zone, x, y, dest)
     if not (zl and l) then
         return 0
     end
-    local px, py = zl + x * (zr - zl), zt + y * (zb - zt)
+    local px, py = zl + posX * (zr - zl), zt + posY * (zb - zt)
     local dx, dy = (l + r) / 2 - px, (t + b) / 2 - py
     return math.atan2(-dx, -dy) -- the atlas points up; screen y grows down
 end
@@ -305,21 +309,21 @@ local function TransportGroups(zone)
         return groups
     end
     groups = {}
-    local list = data.transports[zone] or {}
-    for i = 1, #list do
-        local t = list[i]
+    local entries = payload.transports[zone] or {}
+    for idx = 1, #entries do
+        local t = entries[idx]
         local g
-        for j = 1, #groups do
-            local h = groups[j]
-            if math.abs(h.x - t[1]) < GROUP_DIST and math.abs(h.y - t[2]) < GROUP_DIST then
-                g = h
+        for jdx = 1, #groups do
+            local hgt = groups[jdx]
+            if math.abs(hgt.x - t[1]) < GROUP_DIST and math.abs(hgt.y - t[2]) < GROUP_DIST then
+                g = hgt
                 break
             end
         end
         -- Each destination on its own line, led by its transport's icon.
-        local line = ("|A:%s:16:16|a %s"):format(KIND_ATLAS[t[3]], TransportTip(t))
+        local lineTex = ("|A:%s:16:16|a %s"):format(KIND_ATLAS[t[3]], TransportTip(t))
         if g then
-            g.tip = g.tip .. "\n" .. line
+            g.tip = g.tip .. "\n" .. lineTex
             g.link = g.link .. ", " .. TransportTip(t)
             g.count = g.count + 1
         else
@@ -327,7 +331,7 @@ local function TransportGroups(zone)
                 x = t[1],
                 y = t[2],
                 atlas = KIND_ATLAS[t[3]],
-                tip = line,
+                tip = lineTex,
                 link = TransportTip(t),
                 count = 1,
             }
@@ -341,16 +345,16 @@ end
 local function DrawZone(zone)
     if On("transports") then
         local groups = TransportGroups(zone)
-        for i = 1, #groups do
-            local g = groups[i]
+        for idx = 1, #groups do
+            local g = groups[idx]
             Place(g.x / 100, g.y / 100, g.atlas, PIN_SIZE, g.tip, nil, g.count, g.link)
         end
     end
     if On("instances") then
-        local list = data.instances[zone]
-        if list then
-            for i = 1, #list do
-                local e = list[i]
+        local entries = payload.instances[zone]
+        if entries then
+            for idx = 1, #entries do
+                local e = entries[idx]
                 Place(
                     e[1] / 100,
                     e[2] / 100,
@@ -365,18 +369,18 @@ local function DrawZone(zone)
         end
     end
     if On("exits") then
-        local list = data.exits[zone]
-        if list then
-            for i = 1, #list do
-                local e = list[i]
-                local x, y = e[1] / 100, e[2] / 100
+        local entries = payload.exits[zone]
+        if entries then
+            for idx = 1, #entries do
+                local e = entries[idx]
+                local posX, posY = e[1] / 100, e[2] / 100
                 Place(
-                    x,
-                    y,
+                    posX,
+                    posY,
                     "poi-traveldirections-arrow",
                     ARROW_SIZE,
                     ZoneName(e[3]),
-                    ExitRotation(zone, x, y, e[3]),
+                    ExitRotation(zone, posX, posY, e[3]),
                     nil,
                     CludesUI.Lf("Path from %s to %s", ZoneName(zone), ZoneName(e[3]))
                 )
@@ -386,43 +390,43 @@ local function DrawZone(zone)
 end
 
 -- A zone's point (0..1) on a wider map that holds it, or nil.
-local function OnWiderMap(zone, map, x, y)
+local function OnWiderMap(zone, map, posX, posY)
     local l, r, t, b = C_Map.GetMapRectOnMap(zone, map)
     if not l or r <= l or b <= t then
         return nil
     end
-    x, y = l + x * (r - l), t + y * (b - t)
-    if x < 0 or x > 1 or y < 0 or y > 1 then
+    posX, posY = l + posX * (r - l), t + posY * (b - t)
+    if posX < 0 or posX > 1 or posY < 0 or posY > 1 then
         return nil
     end
-    return x, y
+    return posX, posY
 end
 
 -- A world or continent map's pins: the transports, and on a continent the
 -- instance entrances too, each linking back to its zone.
 local function DrawWider(map, instances)
     if On("transports") then
-        for zone in pairs(data.transports) do
+        for zone in pairs(payload.transports) do
             local groups = TransportGroups(zone)
-            for i = 1, #groups do
-                local g = groups[i]
-                local x, y = OnWiderMap(zone, map, g.x / 100, g.y / 100)
-                if x then
-                    local p = Place(x, y, g.atlas, PIN_SIZE, g.tip, nil, g.count, g.link)
+            for idx = 1, #groups do
+                local g = groups[idx]
+                local posX, posY = OnWiderMap(zone, map, g.x / 100, g.y / 100)
+                if posX then
+                    local p = Place(posX, posY, g.atlas, PIN_SIZE, g.tip, nil, g.count, g.link)
                     p.linkMap, p.linkX, p.linkY = zone, g.x / 100, g.y / 100
                 end
             end
         end
     end
     if instances and On("instances") then
-        for zone, list in pairs(data.instances) do
-            for i = 1, #list do
-                local e = list[i]
-                local x, y = OnWiderMap(zone, map, e[1] / 100, e[2] / 100)
-                if x then
+        for zone, entries in pairs(payload.instances) do
+            for idx = 1, #entries do
+                local e = entries[idx]
+                local posX, posY = OnWiderMap(zone, map, e[1] / 100, e[2] / 100)
+                if posX then
                     local p = Place(
-                        x,
-                        y,
+                        posX,
+                        posY,
                         e[4] and "raid" or "dungeon",
                         INSTANCE_SIZE,
                         InstanceTip(e),
@@ -450,50 +454,50 @@ local function FlightNodes(mapID)
     end
     local Faction = Enum.FlightPathFaction
     local mine = UnitFactionGroup("player") == "Horde" and Faction.Horde or Faction.Alliance
-    local list = {}
-    for i = 1, #nodes do
-        local n = nodes[i]
-        local x, y = n.position.x, n.position.y
+    local entries = {}
+    for idx = 1, #nodes do
+        local num = nodes[idx]
+        local posX, posY = num.position.x, num.position.y
         if
-            (n.faction == Faction.Neutral or n.faction == mine)
-            and not n.name:find("^zz")
-            and x >= 0
-            and x <= 1
-            and y >= 0
-            and y <= 1
+            (num.faction == Faction.Neutral or num.faction == mine)
+            and not num.name:find("^zz")
+            and posX >= 0
+            and posX <= 1
+            and posY >= 0
+            and posY <= 1
         then
-            if n.isUndiscovered then
-                n.note = n.faction == Faction.Neutral and UNDISCOVERED_NEUTRAL_FLIGHTPOINT
+            if num.isUndiscovered then
+                num.note = num.faction == Faction.Neutral and UNDISCOVERED_NEUTRAL_FLIGHTPOINT
                     or UNDISCOVERED_FACTION_FLIGHTPOINT:format(
                         mine == Faction.Horde and FACTION_HORDE or FACTION_ALLIANCE
                     )
             end
-            if n.atlasName == "" then
-                n.atlasName = "flightmaster"
+            if num.atlasName == "" then
+                num.atlasName = "flightmaster"
             end
-            list[#list + 1] = n
+            entries[#entries + 1] = num
         end
     end
-    return list
+    return entries
 end
 
 local function DrawFlights(mapID)
-    local list = FlightNodes(mapID)
-    if not list then
+    local entries = FlightNodes(mapID)
+    if not entries then
         return
     end
-    for i = 1, #list do
-        local n = list[i]
-        local tip = n.note and (n.name .. "\n|cff808080" .. n.note .. "|r") or n.name
+    for idx = 1, #entries do
+        local num = entries[idx]
+        local tipText = num.note and (num.name .. "\n|cff808080" .. num.note .. "|r") or num.name
         Place(
-            n.position.x,
-            n.position.y,
-            n.atlasName,
+            num.position.x,
+            num.position.y,
+            num.atlasName,
             PIN_SIZE,
-            tip,
+            tipText,
             nil,
             nil,
-            CludesUI.Lf("Flight Point: %s", n.name)
+            CludesUI.Lf("Flight Point: %s", num.name)
         )
     end
 end
@@ -519,17 +523,17 @@ local function Refresh(force)
     Clear()
     shownKey = key
     shownMap = mapID
-    local info = mapID and C_Map.GetMapInfo(mapID)
-    if not info then
+    local details = mapID and C_Map.GetMapInfo(mapID)
+    if not details then
         return
     end
     -- The world shows the transports; a continent adds the instance entrances;
     -- a zone adds the flight points and its exits.
-    if info.mapType == Enum.UIMapType.World then
+    if details.mapType == Enum.UIMapType.World then
         DrawWider(mapID, false)
-    elseif info.mapType == Enum.UIMapType.Continent then
+    elseif details.mapType == Enum.UIMapType.Continent then
         DrawWider(mapID, true)
-    elseif info.mapType ~= Enum.UIMapType.Cosmic then
+    elseif details.mapType ~= Enum.UIMapType.Cosmic then
         if On("flights") then
             DrawFlights(mapID)
         end
@@ -538,7 +542,7 @@ local function Refresh(force)
 end
 
 local function Build()
-    data = module.MapTravelData()
+    payload = module.MapTravelData()
     module.MapTravelData = nil
 
     layer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)

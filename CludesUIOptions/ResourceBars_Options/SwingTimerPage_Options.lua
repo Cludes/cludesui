@@ -6,8 +6,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Resource Bars options: Swing Timer page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
+if not mod then
     return
 end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
@@ -25,16 +25,16 @@ local function SwingTalentTexts()
                 "Click a talent to require it: Taken, then Not Taken, then cleared. Every condition must hold for the swing timer to show."
             ),
             none = CludesUI.L("No conditions: the swing timer always shows."),
-            met = function(n)
+            met = function(num)
                 return CludesUI.Lf(
                     "%1$d condition(s), met by your current talents: the swing timer shows.",
-                    n
+                    num
                 )
             end,
-            notMet = function(n)
+            notMet = function(num)
                 return CludesUI.Lf(
                     "%1$d condition(s), not met by your current talents: the swing timer is hidden.",
-                    n
+                    num
                 )
             end,
         }
@@ -45,14 +45,14 @@ end
 -- Swing Timer page (WoW Forever only: the page exists only where the client
 -- has C_SwingTimer; see CUI_ResourceBars_SwingTimer.lua). Same widget set as
 -- the GCD Bar page, plus the row/text/range rows the swing timer adds.
-function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
-    local env = ns._CURB_OptEnv
-    local DB, PP = env.DB, env.PP
+function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
+    local environ = mod._CURB_OptEnv
+    local SavedDB, Pix = environ.DB, environ.PP
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
+    local posY = yOffset
+    local _, hgt
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     CludesUI.AppendSharedMediaTextures(
         _G._CURB_BarTextureNames or {},
@@ -81,7 +81,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
 
     local ST_TIP = "Swing Timer"
     local stOff = function()
-        local p = DB()
+        local p = SavedDB()
         return p and not p.swingTimer.enabled
     end
 
@@ -95,8 +95,8 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     end
 
     local _sec
-    _sec, h = W:SectionHeader(parent, "LAYOUT", y)
-    y = y - h
+    _sec, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+    posY = posY - hgt
     CludesUI.BuildSectionUnlockJump(
         _sec,
         { key = "ERB_SwingTimer", disabled = stOff, disabledTooltip = ST_TIP }
@@ -107,20 +107,20 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
 
     -- Row: Enable Swing Timer (+ position cog) | Frame Strata
     local enableRow
-    enableRow, h = W:DualRow(parent, y, {
+    enableRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Swing Timer",
         tooltip = "One bar per weapon that can swing, each filling over the time to the next auto attack.",
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.enabled
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.enabled = v
+            p.swingTimer.enabled = val
             RefreshST()
             CludesUI:RefreshPage()
         end,
@@ -133,25 +133,25 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         values = sStrataValues,
         order = sStrataOrder,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.frameStrata or "MEDIUM"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.frameStrata = v
+            p.swingTimer.frameStrata = val
             RefreshST()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline position cog (X/Y + unlock) on Enable, as on the GCD Bar page
     if not CludesUI._prebuilding then
-        local rgn = enableRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = enableRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and not p.swingTimer.enabled
             end,
             disabledTooltip = ST_TIP,
@@ -164,7 +164,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 0
                         end
@@ -174,16 +174,16 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         end
                         return g.anchorX or 0
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
                         local g = p.swingTimer
                         if g.unlockPos and g.unlockPos.point then
-                            g.unlockPos.x = v
+                            g.unlockPos.x = val
                         else
-                            g.anchorX = v
+                            g.anchorX = val
                         end
                         RefreshST()
                     end,
@@ -195,7 +195,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return 0
                         end
@@ -205,16 +205,16 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         end
                         return g.anchorY or -130
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
                         local g = p.swingTimer
                         if g.unlockPos and g.unlockPos.point then
-                            g.unlockPos.y = v
+                            g.unlockPos.y = val
                         else
-                            g.anchorY = v
+                            g.anchorY = val
                         end
                         RefreshST()
                     end,
@@ -227,7 +227,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     -- Row: Row Height | Width. Height is per row; the mover reports the whole stack.
     local shDis, shTip, shRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Height", stOff, ST_TIP)
     local swDis, swTip, swRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Width", stOff, ST_TIP)
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Row Height",
         min = 1,
@@ -238,15 +238,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabledTooltip = shTip,
         rawTooltip = shRaw,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.height or 12
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.height = v
+            p.swingTimer.height = val
             RefreshST()
         end,
     }, {
@@ -259,23 +259,23 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabledTooltip = swTip,
         rawTooltip = swRaw,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.width or 220
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.width = v
+            p.swingTimer.width = val
             RefreshST()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Row: Row Spacing | Text Size (+ text offsets cog)
     local stTextRow
-    stTextRow, h = W:DualRow(parent, y, {
+    stTextRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         pixel = true,
         text = "Row Spacing",
@@ -286,15 +286,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.rowSpacing or 2
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.rowSpacing = v
+            p.swingTimer.rowSpacing = val
             RefreshST()
         end,
     }, {
@@ -306,37 +306,37 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.textSize or 11
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.textSize = v
+            p.swingTimer.textSize = val
             RefreshST()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        local function OffsetRow(label, key)
+        local function OffsetRow(labelText, key)
             return {
                 type = "slider",
-                label = label,
+                label = labelText,
                 min = -100,
                 max = 100,
                 step = 1,
                 get = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.swingTimer[key] or 0
                 end,
-                set = function(v)
-                    local p = DB()
+                set = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.swingTimer[key] = v
+                    p.swingTimer[key] = val
                     RefreshST()
                 end,
             }
@@ -356,9 +356,9 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
 
     -- Row: Visibility (shared checklist) | Hide When Idle (+ idle fill cog)
     local stShowRow
-    stShowRow, h = CludesUI.BuildVisibilityRow(W, parent, y, {
+    stShowRow, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
         getStore = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer
         end,
         legacyKey = "visibility",
@@ -378,19 +378,19 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.hideWhenIdle
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.hideWhenIdle = v
+            p.swingTimer.hideWhenIdle = val
             RefreshST()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline cog on Visibility: Forms and Talents. A druid picks the forms the
     -- timer shows in (the per-form map the other bars' cogs write); any class can
     -- require talents, saved per class so one profile serves every class. While
@@ -398,14 +398,14 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     -- forms gets the talent picker straight from the cog.
     if not CludesUI._prebuilding then
         local function STCfg()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer
         end
         local condShow
         local function OpenTalents()
-            local pf = condShow and condShow._popupFrame
-            if pf and pf:IsShown() then
-                pf:Hide()
+            local popFrame = condShow and condShow._popupFrame
+            if popFrame and popFrame:IsShown() then
+                popFrame:Hide()
             end
             local g = STCfg()
             if not g then
@@ -418,18 +418,18 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                 conds = byClass and byClass[class],
                 texts = SwingTalentTexts(),
                 fontKey = "resourceBars",
-                onConfirm = function(list)
+                onConfirm = function(entries)
                     local q = STCfg()
                     if not q then
                         return
                     end
                     local t = q.classTalentConditions
-                    if list then
+                    if entries then
                         if not t then
                             t = {}
                             q.classTalentConditions = t
                         end
-                        t[class] = list
+                        t[class] = entries
                     elseif t then
                         t[class] = nil
                         if not next(t) then
@@ -440,7 +440,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                 end,
             })
         end
-        local formRows = env.FormToggleRows(STCfg, RefreshST, "barDisabledForms")
+        local formRows = environ.FormToggleRows(STCfg, RefreshST, "barDisabledForms")
         if formRows then
             formRows[#formRows + 1] = { type = "button", label = "Talent Conditions", action = OpenTalents }
             _, condShow = CludesUI.BuildInlineCog(stShowRow._leftRegion, {
@@ -468,15 +468,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     label = "Show Fill Color When Idle",
                     tooltip = "Show an idle row full of its fill color instead of the background color.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.swingTimer.idleShowFill) == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        if v then
+                        if val then
                             p.swingTimer.idleShowFill = true
                         else
                             p.swingTimer.idleShowFill = nil
@@ -488,25 +488,25 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:Spacer(parent, y, 16)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 16)
+    posY = posY - hgt
 
-    _sec, h = W:SectionHeader(parent, "DISPLAY", y)
-    y = y - h
+    _sec, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+    posY = posY - hgt
 
     -- Global Settings > Style: the rows wear the Resource Bars row's stock
     -- frame (ns.ST_Style), which gates the CUI border rows as on the other
     -- bars.
-    local stStock = ns.ST_Style() ~= "cui"
-    local stClassic = stStock and ns.ERB_BarsClassic()
-    local function Gate(cfg)
+    local stStock = mod.ST_Style() ~= "cui"
+    local stClassic = stStock and mod.ERB_BarsClassic()
+    local function Gate(conf)
         if stStock then
-            return CludesUI.BlizzStyle.Gate("resourcebars", cfg)
+            return CludesUI.BlizzStyle.Gate("resourcebars", conf)
         end
-        return cfg
+        return conf
     end
     if stStock then
-        y = CludesUI.BlizzStyle.Note(parent, y, "resourcebars")
+        posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "resourcebars")
     end
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog).
@@ -514,9 +514,9 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     do
         local btValues, btOrder = CludesUI.GetBorderTextureDropdown()
         local bsRow
-        bsRow, h = W:DualRow(
-            parent,
-            y,
+        bsRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Gate({
                 type = "dropdown",
                 text = "Border Style",
@@ -525,27 +525,27 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                 values = btValues,
                 order = btOrder,
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.swingTimer.borderTexture or "solid"
                 end,
-                setValue = function(v)
-                    local p = DB()
+                setValue = function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
                     local g = p.swingTimer
-                    g.borderTexture = v
+                    g.borderTexture = val
                     g.borderTextureOffset = nil
                     g.borderTextureOffsetY = nil
                     g.borderTextureShiftX = nil
                     g.borderTextureShiftY = nil
-                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
+                    local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
                     g.borderR = _bcol.r
                     g.borderG = _bcol.g
                     g.borderB = _bcol.b
                     g.borderA = 1
                     g.borderBehind = _bbehind
-                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", v)
+                    local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then
                         g.borderSize = defSz
                     end
@@ -558,14 +558,14 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
             }),
             stClassic
                     and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.stockBorderScale
-                    end, function(v)
-                        local p = DB()
+                    end, function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.stockBorderScale = v
+                        p.swingTimer.stockBorderScale = val
                         RefreshST()
                         CludesUI.ReapplyMatchPads("ERB_SwingTimer")
                         CludesUI:RefreshPage()
@@ -575,27 +575,27 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     disabled = stOff,
                     disabledTooltip = ST_TIP,
                     getStep = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and (p.swingTimer.borderSize or 0) or 0
                     end,
-                    setStep = function(v)
-                        local p = DB()
+                    setStep = function(val)
+                        local p = SavedDB()
                         if p then
-                            p.swingTimer.borderSize = v
+                            p.swingTimer.borderSize = val
                         end
                     end,
                     getTex = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and (p.swingTimer.borderTexture or "solid") or "solid"
                     end,
                     getPx = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.borderSizePx
                     end,
-                    setPx = function(v)
-                        local p = DB()
+                    setPx = function(val)
+                        local p = SavedDB()
                         if p then
-                            p.swingTimer.borderSizePx = v
+                            p.swingTimer.borderSizePx = val
                         end
                     end,
                     apply = function()
@@ -604,14 +604,14 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     end,
                 }))
         )
-        y = y - h
+        posY = posY - hgt
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
-            local p = DB()
+            local p = SavedDB()
             local tex = p and p.swingTimer.borderTexture or "solid"
             if tex ~= "solid" and tex ~= "" then
                 local function step()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and (p.swingTimer.borderSize or 0) or 0
                 end
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -619,33 +619,33 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     disabled = stOff,
                     disabledTooltip = ST_TIP,
                     getTex = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and (p.swingTimer.borderTexture or "solid") or "solid"
                     end,
                     getStep = step,
                     getSizeKey = step,
                     getPx = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.borderSizePx
                     end,
                     getX = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.borderTextureOffset
                     end,
-                    setX = function(v)
-                        local p = DB()
+                    setX = function(val)
+                        local p = SavedDB()
                         if p then
-                            p.swingTimer.borderTextureOffset = v
+                            p.swingTimer.borderTextureOffset = val
                         end
                     end,
                     getY = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.borderTextureOffsetY
                     end,
-                    setY = function(v)
-                        local p = DB()
+                    setY = function(val)
+                        local p = SavedDB()
                         if p then
-                            p.swingTimer.borderTextureOffsetY = v
+                            p.swingTimer.borderTextureOffsetY = val
                         end
                     end,
                     apply = function()
@@ -653,8 +653,8 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 })
-                _, h = W:DualRow(parent, y, Gate(ocfgL), Gate(ocfgR))
-                y = y - h
+                _, hgt = W:DualRow(hostFrame, posY, Gate(ocfgL), Gate(ocfgR))
+                posY = posY - hgt
             end
         end
         -- Corner Radius cog on the size slider (right region), the Border color
@@ -671,7 +671,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     if stOff() or stStock then
                         return true
                     end
-                    local p = DB()
+                    local p = SavedDB()
                     return not CludesUI.RoundedStyleOK(p and p.swingTimer.borderTexture)
                 end,
                 disabledTooltip = function()
@@ -694,27 +694,27 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         max = CludesUI.ROUNDED_MAX_RADIUS,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.swingTimer.cornerRadius or 0
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.swingTimer.cornerRadius = v
+                            p.swingTimer.cornerRadius = val
                             RefreshST()
                         end,
                     },
                 }, function()
-                    local p = DB()
+                    local p = SavedDB()
                     return p and p.swingTimer.cornerMask
-                end, function(v)
-                    local p = DB()
+                end, function(val)
+                    local p = SavedDB()
                     if not p then
                         return
                     end
-                    p.swingTimer.cornerMask = v
+                    p.swingTimer.cornerMask = val
                     RefreshST()
                 end),
             })
@@ -723,7 +723,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     tooltip = "Border Color",
                     hasAlpha = true,
                     disabled = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return not (p and p.swingTimer.enabled and (p.swingTimer.borderSize or 0) > 0)
                     end,
                     disabledTooltip = function()
@@ -733,14 +733,14 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         return "This option requires a Border Size above 0."
                     end,
                     getValue = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.swingTimer.borderR or 0),
                             (p and p.swingTimer.borderG or 0),
                             (p and p.swingTimer.borderB or 0),
                             (p and p.swingTimer.borderA or 1)
                     end,
                     setValue = function(r, g, b, a)
-                        local p = DB()
+                        local p = SavedDB()
                         if not p then
                             return
                         end
@@ -753,8 +753,8 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
             }, { size = 20 })
         end
         if not CludesUI._prebuilding then
-            local rgn = bsRow._leftRegion
-            local cogBtn = CludesUI.BuildInlineCog(rgn, {
+            local region = bsRow._leftRegion
+            local cogBtn = CludesUI.BuildInlineCog(region, {
                 title = "Border Options",
                 rows = {
                     {
@@ -764,13 +764,13 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return 0
                             end
-                            local v = p.swingTimer.borderTextureShiftX
-                            if v then
-                                return v
+                            local val = p.swingTimer.borderTextureShiftX
+                            if val then
+                                return val
                             end
                             local _, _, dsx = CludesUI.GetBorderDefaults(
                                 "resourcebars",
@@ -779,12 +779,12 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                             )
                             return dsx
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.swingTimer.borderTextureShiftX = v == 0 and nil or v
+                            p.swingTimer.borderTextureShiftX = val == 0 and nil or val
                             RefreshST()
                             CludesUI:RefreshPage()
                         end,
@@ -796,13 +796,13 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             if not p then
                                 return 0
                             end
-                            local v = p.swingTimer.borderTextureShiftY
-                            if v then
-                                return v
+                            local val = p.swingTimer.borderTextureShiftY
+                            if val then
+                                return val
                             end
                             local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                 "resourcebars",
@@ -811,12 +811,12 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                             )
                             return dsy
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.swingTimer.borderTextureShiftY = v == 0 and nil or v
+                            p.swingTimer.borderTextureShiftY = val == 0 and nil or val
                             RefreshST()
                             CludesUI:RefreshPage()
                         end,
@@ -825,15 +825,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                         type = "toggle",
                         label = "Show Behind",
                         get = function()
-                            local p = DB()
+                            local p = SavedDB()
                             return p and p.swingTimer.borderBehind or false
                         end,
-                        set = function(v)
-                            local p = DB()
+                        set = function(val)
+                            local p = SavedDB()
                             if not p then
                                 return
                             end
-                            p.swingTimer.borderBehind = v == false and nil or v
+                            p.swingTimer.borderBehind = val == false and nil or val
                             RefreshST()
                             CludesUI:RefreshPage()
                         end,
@@ -841,7 +841,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                 },
             })
             local function UpdateCogVis()
-                local p = DB()
+                local p = SavedDB()
                 local tex = p and p.swingTimer.borderTexture or "solid"
                 if tex == "solid" or stClassic then
                     cogBtn:Hide()
@@ -855,25 +855,26 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     end
 
     -- Row: Color (gradient end / Main Hand / Off Hand / Ranged / class + gradient cog) | Background (+ bg swatch)
-    local function RowSwatch(prefix, tip)
+    local function RowSwatch(prefixText, tipText)
         return {
-            tooltip = tip,
+            tooltip = tipText,
             hasAlpha = true,
             getValue = function()
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return 1, 1, 1, 1
                 end
                 local g = p.swingTimer
-                return g[prefix .. "R"], g[prefix .. "G"], g[prefix .. "B"], g[prefix .. "A"]
+                return g[prefixText .. "R"], g[prefixText .. "G"], g[prefixText .. "B"], g[prefixText .. "A"]
             end,
             setValue = function(r, gg, b, a)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
                 local g = p.swingTimer
-                g[prefix .. "R"], g[prefix .. "G"], g[prefix .. "B"], g[prefix .. "A"] = r, gg, b, a
+                g[prefixText .. "R"], g[prefixText .. "G"], g[prefixText .. "B"], g[prefixText .. "A"] =
+                    r, gg, b, a
                 if g.classColored then
                     g.classColored = false
                 end
@@ -881,7 +882,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                 CludesUI:RefreshPage()
             end,
             onClick = function(self)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
@@ -896,112 +897,107 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                 end
             end,
             refreshAlpha = function()
-                local p = DB()
+                local p = SavedDB()
                 return (p and not p.swingTimer.classColored) and 1 or 0.3
             end,
         }
     end
     local colorRow
-    colorRow, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "multiSwatch",
-            text = "Color",
-            disabled = stOff,
-            disabledTooltip = ST_TIP,
-            swatches = {
-                {
-                    tooltip = "Gradient End Color",
-                    hasAlpha = true,
-                    disabled = function()
-                        local p = DB()
-                        return not (p and p.swingTimer.gradientEnabled)
-                    end,
-                    disabledTooltip = function()
-                        if stOff() then
-                            return ST_TIP
-                        end
-                        return "Gradient"
-                    end,
-                    getValue = function()
-                        local p = DB()
-                        if not p then
-                            return 0.20, 0.20, 0.80, 1
-                        end
-                        return p.swingTimer.gradientR,
-                            p.swingTimer.gradientG,
-                            p.swingTimer.gradientB,
-                            p.swingTimer.gradientA
-                    end,
-                    setValue = function(r, g, b, a)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.gradientR, p.swingTimer.gradientG, p.swingTimer.gradientB, p.swingTimer.gradientA =
-                            r, g, b, a
-                        RefreshST()
-                    end,
-                },
-                RowSwatch("mh", "Main Hand Color"),
-                RowSwatch("oh", "Off Hand Color"),
-                RowSwatch("r", "Ranged Color"),
-                {
-                    tooltip = "Class Colored",
-                    getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                        if cc then
-                            return cc.r, cc.g, cc.b, 1
-                        end
-                        return 1, 0.70, 0, 1
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.classColored = true
-                        RefreshST()
-                        CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        local p = DB()
-                        return (not p or p.swingTimer.classColored == true) and 1 or 0.3
-                    end,
-                },
+    colorRow, hgt = W:DualRow(hostFrame, posY, {
+        type = "multiSwatch",
+        text = "Color",
+        disabled = stOff,
+        disabledTooltip = ST_TIP,
+        swatches = {
+            {
+                tooltip = "Gradient End Color",
+                hasAlpha = true,
+                disabled = function()
+                    local p = SavedDB()
+                    return not (p and p.swingTimer.gradientEnabled)
+                end,
+                disabledTooltip = function()
+                    if stOff() then
+                        return ST_TIP
+                    end
+                    return "Gradient"
+                end,
+                getValue = function()
+                    local p = SavedDB()
+                    if not p then
+                        return 0.20, 0.20, 0.80, 1
+                    end
+                    return p.swingTimer.gradientR,
+                        p.swingTimer.gradientG,
+                        p.swingTimer.gradientB,
+                        p.swingTimer.gradientA
+                end,
+                setValue = function(r, g, b, a)
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    p.swingTimer.gradientR, p.swingTimer.gradientG, p.swingTimer.gradientB, p.swingTimer.gradientA =
+                        r, g, b, a
+                    RefreshST()
+                end,
+            },
+            RowSwatch("mh", "Main Hand Color"),
+            RowSwatch("oh", "Off Hand Color"),
+            RowSwatch("r", "Ranged Color"),
+            {
+                tooltip = "Class Colored",
+                getValue = function()
+                    local _, classFile = UnitClass("player")
+                    local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                    if cc then
+                        return cc.r, cc.g, cc.b, 1
+                    end
+                    return 1, 0.70, 0, 1
+                end,
+                setValue = function() end,
+                onClick = function()
+                    local p = SavedDB()
+                    if not p then
+                        return
+                    end
+                    p.swingTimer.classColored = true
+                    RefreshST()
+                    CludesUI:RefreshPage()
+                end,
+                refreshAlpha = function()
+                    local p = SavedDB()
+                    return (not p or p.swingTimer.classColored == true) and 1 or 0.3
+                end,
             },
         },
-        {
-            type = "slider",
-            text = "Background",
-            min = 0,
-            max = 100,
-            step = 1,
-            disabled = stOff,
-            disabledTooltip = ST_TIP,
-            getValue = function()
-                local p = DB()
-                return math.floor(((p and p.swingTimer.bgA or 0.7) * 100) + 0.5)
-            end,
-            setValue = function(v)
-                local p = DB()
-                if not p then
-                    return
-                end
-                p.swingTimer.bgA = v / 100
-                RefreshST()
-            end,
-        }
-    )
-    y = y - h
+    }, {
+        type = "slider",
+        text = "Background",
+        min = 0,
+        max = 100,
+        step = 1,
+        disabled = stOff,
+        disabledTooltip = ST_TIP,
+        getValue = function()
+            local p = SavedDB()
+            return math.floor(((p and p.swingTimer.bgA or 0.7) * 100) + 0.5)
+        end,
+        setValue = function(val)
+            local p = SavedDB()
+            if not p then
+                return
+            end
+            p.swingTimer.bgA = val / 100
+            RefreshST()
+        end,
+    })
+    posY = posY - hgt
     if not CludesUI._prebuilding then
-        local rgn = colorRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = colorRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
+                local p = SavedDB()
                 return p and not p.swingTimer.enabled
             end,
             disabledTooltip = ST_TIP,
@@ -1011,15 +1007,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     type = "toggle",
                     label = "Enable Gradient",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.gradientEnabled
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.gradientEnabled = v
+                        p.swingTimer.gradientEnabled = val
                         RefreshST()
                         CludesUI:RefreshPage()
                     end,
@@ -1030,15 +1026,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.gradientDir or "HORIZONTAL"
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.gradientDir = v
+                        p.swingTimer.gradientDir = val
                         RefreshST()
                     end,
                 },
@@ -1050,13 +1046,13 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
             {
                 tooltip = "Background Color",
                 getValue = function()
-                    local p = DB()
+                    local p = SavedDB()
                     return (p and p.swingTimer.bgR or 0),
                         (p and p.swingTimer.bgG or 0),
                         (p and p.swingTimer.bgB or 0)
                 end,
                 setValue = function(r, g, b)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
@@ -1068,7 +1064,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     end
 
     -- Row: Bar Texture | Deplete Fill
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Bar Texture",
         disabled = stOff,
@@ -1076,15 +1072,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         values = texValues,
         order = texOrder,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.texture or "none"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.texture = v
+            p.swingTimer.texture = val
             RefreshST()
         end,
     }, {
@@ -1094,38 +1090,38 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.depleteFill
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.depleteFill = v
+            p.swingTimer.depleteFill = val
             RefreshST()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Row: Show Spark | Tracked Weapons (checkbox dropdown, built below)
     local sparkRow
-    sparkRow, h = W:DualRow(parent, y, {
+    sparkRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Spark",
         tooltip = "Show a small glowing spark that moves along the leading edge of the fill while a swing is running.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.showSpark
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.showSpark = v
+            p.swingTimer.showSpark = val
             RefreshST()
         end,
     }, {
@@ -1141,41 +1137,42 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         end,
         setValue = function() end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         -- Not tied to Show Spark: a combined off hand's spark shows either way.
         -- Colours: store keys <key>SparkR/G/B/A, unset by default; each swatch
         -- shows the colour the bar paints (ST_SparkColor). A pick of the unset
         -- colour (white, or a combined off hand's fill) stores nothing, so the
         -- picker's Cancel leaves an unset spark following its default.
-        local function Near(x, y)
-            return math.abs(x - y) < 0.002
+        local function Near(posX, posY)
+            return math.abs(posX - posY) < 0.002
         end
         local function SparkSwatch(name, key)
-            local prefix = key .. "Spark"
+            local prefixText = key .. "Spark"
             return {
                 tooltip = name,
                 hasAlpha = true,
                 getValue = function()
-                    if ns.ST_SparkColor then
-                        return ns.ST_SparkColor(key)
+                    if mod.ST_SparkColor then
+                        return mod.ST_SparkColor(key)
                     end
                     return 1, 1, 1, 1
                 end,
                 setValue = function(r, gg, b, a)
-                    local p = DB()
+                    local p = SavedDB()
                     if not p then
                         return
                     end
                     a = a or 1
-                    if ns.ST_SparkColor then
-                        local ur, ug, ub, ua = ns.ST_SparkColor(key, true)
+                    if mod.ST_SparkColor then
+                        local ur, ug, ub, ua = mod.ST_SparkColor(key, true)
                         if Near(r, ur) and Near(gg, ug) and Near(b, ub) and Near(a, ua) then
                             r, gg, b, a = nil, nil, nil, nil
                         end
                     end
                     local g = p.swingTimer
-                    g[prefix .. "R"], g[prefix .. "G"], g[prefix .. "B"], g[prefix .. "A"] = r, gg, b, a
+                    g[prefixText .. "R"], g[prefixText .. "G"], g[prefixText .. "B"], g[prefixText .. "A"] =
+                        r, gg, b, a
                     RefreshST()
                 end,
             }
@@ -1192,15 +1189,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     max = 32,
                     step = 1,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.sparkWidth or 8
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.sparkWidth = v
+                        p.swingTimer.sparkWidth = val
                         RefreshST()
                     end,
                 },
@@ -1213,15 +1210,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     step = 1,
                     tooltip = "How far the spark reaches past the top and bottom of the bar.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.sparkOverhang or 0
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.sparkOverhang = v
+                        p.swingTimer.sparkOverhang = val
                         RefreshST()
                     end,
                 },
@@ -1238,9 +1235,9 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         })
     end
     if not CludesUI._prebuilding then
-        local rgn = sparkRow._rightRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = sparkRow._rightRegion
+        if region._control then
+            region._control:Hide()
         end
         -- Checked = the row shows. The keys are the per-row toggles this
         -- list replaces (nil = on), so every profile carries over as is.
@@ -1250,38 +1247,38 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
             { key = "showR", label = "Ranged" },
         }
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+            region,
             210,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             WEAPON_ITEMS,
             function(k)
-                local p = DB()
+                local p = SavedDB()
                 return not p or p.swingTimer[k] ~= false
             end,
-            function(k, v)
-                local p = DB()
+            function(k, val)
+                local p = SavedDB()
                 if not p then
                     return
                 end
-                p.swingTimer[k] = v
+                p.swingTimer[k] = val
                 -- The cog's Combine Hands greys out while a hand is off.
                 RefreshST()
                 CludesUI:RefreshPage()
             end
         )
-        PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = cbDD
-        rgn._lastInline = nil
+        Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = cbDD
+        region._lastInline = nil
         local function UpdateWeaponsDD()
-            local off = stOff()
-            cbDD:SetAlpha(off and 0.3 or 1)
-            cbDD:EnableMouse(not off)
+            local offset = stOff()
+            cbDD:SetAlpha(offset and 0.3 or 1)
+            cbDD:EnableMouse(not offset)
             cbDDRefresh()
         end
         UpdateWeaponsDD()
         CludesUI.RegisterWidgetRefresh(UpdateWeaponsDD)
         -- Combine Hands needs both hands tracked, so it rides this row's cog.
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             disabled = stOff,
             disabledTooltip = ST_TIP,
             title = "Tracked Weapons",
@@ -1291,15 +1288,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     label = "Always Show Rows",
                     tooltip = "Show every row ticked in the list even when no weapon is equipped in that slot, so the bar keeps the same layout on every class.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.alwaysShowRows == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.alwaysShowRows = v
+                        p.swingTimer.alwaysShowRows = val
                         RefreshST()
                     end,
                 },
@@ -1308,20 +1305,20 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     label = "Hide Label Without Weapon",
                     tooltip = "A row shown only because of Always Show Rows drops its MH / OH / R label while no weapon is equipped in that slot. A shield keeps its Shield label.",
                     disabled = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return not (p and p.swingTimer.alwaysShowRows)
                     end,
                     disabledTooltip = "Always Show Rows",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.hideLabelNoWeapon == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.hideLabelNoWeapon = v
+                        p.swingTimer.hideLabelNoWeapon = val
                         RefreshST()
                     end,
                 },
@@ -1330,15 +1327,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     label = "Show Shield As Off Hand",
                     tooltip = "Show the Off Hand row, labelled Shield, while a shield is equipped. Always Show Rows also labels it.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.shieldRow == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.shieldRow = v
+                        p.swingTimer.shieldRow = val
                         RefreshST()
                     end,
                 },
@@ -1347,23 +1344,23 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     label = "Combine Hands",
                     tooltip = "Show the off hand as a spark on the Main Hand bar instead of its own row.",
                     disabled = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and (p.swingTimer.showMH == false or p.swingTimer.showOH == false)
                     end,
                     disabledTooltip = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return (p and p.swingTimer.showMH == false) and "Main Hand" or "Off Hand"
                     end,
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.combineHands == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.combineHands = v
+                        p.swingTimer.combineHands = val
                         RefreshST()
                     end,
                 },
@@ -1372,22 +1369,22 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     end
 
     -- Row: Show Time | Show Weapon Label
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Time",
         tooltip = "Show the seconds left to the next swing on each row.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.showTime ~= false
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.showTime = v
+            p.swingTimer.showTime = val
             RefreshST()
         end,
     }, {
@@ -1397,88 +1394,89 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.showLabel ~= false
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.showLabel = v
+            p.swingTimer.showLabel = val
             RefreshST()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- A cog's colour row: store keys prefix .. R/G/B/A, `def` the fallback
     -- {r, g, b, a}; `off` (optional) greys it out with `offTip`.
     -- `shared` (optional): a prefix whose colour shows while this one is unset.
-    local function ColorRow(label, prefix, def, tip, off, offTip, shared)
+    local function ColorRow(labelText, prefixText, spec_def, tipText, offset, offTip, shared)
         return {
             type = "colorpicker",
-            label = label,
-            tooltip = tip,
+            label = labelText,
+            tooltip = tipText,
             hasAlpha = true,
-            disabled = off,
+            disabled = offset,
             disabledTooltip = offTip,
             get = function()
-                local p = DB()
+                local p = SavedDB()
                 local g = p and p.swingTimer
                 if not g then
-                    return def[1], def[2], def[3], def[4]
+                    return spec_def[1], spec_def[2], spec_def[3], spec_def[4]
                 end
-                local k = prefix
-                if shared and g[prefix .. "R"] == nil then
+                local k = prefixText
+                if shared and g[prefixText .. "R"] == nil then
                     k = shared
                 end
-                return g[k .. "R"] or def[1],
-                    g[k .. "G"] or def[2],
-                    g[k .. "B"] or def[3],
-                    g[k .. "A"] or def[4]
+                return g[k .. "R"] or spec_def[1],
+                    g[k .. "G"] or spec_def[2],
+                    g[k .. "B"] or spec_def[3],
+                    g[k .. "A"] or spec_def[4]
             end,
             set = function(r, gg, b, a)
-                local p = DB()
+                local p = SavedDB()
                 if not p then
                     return
                 end
                 local g = p.swingTimer
-                g[prefix .. "R"], g[prefix .. "G"], g[prefix .. "B"], g[prefix .. "A"] = r, gg, b, a
+                g[prefixText .. "R"], g[prefixText .. "G"], g[prefixText .. "B"], g[prefixText .. "A"] =
+                    r, gg, b, a
                 RefreshST()
             end,
         }
     end
     local stateNotFull = function()
-        local p = DB()
+        local p = SavedDB()
         return not p or p.swingTimer.attackState ~= "full"
     end
     local stateOff = function()
-        local p = DB()
+        local p = SavedDB()
         return not p or p.swingTimer.attackState == "off"
     end
     local guideOff = function()
-        local p = DB()
+        local p = SavedDB()
         return not p or (p.swingTimer.moveGuide or "off") == "off"
     end
 
     -- Row: Range Check (+ out-of-range alpha cog) | Attack State (+ colors cog)
     local stateRow
-    stateRow, h = W:DualRow(parent, y, {
+    stateRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Range Check",
         tooltip = "Dim a row and paint its text red while the current target is out of that weapon's auto attack range.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.rangeCheck ~= false
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.rangeCheck = v
+            p.swingTimer.rangeCheck = val
             RefreshST()
         end,
     }, {
@@ -1490,20 +1488,20 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         values = { off = "Off", queued = "Queued Only", full = "Full" },
         order = { "off", "queued", "full" },
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.attackState or "queued"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.attackState = v
+            p.swingTimer.attackState = val
             RefreshST()
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(stateRow._rightRegion, {
             disabled = stOff,
@@ -1568,15 +1566,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     disabled = stateOff,
                     disabledTooltip = "This option requires an Attack State other than Off.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.queueMainHandOnly == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.queueMainHandOnly = v
+                        p.swingTimer.queueMainHandOnly = val
                         RefreshST()
                     end,
                 },
@@ -1595,15 +1593,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     step = 1,
                     tooltip = "Opacity of a row whose target is out of range.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return math.floor(((p and p.swingTimer.outOfRangeAlpha or 0.4) * 100) + 0.5)
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.outOfRangeAlpha = v / 100
+                        p.swingTimer.outOfRangeAlpha = val / 100
                         RefreshST()
                     end,
                 },
@@ -1613,7 +1611,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
     -- Row: Movement Guide (+ GO / STILL colors and Text Cue cog) | (blank: last
     -- row of the section)
     local guideRow
-    guideRow, h = W:DualRow(parent, y, {
+    guideRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Movement Guide",
         tooltip = "Marks when you can move (GO) and, for wand Shoot and Auto Shot, when you must stand still (STILL).",
@@ -1622,20 +1620,20 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         values = { off = "Off", segments = "Segments", windup = "Wind-Up Bar" },
         order = { "off", "segments", "windup" },
         getValue = function()
-            local p = DB()
+            local p = SavedDB()
             return p and p.swingTimer.moveGuide or "off"
         end,
-        setValue = function(v)
-            local p = DB()
+        setValue = function(val)
+            local p = SavedDB()
             if not p then
                 return
             end
-            p.swingTimer.moveGuide = v
+            p.swingTimer.moveGuide = val
             RefreshST()
             CludesUI:RefreshPage()
         end,
     }, CludesUI.BlankRowCfg())
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(guideRow._leftRegion, {
             disabled = function()
@@ -1666,15 +1664,15 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
                     label = "Text Cue",
                     tooltip = "The Ranged row's time reads Move (seconds left to move), then Still, then Go. Needs Show Time.",
                     get = function()
-                        local p = DB()
+                        local p = SavedDB()
                         return p and p.swingTimer.moveCue == true
                     end,
-                    set = function(v)
-                        local p = DB()
+                    set = function(val)
+                        local p = SavedDB()
                         if not p then
                             return
                         end
-                        p.swingTimer.moveCue = v
+                        p.swingTimer.moveCue = val
                         RefreshST()
                     end,
                 },
@@ -1682,5 +1680,5 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
         })
     end
 
-    return math.abs(y)
+    return math.abs(posY)
 end

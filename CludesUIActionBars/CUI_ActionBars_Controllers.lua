@@ -9,13 +9,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  possess bars.
 --  Loads after CUI_ActionBars_Disposal.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local pairs, type = pairs, type
 local InCombatLockdown = InCombatLockdown
 local RegisterAttributeDriver = RegisterAttributeDriver
 
-local I = ns._internals
+local Inner = mod._internals
 
 -------------------------------------------------------------------------------
 --  Central Action Button Controller: a SecureHandlerAttributeTemplate that
@@ -144,29 +144,29 @@ local function InitShowGridMonitor()
 end
 
 -- Register a button with the controller (adds WrapScript handlers + secure table entry)
-local function RegisterButtonWithController(btn)
-    if _controllerButtons[btn] then
+local function RegisterButtonWithController(button)
+    if _controllerButtons[button] then
         return
     end
 
     -- On /reload, Lua locals reset but frames survive: if the button already
     -- carries our secure snippets, skip WrapScript+Execute (re-wrapping in
     -- combat taints the restricted env) and just restore the Lua registry.
-    if btn:GetAttribute("_eabControllerRegistered") then
-        _controllerButtons[btn] = true
+    if button:GetAttribute("_eabControllerRegistered") then
+        _controllerButtons[button] = true
         return
     end
 
-    ActionButtonController:WrapScript(btn, "OnAttributeChanged", BTN_ON_ATTRIBUTE_CHANGED)
-    ActionButtonController:WrapScript(btn, "PostClick", BTN_POST_CLICK)
+    ActionButtonController:WrapScript(button, "OnAttributeChanged", BTN_ON_ATTRIBUTE_CHANGED)
+    ActionButtonController:WrapScript(button, "PostClick", BTN_POST_CLICK)
     ActionButtonController:WrapScript(
-        btn,
+        button,
         "OnReceiveDrag",
         BTN_ON_RECEIVE_DRAG_BEFORE,
         BTN_ON_RECEIVE_DRAG_AFTER
     )
-    ActionButtonController:WrapScript(btn, "OnShow", BTN_ON_SHOW_HIDE)
-    ActionButtonController:WrapScript(btn, "OnHide", BTN_ON_SHOW_HIDE)
+    ActionButtonController:WrapScript(button, "OnShow", BTN_ON_SHOW_HIDE)
+    ActionButtonController:WrapScript(button, "OnHide", BTN_ON_SHOW_HIDE)
     -- Combat drag belt: dragging FROM one of our buttons reveals empty drop
     -- targets via the controller's secure broadcast, independent of the
     -- ActionButton1 showgrid monitor (which depends on Blizzard's retained
@@ -184,7 +184,7 @@ local function RegisterButtonWithController(btn)
     -- the reveal only fires when the drag will actually pick the action up.
     -- IsModifiedClick is whitelisted in the restricted environment.
     ActionButtonController:WrapScript(
-        btn,
+        button,
         "OnDragStart",
         [[
         if control:GetAttribute("eab-barslocked") ~= 1 or IsModifiedClick("PICKUPACTION") then
@@ -202,7 +202,7 @@ local function RegisterButtonWithController(btn)
     -- a visible button is never stomped). eab-withincutoff keeps icon-cutoff buttons
     -- out of the override; eab-click carries the bar's click-through setting so a
     -- reveal never turns a click-through bar clickable.
-    btn:SetAttributeNoHandler(
+    button:SetAttributeNoHandler(
         "SetShowGrid",
         [[
         local show, reason, force = ...
@@ -247,7 +247,7 @@ local function RegisterButtonWithController(btn)
     -- Visibility: show if grid active or action exists, unless explicitly
     -- state-hidden. Same transient-grid override and edge-gated alpha/mouse
     -- restore as SetShowGrid, so a mid-drag flush cannot re-hide a revealed target.
-    btn:SetAttributeNoHandler(
+    button:SetAttributeNoHandler(
         "UpdateShown",
         [[
         local cur = self:GetAttribute("showgrid") or 0
@@ -276,29 +276,29 @@ local function RegisterButtonWithController(btn)
     )
 
     -- Add to the secure button map
-    ActionButtonController:SetFrameRef("add", btn)
+    ActionButtonController:SetFrameRef("add", button)
     ActionButtonController:Execute([[
         local b = self:GetFrameRef("add")
         _eabBtnMap[b] = b:GetAttribute("action") or 0
     ]])
 
     -- Mark the button so we can detect it survived a /reload
-    btn:SetAttributeNoHandler("_eabControllerRegistered", true)
+    button:SetAttributeNoHandler("_eabControllerRegistered", true)
 
-    _controllerButtons[btn] = true
+    _controllerButtons[button] = true
 end
 
 -- Lua-side showgrid manipulation (out of combat only)
-local function SetShowGridInsecure(btn, show, reason, force)
+local function SetShowGridInsecure(button, show, reason, force)
     if InCombatLockdown() then
-        ns._eabApplyDeferred = true
+        mod._eabApplyDeferred = true
         return
     end
     if type(reason) ~= "number" then
         return
     end
 
-    local value = btn:GetAttribute("showgrid") or 0
+    local value = button:GetAttribute("showgrid") or 0
     local prevValue = value
 
     if show then
@@ -308,7 +308,7 @@ local function SetShowGridInsecure(btn, show, reason, force)
     end
 
     if (value ~= prevValue) or force then
-        btn:SetAttribute("showgrid", value)
+        button:SetAttribute("showgrid", value)
     end
 end
 
@@ -370,8 +370,8 @@ end
 
 -- Add a bar frame to the watch list. Deduped in the snippet: the secure list
 -- can never be pruned, so a re-registration would grow it and every sweep permanently.
-local function RegisterBarWithOverrideController(frame)
-    OverrideController:SetFrameRef("add", frame)
+local function RegisterBarWithOverrideController(widget)
+    OverrideController:SetFrameRef("add", widget)
     OverrideController:Execute([[
         local f = self:GetFrameRef("add")
         for i = 1, #_eabBarFrames do
@@ -381,13 +381,14 @@ local function RegisterBarWithOverrideController(frame)
     ]])
 
     -- Initialize state on the frame
-    frame:SetAttribute("state-overrideui", tonumber(OverrideController:GetAttribute("overrideui")) == 1)
-    frame:SetAttribute("state-petbattleui", tonumber(OverrideController:GetAttribute("petbattleui")) == 1)
-    frame:SetAttribute("state-overridepage", OverrideController:GetAttribute("overridepage") or 0)
+    widget:SetAttribute("state-overrideui", tonumber(OverrideController:GetAttribute("overrideui")) == 1)
+    widget:SetAttribute("state-petbattleui", tonumber(OverrideController:GetAttribute("petbattleui")) == 1)
+    widget:SetAttribute("state-overridepage", OverrideController:GetAttribute("overridepage") or 0)
 end
 
 -- Entry points the files after this one re-import by name.
-I.SHOWGRID, I.SetShowGridInsecure, I._controllerButtons = SHOWGRID, SetShowGridInsecure, _controllerButtons
-I.RegisterButtonWithController = RegisterButtonWithController
-I.RegisterBarWithOverrideController = RegisterBarWithOverrideController
-I.ActionButtonController, I.InitShowGridMonitor = ActionButtonController, InitShowGridMonitor
+Inner.SHOWGRID, Inner.SetShowGridInsecure, Inner._controllerButtons =
+    SHOWGRID, SetShowGridInsecure, _controllerButtons
+Inner.RegisterButtonWithController = RegisterButtonWithController
+Inner.RegisterBarWithOverrideController = RegisterBarWithOverrideController
+Inner.ActionButtonController, Inner.InitShowGridMonitor = ActionButtonController, InitShowGridMonitor

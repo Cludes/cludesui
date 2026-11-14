@@ -8,31 +8,31 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  gain/loss sounds and auto-add.
 --  Reads the earlier Tracking Bars files through ns and ns._buffBarInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._buffBarInternals
+local _, mod = ...
+local Inner = mod._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pcall = pcall
 
-local AddTrackedBuffBarCore, SetECME = I.AddTrackedBuffBarCore, I.SetECME
-local SetAssignDirty = I.SetAssignDirty
+local AddTrackedBuffBarCore, SetECME = Inner.AddTrackedBuffBarCore, Inner.SetECME
+local SetAssignDirty = Inner.SetAssignDirty
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-I.ecmeSetters[#I.ecmeSetters + 1] = function(v)
-    ECME = v
+Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val)
+    ECME = val
 end
 -- Assignment memo gate: cfg->frame pairing changes only on viewer pool composition
 -- edges (aura events, pool Acquire, rebuilds, spec/cache invalidation); the tick
 -- reuses the last pairing until dirtied. Starts dirty so the first tick always pairs.
 local _tbbAssignDirty = true
-I.assignDirtySetters[#I.assignDirtySetters + 1] = function(v)
-    _tbbAssignDirty = v
+Inner.assignDirtySetters[#Inner.assignDirtySetters + 1] = function(val)
+    _tbbAssignDirty = val
 end
 local _tbbAssignedFor
 
@@ -48,20 +48,20 @@ local _tbbAssignedFor
 -- ride the config into SavedVariables.
 local _tbbBaseCapturePending = {}
 
-local function MatchesSID(info, sid)
+local function MatchesSID(details, spellRef)
     -- cooldownInfo id fields can read SECRET in restricted content, and a
     -- secret on either side of == hard-errors: every compare is gated. sid is
     -- the caller's cfg-side id (plain by contract).
     local isSec = issecretvalue
-    if not (isSec and isSec(info.overrideSpellID)) and info.overrideSpellID == sid then
+    if not (isSec and isSec(details.overrideSpellID)) and details.overrideSpellID == spellRef then
         return true
     end
-    if not (isSec and isSec(info.spellID)) and info.spellID == sid then
+    if not (isSec and isSec(details.spellID)) and details.spellID == spellRef then
         return true
     end
-    if info.linkedSpellIDs then
-        for _, lid in ipairs(info.linkedSpellIDs) do
-            if not (isSec and isSec(lid)) and lid == sid then
+    if details.linkedSpellIDs then
+        for _, lid in ipairs(details.linkedSpellIDs) do
+            if not (isSec and isSec(lid)) and lid == spellRef then
                 return true
             end
         end
@@ -69,12 +69,12 @@ local function MatchesSID(info, sid)
     return false
 end
 
-local function MatchFrameToConfig(frame, cfg)
+local function MatchFrameToConfig(widget, conf)
     -- Cooldown-tracking bars are self-driven and never bind a viewer frame.
-    if cfg.trackType == "cooldown" then
+    if conf.trackType == "cooldown" then
         return false
     end
-    local cdID = frame.cooldownID
+    local cdID = widget.cooldownID
     if not cdID then
         return false
     end
@@ -82,8 +82,8 @@ local function MatchFrameToConfig(frame, cfg)
     if not gci then
         return false
     end
-    local info = gci(cdID)
-    if not info then
+    local details = gci(cdID)
+    if not details then
         return false
     end
     -- Self-healing base capture for hero-talent override spells. A bar saved
@@ -95,39 +95,39 @@ local function MatchFrameToConfig(frame, cfg)
     -- spell). Also backfills bars saved without a pick-time baseSpellID.
     local isSec = issecretvalue
     if
-        cfg.spellID
-        and cfg.spellID > 0
-        and not cfg.baseSpellID
-        and not (isSec and isSec(info.overrideSpellID))
-        and not (isSec and isSec(info.spellID))
-        and info.overrideSpellID == cfg.spellID
-        and info.spellID
-        and info.spellID > 0
-        and info.spellID ~= cfg.spellID
+        conf.spellID
+        and conf.spellID > 0
+        and not conf.baseSpellID
+        and not (isSec and isSec(details.overrideSpellID))
+        and not (isSec and isSec(details.spellID))
+        and details.overrideSpellID == conf.spellID
+        and details.spellID
+        and details.spellID > 0
+        and details.spellID ~= conf.spellID
     then
         -- Two matching reads on separate passes before committing: the write is
         -- permanent (SavedVariables), so a single transient echo from a frame
         -- mid-reuse must never corrupt the config's identity.
-        if _tbbBaseCapturePending[cfg] == info.spellID then
-            cfg.baseSpellID = info.spellID
-            _tbbBaseCapturePending[cfg] = nil
+        if _tbbBaseCapturePending[conf] == details.spellID then
+            conf.baseSpellID = details.spellID
+            _tbbBaseCapturePending[conf] = nil
         else
-            _tbbBaseCapturePending[cfg] = info.spellID
+            _tbbBaseCapturePending[conf] = details.spellID
         end
     end
     -- Fast path: match via cooldownInfo struct fields.
-    if cfg.spellIDs then
-        for _, sid in ipairs(cfg.spellIDs) do
-            if MatchesSID(info, sid) then
+    if conf.spellIDs then
+        for _, spellRef in ipairs(conf.spellIDs) do
+            if MatchesSID(details, spellRef) then
                 return true
             end
         end
-    elseif cfg.spellID and cfg.spellID > 0 then
-        if MatchesSID(info, cfg.spellID) then
+    elseif conf.spellID and conf.spellID > 0 then
+        if MatchesSID(details, conf.spellID) then
             return true
         end
         -- Talent-override fallback: a bar saved for the override form also tracks its base, so it keeps showing after the talent is removed.
-        if cfg.baseSpellID and cfg.baseSpellID > 0 and MatchesSID(info, cfg.baseSpellID) then
+        if conf.baseSpellID and conf.baseSpellID > 0 and MatchesSID(details, conf.baseSpellID) then
             return true
         end
     else
@@ -135,21 +135,21 @@ local function MatchFrameToConfig(frame, cfg)
     end
     -- Fallback: the frame's canonical spell ID. Buff bar frames expose the actual aura
     -- variant via GetAuraSpellID, which may not appear in the cooldownInfo struct (e.g. Eclipse Solar/Lunar).
-    local GetCanonical = ns.GetCanonicalSpellIDForFrame
+    local GetCanonical = mod.GetCanonicalSpellIDForFrame
     if GetCanonical then
-        local frameSID = GetCanonical(frame)
+        local frameSID = GetCanonical(widget)
         if frameSID then
-            if cfg.spellIDs then
-                for _, sid in ipairs(cfg.spellIDs) do
-                    if frameSID == sid then
+            if conf.spellIDs then
+                for _, spellRef in ipairs(conf.spellIDs) do
+                    if frameSID == spellRef then
                         return true
                     end
                 end
-            elseif cfg.spellID and cfg.spellID > 0 then
-                if frameSID == cfg.spellID then
+            elseif conf.spellID and conf.spellID > 0 then
+                if frameSID == conf.spellID then
                     return true
                 end
-                if cfg.baseSpellID and frameSID == cfg.baseSpellID then
+                if conf.baseSpellID and frameSID == conf.baseSpellID then
                     return true
                 end
             end
@@ -171,7 +171,7 @@ local _tbbStickyFrame = {}
 -- plain readable number in secret windows (the clean-sid cache keys on it).
 local _tbbStickyCdID = {}
 
-function ns.InvalidateTBBFrameCache()
+function mod.InvalidateTBBFrameCache()
     _findChildGeneration = _findChildGeneration + 1
     wipe(_findChildCache)
     wipe(_tbbStickyFrame)
@@ -181,30 +181,30 @@ function ns.InvalidateTBBFrameCache()
     SetAssignDirty(true)
 end
 
-local function FindChild(cfg)
+local function FindChild(conf)
     -- Fast path: cached result from a previous match (hit or miss).
-    local cached = _findChildCache[cfg]
+    local cached = _findChildCache[conf]
     if cached and cached.gen == _findChildGeneration then
         if cached.frame and cached.frame.cooldownID == cached.cdID then
             return cached.frame
         end
     end
     -- Full scan: iterate BuffBarCooldownViewer pool (TBB's own viewer).
-    local entry = { gen = _findChildGeneration, frame = nil, cdID = nil }
-    _findChildCache[cfg] = entry
+    local record = { gen = _findChildGeneration, frame = nil, cdID = nil }
+    _findChildCache[conf] = record
     local viewer = _G["BuffBarCooldownViewer"]
     if viewer and viewer.itemFramePool then
-        for frame in viewer.itemFramePool:EnumerateActive() do
-            if MatchFrameToConfig(frame, cfg) then
-                entry.frame = frame
-                entry.cdID = frame.cooldownID
-                return frame
+        for widget in viewer.itemFramePool:EnumerateActive() do
+            if MatchFrameToConfig(widget, conf) then
+                record.frame = widget
+                record.cdID = widget.cooldownID
+                return widget
             end
         end
     end
     return nil
 end
-ns.FindTBBChild = FindChild
+mod.FindTBBChild = FindChild
 
 -------------------------------------------------------------------------------
 --  AssignFramesToConfigs
@@ -235,42 +235,42 @@ local _tbbConsumed = {}
 local _tbbFrameSID = {} -- frame -> canonical spell id, computed once per call
 local _tbbFrameMember = {} -- frame -> live linked-family member, computed once per call
 
-local function CfgWantsSID(cfg, sid)
+local function CfgWantsSID(conf, spellRef)
     -- Cooldown-tracking bars NEVER match buff-viewer frames or buff coverage.
-    if cfg.trackType == "cooldown" then
+    if conf.trackType == "cooldown" then
         return false
     end
-    if not sid then
+    if not spellRef then
         return false
     end
     -- Tick paths feed raw aura/struct ids (icon, coverage): a secret survives
     -- the nil check and hard-errors on ==. Narrow matcher: secret = not
     -- provably ours.
-    if issecretvalue and issecretvalue(sid) then
+    if issecretvalue and issecretvalue(spellRef) then
         return false
     end
-    if cfg.spellIDs then
-        for _, s in ipairs(cfg.spellIDs) do
-            if s == sid then
+    if conf.spellIDs then
+        for _, s in ipairs(conf.spellIDs) do
+            if s == spellRef then
                 return true
             end
         end
         return false
     end
-    if cfg.spellID and cfg.spellID > 0 then
-        if sid == cfg.spellID then
+    if conf.spellID and conf.spellID > 0 then
+        if spellRef == conf.spellID then
             return true
         end
-        if cfg.baseSpellID and cfg.baseSpellID > 0 and sid == cfg.baseSpellID then
+        if conf.baseSpellID and conf.baseSpellID > 0 and spellRef == conf.baseSpellID then
             return true
         end
     end
     return false
 end
 
-local function FrameIsActive(frames, target)
-    for i = 1, #frames do
-        if frames[i] == target then
+local function FrameIsActive(frameList, targetUnit)
+    for i = 1, #frameList do
+        if frameList[i] == targetUnit then
             return true
         end
     end
@@ -288,9 +288,9 @@ local function TbbNameFamily(name)
     local i = name:find(":", 1, true)
     -- zhCN/zhTW labels separate variants with the fullwidth colon (U+FF1A;
     -- decimal byte escapes -- Lua 5.1 has no hex escapes).
-    local j = name:find("\239\188\154", 1, true)
-    if j and (not i or j < i) then
-        i = j
+    local jdx = name:find("\239\188\154", 1, true)
+    if jdx and (not i or jdx < i) then
+        i = jdx
     end
     local fam = i and name:sub(1, i - 1) or name
     fam = fam:gsub("^%s+", ""):gsub("%s+$", ""):lower()
@@ -303,17 +303,17 @@ end
 -- Live aura name family of a pool frame; nil when no clean aura read exists
 -- (secret in restricted content, no bound instance) -- callers fall back to
 -- first-match. Aura reads are the ONLY name source: never the frame's label.
-local function TbbFrameNameFamily(frame)
-    local iid = frame.auraInstanceID
+local function TbbFrameNameFamily(widget)
+    local iid = widget.auraInstanceID
     if not iid or (issecretvalue and issecretvalue(iid)) then
         return nil
     end
-    local unit = frame.auraDataUnit
-    if not unit then
+    local unitToken = widget.auraDataUnit
+    if not unitToken then
         return nil
     end
-    local ok, ad = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unit, iid)
-    if not ok or not ad then
+    local success, ad = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unitToken, iid)
+    if not success or not ad then
         return nil
     end
     local nm = ad.name
@@ -333,25 +333,25 @@ end
 -- memo keyed on cooldownID, which still names the member that was up at the last
 -- CLEAN read: the previous outcome keeps the frame and mirrors the new outcome's
 -- timer while the new outcome draws a second bar off the per-spell aura fallback.
-local function TbbLinkedMemberSID(frame)
-    local info = frame.cooldownInfo
-    if not info then
-        local fnGetInfo = frame.GetCooldownInfo
+local function TbbLinkedMemberSID(widget)
+    local details = widget.cooldownInfo
+    if not details then
+        local fnGetInfo = widget.GetCooldownInfo
         if type(fnGetInfo) ~= "function" then
             return nil
         end
-        info = fnGetInfo(frame)
+        details = fnGetInfo(widget)
     end
-    local linked = info and info.linkedSpellIDs
+    local linked = details and details.linkedSpellIDs
     if type(linked) ~= "table" or #linked < 2 then
         return nil
     end
     -- Set from the added aura's spellId, so it can be secret in restricted content.
-    local sid = info.linkedSpellID
-    if type(sid) ~= "number" or (issecretvalue and issecretvalue(sid)) then
+    local spellRef = details.linkedSpellID
+    if type(spellRef) ~= "number" or (issecretvalue and issecretvalue(spellRef)) then
         return nil
     end
-    return sid
+    return spellRef
 end
 
 -- Per-config name families for label/binding compatibility: cfg.name (the
@@ -361,29 +361,29 @@ end
 -- (same class as the deferred name fill).
 local _tbbCfgFamilies = setmetatable({}, { __mode = "k" })
 
-local function TbbCfgFamilies(cfg)
-    local e = _tbbCfgFamilies[cfg]
-    if e and not e.retry and e.nm == cfg.name and e.sid == cfg.spellID and e.bsid == cfg.baseSpellID then
+local function TbbCfgFamilies(conf)
+    local e = _tbbCfgFamilies[conf]
+    if e and not e.retry and e.nm == conf.name and e.sid == conf.spellID and e.bsid == conf.baseSpellID then
         return e
     end
     if not e then
         e = {}
-        _tbbCfgFamilies[cfg] = e
+        _tbbCfgFamilies[conf] = e
     end
-    e.nm, e.sid, e.bsid = cfg.name, cfg.spellID, cfg.baseSpellID
+    e.nm, e.sid, e.bsid = conf.name, conf.spellID, conf.baseSpellID
     e.retry = nil
-    e.f1 = TbbNameFamily(cfg.name)
+    e.f1 = TbbNameFamily(conf.name)
     e.f2, e.f3 = nil, nil
-    if cfg.spellID and cfg.spellID > 0 then
-        local si = C_Spell.GetSpellInfo(cfg.spellID)
+    if conf.spellID and conf.spellID > 0 then
+        local si = C_Spell.GetSpellInfo(conf.spellID)
         if si and si.name then
             e.f2 = TbbNameFamily(si.name)
         else
             e.retry = true
         end
     end
-    if cfg.baseSpellID and cfg.baseSpellID > 0 then
-        local si = C_Spell.GetSpellInfo(cfg.baseSpellID)
+    if conf.baseSpellID and conf.baseSpellID > 0 then
+        local si = C_Spell.GetSpellInfo(conf.baseSpellID)
         if si and si.name then
             e.f3 = TbbNameFamily(si.name)
         else
@@ -409,8 +409,8 @@ end
 -- fam vs ANY of the config's known families. openOnUnknown decides the
 -- verdict when either side is unknowable (the label gate fails OPEN to
 -- today's behavior; variant evidence fails CLOSED).
-local function TbbCfgFamilyMatch(cfg, fam, openOnUnknown)
-    local e = TbbCfgFamilies(cfg)
+local function TbbCfgFamilyMatch(conf, fam, openOnUnknown)
+    local e = TbbCfgFamilies(conf)
     local f1, f2, f3 = e.f1, e.f2, e.f3
     if fam == nil or not (f1 or f2 or f3) then
         return openOnUnknown
@@ -427,7 +427,7 @@ end
 -- persistently after re-acquire, so unproven slots never paint secret labels.
 local _tbbVariantSlot = {}
 
-local function TbbSlotVariantLabeled(bar, cdID)
+local function TbbSlotVariantLabeled(barFrame, cdID)
     if type(cdID) ~= "number" or (issecretvalue and issecretvalue(cdID)) then
         return false
     end
@@ -438,15 +438,15 @@ local function TbbSlotVariantLabeled(bar, cdID)
     -- In combat one indefinite probe is pinned per binding (secret linked ids
     -- would otherwise re-derive at 60Hz); out of combat retries until the
     -- verdict is definite (spell data load is the only wait).
-    if bar._varProbeCd == cdID and InCombatLockdown() then
-        return bar._varProbeVal or false
+    if barFrame._varProbeCd == cdID and InCombatLockdown() then
+        return barFrame._varProbeVal or false
     end
     local verdict, complete = false, false
     if C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-        local ok, info = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cdID)
-        if ok and info then
+        local success, details = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cdID)
+        if success and details then
             local isSec = issecretvalue
-            local lids = info.linkedSpellIDs
+            local lids = details.linkedSpellIDs
             if not lids or #lids == 0 then
                 -- No linked forms at all: definitively single-labeled.
                 _tbbVariantSlot[cdID] = false
@@ -454,7 +454,7 @@ local function TbbSlotVariantLabeled(bar, cdID)
             end
             complete = true
             local baseNm
-            local bsid = info.spellID
+            local bsid = details.spellID
             if bsid and not (isSec and isSec(bsid)) then
                 local si = C_Spell.GetSpellInfo(bsid)
                 local nm = si and si.name
@@ -497,7 +497,7 @@ local function TbbSlotVariantLabeled(bar, cdID)
     if verdict or complete then
         _tbbVariantSlot[cdID] = verdict
     else
-        bar._varProbeCd, bar._varProbeVal = cdID, verdict
+        barFrame._varProbeCd, barFrame._varProbeVal = cdID, verdict
     end
     return verdict
 end
@@ -508,28 +508,28 @@ end
 -- neighbor is the UNIQUE match (field 2026-08). A READABLE live aura name
 -- that is family-incompatible with the config rejects the candidate;
 -- secret/unreadable fails open so variant slots stay bindable in combat.
-local function TbbFuzzyNameOK(cfg, frame)
-    local fam = TbbFrameNameFamily(frame)
+local function TbbFuzzyNameOK(conf, widget)
+    local fam = TbbFrameNameFamily(widget)
     if not fam then
         return true
     end
-    return TbbCfgFamilyMatch(cfg, fam, true)
+    return TbbCfgFamilyMatch(conf, fam, true)
 end
 
-local function AssignFramesToConfigs(bars)
+local function AssignFramesToConfigs(barList)
     local assignment = _tbbAssignment
     -- Memo: pairing moves only on composition edges (player aura events, pool
     -- Acquire, cache invalidation, rebuilds -- all set the dirty flag), so the
     -- ~60Hz tick reuses the last map instead of re-enumerating the pool and
     -- re-resolving canonical ids every frame. Bars-table identity check is the
     -- belt for spec swaps that replace the table without hitting an invalidation site.
-    if not _tbbAssignDirty and _tbbAssignedFor == bars then
+    if not _tbbAssignDirty and _tbbAssignedFor == barList then
         return assignment
     end
     SetAssignDirty(false)
-    _tbbAssignedFor = bars
+    _tbbAssignedFor = barList
     wipe(assignment)
-    if not bars then
+    if not barList then
         return assignment
     end
 
@@ -542,16 +542,16 @@ local function AssignFramesToConfigs(bars)
     -- resolve each frame's canonical spell id ONCE -- otherwise the passes below
     -- re-query it O(configs x frames) per tick, each call pcalling live frame APIs.
     -- Caching also gives every pass a consistent within-tick view of frame identity.
-    local GetCanonical = ns.GetCanonicalSpellIDForFrame
-    local frames = _tbbFrameScratch
-    wipe(frames)
+    local GetCanonical = mod.GetCanonicalSpellIDForFrame
+    local frameList = _tbbFrameScratch
+    wipe(frameList)
     wipe(_tbbFrameSID)
     wipe(_tbbFrameMember)
-    for frame in viewer.itemFramePool:EnumerateActive() do
-        frames[#frames + 1] = frame
-        _tbbFrameSID[frame] = GetCanonical and GetCanonical(frame) or nil
-        if frame.IsActive and frame:IsActive() then
-            _tbbFrameMember[frame] = TbbLinkedMemberSID(frame)
+    for widget in viewer.itemFramePool:EnumerateActive() do
+        frameList[#frameList + 1] = widget
+        _tbbFrameSID[widget] = GetCanonical and GetCanonical(widget) or nil
+        if widget.IsActive and widget:IsActive() then
+            _tbbFrameMember[widget] = TbbLinkedMemberSID(widget)
         end
     end
 
@@ -564,11 +564,11 @@ local function AssignFramesToConfigs(bars)
     -- list the whole family (Eclipse Solar and Lunar, both up), so an added
     -- aura stamps the same member on BOTH and only their per-slot memos still
     -- tell them apart.
-    for i = 1, #frames do
-        local m = _tbbFrameMember[frames[i]]
+    for i = 1, #frameList do
+        local m = _tbbFrameMember[frameList[i]]
         if m then
             local wanted = false
-            for _, c in ipairs(bars) do
+            for _, c in ipairs(barList) do
                 if CfgWantsSID(c, m) then
                     wanted = true
                     break
@@ -576,15 +576,15 @@ local function AssignFramesToConfigs(bars)
             end
             local unique = wanted
             if unique then
-                for j = 1, #frames do
-                    if j ~= i and _tbbFrameMember[frames[j]] == m then
+                for jdx = 1, #frameList do
+                    if jdx ~= i and _tbbFrameMember[frameList[jdx]] == m then
                         unique = false
                         break
                     end
                 end
             end
             if unique then
-                _tbbFrameSID[frames[i]] = m
+                _tbbFrameSID[frameList[i]] = m
             end
         end
     end
@@ -593,23 +593,23 @@ local function AssignFramesToConfigs(bars)
     wipe(consumed)
 
     -- Pass 1: sticky.
-    for _, cfg in ipairs(bars) do
-        local bound = _tbbStickyFrame[cfg]
+    for _, conf in ipairs(barList) do
+        local bound = _tbbStickyFrame[conf]
         -- A bar converted to cooldown tracking must release its old viewer-frame binding
         -- immediately: the secret-trust branch below never calls CfgWantsSID, so otherwise it would keep consuming the frame.
-        if bound and cfg.trackType == "cooldown" then
-            _tbbStickyFrame[cfg] = nil
+        if bound and conf.trackType == "cooldown" then
+            _tbbStickyFrame[conf] = nil
             bound = nil
         end
-        if bound and not consumed[bound] and FrameIsActive(frames, bound) then
-            local sid = _tbbFrameSID[bound]
-            if sid then
+        if bound and not consumed[bound] and FrameIsActive(frameList, bound) then
+            local spellRef = _tbbFrameSID[bound]
+            if spellRef then
                 -- Clean read available: keep only if still the right variant AND
                 -- (collided slots) still the right name family -- a crossed
                 -- pairing must release here or pass 2 can never re-pair it.
-                local keep = CfgWantsSID(cfg, sid)
+                local keep = CfgWantsSID(conf, spellRef)
                 if keep then
-                    local want = TbbNameFamily(cfg.name)
+                    local want = TbbNameFamily(conf.name)
                     if want then
                         local fam = TbbFrameNameFamily(bound)
                         if fam and fam ~= want then
@@ -618,24 +618,24 @@ local function AssignFramesToConfigs(bars)
                     end
                 end
                 if keep then
-                    assignment[cfg] = bound
+                    assignment[conf] = bound
                     consumed[bound] = true
-                    _tbbStickyCdID[cfg] = bound.cooldownID
+                    _tbbStickyCdID[conf] = bound.cooldownID
                 else
-                    _tbbStickyFrame[cfg] = nil
-                    _tbbStickyCdID[cfg] = nil
+                    _tbbStickyFrame[conf] = nil
+                    _tbbStickyCdID[conf] = nil
                 end
-            elseif bound.cooldownID == _tbbStickyCdID[cfg] then
+            elseif bound.cooldownID == _tbbStickyCdID[conf] then
                 -- Secret/combat, but the frame still serves the cooldown slot it
                 -- was bound under: trust the binding locked in earlier.
-                assignment[cfg] = bound
+                assignment[conf] = bound
                 consumed[bound] = true
             else
                 -- Same frame object, different cooldown slot (pool reused it
                 -- mid-secret-window) -- a stale binding here is exactly the
                 -- wrong-name/wrong-icon report; drop it rather than guess.
-                _tbbStickyFrame[cfg] = nil
-                _tbbStickyCdID[cfg] = nil
+                _tbbStickyFrame[conf] = nil
+                _tbbStickyCdID[conf] = nil
             end
         end
     end
@@ -649,37 +649,37 @@ local function AssignFramesToConfigs(bars)
     -- display name and the two slots' aura names differ by prefix, so among
     -- sid-matching frames the one whose live aura name shares the config
     -- name's prefix wins; unique matches take the fast path unchanged.
-    for _, cfg in ipairs(bars) do
-        if not assignment[cfg] then
+    for _, conf in ipairs(barList) do
+        if not assignment[conf] then
             local pick
-            local want = TbbNameFamily(cfg.name)
-            for i = 1, #frames do
-                local frame = frames[i]
-                if not consumed[frame] then
-                    local sid = _tbbFrameSID[frame]
-                    if sid and CfgWantsSID(cfg, sid) then
+            local want = TbbNameFamily(conf.name)
+            for i = 1, #frameList do
+                local widget = frameList[i]
+                if not consumed[widget] then
+                    local spellRef = _tbbFrameSID[widget]
+                    if spellRef and CfgWantsSID(conf, spellRef) then
                         if not want then
-                            pick = frame
+                            pick = widget
                             break
                         end
-                        local fam = TbbFrameNameFamily(frame)
+                        local fam = TbbFrameNameFamily(widget)
                         if fam == want then
-                            pick = frame
+                            pick = widget
                             break
                         end
                         -- Family unreadable/other: remember the first, keep looking
                         -- for a frame that actually names this config's family.
                         if not pick then
-                            pick = frame
+                            pick = widget
                         end
                     end
                 end
             end
             if pick then
-                assignment[cfg] = pick
+                assignment[conf] = pick
                 consumed[pick] = true
-                _tbbStickyFrame[cfg] = pick
-                _tbbStickyCdID[cfg] = pick.cooldownID
+                _tbbStickyFrame[conf] = pick
+                _tbbStickyCdID[conf] = pick.cooldownID
             end
         end
     end
@@ -689,19 +689,23 @@ local function AssignFramesToConfigs(bars)
     -- when the match is unique BOTH ways (one frame fits this cfg, and no other
     -- unassigned cfg fits that frame) -- shared linkedSpellIDs data makes fuzzy
     -- matches ambiguous, and a guessed pairing is worse than a blank bar.
-    for _, cfg in ipairs(bars) do
-        if not assignment[cfg] then
+    for _, conf in ipairs(barList) do
+        if not assignment[conf] then
             local candidate, matches = nil, 0
-            for i = 1, #frames do
-                local frame = frames[i]
-                if not consumed[frame] and MatchFrameToConfig(frame, cfg) and TbbFuzzyNameOK(cfg, frame) then
+            for i = 1, #frameList do
+                local widget = frameList[i]
+                if
+                    not consumed[widget]
+                    and MatchFrameToConfig(widget, conf)
+                    and TbbFuzzyNameOK(conf, widget)
+                then
                     matches = matches + 1
-                    candidate = frame
+                    candidate = widget
                 end
             end
             if matches == 1 then
                 local cfgMatches = 0
-                for _, other in ipairs(bars) do
+                for _, other in ipairs(barList) do
                     if
                         not assignment[other]
                         and MatchFrameToConfig(candidate, other)
@@ -711,7 +715,7 @@ local function AssignFramesToConfigs(bars)
                     end
                 end
                 if cfgMatches == 1 then
-                    assignment[cfg] = candidate
+                    assignment[conf] = candidate
                     consumed[candidate] = true
                 end
             end
@@ -720,7 +724,7 @@ local function AssignFramesToConfigs(bars)
 
     return assignment
 end
-ns.AssignTBBFramesToConfigs = AssignFramesToConfigs
+mod.AssignTBBFramesToConfigs = AssignFramesToConfigs
 
 -------------------------------------------------------------------------------
 --  Audio on Buff Gain / Loss for Tracking Bars
@@ -745,53 +749,53 @@ ns.AssignTBBFramesToConfigs = AssignFramesToConfigs
 -- Returns the key; false when the owning bar has a sound on its other edge
 -- only (this edge is its own silence, so no Buffs bar sound may stand in);
 -- nil when no bar has a say.
-function ns.FindTBBSoundKey(frame, sid, field)
+function mod.FindTBBSoundKey(widget, spellRef, field)
     if not (ECME and ECME.db) then
-        SetECME(ns.ECME)
+        SetECME(mod.ECME)
     end
     local p = ECME and ECME.db and ECME.db.profile
     if not p or (p.cdmBars and p.cdmBars.useBlizzardBuffBars) then
         return nil
     end
-    local tbb = ns.GetTrackedBuffBars()
-    local bars = tbb and tbb.bars
-    if not bars then
+    local tbb = mod.GetTrackedBuffBars()
+    local barList = tbb and tbb.bars
+    if not barList then
         return nil
     end
-    local cfg
-    if frame and _tbbAssignedFor == bars then
+    local conf
+    if widget and _tbbAssignedFor == barList then
         for c, f in pairs(_tbbAssignment) do
-            if f == frame then
+            if f == widget then
                 if c.enabled ~= false and not c.popularKey and c.trackType ~= "cooldown" then
                     local sc = _tbbStickyCdID[c]
                     if
-                        (sc ~= nil and frame.cooldownID == sc)
-                        or CfgWantsSID(c, sid)
-                        or MatchFrameToConfig(frame, c)
+                        (sc ~= nil and widget.cooldownID == sc)
+                        or CfgWantsSID(c, spellRef)
+                        or MatchFrameToConfig(widget, c)
                     then
-                        cfg = c
+                        conf = c
                     end
                 end
                 break
             end
         end
     end
-    if not cfg then
-        for _, c in ipairs(bars) do
-            if c.enabled ~= false and not c.popularKey and CfgWantsSID(c, sid) then
-                cfg = c
+    if not conf then
+        for _, c in ipairs(barList) do
+            if c.enabled ~= false and not c.popularKey and CfgWantsSID(c, spellRef) then
+                conf = c
                 break
             end
         end
     end
-    if not cfg then
+    if not conf then
         return nil
     end
-    local key = cfg[field]
+    local key = conf[field]
     if key and key ~= "none" then
         return key
     end
-    local g, l = cfg.buffActiveSoundKey, cfg.buffLostSoundKey
+    local g, l = conf.buffActiveSoundKey, conf.buffLostSoundKey
     if (g and g ~= "none") or (l and l ~= "none") then
         return false
     end
@@ -800,8 +804,8 @@ end
 
 -- Any tracking bar in any spec of this profile with a gain or loss sound
 -- (feeds ns.RescanBuffSoundFlag). Cooldown-tracking bars never cue.
-function ns.TBBAnyBuffSound()
-    local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
+function mod.TBBAnyBuffSound()
+    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     if not sp then
         return false
     end
@@ -825,31 +829,31 @@ end
 -- finding one): flips both gates live and hooks the buff viewer frames already
 -- out of their pools, since pool Acquire only hooks while the gate is on. Both
 -- viewers: a bar's spell can live in either one.
-function ns.EnsureTBBSoundHooks()
-    ns._cdmAnyBuffSound = true
-    ns._tbbAnyBuffSound = true
-    local hook = ns.EnsureBuffSoundHook
+function mod.EnsureTBBSoundHooks()
+    mod._cdmAnyBuffSound = true
+    mod._tbbAnyBuffSound = true
+    local hook = mod.EnsureBuffSoundHook
     if not hook then
         return
     end
     local viewer = _G.BuffBarCooldownViewer
     local pool = viewer and viewer.itemFramePool
     if pool then
-        for frame in pool:EnumerateActive() do
-            hook(frame)
+        for widget in pool:EnumerateActive() do
+            hook(widget)
         end
     end
     viewer = _G.BuffIconCooldownViewer
     pool = viewer and viewer.itemFramePool
     if pool then
-        for frame in pool:EnumerateActive() do
-            hook(frame)
+        for widget in pool:EnumerateActive() do
+            hook(widget)
         end
     end
 end
 
 -- [popularKey] = GetTime() a latched preset window ends at (loss still to cue).
-ns._tbbPresetLoss = {}
+mod._tbbPresetLoss = {}
 
 -- Self-timed preset edge. The gain comes from the event that (re)starts the
 -- window (Sated rise, Time Spiral glow, potion cast), so a refresh cues again,
@@ -859,35 +863,35 @@ ns._tbbPresetLoss = {}
 -- Time Spiral cues from its glow hide, which clears the latch. One cue per
 -- edge: the throttle id is per preset, so with two bars of one preset only
 -- the first bar with a sound plays.
-function ns.TBBPresetSoundEdge(popularKey, gainEdge, expiry)
-    if not ns._tbbAnyBuffSound or not popularKey then
+function mod.TBBPresetSoundEdge(popularKey, gainEdge, expiry)
+    if not mod._tbbAnyBuffSound or not popularKey then
         return
     end
-    local latch = ns._tbbPresetLoss
+    local latch = mod._tbbPresetLoss
     -- Clear only a present entry: the tick calls in here while walking the latch table.
     if latch[popularKey] then
         latch[popularKey] = nil
     end
     if not (ECME and ECME.db) then
-        SetECME(ns.ECME)
+        SetECME(mod.ECME)
     end
     local p = ECME and ECME.db and ECME.db.profile
     if not p or (p.cdmBars and p.cdmBars.useBlizzardBuffBars) then
         return
     end
-    local tbb = ns.GetTrackedBuffBars()
-    local bars = tbb and tbb.bars
-    if not bars then
+    local tbb = mod.GetTrackedBuffBars()
+    local barList = tbb and tbb.bars
+    if not barList then
         return
     end
     local field = gainEdge and "buffActiveSoundKey" or "buffLostSoundKey"
-    for _, cfg in ipairs(bars) do
-        if cfg.enabled ~= false and cfg.popularKey == popularKey and cfg.trackType ~= "cooldown" then
-            local key = cfg[field]
+    for _, conf in ipairs(barList) do
+        if conf.enabled ~= false and conf.popularKey == popularKey and conf.trackType ~= "cooldown" then
+            local key = conf[field]
             if key and key ~= "none" then
-                ns.PlayBuffSoundEdge(key, "tbb:" .. popularKey, gainEdge)
+                mod.PlayBuffSoundEdge(key, "tbb:" .. popularKey, gainEdge)
             end
-            local lost = cfg.buffLostSoundKey
+            local lost = conf.buffLostSoundKey
             if gainEdge and expiry and lost and lost ~= "none" then
                 latch[popularKey] = expiry
             end
@@ -897,8 +901,8 @@ end
 
 --- Frame-based check: is a spellID present in BuffBarCooldownViewer? Iterates the tiny pool
 --- (~3-5 frames), matching via MatchesSID across all fields (overrideSpellID, spellID, linkedSpellIDs).
-function ns.IsSpellInBuffBarViewer(spellID)
-    if not spellID or spellID <= 0 then
+function mod.IsSpellInBuffBarViewer(spellId)
+    if not spellId or spellId <= 0 then
         return false
     end
     local viewer = _G["BuffBarCooldownViewer"]
@@ -909,18 +913,18 @@ function ns.IsSpellInBuffBarViewer(spellID)
     if not gci then
         return false
     end
-    local GetCanonical = ns.GetCanonicalSpellIDForFrame
-    for frame in viewer.itemFramePool:EnumerateActive() do
-        local cdID = frame.cooldownID
+    local GetCanonical = mod.GetCanonicalSpellIDForFrame
+    for widget in viewer.itemFramePool:EnumerateActive() do
+        local cdID = widget.cooldownID
         if cdID then
-            local info = gci(cdID)
-            if info and MatchesSID(info, spellID) then
+            local details = gci(cdID)
+            if details and MatchesSID(details, spellId) then
                 return true
             end
             -- Fallback: check frame's canonical spell ID (aura variants).
             if GetCanonical then
-                local frameSID = GetCanonical(frame)
-                if frameSID == spellID then
+                local frameSID = GetCanonical(widget)
+                if frameSID == spellId then
                     return true
                 end
             end
@@ -932,18 +936,18 @@ end
 --- Enumerate all spells in BuffBarCooldownViewer ("Tracked Bars") as {spellID, cdID, name,
 --- icon} sorted by layoutIndex then name. Source of truth for the TBB spell picker: TBB IS
 --- our display of these bars, so the picker enumerates THIS pool, never the Tracked Buffs icon viewer.
-function ns.GetTrackedBarSpells(includeUntalented)
+function mod.GetTrackedBarSpells(includeUntalented)
     local result = {}
-    local GetCanonical = ns.GetCanonicalSpellIDForFrame
+    local GetCanonical = mod.GetCanonicalSpellIDForFrame
     local seen = {}
 
     -- Display name plus subtext (e.g. "Solar", "Lunar") to disambiguate spells sharing a base name like Eclipse.
-    local function ResolveName(sid)
-        local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid)
+    local function ResolveName(spellRef)
+        local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRef)
         if name and C_Spell.GetSpellSubtext then
-            local sub = C_Spell.GetSpellSubtext(sid)
-            if sub and sub ~= "" then
-                name = name .. " (" .. sub .. ")"
+            local subFrame = C_Spell.GetSpellSubtext(spellRef)
+            if subFrame and subFrame ~= "" then
+                name = name .. " (" .. subFrame .. ")"
             end
         end
         return name
@@ -951,18 +955,18 @@ function ns.GetTrackedBarSpells(includeUntalented)
 
     local viewer = _G["BuffBarCooldownViewer"]
     if viewer and viewer.itemFramePool then
-        for frame in viewer.itemFramePool:EnumerateActive() do
-            if frame:IsShown() or frame.cooldownInfo then
-                local sid = GetCanonical and GetCanonical(frame)
-                if sid and sid > 0 and not seen[sid] then
-                    seen[sid] = true
-                    local icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(sid)
+        for widget in viewer.itemFramePool:EnumerateActive() do
+            if widget:IsShown() or widget.cooldownInfo then
+                local spellRef = GetCanonical and GetCanonical(widget)
+                if spellRef and spellRef > 0 and not seen[spellRef] then
+                    seen[spellRef] = true
+                    local glyph = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
                     result[#result + 1] = {
-                        spellID = sid,
-                        cdID = frame.cooldownID,
-                        name = ResolveName(sid) or ("Spell " .. sid),
-                        icon = icon,
-                        layoutIndex = frame.layoutIndex or 0,
+                        spellID = spellRef,
+                        cdID = widget.cooldownID,
+                        name = ResolveName(spellRef) or ("Spell " .. spellRef),
+                        icon = glyph,
+                        layoutIndex = widget.layoutIndex or 0,
                         -- Live pool members are always learned; catalog entries appended below may not be.
                         isKnown = true,
                     }
@@ -975,10 +979,10 @@ function ns.GetTrackedBarSpells(includeUntalented)
     -- settings catalog (TrackedBar category). Picker-only (includeUntalented); auto-add and
     -- section checks stay live-only. Provider down/names missing -> nothing appended. Dedup
     -- by canonical sid, same as the live-pool dedup above.
-    if includeUntalented and ns.EnumerateCDMSettingsCatalog then
+    if includeUntalented and mod.EnumerateCDMSettingsCatalog then
         local evc = Enum and Enum.CooldownViewerCategory
         local barCat = evc and (evc.TrackedBar or 3)
-        local catalog = barCat and ns.EnumerateCDMSettingsCatalog({ [barCat] = true })
+        local catalog = barCat and mod.EnumerateCDMSettingsCatalog({ [barCat] = true })
         if catalog then
             local extra = 0
             for _, ce in ipairs(catalog) do
@@ -987,13 +991,13 @@ function ns.GetTrackedBarSpells(includeUntalented)
                     local nm = ResolveName(ce.sid)
                     if nm then
                         local known = (IsPlayerSpell and IsPlayerSpell(ce.sid)) and true or false
-                        local icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ce.sid)
+                        local glyph = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ce.sid)
                         extra = extra + 1
                         result[#result + 1] = {
                             spellID = ce.sid,
                             cdID = ce.cdID,
                             name = nm,
-                            icon = icon,
+                            icon = glyph,
                             -- No live frame -> no layoutIndex; sort after live entries, keeping catalog order among themselves.
                             layoutIndex = 100000 + extra,
                             isKnown = known,
@@ -1020,28 +1024,28 @@ end
 --  tracked spell. Deleted bars stay deleted -- their spells remain in the
 --  tbb.autoSeen ledger; only the populate-on-enable pass ignores it ("give me everything").
 -------------------------------------------------------------------------------
-local function SpellCoveredByBars(bars, sp)
+local function SpellCoveredByBars(barList, sp)
     -- Variant/override coverage: a bar saved for one form covers the whole linked set
     -- (base/override/aura variants share a cooldownInfo), so an Eclipse Solar bar is not
     -- duplicated when Lunar's frame appears under a talent-swapped id.
-    local info
+    local details
     if sp.cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-        info = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
+        details = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
     end
-    for _, cfg in ipairs(bars) do
-        if CfgWantsSID(cfg, sp.spellID) then
+    for _, conf in ipairs(barList) do
+        if CfgWantsSID(conf, sp.spellID) then
             return true
         end
-        if info then
-            if CfgWantsSID(cfg, info.spellID) then
+        if details then
+            if CfgWantsSID(conf, details.spellID) then
                 return true
             end
-            if CfgWantsSID(cfg, info.overrideSpellID) then
+            if CfgWantsSID(conf, details.overrideSpellID) then
                 return true
             end
-            if info.linkedSpellIDs then
-                for _, lid in ipairs(info.linkedSpellIDs) do
-                    if CfgWantsSID(cfg, lid) then
+            if details.linkedSpellIDs then
+                for _, lid in ipairs(details.linkedSpellIDs) do
+                    if CfgWantsSID(conf, lid) then
                         return true
                     end
                 end
@@ -1054,7 +1058,7 @@ end
 -- Shared guards for both auto-add passes. Returns the tbb table, or nil when the pass must not run right now.
 local function AutoAddReady()
     if not (ECME and ECME.db) then
-        SetECME(ns.ECME)
+        SetECME(mod.ECME)
     end
     if not (ECME and ECME.db) then
         return nil
@@ -1066,13 +1070,13 @@ local function AutoAddReady()
     if InCombatLockdown() then
         return nil
     end
-    return ns.GetTrackedBuffBars()
+    return mod.GetTrackedBuffBars()
 end
 
 -- Worker: create a bar in `gid` for every tracked spell not covered by an existing bar.
 -- `ignoreSeen` = full populate (enable pass); otherwise only never-seen spells count, so deleted bars stay deleted.
-local function AutoAddTrackedToGroup(tbb, gid, ignoreSeen)
-    local tracked = ns.GetTrackedBarSpells and ns.GetTrackedBarSpells() or {}
+local function AutoAddTrackedToGroup(tbb, groupId, ignoreSeen)
+    local tracked = mod.GetTrackedBarSpells and mod.GetTrackedBarSpells() or {}
     -- An empty list also means "viewer not populated yet" (login order): nothing to act on either way.
     if #tracked == 0 then
         return 0
@@ -1081,10 +1085,10 @@ local function AutoAddTrackedToGroup(tbb, gid, ignoreSeen)
     -- acting on a partial list could later mis-read a long-tracked spell as "new".
     do
         local viewer = _G["BuffBarCooldownViewer"]
-        local GetCanonical = ns.GetCanonicalSpellIDForFrame
+        local GetCanonical = mod.GetCanonicalSpellIDForFrame
         if viewer and viewer.itemFramePool and GetCanonical then
-            for frame in viewer.itemFramePool:EnumerateActive() do
-                if (frame:IsShown() or frame.cooldownInfo) and not GetCanonical(frame) then
+            for widget in viewer.itemFramePool:EnumerateActive() do
+                if (widget:IsShown() or widget.cooldownInfo) and not GetCanonical(widget) then
                     return 0
                 end
             end
@@ -1096,15 +1100,20 @@ local function AutoAddTrackedToGroup(tbb, gid, ignoreSeen)
         if ignoreSeen or not tbb.autoSeen[sp.spellID] then
             tbb.autoSeen[sp.spellID] = true
             if not SpellCoveredByBars(tbb.bars, sp) then
-                local idx = AddTrackedBuffBarCore(tbb, gid)
-                local nb = tbb.bars[idx]
+                local position = AddTrackedBuffBarCore(tbb, groupId)
+                local nb = tbb.bars[position]
                 nb.spellID = sp.spellID
                 nb.name = sp.name
                 -- Base-form capture for talent-override spells (same as the picker): keeps the bar matching once the talent is removed.
                 if sp.cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-                    local info = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
-                    if info and info.spellID and info.spellID > 0 and info.spellID ~= sp.spellID then
-                        nb.baseSpellID = info.spellID
+                    local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
+                    if
+                        details
+                        and details.spellID
+                        and details.spellID > 0
+                        and details.spellID ~= sp.spellID
+                    then
+                        nb.baseSpellID = details.spellID
                     end
                 end
                 added = added + 1
@@ -1116,35 +1125,35 @@ end
 
 -- Incremental pass: bars for spells newly appearing in the Tracked Bars section, routed to
 -- the flagged group. Returns bars added (configs only; callers rebuild); no-op unless a group opted in.
-function ns.EnsureTBBAutoBars()
+function mod.EnsureTBBAutoBars()
     local tbb = AutoAddReady()
     if not tbb then
         return 0
     end
-    local gid = ns.TBBAutoAddGroupID()
-    if not gid then
+    local groupId = mod.TBBAutoAddGroupID()
+    if not groupId then
         return 0
     end
-    return AutoAddTrackedToGroup(tbb, gid, false)
+    return AutoAddTrackedToGroup(tbb, groupId, false)
 end
 
 -- Full populate for the moment "Auto-Add New to This Group" is switched ON: one bar per tracked spell not already covered somewhere, ledger ignored.
-function ns.PopulateTBBAutoAddGroup(gid)
-    if not gid or gid == 0 then
+function mod.PopulateTBBAutoAddGroup(groupId)
+    if not groupId or groupId == 0 then
         return 0
     end
     local tbb = AutoAddReady()
     if not tbb then
         return 0
     end
-    return AutoAddTrackedToGroup(tbb, gid, true)
+    return AutoAddTrackedToGroup(tbb, groupId, true)
 end
 
 -- Debounced entry point for the buff-bar viewer pool hooks: a spell dragged into Blizzard's
 -- Tracked Bars section acquires a new pool frame and lands here. Combat acquires are skipped
 -- (tracked-set edits happen out of combat; mid-fight acquires are just known auras activating).
 local _tbbAutoAddQueued = false
-function ns.QueueTBBAutoAdd()
+function mod.QueueTBBAutoAdd()
     if _tbbAutoAddQueued then
         return
     end
@@ -1154,17 +1163,17 @@ function ns.QueueTBBAutoAdd()
     _tbbAutoAddQueued = true
     C_Timer.After(1.0, function()
         _tbbAutoAddQueued = false
-        if ns.EnsureTBBAutoBars() > 0 then
-            ns.BuildTrackedBuffBars()
-            if ns.OnTBBBarsAutoAdded then
-                ns.OnTBBBarsAutoAdded()
+        if mod.EnsureTBBAutoBars() > 0 then
+            mod.BuildTrackedBuffBars()
+            if mod.OnTBBBarsAutoAdded then
+                mod.OnTBBBarsAutoAdded()
             end
         end
     end)
 end
 
-I._tbbAssignment, I._tbbStickyCdID = _tbbAssignment, _tbbStickyCdID
-I.AssignFramesToConfigs, I.CfgWantsSID = AssignFramesToConfigs, CfgWantsSID
-I.MatchesSID, I.TbbCfgFamilyMatch = MatchesSID, TbbCfgFamilyMatch
-I.TbbNameFamily, I.TbbSlotVariantLabeled = TbbNameFamily, TbbSlotVariantLabeled
-I.broken = false
+Inner._tbbAssignment, Inner._tbbStickyCdID = _tbbAssignment, _tbbStickyCdID
+Inner.AssignFramesToConfigs, Inner.CfgWantsSID = AssignFramesToConfigs, CfgWantsSID
+Inner.MatchesSID, Inner.TbbCfgFamilyMatch = MatchesSID, TbbCfgFamilyMatch
+Inner.TbbNameFamily, Inner.TbbSlotVariantLabeled = TbbNameFamily, TbbSlotVariantLabeled
+Inner.broken = false

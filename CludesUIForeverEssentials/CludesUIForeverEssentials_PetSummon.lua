@@ -36,16 +36,16 @@ local IsEnabled = F.Enabled
 
 -- This character's settings; nil until written, unless create.
 local function CharCfg(create)
-    local cfg = create and F.Cfg() or F.Read()
-    local guid = UnitGUID("player")
-    if not guid then
+    local conf = create and F.Cfg() or F.Read()
+    local unitGuid = UnitGUID("player")
+    if not unitGuid then
         return nil
     end
     if create then
-        cfg.chars = cfg.chars or {}
-        cfg.chars[guid] = cfg.chars[guid] or {}
+        conf.chars = conf.chars or {}
+        conf.chars[unitGuid] = conf.chars[unitGuid] or {}
     end
-    return cfg.chars and cfg.chars[guid]
+    return conf.chars and conf.chars[unitGuid]
 end
 
 local function OwnOn()
@@ -66,17 +66,17 @@ end
 
 -- This character's favorites that can be summoned (empty: use the account's).
 local function OwnFavorites()
-    local list = {}
+    local entries = {}
     local c = CharCfg()
     if not (c and c.own and c.favorites) then
-        return list
+        return entries
     end
     for petGUID in pairs(c.favorites) do
         if C_PetJournal.PetIsSummonable(petGUID) then
-            list[#list + 1] = petGUID
+            entries[#entries + 1] = petGUID
         end
     end
-    return list
+    return entries
 end
 
 local ev = CreateFrame("Frame")
@@ -107,8 +107,8 @@ local function CanSummonNow()
     then
         return false
     end
-    local _, kind = IsInInstance()
-    return kind ~= "party" and kind ~= "raid" and kind ~= "pvp" and kind ~= "arena"
+    local _, kindOf = IsInInstance()
+    return kindOf ~= "party" and kindOf ~= "raid" and kindOf ~= "pvp" and kindOf ~= "arena"
 end
 
 local Queue
@@ -161,22 +161,22 @@ local EVENTS = {
     "PLAYER_MOUNT_DISPLAY_CHANGED",
 }
 
-ev:SetScript("OnEvent", function(_, event, arg1)
-    if event == "COMPANION_UPDATE" then
+ev:SetScript("OnEvent", function(_, evt, arg1)
+    if evt == "COMPANION_UPDATE" then
         if arg1 == "MOUNT" then
             return
         end
         -- Also fires for other players' pets: only ours is read.
-        local guid = C_PetJournal.GetSummonedPetGUID()
-        current = guid
-        if guid then
+        local unitGuid = C_PetJournal.GetSummonedPetGUID()
+        current = unitGuid
+        if unitGuid then
             SetDismissed(false)
         end
         return
-    elseif event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+    elseif evt == "UNIT_SPELLCAST_STOP" or evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
         ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
         ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-    elseif event == "UNIT_EXITED_VEHICLE" and arg1 ~= "player" then
+    elseif evt == "UNIT_EXITED_VEHICLE" and arg1 ~= "player" then
         return
     end
     if not userDismissed then
@@ -190,8 +190,8 @@ end)
 local function OnDismiss()
     SetDismissed(true)
 end
-local function OnSummonByGUID(guid)
-    if guid and guid == current then
+local function OnSummonByGUID(unitGuid)
+    if unitGuid and unitGuid == current then
         SetDismissed(true)
     end
 end
@@ -206,12 +206,12 @@ end
 -- The blue star on a list button, beside the journal's own; kept in a weak
 -- table, nothing is stored on the journal's buttons.
 local stars = setmetatable({}, { __mode = "k" })
-local function MarkListButton(button)
-    local drag = button and button.dragButton
+local function MarkListButton(btnFrame)
+    local drag = btnFrame and btnFrame.dragButton
     if not drag then
         return
     end
-    local on = ShowsOwn() and IsOwnFavorite(button.petID)
+    local on = ShowsOwn() and IsOwnFavorite(btnFrame.petID)
     local star = stars[drag]
     if on and not star then
         star = drag:CreateTexture(nil, "OVERLAY", nil, 2)
@@ -237,9 +237,12 @@ end
 -- A pet's right-click menu. The owner is its list button or the pet card,
 -- whose petID is the owned pet's GUID, or the list button's icon, whose
 -- parent holds it (PetJournal_ShowPetDropdown; the menu passes no context).
-local function AddMenuEntry(owner, root)
-    local petGUID = owner
-        and (owner.petID or (owner.GetParent and owner:GetParent() and owner:GetParent().petID))
+local function AddMenuEntry(ownerFrame, root)
+    local petGUID = ownerFrame
+        and (
+            ownerFrame.petID
+            or (ownerFrame.GetParent and ownerFrame:GetParent() and ownerFrame:GetParent().petID)
+        )
     if not (petGUID and ShowsOwn()) then
         return
     end
@@ -292,11 +295,11 @@ local function ApplyPetSummon(fresh)
     end
     RefreshJournal()
     local on = IsEnabled()
-    for i = 1, #EVENTS do
+    for idx = 1, #EVENTS do
         if on then
-            ev:RegisterEvent(EVENTS[i])
+            ev:RegisterEvent(EVENTS[idx])
         else
-            ev:UnregisterEvent(EVENTS[i])
+            ev:UnregisterEvent(EVENTS[idx])
         end
     end
     if not on then

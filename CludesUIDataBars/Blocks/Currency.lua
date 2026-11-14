@@ -4,36 +4,36 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Currency.lua
 -- Currency block factory.
 
-local ADDON_NAME, ns = ...
-local L = ns.L
-local K = ns.BlockKit
+local ADDON_NAME, mod = ...
+local L = mod.L
+local Keys = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
 local floor = math.floor
-local max = math.max
+local upper = math.max
 local min = math.min
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
+local ICON_GAP = Keys.ICON_GAP
+local CONTENT_BASE = Keys.CONTENT_BASE
+local InstKey = Keys.InstKey
+local MakeEventFrame = Keys.MakeEventFrame
+local RegisterInstEvents = Keys.RegisterInstEvents
+local UnregisterInstEvents = Keys.UnregisterInstEvents
+local HBudget = Keys.HBudget
+local VSlotW = Keys.VSlotW
+local MaybeRelayout = Keys.MaybeRelayout
+local AttachTextOffset = Keys.AttachTextOffset
+local BlockColorOf = Keys.BlockColorOf
+local IconColorOf = Keys.IconColorOf
 
 -------------------------------------------------------------------------------
 --  CURRENCY (searchable-picker driven; icon + amount + owned tooltip)
 -------------------------------------------------------------------------------
-ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
-    local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
-    inst.events = { "CURRENCY_DISPLAY_UPDATE" }
+mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+    instance.key = InstKey(barCtx, blockCfg)
+    instance.events = { "CURRENCY_DISPLAY_UPDATE" }
 
     local mouseOver = false
     local _curFitBuf = { "" }
@@ -45,14 +45,14 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
         return barCtx.cfg
     end
 
-    local button = CreateFrame("Button", nil, content)
-    button:SetAllPoints()
-    button:EnableMouse(true)
-    button:RegisterForClicks("AnyUp")
+    local btnFrame = CreateFrame("Button", nil, contentFrame)
+    btnFrame:SetAllPoints()
+    btnFrame:EnableMouse(true)
+    btnFrame:RegisterForClicks("AnyUp")
 
-    local icon = button:CreateTexture(nil, "OVERLAY")
-    local amountText = button:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(inst, amountText)
+    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local amountText = btnFrame:CreateFontString(nil, "OVERLAY")
+    AttachTextOffset(instance, amountText)
 
     local function GetInfo()
         local s = D()
@@ -62,161 +62,161 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
         if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
             return nil
         end
-        local info = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
-        if info and info.discovered ~= false then
-            return info
+        local details = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
+        if details and details.discovered ~= false then
+            return details
         end
         return nil
     end
 
-    local function Num(v)
+    local function Num(val)
         if BreakUpLargeNumbers then
-            return BreakUpLargeNumbers(v or 0)
+            return BreakUpLargeNumbers(val or 0)
         end
-        return tostring(v or 0)
+        return tostring(val or 0)
     end
 
-    function inst:Refresh()
+    function instance:Refresh()
         local s = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local gap = ICON_GAP
 
-        local info = GetInfo()
-        local text
+        local details = GetInfo()
+        local textValue
         if not s.currencyId then
             -- Bar text goes straight through SetText, which does not route through the
             -- locale like the Tip_* helpers, so translate by hand (as the Great Vault block does for its own label).
-            text = CludesUI.L(L["SELECT_CURRENCY"])
-        elseif info then
+            textValue = CludesUI.L(L["SELECT_CURRENCY"])
+        elseif details then
             if BreakUpLargeNumbers then
-                text = BreakUpLargeNumbers(info.quantity or 0)
+                textValue = BreakUpLargeNumbers(details.quantity or 0)
             else
-                text = tostring(info.quantity or 0)
+                textValue = tostring(details.quantity or 0)
             end
         else
-            text = "-"
+            textValue = "-"
         end
 
         local iconSz = 0
-        if s.showIcon ~= false and info and info.iconFileID then
+        if s.showIcon ~= false and details and details.iconFileID then
             iconSz = fontSize + 2
-            icon:SetTexture(info.iconFileID)
-            icon:SetTexCoord(5 / 64, 59 / 64, 5 / 64, 59 / 64)
-            icon:Show()
+            glyph:SetTexture(details.iconFileID)
+            glyph:SetTexCoord(5 / 64, 59 / 64, 5 / 64, 59 / 64)
+            glyph:Show()
         else
-            icon:Hide()
+            glyph:Hide()
         end
 
         if isSide then
-            local slotW = VSlotW(inst)
-            local innerW = max(24, slotW - 8)
-            _curFitBuf[1] = text
-            ns.SetFont(amountText, fontSize, barCfg)
-            amountText:SetText(text)
+            local slotW = VSlotW(instance)
+            local innerW = upper(24, slotW - 8)
+            _curFitBuf[1] = textValue
+            mod.SetFont(amountText, fontSize, barCfg)
+            amountText:SetText(textValue)
             local totalH = 8
             if iconSz > 0 then
-                icon:SetSize(iconSz, iconSz)
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                glyph:SetSize(iconSz, iconSz)
+                glyph:ClearAllPoints()
+                glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
                 totalH = totalH + iconSz + 2
             end
-            ns.SetWrappedText(amountText, innerW, "CENTER")
+            mod.SetWrappedText(amountText, innerW, "CENTER")
             amountText:ClearAllPoints()
             if iconSz > 0 then
-                amountText:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                amountText:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
             else
-                amountText:SetPoint("TOP", button, "TOP", 0, -4)
+                amountText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             end
-            totalH = totalH + ns.SnapToPixelGrid(amountText:GetStringHeight()) + 4
-            totalH = max(totalH, barH)
-            content:SetSize(slotW, totalH)
-            button:SetSize(slotW, totalH)
+            totalH = totalH + mod.SnapToPixelGrid(amountText:GetStringHeight()) + 4
+            totalH = upper(totalH, barH)
+            contentFrame:SetSize(slotW, totalH)
+            btnFrame:SetSize(slotW, totalH)
         else
-            local slotW = HBudget(inst, 120)
-            local textBudget = max(20, slotW - iconSz - gap - 8)
-            _curFitBuf[1] = text
-            ns.SetFont(amountText, fontSize, barCfg)
-            ns.ResetInlineText(amountText, "LEFT")
-            amountText:SetText(text)
+            local slotW = HBudget(instance, 120)
+            local textBudget = upper(20, slotW - iconSz - gap - 8)
+            _curFitBuf[1] = textValue
+            mod.SetFont(amountText, fontSize, barCfg)
+            mod.ResetInlineText(amountText, "LEFT")
+            amountText:SetText(textValue)
             if iconSz > 0 then
                 iconSz = fontSize + 2
-                icon:SetSize(iconSz, iconSz)
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                glyph:SetSize(iconSz, iconSz)
+                glyph:ClearAllPoints()
+                glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             end
             amountText:ClearAllPoints()
             local xOff = 0
             if iconSz > 0 then
                 xOff = iconSz + gap
             end
-            amountText:SetPoint("LEFT", button, "LEFT", xOff, 0)
-            local tw = ns.SnapToPixelGrid(amountText:GetStringWidth())
+            amountText:SetPoint("LEFT", btnFrame, "LEFT", xOff, 0)
+            local tw = mod.SnapToPixelGrid(amountText:GetStringWidth())
             local totalW = min(slotW, iconSz + (iconSz > 0 and gap or 0) + tw + 4)
-            content:SetSize(max(totalW, 10), barH)
-            button:SetSize(max(totalW, 10), barH)
+            contentFrame:SetSize(upper(totalW, 10), barH)
+            btnFrame:SetSize(upper(totalW, 10), barH)
         end
 
         local cbr, cbg, cbb = BlockColorOf(blockCfg)
         do
             local ir, ig, ib = IconColorOf(blockCfg)
-            icon:SetVertexColor(ir, ig, ib, 1)
+            glyph:SetVertexColor(ir, ig, ib, 1)
         end
         if not s.currencyId then
             amountText:SetTextColor(0.55, 0.55, 0.55, 1)
         elseif mouseOver then
-            local ar, ag, ab = ns.GetAccent()
+            local ar, ag, ab = mod.GetAccent()
             amountText:SetTextColor(ar, ag, ab, 1)
         else
             amountText:SetTextColor(cbr, cbg, cbb, 1)
         end
-        MaybeRelayout(inst)
+        MaybeRelayout(instance)
     end
 
     -- Manual tooltip composition (the owned tooltip has no SetCurrencyByID).
     local function ShowCurrencyTooltip()
         local s = D()
-        local ar, ag, ab = ns.GetAccent()
+        local ar, ag, ab = mod.GetAccent()
         -- Unconfigured: the placeholder is the whole block, so the tooltip has to say where the currency is actually picked.
         if not s.currencyId then
-            ns.Tip_Begin(button)
-            ns.Tip_AddLine(L["SELECT_CURRENCY"], 1, 1, 1)
-            ns.Tip_AddLine(" ")
-            ns.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
-            ns.Tip_Show()
+            mod.Tip_Begin(btnFrame)
+            mod.Tip_AddLine(L["SELECT_CURRENCY"], 1, 1, 1)
+            mod.Tip_AddLine(" ")
+            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
+            mod.Tip_Show()
             return
         end
-        local info = nil
+        local details = nil
         if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
-            info = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
+            details = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
         end
-        if not info then
+        if not details then
             return
         end
-        ns.Tip_Begin(button)
+        mod.Tip_Begin(btnFrame)
         local qr, qg, qb = 1, 1, 1
-        if info.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[info.quality] then
-            local qc = ITEM_QUALITY_COLORS[info.quality]
+        if details.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[details.quality] then
+            local qc = ITEM_QUALITY_COLORS[details.quality]
             qr, qg, qb = qc.r, qc.g, qc.b
         end
-        ns.Tip_AddLine(info.name or "?", qr, qg, qb)
+        mod.Tip_AddLine(details.name or "?", qr, qg, qb)
         -- Some currencies carry paragraphs of flavor text that tower over the bar. Opt-out keeps name, total and click hint; only the text goes.
-        if s.showDescription ~= false and info.description and info.description ~= "" then
-            ns.Tip_AddLine(" ")
-            ns.Tip_AddWrappedLine(info.description, 280, 0.8, 0.8, 0.8)
+        if s.showDescription ~= false and details.description and details.description ~= "" then
+            mod.Tip_AddLine(" ")
+            mod.Tip_AddWrappedLine(details.description, 280, 0.8, 0.8, 0.8)
         end
-        ns.Tip_AddLine(" ")
-        local qty = Num(info.quantity)
-        local cap = info.maxQuantity
+        mod.Tip_AddLine(" ")
+        local qty = Num(details.quantity)
+        local cap = details.maxQuantity
         if cap and cap > 0 then
             -- useTotalEarnedForMaxQty currencies (crests) cap what you EARNED this
             -- season, not what you hold, so the wallet total is the wrong numerator.
-            if info.useTotalEarnedForMaxQty then
-                ns.Tip_AddDouble(
+            if details.useTotalEarnedForMaxQty then
+                mod.Tip_AddDouble(
                     L["TOTAL"],
-                    qty .. " |cffaaaaaa(" .. Num(info.totalEarned) .. "/" .. Num(cap) .. ")|r",
+                    qty .. " |cffaaaaaa(" .. Num(details.totalEarned) .. "/" .. Num(cap) .. ")|r",
                     0.6,
                     0.6,
                     0.6,
@@ -225,27 +225,27 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
                     1
                 )
             else
-                ns.Tip_AddDouble(L["TOTAL"], qty .. " / " .. Num(cap), 0.6, 0.6, 0.6, 1, 1, 1)
+                mod.Tip_AddDouble(L["TOTAL"], qty .. " / " .. Num(cap), 0.6, 0.6, 0.6, 1, 1, 1)
             end
         else
-            ns.Tip_AddDouble(L["TOTAL"], qty, 0.6, 0.6, 0.6, 1, 1, 1)
+            mod.Tip_AddDouble(L["TOTAL"], qty, 0.6, 0.6, 0.6, 1, 1, 1)
         end
-        ns.Tip_AddLine(" ")
-        ns.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
-        ns.Tip_Show()
+        mod.Tip_AddLine(" ")
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
+        mod.Tip_Show()
     end
 
-    button:SetScript("OnEnter", function()
+    btnFrame:SetScript("OnEnter", function()
         mouseOver = true
-        inst:Refresh()
+        instance:Refresh()
         ShowCurrencyTooltip()
     end)
-    button:SetScript("OnLeave", function()
+    btnFrame:SetScript("OnLeave", function()
         mouseOver = false
-        ns.Tip_Hide(button)
-        inst:Refresh()
+        mod.Tip_Hide(btnFrame)
+        instance:Refresh()
     end)
-    button:SetScript("OnClick", function(_, mb)
+    btnFrame:SetScript("OnClick", function(_, mb)
         if mb == "LeftButton" then
             -- No currency picked yet: the Blizzard panel cannot assign one, so send the player to the picker instead of dead-ending there.
             if not D().currencyId then
@@ -255,11 +255,11 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
                     return
                 end
                 -- Options surface is LoadOnDemand; load it so OpenBlockSettings exists.
-                if not ns.OpenBlockSettings then
+                if not mod.OpenBlockSettings then
                     CludesUI:EnsureLoaded()
                 end
-                if ns.OpenBlockSettings then
-                    ns.OpenBlockSettings(barCtx.id, blockCfg.id, "currency")
+                if mod.OpenBlockSettings then
+                    mod.OpenBlockSettings(barCtx.id, blockCfg.id, "currency")
                 end
                 return
             end
@@ -271,31 +271,31 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
         end
     end)
 
-    inst.eventFrame = MakeEventFrame(inst, function(self)
+    instance.eventFrame = MakeEventFrame(instance, function(self)
         self:Refresh()
     end)
 
-    function inst:Enable()
-        content:Show()
+    function instance:Enable()
+        contentFrame:Show()
         RegisterInstEvents(self)
     end
 
-    function inst:Disable()
+    function instance:Disable()
         UnregisterInstEvents(self)
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    function inst:GetAutoLength()
+    function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return max(content:GetHeight() or 40, 30)
+            return upper(contentFrame:GetHeight() or 40, 30)
         end
-        return max(content:GetWidth() or 60, 24)
+        return upper(contentFrame:GetWidth() or 60, 24)
     end
 
-    function inst:Destroy()
+    function instance:Destroy()
         self._dead = true
-        content:Hide()
+        contentFrame:Hide()
     end
 
-    return inst
+    return instance
 end

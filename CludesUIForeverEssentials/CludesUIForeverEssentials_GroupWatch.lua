@@ -22,8 +22,8 @@ local _, module = ...
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 local function AurasSecret()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
@@ -50,13 +50,13 @@ local UNIT_EVENTS =
     { "UNIT_POWER_UPDATE", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER", "UNIT_CONNECTION", "UNIT_AURA" }
 
 local hmFrame, drinkName, shareCurve
-local rows, members, list, tracked, rank, units, watchers = {}, {}, {}, {}, {}, {}, {}
+local rowList, members, list, tracked, rank, units, watchers = {}, {}, {}, {}, {}, {}, {}
 local RAID, PARTY = {}, {}
-for i = 1, 40 do
-    RAID[i] = "raid" .. i
+for idx = 1, 40 do
+    RAID[idx] = "raid" .. idx
 end
-for i = 1, 4 do
-    PARTY[i] = "party" .. i
+for idx = 1, 4 do
+    PARTY[idx] = "party" .. idx
 end
 
 local function HMHere()
@@ -66,12 +66,12 @@ local function HMHere()
     if HM.Get("where") == "group" then
         return true
     end
-    local _, kind = IsInInstance()
-    return kind == "party" or kind == "raid"
+    local _, kindOf = IsInInstance()
+    return kindOf == "party" or kindOf == "raid"
 end
 
-local function IsHealer(unit, class)
-    local role = UnitGroupRolesAssigned(unit)
+local function IsHealer(unitToken, classFile)
+    local role = UnitGroupRolesAssigned(unitToken)
     if Secret(role) then
         role = nil
     end
@@ -81,7 +81,7 @@ local function IsHealer(unit, class)
     if role == "TANK" or role == "DAMAGER" then
         return false
     end
-    return HEALER_CLASSES[class] == true
+    return HEALER_CLASSES[classFile] == true
 end
 
 local function Units()
@@ -90,15 +90,15 @@ local function Units()
         units[1] = "player"
     end
     if IsInRaid() then
-        for i = 1, math.min(GetNumGroupMembers(), 40) do
-            local me = UnitIsUnit(RAID[i], "player")
+        for idx = 1, math.min(GetNumGroupMembers(), 40) do
+            local me = UnitIsUnit(RAID[idx], "player")
             if not Secret(me) and not me then
-                units[#units + 1] = RAID[i]
+                units[#units + 1] = RAID[idx]
             end
         end
     else
-        for i = 1, math.min(GetNumSubgroupMembers(), 4) do
-            units[#units + 1] = PARTY[i]
+        for idx = 1, math.min(GetNumSubgroupMembers(), 4) do
+            units[#units + 1] = PARTY[idx]
         end
     end
     return units
@@ -107,23 +107,23 @@ end
 local function Roster()
     wipe(list)
     wipe(tracked)
-    for _, unit in ipairs(Units()) do
-        local name, guid = UnitName(unit), UnitGUID(unit)
-        local _, class = UnitClass(unit)
+    for _, unitToken in ipairs(Units()) do
+        local name, unitGuid = UnitName(unitToken), UnitGUID(unitToken)
+        local _, classFile = UnitClass(unitToken)
         if
             name
-            and guid
-            and not (Secret(name) or Secret(guid) or Secret(class))
-            and IsHealer(unit, class)
+            and unitGuid
+            and not (Secret(name) or Secret(unitGuid) or Secret(classFile))
+            and IsHealer(unitToken, classFile)
         then
-            local n = #list + 1
-            local m = members[n] or {}
-            members[n] = m
-            if m.guid ~= guid then
+            local num = #list + 1
+            local m = members[num] or {}
+            members[num] = m
+            if m.guid ~= unitGuid then
                 m.pct, m.drinking = nil, false
             end
-            m.unit, m.name, m.class, m.guid = unit, name, class, guid
-            list[n], tracked[unit] = m, m
+            m.unit, m.name, m.class, m.guid = unitToken, name, classFile, unitGuid
+            list[num], tracked[unitToken] = m, m
         end
     end
 end
@@ -146,24 +146,24 @@ local function Drinking(m)
 end
 
 -- True when the drinking state changed (an aura update for this unit).
-local function DrinkChanged(m, info)
+local function DrinkChanged(m, details)
     if not CanReadDrink() then
         return false
     end
     local was = m.drinking
-    if not info or info.isFullUpdate then
+    if not details or details.isFullUpdate then
         Drinking(m)
         return m.drinking ~= was
     end
-    for _, a in ipairs(info.addedAuras or {}) do
+    for _, a in ipairs(details.addedAuras or {}) do
         if not Secret(a.name) and a.name == drinkName then
             m.drinking, m.drinkID = true, a.auraInstanceID
         end
     end
-    local id = m.drinkID
-    if id then
-        for _, r in ipairs(info.removedAuraInstanceIDs or {}) do
-            if r == id then
+    local ident = m.drinkID
+    if ident then
+        for _, r in ipairs(details.removedAuraInstanceIDs or {}) do
+            if r == ident then
                 m.drinking, m.drinkID = false, nil
             end
         end
@@ -180,10 +180,10 @@ local function Read(m)
         dead = false
     end
     m.state = (not online and OFFLINE) or (dead and DEAD) or nil
-    local cur, max = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
-    m.secret = (Secret(cur) or Secret(max)) == true
-    if not m.secret and max > 0 then
-        m.pct = cur / max
+    local current, upper = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
+    m.secret = (Secret(current) or Secret(upper)) == true
+    if not m.secret and upper > 0 then
+        m.pct = current / upper
     end
 end
 
@@ -211,20 +211,20 @@ local function Held(a, b)
 end
 
 local function Sort()
-    for i = 1, #list do
-        if list[i].secret then
+    for idx = 1, #list do
+        if list[idx].secret then
             table.sort(list, Held)
             return
         end
     end
     table.sort(list, Less)
     wipe(rank)
-    for i = 1, #list do
-        rank[list[i].guid] = i
+    for idx = 1, #list do
+        rank[list[idx].guid] = idx
     end
 end
 
-local function SecretShare(fs, unit)
+local function SecretShare(fontStr, unitToken)
     if not (UnitPowerPercent and C_CurveUtil) then
         return false
     end
@@ -234,7 +234,7 @@ local function SecretShare(fs, unit)
         shareCurve:AddPoint(0, 0)
         shareCurve:AddPoint(1, 100)
     end
-    fs:SetFormattedText("%.1f%%", UnitPowerPercent(unit, MANA, false, shareCurve))
+    fontStr:SetFormattedText("%.1f%%", UnitPowerPercent(unitToken, MANA, false, shareCurve))
     return true
 end
 
@@ -245,8 +245,8 @@ local SAMPLE = {
     { name = "Paladin", class = "PALADIN", guid = "4", state = DEAD },
 }
 
-local function Row(i)
-    local r = rows[i]
+local function Row(idx)
+    local r = rowList[idx]
     if r then
         return r
     end
@@ -261,25 +261,25 @@ local function Row(i)
     r.name = r:CreateFontString(nil, "OVERLAY")
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
-    rows[i] = r
+    rowList[idx] = r
     return r
 end
 
 local function PaintRows(entries)
-    local size, drinks = HM.Get("size"), HM.Get("drinking")
-    local step = size + ROW_PAD
+    local dim, drinks = HM.Get("size"), HM.Get("drinking")
+    local step = dim + ROW_PAD
     hmFrame:SetSize(HM.Get("width"), #entries * step + 2 * PAD)
-    for i, m in ipairs(entries) do
-        local r = Row(i)
+    for idx, m in ipairs(entries) do
+        local r = Row(idx)
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", PAD, -PAD - (i - 1) * step)
-        r:SetPoint("TOPRIGHT", -PAD, -PAD - (i - 1) * step)
+        r:SetPoint("TOPLEFT", PAD, -PAD - (idx - 1) * step)
+        r:SetPoint("TOPRIGHT", -PAD, -PAD - (idx - 1) * step)
         r:SetHeight(step)
-        CludesUI.Kit.Font(r.name, size, "essentials")
-        CludesUI.Kit.Font(r.pct, size, "essentials")
-        r.icon:SetSize(size, size)
+        CludesUI.Kit.Font(r.name, dim, "essentials")
+        CludesUI.Kit.Font(r.pct, dim, "essentials")
+        r.icon:SetSize(dim, dim)
         r.name:ClearAllPoints()
-        r.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
+        r.name:SetPoint("LEFT", drinks and (dim + ICON_GAP) or 0, 0)
         r.name:SetPoint("RIGHT", r.pct, "LEFT", -8, 0)
         r.name:SetText(m.name)
         local c = RAID_CLASS_COLORS[m.class]
@@ -316,8 +316,8 @@ local function PaintRows(entries)
         end
         r:Show()
     end
-    for i = #entries + 1, #rows do
-        rows[i]:Hide()
+    for idx = #entries + 1, #rowList do
+        rowList[idx]:Hide()
     end
 end
 
@@ -334,8 +334,8 @@ local function HMRedraw()
         hmFrame:Hide()
         return
     end
-    for i = 1, #list do
-        Read(list[i])
+    for idx = 1, #list do
+        Read(list[idx])
     end
     Sort()
     PaintRows(list)
@@ -354,47 +354,47 @@ local function HMSoon()
     end)
 end
 
-local function OnUnitEvent(w, event, _, arg)
-    if event == "UNIT_POWER_UPDATE" and (Secret(arg) or arg ~= MANA_TOKEN) then
+local function OnUnitEvent(wid, evt, _, arg)
+    if evt == "UNIT_POWER_UPDATE" and (Secret(arg) or arg ~= MANA_TOKEN) then
         return
     end
-    local m = tracked[w.unit]
+    local m = tracked[wid.unit]
     if not m then
         return
     end
-    if event == "UNIT_AURA" and not DrinkChanged(m, arg) then
+    if evt == "UNIT_AURA" and not DrinkChanged(m, arg) then
         return
     end
     HMSoon()
 end
 
 local function Watch()
-    for i, m in ipairs(list) do
-        local w = watchers[i]
-        if not w then
-            w = CreateFrame("Frame")
-            w:SetScript("OnEvent", OnUnitEvent)
-            watchers[i] = w
+    for idx, m in ipairs(list) do
+        local wid = watchers[idx]
+        if not wid then
+            wid = CreateFrame("Frame")
+            wid:SetScript("OnEvent", OnUnitEvent)
+            watchers[idx] = wid
         end
-        if w.unit ~= m.unit then
-            w:UnregisterAllEvents()
-            w.unit = m.unit
+        if wid.unit ~= m.unit then
+            wid:UnregisterAllEvents()
+            wid.unit = m.unit
             for _, e in ipairs(UNIT_EVENTS) do
-                w:RegisterUnitEvent(e, m.unit)
+                wid:RegisterUnitEvent(e, m.unit)
             end
         end
     end
-    for i = #list + 1, #watchers do
-        watchers[i]:UnregisterAllEvents()
-        watchers[i].unit = nil
+    for idx = #list + 1, #watchers do
+        watchers[idx]:UnregisterAllEvents()
+        watchers[idx].unit = nil
     end
 end
 
 local hmEvents = CreateFrame("Frame")
 local HMApply
 local rosterPending
-hmEvents:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_ENTERING_WORLD" then
+hmEvents:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_ENTERING_WORLD" then
         return HMApply()
     end
     if rosterPending then
@@ -429,8 +429,8 @@ HMApply = function()
     wipe(tracked)
     if HMHere() then
         Roster()
-        for i = 1, #list do
-            Drinking(list[i])
+        for idx = 1, #list do
+            Drinking(list[idx])
         end
     end
     Watch()
@@ -463,24 +463,20 @@ HM.Start(HMApply, {
 -------------------------------------------------------------------------------
 --  Pet Tracker
 -------------------------------------------------------------------------------
-local PT = module.Feature(
-    "petTracker",
-    {
-        enabled = false,
-        passive = true,
-        lowHealth = false,
-        lowBelow = 25,
-        instanceOnly = false,
-        combatOnly = false,
-        hideMounted = true,
-        showIcon = true,
-        size = 20,
-        missingText = "Pet Missing",
-        passiveText = "Pet Passive",
-        lowText = "Pet Low HP",
-    },
-    { point = "CENTER", relPoint = "CENTER", x = 0, y = 260 }
-)
+local PT = module.Feature("petTracker", {
+    enabled = false,
+    passive = true,
+    lowHealth = false,
+    lowBelow = 25,
+    instanceOnly = false,
+    combatOnly = false,
+    hideMounted = true,
+    showIcon = true,
+    size = 20,
+    missingText = "Pet Missing",
+    passiveText = "Pet Passive",
+    lowText = "Pet Low HP",
+}, { point = "CENTER", relPoint = "CENTER", x = 0, y = 260 })
 
 local CALL_PET, SUMMON_IMP = 883, 688
 local LONE_WOLF, LONE_WOLF_TAUGHT = 415370, 409979
@@ -504,8 +500,8 @@ local PT_EVENTS = {
 local ptFrame, curve, mounted, dismountTimer, sacrificed
 local _, CLASS = UnitClass("player")
 
-local function Known(id)
-    return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(id)
+local function Known(ident)
+    return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(ident)
 end
 
 local function PTBuild()
@@ -523,11 +519,11 @@ local function PTBuild()
 end
 
 local function Restyle()
-    local size = PT.Get("size")
-    CludesUI.Kit.Font(ptFrame.text, size, "essentials")
+    local dim = PT.Get("size")
+    CludesUI.Kit.Font(ptFrame.text, dim, "essentials")
     ptFrame.text:ClearAllPoints()
     if PT.Get("showIcon") then
-        ptFrame.icon:SetSize(size + 12, size + 12)
+        ptFrame.icon:SetSize(dim + 12, dim + 12)
         ptFrame.icon:SetPoint("LEFT")
         ptFrame.icon:Show()
         ptFrame.text:SetPoint("LEFT", ptFrame.icon, "RIGHT", 8, 0)
@@ -535,7 +531,7 @@ local function Restyle()
         ptFrame.icon:Hide()
         ptFrame.text:SetPoint("CENTER")
     end
-    ptFrame:SetSize(220, size + 16)
+    ptFrame:SetSize(220, dim + 16)
 end
 
 -- The warning fades out above the low-health line: 1 below it, 0 above.
@@ -565,8 +561,8 @@ local function CheckSacrifice()
         return
     end
     sacrificed = false
-    for _, id in ipairs(SACRIFICE_BUFFS) do
-        if C_UnitAuras.GetPlayerAuraBySpellID(id) then
+    for _, ident in ipairs(SACRIFICE_BUFFS) do
+        if C_UnitAuras.GetPlayerAuraBySpellID(ident) then
             sacrificed = true
             return
         end
@@ -577,8 +573,8 @@ local function IsPassive()
     if not PetHasActionBar() then
         return false
     end
-    for i = 1, NUM_PET_ACTION_SLOTS do
-        local name, _, _, isActive = GetPetActionInfo(i)
+    for idx = 1, NUM_PET_ACTION_SLOTS do
+        local name, _, _, isActive = GetPetActionInfo(idx)
         if name == "PET_MODE_PASSIVE" then
             return isActive == true
         end
@@ -637,8 +633,8 @@ local function PTUpdate()
 end
 
 local ptEvents = CreateFrame("Frame")
-ptEvents:SetScript("OnEvent", function(_, event, unit)
-    if event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
+ptEvents:SetScript("OnEvent", function(_, evt, unitToken)
+    if evt == "PLAYER_MOUNT_DISPLAY_CHANGED" then
         local was = mounted
         mounted = IsMounted()
         if dismountTimer then
@@ -651,9 +647,9 @@ ptEvents:SetScript("OnEvent", function(_, event, unit)
                 PTUpdate()
             end)
         end
-    elseif event == "UNIT_AURA" or event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "UNIT_AURA" or evt == "PLAYER_REGEN_ENABLED" then
         CheckSacrifice()
-    elseif event == "UNIT_HEALTH" and unit ~= "pet" then
+    elseif evt == "UNIT_HEALTH" and unitToken ~= "pet" then
         return
     end
     PTUpdate()

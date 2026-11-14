@@ -19,17 +19,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- are allowed. Only Blizzard frames touched: micro menu containers (via a
 -- SecureHandlerStateTemplate hider) and the MicroButtons/ProfessionMicroButton/QuestLogMicroButton (via secure attributes).
 
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 
 -- Helpers shared by every block file.
-local K = {}
-ns.BlockKit = K
+local Keys = {}
+mod.BlockKit = Keys
 
 -- Max-level check with layered fallbacks, matching the Action Bars XP bar's:
 -- the Is* helpers are nil-guarded, so client API churn can silently disable
 -- them -- a plain numeric compare against the expansion max level backstops
 -- the check.
-function K.AtMaxLevel()
+function Keys.AtMaxLevel()
     local level = UnitLevel("player") or 0
     if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then
         return true
@@ -49,9 +49,9 @@ local ICON_GAP = 8
 -- Unit Frames Bar Texture set; SharedMedia appended below + at dropdown build.
 -- "none" = flat fill.
 local barTextures, barTextureNames, barTextureOrder = CludesUI.BuildBarTextureTables(true)
-ns.barTextures = barTextures
-ns.barTextureOrder = barTextureOrder
-ns.barTextureNames = barTextureNames
+mod.barTextures = barTextures
+mod.barTextureOrder = barTextureOrder
+mod.barTextureNames = barTextureNames
 
 -- Seed SharedMedia statusbar textures once at load so a saved LSM key resolves at login; the parent helper also registers for late LSM packs.
 CludesUI.AppendSharedMediaTextures(barTextureNames, barTextureOrder, nil, barTextures)
@@ -70,26 +70,26 @@ local function InstKey(barCtx, blockCfg)
     return "EDB" .. barCtx.id .. "_" .. blockCfg.id
 end
 
-local function MakeEventFrame(inst, handler)
+local function MakeEventFrame(instance, handler)
     local f = CreateFrame("Frame")
-    f:SetScript("OnEvent", function(_, event, ...)
-        handler(inst, event, ...)
+    f:SetScript("OnEvent", function(_, evt, ...)
+        handler(instance, evt, ...)
     end)
     return f
 end
 
-local function RegisterInstEvents(inst)
-    if not (inst.eventFrame and inst.events) then
+local function RegisterInstEvents(instance)
+    if not (instance.eventFrame and instance.events) then
         return
     end
-    for i = 1, #inst.events do
-        pcall(inst.eventFrame.RegisterEvent, inst.eventFrame, inst.events[i])
+    for idx = 1, #instance.events do
+        pcall(instance.eventFrame.RegisterEvent, instance.eventFrame, instance.events[idx])
     end
 end
 
-local function UnregisterInstEvents(inst)
-    if inst.eventFrame then
-        inst.eventFrame:UnregisterAllEvents()
+local function UnregisterInstEvents(instance)
+    if instance.eventFrame then
+        instance.eventFrame:UnregisterAllEvents()
     end
 end
 
@@ -99,8 +99,8 @@ end
 local CONTENT_BASE = 30
 
 -- Content scale of a block: content frames are SetScale'd as a group, so fit budgets must convert slot pixels into content space (slot / scale).
-local function ContentScaleOf(inst)
-    local s = ((inst.cfg and inst.cfg.scale) or 100) / 100
+local function ContentScaleOf(instance)
+    local s = ((instance.cfg and instance.cfg.scale) or 100) / 100
     if s <= 0 then
         return 1
     end
@@ -108,52 +108,52 @@ local function ContentScaleOf(inst)
 end
 
 -- Horizontal text budget: every block fits into its solver-assigned slot width (sizing is share-based for auto and fixed blocks alike).
-local function HBudget(inst, fallback)
-    local w = inst.slot and inst.slot:GetWidth()
-    if w and w > 8 then
-        return w / ContentScaleOf(inst)
+local function HBudget(instance, fallback)
+    local wid = instance.slot and instance.slot:GetWidth()
+    if wid and wid > 8 then
+        return wid / ContentScaleOf(instance)
     end
     return fallback
 end
 
 -- Vertical cross-axis width (bar thickness; falls back before slot layout).
-local function VSlotW(inst)
-    local w = inst.slot and inst.slot:GetWidth()
-    if w and w > 2 then
-        return w / ContentScaleOf(inst)
+local function VSlotW(instance)
+    local wid = instance.slot and instance.slot:GetWidth()
+    if wid and wid > 2 then
+        return wid / ContentScaleOf(instance)
     end
-    return inst.ctx.GetThickness()
+    return instance.ctx.GetThickness()
 end
 
 -- Re-layout only when the measured auto extent actually changed (breaks the
 -- Refresh -> layout -> Refresh loop). Only auto-mode bars size from content --
 -- the fill block's px is the remainder, so its content never drives layout.
-local function MaybeRelayout(inst)
-    local b = inst.cfg
-    local barCfg = inst.ctx and inst.ctx.cfg
+local function MaybeRelayout(instance)
+    local b = instance.cfg
+    local barCfg = instance.ctx and instance.ctx.cfg
     if not barCfg then
         return
     end
-    local w = 0
-    if inst.GetAutoLength then
-        w = inst:GetAutoLength() or 0
+    local wid = 0
+    if instance.GetAutoLength then
+        wid = instance:GetAutoLength() or 0
     end
-    if ns.BarSizingMode(barCfg) ~= "auto" then
+    if mod.BarSizingMode(barCfg) ~= "auto" then
         -- Even mode ignores widths, but flipping to/from collapsed (extent 0)
         -- changes the SHARE COUNT -- re-solve so the freed share redistributes.
-        local was = inst._lastAuto
-        inst._lastAuto = w
-        if was ~= nil and ((was <= 0) ~= (w <= 0)) then
-            inst.ctx.RequestLayout()
+        local was = instance._lastAuto
+        instance._lastAuto = wid
+        if was ~= nil and ((was <= 0) ~= (wid <= 0)) then
+            instance.ctx.RequestLayout()
         end
         return
     end
     if barCfg.fillBlockId == b.id then
         return
     end
-    if inst._lastAuto == nil or abs(w - inst._lastAuto) > 0.5 then
-        inst._lastAuto = w
-        inst.ctx.RequestLayout()
+    if instance._lastAuto == nil or abs(wid - instance._lastAuto) > 0.5 then
+        instance._lastAuto = wid
+        instance.ctx.RequestLayout()
     end
 end
 
@@ -161,23 +161,23 @@ end
 -- SetPoint so every anchor carries the live cfg offset. Wrap ONLY texts anchored to
 -- non-text targets -- chained texts (bagText->goldText, eventText->clockText,
 -- infoText->specText) inherit the shift and would double-shift. Safe to shadow (our own FontStrings); re-renders via ns.ReflowBlocks.
-local function AttachTextOffset(inst, fs)
-    if not fs or fs._edbTxo then
+local function AttachTextOffset(instance, fontStr)
+    if not fontStr or fontStr._edbTxo then
         return
     end
-    fs._edbTxo = true
-    local orig = fs.SetPoint
-    fs.SetPoint = function(self, point, a2, a3, a4, a5)
-        local c = inst.cfg
+    fontStr._edbTxo = true
+    local orig = fontStr.SetPoint
+    fontStr.SetPoint = function(self, anchorPoint, a2, a3, a4, a5)
+        local c = instance.cfg
         local dx = (c and c.textXOff) or 0
         local dy = (c and c.textYOff) or 0
         if a2 == nil then
-            return orig(self, point, dx, dy)
+            return orig(self, anchorPoint, dx, dy)
         end
         if type(a2) == "number" then
-            return orig(self, point, a2 + dx, (a3 or 0) + dy)
+            return orig(self, anchorPoint, a2 + dx, (a3 or 0) + dy)
         end
-        return orig(self, point, a2, a3 or point, (a4 or 0) + dx, (a5 or 0) + dy)
+        return orig(self, anchorPoint, a2, a3 or anchorPoint, (a4 or 0) + dx, (a5 or 0) + dy)
     end
 end
 
@@ -187,7 +187,7 @@ end
 local function BlockColorOf(b)
     if b.useDynamicColor then
         -- Opt-in state-driven text mode (the Text Color row's 4th swatch).
-        return ns.BlockTextDynamic(b.type)
+        return mod.BlockTextDynamic(b.type)
     end
     if b.useClassColor then
         local _, classFile = UnitClass("player")
@@ -196,7 +196,7 @@ local function BlockColorOf(b)
             return cc.r, cc.g, cc.b
         end
     elseif b.useAccentColor then
-        return ns.GetAccent()
+        return mod.GetAccent()
     end
     local c = b.color
     if c then
@@ -233,15 +233,15 @@ local CRESTS = {
     { key = "t4", id = 3445, hex = "FF8000", r = 1, g = 0.502, b = 0 },
     { key = "t5", id = 3446, hex = "FFD100", r = 1, g = 0.820, b = 0 },
 }
-ns.CRESTS = CRESTS
+mod.CRESTS = CRESTS
 -- Currency id set: the crest block's CURRENCY_DISPLAY_UPDATE handler drops
 -- events that name some other currency (payload currencyType; nil = bulk).
 do
     local ids = {}
-    for i = 1, #CRESTS do
-        ids[CRESTS[i].id] = true
+    for idx = 1, #CRESTS do
+        ids[CRESTS[idx].id] = true
     end
-    ns.CREST_IDS = ids
+    mod.CREST_IDS = ids
 end
 
 -- SEASON UPDATE: rank-1 item level of each upgrade track, highest first;
@@ -257,7 +257,7 @@ local ILVL_BANDS = {
 }
 -- Equipped item level, written by the ilvl block's Refresh; read by the band
 -- tint below (and its swatch preview) exactly like K.lastDurabilityPct.
-K.lastAvgIlvl = nil
+Keys.lastAvgIlvl = nil
 
 -- Themed per-block icon defaults (Icon Color row's "Default" swatch): spec ->
 -- live class color; professions -> live accent (matches their skill-bar fill,
@@ -286,7 +286,7 @@ local ICON_DEFAULTS = {
 -- Block icon art in one place: the CludesUI file (full path) and its
 -- Blizzard counterpart (a path or a fileID). Entries without
 -- `wow` have no stock equivalent and always show the custom art.
-local MEDIA, MM = ns.MEDIA, ns.MICROMENU_MEDIA
+local MEDIA, MM = mod.MEDIA, mod.MICROMENU_MEDIA
 local ICON_ART = {
     audio = { custom = MEDIA .. "audio.png", wow = "Interface\\Common\\VoiceChat-Speaker" },
     bags = { custom = MM .. "menu-bags.png", wow = "Interface\\Buttons\\Button-Backpack-Up" },
@@ -304,7 +304,7 @@ local ICON_ART = {
 -- profession or micro button); they read settings.iconStyle directly.
 local OWN_ICON_STYLE = { spec = true, profession = true, profession2 = true, micromenu = true }
 
-function ns.BlockHasIconStyle(bType)
+function mod.BlockHasIconStyle(bType)
     if OWN_ICON_STYLE[bType] then
         return true
     end
@@ -313,40 +313,40 @@ function ns.BlockHasIconStyle(bType)
 end
 
 -- Crops a stock item/spell icon (Interface\Icons, fileID) off its baked-in border.
-function K.CropStockIcon(icon)
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+function Keys.CropStockIcon(glyph)
+    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 end
 
 -- Paints a block icon in its selected style. key defaults to the block type.
 -- Cheap to call from Refresh: the texture is only set when it changes.
-function K.SetBlockIcon(icon, blockCfg, key)
+function Keys.SetBlockIcon(glyph, blockCfg, key)
     local art = ICON_ART[key or blockCfg.type]
     local s = blockCfg.settings
-    local tex = art.wow and s and s.iconStyle == "wow" and art.wow
-    local want = tex or art.custom
-    if icon._edbIconTex == want then
+    local texture = art.wow and s and s.iconStyle == "wow" and art.wow
+    local wanted = texture or art.custom
+    if glyph._edbIconTex == wanted then
         return
     end
-    icon._edbIconTex = want
-    if tex then
-        icon:SetTexture(tex)
-        local crop = type(tex) == "number" or tex:find("^Interface\\Icons\\")
+    glyph._edbIconTex = wanted
+    if texture then
+        glyph:SetTexture(texture)
+        local crop = type(texture) == "number" or texture:find("^Interface\\Icons\\")
         if crop then
-            K.CropStockIcon(icon)
+            Keys.CropStockIcon(glyph)
         else
-            icon:SetTexCoord(0, 1, 0, 1)
+            glyph:SetTexCoord(0, 1, 0, 1)
         end
     else
-        icon:SetTexture(art.custom)
-        icon:SetTexCoord(0, 1, 0, 1)
+        glyph:SetTexture(art.custom)
+        glyph:SetTexCoord(0, 1, 0, 1)
     end
 end
 
 -- Lowest equipped-durability percent, written by the durability block's sampler; read by the dynamic tint below (and its swatch preview).
-K.lastDurabilityPct = nil
-function ns.BlockIconDefault(bType, settings)
+Keys.lastDurabilityPct = nil
+function mod.BlockIconDefault(bType, prefs)
     -- Stock art carries its own colors; durability keeps its low-durability tint.
-    if settings and settings.iconStyle == "wow" and bType ~= "durability" and ns.BlockHasIconStyle(bType) then
+    if prefs and prefs.iconStyle == "wow" and bType ~= "durability" and mod.BlockHasIconStyle(bType) then
         return 1, 1, 1
     end
     if bType == "spec" then
@@ -358,11 +358,11 @@ function ns.BlockIconDefault(bType, settings)
         return 1, 1, 1
     end
     if bType == "profession" or bType == "profession2" then
-        return ns.GetAccent()
+        return mod.GetAccent()
     end
     if bType == "durability" then
         -- White(100%) fades to soft red(1,.35,.35) over 20..100; <=20% is fully red.
-        local pct = K.lastDurabilityPct or 100
+        local pct = Keys.lastDurabilityPct or 100
         local t = (pct - 20) * (100 / 80)
         if t < 0 then
             t = 0
@@ -389,12 +389,12 @@ local TEXT_DYNAMIC = {
     -- Item level "Band": the crest color of the upgrade track the equipped
     -- gear sits in. Below the lowest track it stays white.
     ilvl = function()
-        local lvl = K.lastAvgIlvl
+        local lvl = Keys.lastAvgIlvl
         if not lvl then
             return 1, 1, 1
         end
-        for i = 1, #ILVL_BANDS do
-            local band = ILVL_BANDS[i]
+        for idx = 1, #ILVL_BANDS do
+            local band = ILVL_BANDS[idx]
             if lvl >= band[1] then
                 local c = CRESTS[band[2]]
                 return c.r, c.g, c.b
@@ -403,19 +403,19 @@ local TEXT_DYNAMIC = {
         return 1, 1, 1
     end,
 }
-function ns.BlockTextDynamic(bType)
-    local fn = TEXT_DYNAMIC[bType]
-    if fn then
-        return fn()
+function mod.BlockTextDynamic(bType)
+    local func = TEXT_DYNAMIC[bType]
+    if func then
+        return func()
     end
-    return ns.BlockIconDefault(bType)
+    return mod.BlockIconDefault(bType)
 end
 
 -- Per-block ICON color (Icon Color row: Custom/Class/Accent/Default). Nothing stored = the themed default above; state-driven colors win at their sites.
 local function IconColorOf(b)
     if b.useIconDefaultColor then
         -- Explicit Default mode: the stored custom color stays stashed.
-        return ns.BlockIconDefault(b.type, b.settings)
+        return mod.BlockIconDefault(b.type, b.settings)
     end
     if b.useIconClassColor then
         local _, classFile = UnitClass("player")
@@ -424,13 +424,13 @@ local function IconColorOf(b)
             return cc.r, cc.g, cc.b
         end
     elseif b.useIconAccentColor then
-        return ns.GetAccent()
+        return mod.GetAccent()
     end
     local c = b.iconColor
     if c then
         return c.r or 1, c.g or 1, c.b or 1
     end
-    return ns.BlockIconDefault(b.type, b.settings)
+    return mod.BlockIconDefault(b.type, b.settings)
 end
 
 -- Retire a secure frame: hide + reparent to the engine park frame, deferred to OOC when needed (alpha-hidden immediately in combat).
@@ -440,28 +440,28 @@ local function ParkSecureFrame(f, key)
     end
     if InCombatLockdown() then
         f:SetAlpha(0)
-        ns.DeferUntilOOC("edbkill:" .. key, function()
+        mod.DeferUntilOOC("edbkill:" .. key, function()
             f:Hide()
-            f:SetParent(ns._park)
+            f:SetParent(mod._park)
         end)
     else
         f:Hide()
-        f:SetParent(ns._park)
+        f:SetParent(mod._park)
     end
 end
 
-K.ICON_GAP = ICON_GAP
-K.CONTENT_BASE = CONTENT_BASE
-K.CRESTS = CRESTS
-K.InstKey = InstKey
-K.MakeEventFrame = MakeEventFrame
-K.RegisterInstEvents = RegisterInstEvents
-K.UnregisterInstEvents = UnregisterInstEvents
-K.HBudget = HBudget
-K.VSlotW = VSlotW
-K.MaybeRelayout = MaybeRelayout
-K.AttachTextOffset = AttachTextOffset
-K.BlockColorOf = BlockColorOf
-K.ZoneReactionColor = ZoneReactionColor
-K.IconColorOf = IconColorOf
-K.ParkSecureFrame = ParkSecureFrame
+Keys.ICON_GAP = ICON_GAP
+Keys.CONTENT_BASE = CONTENT_BASE
+Keys.CRESTS = CRESTS
+Keys.InstKey = InstKey
+Keys.MakeEventFrame = MakeEventFrame
+Keys.RegisterInstEvents = RegisterInstEvents
+Keys.UnregisterInstEvents = UnregisterInstEvents
+Keys.HBudget = HBudget
+Keys.VSlotW = VSlotW
+Keys.MaybeRelayout = MaybeRelayout
+Keys.AttachTextOffset = AttachTextOffset
+Keys.BlockColorOf = BlockColorOf
+Keys.ZoneReactionColor = ZoneReactionColor
+Keys.IconColorOf = IconColorOf
+Keys.ParkSecureFrame = ParkSecureFrame

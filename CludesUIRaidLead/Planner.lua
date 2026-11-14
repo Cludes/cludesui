@@ -14,11 +14,11 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-local _, ns = ...
-ns = ns or {}
+local _, mod = ...
+mod = mod or {}
 
 local Planner = {}
-ns.Planner = Planner
+mod.Planner = Planner
 
 local GROUP_SIZE = 5
 local MAX_GROUPS = 8
@@ -64,23 +64,23 @@ local function ByKind(a, b)
 end
 
 local function Sorted(members)
-    local list = {}
-    for i = 1, #members do
-        list[i] = members[i]
+    local entries = {}
+    for idx = 1, #members do
+        entries[idx] = members[idx]
     end
-    table.sort(list, ByKind)
-    return list
+    table.sort(entries, ByKind)
+    return entries
 end
 
 --- Tanks, melee, ranged, healers, filling group 1, then group 2 and so on.
 --- Returns target[name] = group.
 function Planner.ByRole(members)
-    local target = {}
-    local list = Sorted(members)
-    for i = 1, #list do
-        target[list[i].name] = math.floor((i - 1) / GROUP_SIZE) + 1
+    local targetUnit = {}
+    local entries = Sorted(members)
+    for idx = 1, #entries do
+        targetUnit[entries[idx].name] = math.floor((idx - 1) / GROUP_SIZE) + 1
     end
-    return target
+    return targetUnit
 end
 
 --- Two balanced halves. Each kind is dealt out in turn, so both sides get the
@@ -89,35 +89,35 @@ end
 --- the first groups and side two the groups after them.
 --- Returns target[name] = group, and the number of groups each side uses.
 function Planner.Split(members)
-    local list = Sorted(members)
+    local entries = Sorted(members)
     local sides = { {}, {} }
     local turn = 1
-    for i = 1, #list do
-        local side = sides[turn]
-        side[#side + 1] = list[i]
+    for idx = 1, #entries do
+        local sideName = sides[turn]
+        sideName[#sideName + 1] = entries[idx]
         turn = 3 - turn
     end
     local perSide = math.max(1, math.ceil(#sides[1] / GROUP_SIZE))
     if perSide * 2 > MAX_GROUPS then
         perSide = MAX_GROUPS / 2
     end
-    local target = {}
+    local targetUnit = {}
     for s = 1, 2 do
-        local side = sides[s]
-        for i = 1, #side do
-            target[side[i].name] = (s - 1) * perSide + math.floor((i - 1) / GROUP_SIZE) + 1
+        local sideName = sides[s]
+        for idx = 1, #sideName do
+            targetUnit[sideName[idx].name] = (s - 1) * perSide + math.floor((idx - 1) / GROUP_SIZE) + 1
         end
     end
-    return target, perSide
+    return targetUnit, perSide
 end
 
 --- The groups as they are now: target[name] = group. Used to undo a sort.
 function Planner.Snapshot(members)
-    local target = {}
-    for i = 1, #members do
-        target[members[i].name] = members[i].group
+    local targetUnit = {}
+    for idx = 1, #members do
+        targetUnit[members[idx].name] = members[idx].group
     end
-    return target
+    return targetUnit
 end
 
 --- The next single move that brings the raid closer to `target`, or nil when
@@ -128,31 +128,31 @@ end
 --- Members the plan does not name are left where they are. Every move puts at
 --- least one member in their final group and never takes one out of it, so
 --- repeating this always finishes.
-function Planner.NextMove(members, target)
-    local count = {}
+function Planner.NextMove(members, targetUnit)
+    local total = {}
     for g = 1, MAX_GROUPS do
-        count[g] = 0
+        total[g] = 0
     end
-    for i = 1, #members do
-        local g = members[i].group
-        if count[g] then
-            count[g] = count[g] + 1
+    for idx = 1, #members do
+        local g = members[idx].group
+        if total[g] then
+            total[g] = total[g] + 1
         end
     end
     local setMove
-    for i = 1, #members do
-        local m = members[i]
-        local want = target[m.name]
-        if want and want ~= m.group then
+    for idx = 1, #members do
+        local m = members[idx]
+        local wanted = targetUnit[m.name]
+        if wanted and wanted ~= m.group then
             -- A trade that fixes both members is the best move there is.
-            for j = 1, #members do
-                local n = members[j]
-                if n.group == want and target[n.name] == m.group then
-                    return { op = "swap", index = m.index, other = n.index }
+            for jdx = 1, #members do
+                local num = members[jdx]
+                if num.group == wanted and targetUnit[num.name] == m.group then
+                    return { op = "swap", index = m.index, other = num.index }
                 end
             end
-            if count[want] < GROUP_SIZE then
-                setMove = setMove or { op = "set", index = m.index, group = want }
+            if total[wanted] < GROUP_SIZE then
+                setMove = setMove or { op = "set", index = m.index, group = wanted }
             end
         end
     end
@@ -160,15 +160,15 @@ function Planner.NextMove(members, target)
         return setMove
     end
     -- Every wanted group is full: trade with anyone in it who belongs elsewhere.
-    for i = 1, #members do
-        local m = members[i]
-        local want = target[m.name]
-        if want and want ~= m.group then
-            for j = 1, #members do
-                local n = members[j]
-                local nWant = target[n.name]
-                if n.group == want and nWant and nWant ~= want then
-                    return { op = "swap", index = m.index, other = n.index }
+    for idx = 1, #members do
+        local m = members[idx]
+        local wanted = targetUnit[m.name]
+        if wanted and wanted ~= m.group then
+            for jdx = 1, #members do
+                local num = members[jdx]
+                local nWant = targetUnit[num.name]
+                if num.group == wanted and nWant and nWant ~= wanted then
+                    return { op = "swap", index = m.index, other = num.index }
                 end
             end
         end
@@ -178,16 +178,16 @@ end
 
 --- How many members of each kind a plan puts in each group, for the summary
 --- printed to chat: out[group] = { TANK = n, MELEE = n, RANGED = n, HEALER = n }.
-function Planner.Summary(members, target)
-    local out = {}
-    for i = 1, #members do
-        local m = members[i]
-        local g = target[m.name] or m.group
-        out[g] = out[g] or { TANK = 0, MELEE = 0, RANGED = 0, HEALER = 0 }
-        local k = Planner.Kind(m)
-        out[g][k] = out[g][k] + 1
+function Planner.Summary(members, targetUnit)
+    local result = {}
+    for idx = 1, #members do
+        local m = members[idx]
+        local g = targetUnit[m.name] or m.group
+        result[g] = result[g] or { TANK = 0, MELEE = 0, RANGED = 0, HEALER = 0 }
+        local key = Planner.Kind(m)
+        result[g][key] = result[g][key] + 1
     end
-    return out
+    return result
 end
 
 return Planner

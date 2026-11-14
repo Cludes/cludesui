@@ -8,59 +8,60 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and _Bank read from ns.
 --  Reads the earlier Bags files through ns and ns._bagsInternals.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-local I = ns._bagsInternals
+local mod = select(2, ...)
+local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local CUI = CludesUI
 
-local ApplyBagScale, BagsItemUnusable, BP = I.ApplyBagScale, I.BagsItemUnusable, I.BP
-local CurrencyOrder, GetAccentRGB = I.CurrencyOrder, I.GetAccentRGB
-local GetCatTitleSize, GetDefaultBagType = I.GetCatTitleSize, I.GetDefaultBagType
-local GetFont, SetBagFont, SLOT_SIZE, SPACING = I.GetFont, I.SetBagFont, I.SLOT_SIZE, I.SPACING
-local ApplySavedOrder = I.ApplySavedOrder
-local ArmorySlotGroupingEnabled = I.ArmorySlotGroupingEnabled
-local BuildExpansionBuckets, BuildSlotBuckets = I.BuildExpansionBuckets, I.BuildSlotBuckets
-local GetArmorySlotBucket, IsArmoryGearCategory = I.GetArmorySlotBucket, I.IsArmoryGearCategory
-local IsGearOnlyGroup, itemSlots = I.IsGearOnlyGroup, I.itemSlots
-local MergeDuplicates, PreCacheSortFields = I.MergeDuplicates, I.PreCacheSortFields
-local RegisterPawnIntegration, SetItemPanelOpen = I.RegisterPawnIntegration, I.SetItemPanelOpen
-local UpdatePawnArrow, VisualSortCompare = I.UpdatePawnArrow, I.VisualSortCompare
-local CreateHeader, CreateFooter = I.CreateHeader, I.CreateFooter
-local CreateReagentBagUI, GoldLedger = I.CreateReagentBagUI, I.GoldLedger
-local OnGoldChanged, SyncBagFrameToFooter = I.OnGoldChanged, I.SyncBagFrameToFooter
-local CreateInsetBorder, QUEST_BORDER_COLOR = I.CreateInsetBorder, I.QUEST_BORDER_COLOR
-local SetInsetBorderColor = I.SetInsetBorderColor
-local SetInsetBorderThickness, _itemDragFrame = I.SetInsetBorderThickness, I._itemDragFrame
-local ExitAssignSelectMode, ExitPinSelectMode = I.ExitAssignSelectMode, I.ExitPinSelectMode
-local GetOrCreateAssignOverlay = I.GetOrCreateAssignOverlay
-local GetOrCreatePinOverlay = I.GetOrCreatePinOverlay
-local ResetAssignOverlays, CreateSidebar = I.ResetAssignOverlays, I.CreateSidebar
-local _catHeaders, _expSubHeaders = I._catHeaders, I._expSubHeaders
-local CreateBagScrollFrame = I.CreateBagScrollFrame
-local GetOrCreateCatHeader = I.GetOrCreateCatHeader
-local GetOrCreateExpSubHeader = I.GetOrCreateExpSubHeader
-local ShowRecentClearButton = I.ShowRecentClearButton
-local SetSelectedCategoryIndex = I.SetSelectedCategoryIndex
-local SetSelectedGroupName = I.SetSelectedGroupName
+local ApplyBagScale, BagsItemUnusable, BP = Inner.ApplyBagScale, Inner.BagsItemUnusable, Inner.BP
+local CurrencyOrder, GetAccentRGB = Inner.CurrencyOrder, Inner.GetAccentRGB
+local GetCatTitleSize, GetDefaultBagType = Inner.GetCatTitleSize, Inner.GetDefaultBagType
+local GetFont, SetBagFont, SLOT_SIZE, SPACING =
+    Inner.GetFont, Inner.SetBagFont, Inner.SLOT_SIZE, Inner.SPACING
+local ApplySavedOrder = Inner.ApplySavedOrder
+local ArmorySlotGroupingEnabled = Inner.ArmorySlotGroupingEnabled
+local BuildExpansionBuckets, BuildSlotBuckets = Inner.BuildExpansionBuckets, Inner.BuildSlotBuckets
+local GetArmorySlotBucket, IsArmoryGearCategory = Inner.GetArmorySlotBucket, Inner.IsArmoryGearCategory
+local IsGearOnlyGroup, itemSlots = Inner.IsGearOnlyGroup, Inner.itemSlots
+local MergeDuplicates, PreCacheSortFields = Inner.MergeDuplicates, Inner.PreCacheSortFields
+local RegisterPawnIntegration, SetItemPanelOpen = Inner.RegisterPawnIntegration, Inner.SetItemPanelOpen
+local UpdatePawnArrow, VisualSortCompare = Inner.UpdatePawnArrow, Inner.VisualSortCompare
+local CreateHeader, CreateFooter = Inner.CreateHeader, Inner.CreateFooter
+local CreateReagentBagUI, GoldLedger = Inner.CreateReagentBagUI, Inner.GoldLedger
+local OnGoldChanged, SyncBagFrameToFooter = Inner.OnGoldChanged, Inner.SyncBagFrameToFooter
+local CreateInsetBorder, QUEST_BORDER_COLOR = Inner.CreateInsetBorder, Inner.QUEST_BORDER_COLOR
+local SetInsetBorderColor = Inner.SetInsetBorderColor
+local SetInsetBorderThickness, _itemDragFrame = Inner.SetInsetBorderThickness, Inner._itemDragFrame
+local ExitAssignSelectMode, ExitPinSelectMode = Inner.ExitAssignSelectMode, Inner.ExitPinSelectMode
+local GetOrCreateAssignOverlay = Inner.GetOrCreateAssignOverlay
+local GetOrCreatePinOverlay = Inner.GetOrCreatePinOverlay
+local ResetAssignOverlays, CreateSidebar = Inner.ResetAssignOverlays, Inner.CreateSidebar
+local _catHeaders, _expSubHeaders = Inner._catHeaders, Inner._expSubHeaders
+local CreateBagScrollFrame = Inner.CreateBagScrollFrame
+local GetOrCreateCatHeader = Inner.GetOrCreateCatHeader
+local GetOrCreateExpSubHeader = Inner.GetOrCreateExpSubHeader
+local ShowRecentClearButton = Inner.ShowRecentClearButton
+local SetSelectedCategoryIndex = Inner.SetSelectedCategoryIndex
+local SetSelectedGroupName = Inner.SetSelectedGroupName
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._bagsInternals, which hands the value to every copy.
-local selectedCategoryIndex = I.selectedCategoryIndex
-I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v)
-    selectedCategoryIndex = v
+local selectedCategoryIndex = Inner.selectedCategoryIndex
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
+    selectedCategoryIndex = val
 end
 local selectedGroupName
-I.groupNameSetters[#I.groupNameSetters + 1] = function(v)
-    selectedGroupName = v
+Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val)
+    selectedGroupName = val
 end
-local _anyItemPanelOpen = I._anyItemPanelOpen
-I.anyItemPanelOpenSetters[#I.anyItemPanelOpenSetters + 1] = function(v)
-    _anyItemPanelOpen = v
+local _anyItemPanelOpen = Inner._anyItemPanelOpen
+Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val)
+    _anyItemPanelOpen = val
 end
 
 -- Unmerge state the CURRENT painted layout was built with; the bags OnShow
@@ -68,8 +69,8 @@ end
 -- mailbox hides both). Written by the earlier files through
 -- SetPaintedPanelOpen, read here only.
 local _paintedPanelOpen = false
-I.paintedPanelOpenSetters[#I.paintedPanelOpenSetters + 1] = function(v)
-    _paintedPanelOpen = v
+Inner.paintedPanelOpenSetters[#Inner.paintedPanelOpenSetters + 1] = function(val)
+    _paintedPanelOpen = val
 end
 
 -------------------------------------------------------------------------------
@@ -90,8 +91,8 @@ local function StartAddon()
 
     -- Position: default 50px from bottom-left, saved position overrides
     if BP().bagsPosition then
-        local pos = BP().bagsPosition
-        CUI_Bags:SetPoint(pos.point, UIParent, pos.relativePoint, pos.x, pos.y)
+        local place = BP().bagsPosition
+        CUI_Bags:SetPoint(place.point, UIParent, place.relativePoint, place.x, place.y)
     else
         CUI_Bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -50, 50)
     end
@@ -115,16 +116,16 @@ local function StartAddon()
         if not IsMouseButtonDown("LeftButton") then
             _bagDragging = false
             self:Hide()
-            local left, top = CUI_Bags:GetLeft(), CUI_Bags:GetTop()
-            if left and top then
-                local PP = CUI and CUI.PP
-                if PP and PP.Snap then
-                    left = PP.Snap(left)
-                    top = PP.Snap(top)
+            local leftX, topY = CUI_Bags:GetLeft(), CUI_Bags:GetTop()
+            if leftX and topY then
+                local Pix = CUI and CUI.PP
+                if Pix and Pix.Snap then
+                    leftX = Pix.Snap(leftX)
+                    topY = Pix.Snap(topY)
                 end
-                BP().bagsPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = left, y = top }
+                BP().bagsPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = leftX, y = topY }
                 CUI_Bags:ClearAllPoints()
-                CUI_Bags:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+                CUI_Bags:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
             end
             return
         end
@@ -135,13 +136,13 @@ local function StartAddon()
         CUI_Bags:ClearAllPoints()
         CUI_Bags:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", newLeft, newTop)
     end)
-    CUI_Bags:SetScript("OnMouseDown", function(self, button)
+    CUI_Bags:SetScript("OnMouseDown", function(self, btnFrame)
         self:Raise()
         self:RepinIconLevels()
         -- Locked (the footer's lock icon): the window stays put. Nor does it move
         -- while something is on the cursor: a click on its empty space drops an
         -- item from outside the bags (the OnMouseUp hook below).
-        if button ~= "LeftButton" or BP().bagWindowLocked or GetCursorInfo() then
+        if btnFrame ~= "LeftButton" or BP().bagWindowLocked or GetCursorInfo() then
             return
         end
         local cx, cy = GetCursorPosition()
@@ -156,20 +157,20 @@ local function StartAddon()
         _bagDragging = true
         _bagDragFrame:Show()
     end)
-    CUI_Bags:SetScript("OnMouseUp", function(_, button)
-        if button == "LeftButton" and _bagDragging then
+    CUI_Bags:SetScript("OnMouseUp", function(_, btnFrame)
+        if btnFrame == "LeftButton" and _bagDragging then
             _bagDragging = false
             _bagDragFrame:Hide()
-            local left, top = CUI_Bags:GetLeft(), CUI_Bags:GetTop()
-            if left and top then
-                local PP = CUI and CUI.PP
-                if PP and PP.Snap then
-                    left = PP.Snap(left)
-                    top = PP.Snap(top)
+            local leftX, topY = CUI_Bags:GetLeft(), CUI_Bags:GetTop()
+            if leftX and topY then
+                local Pix = CUI and CUI.PP
+                if Pix and Pix.Snap then
+                    leftX = Pix.Snap(leftX)
+                    topY = Pix.Snap(topY)
                 end
-                BP().bagsPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = left, y = top }
+                BP().bagsPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = leftX, y = topY }
                 CUI_Bags:ClearAllPoints()
-                CUI_Bags:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+                CUI_Bags:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
             end
         end
     end)
@@ -184,7 +185,9 @@ local function StartAddon()
     CUI_Bags.bgOverlay:SetAllPoints()
     CUI_Bags.bgOverlay:SetColorTexture(0, 0, 0, 0.25)
 
-    if not ns.SkinForeverBagWindow(CUI_Bags, CUI_Bags.bg, CUI_Bags.bgOverlay, true, true) and CUI.PanelPP then
+    if
+        not mod.SkinForeverBagWindow(CUI_Bags, CUI_Bags.bg, CUI_Bags.bgOverlay, true, true) and CUI.PanelPP
+    then
         CUI.PanelPP.CreateBorder(CUI_Bags, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
     end
 
@@ -211,7 +214,7 @@ local function StartAddon()
         end
         -- The one-time "categories can be dragged" tip, until its Okay
         if not CludesUIDB.bagCategoryTipSeen then
-            ns.ShowCategoryTip()
+            mod.ShowCategoryTip()
         end
     end)
 
@@ -250,12 +253,12 @@ local function StartAddon()
         if not CursorItemIsExternal() then
             return
         end
-        local special = ns.SpecialBags()
+        local special = mod.SpecialBags()
         for bag = 0, 4 do
             local numSlots = (special and special[bag]) and 0 or C_Container.GetContainerNumSlots(bag)
-            for slot = 1, numSlots do
-                if not C_Container.GetContainerItemInfo(bag, slot) then
-                    C_Container.PickupContainerItem(bag, slot)
+            for slotIndex = 1, numSlots do
+                if not C_Container.GetContainerItemInfo(bag, slotIndex) then
+                    C_Container.PickupContainerItem(bag, slotIndex)
                     return
                 end
             end
@@ -264,8 +267,8 @@ local function StartAddon()
     -- Click or drag release on empty bag window space with an item from
     -- outside the bags (bank, mail, ...) on the cursor: it goes to the first
     -- empty bag slot. An item picked up from the bags stays on the cursor.
-    CUI_Bags:HookScript("OnMouseUp", function(_, button)
-        if button == "LeftButton" then
+    CUI_Bags:HookScript("OnMouseUp", function(_, btnFrame)
+        if btnFrame == "LeftButton" then
             PlaceExternalCursorItem()
         end
     end)
@@ -282,7 +285,7 @@ local function StartAddon()
     local dropBorder, dropCatch
     local hoverFrame, hoverCatch = false, false
     local extCache, extDirty = false, true
-    function ns.CursorItemExternalCached()
+    function mod.CursorItemExternalCached()
         if extDirty then
             extCache = CursorItemIsExternal()
             extDirty = false
@@ -290,21 +293,21 @@ local function StartAddon()
         return extCache
     end
     local function SyncDropBorder()
-        local layer = ns.CursorItemExternalCached() and CUI_Bags:IsVisible()
+        local layer = mod.CursorItemExternalCached() and CUI_Bags:IsVisible()
         if layer and not dropCatch then
             dropCatch = CreateFrame("Frame", nil, CUI_Bags)
             dropCatch:Hide()
             dropCatch:EnableMouse(true)
             dropCatch:EnableMouseWheel(true)
             dropCatch:SetScript("OnMouseWheel", function(_, delta)
-                local sf = CUI_Bags._scrollFrame
-                local wheel = sf and sf:GetScript("OnMouseWheel")
+                local scrollFrame = CUI_Bags._scrollFrame
+                local wheel = scrollFrame and scrollFrame:GetScript("OnMouseWheel")
                 if wheel then
-                    wheel(sf, delta)
+                    wheel(scrollFrame, delta)
                 end
             end)
-            dropCatch:SetScript("OnMouseUp", function(_, button)
-                if button == "LeftButton" then
+            dropCatch:SetScript("OnMouseUp", function(_, btnFrame)
+                if btnFrame == "LeftButton" then
                     PlaceExternalCursorItem()
                 end
             end)
@@ -330,8 +333,8 @@ local function StartAddon()
             end
             dropCatch:SetShown(layer and true or false)
         end
-        local on = layer and (hoverFrame or hoverCatch)
-        if on and not dropBorder then
+        local enabled = layer and (hoverFrame or hoverCatch)
+        if enabled and not dropBorder then
             dropBorder = CreateFrame("Frame", nil, CUI_Bags)
             dropBorder:SetAllPoints()
             dropBorder:SetFrameLevel(CUI_Bags:GetFrameLevel() + 60)
@@ -341,11 +344,11 @@ local function StartAddon()
         if not dropBorder then
             return
         end
-        if on then
+        if enabled then
             local r, g, bl = GetAccentRGB()
             SetInsetBorderColor(dropBorder, r, g, bl, 1)
         end
-        dropBorder:SetShown(on and true or false)
+        dropBorder:SetShown(enabled and true or false)
     end
     CUI_Bags._syncDropTarget = SyncDropBorder
     CUI_Bags:HookScript("OnEnter", function()
@@ -364,7 +367,7 @@ local function StartAddon()
         if event == "CURSOR_CHANGED" or GetCursorInfo() == "item" then
             SyncDropBorder()
             -- The Compact display's drop zones (CludesUIBags_Compact.lua)
-            ns.CompactZonesSync()
+            mod.CompactZonesSync()
         end
     end)
     CUI_Bags:HookScript("OnShow", function()
@@ -393,24 +396,24 @@ local function StartAddon()
         b:SetHeight(22)
         b:SetPoint("BOTTOMLEFT", footer, "BOTTOMLEFT", 8, 5)
         b:SetFrameLevel(footer:GetFrameLevel() + 20)
-        local bg = b:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.15, 0.15, 0.15, 1)
-        local PP = CUI and CUI.PP
-        if PP and PP.CreateBorder then
-            PP.CreateBorder(b, 0.25, 0.25, 0.25, 1)
+        local backdrop = b:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
+        local Pix = CUI and CUI.PP
+        if Pix and Pix.CreateBorder then
+            Pix.CreateBorder(b, 0.25, 0.25, 0.25, 1)
         end
-        local fs = b:CreateFontString(nil, "OVERLAY")
-        SetBagFont(fs, 11)
-        fs:SetPoint("CENTER", 0, 0)
-        fs:SetTextColor(1, 1, 1, 0.9)
-        fs:SetText(CludesUI.L("Place in Bags"))
-        b:SetWidth(fs:GetStringWidth() + 20)
+        local fontStr = b:CreateFontString(nil, "OVERLAY")
+        SetBagFont(fontStr, 11)
+        fontStr:SetPoint("CENTER", 0, 0)
+        fontStr:SetTextColor(1, 1, 1, 0.9)
+        fontStr:SetText(CludesUI.L("Place in Bags"))
+        b:SetWidth(fontStr:GetStringWidth() + 20)
         b:SetScript("OnEnter", function()
-            bg:SetColorTexture(0.2, 0.2, 0.2, 1)
+            backdrop:SetColorTexture(0.2, 0.2, 0.2, 1)
         end)
         b:SetScript("OnLeave", function()
-            bg:SetColorTexture(0.15, 0.15, 0.15, 1)
+            backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
         end)
         b:SetScript("OnClick", function()
             PlaceExternalCursorItem()
@@ -423,20 +426,20 @@ local function StartAddon()
     end
     -- Show edge (gated at the call): scroll aids, sidebar steps, drop button.
     PadBagsShown = function()
-        local on = CUI.PadInUse()
+        local enabled = CUI.PadInUse()
         CUI_Bags._padBuilt = true
         if CUI_Bags._scrollTrack then
-            CUI_Bags._scrollTrack.PadSync(on)
+            CUI_Bags._scrollTrack.PadSync(enabled)
         end
-        ns.PadSidebarSync(
+        mod.PadSidebarSync(
             CUI_Bags._sidebarHdr,
             CUI_Bags._sidebarSF,
             CUI_Bags._sidebarChild,
             "bagSidebarCollapsed",
-            on
+            enabled
         )
         local watch = CUI_Bags._padCursorWatch
-        if on then
+        if enabled then
             if not watch then
                 PadPlaceButton()
                 watch = CUI_Bags._padCursorWatch
@@ -468,7 +471,7 @@ local function StartAddon()
     CUI_BagsWindow.bg = CUI_BagsWindow:CreateTexture(nil, "BACKGROUND")
     CUI_BagsWindow.bg:SetAllPoints()
     CUI_BagsWindow.bg:SetColorTexture(0.02, 0.02, 0.02, 0.95)
-    if not ns.SkinForeverBagWindow(CUI_BagsWindow, CUI_BagsWindow.bg) and CUI.PanelPP then
+    if not mod.SkinForeverBagWindow(CUI_BagsWindow, CUI_BagsWindow.bg) and CUI.PanelPP then
         CUI.PanelPP.CreateBorder(CUI_BagsWindow, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
     end
     CludesUI.RegisterEscapeClose(CUI_BagsWindow)
@@ -486,7 +489,7 @@ local function StartAddon()
     CUI_BagsReagent.bg = CUI_BagsReagent:CreateTexture(nil, "BACKGROUND")
     CUI_BagsReagent.bg:SetAllPoints()
     CUI_BagsReagent.bg:SetColorTexture(0.02, 0.02, 0.02, 0.95)
-    if not ns.SkinForeverBagWindow(CUI_BagsReagent, CUI_BagsReagent.bg, nil, true, true) and CUI.PanelPP then
+    if not mod.SkinForeverBagWindow(CUI_BagsReagent, CUI_BagsReagent.bg, nil, true, true) and CUI.PanelPP then
         CUI.PanelPP.CreateBorder(CUI_BagsReagent, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
     end
 
@@ -519,7 +522,7 @@ local function StartAddon()
         CludesUIDB.bagsVisible = false
         -- Controller cursor: keep Blizzard's hidden bag frames closed too.
         if CUI.PadInUse() then
-            ns.PadReleaseBlizzBags()
+            mod.PadReleaseBlizzBags()
         end
     end
     local function ToggleCUI()
@@ -535,7 +538,7 @@ local function StartAddon()
                 -- since login. Its D-pad cannot reach our bags, so they stay
                 -- closed until a reload.
                 if CUI.IS_FOREVER and CUI.PadGamepadUI() then
-                    ns.PadStyleChanged()
+                    mod.PadStyleChanged()
                     return
                 end
             end
@@ -569,33 +572,33 @@ local function StartAddon()
     end
 
     local characterBagHooksInstalled = false
-    function ns.ToggleBagsWithCharacterFrame()
+    function mod.ToggleBagsWithCharacterFrame()
         if not BP().bagOpenWithCharacter then
             return
         end
         -- WoW Forever's Gamepad interface style: no hooks on Blizzard windows (see the stand-down below).
-        if ns.PadUIStandDown() then
+        if mod.PadUIStandDown() then
             return
         end
-        local frame = _G.CharacterFrame
-        if not frame then
+        local widget = _G.CharacterFrame
+        if not widget then
             return
         end
         if not characterBagHooksInstalled then
             characterBagHooksInstalled = true
-            frame:HookScript("OnShow", function()
+            widget:HookScript("OnShow", function()
                 if BP().bagOpenWithCharacter and not CUI_Bags:IsVisible() then
                     ToggleCUI()
                 end
             end)
-            frame:HookScript("OnHide", function()
+            widget:HookScript("OnHide", function()
                 if BP().bagOpenWithCharacter and CUI_Bags:IsVisible() then
                     ToggleCUI()
                 end
             end)
         end
     end
-    ns.ToggleBagsWithCharacterFrame()
+    mod.ToggleBagsWithCharacterFrame()
 
     local _lastToggleTime = 0
     local _visibleBeforeToggle = false
@@ -619,11 +622,11 @@ local function StartAddon()
     -- WoW Forever with the Gamepad interface style at login: Blizzard's own
     -- bags keep the D-pad navigation, so none of the takeover below runs
     -- (false on retail and for every other Forever player).
-    if ns.PadUIStandDown() then
+    if mod.PadUIStandDown() then
         -- A switch back to another style: the takeover follows a reload.
         local function StyleCheck()
             if not CUI.PadGamepadUI() then
-                ns.PadStyleChanged()
+                mod.PadStyleChanged()
             end
         end
         hooksecurefunc("ToggleAllBags", StyleCheck)
@@ -664,8 +667,8 @@ local function StartAddon()
         KillBlizzard()
 
         local keyringHooked = setmetatable({}, { __mode = "k" })
-        hooksecurefunc("ToggleBag", function(id)
-            if KEYRING and id == KEYRING then
+        hooksecurefunc("ToggleBag", function(ident)
+            if KEYRING and ident == KEYRING then
                 -- Blizzard just opened or closed it; only an open one comes out.
                 local f = ContainerFrameUtil_GetShownFrameForID
                     and ContainerFrameUtil_GetShownFrameForID(KEYRING)
@@ -689,32 +692,33 @@ local function StartAddon()
 
         -- Window that auto-opened the bags (merchant, mail, auction house, ...)
         local bagsOpener
-        hooksecurefunc("OpenAllBags", function(frame)
+        hooksecurefunc("OpenAllBags", function(widget)
             -- Blizzard's OpenBackpack can call ToggleBackpack first, which already
             -- flipped our window this frame: read its state from before that.
             local wasVisible = CUI_Bags:IsVisible()
             if _lastToggleTime == GetTime() then
                 wasVisible = _visibleBeforeToggle
             end
-            local open = wasVisible or ns.BagAutoWindowOn("bagAutoOpenWindows", ns.BagAutoWindowKey(frame))
+            local open = wasVisible or mod.BagAutoWindowOn("bagAutoOpenWindows", mod.BagAutoWindowKey(widget))
             if open and not CUI_Bags:IsVisible() then
                 ToggleCUI()
             elseif not open and CUI_Bags:IsVisible() then
                 CloseBags()
             end
             if open and not wasVisible then
-                bagsOpener = frame
+                bagsOpener = widget
             end
             KillBlizzard()
         end)
         -- Close with that window; frame is nil for non-window closes
-        hooksecurefunc("CloseAllBags", function(frame)
-            if not frame or frame ~= bagsOpener then
+        hooksecurefunc("CloseAllBags", function(widget)
+            if not widget or widget ~= bagsOpener then
                 return
             end
             bagsOpener = nil
             if
-                CUI_Bags:IsShown() and ns.BagAutoWindowOn("bagAutoCloseWindows", ns.BagAutoWindowKey(frame))
+                CUI_Bags:IsShown()
+                and mod.BagAutoWindowOn("bagAutoCloseWindows", mod.BagAutoWindowKey(widget))
             then
                 CloseBags()
             end
@@ -774,29 +778,29 @@ local function StartAddon()
     -- weapon stack on WoW Forever) counts by its size. The ammo slot (0) is
     -- skipped: it names a type whose ammo is already counted in the bags.
     local function TallyItemCounts()
-        local counts, order = {}, {}
+        local counts, sequence = {}, {}
         for bag = 0, 5 do
             local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slot = 1, numSlots do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info and info.itemID then
-                    if not counts[info.itemID] then
-                        order[#order + 1] = info.itemID
+            for slotIndex = 1, numSlots do
+                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                if details and details.itemID then
+                    if not counts[details.itemID] then
+                        sequence[#sequence + 1] = details.itemID
                     end
-                    counts[info.itemID] = (counts[info.itemID] or 0) + (info.stackCount or 0)
+                    counts[details.itemID] = (counts[details.itemID] or 0) + (details.stackCount or 0)
                 end
             end
         end
-        for slot = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
-            local itemID = GetInventoryItemID("player", slot)
-            if itemID then
-                if not counts[itemID] then
-                    order[#order + 1] = itemID
+        for slotIndex = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
+            local itemId = GetInventoryItemID("player", slotIndex)
+            if itemId then
+                if not counts[itemId] then
+                    sequence[#sequence + 1] = itemId
                 end
-                counts[itemID] = (counts[itemID] or 0) + (GetInventoryItemCount("player", slot) or 1)
+                counts[itemId] = (counts[itemId] or 0) + (GetInventoryItemCount("player", slotIndex) or 1)
             end
         end
-        return counts, order
+        return counts, sequence
     end
 
     local function SnapshotKnownIDs()
@@ -822,30 +826,30 @@ local function StartAddon()
             return
         end
         local atMail = MailOpen()
-        local counts, order = TallyItemCounts()
-        for _, itemID in ipairs(order) do
-            local count = counts[itemID]
-            local known = _knownItemCounts[itemID] or 0
-            if count > known then
+        local counts, sequence = TallyItemCounts()
+        for _, itemId in ipairs(sequence) do
+            local total = counts[itemId]
+            local known = _knownItemCounts[itemId] or 0
+            if total > known then
                 -- New, or more of a listed item: either way it is the newest now
                 local recent, ro = CUI_Bags._recentItems, CUI_Bags._recentOrder
-                if recent[itemID] then
+                if recent[itemId] then
                     for i = #ro, 1, -1 do
-                        if ro[i] == itemID then
+                        if ro[i] == itemId then
                             table.remove(ro, i)
                             break
                         end
                     end
                 end
                 CUI_Bags._recentSeq = CUI_Bags._recentSeq + 1
-                recent[itemID] = CUI_Bags._recentSeq
-                ro[#ro + 1] = itemID
+                recent[itemId] = CUI_Bags._recentSeq
+                ro[#ro + 1] = itemId
                 while #ro > RECENT_MAX do
                     recent[table.remove(ro, 1)] = nil
                 end
             end
-            if not atMail or count > known then
-                _knownItemCounts[itemID] = count
+            if not atMail or total > known then
+                _knownItemCounts[itemId] = total
             end
         end
         -- Items gone entirely (sold/used/deleted) no longer appear in `counts`;
@@ -855,9 +859,9 @@ local function StartAddon()
         -- gone from bags there was as likely posted or sent as disposed of, and
         -- dropping its peak would re-flag it as new the moment it came back.
         if not atMail then
-            for itemID in pairs(_knownItemCounts) do
-                if not counts[itemID] then
-                    _knownItemCounts[itemID] = nil
+            for itemId in pairs(_knownItemCounts) do
+                if not counts[itemId] then
+                    _knownItemCounts[itemId] = nil
                 end
             end
         end
@@ -974,16 +978,16 @@ local function StartAddon()
     -- pcall belt: RegisterEvent on an unknown event name is a HARD error, and this loop runs
     -- BEFORE the OnEvent wiring below, so one bad name kills StartAddon; a panel lost to a patch rename must degrade to "that panel doesn't unmerge", never a dead bags addon.
     for evt in pairs(ITEM_PANEL_EVENTS) do
-        local ok = pcall(CUI_Bags.RegisterEvent, CUI_Bags, evt)
-        if not ok then
+        local success = pcall(CUI_Bags.RegisterEvent, CUI_Bags, evt)
+        if not success then
             ITEM_PANEL_EVENTS[evt] = nil
         end
     end
 
     -- Send Mail is driven off the frame, not MAIL_SHOW, so switching tabs inside an open
     -- mailbox flips the state too. Blizzard_MailFrame loads with no LoadOnDemand, so the frame exists by now; the guard is belt.
-    local function HookSendMail(frame)
-        if not frame or not frame.HookScript then
+    local function HookSendMail(widget)
+        if not widget or not widget.HookScript then
             return
         end
         local function flip(open)
@@ -991,14 +995,14 @@ local function StartAddon()
                 CUI_Bags:RefreshInventory()
             end
         end
-        frame:HookScript("OnShow", function()
+        widget:HookScript("OnShow", function()
             flip(true)
         end)
-        frame:HookScript("OnHide", function()
+        widget:HookScript("OnHide", function()
             flip(false)
         end)
         -- Already on the Send Mail tab when hooked (/reload with mailbox open): OnShow already fired, so seed from live state.
-        if frame:IsShown() then
+        if widget:IsShown() then
             flip(true)
         end
     end
@@ -1006,7 +1010,7 @@ local function StartAddon()
 
     -- The saved slot size before the pool is built (out of combat only): a first
     -- bag open in combat could not resize the slots for the whole fight.
-    ns.ApplySlotMetrics()
+    mod.ApplySlotMetrics()
     -- Pre-warm the secure item-button pool out of combat: a ContainerFrameItemButtonTemplate created
     -- in lockdown is tainted (UseContainerItem() blocked in M+/Delves), so build every button we could
     -- need up front and let RefreshInventory only position/show clean ones. Slots the loading-screen
@@ -1026,14 +1030,14 @@ local function StartAddon()
             end
         end
         if co and not hasAny then
-            local order = 0
+            local sequence = 0
             for i = 1, 20 do
-                local info = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
-                if not info then
+                local details = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
+                if not details then
                     break
                 end
-                order = order + 1
-                co[info.currencyTypesID] = order
+                sequence = sequence + 1
+                co[details.currencyTypesID] = sequence
             end
         end
     end
@@ -1044,11 +1048,11 @@ local function StartAddon()
         local s = {}
         if C_CurrencyInfo and C_CurrencyInfo.GetBackpackCurrencyInfo then
             for i = 1, 20 do
-                local info = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
-                if not info then
+                local details = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
+                if not details then
                     break
                 end
-                s[info.currencyTypesID] = true
+                s[details.currencyTypesID] = true
             end
         end
         return s
@@ -1149,14 +1153,14 @@ local function StartAddon()
             end
             return
         end
-        local panel = ITEM_PANEL_EVENTS[event]
-        if panel then
+        local panelFrame = ITEM_PANEL_EVENTS[event]
+        if panelFrame then
             -- Tracked even while bags are hidden: the panel that opens them (OpenAllBags) can fire in either order with this event.
-            if SetItemPanelOpen(panel[1], panel[2]) and CUI_Bags:IsVisible() then
+            if SetItemPanelOpen(panelFrame[1], panelFrame[2]) and CUI_Bags:IsVisible() then
                 CUI_Bags:RefreshInventory()
             end
             -- Sell Junk shows with the merchant (only once the Junk Marker built it)
-            if panel[1] == "merchant" and CUI_Bags._junkBtn then
+            if panelFrame[1] == "merchant" and CUI_Bags._junkBtn then
                 CUI_Bags:SyncHeaderIcons()
             end
             return
@@ -1274,7 +1278,7 @@ loader:SetScript("OnEvent", function(self, event)
     -- sound effects still read the mute. Out of combat (some CVars cannot
     -- change in combat): a reload in combat waits for its end.
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("staleSortMute", ReleaseStaleSortMute)
+        mod.CombatQueue.Defer("staleSortMute", ReleaseStaleSortMute)
     else
         ReleaseStaleSortMute()
     end
@@ -1300,31 +1304,31 @@ end)
 -------------------------------------------------------------------------------
 --  Shared with CludesUIBags_Grid.lua (loads after this file)
 -------------------------------------------------------------------------------
-function ns.GetSelection()
+function mod.GetSelection()
     return selectedCategoryIndex, selectedGroupName
 end
-function ns.SetSelection(idx, group)
-    SetSelectedCategoryIndex(idx)
+function mod.SetSelection(position, group)
+    SetSelectedCategoryIndex(position)
     SetSelectedGroupName(group)
 end
-ns.SLOT_SIZE, ns.SPACING = SLOT_SIZE, SPACING
-ns.itemSlots = itemSlots
-ns.itemDragFrame = _itemDragFrame
-ns.catHeaders = _catHeaders
-ns.expSubHeaders = _expSubHeaders
-ns.QUEST_BORDER_COLOR = QUEST_BORDER_COLOR
-ns.BagsItemUnusable = BagsItemUnusable
-ns.GetFont = GetFont
-ns.GetCatTitleSize = GetCatTitleSize
-ns.SetInsetBorderThickness = SetInsetBorderThickness
-ns.UpdatePawnArrow = UpdatePawnArrow
-ns.PreCacheSortFields = PreCacheSortFields
+mod.SLOT_SIZE, mod.SPACING = SLOT_SIZE, SPACING
+mod.itemSlots = itemSlots
+mod.itemDragFrame = _itemDragFrame
+mod.catHeaders = _catHeaders
+mod.expSubHeaders = _expSubHeaders
+mod.QUEST_BORDER_COLOR = QUEST_BORDER_COLOR
+mod.BagsItemUnusable = BagsItemUnusable
+mod.GetFont = GetFont
+mod.GetCatTitleSize = GetCatTitleSize
+mod.SetInsetBorderThickness = SetInsetBorderThickness
+mod.UpdatePawnArrow = UpdatePawnArrow
+mod.PreCacheSortFields = PreCacheSortFields
 -- Recent Items order in every view: newest pickup first (pickup numbers in
 -- CUI_Bags._recentItems), the bag position breaking ties within one item
-function ns.RecentCompare(a, b)
-    local rec = CUI_Bags._recentItems
-    local ra = (a.info and rec[a.info.itemID]) or 0
-    local rb = (b.info and rec[b.info.itemID]) or 0
+function mod.RecentCompare(a, b)
+    local recd = CUI_Bags._recentItems
+    local ra = (a.info and recd[a.info.itemID]) or 0
+    local rb = (b.info and recd[b.info.itemID]) or 0
     if ra ~= rb then
         return ra > rb
     end
@@ -1333,22 +1337,22 @@ function ns.RecentCompare(a, b)
     end
     return a.slot < b.slot
 end
-ns.VisualSortCompare = VisualSortCompare
-ns.MergeDuplicates = MergeDuplicates
-ns.ApplySavedOrder = ApplySavedOrder
-ns.BuildExpansionBuckets = BuildExpansionBuckets
-ns.BuildSlotBuckets = BuildSlotBuckets
-ns.GetArmorySlotBucket = GetArmorySlotBucket
-ns.ArmorySlotGroupingEnabled = ArmorySlotGroupingEnabled
-ns.IsArmoryGearCategory = IsArmoryGearCategory
-ns.IsGearOnlyGroup = IsGearOnlyGroup
-ns.GetOrCreateCatHeader = GetOrCreateCatHeader
-ns.GetOrCreateExpSubHeader = GetOrCreateExpSubHeader
-ns.ShowRecentClearButton = ShowRecentClearButton
-ns.GetOrCreatePinOverlay = GetOrCreatePinOverlay
-ns.GetOrCreateAssignOverlay = GetOrCreateAssignOverlay
-ns.ResetAssignOverlays = ResetAssignOverlays
+mod.VisualSortCompare = VisualSortCompare
+mod.MergeDuplicates = MergeDuplicates
+mod.ApplySavedOrder = ApplySavedOrder
+mod.BuildExpansionBuckets = BuildExpansionBuckets
+mod.BuildSlotBuckets = BuildSlotBuckets
+mod.GetArmorySlotBucket = GetArmorySlotBucket
+mod.ArmorySlotGroupingEnabled = ArmorySlotGroupingEnabled
+mod.IsArmoryGearCategory = IsArmoryGearCategory
+mod.IsGearOnlyGroup = IsGearOnlyGroup
+mod.GetOrCreateCatHeader = GetOrCreateCatHeader
+mod.GetOrCreateExpSubHeader = GetOrCreateExpSubHeader
+mod.ShowRecentClearButton = ShowRecentClearButton
+mod.GetOrCreatePinOverlay = GetOrCreatePinOverlay
+mod.GetOrCreateAssignOverlay = GetOrCreateAssignOverlay
+mod.ResetAssignOverlays = ResetAssignOverlays
 
 -- The start values the copies were built from: nothing may read them again.
-I._anyItemPanelOpen, I.selectedCategoryIndex = nil, nil
-I.broken = false
+Inner._anyItemPanelOpen, Inner.selectedCategoryIndex = nil, nil
+Inner.broken = false

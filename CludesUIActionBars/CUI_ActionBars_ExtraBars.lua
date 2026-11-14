@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Micro Menu and Bag Bar, and the extra bars setup. Loads after
 --  CUI_ActionBars_DataBars.lua and reads the main file through ns only.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, type = ipairs, type
@@ -17,14 +17,14 @@ local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
 local GetBindingKey = GetBindingKey
 
-local EAB, EAB_VTABLE, EXTRA_BARS = ns.EAB, ns.EAB_VTABLE, ns.EXTRA_BARS
-local ForceCooldownPaint = ns.ForceCooldownPaint
-local I = ns._internals
+local ABAR, EAB_VTABLE, EXTRA_BARS = mod.EAB, mod.EAB_VTABLE, mod.EXTRA_BARS
+local ForceCooldownPaint = mod.ForceCooldownPaint
+local Inner = mod._internals
 local BLIZZ_MOVABLE_OVERLAY, FormatHotkeyText, SafeEnableMouse =
-    I.BLIZZ_MOVABLE_OVERLAY, I.FormatHotkeyText, I.SafeEnableMouse
-local SetupDataBars, _quickKeybindState = I.SetupDataBars, I._quickKeybindState
+    Inner.BLIZZ_MOVABLE_OVERLAY, Inner.FormatHotkeyText, Inner.SafeEnableMouse
+local SetupDataBars, _quickKeybindState = Inner.SetupDataBars, Inner._quickKeybindState
 local blizzMovableHolders, extraBarHolders, hoverStates =
-    I.blizzMovableHolders, I.extraBarHolders, I.hoverStates
+    Inner.blizzMovableHolders, Inner.extraBarHolders, Inner.hoverStates
 local AttachExtraBarHoverHooks -- assigned below, published as ns.AttachExtraBarHoverHooks
 
 -------------------------------------------------------------------------------
@@ -34,21 +34,21 @@ local AttachExtraBarHoverHooks -- assigned below, published as ns.AttachExtraBar
 --  Bar stays Blizzard's (Edit Mode owns its position).
 --  Overlay sizes are hardcoded (don't affect actual Blizzard frame rendering).
 -------------------------------------------------------------------------------
-local function SetupBlizzardMovableFrame(barKey)
-    local holder = CreateFrame("Frame", "CludesEAB_" .. barKey, UIParent)
-    holder:SetClampedToScreen(true)
-    holder:EnableMouse(false)
-    blizzMovableHolders[barKey] = holder
+local function SetupBlizzardMovableFrame(barId)
+    local holderFrame = CreateFrame("Frame", "CludesEAB_" .. barId, UIParent)
+    holderFrame:SetClampedToScreen(true)
+    holderFrame:EnableMouse(false)
+    blizzMovableHolders[barId] = holderFrame
 
-    local ov = BLIZZ_MOVABLE_OVERLAY[barKey]
-    holder:SetSize(ov and ov.w or 50, ov and ov.h or 50)
+    local shade = BLIZZ_MOVABLE_OVERLAY[barId]
+    holderFrame:SetSize(shade and shade.w or 50, shade and shade.h or 50)
 
     -- Identify which Blizzard frames to manage for this bar key.
     -- extraFrames = all frames that get reparented into the holder.
     local primaryFrame -- the frame we read position from before reparenting
     local extraFrames = {}
 
-    if barKey == "ExtraActionButton" then
+    if barId == "ExtraActionButton" then
         -- ExtraAbilityContainer is the layout container Blizzard's Edit Mode
         -- positions. It parents ExtraActionBarFrame and ZoneAbilityFrame.
         -- We take ownership of the whole container.
@@ -60,33 +60,33 @@ local function SetupBlizzardMovableFrame(barKey)
     end
 
     if #extraFrames == 0 then
-        holder:Hide()
+        holderFrame:Hide()
         return
     end
 
     -- Restore saved position BEFORE reparenting so we can still read the
     -- original Blizzard-placed position if no save exists yet.
-    local pos = EAB.db.profile.barPositions[barKey]
-    if pos and pos.point then
-        holder:ClearAllPoints()
-        holder:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+    local place = ABAR.db.profile.barPositions[barId]
+    if place and place.point then
+        holderFrame:ClearAllPoints()
+        holderFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x, place.y)
     else
         -- Try to capture Blizzard's current Edit Mode position immediately.
         -- If the frame has no valid bounds yet, defer via OnUpdate.
-        local src = primaryFrame
+        local source = primaryFrame
         local function TryCapturePosition(self)
-            local bL, bT = src:GetLeft(), src:GetTop()
-            local bR, bB = src:GetRight(), src:GetBottom()
+            local bL, bT = source:GetLeft(), source:GetTop()
+            local bR, bB = source:GetRight(), source:GetBottom()
             if bL and bT and bR and bB and (bR - bL) > 1 then
-                local bS = src:GetEffectiveScale()
+                local bS = source:GetEffectiveScale()
                 local uS = UIParent:GetEffectiveScale()
                 local uiW, uiH = UIParent:GetSize()
                 local cx = (bL + bR) * 0.5 * bS / uS - uiW / 2
                 local cy = (bT + bB) * 0.5 * bS / uS - uiH / 2
-                EAB.db.profile.barPositions[barKey] =
+                ABAR.db.profile.barPositions[barId] =
                     { point = "CENTER", relPoint = "CENTER", x = cx, y = cy }
-                holder:ClearAllPoints()
-                holder:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
+                holderFrame:ClearAllPoints()
+                holderFrame:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
                 if self then
                     self:SetScript("OnUpdate", nil)
                 end
@@ -95,8 +95,8 @@ local function SetupBlizzardMovableFrame(barKey)
             return false
         end
         if not TryCapturePosition(nil) then
-            holder:ClearAllPoints()
-            holder:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
+            holderFrame:ClearAllPoints()
+            holderFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
             local attempts = 0
             local captureFrame = CreateFrame("Frame")
             captureFrame:SetScript("OnUpdate", function(self)
@@ -112,17 +112,17 @@ local function SetupBlizzardMovableFrame(barKey)
     -- multiple times. In combat the move waits for combat to end, queued
     -- once per bar however many asks; until then a container Blizzard
     -- parented into its bottom managed column is laid out in its own slot.
-    local reparentKey = "BlizzMovableReparent" .. barKey
+    local reparentKey = "BlizzMovableReparent" .. barId
     local function ReparentIntoHolder()
         if InCombatLockdown() then
-            ns.CombatQueue.Defer(reparentKey, ReparentIntoHolder)
+            mod.CombatQueue.Defer(reparentKey, ReparentIntoHolder)
             return
         end
         for _, f in ipairs(extraFrames) do
-            f:SetParent(holder)
+            f:SetParent(holderFrame)
             -- ExtraAbilityContainer is an Edit Mode system: base methods only.
             CludesUI.ClearFramePoints(f)
-            CludesUI.SetFramePoint(f, "CENTER", holder, "CENTER", 0, 0)
+            CludesUI.SetFramePoint(f, "CENTER", holderFrame, "CENTER", 0, 0)
         end
     end
 
@@ -130,7 +130,7 @@ local function SetupBlizzardMovableFrame(barKey)
     -- reparent it into our holder. Keep OnShow/OnHide cleared on the container so
     -- Blizzard's layout code cannot fire, but leave the child frames
     -- (ExtraActionBarFrame, ZoneAbilityFrame) untouched so they show and hide normally.
-    if barKey == "ExtraActionButton" and ExtraAbilityContainer then
+    if barId == "ExtraActionButton" and ExtraAbilityContainer then
         -- Hide the Edit Mode selection overlay so it doesn't appear in
         -- Blizzard's Edit Mode (we own this frame's position via unlock).
         local eacSel = ExtraAbilityContainer.Selection
@@ -189,8 +189,8 @@ local function SetupBlizzardMovableFrame(barKey)
             -- refresh is a reliable delve-entry signal (the button's own OnShow
             -- doesn't fire then), and RefreshBroadcaster reads the button's
             -- actual visibility to decide.
-            if ns.RefreshBroadcaster then
-                ns.RefreshBroadcaster()
+            if mod.RefreshBroadcaster then
+                mod.RefreshBroadcaster()
             end
         end
 
@@ -201,9 +201,9 @@ local function SetupBlizzardMovableFrame(barKey)
         -- so this is the only refresh signal for that path. Deferred one frame so
         -- Blizzard has finished assigning the button's action before we read it.
         if ExtraAbilityContainer.AddFrame then
-            hooksecurefunc(ExtraAbilityContainer, "AddFrame", function(_, frame)
-                if frame and frame.EnableMouse and not InCombatLockdown() then
-                    frame:EnableMouse(true)
+            hooksecurefunc(ExtraAbilityContainer, "AddFrame", function(_, widget)
+                if widget and widget.EnableMouse and not InCombatLockdown() then
+                    widget:EnableMouse(true)
                 end
                 C_Timer_After(0, RefreshExtraActionButton)
             end)
@@ -214,10 +214,10 @@ local function SetupBlizzardMovableFrame(barKey)
             if InCombatLockdown() then
                 return
             end
-            local container = ExtraAbilityContainer
-            container:SetParent(holder)
-            CludesUI.ClearFramePoints(container)
-            CludesUI.SetFramePoint(container, "CENTER", holder, "CENTER", 0, 0)
+            local boxHolder = ExtraAbilityContainer
+            boxHolder:SetParent(holderFrame)
+            CludesUI.ClearFramePoints(boxHolder)
+            CludesUI.SetFramePoint(boxHolder, "CENTER", holderFrame, "CENTER", 0, 0)
         end
         RepositionExtraContainer()
 
@@ -225,7 +225,7 @@ local function SetupBlizzardMovableFrame(barKey)
         if ExtraAbilityContainer.ApplySystemAnchor then
             hooksecurefunc(ExtraAbilityContainer, "ApplySystemAnchor", function()
                 local _, relFrame = ExtraAbilityContainer:GetPoint()
-                if relFrame ~= holder then
+                if relFrame ~= holderFrame then
                     RepositionExtraContainer()
                 end
                 -- Do NOT write to BottomManagedFrameContainer.showingFrames here.
@@ -243,7 +243,7 @@ local function SetupBlizzardMovableFrame(barKey)
         -- Re-reparent if the container shows outside the holder. (Its OnShow
         -- script is cleared above; this method hook still fires on Show.)
         hooksecurefunc(ExtraAbilityContainer, "Show", function()
-            if ExtraAbilityContainer:GetParent() ~= holder then
+            if ExtraAbilityContainer:GetParent() ~= holderFrame then
                 RepositionExtraContainer()
             end
             RefreshExtraActionButton()
@@ -266,19 +266,19 @@ local function SetupBlizzardMovableFrame(barKey)
     -- Blizzard or another addon steals the frame back.
     for _, f in ipairs(extraFrames) do
         hooksecurefunc(f, "SetParent", function(self, newParent)
-            if newParent ~= holder then
+            if newParent ~= holderFrame then
                 ReparentIntoHolder()
             end
         end)
     end
 
     -- Apply visibility settings
-    local s = EAB.db.profile.bars[barKey]
-    if s and EAB.VisibilityCompat.IsNever(s) then
-        holder:Hide()
+    local s = ABAR.db.profile.bars[barId]
+    if s and ABAR.VisibilityCompat.IsNever(s) then
+        holderFrame:Hide()
     end
 
-    return holder
+    return holderFrame
 end
 
 -- Re-disable mouse on ExtraActionBarFrame after every combat: Blizzard's
@@ -295,13 +295,13 @@ _blizzMovableCombatFrame:SetScript("OnEvent", function()
 end)
 
 local function SetupBlizzardMovableFrames()
-    for _, info in ipairs(EXTRA_BARS) do
-        if info.isBlizzardMovable then
+    for _, details in ipairs(EXTRA_BARS) do
+        if details.isBlizzardMovable then
             -- EncounterBar: position fully owned by Blizzard Edit Mode.
-            if info.key == "EncounterBar" then
+            if details.key == "EncounterBar" then
                 -- no-op: let Blizzard own position entirely
             else
-                SetupBlizzardMovableFrame(info.key)
+                SetupBlizzardMovableFrame(details.key)
             end
         end
     end
@@ -311,24 +311,24 @@ end
 --  Extra Bar Holders (MicroBar, BagBar) positioning via holder frames.
 --  Reparents Blizzard frames into holder frames so unlock mode can position them.
 -------------------------------------------------------------------------------
-AttachExtraBarHoverHooks = function(info)
+AttachExtraBarHoverHooks = function(details)
     -- Position-only Blizzard-owned bars (the QueueStatus eye) never get mouseover
     -- fade hooks -- CUI controls only their position now, not visibility. Without
     -- this, a stale "mouseover" setting would fade the eye to alpha 0 on leave.
-    if info.noManagedVisibility then
+    if details.noManagedVisibility then
         return
     end
     -- Idempotent: only attach once per bar key
-    if hoverStates[info.key] then
+    if hoverStates[details.key] then
         return
     end
 
-    local blizzFrame = _G[info.frameName]
+    local blizzFrame = _G[details.frameName]
     if not blizzFrame then
         return
     end
-    local holder = extraBarHolders[info.key]
-    local hoverFrame = info.hoverFrame and _G[info.hoverFrame]
+    local holderFrame = extraBarHolders[details.key]
+    local hoverFrame = details.hoverFrame and _G[details.hoverFrame]
 
     -- Fade the Blizzard frame directly rather than the holder.
     -- The holder is for positioning only; fading it can be overridden by
@@ -336,14 +336,14 @@ AttachExtraBarHoverHooks = function(info)
     local fadeTarget = blizzFrame
     local hoverRoot = hoverFrame or blizzFrame
 
-    local state = EAB_VTABLE.Hover.GetState(info.key, fadeTarget)
+    local status = EAB_VTABLE.Hover.GetState(details.key, fadeTarget)
 
-    local function IsChildOfHoverRoot(frame)
-        while frame do
-            if frame == hoverRoot then
+    local function IsChildOfHoverRoot(widget)
+        while widget do
+            if widget == hoverRoot then
                 return true
             end
-            frame = frame.GetParent and frame:GetParent() or nil
+            widget = widget.GetParent and widget:GetParent() or nil
         end
         return false
     end
@@ -361,7 +361,7 @@ AttachExtraBarHoverHooks = function(info)
         return hoverRoot:IsMouseOver()
     end
 
-    local OnEnter, OnLeave = EAB_VTABLE.Hover.BuildHandlers(info.key, state, {
+    local OnEnter, OnLeave = EAB_VTABLE.Hover.BuildHandlers(details.key, status, {
         canEnter = function()
             return IsHoverRootActive()
         end,
@@ -376,22 +376,22 @@ AttachExtraBarHoverHooks = function(info)
 
     -- Recurse into child frames to hook all interactive buttons, including
     -- those nested inside sub-containers (e.g. MicroMenu inside MicroMenuContainer).
-    local function HookChildren(parent, depth)
+    local function HookChildren(hostFrame, depth)
         depth = depth or 0
         if depth > 3 then
             return
         end
-        for _, child in ipairs({ parent:GetChildren() }) do
+        for _, childFrame in ipairs({ hostFrame:GetChildren() }) do
             if
-                child:IsObjectType("Button")
-                or child:IsObjectType("CheckButton")
-                or child:IsObjectType("ItemButton")
+                childFrame:IsObjectType("Button")
+                or childFrame:IsObjectType("CheckButton")
+                or childFrame:IsObjectType("ItemButton")
             then
-                child:HookScript("OnEnter", OnEnter)
-                child:HookScript("OnLeave", OnLeave)
+                childFrame:HookScript("OnEnter", OnEnter)
+                childFrame:HookScript("OnLeave", OnLeave)
             else
                 -- Recurse into non-button containers
-                HookChildren(child, depth + 1)
+                HookChildren(childFrame, depth + 1)
             end
         end
     end
@@ -411,11 +411,11 @@ end
 -- while the spot helper answers, a spot saved before the variant placed the
 -- eye (a login capture) gives way; the stamp is set as soon as nothing is
 -- saved, so every later spot is the player's own.
-function ns.AB_ForeverEyeParked()
-    if not ns.AB_Forever() then
+function mod.AB_ForeverEyeParked()
+    if not mod.AB_Forever() then
         return false
     end
-    local p = EAB.db.profile
+    local p = ABAR.db.profile
     local qs = p.barPositions.QueueStatus
     if not p.foreverEyeRingSeeded then
         if not (qs and qs.point) then
@@ -432,28 +432,28 @@ function ns.AB_ForeverEyeParked()
     return not (qs and qs.point)
 end
 -- Places the holder there; true when parked.
-function ns.AB_ForeverEyePark(holder)
-    if not (holder and ns.AB_ForeverEyeParked()) then
+function mod.AB_ForeverEyePark(holderFrame)
+    if not (holderFrame and mod.AB_ForeverEyeParked()) then
         return false
     end
     local mm = CludesUI._ModuleNS.CludesUIMinimap
-    local map, x, y
+    local map, posX, posY
     if mm then
-        map, x, y = mm.MinimapQueueEyeSpot()
+        map, posX, posY = mm.MinimapQueueEyeSpot()
     end
-    holder:ClearAllPoints()
+    holderFrame:ClearAllPoints()
     if map then
-        holder:SetPoint("CENTER", map, "CENTER", x, y)
+        holderFrame:SetPoint("CENTER", map, "CENTER", posX, posY)
     else
         -- Blizzard's stock spot, which scales with the minimap's Edit Mode size.
         local ms = (MinimapCluster and MinimapCluster.GetEditModeScale and MinimapCluster:GetEditModeScale())
             or 1
-        holder:SetPoint("CENTER", Minimap, "CENTER", -68 * ms, -68 * ms)
+        holderFrame:SetPoint("CENTER", Minimap, "CENTER", -68 * ms, -68 * ms)
     end
     return true
 end
-function ns.AB_ForeverEyeRelayout()
-    ns.AB_ForeverEyePark(extraBarHolders.QueueStatus)
+function mod.AB_ForeverEyeRelayout()
+    mod.AB_ForeverEyePark(extraBarHolders.QueueStatus)
 end
 
 -- Blizzard Style on the WoW Forever client: that client frames the micro menu
@@ -466,11 +466,11 @@ end
 -- look keeps the art.
 local FV_BAG_ART = { "actionbar-frame", "iconframe-background" }
 local fvBagArt
-local function FadeForeverBarArt(barKey)
-    if not (CludesUI.IS_FOREVER and ns.AB_Style() == "blizzard" and not ns.AB_Forever()) then
+local function FadeForeverBarArt(barId)
+    if not (CludesUI.IS_FOREVER and mod.AB_Style() == "blizzard" and not mod.AB_Forever()) then
         return
     end
-    if barKey == "MicroBar" then
+    if barId == "MicroBar" then
         local mm = _G.MicroMenu
         if mm and mm.BackgroundArt then
             mm.BackgroundArt:SetAlpha(0)
@@ -480,20 +480,20 @@ local function FadeForeverBarArt(barKey)
         end
         return
     end
-    local bar = _G.BagsBar
-    if not bar then
+    local barFrame = _G.BagsBar
+    if not barFrame then
         return
     end
     if not fvBagArt then
         fvBagArt = {}
-        local regions = { bar:GetRegions() }
+        local regions = { barFrame:GetRegions() }
         for i = 1, #regions do
             local r = regions[i]
             local atlas = r.GetAtlas and r:GetAtlas()
             if atlas then
                 local la = atlas:lower()
-                for j = 1, #FV_BAG_ART do
-                    if la:find(FV_BAG_ART[j], 1, true) then
+                for jdx = 1, #FV_BAG_ART do
+                    if la:find(FV_BAG_ART[jdx], 1, true) then
                         fvBagArt[#fvBagArt + 1] = r
                         break
                     end
@@ -506,41 +506,41 @@ local function FadeForeverBarArt(barKey)
     end
 end
 
-local function SetupExtraBarHolder(barKey, frameName, barInfo)
+local function SetupExtraBarHolder(barId, frameName, barInfo)
     local blizzFrame = _G[frameName]
     if not blizzFrame then
         return
     end
 
-    local holder = CreateFrame("Frame", "CludesEAB_" .. barKey, UIParent)
-    holder:SetClampedToScreen(true)
-    extraBarHolders[barKey] = holder
+    local holderFrame = CreateFrame("Frame", "CludesEAB_" .. barId, UIParent)
+    holderFrame:SetClampedToScreen(true)
+    extraBarHolders[barId] = holderFrame
 
     -- Size the holder to match the Blizzard frame
-    local w, h = blizzFrame:GetWidth(), blizzFrame:GetHeight()
-    if w and w > 1 and h and h > 1 then
-        holder:SetSize(w, h)
+    local wid, hgt = blizzFrame:GetWidth(), blizzFrame:GetHeight()
+    if wid and wid > 1 and hgt and hgt > 1 then
+        holderFrame:SetSize(wid, hgt)
     else
-        holder:SetSize(200, 40)
+        holderFrame:SetSize(200, 40)
     end
 
     -- MicroBar/BagBar: position fully owned by Blizzard Edit Mode.
     -- Don't save or restore positions -- passive-follow handles it.
     -- Early return skips all position capture/restore code below.
-    if barKey == "MicroBar" or barKey == "BagBar" then
-        EAB.db.profile.barPositions[barKey] = nil
+    if barId == "MicroBar" or barId == "BagBar" then
+        ABAR.db.profile.barPositions[barId] = nil
         local function SyncFollow()
             local fw, fh = blizzFrame:GetWidth(), blizzFrame:GetHeight()
             if fw and fw > 1 and fh and fh > 1 then
                 -- In our own units: Edit Mode's Size setting scales the frame.
-                local k = blizzFrame:GetEffectiveScale() / holder:GetEffectiveScale()
-                holder:SetSize(fw * k, fh * k)
+                local k = blizzFrame:GetEffectiveScale() / holderFrame:GetEffectiveScale()
+                holderFrame:SetSize(fw * k, fh * k)
             end
-            holder:ClearAllPoints()
-            holder:SetPoint("CENTER", blizzFrame, "CENTER", 0, 0)
+            holderFrame:ClearAllPoints()
+            holderFrame:SetPoint("CENTER", blizzFrame, "CENTER", 0, 0)
             -- The bar's end caps follow the frame's size and orientation.
-            ns.AB_ExtraCaps(barKey)
-            FadeForeverBarArt(barKey)
+            mod.AB_ExtraCaps(barId)
+            FadeForeverBarArt(barId)
         end
         SyncFollow()
         blizzFrame:HookScript("OnSizeChanged", function()
@@ -557,16 +557,16 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
                 C_Timer_After(0, SyncFollow)
             end)
         end
-        return holder
+        return holderFrame
     end
 
     -- Restore saved position or capture current Blizzard position
-    local pos = EAB.db.profile.barPositions[barKey]
-    if barKey == "QueueStatus" and ns.AB_ForeverEyePark(holder) then
+    local place = ABAR.db.profile.barPositions[barId]
+    if barId == "QueueStatus" and mod.AB_ForeverEyePark(holderFrame) then
         -- WoW Forever: at its stock spot on the minimap (never captured).
-    elseif pos and pos.point then
-        holder:ClearAllPoints()
-        holder:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+    elseif place and place.point then
+        holderFrame:ClearAllPoints()
+        holderFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x, place.y)
     else
         local bL, bT = blizzFrame:GetLeft(), blizzFrame:GetTop()
         local bR, bB = blizzFrame:GetRight(), blizzFrame:GetBottom()
@@ -576,18 +576,18 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
             local uiW, uiH = UIParent:GetSize()
             local cx = (bL + bR) * 0.5 * bS / uiS - uiW / 2
             local cy = (bT + bB) * 0.5 * bS / uiS - uiH / 2
-            EAB.db.profile.barPositions[barKey] = {
+            ABAR.db.profile.barPositions[barId] = {
                 point = "CENTER",
                 relPoint = "CENTER",
                 x = cx,
                 y = cy,
             }
-            holder:ClearAllPoints()
-            holder:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
+            holderFrame:ClearAllPoints()
+            holderFrame:SetPoint("CENTER", UIParent, "CENTER", cx, cy)
         else
             -- Defer capture
-            holder:ClearAllPoints()
-            holder:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
+            holderFrame:ClearAllPoints()
+            holderFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
             local attempts = 0
             local captureFrame = CreateFrame("Frame")
             captureFrame:SetScript("OnUpdate", function(self)
@@ -600,14 +600,14 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
                     local uiW, uiH = UIParent:GetSize()
                     local ccx = (cL + cR) * 0.5 * cS / uS - uiW / 2
                     local ccy = (cT + cB) * 0.5 * cS / uS - uiH / 2
-                    EAB.db.profile.barPositions[barKey] = {
+                    ABAR.db.profile.barPositions[barId] = {
                         point = "CENTER",
                         relPoint = "CENTER",
                         x = ccx,
                         y = ccy,
                     }
-                    holder:ClearAllPoints()
-                    holder:SetPoint("CENTER", UIParent, "CENTER", ccx, ccy)
+                    holderFrame:ClearAllPoints()
+                    holderFrame:SetPoint("CENTER", UIParent, "CENTER", ccx, ccy)
                     self:SetScript("OnUpdate", nil)
                 elseif attempts > 300 then
                     self:SetScript("OnUpdate", nil)
@@ -619,8 +619,8 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
     -- QueueStatusButton: reparent to UIParent so micro menu visibility
     -- (mouseover/combat hide) doesn't affect the eye. Hook UpdatePosition to
     -- prevent snap-back.
-    if barKey == "QueueStatus" then
-        SafeEnableMouse(holder, false)
+    if barId == "QueueStatus" then
+        SafeEnableMouse(holderFrame, false)
 
         -- Reparent to UIParent (independent of micro menu visibility)
         local function EnsureQueueParent()
@@ -640,7 +640,7 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
         local function SyncQueueHolderSize()
             local fw, fh = blizzFrame:GetWidth(), blizzFrame:GetHeight()
             if fw and fw > 1 and fh and fh > 1 then
-                holder:SetSize(fw, fh)
+                holderFrame:SetSize(fw, fh)
             end
         end
 
@@ -649,7 +649,7 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
         -- pass (tainted from here); the saved base methods move it cleanly.
         local function RepositionQueue()
             CludesUI.ClearFramePoints(blizzFrame)
-            CludesUI.SetFramePoint(blizzFrame, "CENTER", holder, "CENTER", 0, 0)
+            CludesUI.SetFramePoint(blizzFrame, "CENTER", holderFrame, "CENTER", 0, 0)
         end
 
         RepositionQueue()
@@ -680,7 +680,7 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
             end
             if MinimapCluster and type(MinimapCluster.SetEditModeScale) == "function" then
                 hooksecurefunc(MinimapCluster, "SetEditModeScale", function()
-                    ns.AB_ForeverEyeRelayout()
+                    mod.AB_ForeverEyeRelayout()
                     Repin()
                 end)
             end
@@ -696,7 +696,7 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
         end
 
         -- Safety net: on LFG_UPDATE, re-parent and let Blizzard show the eye
-        local queueWatcher = ns.TakeShell()
+        local queueWatcher = mod.TakeShell()
         queueWatcher:RegisterEvent("LFG_UPDATE")
         queueWatcher:RegisterEvent("LFG_QUEUE_STATUS_UPDATE")
         queueWatcher:RegisterEvent("LFG_ROLE_CHECK_UPDATE")
@@ -706,16 +706,16 @@ local function SetupExtraBarHolder(barKey, frameName, barInfo)
             RepositionQueue()
         end)
 
-        return holder
+        return holderFrame
     end
     -- All current extra bars (MicroBar, BagBar, QueueStatus) return above;
     -- nothing reaches here.
 end
 
 local function SetupExtraBarHolders()
-    for _, info in ipairs(EXTRA_BARS) do
-        if not info.isDataBar and not info.isBlizzardMovable and info.frameName then
-            SetupExtraBarHolder(info.key, info.frameName, info)
+    for _, details in ipairs(EXTRA_BARS) do
+        if not details.isDataBar and not details.isBlizzardMovable and details.frameName then
+            SetupExtraBarHolder(details.key, details.frameName, details)
         end
     end
 end
@@ -727,9 +727,9 @@ local function RegisterExtraBarsWithUnlockMode()
     local MK = CludesUI.MakeUnlockElement
     local elements = {}
     local orderBase = 350
-    for idx, info in ipairs(EXTRA_BARS) do
-        if not info.isDataBar and not info.isBlizzardMovable and info.frameName then
-            local bk = info.key
+    for position, details in ipairs(EXTRA_BARS) do
+        if not details.isDataBar and not details.isBlizzardMovable and details.frameName then
+            local bk = details.key
             -- MicroBar, BagBar: position fully owned by Blizzard Edit Mode.
             -- Skip unlock registration entirely.
             if bk == "MicroBar" or bk == "BagBar" then
@@ -738,80 +738,92 @@ local function RegisterExtraBarsWithUnlockMode()
                 local isBlizzOwned = (bk == "QueueStatus")
                 elements[#elements + 1] = MK({
                     key = bk,
-                    label = info.label,
+                    label = details.label,
                     group = "Action Bars",
-                    order = orderBase + idx,
+                    order = orderBase + position,
                     noResize = true,
                     noAnchorTo = isBlizzOwned,
                     noAnchorTarget = isBlizzOwned,
                     isHidden = function()
-                        local s = EAB.db.profile.bars[bk]
+                        local s = ABAR.db.profile.bars[bk]
                         if not s then
                             return false
                         end
-                        local ov = EAB._visOverride and EAB._visOverride[bk]
-                        if ov then
-                            return ov == "never"
+                        local shade = ABAR._visOverride and ABAR._visOverride[bk]
+                        if shade then
+                            return shade == "never"
                         end
-                        return EAB.VisibilityCompat.IsNever(s)
+                        return ABAR.VisibilityCompat.IsNever(s)
                     end,
                     getFrame = function()
                         return extraBarHolders[bk]
                     end,
                     getSize = function()
-                        local holder = extraBarHolders[bk]
-                        if holder then
-                            return holder:GetWidth(), holder:GetHeight()
+                        local holderFrame = extraBarHolders[bk]
+                        if holderFrame then
+                            return holderFrame:GetWidth(), holderFrame:GetHeight()
                         end
                         return 200, 40
                     end,
-                    savePos = function(_, point, relPoint, x, y)
-                        if point and x and y then
-                            EAB.db.profile.barPositions[bk] = {
-                                point = point,
-                                relPoint = relPoint or point,
-                                x = x,
-                                y = y,
+                    savePos = function(_, anchorPoint, relPoint, posX, posY)
+                        if anchorPoint and posX and posY then
+                            ABAR.db.profile.barPositions[bk] = {
+                                point = anchorPoint,
+                                relPoint = relPoint or anchorPoint,
+                                x = posX,
+                                y = posY,
                             }
                         end
                         if not CludesUI._unlockActive then
-                            local holder = extraBarHolders[bk]
-                            if holder and point and x and y then
-                                holder:ClearAllPoints()
-                                holder:SetPoint(point, UIParent, relPoint or point, x, y)
+                            local holderFrame = extraBarHolders[bk]
+                            if holderFrame and anchorPoint and posX and posY then
+                                holderFrame:ClearAllPoints()
+                                holderFrame:SetPoint(
+                                    anchorPoint,
+                                    UIParent,
+                                    relPoint or anchorPoint,
+                                    posX,
+                                    posY
+                                )
                             end
                         end
                     end,
                     loadPos = function()
-                        local pos = EAB.db.profile.barPositions[bk]
-                        if not pos then
+                        local place = ABAR.db.profile.barPositions[bk]
+                        if not place then
                             return nil
                         end
                         return {
-                            point = pos.point,
-                            relPoint = pos.relPoint or pos.point,
-                            x = pos.x,
-                            y = pos.y,
+                            point = place.point,
+                            relPoint = place.relPoint or place.point,
+                            x = place.x,
+                            y = place.y,
                         }
                     end,
                     clearPos = function()
-                        EAB.db.profile.barPositions[bk] = nil
+                        ABAR.db.profile.barPositions[bk] = nil
                     end,
                     applyPos = function()
-                        local pos = EAB.db.profile.barPositions[bk]
-                        local holder = extraBarHolders[bk]
-                        if not holder then
+                        local place = ABAR.db.profile.barPositions[bk]
+                        local holderFrame = extraBarHolders[bk]
+                        if not holderFrame then
                             return
                         end
                         -- MicroBar/BagBar: Blizzard owns position, never move
                         if bk == "MicroBar" or bk == "BagBar" then
                             return
                         end
-                        holder:ClearAllPoints()
-                        if pos and pos.point then
-                            holder:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
-                        elseif not (bk == "QueueStatus" and ns.AB_ForeverEyePark(holder)) then
-                            holder:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
+                        holderFrame:ClearAllPoints()
+                        if place and place.point then
+                            holderFrame:SetPoint(
+                                place.point,
+                                UIParent,
+                                place.relPoint or place.point,
+                                place.x,
+                                place.y
+                            )
+                        elseif not (bk == "QueueStatus" and mod.AB_ForeverEyePark(holderFrame)) then
+                            holderFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
                         end
                     end,
                 })
@@ -826,7 +838,7 @@ end
 --  These use Blizzard's existing frames, we just manage visibility.
 -------------------------------------------------------------------------------
 local function SetupExtraBars()
-    if not EAB.db then
+    if not ABAR.db then
         return
     end
 
@@ -836,20 +848,20 @@ local function SetupExtraBars()
     -- Setup extra bar holders (MicroBar, BagBar) for visibility/mouseover
     SetupExtraBarHolders()
 
-    for _, info in ipairs(EXTRA_BARS) do
-        if not info.isDataBar and not info.isBlizzardMovable then
-            local blizzFrame = _G[info.frameName]
+    for _, details in ipairs(EXTRA_BARS) do
+        if not details.isDataBar and not details.isBlizzardMovable then
+            local blizzFrame = _G[details.frameName]
             if blizzFrame then
-                local s = EAB.db.profile.bars[info.key]
+                local s = ABAR.db.profile.bars[details.key]
                 if s then
-                    local holder = extraBarHolders[info.key]
-                    if EAB.VisibilityCompat.IsNever(s) and not info.blizzOwnedVisibility then
+                    local holderFrame = extraBarHolders[details.key]
+                    if ABAR.VisibilityCompat.IsNever(s) and not details.blizzOwnedVisibility then
                         blizzFrame:Hide()
-                        if holder then
-                            holder:Hide()
+                        if holderFrame then
+                            holderFrame:Hide()
                         end
                     end
-                    AttachExtraBarHoverHooks(info)
+                    AttachExtraBarHoverHooks(details)
                 end
             end
         end -- not isDataBar/isBlizzardMovable
@@ -874,7 +886,7 @@ local function SetupExtraBars()
     -- Apply correct initial alpha now that holders exist.
     -- RefreshMouseover ran at OnEnable before holders were created, so
     -- bars with mouseoverEnabled never got their alpha set to 0.
-    EAB:RefreshMouseover()
+    ABAR:RefreshMouseover()
 end
 
 -- Setup extra bars after a short delay to ensure frames exist
@@ -885,4 +897,4 @@ extraBarFrame:SetScript("OnEvent", function(self)
     C_Timer_After(0.5, SetupExtraBars)
 end)
 
-ns.AttachExtraBarHoverHooks = AttachExtraBarHoverHooks -- called by CUI_ActionBars_Fade.lua
+mod.AttachExtraBarHoverHooks = AttachExtraBarHoverHooks -- called by CUI_ActionBars_Fade.lua

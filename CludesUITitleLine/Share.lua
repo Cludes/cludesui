@@ -2,14 +2,14 @@
 -- are in your group, so this asks their own TitleLine over an addon whisper,
 -- and otherwise falls back on what was seen the last time you grouped.
 
-local _, ns = ...
-if ns.standalone then
+local _, mod = ...
+if mod.standalone then
     return
 end
-local DAY = ns.DAY
+local DAY = mod.DAY
 
 local Share = {}
-ns.Share = Share
+mod.Share = Share
 
 local PREFIX = "TitleLine"
 local ASK_WAIT = 15 -- seconds before an unanswered ask counts as no TitleLine
@@ -28,7 +28,7 @@ end
 
 -- One message: score, class, scored runs this season, then each dungeon's
 -- best as "map,level,score,timed,day" (day of the season it was set).
-function Share.Encode(score, class, count, bests)
+function Share.Encode(score, classFile, total, bests)
     local parts = {}
     for _, b in ipairs(bests) do
         parts[#parts + 1] = ("%d,%d,%d,%d,%s"):format(
@@ -41,23 +41,23 @@ function Share.Encode(score, class, count, bests)
     end
     return ("K1|%d|%s|%d|%s"):format(
         math.floor(score + 0.5),
-        class or "",
-        count or 0,
+        classFile or "",
+        total or 0,
         table.concat(parts, ";")
     )
 end
 
 -- A reply from another player is untrusted: anything out of shape or out of
 -- range is dropped rather than shown.
-function Share.Decode(text)
-    local score, class, count, list = text:match("^K1|(%d+)|(%u*)|(%d+)|([%d,;]*)$")
-    score, count = tonumber(score), tonumber(count)
-    if not score or score > 9999 or not count then
+function Share.Decode(textValue)
+    local score, classFile, total, entries = textValue:match("^K1|(%d+)|(%u*)|(%d+)|([%d,;]*)$")
+    score, total = tonumber(score), tonumber(total)
+    if not score or score > 9999 or not total then
         return nil
     end
     local runs = {}
-    for entry in list:gmatch("[^;]+") do
-        local map, level, s, timed, day = entry:match("^(%d+),(%d+),(%d+),([01]),(%d*)$")
+    for record in entries:gmatch("[^;]+") do
+        local map, level, s, timed, day = record:match("^(%d+),(%d+),(%d+),([01]),(%d*)$")
         map, level, s, day = tonumber(map), tonumber(level), tonumber(s), tonumber(day)
         if map and level and level >= 2 and level <= 99 and s and s <= 999 and (not day or day <= 400) then
             runs[#runs + 1] = { map = map, level = level, score = s, timed = timed == "1", day = day }
@@ -66,25 +66,25 @@ function Share.Decode(text)
             break
         end
     end
-    return { score = score, class = class ~= "" and class or nil, count = count, runs = runs }
+    return { score = score, class = classFile ~= "" and classFile or nil, count = total, runs = runs }
 end
 
 -- Your current character's keys, for a guildmate who asked.
 local function MyKeys()
-    local ctx = ns.Context({ subject = "current" })
-    if ctx.error then
+    local context = mod.Context({ subject = "current" })
+    if context.error then
         return nil
     end
-    local startsAt = ctx.region.startsAt
+    local startsAt = context.region.startsAt
     -- The day each dungeon's best was set: its last step in your history.
     local when = {}
-    for _, p in ipairs(ctx.history.points) do
+    for _, p in ipairs(context.history.points) do
         if p.map then
             when[p.map] = math.max(0, math.floor((p.t - startsAt) / DAY))
         end
     end
     local bests = {}
-    for _, r in ipairs(ctx.myRuns) do
+    for _, r in ipairs(context.myRuns) do
         if (r.mapScore or 0) > 0 then
             bests[#bests + 1] = {
                 map = r.challengeModeID,
@@ -95,8 +95,8 @@ local function MyKeys()
             }
         end
     end
-    local _, class = UnitClass("player")
-    return Share.Encode(ctx.history.actual, class, ctx.history.runs, bests)
+    local _, classFile = UnitClass("player")
+    return Share.Encode(context.history.actual, classFile, context.history.runs, bests)
 end
 
 -- Ask a player's TitleLine for their keys. Not during a chat lockdown, when
@@ -119,33 +119,33 @@ function Share.AskState(key)
     return time() - at < ASK_WAIT and "asking" or "silent"
 end
 
-function Share.OnMessage(prefix, text, channel, sender)
-    if prefix ~= PREFIX or channel ~= "WHISPER" then
+function Share.OnMessage(prefixText, textValue, channel, sender)
+    if prefixText ~= PREFIX or channel ~= "WHISPER" then
         return
     end
     sender = Share.Key(sender)
     if not sender then
         return
     end
-    if text == "Q1" then
-        local now = time()
-        if (answered[sender] or 0) + REPLY_GAP > now or C_ChatInfo.InChatMessagingLockdown() then
+    if textValue == "Q1" then
+        local nowTime = time()
+        if (answered[sender] or 0) + REPLY_GAP > nowTime or C_ChatInfo.InChatMessagingLockdown() then
             return
         end
-        answered[sender] = now
+        answered[sender] = nowTime
         local reply = MyKeys()
         if reply then
             C_ChatInfo.SendAddonMessage(PREFIX, reply, "WHISPER", sender)
         end
     elseif asked[sender] then
         -- Only answers to an ask are taken; anything unsolicited is ignored.
-        local data = Share.Decode(text)
-        if data then
+        local payload = Share.Decode(textValue)
+        if payload then
             asked[sender] = nil
-            data.at, data.season = time(), ns.Data.season.slug
-            CludesUITitleLineDB.shared[sender] = data
-            if ns.Views and ns.Views.OnShared then
-                ns.Views.OnShared(sender)
+            payload.at, payload.season = time(), mod.Data.season.slug
+            CludesUITitleLineDB.shared[sender] = payload
+            if mod.Views and mod.Views.OnShared then
+                mod.Views.OnShared(sender)
             end
         end
     end
@@ -154,7 +154,7 @@ end
 -- What there is on a player this season: their own TitleLine's answer, else
 -- what was seen when you last grouped, else nothing.
 function Share.Keys(key)
-    local slug = ns.Data.season.slug
+    local slug = mod.Data.season.slug
     local s = CludesUITitleLineDB.shared[key]
     if s and s.season == slug then
         return s, "shared"

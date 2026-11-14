@@ -9,15 +9,15 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Both apply functions return at once off WoW Forever. Reads the main file
 --  through ns and ns._internals; db is set through I.dbSetters.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local issecretvalue = issecretvalue
 
-local I = ns._internals
-local frames = I.frames
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local Inner = mod._internals
+local frameList = Inner.frames
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -- Pet happiness (WoW Forever): the stock pet frame's mood icon, carried
@@ -25,7 +25,7 @@ end
 -- pet whose happiness reads 1..3, with that state's atlas. The icon frame is
 -- also the event receiver; it is built the first time the feature is on for
 -- a hunter and drops every event while off, so it costs nothing otherwise.
-function ns.UF_RefreshPetHappiness(h)
+function mod.UF_RefreshPetHappiness(hgt)
     local happiness = C_PetInfo.GetPetHappiness()
     local _, isHunterPet = HasPetUI()
     local atlas = isHunterPet
@@ -33,18 +33,18 @@ function ns.UF_RefreshPetHappiness(h)
         or nil
     if atlas then
         -- Paint only a real mood change (the texture is set nowhere else).
-        if h._atlas ~= atlas then
-            h._atlas = atlas
-            h._tex:SetAtlas(atlas)
+        if hgt._atlas ~= atlas then
+            hgt._atlas = atlas
+            hgt._tex:SetAtlas(atlas)
         end
-        h:Show()
+        hgt:Show()
     else
-        h:Hide()
+        hgt:Hide()
     end
 end
 
 -- Hover text, read fresh: state, damage share, loyalty trend and diet.
-function ns.UF_PetHappinessOnEnter(self)
+function mod.UF_PetHappinessOnEnter(self)
     -- Faded out with its frame (the pet mirrors the player frame's alpha and
     -- mouseover mode rests at 0): an unseen icon shows no tooltip. An alpha the
     -- client withholds (secret, or no value at all when it refuses alpha
@@ -54,28 +54,28 @@ function ns.UF_PetHappinessOnEnter(self)
         return
     end
     local happiness, dmg, loyalty = C_PetInfo.GetPetHappiness()
-    local text = (happiness == 1 and PET_HAPPINESS1)
+    local textValue = (happiness == 1 and PET_HAPPINESS1)
         or (happiness == 2 and PET_HAPPINESS2)
         or (happiness == 3 and PET_HAPPINESS3)
-    if not text then
+    if not textValue then
         return
     end
     if dmg then
-        text = text .. "\n" .. PET_DAMAGE_PERCENTAGE:format(dmg)
+        textValue = textValue .. "\n" .. PET_DAMAGE_PERCENTAGE:format(dmg)
     end
     if loyalty and loyalty < 0 then
-        text = text .. "\n" .. LOSING_LOYALTY
+        textValue = textValue .. "\n" .. LOSING_LOYALTY
     elseif loyalty and loyalty > 0 then
-        text = text .. "\n" .. GAINING_LOYALTY
+        textValue = textValue .. "\n" .. GAINING_LOYALTY
     end
     local diet = C_PetInfo.GetPetFoodTypes()
     if diet and #diet > 0 then
-        text = text .. "\n" .. PET_DIET_TEMPLATE:format(table.concat(diet, PET_FOOD_DELIMIT))
+        textValue = textValue .. "\n" .. PET_DIET_TEMPLATE:format(table.concat(diet, PET_FOOD_DELIMIT))
     end
-    CludesUI.ShowWidgetTooltip(self, text)
+    CludesUI.ShowWidgetTooltip(self, textValue)
 end
 
-function ns.UF_PetHappinessOnLeave()
+function mod.UF_PetHappinessOnLeave()
     CludesUI.HideWidgetTooltip()
 end
 
@@ -83,59 +83,59 @@ end
 -- offsets, and arms or drops its events. Every reload pass runs it (the
 -- options setters reach it through ReloadAndUpdate) and it is safe to call
 -- directly; it returns at once off WoW Forever.
-function ns.UF_ApplyPetHappiness()
+function mod.UF_ApplyPetHappiness()
     if CludesUI.IS_FOREVER ~= true then
         return
     end
-    local pf = frames.pet
-    local s = db.profile.pet
-    local h = pf and pf._petHappy
+    local popFrame = frameList.pet
+    local s = saved.profile.pet
+    local hgt = popFrame and popFrame._petHappy
     -- Only hunter pets carry happiness: every other class never builds it.
-    local on = pf
+    local enabled = popFrame
         and s
         and s.happinessEnabled ~= false
-        and not ns.VisUnitDisabled(db.profile, "pet")
+        and not mod.VisUnitDisabled(saved.profile, "pet")
         and select(2, UnitClass("player")) == "HUNTER"
-    if not on then
-        if h then
-            h:UnregisterAllEvents()
-            h:Hide()
+    if not enabled then
+        if hgt then
+            hgt:UnregisterAllEvents()
+            hgt:Hide()
         end
         return
     end
-    if not h then
-        h = CreateFrame("Frame", nil, pf)
+    if not hgt then
+        hgt = CreateFrame("Frame", nil, popFrame)
         -- Hover only: clicks fall through to the unit button underneath.
-        h:EnableMouseMotion(true)
-        h._tex = h:CreateTexture(nil, "OVERLAY")
-        h._tex:SetAllPoints()
-        h:SetScript("OnEvent", ns.UF_RefreshPetHappiness)
-        h:SetScript("OnEnter", ns.UF_PetHappinessOnEnter)
-        h:SetScript("OnLeave", ns.UF_PetHappinessOnLeave)
-        h:Hide()
-        pf._petHappy = h
+        hgt:EnableMouseMotion(true)
+        hgt._tex = hgt:CreateTexture(nil, "OVERLAY")
+        hgt._tex:SetAllPoints()
+        hgt:SetScript("OnEvent", mod.UF_RefreshPetHappiness)
+        hgt:SetScript("OnEnter", mod.UF_PetHappinessOnEnter)
+        hgt:SetScript("OnLeave", mod.UF_PetHappinessOnLeave)
+        hgt:Hide()
+        popFrame._petHappy = hgt
     end
     local sz = s.happinessSize or 20
     local align = s.happinessAlign or "right"
-    local x, y = s.happinessX or 0, s.happinessY or 0
-    h:SetSize(sz, sz)
-    h:ClearAllPoints()
+    local posX, posY = s.happinessX or 0, s.happinessY or 0
+    hgt:SetSize(sz, sz)
+    hgt:ClearAllPoints()
     if align == "left" then
-        h:SetPoint("RIGHT", pf, "LEFT", x, y)
+        hgt:SetPoint("RIGHT", popFrame, "LEFT", posX, posY)
     elseif align == "top" then
-        h:SetPoint("BOTTOM", pf, "TOP", x, y)
+        hgt:SetPoint("BOTTOM", popFrame, "TOP", posX, posY)
     else
-        h:SetPoint("LEFT", pf, "RIGHT", x, y)
+        hgt:SetPoint("LEFT", popFrame, "RIGHT", posX, posY)
     end
     -- Above the border and the name/health text (the strata pass re-stacks).
-    if pf._textOverlay then
-        h:SetFrameLevel(pf._textOverlay:GetFrameLevel() + 5)
+    if popFrame._textOverlay then
+        hgt:SetFrameLevel(popFrame._textOverlay:GetFrameLevel() + 5)
     end
-    h:RegisterUnitEvent("UNIT_HAPPINESS", "pet")
-    h:RegisterUnitEvent("UNIT_PET", "player")
+    hgt:RegisterUnitEvent("UNIT_HAPPINESS", "pet")
+    hgt:RegisterUnitEvent("UNIT_PET", "player")
     -- The pet's state may not read yet at login: the zone-in edge repaints.
-    h:RegisterEvent("PLAYER_ENTERING_WORLD")
-    ns.UF_RefreshPetHappiness(h)
+    hgt:RegisterEvent("PLAYER_ENTERING_WORLD")
+    mod.UF_RefreshPetHappiness(hgt)
 end
 
 -- Combo point arc (WoW Forever style): the stock target frame's combo points,
@@ -152,10 +152,10 @@ end
 -- mask, pinned to the fill's right edge, bounds the pip's textures, and a
 -- one-point gate over the whole arc hides it while empty. A plain count also
 -- plays the stock fill flash.
-ns.UF_COMBO_FILE = "Interface\\ComboFrame\\ComboPoint"
+mod.UF_COMBO_FILE = "Interface\\ComboFrame\\ComboPoint"
 -- Each slot's TOPRIGHT from the target box's TOPRIGHT (the stock container
 -- offset folded in); slots 7-9 are the extra points, at 0.6 alpha.
-ns.UF_COMBO_SLOTS = {
+mod.UF_COMBO_SLOTS = {
     { -63, -6 },
     { -50.5, -5 },
     { -38, -6 },
@@ -168,62 +168,62 @@ ns.UF_COMBO_SLOTS = {
 }
 -- A w x h gate and its mask: the mask is the gate's size and rides the fill's
 -- right edge, so an empty fill parks it a full width clear of the payload.
-function ns.UF_ComboGate(parent, w, h)
-    local g = CreateFrame("StatusBar", nil, parent)
-    g:SetSize(w, h)
+function mod.UF_ComboGate(hostFrame, wid, hgt)
+    local g = CreateFrame("StatusBar", nil, hostFrame)
+    g:SetSize(wid, hgt)
     g:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fill = g:GetStatusBarTexture()
-    fill:SetAlpha(0)
+    local fillTex = g:GetStatusBarTexture()
+    fillTex:SetAlpha(0)
     g:SetMinMaxValues(0, 1)
     g:SetValue(0)
     local m = g:CreateMaskTexture()
     m:SetTexture("Interface\\Buttons\\WHITE8x8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
-    m:SetSize(w, h)
-    m:SetPoint("RIGHT", fill, "RIGHT", 0, 0)
+    m:SetSize(wid, hgt)
+    m:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
     return g, m
 end
-function ns.UF_BuildComboArc(host)
-    local arc = CreateFrame("Frame", nil, host)
+function mod.UF_BuildComboArc(hostRegion)
+    local arc = CreateFrame("Frame", nil, hostRegion)
     -- Spans every slot's textures (the arc gate's payload).
     arc:SetSize(82, 72)
-    arc._gate, arc._mask = ns.UF_ComboGate(arc, 82, 72)
+    arc._gate, arc._mask = mod.UF_ComboGate(arc, 82, 72)
     arc._gate:SetPoint("TOPLEFT", arc, "TOPLEFT", 0, 0)
-    local file = ns.UF_COMBO_FILE
+    local file = mod.UF_COMBO_FILE
     local pips, gates = {}, {}
-    for k = 1, 9 do
-        local pip = CreateFrame("Frame", nil, arc)
-        pip:SetSize(12, 12)
-        if k >= 7 then
-            pip:SetAlpha(0.6)
+    for key = 1, 9 do
+        local pipTex = CreateFrame("Frame", nil, arc)
+        pipTex:SetSize(12, 12)
+        if key >= 7 then
+            pipTex:SetAlpha(0.6)
         end
-        local base = pip:CreateTexture(nil, "BACKGROUND")
-        base:SetTexture(file)
-        base:SetTexCoord(0, 0.375, 0, 1)
-        base:SetSize(12, 16)
-        base:SetPoint("TOPLEFT", pip, "TOPLEFT", 0, 0)
-        local hl = pip:CreateTexture(nil, "ARTWORK")
-        hl:SetTexture(file)
-        hl:SetTexCoord(0.375, 0.5625, 0, 1)
-        hl:SetSize(8, 16)
-        hl:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, 0)
-        hl:SetAlpha(0)
-        local shine = pip:CreateTexture(nil, "OVERLAY")
+        local baseValue = pipTex:CreateTexture(nil, "BACKGROUND")
+        baseValue:SetTexture(file)
+        baseValue:SetTexCoord(0, 0.375, 0, 1)
+        baseValue:SetSize(12, 16)
+        baseValue:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 0, 0)
+        local highlight = pipTex:CreateTexture(nil, "ARTWORK")
+        highlight:SetTexture(file)
+        highlight:SetTexCoord(0.375, 0.5625, 0, 1)
+        highlight:SetSize(8, 16)
+        highlight:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 2, 0)
+        highlight:SetAlpha(0)
+        local shine = pipTex:CreateTexture(nil, "OVERLAY")
         shine:SetTexture(file)
         shine:SetTexCoord(0.5625, 1, 0, 1)
         shine:SetSize(14, 16)
-        shine:SetPoint("TOPLEFT", pip, "TOPLEFT", 0, 4)
+        shine:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 0, 4)
         shine:SetBlendMode("ADD")
         shine:SetAlpha(0)
         -- The pip's own gate spans its three textures (the shine rides 4 up).
-        local g, m = ns.UF_ComboGate(pip, 14, 20)
-        g:SetPoint("TOPLEFT", pip, "TOPLEFT", 0, 4)
-        hl:AddMaskTexture(m)
+        local g, m = mod.UF_ComboGate(pipTex, 14, 20)
+        g:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 0, 4)
+        highlight:AddMaskTexture(m)
         shine:AddMaskTexture(m)
         -- A newly filled point: the highlight fades in, then the shine flashes.
-        local ag = pip:CreateAnimationGroup()
+        local ag = pipTex:CreateAnimationGroup()
         ag:SetToFinalAlpha(true)
         local a = ag:CreateAnimation("Alpha")
-        a:SetTarget(hl)
+        a:SetTarget(highlight)
         a:SetFromAlpha(0)
         a:SetToAlpha(1)
         a:SetDuration(0.4)
@@ -240,8 +240,9 @@ function ns.UF_BuildComboArc(host)
         a:SetToAlpha(0)
         a:SetDuration(0.4)
         a:SetOrder(3)
-        pip._base, pip._hl, pip._shine, pip._mask, pip._anim = base, hl, shine, m, ag
-        pips[k], gates[k] = pip, g
+        pipTex._base, pipTex._hl, pipTex._shine, pipTex._mask, pipTex._anim =
+            baseValue, highlight, shine, m, ag
+        pips[key], gates[key] = pipTex, g
     end
     arc._pips, arc._gates = pips, gates
     -- The arc fades in when its first point lands.
@@ -252,32 +253,32 @@ function ns.UF_BuildComboArc(host)
     fa:SetToAlpha(1)
     fa:SetDuration(0.3)
     arc._fade = fade
-    ns._ufComboArc = arc
+    mod._ufComboArc = arc
     return arc
 end
 -- The arc's event receiver (the Forever client only; armed by
 -- ns.UF_ApplyForeverComboArc).
 if CludesUI.IS_FOREVER == true then
-    ns._ufComboEv = CreateFrame("Frame")
-    ns._ufComboEv:SetScript("OnEvent", function(_, ...)
-        local arc = ns._ufComboArc
+    mod._ufComboEv = CreateFrame("Frame")
+    mod._ufComboEv:SetScript("OnEvent", function(_, ...)
+        local arc = mod._ufComboArc
         if arc then
-            ns.UF_ComboArcRefresh(arc, ...)
+            mod.UF_ComboArcRefresh(arc, ...)
         end
     end)
 end
 -- The classes the arc draws for (combo points on WoW Forever).
-function ns.UF_ComboClass()
+function mod.UF_ComboClass()
     local _, cls = UnitClass("player")
     return cls == "ROGUE" or cls == "DRUID"
 end
 -- Combo Points: "target" (the stock spot; anything unknown reads as it),
 -- "player" or "never".
-function ns.UF_ComboLocation()
-    local s = db and db.profile and db.profile.player
-    local v = s and s.foreverComboLocation
-    if v == "player" or v == "never" then
-        return v
+function mod.UF_ComboLocation()
+    local s = saved and saved.profile and saved.profile.player
+    local val = s and s.foreverComboLocation
+    if val == "player" or val == "never" then
+        return val
     end
     return "target"
 end
@@ -285,19 +286,19 @@ end
 -- centre -55,-48 off the box's top right). A host on another kit's ring (the
 -- player's 60 at TOPLEFT 24,-19) moves every slot by the gap between the two
 -- centres, in the slots' own frame before the mirror; 0,0 on the target kit.
-function ns.UF_ComboRingShift(G)
-    local P = G and G.portrait
-    if not (P and P.size) then
+function mod.UF_ComboRingShift(G)
+    local Prm = G and G.portrait
+    if not (Prm and Prm.size) then
         return 0, 0
     end
-    local r = P.size / 2
-    local cx = (P.point == "TOPLEFT") and -(P.x + r) or (P.x - r)
-    return cx + 55, P.y - r + 48
+    local r = Prm.size / 2
+    local cx = (Prm.point == "TOPLEFT") and -(Prm.x + r) or (Prm.x - r)
+    return cx + 55, Prm.y - r + 48
 end
 -- Which slots the arc uses (from the point cap, as the stock frame lays it
 -- out) and which empty pips show with the arc; re-run only on a cap or
 -- colourblind change. A secret cap keeps the last layout.
-function ns.UF_ComboArcLayout(arc)
+function mod.UF_ComboArcLayout(arc)
     local mx = UnitPowerMax("player", Enum.PowerType.ComboPoints)
     if issecretvalue(mx) then
         if arc._max then
@@ -320,81 +321,81 @@ function ns.UF_ComboArcLayout(arc)
     end
     arc._max, arc._start, arc._cb = mx, start, cb
     local pips, gates = arc._pips, arc._gates
-    for k = 1, 9 do
-        local pip = pips[k]
-        local i = k - start + 1
-        if i >= 1 and i <= mx then
-            gates[k]:SetMinMaxValues(i - 1, i)
+    for key = 1, 9 do
+        local pipTex = pips[key]
+        local idx = key - start + 1
+        if idx >= 1 and idx <= mx then
+            gates[key]:SetMinMaxValues(idx - 1, idx)
             -- The empty pip shows with the arc, or only while filled (the
             -- extra points; every point in colourblind mode).
-            local want = (cb or i >= extra) and pip._mask or arc._mask
-            if pip._baseMask ~= want then
-                if pip._baseMask then
-                    pip._base:RemoveMaskTexture(pip._baseMask)
+            local wanted = (cb or idx >= extra) and pipTex._mask or arc._mask
+            if pipTex._baseMask ~= wanted then
+                if pipTex._baseMask then
+                    pipTex._base:RemoveMaskTexture(pipTex._baseMask)
                 end
-                pip._base:AddMaskTexture(want)
-                pip._baseMask = want
+                pipTex._base:AddMaskTexture(wanted)
+                pipTex._baseMask = wanted
             end
-            pip:Show()
+            pipTex:Show()
         else
-            pip:Hide()
+            pipTex:Hide()
         end
     end
 end
-function ns.UF_ComboArcRefresh(arc, event, _, powerType)
-    if event == "UNIT_POWER_UPDATE" and powerType ~= "COMBO_POINTS" then
+function mod.UF_ComboArcRefresh(arc, evt, _, powerType)
+    if evt == "UNIT_POWER_UPDATE" and powerType ~= "COMBO_POINTS" then
         return
     end
-    if arc._cb == nil or event == "UNIT_MAXPOWER" or event == "PLAYER_ENTERING_WORLD" then
-        ns.UF_ComboArcLayout(arc)
+    if arc._cb == nil or evt == "UNIT_MAXPOWER" or evt == "PLAYER_ENTERING_WORLD" then
+        mod.UF_ComboArcLayout(arc)
     end
     -- The target's count (the stock frame's read: the power value lags a
     -- target swap). Fed to every gate as it comes, secret or not.
-    local n = GetComboPoints("player", "target")
-    arc._gate:SetValue(n)
+    local num = GetComboPoints("player", "target")
+    arc._gate:SetValue(num)
     local gates, pips = arc._gates, arc._pips
-    for k = 1, 9 do
-        gates[k]:SetValue(n)
+    for key = 1, 9 do
+        gates[key]:SetValue(num)
     end
-    if issecretvalue(n) then
+    if issecretvalue(num) then
         -- No compare: the gates alone show the filled points, at full
         -- highlight, with no flash.
         if not arc._secret then
             arc._secret = true
             arc._fade:Stop()
             arc:SetAlpha(1)
-            for k = 1, 9 do
-                local pip = pips[k]
-                pip._anim:Stop()
-                pip._hl:SetAlpha(1)
-                pip._shine:SetAlpha(0)
+            for key = 1, 9 do
+                local pipTex = pips[key]
+                pipTex._anim:Stop()
+                pipTex._hl:SetAlpha(1)
+                pipTex._shine:SetAlpha(0)
             end
         end
         return
     end
     -- Back from a secret stretch: settle on the count without replaying it.
-    local last = arc._secret and n or (arc._last or 0)
+    local last = arc._secret and num or (arc._last or 0)
     arc._secret = nil
-    arc._last = n
-    if n > 0 and last == 0 then
+    arc._last = num
+    if num > 0 and last == 0 then
         arc._fade:Stop()
         arc._fade:Play()
     end
     local start = arc._start
-    for i = 1, arc._max do
-        local pip = pips[start + i - 1]
-        if not pip then
+    for idx = 1, arc._max do
+        local pipTex = pips[start + idx - 1]
+        if not pipTex then
             break
         end
-        if i > n then
-            pip._anim:Stop()
-            pip._hl:SetAlpha(0)
-            pip._shine:SetAlpha(0)
-        elseif i > last then
-            pip._anim:Stop()
-            pip._hl:SetAlpha(0)
-            pip._shine:SetAlpha(0)
-            pip._anim:Play()
+        if idx > num then
+            pipTex._anim:Stop()
+            pipTex._hl:SetAlpha(0)
+            pipTex._shine:SetAlpha(0)
+        elseif idx > last then
+            pipTex._anim:Stop()
+            pipTex._hl:SetAlpha(0)
+            pipTex._shine:SetAlpha(0)
+            pipTex._anim:Play()
         end
     end
 end
@@ -406,76 +407,76 @@ end
 -- Blizzard's own target frame, stand down for any other spot. Every reload
 -- pass, the class resource toggle and the Combo Points setter run it; it
 -- returns at once off WoW Forever.
-function ns.UF_ApplyForeverComboArc()
+function mod.UF_ApplyForeverComboArc()
     if CludesUI.IS_FOREVER ~= true then
         return
     end
-    local arc, ev = ns._ufComboArc, ns._ufComboEv
-    local host
-    if ns.UF_Forever() and db.profile.player.classPowerStyle == "blizzard" and ns.UF_ComboClass() then
+    local arc, ev = mod._ufComboArc, mod._ufComboEv
+    local hostRegion
+    if mod.UF_Forever() and saved.profile.player.classPowerStyle == "blizzard" and mod.UF_ComboClass() then
         -- Combo Points belongs to our player frame: without one (its Frame
         -- Source Blizzard or Hidden) it reads as the stock spot, so nothing
         -- is taken down and no choice is stranded.
-        local loc = frames.player and ns.UF_ComboLocation() or "target"
+        local loc = frameList.player and mod.UF_ComboLocation() or "target"
         if loc == "target" then
-            host = frames.target
+            hostRegion = frameList.target
         else
             if loc == "player" then
-                host = frames.player
+                hostRegion = frameList.player
             end
             -- Blizzard's own goes to the hidden parent out of combat and
             -- outside Edit Mode (a skipped pass retries on the next one). The
             -- hidden parent is pinned for the session: only a reload brings
             -- it back (the options setters offer one).
-            if ns._ufComboFrameKept then
+            if mod._ufComboFrameKept then
                 if InCombatLockdown() then
-                    ns.CombatQueue.Defer("UF_ComboArc", ns.UF_ApplyForeverComboArc)
+                    mod.CombatQueue.Defer("UF_ComboArc", mod.UF_ApplyForeverComboArc)
                 elseif not (EditModeManagerFrame and EditModeManagerFrame:IsShown()) then
-                    ns._ufComboFrameKept, ns._ufComboFrameByLoc = nil, true
-                    ns.UF_HideBlizzardFrame(_G.ComboFrame)
+                    mod._ufComboFrameKept, mod._ufComboFrameByLoc = nil, true
+                    mod.UF_HideBlizzardFrame(_G.ComboFrame)
                 end
             end
         end
     end
-    if not host then
+    if not hostRegion then
         ev:UnregisterAllEvents()
         if arc then
             arc:Hide()
         end
         return
     end
-    arc = arc or ns.UF_BuildComboArc(host)
+    arc = arc or mod.UF_BuildComboArc(hostRegion)
     -- Re-seated only when the host, its kit or its side changed (Portrait
     -- Side swaps the kit).
-    local G = ns.UF_BlizzGeom(host)
+    local G = mod.UF_BlizzGeom(hostRegion)
     local mirror = (G and G.side == "left") or nil
-    if arc._host ~= host or arc._kit ~= G or arc._mirror ~= mirror then
-        arc._host, arc._kit, arc._mirror = host, G, mirror
-        if arc:GetParent() ~= host then
-            arc:SetParent(host)
+    if arc._host ~= hostRegion or arc._kit ~= G or arc._mirror ~= mirror then
+        arc._host, arc._kit, arc._mirror = hostRegion, G, mirror
+        if arc:GetParent() ~= hostRegion then
+            arc:SetParent(hostRegion)
         end
-        local dx, dy = ns.UF_ComboRingShift(G)
+        local dx, dy = mod.UF_ComboRingShift(G)
         arc:ClearAllPoints()
-        ns.UF_BlizzPoint(arc, "TOPRIGHT", host, "TOPRIGHT", 4 + dx, dy, mirror)
-        local slots, pips = ns.UF_COMBO_SLOTS, arc._pips
-        for k = 1, 9 do
-            pips[k]:ClearAllPoints()
-            ns.UF_BlizzPoint(
-                pips[k],
+        mod.UF_BlizzPoint(arc, "TOPRIGHT", hostRegion, "TOPRIGHT", 4 + dx, dy, mirror)
+        local slots, pips = mod.UF_COMBO_SLOTS, arc._pips
+        for key = 1, 9 do
+            pips[key]:ClearAllPoints()
+            mod.UF_BlizzPoint(
+                pips[key],
                 "TOPRIGHT",
-                host,
+                hostRegion,
                 "TOPRIGHT",
-                slots[k][1] + dx,
-                slots[k][2] + dy,
+                slots[key][1] + dx,
+                slots[key][2] + dy,
                 mirror
             )
         end
     end
     -- Over the art, portrait and bars, one level above the level host (its
     -- level and PvP badges), as Blizzard's own draws over its frame's badges.
-    local clip = host._barClip
-    arc:SetFrameStrata((clip and clip:GetFrameStrata()) or host:GetFrameStrata())
-    arc:SetFrameLevel(((clip and clip:GetFrameLevel()) or host:GetFrameLevel()) + 13)
+    local clip = hostRegion._barClip
+    arc:SetFrameStrata((clip and clip:GetFrameStrata()) or hostRegion:GetFrameStrata())
+    arc:SetFrameLevel(((clip and clip:GetFrameLevel()) or hostRegion:GetFrameLevel()) + 13)
     ev:RegisterEvent("PLAYER_TARGET_CHANGED")
     -- Points moving to a new target keep their count, so no power event fires.
     ev:RegisterEvent("COMBO_TARGET_CHANGED")
@@ -484,7 +485,7 @@ function ns.UF_ApplyForeverComboArc()
     ev:RegisterUnitEvent("UNIT_MAXPOWER", "player")
     -- Re-lays only on a cap or colourblind change (a colourblind change has
     -- no event of its own, so every apply asks).
-    ns.UF_ComboArcLayout(arc)
+    mod.UF_ComboArcLayout(arc)
     arc:Show()
-    ns.UF_ComboArcRefresh(arc)
+    mod.UF_ComboArcRefresh(arc)
 end

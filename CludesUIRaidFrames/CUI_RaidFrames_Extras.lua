@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  frame-provider APIs for external trackers.
 --  Reads the earlier Raid Frames files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs = pairs
 local ipairs = ipairs
@@ -34,12 +34,12 @@ local issecretvalue = issecretvalue
 local CreateFrame = CreateFrame
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
-local allButtons, GetFFD, GetPowerColor = I.allButtons, I.GetFFD, I.GetPowerColor
-local ApplyFont, PixelSnap = I.ApplyFont, I.PixelSnap
+local allButtons, GetFFD, GetPowerColor = Inner.allButtons, Inner.GetFFD, Inner.GetPowerColor
+local ApplyFont, PixelSnap = Inner.ApplyFont, Inner.PixelSnap
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -52,11 +52,11 @@ end
 --  container never built.
 -------------------------------------------------------------------------------
 do
-    local container
-    local rows = {} -- i -> { nameFS, valFS, unit }
+    local boxHolder
+    local rowList = {} -- i -> { nameFS, valFS, unit }
 
     local function HMSet()
-        local prof = db.profile
+        local prof = saved.profile
         local hm = prof.healerMana
         if not hm then
             hm = { mode = "none" }
@@ -64,66 +64,72 @@ do
         end
         return hm
     end
-    ns._HMSet = HMSet
+    mod._HMSet = HMSet
 
     -- The display's mode gates on the CURRENT group type; solo counts as
     -- neither (the preview eyeball still works ungrouped).
-    function ns._HMActive()
-        local mode = HMSet().mode or "none"
-        if mode == "none" then
+    function mod._HMActive()
+        local modeName = HMSet().mode or "none"
+        if modeName == "none" then
             return false
         end
         if IsInRaid() then
-            return mode == "raid" or mode == "both"
+            return modeName == "raid" or modeName == "both"
         end
         if IsInGroup() then
-            return mode == "party" or mode == "both"
+            return modeName == "party" or modeName == "both"
         end
         return false
     end
 
     local function EnsureContainer()
-        if container then
-            return container
+        if boxHolder then
+            return boxHolder
         end
-        container = CreateFrame("Frame", "ERF_HealerMana", UIParent)
-        container:SetSize(50, 25)
-        container:Hide()
-        ns._hmContainer = container
-        local pos = HMSet().unlockPos
-        if pos and pos.point then
-            container:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
+        boxHolder = CreateFrame("Frame", "ERF_HealerMana", UIParent)
+        boxHolder:SetSize(50, 25)
+        boxHolder:Hide()
+        mod._hmContainer = boxHolder
+        local place = HMSet().unlockPos
+        if place and place.point then
+            boxHolder:SetPoint(
+                place.point,
+                UIParent,
+                place.relPoint or place.point,
+                place.x or 0,
+                place.y or 0
+            )
         else
-            container:SetPoint("CENTER", UIParent, "CENTER", 320, 0)
+            boxHolder:SetPoint("CENTER", UIParent, "CENTER", 320, 0)
         end
-        return container
+        return boxHolder
     end
-    ns._HMEnsureContainer = EnsureContainer
+    mod._HMEnsureContainer = EnsureContainer
 
     -- Value repaint: the engine percent object straight into the display
     -- sink -- secret-safe, no Lua math (same source as the power bars).
-    function ns._HMUpdateValue(unit)
-        local r = ns._hmUnitRows and ns._hmUnitRows[unit]
+    function mod._HMUpdateValue(unitToken)
+        local r = mod._hmUnitRows and mod._hmUnitRows[unitToken]
         if not r then
             return
         end
-        r.valFS:SetFormattedText("%d", UnitPowerPercent(unit, 0, true, CurveConstants.ScaleTo100))
+        r.valFS:SetFormattedText("%d", UnitPowerPercent(unitToken, 0, true, CurveConstants.ScaleTo100))
     end
 
     -- Full rebuild: healer set, names, colors, layout. Runs on the roster/
     -- roles cadence (UpdatePowerEventRegistration tail) + settings changes.
-    function ns.HM_Rebuild()
+    function mod.HM_Rebuild()
         local hm = HMSet()
-        local preview = ns._hmPreview
-        if not ns._HMActive() and not preview then
-            if container then
-                container:Hide()
+        local preview = mod._hmPreview
+        if not mod._HMActive() and not preview then
+            if boxHolder then
+                boxHolder:Hide()
             end
-            ns._hmUnitRows = nil
+            mod._hmUnitRows = nil
             return
         end
         EnsureContainer()
-        local size = hm.textSize or 12
+        local dim = hm.textSize or 12
         local spacing = hm.spacing or 2
         local alignR = hm.align == "RIGHT"
         local alignC = hm.align == "CENTER"
@@ -134,33 +140,33 @@ do
         local powerMode = hm.colorMode == "power"
         local cc = hm.color
         local cr, cg, cb = (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1
-        local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+        local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
         local outline = (CludesUI.GetFontOutlineFlag("raidFrames")) or "OUTLINE"
-        local rowH = size + spacing
+        local rowH = dim + spacing
         local map = {}
-        local count, widest = 0, 40
+        local total, widest = 0, 40
 
-        local function addRow(unit, fakeName, fakeClass, fakeVal)
-            count = count + 1
-            local r = rows[count]
+        local function addRow(unitToken, fakeName, fakeClass, fakeVal)
+            total = total + 1
+            local r = rowList[total]
             if not r then
                 r = {
-                    nameFS = container:CreateFontString(nil, "OVERLAY"),
-                    valFS = container:CreateFontString(nil, "OVERLAY"),
+                    nameFS = boxHolder:CreateFontString(nil, "OVERLAY"),
+                    valFS = boxHolder:CreateFontString(nil, "OVERLAY"),
                 }
-                rows[count] = r
+                rowList[total] = r
             end
-            r.unit = unit
+            r.unit = unitToken
             local nameFS, valFS = r.nameFS, r.valFS
             -- The name a font family (other players' names), with no shadow as
             -- the value's plain font.
-            CludesUI.SetFontFamily(nameFS, fontPath, size, outline, false)
-            valFS:SetFont(fontPath, size, outline)
+            CludesUI.SetFontFamily(nameFS, fontFile, dim, outline, false)
+            valFS:SetFont(fontFile, dim, outline)
             -- Value color: power color per unit, or the custom color.
             if powerMode then
                 local pr, pg, pb
-                if unit then
-                    pr, pg, pb = GetPowerColor(unit)
+                if unitToken then
+                    pr, pg, pb = GetPowerColor(unitToken)
                 end
                 valFS:SetTextColor(pr or 0.3, pg or 0.5, pb or 0.85, 1)
             else
@@ -172,19 +178,19 @@ do
                 local nr, ng, nb = cr, cg, cb
                 if classNames then
                     local token = fakeClass
-                    if not token and unit then
-                        token = select(2, UnitClass(unit))
+                    if not token and unitToken then
+                        token = select(2, UnitClass(unitToken))
                         if issecretvalue and issecretvalue(token) then
                             token = nil
                         end
                     end
-                    local col = token
+                    local column = token
                         and (
                             (CludesUI.GetClassColor(token))
                             or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[token])
                         )
-                    if col then
-                        nr, ng, nb = col.r, col.g, col.b
+                    if column then
+                        nr, ng, nb = column.r, column.g, column.b
                     end
                 elseif powerMode then
                     nr, ng, nb = 1, 1, 1
@@ -196,18 +202,18 @@ do
                     -- Display sink: a secret name renders raw, never inspected.
                     -- The raid frames' Name Format (live names show only in a
                     -- raid).
-                    local hmName = unit and CludesUI.WithSurname(UnitName(unit))
+                    local hmName = unitToken and CludesUI.WithSurname(UnitName(unitToken))
                     if hmName then
-                        hmName = ns.RF_FormatName(hmName, db.profile)
+                        hmName = mod.RF_FormatName(hmName, saved.profile)
                     end
                     nameFS:SetFormattedText("%s", hmName or "")
                 end
                 nameFS:Show()
-                local w = nameFS:GetStringWidth()
-                if w and not (issecretvalue and issecretvalue(w)) then
-                    nameW = w
+                local wid = nameFS:GetStringWidth()
+                if wid and not (issecretvalue and issecretvalue(wid)) then
+                    nameW = wid
                 else
-                    nameW = size * 5 -- secret name: estimated width
+                    nameW = dim * 5 -- secret name: estimated width
                 end
             else
                 nameFS:SetText("")
@@ -215,14 +221,14 @@ do
             end
             -- Fixed value-width estimate: centering on the live value's real
             -- width would shift the row every tick.
-            local valEst = size * 2.2
+            local valEst = dim * 2.2
             local rowW = (showNames and (nameW + 4) or 0) + valEst
             if rowW > widest then
                 widest = rowW
             end
             -- Growth: rows stack down from the top edge, or up from the
             -- bottom edge (anchor family flips with it).
-            local yOff = (growUp and 1 or -1) * (count - 1) * rowH
+            local yOff = (growUp and 1 or -1) * (total - 1) * rowH
             local pCorner = growUp and "BOTTOMLEFT" or "TOPLEFT"
             local pCornerR = growUp and "BOTTOMRIGHT" or "TOPRIGHT"
             local pEdge = growUp and "BOTTOM" or "TOP"
@@ -230,25 +236,25 @@ do
             valFS:ClearAllPoints()
             if alignC then
                 if showNames then
-                    nameFS:SetPoint(pCorner, container, pEdge, -rowW / 2, yOff)
+                    nameFS:SetPoint(pCorner, boxHolder, pEdge, -rowW / 2, yOff)
                     valFS:SetPoint("LEFT", nameFS, "RIGHT", 4, 0)
                     valFS:SetJustifyH("LEFT")
                 else
-                    valFS:SetPoint(pEdge, container, pEdge, 0, yOff)
+                    valFS:SetPoint(pEdge, boxHolder, pEdge, 0, yOff)
                     valFS:SetJustifyH("CENTER")
                 end
             elseif alignR then
-                valFS:SetPoint(pCornerR, container, pCornerR, 0, yOff)
+                valFS:SetPoint(pCornerR, boxHolder, pCornerR, 0, yOff)
                 valFS:SetJustifyH("RIGHT")
                 if showNames then
                     nameFS:SetPoint("RIGHT", valFS, "LEFT", -4, 0)
                 end
             else
                 if showNames then
-                    nameFS:SetPoint(pCorner, container, pCorner, 0, yOff)
+                    nameFS:SetPoint(pCorner, boxHolder, pCorner, 0, yOff)
                     valFS:SetPoint("LEFT", nameFS, "RIGHT", 4, 0)
                 else
-                    valFS:SetPoint(pCorner, container, pCorner, 0, yOff)
+                    valFS:SetPoint(pCorner, boxHolder, pCorner, 0, yOff)
                 end
                 valFS:SetJustifyH("LEFT")
             end
@@ -256,8 +262,8 @@ do
                 valFS:SetFormattedText("%d", fakeVal)
             end
             valFS:Show()
-            if unit then
-                map[unit] = r
+            if unitToken then
+                map[unitToken] = r
             end
         end
 
@@ -269,52 +275,52 @@ do
             -- Ordered walk, roster order; the role read is the same cached
             -- resolver the power-bar registration uses.
             if inRaid then
-                for i = 1, 40 do
-                    local unit = "raid" .. i
-                    if UnitExists(unit) and ns._ResolvePowerRole(unit) == "HEALER" then
-                        addRow(unit)
+                for idx = 1, 40 do
+                    local unitToken = "raid" .. idx
+                    if UnitExists(unitToken) and mod._ResolvePowerRole(unitToken) == "HEALER" then
+                        addRow(unitToken)
                     end
                 end
             else
-                if ns._ResolvePowerRole("player") == "HEALER" then
+                if mod._ResolvePowerRole("player") == "HEALER" then
                     addRow("player")
                 end
-                for i = 1, 4 do
-                    local unit = "party" .. i
-                    if UnitExists(unit) and ns._ResolvePowerRole(unit) == "HEALER" then
-                        addRow(unit)
+                for idx = 1, 4 do
+                    local unitToken = "party" .. idx
+                    if UnitExists(unitToken) and mod._ResolvePowerRole(unitToken) == "HEALER" then
+                        addRow(unitToken)
                     end
                 end
             end
         end
 
         -- Retire surplus rows from a previous, larger set.
-        for i = count + 1, #rows do
-            rows[i].nameFS:Hide()
-            rows[i].valFS:Hide()
-            rows[i].unit = nil
+        for idx = total + 1, #rowList do
+            rowList[idx].nameFS:Hide()
+            rowList[idx].valFS:Hide()
+            rowList[idx].unit = nil
         end
 
-        ns._hmUnitRows = (not preview and count > 0) and map or nil
-        if count > 0 then
+        mod._hmUnitRows = (not preview and total > 0) and map or nil
+        if total > 0 then
             -- Content-sized, with unlock-mover minimums (50x25).
-            container:SetSize(math.max(widest, 50), math.max(count * rowH - spacing, 25))
-            container:Show()
+            boxHolder:SetSize(math.max(widest, 50), math.max(total * rowH - spacing, 25))
+            boxHolder:Show()
             -- Seed live values (the event path keeps them current after).
             if not preview then
-                for unit in pairs(map) do
-                    ns._HMUpdateValue(unit)
+                for unitToken in pairs(map) do
+                    mod._HMUpdateValue(unitToken)
                 end
             end
         else
-            container:Hide()
+            boxHolder:Hide()
         end
     end
 
     -- Options preview (eyeball): fake rows at the saved position.
-    function ns.HM_SetPreview(on)
-        ns._hmPreview = on and true or nil
-        ns.HM_Rebuild()
+    function mod.HM_SetPreview(on)
+        mod._hmPreview = on and true or nil
+        mod.HM_Rebuild()
     end
 end
 
@@ -323,10 +329,10 @@ end
 --  movable frame.
 -------------------------------------------------------------------------------
 do
-    local frame, events
+    local widget, events
 
     local function PGSet()
-        local prof = db.profile
+        local prof = saved.profile
         local pg = prof.playerGroup
         if not pg then
             pg = {}
@@ -334,14 +340,14 @@ do
         end
         return pg
     end
-    ns._PGSet = PGSet
+    mod._PGSet = PGSet
 
-    local function ModeColor(mode, custom)
-        if mode == "custom" then
+    local function ModeColor(modeName, custom)
+        if modeName == "custom" then
             return custom
         end
         local r, g, b
-        if mode == "class" then
+        if modeName == "class" then
             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
             if cc then
                 r, g, b = cc.r, cc.g, cc.b
@@ -356,7 +362,7 @@ do
     end
 
     local function CustomColor(key)
-        local pg, s = PGSet(), db.profile
+        local pg, s = PGSet(), saved.profile
         if pg[key] then
             return pg[key]
         end
@@ -367,87 +373,92 @@ do
         local bc = s.borderColor or {}
         return { r = bc.r or 0, g = bc.g or 0, b = bc.b or 0, a = s.borderAlpha or 1 }
     end
-    ns._PGCustomColor = CustomColor
+    mod._PGCustomColor = CustomColor
 
-    function ns._PGStyle()
-        local pg, s = PGSet(), db.profile
-        local bg = s.customBgColor or {}
+    function mod._PGStyle()
+        local pg, s = PGSet(), saved.profile
+        local backdrop = s.customBgColor or {}
         return pg.textSize or s.groupNumberSize or 10,
             ModeColor(pg.textColorMode or "accent", CustomColor("textColor")),
-            pg.bgColor or { r = bg.r or 17 / 255, g = bg.g or 17 / 255, b = bg.b or 17 / 255, a = 1 },
+            pg.bgColor or {
+                r = backdrop.r or 17 / 255,
+                g = backdrop.g or 17 / 255,
+                b = backdrop.b or 17 / 255,
+                a = 1,
+            },
             pg.borderSize or s.borderSize or 1,
             ModeColor(pg.borderColorMode or "accent", CustomColor("borderColor"))
     end
 
     local function ApplyPos()
-        if not frame then
+        if not widget then
             return
         end
-        local pos = PGSet().unlockPos
-        frame:ClearAllPoints()
-        if pos and pos.point then
-            frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
+        local place = PGSet().unlockPos
+        widget:ClearAllPoints()
+        if place and place.point then
+            widget:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
         else
-            frame:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
+            widget:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
         end
     end
-    ns._PGApplyPos = ApplyPos
+    mod._PGApplyPos = ApplyPos
 
     local function EnsureFrame()
-        if frame then
-            return frame
+        if widget then
+            return widget
         end
-        frame = CreateFrame("Frame", "ERF_PlayerGroup", UIParent)
-        frame:SetSize(50, 25)
-        frame:Hide()
-        frame.bg = frame:CreateTexture(nil, "BACKGROUND")
-        frame.bg:SetAllPoints()
-        frame.borderFrame = CreateFrame("Frame", nil, frame)
-        frame.borderFrame:SetAllPoints()
-        frame.text = frame:CreateFontString(nil, "OVERLAY")
-        frame.text:SetPoint("CENTER")
-        ns._pgFrame = frame
+        widget = CreateFrame("Frame", "ERF_PlayerGroup", UIParent)
+        widget:SetSize(50, 25)
+        widget:Hide()
+        widget.bg = widget:CreateTexture(nil, "BACKGROUND")
+        widget.bg:SetAllPoints()
+        widget.borderFrame = CreateFrame("Frame", nil, widget)
+        widget.borderFrame:SetAllPoints()
+        widget.text = widget:CreateFontString(nil, "OVERLAY")
+        widget.text:SetPoint("CENTER")
+        mod._pgFrame = widget
         ApplyPos()
-        return frame
+        return widget
     end
-    ns._PGEnsureFrame = EnsureFrame
+    mod._PGEnsureFrame = EnsureFrame
 
-    local fmt, shown -- the text format and the group it shows
+    local fmt, isShown -- the text format and the group it shows
 
     local function UpdateGroup()
-        if not frame then
+        if not widget then
             return
         end
-        local index = IsInRaid() and UnitInRaid("player")
-        local group = index and select(3, GetRaidRosterInfo(index))
+        local slotPos = IsInRaid() and UnitInRaid("player")
+        local group = slotPos and select(3, GetRaidRosterInfo(slotPos))
         -- Out of a raid, or a roster read mid-update that has no group for you yet.
-        if not index or type(group) == "nil" then
-            if not ns._pgPreview then
-                frame:Hide()
-                shown = nil
+        if not slotPos or type(group) == "nil" then
+            if not mod._pgPreview then
+                widget:Hide()
+                isShown = nil
                 return
             end
             group = 3
         end
         -- A secret subgroup goes straight into the text sink, never compared.
         if issecretvalue and issecretvalue(group) then
-            frame.text:SetFormattedText(fmt, group)
-            shown = nil
-        elseif group ~= shown then
-            frame.text:SetFormattedText(fmt, group)
-            shown = group
+            widget.text:SetFormattedText(fmt, group)
+            isShown = nil
+        elseif group ~= isShown then
+            widget.text:SetFormattedText(fmt, group)
+            isShown = group
         end
-        frame:Show()
+        widget:Show()
     end
 
     -- Style path: settings changes, reloads and accent changes.
-    function ns.PG_Apply()
+    function mod.PG_Apply()
         local pg = PGSet()
         local on = pg.enabled and true or false
         if on and not events then
             events = CreateFrame("Frame")
             events:SetScript("OnEvent", UpdateGroup)
-            CludesUI.RegAccent({ type = "callback", fn = ns.PG_Apply })
+            CludesUI.RegAccent({ type = "callback", fn = mod.PG_Apply })
         end
         if events then
             if on then
@@ -457,53 +468,53 @@ do
             end
         end
         if not on then
-            if frame then
-                frame:Hide()
+            if widget then
+                widget:Hide()
             end
             return
         end
         EnsureFrame()
-        local size, tc, bg, bs, bc = ns._PGStyle()
-        local s = db.profile
+        local dim, tc, backdrop, bs, bc = mod._PGStyle()
+        local s = saved.profile
         local full = pg.format == "full"
-        local fs = frame.text
-        ApplyFont(fs, size)
-        fs:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
+        local fontStr = widget.text
+        ApplyFont(fontStr, dim)
+        fontStr:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
         fmt = full and GROUP_NUMBER or "%d"
-        local w, h = pg.width, pg.height
-        if not (w and h) then
+        local wid, hgt = pg.width, pg.height
+        if not (wid and hgt) then
             -- The widest group, so the size never changes with the number.
             local tw = 0
             for g = 1, 8 do
-                fs:SetFormattedText(fmt, g)
-                local sw = fs:GetStringWidth()
+                fontStr:SetFormattedText(fmt, g)
+                local sw = fontStr:GetStringWidth()
                 if sw > tw then
                     tw = sw
                 end
             end
-            local th = fs:GetStringHeight()
+            local th = fontStr:GetStringHeight()
             if not full then
                 tw = math.max(tw, th)
                 th = tw
             end
             local pad = (pg.padding or 4) * 2
-            w = w or (tw + pad)
-            h = h or (th + pad)
+            wid = wid or (tw + pad)
+            hgt = hgt or (th + pad)
         end
-        shown = nil
-        frame:SetSize(PixelSnap(w), PixelSnap(h))
-        frame.bg:SetColorTexture(bg.r, bg.g, bg.b, bg.a or 1)
-        local tex = s.borderTexture or "solid"
+        isShown = nil
+        widget:SetSize(PixelSnap(wid), PixelSnap(hgt))
+        widget.bg:SetColorTexture(backdrop.r, backdrop.g, backdrop.b, backdrop.a or 1)
+        local texture = s.borderTexture or "solid"
         -- The frame border's exact pixels apply only at its own size.
-        local px = (pg.borderSize == nil) and CludesUI.BorderPx(s.borderSizePx, bs, tex) or nil
+        local px = (pg.borderSize == nil) and CludesUI.BorderPx(s.borderSizePx, bs, texture) or nil
         CludesUI.ApplyBorderStyle(
-            frame.borderFrame,
+            widget.borderFrame,
             bs,
             bc.r,
             bc.g,
             bc.b,
             bc.a or 1,
-            tex,
+            texture,
             s.borderTextureOffset,
             s.borderTextureOffsetY,
             s.borderTextureShiftX,
@@ -516,13 +527,13 @@ do
         UpdateGroup()
     end
 
-    function ns.PG_SetPreview(on)
-        ns._pgPreview = on and true or nil
-        ns.PG_Apply()
+    function mod.PG_SetPreview(on)
+        mod._pgPreview = on and true or nil
+        mod.PG_Apply()
     end
 end
 
-ns.GetFFD = GetFFD
+mod.GetFFD = GetFFD
 
 -------------------------------------------------------------------------------
 --  External tracker integration (frame-provider APIs)
@@ -544,21 +555,21 @@ ns.GetFFD = GetFFD
 -- Extra frames are skipped (deliberate DUPLICATES of units already on a real raid
 -- button -- handing a tracker both leaves it choosing between two frames for one unit).
 -- Boss frames never join allButtons for the same reason: not party/raid unit frames.
-ns._CollectTrackerFrames = function()
-    local out = {}
-    local function Collect(list)
-        if not list then
+mod._CollectTrackerFrames = function()
+    local result = {}
+    local function Collect(entries)
+        if not entries then
             return
         end
-        for _, btn in ipairs(list) do
-            if btn:IsVisible() and btn:GetAttribute("unit") and not GetFFD(btn)._isExtra then
-                out[#out + 1] = btn
+        for _, button in ipairs(entries) do
+            if button:IsVisible() and button:GetAttribute("unit") and not GetFFD(button)._isExtra then
+                result[#result + 1] = button
             end
         end
     end
-    Collect(ns._partyAllButtons)
+    Collect(mod._partyAllButtons)
     Collect(allButtons)
-    return out
+    return result
 end
 
 -- Public unit -> frame lookup for any addon wanting our raid or party frame.
@@ -568,33 +579,33 @@ end
 -- fresh the cache. This compares nothing -- it reads the secure "unit"
 -- attribute the header wrote. Extra frames answer last: they duplicate a unit
 -- already on a real raid button.
-function CludesUI.GetUnitFrame(unit)
-    if type(unit) ~= "string" then
+function CludesUI.GetUnitFrame(unitToken)
+    if type(unitToken) ~= "string" then
         return nil
     end
-    local function Find(list)
-        if not list then
+    local function Find(entries)
+        if not entries then
             return nil
         end
-        for _, btn in ipairs(list) do
-            if btn:IsVisible() then
-                local u = btn:GetAttribute("unit")
+        for _, button in ipairs(entries) do
+            if button:IsVisible() then
+                local u = button:GetAttribute("unit")
                 -- type() reports a secret's underlying type, so a secret
                 -- attribute would pass as a string and the compare would throw:
                 -- probe for secrecy first, never compare a secret.
                 if type(u) == "string" and not (issecretvalue and issecretvalue(u)) then
-                    if u == unit then
-                        return btn
+                    if u == unitToken then
+                        return button
                     end
                     -- The header gives the player's own button a raidN token, so
                     -- a literal compare never finds "player". UnitIsUnit answers
                     -- a SECRET boolean for a restricted pairing (or nil when the
                     -- compare is refused); only a plain true counts, and a secret
                     -- is never looked at.
-                    if unit == "player" then
-                        local ok, same = pcall(UnitIsUnit, u, "player")
-                        if ok and not (issecretvalue and issecretvalue(same)) and same == true then
-                            return btn
+                    if unitToken == "player" then
+                        local success, same = pcall(UnitIsUnit, u, "player")
+                        if success and not (issecretvalue and issecretvalue(same)) and same == true then
+                            return button
                         end
                     end
                 end
@@ -602,7 +613,7 @@ function CludesUI.GetUnitFrame(unit)
         end
         return nil
     end
-    return Find(ns._partyAllButtons) or Find(allButtons) or ns._xfUnitToButton[unit]
+    return Find(mod._partyAllButtons) or Find(allButtons) or mod._xfUnitToButton[unitToken]
 end
 
 -- Notifies subscribed providers that our frame set changed, debounced to one
@@ -619,18 +630,18 @@ end
 -- aura containers deny tainted reads while auras are secret, so a mid-fight
 -- scan can drop every CUI frame for the rest of the fight. The library
 -- rescans on its own at PLAYER_REGEN_ENABLED, so the regen pass covers it.
-ns._NotifyTrackerProviders = function()
-    if ns._trackerRefreshPending then
+mod._NotifyTrackerProviders = function()
+    if mod._trackerRefreshPending then
         return
     end
-    local cb = ns._trackerRefreshCb
+    local cb = mod._trackerRefreshCb
     local lgf = LibStub and LibStub("LibGetFrame-1.0", true)
     if not cb and not (lgf and lgf.ScanForUnitFrames) then
         return
     end
-    ns._trackerRefreshPending = true
+    mod._trackerRefreshPending = true
     C_Timer.After(0, function()
-        ns._trackerRefreshPending = false
+        mod._trackerRefreshPending = false
         if cb then
             pcall(cb)
         end
@@ -642,7 +653,7 @@ end
 
 -- Registers CUI as a frame provider with any installed, supported tracker.
 -- Inert when none is present. Called once from OnEnable.
-ns._RegisterTrackerProviders = function()
+mod._RegisterTrackerProviders = function()
     -- MiniAuras: stable public global MiniAurasApi.v1, created at its file load and so
     -- present by PLAYER_LOGIN whenever MiniAuras is enabled. MiniCCApi is the
     -- pre-rename global (same v1 contract), kept as a fallback for older installs.
@@ -651,13 +662,13 @@ ns._RegisterTrackerProviders = function()
         pcall(function()
             api.v1:RegisterFrameProvider({
                 Name = "CludesUI",
-                GetFrames = ns._CollectTrackerFrames,
+                GetFrames = mod._CollectTrackerFrames,
                 RegisterRefreshFrames = function(cb)
-                    ns._trackerRefreshCb = cb
+                    mod._trackerRefreshCb = cb
                 end,
             })
         end)
     end
 end
 
-I.broken = false
+Inner.broken = false

@@ -31,36 +31,36 @@ local ENCHANT_SLOTS = {
 
 local cache = {} -- guid -> { name, class, level, ilvl, bare = {...}, when }
 local queue, asking = {}, nil
-local win, rows = nil, {}
+local window, rowList = nil, {}
 
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 
 local function Members()
-    local out = {}
+    local result = {}
     if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            out[#out + 1] = "raid" .. i
+        for idx = 1, GetNumGroupMembers() do
+            result[#result + 1] = "raid" .. idx
         end
     else
-        out[1] = "player"
-        for i = 1, GetNumSubgroupMembers() do
-            out[#out + 1] = "party" .. i
+        result[1] = "player"
+        for idx = 1, GetNumSubgroupMembers() do
+            result[#result + 1] = "party" .. idx
         end
     end
-    return out
+    return result
 end
 
-local function BareSlots(unit)
+local function BareSlots(unitToken)
     local bare = {}
-    for slot, name in pairs(ENCHANT_SLOTS) do
-        local link = GetInventoryItemLink(unit, slot)
-        if link and not Secret(link) then
-            local enchant = link:match("item:%d+:(%d*)")
+    for slotIndex, name in pairs(ENCHANT_SLOTS) do
+        local itemLink = GetInventoryItemLink(unitToken, slotIndex)
+        if itemLink and not Secret(itemLink) then
+            local enchant = itemLink:match("item:%d+:(%d*)")
             if enchant == nil or enchant == "" or enchant == "0" then
                 bare[#bare + 1] = name
             end
@@ -70,28 +70,28 @@ local function BareSlots(unit)
     return bare
 end
 
-local function Read(unit)
-    local guid = UnitGUID(unit)
-    if not guid or Secret(guid) then
+local function Read(unitToken)
+    local unitGuid = UnitGUID(unitToken)
+    if not unitGuid or Secret(unitGuid) then
         return
     end
-    local _, class = UnitClass(unit)
+    local _, classFile = UnitClass(unitToken)
     local ilvl
-    if UnitIsUnit(unit, "player") then
+    if UnitIsUnit(unitToken, "player") then
         local _, equipped = GetAverageItemLevel()
         ilvl = equipped
     elseif C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
-        ilvl = C_PaperDollInfo.GetInspectItemLevel(unit)
+        ilvl = C_PaperDollInfo.GetInspectItemLevel(unitToken)
     end
     if Secret(ilvl) then
         ilvl = nil
     end
-    cache[guid] = {
-        name = UnitName(unit),
-        class = class,
-        level = UnitLevel(unit),
+    cache[unitGuid] = {
+        name = UnitName(unitToken),
+        class = classFile,
+        level = UnitLevel(unitToken),
         ilvl = ilvl,
-        bare = BareSlots(unit),
+        bare = BareSlots(unitToken),
         when = GetTime(),
     }
 end
@@ -101,15 +101,15 @@ local Refresh
 local function AskNext()
     asking = nil
     while #queue > 0 do
-        local unit = table.remove(queue, 1)
-        if UnitExists(unit) and UnitIsConnected(unit) then
-            if UnitIsUnit(unit, "player") then
-                Read(unit)
-            elseif CanInspect(unit, false) and not InCombatLockdown() then
-                asking = { unit = unit, guid = UnitGUID(unit) }
-                NotifyInspect(unit)
+        local unitToken = table.remove(queue, 1)
+        if UnitExists(unitToken) and UnitIsConnected(unitToken) then
+            if UnitIsUnit(unitToken, "player") then
+                Read(unitToken)
+            elseif CanInspect(unitToken, false) and not InCombatLockdown() then
+                asking = { unit = unitToken, guid = UnitGUID(unitToken) }
+                NotifyInspect(unitToken)
                 C_Timer.After(PACE, function()
-                    if asking and asking.unit == unit then
+                    if asking and asking.unit == unitToken then
                         AskNext()
                     end -- no answer: move on
                 end)
@@ -124,8 +124,8 @@ end
 
 local function ScanGroup()
     wipe(queue)
-    for _, unit in ipairs(Members()) do
-        queue[#queue + 1] = unit
+    for _, unitToken in ipairs(Members()) do
+        queue[#queue + 1] = unitToken
     end
     if not asking then
         AskNext()
@@ -135,18 +135,18 @@ end
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("INSPECT_READY")
 ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-ev:SetScript("OnEvent", function(_, event, guid)
-    if event == "GROUP_ROSTER_UPDATE" then
-        if win and win:IsShown() then
+ev:SetScript("OnEvent", function(_, evt, unitGuid)
+    if evt == "GROUP_ROSTER_UPDATE" then
+        if window and window:IsShown() then
             ScanGroup()
         end
         return
     end
-    if not (asking and asking.guid == guid) then
+    if not (asking and asking.guid == unitGuid) then
         return
     end
-    local unit = asking.unit
-    Read(unit)
+    local unitToken = asking.unit
+    Read(unitToken)
     -- Leave the game's own inspect window alone if the player opened it.
     if not (InspectFrame and InspectFrame:IsShown()) then
         ClearInspectPlayer()
@@ -155,7 +155,7 @@ ev:SetScript("OnEvent", function(_, event, guid)
         Refresh()
     end
     C_Timer.After(PACE, function()
-        if asking and asking.guid == guid then
+        if asking and asking.guid == unitGuid then
             AskNext()
         end
     end)
@@ -167,36 +167,36 @@ end)
 local ROW_H = 18
 
 local function Build()
-    if win then
+    if window then
         return
     end
-    win = CreateFrame("Frame", "CludesUIGroupInspect", UIParent)
-    win:SetSize(460, 60)
-    win:SetPoint("CENTER", 0, 120)
-    CludesUI.Kit.Panel(win, 0.94)
-    win:SetMovable(true)
-    win:EnableMouse(true)
-    win:RegisterForDrag("LeftButton")
-    win:SetScript("OnDragStart", win.StartMoving)
-    win:SetScript("OnDragStop", win.StopMovingOrSizing)
-    win:SetFrameStrata("HIGH")
-    local title = win:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(title, 15, "essentials")
-    title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("Group Inspect")
-    CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(win, "x", function()
-        win:Hide()
+    window = CreateFrame("Frame", "CludesUIGroupInspect", UIParent)
+    window:SetSize(460, 60)
+    window:SetPoint("CENTER", 0, 120)
+    CludesUI.Kit.Panel(window, 0.94)
+    window:SetMovable(true)
+    window:EnableMouse(true)
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnDragStart", window.StartMoving)
+    window:SetScript("OnDragStop", window.StopMovingOrSizing)
+    window:SetFrameStrata("HIGH")
+    local titleText = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(titleText, 15, "essentials")
+    titleText:SetPoint("TOPLEFT", 10, -8)
+    titleText:SetText("Group Inspect")
+    CludesUI.Kit.AccentText(titleText)
+    local close = CludesUI.Kit.Glyph(window, "x", function()
+        window:Hide()
     end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
-    win:Hide()
+    window:Hide()
     tinsert(UISpecialFrames, "CludesUIGroupInspect")
 end
 
-local function Row(i)
-    local r = rows[i]
+local function Row(idx)
+    local r = rowList[idx]
     if not r then
-        r = CreateFrame("Button", nil, win)
+        r = CreateFrame("Button", nil, window)
         r:SetSize(440, ROW_H)
         r.text = r:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(r.text, 12, "essentials")
@@ -204,68 +204,68 @@ local function Row(i)
         r.text:SetJustifyH("LEFT")
         r.text:SetWidth(440)
         r.text:SetWordWrap(false)
-        local hl = r:CreateTexture(nil, "HIGHLIGHT")
-        hl:SetAllPoints()
-        hl:SetColorTexture(1, 1, 1, 0.06)
+        local highlight = r:CreateTexture(nil, "HIGHLIGHT")
+        highlight:SetAllPoints()
+        highlight:SetColorTexture(1, 1, 1, 0.06)
         r:SetScript("OnClick", function(self)
             if self.unit and UnitExists(self.unit) and CanInspect(self.unit, true) then
                 InspectUnit(self.unit)
             end
         end)
-        rows[i] = r
+        rowList[idx] = r
     end
     r:ClearAllPoints()
-    r:SetPoint("TOPLEFT", win, "TOPLEFT", 10, -30 - (i - 1) * ROW_H)
+    r:SetPoint("TOPLEFT", window, "TOPLEFT", 10, -30 - (idx - 1) * ROW_H)
     r:Show()
     return r
 end
 
 Refresh = function()
-    if not (win and win:IsShown()) then
+    if not (window and window:IsShown()) then
         return
     end
-    local list = {}
-    for _, unit in ipairs(Members()) do
-        local guid = UnitGUID(unit)
-        local c = guid and not Secret(guid) and cache[guid]
-        local _, class = UnitClass(unit)
-        local colour = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        local name = UnitName(unit) or "?"
+    local entries = {}
+    for _, unitToken in ipairs(Members()) do
+        local unitGuid = UnitGUID(unitToken)
+        local c = unitGuid and not Secret(unitGuid) and cache[unitGuid]
+        local _, classFile = UnitClass(unitToken)
+        local colour = RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        local name = UnitName(unitToken) or "?"
         if colour then
             name = colour:WrapTextInColorCode(name)
         end
-        local text
+        local textValue
         if c then
-            text = ("%s  |cff9aa6b2%d|r  %s"):format(
+            textValue = ("%s  |cff9aa6b2%d|r  %s"):format(
                 name,
                 c.level or 0,
                 c.ilvl and ("ilvl %.1f"):format(c.ilvl) or "|cff9aa6b2ilvl ?|r"
             )
             if #c.bare > 0 then
-                text = text .. "  |cffffb040no enchant: " .. table.concat(c.bare, ", ") .. "|r"
+                textValue = textValue .. "  |cffffb040no enchant: " .. table.concat(c.bare, ", ") .. "|r"
             end
         else
-            text = name .. "  |cff9aa6b2out of range or not yet asked|r"
+            textValue = name .. "  |cff9aa6b2out of range or not yet asked|r"
         end
-        list[#list + 1] = { unit = unit, text = text, ilvl = c and c.ilvl or -1 }
+        entries[#entries + 1] = { unit = unitToken, text = textValue, ilvl = c and c.ilvl or -1 }
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         return a.ilvl > b.ilvl
     end)
-    for i, l in ipairs(list) do
-        local r = Row(i)
+    for idx, l in ipairs(entries) do
+        local r = Row(idx)
         r.unit = l.unit
         r.text:SetText(l.text)
     end
-    for i = #list + 1, #rows do
-        rows[i]:Hide()
+    for idx = #entries + 1, #rowList do
+        rowList[idx]:Hide()
     end
-    win:SetHeight(40 + #list * ROW_H)
+    window:SetHeight(40 + #entries * ROW_H)
 end
 
 function module.ShowGroupInspect()
     Build()
-    win:Show()
+    window:Show()
     Refresh()
     ScanGroup()
 end
@@ -274,8 +274,8 @@ CludesUI._GroupInspect = { Show = module.ShowGroupInspect }
 
 SLASH_CUIGROUPINSPECT1 = "/cinspect"
 SlashCmdList.CUIGROUPINSPECT = function()
-    if win and win:IsShown() then
-        win:Hide()
+    if window and window:IsShown() then
+        window:Hide()
     else
         module.ShowGroupInspect()
     end

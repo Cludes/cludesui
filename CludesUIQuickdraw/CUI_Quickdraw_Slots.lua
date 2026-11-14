@@ -8,13 +8,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  professions, outfits and the interface panels.
 --  Reads the earlier Quickdraw files through ns and ns._qdInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._qdInternals
+local _, mod = ...
+local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local tonumber, type, select = tonumber, type, select
 local tinsert = table.insert
@@ -74,26 +74,26 @@ local CYCLE_N = 8
 -- Both cycles step through the eight ICON positions; the world one maps each
 -- onto the engine's number exactly as a fixed world marker slot does. nil for
 -- every kind that does not cycle, which is what marks a slot as one.
-local function CycleSteps(kind)
-    local out = {}
-    if kind == "cycleraidtarget" then
+local function CycleSteps(kindOf)
+    local result = {}
+    if kindOf == "cycleraidtarget" then
         for i = 1, CYCLE_N do
-            out[i] = "/tm " .. i
+            result[i] = "/tm " .. i
         end
-    elseif kind == "cycleworldmarker" then
+    elseif kindOf == "cycleworldmarker" then
         for i = 1, CYCLE_N do
-            out[i] = "/wm " .. WORLD_MARKER_ENGINE[i]
+            result[i] = "/wm " .. WORLD_MARKER_ENGINE[i]
         end
     else
         return nil
     end
-    return out
+    return result
 end
 
 -- The icon position the NEXT press places. Derived from the stored one rather
 -- than stored itself, so there is only ever one number to keep in step.
-local function CycleNext(slot)
-    local last = tonumber(slot and slot.cyclePos) or 0
+local function CycleNext(slotIndex)
+    local last = tonumber(slotIndex and slotIndex.cyclePos) or 0
     if last < 1 or last > CYCLE_N then
         last = 0
     end
@@ -104,13 +104,13 @@ end
 -- the next push and every icon drawn before it agree with what actually fired.
 -- Called from the release; a cell that does not cycle answers nothing and
 -- leaves the slot alone.
-local function CyclePosBack(btn, idx, slot)
-    if not btn or not idx or not slot then
+local function CyclePosBack(btn, position, slotIndex)
+    if not btn or not position or not slotIndex then
         return
     end
-    local pos = tonumber(btn:GetAttribute("eqdCycPos" .. idx))
-    if pos and CycleSteps(slot.kind) then
-        slot.cyclePos = pos
+    local place = tonumber(btn:GetAttribute("eqdCycPos" .. position))
+    if place and CycleSteps(slotIndex.kind) then
+        slotIndex.cyclePos = place
     end
 end
 
@@ -124,8 +124,8 @@ end
 -- FireInsecure the way a battle pet does.
 local RANDOM_FAVORITE_MOUNT = 150544
 
-local function MarkerIcon(id)
-    return "Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. id
+local function MarkerIcon(ident)
+    return "Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. ident
 end
 
 -- The CURRENT index of the specialization a slot names, for both kinds that
@@ -136,30 +136,30 @@ end
 -- palette carried to an alt would otherwise point at somebody else's spec. A
 -- dynamicspec slot banks the position instead, and means it -- the second on a
 -- druid and the second on a warrior are both simply "the second one".
-local function SpecIndexFor(slot)
-    if not slot or not C_SpecializationInfo then
+local function SpecIndexFor(slotIndex)
+    if not slotIndex or not C_SpecializationInfo then
         return nil
     end
     local classID = select(3, UnitClass("player"))
     if not classID then
         return nil
     end
-    local count = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
+    local total = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
 
-    if slot.kind == "dynamicspec" then
-        local i = tonumber(slot.index)
-        if i and i >= 1 and i <= count then
+    if slotIndex.kind == "dynamicspec" then
+        local i = tonumber(slotIndex.index)
+        if i and i >= 1 and i <= total then
             return i
         end
         return nil
     end
 
-    local want = tonumber(slot.specID)
-    if not want then
+    local wanted = tonumber(slotIndex.specID)
+    if not wanted then
         return nil
     end
-    for i = 1, count do
-        if C_SpecializationInfo.GetSpecializationInfo(i) == want then
+    for i = 1, total do
+        if C_SpecializationInfo.GetSpecializationInfo(i) == wanted then
             return i
         end
     end
@@ -173,8 +173,8 @@ end
 -- On ns with no local alias, and called back through ns below: written when
 -- the module was one file whose main chunk was at Lua's ceiling of 200 locals
 -- (see UsableSlots), where a local here spent the last one.
-ns.SpecPositionName = function(index)
-    return CludesUI.Lf("Specialization %1$d", index or 0)
+mod.SpecPositionName = function(slotPos)
+    return CludesUI.Lf("Specialization %1$d", slotPos or 0)
 end
 
 -------------------------------------------------------------------------------
@@ -194,15 +194,15 @@ end
 do
     local cache = {}
 
-    local function Resolve(slot)
-        if not slot or slot.kind ~= "dynamicprofession" then
+    local function Resolve(slotIndex)
+        if not slotIndex or slotIndex.kind ~= "dynamicprofession" then
             return nil, nil
         end
-        local i = tonumber(slot.index)
+        local i = tonumber(slotIndex.index)
         if not i then
             return nil, nil
         end
-        local key = i * 4 + (slot.extra and 1 or 0) + (slot.specialization and 2 or 0)
+        local key = i * 4 + (slotIndex.extra and 1 or 0) + (slotIndex.specialization and 2 or 0)
         local hit = cache[key]
         if hit then
             return hit.book, hit.spell
@@ -227,7 +227,7 @@ do
         local spell
         if book then
             local _, _, _, _, numSpells, spellOffset, skillLine = GetProfessionInfo(book)
-            if slot.specialization then
+            if slotIndex.specialization then
                 -- Blizzard exposes each learned flyout and each profession's
                 -- skill line, but no relationship between the two.
                 local flyoutID
@@ -240,10 +240,10 @@ do
                 end
                 if flyoutID then
                     local numSlots = select(3, GetFlyoutInfo(flyoutID))
-                    for n = 1, (numSlots or 0) do
-                        local spellID, _, isKnown = GetFlyoutSlotInfo(flyoutID, n)
+                    for num = 1, (numSlots or 0) do
+                        local spellId, _, isKnown = GetFlyoutSlotInfo(flyoutID, num)
                         if isKnown then
-                            spell = spellID
+                            spell = spellId
                             break
                         end
                     end
@@ -251,17 +251,17 @@ do
             else
                 -- Nth non-passive spell in the profession block: 1 = opener,
                 -- 2 = the profession's native extra action, when it has one.
-                local which = slot.extra and 2 or 1
+                local which = slotIndex.extra and 2 or 1
                 local seen = 0
-                for n = 1, (numSpells or 0) do
-                    local info = C_SpellBook.GetSpellBookItemInfo(
-                        n + (spellOffset or 0),
+                for num = 1, (numSpells or 0) do
+                    local details = C_SpellBook.GetSpellBookItemInfo(
+                        num + (spellOffset or 0),
                         Enum.SpellBookSpellBank.Player
                     )
-                    if info and info.spellID and not info.isPassive then
+                    if details and details.spellID and not details.isPassive then
                         seen = seen + 1
                         if seen == which then
-                            spell = info.spellID
+                            spell = details.spellID
                             break
                         end
                     end
@@ -273,13 +273,13 @@ do
         return book, spell
     end
 
-    ns.ProfessionBookIndexFor = function(slot)
-        return (Resolve(slot))
+    mod.ProfessionBookIndexFor = function(slotIndex)
+        return (Resolve(slotIndex))
     end
-    ns.ProfessionSpellFor = function(slot)
-        return (select(2, Resolve(slot)))
+    mod.ProfessionSpellFor = function(slotIndex)
+        return (select(2, Resolve(slotIndex)))
     end
-    ns.WipeProfessionCache = function()
+    mod.WipeProfessionCache = function()
         wipe(cache)
     end
 end
@@ -287,91 +287,96 @@ end
 -- Picker / unresolved-placeholder name for a dynamicprofession position (the
 -- ns.SpecPositionName counterpart): positions 1-2 by number, 3-5 by the
 -- client's own skill name.
-ns.ProfessionPositionName = function(index, extra, specialization)
-    index = tonumber(index)
-    local base
-    if index == 3 then
-        base = COOKING or "Cooking"
-    elseif index == 4 then
-        base = FISHING or "Fishing"
-    elseif index == 5 then
+mod.ProfessionPositionName = function(slotPos, extra, specialization)
+    slotPos = tonumber(slotPos)
+    local baseValue
+    if slotPos == 3 then
+        baseValue = COOKING or "Cooking"
+    elseif slotPos == 4 then
+        baseValue = FISHING or "Fishing"
+    elseif slotPos == 5 then
         -- WoW Forever's professions book reads GetProfessions as prof1, prof2,
         -- First Aid, fishing, cooking: there the position is First Aid, named
         -- by its skill line (129) as the client spells it.
         if CludesUI.IS_FOREVER then
-            base = C_TradeSkillUI.GetTradeSkillDisplayName(129)
-            if type(base) ~= "string" or base == "" then
-                base = CludesUI.L("First Aid")
+            baseValue = C_TradeSkillUI.GetTradeSkillDisplayName(129)
+            if type(baseValue) ~= "string" or baseValue == "" then
+                baseValue = CludesUI.L("First Aid")
             end
         else
-            base = ARCHAEOLOGY or "Archaeology"
+            baseValue = ARCHAEOLOGY or "Archaeology"
         end
     else
-        base = CludesUI.Lf("Profession %1$d", index or 0)
+        baseValue = CludesUI.Lf("Profession %1$d", slotPos or 0)
     end
     if specialization then
-        return CludesUI.Lf("%1$s Specialization Ability", base)
+        return CludesUI.Lf("%1$s Specialization Ability", baseValue)
     elseif extra then
-        return CludesUI.Lf("%1$s Extra Ability", base)
+        return CludesUI.Lf("%1$s Extra Ability", baseValue)
     end
-    return base
+    return baseValue
 end
 
 -- Store the stable outfitID; the secure action uses the reorderable index.
-function ns.OutfitInfo(slot)
-    local id = type(slot) == "table" and slot.id or slot
-    local info = type(id) == "number" and C_TransmogOutfitInfo.GetOutfitInfo(id)
-    return info and not info.isDisabled and info or nil
+function mod.OutfitInfo(slotIndex)
+    local ident = type(slotIndex) == "table" and slotIndex.id or slotIndex
+    local details = type(ident) == "number" and C_TransmogOutfitInfo.GetOutfitInfo(ident)
+    return details and not details.isDisabled and details or nil
 end
 
-function ns.OutfitIcon(info)
-    local icon = info and info.icon
-    return icon ~= 0 and icon or nil
+function mod.OutfitIcon(details)
+    local glyph = details and details.icon
+    return glyph ~= 0 and glyph or nil
 end
 
-function ns.OutfitSlots()
-    local out = {}
-    for _, info in ipairs(C_TransmogOutfitInfo.GetOutfitsInfo() or {}) do
-        if not info.isDisabled then
-            out[#out + 1] = {
+function mod.OutfitSlots()
+    local result = {}
+    for _, details in ipairs(C_TransmogOutfitInfo.GetOutfitsInfo() or {}) do
+        if not details.isDisabled then
+            result[#result + 1] = {
                 kind = "outfit",
-                id = info.outfitID,
-                name = info.name,
-                icon = ns.OutfitIcon(info) or { atlas = "poi-transmogrifier" },
+                id = details.outfitID,
+                name = details.name,
+                icon = mod.OutfitIcon(details) or { atlas = "poi-transmogrifier" },
             }
         end
     end
-    return out
+    return result
 end
 
 -- Set IDs are character-local even when the palette is shared.
 local function EquipmentSetOwner()
-    local guid = UnitGUID("player")
-    if not issecretvalue(guid) then
-        return guid
+    local unitGuid = UnitGUID("player")
+    if not issecretvalue(unitGuid) then
+        return unitGuid
     end
 end
 
-function ns.EquipmentSetInfo(slot)
-    if type(slot.id) ~= "number" or type(slot.owner) ~= "string" or slot.owner ~= EquipmentSetOwner() then
+function mod.EquipmentSetInfo(slotIndex)
+    if
+        type(slotIndex.id) ~= "number"
+        or type(slotIndex.owner) ~= "string"
+        or slotIndex.owner ~= EquipmentSetOwner()
+    then
         return
     end
-    return C_EquipmentSet.GetEquipmentSetInfo(slot.id)
+    return C_EquipmentSet.GetEquipmentSetInfo(slotIndex.id)
 end
 
-function ns.EquipmentSetSlots()
-    local out = {}
-    local owner = EquipmentSetOwner()
-    if not owner then
-        return out
+function mod.EquipmentSetSlots()
+    local result = {}
+    local ownerFrame = EquipmentSetOwner()
+    if not ownerFrame then
+        return result
     end
-    for _, id in ipairs(C_EquipmentSet.GetEquipmentSetIDs()) do
-        local name, icon = C_EquipmentSet.GetEquipmentSetInfo(id)
+    for _, ident in ipairs(C_EquipmentSet.GetEquipmentSetIDs()) do
+        local name, glyph = C_EquipmentSet.GetEquipmentSetInfo(ident)
         if name then
-            out[#out + 1] = { kind = "equipmentset", id = id, owner = owner, name = name, icon = icon }
+            result[#result + 1] =
+                { kind = "equipmentset", id = ident, owner = ownerFrame, name = name, icon = glyph }
         end
     end
-    return out
+    return result
 end
 
 -------------------------------------------------------------------------------
@@ -598,49 +603,45 @@ do
     -- first: they open its Classic Spellbook and Classic Talents while those
     -- are on and click the micro buttons otherwise.
     if CludesUI.IS_FOREVER then
-        for _, def in ipairs(PANELS) do
-            if def.key == "greatvault" then
-                def.fire = nil
+        for _, spec_def in ipairs(PANELS) do
+            if spec_def.key == "greatvault" then
+                spec_def.fire = nil
             end
         end
-        for i, def in ipairs(PANELS) do
-            if def.key == "spellbook" then
-                def.button, def.label, def.default =
+        for i, spec_def in ipairs(PANELS) do
+            if spec_def.key == "spellbook" then
+                spec_def.button, spec_def.label, spec_def.default =
                     { "CUI_SpellbookRoute", "SpellbookMicroButton" }, "SPELLBOOK", "Spellbook"
-                tinsert(
-                    PANELS,
-                    i + 1,
-                    {
-                        key = "talents",
-                        icon = ART .. "menu-achievements.png",
-                        button = { "CUI_TalentsRoute", "TalentMicroButton" },
-                        label = "TALENTS",
-                        default = "Talents",
-                    }
-                )
+                tinsert(PANELS, i + 1, {
+                    key = "talents",
+                    icon = ART .. "menu-achievements.png",
+                    button = { "CUI_TalentsRoute", "TalentMicroButton" },
+                    label = "TALENTS",
+                    default = "Talents",
+                })
                 break
             end
         end
     end
 
     local byKey = {}
-    for _, def in ipairs(PANELS) do
-        byKey[def.key] = def
+    for _, spec_def in ipairs(PANELS) do
+        byKey[spec_def.key] = spec_def
     end
 
     -- The button this panel is clicked by, or nil for the ones with none and
     -- for a client that has not got the button. IsForbidden as well as
     -- existence: /click refuses a frame an addon may not reach
     -- (SlashCommands.lua:738), so an entry pointing at one would fire nothing.
-    local function PanelButton(def)
-        local names = def and def.button
-        if not names then
+    local function PanelButton(spec_def)
+        local nameList = spec_def and spec_def.button
+        if not nameList then
             return nil
         end
-        if type(names) == "string" then
-            names = { names }
+        if type(nameList) == "string" then
+            nameList = { nameList }
         end
-        for _, name in ipairs(names) do
+        for _, name in ipairs(nameList) do
             local f = _G[name]
             if f and f.Click and f.IsForbidden and not f:IsForbidden() then
                 return name
@@ -649,36 +650,36 @@ do
         return nil
     end
 
-    ns.PanelDef = function(slot)
-        return slot and byKey[slot.key]
+    mod.PanelDef = function(slotIndex)
+        return slotIndex and byKey[slotIndex.key]
     end
 
-    ns.PanelName = function(def)
-        if not def then
+    mod.PanelName = function(spec_def)
+        if not spec_def then
             return nil
         end
-        local names = def.label
-        if type(names) == "string" then
-            names = { names }
+        local nameList = spec_def.label
+        if type(nameList) == "string" then
+            nameList = { nameList }
         end
-        for _, g in ipairs(names) do
+        for _, g in ipairs(nameList) do
             local s = _G[g]
             if type(s) == "string" and s ~= "" then
                 return s
             end
         end
-        return CludesUI.L(def.default)
+        return CludesUI.L(spec_def.default)
     end
 
     -- The macro a panel entry fires, or nil for the ones FireInsecure takes.
-    ns.PanelMacro = function(def)
-        local name = PanelButton(def)
+    mod.PanelMacro = function(spec_def)
+        local name = PanelButton(spec_def)
         return name and ("/click " .. name) or nil
     end
 
-    ns.PanelFire = function(def)
-        if def and def.fire and (not def.exists or def.exists()) then
-            def.fire()
+    mod.PanelFire = function(spec_def)
+        if spec_def and spec_def.fire and (not spec_def.exists or spec_def.exists()) then
+            spec_def.fire()
         end
     end
 
@@ -686,33 +687,33 @@ do
     -- Shop is not built into every region's client, and a panel whose addon
     -- never loaded has no toggle to call. An entry that answers no goes dark
     -- under Hide Unavailable Actions rather than sitting there firing nothing.
-    ns.PanelAvailable = function(def)
-        if not def then
+    mod.PanelAvailable = function(spec_def)
+        if not spec_def then
             return false
         end
-        if def.button then
-            return PanelButton(def) ~= nil
+        if spec_def.button then
+            return PanelButton(spec_def) ~= nil
         end
-        return (def.fire ~= nil) and (not def.exists or def.exists())
+        return (spec_def.fire ~= nil) and (not spec_def.exists or spec_def.exists())
     end
 
     -- Candidate slots for the picker and the preset, in the order the micro
     -- menu itself runs. keepOrder holds them in it: the panels are a row the
     -- player already reads left to right, and alphabetising them would be the
     -- one place in the interface they are not in that order.
-    ns.PanelSlots = function(includeMinor)
-        local out = {}
-        for _, def in ipairs(PANELS) do
-            if (includeMinor or not def.minor) and ns.PanelAvailable(def) then
-                out[#out + 1] = { kind = "panel", key = def.key }
+    mod.PanelSlots = function(includeMinor)
+        local result = {}
+        for _, spec_def in ipairs(PANELS) do
+            if (includeMinor or not spec_def.minor) and mod.PanelAvailable(spec_def) then
+                result[#result + 1] = { kind = "panel", key = spec_def.key }
             end
         end
-        return out
+        return result
     end
 end
 
-I.CycleNext, I.CyclePosBack, I.CycleSteps = CycleNext, CyclePosBack, CycleSteps
-I.MARKER_NAMES, I.MarkerIcon = MARKER_NAMES, MarkerIcon
-I.RANDOM_FAVORITE_MOUNT, I.SpecIndexFor = RANDOM_FAVORITE_MOUNT, SpecIndexFor
-I.WORLD_MARKER_ENGINE = WORLD_MARKER_ENGINE
-I.broken = false
+Inner.CycleNext, Inner.CyclePosBack, Inner.CycleSteps = CycleNext, CyclePosBack, CycleSteps
+Inner.MARKER_NAMES, Inner.MarkerIcon = MARKER_NAMES, MarkerIcon
+Inner.RANDOM_FAVORITE_MOUNT, Inner.SpecIndexFor = RANDOM_FAVORITE_MOUNT, SpecIndexFor
+Inner.WORLD_MARKER_ENGINE = WORLD_MARKER_ENGINE
+Inner.broken = false

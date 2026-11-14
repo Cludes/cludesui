@@ -1,9 +1,9 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-local addon, ns = ...
+local addon, mod = ...
 
-if not ns then
+if not mod then
     return
 end
 
@@ -36,12 +36,12 @@ end
 local LIFT_STRATA = "HIGH"
 
 local function Enabled()
-    local prof = ns.db and ns.db.profile
+    local prof = mod.db and mod.db.profile
     return prof ~= nil and prof.castOverlayEnabled == true
 end
 
-local function GetLift(plate)
-    local lift = plate._castLift
+local function GetLift(backing)
+    local lift = backing._castLift
     if not lift then
         lift = CreateFrame("Frame", nil, UIParent)
         lift:SetFrameStrata(LIFT_STRATA)
@@ -51,7 +51,7 @@ local function GetLift(plate)
         if lift.EnableMouseMotion then
             lift:EnableMouseMotion(false)
         end
-        plate._castLift = lift
+        backing._castLift = lift
     end
     return lift
 end
@@ -62,13 +62,13 @@ end
 -- settings changes, profile swaps, scale changes, and the options toggle (via
 -- ns.RefreshAllSettings) all converge here; pooled plates self-heal on their next spawn
 -- via the appearance generation counter.
-function ns.RefreshCastOverlay(plate)
-    local cast = plate and plate.cast
+function mod.RefreshCastOverlay(backing)
+    local cast = backing and backing.cast
     if not cast then
         return
     end
     if Enabled() then
-        local lift = GetLift(plate)
+        local lift = GetLift(backing)
         if cast:GetParent() ~= lift then
             cast:SetParent(lift)
             cast:SetFrameStrata(LIFT_STRATA)
@@ -77,31 +77,31 @@ function ns.RefreshCastOverlay(plate)
             -- cast border (a strata-inheriting child of the cast bar) rides up to
             -- HIGH with the lift -- leaving MEDIUM text behind it. Lift the text to
             -- the same strata; its level 900 keeps it above the border there.
-            if plate.castTextFrame then
-                plate.castTextFrame:SetFrameStrata(LIFT_STRATA)
+            if backing.castTextFrame then
+                backing.castTextFrame:SetFrameStrata(LIFT_STRATA)
             end
-            plate._castOverlayLifted = true
+            backing._castOverlayLifted = true
             -- The strata change just reset the custom spell icon border's (a cast bar
             -- child, when it exists): re-seat it above the icon.
-            if plate._castIconBorder or cast._iconSeam then
-                ns.ApplyCastIconBorder(plate)
+            if backing._castIconBorder or cast._iconSeam then
+                mod.ApplyCastIconBorder(backing)
             end
         end
-        local s = plate:GetEffectiveScale()
-        if plate._castLiftScale ~= s then
-            plate._castLiftScale = s
+        local s = backing:GetEffectiveScale()
+        if backing._castLiftScale ~= s then
+            backing._castLiftScale = s
             lift:SetScale(s)
         end
-    elseif plate._castOverlayLifted then
-        cast:SetParent(plate)
-        cast:SetFrameStrata(plate:GetFrameStrata())
-        if plate.castTextFrame then
-            plate.castTextFrame:SetFrameStrata("MEDIUM")
+    elseif backing._castOverlayLifted then
+        cast:SetParent(backing)
+        cast:SetFrameStrata(backing:GetFrameStrata())
+        if backing.castTextFrame then
+            backing.castTextFrame:SetFrameStrata("MEDIUM")
         end
-        plate._castOverlayLifted = nil
-        plate._castLiftScale = nil
-        if plate._castIconBorder or cast._iconSeam then
-            ns.ApplyCastIconBorder(plate)
+        backing._castOverlayLifted = nil
+        backing._castLiftScale = nil
+        if backing._castIconBorder or cast._iconSeam then
+            mod.ApplyCastIconBorder(backing)
         end
     end
 end

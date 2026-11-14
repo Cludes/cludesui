@@ -6,113 +6,111 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Forever Tools > Training: the Training Planner page. Lists what you can
 --  train now with its total, then the next levels that bring spells.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIForeverEssentials"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIForeverEssentials"]
+if not mod then
     return
 end
 
 local COMING_LEVELS = 6 -- how many coming levels the page lists
 
-function _G._CUI_BuildForeverTrainingPage(_, parent, yOffset)
+function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
-    local s = ns.TrainingSettings()
+    local posY = yOffset
+    local _, hgt
+    local s = mod.TrainingSettings()
 
     CludesUI:ClearContentHeader()
 
-    _, h = W:SectionHeader(parent, "TRAINING PLANNER", y)
-    y = y - h
-    _, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "toggle",
-            text = "Message on Level Up",
-            tooltip = "When you level up, a chat line says how many new spells your trainer has for you and what they cost.",
-            getValue = function()
-                return s.levelUpMessage
-            end,
-            setValue = function(v)
-                s.levelUpMessage = v and true or false
-            end,
-        },
-        {
-            type = "label",
-            text = "Base prices, before rep discount",
-            tooltip = "Prices are the trainer's base prices. A reputation discount at the trainer makes the real bill a little lower.",
-        }
-    )
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "TRAINING PLANNER", posY)
+    posY = posY - hgt
+    _, hgt = W:DualRow(hostFrame, posY, {
+        type = "toggle",
+        text = "Message on Level Up",
+        tooltip = "When you level up, a chat line says how many new spells your trainer has for you and what they cost.",
+        getValue = function()
+            return s.levelUpMessage
+        end,
+        setValue = function(val)
+            s.levelUpMessage = val and true or false
+        end,
+    }, {
+        type = "label",
+        text = "Base prices, before rep discount",
+        tooltip = "Prices are the trainer's base prices. A reputation discount at the trainer makes the real bill a little lower.",
+    })
+    posY = posY - hgt
 
-    local plan = ns.TrainingPlan()
+    local plan = mod.TrainingPlan()
 
     -- Two spells a row: the page's dual rows hold one item each side.
     local function List(entries, showLevel)
-        for i = 1, #entries, 2 do
+        for idx = 1, #entries, 2 do
             local function Slot(e)
                 if not e then
                     return { type = "label", text = "" }
                 end
-                local text = ns.TrainingSpellLabel(e.id) .. "  |cff9aa6b2" .. ns.TrainingMoney(e.cost) .. "|r"
+                local textValue = mod.TrainingSpellLabel(e.id)
+                    .. "  |cff9aa6b2"
+                    .. mod.TrainingMoney(e.cost)
+                    .. "|r"
                 if showLevel then
-                    text = "|cff4cc9f0" .. e.level .. "|r  " .. text
+                    textValue = "|cff4cc9f0" .. e.level .. "|r  " .. textValue
                 end
                 if e.needs then
-                    text = text
+                    textValue = textValue
                         .. "  |cffffb040needs "
                         .. (C_Spell.GetSpellName(e.needs) or ("spell " .. e.needs))
                         .. "|r"
                 end
                 if e.skillLevel then
-                    text = text .. "  |cff9aa6b2Poisons " .. e.skillLevel .. "|r"
+                    textValue = textValue .. "  |cff9aa6b2Poisons " .. e.skillLevel .. "|r"
                 end
-                return { type = "label", text = text, tooltip = text }
+                return { type = "label", text = textValue, tooltip = textValue }
             end
-            _, h = W:DualRow(parent, y, Slot(entries[i]), Slot(entries[i + 1]))
-            y = y - h
+            _, hgt = W:DualRow(hostFrame, posY, Slot(entries[idx]), Slot(entries[idx + 1]))
+            posY = posY - hgt
         end
     end
 
-    _, h = W:SectionHeader(
-        parent,
+    _, hgt = W:SectionHeader(
+        hostFrame,
         ("TRAIN NOW  -  %d SPELL%s, %s"):format(
             #plan.now,
             #plan.now == 1 and "" or "S",
-            ns.TrainingMoney(plan.nowCost)
+            mod.TrainingMoney(plan.nowCost)
         ),
-        y
+        posY
     )
-    y = y - h
+    posY = posY - hgt
     if #plan.now == 0 then
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             { type = "label", text = "Nothing to train right now." },
             { type = "label", text = "" }
         )
-        y = y - h
+        posY = posY - hgt
     else
         List(plan.now, true)
     end
 
     if #plan.blocked > 0 then
-        _, h = W:SectionHeader(parent, "WAITING ON A TALENT OR QUEST", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "WAITING ON A TALENT OR QUEST", posY)
+        posY = posY - hgt
         List(plan.blocked, true)
     end
 
-    for i = 1, math.min(COMING_LEVELS, #plan.levels) do
-        local lvl = plan.levels[i]
+    for idx = 1, math.min(COMING_LEVELS, #plan.levels) do
+        local lvl = plan.levels[idx]
         local entries = plan.coming[lvl]
         local cost = 0
         for _, e in ipairs(entries) do
             cost = cost + e.cost
         end
-        _, h = W:SectionHeader(parent, ("LEVEL %d  -  %s"):format(lvl, ns.TrainingMoney(cost)), y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, ("LEVEL %d  -  %s"):format(lvl, mod.TrainingMoney(cost)), posY)
+        posY = posY - hgt
         List(entries, false)
     end
 
-    return math.abs(y)
+    return math.abs(posY)
 end

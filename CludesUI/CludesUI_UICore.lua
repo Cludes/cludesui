@@ -11,7 +11,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  surface is LoadOnDemand.
 -------------------------------------------------------------------------------
 
-local PP = CludesUI.PanelPP
+local Pix = CludesUI.PanelPP
 local SolidTex = CludesUI.SolidTex
 local MakeFont = CludesUI.MakeFont
 local MakeBorder = CludesUI.MakeBorder
@@ -37,38 +37,38 @@ local BTN_TXT_HA = CludesUI.BTN_TXT_HA
 --             brd_r,brd_g,brd_b,brd_a, brd_hr,brd_hg,brd_hb,brd_ha,
 --             txt_r,txt_g,txt_b,txt_a, txt_hr,txt_hg,txt_hb,txt_ha }
 -- square (optional): the square outline, for a window that is square by design.
-local function MakeStyledButton(btn, text, fontSize, colours, onClick, square)
+local function MakeStyledButton(btn, textValue, fontSize, colours, onClick, square)
     local c = colours
-    local bg = SolidTex(btn, "BACKGROUND", c[1], c[2], c[3], c[4])
-    bg:SetAllPoints()
+    local backdrop = SolidTex(btn, "BACKGROUND", c[1], c[2], c[3], c[4])
+    backdrop:SetAllPoints()
     local brd
     if square then
-        brd = MakeBorder(btn, c[9], c[10], c[11], c[12], PP)
+        brd = MakeBorder(btn, c[9], c[10], c[11], c[12], Pix)
     else
-        brd = CludesUI.MakeRoundedBorder(btn, c[9], c[10], c[11], c[12], bg)
+        brd = CludesUI.MakeRoundedBorder(btn, c[9], c[10], c[11], c[12], backdrop)
     end
-    local lbl = MakeFont(btn, fontSize, nil, c[17], c[18], c[19])
+    local labelFS = MakeFont(btn, fontSize, nil, c[17], c[18], c[19])
     -- The resting alpha lives in the text colour, as the hover scripts below set it
     -- (a region alpha on top would multiply with it after the first hover).
-    lbl:SetTextColor(c[17], c[18], c[19], c[20])
-    lbl:SetPoint("CENTER")
-    lbl:SetText(CludesUI.L(text))
+    labelFS:SetTextColor(c[17], c[18], c[19], c[20])
+    labelFS:SetPoint("CENTER")
+    labelFS:SetText(CludesUI.L(textValue))
     btn:SetScript("OnEnter", function()
-        lbl:SetTextColor(c[21], c[22], c[23], c[24])
+        labelFS:SetTextColor(c[21], c[22], c[23], c[24])
         brd:SetColor(c[13], c[14], c[15], c[16])
-        bg:SetColorTexture(c[5], c[6], c[7], c[8])
+        backdrop:SetColorTexture(c[5], c[6], c[7], c[8])
     end)
     btn:SetScript("OnLeave", function()
-        lbl:SetTextColor(c[17], c[18], c[19], c[20])
+        labelFS:SetTextColor(c[17], c[18], c[19], c[20])
         brd:SetColor(c[9], c[10], c[11], c[12])
-        bg:SetColorTexture(c[1], c[2], c[3], c[4])
+        backdrop:SetColorTexture(c[1], c[2], c[3], c[4])
     end)
     btn:SetScript("OnClick", function()
         if onClick then
             onClick()
         end
     end)
-    return bg, brd, lbl
+    return backdrop, brd, labelFS
 end
 
 -- Pre-built colour arrays for the two button styles
@@ -151,9 +151,9 @@ CludesUI.RB_COLOURS = RB_COLOURS
 local TIP_BG_R, TIP_BG_G, TIP_BG_B = 0.062, 0.070, 0.082
 local TIP_ARROW = 16
 
-local function TipArrowTex(holder, layer, sub, size, r, g, b, a)
-    local t = holder:CreateTexture(nil, layer, nil, sub)
-    t:SetSize(size, size)
+local function TipArrowTex(holderFrame, layer, subFrame, dim, r, g, b, a)
+    local t = holderFrame:CreateTexture(nil, layer, nil, subFrame)
+    t:SetSize(dim, dim)
     t:SetPoint("CENTER")
     t:SetColorTexture(r, g, b, a)
     t:SetRotation(math.rad(45))
@@ -164,89 +164,89 @@ local function TipArrowTex(holder, layer, sub, size, r, g, b, a)
     return t
 end
 
-function CludesUI.BuildTipCallout(parent, opts)
-    local pp = opts.pp or PP
-    local strata = opts.strata
+function CludesUI.BuildTipCallout(hostFrame, options)
+    local pp = options.pp or Pix
+    local strata = options.strata
     if strata == nil then
         strata = "FULLSCREEN_DIALOG"
     end
     local accent = CludesUI.CLUDES_GREEN
     local ar, ag, ab = accent.r, accent.g, accent.b
-    local bgA = opts.bgAlpha or 1
-    local w = opts.width
+    local bgA = options.bgAlpha or 1
+    local wid = options.width
 
-    local tip = CreateFrame("Frame", nil, parent)
+    local tipText = CreateFrame("Frame", nil, hostFrame)
     if strata then
-        tip:SetFrameStrata(strata)
+        tipText:SetFrameStrata(strata)
     end
-    tip:SetFrameLevel(opts.level or 200)
-    tip:SetWidth(w)
-    tip:EnableMouse(true)
-    tip:Hide()
-    SolidTex(tip, "BACKGROUND", TIP_BG_R, TIP_BG_G, TIP_BG_B, bgA):SetAllPoints()
-    MakeBorder(tip, ar, ag, ab, 0.25, pp)
+    tipText:SetFrameLevel(options.level or 200)
+    tipText:SetWidth(wid)
+    tipText:EnableMouse(true)
+    tipText:Hide()
+    SolidTex(tipText, "BACKGROUND", TIP_BG_R, TIP_BG_G, TIP_BG_B, bgA):SetAllPoints()
+    MakeBorder(tipText, ar, ag, ab, 0.25, pp)
 
     -- The arrow: a rotated square whose inner half the box edge clips away
-    local off = opts.arrowOffset or 0
-    local clip = CreateFrame("Frame", nil, tip)
+    local offset = options.arrowOffset or 0
+    local clip = CreateFrame("Frame", nil, tipText)
     if strata then
         clip:SetFrameStrata(strata)
     end
-    clip:SetFrameLevel(tip:GetFrameLevel() + 10)
+    clip:SetFrameLevel(tipText:GetFrameLevel() + 10)
     clip:SetClipsChildren(true)
-    local holder = CreateFrame("Frame", nil, clip)
-    holder:SetFrameLevel(clip:GetFrameLevel() + 1)
-    holder:SetSize(TIP_ARROW + 4, TIP_ARROW + 4)
-    if opts.arrow == "left" then
+    local holderFrame = CreateFrame("Frame", nil, clip)
+    holderFrame:SetFrameLevel(clip:GetFrameLevel() + 1)
+    holderFrame:SetSize(TIP_ARROW + 4, TIP_ARROW + 4)
+    if options.arrow == "left" then
         clip:SetSize(TIP_ARROW, TIP_ARROW * 2)
-        clip:SetPoint("RIGHT", tip, "LEFT", 1, off)
-        holder:SetPoint("CENTER", clip, "RIGHT", 0, 0)
-    elseif opts.arrow == "bottom" then
+        clip:SetPoint("RIGHT", tipText, "LEFT", 1, offset)
+        holderFrame:SetPoint("CENTER", clip, "RIGHT", 0, 0)
+    elseif options.arrow == "bottom" then
         clip:SetSize(TIP_ARROW * 2, TIP_ARROW)
-        clip:SetPoint("TOP", tip, "BOTTOM", off, 1)
-        holder:SetPoint("CENTER", clip, "TOP", 0, 0)
+        clip:SetPoint("TOP", tipText, "BOTTOM", offset, 1)
+        holderFrame:SetPoint("CENTER", clip, "TOP", 0, 0)
     else
         clip:SetSize(TIP_ARROW * 2, TIP_ARROW)
-        clip:SetPoint("BOTTOM", tip, "TOP", off, -1)
-        holder:SetPoint("CENTER", clip, "BOTTOM", 0, 0)
+        clip:SetPoint("BOTTOM", tipText, "TOP", offset, -1)
+        holderFrame:SetPoint("CENTER", clip, "BOTTOM", 0, 0)
     end
-    TipArrowTex(holder, "ARTWORK", 7, TIP_ARROW + 2, ar, ag, ab, 0.18)
-    TipArrowTex(holder, "OVERLAY", 6, TIP_ARROW, TIP_BG_R, TIP_BG_G, TIP_BG_B, bgA)
+    TipArrowTex(holderFrame, "ARTWORK", 7, TIP_ARROW + 2, ar, ag, ab, 0.18)
+    TipArrowTex(holderFrame, "OVERLAY", 6, TIP_ARROW, TIP_BG_R, TIP_BG_G, TIP_BG_B, bgA)
 
-    local size = opts.fontSize or 12
+    local dim = options.fontSize or 12
     local msg
-    if opts.font then
-        msg = tip:CreateFontString(nil, "OVERLAY")
-        msg:SetFont(opts.font, size, opts.fontFlags or "")
+    if options.font then
+        msg = tipText:CreateFontString(nil, "OVERLAY")
+        msg:SetFont(options.font, dim, options.fontFlags or "")
         msg:SetTextColor(1, 1, 1, 0.85)
     else
-        msg = MakeFont(tip, size, nil, 1, 1, 1, 0.85)
+        msg = MakeFont(tipText, dim, nil, 1, 1, 1, 0.85)
     end
-    local textTop = opts.textTop or 17
-    msg:SetPoint("TOP", tip, "TOP", 0, -textTop)
-    msg:SetWidth(w - (opts.textInset or 30))
+    local textTop = options.textTop or 17
+    msg:SetPoint("TOP", tipText, "TOP", 0, -textTop)
+    msg:SetWidth(wid - (options.textInset or 30))
     msg:SetJustifyH("CENTER")
-    msg:SetSpacing(opts.spacing or 6)
-    msg:SetText(opts.text)
+    msg:SetSpacing(options.spacing or 6)
+    msg:SetText(options.text)
 
-    local btnH, btnBottom = opts.btnH or 26, opts.btnBottom or 13
-    local h = opts.height
-    if not h then
-        h = math.ceil(textTop + msg:GetStringHeight() + (opts.gap or 12) + btnH + btnBottom)
+    local btnH, btnBottom = options.btnH or 26, options.btnBottom or 13
+    local hgt = options.height
+    if not hgt then
+        hgt = math.ceil(textTop + msg:GetStringHeight() + (options.gap or 12) + btnH + btnBottom)
     end
-    pp.Size(tip, w, h)
+    pp.Size(tipText, wid, hgt)
 
-    local ok = CreateFrame("Button", nil, tip)
-    ok:SetSize(opts.btnW or 86, btnH)
-    ok:SetPoint("BOTTOM", tip, "BOTTOM", 0, btnBottom)
-    local onOkay = opts.onOkay
-    MakeStyledButton(ok, "Okay", opts.btnFontSize or 11, RB_COLOURS, function()
-        tip:Hide()
+    local success = CreateFrame("Button", nil, tipText)
+    success:SetSize(options.btnW or 86, btnH)
+    success:SetPoint("BOTTOM", tipText, "BOTTOM", 0, btnBottom)
+    local onOkay = options.onOkay
+    MakeStyledButton(success, "Okay", options.btnFontSize or 11, RB_COLOURS, function()
+        tipText:Hide()
         if onOkay then
             onOkay()
         end
     end)
-    return tip
+    return tipText
 end
 
 -- Shows a tip callout with a 0.3 s fade in (its OnUpdate ends with the fade).
@@ -260,11 +260,11 @@ local function TipFadeIn(self, dt)
     self._fadeT = t
     self:SetAlpha(t / 0.3)
 end
-function CludesUI.ShowTipCallout(tip)
-    tip._fadeT = 0
-    tip:SetAlpha(0)
-    tip:Show()
-    tip:SetScript("OnUpdate", TipFadeIn)
+function CludesUI.ShowTipCallout(tipText)
+    tipText._fadeT = 0
+    tipText:SetAlpha(0)
+    tipText:Show()
+    tipText:SetScript("OnUpdate", TipFadeIn)
 end
 
 -- Global disabled-widget tooltip: "This option requires ___ to be enabled". requirement = human-readable name ("Show Class Power", "a non-None slot"). state = "enabled" (default) or "disabled" picks the trailing verb.
@@ -297,10 +297,10 @@ local function GetTooltipFrame()
         tooltipFrame:SetFrameStrata("TOOLTIP")
         tooltipFrame:SetFrameLevel(200)
         tooltipFrame:SetSize(250, 40)
-        local bg = tooltipFrame:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        tooltipFrame.bg = bg
-        MakeBorder(tooltipFrame, 1, 1, 1, 0.15, PP)
+        local backdrop = tooltipFrame:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        tooltipFrame.bg = backdrop
+        MakeBorder(tooltipFrame, 1, 1, 1, 0.15, Pix)
         -- The panel font as a font family: the tooltip also shows friends' names
         -- and notes, whose scripts the panel font may lack.
         tooltipFrame.text = tooltipFrame:CreateFontString(nil, "OVERLAY")
@@ -318,17 +318,17 @@ local function GetTooltipFrame()
 end
 
 -- True when the anchor lives in the options panel or a registered popup (cog/confirm), so its tooltip rides the user's panel-scale slider. In-game anchors (bags, minimap, meters) stay at scale 1.
-local function IsPanelFamilyAnchor(region)
+local function IsPanelFamilyAnchor(regionFrame)
     local mf = CludesUI._mainFrame
     local pops = CludesUI._popupFrames
-    local node = region
+    local node = regionFrame
     while node do
         if node == mf then
             return true
         end
         if pops then
-            for i = 1, #pops do
-                if pops[i].popup == node then
+            for idx = 1, #pops do
+                if pops[idx].popup == node then
                     return true
                 end
             end
@@ -339,9 +339,9 @@ local function IsPanelFamilyAnchor(region)
 end
 
 -- opts (optional): { color = {r,g,b}, width = number } overrides text colour / forces width
-local function ShowWidgetTooltip(label, text, opts)
+local function ShowWidgetTooltip(labelText, textValue, options)
     -- Suppress in M+/raid/PvP combat: frame APIs return secret values in tainted execution; opts.force bypasses.
-    if not (opts and opts.force) then
+    if not (options and options.force) then
         local _, iType = IsInInstance()
         if
             iType == "party"
@@ -359,68 +359,68 @@ local function ShowWidgetTooltip(label, text, opts)
         end
     end
     -- text may be a function for dynamic text; resolved after suppression checks so it isn't called when nothing will show.
-    if type(text) == "function" then
-        text = text()
+    if type(textValue) == "function" then
+        textValue = textValue()
     end
     local tt = GetTooltipFrame()
-    tooltipOwner[1] = label
+    tooltipOwner[1] = labelText
     local MAX_W = 250
     local PAD = 8 -- horizontal padding each side (matches text anchor insets)
-    if opts and opts.width then
-        tt:SetWidth(opts.width)
+    if options and options.width then
+        tt:SetWidth(options.width)
     else
         -- Natural single-line width is measured after Show, then clamped to MAX_W
         tt:SetWidth(MAX_W)
     end
-    if opts and opts.color then
-        tt.text:SetTextColor(opts.color[1], opts.color[2], opts.color[3], opts.color[4] or 0.80)
+    if options and options.color then
+        tt.text:SetTextColor(options.color[1], options.color[2], options.color[3], options.color[4] or 0.80)
     else
         tt.text:SetTextColor(1, 1, 1, 0.80)
     end
-    if opts and opts.justify then
-        tt.text:SetJustifyH(opts.justify)
+    if options and options.justify then
+        tt.text:SetJustifyH(options.justify)
     else
         tt.text:SetJustifyH("CENTER")
     end
-    tt.text:SetText(CludesUI.L(text))
+    tt.text:SetText(CludesUI.L(textValue))
     -- Scale must be set before anchoring: the cursor branch divides by the tooltip's effective scale (reset to 1 in HideWidgetTooltip).
-    local ttScaleMult = opts and opts.scale
+    local ttScaleMult = options and options.scale
     if not ttScaleMult then
         ttScaleMult = 1
         local us = CludesUIDB and CludesUIDB.panelScale
-        if us and us ~= 1 and label and label.GetParent and IsPanelFamilyAnchor(label) then
+        if us and us ~= 1 and labelText and labelText.GetParent and IsPanelFamilyAnchor(labelText) then
             ttScaleMult = us
         end
     end
     tt:SetScale(ttScaleMult)
     tt:ClearAllPoints()
-    if opts and opts.anchorPoint then
+    if options and options.anchorPoint then
         -- Custom anchor: opts.anchorPoint on tooltip -> opts.anchorTo on label
         tt:SetPoint(
-            opts.anchorPoint,
-            label,
-            opts.anchorTo or opts.anchorPoint,
-            opts.anchorX or 0,
-            opts.anchorY or 0
+            options.anchorPoint,
+            labelText,
+            options.anchorTo or options.anchorPoint,
+            options.anchorX or 0,
+            options.anchorY or 0
         )
-    elseif opts and opts.anchor == "cursor" then
+    elseif options and options.anchor == "cursor" then
         local scale = tt:GetEffectiveScale()
         local cx, cy = GetCursorPosition()
         tt:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", cx / scale, cy / scale + 4)
-    elseif opts and opts.anchor == "below" then
-        tt:SetPoint("TOP", label, "BOTTOM", 0, -4)
-    elseif opts and opts.anchor == "left" then
-        tt:SetPoint("RIGHT", label, "LEFT", -4, 0)
-    elseif opts and opts.anchor == "right" then
-        tt:SetPoint("LEFT", label, "RIGHT", 4, 0)
+    elseif options and options.anchor == "below" then
+        tt:SetPoint("TOP", labelText, "BOTTOM", 0, -4)
+    elseif options and options.anchor == "left" then
+        tt:SetPoint("RIGHT", labelText, "LEFT", -4, 0)
+    elseif options and options.anchor == "right" then
+        tt:SetPoint("LEFT", labelText, "RIGHT", 4, 0)
     else
-        tt:SetPoint("BOTTOM", label, "TOP", 0, 4)
+        tt:SetPoint("BOTTOM", labelText, "TOP", 0, 4)
     end
     -- Show at alpha 0 BEFORE measuring: font geometry must be computed on a visible frame (GetStringHeight is wrong on hidden frames).
     tt:SetAlpha(0)
     tt:Show()
     -- Auto-size: natural text width + padding, capped at MAX_W
-    if not (opts and opts.width) then
+    if not (options and options.width) then
         local sw = tt.text:GetStringWidth()
         if issecretvalue and issecretvalue(sw) then
             tt:SetWidth(MAX_W)
@@ -577,18 +577,18 @@ local _gradStart = CreateColor(0, 0, 0, 0)
 local _gradEnd = CreateColor(0, 0, 0, 0)
 
 local function UpdateAccentElements(r, g, b)
-    for _, entry in ipairs(CludesUI._accentElements) do
-        if entry.type == "solid" and entry.obj then
-            entry.obj:SetColorTexture(r, g, b, entry.a or 1)
-        elseif entry.type == "gradient" and entry.obj then
-            entry.obj:SetColorTexture(r, g, b, 1)
-            _gradStart.r, _gradStart.g, _gradStart.b, _gradStart.a = r, g, b, entry.startA or 0.15
+    for _, record in ipairs(CludesUI._accentElements) do
+        if record.type == "solid" and record.obj then
+            record.obj:SetColorTexture(r, g, b, record.a or 1)
+        elseif record.type == "gradient" and record.obj then
+            record.obj:SetColorTexture(r, g, b, 1)
+            _gradStart.r, _gradStart.g, _gradStart.b, _gradStart.a = r, g, b, record.startA or 0.15
             _gradEnd.r, _gradEnd.g, _gradEnd.b, _gradEnd.a = r, g, b, 0
-            entry.obj:SetGradient("HORIZONTAL", _gradStart, _gradEnd)
-        elseif entry.type == "vertex" and entry.obj then
-            entry.obj:SetVertexColor(r, g, b, 1)
-        elseif entry.type == "callback" and entry.fn then
-            entry.fn(r, g, b)
+            record.obj:SetGradient("HORIZONTAL", _gradStart, _gradEnd)
+        elseif record.type == "vertex" and record.obj then
+            record.obj:SetVertexColor(r, g, b, 1)
+        elseif record.type == "callback" and record.fn then
+            record.fn(r, g, b)
         end
     end
 end
@@ -644,25 +644,25 @@ end
 --  edited. The CUI Options Theme (activeTheme / panel background) is separate and global.
 -------------------------------------------------------------------------------
 function CludesUI.GetActiveProfileData()
-    local db = CludesUIDB
-    if not db or not db.profiles then
+    local saved = CludesUIDB
+    if not saved or not saved.profiles then
         return nil
     end
-    return db.profiles[db.activeProfile or "Default"]
+    return saved.profiles[saved.activeProfile or "Default"]
 end
 
 -- Writer used by the accent swatch. `custom` and `useClass` are each optional; pass nil to leave unchanged.
 function CludesUI.SetActiveProfileAccent(custom, useClass)
-    local db = CludesUIDB
-    if not db then
+    local saved = CludesUIDB
+    if not saved then
         return
     end
-    db.profiles = db.profiles or {}
-    local name = db.activeProfile or "Default"
-    local p = db.profiles[name]
+    saved.profiles = saved.profiles or {}
+    local name = saved.activeProfile or "Default"
+    local p = saved.profiles[name]
     if not p then
         p = {}
-        db.profiles[name] = p
+        saved.profiles[name] = p
     end
     p.cuiAccent = p.cuiAccent or {}
     if custom ~= nil then
@@ -847,90 +847,90 @@ local _ctxPanels = {} -- look -> its top-level panel
 local _ctxOpen -- the top-level panel on screen, if any
 local CtxShowSub
 
-local function CtxRoot(panel)
-    return panel._root or panel
+local function CtxRoot(panelFrame)
+    return panelFrame._root or panelFrame
 end
 
 -- Lit: hovered or active.
-local function CtxPaint(row, lit)
-    row._hl:SetColorTexture(1, 1, 1, lit and (CludesUI.DD_ITEM_HL_A or 0.08) or 0)
-    local EG = lit and (row._panel._look.lit or CludesUI.CLUDES_GREEN)
-    if EG then
-        row._lbl:SetTextColor(EG.r, EG.g, EG.b, 1)
+local function CtxPaint(rowFrame, lit)
+    rowFrame._hl:SetColorTexture(1, 1, 1, lit and (CludesUI.DD_ITEM_HL_A or 0.08) or 0)
+    local ACC = lit and (rowFrame._panel._look.lit or CludesUI.CLUDES_GREEN)
+    if ACC then
+        rowFrame._lbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
     else
-        row._lbl:SetTextColor(1, 1, 1, 1)
+        rowFrame._lbl:SetTextColor(1, 1, 1, 1)
     end
 end
 
-local function CtxRowEnter(row)
-    local sub = row._panel._sub
-    if row._disabled then
-        if sub then
-            sub:Hide()
+local function CtxRowEnter(rowFrame)
+    local subFrame = rowFrame._panel._sub
+    if rowFrame._disabled then
+        if subFrame then
+            subFrame:Hide()
         end
         return
     end
-    local item = row._item
-    CtxPaint(row, true)
-    if item.tooltip then
-        CtxRoot(row._panel)._tip = true
-        CludesUI.ShowWidgetTooltip(row, item.tooltip)
+    local itemInfo = rowFrame._item
+    CtxPaint(rowFrame, true)
+    if itemInfo.tooltip then
+        CtxRoot(rowFrame._panel)._tip = true
+        CludesUI.ShowWidgetTooltip(rowFrame, itemInfo.tooltip)
     end
-    if item.children then
-        CtxShowSub(row, item.children)
-    elseif sub then
-        sub:Hide()
+    if itemInfo.children then
+        CtxShowSub(rowFrame, itemInfo.children)
+    elseif subFrame then
+        subFrame:Hide()
     end
 end
 
-local function CtxRowLeave(row)
-    if row._disabled then
+local function CtxRowLeave(rowFrame)
+    if rowFrame._disabled then
         return
     end
-    local item = row._item
-    if item.tooltip then
-        CtxRoot(row._panel)._tip = nil
+    local itemInfo = rowFrame._item
+    if itemInfo.tooltip then
+        CtxRoot(rowFrame._panel)._tip = nil
         CludesUI.HideWidgetTooltip()
     end
-    CtxPaint(row, item.isActive)
+    CtxPaint(rowFrame, itemInfo.isActive)
     -- A submenu stays open while the pointer moved into it.
-    local sub = row._panel._sub
-    if sub and item.children and not (sub:IsShown() and sub:IsMouseOver()) then
-        sub:Hide()
+    local subFrame = rowFrame._panel._sub
+    if subFrame and itemInfo.children and not (subFrame:IsShown() and subFrame:IsMouseOver()) then
+        subFrame:Hide()
     end
 end
 
-local function CtxRowClick(row)
-    local item = row._item
-    if row._disabled or item.children then
+local function CtxRowClick(rowFrame)
+    local itemInfo = rowFrame._item
+    if rowFrame._disabled or itemInfo.children then
         return
     end
-    CtxRoot(row._panel):Hide()
-    if item.onClick then
-        item.onClick()
+    CtxRoot(rowFrame._panel):Hide()
+    if itemInfo.onClick then
+        itemInfo.onClick()
     end
 end
 
 -- pickOnDown menus act on the press: a focused edit box drops its focus on
 -- a mouse down outside it, before the row's click could land.
-local function CtxRowDown(row, button)
-    if button == "LeftButton" and CtxRoot(row._panel)._pickOnDown then
-        CtxRowClick(row)
+local function CtxRowDown(rowFrame, btnFrame)
+    if btnFrame == "LeftButton" and CtxRoot(rowFrame._panel)._pickOnDown then
+        CtxRowClick(rowFrame)
     end
 end
 
-local function CtxBoxCommit(box)
-    local item = box:GetParent()._item
-    local v = math.max(item.min or 1, math.floor(box:GetNumber() + 0.5))
-    box:SetNumber(v)
-    if item.setValue then
-        item.setValue(v)
+local function CtxBoxCommit(boxFrame)
+    local itemInfo = boxFrame:GetParent()._item
+    local val = math.max(itemInfo.min or 1, math.floor(boxFrame:GetNumber() + 0.5))
+    boxFrame:SetNumber(val)
+    if itemInfo.setValue then
+        itemInfo.setValue(val)
     end
-    box:ClearFocus()
+    boxFrame:ClearFocus()
 end
 
-local function CtxBoxEscape(box)
-    box:ClearFocus()
+local function CtxBoxEscape(boxFrame)
+    boxFrame:ClearFocus()
 end
 
 -- Combat closes a menu: the event is registered only while it is shown.
@@ -950,11 +950,11 @@ local function CtxPanelHidden(self)
     end
     self._owner = nil
     self._src = nil
-    local rows = self._items
-    for i = 1, #rows do
-        local box = rows[i]._box
-        if box then
-            box:ClearFocus()
+    local rowList = self._items
+    for idx = 1, #rowList do
+        local boxFrame = rowList[idx]._box
+        if boxFrame then
+            boxFrame:ClearFocus()
         end
     end
     if self._sub then
@@ -987,16 +987,16 @@ local function CtxPoll(self, dt)
     end
     -- A click on the owner is left to the owner: its OnClick reaches
     -- ShowContextMenu with the menu still open and toggles it closed.
-    local owner = self._owner
-    if owner and owner.IsMouseOver and owner:IsMouseOver() then
+    local ownerFrame = self._owner
+    if ownerFrame and ownerFrame.IsMouseOver and ownerFrame:IsMouseOver() then
         return
     end
-    local sub = self._sub
-    while sub and sub:IsShown() do
-        if sub:IsMouseOver() then
+    local subFrame = self._sub
+    while subFrame and subFrame:IsShown() do
+        if subFrame:IsMouseOver() then
             return
         end
-        sub = sub._sub
+        subFrame = subFrame._sub
     end
     self:Hide()
 end
@@ -1009,15 +1009,15 @@ local function CtxNewPanel(look, level)
     p:SetFrameLevel(200 + level * 10)
     p:SetClampedToScreen(true)
     p:EnableMouse(true)
-    local bg = p:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(
+    local backdrop = p:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(
         RS.BG_R or 0.067,
         RS.BG_G or 0.067,
         RS.BG_B or 0.067,
         look.ctxBg and (RS.CTX_ALPHA or 0.95) or (RS.QT_ALPHA or 0.97)
     )
-    p._bg = bg
+    p._bg = backdrop
     local PP_L = CludesUI.PP
     if look.atlas and C_Texture.GetAtlasInfo(look.atlas) then
         local art = p:CreateTexture(nil, "BACKGROUND", nil, -1)
@@ -1025,7 +1025,7 @@ local function CtxNewPanel(look, level)
         art:SetPoint("TOPLEFT", p, "TOPLEFT", -10, 7)
         art:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", 10, -13)
         art:SetAlpha(0.925)
-        bg:SetColorTexture(0, 0, 0, 0)
+        backdrop:SetColorTexture(0, 0, 0, 0)
         p._art = art
     elseif PP_L and PP_L.CreateBorder then
         PP_L.CreateBorder(p, 1, 1, 1, RS.BRD_ALPHA or 0.18, 1)
@@ -1039,92 +1039,92 @@ local function CtxNewPanel(look, level)
     return p
 end
 
-local function CtxRow(panel, i)
-    local row = panel._items[i]
-    if row then
-        return row
+local function CtxRow(panelFrame, idx)
+    local rowFrame = panelFrame._items[idx]
+    if rowFrame then
+        return rowFrame
     end
-    local look = panel._look
-    row = CreateFrame("Button", nil, panel)
-    local hl = row:CreateTexture(nil, "BACKGROUND", nil, 1)
-    hl:SetAllPoints()
-    row._hl = hl
-    local lbl = row:CreateFontString(nil, "OVERLAY")
-    lbl:SetPoint("RIGHT", row, "RIGHT", look.right, 0) -- LEFT: per item in CtxLayout
-    lbl:SetJustifyH("LEFT")
+    local look = panelFrame._look
+    rowFrame = CreateFrame("Button", nil, panelFrame)
+    local highlight = rowFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
+    highlight:SetAllPoints()
+    rowFrame._hl = highlight
+    local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+    labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", look.right, 0) -- LEFT: per item in CtxLayout
+    labelFS:SetJustifyH("LEFT")
     if look.noWrap then
-        lbl:SetWordWrap(false)
+        labelFS:SetWordWrap(false)
     end
-    row._lbl = lbl
-    row._panel = panel
-    row:SetScript("OnEnter", CtxRowEnter)
-    row:SetScript("OnLeave", CtxRowLeave)
-    row:SetScript("OnClick", CtxRowClick)
-    row:SetScript("OnMouseDown", CtxRowDown)
-    panel._items[i] = row
-    return row
+    rowFrame._lbl = labelFS
+    rowFrame._panel = panelFrame
+    rowFrame:SetScript("OnEnter", CtxRowEnter)
+    rowFrame:SetScript("OnLeave", CtxRowLeave)
+    rowFrame:SetScript("OnClick", CtxRowClick)
+    rowFrame:SetScript("OnMouseDown", CtxRowDown)
+    panelFrame._items[idx] = rowFrame
+    return rowFrame
 end
 
 -- Separator line, submenu arrow, number box and item icon: made on a row's
 -- first need.
-local function CtxSep(row)
-    local sep = row._sep
+local function CtxSep(rowFrame)
+    local sep = rowFrame._sep
     if not sep then
-        sep = row:CreateTexture(nil, "ARTWORK")
+        sep = rowFrame:CreateTexture(nil, "ARTWORK")
         sep:SetHeight(1)
-        sep:SetPoint("LEFT", row, "LEFT", 6, 0)
-        sep:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+        sep:SetPoint("LEFT", rowFrame, "LEFT", 6, 0)
+        sep:SetPoint("RIGHT", rowFrame, "RIGHT", -6, 0)
         sep:SetColorTexture(1, 1, 1, 0.12)
-        row._sep = sep
+        rowFrame._sep = sep
     end
     return sep
 end
 
-local function CtxArrow(row)
-    local arrow = row._arrow
+local function CtxArrow(rowFrame)
+    local arrow = rowFrame._arrow
     if not arrow then
-        arrow = row:CreateTexture(nil, "ARTWORK")
+        arrow = rowFrame:CreateTexture(nil, "ARTWORK")
         arrow:SetTexture(CTX_ARROW)
         arrow:SetSize(19, 19)
-        arrow:SetPoint("RIGHT", row, "RIGHT", -2, 0)
+        arrow:SetPoint("RIGHT", rowFrame, "RIGHT", -2, 0)
         arrow:SetRotation(math.pi / 2)
-        row._arrow = arrow
+        rowFrame._arrow = arrow
     end
     return arrow
 end
 
-local function CtxBox(row, fontPath, outline)
-    local box = row._box
-    if not box then
-        box = CreateFrame("EditBox", nil, row)
-        box:SetSize(50, 18)
-        box:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-        box:SetFrameLevel(row:GetFrameLevel() + 3)
-        box:SetFont(fontPath, 10, outline)
-        box:SetTextColor(1, 1, 1, 0.9)
-        box:SetJustifyH("CENTER")
-        local bg = box:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0.4)
-        box:SetAutoFocus(false)
-        box:SetNumeric(true)
-        box:SetMaxLetters(5)
-        box:SetScript("OnEnterPressed", CtxBoxCommit)
-        box:SetScript("OnEscapePressed", CtxBoxEscape)
-        row._box = box
+local function CtxBox(rowFrame, fontFile, outline)
+    local boxFrame = rowFrame._box
+    if not boxFrame then
+        boxFrame = CreateFrame("EditBox", nil, rowFrame)
+        boxFrame:SetSize(50, 18)
+        boxFrame:SetPoint("RIGHT", rowFrame, "RIGHT", -8, 0)
+        boxFrame:SetFrameLevel(rowFrame:GetFrameLevel() + 3)
+        boxFrame:SetFont(fontFile, 10, outline)
+        boxFrame:SetTextColor(1, 1, 1, 0.9)
+        boxFrame:SetJustifyH("CENTER")
+        local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0, 0, 0, 0.4)
+        boxFrame:SetAutoFocus(false)
+        boxFrame:SetNumeric(true)
+        boxFrame:SetMaxLetters(5)
+        boxFrame:SetScript("OnEnterPressed", CtxBoxCommit)
+        boxFrame:SetScript("OnEscapePressed", CtxBoxEscape)
+        rowFrame._box = boxFrame
     end
-    box:SetFont(fontPath, 10, outline)
-    return box
+    boxFrame:SetFont(fontFile, 10, outline)
+    return boxFrame
 end
 
 -- the x on a row with onRemove: its own button, so the row's click still picks
-local function CtxRemove(row)
-    local rm = row._rm
+local function CtxRemove(rowFrame)
+    local rm = rowFrame._rm
     if not rm then
-        rm = CreateFrame("Button", nil, row)
+        rm = CreateFrame("Button", nil, rowFrame)
         rm:SetSize(16, 16)
-        rm:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-        rm:SetFrameLevel(row:GetFrameLevel() + 2)
+        rm:SetPoint("RIGHT", rowFrame, "RIGHT", -4, 0)
+        rm:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
         rm.icon = rm:CreateTexture(nil, "OVERLAY")
         rm.icon:SetAllPoints()
         rm.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
@@ -1134,10 +1134,10 @@ local function CtxRemove(row)
             self.icon:SetAlpha(1)
             local r = self:GetParent()
             CtxPaint(r, true)
-            local tip = r._item.removeTip
-            if tip then
+            local tipText = r._item.removeTip
+            if tipText then
                 CtxRoot(r._panel)._tip = true
-                CludesUI.ShowWidgetTooltip(self, tip)
+                CludesUI.ShowWidgetTooltip(self, tipText)
             end
         end)
         rm:SetScript("OnLeave", function(self)
@@ -1149,92 +1149,92 @@ local function CtxRemove(row)
         end)
         rm:SetScript("OnClick", function(self)
             local r = self:GetParent()
-            local fn = r._item.onRemove
+            local func = r._item.onRemove
             CludesUI.HideWidgetTooltip()
             CtxRoot(r._panel):Hide()
-            fn()
+            func()
         end)
-        row._rm = rm
+        rowFrame._rm = rm
     end
     return rm
 end
 
-local function CtxIcon(row)
-    local icon = row._icon
-    if not icon then
-        icon = row:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(16, 16)
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        row._icon = icon
+local function CtxIcon(rowFrame)
+    local glyph = rowFrame._icon
+    if not glyph then
+        glyph = rowFrame:CreateTexture(nil, "ARTWORK")
+        glyph:SetSize(16, 16)
+        glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        rowFrame._icon = glyph
     end
-    return icon
+    return glyph
 end
 
 -- the small line under a label, made on first need
-local function CtxDesc(row)
-    local d = row._desc
+local function CtxDesc(rowFrame)
+    local d = rowFrame._desc
     if not d then
-        d = row:CreateFontString(nil, "OVERLAY")
+        d = rowFrame:CreateFontString(nil, "OVERLAY")
         d:SetJustifyH("LEFT")
         d:SetWordWrap(false)
-        row._desc = d
+        rowFrame._desc = d
     end
     return d
 end
 
-local function CtxLayout(panel, items, minW, fontKey)
-    local look = panel._look
+local function CtxLayout(panelFrame, itemList, minW, fontKey)
+    local look = panelFrame._look
     if
         look.popupBorder
-        and not panel._art
+        and not panelFrame._art
         and CludesUI._applyBlizzardConfiguredBorder
         and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
     then
-        pcall(CludesUI._applyBlizzardConfiguredBorder, panel, "popupMenu", 1)
+        pcall(CludesUI._applyBlizzardConfiguredBorder, panelFrame, "popupMenu", 1)
     end
-    local L, size = CludesUI.L, look.size
-    local fontPath, outline
+    local L, dim = CludesUI.L, look.size
+    local fontFile, outline
     if fontKey then
-        fontPath, outline = CludesUI.GetFontPath(fontKey), CludesUI.GetFontOutlineFlag(fontKey)
+        fontFile, outline = CludesUI.GetFontPath(fontKey), CludesUI.GetFontOutlineFlag(fontKey)
     else
-        fontPath = (CludesUI.GetFontPath()) or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+        fontFile = (CludesUI.GetFontPath()) or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
         outline = (CludesUI.GetFontOutlineFlag()) or ""
     end
 
     -- Hide pooled rows past the current item count
-    local rows = panel._items
-    for i = 1, #rows do
-        rows[i]:Hide()
+    local rowList = panelFrame._items
+    for idx = 1, #rowList do
+        rowList[idx]:Hide()
     end
 
-    local mfs = panel._measureFS
+    local mfs = panelFrame._measureFS
     if not mfs then
-        mfs = panel:CreateFontString(nil, "OVERLAY")
-        panel._measureFS = mfs
+        mfs = panelFrame:CreateFontString(nil, "OVERLAY")
+        panelFrame._measureFS = mfs
     end
-    mfs:SetFont(fontPath, size, outline)
+    mfs:SetFont(fontFile, dim, outline)
     local widest = 0
     local iconW = 0
-    for _, item in ipairs(items) do
-        if type(item) == "table" then
-            mfs:SetText(item.noLoc and item.text or L(item.text or ""))
-            local w = mfs:GetStringWidth() or 0
-            if item.onRemove then
-                w = w + 20
+    for _, itemInfo in ipairs(itemList) do
+        if type(itemInfo) == "table" then
+            mfs:SetText(itemInfo.noLoc and itemInfo.text or L(itemInfo.text or ""))
+            local wid = mfs:GetStringWidth() or 0
+            if itemInfo.onRemove then
+                wid = wid + 20
             end
-            if w > widest then
-                widest = w
+            if wid > widest then
+                widest = wid
             end
-            if item.desc then
-                mfs:SetFont(fontPath, size - 2, outline)
-                mfs:SetText(item.desc)
-                w = mfs:GetStringWidth() or 0
-                if w > widest then
-                    widest = w
+            if itemInfo.desc then
+                mfs:SetFont(fontFile, dim - 2, outline)
+                mfs:SetText(itemInfo.desc)
+                wid = mfs:GetStringWidth() or 0
+                if wid > widest then
+                    widest = wid
                 end
-                mfs:SetFont(fontPath, size, outline)
+                mfs:SetFont(fontFile, dim, outline)
             end
-            if item.icon then
+            if itemInfo.icon then
                 iconW = 22
             end
         end
@@ -1244,199 +1244,199 @@ local function CtxLayout(panel, items, minW, fontKey)
 
     local pad = look.pad
     local width = math.max(minW or look.minW, widest + look.textPad + iconW)
-    local y = pad
-    for i, item in ipairs(items) do
-        local row = CtxRow(panel, i)
-        local lbl = row._lbl
+    local posY = pad
+    for idx, itemInfo in ipairs(itemList) do
+        local rowFrame = CtxRow(panelFrame, idx)
+        local labelFS = rowFrame._lbl
         -- A row keeps the shadow a module font primed it with; clear it on
         -- the plain path.
         if fontKey and not look.plainFont then
-            CludesUI.ApplyModuleFont(lbl, fontPath, size, fontKey, outline)
-            row._primed = true
+            CludesUI.ApplyModuleFont(labelFS, fontFile, dim, fontKey, outline)
+            rowFrame._primed = true
         else
-            if row._primed then
-                CludesUI.PrimeFontShadow(lbl, false)
-                row._primed = nil
+            if rowFrame._primed then
+                CludesUI.PrimeFontShadow(labelFS, false)
+                rowFrame._primed = nil
             end
-            lbl:SetFont(fontPath, size, outline)
+            labelFS:SetFont(fontFile, dim, outline)
         end
-        row._hl:SetColorTexture(1, 1, 1, 0)
-        if row._sep then
-            row._sep:Hide()
+        rowFrame._hl:SetColorTexture(1, 1, 1, 0)
+        if rowFrame._sep then
+            rowFrame._sep:Hide()
         end
-        if row._arrow then
-            row._arrow:Hide()
+        if rowFrame._arrow then
+            rowFrame._arrow:Hide()
         end
-        if row._box then
-            row._box:Hide()
+        if rowFrame._box then
+            rowFrame._box:Hide()
         end
-        if row._icon then
-            row._icon:Hide()
+        if rowFrame._icon then
+            rowFrame._icon:Hide()
         end
-        if row._rm then
-            row._rm:Hide()
+        if rowFrame._rm then
+            rowFrame._rm:Hide()
         end
-        if row._desc then
-            row._desc:Hide()
+        if rowFrame._desc then
+            rowFrame._desc:Hide()
         end
-        local desc = type(item) == "table" and item.desc
+        local desc = type(itemInfo) == "table" and itemInfo.desc
         -- The label starts past the item's icon.
-        lbl:SetPoint(
+        labelFS:SetPoint(
             "LEFT",
-            row,
+            rowFrame,
             "LEFT",
-            look.left + ((type(item) == "table" and item.icon) and 22 or 0),
+            look.left + ((type(itemInfo) == "table" and itemInfo.icon) and 22 or 0),
             desc and 6 or 0
         )
-        lbl:SetPoint("RIGHT", row, "RIGHT", look.right, desc and 6 or 0)
-        local h = desc and look.rowH + 10 or look.rowH
-        if item == "---" then
-            h = look.sepH
-            row._item, row._disabled = nil, true
-            lbl:SetText("")
-            CtxSep(row):Show()
-            row:EnableMouse(false)
+        labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", look.right, desc and 6 or 0)
+        local hgt = desc and look.rowH + 10 or look.rowH
+        if itemInfo == "---" then
+            hgt = look.sepH
+            rowFrame._item, rowFrame._disabled = nil, true
+            labelFS:SetText("")
+            CtxSep(rowFrame):Show()
+            rowFrame:EnableMouse(false)
         else
-            row._item = item
-            lbl:SetText(item.noLoc and item.text or L(item.text or ""))
+            rowFrame._item = itemInfo
+            labelFS:SetText(itemInfo.noLoc and itemInfo.text or L(itemInfo.text or ""))
             if desc then
-                local d = CtxDesc(row)
-                d:SetFont(fontPath, size - 2, outline)
-                d:SetPoint("TOPLEFT", lbl, "BOTTOMLEFT", 0, -3)
-                d:SetPoint("RIGHT", row, "RIGHT", look.right, 0)
+                local d = CtxDesc(rowFrame)
+                d:SetFont(fontFile, dim - 2, outline)
+                d:SetPoint("TOPLEFT", labelFS, "BOTTOMLEFT", 0, -3)
+                d:SetPoint("RIGHT", rowFrame, "RIGHT", look.right, 0)
                 d:SetText(desc)
-                d:SetTextColor(1, 1, 1, (item.isDisabled and item.isDisabled()) and 0.25 or 0.5)
+                d:SetTextColor(1, 1, 1, (itemInfo.isDisabled and itemInfo.isDisabled()) and 0.25 or 0.5)
                 d:Show()
             end
-            if item.icon then
-                local ic = CtxIcon(row)
-                ic:SetPoint("LEFT", row, "LEFT", look.left, 0)
-                ic:SetTexture(item.icon)
+            if itemInfo.icon then
+                local ic = CtxIcon(rowFrame)
+                ic:SetPoint("LEFT", rowFrame, "LEFT", look.left, 0)
+                ic:SetTexture(itemInfo.icon)
                 ic:Show()
             end
-            if item.isInput then
-                row._disabled = true
-                lbl:SetTextColor(1, 1, 1, 1)
-                row:EnableMouse(false)
-                local box = CtxBox(row, fontPath, outline)
-                box:SetNumber(item.getValue and item.getValue() or 0)
-                box:Show()
+            if itemInfo.isInput then
+                rowFrame._disabled = true
+                labelFS:SetTextColor(1, 1, 1, 1)
+                rowFrame:EnableMouse(false)
+                local boxFrame = CtxBox(rowFrame, fontFile, outline)
+                boxFrame:SetNumber(itemInfo.getValue and itemInfo.getValue() or 0)
+                boxFrame:Show()
             else
-                local disabled = item.isDisabled and item.isDisabled()
-                row._disabled = disabled
-                row:EnableMouse(true)
-                if item.children then
-                    local arrow = CtxArrow(row)
+                local disabled = itemInfo.isDisabled and itemInfo.isDisabled()
+                rowFrame._disabled = disabled
+                rowFrame:EnableMouse(true)
+                if itemInfo.children then
+                    local arrow = CtxArrow(rowFrame)
                     arrow:SetVertexColor(1, 1, 1, disabled and 0.2 or 0.75)
                     arrow:Show()
                 end
                 if disabled then
-                    lbl:SetTextColor(0.4, 0.4, 0.4, 0.5)
+                    labelFS:SetTextColor(0.4, 0.4, 0.4, 0.5)
                 else
-                    CtxPaint(row, item.isActive)
+                    CtxPaint(rowFrame, itemInfo.isActive)
                 end
-                if item.onRemove and not disabled then
-                    CtxRemove(row):Show()
+                if itemInfo.onRemove and not disabled then
+                    CtxRemove(rowFrame):Show()
                 end
             end
         end
-        row:SetSize(width - pad * 2, h)
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", panel, "TOPLEFT", pad, -y)
-        row:Show()
-        y = y + h
+        rowFrame:SetSize(width - pad * 2, hgt)
+        rowFrame:ClearAllPoints()
+        rowFrame:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", pad, -posY)
+        rowFrame:Show()
+        posY = posY + hgt
     end
-    panel:SetSize(width, y + pad)
+    panelFrame:SetSize(width, posY + pad)
 end
 
 -- Beside the row, flipped to its left when it would run off the screen.
-CtxShowSub = function(row, children)
-    local parent = row._panel
-    local sub = parent._sub
-    if not sub then
-        sub = CtxNewPanel(parent._look, parent._level + 1)
-        sub._root = CtxRoot(parent)
-        parent._sub = sub
+CtxShowSub = function(rowFrame, children)
+    local hostFrame = rowFrame._panel
+    local subFrame = hostFrame._sub
+    if not subFrame then
+        subFrame = CtxNewPanel(hostFrame._look, hostFrame._level + 1)
+        subFrame._root = CtxRoot(hostFrame)
+        hostFrame._sub = subFrame
     end
     -- Already showing this row's items: nothing changes while a menu is open.
-    if sub:IsShown() and sub._src == children and sub._srcRow == row then
+    if subFrame:IsShown() and subFrame._src == children and subFrame._srcRow == rowFrame then
         return
     end
-    CtxLayout(sub, children, nil, CtxRoot(parent)._fontKey)
-    sub._src, sub._srcRow = children, row
-    sub:ClearAllPoints()
-    local right, screen = row:GetRight(), UIParent:GetRight()
-    if right and screen and right + sub:GetWidth() > screen then
-        sub:SetPoint("TOPRIGHT", row, "TOPLEFT", 0, 0)
+    CtxLayout(subFrame, children, nil, CtxRoot(hostFrame)._fontKey)
+    subFrame._src, subFrame._srcRow = children, rowFrame
+    subFrame:ClearAllPoints()
+    local right, screen = rowFrame:GetRight(), UIParent:GetRight()
+    if right and screen and right + subFrame:GetWidth() > screen then
+        subFrame:SetPoint("TOPRIGHT", rowFrame, "TOPLEFT", 0, 0)
     else
-        sub:SetPoint("TOPLEFT", row, "TOPRIGHT", 0, 0)
+        subFrame:SetPoint("TOPLEFT", rowFrame, "TOPRIGHT", 0, 0)
     end
-    sub:Show()
+    subFrame:Show()
 end
 
-local function ShowContextMenu(anchor, items, opts)
+local function ShowContextMenu(anchorFrame, itemList, options)
     -- Toggle: the owner's click while its own menu is open closes it.
-    if anchor and _ctxOpen and _ctxOpen._owner == anchor then
+    if anchorFrame and _ctxOpen and _ctxOpen._owner == anchorFrame then
         _ctxOpen:Hide()
         return
     end
-    local look = CTX_LOOKS[opts and opts.look] or CTX_LOOKS.default
-    local panel = _ctxPanels[look]
-    if not panel then
-        panel = CtxNewPanel(look, 0)
-        _ctxPanels[look] = panel
+    local look = CTX_LOOKS[options and options.look] or CTX_LOOKS.default
+    local panelFrame = _ctxPanels[look]
+    if not panelFrame then
+        panelFrame = CtxNewPanel(look, 0)
+        _ctxPanels[look] = panelFrame
     end
-    if _ctxOpen and _ctxOpen ~= panel then
+    if _ctxOpen and _ctxOpen ~= panelFrame then
         _ctxOpen:Hide()
     end
-    if panel._sub then
-        panel._sub:Hide()
+    if panelFrame._sub then
+        panelFrame._sub:Hide()
     end
-    panel._owner = anchor
-    panel._fontKey = opts and opts.fontKey
-    panel._pickOnDown = opts and opts.pickOnDown
+    panelFrame._owner = anchorFrame
+    panelFrame._fontKey = options and options.fontKey
+    panelFrame._pickOnDown = options and options.pickOnDown
     -- The menu takes the anchor's effective scale (scaleToAnchor) or scale 1,
     -- before the layout and the cursor placement; a new scale snaps its border
     -- again. The applied scale is remembered: GetScale reads back a float32,
     -- which most ratios never equal.
-    local menuScale = (opts and opts.scaleToAnchor and anchor)
-            and anchor:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    local menuScale = (options and options.scaleToAnchor and anchorFrame)
+            and anchorFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
         or 1
-    if (panel._menuScale or 1) ~= menuScale then
-        panel._menuScale = menuScale
-        panel:SetScale(menuScale)
-        CludesUI.PP.SetBorderSize(panel, 1)
+    if (panelFrame._menuScale or 1) ~= menuScale then
+        panelFrame._menuScale = menuScale
+        panelFrame:SetScale(menuScale)
+        CludesUI.PP.SetBorderSize(panelFrame, 1)
     end
 
-    CtxLayout(panel, items, opts and opts.minWidth, panel._fontKey)
+    CtxLayout(panelFrame, itemList, options and options.minWidth, panelFrame._fontKey)
 
-    panel:ClearAllPoints()
-    if opts and opts.below and anchor then
+    panelFrame:ClearAllPoints()
+    if options and options.below and anchorFrame then
         -- Dropdown placement: under the anchor, left edges aligned (screen
         -- clamping still applies).
-        panel:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
-    elseif opts and opts.above and anchor then
-        panel:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 0)
+        panelFrame:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, -2)
+    elseif options and options.above and anchorFrame then
+        panelFrame:SetPoint("BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
     else
         -- Position at cursor
-        local scale = panel:GetEffectiveScale()
+        local scale = panelFrame:GetEffectiveScale()
         local cx, cy = GetCursorPosition()
-        panel:SetPoint(
-            (opts and opts.above) and "BOTTOMLEFT" or "TOPLEFT",
+        panelFrame:SetPoint(
+            (options and options.above) and "BOTTOMLEFT" or "TOPLEFT",
             UIParent,
             "BOTTOMLEFT",
             cx / scale,
             cy / scale
         )
     end
-    _ctxOpen = panel
-    panel:Show()
+    _ctxOpen = panelFrame
+    panelFrame:Show()
 
-    if opts and opts.noPoll then
-        panel:SetScript("OnUpdate", nil) -- the owner closes it
+    if options and options.noPoll then
+        panelFrame:SetScript("OnUpdate", nil) -- the owner closes it
     else
-        panel._elapsed = 0
-        panel:SetScript("OnUpdate", CtxPoll)
+        panelFrame._elapsed = 0
+        panelFrame:SetScript("OnUpdate", CtxPoll)
     end
 end
 
@@ -1489,17 +1489,17 @@ do
                 return name
             end
         end
-        local row = joined[name]
-        if not row then
-            row = {}
-            joined[name] = row
+        local rowFrame = joined[name]
+        if not rowFrame then
+            rowFrame = {}
+            joined[name] = rowFrame
         end
-        local full = row[surname]
+        local full = rowFrame[surname]
         if not full then
             local tail = SEP .. surname
             -- Some units already carry it in the first value.
             full = (name:sub(-#tail) == tail) and name or (name .. tail)
-            row[surname] = full
+            rowFrame[surname] = full
         end
         return full
     end
@@ -1507,15 +1507,15 @@ do
     -- True for your own unit on WoW Forever while Blizzard's "My Surname" (UnitSurnameOwn)
     -- is off, when your name is your first name alone: the [name:last] and [target:last]
     -- tags show nothing for it, so "[name:first] [name:last]" reads as the first name.
-    function CludesUI.OwnSurnameHidden(unit)
-        if not IS_FOREVER or not unit then
+    function CludesUI.OwnSurnameHidden(unitToken)
+        if not IS_FOREVER or not unitToken then
             return false
         end
         local PI = C_PlayerInfo
         if not (PI and PI.ShouldDisplaySurname) or PI.ShouldDisplaySurname() then
             return false
         end
-        local isMe = UnitIsUnit(unit, "player")
+        local isMe = UnitIsUnit(unitToken, "player")
         if issecretvalue(isMe) then
             return false
         end
@@ -1539,74 +1539,74 @@ do
     do
         local floor = math.floor
         local short = { first = {}, last = {}, abbr = {} } -- [mode][name] = short form
-        local count = { first = 0, last = 0, abbr = 0 }
+        local total = { first = 0, last = 0, abbr = 0 }
         local sepPat = (SEP ~= " " and SEP ~= "") and SEP:gsub("%W", "%%%0") or nil
 
-        local function Utf8Prefix(text, n)
-            local bytes, i, chars = #text, 1, 0
-            while i <= bytes do
-                if chars == n then
-                    return text:sub(1, i - 1)
+        local function Utf8Prefix(textValue, num)
+            local bytes, idx, chars = #textValue, 1, 0
+            while idx <= bytes do
+                if chars == num then
+                    return textValue:sub(1, idx - 1)
                 end
-                local b = text:byte(i)
-                i = i + ((b < 128 and 1) or (b < 224 and 2) or (b < 240 and 3) or 4)
+                local b = textValue:byte(idx)
+                idx = idx + ((b < 128 and 1) or (b < 224 and 2) or (b < 240 and 3) or 4)
                 chars = chars + 1
             end
-            return text
+            return textValue
         end
         CludesUI.Utf8Prefix = Utf8Prefix
 
-        local function IsCount(mode)
-            return type(mode) == "number" and mode >= 1 and mode == floor(mode)
+        local function IsCount(modeName)
+            return type(modeName) == "number" and modeName >= 1 and modeName == floor(modeName)
         end
-        function CludesUI.IsNameFormat(mode)
-            return short[mode] ~= nil or IsCount(mode)
+        function CludesUI.IsNameFormat(modeName)
+            return short[modeName] ~= nil or IsCount(modeName)
         end
 
-        function CludesUI.ShortName(name, mode)
+        function CludesUI.ShortName(name, modeName)
             if issecretvalue(name) or type(name) ~= "string" then
                 return name
             end
-            local cache = short[mode]
+            local cache = short[modeName]
             if not cache then
                 -- A Character Count gets its cache on first use.
-                if not IsCount(mode) then
+                if not IsCount(modeName) then
                     return name
                 end
                 cache = {}
-                short[mode], count[mode] = cache, 0
+                short[modeName], total[modeName] = cache, 0
             end
             local s = cache[name]
             if s then
                 return s
             end
             local words = sepPat and name:gsub(sepPat, " ") or name
-            if mode == "first" then
+            if modeName == "first" then
                 s = words:match("^%s*(%S+)")
-            elseif mode == "last" then
+            elseif modeName == "last" then
                 s = words:match("(%S+)%s*$")
-            elseif mode == "abbr" then
+            elseif modeName == "abbr" then
                 local parts = {}
                 for word in words:gmatch("%S+") do
                     parts[#parts + 1] = word
                 end
                 if #parts >= 2 then
-                    for i = 1, #parts - 1 do
-                        parts[i] = Utf8Prefix(parts[i], 1) .. "."
+                    for idx = 1, #parts - 1 do
+                        parts[idx] = Utf8Prefix(parts[idx], 1) .. "."
                     end
                     s = table.concat(parts, " ")
                 end
             else
                 -- No trailing space where the cut lands between two words.
-                s = Utf8Prefix(words, mode):match("^(.-)%s*$")
+                s = Utf8Prefix(words, modeName):match("^(.-)%s*$")
             end
             s = s or name
-            if count[mode] >= 256 then
+            if total[modeName] >= 256 then
                 wipe(cache)
-                count[mode] = 0
+                total[modeName] = 0
             end
             cache[name] = s
-            count[mode] = count[mode] + 1
+            total[modeName] = total[modeName] + 1
             return s
         end
 
@@ -1618,14 +1618,14 @@ do
         -- other mode, and a nil unit (an options preview), comes back as given.
         -- Retail returns every mode as given: its player names are one word,
         -- so there these two modes only ever shorten other names.
-        function CludesUI.UnitNameFormat(mode, unit)
-            if IS_FOREVER and unit and (mode == "first" or mode == "last") then
-                local isPlayer = UnitIsPlayer(unit)
+        function CludesUI.UnitNameFormat(modeName, unitToken)
+            if IS_FOREVER and unitToken and (modeName == "first" or modeName == "last") then
+                local isPlayer = UnitIsPlayer(unitToken)
                 if issecretvalue(isPlayer) or not isPlayer then
                     return nil
                 end
             end
-            return mode
+            return modeName
         end
 
         -- The Name Format choices, for every dropdown that sets one:
@@ -1649,16 +1649,16 @@ do
         local MENU_W = 160
         -- A saved count's label, made when a dropdown reads it.
         local COUNT_LABEL = {
-            __index = function(_, k)
-                if IsCount(k) then
-                    return CludesUI.Lf("%1$d Characters", k)
+            __index = function(_, key)
+                if IsCount(key) then
+                    return CludesUI.Lf("%1$d Characters", key)
                 end
             end,
         }
-        local function ParseCount(text)
-            local n = tonumber(text)
-            if n and n <= MAX_COUNT and IsCount(n) then
-                return n
+        local function ParseCount(textValue)
+            local num = tonumber(textValue)
+            if num and num <= MAX_COUNT and IsCount(num) then
+                return num
             end
         end
         local function EnemyNote()
@@ -1666,30 +1666,30 @@ do
                 "Enemies' names will still show their full names in restricted content (M+/Raid)."
             )
         end
-        function CludesUI.NameFormatMenu(get, set, opts)
-            local onSaved = opts and opts.onSaved
-            local warn = opts and opts.enemies and not CludesUI.IS_FOREVER
+        function CludesUI.NameFormatMenu(get, group, options)
+            local onSaved = options and options.onSaved
+            local warn = options and options.enemies and not CludesUI.IS_FOREVER
             local function Edit()
-                local cur = get()
+                local current = get()
                 CludesUI:ShowInputPopup({
                     title = CludesUI.L("Character Count"),
                     message = CludesUI.L("Names show at most this many characters."),
                     redWarning = warn and EnemyNote() or nil,
                     placeholder = "1 - " .. MAX_COUNT,
-                    initialText = IsCount(cur) and tostring(cur) or "",
+                    initialText = IsCount(current) and tostring(current) or "",
                     numeric = true,
                     maxLetters = #tostring(MAX_COUNT),
-                    validate = function(text)
-                        if not ParseCount(text) then
+                    validate = function(textValue)
+                        if not ParseCount(textValue) then
                             return CludesUI.Lf("Enter a number from %1$d to %2$d.", 1, MAX_COUNT)
                         end
                     end,
-                    onConfirm = function(text)
-                        local n = ParseCount(text)
-                        if not n then
+                    onConfirm = function(textValue)
+                        local num = ParseCount(textValue)
+                        if not num then
                             return
                         end
-                        set(n)
+                        group(num)
                         if onSaved then
                             onSaved()
                         end
@@ -1697,10 +1697,10 @@ do
                     end,
                 })
             end
-            local function SetValue(v)
+            local function SetValue(val)
                 local old = get()
-                set(v)
-                if warn and v ~= "full" and v ~= old then
+                group(val)
+                if warn and val ~= "full" and val ~= old then
                     CludesUI:ShowConfirmPopup({
                         title = "Name Format",
                         message = EnemyNote(),
@@ -1723,16 +1723,16 @@ do
                 SetValue
         end
         CludesUI.NAME_FORMAT_MENU_W = MENU_W
-        function CludesUI.NameFormatCogRow(get, set, opts)
-            local values, order, getValue, setValue = CludesUI.NameFormatMenu(get, function(v)
-                set((v ~= "full") and v or nil)
-            end, opts)
+        function CludesUI.NameFormatCogRow(get, group, options)
+            local values, sequence, getValue, setValue = CludesUI.NameFormatMenu(get, function(val)
+                group((val ~= "full") and val or nil)
+            end, options)
             return {
                 type = "dropdown",
-                label = opts and opts.label or "Name Format",
-                tooltip = opts and opts.tooltip,
+                label = options and options.label or "Name Format",
+                tooltip = options and options.tooltip,
                 values = values,
-                order = order,
+                order = sequence,
                 ddWidth = MENU_W,
                 get = getValue,
                 set = setValue,
@@ -1757,52 +1757,52 @@ if CludesUI.IS_FOREVER then
     local aggR, aggG, aggB, lowR, lowG, lowB, fold
     local white -- [fs] = true while its last paint was plain white (weak keys)
 
-    local function PaintWhite(fs)
+    local function PaintWhite(fontStr)
         if not white then
             white = setmetatable({}, { __mode = "k" })
         end
-        if white[fs] then
+        if white[fontStr] then
             return
         end
-        white[fs] = true
-        fs:SetTextColor(1, 1, 1)
+        white[fontStr] = true
+        fontStr:SetTextColor(1, 1, 1)
     end
 
-    function CludesUI.PaintThreatPct(fs, pct, status, isTanking, colorByThreat)
-        fs:SetFormattedText("%.0f%%", pct)
+    function CludesUI.PaintThreatPct(fontStr, pct, status, isTanking, colorByThreat)
+        fontStr:SetFormattedText("%.0f%%", pct)
         if not colorByThreat then
-            return PaintWhite(fs)
+            return PaintWhite(fontStr)
         end
         if type(status) == "number" and not issecretvalue(status) then
-            fs:SetTextColor(GetThreatStatusColor(status))
+            fontStr:SetTextColor(GetThreatStatusColor(status))
         elseif type(isTanking) == "boolean" then
             if not fold then
                 aggR, aggG, aggB = GetThreatStatusColor(3)
                 lowR, lowG, lowB = GetThreatStatusColor(0)
                 fold = C_CurveUtil.EvaluateColorValueFromBoolean
             end
-            fs:SetTextColor(
+            fontStr:SetTextColor(
                 fold(isTanking, aggR, lowR),
                 fold(isTanking, aggG, lowG),
                 fold(isTanking, aggB, lowB)
             )
         else
-            return PaintWhite(fs)
+            return PaintWhite(fontStr)
         end
-        if white and white[fs] then
-            white[fs] = nil
+        if white and white[fontStr] then
+            white[fontStr] = nil
         end
     end
 
-    function CludesUI.PaintThreatGap(fs, text, ahead, colorOn, aheadC, behindC)
-        fs:SetText(text)
+    function CludesUI.PaintThreatGap(fontStr, textValue, ahead, colorOn, aheadC, behindC)
+        fontStr:SetText(textValue)
         if not colorOn then
-            return PaintWhite(fs)
+            return PaintWhite(fontStr)
         end
         local c = ahead and aheadC or behindC
-        fs:SetTextColor(c.r, c.g, c.b)
-        if white and white[fs] then
-            white[fs] = nil
+        fontStr:SetTextColor(c.r, c.g, c.b)
+        if white and white[fontStr] then
+            white[fontStr] = nil
         end
     end
 end -- IS_FOREVER
@@ -1865,8 +1865,8 @@ do
         if not C_GamePad.IsEnabled() then
             return false
         end
-        for _, id in ipairs(C_GamePad.GetAllDeviceIDs()) do
-            if C_GamePad.GetDeviceRawState(id) then
+        for _, ident in ipairs(C_GamePad.GetAllDeviceIDs()) do
+            if C_GamePad.GetDeviceRawState(ident) then
                 return true
             end
         end
@@ -1934,29 +1934,29 @@ do
                 return
             end
             -- Snapshot first: a watcher may watch or unwatch while this runs.
-            local n = 0
-            for owner in pairs(watchers) do
-                n = n + 1
-                flushOwners[n] = owner
+            local num = 0
+            for ownerFrame in pairs(watchers) do
+                num = num + 1
+                flushOwners[num] = ownerFrame
             end
-            local on = PadModeOn()
+            local enabled = PadModeOn()
             -- One failing watcher must not stop the rest (or strand the
             -- snapshot slots): report it and carry on.
-            for i = 1, n do
-                local fn = watchers[flushOwners[i]]
-                flushOwners[i] = nil
-                if fn then
-                    local ok, err = pcall(fn, on)
-                    if not ok then
+            for idx = 1, num do
+                local func = watchers[flushOwners[idx]]
+                flushOwners[idx] = nil
+                if func then
+                    local success, err = pcall(func, enabled)
+                    if not success then
                         geterrorhandler()(err)
                     end
                 end
             end
         end
 
-        local function OnPadEdge(_, event, name)
+        local function OnPadEdge(_, evt, name)
             -- CVAR_UPDATE fires for every cvar, dozens of times at login.
-            if event == "CVAR_UPDATE" and name ~= "GamePadEnable" then
+            if evt == "CVAR_UPDATE" and name ~= "GamePadEnable" then
                 return
             end
             if flushArmed then
@@ -1966,8 +1966,8 @@ do
             C_Timer.After(0, FlushPad)
         end
 
-        function CludesUI.WatchPad(owner, fn)
-            if owner == nil or not fn then
+        function CludesUI.WatchPad(ownerFrame, func)
+            if ownerFrame == nil or not func then
                 return
             end
             if not watchFrame then
@@ -1986,14 +1986,14 @@ do
                     watchFrame:RegisterEvent("CVAR_UPDATE")
                 end
             end
-            watchers[owner] = fn
+            watchers[ownerFrame] = func
         end
 
-        function CludesUI.UnwatchPad(owner)
-            if not watchers or owner == nil or watchers[owner] == nil then
+        function CludesUI.UnwatchPad(ownerFrame)
+            if not watchers or ownerFrame == nil or watchers[ownerFrame] == nil then
                 return
             end
-            watchers[owner] = nil
+            watchers[ownerFrame] = nil
             if next(watchers) == nil then
                 watchFrame:UnregisterAllEvents()
             end
@@ -2045,17 +2045,17 @@ do
     end
 
     -- nodeignore / nodepass / nodepriority / hidekeyboard ... (v nil = true)
-    function CludesUI.PadHint(f, attr, v)
+    function CludesUI.PadHint(f, attr, val)
         if not f or not PadCP() then
             return
         end
         if f:IsProtected() and InCombatLockdown() then
             return
         end
-        if v == nil then
-            v = true
+        if val == nil then
+            val = true
         end
-        f:SetAttribute(attr, v)
+        f:SetAttribute(attr, val)
     end
 
     -- A hand-built modal popup of ours (a named dimmer over its panel) joins the
@@ -2065,14 +2065,14 @@ do
     -- controller's cancel button presses, and onEscape (nil = hide the dimmer) is
     -- what Back runs. Call it just before the dimmer's Show (the Cooldown
     -- Manager's popups, the Talent Conditions picker).
-    function CludesUI.PadPopupOpen(dimmer, panel, closeBtn, onEscape)
+    function CludesUI.PadPopupOpen(dimmer, panelFrame, closeBtn, onEscape)
         if dimmer._padReg or not CludesUI.PadInUse() then
             return
         end
         dimmer._padReg = true
-        CludesUI.PadHint(panel, "nodepass")
+        CludesUI.PadHint(panelFrame, "nodepass")
         if closeBtn then
-            panel.CloseButton = closeBtn
+            panelFrame.CloseButton = closeBtn
         end
         CludesUI.RegisterEscapeClose(dimmer, { padOnly = true, onEscape = onEscape })
     end

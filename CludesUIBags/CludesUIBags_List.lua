@@ -10,8 +10,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  displays nothing here is ever built. The bank's List View (bankListView) reuses the row,
 --  column and header bar pieces via ns.
 -------------------------------------------------------------------------------
-local ns = select(2, ...)
-if not (ns and ns.SetBagFont) then
+local mod = select(2, ...)
+if not (mod and mod.SetBagFont) then
     return
 end
 
@@ -78,8 +78,8 @@ local function GetColumns()
 end
 
 -- Always writes a fresh copy so DEFAULT_COLUMNS is never mutated.
-local function SetColumns(list)
-    BP().bagListColumns = CopyTable(list)
+local function SetColumns(entries)
+    BP().bagListColumns = CopyTable(entries)
 end
 
 -- List font: resolved once per layout pass, applied only when it changed
@@ -89,17 +89,17 @@ local function ResolveListFont()
     _lfSize = BP().bagListFontSize or 11
     _lfFlag = CUI.GetFontOutlineFlag("bags")
 end
-local function SetListFont(fs, size)
+local function SetListFont(fontStr, size)
     if not _lfPath then
         ResolveListFont()
     end
     size = size or _lfSize
-    if fs._lfPath == _lfPath and fs._lfSize == size and fs._lfFlag == _lfFlag then
+    if fontStr._lfPath == _lfPath and fontStr._lfSize == size and fontStr._lfFlag == _lfFlag then
         return
     end
-    fs._lfPath, fs._lfSize, fs._lfFlag = _lfPath, size, _lfFlag
-    CUI.PrimeFontShadow(fs, true)
-    fs:SetFont(_lfPath, size, _lfFlag)
+    fontStr._lfPath, fontStr._lfSize, fontStr._lfFlag = _lfPath, size, _lfFlag
+    CUI.PrimeFontShadow(fontStr, true)
+    fontStr:SetFont(_lfPath, size, _lfFlag)
 end
 
 -- Repaints both list views; the bank only while it shows its List View.
@@ -153,12 +153,12 @@ local _bindLoc = ItemLocation:CreateEmpty()
 --  Per-item values (stamped on the pooled slot tables, wiped on reuse)
 -------------------------------------------------------------------------------
 local function StampItem(d)
-    local info = d.info
-    local count = d._mergedCount or info.stackCount or 1
+    local details = d.info
+    local count = d._mergedCount or details.stackCount or 1
     local _, _, _, baseIlvl, reqLevel, _, _, _, _, _, sellPrice, _, _, bindType = GetItemInfo(d.itemLink)
     local _, _, subType, _, _, classID = GetItemInfoInstant(d.itemLink)
-    d._lvName = info.itemName or ""
-    d._lvQuality = info.quality or 1
+    d._lvName = details.itemName or ""
+    d._lvQuality = details.quality or 1
     d._lvIlvl = d._isGear and (tonumber(d._giIlvl) or baseIlvl) or 0
     d._lvReq = (reqLevel and reqLevel > 1) and reqLevel or 0
     d._lvType = subType or ""
@@ -169,14 +169,14 @@ local function StampItem(d)
     d._lvTrackSort = tc
             and ((CUI._TRACK_RANK and CUI._TRACK_RANK[tc] or 0) * 100 + (tonumber(rank:match("^(%d+)")) or 0))
         or 0
-    d._lvSell = (not info.hasNoValue and sellPrice) and sellPrice * count or 0
-    if bindType == IB.OnEquip and not info.isBound and d.bag and d.slot then
+    d._lvSell = (not details.hasNoValue and sellPrice) and sellPrice * count or 0
+    if bindType == IB.OnEquip and not details.isBound and d.bag and d.slot then
         _bindLoc:SetBagAndSlot(d.bag, d.slot)
         if C_Item.IsBoundToAccountUntilEquip(_bindLoc) then
             bindType = IB.ToBnetAccountUntilEquipped
         end
     end
-    if info.isBound and BIND_SOULBOUND[bindType] then
+    if details.isBound and BIND_SOULBOUND[bindType] then
         d._lvBind = L("SB")
     else
         d._lvBind = bindType and BIND_ABBR[bindType] and L(BIND_ABBR[bindType]) or ""
@@ -184,7 +184,7 @@ local function StampItem(d)
     local key = classID and SPLIT_KEY[classID]
     d._lvSub = (key and BP()[key] and subType) or ""
 end
-ns.StampListItem = StampItem
+mod.StampListItem = StampItem
 
 -- Static comparator (no per-refresh closures); _sk/_sa set before each sort.
 local _sk, _sa = "_lvQuality", false
@@ -204,7 +204,7 @@ local function ListCompare(a, b)
     end
     return a.slot < b.slot
 end
-ns.ListCompare = ListCompare
+mod.ListCompare = ListCompare
 
 -- OneBag / MultiBag: real bag/slot order
 local function SlotCompare(a, b)
@@ -290,13 +290,13 @@ end
 -- nil in combat (a secure button born in lockdown is tainted); callers skip
 -- the row and fill it after combat.
 local _hostRows = {} -- host -> rows created under it (live column reflow)
-function ns.CreateListRow(host)
+function mod.CreateListRow(hostRegion)
     if InCombatLockdown() then
         return nil
     end
-    local slotParent = CreateFrame("Frame", nil, host)
+    local slotParent = CreateFrame("Frame", nil, hostRegion)
     local btn = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
-    ns.PinItemButton(btn, host)
+    mod.PinItemButton(btn, hostRegion)
     btn:SetAllPoints(slotParent)
     btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     btn:RegisterForDrag("LeftButton")
@@ -315,47 +315,47 @@ function ns.CreateListRow(host)
     end
     -- Third-party overlay painters (CUI_Bags.RunItemOverlays) parent to this,
     -- as on the grid slots: here it covers the row's icon.
-    local ov = CreateFrame("Frame", nil, btn)
-    ov:SetAllPoints(btn._lvIcon)
-    ov:SetFrameLevel(btn:GetFrameLevel() + 3)
-    btn._textOverlay = ov
+    local shade = CreateFrame("Frame", nil, btn)
+    shade:SetAllPoints(btn._lvIcon)
+    shade:SetFrameLevel(btn:GetFrameLevel() + 3)
+    btn._textOverlay = shade
     btn._cells = {}
-    local list = _hostRows[host]
-    if not list then
-        list = {}
-        _hostRows[host] = list
+    local entries = _hostRows[hostRegion]
+    if not entries then
+        entries = {}
+        _hostRows[hostRegion] = entries
     end
-    list[#list + 1] = btn
+    entries[#entries + 1] = btn
     return btn
 end
 
 -- Secure container button, one per row. NEVER created in combat (a button
 -- born in lockdown is tainted); RefreshInventory flags the combat refresh
 -- and PLAYER_REGEN_ENABLED replays it, which fills the gap.
-local function GetOrCreateRow(idx)
-    if _rows[idx] then
-        return _rows[idx]
+local function GetOrCreateRow(position)
+    if _rows[position] then
+        return _rows[position]
     end
     if InCombatLockdown() then
         CUI_Bags._poolShort = true
         return nil
     end
-    local btn = ns.CreateListRow(CUI_Bags)
-    btn:HookScript("OnMouseUp", ns.SlotMiddleClick)
-    btn:HookScript("PreClick", ns.BankRoutePreClick)
-    btn:HookScript("OnClick", ns.BankRouteOnClick)
+    local btn = mod.CreateListRow(CUI_Bags)
+    btn:HookScript("OnMouseUp", mod.SlotMiddleClick)
+    btn:HookScript("PreClick", mod.BankRoutePreClick)
+    btn:HookScript("OnClick", mod.BankRouteOnClick)
     btn:HookScript("PostClick", function(self)
-        CUI_Bags.ShowStackSplitter(self, ns.SplitTargetBags(self:GetParent():GetID()), CUI_Bags)
+        CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(self:GetParent():GetID()), CUI_Bags)
     end)
-    _rows[idx] = btn
+    _rows[position] = btn
     return btn
 end
 
 -- Pre-build rows out of combat so a first open mid-fight has them.
 -- Returns false when combat stopped it (GetOrCreateRow flags _poolShort) or
 -- the optional time budget (msBudget ms from t0) ran out.
-function ns.WarmListRows(total, t0, msBudget)
-    for i = 1, total do
+function mod.WarmListRows(sum, t0, msBudget)
+    for i = 1, sum do
         if not _rows[i] then
             local b = GetOrCreateRow(i)
             if not b then
@@ -371,16 +371,16 @@ function ns.WarmListRows(total, t0, msBudget)
     return true
 end
 
-local function GetCell(btn, id)
-    local fs = btn._cells[id]
-    if not fs then
-        fs = btn:CreateFontString(nil, "OVERLAY")
-        fs:SetWordWrap(false)
-        fs:SetJustifyH(COLUMNS[id].justify or "LEFT")
-        btn._cells[id] = fs
+local function GetCell(btn, ident)
+    local fontStr = btn._cells[ident]
+    if not fontStr then
+        fontStr = btn:CreateFontString(nil, "OVERLAY")
+        fontStr:SetWordWrap(false)
+        fontStr:SetJustifyH(COLUMNS[ident].justify or "LEFT")
+        btn._cells[ident] = fontStr
     end
-    SetListFont(fs)
-    return fs
+    SetListFont(fontStr)
+    return fontStr
 end
 
 local function SetRoundIcon(btn, round)
@@ -421,37 +421,37 @@ local _virtualCollapsed = {}
 local function IsCollapsed(key)
     return _virtualCollapsed[key] or (BP().bagListCollapsed or _emptyP)[key] == true
 end
-local function SetCollapsed(set, key, v)
+local function SetCollapsed(group, key, val)
     if key:find("^Virtual:") then
-        _virtualCollapsed[key] = v
+        _virtualCollapsed[key] = val
     else
-        set[key] = v
+        group[key] = val
     end
 end
 local function ToggleCollapsed(self)
     local p = BP()
-    local set = p.bagListCollapsed
-    if not set then
-        set = {}
-        p.bagListCollapsed = set
+    local group = p.bagListCollapsed
+    if not group then
+        group = {}
+        p.bagListCollapsed = group
     end
     if IsShiftKeyDown() and not self._sub then
         local collapse = not IsCollapsed(self._key) or nil
         for i = 1, _sectionsUsed do
             local s = _sections[i]
             if not s._sub then
-                SetCollapsed(set, s._key, collapse)
+                SetCollapsed(group, s._key, collapse)
             end
         end
     else
-        SetCollapsed(set, self._key, not IsCollapsed(self._key) or nil)
+        SetCollapsed(group, self._key, not IsCollapsed(self._key) or nil)
     end
     Refresh()
 end
 
-local function GetOrCreateSection(idx)
-    if _sections[idx] then
-        return _sections[idx]
+local function GetOrCreateSection(position)
+    if _sections[position] then
+        return _sections[position]
     end
     local f = CreateFrame("Button", nil, CUI_Bags)
     f._arrow = f:CreateTexture(nil, "OVERLAY")
@@ -480,7 +480,7 @@ local function GetOrCreateSection(idx)
     end)
     f._label:SetAlpha(0.8)
     f._arrow:SetAlpha(0.6)
-    _sections[idx] = f
+    _sections[position] = f
     return f
 end
 
@@ -490,16 +490,16 @@ end
 -- Fixed column width: the header-resized width, else the default.
 -- The icon column never resizes.
 local MIN_COL_W, MIN_FLEX_W = 20, 60
-local function FixedWidth(id)
-    local def = COLUMNS[id]
-    if not def.width then
+local function FixedWidth(ident)
+    local spec_def = COLUMNS[ident]
+    if not spec_def.width then
         return nil
     end
-    if id == "icon" then
-        return def.width
+    if ident == "icon" then
+        return spec_def.width
     end
     local saved = BP().bagListColWidths
-    return (saved and saved[id]) or def.width
+    return (saved and saved[ident]) or spec_def.width
 end
 
 local _colX, _colW = {}, {}
@@ -509,80 +509,80 @@ local function LayoutColumns(rowW)
     ResolveListFont()
     local cols = GetColumns()
     local fixed = 0
-    for _, id in ipairs(cols) do
-        fixed = fixed + (FixedWidth(id) or 0)
+    for _, ident in ipairs(cols) do
+        fixed = fixed + (FixedWidth(ident) or 0)
     end
     local flexW = math.max(MIN_FLEX_W, rowW - fixed - COL_GAP * (#cols + 1))
-    local x = COL_GAP
-    for _, id in ipairs(cols) do
-        local w = FixedWidth(id) or flexW
-        _colX[id], _colW[id] = x, w
-        x = x + w + COL_GAP
+    local posX = COL_GAP
+    for _, ident in ipairs(cols) do
+        local wid = FixedWidth(ident) or flexW
+        _colX[ident], _colW[ident] = posX, wid
+        posX = posX + wid + COL_GAP
     end
     return cols
 end
-ns.ListLayoutColumns = LayoutColumns
+mod.ListLayoutColumns = LayoutColumns
 
 -------------------------------------------------------------------------------
 --  Column header bar: click sorts, drag reorders, right-click edits columns
 -------------------------------------------------------------------------------
-local function MoveColumn(id, toIdx)
+local function MoveColumn(ident, toIdx)
     local cols = {}
     for _, c in ipairs(GetColumns()) do
-        if c ~= id then
+        if c ~= ident then
             cols[#cols + 1] = c
         end
     end
     toIdx = math.max(1, math.min(toIdx, #cols + 1))
-    table.insert(cols, toIdx, id)
+    table.insert(cols, toIdx, ident)
     SetColumns(cols)
     Refresh()
 end
 
 local IndexOf = tIndexOf
 
-local function ToggleColumn(id)
+local function ToggleColumn(ident)
     local cols = GetColumns()
-    local at = IndexOf(cols, id)
-    local out = {}
+    local at = IndexOf(cols, ident)
+    local result = {}
     for _, c in ipairs(cols) do
-        out[#out + 1] = c
+        result[#result + 1] = c
     end
     if at then
-        if #out == 1 then
+        if #result == 1 then
             return
         end -- keep at least one column
-        table.remove(out, at)
+        table.remove(result, at)
     else
         -- Re-add in its default position relative to the shown columns
-        local rank = IndexOf(COLUMN_ORDER, id)
-        local insertAt = #out + 1
-        for i, c in ipairs(out) do
+        local rank = IndexOf(COLUMN_ORDER, ident)
+        local insertAt = #result + 1
+        for i, c in ipairs(result) do
             if IndexOf(COLUMN_ORDER, c) > rank then
                 insertAt = i
                 break
             end
         end
-        table.insert(out, insertAt, id)
+        table.insert(result, insertAt, ident)
     end
-    SetColumns(out)
+    SetColumns(result)
     Refresh()
 end
 
 -- True while a column is shown or still sorts the list (its data is needed)
-function ns.ListUsesColumn(id)
-    return IndexOf(GetColumns(), id) ~= nil or BP().bagListSortKey == id
+function mod.ListUsesColumn(ident)
+    return IndexOf(GetColumns(), ident) ~= nil or BP().bagListSortKey == ident
 end
 
-local function ShowColumnMenu(owner, id)
-    MenuUtil.CreateContextMenu(owner, function(_, root)
+local function ShowColumnMenu(ownerFrame, ident)
+    MenuUtil.CreateContextMenu(ownerFrame, function(_, root)
         root:CreateTitle(L("Columns"))
         for _, cid in ipairs(COLUMN_ORDER) do
             -- WoW Forever has no upgrade tracks: Track is offered there only
             -- to switch off a column an imported profile brought in
             if cid ~= "track" or not CUI.IS_FOREVER or IndexOf(GetColumns(), cid) then
-                local def = COLUMNS[cid]
-                root:CreateCheckbox(L(def.menuLabel or def.label), function()
+                local spec_def = COLUMNS[cid]
+                root:CreateCheckbox(L(spec_def.menuLabel or spec_def.label), function()
                     return IndexOf(GetColumns(), cid) ~= nil
                 end, function()
                     ToggleColumn(cid)
@@ -590,15 +590,15 @@ local function ShowColumnMenu(owner, id)
             end
         end
         root:CreateDivider()
-        local at = IndexOf(GetColumns(), id)
+        local at = IndexOf(GetColumns(), ident)
         if at and at > 1 then
             root:CreateButton(L("Move Left"), function()
-                MoveColumn(id, at - 1)
+                MoveColumn(ident, at - 1)
             end)
         end
         if at and at < #GetColumns() then
             root:CreateButton(L("Move Right"), function()
-                MoveColumn(id, at + 1)
+                MoveColumn(ident, at + 1)
             end)
         end
         root:CreateCheckbox(L("Round Icons"), function()
@@ -633,23 +633,23 @@ local function OnHeaderDragUpdate(self)
     end
     cx = cx / self:GetEffectiveScale()
     local cols, btns = GetColumns(), self:GetParent()._btns
-    local target = 1
+    local targetUnit = 1
     for _, cid in ipairs(cols) do
         local b = btns[cid]
         if cid ~= self._colId and b then
             local l, r = b:GetLeft(), b:GetRight()
             if l and cx > (l + r) / 2 then
-                target = target + 1
+                targetUnit = targetUnit + 1
             end
         end
     end
-    if target ~= IndexOf(cols, self._colId) then
-        MoveColumn(self._colId, target)
+    if targetUnit ~= IndexOf(cols, self._colId) then
+        MoveColumn(self._colId, targetUnit)
     end
 end
 
-local function OnHeaderMouseDown(self, button)
-    if button ~= "LeftButton" then
+local function OnHeaderMouseDown(self, btnFrame)
+    if btnFrame ~= "LeftButton" then
         return
     end
     self._downX = GetCursorPosition()
@@ -657,12 +657,12 @@ local function OnHeaderMouseDown(self, button)
     self:SetScript("OnUpdate", OnHeaderDragUpdate)
 end
 
-local function OnHeaderMouseUp(self, button)
-    if button == "RightButton" then
+local function OnHeaderMouseUp(self, btnFrame)
+    if btnFrame == "RightButton" then
         ShowColumnMenu(self, self._colId)
         return
     end
-    if button ~= "LeftButton" or not self._downX then
+    if btnFrame ~= "LeftButton" or not self._downX then
         return
     end
     self:SetScript("OnUpdate", nil)
@@ -672,8 +672,8 @@ local function OnHeaderMouseUp(self, button)
         self._dragged = nil
         return
     end
-    local def = COLUMNS[self._colId]
-    if not def.field then
+    local spec_def = COLUMNS[self._colId]
+    if not spec_def.field then
         return
     end
     local p = BP()
@@ -681,31 +681,38 @@ local function OnHeaderMouseUp(self, button)
         p.bagListSortAsc = not p.bagListSortAsc
     else
         p.bagListSortKey = self._colId
-        p.bagListSortAsc = not def.desc
+        p.bagListSortAsc = not spec_def.desc
     end
     Refresh()
 end
 
 -- Live column reflow: re-place the header buttons and the visible rows'
 -- cells from the current widths, without a bag rescan.
-local function ReflowHost(host)
-    local bar = _hdrBars[host]
-    if not bar or not bar:IsShown() or not bar._rowW then
+local function ReflowHost(hostRegion)
+    local barFrame = _hdrBars[hostRegion]
+    if not barFrame or not barFrame:IsShown() or not barFrame._rowW then
         return
     end
-    local cols = LayoutColumns(bar._rowW)
-    ns.UpdateListHeaderBar(host, cols, bar._leftX, bar._topY, bar._startX, bar._noSort)
-    for _, btn in ipairs(_hostRows[host] or _emptyP) do
+    local cols = LayoutColumns(barFrame._rowW)
+    mod.UpdateListHeaderBar(
+        hostRegion,
+        cols,
+        barFrame._leftX,
+        barFrame._topY,
+        barFrame._startX,
+        barFrame._noSort
+    )
+    for _, btn in ipairs(_hostRows[hostRegion] or _emptyP) do
         if btn:IsVisible() then
             if btn._lvIcon:IsShown() and _colX.icon then
                 btn._lvIcon:ClearAllPoints()
                 btn._lvIcon:SetPoint("LEFT", btn, "LEFT", _colX.icon, 0)
             end
-            for id, fs in pairs(btn._cells) do
-                if fs:IsShown() and IndexOf(cols, id) then
-                    fs:ClearAllPoints()
-                    fs:SetPoint("LEFT", btn, "LEFT", _colX[id], 0)
-                    fs:SetWidth(_colW[id])
+            for ident, fontStr in pairs(btn._cells) do
+                if fontStr:IsShown() and IndexOf(cols, ident) then
+                    fontStr:ClearAllPoints()
+                    fontStr:SetPoint("LEFT", btn, "LEFT", _colX[ident], 0)
+                    fontStr:SetWidth(_colW[ident])
                 end
             end
         end
@@ -729,36 +736,36 @@ local function SizerOnUpdate(self)
         SizerStop(self)
         return
     end
-    local hdr = self:GetParent()
-    local cx = GetCursorPosition() / hdr:GetEffectiveScale()
-    local w = math.floor(self._startW + self._sign * (cx - self._startCX) + 0.5)
-    w = math.max(MIN_COL_W, math.min(self._maxW, w))
-    if w == self._lastW then
+    local heading = self:GetParent()
+    local cx = GetCursorPosition() / heading:GetEffectiveScale()
+    local wid = math.floor(self._startW + self._sign * (cx - self._startCX) + 0.5)
+    wid = math.max(MIN_COL_W, math.min(self._maxW, wid))
+    if wid == self._lastW then
         return
     end
-    self._lastW = w
+    self._lastW = wid
     local p = BP()
     local t = p.bagListColWidths
     if not t then
         t = {}
         p.bagListColWidths = t
     end
-    t[hdr._colId] = w
-    for host in pairs(_hdrBars) do
-        ReflowHost(host)
+    t[heading._colId] = wid
+    for hostRegion in pairs(_hdrBars) do
+        ReflowHost(hostRegion)
     end
 end
 
-local function SizerOnMouseDown(self, button)
-    if button ~= "LeftButton" then
+local function SizerOnMouseDown(self, btnFrame)
+    if btnFrame ~= "LeftButton" then
         return
     end
-    local hdr = self:GetParent()
-    local bar = hdr:GetParent()
-    if not bar._rowW then
+    local heading = self:GetParent()
+    local barFrame = heading:GetParent()
+    if not barFrame._rowW then
         return
     end
-    LayoutColumns(bar._rowW)
+    LayoutColumns(barFrame._rowW)
     -- Width the flexible column can give up (no flexible column: capped growth)
     local slack = 200
     for _, cid in ipairs(GetColumns()) do
@@ -766,30 +773,30 @@ local function SizerOnMouseDown(self, button)
             slack = _colW[cid] - MIN_FLEX_W
         end
     end
-    self._startW = FixedWidth(hdr._colId)
+    self._startW = FixedWidth(heading._colId)
     self._lastW = self._startW
     self._maxW = self._startW + math.max(0, slack)
-    self._startCX = GetCursorPosition() / hdr:GetEffectiveScale()
+    self._startCX = GetCursorPosition() / heading:GetEffectiveScale()
     self:SetScript("OnUpdate", SizerOnUpdate)
 end
 
-local function GetOrCreateHeaderBtn(bar, id)
-    if bar._btns[id] then
-        return bar._btns[id]
+local function GetOrCreateHeaderBtn(barFrame, ident)
+    if barFrame._btns[ident] then
+        return barFrame._btns[ident]
     end
-    local b = CreateFrame("Button", nil, bar)
+    local b = CreateFrame("Button", nil, barFrame)
     b:SetHeight(COLHDR_H)
-    b._colId = id
+    b._colId = ident
     b._label = b:CreateFontString(nil, "OVERLAY")
     SetListFont(b._label, 10)
     b._label:SetAllPoints()
-    b._label:SetJustifyH(COLUMNS[id].justify or "LEFT")
-    b._label:SetText(COLUMNS[id].label ~= "" and L(COLUMNS[id].label) or "")
+    b._label:SetJustifyH(COLUMNS[ident].justify or "LEFT")
+    b._label:SetText(COLUMNS[ident].label ~= "" and L(COLUMNS[ident].label) or "")
     b._label:SetTextColor(0.6, 0.6, 0.6)
     b._arrow = b:CreateTexture(nil, "OVERLAY")
     b._arrow:SetSize(8, 8)
     b._arrow:SetTexture(ARROW_TEX)
-    if id == "icon" then
+    if ident == "icon" then
         -- The icon column has no label: a bag glyph over the row icons,
         -- tinted like the labels.
         b._glyph = b:CreateTexture(nil, "OVERLAY")
@@ -800,14 +807,14 @@ local function GetOrCreateHeaderBtn(bar, id)
     end
     b:SetScript("OnMouseDown", OnHeaderMouseDown)
     b:SetScript("OnMouseUp", OnHeaderMouseUp)
-    if COLUMNS[id].width and id ~= "icon" then
+    if COLUMNS[ident].width and ident ~= "icon" then
         local g = CreateFrame("Button", nil, b)
         g:SetSize(COL_GAP, COLHDR_H)
-        local line = g:CreateTexture(nil, "HIGHLIGHT")
-        line:SetWidth(CUI.PP.mult)
-        line:SetPoint("TOP")
-        line:SetPoint("BOTTOM")
-        line:SetColorTexture(1, 1, 1, 0.6)
+        local lineTex = g:CreateTexture(nil, "HIGHLIGHT")
+        lineTex:SetWidth(CUI.PP.mult)
+        lineTex:SetPoint("TOP")
+        lineTex:SetPoint("BOTTOM")
+        lineTex:SetColorTexture(1, 1, 1, 0.6)
         g:SetScript("OnMouseDown", SizerOnMouseDown)
         g:SetScript("OnMouseUp", SizerStop)
         g:SetScript("OnHide", SizerStop)
@@ -832,54 +839,55 @@ local function GetOrCreateHeaderBtn(bar, id)
         end
         CUI.HideWidgetTooltip()
     end)
-    bar._btns[id] = b
+    barFrame._btns[ident] = b
     return b
 end
 
 -- the column bar for a window, nil before its first list refresh
-function ns.ListHeaderBar(host)
-    return _hdrBars[host]
+function mod.ListHeaderBar(hostRegion)
+    return _hdrBars[hostRegion]
 end
 
 -- One column header bar per host frame (bags, bank). Returns its height.
-function ns.UpdateListHeaderBar(host, cols, leftX, topY, startX, noSort)
-    local bar = _hdrBars[host]
-    if not bar then
-        bar = CreateFrame("Frame", nil, host)
-        bar:SetHeight(COLHDR_H)
-        bar._btns = {}
-        local line = bar:CreateTexture(nil, "ARTWORK")
-        line:SetHeight(CUI.PP.mult)
-        line:SetPoint("BOTTOMLEFT")
-        line:SetPoint("BOTTOMRIGHT")
-        line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
-        _hdrBars[host] = bar
+function mod.UpdateListHeaderBar(hostRegion, cols, leftX, topY, startX, noSort)
+    local barFrame = _hdrBars[hostRegion]
+    if not barFrame then
+        barFrame = CreateFrame("Frame", nil, hostRegion)
+        barFrame:SetHeight(COLHDR_H)
+        barFrame._btns = {}
+        local lineTex = barFrame:CreateTexture(nil, "ARTWORK")
+        lineTex:SetHeight(CUI.PP.mult)
+        lineTex:SetPoint("BOTTOMLEFT")
+        lineTex:SetPoint("BOTTOMRIGHT")
+        lineTex:SetColorTexture(0.7, 0.7, 0.7, 0.2)
+        _hdrBars[hostRegion] = barFrame
     end
     -- Kept for live reflow while a column is resized
-    bar._rowW, bar._leftX, bar._topY, bar._startX, bar._noSort = _lastRowW, leftX, topY, startX, noSort
+    barFrame._rowW, barFrame._leftX, barFrame._topY, barFrame._startX, barFrame._noSort =
+        _lastRowW, leftX, topY, startX, noSort
     local flexIdx
-    for i, id in ipairs(cols) do
-        if not COLUMNS[id].width then
+    for i, ident in ipairs(cols) do
+        if not COLUMNS[ident].width then
             flexIdx = i
         end
     end
-    bar:ClearAllPoints()
-    bar:SetPoint("TOPLEFT", host, "TOPLEFT", leftX, topY)
-    bar:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, topY)
-    bar:Show()
+    barFrame:ClearAllPoints()
+    barFrame:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", leftX, topY)
+    barFrame:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", 0, topY)
+    barFrame:Show()
     -- Hide only dropped columns: hiding the held button would end its drag
-    for id, b in pairs(bar._btns) do
-        if not IndexOf(cols, id) then
+    for ident, b in pairs(barFrame._btns) do
+        if not IndexOf(cols, ident) then
             b:Hide()
         end
     end
     local sortKey = not noSort and BP().bagListSortKey
-    for i, id in ipairs(cols) do
-        local b = GetOrCreateHeaderBtn(bar, id)
+    for i, ident in ipairs(cols) do
+        local b = GetOrCreateHeaderBtn(barFrame, ident)
         SetListFont(b._label, 10)
         b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", bar, "TOPLEFT", startX + _colX[id], 0)
-        b:SetWidth(math.max(_colW[id], 12))
+        b:SetPoint("TOPLEFT", barFrame, "TOPLEFT", startX + _colX[ident], 0)
+        b:SetWidth(math.max(_colW[ident], 12))
         if b._sizer then
             -- Grip sits in the gap on the side facing the flexible column
             local g = b._sizer
@@ -893,9 +901,9 @@ function ns.UpdateListHeaderBar(host, cols, leftX, topY, startX, noSort)
             end
         end
         b._arrow:ClearAllPoints()
-        if id == sortKey and COLUMNS[id].field then
+        if ident == sortKey and COLUMNS[ident].field then
             -- Arrow sits beside the label, on the side away from the text
-            if COLUMNS[id].justify == "RIGHT" then
+            if COLUMNS[ident].justify == "RIGHT" then
                 b._arrow:SetPoint("RIGHT", b, "RIGHT", -(b._label:GetStringWidth() + 3), 0)
             else
                 b._arrow:SetPoint("LEFT", b._label, "LEFT", b._label:GetStringWidth() + 3, 0)
@@ -911,7 +919,7 @@ function ns.UpdateListHeaderBar(host, cols, leftX, topY, startX, noSort)
 end
 
 -- Sets the ListCompare sort field from the saved header sort.
-function ns.ListSortSetup()
+function mod.ListSortSetup()
     local sortDef = BP().bagListSortKey and COLUMNS[BP().bagListSortKey]
     if sortDef and sortDef.field then
         _sk, _sa = sortDef.field, BP().bagListSortAsc == true
@@ -925,181 +933,185 @@ end
 -------------------------------------------------------------------------------
 -- dim: a pinned item in a OneBag / MultiBag bag section while Dim Items in
 -- OneBag/MultiBag is on (the grid's search-miss alpha).
-local function RenderRow(btn, data, cols, rowW, x, y, stripe, dim)
+local function RenderRow(btn, payload, cols, rowW, posX, posY, stripe, dim)
     -- Bags and bank share the column tables at their own row widths: a bank
     -- batch painted after a bags refresh re-lays them out for its width.
     if rowW ~= _lastRowW then
         LayoutColumns(rowW)
     end
-    local parent = btn:GetParent()
-    parent:ClearAllPoints()
-    parent:SetSize(rowW, RowH())
-    parent:SetPoint("TOPLEFT", x, y)
-    parent:SetID(data.bag)
-    btn:SetID(data.slot)
-    parent:Show()
+    local hostFrame = btn:GetParent()
+    hostFrame:ClearAllPoints()
+    hostFrame:SetSize(rowW, RowH())
+    hostFrame:SetPoint("TOPLEFT", posX, posY)
+    hostFrame:SetID(payload.bag)
+    btn:SetID(payload.slot)
+    hostFrame:Show()
     btn:Show()
     btn:SetAlpha(dim and 0.2 or 1)
     btn._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
 
-    local info = data.info
-    local q = info.quality or 1
-    for _, fs in pairs(btn._cells) do
-        fs:Hide()
+    local details = payload.info
+    local q = details.quality or 1
+    for _, fontStr in pairs(btn._cells) do
+        fontStr:Hide()
     end
     btn._lvIcon:Hide()
-    for _, id in ipairs(cols) do
-        local cx, cw = _colX[id], _colW[id]
-        if id == "icon" then
-            local icon = btn._lvIcon
+    for _, ident in ipairs(cols) do
+        local cx, cw = _colX[ident], _colW[ident]
+        if ident == "icon" then
+            local glyph = btn._lvIcon
             local isz = math.min(ICON_SIZE, RowH() - 4)
-            icon:SetSize(isz, isz)
-            icon:ClearAllPoints()
-            icon:SetPoint("LEFT", btn, "LEFT", cx, 0)
-            icon:SetTexture(info.iconFileID)
+            glyph:SetSize(isz, isz)
+            glyph:ClearAllPoints()
+            glyph:SetPoint("LEFT", btn, "LEFT", cx, 0)
+            glyph:SetTexture(details.iconFileID)
             local round = BP().bagListRoundIcons == true
             SetRoundIcon(btn, round)
             -- Round: fixed crop past the icon's baked-in border so the circle edge stays clean
             local z = round and ROUND_ZOOM or (BP().bagItemIconZoom or 0.08)
-            icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            glyph:SetTexCoord(z, 1 - z, z, 1 - z)
             -- Junk Item Visuals' Desaturate greys grey items and Junk Marker junk
-            icon:SetDesaturated(
-                info.isLocked
+            glyph:SetDesaturated(
+                details.isLocked
                     or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
-                        info.itemID,
+                        details.itemID,
                         q
                     )))
                     or false
             )
-            if CUI._BagsItemUnusable(data.bag, data.slot, data.itemLink, info.itemID) then
-                icon:SetVertexColor(1, 0.1, 0.1)
+            if CUI._BagsItemUnusable(payload.bag, payload.slot, payload.itemLink, details.itemID) then
+                glyph:SetVertexColor(1, 0.1, 0.1)
             else
-                icon:SetVertexColor(1, 1, 1)
+                glyph:SetVertexColor(1, 1, 1)
             end
-            icon:Show()
+            glyph:Show()
             -- Quality Item Border: square icons only
-            local ov = btn._textOverlay
-            if not round and (BP().bagQualityBorder ~= false or ns.BagsForever()) then
-                if not (ov._brdT or ov._fvSlotBorder) then
-                    ns.CreateInsetBorder(ov, true, icon)
+            local shade = btn._textOverlay
+            if not round and (BP().bagQualityBorder ~= false or mod.BagsForever()) then
+                if not (shade._brdT or shade._fvSlotBorder) then
+                    mod.CreateInsetBorder(shade, true, glyph)
                 end
-                local r, g, b = ns.QualityBorderColor(q)
-                ns.SetInsetBorderColor(ov, r, g, b, 1)
-                if ov._fvSlotBorder then
-                    ns.SetForeverSlotQuestBorder(ov, data._isQuest, data._isQuestStarter)
+                local r, g, b = mod.QualityBorderColor(q)
+                mod.SetInsetBorderColor(shade, r, g, b, 1)
+                if shade._fvSlotBorder then
+                    mod.SetForeverSlotQuestBorder(shade, payload._isQuest, payload._isQuestStarter)
                 end
-            elseif ov._brdT or ov._fvSlotBorder then
-                ns.SetInsetBorderColor(ov, 0, 0, 0, 0)
-                if ov._fvQuestBorder then
-                    ov._fvQuestBorder:Hide()
+            elseif shade._brdT or shade._fvSlotBorder then
+                mod.SetInsetBorderColor(shade, 0, 0, 0, 0)
+                if shade._fvQuestBorder then
+                    shade._fvQuestBorder:Hide()
                 end
             end
         else
-            local fs = GetCell(btn, id)
-            fs:ClearAllPoints()
-            fs:SetPoint("LEFT", btn, "LEFT", cx, 0)
-            fs:SetWidth(cw)
-            local text
-            if id == "name" then
-                text = data._lvName
+            local fontStr = GetCell(btn, ident)
+            fontStr:ClearAllPoints()
+            fontStr:SetPoint("LEFT", btn, "LEFT", cx, 0)
+            fontStr:SetWidth(cw)
+            local textValue
+            if ident == "name" then
+                textValue = payload._lvName
                 local c = ITEM_QUALITY_COLORS[q]
                 if c then
-                    fs:SetTextColor(c.r, c.g, c.b)
+                    fontStr:SetTextColor(c.r, c.g, c.b)
                 else
-                    fs:SetTextColor(1, 1, 1)
+                    fontStr:SetTextColor(1, 1, 1)
                 end
             else
-                fs:SetTextColor(0.85, 0.85, 0.85)
-                if id == "ilvl" then
-                    text = data._lvIlvl > 0 and data._lvIlvl or ""
-                elseif id == "reqlvl" then
-                    text = data._lvReq > 0 and data._lvReq or ""
-                elseif id == "type" then
-                    text = data._lvType
-                elseif id == "bind" then
-                    text = data._lvBind
-                elseif id == "track" then
-                    text = data._lvTrack
-                    local tc = data._giTrackColor
+                fontStr:SetTextColor(0.85, 0.85, 0.85)
+                if ident == "ilvl" then
+                    textValue = payload._lvIlvl > 0 and payload._lvIlvl or ""
+                elseif ident == "reqlvl" then
+                    textValue = payload._lvReq > 0 and payload._lvReq or ""
+                elseif ident == "type" then
+                    textValue = payload._lvType
+                elseif ident == "bind" then
+                    textValue = payload._lvBind
+                elseif ident == "track" then
+                    textValue = payload._lvTrack
+                    local tc = payload._giTrackColor
                     if tc then
-                        fs:SetTextColor(tc.r, tc.g, tc.b)
+                        fontStr:SetTextColor(tc.r, tc.g, tc.b)
                     end
-                elseif id == "count" then
-                    text = data._lvCount > 1 and data._lvCount or ""
-                elseif id == "sell" then
-                    text = data._lvSell > 0 and C_CurrencyInfo.GetCoinTextureString(data._lvSell) or ""
+                elseif ident == "count" then
+                    textValue = payload._lvCount > 1 and payload._lvCount or ""
+                elseif ident == "sell" then
+                    textValue = payload._lvSell > 0 and C_CurrencyInfo.GetCoinTextureString(payload._lvSell)
+                        or ""
                 end
             end
-            fs:SetText(text)
-            fs:Show()
+            fontStr:SetText(textValue)
+            fontStr:Show()
         end
     end
 
     if btn.Cooldown then
-        if data._cdStart and IndexOf(cols, "icon") then
-            btn.Cooldown:SetCooldown(data._cdStart, data._cdDuration)
+        if payload._cdStart and IndexOf(cols, "icon") then
+            btn.Cooldown:SetCooldown(payload._cdStart, payload._cdDuration)
         else
             btn.Cooldown:Clear()
         end
     end
     btn._textOverlay:SetShown(btn._lvIcon:IsShown())
-    CUI_Bags.RunItemOverlays(btn, data)
+    CUI_Bags.RunItemOverlays(btn, payload)
     -- Tooltip requery after the slot re-assignment (see RenderButton)
     if GameTooltip:IsOwned(btn) and btn.UpdateTooltip then
         btn:UpdateTooltip()
     end
 end
-ns.RenderListRow = RenderRow
+mod.RenderListRow = RenderRow
 
 -- Mark mode: the row pool it hit-tests, and the one row it toggled
-ns.ListRows = _rows
-function ns.ListPaintJunk(btn, info)
-    local q = info.quality or 1
+mod.ListRows = _rows
+function mod.ListPaintJunk(btn, details)
+    local q = details.quality or 1
     btn._lvIcon:SetDesaturated(
-        info.isLocked
-            or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(info.itemID, q)))
+        details.isLocked
+            or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
+                details.itemID,
+                q
+            )))
             or false
     )
 end
 
 -- Re-pins each host's rows (the bags and the bank) after its level moved (ns.PinItemPool)
-function ns.ResyncListRowLevels()
-    for host, rows in pairs(_hostRows) do
-        ns.PinItemPool(rows, host, "_rowPinLevel")
+function mod.ResyncListRowLevels()
+    for hostRegion, rowList in pairs(_hostRows) do
+        mod.PinItemPool(rowList, hostRegion, "_rowPinLevel")
     end
 end
 
 -- Empty bag slot row (OneBag / MultiBag); clicking or dropping an item
 -- places it in that slot.
-local function RenderEmptyRow(btn, cols, d, rowW, x, y, stripe)
+local function RenderEmptyRow(btn, cols, d, rowW, posX, posY, stripe)
     if rowW ~= _lastRowW then
         LayoutColumns(rowW)
     end
-    local parent = btn:GetParent()
-    parent:ClearAllPoints()
-    parent:SetSize(rowW, RowH())
-    parent:SetPoint("TOPLEFT", x, y)
-    parent:SetID(d.bag)
+    local hostFrame = btn:GetParent()
+    hostFrame:ClearAllPoints()
+    hostFrame:SetSize(rowW, RowH())
+    hostFrame:SetPoint("TOPLEFT", posX, posY)
+    hostFrame:SetID(d.bag)
     btn:SetID(d.slot)
-    parent:Show()
+    hostFrame:Show()
     btn:Show()
     btn:SetAlpha(1)
     btn._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
     btn._lvIcon:Hide()
-    for _, fs in pairs(btn._cells) do
-        fs:Hide()
+    for _, fontStr in pairs(btn._cells) do
+        fontStr:Hide()
     end
     if btn.Cooldown then
         btn.Cooldown:Clear()
     end
     local hasName = IndexOf(cols, "name")
-    local fs = GetCell(btn, "name")
-    fs:ClearAllPoints()
-    fs:SetPoint("LEFT", btn, "LEFT", hasName and _colX.name or COL_GAP, 0)
-    fs:SetWidth(hasName and _colW.name or (rowW - COL_GAP * 2))
-    fs:SetTextColor(0.4, 0.4, 0.4)
-    fs:SetText(L("Empty"))
-    fs:Show()
+    local fontStr = GetCell(btn, "name")
+    fontStr:ClearAllPoints()
+    fontStr:SetPoint("LEFT", btn, "LEFT", hasName and _colX.name or COL_GAP, 0)
+    fontStr:SetWidth(hasName and _colW.name or (rowW - COL_GAP * 2))
+    fontStr:SetTextColor(0.4, 0.4, 0.4)
+    fontStr:SetText(L("Empty"))
+    fontStr:Show()
     -- No item: painters clear what they drew on this reused row
     btn._textOverlay:Hide()
     CUI_Bags.RunItemOverlays(btn, d)
@@ -1107,25 +1119,25 @@ local function RenderEmptyRow(btn, cols, d, rowW, x, y, stripe)
         btn:UpdateTooltip()
     end
 end
-ns.ListRowH = RowH
+mod.ListRowH = RowH
 
 -- Returns the header height and whether the section is collapsed.
-local function PlaceSection(key, label, count, x, y, w, sub)
+local function PlaceSection(key, labelText, count, posX, posY, wid, subFrame)
     _sectionsUsed = _sectionsUsed + 1
     local s = GetOrCreateSection(_sectionsUsed)
     s:SetParent(CUI_Bags._scrollChild)
     s:ClearAllPoints()
-    s:SetPoint("TOPLEFT", x + (sub and 12 or 0), y)
-    s:SetSize(w - (sub and 12 or 0), sub and SUBSECTION_H or SECTION_H)
+    s:SetPoint("TOPLEFT", posX + (subFrame and 12 or 0), posY)
+    s:SetSize(wid - (subFrame and 12 or 0), subFrame and SUBSECTION_H or SECTION_H)
     -- Category Title Size (11 by default: 11 / 10)
-    local size = ns.GetCatTitleSize()
+    local size = mod.GetCatTitleSize()
     local small = math.max(8, size - 1)
-    SetListFont(s._label, sub and small or size)
+    SetListFont(s._label, subFrame and small or size)
     SetListFont(s._count, small)
-    s._label:SetTextColor(sub and 0.55 or 0.7, sub and 0.55 or 0.7, sub and 0.55 or 0.7)
-    s._label:SetText(label)
+    s._label:SetTextColor(subFrame and 0.55 or 0.7, subFrame and 0.55 or 0.7, subFrame and 0.55 or 0.7)
+    s._label:SetText(labelText)
     s._count:SetText(count)
-    s._key, s._sub = key, sub
+    s._key, s._sub = key, subFrame
     local collapsed = IsCollapsed(key) and true or false
     -- Arrow points right when collapsed, down when open
     s._arrow:SetRotation(collapsed and math.pi or math.pi / 2)
@@ -1134,7 +1146,7 @@ local function PlaceSection(key, label, count, x, y, w, sub)
         s._line:SetPoint("RIGHT", s, "RIGHT", 0, 0)
     end
     s:Show()
-    return sub and SUBSECTION_H or SECTION_H, collapsed
+    return subFrame and SUBSECTION_H or SECTION_H, collapsed
 end
 
 -- items: the already-filtered display list. Returns the content height.
@@ -1145,15 +1157,15 @@ end
 -- recent (recent itemID set: Recent section in slot views), recentOnly (the
 -- Recent Items tab: every item in that one section, newest first), emptySlots
 -- (slot views: empty slots as rows; nil while searching).
-function ns.RenderListView(items, opts)
-    local child = CUI_Bags._scrollChild
+function mod.RenderListView(itemList, options)
+    local childFrame = CUI_Bags._scrollChild
     local cats = CUI_CategoryManager:GetCategories()
-    local hidden = opts.allItems and BP().bagHiddenInAllItems or _emptyP
-    local rowW = opts.rowW
+    local hidden = options.allItems and BP().bagHiddenInAllItems or _emptyP
+    local rowW = options.rowW
 
     -- Bucket: section key (category index, "pinned" or "junk") -> sub label -> items.
     -- Slot views key sections by bag ID (0-5), or "main" for OneBag's bags 0-4.
-    local slotView = opts.slotView
+    local slotView = options.slotView
     -- One Junk section: the Junk category (under its own name) while the Junk
     -- Marker is on, else every grey item
     local junkOn = CUI_CategoryManager:IsJunkMarkerEnabled()
@@ -1166,23 +1178,23 @@ function ns.RenderListView(items, opts)
             end
         end
     end
-    local buckets, order = {}, {}
+    local buckets, sequence = {}, {}
     local function GetBucket(key)
         local b = buckets[key]
         if not b then
             b = { key = key, subs = {}, subList = {}, n = 0, sell = 0 }
             buckets[key] = b
-            order[#order + 1] = b
+            sequence[#sequence + 1] = b
         end
         return b
     end
     -- subOrder: the sub-section's sort key (equip slots), nil sorts by label
-    local function Add(key, sub, d, subOrder)
+    local function Add(key, subFrame, d, subOrder)
         local b = GetBucket(key)
-        local sl = b.subs[sub]
+        local sl = b.subs[subFrame]
         if not sl then
-            sl = { label = sub, order = subOrder }
-            b.subs[sub] = sl
+            sl = { label = subFrame, order = subOrder }
+            b.subs[subFrame] = sl
             b.subList[#b.subList + 1] = sl
         end
         sl[#sl + 1] = d
@@ -1191,55 +1203,56 @@ function ns.RenderListView(items, opts)
     end
     -- OneBag: a WoW Forever special bag (ns.SpecialBags) keeps a section of
     -- its own, as the reagent bag does, after Main Bags.
-    local special = slotView == "one" and ns.SpecialBags() or nil
+    local special = slotView == "one" and mod.SpecialBags() or nil
     local function BagKey(bag)
         if slotView == "one" and bag ~= 5 and not (special and special[bag]) then
             return "main"
         end
         return bag
     end
-    local pinnedSet, recentSet = opts.pinned, opts.recent
+    local pinnedSet, recentSet = options.pinned, options.recent
     if not slotView then
-        items = ns.MergeDuplicates(items)
+        itemList = mod.MergeDuplicates(itemList)
     end
     -- Group Gear by Slot: the gear categories' sub-sections are equip slots,
     -- in place of Split by Type
-    local gearSlots = not slotView and ns.ArmorySlotGroupingEnabled()
-    for _, d in ipairs(items) do
+    local gearSlots = not slotView and mod.ArmorySlotGroupingEnabled()
+    for _, d in ipairs(itemList) do
         local ci = d.categoryIndex
-        local cat = ci and cats[ci]
+        local category = ci and cats[ci]
         if d.info and d.itemLink then
             StampItem(d)
-            if pinnedSet and ns.IsItemPinned(pinnedSet, d.itemLink, d.info.itemID) then
+            if pinnedSet and mod.IsItemPinned(pinnedSet, d.itemLink, d.info.itemID) then
                 Add("pinned", "", d)
             end
             if recentSet and recentSet[d.info.itemID] and not d._pinnedOnly then
                 Add("recent", "", d)
             end
-            if opts.recentOnly then
+            if options.recentOnly then
                 Add("recent", "", d)
             elseif slotView then
                 Add(BagKey(d.bag), "", d)
             elseif
-                cat
-                and not (opts.allItems and d._pinnedOnly)
-                and not hidden[cat._defaultName]
-                and not (cat.groupName and hidden[cat.groupName])
+                category
+                and not (options.allItems and d._pinnedOnly)
+                and not hidden[category._defaultName]
+                and not (category.groupName and hidden[category.groupName])
             then
-                local key = (junkOn and cat.isJunk or (not junkOn and d._lvQuality == 0)) and "junk" or ci
+                local key = (junkOn and category.isJunk or (not junkOn and d._lvQuality == 0)) and "junk"
+                    or ci
                 if key == "junk" then
                     Add(key, "", d)
-                elseif gearSlots and ns.IsArmoryGearCategory(cat) then
-                    local sk, label = ns.GetArmorySlotBucket(d)
-                    Add(key, label, d, sk)
+                elseif gearSlots and mod.IsArmoryGearCategory(category) then
+                    local sk, labelText = mod.GetArmorySlotBucket(d)
+                    Add(key, labelText, d, sk)
                 else
                     Add(key, d._lvSub, d)
                 end
             end
         end
     end
-    if slotView and opts.emptySlots then
-        for _, d in ipairs(opts.emptySlots) do
+    if slotView and options.emptySlots then
+        for _, d in ipairs(options.emptySlots) do
             local b = GetBucket(BagKey(d.bag))
             local sl = b.subs[""]
             if not sl then
@@ -1253,7 +1266,7 @@ function ns.RenderListView(items, opts)
     -- Pinned first, category (or bag) order, Junk after the last saved category
     -- (virtual categories follow it, as in the grid and the sidebar)
     local RANK = { pinned = -2, recent = -1, main = 0, junk = CUI_CategoryManager:GetSavedCount() + 0.5 }
-    table.sort(order, function(a, b)
+    table.sort(sequence, function(a, b)
         return (RANK[a.key] or a.key) < (RANK[b.key] or b.key)
     end)
     local pinnedLabel, recentLabel = L("Pinned Items"), L("Recent Items")
@@ -1266,52 +1279,52 @@ function ns.RenderListView(items, opts)
         end
     end
 
-    ns.ListSortSetup()
+    mod.ListSortSetup()
     local rowCompare = slotView and SlotCompare or ListCompare
     local cols = LayoutColumns(rowW)
-    ns.UpdateListHeaderBar(CUI_Bags, cols, opts.leftX, opts.topY, opts.startX, slotView ~= nil)
+    mod.UpdateListHeaderBar(CUI_Bags, cols, options.leftX, options.topY, options.startX, slotView ~= nil)
 
     for _, s in ipairs(_sections) do
         s:Hide()
     end
     _sectionsUsed, _rowsUsed = 0, 0
-    local x, y = opts.startX, -4
+    local posX, posY = options.startX, -4
     local showValue = BP().bagListSectionValue == true
     local rowH = RowH()
 
-    for _, b in ipairs(order) do
-        local label, secKey, count
+    for _, b in ipairs(sequence) do
+        local labelText, secKey, count
         if b.key == "junk" then
-            label, secKey = junkLabel, "junk"
+            labelText, secKey = junkLabel, "junk"
         elseif b.key == "pinned" then
-            label, secKey = pinnedLabel, "pinned"
+            labelText, secKey = pinnedLabel, "pinned"
         elseif b.key == "recent" then
-            label, secKey = recentLabel, "recent"
+            labelText, secKey = recentLabel, "recent"
         elseif b.key == "main" then
-            local total = 0
+            local sum = 0
             for bag = 0, 4 do
                 if not (special and special[bag]) then
-                    total = total + C_Container.GetContainerNumSlots(bag)
+                    sum = sum + C_Container.GetContainerNumSlots(bag)
                 end
             end
-            label, secKey = L("Main Bags"), "bagmain"
-            count = "(" .. b.n .. " / " .. total .. ")"
+            labelText, secKey = L("Main Bags"), "bagmain"
+            count = "(" .. b.n .. " / " .. sum .. ")"
         elseif slotView then
-            label, secKey = ns.BagDisplayName(b.key), "bag" .. b.key
+            labelText, secKey = mod.BagDisplayName(b.key), "bag" .. b.key
             count = "(" .. b.n .. " / " .. C_Container.GetContainerNumSlots(b.key) .. ")"
         else
-            label, secKey = cats[b.key].name, cats[b.key]._defaultName
+            labelText, secKey = cats[b.key].name, cats[b.key]._defaultName
         end
         count = count or ("(" .. b.n .. ")")
         if showValue and b.sell > 0 then
             count = count .. "  " .. C_CurrencyInfo.GetCoinTextureString(b.sell)
         end
-        local h, collapsed = PlaceSection(secKey, label, count, x, y, rowW, false)
+        local hgt, collapsed = PlaceSection(secKey, labelText, count, posX, posY, rowW, false)
         if secKey == "recent" and BP().bagShowRecentClear == true then
             local s = _sections[_sectionsUsed]
-            s._line:SetPoint("RIGHT", ns.ShowRecentClearButton(s), "LEFT", -6, 0)
+            s._line:SetPoint("RIGHT", mod.ShowRecentClearButton(s), "LEFT", -6, 0)
         end
-        y = y - h
+        posY = posY - hgt
         table.sort(b.subList, SubCompare)
         for _, sl in ipairs(b.subList) do
             if collapsed then
@@ -1319,41 +1332,48 @@ function ns.RenderListView(items, opts)
             end
             local subCollapsed
             if sl.label ~= "" then
-                h, subCollapsed =
-                    PlaceSection(secKey .. "/" .. sl.label, sl.label, "(" .. #sl .. ")", x, y, rowW, true)
-                y = y - h
+                hgt, subCollapsed = PlaceSection(
+                    secKey .. "/" .. sl.label,
+                    sl.label,
+                    "(" .. #sl .. ")",
+                    posX,
+                    posY,
+                    rowW,
+                    true
+                )
+                posY = posY - hgt
             end
             -- Recent Items: newest pickup first, whatever the column sort
             if not subCollapsed then
-                table.sort(sl, b.key == "recent" and ns.RecentCompare or rowCompare)
+                table.sort(sl, b.key == "recent" and mod.RecentCompare or rowCompare)
             end
             for i, d in ipairs(subCollapsed and _emptyP or sl) do
                 local btn = GetOrCreateRow(_rowsUsed + 1)
                 if btn then -- nil in combat (see GetOrCreateRow)
                     _rowsUsed = _rowsUsed + 1
-                    btn:GetParent():SetParent(child)
+                    btn:GetParent():SetParent(childFrame)
                     if d.info then
                         RenderRow(
                             btn,
                             d,
                             cols,
                             rowW,
-                            x,
-                            y,
+                            posX,
+                            posY,
                             i % 2 == 0,
                             d._pinDim and b.key ~= "pinned" and b.key ~= "recent"
                         )
                     else
-                        RenderEmptyRow(btn, cols, d, rowW, x, y, i % 2 == 0)
+                        RenderEmptyRow(btn, cols, d, rowW, posX, posY, i % 2 == 0)
                     end
-                    y = y - rowH
+                    posY = posY - rowH
                 end
             end
         end
-        y = y - 6
+        posY = posY - 6
     end
     for i = _rowsUsed + 1, #_rows do
         _rows[i]:GetParent():Hide()
     end
-    return math.abs(y) + 10, COLHDR_H
+    return math.abs(posY) + 10, COLHDR_H
 end

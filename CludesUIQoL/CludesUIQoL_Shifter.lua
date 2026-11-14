@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Ctrl+drag for a temporary move that resets when the panel closes.
 -------------------------------------------------------------------------------
 local GetFFD = CludesUI._GetFFD
-local ns = select(2, ...)
+local mod = select(2, ...)
 
 -- Temporary positions (per-frame, cleared on hide, not persisted)
 local tempPos = {}
@@ -114,11 +114,11 @@ local DRAG_HEADERS = {
 -- to a child frame: either a global name or a function(frame) -> child, or a
 -- list of global names.
 local EXTRA_DRAG_TARGETS = {
-    ["AchievementFrame"] = function(frame)
-        return frame.Header or _G["AchievementFrameHeader"]
+    ["AchievementFrame"] = function(widget)
+        return widget.Header or _G["AchievementFrameHeader"]
     end,
-    ["ContainerFrameCombinedBags"] = function(frame)
-        return frame.TitleContainer or _G["ContainerFrameCombinedBags"]
+    ["ContainerFrameCombinedBags"] = function(widget)
+        return widget.TitleContainer or _G["ContainerFrameCombinedBags"]
     end,
     -- WoW Forever's group finder: each tab is a full window laid over the parent
     ["LFGParentFrame"] = { "LFGBrowseFrame", "LFGListingFrame", "LFGWhoListFrame" },
@@ -165,8 +165,8 @@ local NO_STRATA_LIFT = { EncounterJournal = true }
 
 -- Whether a hooked window takes the protected path: secure positioning and
 -- scaling, the cursor-delta drag, position-only docking, never moved in combat.
-local function Secured(frame)
-    return frame:IsProtected() or GetFFD(frame)._shSecure == true
+local function Secured(widget)
+    return widget:IsProtected() or GetFFD(widget)._shSecure == true
 end
 
 -------------------------------------------------------------------------------
@@ -181,7 +181,7 @@ local function GetSavedPos(name)
     return db and db.shifterPositions and db.shifterPositions[name]
 end
 
-local function SavePos(name, point, relPoint, x, y)
+local function SavePos(name, anchorPoint, relPoint, posX, posY)
     if not CludesUIDB then
         CludesUIDB = {}
     end
@@ -189,10 +189,10 @@ local function SavePos(name, point, relPoint, x, y)
         CludesUIDB.shifterPositions = {}
     end
     CludesUIDB.shifterPositions[name] = {
-        point = point,
+        point = anchorPoint,
         relPoint = relPoint,
-        x = x,
-        y = y,
+        x = posX,
+        y = posY,
     }
     CludesUI:RefreshPage(true)
 end
@@ -225,15 +225,15 @@ end
 --  Parented to UIParent so self:GetParent() inside the snippet IS UIParent.
 -------------------------------------------------------------------------------
 local securePositioner = CreateFrame("Frame", nil, UIParent, "SecureHandlerBaseTemplate")
-local function SecureSetPoint(frame, point, relPoint, x, y)
+local function SecureSetPoint(widget, anchorPoint, relPoint, posX, posY)
     if InCombatLockdown() then
         return false
     end
-    securePositioner:SetFrameRef("f", frame)
-    securePositioner:SetAttribute("p", point)
+    securePositioner:SetFrameRef("f", widget)
+    securePositioner:SetAttribute("p", anchorPoint)
     securePositioner:SetAttribute("rp", relPoint)
-    securePositioner:SetAttribute("x", x)
-    securePositioner:SetAttribute("y", y)
+    securePositioner:SetAttribute("x", posX)
+    securePositioner:SetAttribute("y", posY)
     securePositioner:Execute([[
         local f = self:GetFrameRef("f")
         if not f then return end
@@ -247,15 +247,15 @@ end
 -- "$parent" and not a frame ref: a relative frame handed in by ref must be
 -- explicitly protected (RestrictedFrames.lua), and a parent that is only
 -- protected through its children is not.
-local function SecureSetPointParent(frame, point, relPoint, x, y)
+local function SecureSetPointParent(widget, anchorPoint, relPoint, posX, posY)
     if InCombatLockdown() then
         return false
     end
-    securePositioner:SetFrameRef("f", frame)
-    securePositioner:SetAttribute("p", point)
+    securePositioner:SetFrameRef("f", widget)
+    securePositioner:SetAttribute("p", anchorPoint)
     securePositioner:SetAttribute("rp", relPoint)
-    securePositioner:SetAttribute("x", x)
-    securePositioner:SetAttribute("y", y)
+    securePositioner:SetAttribute("x", posX)
+    securePositioner:SetAttribute("y", posY)
     securePositioner:Execute([[
         local f = self:GetFrameRef("f")
         if not f then return end
@@ -268,52 +268,53 @@ end
 -- Where a point sits in a box, as fractions of its width and height from the
 -- bottom left corner.
 local function PointFrac(p)
-    local x = p:find("LEFT") and 0 or (p:find("RIGHT") and 1 or 0.5)
-    local y = p:find("TOP") and 1 or (p:find("BOTTOM") and 0 or 0.5)
-    return x, y
+    local posX = p:find("LEFT") and 0 or (p:find("RIGHT") and 1 or 0.5)
+    local posY = p:find("TOP") and 1 or (p:find("BOTTOM") and 0 or 0.5)
+    return posX, posY
 end
 
 -- Whether a window placed at its saved position would overlap CharacterFrame
 -- (screen-absolute units, so Shifter scaling on either frame is accounted for).
-local function SavedPosOverlaps(frame, pos, cf)
-    local es, cs = frame:GetEffectiveScale() or 1, cf:GetEffectiveScale() or 1
+local function SavedPosOverlaps(widget, place, castFrame)
+    local es, cs = widget:GetEffectiveScale() or 1, castFrame:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
-    local cl, cr, cb, ct = cf:GetLeft(), cf:GetRight(), cf:GetBottom(), cf:GetTop()
-    if not (cl and cr and cb and ct and pos.point) then
+    local cl, cr, cb, ct =
+        castFrame:GetLeft(), castFrame:GetRight(), castFrame:GetBottom(), castFrame:GetTop()
+    if not (cl and cr and cb and ct and place.point) then
         return false
     end
-    local w, h = (frame:GetWidth() or 0) * es, (frame:GetHeight() or 0) * es
-    local rx, ry = PointFrac(pos.relPoint or pos.point)
-    local px, py = PointFrac(pos.point)
-    local left = rx * UIParent:GetWidth() * ues + (pos.x or 0) * es - px * w
-    local bottom = ry * UIParent:GetHeight() * ues + (pos.y or 0) * es - py * h
-    return left < cr * cs and left + w > cl * cs and bottom < ct * cs and bottom + h > cb * cs
+    local wid, hgt = (widget:GetWidth() or 0) * es, (widget:GetHeight() or 0) * es
+    local rx, ry = PointFrac(place.relPoint or place.point)
+    local px, py = PointFrac(place.point)
+    local leftX = rx * UIParent:GetWidth() * ues + (place.x or 0) * es - px * wid
+    local bottom = ry * UIParent:GetHeight() * ues + (place.y or 0) * es - py * hgt
+    return leftX < cr * cs and leftX + wid > cl * cs and bottom < ct * cs and bottom + hgt > cb * cs
 end
 
 -- Offset from one point of a w x h box to another: a mover saves where one
 -- point of its box is, and the frame it places may hang from another (so a
 -- frame that grows keeps that edge where the player put it).
-local function AnchorShift(point, anchor, w, h)
-    local px, py = PointFrac(point)
-    local ax, ay = PointFrac(anchor)
-    return (ax - px) * w, (ay - py) * h
+local function AnchorShift(anchorPoint, anchorFrame, wid, hgt)
+    local px, py = PointFrac(anchorPoint)
+    local ax, ay = PointFrac(anchorFrame)
+    return (ax - px) * wid, (ay - py) * hgt
 end
 
-local function ApplyPosition(frame, name)
-    if InCombatLockdown() and Secured(frame) then
+local function ApplyPosition(widget, name)
+    if InCombatLockdown() and Secured(widget) then
         return
     end
-    local pos = tempPos[frame] or GetSavedPos(name)
-    if not pos or not pos.point then
+    local place = tempPos[widget] or GetSavedPos(name)
+    if not place or not place.point then
         return
     end
-    local ffd = GetFFD(frame)
+    local ffd = GetFFD(widget)
     ffd._shIgnoreSP = true
-    if Secured(frame) then
-        SecureSetPoint(frame, pos.point, pos.relPoint, pos.x, pos.y)
+    if Secured(widget) then
+        SecureSetPoint(widget, place.point, place.relPoint, place.x, place.y)
     else
-        frame:ClearAllPoints()
-        frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+        widget:ClearAllPoints()
+        widget:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
     end
     ffd._shIgnoreSP = false
 end
@@ -329,11 +330,11 @@ end
 -------------------------------------------------------------------------------
 local SCALE_MIN, SCALE_MAX, SCALE_STEP = 0.5, 2, 0.1
 
-local function SecureSetScale(frame, scale)
+local function SecureSetScale(widget, scale)
     if InCombatLockdown() then
         return false
     end
-    securePositioner:SetFrameRef("f", frame)
+    securePositioner:SetFrameRef("f", widget)
     securePositioner:SetAttribute("s", scale)
     securePositioner:Execute([[
         local f = self:GetFrameRef("f")
@@ -342,67 +343,67 @@ local function SecureSetScale(frame, scale)
     return true
 end
 
-local function SetShifterScale(frame, scale)
+local function SetShifterScale(widget, scale)
     -- Guard the SetScale reentry hook (below) so our own re-scale never
     -- recurses -- mirrors the _shIgnoreSP guard used for SetPoint.
-    local ffd = GetFFD(frame)
+    local ffd = GetFFD(widget)
     ffd._shIgnoreSS = true
-    local ok
-    if Secured(frame) then
-        ok = SecureSetScale(frame, scale)
+    local success
+    if Secured(widget) then
+        success = SecureSetScale(widget, scale)
     else
-        frame:SetScale(scale)
-        ok = true
+        widget:SetScale(scale)
+        success = true
     end
     ffd._shIgnoreSS = false
-    return ok
+    return success
 end
 
 -- OnShow / init restore: temp > saved > (original, if we scaled it earlier).
-local function ApplyScale(frame, name)
-    if InCombatLockdown() and Secured(frame) then
+local function ApplyScale(widget, name)
+    if InCombatLockdown() and Secured(widget) then
         return
     end
-    local ffd = GetFFD(frame)
-    local target = tempScale[frame] or GetSavedScale(name)
-    if target then
+    local ffd = GetFFD(widget)
+    local targetUnit = tempScale[widget] or GetSavedScale(name)
+    if targetUnit then
         if ffd._shOrigScale == nil then
-            ffd._shOrigScale = frame:GetScale()
+            ffd._shOrigScale = widget:GetScale()
         end
         ffd._shScaled = true
     else
         if not (ffd._shScaled and ffd._shOrigScale) then
             return
         end
-        target = ffd._shOrigScale
+        targetUnit = ffd._shOrigScale
         ffd._shScaled = nil
     end
-    if math.abs(frame:GetScale() - target) < 0.001 then
+    if math.abs(widget:GetScale() - targetUnit) < 0.001 then
         return
     end
-    SetShifterScale(frame, target)
+    SetShifterScale(widget, targetUnit)
 end
 
-local function ApplyScaleStep(frame, name, delta, mode)
-    if InCombatLockdown() and Secured(frame) then
+local function ApplyScaleStep(widget, name, delta, modeName)
+    if InCombatLockdown() and Secured(widget) then
         return
     end
-    local ffd = GetFFD(frame)
+    local ffd = GetFFD(widget)
     if ffd._shOrigScale == nil then
-        ffd._shOrigScale = frame:GetScale()
+        ffd._shOrigScale = widget:GetScale()
     end
-    local oldS = frame:GetScale()
-    local cur = tempScale[frame] or GetSavedScale(name) or oldS
-    local new = math.floor((cur + SCALE_STEP * delta) * 100 + 0.5) / 100
+    local oldS = widget:GetScale()
+    local current = tempScale[widget] or GetSavedScale(name) or oldS
+    local new = math.floor((current + SCALE_STEP * delta) * 100 + 0.5) / 100
     if new < SCALE_MIN then
         new = SCALE_MIN
     elseif new > SCALE_MAX then
         new = SCALE_MAX
     end
-    if new == cur and math.abs(oldS - new) < 0.005 then
+    if new == current and math.abs(oldS - new) < 0.005 then
         return
     end
-    if not SetShifterScale(frame, new) then
+    if not SetShifterScale(widget, new) then
         return
     end
     ffd._shScaled = true
@@ -415,40 +416,40 @@ local function ApplyScaleStep(frame, name, delta, mode)
     -- claims the seat like dragging does: capture the current visual spot
     -- (center-based, frame-local units at the NEW scale) so the pin holds it.
     local function CaptureCenter()
-        local fcx, fcy = frame:GetCenter()
+        local fcx, fcy = widget:GetCenter()
         local ucx, ucy = UIParent:GetCenter()
         if not fcx or not ucx then
             return nil
         end
-        local es = frame:GetEffectiveScale()
+        local es = widget:GetEffectiveScale()
         local ues = UIParent:GetEffectiveScale()
         return (fcx * es - ucx * ues) / es, (fcy * es - ucy * ues) / es
     end
-    if mode == "save" then
+    if modeName == "save" then
         SaveScale(name, new)
-        tempScale[frame] = nil
+        tempScale[widget] = nil
         local saved = GetSavedPos(name)
         if saved then
             SavePos(name, saved.point, saved.relPoint, saved.x * ratio, saved.y * ratio)
-        elseif not tempPos[frame] then
+        elseif not tempPos[widget] then
             local cx, cy = CaptureCenter()
             if cx then
                 SavePos(name, "CENTER", "CENTER", cx, cy)
             end
         end
-        if tempPos[frame] then
-            tempPos[frame].x = tempPos[frame].x * ratio
-            tempPos[frame].y = tempPos[frame].y * ratio
+        if tempPos[widget] then
+            tempPos[widget].x = tempPos[widget].x * ratio
+            tempPos[widget].y = tempPos[widget].y * ratio
         end
     else
-        tempScale[frame] = new
-        if tempPos[frame] then
-            tempPos[frame].x = tempPos[frame].x * ratio
-            tempPos[frame].y = tempPos[frame].y * ratio
+        tempScale[widget] = new
+        if tempPos[widget] then
+            tempPos[widget].x = tempPos[widget].x * ratio
+            tempPos[widget].y = tempPos[widget].y * ratio
         else
             local saved = GetSavedPos(name)
             if saved then
-                tempPos[frame] = {
+                tempPos[widget] = {
                     point = saved.point,
                     relPoint = saved.relPoint,
                     x = saved.x * ratio,
@@ -457,7 +458,7 @@ local function ApplyScaleStep(frame, name, delta, mode)
             else
                 local cx, cy = CaptureCenter()
                 if cx then
-                    tempPos[frame] = {
+                    tempPos[widget] = {
                         point = "CENTER",
                         relPoint = "CENTER",
                         x = cx,
@@ -467,7 +468,7 @@ local function ApplyScaleStep(frame, name, delta, mode)
             end
         end
     end
-    ApplyPosition(frame, name)
+    ApplyPosition(widget, name)
 end
 
 -------------------------------------------------------------------------------
@@ -497,8 +498,8 @@ wheelOverlay:SetFrameStrata("TOOLTIP")
 local WheelArm = { shown = 0 }
 
 local function FindWheelTarget()
-    for i = 1, #hookedFrames do
-        local e = hookedFrames[i]
+    for idx = 1, #hookedFrames do
+        local e = hookedFrames[idx]
         if e.frame:IsVisible() and e.frame:IsMouseOver() then
             return e.frame, e.name
         end
@@ -540,14 +541,14 @@ do
 end
 
 wheelOverlay:SetScript("OnMouseWheel", function(_, delta)
-    local frame, name = wheelTarget, wheelTargetName
-    if not frame or not IsEnabled() then
+    local widget, name = wheelTarget, wheelTargetName
+    if not widget or not IsEnabled() then
         return
     end
     if IsShiftKeyDown() then
-        ApplyScaleStep(frame, name, delta, "save")
+        ApplyScaleStep(widget, name, delta, "save")
     elseif IsControlKeyDown() then
-        ApplyScaleStep(frame, name, delta, "temp")
+        ApplyScaleStep(widget, name, delta, "temp")
     end
 end)
 
@@ -571,12 +572,12 @@ end
 
 function WheelArm.Note(delta)
     local was = WheelArm.shown
-    local now = was + delta
-    if now < 0 then
-        now = 0
+    local nowTime = was + delta
+    if nowTime < 0 then
+        nowTime = 0
     end
-    WheelArm.shown = now
-    if (was == 0) ~= (now == 0) then
+    WheelArm.shown = nowTime
+    if (was == 0) ~= (nowTime == 0) then
         WheelArm.Sync()
     end
 end
@@ -595,16 +596,16 @@ secureDragUpdater:Hide()
 
 local function StopSecureDrag()
     secureDragUpdater:Hide()
-    local frame = secureDrag.frame
-    if not frame then
+    local widget = secureDrag.frame
+    if not widget then
         return
     end
     if secureDrag.curX then
         if secureDrag.mode == "save" then
             SavePos(secureDrag.name, "CENTER", "CENTER", secureDrag.curX, secureDrag.curY)
-            tempPos[frame] = nil
+            tempPos[widget] = nil
         else
-            tempPos[frame] =
+            tempPos[widget] =
                 { point = "CENTER", relPoint = "CENTER", x = secureDrag.curX, y = secureDrag.curY }
         end
     end
@@ -612,8 +613,8 @@ local function StopSecureDrag()
 end
 
 secureDragUpdater:SetScript("OnUpdate", function()
-    local frame = secureDrag.frame
-    if not frame then
+    local widget = secureDrag.frame
+    if not widget then
         secureDragUpdater:Hide()
         return
     end
@@ -622,7 +623,7 @@ secureDragUpdater:SetScript("OnUpdate", function()
         return
     end
     local cx, cy = GetCursorPosition()
-    local es = frame:GetEffectiveScale()
+    local es = widget:GetEffectiveScale()
     local ues = UIParent:GetEffectiveScale()
     local ucx, ucy = UIParent:GetCenter()
     local newScreenX = secureDrag.startX + (cx - secureDrag.cursorX)
@@ -639,24 +640,24 @@ secureDragUpdater:SetScript("OnUpdate", function()
     elseif newScreenY > sh then
         newScreenY = sh
     end
-    local x = (newScreenX - ucx * ues) / es
-    local y = (newScreenY - ucy * ues) / es
-    secureDrag.curX, secureDrag.curY = x, y
-    local ffd = GetFFD(frame)
+    local posX = (newScreenX - ucx * ues) / es
+    local posY = (newScreenY - ucy * ues) / es
+    secureDrag.curX, secureDrag.curY = posX, posY
+    local ffd = GetFFD(widget)
     ffd._shIgnoreSP = true
-    SecureSetPoint(frame, "CENTER", "CENTER", x, y)
+    SecureSetPoint(widget, "CENTER", "CENTER", posX, posY)
     ffd._shIgnoreSP = false
 end)
 
-local function StartSecureDrag(frame, name, mode)
-    local fcx, fcy = frame:GetCenter()
+local function StartSecureDrag(widget, name, modeName)
+    local fcx, fcy = widget:GetCenter()
     if not fcx then
         return
     end
-    local es = frame:GetEffectiveScale()
-    secureDrag.frame = frame
+    local es = widget:GetEffectiveScale()
+    secureDrag.frame = widget
     secureDrag.name = name
-    secureDrag.mode = mode
+    secureDrag.mode = modeName
     secureDrag.cursorX, secureDrag.cursorY = GetCursorPosition()
     secureDrag.startX, secureDrag.startY = fcx * es, fcy * es
     secureDrag.curX, secureDrag.curY = nil, nil
@@ -679,8 +680,8 @@ end
 local dockedCompanions = {}
 
 local function RedockCompanions()
-    for i = 1, #dockedCompanions do
-        local c = dockedCompanions[i]
+    for idx = 1, #dockedCompanions do
+        local c = dockedCompanions[idx]
         if c.frame:IsShown() and c.shouldDock() then
             if c.liftStrata and not Secured(c.frame) then
                 c.frame:SetFrameStrata("DIALOG")
@@ -696,13 +697,13 @@ end
 -------------------------------------------------------------------------------
 --  Hook a single frame
 -------------------------------------------------------------------------------
-local function HookFrame(frame, name)
-    local ffd = GetFFD(frame)
+local function HookFrame(widget, name)
+    local ffd = GetFFD(widget)
     if ffd._shHooked then
         return
     end
     ffd._shHooked = true
-    hookedFrames[#hookedFrames + 1] = { frame = frame, name = name }
+    hookedFrames[#hookedFrames + 1] = { frame = widget, name = name }
 
     if SECURE_PATH[name] then
         ffd._shSecure = true
@@ -714,13 +715,13 @@ local function HookFrame(frame, name)
     -- are all top-level closable panels, so OnShow/OnHide track exactly the
     -- IsVisible state FindWheelTarget tests. A frame hooked while already
     -- open (LoD addon load, /reload with the map up) counts immediately.
-    frame:HookScript("OnShow", function()
+    widget:HookScript("OnShow", function()
         WheelArm.Note(1)
     end)
-    frame:HookScript("OnHide", function()
+    widget:HookScript("OnHide", function()
         WheelArm.Note(-1)
     end)
-    if frame:IsShown() then
+    if widget:IsShown() then
         WheelArm.Note(1)
     end
 
@@ -729,9 +730,9 @@ local function HookFrame(frame, name)
     -- SetPoint'd by insecure code (it taints them); they drag via the secure
     -- cursor-delta path above. SetMovable is only needed for StartMoving, so they
     -- skip it entirely.
-    if not Secured(frame) then
-        frame:SetMovable(true)
-        frame:SetClampedToScreen(true)
+    if not Secured(widget) then
+        widget:SetMovable(true)
+        widget:SetClampedToScreen(true)
     end
 
     local dragging -- non-protected only: "save" | "temp" | nil
@@ -740,39 +741,39 @@ local function HookFrame(frame, name)
         if not dragTarget or not dragTarget.HookScript then
             return
         end
-        dragTarget:HookScript("OnMouseDown", function(_, button)
+        dragTarget:HookScript("OnMouseDown", function(_, btnFrame)
             if not IsEnabled() then
                 return
             end
-            if button ~= "LeftButton" then
+            if btnFrame ~= "LeftButton" then
                 return
             end
-            if InCombatLockdown() and Secured(frame) then
+            if InCombatLockdown() and Secured(widget) then
                 return
             end
             local noShift = CludesUIDB and CludesUIDB.shifterNoShift
-            local mode
+            local modeName
             if IsShiftKeyDown() or noShift then
-                mode = "save"
+                modeName = "save"
             elseif IsControlKeyDown() then
-                mode = "temp"
+                modeName = "temp"
             else
                 return
             end
-            if Secured(frame) then
-                StartSecureDrag(frame, name, mode)
+            if Secured(widget) then
+                StartSecureDrag(widget, name, modeName)
             else
-                dragging = mode
-                frame:StartMoving()
+                dragging = modeName
+                widget:StartMoving()
             end
         end)
 
-        dragTarget:HookScript("OnMouseUp", function(_, button)
-            if button ~= "LeftButton" then
+        dragTarget:HookScript("OnMouseUp", function(_, btnFrame)
+            if btnFrame ~= "LeftButton" then
                 return
             end
-            if Secured(frame) then
-                if secureDrag.frame == frame then
+            if Secured(widget) then
+                if secureDrag.frame == widget then
                     StopSecureDrag()
                 end
                 return
@@ -780,19 +781,19 @@ local function HookFrame(frame, name)
             if not dragging then
                 return
             end
-            frame:StopMovingOrSizing()
-            frame:SetUserPlaced(false)
-            local p, _, rp, x, y = frame:GetPoint(1)
+            widget:StopMovingOrSizing()
+            widget:SetUserPlaced(false)
+            local p, _, rp, posX, posY = widget:GetPoint(1)
             if p then
                 if dragging == "save" then
-                    SavePos(name, p, rp, x, y)
-                    tempPos[frame] = nil
+                    SavePos(name, p, rp, posX, posY)
+                    tempPos[widget] = nil
                 else
-                    tempPos[frame] = {
+                    tempPos[widget] = {
                         point = p,
                         relPoint = rp,
-                        x = x,
-                        y = y,
+                        x = posX,
+                        y = posY,
                     }
                 end
             end
@@ -807,37 +808,37 @@ local function HookFrame(frame, name)
 
     -- Primary drag target (header child or the frame itself)
     local headerName = DRAG_HEADERS[name]
-    AttachDrag((headerName and _G[headerName]) or frame)
+    AttachDrag((headerName and _G[headerName]) or widget)
 
     -- Extra handles layered on top of the frame body
     local extra = EXTRA_DRAG_TARGETS[name]
     if type(extra) == "table" then
-        for _, child in ipairs(extra) do
-            AttachDrag(_G[child])
+        for _, childFrame in ipairs(extra) do
+            AttachDrag(_G[childFrame])
         end
     elseif extra then
-        AttachDrag(type(extra) == "function" and extra(frame) or _G[extra])
+        AttachDrag(type(extra) == "function" and extra(widget) or _G[extra])
     end
 
-    frame:HookScript("OnShow", function()
+    widget:HookScript("OnShow", function()
         if not IsEnabled() then
             return
         end
         -- Scale first: stored position offsets are frame-local units, so the
         -- pin only lands right once the final scale is in effect.
-        ApplyScale(frame, name)
-        ApplyPosition(frame, name)
+        ApplyScale(widget, name)
+        ApplyPosition(widget, name)
     end)
 
-    frame:HookScript("OnHide", function()
+    widget:HookScript("OnHide", function()
         if not IsEnabled() then
             return
         end
-        if secureDrag.frame == frame then
+        if secureDrag.frame == widget then
             StopSecureDrag()
         end
-        tempPos[frame] = nil
-        tempScale[frame] = nil
+        tempPos[widget] = nil
+        tempScale[widget] = nil
     end)
 
     -- Item Upgrade / Transmog / Item Socketing / Merchant (covers vendors like the
@@ -854,34 +855,40 @@ local function HookFrame(frame, name)
     -- (whichever window moved last); then it docks beside it instead.
     local ShouldDock, DockToCharacterFrame
     if DOCKING_COMPANIONS[name] then
-        local defaultStrata = frame:GetFrameStrata()
+        local defaultStrata = widget:GetFrameStrata()
         ShouldDock = function()
             -- Protected frames (PVEFrame) still dock -- but position-only,
             -- through the SecureSetPoint branch below; their strata/Raise
             -- touches are skipped in the OnShow/OnHide hooks (insecure writes
             -- taint a protected tree -- the PVEFrame SetMovable incident).
-            local cf = _G.CharacterFrame
-            if not (cf and cf:IsShown() and (tempPos[cf] or GetSavedPos("CharacterFrame"))) then
+            local castFrame = _G.CharacterFrame
+            if
+                not (
+                    castFrame
+                    and castFrame:IsShown()
+                    and (tempPos[castFrame] or GetSavedPos("CharacterFrame"))
+                )
+            then
                 return false
             end
-            local own = tempPos[frame] or GetSavedPos(name)
-            return not own or SavedPosOverlaps(frame, own, cf)
+            local own = tempPos[widget] or GetSavedPos(name)
+            return not own or SavedPosOverlaps(widget, own, castFrame)
         end
         DockToCharacterFrame = function()
-            local cf = _G.CharacterFrame
+            local castFrame = _G.CharacterFrame
             local margin = 4
             -- Compare available room in SCREEN-ABSOLUTE units. cf's edges are in CF's
             -- effective-scale space and this frame's width is in its own; raw mixing
             -- picks the wrong side (and mis-places the protected dock below) the moment
             -- either frame is Shifter-scaled -- which is the headline scenario here.
-            local cs = cf:GetEffectiveScale() or 1
-            local es = frame:GetEffectiveScale() or 1
+            local cs = castFrame:GetEffectiveScale() or 1
+            local es = widget:GetEffectiveScale() or 1
             local ues = UIParent:GetEffectiveScale() or 1
-            local wAbs = (frame:GetWidth() or 0) * es
-            local leftRoom = (cf:GetLeft() or 0) * cs
-            local rightRoom = (GetScreenWidth() or 0) * ues - (cf:GetRight() or 0) * cs
+            local wAbs = (widget:GetWidth() or 0) * es
+            local leftRoom = (castFrame:GetLeft() or 0) * cs
+            local rightRoom = (GetScreenWidth() or 0) * ues - (castFrame:GetRight() or 0) * cs
             local dockLeft = leftRoom >= wAbs + margin * es or leftRoom >= rightRoom
-            if Secured(frame) then
+            if Secured(widget) then
                 -- Plain SetPoint on a protected frame (e.g. PVEFrame) taints it -- same
                 -- reason SecureSetPoint exists for saved/dragged positions above.
                 -- SecureSetPoint only anchors relative to UIParent, so convert the dock
@@ -891,18 +898,18 @@ local function HookFrame(frame, name)
                 if InCombatLockdown() then
                     return
                 end
-                local hAbs = (frame:GetHeight() or 0) * es
+                local hAbs = (widget:GetHeight() or 0) * es
                 local absCenterX
                 if dockLeft then
                     absCenterX = leftRoom - margin * es - wAbs / 2
                 else
-                    absCenterX = (cf:GetRight() or 0) * cs + margin * es + wAbs / 2
+                    absCenterX = (castFrame:GetRight() or 0) * cs + margin * es + wAbs / 2
                 end
-                local absCenterY = (cf:GetTop() or 0) * cs - hAbs / 2
+                local absCenterY = (castFrame:GetTop() or 0) * cs - hAbs / 2
                 local ucx, ucy = UIParent:GetCenter()
                 if ucx and es > 0 then
                     SecureSetPoint(
-                        frame,
+                        widget,
                         "CENTER",
                         "CENTER",
                         (absCenterX - ucx * ues) / es,
@@ -911,24 +918,24 @@ local function HookFrame(frame, name)
                 end
             else
                 ffd._shIgnoreSP = true
-                frame:ClearAllPoints()
+                widget:ClearAllPoints()
                 if dockLeft then
-                    frame:SetPoint("TOPRIGHT", cf, "TOPLEFT", -margin, 0)
+                    widget:SetPoint("TOPRIGHT", castFrame, "TOPLEFT", -margin, 0)
                 else
-                    frame:SetPoint("TOPLEFT", cf, "TOPRIGHT", margin, 0)
+                    widget:SetPoint("TOPLEFT", castFrame, "TOPRIGHT", margin, 0)
                 end
                 ffd._shIgnoreSP = false
             end
         end
-        frame:HookScript("OnHide", function()
+        widget:HookScript("OnHide", function()
             -- Strata writes are INSECURE: on a protected frame (PVEFrame)
             -- they taint its whole tree, exactly like the SetMovable call
             -- that caused the original secret-value incident. Skip them.
-            if liftStrata and not Secured(frame) then
-                frame:SetFrameStrata(defaultStrata)
+            if liftStrata and not Secured(widget) then
+                widget:SetFrameStrata(defaultStrata)
             end
         end)
-        frame:HookScript("OnShow", function()
+        widget:HookScript("OnShow", function()
             if not IsEnabled() then
                 return
             end
@@ -937,17 +944,17 @@ local function HookFrame(frame, name)
                 -- CharacterFrame -- a docked frame no longer does. Protected
                 -- frames therefore get position-only docking; strata and
                 -- Raise are insecure writes that would taint their tree.
-                if liftStrata and not Secured(frame) then
-                    frame:SetFrameStrata("DIALOG")
+                if liftStrata and not Secured(widget) then
+                    widget:SetFrameStrata("DIALOG")
                 end
                 DockToCharacterFrame()
-                if not Secured(frame) then
-                    frame:Raise()
+                if not Secured(widget) then
+                    widget:Raise()
                 end
             end
         end)
         dockedCompanions[#dockedCompanions + 1] = {
-            frame = frame,
+            frame = widget,
             shouldDock = ShouldDock,
             dock = DockToCharacterFrame,
             liftStrata = liftStrata,
@@ -956,12 +963,12 @@ local function HookFrame(frame, name)
         -- CharacterFrame itself isn't a companion, but every companion's dock
         -- is relative to IT -- so a scale or position change here is exactly
         -- what leaves already-open companions stale (see RedockCompanions).
-        hooksecurefunc(frame, "SetPoint", function()
+        hooksecurefunc(widget, "SetPoint", function()
             if IsEnabled() then
                 RedockCompanions()
             end
         end)
-        hooksecurefunc(frame, "SetScale", function()
+        hooksecurefunc(widget, "SetScale", function()
             if IsEnabled() then
                 RedockCompanions()
             end
@@ -976,48 +983,52 @@ local function HookFrame(frame, name)
         -- SetFrameStrata and Raise are still INSECURE writes, and on a protected frame
         -- they taint its whole tree (the PVEFrame SetMovable incident) -- those stay at
         -- Blizzard strata, possibly buried but never tainted.
-        local defaultStrata = frame:GetFrameStrata()
-        frame:HookScript("OnHide", function()
-            if liftStrata and not Secured(frame) then
-                frame:SetFrameStrata(defaultStrata)
+        local defaultStrata = widget:GetFrameStrata()
+        widget:HookScript("OnHide", function()
+            if liftStrata and not Secured(widget) then
+                widget:SetFrameStrata(defaultStrata)
             end
         end)
-        frame:HookScript("OnShow", function()
+        widget:HookScript("OnShow", function()
             if not IsEnabled() then
                 return
             end
-            if Secured(frame) then
+            if Secured(widget) then
                 return
             end
-            local cf = _G.CharacterFrame
-            if cf and cf:IsShown() and (tempPos[cf] or GetSavedPos("CharacterFrame")) then
+            local castFrame = _G.CharacterFrame
+            if
+                castFrame
+                and castFrame:IsShown()
+                and (tempPos[castFrame] or GetSavedPos("CharacterFrame"))
+            then
                 if liftStrata then
-                    frame:SetFrameStrata("DIALOG")
+                    widget:SetFrameStrata("DIALOG")
                 end
-                frame:Raise()
+                widget:Raise()
             end
         end)
     end
 
-    hooksecurefunc(frame, "SetPoint", function()
+    hooksecurefunc(widget, "SetPoint", function()
         if not IsEnabled() then
             return
         end
         if ffd._shIgnoreSP then
             return
         end
-        if secureDrag.frame == frame then
+        if secureDrag.frame == widget then
             return
         end -- don't fight an active drag
-        if InCombatLockdown() and Secured(frame) then
+        if InCombatLockdown() and Secured(widget) then
             return
         end
         if DockToCharacterFrame and ShouldDock() then
             DockToCharacterFrame()
             return
         end
-        if tempPos[frame] or GetSavedPos(name) then
-            ApplyPosition(frame, name)
+        if tempPos[widget] or GetSavedPos(name) then
+            ApplyPosition(widget, name)
         end
     end)
 
@@ -1026,25 +1037,25 @@ local function HookFrame(frame, name)
     -- OnShow restore -- e.g. the crafting order window resets its scale when you submit
     -- an order, so a scaled window snapped back. Only re-assert for frames the user has
     -- actually scaled; guarded so our own re-scale can't recurse.
-    hooksecurefunc(frame, "SetScale", function()
+    hooksecurefunc(widget, "SetScale", function()
         if not IsEnabled() then
             return
         end
         if ffd._shIgnoreSS then
             return
         end
-        if InCombatLockdown() and Secured(frame) then
+        if InCombatLockdown() and Secured(widget) then
             return
         end
-        if tempScale[frame] or GetSavedScale(name) then
-            ApplyScale(frame, name)
+        if tempScale[widget] or GetSavedScale(name) then
+            ApplyScale(widget, name)
         end
     end)
 
     -- If the frame is already visible, apply saved scale + position now
-    if frame:IsVisible() then
-        ApplyScale(frame, name)
-        ApplyPosition(frame, name)
+    if widget:IsVisible() then
+        ApplyScale(widget, name)
+        ApplyPosition(widget, name)
     end
 end
 
@@ -1053,9 +1064,9 @@ local function TryHook(name)
     if CludesUI.PadGamepadUI() then
         return
     end
-    local frame = _G[name]
-    if frame and frame.HookScript then
-        HookFrame(frame, name)
+    local widget = _G[name]
+    if widget and widget.HookScript then
+        HookFrame(widget, name)
     end
 end
 
@@ -1070,14 +1081,14 @@ local function HookAdopted(name)
     if CludesUI.PadGamepadUI() then
         return
     end
-    local frame = _G[name]
-    if not (frame and frame.HookScript) then
+    local widget = _G[name]
+    if not (widget and widget.HookScript) then
         return
     end
-    HookFrame(frame, name)
+    HookFrame(widget, name)
     if not InCombatLockdown() then
-        ApplyScale(frame, name)
-        ApplyPosition(frame, name)
+        ApplyScale(widget, name)
+        ApplyPosition(widget, name)
     end
 end
 
@@ -1174,9 +1185,9 @@ local lootProxies = {}
 local lootPlacers = {} -- name -> placement callback, built once per window
 local lootClaimed = {} -- name -> true while our placement claim is registered
 
-local function LootEnabled(info)
+local function LootEnabled(details)
     local db = CludesUIDB
-    return db and db[info.switch or "shifterLootUnlock"] or false
+    return db and db[details.switch or "shifterLootUnlock"] or false
 end
 
 local function GetLootPos(name)
@@ -1184,7 +1195,7 @@ local function GetLootPos(name)
     return db and db.shifterLootPositions and db.shifterLootPositions[name]
 end
 
-local function SaveLootPos(name, point, relPoint, x, y)
+local function SaveLootPos(name, anchorPoint, relPoint, posX, posY)
     if not CludesUIDB then
         CludesUIDB = {}
     end
@@ -1192,10 +1203,10 @@ local function SaveLootPos(name, point, relPoint, x, y)
         CludesUIDB.shifterLootPositions = {}
     end
     CludesUIDB.shifterLootPositions[name] = {
-        point = point,
+        point = anchorPoint,
         relPoint = relPoint,
-        x = x,
-        y = y,
+        x = posX,
+        y = posY,
     }
 end
 
@@ -1203,36 +1214,36 @@ end
 -- forbidden and anchor-restricted frames itself (secret-safe), so such a
 -- window is never claimed.
 local function LootFrame(name)
-    local frame = _G[name]
-    if type(frame) == "table" then
-        return frame
+    local widget = _G[name]
+    if type(widget) == "table" then
+        return widget
     end
 end
 
 -- The saved spot while the feature is on; nil leaves the window to the next
 -- placement owner, or to Blizzard's own anchor.
-local function LootPlacer(info)
-    local name = info.name
-    local fn = lootPlacers[name]
-    if not fn then
-        fn = function()
-            if not LootEnabled(info) then
+local function LootPlacer(details)
+    local name = details.name
+    local func = lootPlacers[name]
+    if not func then
+        func = function()
+            if not LootEnabled(details) then
                 return nil
             end
-            local pos = GetLootPos(name)
-            if not pos then
+            local place = GetLootPos(name)
+            if not place then
                 return nil
             end
-            local anchor = info.anchor
-            if anchor then
-                local dx, dy = AnchorShift(pos.point, anchor, info.defW, info.defH)
-                return anchor, UIParent, pos.relPoint, pos.x + dx, pos.y + dy
+            local anchorFrame = details.anchor
+            if anchorFrame then
+                local dx, dy = AnchorShift(place.point, anchorFrame, details.defW, details.defH)
+                return anchorFrame, UIParent, place.relPoint, place.x + dx, place.y + dy
             end
-            return pos.point, UIParent, pos.relPoint, pos.x, pos.y
+            return place.point, UIParent, place.relPoint, place.x, place.y
         end
-        lootPlacers[name] = fn
+        lootPlacers[name] = func
     end
-    return fn
+    return func
 end
 
 -- Drops our claim: the placer hands the window to the next owner, or back to
@@ -1242,66 +1253,66 @@ local function ReleaseLootWindow(name)
         return
     end
     lootClaimed[name] = nil
-    local frame = LootFrame(name)
-    if frame then
-        CludesUI.SetFramePlacer(frame, "shifter", nil)
+    local widget = LootFrame(name)
+    if widget then
+        CludesUI.SetFramePlacer(widget, "shifter", nil)
     end
 end
 
 -- Claims the window while the feature is on and a position is saved, and
 -- places it this frame; releases it otherwise.
-local function SyncLootWindow(info)
-    local name = info.name
-    if not (LootEnabled(info) and GetLootPos(name)) then
+local function SyncLootWindow(details)
+    local name = details.name
+    if not (LootEnabled(details) and GetLootPos(name)) then
         ReleaseLootWindow(name)
         return
     end
-    local frame = LootFrame(name)
-    if not frame then
+    local widget = LootFrame(name)
+    if not widget then
         return
     end
     if not lootClaimed[name] then
-        if not CludesUI.SetFramePlacer(frame, "shifter", LootPlacer(info)) then
+        if not CludesUI.SetFramePlacer(widget, "shifter", LootPlacer(details)) then
             return
         end
         lootClaimed[name] = true
     end
-    CludesUI.RequestFramePlacement(frame)
+    CludesUI.RequestFramePlacement(widget)
 end
 
 -- The proxy sits at the saved position, or at the window's default spot.
-local function PlaceLootProxy(proxy, info)
-    local pos = GetLootPos(info.name)
+local function PlaceLootProxy(proxy, details)
+    local place = GetLootPos(details.name)
     proxy:ClearAllPoints()
-    if pos then
-        proxy:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
-    elseif info.defPos then
-        local d = info.defPos
+    if place then
+        proxy:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
+    elseif details.defPos then
+        local d = details.defPos
         proxy:SetPoint(d[1], UIParent, d[2], d[3], d[4])
     else
-        proxy:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, info.defY)
+        proxy:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, details.defY)
     end
 end
 
 -- Hidden rect-only ghost the unlock mover attaches to; never visible.
-local function EnsureLootProxy(info)
-    local proxy = lootProxies[info.name]
+local function EnsureLootProxy(details)
+    local proxy = lootProxies[details.name]
     if proxy then
         return proxy
     end
     proxy = CreateFrame("Frame", nil, UIParent)
     proxy:Hide()
-    proxy:SetSize(info.defW, info.defH)
-    PlaceLootProxy(proxy, info)
-    lootProxies[info.name] = proxy
+    proxy:SetSize(details.defW, details.defH)
+    PlaceLootProxy(proxy, details)
+    lootProxies[details.name] = proxy
     return proxy
 end
 
 -- Each window by its own switch: claimed while it is on with a saved spot,
 -- released otherwise.
 local function InitLootWindows()
-    for i = 1, #LOOT_WINDOWS do
-        SyncLootWindow(LOOT_WINDOWS[i])
+    for idx = 1, #LOOT_WINDOWS do
+        SyncLootWindow(LOOT_WINDOWS[idx])
     end
 end
 
@@ -1311,13 +1322,13 @@ local function RegisterLootUnlockElements()
         return
     end
     local elements = {}
-    for i = 1, #LOOT_WINDOWS do
-        local info = LOOT_WINDOWS[i]
+    for idx = 1, #LOOT_WINDOWS do
+        local details = LOOT_WINDOWS[idx]
         elements[#elements + 1] = MK({
-            key = info.key,
-            label = info.label,
+            key = details.key,
+            label = details.label,
             group = "Utilities",
-            order = info.order,
+            order = details.order,
             noResize = true,
             noAnchorTarget = true,
             noAnchorTo = true,
@@ -1326,59 +1337,60 @@ local function RegisterLootUnlockElements()
             -- until the user turns them off: brown tint + reminder subtitle
             -- to tell them apart from live-frame movers.
             moverBg = { r = 0.165, g = 0.11, b = 0.055 },
-            subtitle = info.subtitle or "Disable Loot layout mode overlays in Shifter once done positioning",
+            subtitle = details.subtitle
+                or "Disable Loot layout mode overlays in Shifter once done positioning",
             isHidden = function()
-                if not LootEnabled(info) or not _G[info.name] then
+                if not LootEnabled(details) or not _G[details.name] then
                     return true
                 end
                 -- "Hide Unlock Mode Overlays": the movers stay out of unlock
                 -- mode but saved positions keep applying (the placer claim
                 -- never depends on the movers existing).
-                return CludesUIDB and CludesUIDB[info.hideKey or "shifterLootHideOverlays"] or false
+                return CludesUIDB and CludesUIDB[details.hideKey or "shifterLootHideOverlays"] or false
             end,
             getFrame = function()
-                return EnsureLootProxy(info)
+                return EnsureLootProxy(details)
             end,
             getSize = function()
-                if info.fixedSize then
-                    return info.defW, info.defH
+                if details.fixedSize then
+                    return details.defW, details.defH
                 end
-                local frame = _G[info.name]
-                local w = frame and frame.GetWidth and frame:GetWidth() or 0
-                local h = frame and frame.GetHeight and frame:GetHeight() or 0
-                if not w or w < 20 then
-                    w = info.defW
+                local widget = _G[details.name]
+                local wid = widget and widget.GetWidth and widget:GetWidth() or 0
+                local hgt = widget and widget.GetHeight and widget:GetHeight() or 0
+                if not wid or wid < 20 then
+                    wid = details.defW
                 end
-                if not h or h < 20 then
-                    h = info.defH
+                if not hgt or hgt < 20 then
+                    hgt = details.defH
                 end
-                return w, h
+                return wid, hgt
             end,
-            savePos = function(_, point, relPoint, x, y)
-                SaveLootPos(info.name, point, relPoint, x, y)
-                PlaceLootProxy(EnsureLootProxy(info), info)
-                SyncLootWindow(info)
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                SaveLootPos(details.name, anchorPoint, relPoint, posX, posY)
+                PlaceLootProxy(EnsureLootProxy(details), details)
+                SyncLootWindow(details)
             end,
             loadPos = function()
-                local pos = GetLootPos(info.name)
-                if pos then
-                    return { point = pos.point, relPoint = pos.relPoint, x = pos.x, y = pos.y }
+                local place = GetLootPos(details.name)
+                if place then
+                    return { point = place.point, relPoint = place.relPoint, x = place.x, y = place.y }
                 end
                 return nil
             end,
             clearPos = function()
                 if CludesUIDB and CludesUIDB.shifterLootPositions then
-                    CludesUIDB.shifterLootPositions[info.name] = nil
+                    CludesUIDB.shifterLootPositions[details.name] = nil
                 end
-                local proxy = lootProxies[info.name]
+                local proxy = lootProxies[details.name]
                 if proxy then
-                    PlaceLootProxy(proxy, info)
+                    PlaceLootProxy(proxy, details)
                 end
-                ReleaseLootWindow(info.name)
+                ReleaseLootWindow(details.name)
             end,
             applyPos = function()
-                PlaceLootProxy(EnsureLootProxy(info), info)
-                SyncLootWindow(info)
+                PlaceLootProxy(EnsureLootProxy(details), details)
+                SyncLootWindow(details)
             end,
         })
     end
@@ -1423,55 +1435,55 @@ local function GetTopBarPos()
     return CludesUIDB and CludesUIDB.shifterTopBarPos
 end
 
-local function SaveTopBarPos(point, relPoint, x, y)
+local function SaveTopBarPos(anchorPoint, relPoint, posX, posY)
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    CludesUIDB.shifterTopBarPos = { point = point, relPoint = relPoint, x = x, y = y }
+    CludesUIDB.shifterTopBarPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
 end
 
 -- Returns the live Blizzard frame only when it is safe to reposition. A
 -- secret answer (ObjectSecurity aspect) counts as unsafe.
 local function TopBarFrame()
-    local frame = _G[TOPBAR_NAME]
-    if type(frame) ~= "table" or not frame.IsForbidden then
+    local widget = _G[TOPBAR_NAME]
+    if type(widget) ~= "table" or not widget.IsForbidden then
         return nil
     end
-    local v = frame:IsForbidden()
-    if issecretvalue(v) or v then
+    local val = widget:IsForbidden()
+    if issecretvalue(val) or val then
         return nil
     end
-    v = frame:IsProtected()
-    if issecretvalue(v) or v then
+    val = widget:IsProtected()
+    if issecretvalue(val) or val then
         return nil
     end
-    return frame
+    return widget
 end
 
 -- Our saved spot while the feature is on; otherwise Blizzard's own anchor,
 -- and only while ours is still on the container. SECURE writes only (see
 -- block comment); false = in combat, so the queue decides again later.
 local function SyncTopBar()
-    local frame = TopBarFrame()
-    if not frame then
+    local widget = TopBarFrame()
+    if not widget then
         return
     end
-    local pos = TopBarEnabled() and GetTopBarPos()
-    if not pos and not topBarMoved then
+    local place = TopBarEnabled() and GetTopBarPos()
+    if not place and not topBarMoved then
         return
     end
-    local ok
+    local success
     topBarWriting = true
-    if pos then
-        ok = SecureSetPoint(frame, pos.point, pos.relPoint, pos.x, pos.y)
+    if place then
+        success = SecureSetPoint(widget, place.point, place.relPoint, place.x, place.y)
     else
-        ok = SecureSetPoint(frame, "TOP", "TOP", 0, TOPBAR_HOMEY)
+        success = SecureSetPoint(widget, "TOP", "TOP", 0, TOPBAR_HOMEY)
     end
     topBarWriting = false
-    if ok then
-        topBarMoved = pos and true or false
+    if success then
+        topBarMoved = place and true or false
     else
-        ns.CombatQueue.Defer("ShifterTopBar", SyncTopBar)
+        mod.CombatQueue.Defer("ShifterTopBar", SyncTopBar)
     end
 end
 
@@ -1479,8 +1491,8 @@ local function HookTopBar()
     if topBarHooked then
         return
     end
-    local frame = TopBarFrame()
-    if not frame then
+    local widget = TopBarFrame()
+    if not widget then
         return
     end
     topBarHooked = true
@@ -1488,7 +1500,7 @@ local function HookTopBar()
     -- feature is on; otherwise that anchor stands and ours is gone. The
     -- restricted environment's SetPoint is the C method, so our own write
     -- does not reach this hook; the guard stops a loop should it ever do so.
-    hooksecurefunc(frame, "SetPoint", function()
+    hooksecurefunc(widget, "SetPoint", function()
         if topBarWriting then
             return
         end
@@ -1508,9 +1520,9 @@ local function EnsureTopBarProxy()
     topBarProxy = CreateFrame("Frame", nil, UIParent)
     topBarProxy:Hide()
     topBarProxy:SetSize(TOPBAR_DEFW, TOPBAR_DEFH)
-    local pos = GetTopBarPos()
-    if pos then
-        topBarProxy:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+    local place = GetTopBarPos()
+    if place then
+        topBarProxy:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
     else
         topBarProxy:SetPoint("TOP", UIParent, "TOP", 0, TOPBAR_DEFY)
     end
@@ -1548,18 +1560,18 @@ local function RegisterTopBarUnlockElement()
             getSize = function()
                 return TOPBAR_DEFW, TOPBAR_DEFH
             end,
-            savePos = function(_, point, relPoint, x, y)
-                SaveTopBarPos(point, relPoint, x, y)
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                SaveTopBarPos(anchorPoint, relPoint, posX, posY)
                 local proxy = EnsureTopBarProxy()
                 proxy:ClearAllPoints()
-                proxy:SetPoint(point, UIParent, relPoint, x, y)
+                proxy:SetPoint(anchorPoint, UIParent, relPoint, posX, posY)
                 HookTopBar()
                 SyncTopBar()
             end,
             loadPos = function()
-                local pos = GetTopBarPos()
-                if pos then
-                    return { point = pos.point, relPoint = pos.relPoint, x = pos.x, y = pos.y }
+                local place = GetTopBarPos()
+                if place then
+                    return { point = place.point, relPoint = place.relPoint, x = place.x, y = place.y }
                 end
                 return nil
             end,
@@ -1575,11 +1587,11 @@ local function RegisterTopBarUnlockElement()
                 SyncTopBar()
             end,
             applyPos = function()
-                local pos = GetTopBarPos()
+                local place = GetTopBarPos()
                 local proxy = EnsureTopBarProxy()
                 proxy:ClearAllPoints()
-                if pos then
-                    proxy:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+                if place then
+                    proxy:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
                 else
                     proxy:SetPoint("TOP", UIParent, "TOP", 0, TOPBAR_DEFY)
                 end
@@ -1635,39 +1647,39 @@ end
 
 -- The live column, unless forbidden (a secret answer counts as forbidden).
 function CARRIER.Frame()
-    local frame = _G[CARRIER.name]
-    if type(frame) ~= "table" or not frame.IsForbidden then
+    local widget = _G[CARRIER.name]
+    if type(widget) ~= "table" or not widget.IsForbidden then
         return nil
     end
-    local v = frame:IsForbidden()
-    if issecretvalue(v) or v then
+    local val = widget:IsForbidden()
+    if issecretvalue(val) or val then
         return nil
     end
-    return frame
+    return widget
 end
 
 -- Our spot while the feature is on; otherwise Blizzard's own anchor, and only
 -- while ours is still on the column.
 function CARRIER.Sync()
-    local frame = CARRIER.Frame()
-    if not frame then
+    local widget = CARRIER.Frame()
+    if not widget then
         return
     end
-    local pos = CARRIER.On() and CARRIER.Pos()
-    if not pos and not CARRIER.moved then
+    local place = CARRIER.On() and CARRIER.Pos()
+    if not place and not CARRIER.moved then
         return
     end
-    local ok
-    if pos then
-        local dx, dy = AnchorShift(pos.point, "TOPRIGHT", CARRIER.w, CARRIER.h)
-        ok = SecureSetPoint(frame, "TOPRIGHT", pos.relPoint, pos.x + dx, pos.y + dy)
+    local success
+    if place then
+        local dx, dy = AnchorShift(place.point, "TOPRIGHT", CARRIER.w, CARRIER.h)
+        success = SecureSetPoint(widget, "TOPRIGHT", place.relPoint, place.x + dx, place.y + dy)
     else
-        ok = SecureSetPointParent(frame, "TOPRIGHT", "TOPRIGHT", -10, 0)
+        success = SecureSetPointParent(widget, "TOPRIGHT", "TOPRIGHT", -10, 0)
     end
-    if ok then
-        CARRIER.moved = pos and true or false
+    if success then
+        CARRIER.moved = place and true or false
     else
-        ns.CombatQueue.Defer("ShifterCarriers", CARRIER.Sync)
+        mod.CombatQueue.Defer("ShifterCarriers", CARRIER.Sync)
     end
 end
 
@@ -1681,11 +1693,11 @@ function CARRIER.PlaceProxy()
         proxy:SetSize(CARRIER.w, CARRIER.h)
         CARRIER.proxy = proxy
     end
-    local pos = CARRIER.Pos()
+    local place = CARRIER.Pos()
     local d = CARRIER.defPos
     proxy:ClearAllPoints()
-    if pos then
-        proxy:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+    if place then
+        proxy:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
     else
         proxy:SetPoint(d[1], UIParent, d[2], d[3], d[4])
     end
@@ -1722,18 +1734,19 @@ function CARRIER.Register()
             getSize = function()
                 return CARRIER.w, CARRIER.h
             end,
-            savePos = function(_, point, relPoint, x, y)
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
                 if not CludesUIDB then
                     CludesUIDB = {}
                 end
-                CludesUIDB.shifterCarrierPos = { point = point, relPoint = relPoint, x = x, y = y }
+                CludesUIDB.shifterCarrierPos =
+                    { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 CARRIER.PlaceProxy()
                 CARRIER.Sync()
             end,
             loadPos = function()
-                local pos = CARRIER.Pos()
-                if pos then
-                    return { point = pos.point, relPoint = pos.relPoint, x = pos.x, y = pos.y }
+                local place = CARRIER.Pos()
+                if place then
+                    return { point = place.point, relPoint = place.relPoint, x = place.x, y = place.y }
                 end
                 return nil
             end,
@@ -1774,16 +1787,16 @@ local function InitShifter()
     if CludesUI.PadGamepadUI() then
         return
     end
-    for i = 1, #PRELOADED do
-        TryHook(PRELOADED[i])
+    for idx = 1, #PRELOADED do
+        TryHook(PRELOADED[idx])
     end
-    for addon, frames in pairs(ADDON_FRAMES) do
+    for addon, frameList in pairs(ADDON_FRAMES) do
         if C_AddOns.IsAddOnLoaded(addon) then
-            for i = 1, #frames do
-                TryHook(frames[i])
+            for idx = 1, #frameList do
+                TryHook(frameList[idx])
             end
         else
-            pendingAddons[addon] = frames
+            pendingAddons[addon] = frameList
         end
     end
     if next(pendingAddons) then
@@ -1800,8 +1813,8 @@ local function InitShifter()
 end
 
 eventFrame:RegisterEvent("PLAYER_LOGIN")
-eventFrame:SetScript("OnEvent", function(self, event, arg1)
-    if event == "PLAYER_LOGIN" then
+eventFrame:SetScript("OnEvent", function(self, evt, arg1)
+    if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
         if IsEnabled() then
             InitShifter()
@@ -1816,18 +1829,18 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         if CARRIER.On() then
             CARRIER.Sync()
         end
-    elseif event == "ADDON_LOADED" then
-        local frames = pendingAddons[arg1]
-        if frames then
+    elseif evt == "ADDON_LOADED" then
+        local frameList = pendingAddons[arg1]
+        if frameList then
             pendingAddons[arg1] = nil
-            for i = 1, #frames do
-                TryHook(frames[i])
+            for idx = 1, #frameList do
+                TryHook(frameList[idx])
             end
             if not next(pendingAddons) then
                 self:UnregisterEvent("ADDON_LOADED")
             end
         end
-    elseif event == "MODIFIER_STATE_CHANGED" then
+    elseif evt == "MODIFIER_STATE_CHANGED" then
         UpdateWheelOverlay()
     end
 end)
@@ -1859,8 +1872,8 @@ function CludesUI._ResetShifterPositions()
     wipe(tempScale)
     -- No saved spots remain: the loot windows, the capture bars, the top bar
     -- and the flag carriers take Blizzard's own anchors back.
-    for i = 1, #LOOT_WINDOWS do
-        ReleaseLootWindow(LOOT_WINDOWS[i].name)
+    for idx = 1, #LOOT_WINDOWS do
+        ReleaseLootWindow(LOOT_WINDOWS[idx].name)
     end
     SyncTopBar()
     CARRIER.Sync()

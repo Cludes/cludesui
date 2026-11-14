@@ -48,14 +48,14 @@ local AK -- CludesUI.AuraKit, resolved at first sync
 -- distinct threshold; bounded by the slider range, so no eviction needed).
 -- Floor 1, never 0: a 0 threshold would collide with the tenths breakpoint
 -- at threshold = 0 in GetDecimalFormatter's table.
-local function ClampThr(v)
-    v = tonumber(v) or 5
-    if v < 1 then
-        v = 1
-    elseif v > 120 then
-        v = 120
+local function ClampThr(val)
+    val = tonumber(val) or 5
+    if val < 1 then
+        val = 1
+    elseif val > 120 then
+        val = 120
     end
-    return math.floor(v + 0.5)
+    return math.floor(val + 0.5)
 end
 
 local formatterByThr = {}
@@ -117,8 +117,8 @@ local function GetDecimalFormatter(thr)
         step = 1,
         components = { { div = 86400 } },
     }
-    local ok = pcall(f.SetBreakpoints, f, points)
-    if not ok then
+    local success = pcall(f.SetBreakpoints, f, points)
+    if not success then
         formatterByThr[thr] = false
         return nil
     end
@@ -128,20 +128,20 @@ end
 
 -- Variant expansion for one stored spell id: the live aura can come up under
 -- the talent override (or base) form of the id the config captured.
-local function AddVariants(include, sid)
-    if type(sid) ~= "number" or sid <= 0 then
+local function AddVariants(include, spellRef)
+    if type(spellRef) ~= "number" or spellRef <= 0 then
         return
     end
-    include[sid] = true
+    include[spellRef] = true
     if C_Spell then
         if C_Spell.GetOverrideSpell then
-            local o = C_Spell.GetOverrideSpell(sid)
+            local o = C_Spell.GetOverrideSpell(spellRef)
             if type(o) == "number" and o > 0 then
                 include[o] = true
             end
         end
         if C_Spell.GetBaseSpell then
-            local b = C_Spell.GetBaseSpell(sid)
+            local b = C_Spell.GetBaseSpell(spellRef)
             if type(b) == "number" and b > 0 then
                 include[b] = true
             end
@@ -152,14 +152,14 @@ end
 -- Secret-guarded AddVariants for ids read off live frames/cooldownInfo (an
 -- active frame's ids can be SECRET; a secret table key would blow up the
 -- filter). issecretvalue FIRST, arithmetic after.
-local function AddCleanID(include, id)
-    if issecretvalue and issecretvalue(id) then
+local function AddCleanID(include, ident)
+    if issecretvalue and issecretvalue(ident) then
         return
     end
-    if type(id) ~= "number" or id <= 0 then
+    if type(ident) ~= "number" or ident <= 0 then
         return
     end
-    AddVariants(include, id)
+    AddVariants(include, ident)
 end
 
 -- Reconcile a config's include set against Blizzard's cooldown info -- the SAME source
@@ -167,34 +167,34 @@ end
 -- appears often carries an id that exists ONLY in linkedSpellIDs (variant chains:
 -- rituals, Eclipse-style pairs), never in the stored config ids, and without it the
 -- slot filter can never match. Sync-time only (rebuilds), never per tick.
-local function AddCooldownInfoIDs(include, cfg)
-    local frame = ns.FindTBBChild and ns.FindTBBChild(cfg)
-    if not frame then
+local function AddCooldownInfoIDs(include, conf)
+    local widget = ns.FindTBBChild and ns.FindTBBChild(conf)
+    if not widget then
         return
     end
     -- The frame's canonical id resolves GetSpellID/GetAuraSpellID (the actual
     -- aura variant) with its own secret handling.
     if ns.GetCanonicalSpellIDForFrame then
-        AddCleanID(include, ns.GetCanonicalSpellIDForFrame(frame))
+        AddCleanID(include, ns.GetCanonicalSpellIDForFrame(widget))
     end
-    local cdID = frame.cooldownID
+    local cdID = widget.cooldownID
     local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    local info = cdID and gci and gci(cdID)
-    if not info then
+    local details = cdID and gci and gci(cdID)
+    if not details then
         return
     end
-    AddCleanID(include, info.spellID)
-    AddCleanID(include, info.overrideSpellID)
-    AddCleanID(include, info.overrideTooltipSpellID)
-    if info.linkedSpellIDs then
-        for k = 1, #info.linkedSpellIDs do
-            AddCleanID(include, info.linkedSpellIDs[k])
+    AddCleanID(include, details.spellID)
+    AddCleanID(include, details.overrideSpellID)
+    AddCleanID(include, details.overrideTooltipSpellID)
+    if details.linkedSpellIDs then
+        for k = 1, #details.linkedSpellIDs do
+            AddCleanID(include, details.linkedSpellIDs[k])
         end
     end
 end
 
-local host -- shown 1px anchor for the container (alpha 0, mouse-off)
-local container -- live AuraContainer, or nil
+local hostRegion -- shown 1px anchor for the container (alpha 0, mouse-off)
+local boxHolder -- live AuraContainer, or nil
 local signature -- signature string of the live container's slot set
 local boundIndex = {} -- bar index -> slot button (rebuilt per container)
 local boundThr = {} -- bar index -> threshold its binding was registered with
@@ -208,18 +208,18 @@ local function SyncAfterCombat()
 end
 
 local function UnmarkAll()
-    for idx in pairs(boundIndex) do
-        local bar = ns.GetTBBFrame and ns.GetTBBFrame(idx)
-        if bar then
-            bar._tbbEngineText = nil
-            bar._tbbEngineFS = nil
+    for position in pairs(boundIndex) do
+        local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(position)
+        if barFrame then
+            barFrame._tbbEngineText = nil
+            barFrame._tbbEngineFS = nil
             -- The mirror gates the timer FS alpha from the secret aura
             -- presence; an unbound bar must never keep a stuck alpha-0 FS.
-            if bar._tbbAlphaGated then
-                if bar._timerText then
-                    bar._timerText:SetAlpha(1)
+            if barFrame._tbbAlphaGated then
+                if barFrame._timerText then
+                    barFrame._timerText:SetAlpha(1)
                 end
-                bar._tbbAlphaGated = nil
+                barFrame._tbbAlphaGated = nil
             end
         end
     end
@@ -229,9 +229,9 @@ end
 
 local function ReleaseCurrent()
     UnmarkAll()
-    if container then
-        AK.ReleaseContainer(container) -- hides it: the engine stops driving
-        container = nil
+    if boxHolder then
+        AK.ReleaseContainer(boxHolder) -- hides it: the engine stops driving
+        boxHolder = nil
         signature = nil
     end
 end
@@ -248,34 +248,34 @@ end
 -- aura to whichever slot it liked -- the losing bar showed no decimals at all.
 local function CollectDesired()
     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
-    local bars = tbb and tbb.bars
-    if not bars then
+    local barList = tbb and tbb.bars
+    if not barList then
         return nil, ""
     end
 
     local work, claimed
-    for i, cfg in ipairs(bars) do
+    for i, conf in ipairs(barList) do
         if
-            cfg.enabled ~= false
-            and cfg.timerDecimals
-            and not cfg.popularKey
-            and cfg.trackType ~= "cooldown"
+            conf.enabled ~= false
+            and conf.timerDecimals
+            and not conf.popularKey
+            and conf.trackType ~= "cooldown"
         then
             local include = {}
-            AddVariants(include, cfg.spellID)
-            AddVariants(include, cfg.baseSpellID)
-            if cfg.spellIDs then
-                for k = 1, #cfg.spellIDs do
-                    AddVariants(include, cfg.spellIDs[k])
+            AddVariants(include, conf.spellID)
+            AddVariants(include, conf.baseSpellID)
+            if conf.spellIDs then
+                for k = 1, #conf.spellIDs do
+                    AddVariants(include, conf.spellIDs[k])
                 end
             end
             if next(include) then
                 work = work or {}
                 claimed = claimed or {}
-                work[#work + 1] = { index = i, cfg = cfg, include = include }
-                for id in pairs(include) do
-                    if claimed[id] == nil then
-                        claimed[id] = i
+                work[#work + 1] = { index = i, cfg = conf, include = include }
+                for ident in pairs(include) do
+                    if claimed[ident] == nil then
+                        claimed[ident] = i
                     end
                 end
             end
@@ -287,68 +287,68 @@ local function CollectDesired()
 
     local desired, sigParts = {}, {}
     local extra = {}
-    for n = 1, #work do
-        local w = work[n]
+    for num = 1, #work do
+        local wid = work[num]
         wipe(extra)
-        AddCooldownInfoIDs(extra, w.cfg)
-        for id in pairs(extra) do
-            local owner = claimed[id]
-            if owner == nil or owner == w.index then
-                w.include[id] = true
+        AddCooldownInfoIDs(extra, wid.cfg)
+        for ident in pairs(extra) do
+            local ownerFrame = claimed[ident]
+            if ownerFrame == nil or ownerFrame == wid.index then
+                wid.include[ident] = true
             end
         end
         local ids = {}
-        for id in pairs(w.include) do
-            ids[#ids + 1] = id
+        for ident in pairs(wid.include) do
+            ids[#ids + 1] = ident
         end
         table.sort(ids)
         -- thr intentionally stays OUT of the signature: a slider move
         -- re-registers the live binding in place (no container swap).
         desired[#desired + 1] = {
-            index = w.index,
-            include = w.include,
+            index = wid.index,
+            include = wid.include,
             ids = ids,
-            thr = ClampThr(w.cfg.timerDecimalThreshold),
+            thr = ClampThr(wid.cfg.timerDecimalThreshold),
         }
-        sigParts[#sigParts + 1] = w.index .. "=" .. table.concat(ids, ",")
+        sigParts[#sigParts + 1] = wid.index .. "=" .. table.concat(ids, ",")
     end
     return desired, table.concat(sigParts, ";")
 end
 
 local function BuildContainer(desired)
-    if not host then
+    if not hostRegion then
         -- Shown but invisible: the engine only processes VISIBLE containers,
         -- and the noRegions slot buttons render nothing anyway. Alpha 0 on
         -- the host is belt-and-braces; it does not reach the bound timer
         -- FontStrings (they live on the TBB bars, not in this tree).
-        host = CreateFrame("Frame", nil, UIParent)
-        host:SetSize(1, 1)
-        host:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
-        host:SetFrameStrata("BACKGROUND")
-        host:SetAlpha(0)
-        host:EnableMouse(false)
+        hostRegion = CreateFrame("Frame", nil, UIParent)
+        hostRegion:SetSize(1, 1)
+        hostRegion:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+        hostRegion:SetFrameStrata("BACKGROUND")
+        hostRegion:SetAlpha(0)
+        hostRegion:EnableMouse(false)
     end
 
     AK.styles.tbbDecimalText = AK.styles.tbbDecimalText or { width = 1, height = 1, noRegions = true }
 
     local slots = {}
-    for n = 1, #desired do
-        local want = desired[n]
-        slots[n] = {
-            key = "tbb" .. want.index,
+    for num = 1, #desired do
+        local wanted = desired[num]
+        slots[num] = {
+            key = "tbb" .. wanted.index,
             filter = { "HELPFUL" },
-            candidateFilters = { includeSpellIDs = want.include },
+            candidateFilters = { includeSpellIDs = wanted.include },
             style = "tbbDecimalText",
-            extraInit = function(button)
-                if button.SetMouseMotionEnabled then
-                    button:SetMouseMotionEnabled(false)
+            extraInit = function(btnFrame)
+                if btnFrame.SetMouseMotionEnabled then
+                    btnFrame:SetMouseMotionEnabled(false)
                 end
-                local fmt = GetDecimalFormatter(want.thr)
+                local fmt = GetDecimalFormatter(wanted.thr)
                 if not fmt then
                     return
                 end -- rejected: tick keeps its mirror
-                local bar = ns.GetTBBFrame and ns.GetTBBFrame(want.index)
-                if not (bar and bar._timerText) then
+                local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
+                if not (barFrame and barFrame._timerText) then
                     return
                 end -- unbound: tick keeps its mirror
                 -- The bound FS MUST be a descendant of the aura button (aspect
@@ -357,24 +357,24 @@ local function BuildContainer(desired)
                 -- carrier arrangement as the standard AuraKit regions; fonted
                 -- BEFORE registration (style-before-register contract). It is
                 -- never rendered (alpha-0 host); only its string is read.
-                local carrier = CreateFrame("Frame", nil, button)
-                carrier:SetAllPoints(button)
-                local fs = carrier:CreateFontString(nil, "OVERLAY")
-                fs:SetFont(
+                local carrier = CreateFrame("Frame", nil, btnFrame)
+                carrier:SetAllPoints(btnFrame)
+                local fontStr = carrier:CreateFontString(nil, "OVERLAY")
+                fontStr:SetFont(
                     (ns.GetCDMFont and ns.GetCDMFont())
                         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
                     12,
                     ""
                 )
-                fs:SetPoint("CENTER", button, "CENTER", 0, 0)
+                fontStr:SetPoint("CENTER", btnFrame, "CENTER", 0, 0)
                 -- 68914 schema: updateInterval is a binding-level knob now,
                 -- so the formatter + 0.05s interval travel on a configured
                 -- DurationTextBinding via options.binding (BuildDurationTextOpts).
-                AK.SetDurationTextSafe(button, fs, AK.BuildDurationTextOpts(fmt, nil, 0.05))
-                boundIndex[want.index] = button
-                boundThr[want.index] = want.thr
-                bar._tbbEngineText = button
-                bar._tbbEngineFS = fs
+                AK.SetDurationTextSafe(btnFrame, fontStr, AK.BuildDurationTextOpts(fmt, nil, 0.05))
+                boundIndex[wanted.index] = btnFrame
+                boundThr[wanted.index] = wanted.thr
+                barFrame._tbbEngineText = btnFrame
+                barFrame._tbbEngineFS = fontStr
             end,
         }
     end
@@ -383,8 +383,8 @@ local function BuildContainer(desired)
     -- OnUpdate, and an unanchored container has no renderable rect -- it
     -- builds, binds slots, and then never processes a single aura (silent:
     -- the hidden FS stays empty and the tick falls back to whole seconds).
-    container = AK.CreateContainer(host, "player", {
-        point = { "BOTTOMLEFT", host, "BOTTOMLEFT", 0, 0 },
+    boxHolder = AK.CreateContainer(hostRegion, "player", {
+        point = { "BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 0, 0 },
         slots = slots,
     })
 end
@@ -398,37 +398,37 @@ function ns.TBBDecimals_Sync()
     local desired, sig = CollectDesired()
 
     if not desired then
-        if container then
+        if boxHolder then
             ReleaseCurrent()
         end
         return
     end
 
-    if container and sig == signature then
+    if boxHolder and sig == signature then
         -- Same slot set: re-stamp the tick contract flags (BuildTrackedBuffBars
         -- runs often between swaps and nothing else ever sets these), and
         -- re-register any binding whose threshold slider moved -- a fresh
         -- SetDurationText on the live button swaps the formatter in place
         -- (established re-registration pattern; no container swap needed).
-        for n = 1, #desired do
-            local want = desired[n]
-            local button = boundIndex[want.index]
-            local bar = ns.GetTBBFrame and ns.GetTBBFrame(want.index)
-            if button and bar then
-                bar._tbbEngineText = button
-                if bar._tbbEngineFS and boundThr[want.index] ~= want.thr then
-                    local fmt = GetDecimalFormatter(want.thr)
+        for num = 1, #desired do
+            local wanted = desired[num]
+            local btnFrame = boundIndex[wanted.index]
+            local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
+            if btnFrame and barFrame then
+                barFrame._tbbEngineText = btnFrame
+                if barFrame._tbbEngineFS and boundThr[wanted.index] ~= wanted.thr then
+                    local fmt = GetDecimalFormatter(wanted.thr)
                     if fmt then
                         -- Stamp only on success: SetDurationTextSafe never throws
                         -- anymore, and a denied re-registration under restriction must
                         -- stay unstamped so a later Sync retries it.
-                        local ok = AK.SetDurationTextSafe(
-                            button,
-                            bar._tbbEngineFS,
+                        local success = AK.SetDurationTextSafe(
+                            btnFrame,
+                            barFrame._tbbEngineFS,
                             AK.BuildDurationTextOpts(fmt, nil, 0.05)
                         )
-                        if ok then
-                            boundThr[want.index] = want.thr
+                        if success then
+                            boundThr[wanted.index] = wanted.thr
                         end
                     end
                 end
@@ -451,5 +451,5 @@ function ns.TBBDecimals_Sync()
     pendingRegen = nil
 
     BuildContainer(desired)
-    signature = container and sig or nil
+    signature = boxHolder and sig or nil
 end

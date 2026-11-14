@@ -1,5 +1,5 @@
-local addonName, ns = ...
-if ns.standalone then
+local addonName, mod = ...
+if mod.standalone then
     return
 end
 -------------------------------------------------------------------------------
@@ -7,14 +7,14 @@ end
 --  pages of the CludesUI panel (CludesUIOptions/CUI_Tank_Options.lua). This
 --  file is the small bridge the rest of the module calls.
 -------------------------------------------------------------------------------
-ns.Options = {}
+mod.Options = {}
 
-function ns.Options:Initialize() end
+function mod.Options:Initialize() end
 
 --- Opens the Tank Kit pages of the CludesUI panel.
-function ns.Options:Open()
+function mod.Options:Open()
     if InCombatLockdown() then
-        ns.Print("Settings cannot be opened in combat.")
+        mod.Print("Settings cannot be opened in combat.")
         return
     end
     -- One tick later: the first open loads the settings addon and builds the
@@ -32,7 +32,7 @@ end
 
 --- Called when test mode or the frame lock changes outside the panel (a slash
 --- command): repaints the Tank Kit page if it is the one on screen.
-function ns.Options:SyncTestButton()
+function mod.Options:SyncTestButton()
     local main = CludesUI._mainFrame
     if not (main and main:IsShown()) then
         return

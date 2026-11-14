@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Essential tools for WoW Forever. Each feature lives in its own file, listed
 --  after this one in the TOC; this file publishes the module.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 if
     not (
         CludesUI
@@ -21,11 +21,11 @@ then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the threat meter redraws through the parent's RegisterNumberFormatCallback and takes its font families through ApplyModuleFontFamily; Classic Talents reads its trees through ForeverTalentTrees and TalentTreeGrid)
-CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
+CludesUI._ModuleNS[ADDON_NAME] = mod -- LOD options files read this module ns via the registry
 
 -- Lifecycle object (OnInitialize / OnEnable) for features that need one. No
 -- per-profile DB: every feature so far keeps account-wide settings.
-ns.addon = CludesUI.Lite.NewAddon(ADDON_NAME)
+mod.addon = CludesUI.Lite.NewAddon(ADDON_NAME)
 
 -------------------------------------------------------------------------------
 --  Feature kit: settings and the login boot for every feature, plus placement
@@ -36,7 +36,7 @@ ns.addon = CludesUI.Lite.NewAddon(ADDON_NAME)
 --  accessor and Get() falls back to defaults. pos (point, relPoint, x, y) is
 --  where unlock mode put the frame; defaultPos stands in until then.
 -------------------------------------------------------------------------------
-function ns.Feature(dbKey, defaults, defaultPos)
+function mod.Feature(dbKey, defaultSet, defaultPos)
     local F, none = {}, {}
     local function Read()
         return CludesUIDB and CludesUIDB[dbKey] or none
@@ -53,34 +53,34 @@ function ns.Feature(dbKey, defaults, defaultPos)
         return c
     end
     local function Get(key)
-        local v = Read()[key]
-        if v == nil then
-            return defaults[key]
+        local val = Read()[key]
+        if val == nil then
+            return defaultSet[key]
         end
-        return v
+        return val
     end
     local function Enabled()
         return Get("enabled") == true
     end
     local function SavedPos()
-        local pos = Read().pos
-        return pos and pos.point and pos or defaultPos
+        local place = Read().pos
+        return place and place.point and place or defaultPos
     end
     -- A frame not built yet (nil) has nothing to place. snap: a CENTER point
     -- lands on the pixel grid for the frame's size, as unlock mode places it.
-    local function Place(frame, snap)
-        if not frame then
+    local function Place(widget, snap)
+        if not widget then
             return
         end
-        local pos = SavedPos()
-        local x, y = pos.x or 0, pos.y or 0
-        if snap and pos.point == "CENTER" then
-            local PP = CludesUI.PP
-            x = PP.SnapCenterForDim(x, frame:GetWidth())
-            y = PP.SnapCenterForDim(y, frame:GetHeight())
+        local place = SavedPos()
+        local posX, posY = place.x or 0, place.y or 0
+        if snap and place.point == "CENTER" then
+            local Pix = CludesUI.PP
+            posX = Pix.SnapCenterForDim(posX, widget:GetWidth())
+            posY = Pix.SnapCenterForDim(posY, widget:GetHeight())
         end
-        frame:ClearAllPoints()
-        frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, x, y)
+        widget:ClearAllPoints()
+        widget:SetPoint(place.point, UIParent, place.relPoint or place.point, posX, posY)
     end
     F.Read, F.Cfg, F.Get, F.Enabled, F.Place = Read, Cfg, Get, Enabled, Place
 
@@ -124,11 +124,11 @@ function ns.Feature(dbKey, defaults, defaultPos)
                 getFrame = function()
                     return Shown() and u.frame(true) or nil
                 end,
-                savePos = function(_, point, relPoint, x, y)
-                    if not point then
+                savePos = function(_, anchorPoint, relPoint, posX, posY)
+                    if not anchorPoint then
                         return
                     end
-                    Cfg().pos = { point = point, relPoint = relPoint, x = x, y = y }
+                    Cfg().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     if not CludesUI._unlockActive then
                         Place(u.frame(), u.snap)
                     end
@@ -151,8 +151,8 @@ function ns.Feature(dbKey, defaults, defaultPos)
                 e.getSize = function()
                     return Get("width"), u.height()
                 end
-                e.setWidth = function(_, w)
-                    Cfg().width = math.max(u.minWidth, CludesUI.PP.Snap(w))
+                e.setWidth = function(_, wid)
+                    Cfg().width = math.max(u.minWidth, CludesUI.PP.Snap(wid))
                     u.applyStyle()
                     if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                         CludesUI.RepositionBarToMover(u.key)
@@ -177,7 +177,7 @@ end
 -- buttons, which Quick Keybind mode binds there. A click does nothing while
 -- the game has the button disabled. Built out of combat, since its mouse
 -- routing is blocked in combat on every frame; nil without the button.
-function ns.MicroClickLayer(microName, onClick)
+function mod.MicroClickLayer(microName, onClick)
     local micro = _G[microName]
     if not micro or InCombatLockdown() then
         return nil
@@ -200,19 +200,19 @@ end
 --  Auctionator prices (Loot Feed, Junk Items)
 -------------------------------------------------------------------------------
 -- Auctionator's API, while that addon is loaded.
-function ns.AuctionAPI()
+function mod.AuctionAPI()
     local api = Auctionator and Auctionator.API and Auctionator.API.v1
     return api and api.GetAuctionPriceByItemLink and api or nil
 end
 
 -- What Auctionator last saw one of the item listed for, when it has a price.
-function ns.AuctionPrice(link)
-    local api = ns.AuctionAPI()
+function mod.AuctionPrice(itemLink)
+    local api = mod.AuctionAPI()
     if not api then
         return
     end
-    local ok, price = pcall(api.GetAuctionPriceByItemLink, "CludesUI", link)
-    if ok and type(price) == "number" and price > 0 then
+    local success, price = pcall(api.GetAuctionPriceByItemLink, "CludesUI", itemLink)
+    if success and type(price) == "number" and price > 0 then
         return price
     end
 end

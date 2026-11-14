@@ -26,11 +26,11 @@ local _, module = ...
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
-local function Known(id)
-    return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(id)
+local function Known(ident)
+    return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(ident)
 end
 local _, CLASS = UnitClass("player")
 
@@ -141,70 +141,66 @@ local FOOD_CLASS, FOOD_SUBCLASS, OTHER_SUBCLASS = 0, 5, 8
 local FOOD_SPELL, NUTRITIOUS_DRINK, DRINK_ITEM = 433, 1249920, 159
 local NO_DRINK = { WARRIOR = true, ROGUE = true }
 
-local R = module.Feature(
-    "restock",
-    {
-        enabled = true,
-        reagents = true,
-        ammo = true,
-        ammoTarget = 1000,
-        food = true,
-        foodBelow = 10,
-        foodMinLevel = 0,
-        foodMaxLevel = 60,
-        vendor = true,
-        bagsBelow = 4,
-        buy = false,
-        hunterAmmo = false,
-        hunterAmmoBelow = 500,
-        size = 16,
-    },
-    { point = "CENTER", relPoint = "CENTER", x = 0, y = 120 }
-)
+local R = module.Feature("restock", {
+    enabled = true,
+    reagents = true,
+    ammo = true,
+    ammoTarget = 1000,
+    food = true,
+    foodBelow = 10,
+    foodMinLevel = 0,
+    foodMaxLevel = 60,
+    vendor = true,
+    bagsBelow = 4,
+    buy = false,
+    hunterAmmo = false,
+    hunterAmmoBelow = 500,
+    size = 16,
+}, { point = "CENTER", relPoint = "CENTER", x = 0, y = 120 })
 
-local function Target(itemID)
+local function Target(itemId)
     local t = R.Read().targets
-    return (t and t[itemID]) or TARGETS[itemID]
+    return (t and t[itemId]) or TARGETS[itemId]
 end
 
 local pending = {}
 local rEvents = CreateFrame("Frame")
-local function RequestItem(id)
-    if pending[id] then
+local function RequestItem(ident)
+    if pending[ident] then
         return
     end
-    pending[id] = true
+    pending[ident] = true
     rEvents:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-    C_Item.RequestLoadItemDataByID(id)
+    C_Item.RequestLoadItemDataByID(ident)
 end
 
-local function ItemName(id)
-    return C_Item.GetItemNameByID(id) or ("item " .. id)
+local function ItemName(ident)
+    return C_Item.GetItemNameByID(ident) or ("item " .. ident)
 end
 
 local function KnownReagent(family)
-    local item
+    local itemInfo
     for _, rank in ipairs(family) do
         if Known(rank[1]) then
-            item = rank[2]
+            itemInfo = rank[2]
         end
     end
-    return item
+    return itemInfo
 end
 
 local function CarriedAmmo()
     if THROWN_CLASSES[CLASS] then
-        local item = GetInventoryItemID("player", RANGED_SLOT)
-        if item then
-            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(item)
+        local itemInfo = GetInventoryItemID("player", RANGED_SLOT)
+        if itemInfo then
+            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(itemInfo)
             if classID == WEAPON_CLASS and subID == THROWN_SUBCLASS then
-                local stack = select(8, C_Item.GetItemInfo(item))
+                local stack = select(8, C_Item.GetItemInfo(itemInfo))
                 if not stack then
-                    RequestItem(item)
+                    RequestItem(itemInfo)
                     return
                 end
                 if stack > 1 then
-                    return item
+                    return itemInfo
                 end
                 return
             end
@@ -214,20 +210,20 @@ local function CarriedAmmo()
 end
 
 local function Wanted()
-    local want = {}
+    local wanted = {}
     if R.Get("reagents") then
         for _, f in ipairs(FAMILIES) do
-            local item = f.class == CLASS and KnownReagent(f)
-            if item and Target(item) > 0 then
-                want[item] = Target(item)
+            local itemInfo = f.class == CLASS and KnownReagent(f)
+            if itemInfo and Target(itemInfo) > 0 then
+                wanted[itemInfo] = Target(itemInfo)
             end
         end
     end
     local ammo = R.Get("ammo") and CarriedAmmo()
     if ammo and ammo > 0 then
-        want[ammo] = R.Get("ammoTarget")
+        wanted[ammo] = R.Get("ammoTarget")
     end
-    return want
+    return wanted
 end
 
 local function HunterAmmoOn()
@@ -244,26 +240,26 @@ local function ScanBags()
         if (family or 0) == 0 then
             free = free + (slots or 0)
         end
-        for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local info = C_Container.GetContainerItemInfo(bag, slot)
-            if info then
-                if info.quality == Enum.ItemQuality.Poor and not info.hasNoValue then
+        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+            if details then
+                if details.quality == Enum.ItemQuality.Poor and not details.hasNoValue then
                     junk = junk + 1
                 end
-                local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(info.itemID)
+                local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(details.itemID)
                 local isFood = classID == FOOD_CLASS and (subID == FOOD_SUBCLASS or subID == OTHER_SUBCLASS)
-                local level = isFood and select(5, C_Item.GetItemInfo(info.itemID))
+                local level = isFood and select(5, C_Item.GetItemInfo(details.itemID))
                 if isFood and not level then
-                    RequestItem(info.itemID)
+                    RequestItem(details.itemID)
                 end
                 if level and level >= R.Get("foodMinLevel") and level <= R.Get("foodMaxLevel") then
-                    local spell = C_Item.GetItemSpell(info.itemID)
-                    if FOOD_AND_DRINK[info.itemID] then
-                        food, drink = food + info.stackCount, drink + info.stackCount
+                    local spell = C_Item.GetItemSpell(details.itemID)
+                    if FOOD_AND_DRINK[details.itemID] then
+                        food, drink = food + details.stackCount, drink + details.stackCount
                     elseif spell and (spell == drinkSpell or spell == nutritious) then
-                        drink = drink + info.stackCount
+                        drink = drink + details.stackCount
                     elseif subID == FOOD_SUBCLASS or spell == foodSpell then
-                        food = food + info.stackCount
+                        food = food + details.stackCount
                     end
                 end
             end
@@ -274,11 +270,11 @@ end
 
 local function Lines()
     local lines = {}
-    for id, target in pairs(Wanted()) do
-        local have = C_Item.GetItemCount(id)
-        local hunterAmmo = HunterAmmoOn() and id == GetInventoryItemID("player", AMMO_SLOT)
-        if not hunterAmmo and have < target then
-            lines[#lines + 1] = ("%s  %d / %d"):format(ItemName(id), have, target)
+    for ident, targetUnit in pairs(Wanted()) do
+        local have = C_Item.GetItemCount(ident)
+        local hunterAmmo = HunterAmmoOn() and ident == GetInventoryItemID("player", AMMO_SLOT)
+        if not hunterAmmo and have < targetUnit then
+            lines[#lines + 1] = ("%s  %d / %d"):format(ItemName(ident), have, targetUnit)
         end
     end
     table.sort(lines)
@@ -354,9 +350,9 @@ end
 
 local function ShowAlert(lines)
     BuildAlert()
-    local size = R.Get("size")
-    CludesUI.Kit.Font(alert.title, size + 6, "essentials")
-    CludesUI.Kit.Font(alert.text, size, "essentials")
+    local dim = R.Get("size")
+    CludesUI.Kit.Font(alert.title, dim + 6, "essentials")
+    CludesUI.Kit.Font(alert.text, dim, "essentials")
     alert.text:SetText(table.concat(lines, "\n"))
     alert:SetSize(
         math.max(alert.title:GetStringWidth(), alert.text:GetStringWidth()) + 16,
@@ -397,33 +393,33 @@ local function Buy()
     if not (R.Enabled() and R.Get("buy")) then
         return
     end
-    local want = Wanted()
+    local wanted = Wanted()
     local money = GetMoney()
     local spent, bought = 0, {}
-    for index = 1, GetMerchantNumItems() do
-        local id = tonumber((GetMerchantItemLink(index) or ""):match("item:(%d+)"))
-        local target = id and want[id]
-        local info = target and C_MerchantFrame.GetItemInfo(index)
-        if info and info.isPurchasable and not info.hasExtendedCost then
-            local bundle = math.max(info.stackCount, 1)
-            local bundles = math.ceil((target - C_Item.GetItemCount(id)) / bundle)
-            if info.numAvailable and info.numAvailable >= 0 then
-                bundles = math.min(bundles, info.numAvailable)
+    for slotPos = 1, GetMerchantNumItems() do
+        local ident = tonumber((GetMerchantItemLink(slotPos) or ""):match("item:(%d+)"))
+        local targetUnit = ident and wanted[ident]
+        local details = targetUnit and C_MerchantFrame.GetItemInfo(slotPos)
+        if details and details.isPurchasable and not details.hasExtendedCost then
+            local bundle = math.max(details.stackCount, 1)
+            local bundles = math.ceil((targetUnit - C_Item.GetItemCount(ident)) / bundle)
+            if details.numAvailable and details.numAvailable >= 0 then
+                bundles = math.min(bundles, details.numAvailable)
             end
-            if info.price > 0 then
-                bundles = math.min(bundles, math.floor(money / info.price))
+            if details.price > 0 then
+                bundles = math.min(bundles, math.floor(money / details.price))
             end
-            local perBuy = math.max(math.floor(GetMerchantItemMaxStack(index) / bundle), 1)
+            local perBuy = math.max(math.floor(GetMerchantItemMaxStack(slotPos) / bundle), 1)
             if bundles > 0 then
-                local left = bundles
-                while left > 0 do
-                    local take = math.min(left, perBuy)
-                    BuyMerchantItem(index, take * bundle)
-                    left = left - take
+                local leftX = bundles
+                while leftX > 0 do
+                    local take = math.min(leftX, perBuy)
+                    BuyMerchantItem(slotPos, take * bundle)
+                    leftX = leftX - take
                 end
-                money = money - bundles * info.price
-                spent = spent + bundles * info.price
-                bought[#bought + 1] = bundles * bundle .. "x " .. ItemName(id)
+                money = money - bundles * details.price
+                spent = spent + bundles * details.price
+                bought[#bought + 1] = bundles * bundle .. "x " .. ItemName(ident)
             end
         end
     end
@@ -438,25 +434,25 @@ local function Buy()
 end
 
 local wasResting
-rEvents:SetScript("OnEvent", function(_, event, id)
-    if event == "GET_ITEM_INFO_RECEIVED" then
-        if not pending[id] then
+rEvents:SetScript("OnEvent", function(_, evt, ident)
+    if evt == "GET_ITEM_INFO_RECEIVED" then
+        if not pending[ident] then
             return
         end
-        pending[id] = nil
+        pending[ident] = nil
         if not next(pending) then
             rEvents:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
         end
         return Check()
     end
-    if event == "MERCHANT_SHOW" then
+    if evt == "MERCHANT_SHOW" then
         HideAlert()
         Buy()
-    elseif event == "MERCHANT_CLOSED" then
+    elseif evt == "MERCHANT_CLOSED" then
         C_Timer.After(0.5, Check)
-    elseif event == "PLAYER_REGEN_DISABLED" then
+    elseif evt == "PLAYER_REGEN_DISABLED" then
         HideAlert()
-    elseif event == "PLAYER_UPDATE_RESTING" or event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_UPDATE_RESTING" or evt == "PLAYER_ENTERING_WORLD" then
         local resting = IsResting()
         if resting and not wasResting then
             Check()
@@ -476,8 +472,8 @@ local function RApply()
         HideAlert()
         return
     end
-    for id in pairs(TARGETS) do
-        C_Item.RequestLoadItemDataByID(id)
+    for ident in pairs(TARGETS) do
+        C_Item.RequestLoadItemDataByID(ident)
     end
     for _, e in ipairs({
         "MERCHANT_SHOW",
@@ -503,19 +499,19 @@ end
 
 --- This class's reagents, for the options page: { {item, name, target}, ... }.
 local function ClassReagents()
-    local out, seen = {}, {}
+    local result, seen = {}, {}
     for _, f in ipairs(FAMILIES) do
         if f.class == CLASS then
             for _, rank in ipairs(f) do
-                local item = rank[2]
-                if not seen[item] then
-                    seen[item] = true
-                    out[#out + 1] = { item = item, name = ItemName(item) }
+                local itemInfo = rank[2]
+                if not seen[itemInfo] then
+                    seen[itemInfo] = true
+                    result[#result + 1] = { item = itemInfo, name = ItemName(itemInfo) }
                 end
             end
         end
     end
-    return out
+    return result
 end
 
 R.Start(RApply, {
@@ -569,11 +565,11 @@ local LOCKPICKING = 633
 local L = module.Feature("lockboxSkill", { enabled = false })
 local lockSkill, lockName
 local function ReadSkill()
-    local info = C_SkillInfo
+    local details = C_SkillInfo
         and C_SkillInfo.GetSkillLineInfoByID
         and C_SkillInfo.GetSkillLineInfoByID(LOCKPICKING)
-    lockSkill = info and (info.rank + info.modifier)
-    lockName = (info and info.name ~= "" and info.name)
+    lockSkill = details and (details.rank + details.modifier)
+    lockName = (details and details.name ~= "" and details.name)
         or (C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName and C_TradeSkillUI.GetTradeSkillDisplayName(
             LOCKPICKING
         ))
@@ -582,15 +578,15 @@ end
 local lockEv = CreateFrame("Frame")
 lockEv:SetScript("OnEvent", ReadSkill)
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, payload)
         if not L.Enabled() then
             return
         end
-        local id = data and data.id
-        if not id or Secret(id) then
+        local ident = payload and payload.id
+        if not ident or Secret(ident) then
             return
         end
-        local need = LOCKBOX_SKILL[id]
+        local need = LOCKBOX_SKILL[ident]
         if not need then
             return
         end
@@ -635,28 +631,28 @@ local function GOn()
     return G.Get("worn") or G.Get("pole")
 end
 
-local function Wearing(w, id)
-    if w.item then
-        return id == w.item
+local function Wearing(wid, ident)
+    if wid.item then
+        return ident == wid.item
     end
-    local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(id)
-    return classID == Enum.ItemClass.Weapon and subID == Enum.ItemWeaponSubclass[w.weapon]
+    local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(ident)
+    return classID == Enum.ItemClass.Weapon and subID == Enum.ItemWeaponSubclass[wid.weapon]
 end
 
-local function WornHere(w, here)
-    if w.instance then
-        return w.instance == here
+local function WornHere(wid, here)
+    if wid.instance then
+        return wid.instance == here
     end
-    if w.where and G.Get(w.where) == "instance" then
-        local _, kind = IsInInstance()
-        return kind == "party" or kind == "raid"
+    if wid.where and G.Get(wid.where) == "instance" then
+        local _, kindOf = IsInInstance()
+        return kindOf == "party" or kindOf == "raid"
     end
     return true
 end
 
 local GUpdate
-local function Icon(i)
-    local b = gIcons[i]
+local function Icon(idx)
+    local b = gIcons[idx]
     if b then
         return b
     end
@@ -683,7 +679,7 @@ local function Icon(i)
             GUpdate()
         end
     end)
-    gIcons[i] = b
+    gIcons[idx] = b
     return b
 end
 
@@ -691,41 +687,47 @@ GUpdate = function()
     if not gFrame then
         return
     end
-    local size = G.Get("size")
+    local dim = G.Get("size")
     local here = select(8, GetInstanceInfo())
-    local shown = 0
-    for _, w in ipairs(WORN) do
-        local id = GetInventoryItemID("player", w.slot)
-        if dismissed[w.slot] ~= id then
-            dismissed[w.slot] = nil
+    local isShown = 0
+    for _, wid in ipairs(WORN) do
+        local ident = GetInventoryItemID("player", wid.slot)
+        if dismissed[wid.slot] ~= ident then
+            dismissed[wid.slot] = nil
         end
-        local show, tex, slot
+        local show, texture, slotIndex
         if CludesUI._unlockActive then
-            show, tex = G.Get(w.setting), C_Item.GetItemIconByID(w.item or w.sample)
-        elseif id and not dismissed[w.slot] and G.Get(w.setting) and WornHere(w, here) and Wearing(w, id) then
-            show, tex, slot = true, C_Item.GetItemIconByID(id), w.slot
+            show, texture = G.Get(wid.setting), C_Item.GetItemIconByID(wid.item or wid.sample)
+        elseif
+            ident
+            and not dismissed[wid.slot]
+            and G.Get(wid.setting)
+            and WornHere(wid, here)
+            and Wearing(wid, ident)
+        then
+            show, texture, slotIndex = true, C_Item.GetItemIconByID(ident), wid.slot
         end
         if show then
-            shown = shown + 1
-            local b = Icon(shown)
-            b:SetSize(size, size)
+            isShown = isShown + 1
+            local b = Icon(isShown)
+            b:SetSize(dim, dim)
             b:ClearAllPoints()
-            b:SetPoint("LEFT", gFrame, "LEFT", (shown - 1) * (size + 4), 0)
-            b.tex:SetTexture(tex)
-            b.slot = slot
+            b:SetPoint("LEFT", gFrame, "LEFT", (isShown - 1) * (dim + 4), 0)
+            b.tex:SetTexture(texture)
+            b.slot = slotIndex
             b:Show()
         end
     end
-    for i = shown + 1, #gIcons do
-        gIcons[i]:Hide()
+    for idx = isShown + 1, #gIcons do
+        gIcons[idx]:Hide()
     end
-    gFrame:SetSize(math.max(shown, 1) * (size + 4) - 4, size)
+    gFrame:SetSize(math.max(isShown, 1) * (dim + 4) - 4, dim)
 end
 
 local gEv = CreateFrame("Frame")
-gEv:SetScript("OnEvent", function(_, event, slot, hasCurrent)
-    if event == "PLAYER_EQUIPMENT_CHANGED" and not hasCurrent then
-        dismissed[slot] = nil
+gEv:SetScript("OnEvent", function(_, evt, slotIndex, hasCurrent)
+    if evt == "PLAYER_EQUIPMENT_CHANGED" and not hasCurrent then
+        dismissed[slotIndex] = nil
     end
     GUpdate()
 end)
@@ -817,10 +819,10 @@ local function TUpdate()
     end
 end
 local tEv = CreateFrame("Frame")
-tEv:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_REGEN_DISABLED" then
+tEv:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_REGEN_DISABLED" then
         tCombat = true
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif evt == "PLAYER_REGEN_ENABLED" then
         tCombat = false
     end
     TUpdate()

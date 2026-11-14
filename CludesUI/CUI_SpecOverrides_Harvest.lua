@@ -10,110 +10,110 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
-local I = CUI_NS._soInternals
+local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local BlacklistedFKey, ConflictSpec = I.BlacklistedFKey, I.ConflictSpec
-local CurrentSpecID, DeepCopy, EntryOwning = I.CurrentSpecID, I.DeepCopy, I.EntryOwning
-local FKeyLoaded, FS, GetGroups = I.FKeyLoaded, I.FS, I.GetGroups
-local GetProfileRoot, GetStore, GOLD_B = I.GetProfileRoot, I.GetStore, I.GOLD_B
-local GOLD_G, GOLD_R, GroupById = I.GOLD_G, I.GOLD_R, I.GroupById
-local HasRegisteredDefault, L, MatchOwnedFKey = I.HasRegisteredDefault, I.L, I.MatchOwnedFKey
-local NIL_SENT, PS, PxCo, ReadLive = I.NIL_SENT, I.PS, I.PxCo, I.ReadLive
-local RebuildFKeyIndex, RunRefreshers = I.RebuildFKeyIndex, I.RunRefreshers
-local SnapValue, SpecInAnyGroup, SplitFKey = I.SnapValue, I.SpecInAnyGroup, I.SplitFKey
-local WriteLive, SetEditGroup, SetDefaultView = I.WriteLive, I.SetEditGroup, I.SetDefaultView
-local SetInTransition, SetActiveSpec = I.SetInTransition, I.SetActiveSpec
+local BlacklistedFKey, ConflictSpec = Inner.BlacklistedFKey, Inner.ConflictSpec
+local CurrentSpecID, DeepCopy, EntryOwning = Inner.CurrentSpecID, Inner.DeepCopy, Inner.EntryOwning
+local FKeyLoaded, FS, GetGroups = Inner.FKeyLoaded, Inner.FS, Inner.GetGroups
+local GetProfileRoot, GetStore, GOLD_B = Inner.GetProfileRoot, Inner.GetStore, Inner.GOLD_B
+local GOLD_G, GOLD_R, GroupById = Inner.GOLD_G, Inner.GOLD_R, Inner.GroupById
+local HasRegisteredDefault, L, MatchOwnedFKey = Inner.HasRegisteredDefault, Inner.L, Inner.MatchOwnedFKey
+local NIL_SENT, PS, PxCo, ReadLive = Inner.NIL_SENT, Inner.PS, Inner.PxCo, Inner.ReadLive
+local RebuildFKeyIndex, RunRefreshers = Inner.RebuildFKeyIndex, Inner.RunRefreshers
+local SnapValue, SpecInAnyGroup, SplitFKey = Inner.SnapValue, Inner.SpecInAnyGroup, Inner.SplitFKey
+local WriteLive, SetEditGroup, SetDefaultView = Inner.WriteLive, Inner.SetEditGroup, Inner.SetDefaultView
+local SetInTransition, SetActiveSpec = Inner.SetInTransition, Inner.SetActiveSpec
 
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-I.editGroupSetters[#I.editGroupSetters + 1] = function(v)
-    _editGroup = v
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val)
+    _editGroup = val
 end
 local _defaultView = false -- panel open in Default Editing Mode: live holds
 -- the stored DEFAULT values for captured paths
-I.defaultViewSetters[#I.defaultViewSetters + 1] = function(v)
-    _defaultView = v
+Inner.defaultViewSetters[#Inner.defaultViewSetters + 1] = function(val)
+    _defaultView = val
 end
 local _enterSnap = nil -- profiles snapshot from session start (set by editing-as
 -- enter flows; baseline for exit-sweep + HarvestGroup revert detection)
-I.enterSnapSetters[#I.enterSnapSetters + 1] = function(v)
-    _enterSnap = v
+Inner.enterSnapSetters[#Inner.enterSnapSetters + 1] = function(val)
+    _enterSnap = val
 end
 local RequestGoldWalk
-I.goldWalkSetters[#I.goldWalkSetters + 1] = function(v)
-    RequestGoldWalk = v
+Inner.goldWalkSetters[#Inner.goldWalkSetters + 1] = function(val)
+    RequestGoldWalk = val
 end
 local SweepUncaptured
-I.sweepSetters[#I.sweepSetters + 1] = function(v)
-    SweepUncaptured = v
+Inner.sweepSetters[#Inner.sweepSetters + 1] = function(val)
+    SweepUncaptured = val
 end
 local TeardownEditSession
-I.teardownSetters[#I.teardownSetters + 1] = function(v)
-    TeardownEditSession = v
+Inner.teardownSetters[#Inner.teardownSetters + 1] = function(val)
+    TeardownEditSession = val
 end
 local PanelShown
-I.panelShownSetters[#I.panelShownSetters + 1] = function(v)
-    PanelShown = v
+Inner.panelShownSetters[#Inner.panelShownSetters + 1] = function(val)
+    PanelShown = val
 end
 local EnterDefaultView
-I.enterDefaultViewSetters[#I.enterDefaultViewSetters + 1] = function(v)
-    EnterDefaultView = v
+Inner.enterDefaultViewSetters[#Inner.enterDefaultViewSetters + 1] = function(val)
+    EnterDefaultView = val
 end
 local UpdateIndicator
-I.updateIndicatorSetters[#I.updateIndicatorSetters + 1] = function(v)
-    UpdateIndicator = v
+Inner.updateIndicatorSetters[#Inner.updateIndicatorSetters + 1] = function(val)
+    UpdateIndicator = val
 end
 local RefreshCardsPopup
-I.refreshCardsSetters[#I.refreshCardsSetters + 1] = function(v)
-    RefreshCardsPopup = v
+Inner.refreshCardsSetters[#Inner.refreshCardsSetters + 1] = function(val)
+    RefreshCardsPopup = val
 end
 
 -------------------------------------------------------------------------------
 --  Harvest / Apply  (save-on-leave, apply-on-enter)
 -------------------------------------------------------------------------------
 local _inTransition = false -- suppresses HarvestCurrent between leave & apply
-I.inTransitionSetters[#I.inTransitionSetters + 1] = function(v)
-    _inTransition = v
+Inner.inTransitionSetters[#Inner.inTransitionSetters + 1] = function(val)
+    _inTransition = val
 end
 local _activeSpec = nil -- spec whose values currently sit in the live db
 -- (ignoring a temporary Editing-as swap)
-I.activeSpecSetters[#I.activeSpecSetters + 1] = function(v)
-    _activeSpec = v
+Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(val)
+    _activeSpec = val
 end
 
 -- Reads the live value of every captured path into a map.
 local function HarvestMap()
-    local store = GetStore()
-    if not store or #store == 0 then
+    local storage = GetStore()
+    if not storage or #storage == 0 then
         return nil
     end
     local maps = {}
-    for i, entry in ipairs(store) do
+    for idx, record in ipairs(storage) do
         local m = {}
-        for fkey in pairs(entry.values.default) do
+        for fkey in pairs(record.values.default) do
             if not FKeyLoaded(fkey) then
                 -- Disabled child addon: keep the recorded default so the equality
                 -- branch retains each spec's stored value instead of banking NIL_SENT over it.
-                m[fkey] = entry.values.default[fkey]
+                m[fkey] = record.values.default[fkey]
             else
-                local v = ReadLive(fkey)
-                if v == nil then
+                local val = ReadLive(fkey)
+                if val == nil then
                     m[fkey] = NIL_SENT
-                elseif type(v) == "table" then
-                    m[fkey] = entry.values.default[fkey] -- structure changed; keep default
+                elseif type(val) == "table" then
+                    m[fkey] = record.values.default[fkey] -- structure changed; keep default
                 else
-                    m[fkey] = v
+                    m[fkey] = val
                 end
             end
         end
-        maps[i] = m
+        maps[idx] = m
     end
     return maps
 end
@@ -131,7 +131,7 @@ local function Harvest(specID)
     if not specID then
         return
     end
-    local store = GetStore()
+    local storage = GetStore()
     local maps = HarvestMap()
     if not maps then
         return
@@ -144,11 +144,11 @@ local function Harvest(specID)
     if not SpecInAnyGroup(specID) then
         return
     end
-    for i, entry in ipairs(store) do
-        local m = maps[i]
-        local prev = entry.values[specID]
+    for idx, record in ipairs(storage) do
+        local m = maps[idx]
+        local prev = record.values[specID]
         local has = false
-        for fkey, dv in pairs(entry.values.default) do
+        for fkey, dv in pairs(record.values.default) do
             if MatchOwnedFKey(fkey) then
                 -- Match-owned size keys: live is the match engine's write, never a user
                 -- edit; Apply skips them so live permanently diverges from stored.
@@ -173,7 +173,7 @@ local function Harvest(specID)
                 has = true
             end
         end
-        entry.values[specID] = has and m or nil
+        record.values[specID] = has and m or nil
     end
 end
 
@@ -182,27 +182,27 @@ end
 -- against the default: the default is movable (Default view edits rewrite it), and
 -- equality-pruning against a moved default deletes intentional overrides.
 local function PruneRedundantValues()
-    local store = GetStore()
-    if not store then
+    local storage = GetStore()
+    if not storage then
         return
     end
     local changed = false
-    for i = #store, 1, -1 do
-        local e = store[i]
-        local def = e.values and e.values.default
-        if def then
-            for fkey in pairs(def) do
+    for idx = #storage, 1, -1 do
+        local e = storage[idx]
+        local spec_def = e.values and e.values.default
+        if spec_def then
+            for fkey in pairs(spec_def) do
                 local held = false
-                for k, m in pairs(e.values) do
-                    if k ~= "default" and type(m) == "table" and m[fkey] ~= nil then
+                for key, m in pairs(e.values) do
+                    if key ~= "default" and type(m) == "table" and m[fkey] ~= nil then
                         held = true
                         break
                     end
                 end
                 if not held then
                     -- An exact-size companion stays while its size key does (PxCo).
-                    local base = fkey:sub(-2) == "Px" and fkey:sub(1, -3) or nil
-                    if base and def[base] ~= nil and PxCo.Partner(base) == fkey then
+                    local baseValue = fkey:sub(-2) == "Px" and fkey:sub(1, -3) or nil
+                    if baseValue and spec_def[baseValue] ~= nil and PxCo.Partner(baseValue) == fkey then
                         held = true
                     end
                 end
@@ -214,23 +214,23 @@ local function PruneRedundantValues()
                     -- applied and GC freely; an unloaded module can't be verified and is kept.
                     local canGC = BlacklistedFKey(fkey)
                     if not canGC and FKeyLoaded(fkey) then
-                        local dv = def[fkey]
+                        local dv = spec_def[fkey]
                         if dv == NIL_SENT then
                             dv = nil
                         end
-                        local cur = ReadLive(fkey)
-                        if type(dv) == "table" or type(cur) == "table" or cur == dv then
+                        local current = ReadLive(fkey)
+                        if type(dv) == "table" or type(current) == "table" or current == dv then
                             canGC = true
                         end
                     end
                     if canGC then
-                        def[fkey] = nil
+                        spec_def[fkey] = nil
                         changed = true
                     end
                 end
             end
-            if not next(def) then
-                table.remove(store, i)
+            if not next(spec_def) then
+                table.remove(storage, idx)
                 changed = true
             end
         end
@@ -251,16 +251,16 @@ local function HarvestGroup(group)
     if not group then
         return
     end
-    local store = GetStore()
+    local storage = GetStore()
     local maps = HarvestMap()
     if not maps then
         return
     end
-    for i, entry in ipairs(store) do
-        if not ConflictSpec(entry, group) then
-            local m = maps[i]
+    for idx, record in ipairs(storage) do
+        if not ConflictSpec(record, group) then
+            local m = maps[idx]
             local preserve
-            for fkey, dv in pairs(entry.values.default) do
+            for fkey, dv in pairs(record.values.default) do
                 if MatchOwnedFKey(fkey) or not FKeyLoaded(fkey) then
                     -- Match-owned size keys never bank FROM live (see Harvest): the
                     -- broadcast below would stamp the match engine's write onto EVERY
@@ -286,18 +286,18 @@ local function HarvestGroup(group)
                 end
             end
             for _, specID in ipairs(group.specs or {}) do
-                local prev = entry.values[specID]
-                local out = next(m) ~= nil and DeepCopy(m) or nil
+                local prev = record.values[specID]
+                local result = next(m) ~= nil and DeepCopy(m) or nil
                 if preserve and prev then
                     for fkey in pairs(preserve) do
                         local pv = prev[fkey]
                         if pv ~= nil then
-                            out = out or {}
-                            out[fkey] = (type(pv) == "table") and DeepCopy(pv) or pv
+                            result = result or {}
+                            result[fkey] = (type(pv) == "table") and DeepCopy(pv) or pv
                         end
                     end
                 end
-                entry.values[specID] = out
+                record.values[specID] = result
             end
         end
     end
@@ -312,44 +312,44 @@ end
 -- every override map holding its own legacy size gets NIL_SENT for the
 -- companion, so that spec or condition draws its own size, not the baseline's.
 -- Defined here, after the locals it reads.
-function PxCo.Pair(store, cond)
-    if not store then
+function PxCo.Pair(storage, cond)
+    if not storage then
         return
     end
     local CO = CludesUI._CondOv
     local changed = false
-    for _, entry in ipairs(store) do
-        local def = entry.values and entry.values.default
-        if def then
+    for _, record in ipairs(storage) do
+        local spec_def = record.values and record.values.default
+        if spec_def then
             local adopt
-            for fkey in pairs(def) do
+            for fkey in pairs(spec_def) do
                 local p = PxCo.Partner(fkey)
                 if
                     p
-                    and def[p] == nil
+                    and spec_def[p] == nil
                     and FKeyLoaded(p)
                     and not EntryOwning(p)
                     and not (CO and CO.EntryOwning and CO.EntryOwning(p))
                 then
-                    local cur = ReadLive(p)
-                    if cur ~= nil and type(cur) ~= "table" then
+                    local current = ReadLive(p)
+                    if current ~= nil and type(current) ~= "table" then
                         adopt = adopt or {}
-                        adopt[p] = cur
+                        adopt[p] = current
                     end
                 end
             end
             if adopt then
-                for p, v in pairs(adopt) do
-                    def[p] = v
+                for p, val in pairs(adopt) do
+                    spec_def[p] = val
                 end
                 changed = true
             end
-            for fkey in pairs(def) do
+            for fkey in pairs(spec_def) do
                 local p = PxCo.Partner(fkey)
-                local pv = p and def[p]
+                local pv = p and spec_def[p]
                 if type(pv) == "string" and pv ~= NIL_SENT then
-                    for k, m in pairs(entry.values) do
-                        if k ~= "default" and type(m) == "table" and m[fkey] ~= nil and m[p] == nil then
+                    for key, m in pairs(record.values) do
+                        if key ~= "default" and type(m) == "table" and m[fkey] ~= nil and m[p] == nil then
                             m[p] = NIL_SENT
                             changed = true
                         end
@@ -371,39 +371,39 @@ end
 -- Raw writer: puts the given spec's stored values into the live profile
 -- tables. Returns the set of folders whose values actually changed, or nil.
 local function WriteSpecValues(specID)
-    local store = GetStore()
-    if not store or #store == 0 or not specID then
+    local storage = GetStore()
+    if not storage or #storage == 0 or not specID then
         return nil
     end
-    PxCo.Pair(store)
+    PxCo.Pair(storage)
     local touched = nil
-    for _, entry in ipairs(store) do
-        local m = entry.values[specID] or entry.values.default
-        for fkey, def in pairs(entry.values.default) do
+    for _, record in ipairs(storage) do
+        local m = record.values[specID] or record.values.default
+        for fkey, spec_def in pairs(record.values.default) do
             -- Apply-side folder blacklist: legacy entries can carry paths into
             -- hands-off addons (CDM runs its own per-spec system; a stale write
             -- re-injects frozen spell data and its unmapped folder forces a full
             -- RefreshAllAddons mid-play). Match-owned keys: the match engine owns
             -- them while a link exists, so stored is a stale copy.
             if not BlacklistedFKey(fkey) and not MatchOwnedFKey(fkey) then
-                local v = m[fkey]
-                if v == nil then
-                    v = def
+                local val = m[fkey]
+                if val == nil then
+                    val = spec_def
                 end
-                if v == NIL_SENT then
-                    v = nil
+                if val == NIL_SENT then
+                    val = nil
                 end
                 -- Key-removal markers are honored ONLY for keys with no registered
                 -- default: on defaults-backed keys the marker is harvest residue (see
                 -- HasRegisteredDefault) and writing nil strips a key consumers read
                 -- raw. Skip; live keeps the merged default and the next harvest self-heals.
-                local nilPoison = (v == nil) and HasRegisteredDefault(fkey)
-                local cur = ReadLive(fkey)
+                local nilPoison = (val == nil) and HasRegisteredDefault(fkey)
+                local current = ReadLive(fkey)
                 -- Table values are never written or compared: a stored table
                 -- reference NEVER equals live -> phantom "write" plus a full
                 -- module refresh on every apply.
-                if not nilPoison and type(v) ~= "table" and type(cur) ~= "table" and cur ~= v then
-                    if WriteLive(fkey, v) then
+                if not nilPoison and type(val) ~= "table" and type(current) ~= "table" and current ~= val then
+                    if WriteLive(fkey, val) then
                         local folder = SplitFKey(fkey)
                         if folder then
                             touched = touched or {}
@@ -429,27 +429,27 @@ end
 -- Default variant: writes the stored DEFAULT values (what specs outside any
 -- group use). Powers the panel's Default Editing Mode view.
 local function WriteDefaultValues()
-    local store = GetStore()
-    if not store or #store == 0 then
+    local storage = GetStore()
+    if not storage or #storage == 0 then
         return nil
     end
     local touched = nil
-    for _, entry in ipairs(store) do
-        for fkey, def in pairs(entry.values.default) do
+    for _, record in ipairs(storage) do
+        for fkey, spec_def in pairs(record.values.default) do
             -- Same apply-side blacklist + match-ownership skip as WriteSpecValues.
             if not BlacklistedFKey(fkey) and not MatchOwnedFKey(fkey) then
-                local v = def
-                if v == NIL_SENT then
-                    v = nil
+                local val = spec_def
+                if val == NIL_SENT then
+                    val = nil
                 end
                 -- Same defaults-backed nil-poison skip as WriteSpecValues,
                 -- plus its table guards: a stored table reference never
                 -- equals live, so comparing/writing one registers a phantom
                 -- change and forces a full module refresh on every apply.
-                local nilPoison = (v == nil) and HasRegisteredDefault(fkey)
-                local cur = ReadLive(fkey)
-                if not nilPoison and type(v) ~= "table" and type(cur) ~= "table" and cur ~= v then
-                    if WriteLive(fkey, v) then
+                local nilPoison = (val == nil) and HasRegisteredDefault(fkey)
+                local current = ReadLive(fkey)
+                if not nilPoison and type(val) ~= "table" and type(current) ~= "table" and current ~= val then
+                    if WriteLive(fkey, val) then
                         local folder = SplitFKey(fkey)
                         if folder then
                             touched = touched or {}
@@ -466,21 +466,21 @@ end
 -- Banks live values into the entries' DEFAULT maps (Default Editing Mode
 -- edits are edits to the shared baseline).
 local function HarvestDefaults()
-    local store = GetStore()
+    local storage = GetStore()
     -- A Default view edit to an exact size an entry does not record yet is a
     -- baseline edit: pair it first so it banks.
-    PxCo.Pair(store)
+    PxCo.Pair(storage)
     local maps = HarvestMap()
     if not maps then
         return
     end
-    for i, entry in ipairs(store) do
+    for idx, record in ipairs(storage) do
         -- Match-owned size keys never bank FROM live: live holds whatever the
         -- match engine last wrote (it re-pulls and persists on every target
         -- resize, including the Default view's own value writes), never a user
         -- default edit. Keep the recorded default verbatim.
-        local m = maps[i]
-        local prev = entry.values.default
+        local m = maps[idx]
+        local prev = record.values.default
         for fkey in pairs(m) do
             if MatchOwnedFKey(fkey) then
                 if prev ~= nil then
@@ -490,7 +490,7 @@ local function HarvestDefaults()
                 end
             end
         end
-        entry.values.default = m
+        record.values.default = m
     end
     PruneRedundantValues()
 end
@@ -514,8 +514,8 @@ local function ApplyValuesFor(specID)
         local t2 = CludesUI._CondOv.WriteValues(CludesUI._CondOv._edit.id, true)
         if t2 then
             touched = touched or {}
-            for k in pairs(t2) do
-                touched[k] = true
+            for key in pairs(t2) do
+                touched[key] = true
             end
         end
         return touched
@@ -572,20 +572,20 @@ function CludesUI.SpecOverrides_ApplyValues(specID)
             -- the one-shot converge with nothing to converge to. pcall so a converge
             -- error can't abort the caller's module fan-out (RefreshAllAddons runs
             -- ApplyValues as its first statement).
-            local sid = specID or _activeSpec or CurrentSpecID()
-            if sid then
+            local spellRef = specID or _activeSpec or CurrentSpecID()
+            if spellRef then
                 prof._importEstablishPending = nil
                 -- One converge serves both windows: the forced apply below
                 -- also satisfies a pending reset-pointer converge.
                 CludesUI._unlockResetConvergePending = nil
                 if CludesUI.SpecOverrides_ApplyUnlock then
-                    pcall(CludesUI.SpecOverrides_ApplyUnlock, sid, true)
+                    pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
                 end
                 if CludesUI.SpecOverrides_ApplyBm then
-                    pcall(CludesUI.SpecOverrides_ApplyBm, sid, true)
+                    pcall(CludesUI.SpecOverrides_ApplyBm, spellRef, true)
                 end
                 if CludesUI.SpecOverrides_ApplyDm then
-                    pcall(CludesUI.SpecOverrides_ApplyDm, sid, true)
+                    pcall(CludesUI.SpecOverrides_ApplyDm, spellRef, true)
                 end
             end
         end
@@ -599,11 +599,11 @@ function CludesUI.SpecOverrides_ApplyValues(specID)
     -- clearing, clear-first, pcall'd). No ApplyBm -- the BM pointer is never
     -- reset, so it is never lied about.
     if CludesUI._unlockResetConvergePending then
-        local sid = specID or _activeSpec or CurrentSpecID()
-        if sid then
+        local spellRef = specID or _activeSpec or CurrentSpecID()
+        if spellRef then
             CludesUI._unlockResetConvergePending = nil
             if CludesUI.SpecOverrides_ApplyUnlock then
-                pcall(CludesUI.SpecOverrides_ApplyUnlock, sid, true)
+                pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
             end
         end
     end
@@ -665,31 +665,31 @@ function CludesUI.SpecOverrides_Apply(specID, deferLogin)
     if not CludesUI._importGuardArmedNow then
         local prof = GetProfileRoot()
         if prof and prof._importEstablishPending then
-            local sid = specID or _activeSpec or CurrentSpecID()
-            if sid then
+            local spellRef = specID or _activeSpec or CurrentSpecID()
+            if spellRef then
                 prof._importEstablishPending = nil
                 -- One converge serves both windows: the forced apply below
                 -- also satisfies a pending reset-pointer converge.
                 CludesUI._unlockResetConvergePending = nil
                 if CludesUI.SpecOverrides_ApplyUnlock then
-                    pcall(CludesUI.SpecOverrides_ApplyUnlock, sid, true)
+                    pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
                 end
                 if CludesUI.SpecOverrides_ApplyBm then
-                    pcall(CludesUI.SpecOverrides_ApplyBm, sid, true)
+                    pcall(CludesUI.SpecOverrides_ApplyBm, spellRef, true)
                 end
                 if CludesUI.SpecOverrides_ApplyDm then
-                    pcall(CludesUI.SpecOverrides_ApplyDm, sid, true)
+                    pcall(CludesUI.SpecOverrides_ApplyDm, spellRef, true)
                 end
             end
         end
     end
     -- Reset-pointer converge; same contract as the copy above.
     if CludesUI._unlockResetConvergePending then
-        local sid = specID or _activeSpec or CurrentSpecID()
-        if sid then
+        local spellRef = specID or _activeSpec or CurrentSpecID()
+        if spellRef then
             CludesUI._unlockResetConvergePending = nil
             if CludesUI.SpecOverrides_ApplyUnlock then
-                pcall(CludesUI.SpecOverrides_ApplyUnlock, sid, true)
+                pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
             end
         end
     end
@@ -922,20 +922,20 @@ function CludesUI.SpecOverrides_IsCaptured(folder, ...)
     local fkey = folder .. FS .. table.concat({ ... }, PS)
     local C = CludesUI._CondOv
     for pass = 1, 2 do
-        local store
+        local storage
         if pass == 1 then
-            store = GetStore()
+            storage = GetStore()
         elseif C and C.GetStore then
-            store = C.GetStore()
+            storage = C.GetStore()
         end
-        if store then
-            for _, e in ipairs(store) do
+        if storage then
+            for _, e in ipairs(storage) do
                 local vals = e.values
                 if type(vals) == "table" then
                     for _, map in pairs(vals) do
                         if type(map) == "table" then
-                            for k in pairs(map) do
-                                if k == fkey or (#k < #fkey and fkey:sub(1, #k + 1) == k .. PS) then
+                            for key in pairs(map) do
+                                if key == fkey or (#key < #fkey and fkey:sub(1, #key + 1) == key .. PS) then
                                     return true
                                 end
                             end
@@ -954,31 +954,31 @@ end
 --- { kind = "cond", id = condition group id }, each once; empty when none
 --- does. One pass over both stores. Read-only, for options pages that tell
 --- apart where an override applies.
-function CludesUI.SpecOverrides_CapturedBy(folder, keys)
-    local want = {}
-    for i = 1, #keys do
-        want[folder .. FS .. keys[i]] = true
+function CludesUI.SpecOverrides_CapturedBy(folder, keyList)
+    local wanted = {}
+    for idx = 1, #keyList do
+        wanted[folder .. FS .. keyList[idx]] = true
     end
     local C = CludesUI._CondOv
-    local out, seen = {}, { spec = {}, cond = {} }
+    local result, seen = {}, { spec = {}, cond = {} }
     for pass = 1, 2 do
-        local store, kind
+        local storage, kindOf
         if pass == 1 then
-            store, kind = GetStore(), "spec"
+            storage, kindOf = GetStore(), "spec"
         elseif C and C.GetStore then
-            store, kind = C.GetStore(), "cond"
+            storage, kindOf = C.GetStore(), "cond"
         end
-        if store then
-            local seenKind = seen[kind]
-            for _, e in ipairs(store) do
+        if storage then
+            local seenKind = seen[kindOf]
+            for _, e in ipairs(storage) do
                 local vals = e.values
                 if type(vals) == "table" then
-                    for id, map in pairs(vals) do
-                        if type(id) == "number" and type(map) == "table" and not seenKind[id] then
-                            for k in pairs(map) do
-                                if want[k] then
-                                    seenKind[id] = true
-                                    out[#out + 1] = { kind = kind, id = id }
+                    for ident, map in pairs(vals) do
+                        if type(ident) == "number" and type(map) == "table" and not seenKind[ident] then
+                            for key in pairs(map) do
+                                if wanted[key] then
+                                    seenKind[ident] = true
+                                    result[#result + 1] = { kind = kindOf, id = ident }
                                     break
                                 end
                             end
@@ -988,11 +988,11 @@ function CludesUI.SpecOverrides_CapturedBy(folder, keys)
             end
         end
     end
-    return out
+    return result
 end
 
-function CludesUI.SpecOverrides_GroupById(gid)
-    return GroupById(gid)
+function CludesUI.SpecOverrides_GroupById(groupId)
+    return GroupById(groupId)
 end
 
 --- READ-ONLY view-state probe: true ONLY while the panel's Default Editing
@@ -1077,8 +1077,8 @@ function CludesUI.SpecOverrides_OwningGroupFor(specID)
         return nil
     end
     for _, g in ipairs(GetGroups() or {}) do
-        for _, sid in ipairs(g.specs or {}) do
-            if sid == specID then
+        for _, spellRef in ipairs(g.specs or {}) do
+            if spellRef == specID then
                 return g
             end
         end
@@ -1101,21 +1101,21 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(folder)
         return nil
     end
     local specID = CurrentSpecID()
-    local out, specSrc, condSrc
-    local store = GetStore()
-    if store and specID then
-        for _, entry in ipairs(store) do
-            local m = entry.values[specID] or entry.values.default
-            for fkey, def in pairs(entry.values.default) do
+    local result, specSrc, condSrc
+    local storage = GetStore()
+    if storage and specID then
+        for _, record in ipairs(storage) do
+            local m = record.values[specID] or record.values.default
+            for fkey, spec_def in pairs(record.values.default) do
                 if not BlacklistedFKey(fkey) and not MatchOwnedFKey(fkey) and SplitFKey(fkey) == folder then
-                    local v = m[fkey]
-                    if v == nil then
-                        v = def
+                    local val = m[fkey]
+                    if val == nil then
+                        val = spec_def
                     end
-                    if v == NIL_SENT or type(v) ~= "table" then
-                        out = out or {}
-                        out[fkey] = v
-                        if not specSrc and m ~= entry.values.default and m[fkey] ~= nil then
+                    if val == NIL_SENT or type(val) ~= "table" then
+                        result = result or {}
+                        result[fkey] = val
+                        if not specSrc and m ~= record.values.default and m[fkey] ~= nil then
                             local g = CludesUI.SpecOverrides_OwningGroupFor(specID)
                             specSrc = (g and (g.name or g.label)) or L("Spec Override")
                         end
@@ -1128,28 +1128,28 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(folder)
     if C and C.GetStore then
         local cstore = C.GetStore()
         if cstore and #cstore > 0 then
-            local gid = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
-            for _, entry in ipairs(cstore) do
-                local map = gid and entry.values[gid] or nil
-                for fkey, def in pairs(entry.values.default) do
+            local groupId = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
+            for _, record in ipairs(cstore) do
+                local map = groupId and record.values[groupId] or nil
+                for fkey, spec_def in pairs(record.values.default) do
                     if
                         not BlacklistedFKey(fkey)
                         and not MatchOwnedFKey(fkey)
                         and not EntryOwning(fkey)
                         and SplitFKey(fkey) == folder
                     then
-                        local v = def
+                        local val = spec_def
                         local fromCond = false
                         if map and map[fkey] ~= nil then
-                            v = map[fkey]
+                            val = map[fkey]
                             fromCond = true
                         end
-                        if v == NIL_SENT or type(v) ~= "table" then
-                            out = out or {}
-                            out[fkey] = v
+                        if val == NIL_SENT or type(val) ~= "table" then
+                            result = result or {}
+                            result[fkey] = val
                             if fromCond and not condSrc then
                                 local cg = CludesUI.Conditions_GroupById
-                                    and CludesUI.Conditions_GroupById(gid)
+                                    and CludesUI.Conditions_GroupById(groupId)
                                 condSrc = cg and (cg.name or cg.label)
                             end
                         end
@@ -1158,7 +1158,7 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(folder)
             end
         end
     end
-    return out, specSrc, condSrc
+    return result, specSrc, condSrc
 end
 
 --- Active layer gid; nil = the baseline layout is live.
@@ -1179,8 +1179,8 @@ local function OwnerGid(specID)
     end
     for _, g in ipairs(GetGroups() or {}) do
         if s.layouts[g.id] then
-            for _, sid in ipairs(g.specs or {}) do
-                if sid == specID then
+            for _, spellRef in ipairs(g.specs or {}) do
+                if spellRef == specID then
                     return g.id
                 end
             end
@@ -1205,9 +1205,9 @@ function CludesUI.SpecOverrides_EffectiveUnlockLayer()
     if not specID then
         return nil
     end
-    local want = OwnerGid(specID)
-    if want and s.layouts and s.layouts[want] then
-        return s.layouts[want], s.baselineLayout
+    local wanted = OwnerGid(specID)
+    if wanted and s.layouts and s.layouts[wanted] then
+        return s.layouts[wanted], s.baselineLayout
     end
     local C = CludesUI._CondOv
     local cond = C and C.ResolveGid and C.ResolveGid() or nil
@@ -1221,8 +1221,8 @@ function CludesUI.SpecOverrides_EffectiveUnlockLayer()
     return nil
 end
 
-I.ApplyValuesFor, I.GetUnlockStore = ApplyValuesFor, GetUnlockStore
-I.HarvestDefaults, I.HarvestGroup, I.OwnerGid = HarvestDefaults, HarvestGroup, OwnerGid
-I.PruneRedundantValues, I.WriteDefaultValues = PruneRedundantValues, WriteDefaultValues
-I.WriteGroupValues, I.WriteSpecValues = WriteGroupValues, WriteSpecValues
-I.broken = false
+Inner.ApplyValuesFor, Inner.GetUnlockStore = ApplyValuesFor, GetUnlockStore
+Inner.HarvestDefaults, Inner.HarvestGroup, Inner.OwnerGid = HarvestDefaults, HarvestGroup, OwnerGid
+Inner.PruneRedundantValues, Inner.WriteDefaultValues = PruneRedundantValues, WriteDefaultValues
+Inner.WriteGroupValues, Inner.WriteSpecValues = WriteGroupValues, WriteSpecValues
+Inner.broken = false

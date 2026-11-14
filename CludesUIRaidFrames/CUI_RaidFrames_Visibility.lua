@@ -7,13 +7,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Range fading, the ghost aura safety net and UpdateVisibility.
 --  Reads the earlier Raid Frames files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local pairs = pairs
 local ipairs = ipairs
@@ -30,21 +30,21 @@ local InCombatLockdown = InCombatLockdown
 local GetNumGroupMembers = GetNumGroupMembers
 local C_Timer = C_Timer
 
-local allButtons, FFD, GetFFD, separatedHdrs = I.allButtons, I.FFD, I.GetFFD, I.separatedHdrs
-local unitToButton, RebuildUnitMap = I.unitToButton, I.RebuildUnitMap
-local UpdateAllButtons, LayoutGroups = I.UpdateAllButtons, I.LayoutGroups
-local SetFramesVisible, SetRangeUpdate = I.SetFramesVisible, I.SetRangeUpdate
+local allButtons, FFD, GetFFD, separatedHdrs = Inner.allButtons, Inner.FFD, Inner.GetFFD, Inner.separatedHdrs
+local unitToButton, RebuildUnitMap = Inner.unitToButton, Inner.RebuildUnitMap
+local UpdateAllButtons, LayoutGroups = Inner.UpdateAllButtons, Inner.LayoutGroups
+local SetFramesVisible, SetRangeUpdate = Inner.SetFramesVisible, Inner.SetRangeUpdate
 -- false in the table for a class without one; nil here, which the tests below expect
-local playerFriendlySpell = I.playerFriendlySpell or nil
-local playerRezSpell = I.playerRezSpell or nil
+local playerFriendlySpell = Inner.playerFriendlySpell or nil
+local playerRezSpell = Inner.playerRezSpell or nil
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 local containerFrame
-I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v)
-    containerFrame = v
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
+    containerFrame = val
 end
 
 -- Assigned below; CUI_RaidFrames_Reload.lua holds the forward declaration
@@ -77,79 +77,79 @@ do
     -- Apply final alpha to a button: range alpha * BM frame alpha. Range alpha is
     -- stored in FFD so BM can read it; BM alpha lives in _bmSavedAlpha so range can
     -- read it. Each system stores its own value; final apply multiplies the two.
-    local function ApplyRangeAlpha(btn, rangeAlpha)
-        local d = GetFFD(btn)
+    local function ApplyRangeAlpha(button, rangeAlpha)
+        local d = GetFFD(button)
         d.rangeAlpha = rangeAlpha
-        local bmA = btn._bmSavedAlpha or 1
-        btn:SetAlpha(bmA * rangeAlpha)
+        local bmA = button._bmSavedAlpha or 1
+        button:SetAlpha(bmA * rangeAlpha)
         -- A 3D party portrait does not take the button's alpha: mirror it.
         if d.pt and d.pt._3dOn then
-            ns.RF_PtModelAlpha(d, bmA * rangeAlpha)
+            mod.RF_PtModelAlpha(d, bmA * rangeAlpha)
         end
     end
 
     -- Secret-safe range alpha via SetAlphaFromBoolean (UnitInRange can return a
     -- secret boolean in Midnight). Marks rangeAlpha nil so UpdateButton/BM leave
     -- the secret-set alpha alone.
-    local function ApplyRangeAlphaSecret(btn, inRange, inAlpha, outAlpha)
-        local bmA = btn._bmSavedAlpha or 1
-        if btn.SetAlphaFromBoolean then
-            btn:SetAlphaFromBoolean(inRange, bmA * inAlpha, bmA * outAlpha)
+    local function ApplyRangeAlphaSecret(button, inRange, inAlpha, outAlpha)
+        local bmA = button._bmSavedAlpha or 1
+        if button.SetAlphaFromBoolean then
+            button:SetAlphaFromBoolean(inRange, bmA * inAlpha, bmA * outAlpha)
         else
-            ApplyRangeAlpha(btn, inAlpha)
+            ApplyRangeAlpha(button, inAlpha)
             return
         end
-        local d = GetFFD(btn)
+        local d = GetFFD(button)
         d.rangeAlpha = nil
         -- A 3D party portrait does not take the button's alpha: mirror it.
         if d.pt and d.pt._3dOn then
-            ns.RF_PtModelAlphaSecret(d, inRange, bmA * inAlpha, bmA * outAlpha)
+            mod.RF_PtModelAlphaSecret(d, inRange, bmA * inAlpha, bmA * outAlpha)
         end
     end
 
     -- Evaluate + apply range alpha for ONE unit. Shared by the
     -- UNIT_IN_RANGE_UPDATE event, the refiner poll, the seed pass, and roster
     -- assignment. Standard living units take the secret-safe UnitInRange path.
-    local function UpdateButtonRange(unit, btn)
+    local function UpdateButtonRange(unitToken, button)
         -- Read oorAlpha through the party-aware proxy so a custom party_oorAlpha
         -- actually applies to party frames (was reading the raid value directly).
-        local rd = GetFFD(btn)
-        local rs = rd._isParty and ns._scaledPartyProxy
-            or (rd._isExtra and ns._scaledExtraProxy)
-            or ns._scaledProfile
+        local rd = GetFFD(button)
+        local rs = rd._isParty and mod._scaledPartyProxy
+            or (rd._isExtra and mod._scaledExtraProxy)
+            or mod._scaledProfile
         local oorAlpha = rs.oorAlpha or 0.4
-        if UnitIsUnit(unit, "player") or not UnitExists(unit) then
-            ApplyRangeAlpha(btn, 1)
-        elseif not UnitIsConnected(unit) then
+        if UnitIsUnit(unitToken, "player") or not UnitExists(unitToken) then
+            ApplyRangeAlpha(button, 1)
+        elseif not UnitIsConnected(unitToken) then
             -- Offline units take a fixed 80% alpha, never the out-of-range fade --
             -- an offline player isn't "out of range", and a steady alpha reads
             -- better alongside the offline status tint. Overrides oorAlpha entirely.
-            ApplyRangeAlpha(btn, 0.8)
-        elseif UnitPhaseReason and UnitPhaseReason(unit) then
-            ApplyRangeAlpha(btn, oorAlpha)
-        elseif UnitIsDeadOrGhost(unit) then
+            ApplyRangeAlpha(button, 0.8)
+        elseif UnitPhaseReason and UnitPhaseReason(unitToken) then
+            ApplyRangeAlpha(button, oorAlpha)
+        elseif UnitIsDeadOrGhost(unitToken) then
             -- Ghost units need to be checked using a rez-spell because UnitInRange checks the ghost's range, not the corpse's.
             -- We want to provide rez-range feedback based on the corpse's position.
             if playerHasRez then
-                local r = C_Spell_IsSpellInRange(playerRezSpell, unit)
+                local r = C_Spell_IsSpellInRange(playerRezSpell, unitToken)
                 if r == true then
-                    ApplyRangeAlpha(btn, 1)
+                    ApplyRangeAlpha(button, 1)
                 elseif r == false then
-                    ApplyRangeAlpha(btn, oorAlpha)
+                    ApplyRangeAlpha(button, oorAlpha)
                 else
                     -- Use the standard ~40yd interact range (UnitInRange) as fallback
-                    ApplyRangeAlphaSecret(btn, UnitInRange(unit), 1, oorAlpha)
+                    ApplyRangeAlphaSecret(button, UnitInRange(unitToken), 1, oorAlpha)
                 end
             else
                 -- Use the standard ~40yd interact range (UnitInRange) when player has no rez spell
-                ApplyRangeAlphaSecret(btn, UnitInRange(unit), 1, oorAlpha)
+                ApplyRangeAlphaSecret(button, UnitInRange(unitToken), 1, oorAlpha)
             end
         elseif usesSpellRange then
-            local r = C_Spell_IsSpellInRange(playerFriendlySpell, unit)
+            local r = C_Spell_IsSpellInRange(playerFriendlySpell, unitToken)
             if r == true then
-                ApplyRangeAlpha(btn, 1)
+                ApplyRangeAlpha(button, 1)
             elseif r == false then
-                ApplyRangeAlpha(btn, oorAlpha)
+                ApplyRangeAlpha(button, oorAlpha)
             else
                 -- r == nil: no range relationship to this unit (unit-targeted spell, so a
                 -- same-zone out-of-range target already returned false above) -- almost
@@ -158,61 +158,61 @@ do
                 -- last alpha, which stranded a zone-departed unit at its old in-range alpha.
                 -- Cannot reintroduce the 25-vs-40yd boundary flicker: that needed the spell
                 -- check to return nil AT the boundary, which a stable far same-zone target does not.
-                ApplyRangeAlphaSecret(btn, UnitInRange(unit), 1, oorAlpha)
+                ApplyRangeAlphaSecret(button, UnitInRange(unitToken), 1, oorAlpha)
             end
         else
-            ApplyRangeAlphaSecret(btn, UnitInRange(unit), 1, oorAlpha)
+            ApplyRangeAlphaSecret(button, UnitInRange(unitToken), 1, oorAlpha)
         end
     end
-    ns._UpdateButtonRange = UpdateButtonRange
+    mod._UpdateButtonRange = UpdateButtonRange
 
     -- Refiner handles only what UNIT_IN_RANGE_UPDATE cannot: the tighter friendly-spell
     -- range (Evoker/Rogue). Dead units use the event-driven UnitInRange path like living
     -- units, but are still polled so a spell-range class hands a revived unit back to its
     -- tight spell range (one-shot resync via _rangeWasDead). Living, non-spell-range units
     -- are owned by the event and skipped here, so the poll does ~no work for a stable raid.
-    local function RefineButtonRange(unit, btn)
-        if not UnitExists(unit) or UnitIsUnit(unit, "player") then
+    local function RefineButtonRange(unitToken, button)
+        if not UnitExists(unitToken) or UnitIsUnit(unitToken, "player") then
             return
         end
-        local d = GetFFD(btn)
-        if UnitIsDeadOrGhost(unit) then
+        local d = GetFFD(button)
+        if UnitIsDeadOrGhost(unitToken) then
             d._rangeWasDead = true
-            UpdateButtonRange(unit, btn)
+            UpdateButtonRange(unitToken, button)
         elseif d._rangeWasDead then
             d._rangeWasDead = nil
-            UpdateButtonRange(unit, btn)
+            UpdateButtonRange(unitToken, button)
         elseif usesSpellRange then
-            UpdateButtonRange(unit, btn)
+            UpdateButtonRange(unitToken, button)
         end
     end
 
     -- Seed / full re-evaluation of every assigned unit (enable, roster change,
     -- phase change). Kept as RangeUpdate (forward-declared) for existing callers.
     RangeUpdate = function()
-        for unit, btn in pairs(unitToButton) do
-            UpdateButtonRange(unit, btn)
+        for unitToken, button in pairs(unitToButton) do
+            UpdateButtonRange(unitToken, button)
         end
-        for unit, btn in pairs(ns._partyUnitToButton) do
-            UpdateButtonRange(unit, btn)
+        for unitToken, button in pairs(mod._partyUnitToButton) do
+            UpdateButtonRange(unitToken, button)
         end
-        for unit, btn in pairs(ns._xfUnitToButton) do
-            UpdateButtonRange(unit, btn)
+        for unitToken, button in pairs(mod._xfUnitToButton) do
+            UpdateButtonRange(unitToken, button)
         end
-        ns._PF_RangeSeed()
+        mod._PF_RangeSeed()
     end
     SetRangeUpdate(RangeUpdate)
-    ns._RangeSeedAll = RangeUpdate
+    mod._RangeSeedAll = RangeUpdate
 
     local function RangeRefineAll()
-        for unit, btn in pairs(unitToButton) do
-            RefineButtonRange(unit, btn)
+        for unitToken, button in pairs(unitToButton) do
+            RefineButtonRange(unitToken, button)
         end
-        for unit, btn in pairs(ns._partyUnitToButton) do
-            RefineButtonRange(unit, btn)
+        for unitToken, button in pairs(mod._partyUnitToButton) do
+            RefineButtonRange(unitToken, button)
         end
-        for unit, btn in pairs(ns._xfUnitToButton) do
-            RefineButtonRange(unit, btn)
+        for unitToken, button in pairs(mod._xfUnitToButton) do
+            RefineButtonRange(unitToken, button)
         end
     end
 
@@ -232,14 +232,14 @@ do
             rangeTicker = nil
         end
         -- Reset range alpha, respect BM frame alpha
-        for _, btn in pairs(unitToButton) do
-            ApplyRangeAlpha(btn, 1)
+        for _, button in pairs(unitToButton) do
+            ApplyRangeAlpha(button, 1)
         end
-        for _, btn in pairs(ns._partyUnitToButton) do
-            ApplyRangeAlpha(btn, 1)
+        for _, button in pairs(mod._partyUnitToButton) do
+            ApplyRangeAlpha(button, 1)
         end
-        for _, btn in pairs(ns._xfUnitToButton) do
-            ApplyRangeAlpha(btn, 1)
+        for _, button in pairs(mod._xfUnitToButton) do
+            ApplyRangeAlpha(button, 1)
         end
     end
 end -- range fading section
@@ -257,15 +257,15 @@ end -- range fading section
 local ghostTicker = nil
 
 local function GhostAuraCheck()
-    local function checkUnit(unit, btn)
-        local d = GetFFD(btn)
+    local function checkUnit(unitToken, button)
+        local d = GetFFD(button)
         -- unitToButton et al. only ever gain entries on reassignment, never drop
         -- the old one, so unit/btn here can be a stale pairing; re-confirm against
         -- the button's own live attribute before writing to it.
-        if btn:GetAttribute("unit") == unit and ns.RFC_RepointStale then
-            ns.RFC_RepointStale(d, unit)
+        if button:GetAttribute("unit") == unitToken and mod.RFC_RepointStale then
+            mod.RFC_RepointStale(d, unitToken)
         end
-        if not UnitIsVisible(unit) or not UnitIsConnected(unit) then
+        if not UnitIsVisible(unitToken) or not UnitIsConnected(unitToken) then
             if not d.ghostCleared then
                 d.ghostCleared = true
                 -- Binding at ghost time: a reassignment inside the window already
@@ -278,7 +278,7 @@ local function GhostAuraCheck()
                 d.ghostCleared = false
                 -- unitToButton only ever gains entries, so unit/btn can be a stale
                 -- pairing: re-parse only containers still bound to this unit.
-                if d.rfcUnit == unit and d.ghostUnit == unit then
+                if d.rfcUnit == unitToken and d.ghostUnit == unitToken then
                     if d.rfcDebuffs then
                         d.rfcDebuffs:UpdateAllAuras()
                     end
@@ -303,14 +303,14 @@ local function GhostAuraCheck()
             end
         end
     end
-    for unit, btn in pairs(unitToButton) do
-        checkUnit(unit, btn)
+    for unitToken, button in pairs(unitToButton) do
+        checkUnit(unitToken, button)
     end
-    for unit, btn in pairs(ns._partyUnitToButton) do
-        checkUnit(unit, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        checkUnit(unitToken, button)
     end
-    for unit, btn in pairs(ns._xfUnitToButton) do
-        checkUnit(unit, btn)
+    for unitToken, button in pairs(mod._xfUnitToButton) do
+        checkUnit(unitToken, button)
     end
 end
 
@@ -326,16 +326,16 @@ local function StopGhostTicker()
         ghostTicker = nil
     end
     -- Clear ghost flags
-    for _, btn in pairs(unitToButton) do
-        local d = GetFFD(btn)
+    for _, button in pairs(unitToButton) do
+        local d = GetFFD(button)
         d.ghostCleared = nil
     end
-    for _, btn in pairs(ns._partyUnitToButton) do
-        local d = GetFFD(btn)
+    for _, button in pairs(mod._partyUnitToButton) do
+        local d = GetFFD(button)
         d.ghostCleared = nil
     end
-    for _, btn in pairs(ns._xfUnitToButton) do
-        local d = GetFFD(btn)
+    for _, button in pairs(mod._xfUnitToButton) do
+        local d = GetFFD(button)
         d.ghostCleared = nil
     end
 end
@@ -344,8 +344,8 @@ end
 --  Visibility: show/hide based on solo/group/raid setting
 -------------------------------------------------------------------------------
 local framesVisible = false
-I.framesVisibleSetters[#I.framesVisibleSetters + 1] = function(v)
-    framesVisible = v
+Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val)
+    framesVisible = val
 end
 
 -- True when the player is inside an arena instance. Arena puts you in a RAID
@@ -354,7 +354,7 @@ end
 -- external trackers that anchor to our party frames keep working. Detection is
 -- by instance type and must be checked BEFORE any IsInRaid() branch, since
 -- arena makes IsInRaid() return true.
-ns._InArena = function()
+mod._InArena = function()
     local _, instanceType = IsInInstance()
     return instanceType == "arena"
 end
@@ -364,17 +364,17 @@ end
 -- every other member while the raid holds fewer than 10 players. Every
 -- "party or raid frames" decision reads this, never ns._InArena directly;
 -- the group-1 filter itself lives in _LayoutPartyFrames (ns._SmallRaidGroup).
-ns._PartyInRaid = function()
-    if ns._InArena() then
+mod._PartyInRaid = function()
+    if mod._InArena() then
         return true
     end
-    return db.profile.partySmallRaid == true and IsInRaid() and GetNumGroupMembers() < 10
+    return saved.profile.partySmallRaid == true and IsInRaid() and GetNumGroupMembers() < 10
 end
 
 -- The subgroup the party header is limited to in Small Raid mode; nil in
 -- arena (whole team) and outside party-in-raid mode.
-ns._SmallRaidGroup = function()
-    if ns._InArena() or not ns._PartyInRaid() then
+mod._SmallRaidGroup = function()
+    if mod._InArena() or not mod._PartyInRaid() then
         return nil
     end
     return 1
@@ -383,12 +383,12 @@ end
 -- Which set the group state shows (raid, party): raid frames in a raid, party
 -- frames in a party (arena and Small Raid included), each set's Show When Solo
 -- outside a group. ns._RF_VIS_MACROS spells the same rule as macro conditions.
-ns._RFVisWanted = function()
-    local s = db.profile
+mod._RFVisWanted = function()
+    local s = saved.profile
     if not IsInGroup() then
         return s.showWhenSolo and true or false, s.partyShowWhenSolo and true or false
     end
-    if IsInRaid() and not ns._PartyInRaid() then
+    if IsInRaid() and not mod._PartyInRaid() then
         return true, false
     end
     return false, true
@@ -408,7 +408,7 @@ end
 -- so raid10 exists exactly when a raid holds 10 or more members (the
 -- GetNumGroupMembers() < 10 rule); a party never reaches it.
 -- Arena has no macro condition: it is taken at the zone-in pass.
-ns._RF_VIS_MACROS = {
+mod._RF_VIS_MACROS = {
     raid = {
         group = {
             [true] = "[@raid1,exists] show; [@party1,exists][group] hide; show",
@@ -435,32 +435,32 @@ ns._RF_VIS_MACROS = {
 
 -- Registers each container's macro, only when its text changes (driver
 -- registration is a protected action: out of combat, or the login window).
-ns._RFSyncVisDrivers = function()
-    local pc = ns._partyContainerFrame
+mod._RFSyncVisDrivers = function()
+    local pc = mod._partyContainerFrame
     if not containerFrame or not pc or InCombatLockdown() then
         return
     end
-    local s = db.profile
-    local M = ns._RF_VIS_MACROS
-    local mode = (ns._InArena() and "arena") or ((s.partySmallRaid == true) and "small") or "group"
-    local r = M.raid[mode][s.showWhenSolo and true or false]
-    local p = M.party[mode][s.partyShowWhenSolo and true or false]
-    if ns._rfRaidVisMacro ~= r then
+    local s = saved.profile
+    local M = mod._RF_VIS_MACROS
+    local modeName = (mod._InArena() and "arena") or ((s.partySmallRaid == true) and "small") or "group"
+    local r = M.raid[modeName][s.showWhenSolo and true or false]
+    local p = M.party[modeName][s.partyShowWhenSolo and true or false]
+    if mod._rfRaidVisMacro ~= r then
         RegisterStateDriver(containerFrame, "visibility", r)
-        ns._rfRaidVisMacro = r
+        mod._rfRaidVisMacro = r
     end
-    if ns._rfPartyVisMacro ~= p then
+    if mod._rfPartyVisMacro ~= p then
         RegisterStateDriver(pc, "visibility", p)
-        ns._rfPartyVisMacro = p
+        mod._rfPartyVisMacro = p
     end
 end
 
 -- A set that hides keeps its buttons' units (a hidden header ignores the
 -- roster) while its events stop routing: forget each painted occupant so the
 -- next assignment, in combat too, takes the full repaint.
-ns._RFForgetOccupants = function(list)
-    for i = 1, #list do
-        local d = FFD[list[i]]
+mod._RFForgetOccupants = function(entries)
+    for idx = 1, #entries do
+        local d = FFD[entries[idx]]
         if d then
             d._lastGuid = nil
         end
@@ -477,7 +477,7 @@ local function UpdateVisibility()
 
     -- Preview overrides all visibility logic -- real buttons stay suppressed
     -- (alpha), no state changes; the preview close re-runs this.
-    if ns._raidPvActive then
+    if mod._raidPvActive then
         return
     end
 
@@ -487,23 +487,23 @@ local function UpdateVisibility()
     -- above) and heals any case where alpha was left at 0 with the flags cleared.
     -- Gated on the party-preview flag too so a raid-visibility recompute never
     -- un-hides the raid container behind an active party preview.
-    if not ns._sizePreviewTier and not ns._partyPvActive then
+    if not mod._sizePreviewTier and not mod._partyPvActive then
         containerFrame:SetAlpha(1)
     end
 
-    local s = db.profile
+    local s = saved.profile
     -- Arena and Small Raid mode hide the raid frames. The player is in a raid
     -- group there, but we show our party frames instead (see
     -- _UpdatePartyVisibility), so the raid container must stay hidden even
     -- though IsInRaid() returns true.
-    local visible = ns._RFVisWanted()
+    local visible = mod._RFVisWanted()
     local wasVisible = framesVisible
     SetFramesVisible(visible)
-    ns._raidFramesVisible = visible -- mirror for readers outside this file (the FrameSort provider)
+    mod._raidFramesVisible = visible -- mirror for readers outside this file (the FrameSort provider)
     -- Raid frames coming or going is the one change a tracker cannot learn from
     -- its own roster events (mirrors the party call in _UpdatePartyVisibility).
-    if ns._NotifyTrackerProviders then
-        ns._NotifyTrackerProviders()
+    if mod._NotifyTrackerProviders then
+        mod._NotifyTrackerProviders()
     end
 
     -- Update showSolo attribute on all headers, but ONLY when it actually
@@ -513,27 +513,27 @@ local function UpdateVisibility()
     -- was a large needless secure-header spike. showWhenSolo is a static setting;
     -- mirrors the needsHideShow guard in ApplySortToHeaders.
     local wantSolo = s.showWhenSolo or false
-    for _, hdr in ipairs(separatedHdrs) do
-        if hdr and hdr:GetAttribute("showSolo") ~= wantSolo then
-            hdr:SetAttribute("showSolo", wantSolo)
+    for _, heading in ipairs(separatedHdrs) do
+        if heading and heading:GetAttribute("showSolo") ~= wantSolo then
+            heading:SetAttribute("showSolo", wantSolo)
         end
     end
-    if ns._flatHeader and ns._flatHeader:GetAttribute("showSolo") ~= wantSolo then
-        ns._flatHeader:SetAttribute("showSolo", wantSolo)
+    if mod._flatHeader and mod._flatHeader:GetAttribute("showSolo") ~= wantSolo then
+        mod._flatHeader:SetAttribute("showSolo", wantSolo)
     end
 
     -- The driver decides the same way; synced first so the two agree this frame
     -- (readers such as the tier offset check IsShown right after).
-    ns._RFSyncVisDrivers()
+    mod._RFSyncVisDrivers()
     containerFrame:SetShown(visible)
     if visible then
         -- Suppress Blizzard party frames when we're showing for groups
-        if (IsInGroup() and not IsInRaid()) and ns._SuppressBlizzParty then
-            ns._SuppressBlizzParty()
+        if (IsInGroup() and not IsInRaid()) and mod._SuppressBlizzParty then
+            mod._SuppressBlizzParty()
         end
         -- Headers last laid out hidden (native order) take the shown layout
         -- before the rebuild reads their buttons.
-        if ns._rfRaidLaidVis ~= true then
+        if mod._rfRaidLaidVis ~= true then
             LayoutGroups()
         end
         -- Skip heavy refresh at combat end if roster didn't change. Per-unit events
@@ -547,12 +547,12 @@ local function UpdateVisibility()
         -- "lightweight" skip to every caller (preview restore,
         -- EnsureRealFramesRestored, etc.) so a redundant visibility recompute can never
         -- trigger a full refresh spike.
-        local forceRebuild = ns._visForceRebuild
-        ns._visForceRebuild = nil
+        local forceRebuild = mod._visForceRebuild
+        mod._visForceRebuild = nil
         if (not wasVisible) or forceRebuild then
             RebuildUnitMap()
-            if ns.UpdatePowerEventRegistration then
-                ns.UpdatePowerEventRegistration()
+            if mod.UpdatePowerEventRegistration then
+                mod.UpdatePowerEventRegistration()
             end
             UpdateAllButtons()
         end
@@ -564,23 +564,23 @@ local function UpdateVisibility()
         StopRangeTicker()
         StopGhostTicker()
         if wasVisible then
-            ns._RFForgetOccupants(allButtons)
+            mod._RFForgetOccupants(allButtons)
         end
         wipe(unitToButton)
         -- A hidden set runs native order and keeps every group header up, so the
         -- driver can show it mid-fight with every member in place.
-        if ns._rfRaidLaidVis ~= false then
+        if mod._rfRaidLaidVis ~= false then
             LayoutGroups()
             -- The dormant container's footprint (see _ApplyTierOffset).
-            if ns._ApplyTierOffset then
-                ns._ApplyTierOffset()
+            if mod._ApplyTierOffset then
+                mod._ApplyTierOffset()
             end
         end
     end
 end
-ns.UpdateVisibility = UpdateVisibility
+mod.UpdateVisibility = UpdateVisibility
 
-I.RangeUpdate, I.StartGhostTicker = RangeUpdate, StartGhostTicker
-I.StartRangeTicker, I.StopGhostTicker = StartRangeTicker, StopGhostTicker
-I.StopRangeTicker, I.UpdateVisibility = StopRangeTicker, UpdateVisibility
-I.broken = false
+Inner.RangeUpdate, Inner.StartGhostTicker = RangeUpdate, StartGhostTicker
+Inner.StartRangeTicker, Inner.StopGhostTicker = StartRangeTicker, StopGhostTicker
+Inner.StopRangeTicker, Inner.UpdateVisibility = StopRangeTicker, UpdateVisibility
+Inner.broken = false

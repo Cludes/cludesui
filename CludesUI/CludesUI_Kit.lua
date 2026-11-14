@@ -29,7 +29,7 @@ local BG = { 0.062, 0.070, 0.082 } -- the house popup fill
 local CONTROL_BG = { 0, 0, 0, 0.5 }
 local IDLE = { 0.82, 0.82, 0.82 }
 
-local function PP()
+local function Pix()
     return CludesUI.PP
 end
 
@@ -53,63 +53,63 @@ function Kit.SyncAccent(t)
 end
 
 --- Colours a font string in the accent now and each time its frame shows.
-function Kit.AccentText(fs, alpha)
+function Kit.AccentText(fontStr, alpha)
     local function Paint()
         local r, g, b = Kit.Accent()
-        fs:SetTextColor(r, g, b, alpha or 1)
+        fontStr:SetTextColor(r, g, b, alpha or 1)
     end
     Paint()
-    local owner = fs:GetParent()
-    if owner and owner.HookScript and not fs._kitAccent then
-        owner:HookScript("OnShow", Paint)
+    local ownerFrame = fontStr:GetParent()
+    if ownerFrame and ownerFrame.HookScript and not fontStr._kitAccent then
+        ownerFrame:HookScript("OnShow", Paint)
     end
-    fs._kitAccent = true
+    fontStr._kitAccent = true
 end
 
-function Kit.Font(fs, size, key, flags)
-    CludesUI.ApplyModuleFont(fs, nil, size, key, flags)
+function Kit.Font(fontStr, dim, key, flags)
+    CludesUI.ApplyModuleFont(fontStr, nil, dim, key, flags)
 end
 
-local function Border(frame, r, g, b, a)
-    local pp = PP()
-    if pp.GetBorders and pp.GetBorders(frame) then
-        pp.SetBorderColor(frame, r, g, b, a)
+local function Border(widget, r, g, b, a)
+    local pp = Pix()
+    if pp.GetBorders and pp.GetBorders(widget) then
+        pp.SetBorderColor(widget, r, g, b, a)
     else
-        pp.CreateBorder(frame, r, g, b, a, 1, "OVERLAY", 7)
+        pp.CreateBorder(widget, r, g, b, a, 1, "OVERLAY", 7)
     end
 end
 Kit.Border = Border
 
-function Kit.Panel(frame, alpha)
-    local bg = frame._kitBg
-    if not bg then
-        bg = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
-        bg:SetAllPoints()
-        frame._kitBg = bg
+function Kit.Panel(widget, alpha)
+    local backdrop = widget._kitBg
+    if not backdrop then
+        backdrop = widget:CreateTexture(nil, "BACKGROUND", nil, -8)
+        backdrop:SetAllPoints()
+        widget._kitBg = backdrop
     end
-    bg:SetColorTexture(BG[1], BG[2], BG[3], alpha or 0.95)
-    Border(frame, 0, 0, 0, 1)
-    return frame
+    backdrop:SetColorTexture(BG[1], BG[2], BG[3], alpha or 0.95)
+    Border(widget, 0, 0, 0, 1)
+    return widget
 end
 
-function Kit.Glyph(parent, text, onClick, tip, key)
-    local b = CreateFrame("Button", nil, parent)
+function Kit.Glyph(hostFrame, textValue, onClick, tipText, key)
+    local b = CreateFrame("Button", nil, hostFrame)
     b:SetSize(18, 18)
     b.t = b:CreateFontString(nil, "OVERLAY")
     Kit.Font(b.t, 14, key)
     b.t:SetPoint("CENTER")
-    b.t:SetText(text)
+    b.t:SetText(textValue)
     b.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
     b:SetScript("OnClick", onClick)
     b:SetScript("OnEnter", function(self)
         self.t:SetTextColor(Kit.Accent())
-        if tip then
-            CludesUI.ShowWidgetTooltip(self, tip)
+        if tipText then
+            CludesUI.ShowWidgetTooltip(self, tipText)
         end
     end)
     b:SetScript("OnLeave", function(self)
         self.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
-        if tip then
+        if tipText then
             CludesUI.HideWidgetTooltip()
         end
     end)
@@ -119,84 +119,84 @@ end
 --- A movable window. opts: key (font), strata, special (false: Escape does
 --- not close it), onClose. Fields: title, close, header (the line under the
 --- title bar).
-function Kit.Window(name, w, h, title, opts)
-    opts = opts or {}
-    local win = CreateFrame("Frame", name, UIParent)
-    win:SetSize(w, h)
-    win:SetPoint("CENTER", 0, 30)
-    win:SetFrameStrata(opts.strata or "HIGH")
-    win:SetClampedToScreen(true)
-    win:SetMovable(true)
-    win:EnableMouse(true)
-    win:RegisterForDrag("LeftButton")
-    win:SetScript("OnDragStart", win.StartMoving)
-    win:SetScript("OnDragStop", win.StopMovingOrSizing)
-    Kit.Panel(win)
-    win.title = win:CreateFontString(nil, "OVERLAY")
-    Kit.Font(win.title, 15, opts.key)
-    win.title:SetPoint("TOPLEFT", 10, -8)
-    win.title:SetText(title or "")
-    win.header = win:CreateTexture(nil, "ARTWORK")
-    win.header:SetHeight(1)
-    win.header:SetPoint("TOPLEFT", 1, -28)
-    win.header:SetPoint("TOPRIGHT", -1, -28)
-    win.close = Kit.Glyph(win, "x", function()
-        if opts.onClose then
-            opts.onClose()
+function Kit.Window(name, wid, hgt, titleText, options)
+    options = options or {}
+    local window = CreateFrame("Frame", name, UIParent)
+    window:SetSize(wid, hgt)
+    window:SetPoint("CENTER", 0, 30)
+    window:SetFrameStrata(options.strata or "HIGH")
+    window:SetClampedToScreen(true)
+    window:SetMovable(true)
+    window:EnableMouse(true)
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnDragStart", window.StartMoving)
+    window:SetScript("OnDragStop", window.StopMovingOrSizing)
+    Kit.Panel(window)
+    window.title = window:CreateFontString(nil, "OVERLAY")
+    Kit.Font(window.title, 15, options.key)
+    window.title:SetPoint("TOPLEFT", 10, -8)
+    window.title:SetText(titleText or "")
+    window.header = window:CreateTexture(nil, "ARTWORK")
+    window.header:SetHeight(1)
+    window.header:SetPoint("TOPLEFT", 1, -28)
+    window.header:SetPoint("TOPRIGHT", -1, -28)
+    window.close = Kit.Glyph(window, "x", function()
+        if options.onClose then
+            options.onClose()
         end
-        win:Hide()
-    end, nil, opts.key)
-    win.close:SetPoint("TOPRIGHT", -5, -5)
+        window:Hide()
+    end, nil, options.key)
+    window.close:SetPoint("TOPRIGHT", -5, -5)
     local function Paint()
         local r, g, b = Kit.Accent()
-        win.title:SetTextColor(r, g, b)
-        win.header:SetColorTexture(r, g, b, 0.35)
+        window.title:SetTextColor(r, g, b)
+        window.header:SetColorTexture(r, g, b, 0.35)
     end
     Paint()
-    win:HookScript("OnShow", Paint)
-    if name and opts.special ~= false then
+    window:HookScript("OnShow", Paint)
+    if name and options.special ~= false then
         tinsert(UISpecialFrames, name)
     end
-    return win
+    return window
 end
 
 --- A flat square button. opts: key (font), size (text size), tip. Methods:
 --- SetText, GetText, GetTextWidth, SetActive(bool) (the picked tab).
-function Kit.Button(parent, text, w, h, onClick, opts)
-    opts = opts or {}
-    local b = CreateFrame("Button", nil, parent)
-    b:SetSize(w or 90, h or 22)
-    local bg = b:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
-    b._bg = bg
+function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
+    options = options or {}
+    local b = CreateFrame("Button", nil, hostFrame)
+    b:SetSize(wid or 90, hgt or 22)
+    local backdrop = b:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
+    b._bg = backdrop
     b.label = b:CreateFontString(nil, "OVERLAY")
-    Kit.Font(b.label, opts.size or 12, opts.key)
+    Kit.Font(b.label, options.size or 12, options.key)
     b.label:SetPoint("CENTER")
-    b.label:SetText(text or "")
+    b.label:SetText(textValue or "")
     local function Paint(hovered)
         local r, g, bl = Kit.Accent()
         local lit = hovered or b._active
         Border(b, r, g, bl, lit and 1 or 0.45)
         if b._active then
             b.label:SetTextColor(r, g, bl)
-            bg:SetColorTexture(r, g, bl, 0.15)
+            backdrop:SetColorTexture(r, g, bl, 0.15)
         else
             b.label:SetTextColor(hovered and 1 or IDLE[1], hovered and 1 or IDLE[2], hovered and 1 or IDLE[3])
-            bg:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
+            backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
         end
     end
     b._paint = Paint
     Paint(false)
     b:HookScript("OnEnter", function(self)
         Paint(true)
-        if opts.tip then
-            CludesUI.ShowWidgetTooltip(self, opts.tip)
+        if options.tip then
+            CludesUI.ShowWidgetTooltip(self, options.tip)
         end
     end)
     b:HookScript("OnLeave", function()
         Paint(false)
-        if opts.tip then
+        if options.tip then
             CludesUI.HideWidgetTooltip()
         end
     end)
@@ -212,8 +212,8 @@ function Kit.Button(parent, text, w, h, onClick, opts)
     function b:GetTextWidth()
         return self.label:GetStringWidth()
     end
-    function b:SetActive(on)
-        self._active = on and true or nil
+    function b:SetActive(enabled)
+        self._active = enabled and true or nil
         Paint(self:IsMouseOver())
     end
     b:HookScript("OnShow", function(self)
@@ -224,19 +224,19 @@ end
 
 --- A square checkbox with its label. Methods: SetChecked, GetChecked,
 --- SetLabel. onClick(self) runs after the box flips.
-function Kit.Check(parent, label, onClick, key)
-    local c = CreateFrame("Button", nil, parent)
+function Kit.Check(hostFrame, labelText, onClick, key)
+    local c = CreateFrame("Button", nil, hostFrame)
     c:SetSize(16, 16)
-    local bg = c:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
+    local backdrop = c:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
     c.mark = c:CreateTexture(nil, "ARTWORK")
     c.mark:SetPoint("TOPLEFT", 3, -3)
     c.mark:SetPoint("BOTTOMRIGHT", -3, 3)
     c.text = c:CreateFontString(nil, "OVERLAY")
     Kit.Font(c.text, 12, key)
     c.text:SetPoint("LEFT", c, "RIGHT", 6, 0)
-    c.text:SetText(label or "")
+    c.text:SetText(labelText or "")
     c.text:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
     local function Paint()
         local r, g, b = Kit.Accent()
@@ -244,8 +244,8 @@ function Kit.Check(parent, label, onClick, key)
         c.mark:SetColorTexture(r, g, b, 1)
         c.mark:SetShown(c._checked == true)
     end
-    function c:SetChecked(on)
-        self._checked = on and true or false
+    function c:SetChecked(enabled)
+        self._checked = enabled and true or false
         Paint()
     end
     function c:GetChecked()
@@ -268,14 +268,14 @@ function Kit.Check(parent, label, onClick, key)
 end
 
 --- A flat edit box with a grey placeholder while empty and unfocused.
-function Kit.Input(parent, w, h, placeholder, key)
-    local e = CreateFrame("EditBox", nil, parent)
-    e:SetSize(w or 160, h or 22)
+function Kit.Input(hostFrame, wid, hgt, placeholder, key)
+    local e = CreateFrame("EditBox", nil, hostFrame)
+    e:SetSize(wid or 160, hgt or 22)
     e:SetAutoFocus(false)
     e:SetTextInsets(6, 6, 0, 0)
-    local bg = e:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
+    local backdrop = e:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
     Kit.Font(e, 12, key)
     e:SetTextColor(1, 1, 1)
     e.hint = e:CreateFontString(nil, "OVERLAY")
@@ -300,12 +300,12 @@ end
 --- A scroll frame filling parent between insets, with a thin accent bar on
 --- its right that shows only when there is more to scroll. Returns scroll,
 --- content (content's width follows the scroll frame's).
-function Kit.Scroll(parent)
-    local scroll = CreateFrame("ScrollFrame", nil, parent)
-    local content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(1, 1)
-    scroll:SetScrollChild(content)
-    local track = CreateFrame("Frame", nil, parent)
+function Kit.Scroll(hostFrame)
+    local scroll = CreateFrame("ScrollFrame", nil, hostFrame)
+    local contentFrame = CreateFrame("Frame", nil, scroll)
+    contentFrame:SetSize(1, 1)
+    scroll:SetScrollChild(contentFrame)
+    local track = CreateFrame("Frame", nil, hostFrame)
     track:SetWidth(4)
     track:SetPoint("TOPLEFT", scroll, "TOPRIGHT", 6, 0)
     track:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", 6, 0)
@@ -320,8 +320,8 @@ function Kit.Scroll(parent)
 
     local function Update()
         local range = scroll:GetVerticalScrollRange() or 0
-        local h = scroll:GetHeight() or 0
-        if range <= 0.5 or h <= 0 then
+        local hgt = scroll:GetHeight() or 0
+        if range <= 0.5 or hgt <= 0 then
             track:Hide()
             if scroll:GetVerticalScroll() ~= 0 then
                 scroll:SetVerticalScroll(0)
@@ -331,16 +331,16 @@ function Kit.Scroll(parent)
         track:Show()
         local r, g, b = Kit.Accent()
         thumbTex:SetColorTexture(r, g, b, 0.7)
-        local th = math.max(20, h * h / (h + range))
+        local th = math.max(20, hgt * hgt / (hgt + range))
         thumb:SetHeight(th)
-        local pos = (scroll:GetVerticalScroll() / range) * (h - th)
+        local place = (scroll:GetVerticalScroll() / range) * (hgt - th)
         thumb:ClearAllPoints()
-        thumb:SetPoint("TOP", track, "TOP", 0, -pos)
+        thumb:SetPoint("TOP", track, "TOP", 0, -place)
     end
 
-    local function ScrollTo(v)
+    local function ScrollTo(val)
         local range = scroll:GetVerticalScrollRange() or 0
-        scroll:SetVerticalScroll(math.max(0, math.min(range, v)))
+        scroll:SetVerticalScroll(math.max(0, math.min(range, val)))
         Update()
     end
 
@@ -350,8 +350,8 @@ function Kit.Scroll(parent)
     end)
     scroll:SetScript("OnScrollRangeChanged", Update)
     scroll:SetScript("OnVerticalScroll", Update)
-    scroll:SetScript("OnSizeChanged", function(self, w)
-        content:SetWidth(w)
+    scroll:SetScript("OnSizeChanged", function(self, wid)
+        contentFrame:SetWidth(wid)
         Update()
     end)
     thumb:SetScript("OnMouseDown", function(self)
@@ -359,12 +359,12 @@ function Kit.Scroll(parent)
         local scale = self:GetEffectiveScale()
         self._startY, self._startV = cy / scale, scroll:GetVerticalScroll()
         self:SetScript("OnUpdate", function(s)
-            local _, y = GetCursorPosition()
-            y = y / scale
+            local _, posY = GetCursorPosition()
+            posY = posY / scale
             local range = scroll:GetVerticalScrollRange() or 0
-            local h = scroll:GetHeight() - s:GetHeight()
-            if h > 0 then
-                ScrollTo(s._startV + (s._startY - y) / h * range)
+            local hgt = scroll:GetHeight() - s:GetHeight()
+            if hgt > 0 then
+                ScrollTo(s._startV + (s._startY - posY) / hgt * range)
             end
         end)
     end)
@@ -373,7 +373,7 @@ function Kit.Scroll(parent)
     end)
     scroll.Refresh = Update
     track:Hide()
-    return scroll, content
+    return scroll, contentFrame
 end
 
 -------------------------------------------------------------------------------
@@ -391,9 +391,9 @@ local function NewNode()
     return setmetatable({ items = {} }, Node)
 end
 
-function Node:CreateTitle(text)
+function Node:CreateTitle(textValue)
     table.insert(self.items, {
-        text = text,
+        text = textValue,
         noLoc = true,
         isDisabled = function()
             return true
@@ -405,40 +405,43 @@ function Node:CreateDivider()
         table.insert(self.items, "---")
     end
 end
-function Node:CreateButton(text, fn)
-    local child = NewNode()
-    local item = { text = text, noLoc = true, onClick = fn }
-    item._node = child
-    table.insert(self.items, item)
-    return child
+function Node:CreateButton(textValue, func)
+    local childFrame = NewNode()
+    local itemInfo = { text = textValue, noLoc = true, onClick = func }
+    itemInfo._node = childFrame
+    table.insert(self.items, itemInfo)
+    return childFrame
 end
-function Node:CreateRadio(text, isOn, fn)
-    table.insert(self.items, { text = text, noLoc = true, isActive = isOn and isOn() or false, onClick = fn })
+function Node:CreateRadio(textValue, isOn, func)
+    table.insert(
+        self.items,
+        { text = textValue, noLoc = true, isActive = isOn and isOn() or false, onClick = func }
+    )
 end
 Node.CreateCheckbox = Node.CreateRadio
 
 local function Items(node)
-    local out = {}
-    for _, item in ipairs(node.items) do
-        if type(item) == "table" and item._node then
-            local kids = Items(item._node)
-            local copy = { text = item.text, noLoc = true, onClick = item.onClick }
+    local result = {}
+    for _, itemInfo in ipairs(node.items) do
+        if type(itemInfo) == "table" and itemInfo._node then
+            local kids = Items(itemInfo._node)
+            local copy = { text = itemInfo.text, noLoc = true, onClick = itemInfo.onClick }
             if #kids > 0 then
                 copy.children, copy.onClick = kids, nil
             end
-            out[#out + 1] = copy
+            result[#result + 1] = copy
         else
-            out[#out + 1] = item
+            result[#result + 1] = itemInfo
         end
     end
-    if out[#out] == "---" then
-        out[#out] = nil
+    if result[#result] == "---" then
+        result[#result] = nil
     end
-    return out
+    return result
 end
 
-function Kit.ContextMenu(owner, builder, opts)
+function Kit.ContextMenu(ownerFrame, builder, options)
     local root = NewNode()
-    builder(owner, root)
-    CludesUI.ShowContextMenu(owner, Items(root), opts)
+    builder(ownerFrame, root)
+    CludesUI.ShowContextMenu(ownerFrame, Items(root), options)
 end

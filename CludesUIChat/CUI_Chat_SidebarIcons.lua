@@ -8,33 +8,33 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  visible ones, and the Chat Menu icon over Blizzard's chat menu button.
 --  Reads the earlier Chat files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local ECHAT = ns.ECHAT
+local CHAT = mod.ECHAT
 
-local CFD, GetTabAreaHeight = I.CFD, I.GetTabAreaHeight
+local CFD, GetTabAreaHeight = Inner.CFD, Inner.GetTabAreaHeight
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
-local _sidebarFadeTarget = I._sidebarFadeTarget
-I.sidebarFadeTargetSetters[#I.sidebarFadeTargetSetters + 1] = function(v)
-    _sidebarFadeTarget = v
+local _sidebarFadeTarget = Inner._sidebarFadeTarget
+Inner.sidebarFadeTargetSetters[#Inner.sidebarFadeTargetSetters + 1] = function(val)
+    _sidebarFadeTarget = val
 end
-local _sidebarFadeAlpha = I._sidebarFadeAlpha
-I.sidebarFadeAlphaSetters[#I.sidebarFadeAlphaSetters + 1] = function(v)
-    _sidebarFadeAlpha = v
+local _sidebarFadeAlpha = Inner._sidebarFadeAlpha
+Inner.sidebarFadeAlphaSetters[#Inner.sidebarFadeAlphaSetters + 1] = function(val)
+    _sidebarFadeAlpha = val
 end
 
 -- Show/hide individual sidebar icons and re-anchor visible ones to close gaps
 -- Chain refs for ApplySidebarIcons (static: that pass runs on every sidebar
 -- fade edge).
-ECHAT.SIDEBAR_CHAIN_REFS = {
+CHAT.SIDEBAR_CHAIN_REFS = {
     showFriends = { btn = "friendsBtn", tail = "friendsCount" },
     showGuild = { btn = "guildBtn", tail = "guildCount" },
     showDurability = { btn = "durabilityBtn", tail = "durabilityPct" },
@@ -44,67 +44,68 @@ ECHAT.SIDEBAR_CHAIN_REFS = {
     showChatMenu = { btn = "chatMenuBtn" },
     showSettings = { btn = "settingsBtn" },
 }
-function ECHAT.ApplySidebarIcons()
-    local cfg = ECHAT.DB()
+function CHAT.ApplySidebarIcons()
+    local conf = CHAT.DB()
     local cf1 = _G.ChatFrame1
-    local sb = cf1 and CFD(cf1).sidebar
-    if not sb then
+    local scrollBar = cf1 and CFD(cf1).sidebar
+    if not scrollBar then
         return
     end
 
     -- Stock kits pack their column like the stock one: their own spacing
     -- (the visible gap between art; each button's transparent pads come off).
-    local kit = ECHAT.SB_KIT
-    local ICON_GAP = kit and (cfg.stockIconSpacing or kit.gap) or (cfg.sidebarIconSpacing or 10)
+    local kit = CHAT.SB_KIT
+    local ICON_GAP = kit and (conf.stockIconSpacing or kit.gap) or (conf.sidebarIconSpacing or 10)
     -- Shift the chain up by the tab-strip height when the background is extended
     -- and free-move is off. Matches the offset applied at icon creation.
-    local iconTopShift = (ECHAT.ExtendBgBehindTabs(cfg) and not cfg.freeMoveIcons) and GetTabAreaHeight() or 0
+    local iconTopShift = (CHAT.ExtendBgBehindTabs(conf) and not conf.freeMoveIcons) and GetTabAreaHeight()
+        or 0
     local sbd = CFD(cf1)
 
     -- Re-anchor the chain in the creation-time order snapshot. Options-dropdown
     -- order edits intentionally do NOT apply live -- rebuilt on next reload.
     -- Icons never created (enabled after login) are skipped so the chain hangs
     -- off the last icon that actually exists.
-    local CHAIN_REFS = ECHAT.SIDEBAR_CHAIN_REFS
-    local chainOrder = sbd._iconChainOrder or ECHAT.ResolveSidebarIconOrder()
+    local CHAIN_REFS = CHAT.SIDEBAR_CHAIN_REFS
+    local chainOrder = sbd._iconChainOrder or CHAT.ResolveSidebarIconOrder()
 
     -- An alpha-0 sidebar still leaves child Buttons hoverable/clickable (motion is a
     -- separate channel from EnableMouse), so invisible icons must be HIDDEN: always in
     -- "never" mode, and in "mouseover" while fully faded out (shown children would eat
     -- the hover meant to reveal the sidebar). Both fade edges re-run this via
     -- ApplyTabPadding, so shown state tracks the fade with no extra wiring.
-    local sbMode = cfg.sidebarVisibility or "always"
+    local sbMode = conf.sidebarVisibility or "always"
     local sbHidden = sbMode == "never"
         or (sbMode == "mouseover" and _sidebarFadeTarget == 0 and _sidebarFadeAlpha == 0)
-        or ns._chatPassthrough == true
+        or mod._chatPassthrough == true
 
-    local anchor, prevPadB = nil, 0
+    local anchorFrame, prevPadB = nil, 0
     for _, key in ipairs(chainOrder) do
         local refs = CHAIN_REFS[key]
         local btn = refs and sbd[refs.btn]
         if btn then
-            local shown = cfg[key] ~= false and not sbHidden
-            btn:SetShown(shown)
+            local isShown = conf[key] ~= false and not sbHidden
+            btn:SetShown(isShown)
             local tail = refs.tail and sbd[refs.tail]
             if tail then
-                tail:SetShown(shown)
+                tail:SetShown(isShown)
             end
-            if shown then
+            if isShown then
                 -- Pads are nil on the CludesUI look (the maths there is
                 -- unchanged); the stock column starts at the sidebar's top.
                 local padT = btn._sbPadT or 0
                 btn:ClearAllPoints()
-                if anchor then
-                    btn:SetPoint("TOP", anchor, "BOTTOM", 0, -(ICON_GAP - prevPadB - padT))
+                if anchorFrame then
+                    btn:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -(ICON_GAP - prevPadB - padT))
                 elseif kit then
-                    btn:SetPoint("TOP", sb, "TOP", 0, 0)
+                    btn:SetPoint("TOP", scrollBar, "TOP", 0, 0)
                 else
-                    btn:SetPoint("TOP", sb, "TOP", 0, -ICON_GAP + iconTopShift)
+                    btn:SetPoint("TOP", scrollBar, "TOP", 0, -ICON_GAP + iconTopShift)
                 end
                 if tail and not btn._sbTailInside then
-                    anchor, prevPadB = tail, 0
+                    anchorFrame, prevPadB = tail, 0
                 else
-                    anchor, prevPadB = btn, (btn._sbPadB or 0)
+                    anchorFrame, prevPadB = btn, (btn._sbPadB or 0)
                 end
             end
         end
@@ -114,17 +115,17 @@ function ECHAT.ApplySidebarIcons()
     -- from the hidden-sidebar cutoff.
     if sbd.scrollBtn then
         sbd.scrollBtn:SetShown(
-            cfg.showScroll ~= false
-                and (not sbHidden or (cfg.scrollButtonOnChat == true and ns._chatPassthrough ~= true))
+            conf.showScroll ~= false
+                and (not sbHidden or (conf.scrollButtonOnChat == true and mod._chatPassthrough ~= true))
         )
     end
-    if ECHAT.ApplyScrollButtonPosition then
-        ECHAT.ApplyScrollButtonPosition()
+    if CHAT.ApplyScrollButtonPosition then
+        CHAT.ApplyScrollButtonPosition()
     end
 
     -- Re-apply free move offsets after chain layout
-    if ECHAT.ApplyIconFreeMove then
-        ECHAT.ApplyIconFreeMove()
+    if CHAT.ApplyIconFreeMove then
+        CHAT.ApplyIconFreeMove()
     end
 end
 
@@ -164,9 +165,9 @@ local SIDEBAR_CHAIN_KEYS = {
 -- built there either): the M+ Portals icon leaves the chain, which also drops
 -- it from creation and from the options icon list. Every button reader guards.
 if CludesUI.IS_FOREVER then
-    for i = #SIDEBAR_CHAIN_KEYS, 1, -1 do
-        if SIDEBAR_CHAIN_KEYS[i] == "showPortals" then
-            table.remove(SIDEBAR_CHAIN_KEYS, i)
+    for idx = #SIDEBAR_CHAIN_KEYS, 1, -1 do
+        if SIDEBAR_CHAIN_KEYS[idx] == "showPortals" then
+            table.remove(SIDEBAR_CHAIN_KEYS, idx)
         end
     end
 end
@@ -204,17 +205,17 @@ local SIDEBAR_FALLBACK_WITH = { showChatMenu = "showSettings" }
 -- Chain-icon keys sorted into the user's saved order. Used by the sidebar
 -- creation pass (reload-time source of truth), by ApplySidebarIcons when no
 -- creation snapshot exists, and by the options dropdown to list its rows.
-function ECHAT.ResolveSidebarIconOrder()
-    local cfg = ECHAT.DB()
-    local map = (cfg and cfg.sidebarIconOrder) or {}
+function CHAT.ResolveSidebarIconOrder()
+    local conf = CHAT.DB()
+    local map = (conf and conf.sidebarIconOrder) or {}
     local keyIndex = {}
-    local keys = {}
+    local keyList = {}
     local padOff = ChatMenuPadOff()
-    for i = 1, #SIDEBAR_CHAIN_KEYS do
-        local key = SIDEBAR_CHAIN_KEYS[i]
+    for idx = 1, #SIDEBAR_CHAIN_KEYS do
+        local key = SIDEBAR_CHAIN_KEYS[idx]
         if not (padOff and key == "showChatMenu") then
-            keys[#keys + 1] = key
-            keyIndex[key] = i
+            keyList[#keyList + 1] = key
+            keyIndex[key] = idx
         end
     end
     local function OrderOf(key)
@@ -229,17 +230,17 @@ function ECHAT.ResolveSidebarIconOrder()
         end
         return SIDEBAR_FALLBACK_ORDER[key] or 999
     end
-    table.sort(keys, function(a, b)
+    table.sort(keyList, function(a, b)
         local oa, ob = OrderOf(a), OrderOf(b)
         if oa ~= ob then
             return oa < ob
         end
         return keyIndex[a] < keyIndex[b]
     end)
-    return keys
+    return keyList
 end
 
-function ECHAT.SidebarIconExists(key)
+function CHAT.SidebarIconExists(key)
     local ref = SIDEBAR_ICON_REFS[key]
     if not ref then
         return true
@@ -267,41 +268,41 @@ end
 --  (the menu opens in the button's own handler first); a Shift press opens
 --  no menu, so Free Move drags the icon as usual.
 -------------------------------------------------------------------------------
-ECHAT.CHAT_MENU_GLYPH = "Interface\\AddOns\\CludesUI\\media\\micromenu\\menu-options.png"
+CHAT.CHAT_MENU_GLYPH = "Interface\\AddOns\\CludesUI\\media\\micromenu\\menu-options.png"
 do
-    local host -- our sidebar icon, once attached
+    local hostRegion -- our sidebar icon, once attached
 
-    local function Fwd(event, ...)
-        if host:GetScript(event) then
-            ExecuteFrameScript(host, event, ...)
+    local function Fwd(evt, ...)
+        if hostRegion:GetScript(evt) then
+            ExecuteFrameScript(hostRegion, evt, ...)
         end
     end
     local function OnEnter(_, motion)
-        host:LockHighlight()
+        hostRegion:LockHighlight()
         Fwd("OnEnter", motion)
     end
     local function OnLeave(_, motion)
-        host:UnlockHighlight()
+        hostRegion:UnlockHighlight()
         Fwd("OnLeave", motion)
     end
-    local function OnMouseDown(_, button)
-        if button == "LeftButton" then
-            host:SetButtonState("PUSHED")
+    local function OnMouseDown(_, btnFrame)
+        if btnFrame == "LeftButton" then
+            hostRegion:SetButtonState("PUSHED")
         end
-        Fwd("OnMouseDown", button)
+        Fwd("OnMouseDown", btnFrame)
     end
-    local function OnMouseUp(_, button)
-        host:SetButtonState("NORMAL")
-        Fwd("OnMouseUp", button)
+    local function OnMouseUp(_, btnFrame)
+        hostRegion:SetButtonState("NORMAL")
+        Fwd("OnMouseUp", btnFrame)
     end
 
     -- Called once, as the icon is built (only with Chat Menu on at login).
-    function ECHAT.AttachChatMenu(btn)
+    function CHAT.AttachChatMenu(btn)
         local mb = _G.ChatFrameMenuButton
-        if host or not mb then
+        if hostRegion or not mb then
             return
         end
-        host = btn
+        hostRegion = btn
         mb:HookScript("OnEnter", OnEnter)
         mb:HookScript("OnLeave", OnLeave)
         mb:HookScript("OnMouseDown", OnMouseDown)
@@ -314,26 +315,26 @@ do
             btn:UnlockHighlight()
             btn:SetButtonState("NORMAL")
         end)
-        ECHAT.SeatChatMenu()
+        CHAT.SeatChatMenu()
     end
 
     -- The button over the icon, pinned one level above it. The sidebar's
     -- strata and level are set once at build, and fixed values keep Blizzard's
     -- re-levels of the chat frames from carrying the button below the icon.
     -- Re-run after the login pass that hides Blizzard's chat buttons.
-    function ECHAT.SeatChatMenu()
+    function CHAT.SeatChatMenu()
         local mb = _G.ChatFrameMenuButton
-        if not (host and mb) then
+        if not (hostRegion and mb) then
             return
         end
         mb:ClearAllPoints()
-        mb:SetAllPoints(host)
-        mb:SetFrameStrata(host:GetFrameStrata())
+        mb:SetAllPoints(hostRegion)
+        mb:SetFrameStrata(hostRegion:GetFrameStrata())
         mb:SetFixedFrameStrata(true)
-        mb:SetFrameLevel(host:GetFrameLevel() + 2)
+        mb:SetFrameLevel(hostRegion:GetFrameLevel() + 2)
         mb:SetFixedFrameLevel(true)
-        mb:EnableMouse(host:IsVisible())
+        mb:EnableMouse(hostRegion:IsVisible())
     end
 end
 
-I.broken = false
+Inner.broken = false

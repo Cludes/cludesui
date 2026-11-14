@@ -8,8 +8,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  indicators, debuffs, dispels, range/tooltip) and Buff Manager.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIRaidFrames"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -41,22 +41,22 @@ CludesUI.TAB_LABEL_OVERRIDES[PAGE_DM] = "Debuffs"
 -- only. The page being BUILT decides (BuildVisualSections builds the Frames
 -- page too, and the search prebuild can leave the party context stale). ns
 -- fields, so no page builder gains an upvalue.
-function ns.RF_OptPartyKit()
-    return CludesUI._buildingPage == PAGE_PARTY and ns.RF_PartyKit ~= nil and ns.RF_PartyKit() and true
+function mod.RF_OptPartyKit()
+    return CludesUI._buildingPage == PAGE_PARTY and mod.RF_PartyKit ~= nil and mod.RF_PartyKit() and true
         or false
 end
-function ns.RF_PartyKitGate(cfg)
-    if not cfg or not ns.RF_OptPartyKit() then
-        return cfg
+function mod.RF_PartyKitGate(conf)
+    if not conf or not mod.RF_OptPartyKit() then
+        return conf
     end
-    cfg.disabled = function()
+    conf.disabled = function()
         return true
     end
-    cfg.disabledTooltip = "Frame Style: Party Frames"
-    cfg.requireState = "disabled"
-    cfg.rawTooltip = nil
-    cfg._blizzGated = true
-    return cfg
+    conf.disabledTooltip = "Frame Style: Party Frames"
+    conf.requireState = "disabled"
+    conf.rawTooltip = nil
+    conf._blizzGated = true
+    return conf
 end
 
 -- Move Frames button of a Free Move group (Friendly Boss, Extra Frames, Pet Frames): toggles its
@@ -64,34 +64,34 @@ end
 -- overlay; allowed(), whether it can open (Free Move chosen, out of combat); optional enabled()
 -- with enabledTip, the group's own switch, which also dims rgn's plain label while off. Nothing is
 -- built during the search prebuild; returns the button.
-function ns.RF_OptMoveFramesButton(row, rgn, opts)
+function mod.RF_OptMoveFramesButton(rowFrame, region, options)
     if CludesUI._prebuilding then
         return
     end
-    local btn = CreateFrame("Button", nil, row)
-    btn:SetSize(140, 26)
-    btn:SetPoint("RIGHT", rgn, "RIGHT", -20, 0)
-    btn:SetFrameLevel(row:GetFrameLevel() + 5)
-    local bbg = btn:CreateTexture(nil, "BACKGROUND")
+    local button = CreateFrame("Button", nil, rowFrame)
+    button:SetSize(140, 26)
+    button:SetPoint("RIGHT", region, "RIGHT", -20, 0)
+    button:SetFrameLevel(rowFrame:GetFrameLevel() + 5)
+    local bbg = button:CreateTexture(nil, "BACKGROUND")
     bbg:SetAllPoints()
     bbg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-    CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.25, bbg)
-    local lbl = btn:CreateFontString(nil, "OVERLAY")
-    CludesUI.ApplyModuleFont(lbl, nil, 13, "raidFrames")
-    lbl:SetPoint("CENTER", btn, "CENTER", 0, 0)
-    local enabled = opts.enabled
+    CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.25, bbg)
+    local labelFS = button:CreateFontString(nil, "OVERLAY")
+    CludesUI.ApplyModuleFont(labelFS, nil, 13, "raidFrames")
+    labelFS:SetPoint("CENTER", button, "CENTER", 0, 0)
+    local enabled = options.enabled
     local function Update()
-        lbl:SetText(opts.isShown() and CludesUI.L("Stop Moving") or CludesUI.L("Move Frames"))
-        btn:SetAlpha(opts.allowed() and 1 or 0.35)
+        labelFS:SetText(options.isShown() and CludesUI.L("Stop Moving") or CludesUI.L("Move Frames"))
+        button:SetAlpha(options.allowed() and 1 or 0.35)
         -- Plain-label slots have no native disabled handling.
-        if enabled and rgn._label then
-            rgn._label:SetAlpha(enabled() and 1 or 0.3)
+        if enabled and region._label then
+            region._label:SetAlpha(enabled() and 1 or 0.3)
         end
     end
-    btn:SetScript("OnEnter", function(self)
+    button:SetScript("OnEnter", function(self)
         if enabled and not enabled() then
-            CludesUI.ShowWidgetTooltip(self, opts.enabledTip)
-        elseif not opts.allowed() then
+            CludesUI.ShowWidgetTooltip(self, options.enabledTip)
+        elseif not options.allowed() then
             CludesUI.ShowWidgetTooltip(
                 self,
                 CludesUI.DisabledTooltip("This option requires Position to be set to Free Move")
@@ -103,19 +103,19 @@ function ns.RF_OptMoveFramesButton(row, rgn, opts)
             )
         end
     end)
-    btn:SetScript("OnLeave", function()
+    button:SetScript("OnLeave", function()
         CludesUI.HideWidgetTooltip()
     end)
-    btn:SetScript("OnClick", function()
-        if not opts.allowed() then
+    button:SetScript("OnClick", function()
+        if not options.allowed() then
             return
         end
-        opts.setShown(not opts.isShown())
+        options.setShown(not options.isShown())
         Update()
     end)
     CludesUI.RegisterWidgetRefresh(Update)
     Update()
-    return btn
+    return button
 end
 
 -- Party page PORTRAIT section (every style; CUI_RaidFrames_Portrait.lua):
@@ -124,10 +124,10 @@ end
 -- the Art Style alone (2D or class art). `PSSet` is the Party page's setter
 -- (the full party pass, for the box-width changes); every other setting
 -- takes the light path. Returns the new y.
-function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
-    local db = ns.db
-    local kit = ns.RF_OptPartyKit() -- build time only (the page rebuilds)
-    local _, h
+function mod.RF_BuildPartyPortrait(hostFrame, posY, Widgets, PSSet)
+    local db = mod.db
+    local kit = mod.RF_OptPartyKit() -- build time only (the page rebuilds)
+    local _, hgt
     local function PV(k, d)
         local v = db.profile[k]
         if v == nil then
@@ -136,14 +136,14 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
         return v
     end
     local function Refresh()
-        if ns._RefreshProxyModes then
-            ns._RefreshProxyModes()
+        if mod._RefreshProxyModes then
+            mod._RefreshProxyModes()
         end
-        if ns.RF_PtRefreshAll then
-            ns.RF_PtRefreshAll()
+        if mod.RF_PtRefreshAll then
+            mod.RF_PtRefreshAll()
         end
-        if ns.partyPvActive and ns.partyPvActive() and ns.ShowPartyPreview then
-            ns.ShowPartyPreview()
+        if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
+            mod.ShowPartyPreview()
         end
     end
     local function PtSet(k, v)
@@ -154,18 +154,18 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
         C_Timer.After(0, function()
             local rl = CludesUI._widgetRefreshList
             if rl then
-                for i = 1, #rl do
-                    rl[i]()
+                for idx = 1, #rl do
+                    rl[idx]()
                 end
             end
         end)
     end
-    local function IsInside(side)
-        return side == "insideleft" or side == "insideright" or side == "insidecenter"
+    local function IsInside(sideName)
+        return sideName == "insideleft" or sideName == "insideright" or sideName == "insidecenter"
     end
 
-    _, h = W:SectionHeader(parent, "PORTRAIT", y)
-    y = y - h
+    _, hgt = Widgets:SectionHeader(hostFrame, "PORTRAIT", posY)
+    posY = posY - hgt
 
     -- An Art Style pick, with the side effects of leaving and entering 3D
     -- (Inside positions and the None shape are 3D only).
@@ -233,10 +233,10 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
     -- Row 1: Portrait Mode | Art Style. A mode change can widen the frame
     -- (the full party pass) and shows or hides the rows below (a rebuild).
     local modeRow
-    modeRow, h = W:DualRow(
-        parent,
-        y,
-        ns.RF_PartyKitGate({
+    modeRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
+        mod.RF_PartyKitGate({
             type = "dropdown",
             text = "Portrait Mode",
             tooltip = "Attached widens each frame by the portrait.",
@@ -328,7 +328,7 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
     -- Portrait Settings (Detached only): Clickable Portrait, Background Color.
     CludesUI.BuildInlineCog(modeRow._leftRegion, {
         title = "Portrait Settings",
@@ -382,12 +382,12 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
     })
 
     if kit or PV("partyPortraitStyle", "none") == "none" then
-        return y
+        return posY
     end
 
     -- Row 2: Size | Position.
     local sizePosRow
-    sizePosRow, h = W:DualRow(parent, y, {
+    sizePosRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Size",
         min = -50,
@@ -451,61 +451,58 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
-    CludesUI.BuildInlineCog(
-        sizePosRow._leftRegion,
-        {
-            title = "Portrait Zoom",
-            rows = {
-                {
-                    type = "slider",
-                    label = "2D Zoom",
-                    min = 50,
-                    max = 100,
-                    step = 1,
-                    get = function()
-                        return PV("partyPortraitArtScale", 100)
-                    end,
-                    set = function(v)
-                        PtSet("partyPortraitArtScale", v)
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "3D Zoom",
-                    min = 100,
-                    max = ns.RF_PT_ZOOM3D_MAX,
-                    step = 1,
-                    tooltip = "Above 300 the camera pulls back to show the whole character.",
-                    get = function()
-                        return PV("partyPortrait3dZoom", 100)
-                    end,
-                    set = function(v)
-                        PtSet("partyPortrait3dZoom", v)
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Character Size",
-                    min = 50,
-                    max = 200,
-                    step = 1,
-                    tooltip = "Scales the 3D character from the portrait's bottom edge, for use with the full-body 3D Zoom range above 300.",
-                    disabled = function()
-                        return PV("partyPortraitStyle", "none") ~= "detached"
-                            or not IsInside(PV("partyPortraitSide", "left"))
-                    end,
-                    disabledTooltip = "This option requires an Inside position",
-                    get = function()
-                        return PV("partyPortraitCharScale", 100)
-                    end,
-                    set = function(v)
-                        PtSet("partyPortraitCharScale", v)
-                    end,
-                },
+    posY = posY - hgt
+    CludesUI.BuildInlineCog(sizePosRow._leftRegion, {
+        title = "Portrait Zoom",
+        rows = {
+            {
+                type = "slider",
+                label = "2D Zoom",
+                min = 50,
+                max = 100,
+                step = 1,
+                get = function()
+                    return PV("partyPortraitArtScale", 100)
+                end,
+                set = function(v)
+                    PtSet("partyPortraitArtScale", v)
+                end,
             },
-        }
-    )
+            {
+                type = "slider",
+                label = "3D Zoom",
+                min = 100,
+                max = mod.RF_PT_ZOOM3D_MAX,
+                step = 1,
+                tooltip = "Above 300 the camera pulls back to show the whole character.",
+                get = function()
+                    return PV("partyPortrait3dZoom", 100)
+                end,
+                set = function(v)
+                    PtSet("partyPortrait3dZoom", v)
+                end,
+            },
+            {
+                type = "slider",
+                label = "Character Size",
+                min = 50,
+                max = 200,
+                step = 1,
+                tooltip = "Scales the 3D character from the portrait's bottom edge, for use with the full-body 3D Zoom range above 300.",
+                disabled = function()
+                    return PV("partyPortraitStyle", "none") ~= "detached"
+                        or not IsInside(PV("partyPortraitSide", "left"))
+                end,
+                disabledTooltip = "This option requires an Inside position",
+                get = function()
+                    return PV("partyPortraitCharScale", 100)
+                end,
+                set = function(v)
+                    PtSet("partyPortraitCharScale", v)
+                end,
+            },
+        },
+    })
     CludesUI.BuildInlineCog(sizePosRow._rightRegion, {
         title = "Portrait Position Offsets",
         rows = {
@@ -543,130 +540,122 @@ function ns.RF_BuildPartyPortrait(parent, y, W, PSSet)
     })
 
     if PV("partyPortraitStyle", "none") ~= "detached" then
-        return y
+        return posY
     end
 
     -- Row 3 (Detached): Shape | Shape Border (custom colour or class coloured).
     local shapeRow
-    shapeRow, h = W:DualRow(
-        parent,
-        y,
-        {
-            type = "dropdown",
-            text = "Shape",
-            values = {
-                none = "None",
-                portrait = "Portrait",
-                circle = "Circle",
-                square = "Square",
-                csquare = "Rounded Square",
-                diamond = "Diamond",
-                hexagon = "Hexagon",
-                shield = "Shield",
-            },
-            order = { "none", "portrait", "circle", "square", "csquare", "diamond", "hexagon", "shield" },
-            itemDisabled = function(v)
-                return v == "none" and PV("partyPortraitMode", "2d") ~= "3d"
-            end,
-            itemDisabledTooltip = function(v)
-                if v == "none" then
-                    return "None shape requires 3D Art Style"
-                end
-            end,
-            getValue = function()
-                return PV("partyPortraitShape", "portrait")
-            end,
-            setValue = function(v)
-                PtSet("partyPortraitShape", v)
-            end,
+    shapeRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        type = "dropdown",
+        text = "Shape",
+        values = {
+            none = "None",
+            portrait = "Portrait",
+            circle = "Circle",
+            square = "Square",
+            csquare = "Rounded Square",
+            diamond = "Diamond",
+            hexagon = "Hexagon",
+            shield = "Shield",
         },
-        {
-            type = "multiSwatch",
-            text = "Shape Border",
-            swatches = {
-                {
-                    tooltip = "Custom Color",
-                    hasAlpha = false,
-                    getValue = function()
-                        local c = db.profile.partyPortraitBorderColor or { r = 0, g = 0, b = 0 }
-                        return c.r, c.g, c.b
-                    end,
-                    setValue = function(r, g, b)
-                        PtSet("partyPortraitBorderColor", { r = r, g = g, b = b })
-                    end,
-                    onClick = function(self)
-                        if PV("partyPortraitBorderClassColor", true) then
-                            PtSet("partyPortraitBorderClassColor", false)
-                            CludesUI:RefreshPage()
-                            return
-                        end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
-                    end,
-                    refreshAlpha = function()
-                        return PV("partyPortraitBorderClassColor", true) and 0.3 or 1
-                    end,
-                },
-                {
-                    tooltip = "Class Colored",
-                    hasAlpha = false,
-                    getValue = function()
-                        local _, ct = UnitClass("player")
-                        local c = ct and RAID_CLASS_COLORS[ct]
-                        if c then
-                            return c.r, c.g, c.b
-                        end
-                        return 1, 1, 1
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        PtSet("partyPortraitBorderClassColor", true)
+        order = { "none", "portrait", "circle", "square", "csquare", "diamond", "hexagon", "shield" },
+        itemDisabled = function(v)
+            return v == "none" and PV("partyPortraitMode", "2d") ~= "3d"
+        end,
+        itemDisabledTooltip = function(v)
+            if v == "none" then
+                return "None shape requires 3D Art Style"
+            end
+        end,
+        getValue = function()
+            return PV("partyPortraitShape", "portrait")
+        end,
+        setValue = function(v)
+            PtSet("partyPortraitShape", v)
+        end,
+    }, {
+        type = "multiSwatch",
+        text = "Shape Border",
+        swatches = {
+            {
+                tooltip = "Custom Color",
+                hasAlpha = false,
+                getValue = function()
+                    local c = db.profile.partyPortraitBorderColor or { r = 0, g = 0, b = 0 }
+                    return c.r, c.g, c.b
+                end,
+                setValue = function(r, g, b)
+                    PtSet("partyPortraitBorderColor", { r = r, g = g, b = b })
+                end,
+                onClick = function(self)
+                    if PV("partyPortraitBorderClassColor", true) then
+                        PtSet("partyPortraitBorderClassColor", false)
                         CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        return PV("partyPortraitBorderClassColor", true) and 1 or 0.3
-                    end,
-                },
+                        return
+                    end
+                    if self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
+                end,
+                refreshAlpha = function()
+                    return PV("partyPortraitBorderClassColor", true) and 0.3 or 1
+                end,
             },
-        }
-    )
-    y = y - h
-    CludesUI.BuildInlineCog(
-        shapeRow._rightRegion,
-        {
-            title = "Shape Border Settings",
-            rows = {
-                {
-                    type = "slider",
-                    label = "Size",
-                    min = 1,
-                    max = 7,
-                    step = 1,
-                    get = function()
-                        return PV("partyPortraitBorderSize", 7)
-                    end,
-                    set = function(v)
-                        PtSet("partyPortraitBorderSize", v)
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Opacity",
-                    min = 0,
-                    max = 100,
-                    step = 1,
-                    get = function()
-                        return PV("partyPortraitBorderOpacity", 100)
-                    end,
-                    set = function(v)
-                        PtSet("partyPortraitBorderOpacity", v)
-                    end,
-                },
+            {
+                tooltip = "Class Colored",
+                hasAlpha = false,
+                getValue = function()
+                    local _, ct = UnitClass("player")
+                    local c = ct and RAID_CLASS_COLORS[ct]
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end,
+                setValue = function() end,
+                onClick = function()
+                    PtSet("partyPortraitBorderClassColor", true)
+                    CludesUI:RefreshPage()
+                end,
+                refreshAlpha = function()
+                    return PV("partyPortraitBorderClassColor", true) and 1 or 0.3
+                end,
             },
-        }
-    )
-    return y
+        },
+    })
+    posY = posY - hgt
+    CludesUI.BuildInlineCog(shapeRow._rightRegion, {
+        title = "Shape Border Settings",
+        rows = {
+            {
+                type = "slider",
+                label = "Size",
+                min = 1,
+                max = 7,
+                step = 1,
+                get = function()
+                    return PV("partyPortraitBorderSize", 7)
+                end,
+                set = function(v)
+                    PtSet("partyPortraitBorderSize", v)
+                end,
+            },
+            {
+                type = "slider",
+                label = "Opacity",
+                min = 0,
+                max = 100,
+                step = 1,
+                get = function()
+                    return PV("partyPortraitBorderOpacity", 100)
+                end,
+                set = function(v)
+                    PtSet("partyPortraitBorderOpacity", v)
+                end,
+            },
+        },
+    })
+    return posY
 end
 
 -- Party page PARTY TARGETS section (every style, not kit-gated): Enable |
@@ -674,10 +663,10 @@ end
 -- Width | Height and Position (offsets cog). Party-only keys on db.profile;
 -- each setter takes the runtime's own light path (restyle, layout or the
 -- include edge), never a party reload. Returns the new y.
-function ns.RF_BuildPartyTargets(parent, y, W)
-    local db = ns.db
+function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
+    local db = mod.db
     local BLANK = CludesUI.BlankRowCfg
-    local _, h, row
+    local _, hgt, rowFrame
     local function PV(k, d)
         local v = db.profile[k]
         if v == nil then
@@ -687,38 +676,38 @@ function ns.RF_BuildPartyTargets(parent, y, W)
     end
     -- The party preview draws its own target frames (the real ones are dimmed under it).
     local function Preview()
-        if ns.partyPvActive() then
-            ns.ShowPartyPreview()
+        if mod.partyPvActive() then
+            mod.ShowPartyPreview()
         end
     end
     -- Colour and background: the fingerprint-gated restyle and repaint.
     local function PtSet(k, v)
         db.profile[k] = v
-        ns.PT_Refresh()
+        mod.PT_Refresh()
         Preview()
     end
     -- Size, side and offsets: the delta-gated layout (combat-deferred).
     local function LaySet(k, v)
         db.profile[k] = v
-        ns._PT_Layout()
+        mod._PT_Layout()
         Preview()
     end
     local DARK_TIP =
         "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
 
-    _, h = W:SectionHeader(parent, "PARTY TARGETS", y)
-    y = y - h
+    _, hgt = Widgets:SectionHeader(hostFrame, "PARTY TARGETS", posY)
+    posY = posY - hgt
 
     -- Row 1: Enable | Include Own Target. The rows below are HIDDEN while
     -- off, so the flip rebuilds the page.
     local on = db.profile.partyShowTargets == true -- build time (the page rebuilds)
-    _, h = W:DualRow(parent, y, {
+    _, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Party Targets",
         tooltip = "Show a smaller secure target button beside each party frame. Left-click a button to target that party member's current target.",
         disabled = function()
             local p = db.profile
-            return not p.partyShowTargets and p.partyCompactMode and ns.PT_AlongStack(p, true)
+            return not p.partyShowTargets and p.partyCompactMode and mod.PT_AlongStack(p, true)
         end,
         disabledTooltip = "Move Party Targets beside the frame stack or turn off Compact Mode.",
         rawTooltip = true,
@@ -726,11 +715,11 @@ function ns.RF_BuildPartyTargets(parent, y, W)
             return db.profile.partyShowTargets or false
         end,
         setValue = CludesUI.SectionToggleSetValue(function(v)
-            if v and db.profile.partyCompactMode and ns.PT_AlongStack(db.profile, true) then
+            if v and db.profile.partyCompactMode and mod.PT_AlongStack(db.profile, true) then
                 return
             end
             db.profile.partyShowTargets = v
-            ns.PT_SetEnabled(v)
+            mod.PT_SetEnabled(v)
             Preview()
         end),
     }, on and {
@@ -748,19 +737,19 @@ function ns.RF_BuildPartyTargets(parent, y, W)
         end,
         setValue = function(v)
             db.profile.partyTargetIncludeSelf = v
-            ns.PT_SetIncludeSelf(v)
+            mod.PT_SetIncludeSelf(v)
             Preview()
         end,
     } or BLANK())
-    y = y - h
+    posY = posY - hgt
 
     if not on then
-        return y
+        return posY
     end
 
     -- Row 2: Fill Color | Background (the Health Bar row's controls on the
     -- target frames' own keys).
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Fill Color",
         values = { class = "Class Color", dark = "Dark Mode", classic = "Classic", custom = "Custom Color" },
@@ -791,11 +780,11 @@ function ns.RF_BuildPartyTargets(parent, y, W)
             PtSet("partyTargetBgDarkness", v)
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Custom fill swatch: live only in Custom mode, dimmed and blocked otherwise.
     if not CludesUI._prebuilding then
-        local rgn = row._leftRegion
-        local swatch = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+        local region = rowFrame._leftRegion
+        local colorSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
             local c = db.profile.partyTargetCustomFillColor
             if c then
                 return c.r, c.g, c.b, 1
@@ -804,26 +793,26 @@ function ns.RF_BuildPartyTargets(parent, y, W)
         end, function(r, g, b)
             PtSet("partyTargetCustomFillColor", { r = r, g = g, b = b })
         end, false, 20)
-        swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = swatch
+        colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = colorSwatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
-        local block = CreateFrame("Frame", nil, swatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
-        block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(swatch, "Only available with Custom fill color")
+        local blockData = CreateFrame("Frame", nil, colorSwatch)
+        blockData:SetAllPoints()
+        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        blockData:EnableMouse(true)
+        blockData:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color")
         end)
-        block:SetScript("OnLeave", function()
+        blockData:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSwatchVis()
             if PV("partyTargetHealthColorMode", "class") == "custom" then
-                swatch:SetAlpha(1)
-                block:Hide()
+                colorSwatch:SetAlpha(1)
+                blockData:Hide()
             else
-                swatch:SetAlpha(0.3)
-                block:Show()
+                colorSwatch:SetAlpha(0.3)
+                blockData:Show()
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSwatchVis)
@@ -831,9 +820,9 @@ function ns.RF_BuildPartyTargets(parent, y, W)
     end
     -- Background Custom + Class swatch pair: clicking either toggles partyTargetBgClassColored, the inactive one dims (mirrors the fill picker).
     if not CludesUI._prebuilding then
-        local rgn = row._rightRegion
+        local region = rowFrame._rightRegion
         -- Class swatch shows the player's class color and is not editable.
-        local bgClassSwatch = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+        local bgClassSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
             local _, ct = UnitClass("player")
             local cc = ct and CludesUI.GetClassColor(ct)
             if cc then
@@ -851,10 +840,10 @@ function ns.RF_BuildPartyTargets(parent, y, W)
         bgClassSwatch:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        bgClassSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = bgClassSwatch
+        bgClassSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = bgClassSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+        local bgSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
             local c = db.profile.partyTargetCustomBgColor
             if c then
                 return c.r, c.g, c.b, 1
@@ -880,10 +869,10 @@ function ns.RF_BuildPartyTargets(parent, y, W)
         bgSwatch:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        bgSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = bgSwatch
+        bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = bgSwatch
         -- Blocking overlay spans BOTH swatches: Dark Mode has no background.
-        local bgBlock = CreateFrame("Frame", nil, rgn)
+        local bgBlock = CreateFrame("Frame", nil, region)
         bgBlock:SetPoint("TOPLEFT", bgSwatch, "TOPLEFT", 0, 0)
         bgBlock:SetPoint("BOTTOMRIGHT", bgClassSwatch, "BOTTOMRIGHT", 0, 0)
         bgBlock:SetFrameLevel(bgClassSwatch:GetFrameLevel() + 10)
@@ -911,7 +900,7 @@ function ns.RF_BuildPartyTargets(parent, y, W)
     end
 
     -- Row 3: Width | Height (absolute, not scaled with the party frames).
-    _, h = W:DualRow(parent, y, {
+    _, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Width",
         min = 20,
@@ -936,14 +925,14 @@ function ns.RF_BuildPartyTargets(parent, y, W)
             LaySet("partyTargetHeight", v)
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Row 4: Position (+ offsets cog). Shows the side the frames actually
     -- take (the Horizontal Frames setter's refresh re-reads it); a pick of
     -- the side an unset Position shows (the kit's move included) is stored
     -- as unset, so it keeps following the layout and the frame style.
     -- Under the Party Frames kit the stacked frames' buff side is taken.
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Position",
         tooltip = "Right by default, or Bottom with Horizontal Frames. With Frame Style: Party Frames, the side holding the buffs is not available.",
@@ -951,17 +940,17 @@ function ns.RF_BuildPartyTargets(parent, y, W)
         order = { "top", "bottom", "left", "right" },
         itemDisabled = function(v)
             local p = db.profile
-            if p.partyCompactMode and ns.PT_PositionAlongStack(v, p.partyHorizontal) then
+            if p.partyCompactMode and mod.PT_PositionAlongStack(v, p.partyHorizontal) then
                 return true
             end
-            if p.partyHorizontal or not ns.RF_PartyKit() then
+            if p.partyHorizontal or not mod.RF_PartyKit() then
                 return false
             end
-            local m = ns.RF_KitBuffMode(p)
+            local m = mod.RF_KitBuffMode(p)
             return (m == "RIGHT" and v == "right") or (m == "LEFT" and v == "left")
         end,
         itemDisabledTooltip = function(v)
-            if db.profile.partyCompactMode and ns.PT_PositionAlongStack(v, db.profile.partyHorizontal) then
+            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(v, db.profile.partyHorizontal) then
                 return "Compact Mode"
             end
             if v == "left" or v == "right" then
@@ -970,51 +959,48 @@ function ns.RF_BuildPartyTargets(parent, y, W)
         end,
         itemRequireState = "disabled",
         getValue = function()
-            return ns.PT_ShownSide()
+            return mod.PT_ShownSide()
         end,
         setValue = function(v)
-            if db.profile.partyCompactMode and ns.PT_PositionAlongStack(v, db.profile.partyHorizontal) then
+            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(v, db.profile.partyHorizontal) then
                 return
             end
-            LaySet("partyTargetPosition", (v ~= ns.PT_ShownSide(true)) and v or nil)
+            LaySet("partyTargetPosition", (v ~= mod.PT_ShownSide(true)) and v or nil)
         end,
     }, BLANK())
-    y = y - h
-    CludesUI.BuildInlineCog(
-        row._leftRegion,
-        {
-            title = "Target Position Offsets",
-            rows = {
-                {
-                    type = "slider",
-                    label = "X Offset",
-                    min = -100,
-                    max = 100,
-                    step = 1,
-                    get = function()
-                        return PV("partyTargetOffsetX", 0)
-                    end,
-                    set = function(v)
-                        LaySet("partyTargetOffsetX", v)
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Y Offset",
-                    min = -100,
-                    max = 100,
-                    step = 1,
-                    get = function()
-                        return PV("partyTargetOffsetY", 0)
-                    end,
-                    set = function(v)
-                        LaySet("partyTargetOffsetY", v)
-                    end,
-                },
+    posY = posY - hgt
+    CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+        title = "Target Position Offsets",
+        rows = {
+            {
+                type = "slider",
+                label = "X Offset",
+                min = -100,
+                max = 100,
+                step = 1,
+                get = function()
+                    return PV("partyTargetOffsetX", 0)
+                end,
+                set = function(v)
+                    LaySet("partyTargetOffsetX", v)
+                end,
             },
-        }
-    )
-    return y
+            {
+                type = "slider",
+                label = "Y Offset",
+                min = -100,
+                max = 100,
+                step = 1,
+                get = function()
+                    return PV("partyTargetOffsetY", 0)
+                end,
+                set = function(v)
+                    LaySet("partyTargetOffsetY", v)
+                end,
+            },
+        },
+    })
+    return posY
 end
 
 local initFrame = CreateFrame("Frame")
@@ -1022,44 +1008,44 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
-    ns._InitCUIModule = function()
+    mod._InitCUIModule = function()
         if not CludesUI or not CludesUI.RegisterModule then
             return
         end
-        if not ns.db then
+        if not mod.db then
             return
         end
 
-        local PP = CludesUI.PanelPP
-        local db = ns.db
-        local ReloadFrames = ns.ReloadFrames
+        local Pix = CludesUI.PanelPP
+        local db = mod.db
+        local ReloadFrames = mod.ReloadFrames
         local floor = math.floor
 
         ---------------------------------------------------------------------------
         --  Shared helpers
         ---------------------------------------------------------------------------
-        local GetFFD = ns.GetFFD
+        local GetFFD = mod.GetFFD
 
         local function ReloadAndUpdate()
             if ReloadFrames then
                 ReloadFrames()
             end
             -- Preview refresh keeps health values, updates layout/colors.
-            if ns.previewActive and ns.previewActive() and ns.ShowPreview then
-                ns.ShowPreview()
+            if mod.previewActive and mod.previewActive() and mod.ShowPreview then
+                mod.ShowPreview()
             end
-            if ns._sizePreviewTier and ns._ShowSizePreview then
-                ns._ShowSizePreview(ns._sizePreviewTier)
+            if mod._sizePreviewTier and mod._ShowSizePreview then
+                mod._ShowSizePreview(mod._sizePreviewTier)
             end
-            if ns.RefreshPvAuraVisuals then
-                ns.RefreshPvAuraVisuals()
+            if mod.RefreshPvAuraVisuals then
+                mod.RefreshPvAuraVisuals()
             end
             -- Party frames share all settings except width/height.
-            if ns.ReloadPartyFrames then
-                ns.ReloadPartyFrames()
+            if mod.ReloadPartyFrames then
+                mod.ReloadPartyFrames()
             end
-            if ns.partyPvActive and ns.partyPvActive() and ns.ShowPartyPreview then
-                ns.ShowPartyPreview()
+            if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
+                mod.ShowPartyPreview()
             end
         end
 
@@ -1071,13 +1057,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- Mutable state shared with the page builders under RaidFrames_Options\.
         -- A table instead of locals so every file reads and writes the live value.
         -- _partyCtx: true while building/interacting on the party tab.
-        local optState = { _partyCtx = false }
-        local PARTY_KEY_SECTION = ns._PARTY_KEY_SECTION or {}
-        local IsPartySectionCustom = ns._IsPartySectionCustom
+        local optionState = { _partyCtx = false }
+        local PARTY_KEY_SECTION = mod._PARTY_KEY_SECTION or {}
+        local IsPartySectionCustom = mod._IsPartySectionCustom
 
         local function SGet(key)
             if
-                optState._partyCtx
+                optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
@@ -1090,7 +1076,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
         local function SSet(key, val)
             if
-                optState._partyCtx
+                optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
@@ -1098,14 +1084,14 @@ initFrame:SetScript("OnEvent", function(self)
             else
                 db.profile[key] = val
             end
-            if ns._BumpAbsorbGen then
-                ns._BumpAbsorbGen()
+            if mod._BumpAbsorbGen then
+                mod._BumpAbsorbGen()
             end
             ReloadAndUpdate()
         end
         local function SVal(key, default)
             if
-                optState._partyCtx
+                optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
@@ -1123,7 +1109,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Context-aware direct write, for color swatches that bypass SSet.
         local function SWrite(key, val)
             if
-                optState._partyCtx
+                optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
@@ -1131,8 +1117,8 @@ initFrame:SetScript("OnEvent", function(self)
             else
                 db.profile[key] = val
             end
-            if ns._BumpAbsorbGen then
-                ns._BumpAbsorbGen()
+            if mod._BumpAbsorbGen then
+                mod._BumpAbsorbGen()
             end
         end
         -- A border's exact-size companion (<sib>Px) is ONE setting with its legacy
@@ -1140,7 +1126,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- carries only the party companion (nil included), never the raid one.
         local function SGetPx(key, sib)
             if
-                optState._partyCtx
+                optionState._partyCtx
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
                 and db.profile["party_" .. sib] ~= nil
@@ -1238,18 +1224,18 @@ initFrame:SetScript("OnEvent", function(self)
         -- Re-append post-login: the OnInitialize append runs too early to catch most
         -- SM texture providers, which register after our ADDON_LOADED.
         CludesUI.AppendSharedMediaTextures(
-            ns.healthBarTextureNames or {},
-            ns.healthBarTextureOrder or {},
+            mod.healthBarTextureNames or {},
+            mod.healthBarTextureOrder or {},
             nil,
-            ns.healthBarTextures
+            mod.healthBarTextures
         )
 
         local hbtValues = {}
         local hbtOrder = {}
         do
-            local texNames = ns.healthBarTextureNames or {}
-            local texOrder2 = ns.healthBarTextureOrder or {}
-            local texLookup = ns.healthBarTextures or {}
+            local texNames = mod.healthBarTextureNames or {}
+            local texOrder2 = mod.healthBarTextureOrder or {}
+            local texLookup = mod.healthBarTextures or {}
             for _, key in ipairs(texOrder2) do
                 if key ~= "---" then
                     hbtValues[key] = texNames[key] or key
@@ -1354,14 +1340,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- All three dropdowns share absorbStyleValues, so each gains the SM entries and preview swatch.
         do
             CludesUI.AppendSharedMediaTextures(
-                ns.healthBarTextureNames or {},
-                ns.healthBarTextureOrder or {},
+                mod.healthBarTextureNames or {},
+                mod.healthBarTextureOrder or {},
                 nil,
-                ns.healthBarTextures
+                mod.healthBarTextures
             )
-            local smNames = ns.healthBarTextureNames or {}
+            local smNames = mod.healthBarTextureNames or {}
             local smKeys = {}
-            for _, k in ipairs(ns.healthBarTextureOrder or {}) do
+            for _, k in ipairs(mod.healthBarTextureOrder or {}) do
                 if type(k) == "string" and k:find("^sm:") then
                     smKeys[#smKeys + 1] = k
                     absorbStyleValues[k] = smNames[k] or k
@@ -1386,12 +1372,12 @@ initFrame:SetScript("OnEvent", function(self)
                         return nil
                     end
                     if key == "blizzardModern" then
-                        return ns.ResolveAbsorbStyleTex("striped"), modernSwatch
+                        return mod.ResolveAbsorbStyleTex("striped"), modernSwatch
                     end
                     if key == "maxHealthStripes" then
                         return CludesUI.MAX_HEALTH_STRIPES_TEX
                     end
-                    return ns.ResolveAbsorbStyleTex and ns.ResolveAbsorbStyleTex(key) or nil
+                    return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
                 end,
             }
         end
@@ -1431,7 +1417,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- ns._RFGrowthIsVertical is the runtime module's single source of truth for
         -- this check (CUI_RaidFrames_Reload.lua); reuse it here rather than a second copy.
-        local GrowthIsVertical = ns._RFGrowthIsVertical
+        local GrowthIsVertical = mod._RFGrowthIsVertical
 
         -- Merge Groups renders through Blizzard's flat SecureGroupHeader, whose column
         -- axis (columnAnchorPoint) is always perpendicular to Unit Growth -- a same-axis
@@ -1464,30 +1450,30 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Gold border + tooltip on every Preview Mode control while the REAL preview renders an override's effective values (spec group or applied conditional). State comes from the runtime resolvers, NEVER the panel's view flags, so it always matches what the real preview shows.
         -- Recomputed at row build time and from ns._RebuildPvOverlay (view/spec/conditional changes).
-        function ns._UpdatePvModeChrome()
+        function mod._UpdatePvModeChrome()
             if not next(pvModeCtrls) then
                 return
             end
-            local text
+            local textValue
             if (db.profile.previewMode or "overlay") == "real" then
                 -- Editing-as session: preview shows THAT session's values (effective overlay off there by design), so name it.
                 local sessName = CludesUI.SpecOverrides_EditSessionName()
                 if sessName then
-                    text = CludesUI.Lf("Previewing Override: %1$s", sessName)
+                    textValue = CludesUI.Lf("Previewing Override: %1$s", sessName)
                 elseif CludesUI.SpecOverrides_PeekEffectiveValues then
                     local _, specSrc, condSrc =
                         CludesUI.SpecOverrides_PeekEffectiveValues("CludesUIRaidFrames")
                     if specSrc and condSrc then
-                        text = CludesUI.Lf("Previewing Overrides: %1$s, %2$s", specSrc, condSrc)
+                        textValue = CludesUI.Lf("Previewing Overrides: %1$s, %2$s", specSrc, condSrc)
                     elseif specSrc or condSrc then
-                        text = CludesUI.Lf("Previewing Override: %1$s", specSrc or condSrc)
+                        textValue = CludesUI.Lf("Previewing Override: %1$s", specSrc or condSrc)
                     end
                 end
             end
             for _, e in pairs(pvModeCtrls) do
                 if PvEntryLive(e) then
-                    e.gold:SetShown(text ~= nil)
-                    e.ctrl._ttText = text
+                    e.gold:SetShown(textValue ~= nil)
+                    e.ctrl._ttText = textValue
                     e.ctrl._ttOpts = nil
                 end
             end
@@ -1499,21 +1485,21 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Builds the "Preview Mode" row at the top of a page; returns the new y.
-        local function BuildPreviewModeRow(parent, y)
+        local function BuildPreviewModeRow(hostFrame, posY)
             local ROW_H = 50
-            local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+            local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
             local contentPad = CludesUI.CONTENT_PAD or 45
             -- The tab this row belongs to (the page being built sets the context first).
-            local pvCtx = optState._partyCtx and "party" or "raid"
+            local pvCtx = optionState._partyCtx and "party" or "raid"
 
-            y = y - 10
-            local modeRow = CreateFrame("Frame", nil, parent)
-            PP.Size(modeRow, parent:GetWidth() - contentPad * 2, ROW_H)
-            PP.Point(modeRow, "TOPLEFT", parent, "TOPLEFT", contentPad, y)
-            y = y - ROW_H
+            posY = posY - 10
+            local modeRow = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(modeRow, hostFrame:GetWidth() - contentPad * 2, ROW_H)
+            Pix.Point(modeRow, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
+            posY = posY - ROW_H
 
             local modeLabel = modeRow:CreateFontString(nil, "OVERLAY")
-            CludesUI.ApplyModuleFont(modeLabel, fontPath, 14, "raidFrames")
+            CludesUI.ApplyModuleFont(modeLabel, fontFile, 14, "raidFrames")
             modeLabel:SetPoint("TOP", modeRow, "TOP", 0, 0)
             modeLabel:SetText(CludesUI.L("Preview Mode"))
             modeLabel:SetTextColor(1, 1, 1, 0.6)
@@ -1539,23 +1525,23 @@ initFrame:SetScript("OnEvent", function(self)
                     local page = CludesUI:GetActivePage()
                     if page == PAGE_PARTY then
                         if v == "none" then
-                            if ns.HidePartyPreview then
-                                ns.HidePartyPreview()
+                            if mod.HidePartyPreview then
+                                mod.HidePartyPreview()
                             end
                         else
-                            if ns.HidePreview then
-                                ns.HidePreview()
+                            if mod.HidePreview then
+                                mod.HidePreview()
                             end
-                            if ns.ShowPartyPreview then
-                                ns.ShowPartyPreview()
+                            if mod.ShowPartyPreview then
+                                mod.ShowPartyPreview()
                             end
                         end
                     else
-                        if ns.ApplyPreviewMode then
-                            ns.ApplyPreviewMode()
+                        if mod.ApplyPreviewMode then
+                            mod.ApplyPreviewMode()
                         end
-                        if ns.HidePartyPreview then
-                            ns.HidePartyPreview()
+                        if mod.HidePartyPreview then
+                            mod.HidePartyPreview()
                         end
                     end
                     for _, e in pairs(pvModeDropdowns) do
@@ -1581,62 +1567,63 @@ initFrame:SetScript("OnEvent", function(self)
             -- Override-preview chrome lives on a SEPARATE gold border host: the control's own border is re-asserted by its hover scripts, so never recolor it directly (same pattern as the overrides UI slot marks).
             do
                 local gold = CludesUI._SPECOV_GOLD or { 199 / 255, 166 / 255, 90 / 255 }
-                local host = CreateFrame("Frame", nil, ddCtrl)
-                host:SetAllPoints(ddCtrl)
-                host:SetFrameLevel(ddCtrl:GetFrameLevel() + 30)
-                CludesUI.MakeRoundedBorder(host, gold[1], gold[2], gold[3], 0.9)
-                host:Hide()
+                local hostRegion = CreateFrame("Frame", nil, ddCtrl)
+                hostRegion:SetAllPoints(ddCtrl)
+                hostRegion:SetFrameLevel(ddCtrl:GetFrameLevel() + 30)
+                CludesUI.MakeRoundedBorder(hostRegion, gold[1], gold[2], gold[3], 0.9)
+                hostRegion:Hide()
                 if not CludesUI._prebuilding then
                     local e = pvModeCtrls[pvCtx]
                     if not e then
                         e = {}
                         pvModeCtrls[pvCtx] = e
                     end
-                    e.ctrl, e.gold, e.gen = ddCtrl, host, PoolGen(ddCtrl)
+                    e.ctrl, e.gold, e.gen = ddCtrl, hostRegion, PoolGen(ddCtrl)
                 end
             end
-            if ns._UpdatePvModeChrome then
-                ns._UpdatePvModeChrome()
+            if mod._UpdatePvModeChrome then
+                mod._UpdatePvModeChrome()
             end
 
-            ns._previewMode = db.profile.previewMode or "overlay"
-            return y
+            mod._previewMode = db.profile.previewMode or "overlay"
+            return posY
         end
 
         ---------------------------------------------------------------------------
         --  Visual settings sections (shared by raid + party pages)
         ---------------------------------------------------------------------------
-        local function BuildVisualSections(parent, y, W, onSection)
+        local function BuildVisualSections(hostFrame, posY, Widgets, onSection)
             -- Eyeball handles are per-context (raid vs party) so the two page builds don't clobber each other's eye-icon refreshers. Animation start/stop stay on ns: one shared ticker resolves the active preview at call time via ns.PvActiveFrames.
-            local _eyeCtx = optState._partyCtx and "party" or "raid"
-            ns._eye = ns._eye or {}
-            ns._eye[_eyeCtx] = ns._eye[_eyeCtx] or {}
-            local EYE = ns._eye[_eyeCtx]
+            local _eyeCtx = optionState._partyCtx and "party" or "raid"
+            mod._eye = mod._eye or {}
+            mod._eye[_eyeCtx] = mod._eye[_eyeCtx] or {}
+            local EYE = mod._eye[_eyeCtx]
             -- The sections live in RaidFrames_Options\VisualBars_Options.lua (HEALTH BAR ..
             -- TEXT DISPLAY) and VisualIndicators_Options.lua (INDICATORS .. RANGE & TOOLTIP);
             -- Dispels reuses the Health Bar custom-border gates.
             local CustomBorderOff, CustomBorderOffTip
-            y, CustomBorderOff, CustomBorderOffTip = ns.RFO_BuildVisualBars(parent, y, W, onSection, EYE)
-            y = ns.RFO_BuildVisualIndicators(
-                parent,
-                y,
-                W,
+            posY, CustomBorderOff, CustomBorderOffTip =
+                mod.RFO_BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
+            posY = mod.RFO_BuildVisualIndicators(
+                hostFrame,
+                posY,
+                Widgets,
                 onSection,
                 EYE,
                 CustomBorderOff,
                 CustomBorderOffTip
             )
-            return y
+            return posY
         end
 
         ---------------------------------------------------------------------------
         --  Buff Manager page (placeholder)
         ---------------------------------------------------------------------------
-        local function BuildBuffManagerPage(pageName, parent, yOffset)
+        local function BuildBuffManagerPage(pageName, hostFrame, yOffset)
             -- Buff Manager v2 runs INSIDE the legacy page shell.
             -- The from-scratch replacement page was rejected in field review and is not routed to; do not wire it up.
-            if ns.BM_BuildPage then
-                return ns.BM_BuildPage(pageName, parent, yOffset)
+            if mod.BM_BuildPage then
+                return mod.BM_BuildPage(pageName, hostFrame, yOffset)
             end
             return math.abs(yOffset)
         end
@@ -1649,7 +1636,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local function CloseTestMode()
             testModeActive = false
-            ns._testMode = false
+            mod._testMode = false
             if testModeFrame then
                 testModeFrame:SetAlpha(1)
                 local fadeOutAG = testModeFrame._fadeOut
@@ -1667,38 +1654,38 @@ initFrame:SetScript("OnEvent", function(self)
                 testModeFrame:SetAlpha(0)
                 fadeOutAG:Play()
             end
-            ns._indicatorsVisible = false
-            ns._dispelsVisible = false
-            ns._defensivesPreviewVisible = false
-            ns._debuffsPreviewVisible = false
-            if ns._stopHealthAnim and ns._healthAnimActive then
-                ns._stopHealthAnim()
+            mod._indicatorsVisible = false
+            mod._dispelsVisible = false
+            mod._defensivesPreviewVisible = false
+            mod._debuffsPreviewVisible = false
+            if mod._stopHealthAnim and mod._healthAnimActive then
+                mod._stopHealthAnim()
             end
-            ns._healthAnimActive = false
-            ns._bmFrameEffectsVisible = false
-            ns._testReducedMaxHealth = false
-            ns._testAbsorbs = nil
-            ns._testHealAbsorbs = nil
-            ns._testHealPrediction = nil
-            ns._testThreat = nil
-            ns._testBuffsVisible = false
-            if ns.StopPvBuffTicker then
-                ns.StopPvBuffTicker()
+            mod._healthAnimActive = false
+            mod._bmFrameEffectsVisible = false
+            mod._testReducedMaxHealth = false
+            mod._testAbsorbs = nil
+            mod._testHealAbsorbs = nil
+            mod._testHealPrediction = nil
+            mod._testThreat = nil
+            mod._testBuffsVisible = false
+            if mod.StopPvBuffTicker then
+                mod.StopPvBuffTicker()
             end
             -- Hide the container immediately; the dimmer fade masks it.
-            if ns._overlayContainer then
-                ns._overlayContainer:Hide()
+            if mod._overlayContainer then
+                mod._overlayContainer:Hide()
             end
-            if ns.HidePreview then
-                ns.HidePreview()
+            if mod.HidePreview then
+                mod.HidePreview()
             end
             local activePage = CludesUI:GetActivePage()
             if activePage == PAGE_MAIN then
-                local mode = db.profile.previewMode or "overlay"
-                if mode ~= "none" and ns.ShowPreview then
+                local modeName = db.profile.previewMode or "overlay"
+                if modeName ~= "none" and mod.ShowPreview then
                     C_Timer.After(0, function()
-                        if ns.ShowPreview then
-                            ns.ShowPreview()
+                        if mod.ShowPreview then
+                            mod.ShowPreview()
                         end
                     end)
                 end
@@ -1707,52 +1694,52 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Builds the Full Preview sidebar on the first open; every open re-dresses
         -- it through panel._redress (fonts, accent, check states, hover looks, anchor).
-        local function BuildTestPanel(PP, fontPath, accentColor, s)
+        local function BuildTestPanel(Pix, fontFile, accentColor, s)
             local PANEL_W = 260
             local ROW_H = 32
             local PAD = 16
-            local panel = CreateFrame("Frame", nil, testModeFrame)
-            panel:SetSize(PANEL_W, 600)
-            panel:SetPoint("LEFT", testModeFrame, "LEFT", 40, 0)
-            panel:Hide() -- shown once the overlay container is positioned
-            panel:SetFrameLevel(testModeFrame:GetFrameLevel() + 5)
-            local panelBg = panel:CreateTexture(nil, "BACKGROUND")
+            local panelFrame = CreateFrame("Frame", nil, testModeFrame)
+            panelFrame:SetSize(PANEL_W, 600)
+            panelFrame:SetPoint("LEFT", testModeFrame, "LEFT", 40, 0)
+            panelFrame:Hide() -- shown once the overlay container is positioned
+            panelFrame:SetFrameLevel(testModeFrame:GetFrameLevel() + 5)
+            local panelBg = panelFrame:CreateTexture(nil, "BACKGROUND")
             panelBg:SetAllPoints()
             panelBg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 0.9)
-            CludesUI.MakeBorder(panel, 1, 1, 1, 0.1, PP)
-            local panelFadeAG = panel:CreateAnimationGroup()
+            CludesUI.MakeBorder(panelFrame, 1, 1, 1, 0.1, Pix)
+            local panelFadeAG = panelFrame:CreateAnimationGroup()
             local panelFadeA = panelFadeAG:CreateAnimation("Alpha")
             panelFadeA:SetFromAlpha(0)
             panelFadeA:SetToAlpha(1)
             panelFadeA:SetDuration(0.3)
-            panel._fadeIn = panelFadeAG
+            panelFrame._fadeIn = panelFadeAG
 
             -- What every open re-dresses: each font string with its size, each
             -- checkbox with its mark, each Edit button's background and label.
             local fonts, checks, editParts = {}, {}, {}
 
-            local function MakeFont(p, size, r, g, b, a)
-                local fs = p:CreateFontString(nil, "OVERLAY")
-                CludesUI.PrimeFontShadow(fs, true)
-                fs:SetFont(fontPath, size, "")
-                fs:SetTextColor(r or 1, g or 1, b or 1, a or 1)
-                fonts[#fonts + 1] = fs
-                fonts[#fonts + 1] = size
-                return fs
+            local function MakeFont(p, dim, r, g, b, a)
+                local fontStr = p:CreateFontString(nil, "OVERLAY")
+                CludesUI.PrimeFontShadow(fontStr, true)
+                fontStr:SetFont(fontFile, dim, "")
+                fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
+                fonts[#fonts + 1] = fontStr
+                fonts[#fonts + 1] = dim
+                return fontStr
             end
 
             local cy = -PAD
 
-            local function SectionHeader(text)
+            local function SectionHeader(textValue)
                 cy = cy - 10
-                local lbl = MakeFont(panel, 11, 1, 1, 1, 0.75)
-                lbl:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, cy)
-                lbl:SetText(CludesUI.L(text))
-                local line = panel:CreateTexture(nil, "ARTWORK")
-                line:SetHeight(1)
-                line:SetPoint("LEFT", lbl, "RIGHT", 8, 0)
-                line:SetPoint("RIGHT", panel, "RIGHT", -PAD, 0)
-                line:SetColorTexture(1, 1, 1, 0.06)
+                local labelFS = MakeFont(panelFrame, 11, 1, 1, 1, 0.75)
+                labelFS:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
+                labelFS:SetText(CludesUI.L(textValue))
+                local lineTex = panelFrame:CreateTexture(nil, "ARTWORK")
+                lineTex:SetHeight(1)
+                lineTex:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
+                lineTex:SetPoint("RIGHT", panelFrame, "RIGHT", -PAD, 0)
+                lineTex:SetColorTexture(1, 1, 1, 0.06)
                 cy = cy - 15
             end
 
@@ -1762,20 +1749,20 @@ initFrame:SetScript("OnEvent", function(self)
             -- accent changed (a glow takes its colour when it first plays).
             local editGlow, glowR, glowG, glowB
 
-            local function CheckboxRow(label, getVal, setVal, editTarget)
-                local row = CreateFrame("Frame", nil, panel)
-                row:SetSize(PANEL_W - PAD * 2, ROW_H)
-                row:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, cy)
-                row:SetFrameLevel(panel:GetFrameLevel() + 1)
+            local function CheckboxRow(labelText, getVal, setVal, editTarget)
+                local rowFrame = CreateFrame("Frame", nil, panelFrame)
+                rowFrame:SetSize(PANEL_W - PAD * 2, ROW_H)
+                rowFrame:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
+                rowFrame:SetFrameLevel(panelFrame:GetFrameLevel() + 1)
 
-                local cb = CreateFrame("CheckButton", nil, row)
+                local cb = CreateFrame("CheckButton", nil, rowFrame)
                 cb:SetSize(18, 18)
-                cb:SetPoint("LEFT", row, "LEFT", 0, 0)
+                cb:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
 
                 local cbBg = cb:CreateTexture(nil, "BACKGROUND")
                 cbBg:SetAllPoints()
                 cbBg:SetColorTexture(0.15, 0.15, 0.15, 1)
-                CludesUI.MakeBorder(cb, 1, 1, 1, 0.2, PP)
+                CludesUI.MakeBorder(cb, 1, 1, 1, 0.2, Pix)
 
                 local checkMark = cb:CreateTexture(nil, "OVERLAY")
                 checkMark:SetSize(12, 12)
@@ -1792,34 +1779,34 @@ initFrame:SetScript("OnEvent", function(self)
 
                 local function DoToggle()
                     setVal(not getVal())
-                    for _, fn in ipairs(allRefreshFns) do
-                        fn()
+                    for _, func in ipairs(allRefreshFns) do
+                        func()
                     end
-                    if ns._applyTestState then
-                        ns._applyTestState()
+                    if mod._applyTestState then
+                        mod._applyTestState()
                     end
-                    if ns.ShowPreview then
-                        ns.ShowPreview()
+                    if mod.ShowPreview then
+                        mod.ShowPreview()
                     end
                 end
 
                 cb:SetScript("OnClick", DoToggle)
 
                 -- Label is clickable and toggles the checkbox.
-                local lblBtn = CreateFrame("Button", nil, row)
+                local lblBtn = CreateFrame("Button", nil, rowFrame)
                 lblBtn:SetPoint("LEFT", cb, "RIGHT", 8, 0)
-                lblBtn:SetPoint("RIGHT", row, "RIGHT", -50, 0)
+                lblBtn:SetPoint("RIGHT", rowFrame, "RIGHT", -50, 0)
                 lblBtn:SetHeight(ROW_H)
                 lblBtn:SetScript("OnClick", DoToggle)
-                local lbl = MakeFont(lblBtn, 11, 1, 1, 1, 0.85)
-                lbl:SetPoint("LEFT")
-                lbl:SetText(CludesUI.L(label))
+                local labelFS = MakeFont(lblBtn, 11, 1, 1, 1, 0.85)
+                labelFS:SetPoint("LEFT")
+                labelFS:SetText(CludesUI.L(labelText))
 
                 if editTarget then
-                    local editBtn = CreateFrame("Button", nil, row)
+                    local editBtn = CreateFrame("Button", nil, rowFrame)
                     editBtn:SetSize(43, 22)
-                    editBtn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
-                    editBtn:SetFrameLevel(row:GetFrameLevel() + 1)
+                    editBtn:SetPoint("RIGHT", rowFrame, "RIGHT", 0, 0)
+                    editBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
                     local eBg = editBtn:CreateTexture(nil, "BACKGROUND")
                     eBg:SetAllPoints()
                     eBg:SetColorTexture(1, 1, 1, 0.05)
@@ -1843,16 +1830,16 @@ initFrame:SetScript("OnEvent", function(self)
                             -- Scroll to + highlight the target row once the page builds.
                             if editTarget.key then
                                 C_Timer.After(0.1, function()
-                                    local target = ns._editTargets and ns._editTargets[editTarget.key]
-                                    if not target then
+                                    local targetUnit = mod._editTargets and mod._editTargets[editTarget.key]
+                                    if not targetUnit then
                                         return
                                     end
                                     -- A row the page rebuilt since is dressed again (maybe as
                                     -- another row): the glow below is for this dress only.
-                                    local targetGen = PoolGen(target)
-                                    local sf = CludesUI._scrollFrame
-                                    if sf then
-                                        local _, _, _, _, rowY = target:GetPoint(1)
+                                    local targetGen = PoolGen(targetUnit)
+                                    local scrollFrame = CludesUI._scrollFrame
+                                    if scrollFrame then
+                                        local _, _, _, _, rowY = targetUnit:GetPoint(1)
                                         if rowY then
                                             local scrollPos = math.max(0, math.abs(rowY) - 40)
                                             if CludesUI.SmoothScrollTo then
@@ -1861,7 +1848,7 @@ initFrame:SetScript("OnEvent", function(self)
                                         end
                                     end
                                     C_Timer.After(0.15, function()
-                                        if PoolGen(target) ~= targetGen or not target:IsShown() then
+                                        if PoolGen(targetUnit) ~= targetGen or not targetUnit:IsShown() then
                                             return
                                         end
                                         local eg = CludesUI.CLUDES_GREEN
@@ -1874,7 +1861,7 @@ initFrame:SetScript("OnEvent", function(self)
                                             glowR, glowG, glowB = eg.r, eg.g, eg.b
                                             editGlow = CludesUI.MakeSettingGlow({ color = eg })
                                         end
-                                        editGlow(target)
+                                        editGlow(targetUnit)
                                     end)
                                 end)
                             end
@@ -1884,22 +1871,22 @@ initFrame:SetScript("OnEvent", function(self)
 
                 cy = cy - ROW_H
                 allRefreshFns[#allRefreshFns + 1] = Refresh
-                return cb, Refresh, row
+                return cb, Refresh, rowFrame
             end
 
             local nonIndicatorRows = {}
 
             -- Test mode toggle state persists across open/close within a session.
-            if not ns._testState then
+            if not mod._testState then
                 local specIdx = GetSpecialization and GetSpecialization()
                 local specRole = specIdx and GetSpecializationRole and GetSpecializationRole(specIdx)
-                ns._testState = {
+                mod._testState = {
                     animateBars = false,
                     absorbs = s.absorbStyle ~= "none",
                     healAbsorbs = (s.healAbsorbStyle or "clean") ~= "none",
                     healPrediction = s.healPrediction == true,
                     threat = (s.threatBorderSize or 0) > 0
-                        or (s.threatCustomBorder == true and ns.RF_CustomBorderOn(s)),
+                        or (s.threatCustomBorder == true and mod.RF_CustomBorderOn(s)),
                     reducedMaxHealth = false,
                     dispels = false,
                     debuffs = s.debuffFilter ~= "none",
@@ -1908,42 +1895,42 @@ initFrame:SetScript("OnEvent", function(self)
                     indicators = false,
                 }
             end
-            local testState = ns._testState
+            local testState = mod._testState
 
-            ns._applyTestState = function()
+            mod._applyTestState = function()
                 local indOn = testState.indicators
-                ns._indicatorsVisible = indOn
+                mod._indicatorsVisible = indOn
                 -- Indicators suppress every other preview WITHOUT altering testState.
-                ns._dispelsVisible = not indOn and testState.dispels
-                ns._debuffsPreviewVisible = not indOn and testState.debuffs
-                ns._defensivesPreviewVisible = not indOn and testState.defensives
-                ns._testReducedMaxHealth = not indOn and testState.reducedMaxHealth
-                ns._testAbsorbs = not indOn and testState.absorbs
-                ns._testHealAbsorbs = not indOn and testState.healAbsorbs
-                ns._testHealPrediction = not indOn and testState.healPrediction
-                ns._testThreat = not indOn and testState.threat
-                ns._testBuffsVisible = not indOn and testState.buffs
+                mod._dispelsVisible = not indOn and testState.dispels
+                mod._debuffsPreviewVisible = not indOn and testState.debuffs
+                mod._defensivesPreviewVisible = not indOn and testState.defensives
+                mod._testReducedMaxHealth = not indOn and testState.reducedMaxHealth
+                mod._testAbsorbs = not indOn and testState.absorbs
+                mod._testHealAbsorbs = not indOn and testState.healAbsorbs
+                mod._testHealPrediction = not indOn and testState.healPrediction
+                mod._testThreat = not indOn and testState.threat
+                mod._testBuffsVisible = not indOn and testState.buffs
                 local wantAnim = not indOn and testState.animateBars
                 if wantAnim then
-                    if ns._startHealthAnim and not ns._healthAnimActive then
-                        ns._startHealthAnim()
+                    if mod._startHealthAnim and not mod._healthAnimActive then
+                        mod._startHealthAnim()
                     end
                 else
-                    if ns._stopHealthAnim and ns._healthAnimActive then
-                        ns._stopHealthAnim()
+                    if mod._stopHealthAnim and mod._healthAnimActive then
+                        mod._stopHealthAnim()
                     end
                 end
                 -- Restart so debuff/defensive icons hide/show immediately.
-                if ns.RestartPvAuraTicker then
-                    ns.RestartPvAuraTicker()
+                if mod.RestartPvAuraTicker then
+                    mod.RestartPvAuraTicker()
                 end
                 -- Always stop first so re-init picks up new preview frames.
-                if ns.StopPvBuffTicker then
-                    ns.StopPvBuffTicker()
+                if mod.StopPvBuffTicker then
+                    mod.StopPvBuffTicker()
                 end
                 local wantBuffs = not indOn and testState.buffs
-                if wantBuffs and ns.StartPvBuffTicker then
-                    ns.StartPvBuffTicker()
+                if wantBuffs and mod.StartPvBuffTicker then
+                    mod.StartPvBuffTicker()
                 end
             end
 
@@ -2016,7 +2003,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return testState.dispels
                 end, function(v)
                     testState.dispels = v
-                    ns._applyTestState()
+                    mod._applyTestState()
                 end, { page = PAGE_MAIN })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -2026,7 +2013,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return testState.debuffs
                 end, function(v)
                     testState.debuffs = v
-                    ns._applyTestState()
+                    mod._applyTestState()
                 end, { page = PAGE_DM })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -2036,7 +2023,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return testState.defensives
                 end, function(v)
                     testState.defensives = v
-                    ns._applyTestState()
+                    mod._applyTestState()
                 end, { page = PAGE_BUFFS })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -2046,7 +2033,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return testState.buffs
                 end, function(v)
                     testState.buffs = v
-                    ns._applyTestState()
+                    mod._applyTestState()
                 end, { page = PAGE_BUFFS })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -2068,16 +2055,16 @@ initFrame:SetScript("OnEvent", function(self)
             end, function(v)
                 testState.indicators = v
                 SetNonIndicatorRowsEnabled(not v)
-                ns._applyTestState()
+                mod._applyTestState()
             end, { page = PAGE_MAIN })
 
             -- Content height plus room for the close button.
-            panel:SetHeight(math.abs(cy) + 32 + PAD * 3)
+            panelFrame:SetHeight(math.abs(cy) + 32 + PAD * 3)
 
-            local closeBtn = CreateFrame("Button", nil, panel)
+            local closeBtn = CreateFrame("Button", nil, panelFrame)
             closeBtn:SetSize(PANEL_W - PAD * 2, 32)
-            closeBtn:SetPoint("BOTTOM", panel, "BOTTOM", 0, PAD)
-            closeBtn:SetFrameLevel(panel:GetFrameLevel() + 1)
+            closeBtn:SetPoint("BOTTOM", panelFrame, "BOTTOM", 0, PAD)
+            closeBtn:SetFrameLevel(panelFrame:GetFrameLevel() + 1)
             local clBg = closeBtn:CreateTexture(nil, "BACKGROUND")
             clBg:SetAllPoints()
             clBg:SetColorTexture(0.25, 0.25, 0.25, 0.6)
@@ -2096,8 +2083,8 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Dead space closes.
             testModeFrame:SetScript("OnMouseDown", function()
-                local oc = ns._overlayContainer
-                if (panel and panel:IsMouseOver()) or (oc and oc:IsMouseOver()) then
+                local oc = mod._overlayContainer
+                if (panelFrame and panelFrame:IsMouseOver()) or (oc and oc:IsMouseOver()) then
                     return
                 end
                 CloseTestMode()
@@ -2117,22 +2104,22 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.PopupTakeKeys(testModeFrame, testModeFrame)
 
             -- Every open starts the sidebar from the look a new one has.
-            panel._redress = function(fp, ac)
-                for i = 1, #fonts, 2 do
-                    fonts[i]:SetFont(fp, fonts[i + 1], "")
+            panelFrame._redress = function(fp, ac)
+                for idx = 1, #fonts, 2 do
+                    fonts[idx]:SetFont(fp, fonts[idx + 1], "")
                 end
-                for i = 1, #checks, 2 do
-                    checks[i]:SetChecked(false)
-                    checks[i + 1]:SetColorTexture(ac.r, ac.g, ac.b, 1)
+                for idx = 1, #checks, 2 do
+                    checks[idx]:SetChecked(false)
+                    checks[idx + 1]:SetColorTexture(ac.r, ac.g, ac.b, 1)
                 end
-                for i = 1, #editParts, 2 do
-                    editParts[i]:SetColorTexture(1, 1, 1, 0.05)
-                    editParts[i + 1]:SetAlpha(1)
+                for idx = 1, #editParts, 2 do
+                    editParts[idx]:SetColorTexture(1, 1, 1, 0.05)
+                    editParts[idx + 1]:SetAlpha(1)
                 end
                 clBg:SetColorTexture(0.25, 0.25, 0.25, 0.6)
                 clLbl:SetAlpha(1)
-                for _, fn in ipairs(allRefreshFns) do
-                    fn()
+                for _, func in ipairs(allRefreshFns) do
+                    func()
                 end
                 for _, row2 in ipairs(nonIndicatorRows) do
                     row2:SetAlpha(1)
@@ -2142,13 +2129,13 @@ initFrame:SetScript("OnEvent", function(self)
                 if testState.indicators then
                     SetNonIndicatorRowsEnabled(false)
                 end
-                panel:ClearAllPoints()
-                panel:SetPoint("LEFT", testModeFrame, "LEFT", 40, 0)
-                panel:SetAlpha(1)
-                panel:Hide() -- shown once the overlay container is positioned
-                panel:SetFrameLevel(testModeFrame:GetFrameLevel() + 5)
+                panelFrame:ClearAllPoints()
+                panelFrame:SetPoint("LEFT", testModeFrame, "LEFT", 40, 0)
+                panelFrame:SetAlpha(1)
+                panelFrame:Hide() -- shown once the overlay container is positioned
+                panelFrame:SetFrameLevel(testModeFrame:GetFrameLevel() + 5)
             end
-            ns._testPanel = panel
+            mod._testPanel = panelFrame
         end
 
         local function OpenTestMode()
@@ -2157,10 +2144,10 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             testModeActive = true
-            ns._testMode = true
+            mod._testMode = true
 
-            local PP = CludesUI.PanelPP or CludesUI.PP
-            local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+            local Pix = CludesUI.PanelPP or CludesUI.PP
+            local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
             local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
             local s = db.profile
 
@@ -2191,43 +2178,43 @@ initFrame:SetScript("OnEvent", function(self)
             fadeInAG:Play()
 
             -- Force the preview up; ns._testMode forces overlay mode.
-            if ns.HidePreview then
-                ns.HidePreview()
+            if mod.HidePreview then
+                mod.HidePreview()
             end
             C_Timer.After(0, function()
-                if ns.ShowPreview and ns._testMode then
-                    ns.ShowPreview()
+                if mod.ShowPreview and mod._testMode then
+                    mod.ShowPreview()
                     -- Re-apply now that preview frames exist and previewActive is true.
-                    if ns._applyTestState then
-                        ns._applyTestState()
+                    if mod._applyTestState then
+                        mod._applyTestState()
                     end
                     -- Reanchor + fade in the sidebar once the container is placed.
                     C_Timer.After(0, function()
-                        if not ns._testMode then
+                        if not mod._testMode then
                             return
                         end
-                        local oc = ns._overlayContainer
-                        if oc and oc:IsShown() and ns._testPanel then
-                            ns._testPanel:ClearAllPoints()
-                            ns._testPanel:SetPoint("RIGHT", oc, "LEFT", -20, 0)
-                            ns._testPanel:SetAlpha(0)
-                            ns._testPanel:Show()
-                            ns._testPanel:SetAlpha(1)
-                            ns._testPanel._fadeIn:Play()
+                        local oc = mod._overlayContainer
+                        if oc and oc:IsShown() and mod._testPanel then
+                            mod._testPanel:ClearAllPoints()
+                            mod._testPanel:SetPoint("RIGHT", oc, "LEFT", -20, 0)
+                            mod._testPanel:SetAlpha(0)
+                            mod._testPanel:Show()
+                            mod._testPanel:SetAlpha(1)
+                            mod._testPanel._fadeIn:Play()
                         end
                     end)
                 end
             end)
 
-            if not ns._testPanel then
-                BuildTestPanel(PP, fontPath, accentColor, s)
+            if not mod._testPanel then
+                BuildTestPanel(Pix, fontFile, accentColor, s)
             end
-            ns._testPanel._redress(fontPath, accentColor)
-            ns._applyTestState()
+            mod._testPanel._redress(fontFile, accentColor)
+            mod._applyTestState()
         end
 
-        ns.OpenTestMode = OpenTestMode
-        ns.CloseTestMode = CloseTestMode
+        mod.OpenTestMode = OpenTestMode
+        mod.CloseTestMode = CloseTestMode
 
         -- Test button appears on the tab bar while the RF module is selected.
         local testTabBtn = nil
@@ -2257,7 +2244,7 @@ initFrame:SetScript("OnEvent", function(self)
                     testTabBtn:SetFrameLevel(tb:GetFrameLevel() + 1)
 
                     local PP2 = CludesUI.PanelPP or CludesUI.PP
-                    local label = CludesUI.MakeFont(
+                    local labelText = CludesUI.MakeFont(
                         testTabBtn,
                         16,
                         nil,
@@ -2266,11 +2253,11 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI.TEXT_DIM_B or 0.65,
                         CludesUI.TEXT_DIM_A or 0.65
                     )
-                    label:SetPoint("CENTER", 0, 0)
-                    label:SetText(CludesUI.L("Full Preview"))
-                    testTabBtn._label = label
+                    labelText:SetPoint("CENTER", 0, 0)
+                    labelText:SetText(CludesUI.L("Full Preview"))
+                    testTabBtn._label = labelText
 
-                    local textW = label:GetStringWidth() or 30
+                    local textW = labelText:GetStringWidth() or 30
                     testTabBtn:SetWidth(textW + 30)
                     testTabBtn:SetPoint("BOTTOMLEFT", lastBtn, "BOTTOMRIGHT", 6, 0)
 
@@ -2312,7 +2299,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return true
                     end
                     if Dark() then
-                        return not ns.RF_TexBgOpaque(nil, true)
+                        return not mod.RF_TexBgOpaque(nil, true)
                     end
                     return read("healthBarOpacity", 100) < 100
                 end,
@@ -2336,7 +2323,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Shared with the page builders under RaidFrames_Options\ (read in their
         -- prologs). Every field is final here: optState holds the mutable state.
-        ns._RFO_OptEnv = {
+        mod._RFO_OptEnv = {
             TexBgRowCfg = TexBgRowCfg,
             AbbreviateNumbers = AbbreviateNumbers,
             absorbStyleOrder = absorbStyleOrder,
@@ -2358,8 +2345,8 @@ initFrame:SetScript("OnEvent", function(self)
             KeepGrowthPerpendicular = KeepGrowthPerpendicular,
             maxHealthStyleOrder = maxHealthStyleOrder,
             MissingGlowDesc = MissingGlowDesc,
-            optState = optState,
-            PP = PP,
+            optState = optionState,
+            PP = Pix,
             ReadGroupGrowth = ReadGroupGrowth,
             ReloadAndUpdate = ReloadAndUpdate,
             SGet = SGet,
@@ -2427,50 +2414,50 @@ initFrame:SetScript("OnEvent", function(self)
         -- the DM root drops. stripAlways: hide the CC spell strip (parented to
         -- the panel, not the CC root; kept for the next build) even with no CC root.
         local function DropManagerRoots(keepPage, popups, stripAlways)
-            if popups == true and ns._addNewPopup then
-                ns._addNewPopup:Hide()
+            if popups == true and mod._addNewPopup then
+                mod._addNewPopup:Hide()
             end
-            if keepPage ~= PAGE_BUFFS and ns._bmRoot then
-                ParkRoot(ns._bmRoot)
-                ns._bmRoot = nil
+            if keepPage ~= PAGE_BUFFS and mod._bmRoot then
+                ParkRoot(mod._bmRoot)
+                mod._bmRoot = nil
             end
-            local dropDm = keepPage ~= PAGE_DM and ns._dmRoot
+            local dropDm = keepPage ~= PAGE_DM and mod._dmRoot
             if popups == true or (popups == "dm" and dropDm) then
-                if ns._dmAddPopup then
-                    ns._dmAddPopup:Hide()
+                if mod._dmAddPopup then
+                    mod._dmAddPopup:Hide()
                 end
-                if ns._bm2FilterEditor then
-                    ns._bm2FilterEditor:Hide()
-                    ns._bm2FilterEditor = nil
+                if mod._bm2FilterEditor then
+                    mod._bm2FilterEditor:Hide()
+                    mod._bm2FilterEditor = nil
                 end
             end
             if dropDm then
-                ParkRoot(ns._dmRoot)
-                ns._dmRoot = nil
+                ParkRoot(mod._dmRoot)
+                mod._dmRoot = nil
             end
-            local dropCc = keepPage ~= PAGE_CLICKCAST and ns._ccRoot
+            local dropCc = keepPage ~= PAGE_CLICKCAST and mod._ccRoot
             if dropCc then
-                if ns._ccGridPopup then
-                    ns._ccGridPopup:Hide()
-                    ns._ccGridPopup = nil
+                if mod._ccGridPopup then
+                    mod._ccGridPopup:Hide()
+                    mod._ccGridPopup = nil
                 end
-                if ns._ccSpecPopup then
-                    ns._ccSpecPopup:Hide()
-                    ns._ccSpecPopup = nil
+                if mod._ccSpecPopup then
+                    mod._ccSpecPopup:Hide()
+                    mod._ccSpecPopup = nil
                 end
-                if ns._ccQBPopup then
-                    ns._ccQBPopup:Hide()
-                    ns._ccQBPopup = nil
+                if mod._ccQBPopup then
+                    mod._ccQBPopup:Hide()
+                    mod._ccQBPopup = nil
                 end
                 -- (The Quickbind popup's hide renders the page again, which sets
                 -- ns._ccRoot anew: read it after the popups.)
-                if ns._ccRoot then
-                    ParkRoot(ns._ccRoot)
-                    ns._ccRoot = nil
+                if mod._ccRoot then
+                    ParkRoot(mod._ccRoot)
+                    mod._ccRoot = nil
                 end
             end
-            if (dropCc or stripAlways) and ns._ccSpellStrip then
-                ns._ccSpellStrip:Hide()
+            if (dropCc or stripAlways) and mod._ccSpellStrip then
+                mod._ccSpellStrip:Hide()
             end
         end
 
@@ -2483,9 +2470,9 @@ initFrame:SetScript("OnEvent", function(self)
         local function WithStack(err)
             return tostring(err) .. "\n" .. debugstack(2)
         end
-        local function RestorePartyCtx(saved, ok, ...)
-            optState._partyCtx = saved
-            if not ok then
+        local function RestorePartyCtx(saved, success, ...)
+            optionState._partyCtx = saved
+            if not success then
                 error((...), 0)
             end
             return ...
@@ -2501,79 +2488,79 @@ initFrame:SetScript("OnEvent", function(self)
             -- The managers draw over the scroll frame: no inline search there.
             noSearchPages = { [PAGE_BUFFS] = true, [PAGE_DM] = true, [PAGE_CLICKCAST] = true },
             searchTerms = rfSearchTerms,
-            buildPage = function(pageName, parent, yOffset)
+            buildPage = function(pageName, hostFrame, yOffset)
                 -- The cleanup/preview logic below acts on live state (BM/CC roots, raid/party preview overlays over the player's real frames) keyed only on the pageName being built, not what the player is actually looking at. An off-screen search pre-build cycles pageName through every page in `pages`, so NONE of it may run here.
                 -- PAGE_BUFFS / PAGE_CLICKCAST go further: their builders (BuildBuffManagerPage -> ns.BM_BuildPage, ns.CC_BuildPage) bypass `parent` and build directly onto the live shared CludesUI._scrollFrame, so building them here would inject visible UI over whatever is on screen. Skip them; they index normally on the player's first live visit.
                 --
                 -- The pre-build must not leave the live page's _partyCtx changed.
                 if CludesUI._prebuilding then
                     if pageName == PAGE_MAIN or pageName == PAGE_PARTY then
-                        local saved = optState._partyCtx
-                        optState._partyCtx = (pageName == PAGE_PARTY)
-                        local build = (pageName == PAGE_PARTY) and ns.RFO_BuildPartyPage
-                            or ns.RFO_BuildMainPage
-                        return RestorePartyCtx(saved, xpcall(build, WithStack, pageName, parent, yOffset))
+                        local saved = optionState._partyCtx
+                        optionState._partyCtx = (pageName == PAGE_PARTY)
+                        local build = (pageName == PAGE_PARTY) and mod.RFO_BuildPartyPage
+                            or mod.RFO_BuildMainPage
+                        return RestorePartyCtx(saved, xpcall(build, WithStack, pageName, hostFrame, yOffset))
                     end
                     return
                 end
                 -- Drop the BM / DM / CC roots when switching away.
                 DropManagerRoots(pageName)
                 if pageName == PAGE_MAIN then
-                    local mode = db.profile.previewMode or "overlay"
+                    local modeName = db.profile.previewMode or "overlay"
                     -- Skip-restore keeps real party frames hidden under the preview so they don't flash on return to the party tab; restore only for "none", where real frames are meant to be visible.
-                    if ns.HidePartyPreview then
-                        ns.HidePartyPreview(mode ~= "none")
+                    if mod.HidePartyPreview then
+                        mod.HidePartyPreview(modeName ~= "none")
                     end
-                    if mode ~= "none" and ns.ShowPreview then
+                    if modeName ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
-                            if ns.ShowPreview then
-                                ns.ShowPreview()
+                            if mod.ShowPreview then
+                                mod.ShowPreview()
                             end
                         end)
-                    elseif mode == "none" and ns.HidePreview then
-                        ns.HidePreview()
+                    elseif modeName == "none" and mod.HidePreview then
+                        mod.HidePreview()
                     end
                 elseif pageName == PAGE_PARTY then
-                    local mode = db.profile.previewMode or "overlay"
+                    local modeName = db.profile.previewMode or "overlay"
                     -- Skip-restore avoids a one-frame flash of the real frames before the deferred ShowPartyPreview.
-                    if ns.HidePreview then
-                        ns.HidePreview(mode ~= "none")
+                    if mod.HidePreview then
+                        mod.HidePreview(modeName ~= "none")
                     end
-                    if mode ~= "none" and ns.ShowPartyPreview then
+                    if modeName ~= "none" and mod.ShowPartyPreview then
                         C_Timer.After(0, function()
-                            if ns.ShowPartyPreview then
-                                ns.ShowPartyPreview()
+                            if mod.ShowPartyPreview then
+                                mod.ShowPartyPreview()
                             end
                         end)
-                    elseif mode == "none" and ns.HidePartyPreview then
-                        ns.HidePartyPreview()
+                    elseif modeName == "none" and mod.HidePartyPreview then
+                        mod.HidePartyPreview()
                     end
                 else
                     -- BUFFS / CLICKCAST show no preview, so FULL restore both real containers: a skip-restore here would strand the party container under the hidden preview parent with nothing to reparent it back.
-                    if ns.HidePreview then
-                        ns.HidePreview()
+                    if mod.HidePreview then
+                        mod.HidePreview()
                     end
-                    if ns.HidePartyPreview then
-                        ns.HidePartyPreview()
+                    if mod.HidePartyPreview then
+                        mod.HidePartyPreview()
                     end
                 end
                 -- Set party context BEFORE building any page so SGet/SSet/SVal read the correct keys during widget construction.
-                optState._partyCtx = (pageName == PAGE_PARTY)
+                optionState._partyCtx = (pageName == PAGE_PARTY)
 
                 if pageName == PAGE_MAIN then
-                    return ns.RFO_BuildMainPage(pageName, parent, yOffset)
+                    return mod.RFO_BuildMainPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_PARTY then
-                    return ns.RFO_BuildPartyPage(pageName, parent, yOffset)
+                    return mod.RFO_BuildPartyPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_DM then
-                    if ns.DMP_BuildPage then
-                        return ns.DMP_BuildPage(pageName, parent, yOffset)
+                    if mod.DMP_BuildPage then
+                        return mod.DMP_BuildPage(pageName, hostFrame, yOffset)
                     end
                     return math.abs(yOffset)
                 elseif pageName == PAGE_BUFFS then
-                    return BuildBuffManagerPage(pageName, parent, yOffset)
+                    return BuildBuffManagerPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_CLICKCAST then
-                    if ns.CC_BuildPage then
-                        return ns.CC_BuildPage(pageName, parent, yOffset)
+                    if mod.CC_BuildPage then
+                        return mod.CC_BuildPage(pageName, hostFrame, yOffset)
                     end
                     return math.abs(yOffset)
                 end
@@ -2584,7 +2571,7 @@ initFrame:SetScript("OnEvent", function(self)
                 DropManagerRoots(pageName)
                 -- Presets, spec changes and profile switches can alter the text list
                 -- while the page is cached (CUI_RaidFrames_TextDisplay_Options.lua).
-                local textCheck = ns._rfTextChecks and ns._rfTextChecks[pageName]
+                local textCheck = mod._rfTextChecks and mod._rfTextChecks[pageName]
                 if textCheck and textCheck() then
                     C_Timer.After(0, function()
                         if RFPageShown(pageName) then
@@ -2593,43 +2580,43 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                 end
                 if pageName == PAGE_MAIN then
-                    local mode = db.profile.previewMode or "overlay"
+                    local modeName = db.profile.previewMode or "overlay"
                     -- Skip-restore; see buildPage.
-                    if ns.HidePartyPreview then
-                        ns.HidePartyPreview(mode ~= "none")
+                    if mod.HidePartyPreview then
+                        mod.HidePartyPreview(modeName ~= "none")
                     end
-                    if mode ~= "none" and ns.ShowPreview then
+                    if modeName ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
-                            if ns.ShowPreview then
-                                ns.ShowPreview()
+                            if mod.ShowPreview then
+                                mod.ShowPreview()
                             end
                         end)
-                    elseif mode == "none" and ns.HidePreview then
-                        ns.HidePreview()
+                    elseif modeName == "none" and mod.HidePreview then
+                        mod.HidePreview()
                     end
                 elseif pageName == PAGE_PARTY then
-                    local mode = db.profile.previewMode or "overlay"
+                    local modeName = db.profile.previewMode or "overlay"
                     -- Skip-restore avoids a one-frame flash of the real frames before the deferred ShowPartyPreview.
-                    if ns.HidePreview then
-                        ns.HidePreview(mode ~= "none")
+                    if mod.HidePreview then
+                        mod.HidePreview(modeName ~= "none")
                     end
-                    if mode ~= "none" and ns.ShowPartyPreview then
+                    if modeName ~= "none" and mod.ShowPartyPreview then
                         C_Timer.After(0, function()
-                            if ns.ShowPartyPreview then
-                                ns.ShowPartyPreview()
+                            if mod.ShowPartyPreview then
+                                mod.ShowPartyPreview()
                             end
                         end)
-                    elseif mode == "none" and ns.HidePartyPreview then
-                        ns.HidePartyPreview()
+                    elseif modeName == "none" and mod.HidePartyPreview then
+                        mod.HidePartyPreview()
                     end
                 elseif pageName == PAGE_BUFFS then
-                    if ns.HidePreview then
-                        ns.HidePreview()
+                    if mod.HidePreview then
+                        mod.HidePreview()
                     end
-                    if ns.HidePartyPreview then
-                        ns.HidePartyPreview()
+                    if mod.HidePartyPreview then
+                        mod.HidePartyPreview()
                     end
-                    if not ns._bmRoot then
+                    if not mod._bmRoot then
                         C_Timer.After(0, function()
                             if RFPageShown(pageName) then
                                 BuildBuffManagerPage(pageName, nil, -6)
@@ -2637,27 +2624,27 @@ initFrame:SetScript("OnEvent", function(self)
                         end)
                     end
                 elseif pageName == PAGE_DM then
-                    if ns.HidePreview then
-                        ns.HidePreview()
+                    if mod.HidePreview then
+                        mod.HidePreview()
                     end
-                    if ns.HidePartyPreview then
-                        ns.HidePartyPreview()
+                    if mod.HidePartyPreview then
+                        mod.HidePartyPreview()
                     end
-                    if not ns._dmRoot then
+                    if not mod._dmRoot then
                         C_Timer.After(0, function()
-                            if RFPageShown(PAGE_DM) and ns.DMP_BuildPage then
-                                ns.DMP_BuildPage(PAGE_DM, nil, -6)
+                            if RFPageShown(PAGE_DM) and mod.DMP_BuildPage then
+                                mod.DMP_BuildPage(PAGE_DM, nil, -6)
                             end
                         end)
                     end
                 elseif pageName == PAGE_CLICKCAST then
-                    if ns.HidePreview then
-                        ns.HidePreview()
+                    if mod.HidePreview then
+                        mod.HidePreview()
                     end
-                    if not ns._ccRoot then
+                    if not mod._ccRoot then
                         C_Timer.After(0, function()
-                            if RFPageShown(PAGE_CLICKCAST) and ns.CC_BuildPage then
-                                ns.CC_BuildPage(PAGE_CLICKCAST, nil, -6)
+                            if RFPageShown(PAGE_CLICKCAST) and mod.CC_BuildPage then
+                                mod.CC_BuildPage(PAGE_CLICKCAST, nil, -6)
                             end
                         end)
                     end
@@ -2674,24 +2661,24 @@ initFrame:SetScript("OnEvent", function(self)
             -- Tears down all 6 Raid Frames preview mechanisms on cross-module
             -- switch (Real/Party/Size/HealthAnim/PowerAnim/HM previews).
             onModuleLeave = function()
-                if ns.HidePreview then
-                    ns.HidePreview()
+                if mod.HidePreview then
+                    mod.HidePreview()
                 end
-                if ns.HidePartyPreview then
-                    ns.HidePartyPreview()
+                if mod.HidePartyPreview then
+                    mod.HidePartyPreview()
                 end
-                ns._sizePreviewTier = nil
-                if ns._HideSizePreview then
-                    ns._HideSizePreview()
+                mod._sizePreviewTier = nil
+                if mod._HideSizePreview then
+                    mod._HideSizePreview()
                 end
-                if ns._healthAnimActive and ns.StopHealthAnim then
-                    ns.StopHealthAnim()
+                if mod._healthAnimActive and mod.StopHealthAnim then
+                    mod.StopHealthAnim()
                 end
-                if ns._powerAnimActive and ns.StopPowerAnim then
-                    ns.StopPowerAnim()
+                if mod._powerAnimActive and mod.StopPowerAnim then
+                    mod.StopPowerAnim()
                 end
-                if ns._hmPreview and ns.HM_SetPreview then
-                    ns.HM_SetPreview(false)
+                if mod._hmPreview and mod.HM_SetPreview then
+                    mod.HM_SetPreview(false)
                 end
             end,
         })
@@ -2701,19 +2688,19 @@ initFrame:SetScript("OnEvent", function(self)
             if CludesUI:GetActiveModule() == "CludesUIRaidFrames" then
                 local page = CludesUI:GetActivePage()
                 if page == PAGE_MAIN then
-                    local mode = db.profile.previewMode or "overlay"
-                    if mode ~= "none" and ns.ShowPreview then
-                        ns.ShowPreview()
+                    local modeName = db.profile.previewMode or "overlay"
+                    if modeName ~= "none" and mod.ShowPreview then
+                        mod.ShowPreview()
                     end
                 elseif page == PAGE_PARTY then
-                    local mode = db.profile.previewMode or "overlay"
-                    if mode ~= "none" and ns.ShowPartyPreview then
-                        ns.ShowPartyPreview()
+                    local modeName = db.profile.previewMode or "overlay"
+                    if modeName ~= "none" and mod.ShowPartyPreview then
+                        mod.ShowPartyPreview()
                     end
                 elseif page == PAGE_BUFFS then
                     -- Panel opening on Buffs counts as entering it (WoW Forever: All Specs).
-                    ns.BM_EnterAllSpecs()
-                    if not ns._bmRoot then
+                    mod.BM_EnterAllSpecs()
+                    if not mod._bmRoot then
                         C_Timer.After(0, function()
                             if RFPageShown(PAGE_BUFFS) then
                                 BuildBuffManagerPage(PAGE_BUFFS, nil, -6)
@@ -2721,18 +2708,18 @@ initFrame:SetScript("OnEvent", function(self)
                         end)
                     end
                 elseif page == PAGE_DM then
-                    if not ns._dmRoot then
+                    if not mod._dmRoot then
                         C_Timer.After(0, function()
-                            if RFPageShown(PAGE_DM) and ns.DMP_BuildPage then
-                                ns.DMP_BuildPage(PAGE_DM, nil, -6)
+                            if RFPageShown(PAGE_DM) and mod.DMP_BuildPage then
+                                mod.DMP_BuildPage(PAGE_DM, nil, -6)
                             end
                         end)
                     end
                 elseif page == PAGE_CLICKCAST then
-                    if not ns._ccRoot then
+                    if not mod._ccRoot then
                         C_Timer.After(0, function()
-                            if RFPageShown(PAGE_CLICKCAST) and ns.CC_BuildPage then
-                                ns.CC_BuildPage(PAGE_CLICKCAST, nil, -6)
+                            if RFPageShown(PAGE_CLICKCAST) and mod.CC_BuildPage then
+                                mod.CC_BuildPage(PAGE_CLICKCAST, nil, -6)
                             end
                         end)
                     end
@@ -2742,18 +2729,18 @@ initFrame:SetScript("OnEvent", function(self)
         -- Panel close: hide preview and clean up BM/CC.
         if CludesUI.RegisterOnHide then
             CludesUI:RegisterOnHide(function()
-                if ns._rfEyeHintTip then
-                    ns._rfEyeHintTip:Hide()
+                if mod._rfEyeHintTip then
+                    mod._rfEyeHintTip:Hide()
                 end
                 -- HARD INVARIANT against "frames vanish after closing options": both real containers get reparented to UIParent and their visibility recomputed even if a skip-restore tab swap or a post-close deferred ShowPreview orphaned one under the hidden preview parent.
                 -- Self-defers to PLAYER_REGEN_ENABLED in combat.
-                if ns.EnsureRealFramesRestored then
-                    ns.EnsureRealFramesRestored()
+                if mod.EnsureRealFramesRestored then
+                    mod.EnsureRealFramesRestored()
                 end
-                if ns._sizePreviewTier then
-                    ns._sizePreviewTier = nil
-                    if ns._HideSizePreview then
-                        ns._HideSizePreview()
+                if mod._sizePreviewTier then
+                    mod._sizePreviewTier = nil
+                    if mod._HideSizePreview then
+                        mod._HideSizePreview()
                     end
                 end
                 -- BM root + Add New popup: the popup is DIALOG strata and otherwise persists after close.
@@ -2772,12 +2759,12 @@ initFrame:SetScript("OnEvent", function(self)
         if CludesUI.SelectModule then
             hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
                 if folderName ~= "CludesUIRaidFrames" then
-                    if ns._rfEyeHintTip then
-                        ns._rfEyeHintTip:Hide()
+                    if mod._rfEyeHintTip then
+                        mod._rfEyeHintTip:Hide()
                     end
                     -- Tear down previews and guarantee the real containers return to UIParent, including the orphaned-flag-false cases.
-                    if ns.EnsureRealFramesRestored then
-                        ns.EnsureRealFramesRestored()
+                    if mod.EnsureRealFramesRestored then
+                        mod.EnsureRealFramesRestored()
                     end
                     DropManagerRoots(nil, true)
                 end
@@ -2786,7 +2773,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Party Frames search excludes raid-synced sections (their controls live on the Raid tabs). Maps section HEADER TEXT to sync key:
         -- KEEP IN SYNC with the SectionHeader names in the builders and ns._PARTY_SECTION_ORDER.
-        ns._PARTY_SEARCH_SECTION_KEY = {
+        mod._PARTY_SEARCH_SECTION_KEY = {
             ["HEALTH BAR"] = "healthBar",
             ["ABSORBS"] = "absorbs",
             ["POWER BAR"] = "powerBar",
@@ -2796,8 +2783,8 @@ initFrame:SetScript("OnEvent", function(self)
             ["TOP NAME BAR"] = "topNameBar",
             ["EXTRAS"] = "rangeTooltip",
         }
-        ns._PartySearchExclude = function(sectionName)
-            local key = ns._PARTY_SEARCH_SECTION_KEY[sectionName]
+        mod._PartySearchExclude = function(sectionName)
+            local key = mod._PARTY_SEARCH_SECTION_KEY[sectionName]
             if not key then
                 return false
             end
@@ -2809,19 +2796,19 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Party sync overlays track the inline search: hidden while a search is active (those sections are excluded), restored to their per-section sync state when empty. Overlays carry _searchIgnore so the generic search never re-anchors them.
-        ns._PartySearchOverlaySync = function(query)
-            if not ns._syncOverlays then
+        mod._PartySearchOverlaySync = function(query)
+            if not mod._syncOverlays then
                 return
             end
             local searching = query and query ~= ""
             local ss = db and db.profile and db.profile.partySyncSections
-            for key, ov in pairs(ns._syncOverlays) do
+            for key, shade in pairs(mod._syncOverlays) do
                 if searching then
-                    ov:Hide()
+                    shade:Hide()
                 elseif (not ss) or ss[key] ~= false then
-                    ov:Show()
+                    shade:Show()
                 else
-                    ov:Hide()
+                    shade:Hide()
                 end
             end
         end
@@ -2839,76 +2826,76 @@ initFrame:SetScript("OnEvent", function(self)
         if CludesUI.SelectPage then
             local origSelectPage = CludesUI.SelectPage
             CludesUI.SelectPage = function(self, pageName, ...)
-                optState._partyCtx = (pageName == PAGE_PARTY)
+                optionState._partyCtx = (pageName == PAGE_PARTY)
                 -- Entering Buffs from another page (not a rebuild while on it): WoW Forever opens it on All Specs.
                 if pageName == PAGE_BUFFS and CludesUI:GetActivePage() ~= PAGE_BUFFS then
-                    ns.BM_EnterAllSpecs()
+                    mod.BM_EnterAllSpecs()
                 end
                 -- Party tab excludes synced sections from inline search; cleared on every other page (any module) so the hook can never leak.
-                CludesUI._searchExcludeSection = (pageName == PAGE_PARTY) and ns._PartySearchExclude or nil
-                CludesUI._onInlineSearch = (pageName == PAGE_PARTY) and ns._PartySearchOverlaySync or nil
+                CludesUI._searchExcludeSection = (pageName == PAGE_PARTY) and mod._PartySearchExclude or nil
+                CludesUI._onInlineSearch = (pageName == PAGE_PARTY) and mod._PartySearchOverlaySync or nil
                 local result = origSelectPage(self, pageName, ...)
                 -- Re-sync overlays on entering the party tab: a prior search may have hidden them, and the search box clears on page change.
-                if pageName == PAGE_PARTY and ns._PartySearchOverlaySync then
-                    ns._PartySearchOverlaySync("")
+                if pageName == PAGE_PARTY and mod._PartySearchOverlaySync then
+                    mod._PartySearchOverlaySync("")
                 end
-                if ns._rfEyeHintTip then
+                if mod._rfEyeHintTip then
                     if pageName == PAGE_MAIN then
-                        ns._rfEyeHintTip:Show()
+                        mod._rfEyeHintTip:Show()
                     else
-                        ns._rfEyeHintTip:Hide()
+                        mod._rfEyeHintTip:Hide()
                     end
                 end
                 -- Every eyeball toggle resets on tab change.
-                ns._indicatorsVisible = false
-                ns._dispelsVisible = false
-                ns._defensivesPreviewVisible = false
-                ns._debuffsPreviewVisible = false
-                ns._absorbsPreviewVisible = false
+                mod._indicatorsVisible = false
+                mod._dispelsVisible = false
+                mod._defensivesPreviewVisible = false
+                mod._debuffsPreviewVisible = false
+                mod._absorbsPreviewVisible = false
                 -- The health/power tickers live on ns, so one cancel covers whichever preview built them.
-                ns._healthAnimActive = false
-                ns._powerAnimActive = false
-                if ns._healthAnimTicker then
-                    ns._healthAnimTicker:Cancel()
-                    ns._healthAnimTicker = nil
+                mod._healthAnimActive = false
+                mod._powerAnimActive = false
+                if mod._healthAnimTicker then
+                    mod._healthAnimTicker:Cancel()
+                    mod._healthAnimTicker = nil
                 end
-                if ns._powerAnimTicker then
-                    ns._powerAnimTicker:Cancel()
-                    ns._powerAnimTicker = nil
+                if mod._powerAnimTicker then
+                    mod._powerAnimTicker:Cancel()
+                    mod._powerAnimTicker = nil
                 end
                 -- Each tab's latest eyes show the reset too (a page shown from the
                 -- cache keeps the icons it last painted).
-                local eyes = ns._eye
+                local eyes = mod._eye
                 if eyes then
                     for _, eye in pairs(eyes) do
-                        for i = 1, #TAB_RESET_EYES do
-                            local refresh = eye[TAB_RESET_EYES[i]]
+                        for idx = 1, #TAB_RESET_EYES do
+                            local refresh = eye[TAB_RESET_EYES[idx]]
                             if refresh then
                                 refresh()
                             end
                         end
                     end
                 end
-                ns._bmFrameEffectsVisible = false
-                if ns.RestartPvAuraTicker then
-                    ns.RestartPvAuraTicker()
+                mod._bmFrameEffectsVisible = false
+                if mod.RestartPvAuraTicker then
+                    mod.RestartPvAuraTicker()
                 end
-                if ns.ResetPreviewRandomization then
-                    ns.ResetPreviewRandomization()
+                if mod.ResetPreviewRandomization then
+                    mod.ResetPreviewRandomization()
                 end
 
                 -- Manager/HoverCast tabs show no raid frame preview.
                 if pageName == PAGE_BUFFS or pageName == PAGE_DM or pageName == PAGE_CLICKCAST then
-                    if ns.HidePreview then
-                        ns.HidePreview()
+                    if mod.HidePreview then
+                        mod.HidePreview()
                     end
                 end
                 if pageName == PAGE_MAIN then
-                    local mode = db.profile.previewMode or "overlay"
-                    if mode ~= "none" and ns.ShowPreview then
+                    local modeName = db.profile.previewMode or "overlay"
+                    if modeName ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
-                            if ns.ShowPreview then
-                                ns.ShowPreview()
+                            if mod.ShowPreview then
+                                mod.ShowPreview()
                             end
                         end)
                     end
@@ -2939,8 +2926,8 @@ initFrame:SetScript("OnEvent", function(self)
     end -- ns._InitCUIModule
 
     -- SetupOptionsPanel may already have run before PLAYER_LOGIN.
-    if ns.db then
-        ns._InitCUIModule()
+    if mod.db then
+        mod._InitCUIModule()
     end
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.

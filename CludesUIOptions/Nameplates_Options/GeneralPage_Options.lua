@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the shared helpers come from ns._NPO_OptEnv (filled by
 --  CUI_Nameplates_Options.lua).
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUINameplates"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUINameplates"]
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -19,43 +19,46 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- A row half's slider label, for a "(Percent)" suffix beside it: the half's own
 -- label (a page built again keeps its earlier dresses' font strings, idle,
 -- among the half's regions).
-local function SliderLabel(rgn, text)
-    local label = rgn._label
-    if label and label.GetText and CludesUI.EnKey(label:GetText()) == text then
-        return label
+local function SliderLabel(rgn, textValue)
+    local labelText = rgn._label
+    if labelText and labelText.GetText and CludesUI.EnKey(labelText:GetText()) == textValue then
+        return labelText
     end
 end
 
 ---------------------------------------------------------------------------
 --  General page (Friendly settings, Spacing, Show All Debuffs); two-column DualRow layout where possible
 ---------------------------------------------------------------------------
-local function BuildGeneralPage(pageName, parent, yOffset)
-    local env = ns._NPO_OptEnv
-    local DB, DBVal, defaults, FOCUS_LETTER_ANCHOR_ORDER =
-        env.DB, env.DBVal, env.defaults, env.FOCUS_LETTER_ANCHOR_ORDER
+local function BuildGeneralPage(page, hostFrame, yOffset)
+    local environ = mod._NPO_OptEnv
+    local SavedDB, DBVal, defaultSet, FOCUS_LETTER_ANCHOR_ORDER =
+        environ.DB, environ.DBVal, environ.defaults, environ.FOCUS_LETTER_ANCHOR_ORDER
     local FOCUS_LETTER_ANCHORS, GetFocusLetterAnchor, GetNPOptOutline, npDispelGlowDesc =
-        env.FOCUS_LETTER_ANCHORS, env.GetFocusLetterAnchor, env.GetNPOptOutline, env.npDispelGlowDesc
-    local npPandemicGlowDesc = env.npPandemicGlowDesc
-    local pairs, pcall, plates, PP = env.pairs, env.pcall, env.plates, env.PP
+        environ.FOCUS_LETTER_ANCHORS,
+        environ.GetFocusLetterAnchor,
+        environ.GetNPOptOutline,
+        environ.npDispelGlowDesc
+    local npPandemicGlowDesc = environ.npPandemicGlowDesc
+    local pairs, pcall, plates, Pix = environ.pairs, environ.pcall, environ.plates, environ.PP
     local RefreshAllAuras, RefreshAllPlates, SECTION_AURA, SECTION_ENEMY_NP =
-        env.RefreshAllAuras, env.RefreshAllPlates, env.SECTION_AURA, env.SECTION_ENEMY_NP
+        environ.RefreshAllAuras, environ.RefreshAllPlates, environ.SECTION_AURA, environ.SECTION_ENEMY_NP
     local SECTION_FRIENDLY, SECTION_MISC, UpdatePreview =
-        env.SECTION_FRIENDLY, env.SECTION_MISC, env.UpdatePreview
+        environ.SECTION_FRIENDLY, environ.SECTION_MISC, environ.UpdatePreview
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
+    local posY = yOffset
+    local _, hgt
 
     -- No preview on General tab
     CludesUI:ClearContentHeader()
 
     -- Enable per-row center divider for the dual-column layout
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     -----------------------------------------------------------------------
     --  FRIENDLY NAMEPLATES
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, SECTION_FRIENDLY, y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, SECTION_FRIENDLY, posY)
+    posY = posY - hgt
 
     local function friendlyPlayersOff()
         return DBVal("showFriendlyPlayers") == false
@@ -73,24 +76,24 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
 
     local friendlyRow
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show CUI Friendly Player Nameplates",
         tooltip = "When disabled, CUI relinquishes full control of friendly player nameplates to Blizzard. Use Blizzard's own Nameplate settings (Esc > Options > Nameplates) to control them.",
         getValue = function()
             return DBVal("showFriendlyPlayers") ~= false
         end,
-        setValue = function(v)
-            DB().showFriendlyPlayers = v
+        setValue = function(val)
+            SavedDB().showFriendlyPlayers = val
             do
-                if v then
+                if val then
                     -- Enabling: re-assert every friendly-player CVar that SetupAuraCVars sets on load (it skips these while the toggle is off) -- runtime is the only restore path short of /reload.
-                    local p = DB()
+                    local p = SavedDB()
                     local nameOnly = (p and p.friendlyNameOnly ~= false)
                     local classColor = (p and p.classColorFriendly ~= false)
                     -- One of only two places CUI is allowed to force friendly plates visible; also clears any follower-dungeon capture.
-                    if ns.ForceFriendlyPlayerCVarsOn then
-                        ns.ForceFriendlyPlayerCVarsOn()
+                    if mod.ForceFriendlyPlayerCVarsOn then
+                        mod.ForceFriendlyPlayerCVarsOn()
                     end
                     pcall(CludesUI.SetCVar, "UnitNameFriendlyPlayerName", 1, "CludesUINameplates")
                     pcall(
@@ -108,7 +111,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     pcall(
                         CludesUI.SetCVar,
                         "nameplateUseClassColorForFriendlyPlayerUnitNames",
-                        ns.FriendlyNameClassCVar(p),
+                        mod.FriendlyNameClassCVar(p),
                         "CludesUINameplates"
                     )
                 else
@@ -127,11 +130,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     end
                 end
             end
-            if ns.UpdateFriendlyNameplateSystem then
-                ns.UpdateFriendlyNameplateSystem()
+            if mod.UpdateFriendlyNameplateSystem then
+                mod.UpdateFriendlyNameplateSystem()
             end
             -- Re-assert stacking after friendly CVar changes (Blizzard can reset the stacking bitfield as a side effect).
-            ns.RefreshStackingMotion()
+            mod.RefreshStackingMotion()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -141,20 +144,20 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("friendlyNameOnly") ~= false
         end,
-        setValue = function(v)
-            DB().friendlyNameOnly = v
+        setValue = function(val)
+            SavedDB().friendlyNameOnly = val
             pcall(
                 CludesUI.SetCVar,
                 "nameplateShowOnlyNameForFriendlyPlayerUnits",
-                v and 1 or 0,
+                val and 1 or 0,
                 "CludesUINameplates"
             )
             -- Turning name-only ON means the user wants to SEE friendly plates -- the second sanctioned force-visible point.
-            if v and ns.ForceFriendlyPlayerCVarsOn then
-                ns.ForceFriendlyPlayerCVarsOn()
+            if val and mod.ForceFriendlyPlayerCVarsOn then
+                mod.ForceFriendlyPlayerCVarsOn()
             end
-            if ns.UpdateFriendlyNameplateSystem then
-                ns.UpdateFriendlyNameplateSystem()
+            if mod.UpdateFriendlyNameplateSystem then
+                mod.UpdateFriendlyNameplateSystem()
             end
             CludesUI:RefreshPage()
         end,
@@ -162,7 +165,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         disabledTooltip = "Show CUI Friendly Player Nameplates",
     })
     friendlyRow = _
-    y = y - h
+    posY = posY - hgt
 
     ---------------------------------------------------------------
     --  Friendly Player cog popup (size, health text, class colours, target border)
@@ -184,10 +187,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("friendlyPlateYOffset") or 0
                     end,
-                    set = function(v)
-                        DB().friendlyPlateYOffset = v
-                        if ns.RefreshFriendlyPlateYOffset then
-                            ns.RefreshFriendlyPlateYOffset()
+                    set = function(val)
+                        SavedDB().friendlyPlateYOffset = val
+                        if mod.RefreshFriendlyPlateYOffset then
+                            mod.RefreshFriendlyPlateYOffset()
                         end
                     end,
                 },
@@ -198,12 +201,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 40,
                     step = 1,
                     get = function()
-                        return DBVal("friendlyHealthBarHeight") or defaults.friendlyHealthBarHeight
+                        return DBVal("friendlyHealthBarHeight") or defaultSet.friendlyHealthBarHeight
                     end,
-                    set = function(v)
-                        DB().friendlyHealthBarHeight = v
-                        if ns.RefreshFriendlyPlateSize then
-                            ns.RefreshFriendlyPlateSize()
+                    set = function(val)
+                        SavedDB().friendlyHealthBarHeight = val
+                        if mod.RefreshFriendlyPlateSize then
+                            mod.RefreshFriendlyPlateSize()
                         end
                     end,
                 },
@@ -214,12 +217,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 250,
                     step = 1,
                     get = function()
-                        return DBVal("friendlyHealthBarWidth") or defaults.friendlyHealthBarWidth
+                        return DBVal("friendlyHealthBarWidth") or defaultSet.friendlyHealthBarWidth
                     end,
-                    set = function(v)
-                        DB().friendlyHealthBarWidth = v
-                        if ns.RefreshFriendlyPlateSize then
-                            ns.RefreshFriendlyPlateSize()
+                    set = function(val)
+                        SavedDB().friendlyHealthBarWidth = val
+                        if mod.RefreshFriendlyPlateSize then
+                            mod.RefreshFriendlyPlateSize()
                         end
                     end,
                 },
@@ -230,12 +233,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 30,
                     step = 1,
                     get = function()
-                        return DBVal("friendlyNameTextSize") or defaults.friendlyNameTextSize
+                        return DBVal("friendlyNameTextSize") or defaultSet.friendlyNameTextSize
                     end,
-                    set = function(v)
-                        DB().friendlyNameTextSize = v
-                        if ns.RefreshFriendlyNameTextSize then
-                            ns.RefreshFriendlyNameTextSize()
+                    set = function(val)
+                        SavedDB().friendlyNameTextSize = val
+                        if mod.RefreshFriendlyNameTextSize then
+                            mod.RefreshFriendlyNameTextSize()
                         end
                     end,
                 },
@@ -243,13 +246,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     type = "toggle",
                     label = "Show Health Percent",
                     get = function()
-                        local db = DB()
-                        return not (db and db.friendlyHideHealthText)
+                        local saved = SavedDB()
+                        return not (saved and saved.friendlyHideHealthText)
                     end,
-                    set = function(v)
-                        DB().friendlyHideHealthText = not v
-                        if ns.RefreshFriendlyHealthText then
-                            ns.RefreshFriendlyHealthText()
+                    set = function(val)
+                        SavedDB().friendlyHideHealthText = not val
+                        if mod.RefreshFriendlyHealthText then
+                            mod.RefreshFriendlyHealthText()
                         end
                     end,
                 },
@@ -259,18 +262,18 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("classColorFriendly") ~= false
                     end,
-                    set = function(v)
-                        DB().classColorFriendly = v and true or false
+                    set = function(val)
+                        SavedDB().classColorFriendly = val and true or false
                         -- Blizzard's instance plates colour their names by this CVar.
                         if not InCombatLockdown() then
                             pcall(
                                 CludesUI.SetCVar,
                                 "nameplateUseClassColorForFriendlyPlayerUnitNames",
-                                ns.FriendlyNameClassCVar(DB()),
+                                mod.FriendlyNameClassCVar(SavedDB()),
                                 "CludesUINameplates"
                             )
                         end
-                        ns.RefreshAllSettings()
+                        mod.RefreshAllSettings()
                     end,
                 },
                 {
@@ -283,12 +286,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     disabledTooltip = "Class Colored Health Bar",
                     requireState = "disabled",
                     get = function()
-                        local c = DBVal("friendlyBarColor") or defaults.friendlyBarColor
+                        local c = DBVal("friendlyBarColor") or defaultSet.friendlyBarColor
                         return c.r, c.g, c.b
                     end,
                     set = function(r, g, b)
-                        DB().friendlyBarColor = { r = r, g = g, b = b }
-                        ns.RefreshFriendlyColors()
+                        SavedDB().friendlyBarColor = { r = r, g = g, b = b }
+                        mod.RefreshFriendlyColors()
                     end,
                 },
                 {
@@ -297,17 +300,17 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("friendlyNameClassColor") == true
                     end,
-                    set = function(v)
-                        DB().friendlyNameClassColor = v and true or false
+                    set = function(val)
+                        SavedDB().friendlyNameClassColor = val and true or false
                         if not InCombatLockdown() then
                             pcall(
                                 CludesUI.SetCVar,
                                 "nameplateUseClassColorForFriendlyPlayerUnitNames",
-                                ns.FriendlyNameClassCVar(DB()),
+                                mod.FriendlyNameClassCVar(SavedDB()),
                                 "CludesUINameplates"
                             )
                         end
-                        ns.RefreshFriendlyColors()
+                        mod.RefreshFriendlyColors()
                     end,
                 },
                 {
@@ -317,7 +320,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     -- Borders stand down under the stock styles.
                     disabled = function()
                         return CludesUI.BlizzStyle.Get("nameplates")
-                            or not (ns.GetTargetGlowBorderColor() or ns.GetTargetGlowBorderSize())
+                            or not (mod.GetTargetGlowBorderColor() or mod.GetTargetGlowBorderSize())
                     end,
                     disabledTooltip = function()
                         if CludesUI.BlizzStyle.Get("nameplates") then
@@ -332,10 +335,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("friendlyTargetBorderFx") == true
                     end,
-                    set = function(v)
-                        DB().friendlyTargetBorderFx = v
+                    set = function(val)
+                        SavedDB().friendlyTargetBorderFx = val
                         -- Applies to (or restores) the friendly target now.
-                        for _, fp in pairs(ns.friendlyPlates) do
+                        for _, fp in pairs(mod.friendlyPlates) do
                             fp:ApplyTarget()
                         end
                         UpdatePreview()
@@ -358,15 +361,15 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             if updateClass then
                 updateClass()
             end
-            local off = nameOnlyOff()
+            local offset = nameOnlyOff()
             local useClass = DBVal("classColorFriendly") ~= false
-            whiteSwatch:SetAlpha(off and 0.15 or (useClass and 0.3 or 1))
-            classSwatch:SetAlpha(off and 0.15 or (useClass and 1 or 0.3))
-            whiteSwatch:SetMouseClickEnabled(not off)
-            classSwatch:SetMouseClickEnabled(not off)
+            whiteSwatch:SetAlpha(offset and 0.15 or (useClass and 0.3 or 1))
+            classSwatch:SetAlpha(offset and 0.15 or (useClass and 1 or 0.3))
+            whiteSwatch:SetMouseClickEnabled(not offset)
+            classSwatch:SetMouseClickEnabled(not offset)
         end
         local function ApplyClassColored(useClass)
-            DB().classColorFriendly = useClass and true or false
+            SavedDB().classColorFriendly = useClass and true or false
             pcall(
                 CludesUI.SetCVar,
                 "ShowClassColorInFriendlyNameplate",
@@ -376,11 +379,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             pcall(
                 CludesUI.SetCVar,
                 "nameplateUseClassColorForFriendlyPlayerUnitNames",
-                ns.FriendlyNameClassCVar(DB()),
+                mod.FriendlyNameClassCVar(SavedDB()),
                 "CludesUINameplates"
             )
-            if ns.RefreshAllSettings then
-                ns.RefreshAllSettings()
+            if mod.RefreshAllSettings then
+                mod.RefreshAllSettings()
             end
             refreshNameSwatches()
         end
@@ -395,7 +398,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             nil,
             20
         )
-        PP.Point(whiteSwatch, "RIGHT", rightRgn._control, "LEFT", -8, 0)
+        Pix.Point(whiteSwatch, "RIGHT", rightRgn._control, "LEFT", -8, 0)
         whiteSwatch:SetScript("OnClick", function()
             if nameOnlyOff() then
                 return
@@ -424,7 +427,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             nil,
             20
         )
-        PP.Point(classSwatch, "RIGHT", whiteSwatch, "LEFT", -8, 0)
+        Pix.Point(classSwatch, "RIGHT", whiteSwatch, "LEFT", -8, 0)
         rightRgn._lastInline = classSwatch
         classSwatch:SetScript("OnClick", function()
             if nameOnlyOff() then
@@ -452,20 +455,20 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 tooltip = "Custom Color",
                 hasAlpha = false,
                 getValue = function()
-                    local c = DBVal("friendlyBelowNameColor") or defaults.friendlyBelowNameColor
+                    local c = DBVal("friendlyBelowNameColor") or defaultSet.friendlyBelowNameColor
                     return c.r, c.g, c.b
                 end,
                 setValue = function(r, g, b)
-                    DB().friendlyBelowNameColor = { r = r, g = g, b = b }
-                    if ns.RefreshFriendlyBelowName then
-                        ns.RefreshFriendlyBelowName()
+                    SavedDB().friendlyBelowNameColor = { r = r, g = g, b = b }
+                    if mod.RefreshFriendlyBelowName then
+                        mod.RefreshFriendlyBelowName()
                     end
                 end,
                 onClick = function(self)
                     if DBVal("friendlyBelowNameClassColor") == true then
-                        DB().friendlyBelowNameClassColor = false
-                        if ns.RefreshFriendlyBelowName then
-                            ns.RefreshFriendlyBelowName()
+                        SavedDB().friendlyBelowNameClassColor = false
+                        if mod.RefreshFriendlyBelowName then
+                            mod.RefreshFriendlyBelowName()
                         end
                         CludesUI:RefreshPage()
                         return
@@ -494,9 +497,9 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    DB().friendlyBelowNameClassColor = true
-                    if ns.RefreshFriendlyBelowName then
-                        ns.RefreshFriendlyBelowName()
+                    SavedDB().friendlyBelowNameClassColor = true
+                    if mod.RefreshFriendlyBelowName then
+                        mod.RefreshFriendlyBelowName()
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -511,7 +514,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
 
     local subtitleRow
-    subtitleRow, h = W:DualRow(parent, y, {
+    subtitleRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Subtitle Text",
         tooltip = "Show the player's title inline with their name, and/or their guild on a line below it, on friendly nameplates.",
@@ -522,10 +525,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("friendlyBelowName") or "none"
         end,
-        setValue = function(v)
-            DB().friendlyBelowName = v
-            if ns.RefreshFriendlyBelowName then
-                ns.RefreshFriendlyBelowName()
+        setValue = function(val)
+            SavedDB().friendlyBelowName = val
+            if mod.RefreshFriendlyBelowName then
+                mod.RefreshFriendlyBelowName()
             end
             CludesUI:RefreshPage()
         end,
@@ -544,7 +547,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         end,
         swatches = MakeGuildColorSwatches(),
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Subtitle Text inline cog: Name Text Settings, headed by the friendly Name
     -- Format (a friendly player's name, in both modes), so the cog opens
@@ -559,31 +562,25 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             rows = {
                 -- WoW Forever names it for players, as Forever Essentials' Name
                 -- Format section does (it only ever shaped players' names).
-                CludesUI.NameFormatCogRow(
-                    function()
-                        return DBVal("friendlyNameFormat")
-                    end,
-                    function(v)
-                        DB().friendlyNameFormat = v
-                        ns.NP_SyncFriendlyNameFormat()
-                    end,
-                    CludesUI.IS_FOREVER == true
-                            and {
-                                label = "Player Name Format",
-                                tooltip = "Friendly player names on nameplates, in both modes.",
-                            }
-                        or nil
-                ),
+                CludesUI.NameFormatCogRow(function()
+                    return DBVal("friendlyNameFormat")
+                end, function(val)
+                    SavedDB().friendlyNameFormat = val
+                    mod.NP_SyncFriendlyNameFormat()
+                end, CludesUI.IS_FOREVER == true and {
+                    label = "Player Name Format",
+                    tooltip = "Friendly player names on nameplates, in both modes.",
+                } or nil),
                 {
                     type = "toggle",
                     label = "Show Level",
                     get = function()
                         return DBVal("friendlyShowLevel") == true
                     end,
-                    set = function(v)
-                        DB().friendlyShowLevel = v and true or false
-                        if ns.RefreshFriendlyBelowName then
-                            ns.RefreshFriendlyBelowName()
+                    set = function(val)
+                        SavedDB().friendlyShowLevel = val and true or false
+                        if mod.RefreshFriendlyBelowName then
+                            mod.RefreshFriendlyBelowName()
                         end
                     end,
                 },
@@ -598,10 +595,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("friendlyLevelDiffColor") == true
                     end,
-                    set = function(v)
-                        DB().friendlyLevelDiffColor = v and true or false
-                        if ns.RefreshFriendlyBelowName then
-                            ns.RefreshFriendlyBelowName()
+                    set = function(val)
+                        SavedDB().friendlyLevelDiffColor = val and true or false
+                        if mod.RefreshFriendlyBelowName then
+                            mod.RefreshFriendlyBelowName()
                         end
                     end,
                 },
@@ -614,10 +611,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("friendlyBelowNameGuildBrackets") ~= false
                     end,
-                    set = function(v)
-                        DB().friendlyBelowNameGuildBrackets = v and true or false
-                        if ns.RefreshFriendlyBelowName then
-                            ns.RefreshFriendlyBelowName()
+                    set = function(val)
+                        SavedDB().friendlyBelowNameGuildBrackets = val and true or false
+                        if mod.RefreshFriendlyBelowName then
+                            mod.RefreshFriendlyBelowName()
                         end
                     end,
                 },
@@ -626,18 +623,18 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
 
     local npcRow
-    npcRow, h = W:DualRow(parent, y, {
+    npcRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Friendly NPC Nameplates",
         getValue = function()
             return DBVal("showFriendlyNPCs") == true
         end,
-        setValue = function(v)
-            DB().showFriendlyNPCs = v
-            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNPCs", v and 1 or 0, "CludesUINameplates")
-            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNpcs", v and 1 or 0, "CludesUINameplates")
-            if ns.UpdateFriendlyNameplateSystem then
-                ns.UpdateFriendlyNameplateSystem()
+        setValue = function(val)
+            SavedDB().showFriendlyNPCs = val
+            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNPCs", val and 1 or 0, "CludesUINameplates")
+            pcall(CludesUI.SetCVar, "nameplateShowFriendlyNpcs", val and 1 or 0, "CludesUINameplates")
+            if mod.UpdateFriendlyNameplateSystem then
+                mod.UpdateFriendlyNameplateSystem()
             end
             CludesUI:RefreshPage()
         end,
@@ -651,17 +648,17 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         disabled = nameOnlyOff,
         disabledTooltip = "Make Friendly Nameplates Name Only",
         getValue = function()
-            return DBVal("friendlyNameSize") or defaults.friendlyNameSize
+            return DBVal("friendlyNameSize") or defaultSet.friendlyNameSize
         end,
-        setValue = function(v)
-            DB().friendlyNameSize = v
-            if ns.RefreshFriendlyNameSize then
-                ns.RefreshFriendlyNameSize()
+        setValue = function(val)
+            SavedDB().friendlyNameSize = val
+            if mod.RefreshFriendlyNameSize then
+                mod.RefreshFriendlyNameSize()
             end
         end,
         tooltip = "Adjusts the size of friendly player names shown in Name Only mode. Default is 15.",
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Cog popup for NPC nameplate settings (Show NPC Titles)
     do
@@ -678,11 +675,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         end
         -- The overlay's marker follows the Raid Marker element, as the friendly plates' does.
         local function markerOff()
-            return (DBVal("raidMarkerPos") or defaults.raidMarkerPos) == "none"
+            return (DBVal("raidMarkerPos") or defaultSet.raidMarkerPos) == "none"
         end
 
         local rgn = npcRow._leftRegion
-        local btn = CludesUI.BuildInlineCog(rgn, {
+        local button = CludesUI.BuildInlineCog(rgn, {
             chain = false,
             disabled = npcCogOff,
             disabledTooltip = function()
@@ -694,10 +691,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             rows = {
                 CludesUI.NameFormatCogRow(function()
                     return DBVal("friendlyNPCNameFormat")
-                end, function(v)
-                    DB().friendlyNPCNameFormat = v
-                    if ns.RefreshAllNPCOverlays then
-                        ns.RefreshAllNPCOverlays()
+                end, function(val)
+                    SavedDB().friendlyNPCNameFormat = val
+                    if mod.RefreshAllNPCOverlays then
+                        mod.RefreshAllNPCOverlays()
                     end
                 end),
                 {
@@ -706,10 +703,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("showNPCTitles") ~= false
                     end,
-                    set = function(v)
-                        DB().showNPCTitles = v and true or false
-                        if ns.RefreshAllNPCOverlays then
-                            ns.RefreshAllNPCOverlays()
+                    set = function(val)
+                        SavedDB().showNPCTitles = val and true or false
+                        if mod.RefreshAllNPCOverlays then
+                            mod.RefreshAllNPCOverlays()
                         end
                     end,
                 },
@@ -719,10 +716,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("showNPCRaidMarker") ~= false
                     end,
-                    set = function(v)
-                        DB().showNPCRaidMarker = v and true or false
-                        if ns.RefreshAllNPCOverlays then
-                            ns.RefreshAllNPCOverlays()
+                    set = function(val)
+                        SavedDB().showNPCRaidMarker = val and true or false
+                        if mod.RefreshAllNPCOverlays then
+                            mod.RefreshAllNPCOverlays()
                         end
                     end,
                     disabled = markerOff,
@@ -735,12 +732,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 30,
                     step = 1,
                     get = function()
-                        return DBVal("friendlyNPCNameSize") or defaults.friendlyNPCNameSize
+                        return DBVal("friendlyNPCNameSize") or defaultSet.friendlyNPCNameSize
                     end,
-                    set = function(v)
-                        DB().friendlyNPCNameSize = v
-                        if ns.RefreshNPCOverlayStyle then
-                            ns.RefreshNPCOverlayStyle()
+                    set = function(val)
+                        SavedDB().friendlyNPCNameSize = val
+                        if mod.RefreshNPCOverlayStyle then
+                            mod.RefreshNPCOverlayStyle()
                         end
                     end,
                 },
@@ -751,12 +748,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 30,
                     step = 1,
                     get = function()
-                        return DBVal("friendlyNPCTitleSize") or defaults.friendlyNPCTitleSize
+                        return DBVal("friendlyNPCTitleSize") or defaultSet.friendlyNPCTitleSize
                     end,
-                    set = function(v)
-                        DB().friendlyNPCTitleSize = v
-                        if ns.RefreshNPCOverlayStyle then
-                            ns.RefreshNPCOverlayStyle()
+                    set = function(val)
+                        SavedDB().friendlyNPCTitleSize = val
+                        if mod.RefreshNPCOverlayStyle then
+                            mod.RefreshNPCOverlayStyle()
                         end
                     end,
                     disabled = titleOff,
@@ -766,13 +763,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     type = "colorpicker",
                     label = "Name Color",
                     get = function()
-                        local c = DBVal("friendlyNPCNameColor") or defaults.friendlyNPCNameColor
+                        local c = DBVal("friendlyNPCNameColor") or defaultSet.friendlyNPCNameColor
                         return c.r, c.g, c.b
                     end,
                     set = function(r, g, b)
-                        DB().friendlyNPCNameColor = { r = r, g = g, b = b }
-                        if ns.RefreshNPCOverlayStyle then
-                            ns.RefreshNPCOverlayStyle()
+                        SavedDB().friendlyNPCNameColor = { r = r, g = g, b = b }
+                        if mod.RefreshNPCOverlayStyle then
+                            mod.RefreshNPCOverlayStyle()
                         end
                     end,
                 },
@@ -781,13 +778,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     label = "Title Color",
                     hasAlpha = true,
                     get = function()
-                        local c = DBVal("friendlyNPCTitleColor") or defaults.friendlyNPCTitleColor
+                        local c = DBVal("friendlyNPCTitleColor") or defaultSet.friendlyNPCTitleColor
                         return c.r, c.g, c.b, c.a or 1
                     end,
                     set = function(r, g, b, a)
-                        DB().friendlyNPCTitleColor = { r = r, g = g, b = b, a = a or 1 }
-                        if ns.RefreshNPCOverlayStyle then
-                            ns.RefreshNPCOverlayStyle()
+                        SavedDB().friendlyNPCTitleColor = { r = r, g = g, b = b, a = a or 1 }
+                        if mod.RefreshNPCOverlayStyle then
+                            mod.RefreshNPCOverlayStyle()
                         end
                     end,
                     disabled = titleOff,
@@ -805,19 +802,19 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             if updateNpcSwatch then
                 updateNpcSwatch()
             end
-            local off = npcColorOff()
-            npcSwatch:SetAlpha(off and 0.3 or 1)
-            npcSwatch:SetMouseClickEnabled(not off)
+            local offset = npcColorOff()
+            npcSwatch:SetAlpha(offset and 0.3 or 1)
+            npcSwatch:SetMouseClickEnabled(not offset)
         end
         npcSwatch, updateNpcSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-            local c = DBVal("friendlyNPCColor") or defaults.friendlyNPCColor
+            local c = DBVal("friendlyNPCColor") or defaultSet.friendlyNPCColor
             return c.r, c.g, c.b
         end, function(r, g, b)
-            DB().friendlyNPCColor = { r = r, g = g, b = b }
-            ns.RefreshFriendlyColors()
+            SavedDB().friendlyNPCColor = { r = r, g = g, b = b }
+            mod.RefreshFriendlyColors()
             refreshNpcSwatch()
         end, nil, 20)
-        PP.Point(npcSwatch, "RIGHT", btn or rgn._control, "LEFT", -8, 0)
+        Pix.Point(npcSwatch, "RIGHT", button or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = npcSwatch
         local origNpcClick = npcSwatch:GetScript("OnClick")
         npcSwatch:SetScript("OnClick", function(self, ...)
@@ -844,17 +841,17 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         refreshNpcSwatch()
     end
 
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Friendly Names Not Clickable",
         tooltip = "Make friendly player and NPC nameplates click-through so their names never block your mouse or cause accidental friendly targeting.\n\nUse this when friendly names get in the way of clicking the world or the enemy nameplates behind them.",
         getValue = function()
             return DBVal("friendlyClickThrough") == true
         end,
-        setValue = function(v)
-            DB().friendlyClickThrough = v
-            if ns.UpdateFriendlyClickThrough then
-                ns.UpdateFriendlyClickThrough()
+        setValue = function(val)
+            SavedDB().friendlyClickThrough = val
+            if mod.UpdateFriendlyClickThrough then
+                mod.UpdateFriendlyClickThrough()
             end
         end,
     }, {
@@ -863,13 +860,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("showEnemyPets") == true
         end,
-        setValue = function(v)
-            DB().showEnemyPets = v
-            pcall(CludesUI.SetCVar, "nameplateShowEnemyPets", v and 1 or 0, "CludesUINameplates")
+        setValue = function(val)
+            SavedDB().showEnemyPets = val
+            pcall(CludesUI.SetCVar, "nameplateShowEnemyPets", val and 1 or 0, "CludesUINameplates")
         end,
         tooltip = "Toggle visibility of enemy pet nameplates.",
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Inline DIRECTIONS cog on Friendly Name Size: name-only vertical distance
     if not CludesUI._prebuilding then
@@ -884,12 +881,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        return DBVal("friendlyNameOnlyYOffset") or defaults.friendlyNameOnlyYOffset
+                        return DBVal("friendlyNameOnlyYOffset") or defaultSet.friendlyNameOnlyYOffset
                     end,
-                    set = function(v)
-                        DB().friendlyNameOnlyYOffset = v
-                        if ns.RefreshFriendlyNameOnlyOffset then
-                            ns.RefreshFriendlyNameOnlyOffset()
+                    set = function(val)
+                        SavedDB().friendlyNameOnlyYOffset = val
+                        if mod.RefreshFriendlyNameOnlyOffset then
+                            mod.RefreshFriendlyNameOnlyOffset()
                         end
                     end,
                 },
@@ -897,17 +894,17 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  ENEMY NAMEPLATE SPACING
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, SECTION_ENEMY_NP, y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, SECTION_ENEMY_NP, posY)
+    posY = posY - hgt
 
     local stackingRow
-    stackingRow, h = W:DualRow(parent, y, {
+    stackingRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Stacking Nameplates",
         values = { __placeholder = "..." },
@@ -924,15 +921,15 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 200,
         step = 5,
         getValue = function()
-            return DBVal("stackSpacingScale") or defaults.stackSpacingScale
+            return DBVal("stackSpacingScale") or defaultSet.stackSpacingScale
         end,
-        setValue = function(v)
-            DB().stackSpacingScale = v
-            ns.RefreshStackingBounds()
+        setValue = function(val)
+            SavedDB().stackSpacingScale = val
+            mod.RefreshStackingBounds()
         end,
         tooltip = "Adjusts the vertical spacing between stacked nameplates. 100% = default, lower = tighter, higher = more spread.",
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Replace the placeholder dropdown with a multi-select checkbox dropdown; Enemy and Friendly stacking are independent toggles over the Midnight stacking bitfield. Friendly locks out while CUI isn't managing friendly plates (Blizzard owns that bit then).
     if not CludesUI._prebuilding then
@@ -964,16 +961,16 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 end
                 return false
             end,
-            function(k, v)
+            function(k, val)
                 if k == "enemy" then
-                    DB().stackingEnabled = v
+                    SavedDB().stackingEnabled = val
                 elseif k == "friendly" then
-                    DB().stackingFriendly = v
+                    SavedDB().stackingFriendly = val
                 end
-                ns.RefreshStackingMotion()
+                mod.RefreshStackingMotion()
             end
         )
-        PP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
+        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
         leftRgn._control = cbDD
         cbDD:HookScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
@@ -988,18 +985,18 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
 
     local hitboxRow
-    hitboxRow, h = W:DualRow(parent, y, {
+    hitboxRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Hitbox Size X",
         min = 50,
         max = 250,
         step = 5,
         getValue = function()
-            return DBVal("hitboxScaleX") or defaults.hitboxScaleX
+            return DBVal("hitboxScaleX") or defaultSet.hitboxScaleX
         end,
-        setValue = function(v)
-            DB().hitboxScaleX = v
-            ns.RefreshHitboxSize()
+        setValue = function(val)
+            SavedDB().hitboxScaleX = val
+            mod.RefreshHitboxSize()
         end,
         tooltip = "Widens the clickable hitbox of enemy nameplates. 100% = matches bar width. Increase to make nameplates easier to click.",
     }, {
@@ -1009,15 +1006,15 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 250,
         step = 5,
         getValue = function()
-            return DBVal("hitboxScaleY") or defaults.hitboxScaleY
+            return DBVal("hitboxScaleY") or defaultSet.hitboxScaleY
         end,
-        setValue = function(v)
-            DB().hitboxScaleY = v
-            ns.RefreshHitboxSize()
+        setValue = function(val)
+            SavedDB().hitboxScaleY = val
+            mod.RefreshHitboxSize()
         end,
         tooltip = "Increases the clickable hitbox height of enemy nameplates. 100% = matches bar height. Increase to make nameplates easier to click.",
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Eyeball toggle on Hitbox Size X: translucent overlay on real enemy nameplates marking the clickable area, for visual slider tuning; runtime-only, auto-hides when the panel closes. None in the search pre-build: it indexes nothing, and the row is a stand-in there.
     if not CludesUI._prebuilding then
@@ -1033,12 +1030,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function RefreshEyeIcon()
-            eyeTex:SetTexture(ns._hitboxOverlayShown and EYE_INVISIBLE or EYE_VISIBLE)
+            eyeTex:SetTexture(mod._hitboxOverlayShown and EYE_INVISIBLE or EYE_VISIBLE)
         end
         RefreshEyeIcon()
         eyeBtn:SetScript("OnClick", function()
-            if ns.SetHitboxOverlayShown then
-                ns.SetHitboxOverlayShown(not ns._hitboxOverlayShown)
+            if mod.SetHitboxOverlayShown then
+                mod.SetHitboxOverlayShown(not mod._hitboxOverlayShown)
             end
             RefreshEyeIcon()
         end)
@@ -1051,11 +1048,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             CludesUI.HideWidgetTooltip()
         end)
         -- Auto-hide the overlay when the options panel closes (hook once).
-        if not ns._hitboxOverlayCloseHook and CludesUI._mainFrame then
-            ns._hitboxOverlayCloseHook = true
+        if not mod._hitboxOverlayCloseHook and CludesUI._mainFrame then
+            mod._hitboxOverlayCloseHook = true
             CludesUI._mainFrame:HookScript("OnHide", function()
-                if ns._hitboxOverlayShown and ns.SetHitboxOverlayShown then
-                    ns.SetHitboxOverlayShown(false)
+                if mod._hitboxOverlayShown and mod.SetHitboxOverlayShown then
+                    mod.SetHitboxOverlayShown(false)
                 end
             end)
         end
@@ -1082,67 +1079,67 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 max = 400,
                 step = 5,
                 getValue = function()
-                    local def, cur =
+                    local spec_def, current =
                         CVarDefault("nameplateMotionSpeed"), tonumber(GetCVar("nameplateMotionSpeed"))
-                    if not (def and def > 0 and cur) then
+                    if not (spec_def and spec_def > 0 and current) then
                         return 100
                     end
-                    return math.floor(cur / def * 100 + 0.5)
+                    return math.floor(current / spec_def * 100 + 0.5)
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     if InCombatLockdown() then
                         return
                     end
-                    local def = CVarDefault("nameplateMotionSpeed")
-                    if not (def and def > 0) then
+                    local spec_def = CVarDefault("nameplateMotionSpeed")
+                    if not (spec_def and spec_def > 0) then
                         return
                     end
-                    ns.KeepNameplateCVar("nameplateMotionSpeed", def * v / 100)
+                    mod.KeepNameplateCVar("nameplateMotionSpeed", spec_def * val / 100)
                 end,
                 tooltip = "How fast stacked nameplates slide into place. 100% is Blizzard's default.",
             }
         end
         if C_CVar.GetCVarInfo("nameplateTopInset") then
-            local def = CVarDefault("nameplateTopInset")
-            local frac = not def or def <= 1
+            local spec_def = CVarDefault("nameplateTopInset")
+            local frac = not spec_def or spec_def <= 1
             cvarRows[#cvarRows + 1] = {
                 type = "slider",
                 text = "Top Screen Inset",
                 min = 0,
-                max = frac and 50 or math.max(100, math.ceil((def or 0) * 4)),
+                max = frac and 50 or math.max(100, math.ceil((spec_def or 0) * 4)),
                 step = 1,
                 getValue = function()
-                    local cur = tonumber(GetCVar("nameplateTopInset")) or 0
+                    local current = tonumber(GetCVar("nameplateTopInset")) or 0
                     if frac then
-                        return math.floor(cur * 100 + 0.5)
+                        return math.floor(current * 100 + 0.5)
                     end
-                    return cur
+                    return current
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     if InCombatLockdown() then
                         return
                     end
-                    ns.KeepNameplateCVar("nameplateTopInset", frac and v / 100 or v)
+                    mod.KeepNameplateCVar("nameplateTopInset", frac and val / 100 or val)
                 end,
                 tooltip = "How far from the top of the screen nameplates stop. 0 lets them reach the edge.",
             }
         end
-        for i = 1, #cvarRows, 2 do
-            _, h = W:DualRow(parent, y, cvarRows[i], cvarRows[i + 1] or CludesUI.BlankRowCfg())
-            y = y - h
+        for idx = 1, #cvarRows, 2 do
+            _, hgt = W:DualRow(hostFrame, posY, cvarRows[idx], cvarRows[idx + 1] or CludesUI.BlankRowCfg())
+            posY = posY - hgt
         end
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  EXTRA AURA OPTIONS
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, SECTION_AURA, y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, SECTION_AURA, posY)
+    posY = posY - hgt
 
-    local maxDbfOriginal = DBVal("maxDebuffs") or defaults.maxDebuffs
+    local maxDbfOriginal = DBVal("maxDebuffs") or defaultSet.maxDebuffs
     local maxDbfPendingPopup
     local maxDbfCfg = {
         type = "slider",
@@ -1151,23 +1148,23 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 10,
         step = 1,
         getValue = function()
-            return DBVal("maxDebuffs") or defaults.maxDebuffs
+            return DBVal("maxDebuffs") or defaultSet.maxDebuffs
         end,
-        setValue = function(v)
-            DB().maxDebuffs = v
+        setValue = function(val)
+            SavedDB().maxDebuffs = val
             -- 12.1 containers raise/lower the group's frame cap live via SetAuraGroupMaxFrameCount inside the reload's cfg pass.
-            if ns.NPC_ReloadAll then
-                ns.NPC_ReloadAll()
+            if mod.NPC_ReloadAll then
+                mod.NPC_ReloadAll()
                 return
             end
             -- Legacy pools are sized at plate creation: show the reload popup once after the slider drag ends (debounced).
-            if v ~= maxDbfOriginal then
+            if val ~= maxDbfOriginal then
                 if maxDbfPendingPopup then
                     maxDbfPendingPopup:Cancel()
                 end
                 maxDbfPendingPopup = C_Timer.NewTimer(0.5, function()
                     maxDbfPendingPopup = nil
-                    if (DB().maxDebuffs or defaults.maxDebuffs) ~= maxDbfOriginal then
+                    if (SavedDB().maxDebuffs or defaultSet.maxDebuffs) ~= maxDbfOriginal then
                         CludesUI:ShowConfirmPopup({
                             title = "Reload Required",
                             message = "Changing Max Debuffs requires a UI reload to take effect.",
@@ -1182,21 +1179,21 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         tooltip = "Maximum number of debuff icons shown on enemy nameplates.",
     }
     local debuffRow1
-    debuffRow1, h = W:DualRow(parent, y, maxDbfCfg, {
+    debuffRow1, hgt = W:DualRow(hostFrame, posY, maxDbfCfg, {
         type = "toggle",
         text = "Show Buff / Debuff Tooltips",
         tooltip = "Show the spell tooltip when you hover a buff or debuff icon on a nameplate.\n\nWhile the cursor is over an icon, the plate behind it will not highlight or take mouseover targeting.",
         getValue = function()
             return DBVal("showAuraTooltips") == true
         end,
-        setValue = function(v)
-            DB().showAuraTooltips = v
-            if ns.NPC_ReloadAll then
-                ns.NPC_ReloadAll()
+        setValue = function(val)
+            SavedDB().showAuraTooltips = val
+            if mod.NPC_ReloadAll then
+                mod.NPC_ReloadAll()
             end
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     local GO = CludesUI.GlowOptions
 
@@ -1204,9 +1201,9 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     -- Style with its color swatches and cog, the preview in the right half.
     local panDesc = npPandemicGlowDesc
     local panRow
-    panRow, h = W:DualRow(
-        parent,
-        y,
+    panRow, hgt = W:DualRow(
+        hostFrame,
+        posY,
         GO.DropdownSpec(
             panDesc,
             "Pandemic Glow Style",
@@ -1214,7 +1211,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         ),
         { type = "label", text = "Pandemic Glow Preview" }
     )
-    y = y - h
+    posY = posY - hgt
     GO.AttachInline(panRow._leftRegion, panDesc)
 
     if not CludesUI._prebuilding then
@@ -1229,12 +1226,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             ROGUE = { 1943 },
         }
         local pool = BY_CLASS[select(2, UnitClass("player"))] or { 1079, 8921, 194310, 34914, 980, 1943 }
-        local icon = 136197
+        local glyph = 136197
         local start = math.random(#pool)
-        for i = 0, #pool - 1 do
-            local info = C_Spell.GetSpellInfo(pool[(start + i - 1) % #pool + 1])
-            if info and info.iconID then
-                icon = info.iconID
+        for idx = 0, #pool - 1 do
+            local details = C_Spell.GetSpellInfo(pool[(start + idx - 1) % #pool + 1])
+            if details and details.iconID then
+                glyph = details.iconID
                 break
             end
         end
@@ -1242,7 +1239,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         GO.BuildPreview(
             rightRgn,
             panDesc,
-            { anchor = rightRgn, point = "RIGHT", relPoint = "RIGHT", x = -20, icon = icon }
+            { anchor = rightRgn, point = "RIGHT", relPoint = "RIGHT", x = -20, icon = glyph }
         )
         -- The preview's label dims with it while no glow is picked.
         local previewLabel = rightRgn._label
@@ -1259,13 +1256,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 tooltip = "Apply this pandemic glow to all CDM bars and tracking bars. A surface that can't show a style uses its closest match.",
                 isSynced = function()
                     return CludesUI.IsPandemicGlowSyncedToAll(
-                        CludesUI.PandemicPayloadFromNameplate(DB()),
+                        CludesUI.PandemicPayloadFromNameplate(SavedDB()),
                         { skipNameplates = true }
                     )
                 end,
                 onClick = function()
                     CludesUI.ApplyPandemicGlowToAll(
-                        CludesUI.PandemicPayloadFromNameplate(DB()),
+                        CludesUI.PandemicPayloadFromNameplate(SavedDB()),
                         { skipNameplates = true }
                     )
                     C_Timer.After(0, function()
@@ -1302,8 +1299,8 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             end
             return "important"
         end,
-        setValue = function(v)
-            DB().npEnemyBuffFilter = v
+        setValue = function(val)
+            SavedDB().npEnemyBuffFilter = val
             -- Applies live: RefreshAllAuras drives the container reload;
             -- its cfg pass re-drives both buff group filter strings and
             -- parks/unparks the plain remainder group.
@@ -1315,8 +1312,8 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         end,
     }
     local dispelGlowRow
-    dispelGlowRow, h = W:DualRow(parent, y, buffFilterDropdown, dispelGlowDropdown)
-    y = y - h
+    dispelGlowRow, hgt = W:DualRow(hostFrame, posY, buffFilterDropdown, dispelGlowDropdown)
+    posY = posY - hgt
 
     GO.AttachInline(dispelGlowRow._rightRegion, dispelDesc)
 
@@ -1337,8 +1334,8 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("npEnemyBuffDispelByMe") == true
                     end,
-                    set = function(v)
-                        DB().npEnemyBuffDispelByMe = v or nil
+                    set = function(val)
+                        SavedDB().npEnemyBuffDispelByMe = val or nil
                         RefreshAllAuras()
                         UpdatePreview()
                     end,
@@ -1347,28 +1344,28 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         })
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  TARGET AND FOCUS EFFECTS
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "TARGET AND FOCUS EFFECTS", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "TARGET AND FOCUS EFFECTS", posY)
+    posY = posY - hgt
 
     local function hashLineOff()
         return not (DBVal("hashLineEnabled"))
     end
 
-    local row
-    row, h = W:DualRow(parent, y, {
+    local rowFrame
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Hash Line on Target at Percent",
         getValue = function()
             return DBVal("hashLineEnabled") or false
         end,
-        setValue = function(v)
-            DB().hashLineEnabled = v
+        setValue = function(val)
+            SavedDB().hashLineEnabled = val
             RefreshAllPlates()
             UpdatePreview()
             CludesUI:RefreshPage()
@@ -1382,19 +1379,19 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         disabled = hashLineOff,
         disabledTooltip = "Show Hash Line on Target at Percent",
         getValue = function()
-            return DBVal("hashLinePercent") or defaults.hashLinePercent
+            return DBVal("hashLinePercent") or defaultSet.hashLinePercent
         end,
-        setValue = function(v)
-            DB().hashLinePercent = v
+        setValue = function(val)
+            SavedDB().hashLinePercent = val
             RefreshAllPlates()
             UpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Add "(Percent)" suffix in smaller, dimmer text next to the slider label
     if not CludesUI._prebuilding then
-        local rightFrame = row._rightRegion
+        local rightFrame = rowFrame._rightRegion
         if rightFrame then
             local suffixFS = rightFrame:CreateFontString(nil, "OVERLAY")
             suffixFS:SetFont(CludesUI.EXPRESSWAY, 11, GetNPOptOutline())
@@ -1417,16 +1414,16 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     -- Inline color swatch for hash line custom color
     if not CludesUI._prebuilding then
         local hashColorGet = function()
-            local c = (DB() and DB().hashLineColor) or defaults.hashLineColor
+            local c = (SavedDB() and SavedDB().hashLineColor) or defaultSet.hashLineColor
             return c.r, c.g, c.b
         end
         local hashColorSet = function(r, g, b)
-            DB().hashLineColor = { r = r, g = g, b = b }
+            SavedDB().hashLineColor = { r = r, g = g, b = b }
             RefreshAllPlates()
             UpdatePreview()
         end
-        local leftRgn = row._leftRegion
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local leftRgn = rowFrame._leftRegion
+        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
             leftRgn,
             leftRgn:GetFrameLevel() + 5,
             hashColorGet,
@@ -1434,21 +1431,21 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             nil,
             20
         )
-        PP.Point(swatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
+        Pix.Point(colorSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
         -- Gray out swatch when hash line is off
         CludesUI.RegisterWidgetRefresh(function()
-            local off = hashLineOff()
-            swatch:SetAlpha(off and 0.15 or 1)
-            swatch:EnableMouse(not off)
+            local offset = hashLineOff()
+            colorSwatch:SetAlpha(offset and 0.15 or 1)
+            colorSwatch:EnableMouse(not offset)
             updateSwatch()
         end)
-        swatch:SetAlpha(hashLineOff() and 0.15 or 1)
-        swatch:EnableMouse(not hashLineOff())
+        colorSwatch:SetAlpha(hashLineOff() and 0.15 or 1)
+        colorSwatch:EnableMouse(not hashLineOff())
     end
 
     -- Row 2: Scale Target Nameplate | Non-Target Opacity
     local tfScaleRow
-    tfScaleRow, h = W:DualRow(parent, y, {
+    tfScaleRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Scale Target Nameplate",
         trackWidth = 110,
@@ -1456,12 +1453,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 200,
         step = 5,
         getValue = function()
-            return DBVal("targetScale") or defaults.targetScale
+            return DBVal("targetScale") or defaultSet.targetScale
         end,
-        setValue = function(v)
-            DB().targetScale = v
-            for _, plate in pairs(plates) do
-                plate:ApplyScale()
+        setValue = function(val)
+            SavedDB().targetScale = val
+            for _, backing in pairs(plates) do
+                backing:ApplyScale()
             end
         end,
         tooltip = "Scales your current target's nameplate. 100% = no change.",
@@ -1475,15 +1472,15 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("nonTargetAlpha") or 100
         end,
-        setValue = function(v)
-            DB().nonTargetAlpha = v
-            if ns.NT_RefreshSetting then
-                ns.NT_RefreshSetting()
+        setValue = function(val)
+            SavedDB().nonTargetAlpha = val
+            if mod.NT_RefreshSetting then
+                mod.NT_RefreshSetting()
             end
             CludesUI:RefreshPage() -- update the cog disabled state
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- "(Percent)" suffix on the target scale slider
     if not CludesUI._prebuilding then
         local leftFrame = tfScaleRow._leftRegion
@@ -1502,21 +1499,21 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
     -- Inline cog on Scale Target Nameplate: the enemy type scales.
     if not CludesUI._prebuilding then
-        local function TypeScaleRow(label, key, tip)
+        local function TypeScaleRow(labelText, key, tipText)
             return {
                 type = "slider",
-                label = label,
-                tooltip = tip,
+                label = labelText,
+                tooltip = tipText,
                 min = 25,
                 max = 125,
                 step = 5,
                 get = function()
-                    return DBVal(key) or defaults[key]
+                    return DBVal(key) or defaultSet[key]
                 end,
-                set = function(v)
-                    DB()[key] = v
-                    if ns.NP_RefreshTypeScaleSetting then
-                        ns.NP_RefreshTypeScaleSetting()
+                set = function(val)
+                    SavedDB()[key] = val
+                    if mod.NP_RefreshTypeScaleSetting then
+                        mod.NP_RefreshTypeScaleSetting()
                     end
                 end,
             }
@@ -1556,10 +1553,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("nonTargetKeepFocus") ~= false
                     end,
-                    set = function(v)
-                        DB().nonTargetKeepFocus = v
-                        if ns.NT_RefreshSetting then
-                            ns.NT_RefreshSetting()
+                    set = function(val)
+                        SavedDB().nonTargetKeepFocus = val
+                        if mod.NT_RefreshSetting then
+                            mod.NT_RefreshSetting()
                         end
                     end,
                 },
@@ -1580,11 +1577,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                         end
                         return DBVal("nonTargetCastImportantOnly") == true and "important" or "all"
                     end,
-                    set = function(v)
-                        DB().nonTargetCastFull = v ~= "off"
-                        DB().nonTargetCastImportantOnly = v == "important"
-                        if ns.NT_RefreshSetting then
-                            ns.NT_RefreshSetting()
+                    set = function(val)
+                        SavedDB().nonTargetCastFull = val ~= "off"
+                        SavedDB().nonTargetCastImportantOnly = val == "important"
+                        if mod.NT_RefreshSetting then
+                            mod.NT_RefreshSetting()
                         end
                     end,
                 },
@@ -1597,7 +1594,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         return DBVal("focusLetterEnabled") ~= true
     end
     local tfFocusRow
-    tfFocusRow, h = W:DualRow(parent, y, {
+    tfFocusRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Focus Cast Height",
         trackWidth = 110,
@@ -1605,11 +1602,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 200,
         step = 5,
         getValue = function()
-            return DBVal("focusCastHeight") or defaults.focusCastHeight
+            return DBVal("focusCastHeight") or defaultSet.focusCastHeight
         end,
-        setValue = function(v)
-            DB().focusCastHeight = v
-            ns.RefreshAllSettings()
+        setValue = function(val)
+            SavedDB().focusCastHeight = val
+            mod.RefreshAllSettings()
         end,
         tooltip = "Increases the cast bar height on your focus target's nameplate. 100% = normal height.",
     }, {
@@ -1619,13 +1616,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("focusLetterEnabled") == true
         end,
-        setValue = function(v)
-            DB().focusLetterEnabled = v
+        setValue = function(val)
+            SavedDB().focusLetterEnabled = val
             RefreshAllPlates()
             CludesUI:RefreshPage()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- "(Percent)" suffix on Focus Cast Height
     if not CludesUI._prebuilding then
         local leftFrame = tfFocusRow._leftRegion
@@ -1656,8 +1653,8 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     values = FOCUS_LETTER_ANCHORS,
                     order = FOCUS_LETTER_ANCHOR_ORDER,
                     get = GetFocusLetterAnchor,
-                    set = function(v)
-                        DB().focusLetterAnchor = v
+                    set = function(val)
+                        SavedDB().focusLetterAnchor = val
                         RefreshAllPlates()
                     end,
                 },
@@ -1668,10 +1665,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 40,
                     step = 1,
                     get = function()
-                        return DBVal("focusLetterSize") or defaults.focusLetterSize
+                        return DBVal("focusLetterSize") or defaultSet.focusLetterSize
                     end,
-                    set = function(v)
-                        DB().focusLetterSize = v
+                    set = function(val)
+                        SavedDB().focusLetterSize = val
                         RefreshAllPlates()
                     end,
                 },
@@ -1682,10 +1679,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 100,
                     step = 1,
                     get = function()
-                        return DBVal("focusLetterX") or defaults.focusLetterX
+                        return DBVal("focusLetterX") or defaultSet.focusLetterX
                     end,
-                    set = function(v)
-                        DB().focusLetterX = v
+                    set = function(val)
+                        SavedDB().focusLetterX = val
                         RefreshAllPlates()
                     end,
                 },
@@ -1696,10 +1693,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 100,
                     step = 1,
                     get = function()
-                        return DBVal("focusLetterY") or defaults.focusLetterY
+                        return DBVal("focusLetterY") or defaultSet.focusLetterY
                     end,
-                    set = function(v)
-                        DB().focusLetterY = v
+                    set = function(val)
+                        SavedDB().focusLetterY = val
                         RefreshAllPlates()
                     end,
                 },
@@ -1712,22 +1709,22 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         return DBVal("rangeTextEnabled") ~= true
     end
     local tfRangeRow
-    tfRangeRow, h = W:DualRow(parent, y, {
+    tfRangeRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Distance to Target Text (Range)",
         tooltip = "Shows the approximate distance to your current target on its nameplate as a range bracket, e.g. 15+ when the target is 15-20 yards away.",
         getValue = function()
             return DBVal("rangeTextEnabled") == true
         end,
-        setValue = function(v)
-            DB().rangeTextEnabled = v
-            if ns.RangeText_Apply then
-                ns.RangeText_Apply()
+        setValue = function(val)
+            SavedDB().rangeTextEnabled = val
+            if mod.RangeText_Apply then
+                mod.RangeText_Apply()
             end
             CludesUI:RefreshPage()
         end,
     }, { type = "label", text = "" })
-    y = y - h
+    posY = posY - hgt
     -- RESIZE cog: text size + X/Y offsets (mirrors the raid-marker cog), beside the toggle
     if not CludesUI._prebuilding then
         local rgn = tfRangeRow._leftRegion
@@ -1743,12 +1740,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 32,
                     step = 1,
                     get = function()
-                        return DBVal("rangeTextSize") or defaults.rangeTextSize
+                        return DBVal("rangeTextSize") or defaultSet.rangeTextSize
                     end,
-                    set = function(v)
-                        DB().rangeTextSize = v
-                        if ns.RangeText_Refresh then
-                            ns.RangeText_Refresh()
+                    set = function(val)
+                        SavedDB().rangeTextSize = val
+                        if mod.RangeText_Refresh then
+                            mod.RangeText_Refresh()
                         end
                     end,
                 },
@@ -1761,10 +1758,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("rangeTextOffsetX") or 0
                     end,
-                    set = function(v)
-                        DB().rangeTextOffsetX = v
-                        if ns.RangeText_Refresh then
-                            ns.RangeText_Refresh()
+                    set = function(val)
+                        SavedDB().rangeTextOffsetX = val
+                        if mod.RangeText_Refresh then
+                            mod.RangeText_Refresh()
                         end
                     end,
                 },
@@ -1777,10 +1774,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("rangeTextOffsetY") or 0
                     end,
-                    set = function(v)
-                        DB().rangeTextOffsetY = v
-                        if ns.RangeText_Refresh then
-                            ns.RangeText_Refresh()
+                    set = function(val)
+                        SavedDB().rangeTextOffsetY = val
+                        if mod.RangeText_Refresh then
+                            mod.RangeText_Refresh()
                         end
                     end,
                 },
@@ -1791,41 +1788,41 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     if not CludesUI._prebuilding then
         local rgn = tfRangeRow._leftRegion
         local rangeColorGet = function()
-            local c = (DB() and DB().rangeTextColor) or defaults.rangeTextColor
+            local c = (SavedDB() and SavedDB().rangeTextColor) or defaultSet.rangeTextColor
             return c.r, c.g, c.b
         end
         local rangeColorSet = function(r, g, b)
-            DB().rangeTextColor = { r = r, g = g, b = b }
-            if ns.RangeText_Refresh then
-                ns.RangeText_Refresh()
+            SavedDB().rangeTextColor = { r = r, g = g, b = b }
+            if mod.RangeText_Refresh then
+                mod.RangeText_Refresh()
             end
         end
-        local swatch, updateSwatch =
+        local colorSwatch, updateSwatch =
             CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, rangeColorGet, rangeColorSet, nil, 20)
-        PP.Point(swatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = swatch
+        Pix.Point(colorSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        rgn._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
-            local off = tfRangeOff()
-            swatch:SetAlpha(off and 0.15 or 1)
-            swatch:EnableMouse(not off)
+            local offset = tfRangeOff()
+            colorSwatch:SetAlpha(offset and 0.15 or 1)
+            colorSwatch:EnableMouse(not offset)
             updateSwatch()
         end)
-        swatch:SetAlpha(tfRangeOff() and 0.15 or 1)
-        swatch:EnableMouse(not tfRangeOff())
+        colorSwatch:SetAlpha(tfRangeOff() and 0.15 or 1)
+        colorSwatch:EnableMouse(not tfRangeOff())
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  EXTRAS
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, SECTION_MISC, y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, SECTION_MISC, posY)
+    posY = posY - hgt
 
     -- Row 1: Scale Nameplate on Cast | Hide Enemy Name While Casting
     local exCastRow
-    exCastRow, h = W:DualRow(parent, y, {
+    exCastRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Scale Nameplate On Cast",
         trackWidth = 110,
@@ -1833,10 +1830,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 200,
         step = 5,
         getValue = function()
-            return DBVal("castScale") or defaults.castScale
+            return DBVal("castScale") or defaultSet.castScale
         end,
-        setValue = function(v)
-            DB().castScale = v
+        setValue = function(val)
+            SavedDB().castScale = val
         end,
         tooltip = "Scales enemy nameplates while they are casting. 100% = no change.",
     }, {
@@ -1846,13 +1843,13 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("hideEnemyNameWhileCasting") == true
         end,
-        setValue = function(v)
-            DB().hideEnemyNameWhileCasting = v
-            ns.RefreshAllSettings()
+        setValue = function(val)
+            SavedDB().hideEnemyNameWhileCasting = val
+            mod.RefreshAllSettings()
             UpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- "(Percent)" suffix on the cast scale slider
     if not CludesUI._prebuilding then
         local leftFrame = exCastRow._leftRegion
@@ -1872,16 +1869,16 @@ local function BuildGeneralPage(pageName, parent, yOffset)
 
     -- Row 2: Name Raid Marker (target marker shown directly before the enemy name; size lives on inline cog) | Experimental: Cast Lockout as CC Icon.
     local nameRaidMarkerRow
-    nameRaidMarkerRow, h = W:DualRow(parent, y, {
+    nameRaidMarkerRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Name Raid Marker",
         tooltip = "Shows the target marker directly before the enemy name text. Uses its own size and does not use the Core Positions raid marker slot.",
         getValue = function()
             return DBVal("nameRaidMarkerEnabled") == true
         end,
-        setValue = function(v)
-            DB().nameRaidMarkerEnabled = v
-            ns.RefreshAllSettings()
+        setValue = function(val)
+            SavedDB().nameRaidMarkerEnabled = val
+            mod.RefreshAllSettings()
             UpdatePreview()
             CludesUI:RefreshPage()
         end,
@@ -1892,12 +1889,12 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("showCastLockoutAsCrowdControl") == true
         end,
-        setValue = function(v)
-            DB().showCastLockoutAsCrowdControl = v
+        setValue = function(val)
+            SavedDB().showCastLockoutAsCrowdControl = val
             RefreshAllAuras()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     if not CludesUI._prebuilding then
         local function nameRaidMarkerOff()
@@ -1916,11 +1913,11 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     max = 32,
                     step = 1,
                     get = function()
-                        return DBVal("nameRaidMarkerSize") or defaults.nameRaidMarkerSize
+                        return DBVal("nameRaidMarkerSize") or defaultSet.nameRaidMarkerSize
                     end,
-                    set = function(v)
-                        DB().nameRaidMarkerSize = v
-                        ns.RefreshAllSettings()
+                    set = function(val)
+                        SavedDB().nameRaidMarkerSize = val
+                        mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
                 },
@@ -1929,9 +1926,9 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
 
     -- Row 3: Out of Combat Opacity | Line of Sight Opacity
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         {
             type = "slider",
             text = "Out of Combat Opacity",
@@ -1942,10 +1939,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             getValue = function()
                 return DBVal("outOfCombatAlpha") or 100
             end,
-            setValue = function(v)
-                DB().outOfCombatAlpha = v
-                if ns.NT_RefreshSetting then
-                    ns.NT_RefreshSetting()
+            setValue = function(val)
+                SavedDB().outOfCombatAlpha = val
+                if mod.NT_RefreshSetting then
+                    mod.NT_RefreshSetting()
                 end
                 CludesUI:RefreshPage() -- the Keep Focus cog's disabled state
             end,
@@ -1961,49 +1958,49 @@ local function BuildGeneralPage(pageName, parent, yOffset)
             getValue = function()
                 return tonumber(GetCVar("nameplateOccludedAlphaMult")) or 0
             end,
-            setValue = function(v)
+            setValue = function(val)
                 if InCombatLockdown() then
                     return
                 end
-                CludesUI.SetCVar("nameplateOccludedAlphaMult", v, "CludesUINameplates")
+                CludesUI.SetCVar("nameplateOccludedAlphaMult", val, "CludesUINameplates")
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Row 4: Range Check (custom cutoff in the inline cog) | Out of Range Opacity
     local rangeCheckRow
-    rangeCheckRow, h = W:DualRow(parent, y, {
+    rangeCheckRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Range Check",
         values = { disabled = "Disabled", auto = "Auto (Class/Spec)", custom = "Custom" },
         order = { "disabled", "auto", "custom" },
         tooltip = "Disabled runs no nameplate range checks. Auto uses your class and specialization's normal attack range. Custom uses the range set in the cog beside this option.",
         getValue = function()
-            return DBVal("outOfRangeMode") or defaults.outOfRangeMode
+            return DBVal("outOfRangeMode") or defaultSet.outOfRangeMode
         end,
-        setValue = function(v)
-            local prev = DBVal("outOfRangeMode") or defaults.outOfRangeMode
-            local function ApplyMode(mode)
-                DB().outOfRangeMode = mode
-                if mode == "custom" and DB().outOfRangeCustomRange == nil then
-                    DB().outOfRangeCustomRange = CludesUI.Range_GetAttackCutoff()
+        setValue = function(val)
+            local prev = DBVal("outOfRangeMode") or defaultSet.outOfRangeMode
+            local function ApplyMode(modeName)
+                SavedDB().outOfRangeMode = modeName
+                if modeName == "custom" and SavedDB().outOfRangeCustomRange == nil then
+                    SavedDB().outOfRangeCustomRange = CludesUI.Range_GetAttackCutoff()
                 end
-                if ns.RangeText_Apply then
-                    ns.RangeText_Apply()
+                if mod.RangeText_Apply then
+                    mod.RangeText_Apply()
                 end
                 CludesUI:RefreshPage()
             end
             -- Performance confirm on the disabled -> enabled edge only:
             -- the sweep range-checks every visible nameplate continuously.
-            if prev == "disabled" and v ~= "disabled" then
+            if prev == "disabled" and val ~= "disabled" then
                 CludesUI:ShowConfirmPopup({
                     title = "Out of Range Opacity",
                     message = "This feature runs continuous range checks against every visible enemy nameplate. It is one of the more expensive features in CludesUI and can measurably increase CPU usage in crowded areas.",
                     confirmText = "Enable",
                     cancelText = "Cancel",
                     onConfirm = function()
-                        ApplyMode(v)
+                        ApplyMode(val)
                     end,
                     onCancel = function()
                         CludesUI:RefreshPage()
@@ -2011,7 +2008,7 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 })
                 return
             end
-            ApplyMode(v)
+            ApplyMode(val)
         end,
     }, {
         type = "slider",
@@ -2021,25 +2018,25 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         max = 100,
         step = 1,
         disabled = function()
-            return (DBVal("outOfRangeMode") or defaults.outOfRangeMode) == "disabled"
+            return (DBVal("outOfRangeMode") or defaultSet.outOfRangeMode) == "disabled"
         end,
         disabledTooltip = "Range Check: Auto or Custom",
         getValue = function()
-            return DBVal("outOfRangeAlpha") or defaults.outOfRangeAlpha
+            return DBVal("outOfRangeAlpha") or defaultSet.outOfRangeAlpha
         end,
-        setValue = function(v)
-            DB().outOfRangeAlpha = v
-            if ns.RangeText_Apply then
-                ns.RangeText_Apply()
+        setValue = function(val)
+            SavedDB().outOfRangeAlpha = val
+            if mod.RangeText_Apply then
+                mod.RangeText_Apply()
             end
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Inline cog on Range Check: the custom cutoff lives here.
     if not CludesUI._prebuilding then
         local function customOff()
-            return (DBVal("outOfRangeMode") or defaults.outOfRangeMode) ~= "custom"
+            return (DBVal("outOfRangeMode") or defaultSet.outOfRangeMode) ~= "custom"
         end
         local rgn = rangeCheckRow._leftRegion
         CludesUI.BuildInlineCog(rgn, {
@@ -2059,10 +2056,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                     get = function()
                         return DBVal("outOfRangeCustomRange") or CludesUI.Range_GetAttackCutoff()
                     end,
-                    set = function(v)
-                        DB().outOfRangeCustomRange = v
-                        if ns.RangeText_Apply then
-                            ns.RangeText_Apply()
+                    set = function(val)
+                        SavedDB().outOfRangeCustomRange = val
+                        if mod.RangeText_Apply then
+                            mod.RangeText_Apply()
                         end
                     end,
                 },
@@ -2071,16 +2068,16 @@ local function BuildGeneralPage(pageName, parent, yOffset)
     end
 
     -- Row 5: Execute Pulse Glow | Hide Enemy Nameplates out of Combat
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Execute Pulse Glow",
         tooltip = "Pulses a red glow on enemy nameplates below 30% health.",
         getValue = function()
             return DBVal("lowHpGlow") == true
         end,
-        setValue = function(v)
-            DB().lowHpGlow = v
-            ns.RefreshAllSettings()
+        setValue = function(val)
+            SavedDB().lowHpGlow = val
+            mod.RefreshAllSettings()
         end,
     }, {
         type = "toggle",
@@ -2089,14 +2086,14 @@ local function BuildGeneralPage(pageName, parent, yOffset)
         getValue = function()
             return DBVal("hideEnemyPlatesOOC") == true
         end,
-        setValue = function(v)
-            DB().hideEnemyPlatesOOC = v
-            if ns.ApplyOOCPlates then
-                ns.ApplyOOCPlates()
+        setValue = function(val)
+            SavedDB().hideEnemyPlatesOOC = val
+            if mod.ApplyOOCPlates then
+                mod.ApplyOOCPlates()
             end
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Row 6: the class option, if any, built only when there is one. Hide Copies
     -- of Blood Plague (Blood Death Knight only) and Show Sunder Armor (WoW Forever
@@ -2115,10 +2112,10 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 getValue = function()
                     return DBVal("hideBloodPlagueCopies") ~= false
                 end,
-                setValue = function(v)
-                    DB().hideBloodPlagueCopies = v
-                    if ns.NPC_ReloadAll then
-                        ns.NPC_ReloadAll()
+                setValue = function(val)
+                    SavedDB().hideBloodPlagueCopies = val
+                    if mod.NPC_ReloadAll then
+                        mod.NPC_ReloadAll()
                     end
                 end,
             }
@@ -2130,22 +2127,22 @@ local function BuildGeneralPage(pageName, parent, yOffset)
                 getValue = function()
                     return DBVal("showSunderArmor") == true
                 end,
-                setValue = function(v)
-                    DB().showSunderArmor = v
-                    if ns.NPC_ReloadAll then
-                        ns.NPC_ReloadAll()
+                setValue = function(val)
+                    SavedDB().showSunderArmor = val
+                    if mod.NPC_ReloadAll then
+                        mod.NPC_ReloadAll()
                     end
                 end,
             }
         end
     end
     if classCfg then
-        _, h = W:DualRow(parent, y, classCfg, CludesUI.BlankRowCfg())
-        y = y - h
+        _, hgt = W:DualRow(hostFrame, posY, classCfg, CludesUI.BlankRowCfg())
+        posY = posY - hgt
     end
 
-    return math.abs(y)
+    return math.abs(posY)
 end
 
 -- Used by CUI_Nameplates_Options.lua
-ns.NPO_BuildGeneralPage = BuildGeneralPage
+mod.NPO_BuildGeneralPage = BuildGeneralPage

@@ -8,17 +8,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CVar.
 --  Loads after CUI_ActionBars_VisibilityDrivers.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs = ipairs
 local InCombatLockdown = InCombatLockdown
 local GetBindingKey = GetBindingKey
 
-local EAB, EAB_VTABLE, barButtons = ns.EAB, ns.EAB_VTABLE, ns.barButtons
-local I = ns._internals
-local BAR_CONFIG = I.BAR_CONFIG
-local BAR_SLOT_OFFSETS, barFrames, BINDING_MAP = I.BAR_SLOT_OFFSETS, I.barFrames, I.BINDING_MAP
+local ABAR, EAB_VTABLE, barButtons = mod.EAB, mod.EAB_VTABLE, mod.barButtons
+local Inner = mod._internals
+local BAR_CONFIG = Inner.BAR_CONFIG
+local BAR_SLOT_OFFSETS, barFrames, BINDING_MAP = Inner.BAR_SLOT_OFFSETS, Inner.barFrames, Inner.BINDING_MAP
 
 -------------------------------------------------------------------------------
 --  Keybind System: ALL standard-bar slots (empowered spells included) bind to
@@ -62,7 +62,7 @@ local function UpdateKeybinds()
     -- Re-arming here covers every caller at once; sibling paths that already defer share
     -- the "UpdateKeybinds" queue key, so the rebuild runs once after combat.
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("UpdateKeybinds", UpdateKeybinds)
+        mod.CombatQueue.Defer("UpdateKeybinds", UpdateKeybinds)
         return false
     end
     -- With the house editor active our overrides are cleared so Blizzard's
@@ -80,28 +80,28 @@ local function UpdateKeybinds()
     -- bindings, and a click-routed key has no button to route to otherwise.
     -- Combat already bailed above, so the build is legal here; the passes
     -- below then bind the new buttons like any other.
-    ns._eabBuildSkippedBars()
+    mod._eabBuildSkippedBars()
     -- Empower detection for one action slot, shared by the current-page
     -- and base-slot checks in pass 1.
-    local function SlotIsPH(slot)
-        if not (slot and HasAction(slot)) then
+    local function SlotIsPH(slotIndex)
+        if not (slotIndex and HasAction(slotIndex)) then
             return false
         end
-        local actionType, id, subType = GetActionInfo(slot)
+        local actionType, ident, subType = GetActionInfo(slotIndex)
         if actionType == "flyout" then
             return true
         end
         if C_Spell and C_Spell.IsPressHoldReleaseSpell then
-            local spellID
+            local spellId
             if actionType == "spell" then
-                spellID = id
+                spellId = ident
             elseif actionType == "macro" and subType == "spell" then
-                spellID = id
+                spellId = ident
             end
             if
-                spellID
-                and not (issecretvalue and issecretvalue(spellID))
-                and C_Spell.IsPressHoldReleaseSpell(spellID)
+                spellId
+                and not (issecretvalue and issecretvalue(spellId))
+                and C_Spell.IsPressHoldReleaseSpell(spellId)
             then
                 return true
             end
@@ -115,11 +115,11 @@ local function UpdateKeybinds()
     -- opening the popup there produces no visible menu even though the key
     -- was received. Empowers have no popup to anchor, so they're unaffected
     -- and must stay on the native command (see routing comment below).
-    local function SlotIsFlyout(slot)
-        if not (slot and HasAction(slot)) then
+    local function SlotIsFlyout(slotIndex)
+        if not (slotIndex and HasAction(slotIndex)) then
             return false
         end
-        return GetActionInfo(slot) == "flyout"
+        return GetActionInfo(slotIndex) == "flyout"
     end
     -- Pass 1: compute per-button routing signature (k1, k2, useClick, isPH)
     -- and compare against the last applied build.
@@ -128,13 +128,13 @@ local function UpdateKeybinds()
         sig = {}
         _bindState.sig = sig
     end
-    local n = 0
+    local num = 0
     local changed = not _bindState.sigValid
     local anyPH = false
-    for _, info in ipairs(BAR_CONFIG) do
-        local prefix = BINDING_MAP[info.key]
-        local btns = barButtons[info.key]
-        if prefix and btns then
+    for _, details in ipairs(BAR_CONFIG) do
+        local prefixText = BINDING_MAP[details.key]
+        local btns = barButtons[details.key]
+        if prefixText and btns then
             -- Custom modifier/form paging lives only in our private secure
             -- state driver, which never moves Blizzard's GetActionBarPage().
             -- Native engine commands (ACTIONBUTTONn / MULTIACTIONBARxBUTTONn)
@@ -152,7 +152,7 @@ local function UpdateKeybinds()
             -- press-and-hold repeat casting (a synthetic click never reaches
             -- UseAction with isKeyPress=true), so they must stay on the
             -- native command -- only genuine user-configured paging (bs.paging) needs the click route.
-            local bs = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars[info.key]
+            local bs = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[details.key]
             local barHasCustomPaging = EAB_VTABLE.HasCustomPaging(bs)
             -- Auto-paging opt-outs need the click route for the mirror-image
             -- reason: bonusbar stays a native engine concept whether or not
@@ -164,13 +164,13 @@ local function UpdateKeybinds()
             -- press-and-hold repeat on MainBar while the opt-out is on.
             -- Read through the paging conditions' own rule, so the keys
             -- follow exactly the opt-outs the bar's page follows.
-            local noForm, noSky = EAB_VTABLE.GetAutoPagingOptOuts(info.key)
+            local noForm, noSky = EAB_VTABLE.GetAutoPagingOptOuts(details.key)
             if noForm or noSky then
                 barHasCustomPaging = true
             end
-            for i, btn in ipairs(btns) do
-                if btn then
-                    local cmd = prefix .. i
+            for idx, button in ipairs(btns) do
+                if button then
+                    local cmd = prefixText .. idx
                     local k1, k2 = GetBindingKey(cmd)
                     -- Routing is native for everything on standard bars,
                     -- empowers included (flyouts are the exception -- see
@@ -180,14 +180,14 @@ local function UpdateKeybinds()
                     -- rank 1). Click routing exists ONLY where a native
                     -- command cannot express the slot: custom-paged bars
                     -- (above) and the custom bars.
-                    local slot = btn:GetAttribute("action")
+                    local slotIndex = button:GetAttribute("action")
                     -- Custom bars (Bar9/Bar10) have no native binding command, so
                     -- their keys MUST click-route; SetOverrideBinding to a
                     -- non-existent command does nothing. isPH tracks empower
                     -- state separately from useClick: on a custom-paged bar
                     -- useClick is always true, but the secure empower snippet
                     -- still needs a re-trigger when press-and-hold state flips.
-                    local isPH = SlotIsPH(slot)
+                    local isPH = SlotIsPH(slotIndex)
                     -- Base-slot check: isPH no longer decides ROUTING on its
                     -- own (empowers stay native either way); it stays in the
                     -- signature so
@@ -200,13 +200,13 @@ local function UpdateKeybinds()
                     -- mount and dismount (skyriding page flips). Guarded on
                     -- the offsets table so Pet/Stance buttons (action attr
                     -- nil) never alias into MainBar slots.
-                    local isFlyout = SlotIsFlyout(slot)
+                    local isFlyout = SlotIsFlyout(slotIndex)
                     if not isPH then
-                        local off = BAR_SLOT_OFFSETS[info.key]
-                        if off then
-                            local base = off + i
-                            if base ~= slot then
-                                isPH = SlotIsPH(base)
+                        local offset = BAR_SLOT_OFFSETS[details.key]
+                        if offset then
+                            local baseValue = offset + idx
+                            if baseValue ~= slotIndex then
+                                isPH = SlotIsPH(baseValue)
                             end
                         end
                     end
@@ -218,26 +218,26 @@ local function UpdateKeybinds()
                     -- isFlyout IS part of it: flyouts need self to be the
                     -- visible button so SpellFlyout anchors somewhere the
                     -- player can actually see.
-                    local useClick = barHasCustomPaging or (info.customPage ~= nil) or isFlyout
+                    local useClick = barHasCustomPaging or (details.customPage ~= nil) or isFlyout
                     k1 = k1 or false
                     k2 = k2 or false
                     if
-                        sig[n + 1] ~= k1
-                        or sig[n + 2] ~= k2
-                        or sig[n + 3] ~= useClick
-                        or sig[n + 4] ~= isPH
+                        sig[num + 1] ~= k1
+                        or sig[num + 2] ~= k2
+                        or sig[num + 3] ~= useClick
+                        or sig[num + 4] ~= isPH
                     then
                         changed = true
                     end
-                    sig[n + 1], sig[n + 2], sig[n + 3], sig[n + 4] = k1, k2, useClick, isPH
-                    n = n + 4
+                    sig[num + 1], sig[num + 2], sig[num + 3], sig[num + 4] = k1, k2, useClick, isPH
+                    num = num + 4
                 end
             end
         end
     end
-    if _bindState.sigN ~= n then
+    if _bindState.sigN ~= num then
         changed = true
-        _bindState.sigN = n
+        _bindState.sigN = num
     end
     -- Tracked on every full pass (even signature-unchanged ones) so the
     -- combat-drop attr re-assert knows whether any press-and-hold slot
@@ -253,17 +253,17 @@ local function UpdateKeybinds()
     _bindState.sigValid = true
     -- Pass 2: apply. Reads the routing decisions computed above.
     ClearOverrideBindings(_eabBindOwner)
-    local j = 0
-    for _, info in ipairs(BAR_CONFIG) do
-        local prefix = BINDING_MAP[info.key]
-        local btns = barButtons[info.key]
-        if prefix and btns then
-            for i, btn in ipairs(btns) do
-                if btn then
-                    local k1, k2, useClick = sig[j + 1], sig[j + 2], sig[j + 3]
-                    j = j + 4
+    local jdx = 0
+    for _, details in ipairs(BAR_CONFIG) do
+        local prefixText = BINDING_MAP[details.key]
+        local btns = barButtons[details.key]
+        if prefixText and btns then
+            for idx, button in ipairs(btns) do
+                if button then
+                    local k1, k2, useClick = sig[jdx + 1], sig[jdx + 2], sig[jdx + 3]
+                    jdx = jdx + 4
                     if useClick then
-                        local btnName = btn:GetName()
+                        local btnName = button:GetName()
                         if k1 and btnName then
                             SetOverrideBindingClick(_eabBindOwner, false, k1, btnName)
                         end
@@ -271,7 +271,7 @@ local function UpdateKeybinds()
                             SetOverrideBindingClick(_eabBindOwner, false, k2, btnName)
                         end
                     else
-                        local cmd = prefix .. i
+                        local cmd = prefixText .. idx
                         if k1 then
                             SetOverrideBinding(_eabBindOwner, false, k1, cmd)
                         end
@@ -299,10 +299,10 @@ local function UpdateKeybinds()
     -- the combat re-arm above, the housing restore, the post-loading-screen
     -- restore). SetAttribute on a secure header is protected, but the combat
     -- bail at the top guarantees we only reach here out of combat.
-    for _, info in ipairs(BAR_CONFIG) do
-        local frame = barFrames[info.key]
-        if frame then
-            frame:SetAttribute("state-eabempower", GetTime())
+    for _, details in ipairs(BAR_CONFIG) do
+        local widget = barFrames[details.key]
+        if widget then
+            widget:SetAttribute("state-eabempower", GetTime())
         end
     end
     return true
@@ -320,17 +320,17 @@ _G._CUAB_UpdateKeybinds = UpdateKeybinds
 -- play pay nothing. Touches pressAndHoldAction only -- never typerelease,
 -- never bindings -- so the native hold-to-cast path is untouched by
 -- construction.
-ns._EABReassertEmpowerAttrs = function()
+mod._EABReassertEmpowerAttrs = function()
     if InCombatLockdown() then
         return
     end
     if not _bindState.hasPH then
         return
     end
-    for _, info in ipairs(BAR_CONFIG) do
-        local frame = barFrames[info.key]
-        if frame then
-            frame:SetAttribute("state-eabempower", GetTime())
+    for _, details in ipairs(BAR_CONFIG) do
+        local widget = barFrames[details.key]
+        if widget then
+            widget:SetAttribute("state-eabempower", GetTime())
         end
     end
 end
@@ -341,19 +341,19 @@ end
 -- Must be called out of combat (SetAttribute on secure buttons).
 local function ApplyClickRegistration()
     local keyDown = GetCVarBool("ActionButtonUseKeyDown")
-    for _, info in ipairs(BAR_CONFIG) do
-        if not info.isStance and not info.isPetBar then
-            local btns = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        if not details.isStance and not details.isPetBar then
+            local btns = barButtons[details.key]
             if btns then
-                for _, btn in ipairs(btns) do
-                    if btn then
+                for _, button in ipairs(btns) do
+                    if button then
                         -- A mouse click's flip that a drag left behind goes
                         -- with the value it stood in for, or the button's
                         -- next release would restore key down over this one.
-                        if btn:GetAttribute("eabPickupFlipped") then
-                            btn:SetAttribute("eabPickupFlipped", false)
+                        if button:GetAttribute("eabPickupFlipped") then
+                            button:SetAttribute("eabPickupFlipped", false)
                         end
-                        btn:SetAttribute("useOnKeyDown", keyDown)
+                        button:SetAttribute("useOnKeyDown", keyDown)
                     end
                 end
             end
@@ -364,7 +364,7 @@ end
 -- Called when ActionButtonUseKeyDown CVar changes. Defers to out-of-combat.
 local function ApplyKeyDownCVar()
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("ApplyKeyDownCVar", ApplyKeyDownCVar)
+        mod.CombatQueue.Defer("ApplyKeyDownCVar", ApplyKeyDownCVar)
         return
     end
     ApplyClickRegistration()
@@ -372,5 +372,5 @@ local function ApplyKeyDownCVar()
 end
 
 -- Entry points the files after this one re-import by name.
-I.UpdateKeybinds, I._bindState, I._eabBindOwner = UpdateKeybinds, _bindState, _eabBindOwner
-I.ApplyKeyDownCVar = ApplyKeyDownCVar
+Inner.UpdateKeybinds, Inner._bindState, Inner._eabBindOwner = UpdateKeybinds, _bindState, _eabBindOwner
+Inner.ApplyKeyDownCVar = ApplyKeyDownCVar

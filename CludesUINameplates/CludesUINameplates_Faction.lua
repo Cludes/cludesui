@@ -12,7 +12,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  ns.NP_FactionBadge, shared with enemy plates; the badge shows while the
 --  faction slot is set (not "None").
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local badges = {} -- nameplate -> badge frame (reused with the nameplate)
 
@@ -32,18 +32,18 @@ end
 -- The target's left arrow sits just left of the name; while the badge is up it
 -- moves out past the badge instead of under it. Same fully-anchored form as
 -- the friendly plate builds (point+size regions drift inside plate subtrees).
-local function ArrowTo(fp, anchor)
+local function ArrowTo(fp, anchorFrame)
     local la = fp.leftArrow
-    if not la or fp._facArrowTo == anchor then
+    if not la or fp._facArrowTo == anchorFrame then
         return
     end
-    fp._facArrowTo = anchor
+    fp._facArrowTo = anchorFrame
     -- The width we set, never la:GetWidth(): the arrow hangs off the name, and a
     -- secret name (restricted content) makes its measured width secret.
-    local x = -(2 + (fp._arrowW or 16) / 2)
+    local posX = -(2 + (fp._arrowW or 16) / 2)
     la:ClearAllPoints()
-    la:SetPoint("TOP", anchor, "LEFT", x, 8)
-    la:SetPoint("BOTTOM", anchor, "LEFT", x, -8)
+    la:SetPoint("TOP", anchorFrame, "LEFT", posX, 8)
+    la:SetPoint("BOTTOM", anchorFrame, "LEFT", posX, -8)
 end
 
 -- Draw (or hide) the badge beside a friendly full plate's name. No events of
@@ -51,39 +51,39 @@ end
 -- dispatch and settings passes call it. A friendly plate exists only in
 -- full-plate mode and is released before its unit becomes an enemy plate.
 local function Refresh(fp)
-    local nameplate, unit = fp.nameplate, fp.unit
-    if not (nameplate and unit) then
+    local nameplate, unitToken = fp.nameplate, fp.unit
+    if not (nameplate and unitToken) then
         return
     end
     local b = badges[nameplate]
     local atlas, dim
     -- Slot None: no unit queries, only a badge left up from before is hidden.
-    if ns.NP_GetFactionSlot() ~= "none" then
-        atlas, dim = ns.NP_FactionBadge(unit)
+    if mod.NP_GetFactionSlot() ~= "none" then
+        atlas, dim = mod.NP_FactionBadge(unitToken)
     end
-    local fs = fp.name
-    if not (atlas and fs) then
+    local fontStr = fp.name
+    if not (atlas and fontStr) then
         if b then
             b:Hide()
         end
-        if fs then
-            ArrowTo(fp, fs)
+        if fontStr then
+            ArrowTo(fp, fontStr)
         end
         return
     end
     b = b or GetBadge(nameplate)
-    local sz = ns.NP_GetFactionIconSize()
+    local sz = mod.NP_GetFactionIconSize()
     b:SetSize(sz, sz)
     b:SetFrameLevel(nameplate:GetFrameLevel() + 5)
     b:ClearAllPoints()
-    b:SetPoint("RIGHT", fs, "LEFT", -2, 0)
+    b:SetPoint("RIGHT", fontStr, "LEFT", -2, 0)
     -- Repaint only when the art or the dim changes (inputs: faction, Icon Style, honor
     -- badge, dim).
-    local style = ns.NP_GetFactionStyle()
-    local badge = CludesUI.FactionBadgeFor(style, unit)
-    if b.facArt ~= atlas or b.facStyle ~= style or b.facBadge ~= badge then
-        CludesUI.SetFactionArt(b.tex, style, atlas, badge)
-        b.facArt, b.facStyle, b.facBadge = atlas, style, badge
+    local look = mod.NP_GetFactionStyle()
+    local badge = CludesUI.FactionBadgeFor(look, unitToken)
+    if b.facArt ~= atlas or b.facStyle ~= look or b.facBadge ~= badge then
+        CludesUI.SetFactionArt(b.tex, look, atlas, badge)
+        b.facArt, b.facStyle, b.facBadge = atlas, look, badge
     end
     if b.facDim ~= dim then
         b.tex:SetDesaturated(dim)
@@ -94,11 +94,11 @@ local function Refresh(fp)
     ArrowTo(fp, b)
 end
 
-ns.NP_FriendlyFactionRefresh = Refresh
+mod.NP_FriendlyFactionRefresh = Refresh
 
 -- The friendly plate is released (plate removed, switch to name-only) or its
 -- unit promoted to an enemy plate, which draws its own badge.
-function ns.NP_FriendlyFactionHide(fp)
+function mod.NP_FriendlyFactionHide(fp)
     local b = fp.nameplate and badges[fp.nameplate]
     if b then
         b:Hide()
@@ -109,9 +109,9 @@ function ns.NP_FriendlyFactionHide(fp)
 end
 
 -- Every friendly full plate: runs after a settings change or profile switch.
-function ns.NP_RefreshFriendlyFaction()
+function mod.NP_RefreshFriendlyFaction()
     -- Slot None costs one compare per plate: Refresh hides and puts arrows back.
-    for _, fp in pairs(ns.friendlyPlates) do
+    for _, fp in pairs(mod.friendlyPlates) do
         Refresh(fp)
     end
 end

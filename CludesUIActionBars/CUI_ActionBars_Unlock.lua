@@ -7,72 +7,72 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Bar position save and restore, and the Unlock Mode registration.
 --  Loads after CUI_ActionBars_ApplyAll.lua; reads ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local ipairs = ipairs
 local InCombatLockdown = InCombatLockdown
 
-local EAB = ns.EAB
-local I = ns._internals
-local BAR_CONFIG, EXTRA_BARS, SHAPE_BTN_EXPAND = I.BAR_CONFIG, I.EXTRA_BARS, I.SHAPE_BTN_EXPAND
-local barFrames, BLIZZ_MOVABLE_OVERLAY = I.barFrames, I.BLIZZ_MOVABLE_OVERLAY
-local blizzMovableHolders = I.blizzMovableHolders
-local LayoutBar = I.LayoutBar
+local ABAR = mod.EAB
+local Inner = mod._internals
+local BAR_CONFIG, EXTRA_BARS, SHAPE_BTN_EXPAND = Inner.BAR_CONFIG, Inner.EXTRA_BARS, Inner.SHAPE_BTN_EXPAND
+local barFrames, BLIZZ_MOVABLE_OVERLAY = Inner.barFrames, Inner.BLIZZ_MOVABLE_OVERLAY
+local blizzMovableHolders = Inner.blizzMovableHolders
+local LayoutBar = Inner.LayoutBar
 
 -------------------------------------------------------------------------------
 --  Position Save/Restore
 -------------------------------------------------------------------------------
 -- Convert CENTER position to edge for non-CENTER-grow bars (same pattern as CDM).
 -- Stored on EAB, not in a file local.
-function EAB:ConvertCenterToEdge(barKey, point, x, y)
-    if point ~= "CENTER" then
-        return point, x, y
+function ABAR:ConvertCenterToEdge(barId, anchorPoint, posX, posY)
+    if anchorPoint ~= "CENTER" then
+        return anchorPoint, posX, posY
     end
-    local cfg = self.db and self.db.profile and self.db.profile.bars and self.db.profile.bars[barKey]
-    local grow = cfg and cfg.growDirection
+    local conf = self.db and self.db.profile and self.db.profile.bars and self.db.profile.bars[barId]
+    local grow = conf and conf.growDirection
     if not grow then
-        return point, x, y
+        return anchorPoint, posX, posY
     end
     grow = grow:upper()
     if grow == "CENTER" then
-        return point, x, y
+        return anchorPoint, posX, posY
     end
-    local frame = barFrames[barKey]
-    if not frame then
-        return point, x, y
+    local widget = barFrames[barId]
+    if not widget then
+        return anchorPoint, posX, posY
     end
-    local fw = frame:GetWidth() or 0
-    local fh = frame:GetHeight() or 0
+    local fw = widget:GetWidth() or 0
+    local fh = widget:GetHeight() or 0
     if grow == "RIGHT" and fw > 0 then
-        return "LEFT", x - fw / 2, y
+        return "LEFT", posX - fw / 2, posY
     elseif grow == "LEFT" and fw > 0 then
-        return "RIGHT", x + fw / 2, y
+        return "RIGHT", posX + fw / 2, posY
     elseif grow == "DOWN" and fh > 0 then
-        return "TOP", x, y + fh / 2
+        return "TOP", posX, posY + fh / 2
     elseif grow == "UP" and fh > 0 then
-        return "BOTTOM", x, y - fh / 2
+        return "BOTTOM", posX, posY - fh / 2
     end
-    return point, x, y
+    return anchorPoint, posX, posY
 end
 
-function EAB:ConvertEdgeToCenter(barKey, pos)
-    if not pos or not pos.point then
-        return pos
+function ABAR:ConvertEdgeToCenter(barId, place)
+    if not place or not place.point then
+        return place
     end
-    local pt = pos.point
+    local pt = place.point
     if pt == "CENTER" then
-        return pos
+        return place
     end
     if pt ~= "LEFT" and pt ~= "RIGHT" and pt ~= "TOP" and pt ~= "BOTTOM" then
-        return pos
+        return place
     end
-    local frame = barFrames[barKey]
-    if not frame then
-        return pos
+    local widget = barFrames[barId]
+    if not widget then
+        return place
     end
-    local fw = frame:GetWidth() or 0
-    local fh = frame:GetHeight() or 0
-    local cx, cy = pos.x or 0, pos.y or 0
+    local fw = widget:GetWidth() or 0
+    local fh = widget:GetHeight() or 0
+    local cx, cy = place.x or 0, place.y or 0
     if pt == "LEFT" then
         cx = cx + fw / 2
     elseif pt == "RIGHT" then
@@ -82,61 +82,61 @@ function EAB:ConvertEdgeToCenter(barKey, pos)
     elseif pt == "BOTTOM" then
         cy = cy + fh / 2
     end
-    return { point = "CENTER", relPoint = pos.relPoint, x = cx, y = cy }
+    return { point = "CENTER", relPoint = place.relPoint, x = cx, y = cy }
 end
 
-local function SaveBarPosition(barKey)
-    local frame = barFrames[barKey]
-    if not frame then
+local function SaveBarPosition(barId)
+    local widget = barFrames[barId]
+    if not widget then
         return
     end
-    local point, _, relPoint, x, y = frame:GetPoint(1)
-    if point then
+    local anchorPoint, _, relPoint, posX, posY = widget:GetPoint(1)
+    if anchorPoint then
         -- Pixel-perfect snapping can leave sub-pixel offsets (0.5) on
         -- CENTER-anchored bars, and re-snapping on restore drifts 1px at some
         -- UI scales. Clamp near-zero CENTER offsets to exactly 0 so the
         -- restore-skip at RestoreBarPositions fires correctly.
-        if point == "CENTER" and relPoint == "CENTER" then
-            local es = frame:GetEffectiveScale() or 1
+        if anchorPoint == "CENTER" and relPoint == "CENTER" then
+            local es = widget:GetEffectiveScale() or 1
             local PPa = CludesUI and CludesUI.PP
             local onePx = PPa and PPa.perfect and (PPa.perfect / es) or 1
-            if math.abs(x) < onePx then
-                x = 0
+            if math.abs(posX) < onePx then
+                posX = 0
             end
-            if math.abs(y) < onePx then
-                y = 0
+            if math.abs(posY) < onePx then
+                posY = 0
             end
         end
-        EAB.db.profile.barPositions[barKey] = {
-            point = point,
+        ABAR.db.profile.barPositions[barId] = {
+            point = anchorPoint,
             relPoint = relPoint,
-            x = x,
-            y = y,
+            x = posX,
+            y = posY,
         }
     end
 end
 
 local function RestoreBarPositions()
-    local positions = EAB.db.profile.barPositions
+    local positions = ABAR.db.profile.barPositions
     if not positions then
         return
     end
     local PPa = CludesUI and CludesUI.PP
-    for _, info in ipairs(BAR_CONFIG) do
-        local key = info.key
-        local pos = positions[key]
-        local frame = barFrames[key]
-        if pos and frame then
+    for _, details in ipairs(BAR_CONFIG) do
+        local key = details.key
+        local place = positions[key]
+        local widget = barFrames[key]
+        if place and widget then
             -- Skip bars owned by the unlock anchor system: position is computed
             -- from the anchor chain, not saved barPositions.
             local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
             if anchored then
                 -- skip: anchor system owns this bar's position
             else
-                local pt = pos.point or "CENTER"
-                local rpt = pos.relPoint or pt
-                local px = pos.x or 0
-                local py = pos.y or 0
+                local pt = place.point or "CENTER"
+                local rpt = place.relPoint or pt
+                local px = place.x or 0
+                local py = place.y or 0
                 -- Skip CENTER 0,0: this is never an intentional position.
                 -- Anchored bars save 0,0 as a placeholder; their real position
                 -- comes from the anchor chain which resolves later.
@@ -148,18 +148,18 @@ local function RestoreBarPositions()
                     -- dimensions get the +0.5 center offset they need (plain
                     -- SnapForES drifts by 1px on save & exit for odd dimensions).
                     if PPa then
-                        local es = frame:GetEffectiveScale()
+                        local es = widget:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER" and rpt == "CENTER")
                         if isCenterAnchor and PPa.SnapCenterForDim then
-                            px = PPa.SnapCenterForDim(px, frame:GetWidth() or 0, es)
-                            py = PPa.SnapCenterForDim(py, frame:GetHeight() or 0, es)
+                            px = PPa.SnapCenterForDim(px, widget:GetWidth() or 0, es)
+                            py = PPa.SnapCenterForDim(py, widget:GetHeight() or 0, es)
                         elseif PPa.SnapForES then
                             px = PPa.SnapForES(px, es)
                             py = PPa.SnapForES(py, es)
                         end
                     end
-                    frame:ClearAllPoints()
-                    frame:SetPoint(pt, UIParent, rpt, px, py)
+                    widget:ClearAllPoints()
+                    widget:SetPoint(pt, UIParent, rpt, px, py)
                 end
             end -- anchored else
         end
@@ -181,15 +181,15 @@ local function RegisterWithUnlockMode()
     local elements = {}
     local orderBase = 200
 
-    for idx, info in ipairs(BAR_CONFIG) do
-        local key = info.key
+    for position, details in ipairs(BAR_CONFIG) do
+        local key = details.key
         elements[#elements + 1] = MK({
             key = key,
-            label = info.label,
+            label = details.label,
             group = "Action Bars",
-            order = orderBase + idx,
+            order = orderBase + position,
             isHidden = function()
-                local s = EAB.db.profile.bars[info.key]
+                local s = ABAR.db.profile.bars[details.key]
                 if not s then
                     return false
                 end
@@ -197,21 +197,21 @@ local function RegisterWithUnlockMode()
                 -- RefreshRuntimeVisibility does: a bar saved as Never but
                 -- surfaced by the keybind is on screen, so it needs a mover;
                 -- a saved-Always bar toggled off does not.
-                local ov = EAB._visOverride and EAB._visOverride[info.key]
-                if ov then
-                    return ov == "never"
+                local shade = ABAR._visOverride and ABAR._visOverride[details.key]
+                if shade then
+                    return shade == "never"
                 end
-                return EAB.VisibilityCompat.IsNever(s) or (EAB._padHide and s.gamepadHideBar == true)
+                return ABAR.VisibilityCompat.IsNever(s) or (ABAR._padHide and s.gamepadHideBar == true)
             end,
             getFrame = function()
-                return barFrames[info.key]
+                return barFrames[details.key]
             end,
             getSize = function()
-                local frame = barFrames[info.key]
-                if not frame then
+                local widget = barFrames[details.key]
+                if not widget then
                     return 1, 1
                 end
-                return frame:GetWidth(), frame:GetHeight()
+                return widget:GetWidth(), widget:GetHeight()
             end,
             linkedDimensions = true,
             -- Size matching works in every style: stock styles size their buttons
@@ -224,11 +224,11 @@ local function RegisterWithUnlockMode()
             -- paints with; nil for custom shapes (their ring sits inside the
             -- button), stock looks and non-square icons.
             getMatchPad = function()
-                local p = EAB.db and EAB.db.profile
-                if not (p and p.squareIcons) or ns.AB_Style() ~= "cui" then
+                local p = ABAR.db and ABAR.db.profile
+                if not (p and p.squareIcons) or mod.AB_Style() ~= "cui" then
                     return nil
                 end
-                local s = p.bars[info.key]
+                local s = p.bars[details.key]
                 if not s then
                     return nil
                 end
@@ -236,7 +236,7 @@ local function RegisterWithUnlockMode()
                 if shape ~= "none" and shape ~= "cropped" then
                     return nil
                 end
-                local sz, px = ns.ResolveBorderThickness(s)
+                local sz, px = mod.ResolveBorderThickness(s)
                 local c = s.borderColor
                 return CludesUI.BorderMatchPad(
                     sz,
@@ -252,14 +252,14 @@ local function RegisterWithUnlockMode()
                     c and c.a or 1
                 )
             end,
-            setWidth = function(_, w)
-                local s = EAB.db.profile.bars[info.key]
+            setWidth = function(_, wid)
+                local s = ABAR.db.profile.bars[details.key]
                 if not s then
                     return
                 end
                 -- Reverse-engineer square button size from total bar width
                 -- using physical pixel math to distribute remainder pixels.
-                local numIcons = s.overrideNumIcons or s.numIcons or info.count
+                local numIcons = s.overrideNumIcons or s.numIcons or details.count
                 local numRows = s.overrideNumRows or s.numRows or 1
                 if numRows < 1 then
                     numRows = 1
@@ -270,11 +270,11 @@ local function RegisterWithUnlockMode()
                 end
                 local isVert = (s.orientation == "vertical")
                 local pad = s.buttonPadding or 2
-                local shape = ns.AB_LayoutShape(s)
+                local shape = mod.AB_LayoutShape(s)
                 local cols = isVert and numRows or stride
-                local PP = CludesUI and CludesUI.PP
-                local onePx = PP and PP.mult or 1
-                local physTarget = math.floor(w / onePx + 0.5)
+                local Pix = CludesUI and CludesUI.PP
+                local onePx = Pix and Pix.mult or 1
+                local physTarget = math.floor(wid / onePx + 0.5)
                 local physPad = math.floor(pad / onePx + 0.5)
                 local rawPhysBtn = (physTarget - (cols - 1) * physPad) / cols
                 if shape ~= "none" and shape ~= "cropped" then
@@ -298,16 +298,16 @@ local function RegisterWithUnlockMode()
                 else
                     s._matchExtraPixels = nil
                 end
-                LayoutBar(info.key)
+                LayoutBar(details.key)
             end,
-            setHeight = function(_, h)
-                local s = EAB.db.profile.bars[info.key]
+            setHeight = function(_, hgt)
+                local s = ABAR.db.profile.bars[details.key]
                 if not s then
                     return
                 end
                 -- Reverse-engineer square button size from total bar height
                 -- using physical pixel math to distribute remainder pixels.
-                local numIcons = s.overrideNumIcons or s.numIcons or info.count
+                local numIcons = s.overrideNumIcons or s.numIcons or details.count
                 local numRows = s.overrideNumRows or s.numRows or 1
                 if numRows < 1 then
                     numRows = 1
@@ -318,13 +318,13 @@ local function RegisterWithUnlockMode()
                 end
                 local isVert = (s.orientation == "vertical")
                 local pad = s.buttonPadding or 2
-                local shape = ns.AB_LayoutShape(s)
-                local rows = isVert and stride or numRows
-                local PP = CludesUI and CludesUI.PP
-                local onePx = PP and PP.mult or 1
-                local physTarget = math.floor(h / onePx + 0.5)
+                local shape = mod.AB_LayoutShape(s)
+                local rowList = isVert and stride or numRows
+                local Pix = CludesUI and CludesUI.PP
+                local onePx = Pix and Pix.mult or 1
+                local physTarget = math.floor(hgt / onePx + 0.5)
                 local physPad = math.floor(pad / onePx + 0.5)
-                local rawPhysBtn = (physTarget - (rows - 1) * physPad) / rows
+                local rawPhysBtn = (physTarget - (rowList - 1) * physPad) / rowList
                 if shape ~= "none" and shape ~= "cropped" then
                     rawPhysBtn = rawPhysBtn - math.floor((SHAPE_BTN_EXPAND or 10) / onePx + 0.5)
                 elseif shape == "cropped" then
@@ -345,26 +345,26 @@ local function RegisterWithUnlockMode()
                 if shape == "cropped" then
                     croppedH = math.floor(basePhysBtn * 0.80)
                 end
-                local idealPhys = rows * croppedH + (rows - 1) * physPad
+                local idealPhys = rowList * croppedH + (rowList - 1) * physPad
                 local extra = physTarget - idealPhys
-                if extra > 0 and extra <= rows then
+                if extra > 0 and extra <= rowList then
                     s._matchExtraPixelsH = extra
                 else
                     s._matchExtraPixelsH = nil
                 end
-                LayoutBar(info.key)
+                LayoutBar(details.key)
             end,
-            savePos = function(_, point, relPoint, x, y)
-                if point and x and y then
-                    local sp, sx, sy = EAB:ConvertCenterToEdge(info.key, point, x, y)
-                    EAB.db.profile.barPositions[info.key] = {
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                if anchorPoint and posX and posY then
+                    local sp, sx, sy = ABAR:ConvertCenterToEdge(details.key, anchorPoint, posX, posY)
+                    ABAR.db.profile.barPositions[details.key] = {
                         point = sp,
-                        relPoint = relPoint or point,
+                        relPoint = relPoint or anchorPoint,
                         x = sx,
                         y = sy,
                     }
                 else
-                    SaveBarPosition(info.key)
+                    SaveBarPosition(details.key)
                 end
                 -- Follow baseline: capture the anchor target's geometry at save time so
                 -- ApplyAnchorPosition can shift the absolute saved growth edge by the
@@ -373,46 +373,46 @@ local function RegisterWithUnlockMode()
                 -- resizing chain target can follow; nil for unanchored/CENTER-grow
                 -- bars, leaving the follow off and the pure pin unchanged.
                 do
-                    local entry = EAB.db.profile.barPositions[info.key]
-                    local s = EAB.db.profile.bars[info.key]
+                    local record = ABAR.db.profile.barPositions[details.key]
+                    local s = ABAR.db.profile.bars[details.key]
                     local gd = s and (s.growDirection or "up"):upper()
-                    if entry and gd and gd ~= "CENTER" and CludesUI.GetAnchorTargetCenterUI then
-                        entry.tgtx, entry.tgty = CludesUI.GetAnchorTargetCenterUI(info.key)
+                    if record and gd and gd ~= "CENTER" and CludesUI.GetAnchorTargetCenterUI then
+                        record.tgtx, record.tgty = CludesUI.GetAnchorTargetCenterUI(details.key)
                         if CludesUI.GetAnchorTargetEdgesUI then
-                            entry.tgtL, entry.tgtR, entry.tgtT, entry.tgtB =
-                                CludesUI.GetAnchorTargetEdgesUI(info.key)
+                            record.tgtL, record.tgtR, record.tgtT, record.tgtB =
+                                CludesUI.GetAnchorTargetEdgesUI(details.key)
                         end
                     end
                 end
             end,
             loadPos = function()
-                return EAB:ConvertEdgeToCenter(info.key, EAB.db.profile.barPositions[info.key])
+                return ABAR:ConvertEdgeToCenter(details.key, ABAR.db.profile.barPositions[details.key])
             end,
             clearPos = function()
-                EAB.db.profile.barPositions[info.key] = nil
+                ABAR.db.profile.barPositions[details.key] = nil
             end,
             applyPos = function()
-                EAB:RecalcFlyoutDirection(info.key)
-                if CludesUI.IsPointAnchored(info.key) then
-                    CludesUI.ReapplyOwnAnchor(info.key)
+                ABAR:RecalcFlyoutDirection(details.key)
+                if CludesUI.IsPointAnchored(details.key) then
+                    CludesUI.ReapplyOwnAnchor(details.key)
                     return
                 end
                 -- Anchored bars: position owned by anchor system. But bars
                 -- with growth direction need edge bounds applied first so the
                 -- live-edge reading in ApplyAnchorPosition has correct data.
-                if CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(info.key) then
-                    local s = EAB.db.profile.bars[info.key]
+                if CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(details.key) then
+                    local s = ABAR.db.profile.bars[details.key]
                     local gd = s and (s.growDirection or "up"):upper()
                     if gd and gd ~= "CENTER" and gd ~= "UP" then
-                        local pos = EAB.db.profile.barPositions[info.key]
-                        local frame = barFrames[info.key]
-                        if pos and frame then
-                            local pt = pos.point or "CENTER"
-                            local px, py = pos.x or 0, pos.y or 0
+                        local place = ABAR.db.profile.barPositions[details.key]
+                        local widget = barFrames[details.key]
+                        if place and widget then
+                            local pt = place.point or "CENTER"
+                            local px, py = place.x or 0, place.y or 0
                             -- Convert CENTER to edge (like CDM's ApplyBarPositionCentered)
                             if pt == "CENTER" then
-                                local fw = frame:GetWidth() or 0
-                                local fh = frame:GetHeight() or 0
+                                local fw = widget:GetWidth() or 0
+                                local fh = widget:GetHeight() or 0
                                 if gd == "RIGHT" and fw > 0 then
                                     pt = "LEFT"
                                     px = px - fw / 2
@@ -427,37 +427,37 @@ local function RegisterWithUnlockMode()
                             if pt ~= "CENTER" then
                                 local PPa = CludesUI and CludesUI.PP
                                 if PPa and PPa.SnapForES then
-                                    local es = frame:GetEffectiveScale()
+                                    local es = widget:GetEffectiveScale()
                                     px = PPa.SnapForES(px, es)
                                     py = PPa.SnapForES(py, es)
                                 end
-                                frame:ClearAllPoints()
-                                frame:SetPoint(pt, UIParent, pos.relPoint or "CENTER", px, py)
+                                widget:ClearAllPoints()
+                                widget:SetPoint(pt, UIParent, place.relPoint or "CENTER", px, py)
                             end
                         end
                     end
                     return
                 end
-                local pos = EAB.db.profile.barPositions[info.key]
-                local frame = barFrames[info.key]
-                if pos and frame then
-                    local pt = pos.point
-                    local px, py = pos.x, pos.y
+                local place = ABAR.db.profile.barPositions[details.key]
+                local widget = barFrames[details.key]
+                if place and widget then
+                    local pt = place.point
+                    local px, py = place.x, place.y
                     local PPa = CludesUI and CludesUI.PP
                     if PPa and px and py then
-                        local es = frame:GetEffectiveScale()
+                        local es = widget:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER")
-                            and (pos.relPoint == "CENTER" or pos.relPoint == nil)
+                            and (place.relPoint == "CENTER" or place.relPoint == nil)
                         if isCenterAnchor and PPa.SnapCenterForDim then
-                            px = PPa.SnapCenterForDim(px, frame:GetWidth() or 0, es)
-                            py = PPa.SnapCenterForDim(py, frame:GetHeight() or 0, es)
+                            px = PPa.SnapCenterForDim(px, widget:GetWidth() or 0, es)
+                            py = PPa.SnapCenterForDim(py, widget:GetHeight() or 0, es)
                         elseif PPa.SnapForES then
                             px = PPa.SnapForES(px, es)
                             py = PPa.SnapForES(py, es)
                         end
                     end
-                    frame:ClearAllPoints()
-                    frame:SetPoint(pt, UIParent, pos.relPoint or pt, px, py)
+                    widget:ClearAllPoints()
+                    widget:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
                 end
             end,
         })
@@ -465,13 +465,13 @@ local function RegisterWithUnlockMode()
 
     -- Blizzard movable frames (Extra Action Button, Encounter Bar)
     local blizzOrder = orderBase + #BAR_CONFIG
-    for _, info in ipairs(EXTRA_BARS) do
-        if info.isBlizzardMovable then
+    for _, details in ipairs(EXTRA_BARS) do
+        if details.isBlizzardMovable then
             blizzOrder = blizzOrder + 1
-            local bk = info.key
+            local bk = details.key
             elements[#elements + 1] = MK({
                 key = bk,
-                label = info.label,
+                label = details.label,
                 group = "Action Bars",
                 order = blizzOrder,
                 noResize = true,
@@ -480,80 +480,80 @@ local function RegisterWithUnlockMode()
                 -- hides its holder: no mover, and the Cooldown Manager's group
                 -- loot rolls stop keeping clear of it.
                 isHidden = (bk == "ExtraActionButton") and function()
-                    local s = EAB.db.profile.bars[bk]
+                    local s = ABAR.db.profile.bars[bk]
                     if not s then
                         return false
                     end
-                    local ov = EAB._visOverride and EAB._visOverride[bk]
-                    if ov then
-                        return ov == "never"
+                    local shade = ABAR._visOverride and ABAR._visOverride[bk]
+                    if shade then
+                        return shade == "never"
                     end
-                    return EAB.VisibilityCompat.IsNever(s)
+                    return ABAR.VisibilityCompat.IsNever(s)
                 end or nil,
                 getFrame = function()
                     return blizzMovableHolders[bk]
                 end,
                 getSize = function()
-                    local ov = BLIZZ_MOVABLE_OVERLAY[bk]
-                    if ov then
-                        return ov.w, ov.h
+                    local shade = BLIZZ_MOVABLE_OVERLAY[bk]
+                    if shade then
+                        return shade.w, shade.h
                     end
                     return 50, 50
                 end,
-                savePos = function(_, point, relPoint, x, y)
-                    if point and x and y then
-                        EAB.db.profile.barPositions[bk] = {
-                            point = point,
-                            relPoint = relPoint or point,
-                            x = x,
-                            y = y,
+                savePos = function(_, anchorPoint, relPoint, posX, posY)
+                    if anchorPoint and posX and posY then
+                        ABAR.db.profile.barPositions[bk] = {
+                            point = anchorPoint,
+                            relPoint = relPoint or anchorPoint,
+                            x = posX,
+                            y = posY,
                         }
                     end
                     if not CludesUI._unlockActive then
-                        local holder = blizzMovableHolders[bk]
-                        if holder and point and x and y and not InCombatLockdown() then
-                            holder:ClearAllPoints()
-                            holder:SetPoint(point, UIParent, relPoint or point, x, y)
+                        local holderFrame = blizzMovableHolders[bk]
+                        if holderFrame and anchorPoint and posX and posY and not InCombatLockdown() then
+                            holderFrame:ClearAllPoints()
+                            holderFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
                         end
                     end
                 end,
                 loadPos = function()
-                    local pos = EAB.db.profile.barPositions[bk]
-                    if not pos then
+                    local place = ABAR.db.profile.barPositions[bk]
+                    if not place then
                         return nil
                     end
-                    local pt = pos.point
-                    return { point = pt, relPoint = pos.relPoint or pt, x = pos.x, y = pos.y }
+                    local pt = place.point
+                    return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
                 end,
                 clearPos = function()
-                    EAB.db.profile.barPositions[bk] = nil
+                    ABAR.db.profile.barPositions[bk] = nil
                 end,
                 applyPos = function()
-                    local pos = EAB.db.profile.barPositions[bk]
-                    local holder = blizzMovableHolders[bk]
-                    if not holder or InCombatLockdown() then
+                    local place = ABAR.db.profile.barPositions[bk]
+                    local holderFrame = blizzMovableHolders[bk]
+                    if not holderFrame or InCombatLockdown() then
                         return
                     end
-                    holder:ClearAllPoints()
-                    if pos then
-                        local pt = pos.point
-                        local px, py = pos.x, pos.y
+                    holderFrame:ClearAllPoints()
+                    if place then
+                        local pt = place.point
+                        local px, py = place.x, place.y
                         local PPa = CludesUI and CludesUI.PP
                         if PPa and px and py then
-                            local es = holder:GetEffectiveScale()
+                            local es = holderFrame:GetEffectiveScale()
                             local isCenterAnchor = (pt == "CENTER")
-                                and (pos.relPoint == "CENTER" or pos.relPoint == nil)
+                                and (place.relPoint == "CENTER" or place.relPoint == nil)
                             if isCenterAnchor and PPa.SnapCenterForDim then
-                                px = PPa.SnapCenterForDim(px, holder:GetWidth() or 0, es)
-                                py = PPa.SnapCenterForDim(py, holder:GetHeight() or 0, es)
+                                px = PPa.SnapCenterForDim(px, holderFrame:GetWidth() or 0, es)
+                                py = PPa.SnapCenterForDim(py, holderFrame:GetHeight() or 0, es)
                             elseif PPa.SnapForES then
                                 px = PPa.SnapForES(px, es)
                                 py = PPa.SnapForES(py, es)
                             end
                         end
-                        holder:SetPoint(pt, UIParent, pos.relPoint or pt, px, py)
+                        holderFrame:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
                     else
-                        holder:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
+                        holderFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
                     end
                 end,
             })
@@ -568,12 +568,12 @@ local function RegisterWithUnlockMode()
     -- applyPos already pre-positioned them at the edge and the authoritative
     -- pass preserves that via live-edge reading.
     if CludesUI.ReapplyOwnAnchor then
-        for _, info in ipairs(BAR_CONFIG) do
-            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(info.key) then
-                local s = EAB.db.profile.bars[info.key]
+        for _, details in ipairs(BAR_CONFIG) do
+            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(details.key) then
+                local s = ABAR.db.profile.bars[details.key]
                 local gd = s and (s.growDirection or "up"):upper()
                 if not gd or gd == "CENTER" or gd == "UP" then
-                    CludesUI.ReapplyOwnAnchor(info.key)
+                    CludesUI.ReapplyOwnAnchor(details.key)
                 end
             end
         end
@@ -581,4 +581,4 @@ local function RegisterWithUnlockMode()
 end
 
 -- Entry points the files after this one re-import by name.
-I.RestoreBarPositions, I.RegisterWithUnlockMode = RestoreBarPositions, RegisterWithUnlockMode
+Inner.RestoreBarPositions, Inner.RegisterWithUnlockMode = RestoreBarPositions, RegisterWithUnlockMode

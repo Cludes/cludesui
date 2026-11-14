@@ -643,14 +643,14 @@ CludesUI.BUFF_PRESETS = RUNNING
 --   BUFF_PRESET_OTHER_FILTERS      the other client's preset list (key, name)
 local function IdSets(presets)
     local sets = {}
-    for key, list in pairs(presets.spells) do
+    for key, entries in pairs(presets.spells) do
         local set = {}
-        for id, info in pairs(list) do
-            set[id] = true
-            local alts = info.alts
+        for ident, details in pairs(entries) do
+            set[ident] = true
+            local alts = details.alts
             if alts then
-                for i = 1, #alts do
-                    set[alts[i]] = true
+                for idx = 1, #alts do
+                    set[alts[idx]] = true
                 end
             end
         end

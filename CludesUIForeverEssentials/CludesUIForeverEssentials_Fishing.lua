@@ -110,36 +110,36 @@ local worldHooked = false
 -------------------------------------------------------------------------------
 local function ResolveFishing()
     fishingID, fishingName = nil, nil
-    for i = 1, #FISHING_SPELLS do
-        local id = FISHING_SPELLS[i]
-        if IsPlayerSpell(id) then
-            fishingID, fishingName = id, C_Spell.GetSpellName(id)
+    for idx = 1, #FISHING_SPELLS do
+        local ident = FISHING_SPELLS[idx]
+        if IsPlayerSpell(ident) then
+            fishingID, fishingName = ident, C_Spell.GetSpellName(ident)
             return
         end
     end
 end
 
-local function IsPole(id)
-    local _, _, _, _, _, classID, subClassID = C_Item.GetItemInfoInstant(id)
+local function IsPole(ident)
+    local _, _, _, _, _, classID, subClassID = C_Item.GetItemInfoInstant(ident)
     return classID == Enum.ItemClass.Weapon and subClassID == Enum.ItemWeaponSubclass.Fishingpole
 end
 
 -- WoW Forever fishes with the pole in the main hand.
 local function PoleInHand()
-    local id = GetInventoryItemID("player", INVSLOT_MAINHAND)
-    return id ~= nil and IsPole(id)
+    local ident = GetInventoryItemID("player", INVSLOT_MAINHAND)
+    return ident ~= nil and IsPole(ident)
 end
 
 -- The best fishing pole in the bags (highest item level), or nil.
 local function PoleInBags()
     local best, bestLevel
     for bag = 0, NUM_BAG_SLOTS do
-        for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local id = C_Container.GetContainerItemID(bag, slot)
-            if id and IsPole(id) then
-                local level = select(4, C_Item.GetItemInfo(id)) or 0
+        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident = C_Container.GetContainerItemID(bag, slotIndex)
+            if ident and IsPole(ident) then
+                local level = select(4, C_Item.GetItemInfo(ident)) or 0
                 if not best or level > bestLevel then
-                    best, bestLevel = id, level
+                    best, bestLevel = ident, level
                 end
             end
         end
@@ -148,57 +148,61 @@ local function PoleInBags()
 end
 
 local function BestLure()
-    for i = 1, #LURES do
-        if C_Item.GetItemCount(LURES[i]) > 0 then
-            return LURES[i]
+    for idx = 1, #LURES do
+        if C_Item.GetItemCount(LURES[idx]) > 0 then
+            return LURES[idx]
         end
     end
 end
 
 -- The game object ID in a "GameObject-0-...-35591-..." GUID, or nil.
-local function ObjectID(guid)
-    if not guid or issecretvalue(guid) then
+local function ObjectID(unitGuid)
+    if not unitGuid or issecretvalue(unitGuid) then
         return nil
     end
     -- Only the object's ID field is read: the server and spawn fields before
     -- and after it may be obfuscated.
-    return tonumber(guid:match("^GameObject%-[^-]*%-[^-]*%-[^-]*%-[^-]*%-(%d+)%-"))
+    return tonumber(unitGuid:match("^GameObject%-[^-]*%-[^-]*%-[^-]*%-[^-]*%-(%d+)%-"))
 end
 
 -------------------------------------------------------------------------------
 --  Held CVars
 -------------------------------------------------------------------------------
-local function CVarText(v)
-    return v % 1 == 0 and tostring(v) or ("%.2f"):format(v)
+local function CVarText(val)
+    return val % 1 == 0 and tostring(val) or ("%.2f"):format(val)
 end
 
-local function Hold(set, cvars)
-    local cfg = F.Cfg()
-    cfg.held = cfg.held or {}
-    if cfg.held[set] then
+local function Hold(group, cvars)
+    local conf = F.Cfg()
+    conf.held = conf.held or {}
+    if conf.held[group] then
         return
     end
     local was = {}
     for name, value in pairs(cvars) do
-        local cur = C_CVar.GetCVar(name)
-        local want = cur and CVarText(value(tonumber(cur) or 0))
-        if cur ~= nil and cur ~= want and CludesUI.HoldCVar(name, want, "CludesUIForeverEssentials") then
-            was[name] = cur
+        local current = C_CVar.GetCVar(name)
+        local wanted = current and CVarText(value(tonumber(current) or 0))
+        if
+            current ~= nil
+            and current ~= wanted
+            and CludesUI.HoldCVar(name, wanted, "CludesUIForeverEssentials")
+        then
+            was[name] = current
         end
     end
-    cfg.held[set] = was
+    conf.held[group] = was
 end
 
-local function Release(set)
+local function Release(group)
     local held = F.Read().held
-    local was = held and held[set]
+    local was = held and held[group]
     if not was then
         return
     end
     for name, value in pairs(was) do
         CludesUI.ReleaseCVar(name, value, "CludesUIForeverEssentials")
     end
-    held[set] = nil
+    held[group] = nil
 end
 
 -------------------------------------------------------------------------------
@@ -220,7 +224,7 @@ local function BuildIndicator()
     if indicator then
         return
     end
-    local PP = CludesUI.PP
+    local Pix = CludesUI.PP
     indicator = CreateFrame("Frame", nil, UIParent)
     indicator:SetSize(INDICATOR_SIZE, INDICATOR_SIZE)
     indicator:SetFrameStrata("HIGH")
@@ -228,12 +232,12 @@ local function BuildIndicator()
     indicator:SetMouseMotionEnabled(true)
     indicator:SetMouseClickEnabled(false)
     indicator:Hide()
-    local icon = indicator:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexture(ICON)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    indicator.icon = icon
-    PP.CreateBorder(indicator, 1, 0.2, 0.2, 1, 2, "OVERLAY", 2)
+    local glyph = indicator:CreateTexture(nil, "ARTWORK")
+    glyph:SetAllPoints()
+    glyph:SetTexture(ICON)
+    glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    indicator.icon = glyph
+    Pix.CreateBorder(indicator, 1, 0.2, 0.2, 1, 2, "OVERLAY", 2)
     -- The key, clipped to the icon's width.
     local key = indicator:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     key:SetPoint("BOTTOM", 0, 3)
@@ -409,13 +413,13 @@ end
 
 -- A second right-click on the world soon after the first: bound to the
 -- button just for this click.
-local function OnWorldMouseDown(_, button)
-    if button ~= "RightButton" or not F.Get("doubleClick") or CludesUI.PadGamepadUI() then
+local function OnWorldMouseDown(_, btnFrame)
+    if btnFrame ~= "RightButton" or not F.Get("doubleClick") or CludesUI.PadGamepadUI() then
         return
     end
-    local now = GetTime()
-    local double = now - lastRightClick < DOUBLE_CLICK_DELAY
-    lastRightClick = double and 0 or now
+    local nowTime = GetTime()
+    local double = nowTime - lastRightClick < DOUBLE_CLICK_DELAY
+    lastRightClick = double and 0 or nowTime
     if
         not double
         or not castButton
@@ -436,8 +440,8 @@ end
 -------------------------------------------------------------------------------
 --  Events
 -------------------------------------------------------------------------------
-ev:SetScript("OnEvent", function(_, event, _, arg2, arg3)
-    if event == "PLAYER_SOFT_INTERACT_CHANGED" then
+ev:SetScript("OnEvent", function(_, evt, _, arg2, arg3)
+    if evt == "PLAYER_SOFT_INTERACT_CHANGED" then
         -- arg2: the new soft interact target. The bobber with the line in the
         -- water: the key reels in. Anything else: it casts again.
         if InCombatLockdown() then
@@ -453,7 +457,7 @@ ev:SetScript("OnEvent", function(_, event, _, arg2, arg3)
         else
             StopReel()
         end
-    elseif event == "UNIT_SPELLCAST_CHANNEL_START" then
+    elseif evt == "UNIT_SPELLCAST_CHANNEL_START" then
         -- arg3: the spell ID
         if not (fishingName and arg3) or issecretvalue(arg3) then
             return
@@ -463,16 +467,16 @@ ev:SetScript("OnEvent", function(_, event, _, arg2, arg3)
             StartSession()
             UpdateIndicator()
         end
-    elseif event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+    elseif evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
         lineOut = false
         StopReel()
         UpdateIndicator()
-    elseif event == "SPELLS_CHANGED" then
+    elseif evt == "SPELLS_CHANGED" then
         ResolveFishing()
     else
         -- PLAYER_STARTED_MOVING, PLAYER_REGEN_DISABLED (bindings can still
         -- change), PLAYER_LEAVING_WORLD
-        if event == "PLAYER_REGEN_DISABLED" then
+        if evt == "PLAYER_REGEN_DISABLED" then
             ClearOverrideBindings(clickOwner)
             clickArmed = false
         end
@@ -498,8 +502,8 @@ local function Apply()
         booted = true
         local held = F.Read().held
         if held then
-            for set in pairs(held) do
-                Release(set)
+            for group in pairs(held) do
+                Release(group)
             end
         end
     end
@@ -518,8 +522,8 @@ local function Apply()
     if IndicatorOn() then
         BuildIndicator()
     end -- placed in Unlock Mode before the first cast
-    for i = 1, #FEATURE_EVENTS do
-        ev:RegisterEvent(FEATURE_EVENTS[i])
+    for idx = 1, #FEATURE_EVENTS do
+        ev:RegisterEvent(FEATURE_EVENTS[idx])
     end
     ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
     ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")

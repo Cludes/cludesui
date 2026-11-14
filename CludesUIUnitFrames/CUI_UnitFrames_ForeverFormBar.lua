@@ -26,7 +26,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Cost: off = no frames, no events. On: UNIT_DISPLAYPOWER only, plus the
 --  form power's events while the bar shows.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
 if not (CludesUI and CludesUI.IS_FOREVER) then
     return
@@ -48,15 +48,15 @@ local evf = CreateFrame("Frame")
 -- pt / token (the form's power type as last read), text ("cur" / "pct" /
 -- "both" while the text shows, else nil) with its format strings fmtPct and
 -- fmtBoth (built per apply, so a paint builds no string).
-local S = { on = false, live = false, shown = false }
+local Stl = { on = false, live = false, shown = false }
 
 local Secret = CludesUI.IsSecret
 
 -- The bar while it shows, else nil: the bottom-anchored player auras reserve
 -- the space it takes under the frame (CUI_UnitFrames_AuraContainers.lua).
-function ns.UF_ForeverFormBarShown()
-    if S.shown then
-        return S.bar
+function mod.UF_ForeverFormBarShown()
+    if Stl.shown then
+        return Stl.bar
     end
 end
 
@@ -69,34 +69,37 @@ local function Reanchor()
 end
 
 -- The form text's own setting; unset follows the power bar's.
-local function FormVal(s, key, base, def)
-    local v = s[key]
-    if v == nil then
-        v = s[base]
+local function FormVal(s, key, baseValue, spec_def)
+    local val = s[key]
+    if val == nil then
+        val = s[baseValue]
     end
-    if v == nil then
-        v = def
+    if val == nil then
+        val = spec_def
     end
-    return v
+    return val
 end
 
 local function Paint()
-    local bar, pt = S.bar, S.pt
-    if not (bar and pt) then
+    local barFrame, pt = Stl.bar, Stl.pt
+    if not (barFrame and pt) then
         return
     end
-    bar:SetMinMaxValues(0, UnitPowerMax("player", pt))
-    bar:SetValue(UnitPower("player", pt))
-    local mode = S.text
-    if mode == "cur" then
-        bar.text:SetFormattedText("%d", UnitPower("player", pt))
-    elseif mode == "pct" then
-        bar.text:SetFormattedText(S.fmtPct, UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100))
-    elseif mode == "curmax" then
-        bar.text:SetFormattedText("%d / %d", UnitPower("player", pt), UnitPowerMax("player", pt))
-    elseif mode == "both" then
-        bar.text:SetFormattedText(
-            S.fmtBoth,
+    barFrame:SetMinMaxValues(0, UnitPowerMax("player", pt))
+    barFrame:SetValue(UnitPower("player", pt))
+    local modeName = Stl.text
+    if modeName == "cur" then
+        barFrame.text:SetFormattedText("%d", UnitPower("player", pt))
+    elseif modeName == "pct" then
+        barFrame.text:SetFormattedText(
+            Stl.fmtPct,
+            UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100)
+        )
+    elseif modeName == "curmax" then
+        barFrame.text:SetFormattedText("%d / %d", UnitPower("player", pt), UnitPowerMax("player", pt))
+    elseif modeName == "both" then
+        barFrame.text:SetFormattedText(
+            Stl.fmtBoth,
             UnitPower("player", pt),
             UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100)
         )
@@ -105,17 +108,17 @@ end
 
 -- The form power's colour at Power Bar Opacity, and the power bar's background.
 local function Color()
-    local s, bar = S.settings, S.bar
-    local info = S.token and CludesUI.GetPowerColor(S.token)
+    local s, barFrame = Stl.settings, Stl.bar
+    local details = Stl.token and CludesUI.GetPowerColor(Stl.token)
     local r, g, b = 1, 1, 1
-    if info then
-        r, g, b = info.r, info.g, info.b
+    if details then
+        r, g, b = details.r, details.g, details.b
     end
     local op = s.powerBarOpacity or 100
     if op <= 1.0 then
         op = op * 100
     end
-    bar:SetStatusBarColor(r, g, b, op / 100)
+    barFrame:SetStatusBarColor(r, g, b, op / 100)
     -- Form Text Color: power-coloured takes the form's colour, else custom or
     -- white. Neither set follows the power bar's Text Color.
     local pc, tc = s.foreverFormTextPowerColor, s.foreverFormTextColor
@@ -123,31 +126,31 @@ local function Color()
         pc, tc = s.powerPercentTextPowerColor, s.powerTextColor
     end
     if pc then
-        bar.text:SetTextColor(r, g, b)
+        barFrame.text:SetTextColor(r, g, b)
     elseif tc then
-        bar.text:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
+        barFrame.text:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
     else
-        bar.text:SetTextColor(1, 1, 1)
+        barFrame.text:SetTextColor(1, 1, 1)
     end
     if s.powerBgPowerColored then
         local f = CludesUI.GetPowerBgDarkenFactor()
-        bar.bg:SetColorTexture(r * f, g * f, b * f, 1)
+        barFrame.bg:SetColorTexture(r * f, g * f, b * f, 1)
     else
         local c = s.customPowerBgColor
         if c then
-            bar.bg:SetColorTexture(c.r, c.g, c.b, 1)
+            barFrame.bg:SetColorTexture(c.r, c.g, c.b, 1)
         else
-            bar.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
+            barFrame.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
         end
     end
 end
 
-local function SetLive(on)
-    if S.live == on then
+local function SetLive(enabled)
+    if Stl.live == enabled then
         return
     end
-    S.live = on
-    if on then
+    Stl.live = enabled
+    if enabled then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
         evf:RegisterUnitEvent("UNIT_MAXPOWER", "player")
     else
@@ -160,93 +163,98 @@ end
 -- read keeps the last verdict. laidOut: the bar was just laid out, so a
 -- shown bar may have moved.
 local function Sync(laidOut)
-    local bar = S.bar
-    if not bar then
+    local barFrame = Stl.bar
+    if not barFrame then
         return
     end
     local pt, token = UnitPowerType("player")
     if Secret(pt) or Secret(token) then
-        if laidOut and S.shown then
+        if laidOut and Stl.shown then
             Reanchor()
         end
         return
     end
-    local show = S.on and pt ~= MANA
+    local show = Stl.on and pt ~= MANA
     if show then
-        S.pt, S.token = pt, token
+        Stl.pt, Stl.token = pt, token
         Color()
         Paint()
     end
     SetLive(show)
-    bar:SetShown(show)
-    if show ~= S.shown or (show and laidOut) then
-        S.shown = show
+    barFrame:SetShown(show)
+    if show ~= Stl.shown or (show and laidOut) then
+        Stl.shown = show
         Reanchor()
     end
 end
 
-evf:SetScript("OnEvent", function(_, event, _, token)
-    if event == "UNIT_DISPLAYPOWER" then
+evf:SetScript("OnEvent", function(_, evt, _, token)
+    if evt == "UNIT_DISPLAYPOWER" then
         Sync()
-    elseif event == "UNIT_MAXPOWER" or Secret(token) or token == S.token then
+    elseif evt == "UNIT_MAXPOWER" or Secret(token) or token == Stl.token then
         Paint()
     end
 end)
 
-local function Build(frame)
-    local bar = CreateFrame("StatusBar", nil, frame)
-    bar:SetStatusBarTexture(WHITE)
-    local bg = bar:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bar.bg = bg
+local function Build(widget)
+    local barFrame = CreateFrame("StatusBar", nil, widget)
+    barFrame:SetStatusBarTexture(WHITE)
+    local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    barFrame.bg = backdrop
     -- Border on its own child frame (the canonical pattern).
-    local bdr = CreateFrame("Frame", nil, bar)
-    bdr:SetAllPoints(bar)
+    local bdr = CreateFrame("Frame", nil, barFrame)
+    bdr:SetAllPoints(barFrame)
     CludesUI.PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
-    bar.border = bdr
+    barFrame.border = bdr
     -- Text on a frame over the border.
-    local tf = CreateFrame("Frame", nil, bar)
-    tf:SetAllPoints(bar)
-    bar.textFrame = tf
-    bar.text = tf:CreateFontString(nil, "OVERLAY")
-    bar.text:SetWordWrap(false)
-    bar:Hide()
-    S.bar = bar
+    local tf = CreateFrame("Frame", nil, barFrame)
+    tf:SetAllPoints(barFrame)
+    barFrame.textFrame = tf
+    barFrame.text = tf:CreateFontString(nil, "OVERLAY")
+    barFrame.text:SetWordWrap(false)
+    barFrame:Hide()
+    Stl.bar = barFrame
 end
 
 -- The Form Power Text settings (format, position, size, offsets, percent
 -- sign); each unset one follows the power bar's. Smart shows the value (form
 -- power is never mana).
 local function StyleText(s)
-    local fs = S.bar.text
-    local pos = FormVal(s, "foreverFormTextPos", "powerPercentText", "none")
+    local fontStr = Stl.bar.text
+    local place = FormVal(s, "foreverFormTextPos", "powerPercentText", "none")
     local fmt = FormVal(s, "foreverFormTextFormat", "powerTextFormat", "perpp")
-    if pos == "none" or fmt == "none" then
-        S.text = nil
-        fs:Hide()
+    if place == "none" or fmt == "none" then
+        Stl.text = nil
+        fontStr:Hide()
         return
     end
-    S.text = (fmt == "curpp" or fmt == "smart") and "cur"
+    Stl.text = (fmt == "curpp" or fmt == "smart") and "cur"
         or (fmt == "curmaxpp" and "curmax")
         or (fmt == "both" and "both")
         or "pct"
     local sign = (FormVal(s, "foreverFormShowPercent", "powerShowPercent", true) ~= false) and "%%" or ""
-    S.fmtPct, S.fmtBoth = "%d" .. sign, "%d | %d" .. sign
-    CludesUI.ApplyModuleFont(fs, nil, FormVal(s, "foreverFormTextSize", "powerPercentSize", 9), "unitFrames")
+    Stl.fmtPct, Stl.fmtBoth = "%d" .. sign, "%d | %d" .. sign
+    CludesUI.ApplyModuleFont(
+        fontStr,
+        nil,
+        FormVal(s, "foreverFormTextSize", "powerPercentSize", 9),
+        "unitFrames"
+    )
     local ox = FormVal(s, "foreverFormTextX", "powerPercentX", 0)
     local oy = FormVal(s, "foreverFormTextY", "powerPercentY", 0)
-    fs:ClearAllPoints()
-    if pos == "left" then
-        fs:SetJustifyH("LEFT")
-        fs:SetPoint("LEFT", S.bar, "LEFT", 2 + ox, oy)
-    elseif pos == "right" then
-        fs:SetJustifyH("RIGHT")
-        fs:SetPoint("RIGHT", S.bar, "RIGHT", -2 + ox, oy)
+    fontStr:ClearAllPoints()
+    if place == "left" then
+        fontStr:SetJustifyH("LEFT")
+        fontStr:SetPoint("LEFT", Stl.bar, "LEFT", 2 + ox, oy)
+    elseif place == "right" then
+        fontStr:SetJustifyH("RIGHT")
+        fontStr:SetPoint("RIGHT", Stl.bar, "RIGHT", -2 + ox, oy)
     else
-        fs:SetJustifyH("CENTER")
-        fs:SetPoint("CENTER", S.bar, "CENTER", ox, oy)
+        fontStr:SetJustifyH("CENTER")
+        fontStr:SetPoint("CENTER", Stl.bar, "CENTER", ox, oy)
     end
-    fs:Show()
+    fontStr:Show()
 end
 
 -- Under the bars, every stock art ends at the power track's edge (vis.b is
@@ -254,22 +262,22 @@ end
 -- has a rim below it, so the bar drops past that.
 local FOREVER_RIM_DROP = 3
 
-local function Layout(frame, power, s)
-    local bar, PP = S.bar, CludesUI.PP
-    local pos = ns.UF_PowerPos(s)
-    local detached = (pos == "detached_top" or pos == "detached_bottom")
+local function Layout(widget, power, s)
+    local barFrame, Pix = Stl.bar, CludesUI.PP
+    local place = mod.UF_PowerPos(s)
+    local detached = (place == "detached_top" or place == "detached_bottom")
     -- A stock look draws an attached power bar inside its frame art.
-    local G = (not detached) and ns.UF_Blizz() and ns.UF_BlizzGeom(frame)
-    local bs, c, h
+    local G = (not detached) and mod.UF_Blizz() and mod.UF_BlizzGeom(widget)
+    local bs, c, hgt
     -- Form Bar X / Y Offset (Power Type cog).
     local ox, oy = s.foreverFormBarX or 0, s.foreverFormBarY or 0
-    bar:ClearAllPoints()
+    barFrame:ClearAllPoints()
     if G and G.power and G.vis and G.h then
         -- Just under the art, lined up with the power bar.
-        bs, h = 1, G.power.h
-        local drop = ns.UF_Forever() and FOREVER_RIM_DROP or 0
-        bar:SetPoint("TOPLEFT", power, "BOTTOMLEFT", ox, oy - drop)
-        bar:SetPoint("TOPRIGHT", power, "BOTTOMRIGHT", ox, oy - drop)
+        bs, hgt = 1, G.power.h
+        local drop = mod.UF_Forever() and FOREVER_RIM_DROP or 0
+        barFrame:SetPoint("TOPLEFT", power, "BOTTOMLEFT", ox, oy - drop)
+        barFrame:SetPoint("TOPRIGHT", power, "BOTTOMRIGHT", ox, oy - drop)
     else
         -- Against the power bar, overlapping by the border so the two share
         -- one line: the frame's border on an attached bar, its own when detached.
@@ -278,62 +286,62 @@ local function Layout(frame, power, s)
         else
             bs, c = s.borderSize or 1, s.borderColor
         end
-        h = power:GetHeight()
-        local overlap = bs * PP.mult
-        if pos == "above" or pos == "detached_top" then
-            bar:SetPoint("BOTTOMLEFT", power, "TOPLEFT", ox, oy - overlap)
-            bar:SetPoint("BOTTOMRIGHT", power, "TOPRIGHT", ox, oy - overlap)
+        hgt = power:GetHeight()
+        local overlap = bs * Pix.mult
+        if place == "above" or place == "detached_top" then
+            barFrame:SetPoint("BOTTOMLEFT", power, "TOPLEFT", ox, oy - overlap)
+            barFrame:SetPoint("BOTTOMRIGHT", power, "TOPRIGHT", ox, oy - overlap)
         else
-            bar:SetPoint("TOPLEFT", power, "BOTTOMLEFT", ox, oy + overlap)
-            bar:SetPoint("TOPRIGHT", power, "BOTTOMRIGHT", ox, oy + overlap)
+            barFrame:SetPoint("TOPLEFT", power, "BOTTOMLEFT", ox, oy + overlap)
+            barFrame:SetPoint("TOPRIGHT", power, "BOTTOMRIGHT", ox, oy + overlap)
         end
     end
-    bar:SetHeight(math.max(1, h or 1))
-    local fill = power:GetStatusBarTexture()
-    bar:SetStatusBarTexture((fill and fill:GetTexture()) or WHITE)
+    barFrame:SetHeight(math.max(1, hgt or 1))
+    local fillTex = power:GetStatusBarTexture()
+    barFrame:SetStatusBarTexture((fillTex and fillTex:GetTexture()) or WHITE)
     -- Textured Background: as the power bar's (Color() paints it next).
-    ns.UF_TexBgTint(bar.bg, power.bg and power.bg._cuiTexPath)
-    bar:SetReverseFill(s.powerReverseFill and true or false)
+    mod.UF_TexBgTint(barFrame.bg, power.bg and power.bg._cuiTexPath)
+    barFrame:SetReverseFill(s.powerReverseFill and true or false)
     if bs > 0 then
-        PP.UpdateBorder(bar.border, bs, c and c.r or 0, c and c.g or 0, c and c.b or 0, 1)
-        bar.border:Show()
+        Pix.UpdateBorder(barFrame.border, bs, c and c.r or 0, c and c.g or 0, c and c.b or 0, 1)
+        barFrame.border:Show()
     else
-        bar.border:Hide()
+        barFrame.border:Hide()
     end
 end
 
 -- frame: the player frame; power: its power bar; s: the player settings.
-function ns.UF_ForeverFormBar(frame, power, s)
-    local ov = s and s.powerTypeOverride
-    S.on = (power and ov and ov.foreverDruid and s.foreverFormBar and ns.UF_PowerBarDraws(s))
+function mod.UF_ForeverFormBar(widget, power, s)
+    local shade = s and s.powerTypeOverride
+    Stl.on = (power and shade and shade.foreverDruid and s.foreverFormBar and mod.UF_PowerBarDraws(s))
             and true
         or false
-    if not S.on then
+    if not Stl.on then
         evf:UnregisterAllEvents()
-        S.live = false
-        if S.bar then
-            S.bar:Hide()
+        Stl.live = false
+        if Stl.bar then
+            Stl.bar:Hide()
         end
-        if S.shown then
-            S.shown = false
+        if Stl.shown then
+            Stl.shown = false
             Reanchor()
         end
         return
     end
-    if not S.bar then
-        Build(frame)
+    if not Stl.bar then
+        Build(widget)
     end
-    local bar = S.bar
-    if bar:GetParent() ~= frame then
-        bar:SetParent(frame)
+    local barFrame = Stl.bar
+    if barFrame:GetParent() ~= widget then
+        barFrame:SetParent(widget)
     end
     -- The power bar's strata (a detached one can sit higher) and a level over it.
-    bar:SetFrameStrata(power:GetFrameStrata())
-    bar:SetFrameLevel(power:GetFrameLevel() + 1)
-    bar.border:SetFrameLevel(bar:GetFrameLevel() + 5)
-    bar.textFrame:SetFrameLevel(bar:GetFrameLevel() + 6)
-    S.settings, S.frame, S.power = s, frame, power
-    Layout(frame, power, s)
+    barFrame:SetFrameStrata(power:GetFrameStrata())
+    barFrame:SetFrameLevel(power:GetFrameLevel() + 1)
+    barFrame.border:SetFrameLevel(barFrame:GetFrameLevel() + 5)
+    barFrame.textFrame:SetFrameLevel(barFrame:GetFrameLevel() + 6)
+    Stl.settings, Stl.frame, Stl.power = s, widget, power
+    Layout(widget, power, s)
     StyleText(s)
     evf:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
     Sync(true)
@@ -341,11 +349,11 @@ end
 
 -- The form bar's own options re-apply only this bar: a full frame reload per
 -- slider step visibly rebuilds the player frame.
-function ns.UF_ForeverFormBarRelayout()
-    if not (S.on and S.bar) then
+function mod.UF_ForeverFormBarRelayout()
+    if not (Stl.on and Stl.bar) then
         return
     end
-    Layout(S.frame, S.power, S.settings)
-    StyleText(S.settings)
+    Layout(Stl.frame, Stl.power, Stl.settings)
+    StyleText(Stl.settings)
     Sync(true)
 end

@@ -8,20 +8,20 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the appear sounds.
 --  Reads the earlier AuraBuff Reminders files through ns._abrInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._abrInternals
+local _, mod = ...
+local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local EABR = I.EABR
+local REMIND = Inner.EABR
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -42,8 +42,8 @@ local StopAllGlows = CludesUI.Glows.StopAllGlows
 do
     local function AllBorderSizes(ox, oy, sx, sy)
         local t = {}
-        for size = 0, 4 do
-            t[size] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+        for dim = 0, 4 do
+            t[dim] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
         end
         return t
     end
@@ -76,7 +76,7 @@ do
     })
 end
 
-local defaults = {
+local defaultSet = {
     profile = {
         display = {
             iconShape = "none",
@@ -129,7 +129,7 @@ local defaults = {
                 sky = true,
                 hmark = true,
                 -- WoW Forever's Divine Spirit (no key on retail).
-                spirit = EABR.FOREVER or nil,
+                spirit = REMIND.FOREVER or nil,
             },
             -- Per-section "Where to Show". Stores only unchecked buckets
             -- (value false); an absent bucket = shown. Open world defaults
@@ -224,8 +224,8 @@ local defaults = {
 }
 
 -- WoW Forever section settings; only that client's profiles carry the table.
-if EABR.FOREVER then
-    defaults.profile.forever = {
+if REMIND.FOREVER then
+    defaultSet.profile.forever = {
         camp = false, -- Camp Benefits reminder; opt-in, it shows whenever the buff is missing
         sleepingBag = false, -- Sleeping Bag reminder; opt-in, below max level with a Cozy Sleeping Bag in the bags
         gather = false, -- gathering tracking reminder; opt-in, it shows while no tracker is up
@@ -264,80 +264,80 @@ local _dismissedUntilLoad = {} -- [dismissKey] = true
 -------------------------------------------------------------------------------
 -- Class-special keys (poisons/rites/imbues/shields) -> their section's sound
 -- field, or nil; built once. Rogue reminders carry per-category keys.
-function EABR.SpecialSoundField(key)
-    local set = EABR._specialKeySet
-    if not set then
-        local S = EABR.SPECIALS
-        set = { rogue_lethal = S.ROGUE.sound, rogue_nonlethal = S.ROGUE.sound }
+function REMIND.SpecialSoundField(key)
+    local group = REMIND._specialKeySet
+    if not group then
+        local Stl = REMIND.SPECIALS
+        group = { rogue_lethal = Stl.ROGUE.sound, rogue_nonlethal = Stl.ROGUE.sound }
         local groups = {
-            { I.ROGUE_POISONS, S.ROGUE.sound },
-            { I.PALADIN_RITES, S.PALADIN.sound },
-            { I.SHAMAN_IMBUES, S.SHAMAN.sound },
-            { I.SHAMAN_SHIELDS, S.SHAMAN.sound },
+            { Inner.ROGUE_POISONS, Stl.ROGUE.sound },
+            { Inner.PALADIN_RITES, Stl.PALADIN.sound },
+            { Inner.SHAMAN_IMBUES, Stl.SHAMAN.sound },
+            { Inner.SHAMAN_SHIELDS, Stl.SHAMAN.sound },
         }
         for _, g in ipairs(groups) do
             if type(g[1]) == "table" then
                 for _, it in ipairs(g[1]) do
                     if it.key then
-                        set[it.key] = g[2]
+                        group[it.key] = g[2]
                     end
                 end
             end
         end
-        EABR._specialKeySet = set
+        REMIND._specialKeySet = group
     end
-    return set[key]
+    return group[key]
 end
 
 -- Resolves the configured sound key for a reminder from its dismissKey.
-function EABR.ResolveReminderSound(dk)
-    local prefix, key = dk:match("^(%a+):(.+)$")
-    if not prefix then
+function REMIND.ResolveReminderSound(dk)
+    local prefixText, key = dk:match("^(%a+):(.+)$")
+    if not prefixText then
         return nil
     end
-    local p = db.profile
-    if prefix == "raidbuff" then
+    local p = saved.profile
+    if prefixText == "raidbuff" then
         return p.raidBuffs.sectionSound
-    elseif prefix == "aura" then
+    elseif prefixText == "aura" then
         return p.auras.sectionSound
-    elseif prefix == "consumable" then
+    elseif prefixText == "consumable" then
         local co = p.consumables
-        local field = EABR.SpecialSoundField(key)
+        local field = REMIND.SpecialSoundField(key)
         if field then
-            return EABR.SpecialsSound(co, field)
+            return REMIND.SpecialsSound(co, field)
         end
         return co.sectionSound
-    elseif prefix == "forever" then
+    elseif prefixText == "forever" then
         local fo = p.forever
         return fo and fo.sectionSound
     end
     return nil
 end
 
-function EABR.HandleAppearSounds(missing)
-    local prev = EABR._soundPrev or {}
-    local cur = EABR._soundCur or {}
-    wipe(cur)
-    local primed = EABR._soundPrimed
-    for i = 1, #missing do
-        local dk = missing[i].dismissKey
+function REMIND.HandleAppearSounds(missing)
+    local prev = REMIND._soundPrev or {}
+    local current = REMIND._soundCur or {}
+    wipe(current)
+    local primed = REMIND._soundPrimed
+    for idx = 1, #missing do
+        local dk = missing[idx].dismissKey
         if dk and not _dismissedUntilLoad[dk] then
-            cur[dk] = true
+            current[dk] = true
             if primed and not prev[dk] then
-                local skey = EABR.ResolveReminderSound(dk)
+                local skey = REMIND.ResolveReminderSound(dk)
                 if skey and skey ~= "none" then
                     local paths = CludesUI._groupDeathSoundPaths
-                    local path = paths and paths[skey]
-                    if path then
-                        PlaySoundFile(path, "Master")
+                    local filePath = paths and paths[skey]
+                    if filePath then
+                        PlaySoundFile(filePath, "Master")
                     end
                 end
             end
         end
     end
-    EABR._soundPrev, EABR._soundCur, EABR._soundPrimed = cur, prev, true
+    REMIND._soundPrev, REMIND._soundCur, REMIND._soundPrimed = current, prev, true
 end
 
-I._dismissedUntilLoad, I.defaults, I.GLOW_VIEW = _dismissedUntilLoad, defaults, GLOW_VIEW
-I.StopAllGlows = StopAllGlows
-I.broken = false
+Inner._dismissedUntilLoad, Inner.defaults, Inner.GLOW_VIEW = _dismissedUntilLoad, defaultSet, GLOW_VIEW
+Inner.StopAllGlows = StopAllGlows
+Inner.broken = false

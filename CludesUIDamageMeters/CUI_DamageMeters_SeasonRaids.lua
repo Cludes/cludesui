@@ -8,8 +8,8 @@ end
 -- reports inside them (GetInstanceInfo's eighth return), each with the NPC IDs
 -- of its bosses. Adds are left out on purpose: their rows keep the combat note.
 -- Kept by hand; the dungeons beside it are generated (CUI_DamageMeters_SeasonMobs.lua).
-local _, ns = ...
-ns.DM_SEASON_RAIDS = {
+local _, mod = ...
+mod.DM_SEASON_RAIDS = {
     [3004] = { -- The Venomous Abyss
         257911,
         259854, -- The Coiled Altar: Zul'jan, Hex Lord Malacrass

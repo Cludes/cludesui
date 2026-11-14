@@ -7,20 +7,20 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The Ready Check mana warning.
 --  Reads the earlier AuraBuff Reminders files through ns._abrInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._abrInternals
+local _, mod = ...
+local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local EABR, ResolveFontPath = I.EABR, I.ResolveFontPath
+local REMIND, ResolveFontPath = Inner.EABR, Inner.ResolveFontPath
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -------------------------------------------------------------------------------
@@ -32,19 +32,19 @@ local SetupReadyCheckManaWarning = function()
     -- Helpers hang on EABR, not block locals; settings slice (db.profile.consumables, options "Ready Check Mana Warning" row) is fetched inline per helper.
 
     -- Default ON: the warning predates its toggle, so a missing key = enabled.
-    function EABR.RCWEnabled()
-        local p = db and db.profile
+    function REMIND.RCWEnabled()
+        local p = saved and saved.profile
         local c = p and p.consumables
         return not c or c.rcManaWarn ~= false
     end
 
     -- Custom swatch color, or the brightened mana color (the original look).
-    function EABR.RCWColor()
-        local p = db and db.profile
+    function REMIND.RCWColor()
+        local p = saved and saved.profile
         local c = p and p.consumables
-        local col = c and c.rcManaWarnColor
-        if col and col.r then
-            return col.r, col.g, col.b
+        local column = c and c.rcManaWarnColor
+        if column and column.r then
+            return column.r, column.g, column.b
         end
         local mc = CludesUI.GetPowerColor("MANA")
         if mc then
@@ -67,11 +67,11 @@ local SetupReadyCheckManaWarning = function()
     end
 
     -- Pushes position/size/color settings onto the built frame; the color curve is rebuilt here since colors bake in at AddPoint time, and an already-visible warning/preview is re-tinted so edits show live.
-    function EABR.RCWApplySettings()
+    function REMIND.RCWApplySettings()
         if not warnFrame then
             return
         end
-        local p = db and db.profile
+        local p = saved and saved.profile
         local c = p and p.consumables
         warnFrame:ClearAllPoints()
         warnFrame:SetPoint(
@@ -87,7 +87,7 @@ local SetupReadyCheckManaWarning = function()
         warnFS:SetFont(font, (c and c.rcManaWarnSize) or 48, outline)
         -- Explicit white instance color: tinted purely via SetVertexColor (curve result); with no instance color it would inherit the primed shadow FontObject's color, which resolves BLACK.
         warnFS:SetTextColor(1, 1, 1, 1)
-        local r, g, b = EABR.RCWColor()
+        local r, g, b = REMIND.RCWColor()
         -- Curve: alpha 1 at/below 80%, alpha 0 above; colors the FontString directly via SetVertexColor, using alpha for visibility -- no secret value reads.
         if C_CurveUtil and C_CurveUtil.CreateColorCurve then
             warnCurve = C_CurveUtil.CreateColorCurve()
@@ -128,7 +128,7 @@ local SetupReadyCheckManaWarning = function()
         fadeIn:SetSmoothing("IN_OUT")
         ag:SetLooping("REPEAT")
         warnFrame._breathe = ag
-        EABR.RCWApplySettings()
+        REMIND.RCWApplySettings()
         warnFS:SetText(CludesUI.L("LOW MANA"))
     end
 
@@ -137,7 +137,7 @@ local SetupReadyCheckManaWarning = function()
     local _inRaid = false
 
     local function UpdateReadyCheckRegistration()
-        local shouldListen = _inRaid and not InCombatLockdown() and EABR.RCWEnabled()
+        local shouldListen = _inRaid and not InCombatLockdown() and REMIND.RCWEnabled()
         if shouldListen then
             rcFrame:RegisterEvent("READY_CHECK")
         else
@@ -151,29 +151,29 @@ local SetupReadyCheckManaWarning = function()
     rcFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
     rcFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     rcFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    rcFrame:SetScript("OnEvent", function(_, event)
+    rcFrame:SetScript("OnEvent", function(_, evt)
         if
-            event == "GROUP_ROSTER_UPDATE"
-            or event == "ZONE_CHANGED_NEW_AREA"
-            or event == "PLAYER_ENTERING_WORLD"
+            evt == "GROUP_ROSTER_UPDATE"
+            or evt == "ZONE_CHANGED_NEW_AREA"
+            or evt == "PLAYER_ENTERING_WORLD"
         then
             _inRaid = IsInRaid()
             UpdateReadyCheckRegistration()
             return
         end
-        if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
+        if evt == "PLAYER_REGEN_DISABLED" or evt == "PLAYER_REGEN_ENABLED" then
             UpdateReadyCheckRegistration()
             return
         end
         -- READY_CHECK (only fires when out of combat AND in raid)
-        if not EABR.RCWEnabled() then
+        if not REMIND.RCWEnabled() then
             return
         end
-        local spec = GetSpecialization and GetSpecialization()
-        if not spec then
+        local specInfo = GetSpecialization and GetSpecialization()
+        if not specInfo then
             return
         end
-        local role = GetSpecializationRole(spec)
+        local role = GetSpecializationRole(specInfo)
         if role ~= "HEALER" then
             return
         end
@@ -181,7 +181,7 @@ local SetupReadyCheckManaWarning = function()
             return
         end
         BuildWarnFrame()
-        EABR.RCWApplySettings()
+        REMIND.RCWApplySettings()
         if not warnCurve then
             return
         end
@@ -204,17 +204,17 @@ local SetupReadyCheckManaWarning = function()
     -- Options hooks (Consumables -> Ready Check Mana Warning row).
     _G._CUABR_RCWarnApply = function()
         BuildWarnFrame()
-        EABR.RCWApplySettings()
+        REMIND.RCWApplySettings()
     end
     -- Preview bypasses the curve (must be visible at any mana level), tinting with the plain configured color (readable constants, no secrets).
     _G._CUABR_RCWarnPreview = function()
         BuildWarnFrame()
-        EABR.RCWApplySettings()
+        REMIND.RCWApplySettings()
         if warnTimer then
             warnTimer:Cancel()
             warnTimer = nil
         end
-        local r, g, b = EABR.RCWColor()
+        local r, g, b = REMIND.RCWColor()
         warnFS:SetVertexColor(r, g, b, 1)
         warnFrame:Show()
         if warnFrame._breathe and not warnFrame._breathe:IsPlaying() then
@@ -225,8 +225,8 @@ local SetupReadyCheckManaWarning = function()
     _G._CUABR_RCWarnUpdateReg = UpdateReadyCheckRegistration
 end
 -- The warning reads retail spec roles and lives in the consumables options; WoW Forever skips it.
-if not EABR.FOREVER then
+if not REMIND.FOREVER then
     SetupReadyCheckManaWarning()
 end
 
-I.broken = false
+Inner.broken = false

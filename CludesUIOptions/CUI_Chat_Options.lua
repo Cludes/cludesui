@@ -7,11 +7,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Options page for CludesUI Chat: visibility, background opacity/color,
 --  top accent line.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIChat"] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIChat"] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
-local ECHAT = ns.ECHAT
+local CHAT = mod.ECHAT
 
 -- Page reuse: the frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
@@ -26,11 +26,11 @@ initFrame:SetScript("OnEvent", function(self)
     if not CludesUI or not CludesUI.RegisterModule then
         return
     end
-    if not ECHAT then
+    if not CHAT then
         return
     end
 
-    local function DB()
+    local function SavedDB()
         local d = _G._CUCHAT_DB
         if d and d.profile and d.profile.chat then
             return d.profile.chat
@@ -38,34 +38,34 @@ initFrame:SetScript("OnEvent", function(self)
         return {}
     end
     local function Cfg(k)
-        return DB()[k]
+        return SavedDB()[k]
     end
-    local function Set(k, v)
-        DB()[k] = v
+    local function Set(k, val)
+        SavedDB()[k] = val
     end
 
     local function RefreshAll()
-        if ECHAT.ApplyBackground then
-            ECHAT.ApplyBackground()
+        if CHAT.ApplyBackground then
+            CHAT.ApplyBackground()
         end
-        if ECHAT.ApplyFonts then
-            ECHAT.ApplyFonts()
+        if CHAT.ApplyFonts then
+            CHAT.ApplyFonts()
         end
-        if ECHAT.RefreshVisibility then
-            ECHAT.RefreshVisibility()
+        if CHAT.RefreshVisibility then
+            CHAT.RefreshVisibility()
         end
     end
 
-    local function BuildPage(pageName, parent, yOffset)
+    local function BuildPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local PP = CludesUI.PP
-        local y = yOffset
-        local _, h
+        local Pix = CludesUI.PP
+        local posY = yOffset
+        local _, hgt
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
         end
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
 
         local isChat = pageName == "Chat"
         local isTabs = pageName == "Tabs"
@@ -83,7 +83,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- typography come back; every other stock gate stays.
         local FV = STOCK and BS.Forever("chat")
         if isTabs and STOCK then
-            y = BS.Note(parent, y, "chat")
+            posY = BS.Note(hostFrame, posY, "chat")
             if BS.Active("chat") == "blizzard" and not FV then
                 isTabs = false
             end
@@ -94,25 +94,25 @@ initFrame:SetScript("OnEvent", function(self)
             -- reposition banner and its Force Chat on Screen link are gone.
 
             -- -- DISPLAY -----------------------------------------------------------
-            local hdr
-            hdr, h = W:SectionHeader(parent, "DISPLAY", y)
-            y = y - h
-            CludesUI.BuildSectionUnlockJump(hdr, { key = "ECHAT_MainChat" })
+            local heading
+            heading, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+            posY = posY - hgt
+            CludesUI.BuildSectionUnlockJump(heading, { key = "ECHAT_MainChat" })
             if BS then
-                y = BS.Note(parent, y, "chat")
+                posY = BS.Note(hostFrame, posY, "chat")
             end
 
             -- Row 1: Visibility (one control; no mouseover for chat frames) | Lock Main Chat Size
-            _, h = CludesUI.BuildVisibilityRow(W, parent, y, {
-                getStore = DB,
+            _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+                getStore = SavedDB,
                 legacyKey = "visibility",
                 caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
                 onChanged = function()
-                    if ECHAT.ResetIdleTimer then
-                        ECHAT.ResetIdleTimer()
+                    if CHAT.ResetIdleTimer then
+                        CHAT.ResetIdleTimer()
                     end
-                    if ECHAT.ApplyIdleFadeHoverMotion then
-                        ECHAT.ApplyIdleFadeHoverMotion()
+                    if CHAT.ApplyIdleFadeHoverMotion then
+                        CHAT.ApplyIdleFadeHoverMotion()
                     end
                     RefreshAll()
                 end,
@@ -124,14 +124,14 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("lockChatSize") or false
                 end,
-                setValue = function(v)
-                    Set("lockChatSize", v)
-                    if ECHAT.ApplyLockChatSize then
-                        ECHAT.ApplyLockChatSize()
+                setValue = function(val)
+                    Set("lockChatSize", val)
+                    if CHAT.ApplyLockChatSize then
+                        CHAT.ApplyLockChatSize()
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Row 2: Background Opacity (+ inline color swatch) | Background
             -- Texture (Unit Frames bar texture catalogue incl. SharedMedia, with
@@ -139,19 +139,19 @@ initFrame:SetScript("OnEvent", function(self)
             -- background (its tab menu's Background swatch sets it); WoW Forever
             -- fills its framed boxes with these.
             if not STOCK or FV then
-                if ECHAT.RefreshBgTextureCatalogue then
-                    ECHAT.RefreshBgTextureCatalogue()
+                if CHAT.RefreshBgTextureCatalogue then
+                    CHAT.RefreshBgTextureCatalogue()
                 end
                 local btValues, btOrder = {}, {}
                 do
-                    local texNames = ns.chatBgTextureNames or {}
-                    for _, key in ipairs(ns.chatBgTextureOrder or {}) do
+                    local texNames = mod.chatBgTextureNames or {}
+                    for _, key in ipairs(mod.chatBgTextureOrder or {}) do
                         if key ~= "---" then
                             btValues[key] = texNames[key] or key
                             btOrder[#btOrder + 1] = key
                         end
                     end
-                    local texLookup = ns.chatBgTextures or {}
+                    local texLookup = mod.chatBgTextures or {}
                     btValues._menuOpts = {
                         itemHeight = 28,
                         background = function(key)
@@ -160,7 +160,7 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                 end
                 local bgRow
-                bgRow, h = W:DualRow(parent, y, {
+                bgRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "slider",
                     text = "Background Opacity",
                     min = 0,
@@ -169,8 +169,8 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("bgAlpha") or 0.65
                     end,
-                    setValue = function(v)
-                        Set("bgAlpha", v)
+                    setValue = function(val)
+                        Set("bgAlpha", val)
                         RefreshAll()
                     end,
                 }, {
@@ -182,16 +182,16 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("bgTexture") or "none"
                     end,
-                    setValue = function(v)
-                        Set("bgTexture", v)
+                    setValue = function(val)
+                        Set("bgTexture", val)
                         RefreshAll()
                     end,
                 })
                 if not CludesUI._prebuilding then
-                    local rgn = bgRow._leftRegion
-                    local ctrl = rgn._control
+                    local region = bgRow._leftRegion
+                    local ctrl = region._control
                     local bgSwatch, bgSwatchRefresh = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         bgRow:GetFrameLevel() + 3,
                         function()
                             return (Cfg("bgR") or 0.03), (Cfg("bgG") or 0.045), (Cfg("bgB") or 0.05)
@@ -205,19 +205,19 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    PP.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                    Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                     CludesUI.RegisterWidgetRefresh(function()
                         bgSwatchRefresh()
                     end)
                 end
-                y = y - h
+                posY = posY - hgt
             end -- not STOCK or FV
 
             -- Row 3: Font (+ cog: Outline Mode) | Font Size
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
                 local fontRow
-                fontRow, h = W:DualRow(parent, y, {
+                fontRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Font",
                     values = fontValues,
@@ -225,8 +225,8 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("font") or "__global"
                     end,
-                    setValue = function(v)
-                        Set("font", v)
+                    setValue = function(val)
+                        Set("font", val)
                         CludesUI:ShowConfirmPopup({
                             title = "Reload Required",
                             message = "Font changed. A UI reload is needed to apply the new font.",
@@ -246,19 +246,19 @@ initFrame:SetScript("OnEvent", function(self)
                         if Cfg("chatFontSize") then
                             return Cfg("chatFontSize")
                         end
-                        local cf = _G.ChatFrame1
-                        if cf and cf.GetFont then
-                            local _, fh = cf:GetFont()
+                        local castFrame = _G.ChatFrame1
+                        if castFrame and castFrame.GetFont then
+                            local _, fh = castFrame:GetFont()
                             if fh and fh > 0 then
                                 return math.floor(fh + 0.5)
                             end
                         end
                         return 14
                     end,
-                    setValue = function(v)
-                        Set("chatFontSize", v)
-                        if ECHAT.ApplyChatFontSize then
-                            ECHAT.ApplyChatFontSize(v)
+                    setValue = function(val)
+                        Set("chatFontSize", val)
+                        if CHAT.ApplyChatFontSize then
+                            CHAT.ApplyChatFontSize(val)
                         end
                     end,
                 })
@@ -283,8 +283,8 @@ initFrame:SetScript("OnEvent", function(self)
                                 get = function()
                                     return Cfg("outlineMode") or "__global"
                                 end,
-                                set = function(v)
-                                    Set("outlineMode", v)
+                                set = function(val)
+                                    Set("outlineMode", val)
                                     CludesUI:ShowConfirmPopup({
                                         title = "Reload Required",
                                         message = "Outline mode changed. A UI reload is needed to apply.",
@@ -298,7 +298,7 @@ initFrame:SetScript("OnEvent", function(self)
                     })
                 end
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Outer panel border. Without the extended background, visible tabs get
             -- matching individual borders instead of outlining empty tab-strip space.
@@ -306,9 +306,9 @@ initFrame:SetScript("OnEvent", function(self)
             if not STOCK then
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
-                borderRow, h = W:DualRow(
-                    parent,
-                    y,
+                borderRow, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     {
                         type = "dropdown",
                         text = "Border Style",
@@ -317,15 +317,15 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return Cfg("panelBorderTexture") or "solid"
                         end,
-                        setValue = function(v)
-                            Set("panelBorderTexture", v)
+                        setValue = function(val)
+                            Set("panelBorderTexture", val)
                             Set("panelBorderOffsetX", nil)
                             Set("panelBorderOffsetY", nil)
                             Set("panelBorderShiftX", nil)
                             Set("panelBorderShiftY", nil)
                             -- A style with a select colour (Pixels grey) seeds the custom
                             -- colour; the colour mode is kept, every other style keeps its colour.
-                            local selC = CludesUI.GetBorderSelectColor(v)
+                            local selC = CludesUI.GetBorderSelectColor(val)
                             if selC then
                                 Set("panelBorderColor", selC)
                             end
@@ -335,8 +335,8 @@ initFrame:SetScript("OnEvent", function(self)
                             if Cfg("panelBorderThicknessPx") then
                                 Set("panelBorderThicknessPx", false)
                             end
-                            local defSize = CludesUI.GetBorderDefaultSize("chat", v)
-                                or CludesUI.GetBorderTextureDefaultThickness(v)
+                            local defSize = CludesUI.GetBorderDefaultSize("chat", val)
+                                or CludesUI.GetBorderTextureDefaultThickness(val)
                             -- Unregistered SharedMedia borders default to the NUMBER 1; this key stores labels.
                             if type(defSize) == "number" then
                                 defSize = CludesUI.BORDER_LABEL_OF_STEP[defSize] or "thin"
@@ -344,8 +344,8 @@ initFrame:SetScript("OnEvent", function(self)
                             if defSize then
                                 Set("panelBorderThickness", defSize)
                             end
-                            if ECHAT.ApplyExtendedBackground then
-                                ECHAT.ApplyExtendedBackground()
+                            if CHAT.ApplyExtendedBackground then
+                                CHAT.ApplyExtendedBackground()
                             end
                             -- Rebuild: the offset row below exists only for a textured style.
                             CludesUI:RefreshPage(true)
@@ -366,17 +366,17 @@ initFrame:SetScript("OnEvent", function(self)
                         getPx = function()
                             return Cfg("panelBorderThicknessPx")
                         end,
-                        setPx = function(v)
-                            Set("panelBorderThicknessPx", v)
+                        setPx = function(val)
+                            Set("panelBorderThicknessPx", val)
                         end,
                         apply = function()
-                            if ECHAT.ApplyExtendedBackground then
-                                ECHAT.ApplyExtendedBackground()
+                            if CHAT.ApplyExtendedBackground then
+                                CHAT.ApplyExtendedBackground()
                             end
                         end,
                     })
                 )
-                y = y - h
+                posY = posY - hgt
 
                 -- Width Offset | Height Offset: a textured style's outward offsets in their
                 -- own row (Solid has none). Same registry row the panel renders with:
@@ -402,33 +402,33 @@ initFrame:SetScript("OnEvent", function(self)
                             getX = function()
                                 return Cfg("panelBorderOffsetX")
                             end,
-                            setX = function(v)
-                                Set("panelBorderOffsetX", v)
+                            setX = function(val)
+                                Set("panelBorderOffsetX", val)
                             end,
                             getY = function()
                                 return Cfg("panelBorderOffsetY")
                             end,
-                            setY = function(v)
-                                Set("panelBorderOffsetY", v)
+                            setY = function(val)
+                                Set("panelBorderOffsetY", val)
                             end,
                             apply = function()
-                                if ECHAT.ApplyExtendedBackground then
-                                    ECHAT.ApplyExtendedBackground()
+                                if CHAT.ApplyExtendedBackground then
+                                    CHAT.ApplyExtendedBackground()
                                 end
                             end,
                         })
-                        _, h = W:DualRow(parent, y, ocfgL, ocfgR)
-                        y = y - h
+                        _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
+                        posY = posY - hgt
                     end
                 end
 
                 -- Border options cog on Border Style (Show Behind, shifts).
                 do
-                    local rgn = borderRow._leftRegion
-                    CludesUI.BuildInlineCog(rgn, {
-                        anchorTo = rgn._control,
+                    local region = borderRow._leftRegion
+                    CludesUI.BuildInlineCog(region, {
+                        anchorTo = region._control,
                         title = "Border Options",
-                        captureRegion = rgn,
+                        captureRegion = region,
                         rows = {
                             {
                                 type = "toggle",
@@ -436,10 +436,10 @@ initFrame:SetScript("OnEvent", function(self)
                                 get = function()
                                     return Cfg("panelBorderBehind") or false
                                 end,
-                                set = function(v)
-                                    Set("panelBorderBehind", v)
-                                    if ECHAT.ApplyExtendedBackground then
-                                        ECHAT.ApplyExtendedBackground()
+                                set = function(val)
+                                    Set("panelBorderBehind", val)
+                                    if CHAT.ApplyExtendedBackground then
+                                        CHAT.ApplyExtendedBackground()
                                     end
                                 end,
                             },
@@ -450,9 +450,9 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 10,
                                 step = 1,
                                 get = function()
-                                    local v = Cfg("panelBorderShiftX")
-                                    if v ~= nil then
-                                        return v
+                                    local val = Cfg("panelBorderShiftX")
+                                    if val ~= nil then
+                                        return val
                                     end
                                     local _, _, value = CludesUI.GetBorderDefaults(
                                         "chat",
@@ -461,10 +461,10 @@ initFrame:SetScript("OnEvent", function(self)
                                     )
                                     return value
                                 end,
-                                set = function(v)
-                                    Set("panelBorderShiftX", v == 0 and nil or v)
-                                    if ECHAT.ApplyExtendedBackground then
-                                        ECHAT.ApplyExtendedBackground()
+                                set = function(val)
+                                    Set("panelBorderShiftX", val == 0 and nil or val)
+                                    if CHAT.ApplyExtendedBackground then
+                                        CHAT.ApplyExtendedBackground()
                                     end
                                 end,
                             },
@@ -475,9 +475,9 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 10,
                                 step = 1,
                                 get = function()
-                                    local v = Cfg("panelBorderShiftY")
-                                    if v ~= nil then
-                                        return v
+                                    local val = Cfg("panelBorderShiftY")
+                                    if val ~= nil then
+                                        return val
                                     end
                                     local _, _, _, value = CludesUI.GetBorderDefaults(
                                         "chat",
@@ -486,10 +486,10 @@ initFrame:SetScript("OnEvent", function(self)
                                     )
                                     return value
                                 end,
-                                set = function(v)
-                                    Set("panelBorderShiftY", v == 0 and nil or v)
-                                    if ECHAT.ApplyExtendedBackground then
-                                        ECHAT.ApplyExtendedBackground()
+                                set = function(val)
+                                    Set("panelBorderShiftY", val == 0 and nil or val)
+                                    if CHAT.ApplyExtendedBackground then
+                                        CHAT.ApplyExtendedBackground()
                                     end
                                 end,
                             },
@@ -499,29 +499,29 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Accent, custom, and class-color selectors beside Border Size.
                 if not CludesUI._prebuilding then
-                    local rgn = borderRow._rightRegion
-                    local ctrl = rgn._control
-                    local function ApplyMode(mode)
-                        Set("panelBorderColorMode", mode)
-                        if ECHAT.ApplyExtendedBackground then
-                            ECHAT.ApplyExtendedBackground()
+                    local region = borderRow._rightRegion
+                    local ctrl = region._control
+                    local function ApplyMode(modeName)
+                        Set("panelBorderColorMode", modeName)
+                        if CHAT.ApplyExtendedBackground then
+                            CHAT.ApplyExtendedBackground()
                         end
                         CludesUI:RefreshPage()
                     end
 
                     local classSwatch, refreshClass = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         borderRow:GetFrameLevel() + 3,
                         function()
-                            local _, class = UnitClass("player")
-                            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                            local _, classFile = UnitClass("player")
+                            local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                             return c and c.r or 1, c and c.g or 1, c and c.b or 1
                         end,
                         function() end,
                         false,
                         20
                     )
-                    PP.Point(classSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                    Pix.Point(classSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                     classSwatch:SetScript("OnClick", function()
                         ApplyMode("class")
                     end)
@@ -531,7 +531,7 @@ initFrame:SetScript("OnEvent", function(self)
                     classSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
 
                     local accentSwatch, refreshAccent = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         borderRow:GetFrameLevel() + 3,
                         function()
                             return CludesUI.GetAccentColor()
@@ -540,7 +540,7 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    PP.Point(accentSwatch, "RIGHT", classSwatch, "LEFT", -8, 0)
+                    Pix.Point(accentSwatch, "RIGHT", classSwatch, "LEFT", -8, 0)
                     accentSwatch:SetScript("OnClick", function()
                         ApplyMode("accent")
                     end)
@@ -550,7 +550,7 @@ initFrame:SetScript("OnEvent", function(self)
                     accentSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
 
                     local customSwatch, refreshCustom = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         borderRow:GetFrameLevel() + 3,
                         function()
                             local c = Cfg("panelBorderColor") or { r = 1, g = 1, b = 1 }
@@ -560,14 +560,14 @@ initFrame:SetScript("OnEvent", function(self)
                             Set("panelBorderColor", { r = r, g = g, b = b })
                             Set("panelBorderOpacity", a)
                             Set("panelBorderColorMode", "custom")
-                            if ECHAT.ApplyExtendedBackground then
-                                ECHAT.ApplyExtendedBackground()
+                            if CHAT.ApplyExtendedBackground then
+                                CHAT.ApplyExtendedBackground()
                             end
                         end,
                         true,
                         20
                     )
-                    PP.Point(customSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
+                    Pix.Point(customSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
                     local customClick = customSwatch:GetScript("OnClick")
                     customSwatch:SetScript("OnClick", function(self, ...)
                         if (Cfg("panelBorderColorMode") or "custom") ~= "custom" then
@@ -587,10 +587,10 @@ initFrame:SetScript("OnEvent", function(self)
                         refreshCustom()
                         refreshAccent()
                         refreshClass()
-                        local mode = Cfg("panelBorderColorMode") or "custom"
-                        customSwatch:SetAlpha(mode == "custom" and 1 or 0.3)
-                        accentSwatch:SetAlpha(mode == "accent" and 1 or 0.3)
-                        classSwatch:SetAlpha(mode == "class" and 1 or 0.3)
+                        local modeName = Cfg("panelBorderColorMode") or "custom"
+                        customSwatch:SetAlpha(modeName == "custom" and 1 or 0.3)
+                        accentSwatch:SetAlpha(modeName == "accent" and 1 or 0.3)
+                        classSwatch:SetAlpha(modeName == "class" and 1 or 0.3)
                     end
                     CludesUI.RegisterWidgetRefresh(RefreshBorderSwatches)
                     RefreshBorderSwatches()
@@ -604,19 +604,19 @@ initFrame:SetScript("OnEvent", function(self)
             -- for a reload; a kind this client has no art for draws Slim
             -- (CludesUI.ForeverBorderKind). Odd last slot of the section.
             if FV then
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Border Style",
                     tooltip = "WoW Forever's frame round the chat panel, input box, tabs and sidebar buttons. Slim Textured uses Blizzard's current art; a style whose art this client lacks draws Slim. Applies after a UI reload.",
                     values = { slim = "Slim", textured = "Slim Textured", heavy = "Heavy Bronze" },
                     order = { "slim", "textured", "heavy" },
                     getValue = function()
-                        local v = Cfg("foreverBorder")
-                        return (v == "slim" or v == "heavy") and v or "textured"
+                        local val = Cfg("foreverBorder")
+                        return (val == "slim" or val == "heavy") and val or "textured"
                     end,
-                    setValue = function(v)
-                        Set("foreverBorder", v)
-                        if CludesUI.ForeverBorderKind(v) == ns.ChatFvKind() then
+                    setValue = function(val)
+                        Set("foreverBorder", val)
+                        if CludesUI.ForeverBorderKind(val) == mod.ChatFvKind() then
                             return
                         end
                         CludesUI:ShowConfirmPopup({
@@ -628,27 +628,27 @@ initFrame:SetScript("OnEvent", function(self)
                         })
                     end,
                 }, CludesUI.BlankRowCfg())
-                y = y - h
+                posY = posY - hgt
             end
 
             -- -- IDLE FADE ---------------------------------------------------------
-            _, h = W:SectionHeader(parent, "IDLE FADE", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "IDLE FADE", posY)
+            posY = posY - hgt
 
             -- Row 1: Enable Idle Fade | Fade Delay
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Enable Idle Fade",
                 getValue = function()
                     return Cfg("idleFadeEnabled") ~= false
                 end,
-                setValue = function(v)
-                    Set("idleFadeEnabled", v)
-                    if ECHAT.ResetIdleTimer then
-                        ECHAT.ResetIdleTimer()
+                setValue = function(val)
+                    Set("idleFadeEnabled", val)
+                    if CHAT.ResetIdleTimer then
+                        CHAT.ResetIdleTimer()
                     end
-                    if ECHAT.ApplyIdleFadeHoverMotion then
-                        ECHAT.ApplyIdleFadeHoverMotion()
+                    if CHAT.ApplyIdleFadeHoverMotion then
+                        CHAT.ApplyIdleFadeHoverMotion()
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -665,17 +665,17 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("idleFadeDelay") or 15
                 end,
-                setValue = function(v)
-                    Set("idleFadeDelay", v)
-                    if ECHAT.ResetIdleTimer then
-                        ECHAT.ResetIdleTimer()
+                setValue = function(val)
+                    Set("idleFadeDelay", val)
+                    if CHAT.ResetIdleTimer then
+                        CHAT.ResetIdleTimer()
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Row 2 (odd last slot): Fade Strength | (empty)
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Fade Strength",
                 min = 0,
@@ -688,22 +688,22 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("idleFadeStrength") or 40
                 end,
-                setValue = function(v)
-                    Set("idleFadeStrength", v)
-                    if ECHAT.ResetIdleTimer then
-                        ECHAT.ResetIdleTimer()
+                setValue = function(val)
+                    Set("idleFadeStrength", val)
+                    if CHAT.ResetIdleTimer then
+                        CHAT.ResetIdleTimer()
                     end
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
         end -- isChat
 
         -- -- SIDEBAR -----------------------------------------------------------
         if isSidebar then
-            _, h = W:SectionHeader(parent, "SIDEBAR", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "SIDEBAR", posY)
+            posY = posY - hgt
             if STOCK then
-                y = BS.Note(parent, y, "chat")
+                posY = BS.Note(hostFrame, posY, "chat")
             end
 
             -- Row 1: Sidebar Visibility (+ cog) | Sidebar Background
@@ -726,7 +726,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Chain icons listed in the user's saved order (drag rows to reorder);
             -- Scroll is pinned to the sidebar bottom, so its row is fixed.
             local sidebarIconItems = {}
-            local sidebarOrderedKeys = ECHAT.ResolveSidebarIconOrder and ECHAT.ResolveSidebarIconOrder()
+            local sidebarOrderedKeys = CHAT.ResolveSidebarIconOrder and CHAT.ResolveSidebarIconOrder()
                 or {
                     "showFriends",
                     "showGuild",
@@ -742,9 +742,9 @@ initFrame:SetScript("OnEvent", function(self)
             sidebarIconItems[#sidebarIconItems + 1] =
                 { key = "showScroll", label = "Scroll to Bottom", fixed = true }
             local sidebarRow
-            sidebarRow, h = W:DualRow(
-                parent,
-                y,
+            sidebarRow, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 {
                     type = "dropdown",
                     text = "Sidebar Visibility",
@@ -753,30 +753,30 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("sidebarVisibility") or "always"
                     end,
-                    setValue = function(v)
-                        Set("sidebarVisibility", v)
-                        if ECHAT.ApplySidebarVisibility then
-                            ECHAT.ApplySidebarVisibility()
+                    setValue = function(val)
+                        Set("sidebarVisibility", val)
+                        if CHAT.ApplySidebarVisibility then
+                            CHAT.ApplySidebarVisibility()
                         end
                     end,
                 },
                 -- Classic WoW UI and WoW Forever draw nothing behind the column;
                 -- Blizzard Style's column backdrop follows this toggle.
-                (function(cfg)
+                (function(conf)
                     if STOCK and (BS.Active("chat") == "classic" or FV) then
-                        BS.Gate("chat", cfg)
+                        BS.Gate("chat", conf)
                     end
-                    return cfg
+                    return conf
                 end)({
                     type = "toggle",
                     text = "Hide Sidebar Background",
                     getValue = function()
                         return Cfg("hideSidebarBg") or false
                     end,
-                    setValue = function(v)
-                        Set("hideSidebarBg", v)
-                        if ECHAT.ApplySidebarBackground then
-                            ECHAT.ApplySidebarBackground()
+                    setValue = function(val)
+                        Set("hideSidebarBg", val)
+                        if CHAT.ApplySidebarBackground then
+                            CHAT.ApplySidebarBackground()
                         end
                     end,
                 })
@@ -793,20 +793,20 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("sidebarRight") or false
                             end,
-                            set = function(v)
-                                Set("sidebarRight", v)
-                                if ECHAT.ApplySidebarPosition then
-                                    ECHAT.ApplySidebarPosition()
+                            set = function(val)
+                                Set("sidebarRight", val)
+                                if CHAT.ApplySidebarPosition then
+                                    CHAT.ApplySidebarPosition()
                                 end
                             end,
                         },
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
 
             local sidebarLayoutRow
-            sidebarLayoutRow, h = W:DualRow(parent, y, {
+            sidebarLayoutRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Sidebar Width",
                 min = 30,
@@ -814,12 +814,12 @@ initFrame:SetScript("OnEvent", function(self)
                 step = 1,
                 getValue = function()
                     return Cfg("sidebarWidth")
-                        or (ECHAT.SidebarWidthDefault and ECHAT.SidebarWidthDefault() or 40)
+                        or (CHAT.SidebarWidthDefault and CHAT.SidebarWidthDefault() or 40)
                 end,
-                setValue = function(v)
-                    Set("sidebarWidth", v)
-                    if ECHAT.ApplySidebarWidth then
-                        ECHAT.ApplySidebarWidth()
+                setValue = function(val)
+                    Set("sidebarWidth", val)
+                    if CHAT.ApplySidebarWidth then
+                        CHAT.ApplySidebarWidth()
                     end
                 end,
             }, {
@@ -829,13 +829,13 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("sidebarSeparate") or false
                 end,
-                setValue = function(v)
-                    Set("sidebarSeparate", v)
-                    if ECHAT.ApplySidebarPosition then
-                        ECHAT.ApplySidebarPosition()
+                setValue = function(val)
+                    Set("sidebarSeparate", val)
+                    if CHAT.ApplySidebarPosition then
+                        CHAT.ApplySidebarPosition()
                     end
-                    if ECHAT.ApplyExtendedBackground then
-                        ECHAT.ApplyExtendedBackground()
+                    if CHAT.ApplyExtendedBackground then
+                        CHAT.ApplyExtendedBackground()
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -859,23 +859,23 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("sidebarSeparateSpacing") or 8
                             end,
-                            set = function(v)
-                                Set("sidebarSeparateSpacing", v)
-                                if ECHAT.ApplySidebarPosition then
-                                    ECHAT.ApplySidebarPosition()
+                            set = function(val)
+                                Set("sidebarSeparateSpacing", val)
+                                if CHAT.ApplySidebarPosition then
+                                    CHAT.ApplySidebarPosition()
                                 end
-                                if ECHAT.ApplyExtendedBackground then
-                                    ECHAT.ApplyExtendedBackground()
+                                if CHAT.ApplyExtendedBackground then
+                                    CHAT.ApplyExtendedBackground()
                                 end
                             end,
                         },
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
 
-            _, h = W:SectionHeader(parent, "ICONS", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "ICONS", posY)
+            posY = posY - hgt
 
             -- Row 2: Sidebar Icons Color | (empty)
             local function MakeIconColorSwatches()
@@ -890,15 +890,15 @@ initFrame:SetScript("OnEvent", function(self)
                             Set("iconR", r)
                             Set("iconG", g)
                             Set("iconB", b)
-                            if ECHAT.ApplyIconColor then
-                                ECHAT.ApplyIconColor()
+                            if CHAT.ApplyIconColor then
+                                CHAT.ApplyIconColor()
                             end
                         end,
                         onClick = function(self)
                             if Cfg("iconUseAccent") then
                                 Set("iconUseAccent", false)
-                                if ECHAT.ApplyIconColor then
-                                    ECHAT.ApplyIconColor()
+                                if CHAT.ApplyIconColor then
+                                    CHAT.ApplyIconColor()
                                 end
                                 CludesUI:RefreshPage()
                                 return
@@ -921,8 +921,8 @@ initFrame:SetScript("OnEvent", function(self)
                         setValue = function() end,
                         onClick = function()
                             Set("iconUseAccent", true)
-                            if ECHAT.ApplyIconColor then
-                                ECHAT.ApplyIconColor()
+                            if CHAT.ApplyIconColor then
+                                CHAT.ApplyIconColor()
                             end
                             CludesUI:RefreshPage()
                         end,
@@ -933,9 +933,9 @@ initFrame:SetScript("OnEvent", function(self)
                 }
             end
             local iconOptionsRow
-            iconOptionsRow, h = W:DualRow(
-                parent,
-                y,
+            iconOptionsRow, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 -- The stock styles keep the stock column art (no tint).
                 CludesUI.BlizzStyle.Gate(
                     "chat",
@@ -966,21 +966,21 @@ initFrame:SetScript("OnEvent", function(self)
                     function(k)
                         return Cfg(k) ~= false
                     end,
-                    function(k, v)
-                        if v and ECHAT.SidebarIconExists and not ECHAT.SidebarIconExists(k) then
+                    function(k, val)
+                        if val and CHAT.SidebarIconExists and not CHAT.SidebarIconExists(k) then
                             pendingIconReload = true
                         end
-                        Set(k, v)
-                        if ECHAT.ApplySidebarIcons then
-                            ECHAT.ApplySidebarIcons()
+                        Set(k, val)
+                        if CHAT.ApplySidebarIcons then
+                            CHAT.ApplySidebarIcons()
                         end
                     end,
                     {
                         hint2 = "Reload required - close dropdown to reload",
                         setOrder = function(orderedKeys)
                             local map = {}
-                            for i, key in ipairs(orderedKeys) do
-                                map[key] = i
+                            for idx, key in ipairs(orderedKeys) do
+                                map[key] = idx
                             end
                             Set("sidebarIconOrder", map)
                         end,
@@ -1004,11 +1004,11 @@ initFrame:SetScript("OnEvent", function(self)
                 rightRgn._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Row 3: Sidebar Icon Size (+ cog: Icon Spacing) | Free Move Icons
             local sizeRow
-            sizeRow, h = W:DualRow(parent, y, {
+            sizeRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Sidebar Icon Size",
                 min = 0.5,
@@ -1017,10 +1017,10 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("sidebarIconScale") or 1.0
                 end,
-                setValue = function(v)
-                    Set("sidebarIconScale", v)
-                    if ECHAT.ApplySidebarIconScale then
-                        ECHAT.ApplySidebarIconScale()
+                setValue = function(val)
+                    Set("sidebarIconScale", val)
+                    if CHAT.ApplySidebarIconScale then
+                        CHAT.ApplySidebarIconScale()
                     end
                 end,
             }, {
@@ -1030,10 +1030,10 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("freeMoveIcons") or false
                 end,
-                setValue = function(v)
-                    Set("freeMoveIcons", v)
-                    if ECHAT.ApplySidebarIcons then
-                        ECHAT.ApplySidebarIcons()
+                setValue = function(val)
+                    Set("freeMoveIcons", val)
+                    if CHAT.ApplySidebarIcons then
+                        CHAT.ApplySidebarIcons()
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -1054,14 +1054,14 @@ initFrame:SetScript("OnEvent", function(self)
                             step = 1,
                             get = function()
                                 if STOCK then
-                                    return Cfg("stockIconSpacing") or (ECHAT.SB_KIT and ECHAT.SB_KIT.gap) or 4
+                                    return Cfg("stockIconSpacing") or (CHAT.SB_KIT and CHAT.SB_KIT.gap) or 4
                                 end
                                 return Cfg("sidebarIconSpacing") or 10
                             end,
-                            set = function(v)
-                                Set(STOCK and "stockIconSpacing" or "sidebarIconSpacing", v)
-                                if ECHAT.ApplySidebarIcons then
-                                    ECHAT.ApplySidebarIcons()
+                            set = function(val)
+                                Set(STOCK and "stockIconSpacing" or "sidebarIconSpacing", val)
+                                if CHAT.ApplySidebarIcons then
+                                    CHAT.ApplySidebarIcons()
                                 end
                             end,
                         },
@@ -1070,15 +1070,15 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- "Reset" label next to the Free Move Icons toggle (only visible when enabled)
             if not CludesUI._prebuilding then
-                local rgn = sizeRow._rightRegion
-                local resetFS = rgn:CreateFontString(nil, "OVERLAY")
+                local region = sizeRow._rightRegion
+                local resetFS = region:CreateFontString(nil, "OVERLAY")
                 resetFS:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 12, "")
                 resetFS:SetTextColor(1, 1, 1, 0.8)
                 resetFS:SetText(CludesUI.L("Reset"))
-                resetFS:SetPoint("RIGHT", rgn._control, "LEFT", -8, 0)
-                local hitBtn = CreateFrame("Button", nil, rgn)
+                resetFS:SetPoint("RIGHT", region._control, "LEFT", -8, 0)
+                local hitBtn = CreateFrame("Button", nil, region)
                 hitBtn:SetAllPoints(resetFS)
-                hitBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
+                hitBtn:SetFrameLevel(region:GetFrameLevel() + 5)
                 hitBtn:SetScript("OnEnter", function()
                     resetFS:SetTextColor(1, 0.3, 0.3, 1)
                 end)
@@ -1087,39 +1087,39 @@ initFrame:SetScript("OnEvent", function(self)
                 end)
                 hitBtn:SetScript("OnClick", function()
                     Set("iconPositions", {})
-                    if ECHAT.ApplySidebarIcons then
-                        ECHAT.ApplySidebarIcons()
+                    if CHAT.ApplySidebarIcons then
+                        CHAT.ApplySidebarIcons()
                     end
                 end)
                 local function UpdateResetVis()
-                    local on = Cfg("freeMoveIcons")
-                    resetFS:SetShown(on)
-                    hitBtn:SetShown(on)
+                    local enabled = Cfg("freeMoveIcons")
+                    resetFS:SetShown(enabled)
+                    hitBtn:SetShown(enabled)
                 end
                 UpdateResetVis()
                 CludesUI.RegisterWidgetRefresh(UpdateResetVis)
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Row 4: Scroll Button on Chat Panel | (empty)
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Scroll Button on Chat Panel",
                 tooltip = "Anchors the Scroll to Bottom button to the bottom-right corner of the chat panel instead of the sidebar.",
                 getValue = function()
                     return Cfg("scrollButtonOnChat") == true
                 end,
-                setValue = function(v)
-                    Set("scrollButtonOnChat", v)
-                    if ECHAT.ApplySidebarIcons then
-                        ECHAT.ApplySidebarIcons()
+                setValue = function(val)
+                    Set("scrollButtonOnChat", val)
+                    if CHAT.ApplySidebarIcons then
+                        CHAT.ApplySidebarIcons()
                     end
-                    if ECHAT.ApplySidebarVisibility then
-                        ECHAT.ApplySidebarVisibility()
+                    if CHAT.ApplySidebarVisibility then
+                        CHAT.ApplySidebarVisibility()
                     end
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
         end -- isSidebar
 
         if isTabs then
@@ -1127,23 +1127,23 @@ initFrame:SetScript("OnEvent", function(self)
             -- bronze tab) paint at Blizzard's tab geometry: only the
             -- TYPOGRAPHY section applies there.
             if not STOCK then
-                _, h = W:SectionHeader(parent, "LAYOUT", y)
-                y = y - h
+                _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+                posY = posY - hgt
 
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Tabs Inside Chat Panel",
                     tooltip = "Places the tabs inside one continuous chat panel background, including the sidebar when visible.",
                     getValue = function()
                         return Cfg("extendBgBehindTabs") or false
                     end,
-                    setValue = function(v)
-                        Set("extendBgBehindTabs", v)
-                        if ECHAT.ApplyTabPadding then
-                            ECHAT.ApplyTabPadding()
+                    setValue = function(val)
+                        Set("extendBgBehindTabs", val)
+                        if CHAT.ApplyTabPadding then
+                            CHAT.ApplyTabPadding()
                         end
-                        if ECHAT.ApplyTabSpacing then
-                            ECHAT.ApplyTabSpacing()
+                        if CHAT.ApplyTabSpacing then
+                            CHAT.ApplyTabSpacing()
                         end
                         CludesUI:RefreshPage()
                     end,
@@ -1161,16 +1161,16 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("tabSpacing") or 1
                     end,
-                    setValue = function(v)
-                        Set("tabSpacing", v)
-                        if ECHAT.ApplyTabSpacing then
-                            ECHAT.ApplyTabSpacing()
+                    setValue = function(val)
+                        Set("tabSpacing", val)
+                        if CHAT.ApplyTabSpacing then
+                            CHAT.ApplyTabSpacing()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
 
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "slider",
                     text = "Tab Height",
                     min = 18,
@@ -1179,10 +1179,10 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("tabHeight") or 24
                     end,
-                    setValue = function(v)
-                        Set("tabHeight", v)
-                        if ECHAT.ApplyTabLayout then
-                            ECHAT.ApplyTabLayout()
+                    setValue = function(val)
+                        Set("tabHeight", val)
+                        if CHAT.ApplyTabLayout then
+                            CHAT.ApplyTabLayout()
                         end
                     end,
                 }, {
@@ -1194,21 +1194,21 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("tabInnerPaddingX") or 12
                     end,
-                    setValue = function(v)
-                        Set("tabInnerPaddingX", v)
-                        if ECHAT.ApplyTabLayout then
-                            ECHAT.ApplyTabLayout()
+                    setValue = function(val)
+                        Set("tabInnerPaddingX", val)
+                        if CHAT.ApplyTabLayout then
+                            CHAT.ApplyTabLayout()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
             end -- not STOCK (LAYOUT)
 
-            _, h = W:SectionHeader(parent, "TYPOGRAPHY", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "TYPOGRAPHY", posY)
+            posY = posY - hgt
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Tab Font",
                     values = fontValues,
@@ -1216,13 +1216,13 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("tabFont") or "__global"
                     end,
-                    setValue = function(v)
-                        Set("tabFont", v)
-                        if ECHAT.ApplyTabAppearance then
-                            ECHAT.ApplyTabAppearance()
+                    setValue = function(val)
+                        Set("tabFont", val)
+                        if CHAT.ApplyTabAppearance then
+                            CHAT.ApplyTabAppearance()
                         end
-                        if ECHAT.ApplyTabLayout then
-                            ECHAT.ApplyTabLayout()
+                        if CHAT.ApplyTabLayout then
+                            CHAT.ApplyTabLayout()
                         end
                     end,
                 }, {
@@ -1234,27 +1234,28 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("tabFontSize") or 11
                     end,
-                    setValue = function(v)
-                        Set("tabFontSize", v)
-                        if ECHAT.ApplyTabAppearance then
-                            ECHAT.ApplyTabAppearance()
+                    setValue = function(val)
+                        Set("tabFontSize", val)
+                        if CHAT.ApplyTabAppearance then
+                            CHAT.ApplyTabAppearance()
                         end
-                        if ECHAT.ApplyTabLayout then
-                            ECHAT.ApplyTabLayout()
+                        if CHAT.ApplyTabLayout then
+                            CHAT.ApplyTabLayout()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
             end
 
-            local function FontColorSwatch(active)
-                local key = active and "tabFontColorActive" or "tabFontColor"
-                local fallback = active and { r = 1, g = 1, b = 1, a = 1 } or { r = 1, g = 1, b = 1, a = 0.65 }
-                if active then
-                    local function SetMode(mode)
-                        Set("tabFontColorActiveMode", mode)
-                        if ECHAT.ApplyTabAppearance then
-                            ECHAT.ApplyTabAppearance()
+            local function FontColorSwatch(isActive)
+                local key = isActive and "tabFontColorActive" or "tabFontColor"
+                local fallback = isActive and { r = 1, g = 1, b = 1, a = 1 }
+                    or { r = 1, g = 1, b = 1, a = 0.65 }
+                if isActive then
+                    local function SetMode(modeName)
+                        Set("tabFontColorActiveMode", modeName)
+                        if CHAT.ApplyTabAppearance then
+                            CHAT.ApplyTabAppearance()
                         end
                         CludesUI:RefreshPage()
                     end
@@ -1269,8 +1270,8 @@ initFrame:SetScript("OnEvent", function(self)
                             setValue = function(r, g, b, a)
                                 Set(key, { r = r, g = g, b = b, a = a })
                                 Set("tabFontColorActiveMode", "custom")
-                                if ECHAT.ApplyTabAppearance then
-                                    ECHAT.ApplyTabAppearance()
+                                if CHAT.ApplyTabAppearance then
+                                    CHAT.ApplyTabAppearance()
                                 end
                             end,
                             onClick = function(self)
@@ -1304,8 +1305,8 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Class Color",
                             hasAlpha = false,
                             getValue = function()
-                                local _, class = UnitClass("player")
-                                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                                local _, classFile = UnitClass("player")
+                                local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                                 return c and c.r or 1, c and c.g or 1, c and c.b or 1
                             end,
                             setValue = function() end,
@@ -1318,10 +1319,10 @@ initFrame:SetScript("OnEvent", function(self)
                         },
                     }
                 end
-                local function SetMode(mode)
-                    Set("tabFontColorMode", mode)
-                    if ECHAT.ApplyTabAppearance then
-                        ECHAT.ApplyTabAppearance()
+                local function SetMode(modeName)
+                    Set("tabFontColorMode", modeName)
+                    if CHAT.ApplyTabAppearance then
+                        CHAT.ApplyTabAppearance()
                     end
                     CludesUI:RefreshPage()
                 end
@@ -1336,8 +1337,8 @@ initFrame:SetScript("OnEvent", function(self)
                         setValue = function(r, g, b, a)
                             Set(key, { r = r, g = g, b = b, a = a })
                             Set("tabFontColorMode", "custom")
-                            if ECHAT.ApplyTabAppearance then
-                                ECHAT.ApplyTabAppearance()
+                            if CHAT.ApplyTabAppearance then
+                                CHAT.ApplyTabAppearance()
                             end
                         end,
                         onClick = function(self)
@@ -1371,8 +1372,8 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Class Color",
                         hasAlpha = false,
                         getValue = function()
-                            local _, class = UnitClass("player")
-                            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                            local _, classFile = UnitClass("player")
+                            local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                             return c and c.r or 1, c and c.g or 1, c and c.b or 1
                         end,
                         setValue = function() end,
@@ -1385,17 +1386,17 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                 }
             end
-            _, h = W:DualRow(
-                parent,
-                y,
+            _, hgt = W:DualRow(
+                hostFrame,
+                posY,
                 { type = "multiSwatch", text = "Tab Font Color", swatches = FontColorSwatch(false) },
                 { type = "multiSwatch", text = "Tab Font Color Active", swatches = FontColorSwatch(true) }
             )
-            y = y - h
+            posY = posY - hgt
 
             if not STOCK then
-                _, h = W:SectionHeader(parent, "APPEARANCE", y)
-                y = y - h
+                _, hgt = W:SectionHeader(hostFrame, "APPEARANCE", posY)
+                posY = posY - hgt
                 -- The inactive background is a single custom color picker. The
                 -- active background uses the common Custom, Accent, Class order;
                 -- both reuse the existing color tables without new defaults.
@@ -1417,8 +1418,8 @@ initFrame:SetScript("OnEvent", function(self)
                                 local c = Cfg("tabBackgroundColor") or fallback
                                 local a = c.a == nil and fallback.a or c.a
                                 Set("tabBackgroundColor", { r = r, g = g, b = b, a = a })
-                                if ECHAT.ApplyTabAppearance then
-                                    ECHAT.ApplyTabAppearance()
+                                if CHAT.ApplyTabAppearance then
+                                    CHAT.ApplyTabAppearance()
                                 end
                             end,
                         },
@@ -1428,10 +1429,10 @@ initFrame:SetScript("OnEvent", function(self)
                     local key = "tabBackgroundColorActive"
                     local modeKey = "tabBackgroundColorActiveMode"
                     local fallback = TAB_BG_FALLBACK[true]
-                    local function SetMode(mode)
-                        Set(modeKey, mode)
-                        if ECHAT.ApplyTabAppearance then
-                            ECHAT.ApplyTabAppearance()
+                    local function SetMode(modeName)
+                        Set(modeKey, modeName)
+                        if CHAT.ApplyTabAppearance then
+                            CHAT.ApplyTabAppearance()
                         end
                         CludesUI:RefreshPage()
                     end
@@ -1448,8 +1449,8 @@ initFrame:SetScript("OnEvent", function(self)
                                 local a = c.a == nil and fallback.a or c.a
                                 Set(key, { r = r, g = g, b = b, a = a })
                                 Set(modeKey, "custom")
-                                if ECHAT.ApplyTabAppearance then
-                                    ECHAT.ApplyTabAppearance()
+                                if CHAT.ApplyTabAppearance then
+                                    CHAT.ApplyTabAppearance()
                                 end
                             end,
                             onClick = function(self)
@@ -1483,8 +1484,8 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Class Color",
                             hasAlpha = false,
                             getValue = function()
-                                local _, class = UnitClass("player")
-                                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                                local _, classFile = UnitClass("player")
+                                local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                                 return c and c.r or 1, c and c.g or 1, c and c.b or 1
                             end,
                             setValue = function() end,
@@ -1498,26 +1499,21 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                 end
                 local tabBgRow
-                tabBgRow, h = W:DualRow(
-                    parent,
-                    y,
-                    {
-                        type = "multiSwatch",
-                        text = "Tab Background Color",
-                        swatches = InactiveTabBgSwatches(),
-                    },
-                    {
-                        type = "multiSwatch",
-                        text = "Tab Background Color Active",
-                        swatches = ActiveTabBgSwatches(),
-                    }
-                )
-                local function AttachTabBgOpacityCog(rgn, active)
-                    local key = active and "tabBackgroundColorActive" or "tabBackgroundColor"
-                    local fallback = TAB_BG_FALLBACK[active]
-                    CludesUI.BuildInlineCog(rgn, {
-                        title = active and "Active Tab Background" or "Tab Background",
-                        captureRegion = rgn,
+                tabBgRow, hgt = W:DualRow(hostFrame, posY, {
+                    type = "multiSwatch",
+                    text = "Tab Background Color",
+                    swatches = InactiveTabBgSwatches(),
+                }, {
+                    type = "multiSwatch",
+                    text = "Tab Background Color Active",
+                    swatches = ActiveTabBgSwatches(),
+                })
+                local function AttachTabBgOpacityCog(region, isActive)
+                    local key = isActive and "tabBackgroundColorActive" or "tabBackgroundColor"
+                    local fallback = TAB_BG_FALLBACK[isActive]
+                    CludesUI.BuildInlineCog(region, {
+                        title = isActive and "Active Tab Background" or "Tab Background",
+                        captureRegion = region,
                         rows = {
                             {
                                 type = "slider",
@@ -1530,11 +1526,11 @@ initFrame:SetScript("OnEvent", function(self)
                                     local a = c.a == nil and fallback.a or c.a
                                     return math.floor(a * 100 + 0.5)
                                 end,
-                                set = function(v)
+                                set = function(val)
                                     local c = Cfg(key) or fallback
-                                    Set(key, { r = c.r, g = c.g, b = c.b, a = v / 100 })
-                                    if ECHAT.ApplyTabAppearance then
-                                        ECHAT.ApplyTabAppearance()
+                                    Set(key, { r = c.r, g = c.g, b = c.b, a = val / 100 })
+                                    if CHAT.ApplyTabAppearance then
+                                        CHAT.ApplyTabAppearance()
                                     end
                                 end,
                             },
@@ -1545,13 +1541,13 @@ initFrame:SetScript("OnEvent", function(self)
                     AttachTabBgOpacityCog(tabBgRow._leftRegion, false)
                     AttachTabBgOpacityCog(tabBgRow._rightRegion, true)
                 end
-                y = y - h
+                posY = posY - hgt
 
                 local function UnderlineMode()
-                    local mode = Cfg("activeUnderlineColorMode") or "accent"
+                    local modeName = Cfg("activeUnderlineColorMode") or "accent"
                     -- Legacy "border" profiles render and display as Custom,
                     -- without rewriting the saved profile during initialization.
-                    return mode == "border" and "custom" or mode
+                    return modeName == "border" and "custom" or modeName
                 end
                 local function UnderlineSwatches()
                     return {
@@ -1559,21 +1555,22 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Custom Color",
                             hasAlpha = true,
                             getValue = function()
-                                local c = Cfg("activeUnderlineColor") or { r = 0.05, g = 0.82, b = 0.61, a = 1 }
+                                local c = Cfg("activeUnderlineColor")
+                                    or { r = 0.05, g = 0.82, b = 0.61, a = 1 }
                                 return c.r, c.g, c.b, c.a == nil and 1 or c.a
                             end,
                             setValue = function(r, g, b, a)
                                 Set("activeUnderlineColor", { r = r, g = g, b = b, a = a })
                                 Set("activeUnderlineColorMode", "custom")
-                                if ECHAT.ApplyTabAppearance then
-                                    ECHAT.ApplyTabAppearance()
+                                if CHAT.ApplyTabAppearance then
+                                    CHAT.ApplyTabAppearance()
                                 end
                             end,
                             onClick = function(self)
                                 if UnderlineMode() ~= "custom" then
                                     Set("activeUnderlineColorMode", "custom")
-                                    if ECHAT.ApplyTabAppearance then
-                                        ECHAT.ApplyTabAppearance()
+                                    if CHAT.ApplyTabAppearance then
+                                        CHAT.ApplyTabAppearance()
                                     end
                                     CludesUI:RefreshPage()
                                     return
@@ -1595,8 +1592,8 @@ initFrame:SetScript("OnEvent", function(self)
                             setValue = function() end,
                             onClick = function()
                                 Set("activeUnderlineColorMode", "accent")
-                                if ECHAT.ApplyTabAppearance then
-                                    ECHAT.ApplyTabAppearance()
+                                if CHAT.ApplyTabAppearance then
+                                    CHAT.ApplyTabAppearance()
                                 end
                                 CludesUI:RefreshPage()
                             end,
@@ -1615,8 +1612,8 @@ initFrame:SetScript("OnEvent", function(self)
                             setValue = function() end,
                             onClick = function()
                                 Set("activeUnderlineColorMode", "class")
-                                if ECHAT.ApplyTabAppearance then
-                                    ECHAT.ApplyTabAppearance()
+                                if CHAT.ApplyTabAppearance then
+                                    CHAT.ApplyTabAppearance()
                                 end
                                 CludesUI:RefreshPage()
                             end,
@@ -1629,19 +1626,19 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Texture belongs to the tab appearance controls, alongside the
                 -- combined underline toggle and its inline color choices.
-                if ECHAT.RefreshBgTextureCatalogue then
-                    ECHAT.RefreshBgTextureCatalogue()
+                if CHAT.RefreshBgTextureCatalogue then
+                    CHAT.RefreshBgTextureCatalogue()
                 end
                 local btValues, btOrder = {}, {}
                 do
-                    local texNames = ns.chatBgTextureNames or {}
-                    for _, key in ipairs(ns.chatBgTextureOrder or {}) do
+                    local texNames = mod.chatBgTextureNames or {}
+                    for _, key in ipairs(mod.chatBgTextureOrder or {}) do
                         if key ~= "---" then
                             btValues[key] = texNames[key] or key
                             btOrder[#btOrder + 1] = key
                         end
                     end
-                    local texLookup = ns.chatBgTextures or {}
+                    local texLookup = mod.chatBgTextures or {}
                     btValues._menuOpts = {
                         itemHeight = 28,
                         background = function(key)
@@ -1650,16 +1647,16 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                 end
                 local underlineRow
-                underlineRow, h = W:DualRow(parent, y, {
+                underlineRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Active Underline",
                     getValue = function()
                         return Cfg("activeUnderline") ~= false
                     end,
-                    setValue = function(v)
-                        Set("activeUnderline", v)
-                        if ECHAT.ApplyTabAppearance then
-                            ECHAT.ApplyTabAppearance()
+                    setValue = function(val)
+                        Set("activeUnderline", val)
+                        if CHAT.ApplyTabAppearance then
+                            CHAT.ApplyTabAppearance()
                         end
                     end,
                 }, {
@@ -1671,26 +1668,26 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("tabBackgroundTexture") or "none"
                     end,
-                    setValue = function(v)
-                        Set("tabBackgroundTexture", v)
-                        if ECHAT.ApplyTabAppearance then
-                            ECHAT.ApplyTabAppearance()
+                    setValue = function(val)
+                        Set("tabBackgroundTexture", val)
+                        if CHAT.ApplyTabAppearance then
+                            CHAT.ApplyTabAppearance()
                         end
                     end,
                 })
                 if not CludesUI._prebuilding then
                     CludesUI.BuildInlineSwatches(underlineRow._leftRegion, UnderlineSwatches())
                 end
-                y = y - h
+                posY = posY - hgt
 
                 -- (No tab idle-fade section: the per-tab fade layer was removed
                 -- 2026-07-20 -- Blizzard's own tab alpha machinery always won and
                 -- the setting visibly did nothing. Tabs fade with the chat panel
                 -- via the dock; see _ApplyAlpha in CUI_Chat_Visibility.lua.)
 
-                _, h = W:SectionHeader(parent, "BORDER", y)
-                y = y - h
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:SectionHeader(hostFrame, "BORDER", posY)
+                posY = posY - hgt
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Sync Border with Chat Panel",
                     tooltip = "For tabs outside the chat panel, uses the chat panel's border style and color instead of separate tab border settings.",
@@ -1702,15 +1699,15 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("syncTabBorder") ~= false
                     end,
-                    setValue = function(v)
-                        Set("syncTabBorder", v)
-                        if ECHAT.ApplyTabBorders then
-                            ECHAT.ApplyTabBorders()
+                    setValue = function(val)
+                        Set("syncTabBorder", val)
+                        if CHAT.ApplyTabBorders then
+                            CHAT.ApplyTabBorders()
                         end
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
-                y = y - h
+                posY = posY - hgt
                 local syncTabs = function()
                     return Cfg("syncTabBorder") ~= false
                 end
@@ -1725,9 +1722,9 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
-                borderRow, h = W:DualRow(
-                    parent,
-                    y,
+                borderRow, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     {
                         type = "dropdown",
                         text = "Border Style",
@@ -1739,15 +1736,15 @@ initFrame:SetScript("OnEvent", function(self)
                         getValue = function()
                             return Cfg("tabBorderTexture") or "solid"
                         end,
-                        setValue = function(v)
-                            Set("tabBorderTexture", v)
+                        setValue = function(val)
+                            Set("tabBorderTexture", val)
                             Set("tabBorderOffsetX", nil)
                             Set("tabBorderOffsetY", nil)
                             Set("tabBorderShiftX", nil)
                             Set("tabBorderShiftY", nil)
                             -- A style with a select colour (Pixels grey) seeds the custom
                             -- colour; the colour mode is kept, every other style keeps its colour.
-                            local selC = CludesUI.GetBorderSelectColor(v)
+                            local selC = CludesUI.GetBorderSelectColor(val)
                             if selC then
                                 Set("tabBorderColor", selC)
                             end
@@ -1757,17 +1754,17 @@ initFrame:SetScript("OnEvent", function(self)
                             if Cfg("tabBorderThicknessPx") then
                                 Set("tabBorderThicknessPx", false)
                             end
-                            local def = CludesUI.GetBorderDefaultSize("chat", v)
-                                or CludesUI.GetBorderTextureDefaultThickness(v)
+                            local spec_def = CludesUI.GetBorderDefaultSize("chat", val)
+                                or CludesUI.GetBorderTextureDefaultThickness(val)
                             -- Unregistered SharedMedia borders default to the NUMBER 1; this key stores labels.
-                            if type(def) == "number" then
-                                def = CludesUI.BORDER_LABEL_OF_STEP[def] or "thin"
+                            if type(spec_def) == "number" then
+                                spec_def = CludesUI.BORDER_LABEL_OF_STEP[spec_def] or "thin"
                             end
-                            if def then
-                                Set("tabBorderThickness", def)
+                            if spec_def then
+                                Set("tabBorderThickness", spec_def)
                             end
-                            if ECHAT.ApplyTabBorders then
-                                ECHAT.ApplyTabBorders()
+                            if CHAT.ApplyTabBorders then
+                                CHAT.ApplyTabBorders()
                             end
                             -- Rebuild: the offset row below exists only for a textured style.
                             CludesUI:RefreshPage(true)
@@ -1791,17 +1788,17 @@ initFrame:SetScript("OnEvent", function(self)
                         getPx = function()
                             return Cfg("tabBorderThicknessPx")
                         end,
-                        setPx = function(v)
-                            Set("tabBorderThicknessPx", v)
+                        setPx = function(val)
+                            Set("tabBorderThicknessPx", val)
                         end,
                         apply = function()
-                            if ECHAT.ApplyTabBorders then
-                                ECHAT.ApplyTabBorders()
+                            if CHAT.ApplyTabBorders then
+                                CHAT.ApplyTabBorders()
                             end
                         end,
                     })
                 )
-                y = y - h
+                posY = posY - hgt
 
                 -- Width Offset | Height Offset: a textured tab style's outward offsets in
                 -- their own row (Solid has none). Same registry row a tab renders with
@@ -1830,34 +1827,34 @@ initFrame:SetScript("OnEvent", function(self)
                             getX = function()
                                 return Cfg("tabBorderOffsetX")
                             end,
-                            setX = function(v)
-                                Set("tabBorderOffsetX", v)
+                            setX = function(val)
+                                Set("tabBorderOffsetX", val)
                             end,
                             getY = function()
                                 return Cfg("tabBorderOffsetY")
                             end,
-                            setY = function(v)
-                                Set("tabBorderOffsetY", v)
+                            setY = function(val)
+                                Set("tabBorderOffsetY", val)
                             end,
                             apply = function()
-                                if ECHAT.ApplyTabBorders then
-                                    ECHAT.ApplyTabBorders()
+                                if CHAT.ApplyTabBorders then
+                                    CHAT.ApplyTabBorders()
                                 end
                             end,
                         })
-                        _, h = W:DualRow(parent, y, ocfgL, ocfgR)
-                        y = y - h
+                        _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
+                        posY = posY - hgt
                     end
                 end
 
                 do
-                    local rgn = borderRow._leftRegion
-                    CludesUI.BuildInlineCog(rgn, {
+                    local region = borderRow._leftRegion
+                    CludesUI.BuildInlineCog(region, {
                         chain = false,
                         disabled = tabBordersDisabled,
                         disabledTooltip = TabBorderDisabledTip,
                         title = "Tab Border Options",
-                        captureRegion = rgn,
+                        captureRegion = region,
                         rows = {
                             {
                                 type = "slider",
@@ -1866,9 +1863,9 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 10,
                                 step = 1,
                                 get = function()
-                                    local v = Cfg("tabBorderShiftX")
-                                    if v ~= nil then
-                                        return v
+                                    local val = Cfg("tabBorderShiftX")
+                                    if val ~= nil then
+                                        return val
                                     end
                                     local _, _, d = CludesUI.GetBorderDefaults(
                                         "chat",
@@ -1877,9 +1874,9 @@ initFrame:SetScript("OnEvent", function(self)
                                     )
                                     return d
                                 end,
-                                set = function(v)
-                                    Set("tabBorderShiftX", v == 0 and nil or v)
-                                    ECHAT.ApplyTabBorders()
+                                set = function(val)
+                                    Set("tabBorderShiftX", val == 0 and nil or val)
+                                    CHAT.ApplyTabBorders()
                                 end,
                             },
                             {
@@ -1889,9 +1886,9 @@ initFrame:SetScript("OnEvent", function(self)
                                 max = 10,
                                 step = 1,
                                 get = function()
-                                    local v = Cfg("tabBorderShiftY")
-                                    if v ~= nil then
-                                        return v
+                                    local val = Cfg("tabBorderShiftY")
+                                    if val ~= nil then
+                                        return val
                                     end
                                     local _, _, _, d = CludesUI.GetBorderDefaults(
                                         "chat",
@@ -1900,9 +1897,9 @@ initFrame:SetScript("OnEvent", function(self)
                                     )
                                     return d
                                 end,
-                                set = function(v)
-                                    Set("tabBorderShiftY", v == 0 and nil or v)
-                                    ECHAT.ApplyTabBorders()
+                                set = function(val)
+                                    Set("tabBorderShiftY", val == 0 and nil or val)
+                                    CHAT.ApplyTabBorders()
                                 end,
                             },
                         },
@@ -1910,17 +1907,17 @@ initFrame:SetScript("OnEvent", function(self)
                 end
 
                 if not CludesUI._prebuilding then
-                    local rgn, ctrl = borderRow._rightRegion, borderRow._rightRegion._control
-                    local function SetMode(mode)
+                    local region, ctrl = borderRow._rightRegion, borderRow._rightRegion._control
+                    local function SetMode(modeName)
                         if tabBordersDisabled() then
                             return
                         end
-                        Set("tabBorderColorMode", mode)
-                        ECHAT.ApplyTabBorders()
+                        Set("tabBorderColorMode", modeName)
+                        CHAT.ApplyTabBorders()
                         CludesUI:RefreshPage()
                     end
                     local classSw, refreshClass = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         borderRow:GetFrameLevel() + 3,
                         function()
                             local _, cl = UnitClass("player")
@@ -1931,12 +1928,12 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    PP.Point(classSw, "RIGHT", ctrl, "LEFT", -8, 0)
+                    Pix.Point(classSw, "RIGHT", ctrl, "LEFT", -8, 0)
                     classSw:SetScript("OnClick", function()
                         SetMode("class")
                     end)
                     local accentSw, refreshAccent = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         borderRow:GetFrameLevel() + 3,
                         function()
                             return CludesUI.GetAccentColor()
@@ -1945,12 +1942,12 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    PP.Point(accentSw, "RIGHT", classSw, "LEFT", -8, 0)
+                    Pix.Point(accentSw, "RIGHT", classSw, "LEFT", -8, 0)
                     accentSw:SetScript("OnClick", function()
                         SetMode("accent")
                     end)
                     local customSw, refreshCustom = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         borderRow:GetFrameLevel() + 3,
                         function()
                             local c = Cfg("tabBorderColor") or { r = 1, g = 1, b = 1 }
@@ -1960,12 +1957,12 @@ initFrame:SetScript("OnEvent", function(self)
                             Set("tabBorderColor", { r = r, g = g, b = b })
                             Set("tabBorderOpacity", a)
                             Set("tabBorderColorMode", "custom")
-                            ECHAT.ApplyTabBorders()
+                            CHAT.ApplyTabBorders()
                         end,
                         true,
                         20
                     )
-                    PP.Point(customSw, "RIGHT", accentSw, "LEFT", -8, 0)
+                    Pix.Point(customSw, "RIGHT", accentSw, "LEFT", -8, 0)
                     local orig = customSw:GetScript("OnClick")
                     customSw:SetScript("OnClick", function(self, ...)
                         if tabBordersDisabled() then
@@ -1981,10 +1978,10 @@ initFrame:SetScript("OnEvent", function(self)
                         refreshClass()
                         refreshAccent()
                         refreshCustom()
-                        local off, mode = tabBordersDisabled(), Cfg("tabBorderColorMode") or "custom"
-                        customSw:SetAlpha(off and 0.15 or (mode == "custom" and 1 or 0.3))
-                        accentSw:SetAlpha(off and 0.15 or (mode == "accent" and 1 or 0.3))
-                        classSw:SetAlpha(off and 0.15 or (mode == "class" and 1 or 0.3))
+                        local offset, modeName = tabBordersDisabled(), Cfg("tabBorderColorMode") or "custom"
+                        customSw:SetAlpha(offset and 0.15 or (modeName == "custom" and 1 or 0.3))
+                        accentSw:SetAlpha(offset and 0.15 or (modeName == "accent" and 1 or 0.3))
+                        classSw:SetAlpha(offset and 0.15 or (modeName == "class" and 1 or 0.3))
                     end
                     CludesUI.RegisterWidgetRefresh(Refresh)
                     Refresh()
@@ -1992,7 +1989,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Row: Active Tab Border (+ inline color swatch)
                 local activeBorderRow
-                activeBorderRow, h = W:DualRow(parent, y, {
+                activeBorderRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Active Tab Border",
                     tooltip = "Gives the selected tab its own border color.",
@@ -2001,18 +1998,18 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("activeTabBorder") ~= false
                     end,
-                    setValue = function(v)
-                        Set("activeTabBorder", v)
-                        if ECHAT.ApplyTabBorders then
-                            ECHAT.ApplyTabBorders()
+                    setValue = function(val)
+                        Set("activeTabBorder", val)
+                        if CHAT.ApplyTabBorders then
+                            CHAT.ApplyTabBorders()
                         end
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
                 if not CludesUI._prebuilding then
-                    local rgn = activeBorderRow._leftRegion
-                    local swatch, refreshSwatch = CludesUI.BuildColorSwatch(
-                        rgn,
+                    local region = activeBorderRow._leftRegion
+                    local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
+                        region,
                         activeBorderRow:GetFrameLevel() + 3,
                         function()
                             local c = Cfg("tabBorderColorActive") or { r = 1, g = 1, b = 1 }
@@ -2020,35 +2017,35 @@ initFrame:SetScript("OnEvent", function(self)
                         end,
                         function(r, g, b, a)
                             Set("tabBorderColorActive", { r = r, g = g, b = b, a = a })
-                            if ECHAT.ApplyTabBorders then
-                                ECHAT.ApplyTabBorders()
+                            if CHAT.ApplyTabBorders then
+                                CHAT.ApplyTabBorders()
                             end
                         end,
                         true,
                         20
                     )
-                    PP.Point(swatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = swatch
-                    swatch:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(swatch, "Active Border Color")
+                    Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                    region._lastInline = colorSwatch
+                    colorSwatch:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(colorSwatch, "Active Border Color")
                     end)
-                    swatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
+                    colorSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                     local function RefreshActiveSwatch()
                         refreshSwatch()
-                        local off = tabBordersDisabled() or Cfg("activeTabBorder") == false
-                        swatch:SetAlpha(off and 0.3 or 1)
+                        local offset = tabBordersDisabled() or Cfg("activeTabBorder") == false
+                        colorSwatch:SetAlpha(offset and 0.3 or 1)
                     end
                     CludesUI.RegisterWidgetRefresh(RefreshActiveSwatch)
                     RefreshActiveSwatch()
                 end
-                y = y - h
+                posY = posY - hgt
             end -- not STOCK (APPEARANCE, BORDER)
         end -- isTabs
 
         if isChat then
             -- -- INPUT FIELD -------------------------------------------------------
-            _, h = W:SectionHeader(parent, "INPUT FIELD", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "INPUT FIELD", posY)
+            posY = posY - hgt
 
             -- Stock styles keep Blizzard's own input box, its height and place.
             -- WoW Forever's box is ours, always below: its height alone.
@@ -2062,38 +2059,38 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("editBoxHeight") or 23
                     end,
-                    setValue = function(v)
-                        Set("editBoxHeight", v)
-                        if ECHAT.ApplyInputPosition then
-                            ECHAT.ApplyInputPosition()
+                    setValue = function(val)
+                        Set("editBoxHeight", val)
+                        if CHAT.ApplyInputPosition then
+                            CHAT.ApplyInputPosition()
                         end
                     end,
                 }
                 if FV then
-                    _, h = W:DualRow(parent, y, ebHeightCfg, CludesUI.BlankRowCfg())
+                    _, hgt = W:DualRow(hostFrame, posY, ebHeightCfg, CludesUI.BlankRowCfg())
                 else
-                    _, h = W:DualRow(parent, y, {
+                    _, hgt = W:DualRow(hostFrame, posY, {
                         type = "toggle",
                         text = "Input on Top",
                         getValue = function()
                             return Cfg("inputOnTop") or false
                         end,
-                        setValue = function(v)
-                            Set("inputOnTop", v)
-                            if ECHAT.ApplyInputPosition then
-                                ECHAT.ApplyInputPosition()
+                        setValue = function(val)
+                            Set("inputOnTop", val)
+                            if CHAT.ApplyInputPosition then
+                                CHAT.ApplyInputPosition()
                             end
                         end,
                     }, ebHeightCfg)
                 end
-                y = y - h
+                posY = posY - hgt
             end -- not STOCK or FV
 
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
                 fontValues.__chat = "Chat Font"
                 table.insert(fontOrder, 1, "__chat")
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Edit Box Font",
                     values = fontValues,
@@ -2101,10 +2098,10 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("editBoxFont") or "__chat"
                     end,
-                    setValue = function(v)
-                        Set("editBoxFont", v)
-                        if ECHAT.ApplyFonts then
-                            ECHAT.ApplyFonts()
+                    setValue = function(val)
+                        Set("editBoxFont", val)
+                        if CHAT.ApplyFonts then
+                            CHAT.ApplyFonts()
                         end
                     end,
                 }, {
@@ -2117,41 +2114,41 @@ initFrame:SetScript("OnEvent", function(self)
                         if Cfg("editBoxFontSize") then
                             return Cfg("editBoxFontSize")
                         end
-                        local size
+                        local dim
                         if FCF_GetChatWindowInfo then
-                            size = select(2, FCF_GetChatWindowInfo(1))
+                            dim = select(2, FCF_GetChatWindowInfo(1))
                         end
-                        return size or 12
+                        return dim or 12
                     end,
-                    setValue = function(v)
-                        Set("editBoxFontSize", v)
-                        if ECHAT.ApplyFonts then
-                            ECHAT.ApplyFonts()
+                    setValue = function(val)
+                        Set("editBoxFontSize", val)
+                        if CHAT.ApplyFonts then
+                            CHAT.ApplyFonts()
                         end
                     end,
                 })
-                y = y - h
+                posY = posY - hgt
             end
 
             -- -- EXTRAS ------------------------------------------------------------
-            _, h = W:SectionHeader(parent, "EXTRAS", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
+            posY = posY - hgt
 
             -- Row 1: Remember Last Chat Lines (+ cog: Max Lines) | Hide Tooltip on Hover
             local histRow
-            histRow, h = W:DualRow(parent, y, {
+            histRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Remember Last Chat Lines",
                 tooltip = "Saves the most recent lines per chat tab (per character), except Blizzard's combat log window, so they reappear after /reload or relog. Stored separately from layout profiles.",
                 getValue = function()
                     return Cfg("persistChatHistory") == true
                 end,
-                setValue = function(v)
-                    Set("persistChatHistory", v)
-                    if ECHAT.OnSessionHistoryToggled then
-                        ECHAT.OnSessionHistoryToggled(v)
-                    elseif ECHAT.InitChatSessionHistory then
-                        ECHAT.InitChatSessionHistory()
+                setValue = function(val)
+                    Set("persistChatHistory", val)
+                    if CHAT.OnSessionHistoryToggled then
+                        CHAT.OnSessionHistoryToggled(val)
+                    elseif CHAT.InitChatSessionHistory then
+                        CHAT.InitChatSessionHistory()
                     end
                 end,
             }, {
@@ -2160,8 +2157,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("hideTooltipOnHover") or false
                 end,
-                setValue = function(v)
-                    Set("hideTooltipOnHover", v)
+                setValue = function(val)
+                    Set("hideTooltipOnHover", val)
                 end,
             })
             if not CludesUI._prebuilding then
@@ -2178,24 +2175,23 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("persistChatHistoryMaxLines") or 100
                             end,
-                            set = function(v)
-                                Set("persistChatHistoryMaxLines", v)
+                            set = function(val)
+                                Set("persistChatHistoryMaxLines", val)
                             end,
                         },
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Sound dropdown: shallow-copy the runtime tables so _menuOpts
             -- (preview icon) doesn't pollute the shared tables.
             local whisperSoundValues = {}
-            local whisperSoundPaths = ECHAT.WHISPER_SOUND_PATHS or {}
-            local whisperSoundNames = ECHAT.WHISPER_SOUND_NAMES
-                or { none = "Blizzard Default", mute = "None" }
-            local whisperSoundOrder = ECHAT.WHISPER_SOUND_ORDER or { "none", "mute" }
-            for k, v in pairs(whisperSoundNames) do
-                whisperSoundValues[k] = v
+            local whisperSoundPaths = CHAT.WHISPER_SOUND_PATHS or {}
+            local whisperSoundNames = CHAT.WHISPER_SOUND_NAMES or { none = "Blizzard Default", mute = "None" }
+            local whisperSoundOrder = CHAT.WHISPER_SOUND_ORDER or { "none", "mute" }
+            for k, val in pairs(whisperSoundNames) do
+                whisperSoundValues[k] = val
             end
             whisperSoundValues._menuOpts = {
                 itemHeight = 26,
@@ -2217,9 +2213,9 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUI.SOUND_ICON_PRESSED_ATLAS
                 end,
                 iconOnClick = function(key)
-                    local path = whisperSoundPaths[key]
-                    if path then
-                        PlaySoundFile(path, "Master")
+                    local filePath = whisperSoundPaths[key]
+                    if filePath then
+                        PlaySoundFile(filePath, "Master")
                     end
                 end,
                 iconTooltip = function()
@@ -2236,10 +2232,10 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("hideBorders") or false
                 end,
-                setValue = function(v)
-                    Set("hideBorders", v)
-                    if ECHAT.ApplyBorders then
-                        ECHAT.ApplyBorders()
+                setValue = function(val)
+                    Set("hideBorders", val)
+                    if CHAT.ApplyBorders then
+                        CHAT.ApplyBorders()
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -2248,7 +2244,7 @@ initFrame:SetScript("OnEvent", function(self)
                 BS.Gate("chat", hideBordersCfg)
             end
             local extrasBorderRow
-            extrasBorderRow, h = W:DualRow(parent, y, hideBordersCfg, {
+            extrasBorderRow, hgt = W:DualRow(hostFrame, posY, hideBordersCfg, {
                 type = "dropdown",
                 text = "Whisper Sound",
                 tooltip = "Blizzard Default keeps the game's whisper sound. Any other sound replaces it, and None plays no sound.",
@@ -2257,32 +2253,32 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("whisperSoundKey") or "none"
                 end,
-                setValue = function(v)
-                    Set("whisperSoundKey", v)
-                    ECHAT.ApplyWhisperMute()
+                setValue = function(val)
+                    Set("whisperSoundKey", val)
+                    CHAT.ApplyWhisperMute()
                 end,
             })
             if not CludesUI._prebuilding then
-                local rgn = extrasBorderRow._leftRegion
-                local ctrl = rgn._control
-                local function SetInnerMode(mode)
+                local region = extrasBorderRow._leftRegion
+                local ctrl = region._control
+                local function SetInnerMode(modeName)
                     if Cfg("hideBorders") then
                         return
                     end
-                    Set("innerBorderColorMode", mode)
-                    if ECHAT.ApplyBorders then
-                        ECHAT.ApplyBorders()
+                    Set("innerBorderColorMode", modeName)
+                    if CHAT.ApplyBorders then
+                        CHAT.ApplyBorders()
                     end
-                    if ECHAT.ApplyExtendedBackground then
-                        ECHAT.ApplyExtendedBackground()
+                    if CHAT.ApplyExtendedBackground then
+                        CHAT.ApplyExtendedBackground()
                     end
-                    if ECHAT.ApplyTabSeparators then
-                        ECHAT.ApplyTabSeparators()
+                    if CHAT.ApplyTabSeparators then
+                        CHAT.ApplyTabSeparators()
                     end
                     CludesUI:RefreshPage()
                 end
-                local swatch, refreshSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
+                    region,
                     extrasBorderRow:GetFrameLevel() + 3,
                     function()
                         local c = Cfg("innerBorderColor") or { r = 1, g = 1, b = 1, a = 0.06 }
@@ -2291,24 +2287,24 @@ initFrame:SetScript("OnEvent", function(self)
                     function(r, g, b, a)
                         Set("innerBorderColor", { r = r, g = g, b = b, a = a })
                         Set("innerBorderColorMode", "custom")
-                        if ECHAT.ApplyBorders then
-                            ECHAT.ApplyBorders()
+                        if CHAT.ApplyBorders then
+                            CHAT.ApplyBorders()
                         end
-                        if ECHAT.ApplyExtendedBackground then
-                            ECHAT.ApplyExtendedBackground()
+                        if CHAT.ApplyExtendedBackground then
+                            CHAT.ApplyExtendedBackground()
                         end
-                        if ECHAT.ApplyTabSeparators then
-                            ECHAT.ApplyTabSeparators()
+                        if CHAT.ApplyTabSeparators then
+                            CHAT.ApplyTabSeparators()
                         end
                     end,
                     true,
                     20
                 )
-                PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 -- Accent mode swatch sits left of the custom one (select-mode-
                 -- first convention, matching the tab border color trio).
                 local accentSw, refreshAccent = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     extrasBorderRow:GetFrameLevel() + 3,
                     function()
                         return CludesUI.GetAccentColor()
@@ -2317,7 +2313,7 @@ initFrame:SetScript("OnEvent", function(self)
                     false,
                     20
                 )
-                PP.Point(accentSw, "RIGHT", swatch, "LEFT", -8, 0)
+                Pix.Point(accentSw, "RIGHT", colorSwatch, "LEFT", -8, 0)
                 accentSw:SetScript("OnClick", function()
                     SetInnerMode("accent")
                 end)
@@ -2325,8 +2321,8 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUI.ShowWidgetTooltip(accentSw, "Accent Inner Border Color")
                 end)
                 accentSw:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
-                local origClick = swatch:GetScript("OnClick")
-                swatch:SetScript("OnClick", function(self, ...)
+                local origClick = colorSwatch:GetScript("OnClick")
+                colorSwatch:SetScript("OnClick", function(self, ...)
                     if Cfg("hideBorders") then
                         return
                     end
@@ -2336,26 +2332,26 @@ initFrame:SetScript("OnEvent", function(self)
                         origClick(self, ...)
                     end
                 end)
-                swatch:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(swatch, "Inner Border Color")
+                colorSwatch:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(colorSwatch, "Inner Border Color")
                 end)
-                swatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
+                colorSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                 local function RefreshInner()
                     refreshSwatch()
                     refreshAccent()
-                    local off = Cfg("hideBorders") or STOCK
-                    local mode = Cfg("innerBorderColorMode") or "custom"
-                    swatch:SetAlpha(off and 0.3 or (mode == "custom" and 1 or 0.3))
-                    accentSw:SetAlpha(off and 0.3 or (mode == "accent" and 1 or 0.3))
+                    local offset = Cfg("hideBorders") or STOCK
+                    local modeName = Cfg("innerBorderColorMode") or "custom"
+                    colorSwatch:SetAlpha(offset and 0.3 or (modeName == "custom" and 1 or 0.3))
+                    accentSw:SetAlpha(offset and 0.3 or (modeName == "accent" and 1 or 0.3))
                 end
                 CludesUI.RegisterWidgetRefresh(RefreshInner)
                 RefreshInner()
                 if BS then
-                    BS.BlockInline("chat", swatch)
+                    BS.BlockInline("chat", colorSwatch)
                     BS.BlockInline("chat", accentSw)
                 end
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Row 3: Timestamp All Messages | Timestamps
             do
@@ -2381,7 +2377,7 @@ initFrame:SetScript("OnEvent", function(self)
                     "%H:%M ",
                     "%H:%M:%S ",
                 }
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Timestamp All Messages",
                     tooltip = "Adds timestamps to system messages, loot, achievements, and addon messages, not just player chat.",
@@ -2392,13 +2388,13 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("timestampAll") == true
                     end,
-                    setValue = function(v)
-                        Set("timestampAll", v)
-                        if ECHAT.ApplyTimestampCVar then
-                            ECHAT.ApplyTimestampCVar()
+                    setValue = function(val)
+                        Set("timestampAll", val)
+                        if CHAT.ApplyTimestampCVar then
+                            CHAT.ApplyTimestampCVar()
                         end
-                        if ECHAT.EngineQueueRebuildAll then
-                            ECHAT.EngineQueueRebuildAll()
+                        if CHAT.EngineQueueRebuildAll then
+                            CHAT.EngineQueueRebuildAll()
                         end
                     end,
                 }, {
@@ -2409,33 +2405,33 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("timestampFormat") or "%I:%M "
                     end,
-                    setValue = function(v)
-                        Set("timestampFormat", v)
-                        if ECHAT.ApplyTimestampCVar then
-                            ECHAT.ApplyTimestampCVar()
+                    setValue = function(val)
+                        Set("timestampFormat", val)
+                        if CHAT.ApplyTimestampCVar then
+                            CHAT.ApplyTimestampCVar()
                         end
                         CludesUI:RefreshPage()
                     end,
                 })
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Row 4: Shortened Channel Names (+ Use Letters cog) | Class Colored Names
             local abbrevRow
-            abbrevRow, h = W:DualRow(parent, y, {
+            abbrevRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Shortened Channel Names",
                 tooltip = "Abbreviates channel prefixes, like [Party] to [P] and [Guild] to [G]; world channels show their number.",
                 getValue = function()
                     return Cfg("abbreviateChannels") == true
                 end,
-                setValue = function(v)
-                    Set("abbreviateChannels", v)
-                    if ECHAT.EngineSetChannelAbbrev then
-                        ECHAT.EngineSetChannelAbbrev(v)
+                setValue = function(val)
+                    Set("abbreviateChannels", val)
+                    if CHAT.EngineSetChannelAbbrev then
+                        CHAT.EngineSetChannelAbbrev(val)
                     end
-                    if ECHAT.EngineQueueRebuildAll then
-                        ECHAT.EngineQueueRebuildAll()
+                    if CHAT.EngineQueueRebuildAll then
+                        CHAT.EngineQueueRebuildAll()
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -2446,13 +2442,13 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("classColorNames") == true
                 end,
-                setValue = function(v)
-                    Set("classColorNames", v)
-                    if ECHAT.ApplyClassColorNames then
-                        ECHAT.ApplyClassColorNames(v)
+                setValue = function(val)
+                    Set("classColorNames", val)
+                    if CHAT.ApplyClassColorNames then
+                        CHAT.ApplyClassColorNames(val)
                     end
-                    if ECHAT.EngineQueueRebuildAll then
-                        ECHAT.EngineQueueRebuildAll()
+                    if CHAT.EngineQueueRebuildAll then
+                        CHAT.EngineQueueRebuildAll()
                     end
                 end,
             })
@@ -2474,23 +2470,23 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("abbreviateChannelLetters") == true
                             end,
-                            set = function(v)
-                                Set("abbreviateChannelLetters", v)
-                                if ECHAT.EngineSetChannelAbbrevLetters then
-                                    ECHAT.EngineSetChannelAbbrevLetters(v)
+                            set = function(val)
+                                Set("abbreviateChannelLetters", val)
+                                if CHAT.EngineSetChannelAbbrevLetters then
+                                    CHAT.EngineSetChannelAbbrevLetters(val)
                                 end
-                                if ECHAT.EngineQueueRebuildAll then
-                                    ECHAT.EngineQueueRebuildAll()
+                                if CHAT.EngineQueueRebuildAll then
+                                    CHAT.EngineQueueRebuildAll()
                                 end
                             end,
                         },
                     },
                 })
             end
-            y = y - h
+            posY = posY - hgt
         end -- isChat
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     _G._CUBS_BuildChatPage = BuildPage

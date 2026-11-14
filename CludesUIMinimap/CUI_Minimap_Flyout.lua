@@ -9,26 +9,26 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  row sizes and modes.
 --  Reads the earlier Minimap files through ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local _addonVisible, cachedAddonButtons, EBS = I._addonVisible, I.cachedAddonButtons, I.EBS
-local EG, flyoutOwnedFrames, GetFFD = I.EG, I.flyoutOwnedFrames, I.GetFFD
-local QueueApplyAll, SetFlyoutPanel = I.QueueApplyAll, I.SetFlyoutPanel
-local SetFlyoutToggle = I.SetFlyoutToggle
+local _addonVisible, cachedAddonButtons, SKIN = Inner._addonVisible, Inner.cachedAddonButtons, Inner.EBS
+local ACC, flyoutOwnedFrames, GetFFD = Inner.EG, Inner.flyoutOwnedFrames, Inner.GetFFD
+local QueueApplyAll, SetFlyoutPanel = Inner.QueueApplyAll, Inner.SetFlyoutPanel
+local SetFlyoutToggle = Inner.SetFlyoutToggle
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 -- Assigned in CUI_Minimap_Layout.lua (see SetMOEvaluate), so the flyout
 -- panels created here can fire it from OnShow/OnHide.
 local MO_Evaluate
-I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v)
-    MO_Evaluate = v
+Inner.moEvaluateSetters[#Inner.moEvaluateSetters + 1] = function(val)
+    MO_Evaluate = val
 end
 
 -------------------------------------------------------------------------------
@@ -36,11 +36,11 @@ end
 -------------------------------------------------------------------------------
 local flyoutToggle = nil -- the square trigger button
 local flyoutPanel = nil -- the popup grid container
-I.flyoutToggleSetters[#I.flyoutToggleSetters + 1] = function(v)
-    flyoutToggle = v
+Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val)
+    flyoutToggle = val
 end
-I.flyoutPanelSetters[#I.flyoutPanelSetters + 1] = function(v)
-    flyoutPanel = v
+Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val)
+    flyoutPanel = val
 end
 local flyoutSavedParents = {} -- original parent/point data for restore
 local flyoutSavedRegions = {} -- original region states for restore
@@ -61,15 +61,15 @@ local MINIMAP_BTN_JUNK_PATH = {
     ["Interface\\Minimap\\UI%-Minimap%-ZoomButton%-Highlight"] = true,
 }
 
-local function IsJunkTexture(region)
-    if not region or not region.IsObjectType or not region:IsObjectType("Texture") then
+local function IsJunkTexture(regionFrame)
+    if not regionFrame or not regionFrame.IsObjectType or not regionFrame:IsObjectType("Texture") then
         return false
     end
-    local texID = region.GetTextureFileID and region:GetTextureFileID()
+    local texID = regionFrame.GetTextureFileID and regionFrame:GetTextureFileID()
     if texID and MINIMAP_BTN_JUNK[texID] then
         return true
     end
-    local texPath = region:GetTexture()
+    local texPath = regionFrame:GetTexture()
     if texPath and type(texPath) == "string" then
         for pattern in pairs(MINIMAP_BTN_JUNK_PATH) do
             if texPath:match(pattern) then
@@ -80,50 +80,51 @@ local function IsJunkTexture(region)
     return false
 end
 
-local function StripButtonDecorations(btn)
-    if not flyoutSavedRegions[btn] then
+local function StripButtonDecorations(button)
+    if not flyoutSavedRegions[button] then
         local saved = { junk = {} }
-        for _, region in ipairs({ btn:GetRegions() }) do
-            if IsJunkTexture(region) then
+        for _, regionFrame in ipairs({ button:GetRegions() }) do
+            if IsJunkTexture(regionFrame) then
                 saved.junk[#saved.junk + 1] =
-                    { region = region, alpha = region:GetAlpha(), shown = region:IsShown() }
+                    { region = regionFrame, alpha = regionFrame:GetAlpha(), shown = regionFrame:IsShown() }
             end
         end
-        local hl = btn.GetHighlightTexture and btn:GetHighlightTexture()
-        if hl and IsJunkTexture(hl) then
-            saved.junk[#saved.junk + 1] = { region = hl, alpha = hl:GetAlpha(), shown = hl:IsShown() }
+        local highlight = button.GetHighlightTexture and button:GetHighlightTexture()
+        if highlight and IsJunkTexture(highlight) then
+            saved.junk[#saved.junk + 1] =
+                { region = highlight, alpha = highlight:GetAlpha(), shown = highlight:IsShown() }
         end
         -- Snapshot icon anchors/texcoord/size for RestoreButtonDecorations.
-        local icon = btn.icon or btn.Icon
-        if icon then
-            local nPts = icon:GetNumPoints()
+        local glyph = button.icon or button.Icon
+        if glyph then
+            local nPts = glyph:GetNumPoints()
             local pts = {}
-            for i = 1, nPts do
-                pts[i] = { icon:GetPoint(i) }
+            for idx = 1, nPts do
+                pts[idx] = { glyph:GetPoint(idx) }
             end
-            saved.icon = icon
+            saved.icon = glyph
             saved.iconPoints = pts
-            saved.iconTC = { icon:GetTexCoord() }
+            saved.iconTC = { glyph:GetTexCoord() }
         end
-        saved.btnW, saved.btnH = btn:GetWidth(), btn:GetHeight()
-        flyoutSavedRegions[btn] = saved
+        saved.btnW, saved.btnH = button:GetWidth(), button:GetHeight()
+        flyoutSavedRegions[button] = saved
     end
     -- Junk hiding runs on every call; the snapshot above only once.
-    for _, info in ipairs(flyoutSavedRegions[btn].junk) do
-        info.region:SetAlpha(0)
-        info.region:Hide()
+    for _, details in ipairs(flyoutSavedRegions[button].junk) do
+        details.region:SetAlpha(0)
+        details.region:Hide()
     end
 end
 
-local function RestoreButtonDecorations(btn)
-    local saved = flyoutSavedRegions[btn]
+local function RestoreButtonDecorations(button)
+    local saved = flyoutSavedRegions[button]
     if not saved then
         return
     end
-    for _, info in ipairs(saved.junk) do
-        info.region:SetAlpha(info.alpha)
-        if info.shown then
-            info.region:Show()
+    for _, details in ipairs(saved.junk) do
+        details.region:SetAlpha(details.alpha)
+        if details.shown then
+            details.region:Show()
         end
     end
     if saved.icon and saved.iconPoints then
@@ -136,27 +137,27 @@ local function RestoreButtonDecorations(btn)
         end
     end
     if saved.btnW and saved.btnH then
-        btn:SetSize(saved.btnW, saved.btnH)
+        button:SetSize(saved.btnW, saved.btnH)
     end
-    flyoutSavedRegions[btn] = nil
+    flyoutSavedRegions[button] = nil
 end
 
-local function IsUngrouped(btn)
+local function IsUngrouped(button)
     -- A group of one has nothing to open: the only grouped button stands on
     -- the row by itself (decided per scan, see GatherMinimapButtons).
-    if btn == EBS._soloAddonButton then
+    if button == SKIN._soloAddonButton then
         return true
     end
-    local mp = EBS.db and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile.minimap
     if not mp or not mp.ungroupedButtons then
         return false
     end
-    local name = btn:GetName()
+    local name = button:GetName()
     return name and mp.ungroupedButtons[name]
 end
 
-local function GetMinimapButtonLabel(btn)
-    local name = btn:GetName() or ""
+local function GetMinimapButtonLabel(button)
+    local name = button:GetName() or ""
     return name:gsub("^LibDBIcon10_", "")
         :gsub("^Lib_GPI_Minimap_", "")
         :gsub("MinimapButton$", "")
@@ -165,9 +166,9 @@ end
 
 local function CollectFlyoutButtons()
     local collected = {}
-    for _, btn in ipairs(cachedAddonButtons) do
-        if _addonVisible[btn] ~= false and not IsUngrouped(btn) then
-            collected[#collected + 1] = btn
+    for _, button in ipairs(cachedAddonButtons) do
+        if _addonVisible[button] ~= false and not IsUngrouped(button) then
+            collected[#collected + 1] = button
         end
     end
     table.sort(collected, function(a, b)
@@ -177,7 +178,7 @@ local function CollectFlyoutButtons()
 end
 
 local function GetAddonBtnSize()
-    local mp = EBS.db and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile.minimap
     return mp and mp.addonBtnSize or FLYOUT_BTN_SIZE
 end
 
@@ -185,49 +186,49 @@ end
 -- A child frame of the button, so it is re-pinned just below the button on every layout:
 -- the flyout's child loop lifts every child above the button, which would bury the icon.
 -- EBS field, not local.
-function EBS._ShowAddonBtnBox(btn)
-    local d = GetFFD(btn)
+function SKIN._ShowAddonBtnBox(button)
+    local d = GetFFD(button)
     if not d.ungroupBg then
-        local ubg = CreateFrame("Frame", nil, btn, "BackdropTemplate")
+        local ubg = CreateFrame("Frame", nil, button, "BackdropTemplate")
         ubg:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
         ubg:SetBackdropColor(0, 0, 0, 0.8)
-        ubg:SetAllPoints(btn)
+        ubg:SetAllPoints(button)
         d.ungroupBg = ubg
     end
     local ubg = d.ungroupBg
-    ubg:SetFrameStrata(btn:GetFrameStrata())
-    ubg:SetFrameLevel(btn:GetFrameLevel() - 1)
+    ubg:SetFrameStrata(button:GetFrameStrata())
+    ubg:SetFrameLevel(button:GetFrameLevel() - 1)
     ubg:Show()
 end
 
 -- Raise popups an addon parents to its button after layout above the grid. The
 -- button's own black box stays below it, where the layout pinned it.
-function EBS._RaiseLateFlyoutChildren(btn)
-    if not flyoutPanel or btn:GetParent() ~= flyoutPanel then
+function SKIN._RaiseLateFlyoutChildren(button)
+    if not flyoutPanel or button:GetParent() ~= flyoutPanel then
         return
     end
     local combat = InCombatLockdown()
-    local box = GetFFD(btn).ungroupBg
-    local function raise(frame, level)
-        for _, child in ipairs({ frame:GetChildren() }) do
-            if child ~= box and not (combat and child:IsProtected()) then
-                child:SetFrameStrata("DIALOG")
-                child:SetFrameLevel(level)
-                raise(child, level + 1)
+    local boxFrame = GetFFD(button).ungroupBg
+    local function raise(widget, level)
+        for _, childFrame in ipairs({ widget:GetChildren() }) do
+            if childFrame ~= boxFrame and not (combat and childFrame:IsProtected()) then
+                childFrame:SetFrameStrata("DIALOG")
+                childFrame:SetFrameLevel(level)
+                raise(childFrame, level + 1)
             end
         end
     end
-    raise(btn, flyoutPanel:GetFrameLevel() + 6)
+    raise(button, flyoutPanel:GetFrameLevel() + 6)
 end
 
 -- Keep the grid open for a press on anything parented under it (forbidden frames never).
-function EBS._MouseOverFlyoutChild(panel)
+function SKIN._MouseOverFlyoutChild(panelFrame)
     local focus = GetMouseFoci()[1]
     while focus do
         if focus:IsForbidden() then
             return false
         end
-        if focus == panel then
+        if focus == panelFrame then
             return true
         end
         focus = focus:GetParent()
@@ -250,21 +251,21 @@ local function LayoutFlyoutButtons()
     -- call, so compacting it in place is safe.
     if InCombatLockdown() then
         local kept = 0
-        for i = 1, #buttons do
-            local btn = buttons[i]
-            if btn:IsProtected() then
+        for idx = 1, #buttons do
+            local button = buttons[idx]
+            if button:IsProtected() then
                 QueueApplyAll()
             else
                 kept = kept + 1
-                buttons[kept] = btn
+                buttons[kept] = button
             end
         end
-        for i = #buttons, kept + 1, -1 do
-            buttons[i] = nil
+        for idx = #buttons, kept + 1, -1 do
+            buttons[idx] = nil
         end
     end
-    local count = #buttons
-    if count == 0 then
+    local total = #buttons
+    if total == 0 then
         flyoutPanel:SetSize(1, 1)
         return
     end
@@ -273,23 +274,23 @@ local function LayoutFlyoutButtons()
     -- CUI look: each cell gets the flat black box the ungrouped row buttons wear, so a
     -- button looks the same in the grid and on the row. Stock styles (and Button
     -- Backgrounds off) keep the stock-map ring around each icon.
-    local mp = EBS.db and EBS.db.profile.minimap
-    local boxes = not EBS._MinimapBlizz() and not (mp and mp.btnBackgrounds == false)
+    local mp = SKIN.db and SKIN.db.profile.minimap
+    local boxes = not SKIN._MinimapBlizz() and not (mp and mp.btnBackgrounds == false)
     -- Boxes: the outer margin matches the gaps. Ring: margin=8, since the ring overlay
     -- overhangs each button by 3px, leaving 5px of visible clearance.
     local margin = boxes and FLYOUT_PADDING or 8
-    local cols = math.min(count, FLYOUT_COLS)
-    local rows = math.ceil(count / cols)
+    local cols = math.min(total, FLYOUT_COLS)
+    local rowList = math.ceil(total / cols)
     local pw = margin * 2 + cols * btnSize + (cols - 1) * FLYOUT_PADDING
-    local ph = margin * 2 + rows * btnSize + (rows - 1) * FLYOUT_PADDING
+    local ph = margin * 2 + rowList * btnSize + (rowList - 1) * FLYOUT_PADDING
     flyoutPanel:SetSize(pw, ph)
 
-    for i, btn in ipairs(buttons) do
-        if not flyoutSavedParents[btn] then
-            local p1, rel, p2, ox, oy = btn:GetPoint(1)
-            flyoutSavedParents[btn] = {
-                parent = btn:GetParent(),
-                strata = btn:GetFrameStrata(),
+    for idx, button in ipairs(buttons) do
+        if not flyoutSavedParents[button] then
+            local p1, rel, p2, ox, oy = button:GetPoint(1)
+            flyoutSavedParents[button] = {
+                parent = button:GetParent(),
+                strata = button:GetFrameStrata(),
                 point = p1,
                 relTo = rel,
                 relPoint = p2,
@@ -298,94 +299,94 @@ local function LayoutFlyoutButtons()
             }
         end
 
-        local col = (i - 1) % cols
-        local row = math.floor((i - 1) / cols)
-        local xOff = margin + col * (btnSize + FLYOUT_PADDING)
-        local yOff = -(margin + row * (btnSize + FLYOUT_PADDING))
+        local column = (idx - 1) % cols
+        local rowFrame = math.floor((idx - 1) / cols)
+        local xOff = margin + column * (btnSize + FLYOUT_PADDING)
+        local yOff = -(margin + rowFrame * (btnSize + FLYOUT_PADDING))
 
-        btn:SetParent(flyoutPanel)
+        button:SetParent(flyoutPanel)
         -- Unlock fixed strata/level first (LibDBIcon locks these)
-        if btn.SetFixedFrameStrata then
-            btn:SetFixedFrameStrata(false)
+        if button.SetFixedFrameStrata then
+            button:SetFixedFrameStrata(false)
         end
-        if btn.SetFixedFrameLevel then
-            btn:SetFixedFrameLevel(false)
+        if button.SetFixedFrameLevel then
+            button:SetFixedFrameLevel(false)
         end
-        btn:SetFrameStrata("DIALOG")
-        if btn.SetFixedFrameStrata then
-            btn:SetFixedFrameStrata(true)
+        button:SetFrameStrata("DIALOG")
+        if button.SetFixedFrameStrata then
+            button:SetFixedFrameStrata(true)
         end
-        btn:ClearAllPoints()
-        btn:SetPoint("TOPLEFT", flyoutPanel, "TOPLEFT", xOff, yOff)
-        btn:SetSize(btnSize, btnSize)
-        EBS._suppressVisTrack = true
-        btn:SetAlpha(1)
-        btn:Show()
-        EBS._suppressVisTrack = false
-        btn:SetFrameLevel(flyoutPanel:GetFrameLevel() + 5)
-        if btn.SetFixedFrameLevel then
-            btn:SetFixedFrameLevel(true)
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", flyoutPanel, "TOPLEFT", xOff, yOff)
+        button:SetSize(btnSize, btnSize)
+        SKIN._suppressVisTrack = true
+        button:SetAlpha(1)
+        button:Show()
+        SKIN._suppressVisTrack = false
+        button:SetFrameLevel(flyoutPanel:GetFrameLevel() + 5)
+        if button.SetFixedFrameLevel then
+            button:SetFixedFrameLevel(true)
         end
-        StripButtonDecorations(btn)
+        StripButtonDecorations(button)
         -- Overlays left over from a previous ungroup cycle (or the other cell style)
-        if not boxes and GetFFD(btn).ungroupBg then
-            GetFFD(btn).ungroupBg:Hide()
+        if not boxes and GetFFD(button).ungroupBg then
+            GetFFD(button).ungroupBg:Hide()
         end
-        if boxes and GetFFD(btn).flyoutRing then
-            GetFFD(btn).flyoutRing:Hide()
+        if boxes and GetFFD(button).flyoutRing then
+            GetFFD(button).flyoutRing:Hide()
         end
-        if btn._ungroupRing then
-            btn._ungroupRing:Hide()
+        if button._ungroupRing then
+            button._ungroupRing:Hide()
         end
         -- Children must ride the same strata/level as the button.
-        for _, child in ipairs({ btn:GetChildren() }) do
-            child:SetFrameStrata("DIALOG")
-            child:SetFrameLevel(flyoutPanel:GetFrameLevel() + 6)
+        for _, childFrame in ipairs({ button:GetChildren() }) do
+            childFrame:SetFrameStrata("DIALOG")
+            childFrame:SetFrameLevel(flyoutPanel:GetFrameLevel() + 6)
         end
-        if not GetFFD(btn).lateChildHook then
-            GetFFD(btn).lateChildHook = true
-            if btn:HasScript("OnClick") then
-                btn:HookScript("OnClick", EBS._RaiseLateFlyoutChildren)
+        if not GetFFD(button).lateChildHook then
+            GetFFD(button).lateChildHook = true
+            if button:HasScript("OnClick") then
+                button:HookScript("OnClick", SKIN._RaiseLateFlyoutChildren)
             end
         end
-        local icon = btn.icon or btn.Icon
-        if not icon then
-            for _, region in ipairs({ btn:GetRegions() }) do
+        local glyph = button.icon or button.Icon
+        if not glyph then
+            for _, regionFrame in ipairs({ button:GetRegions() }) do
                 if
-                    region:IsObjectType("Texture")
-                    and region:IsShown()
-                    and region:GetAlpha() > 0
-                    and not IsJunkTexture(region)
+                    regionFrame:IsObjectType("Texture")
+                    and regionFrame:IsShown()
+                    and regionFrame:GetAlpha() > 0
+                    and not IsJunkTexture(regionFrame)
                 then
-                    icon = region
+                    glyph = regionFrame
                     break
                 end
             end
         end
-        if icon then
+        if glyph then
             -- Same inset as the row: 3px inside the box, 2px inside the ring
             local inset = boxes and 3 or 2
-            icon:ClearAllPoints()
-            icon:SetPoint("TOPLEFT", btn, "TOPLEFT", inset, -inset)
-            icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -inset, inset)
-            pcall(icon.SetTexCoord, icon, 0.05, 0.95, 0.05, 0.95)
+            glyph:ClearAllPoints()
+            glyph:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+            glyph:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+            pcall(glyph.SetTexCoord, glyph, 0.05, 0.95, 0.05, 0.95)
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
             if CludesUI.PP then
-                CludesUI.PP.DisablePixelSnap(icon)
+                CludesUI.PP.DisablePixelSnap(glyph)
             end
         end
         if boxes then
             -- After the child loop above, which lifted the box over the icon
-            EBS._ShowAddonBtnBox(btn)
+            SKIN._ShowAddonBtnBox(button)
         else
-            if not GetFFD(btn).flyoutRing then
-                local ring = btn:CreateTexture(nil, "OVERLAY", nil, 7)
+            if not GetFFD(button).flyoutRing then
+                local ring = button:CreateTexture(nil, "OVERLAY", nil, 7)
                 ring:SetAtlas("AdventureMap-combatally-ring")
-                ring:SetPoint("TOPLEFT", btn, "TOPLEFT", -3, 3)
-                ring:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 3, -3)
-                GetFFD(btn).flyoutRing = ring
+                ring:SetPoint("TOPLEFT", button, "TOPLEFT", -3, 3)
+                ring:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 3, -3)
+                GetFFD(button).flyoutRing = ring
             end
-            GetFFD(btn).flyoutRing:Show()
+            GetFFD(button).flyoutRing:Show()
         end
     end
 end
@@ -396,7 +397,7 @@ end
 -- (EBS field, not local). edge = anchor tuples (tooltip point,
 -- anchor point, x, y) for corner-hung popups; center = centered on the facing edge
 -- (vault tooltip); tt = named sides for ShowWidgetTooltip labels.
-EBS._Grow = {
+SKIN._Grow = {
     edge = {
         left = { "TOPRIGHT", "TOPLEFT", -4, 0 },
         right = { "TOPLEFT", "TOPRIGHT", 4, 0 },
@@ -412,8 +413,8 @@ EBS._Grow = {
     tt = { left = "left", right = "right", up = "above", down = "below" },
 }
 
-function EBS._Grow.Dir()
-    local mp = EBS.db and EBS.db.profile.minimap
+function SKIN._Grow.Dir()
+    local mp = SKIN.db and SKIN.db.profile.minimap
     local g = (mp and mp.flyoutGrowDir) or "auto"
     if g ~= "auto" then
         return g
@@ -425,8 +426,8 @@ function EBS._Grow.Dir()
     return "down"
 end
 
-function EBS._Grow.TT()
-    return EBS._Grow.tt[EBS._Grow.Dir()] or "left"
+function SKIN._Grow.TT()
+    return SKIN._Grow.tt[SKIN._Grow.Dir()] or "left"
 end
 
 local _flyoutBuilt = false
@@ -472,7 +473,7 @@ local function EnsureFlyoutPanel()
                     IsMouseButtonDown("LeftButton")
                     and not m:IsMouseOver()
                     and not (flyoutToggle and flyoutToggle:IsMouseOver())
-                    and not EBS._MouseOverFlyoutChild(m)
+                    and not SKIN._MouseOverFlyoutChild(m)
                 then
                     m:Hide()
                 end
@@ -508,10 +509,10 @@ _G._CUMIN_RefreshFlyout = function()
         BuildFlyoutContents()
     end
     -- Re-assert alpha (profile swap re-hides via HideMinimapChild during re-init)
-    for _, btn in ipairs(cachedAddonButtons) do
-        if btn:GetParent() == flyoutPanel then
-            btn:SetAlpha(1)
-            btn:Show()
+    for _, button in ipairs(cachedAddonButtons) do
+        if button:GetParent() == flyoutPanel then
+            button:SetAlpha(1)
+            button:Show()
         end
     end
 end
@@ -519,7 +520,7 @@ end
 local function ShowFlyoutPanel()
     EnsureFlyoutPanel()
     -- Re-anchor per Grow Tooltip/Popup on every open (setting or Auto's row position can change). Left/right keep the toggle's bottom edge, up/down its left; 2px gap.
-    local dir = EBS._Grow.Dir()
+    local dir = SKIN._Grow.Dir()
     flyoutPanel:ClearAllPoints()
     if dir == "right" then
         flyoutPanel:SetPoint("BOTTOMLEFT", flyoutToggle, "BOTTOMRIGHT", 2, 0)
@@ -554,7 +555,7 @@ local function ToggleFlyoutPanel()
 end
 
 local function GetInteractableBtnSize()
-    local mp = EBS.db and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile.minimap
     return mp and mp.interactableBtnSize or 22
 end
 
@@ -665,15 +666,15 @@ end
 -- Distance from Map push: left/right rows move horizontally, above/below vertically.
 -- Icon Spacing is applied per link at placement. Forever Square's rows hang
 -- from the frame's outer edge and start EBS.FV_ROW_AIR clear of it.
-local function GetRowBase(mode, distance)
-    local d = (distance or 0) + (EBS._fvSquare and EBS.FV_ROW_AIR or 0)
-    return d * mode.awayX, d * mode.awayY
+local function GetRowBase(modeName, distance)
+    local d = (distance or 0) + (SKIN._fvSquare and SKIN.FV_ROW_AIR or 0)
+    return d * modeName.awayX, d * modeName.awayY
 end
 
 -- Scale for the custom tooltips on the unique minimap buttons (vault, friends,
 -- calendar, mail, tracking, crafting, flyout toggle, portals).
 local function GetCustomTooltipScale()
-    local mp = EBS.db and EBS.db.profile.minimap
+    local mp = SKIN.db and SKIN.db.profile.minimap
     return mp and mp.customTooltipScale or 1.0
 end
 
@@ -694,50 +695,50 @@ local function CreateFlyoutToggle()
         return flyoutToggle
     end
 
-    local btn = CreateFrame("Button", nil, Minimap)
+    local button = CreateFrame("Button", nil, Minimap)
     local iconSize = GetInteractableBtnSize()
-    btn:SetSize(iconSize, iconSize)
-    btn:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMLEFT", 0, 0)
-    btn:SetFrameLevel(Minimap:GetFrameLevel() + 10)
+    button:SetSize(iconSize, iconSize)
+    button:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMLEFT", 0, 0)
+    button:SetFrameLevel(Minimap:GetFrameLevel() + 10)
 
-    local norm = btn:CreateTexture(nil, "ARTWORK")
+    local norm = button:CreateTexture(nil, "ARTWORK")
     norm:SetAllPoints()
     norm:SetAtlas("Map-Filter-Button")
     norm:SetDesaturated(true)
-    norm:SetVertexColor(EG.r, EG.g, EG.b, 1)
-    btn:SetNormalTexture(norm)
-    btn._norm = norm
+    norm:SetVertexColor(ACC.r, ACC.g, ACC.b, 1)
+    button:SetNormalTexture(norm)
+    button._norm = norm
 
-    local pushed = btn:CreateTexture(nil, "ARTWORK")
+    local pushed = button:CreateTexture(nil, "ARTWORK")
     pushed:SetAllPoints()
     pushed:SetAtlas("Map-Filter-Button-down")
     pushed:SetDesaturated(true)
-    pushed:SetVertexColor(EG.r, EG.g, EG.b, 1)
-    btn:SetPushedTexture(pushed)
-    btn._pushed = pushed
+    pushed:SetVertexColor(ACC.r, ACC.g, ACC.b, 1)
+    button:SetPushedTexture(pushed)
+    button._pushed = pushed
 
-    local hl = btn:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints()
-    hl:SetAtlas("Map-Filter-Button")
-    hl:SetDesaturated(true)
-    hl:SetVertexColor(EG.r, EG.g, EG.b, 1)
-    hl:SetAlpha(0.3)
-    btn:SetHighlightTexture(hl)
-    btn._hl = hl
+    local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetAllPoints()
+    highlight:SetAtlas("Map-Filter-Button")
+    highlight:SetDesaturated(true)
+    highlight:SetVertexColor(ACC.r, ACC.g, ACC.b, 1)
+    highlight:SetAlpha(0.3)
+    button:SetHighlightTexture(highlight)
+    button._hl = highlight
 
     -- Keep the three textures synced to the accent. Vertex alpha stays 1; the highlight's SetAlpha(0.3) still applies on top since the two multiply.
     CludesUI.RegAccent({ type = "vertex", obj = norm })
     CludesUI.RegAccent({ type = "vertex", obj = pushed })
-    CludesUI.RegAccent({ type = "vertex", obj = hl })
+    CludesUI.RegAccent({ type = "vertex", obj = highlight })
 
-    local bg = CreateFrame("Frame", nil, btn, "BackdropTemplate")
-    bg:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
-    bg:SetBackdropColor(0, 0, 0, 0.8)
-    bg:SetAllPoints(btn)
-    bg:SetFrameLevel(btn:GetFrameLevel() - 1)
-    btn._bg = bg
+    local backdrop = CreateFrame("Frame", nil, button, "BackdropTemplate")
+    backdrop:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
+    backdrop:SetBackdropColor(0, 0, 0, 0.8)
+    backdrop:SetAllPoints(button)
+    backdrop:SetFrameLevel(button:GetFrameLevel() - 1)
+    button._bg = backdrop
 
-    btn:SetScript("OnClick", function(self)
+    button:SetScript("OnClick", function(self)
         if GetFFD(self).freeMoveJustDragged then
             return
         end
@@ -745,7 +746,7 @@ local function CreateFlyoutToggle()
         CludesUI.HideWidgetTooltip(true)
         ToggleFlyoutPanel()
     end)
-    btn:SetScript("OnEnter", function(self)
+    button:SetScript("OnEnter", function(self)
         if flyoutPanel and flyoutPanel:IsShown() then
             return
         end
@@ -753,33 +754,33 @@ local function CreateFlyoutToggle()
             CludesUI.ShowWidgetTooltip(
                 self,
                 "Addon Buttons",
-                { anchor = EBS._Grow.TT(), scale = GetCustomTooltipScale() }
+                { anchor = SKIN._Grow.TT(), scale = GetCustomTooltipScale() }
             )
         end
     end)
-    btn:SetScript("OnLeave", function(self)
+    button:SetScript("OnLeave", function(self)
         CludesUI.HideWidgetTooltip()
     end)
 
     -- Blizzard/addon hooks on minimap children can disable mouse; re-assert on Show.
-    btn:HookScript("OnShow", function(self)
+    button:HookScript("OnShow", function(self)
         if not self:IsMouseEnabled() then
             self:EnableMouse(true)
         end
     end)
 
-    SetFlyoutToggle(btn)
-    flyoutOwnedFrames[btn] = true
-    return btn
+    SetFlyoutToggle(button)
+    flyoutOwnedFrames[button] = true
+    return button
 end
 
-I.BuildFlyoutContents, I.CollectFlyoutButtons = BuildFlyoutContents, CollectFlyoutButtons
-I.CreateFlyoutToggle, I.flyoutSavedParents = CreateFlyoutToggle, flyoutSavedParents
-I.flyoutSavedRegions, I.GetBtnRowMode = flyoutSavedRegions, GetBtnRowMode
-I.GetCustomTooltipScale, I.GetElementRowMode = GetCustomTooltipScale, GetElementRowMode
-I.GetInteractableBtnSize, I.GetRowBase = GetInteractableBtnSize, GetRowBase
-I.HideFlyoutPanel, I.InvalidateFlyout = HideFlyoutPanel, InvalidateFlyout
-I.IsJunkTexture, I.IsUngrouped = IsJunkTexture, IsUngrouped
-I.RestoreButtonDecorations = RestoreButtonDecorations
-I.StripButtonDecorations = StripButtonDecorations
-I.broken = false
+Inner.BuildFlyoutContents, Inner.CollectFlyoutButtons = BuildFlyoutContents, CollectFlyoutButtons
+Inner.CreateFlyoutToggle, Inner.flyoutSavedParents = CreateFlyoutToggle, flyoutSavedParents
+Inner.flyoutSavedRegions, Inner.GetBtnRowMode = flyoutSavedRegions, GetBtnRowMode
+Inner.GetCustomTooltipScale, Inner.GetElementRowMode = GetCustomTooltipScale, GetElementRowMode
+Inner.GetInteractableBtnSize, Inner.GetRowBase = GetInteractableBtnSize, GetRowBase
+Inner.HideFlyoutPanel, Inner.InvalidateFlyout = HideFlyoutPanel, InvalidateFlyout
+Inner.IsJunkTexture, Inner.IsUngrouped = IsJunkTexture, IsUngrouped
+Inner.RestoreButtonDecorations = RestoreButtonDecorations
+Inner.StripButtonDecorations = StripButtonDecorations
+Inner.broken = false

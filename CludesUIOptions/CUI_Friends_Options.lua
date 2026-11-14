@@ -7,8 +7,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  All get/set calls go through the global bridge to the addon's DB profile.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIFriends"
-local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
 
@@ -40,31 +40,31 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  DB helpers
     ---------------------------------------------------------------------------
-    local db
+    local saved
 
     C_Timer.After(0, function()
-        db = _G._CUFR_DB
+        saved = _G._CUFR_DB
     end)
 
-    local function DB()
-        if not db then
-            db = _G._CUFR_DB
+    local function SavedDB()
+        if not saved then
+            saved = _G._CUFR_DB
         end
-        return db and db.profile
+        return saved and saved.profile
     end
 
     local function ChatDB()
-        local p = DB()
+        local p = SavedDB()
         return p and p.chat
     end
 
     local function MinimapDB()
-        local p = DB()
+        local p = SavedDB()
         return p and p.minimap
     end
 
     local function FriendsDB()
-        local p = DB()
+        local p = SavedDB()
         return p and p.friends
     end
 
@@ -123,10 +123,10 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
-    local function BuildFriendsPage(pageName, parent, yOffset)
+    local function BuildFriendsPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, row, h
+        local posY = yOffset
+        local _, rowFrame, hgt
 
         CludesUI:ClearContentHeader()
 
@@ -137,11 +137,11 @@ initFrame:SetScript("OnEvent", function(self)
         -- accent rows drive only the CludesUI skin of the legacy window,
         -- faction banners also the 12.1 tiles; all three hide under stock.
         local BS = CludesUI.BlizzStyle
-        local function Gate(cfg)
+        local function Gate(conf)
             if BS then
-                BS.Gate("friends", cfg)
+                BS.Gate("friends", conf)
             end
-            return cfg
+            return conf
         end
         -- Border Size / Border Color drive only this module's own flat look;
         -- the Window Skins "Friends List" card draws the frame otherwise.
@@ -149,14 +149,14 @@ initFrame:SetScript("OnEvent", function(self)
             "The Friends List window skin draws this border (Window Skins > Window Skins)."
 
         -- DISPLAY
-        _, h = W:SectionHeader(parent, "DISPLAY", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+        posY = posY - hgt
         if BS then
-            y = BS.Note(parent, y, "friends")
+            posY = BS.Note(hostFrame, posY, "friends")
         end
 
         -- Class Icon Theme | Class Color Names
-        _, h = W:DualRow(parent, y, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Class Icon Theme",
             values = ICON_STYLE_VALUES,
@@ -165,12 +165,12 @@ initFrame:SetScript("OnEvent", function(self)
                 local f = FriendsDB()
                 return f and f.iconStyle or "modern"
             end,
-            setValue = function(v)
+            setValue = function(val)
                 local f = FriendsDB()
                 if not f then
                     return
                 end
-                f.iconStyle = v
+                f.iconStyle = val
                 RepaintFriendRows()
             end,
         }, {
@@ -180,21 +180,21 @@ initFrame:SetScript("OnEvent", function(self)
                 local f = FriendsDB()
                 return f and f.classColorNames
             end,
-            setValue = function(v)
+            setValue = function(val)
                 local f = FriendsDB()
                 if not f then
                     return
                 end
-                f.classColorNames = v
+                f.classColorNames = val
                 RepaintFriendRows()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Border Size | Border Color
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Gate({
                 type = "slider",
                 text = "Border Size",
@@ -202,7 +202,7 @@ initFrame:SetScript("OnEvent", function(self)
                 max = 4,
                 step = 1,
                 disabled = function()
-                    return ns.FR_ChromeShell()
+                    return mod.FR_ChromeShell()
                 end,
                 disabledTooltip = CHROME_BORDER_TIP,
                 rawTooltip = true,
@@ -210,12 +210,12 @@ initFrame:SetScript("OnEvent", function(self)
                     local f = FriendsDB()
                     return f and f.borderSize or 0
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     local f = FriendsDB()
                     if not f then
                         return
                     end
-                    f.borderSize = v
+                    f.borderSize = val
                     RefreshFriends()
                     CludesUI:RefreshPage()
                 end,
@@ -224,14 +224,14 @@ initFrame:SetScript("OnEvent", function(self)
                 type = "multiSwatch",
                 text = "Border Color",
                 disabled = function()
-                    if ns.FR_ChromeShell() then
+                    if mod.FR_ChromeShell() then
                         return true
                     end
                     local f = FriendsDB()
                     return not f or (f.borderSize or 0) == 0
                 end,
                 disabledTooltip = function()
-                    return ns.FR_ChromeShell() and CHROME_BORDER_TIP or "Set Border Size above 0"
+                    return mod.FR_ChromeShell() and CHROME_BORDER_TIP or "Set Border Size above 0"
                 end,
                 rawTooltip = true,
                 swatches = {
@@ -304,12 +304,12 @@ initFrame:SetScript("OnEvent", function(self)
                 },
             })
         )
-        y = y - h
+        posY = posY - hgt
 
         -- Enable Accent Colors | Enable Faction Banners
-        _, h = W:DualRow(
-            parent,
-            y,
+        _, hgt = W:DualRow(
+            hostFrame,
+            posY,
             Gate({
                 type = "toggle",
                 text = "Enable Accent Colors",
@@ -317,12 +317,12 @@ initFrame:SetScript("OnEvent", function(self)
                     local f = FriendsDB()
                     return f and (f.accentColors ~= false)
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     local f = FriendsDB()
                     if not f then
                         return
                     end
-                    f.accentColors = v
+                    f.accentColors = val
                     RefreshFriends()
                 end,
             }),
@@ -333,20 +333,20 @@ initFrame:SetScript("OnEvent", function(self)
                     local f = FriendsDB()
                     return f and (f.factionBanners ~= false)
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     local f = FriendsDB()
                     if not f then
                         return
                     end
-                    f.factionBanners = v
+                    f.factionBanners = val
                     RepaintFriendRows()
                 end,
             })
         )
-        y = y - h
+        posY = posY - hgt
 
         -- Show Region Icons | Auto-Accept Friend Invites
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Region Icons",
             tooltip = "Shows a map icon of the friend's region if they are not playing within your region",
@@ -354,12 +354,12 @@ initFrame:SetScript("OnEvent", function(self)
                 local f = FriendsDB()
                 return f and (f.showRegionIcons ~= false)
             end,
-            setValue = function(v)
+            setValue = function(val)
                 local f = FriendsDB()
                 if not f then
                     return
                 end
-                f.showRegionIcons = v
+                f.showRegionIcons = val
                 RepaintFriendRows()
             end,
         }, {
@@ -370,29 +370,29 @@ initFrame:SetScript("OnEvent", function(self)
                 local f = FriendsDB()
                 return f and f.autoAcceptFriendInvites
             end,
-            setValue = function(v)
+            setValue = function(val)
                 local f = FriendsDB()
                 if not f then
                     return
                 end
-                f.autoAcceptFriendInvites = v
+                f.autoAcceptFriendInvites = val
                 if _G._CUFR_SyncAutoAccept then
                     _G._CUFR_SyncAutoAccept()
                 end
                 CludesUI:RefreshPage() -- update the auto-accept cog disabled state
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Guildmate option lives in a cog on Auto-Accept Friend Invites; it
         -- only extends that feature, so the cog blocks while the toggle is off.
         if not CludesUI._prebuilding then
-            local rgn = row._rightRegion
+            local region = rowFrame._rightRegion
             local function autoAcceptOff()
                 local f = FriendsDB()
                 return not (f and f.autoAcceptFriendInvites)
             end
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Auto Accept Settings",
                 rows = {
                     {
@@ -402,12 +402,12 @@ initFrame:SetScript("OnEvent", function(self)
                             local f = FriendsDB()
                             return f and f.autoAcceptGuildInvites
                         end,
-                        set = function(v)
+                        set = function(val)
                             local f = FriendsDB()
                             if not f then
                                 return
                             end
-                            f.autoAcceptGuildInvites = v
+                            f.autoAcceptGuildInvites = val
                         end,
                     },
                 },
@@ -416,7 +416,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     ---------------------------------------------------------------------------
@@ -426,9 +426,9 @@ initFrame:SetScript("OnEvent", function(self)
         title = "Friends List",
         description = "Custom friends list with groups, notes, and realm grouping.",
         pages = { "Friends" },
-        buildPage = function(pageName, parent, yOffset)
-            if pageName == "Friends" then
-                return BuildFriendsPage(pageName, parent, yOffset)
+        buildPage = function(page, hostFrame, yOffset)
+            if page == "Friends" then
+                return BuildFriendsPage(page, hostFrame, yOffset)
             end
         end,
         onReset = function()

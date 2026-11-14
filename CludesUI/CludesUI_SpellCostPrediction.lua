@@ -82,8 +82,8 @@ local function CastCost()
         castCost = nil
         local costs = castSpell and C_Spell.GetSpellPowerCost(castSpell)
         if costs then
-            for i = 1, #costs do
-                local c = costs[i]
+            for idx = 1, #costs do
+                local c = costs[idx]
                 if not issecretvalue(c.type) and c.type == MANA then
                     castCost = c.cost
                     break
@@ -120,28 +120,28 @@ local function Show(h)
     seg:GetParent():SetFrameLevel(level)
     seg:SetFrameLevel(level)
     -- Same texture as the bar's fill (a swap mints a new segment fill object).
-    local path = pfill:GetTexture() or WHITE
-    if h.texPath ~= path then
-        h.texPath = path
-        seg:SetStatusBarTexture(path)
-        local fill = seg:GetStatusBarTexture()
-        if fill then
-            CludesUI.PP.DisablePixelSnap(fill)
+    local filePath = pfill:GetTexture() or WHITE
+    if h.texPath ~= filePath then
+        h.texPath = filePath
+        seg:SetStatusBarTexture(filePath)
+        local fillTex = seg:GetStatusBarTexture()
+        if fillTex then
+            CludesUI.PP.DisablePixelSnap(fillTex)
         end
     end
-    local fill = seg:GetStatusBarTexture()
-    local mask = cb.Mask and cb.Mask(power) or nil
-    if fill then
+    local fillTex = seg:GetStatusBarTexture()
+    local maskTex = cb.Mask and cb.Mask(power) or nil
+    if fillTex then
         -- AddMaskTexture is additive: the mask the last draw seated comes
         -- off first (a no-op on a new fill object), then the current one.
         if h.mask then
-            pcall(fill.RemoveMaskTexture, fill, h.mask)
+            pcall(fillTex.RemoveMaskTexture, fillTex, h.mask)
         end
-        if mask then
-            pcall(fill.AddMaskTexture, fill, mask)
+        if maskTex then
+            pcall(fillTex.AddMaskTexture, fillTex, maskTex)
         end
     end
-    h.mask = mask
+    h.mask = maskTex
     -- Two points on the fill's leading edge span the bar's thickness; the
     -- segment runs the bar's full length from there and fills back over the
     -- fill (reverse of the bar's own direction), clipped at the bar's end.
@@ -188,20 +188,20 @@ local function Stale(h)
     if h.drawn ~= castSeq or not h.seg:IsShown() then
         return true
     end
-    local bar, cb = h.bar, h.cb
-    local pfill = bar:GetStatusBarTexture()
+    local barFrame, cb = h.bar, h.cb
+    local pfill = barFrame:GetStatusBarTexture()
     if
         pfill ~= h.pfill
         or (pfill:GetTexture() or WHITE) ~= h.texPath
-        or (bar:GetReverseFill() and true or false) ~= h.rev
-        or (bar:GetOrientation() == "VERTICAL") ~= h.vert
-        or (bar:GetRotatesTexture() and true or false) ~= h.rot
-        or bar:GetFrameLevel() + 1 ~= h.seg:GetFrameLevel()
-        or (cb.Mask and cb.Mask(bar) or nil) ~= h.mask
+        or (barFrame:GetReverseFill() and true or false) ~= h.rev
+        or (barFrame:GetOrientation() == "VERTICAL") ~= h.vert
+        or (barFrame:GetRotatesTexture() and true or false) ~= h.rot
+        or barFrame:GetFrameLevel() + 1 ~= h.seg:GetFrameLevel()
+        or (cb.Mask and cb.Mask(barFrame) or nil) ~= h.mask
     then
         return true
     end
-    local r, g, b, a = cb.Color(bar)
+    local r, g, b, a = cb.Color(barFrame)
     return r ~= h.r or g ~= h.g or b ~= h.b or a ~= h.a
 end
 
@@ -213,9 +213,9 @@ local function HideAll()
     end
 end
 
-local function OnEvent(_, event, _, guid, spellID)
-    if event == "UNIT_SPELLCAST_START" then
-        castGUID, castSpell, costRead = guid, spellID, false
+local function OnEvent(_, evt, _, unitGuid, spellId)
+    if evt == "UNIT_SPELLCAST_START" then
+        castGUID, castSpell, costRead = unitGuid, spellId, false
         castSeq = castSeq + 1
         for _, h in pairs(hosts) do
             if h.bar:IsVisible() then
@@ -224,12 +224,12 @@ local function OnEvent(_, event, _, guid, spellID)
         end
         return
     end
-    local cur = castGUID
-    if cur == nil then
+    local current = castGUID
+    if current == nil then
         return
     end
     -- Player cast GUIDs are never secret; if one is, end on any stop.
-    if not (issecretvalue(guid) or issecretvalue(cur)) and guid ~= cur then
+    if not (issecretvalue(unitGuid) or issecretvalue(current)) and unitGuid ~= current then
         return
     end
     castGUID, castSpell, castCost = nil, nil, nil
@@ -239,20 +239,20 @@ end
 -- Cast events are heard while at least one attached host bar is visible;
 -- when the last one hides or detaches they are dropped along with the cast.
 local function Listen()
-    local on = false
+    local enabled = false
     for _, h in pairs(hosts) do
         if h.bar:IsVisible() then
-            on = true
+            enabled = true
             break
         end
     end
-    if on == listening then
+    if enabled == listening then
         return
     end
-    listening = on
-    if on then
-        for i = 1, #EVENTS do
-            ev:RegisterUnitEvent(EVENTS[i], "player")
+    listening = enabled
+    if enabled then
+        for idx = 1, #EVENTS do
+            ev:RegisterUnitEvent(EVENTS[idx], "player")
         end
     else
         ev:UnregisterAllEvents()
@@ -263,8 +263,8 @@ end
 
 -- Hooked once on each host bar (our own StatusBars). A bar that is not
 -- attached returns at once; a bar shown mid-cast draws the cast.
-local function OnHostShow(bar)
-    local h = built[bar]
+local function OnHostShow(barFrame)
+    local h = built[barFrame]
     if hosts[h.key] == h then
         Listen()
         if castGUID then
@@ -273,8 +273,8 @@ local function OnHostShow(bar)
     end
 end
 
-local function OnHostHide(bar)
-    local h = built[bar]
+local function OnHostHide(barFrame)
+    local h = built[barFrame]
     if hosts[h.key] == h then
         Listen()
     end
@@ -282,14 +282,14 @@ end
 
 -- A resize during a cast (a style pass, a scale change) keeps the segment's
 -- length in step with the bar.
-local function OnHostSize(bar, w, hgt)
-    local h = built[bar]
+local function OnHostSize(barFrame, wid, hgt)
+    local h = built[barFrame]
     local seg = h.seg
     if seg and hosts[h.key] == h and seg:IsShown() then
         if h.vert then
             seg:SetHeight(hgt)
         else
-            seg:SetWidth(w)
+            seg:SetWidth(wid)
         end
     end
 end
@@ -297,18 +297,18 @@ end
 -- The host's option is on and its bar can show. cb is the host's callback
 -- table (see the header). Visibility edges after the first attach reach
 -- Listen through the bar's OnShow/OnHide.
-function SCP.Attach(key, bar, cb)
-    local h = built[bar]
+function SCP.Attach(key, barFrame, cb)
+    local h = built[barFrame]
     if not h then
         if not ev then
             ev = CreateFrame("Frame")
             ev:SetScript("OnEvent", OnEvent)
         end
-        h = { bar = bar }
-        built[bar] = h
-        bar:HookScript("OnShow", OnHostShow)
-        bar:HookScript("OnHide", OnHostHide)
-        bar:HookScript("OnSizeChanged", OnHostSize)
+        h = { bar = barFrame }
+        built[barFrame] = h
+        barFrame:HookScript("OnShow", OnHostShow)
+        barFrame:HookScript("OnHide", OnHostHide)
+        barFrame:HookScript("OnSizeChanged", OnHostSize)
     end
     local old = hosts[key]
     local fresh = old ~= h or h.cb ~= cb
@@ -322,7 +322,7 @@ function SCP.Attach(key, bar, cb)
     end
     -- A cast already in flight is laid out again when this attach is new or
     -- the rebuild behind it moved an input of the last draw.
-    if castGUID and bar:IsVisible() and (fresh or Stale(h)) then
+    if castGUID and barFrame:IsVisible() and (fresh or Stale(h)) then
         Show(h)
     end
 end

@@ -18,36 +18,37 @@ local MEMO_MAX = 200
 local memoPre, memoPost, memoN = {}, {}, 0
 
 -- The line for link, false to keep Blizzard's, nil while a value it needs is secret
-local function Build(calc, link, fallback, data)
+local function Build(calc, itemLink, fallback, payload)
     if fallback then
-        if not calc:GetAscendantBonus(link) then
+        if not calc:GetAscendantBonus(itemLink) then
             return false
         end
-        if not canaccessallvalues(data.lines) or not data.lines then
+        if not canaccessallvalues(payload.lines) or not payload.lines then
             return nil
         end
-        for _, line in ipairs(data.lines) do
-            if not canaccessallvalues(line) or not canaccessallvalues(line.type) then
+        for _, lineTex in ipairs(payload.lines) do
+            if not canaccessallvalues(lineTex) or not canaccessallvalues(lineTex.type) then
                 return nil
             end
-            if line.type == Enum.TooltipDataLineType.ItemUpgradeLevel then
+            if lineTex.type == Enum.TooltipDataLineType.ItemUpgradeLevel then
                 return false
             end
         end
     end
-    local info = C_Item.GetItemUpgradeInfo(link)
-    if not canaccessallvalues(info) then
+    local details = C_Item.GetItemUpgradeInfo(itemLink)
+    if not canaccessallvalues(details) then
         return nil
     end
     local rank, maxRank, cap, name
-    if info then
-        rank, maxRank, cap, name = info.currentLevel, info.maxLevel, info.maxItemLevel, info.trackString
+    if details then
+        rank, maxRank, cap, name =
+            details.currentLevel, details.maxLevel, details.maxItemLevel, details.trackString
     end
     if not canaccessallvalues(rank, maxRank, cap, name) then
         return nil
     end
 
-    local level = C_Item.GetDetailedItemLevelInfo(link)
+    local level = C_Item.GetDetailedItemLevelInfo(itemLink)
     if not canaccessallvalues(level) then
         return nil
     end
@@ -55,7 +56,7 @@ local function Build(calc, link, fallback, data)
     local key = CUI.UPGRADE_TRACK_KEYS[name or ""]
     -- shortcut: leave unmatched seasons/tracks unchanged; update shared calculator data for new seasons.
     local minLevel, maxLevel, displayRank, displayMax, ascendant =
-        calc:GetItemUpgradeRange(link, key, rank, maxRank, level, cap)
+        calc:GetItemUpgradeRange(itemLink, key, rank, maxRank, level, cap)
     if not minLevel then
         return false
     end
@@ -68,7 +69,7 @@ local function Build(calc, link, fallback, data)
         return false
     end
     local r, g, b = C_Item.GetItemQualityColor(quality)
-    local text = CludesUI.Lf(
+    local textValue = CludesUI.Lf(
         "%1$d/%2$d %3$s %4$s",
         displayRank,
         displayMax,
@@ -88,7 +89,7 @@ local function Build(calc, link, fallback, data)
             end
         end
     end
-    return { text = text, r = r, g = g, b = b, crest = crest }
+    return { text = textValue, r = r, g = g, b = b, crest = crest }
 end
 
 local function OnUpgradeLine(tooltip, fallback)
@@ -99,26 +100,26 @@ local function OnUpgradeLine(tooltip, fallback)
     if not canaccessallvalues(processing) or not processing then
         return
     end
-    local data = processing.tooltipData
-    if not canaccessallvalues(data) or not data then
+    local payload = processing.tooltipData
+    if not canaccessallvalues(payload) or not payload then
         return
     end
     -- Appended item data must not annotate the primary item's tooltip twice.
-    if tooltip:GetPrimaryTooltipData() ~= data then
+    if tooltip:GetPrimaryTooltipData() ~= payload then
         return
     end
-    if not canaccessallvalues(data.guid, data.hyperlink, data.overrideItemLevel) then
+    if not canaccessallvalues(payload.guid, payload.hyperlink, payload.overrideItemLevel) then
         return
     end
     -- Preview overrides can differ from the hyperlink's actual item level.
-    if data.overrideItemLevel and data.overrideItemLevel > 0 then
+    if payload.overrideItemLevel and payload.overrideItemLevel > 0 then
         return
     end
-    local link = data.hyperlink
-    if data.guid and data.guid ~= "" then
-        link = C_Item.GetItemLinkByGUID(data.guid)
+    local itemLink = payload.hyperlink
+    if payload.guid and payload.guid ~= "" then
+        itemLink = C_Item.GetItemLinkByGUID(payload.guid)
     end
-    if not canaccessallvalues(link) or type(link) ~= "string" or link == "" then
+    if not canaccessallvalues(itemLink) or type(itemLink) ~= "string" or itemLink == "" then
         return
     end
 
@@ -127,10 +128,10 @@ local function OnUpgradeLine(tooltip, fallback)
         return
     end
     local memo = fallback and memoPost or memoPre
-    local line = memo[link]
-    if line == nil then
-        line = Build(calc, link, fallback, data)
-        if line == nil then
+    local lineTex = memo[itemLink]
+    if lineTex == nil then
+        lineTex = Build(calc, itemLink, fallback, payload)
+        if lineTex == nil then
             return
         end
         if memoN >= MEMO_MAX then
@@ -138,16 +139,16 @@ local function OnUpgradeLine(tooltip, fallback)
             wipe(memoPost)
             memoN = 0
         end
-        memo[link] = line
+        memo[itemLink] = lineTex
         memoN = memoN + 1
     end
-    if not line then
+    if not lineTex then
         return
     end
-    if line.crest then
-        tooltip:AddDoubleLine(line.text, line.crest, line.r, line.g, line.b, 1, 1, 1)
+    if lineTex.crest then
+        tooltip:AddDoubleLine(lineTex.text, lineTex.crest, lineTex.r, lineTex.g, lineTex.b, 1, 1, 1)
     else
-        tooltip:AddLine(line.text, line.r, line.g, line.b)
+        tooltip:AddLine(lineTex.text, lineTex.r, lineTex.g, lineTex.b)
     end
     return true
 end

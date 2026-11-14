@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  us: na / oce / mex / bra by realm. eu: the realm's language.
 --  the region filter and the region tags read this. other regions: off
 -------------------------------------------------------------------------------
-local FOLDER, ns = ...
+local FOLDER, mod = ...
 if CludesUI.HELD_BACK_ADDONS[FOLDER] then
     return
 end -- held back (CludesUIGroupFinder.lua)
@@ -240,40 +240,40 @@ local SETS = {
     },
 }
 
-function ns.RegionID()
+function mod.RegionID()
     return GetCurrentRegion and GetCurrentRegion() or 1
 end
 
-local set, byKey, realmOf
+local group, byKey, realmOf
 local function Set()
-    if set ~= nil then
-        return set or nil
+    if group ~= nil then
+        return group or nil
     end
-    set = SETS[ns.RegionID()] or false
-    if set then
+    group = SETS[mod.RegionID()] or false
+    if group then
         byKey, realmOf = {}, {}
-        for _, d in ipairs(set.list) do
+        for _, d in ipairs(group.list) do
             d.flag = FLAG_DIR .. d.key .. ".png"
             byKey[d.key] = d
         end
-        for k, realms in pairs(set.realms) do
+        for k, realms in pairs(group.realms) do
             for _, r in ipairs(realms) do
                 realmOf[r] = k
             end
         end
     end
-    return set or nil
+    return group or nil
 end
 
 -- the filter's list for this region, nil where there's none
-function ns.RegionList()
+function mod.RegionList()
     local s = Set()
     return s and s.list
 end
 
 -- a realm's key, the region's default when it's not listed
 local cache = {}
-function ns.RegionOfRealm(realm)
+function mod.RegionOfRealm(realm)
     local s = Set()
     if not s or type(realm) ~= "string" then
         return nil
@@ -287,13 +287,13 @@ function ns.RegionOfRealm(realm)
 end
 
 -- tag text, color and flag for a key
-function ns.RegionInfo(key)
+function mod.RegionInfo(key)
     Set()
     return byKey and byKey[key]
 end
 
 -- eu realms list languages instead of regions
-function ns.RegionIsLanguage()
+function mod.RegionIsLanguage()
     local s = Set()
     return s and s.language or false
 end

@@ -1,7 +1,7 @@
 if CUI_CLIENT_BLOCKED then
     return
 end
-local ns = select(2, ...)
+local mod = select(2, ...)
 local CUI = CludesUI
 local forever
 local BAG_FRAME_SCALE = 0.8
@@ -10,7 +10,7 @@ local BAG_FRAME_SCALE = 0.8
 --- (useForeverStyle true or false), else the look most of the profile's modules
 --- use (CludesUI.ForeverLookMajority over addons, nil = the active
 --- profile's), so a profile on the WoW Forever look gets it with no write.
-function ns.BagsForeverWanted(p, addons)
+function mod.BagsForeverWanted(p, addons)
     local pick = p and p.useForeverStyle
     if pick == nil then
         return CUI.ForeverLookMajority(addons)
@@ -20,7 +20,7 @@ end
 
 -- Latched at the first read (0.5 s after login: every module has loaded), so a
 -- change takes effect after the reload the Style page asks for.
-function ns.BagsForever()
+function mod.BagsForever()
     if not CUI.IS_FOREVER then
         return false
     end
@@ -28,20 +28,20 @@ function ns.BagsForever()
         if not CUI.Lite.IsDBReady() then
             return false
         end
-        forever = ns.BagsForeverWanted(CUI._bagsDB.profile)
+        forever = mod.BagsForeverWanted(CUI._bagsDB.profile)
     end
     return forever
 end
 
-local function InsetBagBackground(tex, owner)
+local function InsetBagBackground(texture, ownerFrame)
     local inset = CUI.FOREVER_HEAVY.fill * BAG_FRAME_SCALE
-    tex:ClearAllPoints()
-    tex:SetPoint("TOPLEFT", owner, "TOPLEFT", inset, -inset)
-    tex:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -inset, inset)
+    texture:ClearAllPoints()
+    texture:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", inset, -inset)
+    texture:SetPoint("BOTTOMRIGHT", ownerFrame, "BOTTOMRIGHT", -inset, inset)
 end
 
-function ns.SkinForeverBagWindow(owner, bg, overlay, hasTitle, hasPortrait)
-    if not ns.BagsForever() then
+function mod.SkinForeverBagWindow(ownerFrame, backdrop, overlayFrame, hasTitle, hasPortrait)
+    if not mod.BagsForever() then
         return
     end
     local nineSlice = hasPortrait and NineSliceUtil
@@ -53,7 +53,7 @@ function ns.SkinForeverBagWindow(owner, bg, overlay, hasTitle, hasPortrait)
     local cornerInfo = corner and corner.atlas and C_Texture.GetAtlasInfo(corner.atlas)
     local heavyOK = CUI.ForeverHeavyOK()
     if cornerInfo and heavyOK then
-        local border = CreateFrame("Frame", nil, owner)
+        local border = CreateFrame("Frame", nil, ownerFrame)
         border:SetUsingParentLevel(true)
         border:SetScale(BAG_FRAME_SCALE)
         border.layoutType = "HeldBagLayout"
@@ -63,142 +63,142 @@ function ns.SkinForeverBagWindow(owner, bg, overlay, hasTitle, hasPortrait)
         local file = cornerInfo.file or cornerInfo.filename
         local width = 64
         if piece and file and cornerInfo.width > width then
-            local left, right = cornerInfo.leftTexCoord, cornerInfo.rightTexCoord
+            local leftX, right = cornerInfo.leftTexCoord, cornerInfo.rightTexCoord
             piece:SetTexture(file)
             piece:SetTexCoord(
-                left,
-                left + (right - left) * width / cornerInfo.width,
+                leftX,
+                leftX + (right - leftX) * width / cornerInfo.width,
                 cornerInfo.topTexCoord,
                 cornerInfo.bottomTexCoord
             )
             piece:SetSize(width, cornerInfo.height)
         end
         if nineSlice.UpdateCornerCropping then
-            local panel = { NineSlice = border }
+            local panelFrame = { NineSlice = border }
             border:SetScript("OnSizeChanged", function(_, _, height)
-                nineSlice.UpdateCornerCropping(panel, height)
+                nineSlice.UpdateCornerCropping(panelFrame, height)
             end)
         end
         -- Align the visible rim with the window; the native slices include a shadow.
-        border:SetPoint("TOPLEFT", owner, "TOPLEFT", 1, -3)
-        border:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -1, -4.5)
-        owner._foreverBagPortraitFrame = border
+        border:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", 1, -3)
+        border:SetPoint("BOTTOMRIGHT", ownerFrame, "BOTTOMRIGHT", -1, -4.5)
+        ownerFrame._foreverBagPortraitFrame = border
     elseif heavyOK then
-        local border = CreateFrame("Frame", nil, owner)
+        local border = CreateFrame("Frame", nil, ownerFrame)
         border:SetUsingParentLevel(true)
         border:SetScale(BAG_FRAME_SCALE)
-        border:SetAllPoints(owner)
+        border:SetAllPoints(ownerFrame)
         local heavy = CUI.ForeverHeavy(border, "ARTWORK", 1)
-        CUI.ForeverHeavySeat(heavy, owner)
+        CUI.ForeverHeavySeat(heavy, ownerFrame)
         CUI.ForeverHeavyTitle(heavy, hasTitle)
     else
-        CUI.ForeverBorderSeat(CUI.ForeverBorder(owner, "ARTWORK", 1, nil, "slim"), owner)
+        CUI.ForeverBorderSeat(CUI.ForeverBorder(ownerFrame, "ARTWORK", 1, nil, "slim"), ownerFrame)
     end
     if heavyOK then
-        owner._foreverBagFrameScale = BAG_FRAME_SCALE
-        InsetBagBackground(bg, owner)
-        if overlay then
-            InsetBagBackground(overlay, owner)
+        ownerFrame._foreverBagFrameScale = BAG_FRAME_SCALE
+        InsetBagBackground(backdrop, ownerFrame)
+        if overlayFrame then
+            InsetBagBackground(overlayFrame, ownerFrame)
         end
     end
-    bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock")
-    bg:SetVertexColor(0.55, 0.55, 0.55)
+    backdrop:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock")
+    backdrop:SetVertexColor(0.55, 0.55, 0.55)
     return true
 end
 
-function ns.LayoutForeverBagHeader(header, height)
-    local scale = header:GetParent()._foreverBagFrameScale or 1
+function mod.LayoutForeverBagHeader(headerFrame, height)
+    local scale = headerFrame:GetParent()._foreverBagFrameScale or 1
     local trim = CUI.FOREVER_HEAVY.title.bottom * (1 - scale)
     -- The header starts one unit inside the window rim.
-    header._foreverTitleY = 1 - 14 * scale
-    header._foreverControlsY = 1 - 15 * scale
-    header._foreverToolsY = -39 + trim
-    header:SetHeight((height or 54) - trim)
+    headerFrame._foreverTitleY = 1 - 14 * scale
+    headerFrame._foreverControlsY = 1 - 15 * scale
+    headerFrame._foreverToolsY = -39 + trim
+    headerFrame:SetHeight((height or 54) - trim)
 end
 
-function ns.SkinForeverBagTitle(title, count)
-    local header = title:GetParent()
-    local y = header._foreverTitleY
-    title:ClearAllPoints()
-    title:SetPoint("LEFT", header, "TOPLEFT", count and 55 or 40, y)
-    title:SetPoint("RIGHT", header, "TOPRIGHT", count and -124 or -30, y)
-    title:SetJustifyH("CENTER")
-    title:SetWordWrap(false)
-    title:SetTextColor(1, 0.82, 0)
-    if not count then
+function mod.SkinForeverBagTitle(titleText, total)
+    local headerFrame = titleText:GetParent()
+    local posY = headerFrame._foreverTitleY
+    titleText:ClearAllPoints()
+    titleText:SetPoint("LEFT", headerFrame, "TOPLEFT", total and 55 or 40, posY)
+    titleText:SetPoint("RIGHT", headerFrame, "TOPRIGHT", total and -124 or -30, posY)
+    titleText:SetJustifyH("CENTER")
+    titleText:SetWordWrap(false)
+    titleText:SetTextColor(1, 0.82, 0)
+    if not total then
         return
     end
-    count:ClearAllPoints()
-    count:SetPoint("RIGHT", header, "TOPRIGHT", -31, y)
-    count:SetWidth(85)
-    count:SetJustifyH("RIGHT")
-    count:SetWordWrap(false)
-    count:SetTextColor(0.87, 0.77, 0.59)
+    total:ClearAllPoints()
+    total:SetPoint("RIGHT", headerFrame, "TOPRIGHT", -31, posY)
+    total:SetWidth(85)
+    total:SetJustifyH("RIGHT")
+    total:SetWordWrap(false)
+    total:SetTextColor(0.87, 0.77, 0.59)
 end
 
-function ns.ForeverBagSidebarInset(owner)
-    return CUI.FOREVER_HEAVY.band * (owner._foreverBagFrameScale or 1)
+function mod.ForeverBagSidebarInset(ownerFrame)
+    return CUI.FOREVER_HEAVY.band * (ownerFrame._foreverBagFrameScale or 1)
 end
 
-function ns.AnchorBagSidebarIcon(icon, collapsed, left)
+function mod.AnchorBagSidebarIcon(icon, collapsed, leftX)
     icon:ClearAllPoints()
     if collapsed then
         icon:SetPoint("CENTER")
     else
-        icon:SetPoint("LEFT", left, 0)
+        icon:SetPoint("LEFT", leftX, 0)
     end
 end
 
-function ns.SetForeverBagSectionColors(label, line, depth)
+function mod.SetForeverBagSectionColors(labelText, lineTex, depth)
     local shade, alpha = 1, 0.5
     if depth == 1 then
         shade, alpha = 0.8, 0.25
     elseif depth and depth >= 2 then
         shade, alpha = 0.65, 0.15
     end
-    label:SetTextColor(0.88 * shade, 0.77 * shade, 0.58 * shade)
-    line:SetColorTexture(0.56, 0.41, 0.26, alpha)
+    labelText:SetTextColor(0.88 * shade, 0.77 * shade, 0.58 * shade)
+    lineTex:SetColorTexture(0.56, 0.41, 0.26, alpha)
 end
 
-function ns.AddForeverBagPortrait(header, texturePath)
-    local border = header:GetParent()._foreverBagPortraitFrame
-    local art = border or header
+function mod.AddForeverBagPortrait(headerFrame, texturePath)
+    local border = headerFrame:GetParent()._foreverBagPortraitFrame
+    local art = border or headerFrame
     local icon = art:CreateTexture(nil, "ARTWORK")
-    local size = border and 36 or 28
-    icon:SetSize(size, size)
+    local dim = border and 36 or 28
+    icon:SetSize(dim, dim)
     icon:SetTexture(texturePath)
 
-    local mask = art:CreateMaskTexture()
+    local maskTex = art:CreateMaskTexture()
     if border then
         icon:SetPoint("TOPLEFT", border, "TOPLEFT", -4, 1)
-        mask:SetPoint("TOPLEFT", icon, "TOPLEFT", 2, 0)
-        mask:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -2, 4)
+        maskTex:SetPoint("TOPLEFT", icon, "TOPLEFT", 2, 0)
+        maskTex:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -2, 4)
     else
-        icon:SetPoint("CENTER", header, "TOPLEFT", 16, -18)
-        mask:SetAllPoints(icon)
+        icon:SetPoint("CENTER", headerFrame, "TOPLEFT", 16, -18)
+        maskTex:SetAllPoints(icon)
     end
-    mask:SetTexture(
+    maskTex:SetTexture(
         "Interface\\CharacterFrame\\TempPortraitAlphaMask",
         "CLAMPTOBLACKADDITIVE",
         "CLAMPTOBLACKADDITIVE"
     )
-    icon:AddMaskTexture(mask)
+    icon:AddMaskTexture(maskTex)
 
     if not border and C_Texture.GetAtlasInfo("UI-Frame-Portrait") then
-        local rim = header:CreateTexture(nil, "ARTWORK", nil, 1)
+        local rim = headerFrame:CreateTexture(nil, "ARTWORK", nil, 1)
         rim:SetAtlas("UI-Frame-Portrait")
         rim:SetSize(40, 40)
         rim:SetPoint("CENTER", icon)
     end
 end
 
-function ns.PositionForeverBagClose(close)
-    local header = close:GetParent()
-    local scale = header:GetParent()._foreverBagFrameScale or 1
+function mod.PositionForeverBagClose(close)
+    local headerFrame = close:GetParent()
+    local scale = headerFrame:GetParent()._foreverBagFrameScale or 1
     close:ClearAllPoints()
-    close:SetPoint("CENTER", header, "TOPRIGHT", -12, 1 - 13 * scale)
-    local size = 25 * scale
-    close:SetSize(size, size)
+    close:SetPoint("CENTER", headerFrame, "TOPRIGHT", -12, 1 - 13 * scale)
+    local dim = 25 * scale
+    close:SetSize(dim, dim)
     if not C_Texture.GetAtlasInfo("RedButton-Exit") then
         return
     end
@@ -214,7 +214,7 @@ function ns.PositionForeverBagClose(close)
     end
 end
 
-function ns.SkinForeverBagSearch(search, bg, placeholder, clear)
+function mod.SkinForeverBagSearch(search, backdrop, placeholder, clear)
     local getAtlas = C_Texture.GetAtlasInfo
     search:SetHeight(20)
     if
@@ -222,20 +222,20 @@ function ns.SkinForeverBagSearch(search, bg, placeholder, clear)
         and getAtlas("common-search-border-middle")
         and getAtlas("common-search-border-right")
     then
-        local left = search:CreateTexture(nil, "BACKGROUND")
-        left:SetAtlas("common-search-border-left")
-        left:SetSize(8, 20)
-        left:SetPoint("LEFT", -5, 0)
+        local leftX = search:CreateTexture(nil, "BACKGROUND")
+        leftX:SetAtlas("common-search-border-left")
+        leftX:SetSize(8, 20)
+        leftX:SetPoint("LEFT", -5, 0)
         local right = search:CreateTexture(nil, "BACKGROUND")
         right:SetAtlas("common-search-border-right")
         right:SetSize(8, 20)
         right:SetPoint("RIGHT")
-        bg:ClearAllPoints()
-        bg:SetAtlas("common-search-border-middle")
-        bg:SetPoint("TOPLEFT", left, "TOPRIGHT")
-        bg:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
+        backdrop:ClearAllPoints()
+        backdrop:SetAtlas("common-search-border-middle")
+        backdrop:SetPoint("TOPLEFT", leftX, "TOPRIGHT")
+        backdrop:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
     else
-        bg:SetColorTexture(0.035, 0.03, 0.025, 0.92)
+        backdrop:SetColorTexture(0.035, 0.03, 0.025, 0.92)
         local border = CUI.ForeverBorder(search, "ARTWORK", 1, nil, "slim")
         CUI.ForeverBorderSeat(border, search)
         CUI.ForeverBorderPaint(border, 0.65, 0.60, 0.52, 1, true)
@@ -268,18 +268,18 @@ function ns.SkinForeverBagSearch(search, bg, placeholder, clear)
     end
 end
 
-function ns.SkinForeverBagFooter(footer, bg, separator)
+function mod.SkinForeverBagFooter(footer, backdrop, separator)
     if separator then
         separator:Hide()
     end
     -- Keep the coin box on the bottom row when tracked currencies wrap.
     local rowCenter = footer:GetHeight() / 2
-    bg:ClearAllPoints()
-    bg:SetHeight(22)
-    bg:SetPoint("LEFT", footer, "BOTTOMLEFT", 7, rowCenter)
-    bg:SetPoint("RIGHT", footer, "BOTTOMRIGHT", -7, rowCenter)
-    bg:SetColorTexture(0.025, 0.02, 0.015, 0.8)
-    footer._coinBox = bg
+    backdrop:ClearAllPoints()
+    backdrop:SetHeight(22)
+    backdrop:SetPoint("LEFT", footer, "BOTTOMLEFT", 7, rowCenter)
+    backdrop:SetPoint("RIGHT", footer, "BOTTOMRIGHT", -7, rowCenter)
+    backdrop:SetColorTexture(0.025, 0.02, 0.015, 0.8)
+    footer._coinBox = backdrop
 
     if
         not (
@@ -291,19 +291,19 @@ function ns.SkinForeverBagFooter(footer, bg, separator)
         return
     end
 
-    local left = footer:CreateTexture(nil, "BACKGROUND", nil, 2)
-    left:SetAtlas("common-coinbox-left")
-    left:SetWidth(8)
-    left:SetPoint("TOPLEFT", bg)
-    left:SetPoint("BOTTOMLEFT", bg)
+    local leftX = footer:CreateTexture(nil, "BACKGROUND", nil, 2)
+    leftX:SetAtlas("common-coinbox-left")
+    leftX:SetWidth(8)
+    leftX:SetPoint("TOPLEFT", backdrop)
+    leftX:SetPoint("BOTTOMLEFT", backdrop)
     local right = footer:CreateTexture(nil, "BACKGROUND", nil, 2)
     right:SetAtlas("common-coinbox-right")
     right:SetWidth(8)
-    right:SetPoint("TOPRIGHT", bg)
-    right:SetPoint("BOTTOMRIGHT", bg)
+    right:SetPoint("TOPRIGHT", backdrop)
+    right:SetPoint("BOTTOMRIGHT", backdrop)
     local middle = footer:CreateTexture(nil, "BACKGROUND", nil, 2)
     middle:SetAtlas("_common-coinbox-center")
     middle:SetHorizTile(true)
-    middle:SetPoint("TOPLEFT", left, "TOPRIGHT")
+    middle:SetPoint("TOPLEFT", leftX, "TOPRIGHT")
     middle:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
 end

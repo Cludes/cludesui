@@ -50,21 +50,21 @@ ev:SetScript("OnEvent", function(self)
     p:SetFrameStrata("FULLSCREEN_DIALOG")
     p:EnableMouse(true)
 
-    local bg = p:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.062, 0.050, 0.039, 0.97)
+    local backdrop = p:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.062, 0.050, 0.039, 0.97)
 
     -- 1px accent border (no dependencies -- the shared border kit is gated).
-    local function Edge(point1, point2, w, h)
+    local function Edge(point1, point2, wid, hgt)
         local t = p:CreateTexture(nil, "BORDER")
         t:SetColorTexture(0.30, 0.79, 0.94, 0.9)
         t:SetPoint(point1)
         t:SetPoint(point2)
-        if w then
-            t:SetWidth(w)
+        if wid then
+            t:SetWidth(wid)
         end
-        if h then
-            t:SetHeight(h)
+        if hgt then
+            t:SetHeight(hgt)
         end
         return t
     end
@@ -73,36 +73,36 @@ ev:SetScript("OnEvent", function(self)
     Edge("TOPLEFT", "BOTTOMLEFT", 1, nil)
     Edge("TOPRIGHT", "BOTTOMRIGHT", 1, nil)
 
-    local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", 0, -16)
-    title:SetText("CludesUI")
-    title:SetTextColor(0.30, 0.79, 0.94)
+    local titleText = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    titleText:SetPoint("TOP", 0, -16)
+    titleText:SetText("CludesUI")
+    titleText:SetTextColor(0.30, 0.79, 0.94)
 
     local body = p:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    body:SetPoint("TOP", title, "BOTTOM", 0, -12)
+    body:SetPoint("TOP", titleText, "BOTTOM", 0, -12)
     body:SetWidth(430)
     body:SetJustifyH("CENTER")
     body:SetText(
         "This version of CludesUI is built for the Midnight 12.1 patch and has been disabled on this game version.|n|nYour saved settings are safe and untouched. Please install the previous CludesUI release until 12.1 launches."
     )
 
-    local btn = CreateFrame("Button", nil, p)
-    btn:SetSize(110, 26)
-    btn:SetPoint("BOTTOM", 0, 14)
-    local bbg = btn:CreateTexture(nil, "BACKGROUND")
+    local button = CreateFrame("Button", nil, p)
+    button:SetSize(110, 26)
+    button:SetPoint("BOTTOM", 0, 14)
+    local bbg = button:CreateTexture(nil, "BACKGROUND")
     bbg:SetAllPoints()
     bbg:SetColorTexture(0.30, 0.79, 0.94, 0.85)
-    local bl = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local bl = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     bl:SetPoint("CENTER")
     bl:SetText("Okay")
     bl:SetTextColor(0, 0, 0)
-    btn:SetScript("OnEnter", function()
+    button:SetScript("OnEnter", function()
         bbg:SetColorTexture(0.30, 0.79, 0.94, 1)
     end)
-    btn:SetScript("OnLeave", function()
+    button:SetScript("OnLeave", function()
         bbg:SetColorTexture(0.30, 0.79, 0.94, 0.85)
     end)
-    btn:SetScript("OnClick", function()
+    button:SetScript("OnClick", function()
         p:Hide()
     end)
 

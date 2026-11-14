@@ -44,8 +44,8 @@ local CludesUI = _G.CludesUI
 --   syncFrame/syncOpts, lastR/G/B/A, pendR/G/B/A, dirty,
 --   ph[powerKey] = { container, btn, bar, bft, tc, fs, built, queued, err,
 --                    textErr, regMax } }
-local S = { hosts = {} }
-S.class = select(2, UnitClass("player"))
+local Stl = { hosts = {} }
+Stl.class = select(2, UnitClass("player"))
 
 local PHASES = {
     WHIRLWIND_STACKS = {
@@ -61,10 +61,10 @@ local PHASES = {
 }
 
 local function Host(key)
-    local H = S.hosts[key]
+    local H = Stl.hosts[key]
     if not H then
         H = { key = key, ph = {}, seps = {} }
-        S.hosts[key] = H
+        Stl.hosts[key] = H
     end
     return H
 end
@@ -80,14 +80,14 @@ local BROAD_STROKES = 1261049 -- Colossus Smash grants +6 charges when known
 -- cheap C call and this runs only on Sync passes (login/spec/talent/settings
 -- edges; every consumer coalesces trait bursts before reaching here), so no
 -- memo.
-local function EffectiveMaxApps(powerKey, cfg)
+local function EffectiveMaxApps(powerKey, conf)
     if powerKey == "SWEEPING_STRIKES" then
-        local sb = C_SpellBook
-        if not (sb and sb.IsSpellKnown and sb.IsSpellKnown(BROAD_STROKES)) then
+        local scrollBar = C_SpellBook
+        if not (scrollBar and scrollBar.IsSpellKnown and scrollBar.IsSpellKnown(BROAD_STROKES)) then
             return 12
         end
     end
-    return cfg.maxApps
+    return conf.maxApps
 end
 
 -------------------------------------------------------------------------------
@@ -101,16 +101,16 @@ local HostRecolor -- forward (lift re-applies through it)
 local HostSyncByKey -- forward
 
 local function EnsureLift()
-    if S.liftHooked then
+    if Stl.liftHooked then
         return
     end
     local AK = CludesUI.AuraKit
     if not (AK and AK.OnRestrictionLift) then
         return
     end
-    S.liftHooked = true
+    Stl.liftHooked = true
     AK.OnRestrictionLift(function()
-        for _, H in pairs(S.hosts) do
+        for _, H in pairs(Stl.hosts) do
             if H.dirty then
                 H.dirty = nil
                 if H.armed and H.pendR then
@@ -155,9 +155,9 @@ end
 --  Container build (one slot per host+buff, engine-owned end to end)
 -------------------------------------------------------------------------------
 
-local function BuildHostPhase(H, powerKey, opts)
+local function BuildHostPhase(H, powerKey, options)
     local AK = CludesUI.AuraKit
-    local cfg = PHASES[powerKey]
+    local conf = PHASES[powerKey]
     local st = H.ph[powerKey]
     if st.container then
         return
@@ -175,48 +175,48 @@ local function BuildHostPhase(H, powerKey, opts)
     -- regions, so this is the ONLY color write that always lands). The host's
     -- consumer stashes its fully resolved color into H.pend* before the
     -- queued job runs; opts colors are the belt for a job that outruns it.
-    local maxApps = EffectiveMaxApps(powerKey, cfg)
-    local texPath = opts.texPath or "Interface\\Buttons\\WHITE8x8"
-    local r = H.pendR or opts.r or 1
-    local g = H.pendG or opts.g or 1
-    local b = H.pendB or opts.b or 1
-    local a = (H.pendR and (H.pendA or 1)) or opts.a or 1
-    local fillAlpha = opts.fillAlpha or 1
-    local ori = opts.ori or "HORIZONTAL"
+    local maxApps = EffectiveMaxApps(powerKey, conf)
+    local texPath = options.texPath or "Interface\\Buttons\\WHITE8x8"
+    local r = H.pendR or options.r or 1
+    local g = H.pendG or options.g or 1
+    local b = H.pendB or options.b or 1
+    local a = (H.pendR and (H.pendA or 1)) or options.a or 1
+    local fillAlpha = options.fillAlpha or 1
+    local ori = options.ori or "HORIZONTAL"
 
-    local container = AK.CreateContainerShell(H.proxy, { point = { "CENTER" } })
-    AK.AddSlotToContainer(container, {
+    local boxHolder = AK.CreateContainerShell(H.proxy, { point = { "CENTER" } })
+    AK.AddSlotToContainer(boxHolder, {
         key = powerKey,
         filter = { "HELPFUL" },
-        candidateFilters = { includeSpellIDs = cfg.include },
+        candidateFilters = { includeSpellIDs = conf.include },
         style = styleKey,
-        extraInit = function(button)
+        extraInit = function(btnFrame)
             -- Creation window: the only legal moment to touch this subtree.
             -- Two-point anchoring sizes the button by anchors forever; all
             -- repositioning after this is proxy moves.
-            button:SetAllPoints(H.proxy)
+            btnFrame:SetAllPoints(H.proxy)
             -- Display-only overlay: an engine aura button comes mouse-enabled,
             -- and clicks alone would make it an invisible blocker over the
             -- host's row for as long as the buff is up.
-            if button.SetMouseClickEnabled then
-                button:SetMouseClickEnabled(false)
+            if btnFrame.SetMouseClickEnabled then
+                btnFrame:SetMouseClickEnabled(false)
             end
-            if button.SetMouseMotionEnabled then
-                button:SetMouseMotionEnabled(false)
+            if btnFrame.SetMouseMotionEnabled then
+                btnFrame:SetMouseMotionEnabled(false)
             end
-            st.btn = button
+            st.btn = btnFrame
 
-            local bar = CreateFrame("StatusBar", nil, button)
-            bar:SetAllPoints(button)
+            local barFrame = CreateFrame("StatusBar", nil, btnFrame)
+            barFrame:SetAllPoints(btnFrame)
             if ori == "HORIZONTAL" then
-                bar:SetOrientation("HORIZONTAL")
+                barFrame:SetOrientation("HORIZONTAL")
             else
                 -- Legacy pip rows fill top-down unless VERTICAL_UP reverses.
-                bar:SetOrientation("VERTICAL")
-                bar:SetReverseFill(ori ~= "VERTICAL_UP")
+                barFrame:SetOrientation("VERTICAL")
+                barFrame:SetReverseFill(ori ~= "VERTICAL_UP")
             end
-            bar:SetStatusBarTexture(texPath)
-            local bft = bar:GetStatusBarTexture()
+            barFrame:SetStatusBarTexture(texPath)
+            local bft = barFrame:GetStatusBarTexture()
             if bft then
                 bft:SetVertexColor(r, g, b, a)
                 if fillAlpha < 1 then
@@ -226,18 +226,18 @@ local function BuildHostPhase(H, powerKey, opts)
             -- ARMORED: an uncaught error here aborts the engine's
             -- CreateFrameBatch and kills the slot; failures land in st.err and
             -- the host's row stays empty for the session.
-            local ok, err = pcall(function()
+            local success, err = pcall(function()
                 local barOpts = { maxApplications = maxApps }
                 if Enum.StatusBarInterpolation then
                     barOpts.interpolation = Enum.StatusBarInterpolation.Immediate
                 end
-                button:SetApplicationBar(bar, barOpts)
+                btnFrame:SetApplicationBar(barFrame, barOpts)
             end)
-            if not ok then
+            if not success then
                 st.err = err
                 return
             end
-            st.bar = bar
+            st.bar = barFrame
             st.bft = bft
             st.regMax = maxApps
 
@@ -251,7 +251,7 @@ local function BuildHostPhase(H, powerKey, opts)
             -- unrestricted, pcall'd with a lift re-apply under restriction.
             -- ARTWORK on the bar draws above the fill; the separator ticks
             -- live at +4 above all of it.
-            st.thMask = bar:CreateMaskTexture()
+            st.thMask = barFrame:CreateMaskTexture()
             st.thMask:SetTexture(
                 "Interface\\Buttons\\WHITE8x8",
                 "CLAMPTOBLACKADDITIVE",
@@ -260,14 +260,14 @@ local function BuildHostPhase(H, powerKey, opts)
             )
             st.thMask:SetAllPoints(bft)
             st.thStrips = {}
-            for i = 1, 5 do
+            for idx = 1, 5 do
                 -- Sublevels +1..+5: the StatusBar fill texture draws at
                 -- ARTWORK sublevel 0, and strips below it never render
                 -- (field-proven). Ticks stay above on the +4 sepHost frame.
-                local strip = bar:CreateTexture(nil, "ARTWORK", nil, i)
+                local strip = barFrame:CreateTexture(nil, "ARTWORK", nil, idx)
                 strip:AddMaskTexture(st.thMask)
                 strip:Hide()
-                st.thStrips[i] = strip
+                st.thStrips[idx] = strip
             end
 
             -- Count text (opt-in per host): engine-stamped true count via
@@ -275,25 +275,35 @@ local function BuildHostPhase(H, powerKey, opts)
             -- fontstring when one exists by job time, else the opts fields.
             -- The formatter makes every value render ("%d" from 0 up);
             -- without it the engine only shows counts above 1.
-            if opts.text then
+            if options.text then
                 local okT, errT = pcall(function()
-                    local tc = CreateFrame("Frame", nil, button)
-                    tc:SetAllPoints(button)
-                    tc:SetFrameLevel(button:GetFrameLevel() + 6)
-                    local fs = tc:CreateFontString(nil, "OVERLAY")
-                    local lc = opts.text.fontFrom
+                    local tc = CreateFrame("Frame", nil, btnFrame)
+                    tc:SetAllPoints(btnFrame)
+                    tc:SetFrameLevel(btnFrame:GetFrameLevel() + 6)
+                    local fontStr = tc:CreateFontString(nil, "OVERLAY")
+                    local lc = options.text.fontFrom
                     local f, sz, fl
                     if lc and lc.GetFont then
                         f, sz, fl = lc:GetFont()
                     end
                     if f then
-                        fs:SetFont(f, sz, fl)
+                        fontStr:SetFont(f, sz, fl)
                     else
-                        fs:SetFont("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF", 12, "OUTLINE")
+                        fontStr:SetFont(
+                            "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
+                            12,
+                            "OUTLINE"
+                        )
                     end
-                    fs:SetTextColor(opts.text.r or 1, opts.text.g or 1, opts.text.b or 1, 0.9)
-                    local anchor = opts.text.anchor or "CENTER"
-                    fs:SetPoint(anchor, button, anchor, opts.text.x or 0, opts.text.y or 0)
+                    fontStr:SetTextColor(options.text.r or 1, options.text.g or 1, options.text.b or 1, 0.9)
+                    local anchorFrame = options.text.anchor or "CENTER"
+                    fontStr:SetPoint(
+                        anchorFrame,
+                        btnFrame,
+                        anchorFrame,
+                        options.text.x or 0,
+                        options.text.y or 0
+                    )
                     local fmt
                     if
                         C_StringUtil
@@ -313,9 +323,9 @@ local function BuildHostPhase(H, powerKey, opts)
                             fmt = nf
                         end
                     end
-                    button:SetApplicationCount(fs, fmt and { formatter = fmt } or nil)
-                    st.tc, st.fs = tc, fs
-                    tc:SetShown(opts.text.shown and true or false)
+                    btnFrame:SetApplicationCount(fontStr, fmt and { formatter = fmt } or nil)
+                    st.tc, st.fs = tc, fontStr
+                    tc:SetShown(options.text.shown and true or false)
                 end)
                 if not okT then
                     st.textErr = errT
@@ -323,12 +333,12 @@ local function BuildHostPhase(H, powerKey, opts)
             end
         end,
     })
-    AK.FinishContainer(container, "player")
-    st.container = container
+    AK.FinishContainer(boxHolder, "player")
+    st.container = boxHolder
     st.built = true
 end
 
-local function EnsureHostBuilt(H, powerKey, opts)
+local function EnsureHostBuilt(H, powerKey, options)
     local st = H.ph[powerKey]
     if not st then
         st = {}
@@ -346,8 +356,8 @@ local function EnsureHostBuilt(H, powerKey, opts)
         st.queued = nil
         -- Latched, not retried: a hard build failure must not re-enter on
         -- every consumer pass and turn one broken container into a storm.
-        local ok, err = pcall(BuildHostPhase, H, powerKey, opts)
-        if not ok then
+        local success, err = pcall(BuildHostPhase, H, powerKey, options)
+        if not success then
             st.err = err
             return
         end
@@ -365,7 +375,7 @@ end
 --  land exactly on the boundaries.
 -------------------------------------------------------------------------------
 
-local function StyleSeparators(H, frame, sp, n)
+local function StyleSeparators(H, widget, sp, num)
     if not H.sepHost then
         H.sepHost = CreateFrame("Frame", nil, H.proxy)
         H.sepHost:SetAllPoints(H.proxy)
@@ -385,16 +395,16 @@ local function StyleSeparators(H, frame, sp, n)
     end
     local ori = sp.pipOrientation or "HORIZONTAL"
     local vertical = ori ~= "HORIZONTAL"
-    local PP = CludesUI.PP
-    local es = (frame.GetEffectiveScale and frame:GetEffectiveScale()) or 1
+    local Pix = CludesUI.PP
+    local es = (widget.GetEffectiveScale and widget:GetEffectiveScale()) or 1
     local sepW = sep.w or sp.pipSpacing or 1
-    if PP and PP.SnapForES then
-        sepW = PP.SnapForES(sepW, es)
+    if Pix and Pix.SnapForES then
+        sepW = Pix.SnapForES(sepW, es)
     end
     if sepW <= 0 then
         sepW = 1
     end
-    local len = (vertical and frame:GetHeight() or frame:GetWidth()) or 0
+    local len = (vertical and widget:GetHeight() or widget:GetWidth()) or 0
 
     -- Optional empty-cell strip UNDER the engine fill (hosts whose legacy
     -- pips carry an "empty" color rather than relying on the row backdrop).
@@ -426,32 +436,32 @@ local function StyleSeparators(H, frame, sp, n)
     -- Boundary positions. Parametric cell geometry when the host supplies it
     -- (fixed stride, or the stretch-to-width layout); uniform fractions
     -- otherwise (the near-uniform ERB slot layout).
-    local function BoundaryPos(i)
+    local function BoundaryPos(idx)
         if sep.stretch and sep.stretch > 0 then
             local gapPx = sep.gap or 0
-            local basePipW = (sep.stretch - (n - 1) * gapPx) / n
-            return i * (basePipW + gapPx) - gapPx / 2
+            local basePipW = (sep.stretch - (num - 1) * gapPx) / num
+            return idx * (basePipW + gapPx) - gapPx / 2
         elseif sep.cellW then
             local pad = sep.pad or 0
             local gapPx = sep.gap or 0
-            return pad / 2 + i * (sep.cellW + gapPx) - gapPx / 2
+            return pad / 2 + idx * (sep.cellW + gapPx) - gapPx / 2
         end
-        return len * i / n
+        return len * idx / num
     end
 
-    for i = 1, n - 1 do
-        local t = H.seps[i]
+    for idx = 1, num - 1 do
+        local t = H.seps[idx]
         if not t then
             t = H.sepHost:CreateTexture(nil, "ARTWORK")
-            H.seps[i] = t
+            H.seps[idx] = t
         end
         t:SetColorTexture(r, g, b, a)
         t:ClearAllPoints()
         -- Snap the tick's EDGE offset, not just the boundary center: a
         -- half-pixel-offset 1px line can disappear into the pixel grid.
-        local off = BoundaryPos(i) - sepW / 2
-        if PP and PP.SnapForES then
-            off = PP.SnapForES(off, es)
+        local offset = BoundaryPos(idx) - sepW / 2
+        if Pix and Pix.SnapForES then
+            offset = Pix.SnapForES(offset, es)
         end
         if vertical then
             -- Fill runs top-down (or bottom-up for VERTICAL_UP); either way
@@ -459,21 +469,21 @@ local function StyleSeparators(H, frame, sp, n)
             t:SetPoint("LEFT", H.sepHost, "LEFT", 0, 0)
             t:SetPoint("RIGHT", H.sepHost, "RIGHT", 0, 0)
             if ori == "VERTICAL_UP" then
-                t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, off)
+                t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, offset)
             else
-                t:SetPoint("TOP", H.sepHost, "TOP", 0, -off)
+                t:SetPoint("TOP", H.sepHost, "TOP", 0, -offset)
             end
             t:SetHeight(sepW)
         else
             t:SetPoint("TOP", H.sepHost, "TOP", 0, 0)
             t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, 0)
-            t:SetPoint("LEFT", H.sepHost, "LEFT", off, 0)
+            t:SetPoint("LEFT", H.sepHost, "LEFT", offset, 0)
             t:SetWidth(sepW)
         end
         t:Show()
     end
-    for i = n, #H.seps do
-        H.seps[i]:Hide()
+    for idx = num, #H.seps do
+        H.seps[idx]:Hide()
     end
 end
 
@@ -491,65 +501,65 @@ end
 --  "Up to" (reverse) modes have no engine expression and render nothing.
 -------------------------------------------------------------------------------
 
-local function StyleThresholds(H, frame, sp, n)
+local function StyleThresholds(H, widget, sp, num)
     local st = H.armed and H.ph[H.armed]
     local strips = st and st.thStrips
     if not strips then
         return
     end
-    local spec = H.thSpec
+    local specInfo = H.thSpec
     -- Every write below touches the slot subtree post-window (the strips and
     -- mask were BAKED in the creation window; an outside mask anchored to
     -- bft is denied as a forbidden-aspect dependent -- field-proven): legal
     -- while unrestricted, denied under restriction. ONE pcall covers the
     -- whole restyle; a denial rides the host dirty flag so the lift's Sync
     -- re-run restyles, and a throw can never abort the caller's paint pass again
-    local ok = pcall(function()
-        if not spec or n <= 0 then
-            for i = 1, #strips do
-                strips[i]:Hide()
+    local success = pcall(function()
+        if not specInfo or num <= 0 then
+            for idx = 1, #strips do
+                strips[idx]:Hide()
             end
             return
         end
         local ori = sp.pipOrientation or "HORIZONTAL"
         local vertical = ori ~= "HORIZONTAL"
-        local len = (vertical and frame:GetHeight() or frame:GetWidth()) or 0
+        local len = (vertical and widget:GetHeight() or widget:GetWidth()) or 0
         local used = 0
-        for k = 1, #spec do
-            local band = spec[k]
-            if band.start and band.start >= 1 and band.start <= n and used < #strips then
+        for k = 1, #specInfo do
+            local band = specInfo[k]
+            if band.start and band.start >= 1 and band.start <= num and used < #strips then
                 used = used + 1
                 local t = strips[used]
                 t:SetColorTexture(band.r, band.g, band.b, band.a)
                 -- Strip origin measured from the FILL ORIGIN (left; top for
                 -- reversed vertical; bottom for VERTICAL_UP), the separator
                 -- ticks' fractions.
-                local off = len * (band.start - 1) / n
+                local offset = len * (band.start - 1) / num
                 t:ClearAllPoints()
                 if vertical then
                     t:SetPoint("LEFT", st.bar, "LEFT", 0, 0)
                     t:SetPoint("RIGHT", st.bar, "RIGHT", 0, 0)
                     if ori == "VERTICAL_UP" then
-                        t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, off)
+                        t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, offset)
                         t:SetPoint("TOP", st.bar, "TOP", 0, 0)
                     else
-                        t:SetPoint("TOP", st.bar, "TOP", 0, -off)
+                        t:SetPoint("TOP", st.bar, "TOP", 0, -offset)
                         t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, 0)
                     end
                 else
                     t:SetPoint("TOP", st.bar, "TOP", 0, 0)
                     t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, 0)
-                    t:SetPoint("LEFT", st.bar, "LEFT", off, 0)
+                    t:SetPoint("LEFT", st.bar, "LEFT", offset, 0)
                     t:SetPoint("RIGHT", st.bar, "RIGHT", 0, 0)
                 end
                 t:Show()
             end
         end
-        for i = used + 1, #strips do
-            strips[i]:Hide()
+        for idx = used + 1, #strips do
+            strips[idx]:Hide()
         end
     end)
-    if not ok then
+    if not success then
         H.dirty = true
         EnsureLift()
     end
@@ -558,15 +568,15 @@ end
 -- Threshold inputs, handed raw from the consumer's paint pass and
 -- change-gated here with ALLOC-FREE field compares (the pass cadence is the
 -- class bar tick; a rebuild only runs on a real settings/spec/cap change).
-local function HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
+local function HostThresholds(H, powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
     if H.armed ~= powerKey then
         return
     end
     local st = H.ph[powerKey]
-    local n = (st and st.regMax) or 0
+    local num = (st and st.regMax) or 0
     -- v1: "Up to" modes render nothing (no engine expression).
     if reverse then
-        count = nil
+        total = nil
     end
     if bandReverse then
         bandOn = false
@@ -577,9 +587,9 @@ local function HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, band
         H.thIn = inp
     end
     local bn = (bandOn and bands and #bands) or 0
-    local changed = inp.mode ~= mode
-        or inp.count ~= count
-        or inp.n ~= n
+    local changed = inp.mode ~= modeName
+        or inp.count ~= total
+        or inp.n ~= num
         or inp.r ~= r
         or inp.g ~= g
         or inp.b ~= b
@@ -587,8 +597,15 @@ local function HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, band
         or inp.bn ~= bn
     if not changed and bn > 0 then
         for k = 1, bn do
-            local sb, b2 = inp.bands[k], bands[k]
-            if not sb or sb.to ~= b2.to or sb.r ~= b2.r or sb.g ~= b2.g or sb.b ~= b2.b or sb.a ~= b2.a then
+            local scrollBar, b2 = inp.bands[k], bands[k]
+            if
+                not scrollBar
+                or scrollBar.to ~= b2.to
+                or scrollBar.r ~= b2.r
+                or scrollBar.g ~= b2.g
+                or scrollBar.b ~= b2.b
+                or scrollBar.a ~= b2.a
+            then
                 changed = true
                 break
             end
@@ -597,53 +614,53 @@ local function HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, band
     if not changed then
         return
     end
-    inp.mode, inp.count, inp.n = mode, count, n
+    inp.mode, inp.count, inp.n = modeName, total, num
     inp.r, inp.g, inp.b, inp.a, inp.bn = r, g, b, a, bn
-    local spec = H.thSpecStore
-    if not spec then
-        spec = {}
-        H.thSpecStore = spec
+    local specInfo = H.thSpecStore
+    if not specInfo then
+        specInfo = {}
+        H.thSpecStore = specInfo
     end
     local used = 0
     if bn > 0 then
         local prev = 0
         for k = 1, bn do
             local b2 = bands[k]
-            local sb = inp.bands[k]
-            if not sb then
-                sb = {}
-                inp.bands[k] = sb
+            local scrollBar = inp.bands[k]
+            if not scrollBar then
+                scrollBar = {}
+                inp.bands[k] = scrollBar
             end
-            sb.to, sb.r, sb.g, sb.b, sb.a = b2.to, b2.r, b2.g, b2.b, b2.a
+            scrollBar.to, scrollBar.r, scrollBar.g, scrollBar.b, scrollBar.a = b2.to, b2.r, b2.g, b2.b, b2.a
             used = used + 1
-            local e = spec[used]
+            local e = specInfo[used]
             if not e then
                 e = {}
-                spec[used] = e
+                specInfo[used] = e
             end
             e.start = prev + 1
             e.r, e.g, e.b = b2.r or 1, b2.g or 1, b2.b or 1
             e.a = b2.a or a or 1
             prev = b2.to or prev
         end
-    elseif count and count > 0 and n > 0 then
+    elseif total and total > 0 and num > 0 then
         -- Pip-class thresholds are ABSOLUTE stack counts (field round:
         -- mode arrives nil and a percent fallback turned "6 stacks" into
         -- start=1). The value|percent mode split belongs to the value
         -- bars, never these two powers.
-        local start = count
+        local start = total
         used = 1
-        local e = spec[1]
+        local e = specInfo[1]
         if not e then
             e = {}
-            spec[1] = e
+            specInfo[1] = e
         end
         e.start, e.r, e.g, e.b, e.a = start, r or 1, g or 1, b or 1, a or 1
     end
-    for i = used + 1, #spec do
-        spec[i] = nil
+    for idx = used + 1, #specInfo do
+        specInfo[idx] = nil
     end
-    H.thSpec = (used > 0) and spec or nil
+    H.thSpec = (used > 0) and specInfo or nil
     if H.lastStyleFrame then
         StyleThresholds(H, H.lastStyleFrame, H.lastStyleOpts, H.lastStyleN)
     end
@@ -660,12 +677,12 @@ local function HostGate(H)
     end
 end
 
-HostSyncByKey = function(H, frame, powerKey, opts)
-    if S.class ~= "WARRIOR" then
+HostSyncByKey = function(H, widget, powerKey, options)
+    if Stl.class ~= "WARRIOR" then
         return
     end
-    local cfg = powerKey and PHASES[powerKey]
-    if not (cfg and frame and opts) then
+    local conf = powerKey and PHASES[powerKey]
+    if not (conf and widget and options) then
         HostGate(H)
         return
     end
@@ -673,10 +690,10 @@ HostSyncByKey = function(H, frame, powerKey, opts)
         H.lastR = nil
     end -- phase swap: re-apply color
     H.armed = powerKey
-    H.syncFrame, H.syncOpts = frame, opts
+    H.syncFrame, H.syncOpts = widget, options
     local st = H.ph[powerKey]
     if not (st and st.built) then
-        EnsureHostBuilt(H, powerKey, opts)
+        EnsureHostBuilt(H, powerKey, options)
         -- Nothing to show yet (sub-second build window): row stays empty.
         if H.proxy then
             H.proxy:Hide()
@@ -693,12 +710,12 @@ HostSyncByKey = function(H, frame, powerKey, opts)
     -- anchors keep it in step with every relayout at zero per-frame cost.
     -- manualAttach hosts (nameplate) position and size the proxy themselves
     -- BEFORE calling Sync -- the proxy then IS the row frame.
-    if not opts.manualAttach then
-        H.proxy:SetParent(frame)
+    if not options.manualAttach then
+        H.proxy:SetParent(widget)
         H.proxy:ClearAllPoints()
-        H.proxy:SetAllPoints(frame)
+        H.proxy:SetAllPoints(widget)
     end
-    local lvl = opts.manualAttach and H.proxy:GetFrameLevel() or frame:GetFrameLevel()
+    local lvl = options.manualAttach and H.proxy:GetFrameLevel() or widget:GetFrameLevel()
     st.container:SetFrameLevel(lvl + 1)
     st.container:Show()
     -- Talent-dependent cap (Broad Strokes): re-register the bar when the
@@ -706,7 +723,7 @@ HostSyncByKey = function(H, frame, powerKey, opts)
     -- restriction: pcall, and a denial re-applies at the lift (which re-runs
     -- this Sync). The ticks below always follow the REGISTERED max, so a
     -- denied re-register never splits fill scale from tick count.
-    local wantMax = EffectiveMaxApps(powerKey, cfg)
+    local wantMax = EffectiveMaxApps(powerKey, conf)
     if st.regMax ~= wantMax and st.btn and st.bar then
         local okR = pcall(function()
             local barOpts = { maxApplications = wantMax }
@@ -722,21 +739,21 @@ HostSyncByKey = function(H, frame, powerKey, opts)
             EnsureLift()
         end
     end
-    StyleSeparators(H, opts.manualAttach and H.proxy or frame, opts, st.regMax or wantMax)
+    StyleSeparators(H, options.manualAttach and H.proxy or widget, options, st.regMax or wantMax)
     -- Stashed for mid-session threshold restyles (settings edit between
     -- Syncs); NOT a resize-heal mechanism.
-    H.lastStyleFrame = opts.manualAttach and H.proxy or frame
-    H.lastStyleOpts = opts
+    H.lastStyleFrame = options.manualAttach and H.proxy or widget
+    H.lastStyleOpts = options
     H.lastStyleN = st.regMax or wantMax
-    StyleThresholds(H, H.lastStyleFrame, opts, H.lastStyleN)
+    StyleThresholds(H, H.lastStyleFrame, options, H.lastStyleN)
     -- +4, not +1..+3: the engine subtree stacks container(+1) -> slot button
     -- -> fill bar, so the fill paints around +2/+3 (its exact level cannot be
     -- read back; the Ebon Might driver clears it with the same margin).
     H.sepHost:SetFrameLevel(lvl + 4)
     -- Count text visibility rides every Sync (the carrier is ours to toggle;
     -- the fontstring itself is engine-fed). Denied writes defer to the lift.
-    if st.tc and opts.text then
-        if not pcall(st.tc.SetShown, st.tc, opts.text.shown and true or false) then
+    if st.tc and options.text then
+        if not pcall(st.tc.SetShown, st.tc, options.text.shown and true or false) then
             H.dirty = true
             EnsureLift()
         end
@@ -770,26 +787,39 @@ _G._EWC = {
     -- stretch, empty = {r,g,b,a}, emptyInset }, text = { fontFrom, r,g,b,
     -- anchor, x, y, shown }, plus any legacy gap-color fields
     -- (gapColorEnabled/darkTheme/barBg*/pipOrientation/pipSpacing).
-    Sync = function(hostKey, frame, powerKey, opts)
-        HostSyncByKey(Host(hostKey), frame, powerKey, opts)
+    Sync = function(hostKey, widget, powerKey, options)
+        HostSyncByKey(Host(hostKey), widget, powerKey, options)
     end,
-    Thresholds = function(hostKey, powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
-        local H = S.hosts[hostKey]
+    Thresholds = function(
+        hostKey,
+        powerKey,
+        modeName,
+        total,
+        r,
+        g,
+        b,
+        a,
+        bandOn,
+        bands,
+        bandReverse,
+        reverse
+    )
+        local H = Stl.hosts[hostKey]
         if H then
-            HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
+            HostThresholds(H, powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
         end
     end,
     Gate = function(hostKey)
-        local H = S.hosts[hostKey]
+        local H = Stl.hosts[hostKey]
         if H then
             HostGate(H)
         end
     end,
     EngineOn = function(hostKey, powerKey)
-        return HostEngineOn(S.hosts[hostKey], powerKey)
+        return HostEngineOn(Stl.hosts[hostKey], powerKey)
     end,
     Recolor = function(hostKey, powerKey, r, g, b, a)
-        local H = S.hosts[hostKey]
+        local H = Stl.hosts[hostKey]
         if H then
             HostRecolor(H, powerKey, r, g, b, a)
         end
@@ -797,8 +827,8 @@ _G._EWC = {
     -- Talent-aware registration cap for a power key (0 for unknown keys) --
     -- consumers size their layouts from this so geometry and fill scale agree.
     MaxApps = function(powerKey)
-        local cfg = PHASES[powerKey]
-        return cfg and EffectiveMaxApps(powerKey, cfg) or 0
+        local conf = PHASES[powerKey]
+        return conf and EffectiveMaxApps(powerKey, conf) or 0
     end,
     -- Create-on-demand proxy handle for manualAttach hosts: they position and
     -- size it, then call Sync with the same frame and opts.manualAttach.

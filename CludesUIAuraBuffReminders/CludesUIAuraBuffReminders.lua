@@ -22,7 +22,7 @@ then
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
 CludesUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
 
-local EABR = CludesUI.Lite.NewAddon("CludesUIAuraBuffReminders")
+local REMIND = CludesUI.Lite.NewAddon("CludesUIAuraBuffReminders")
 
 -- WoW Forever runs a reduced module: the Raid Buffs section over that client's
 -- own buffs (EABR.CollectForeverRaidBuffs) and one Forever-only section (the
@@ -32,32 +32,32 @@ local EABR = CludesUI.Lite.NewAddon("CludesUIAuraBuffReminders")
 -- options sections off. Both values live on EABR, where every split file reads
 -- them; retail reads FOREVER as false at each gate and nothing else changes
 -- there.
-EABR.FOREVER = CludesUI.IS_FOREVER == true
-EABR.CAMP_BENEFITS = 1229741
-EABR.SLEEPING_BAG_BUFF = 429959
-EABR.SLEEPING_BAG_ITEM = 211527
-EABR.SLEEPING_BAG_STACKS = 3
+REMIND.FOREVER = CludesUI.IS_FOREVER == true
+REMIND.CAMP_BENEFITS = 1229741
+REMIND.SLEEPING_BAG_BUFF = 429959
+REMIND.SLEEPING_BAG_ITEM = 211527
+REMIND.SLEEPING_BAG_STACKS = 3
 -- WoW Forever gathering trackers, in cast preference order: Find Herbs, Find
 -- Minerals. Both are self-buffs there and share one slot with the class
 -- trackers. Find Treasure (Dwarf) is no aura and stacks with any of them.
-EABR.GATHER_TRACKING = { 2383, 2580 }
-EABR.FIND_TREASURE = 2481
-EABR.WELL_FED = 19705
+REMIND.GATHER_TRACKING = { 2383, 2580 }
+REMIND.FIND_TREASURE = 2481
+REMIND.WELL_FED = 19705
 -- Food buffs not named Well Fed (Grilled Squid, Nightfin Soup, Runn Tum Tuber Surprise,
 -- Dirge's Chops, Blessed Sunfruit and its juice): counted by ID, since their names are
 -- shared with other buffs (Mana Regeneration is also Mageblood Potion's).
-EABR.FOOD_BUFFS = { 18192, 18194, 22730, 25661, 18125, 18141 }
+REMIND.FOOD_BUFFS = { 18192, 18194, 22730, 25661, 18125, 18141 }
 -- WoW Forever Mage armors: the three lines, ranks weakest first, the lines
 -- ordered weakest to strongest. Only one can be up and any of them satisfies
 -- the reminder; the icon and the click follow the line last seen up (its
 -- strongest rank this character knows), else the strongest line known.
-EABR.MAGE_ARMORS = {
+REMIND.MAGE_ARMORS = {
     { 168, 7300, 7301 }, -- Frost Armor 1-3
     { 7302, 7320, 10219, 10220 }, -- Ice Armor 1-4
     { 6117, 22782, 22783 }, -- Mage Armor 1-3
 }
-if EABR.FOREVER then
-    EABR.FV_WEAPON_BUFFS = {
+if REMIND.FOREVER then
+    REMIND.FV_WEAPON_BUFFS = {
         {
             key = "instant",
             name = "Instant Poison",
@@ -146,8 +146,8 @@ if EABR.FOREVER then
     -- (each class's always-on buffs); Thorns, Righteous Fury and Shadowform
     -- start unticked. `menu` names a buff in the options list where its
     -- reminder's label would read wrong there.
-    function EABR.FvClassBuffs()
-        local t = EABR._fvClassBuffs
+    function REMIND.FvClassBuffs()
+        local t = REMIND._fvClassBuffs
         if t then
             return t
         end
@@ -229,7 +229,7 @@ if EABR.FOREVER then
                 },
             },
         }
-        EABR._fvClassBuffs = t
+        REMIND._fvClassBuffs = t
         return t
     end
 end
@@ -237,11 +237,11 @@ end
 local _B = {} -- beacon state table, populated later
 -- The two spellbook checks Blizzard's IsPlayerSpell / IsSpellKnown wrap, called
 -- directly: those globals exist only while the loadDeprecationFallbacks CVar is on.
-local Known = function(id)
-    return id
+local Known = function(ident)
+    return ident
         and (
-            C_SpellBook.IsSpellKnown(id)
-            or C_SpellBook.IsSpellInSpellBook(id, Enum.SpellBookSpellBank.Player, false)
+            C_SpellBook.IsSpellKnown(ident)
+            or C_SpellBook.IsSpellInSpellBook(ident, Enum.SpellBookSpellBank.Player, false)
         )
 end
 local _eabrInCombat = false
@@ -320,33 +320,33 @@ local function GetTextAnchorPoints(p)
     return m[1], m[2]
 end
 
-local db -- set in EABR:OnInitialize()
+local saved -- set in EABR:OnInitialize()
 -- Flask state snapshotted before PvP restriction activates (aura API locked in PvP).
 
 local texCache = {}
-local function Tex(id)
-    local c = texCache[id]
+local function Tex(ident)
+    local c = texCache[ident]
     if c then
         return c
     end
-    local t = C_Spell.GetSpellTexture(id)
+    local t = C_Spell.GetSpellTexture(ident)
     if t then
-        texCache[id] = t
+        texCache[ident] = t
     end
     return t
 end
 
 local spellNameCache = {}
-local function SpellName(id)
-    local c = spellNameCache[id]
+local function SpellName(ident)
+    local c = spellNameCache[ident]
     if c then
         return c
     end
-    local n = C_Spell.GetSpellName(id)
-    if n then
-        spellNameCache[id] = n
+    local num = C_Spell.GetSpellName(ident)
+    if num then
+        spellNameCache[ident] = num
     end
-    return n
+    return num
 end
 
 local _cachedPlayerClass
@@ -374,9 +374,9 @@ end
 -------------------------------------------------------------------------------
 local function ResolveFontPath(fontName)
     if fontName and fontName ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local path = CludesUI.ResolveFontName(fontName)
-        if path and path ~= "" then
-            return path
+        local filePath = CludesUI.ResolveFontName(fontName)
+        if filePath and filePath ~= "" then
+            return filePath
         end
     end
     if CludesUI and CludesUI.GetFontPath then
@@ -385,15 +385,15 @@ local function ResolveFontPath(fontName)
     return "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 end
 local _cachedOutline
-local function SetABRFont(fs, font, size)
-    if not (fs and fs.SetFont) then
+local function SetABRFont(fontStr, font, dim)
+    if not (fontStr and fontStr.SetFont) then
         return
     end
     if not _cachedOutline then
         _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff")
     end
-    CludesUI.PrimeFontShadow(fs, _cachedOutline == "" and CludesUI.GetFontUseShadow("auraBuff"))
-    fs:SetFont(font, size, _cachedOutline)
+    CludesUI.PrimeFontShadow(fontStr, _cachedOutline == "" and CludesUI.GetFontUseShadow("auraBuff"))
+    fontStr:SetFont(font, dim, _cachedOutline)
 end
 
 -------------------------------------------------------------------------------
@@ -449,9 +449,9 @@ local function CacheInstanceInfo()
     local _, iType, diffID, _, _, _, _, instanceID, _, _, hasWorldTier = GetInstanceInfo()
     _cachedIType = iType
     _cachedDiffID = tonumber(diffID) or 0
-    EABR._cachedDiffID = _cachedDiffID
-    EABR._cachedWorldTier = hasWorldTier == true
-    if EABR.FOREVER then
+    REMIND._cachedDiffID = _cachedDiffID
+    REMIND._cachedWorldTier = hasWorldTier == true
+    if REMIND.FOREVER then
         return
     end -- the instance check only serves the pre-key threshold window
     -- The instance ID, never a map lookup: this runs on every refresh, and the
@@ -497,7 +497,7 @@ local function InRealInstancedContent()
 end
 
 local function InMythicPlusKey()
-    if EABR.FOREVER then
+    if REMIND.FOREVER then
         return false
     end -- no keystones on WoW Forever
     return C_ChallengeMode
@@ -512,7 +512,7 @@ end
 
 -- Mythic 0 dungeon (difficulty 23). A keyed M+ run is not M0.
 -- Hung on EABR.
-function EABR.InMythicZeroDungeon()
+function REMIND.InMythicZeroDungeon()
     if InMythicPlusKey() then
         return false
     end
@@ -540,7 +540,7 @@ end
 --  All helpers hang on EABR.
 -------------------------------------------------------------------------------
 -- Fine-grained instanced difficulty category, or nil outside mapped content.
-function EABR.CurrentDifficultyCat()
+function REMIND.CurrentDifficultyCat()
     if InMythicPlusKey() then
         return "d_mplus"
     end
@@ -579,7 +579,7 @@ function EABR.CurrentDifficultyCat()
         end
         -- WoW Forever raids report the legacy 40- and 20-player ids; they feed
         -- the Forever section's "Raids" bucket. Retail leaves them unmapped.
-        if EABR.FOREVER and (d == 9 or d == 148) then
+        if REMIND.FOREVER and (d == 9 or d == 148) then
             return "r_normal"
         end
     elseif it == "scenario" then
@@ -595,33 +595,33 @@ end
 -- (Heroic / Normal / Follower), timewalking, delve, lair, scenario (any non-delve
 -- scenario). Returns nil for unmapped instanced content (e.g. PvP) so reminders
 -- never silently vanish there.
-function EABR.CurrentWhereBucket(inInstance)
+function REMIND.CurrentWhereBucket(inInstance)
     -- Lairs carry the World Tier flag instead of a difficulty id the allowlist
     -- knows; the instance gate keeps the flag from ever reclassifying the
     -- open world, whatever else it may be set on.
-    if inInstance and EABR._cachedWorldTier then
+    if inInstance and REMIND._cachedWorldTier then
         return "lair"
     end
-    local cat = EABR.CurrentDifficultyCat()
-    if cat == "d_mplus" or cat == "d_mythic" then
+    local category = REMIND.CurrentDifficultyCat()
+    if category == "d_mplus" or category == "d_mythic" then
         return "dungeon_mythic"
     end
-    if cat == "d_heroic" or cat == "d_normal" or cat == "d_follower" then
+    if category == "d_heroic" or category == "d_normal" or category == "d_follower" then
         return "dungeon_nonmythic"
     end
-    if cat == "d_timewalking" then
+    if category == "d_timewalking" then
         return "timewalking"
     end
-    if cat == "r_mythic" then
+    if category == "r_mythic" then
         return "raid_mythic"
     end
-    if cat == "r_heroic" then
+    if category == "r_heroic" then
         return "raid_heroic"
     end
-    if cat == "r_normal" or cat == "r_lfr" then
+    if category == "r_normal" or category == "r_lfr" then
         return "raid_normal_lfr"
     end
-    if cat == "s_delve" then
+    if category == "s_delve" then
         return "delve"
     end
     if not inInstance then
@@ -635,11 +635,11 @@ end
 
 -- Per-section gate. "In Combat" is an orthogonal state gate layered on top of
 -- the location buckets.
-function EABR.SectionShows(whereToShow, inInstance)
+function REMIND.SectionShows(whereToShow, inInstance)
     if whereToShow and whereToShow.in_combat == false and InCombat() then
         return false
     end
-    local bucket = EABR.CurrentWhereBucket(inInstance)
+    local bucket = REMIND.CurrentWhereBucket(inInstance)
     if not bucket then
         return true
     end
@@ -653,13 +653,13 @@ end
 -- for the classes, reminder sound) in these consumables fields. A field that
 -- is not set yet reads the old shared specials value, so a profile from
 -- before the split behaves as it did until the section is edited.
-EABR.SPECIALS = {
+REMIND.SPECIALS = {
     ROGUE = { where = "rogueWhereToShow", sound = "rogueSound" },
     PALADIN = { where = "paladinWhereToShow", sound = "paladinSound" },
     SHAMAN = { where = "shamanWhereToShow", sound = "shamanSound" },
     PET = { where = "petWhereToShow" },
 }
-function EABR.SpecialsWhere(co, field)
+function REMIND.SpecialsWhere(co, field)
     local t = field and co[field]
     if type(t) == "table" then
         return t
@@ -668,7 +668,7 @@ function EABR.SpecialsWhere(co, field)
 end
 -- A section set to no sound stores "none" (not nil), so it never reads
 -- through to the shared value; HandleAppearSounds skips "none".
-function EABR.SpecialsSound(co, field)
+function REMIND.SpecialsSound(co, field)
     local snd = field and co[field]
     if snd == nil then
         snd = co.specialsSound
@@ -678,18 +678,18 @@ end
 
 -- Bag/equip consumable call sites share the consumables section set; the key
 -- arg is retained for call-site clarity.
-function EABR.ConsumableShows(co, key, inInstance)
-    return EABR.SectionShows(co.whereToShow, inInstance)
+function REMIND.ConsumableShows(co, key, inInstance)
+    return REMIND.SectionShows(co.whereToShow, inInstance)
 end
 
 -- Global Display thresholds. "Show Below Pre-Key" is the Mythic 0 / keystone
 -- lobby value so flasks and food are topped up before the key starts.
-function EABR.GetShowUnderMinutes()
-    if not (db and db.profile) then
+function REMIND.GetShowUnderMinutes()
+    if not (saved and saved.profile) then
         return 0
     end
-    local disp = db.profile.display or {}
-    if (EABR.InMythicZeroDungeon() or InPreKeyDungeon()) and _dungeonPrePull then
+    local disp = saved.profile.display or {}
+    if (REMIND.InMythicZeroDungeon() or InPreKeyDungeon()) and _dungeonPrePull then
         return disp.showUnderMPlus or 40
     end
     return disp.showUnder or 5
@@ -697,32 +697,32 @@ end
 
 -- Thresholds apply everywhere except combat and active Mythic+ keys (there a
 -- reminder means the buff is fully gone).
-function EABR.ShowUnderThresholdApplies()
+function REMIND.ShowUnderThresholdApplies()
     if InCombat() or InMythicPlusKey() then
         return false
     end
     return true
 end
 
-function EABR.IsUnderDuration(duration, expirationTime, sectionKey)
-    if not (db and db.profile and duration and expirationTime and sectionKey) then
+function REMIND.IsUnderDuration(duration, expirationTime, sectionKey)
+    if not (saved and saved.profile and duration and expirationTime and sectionKey) then
         return false
     end
-    if not EABR.ShowUnderThresholdApplies() then
+    if not REMIND.ShowUnderThresholdApplies() then
         return false
     end
-    local thresholdSeconds = EABR.GetShowUnderMinutes() * 60
+    local thresholdSeconds = REMIND.GetShowUnderMinutes() * 60
     if thresholdSeconds > 0 and duration >= thresholdSeconds then
-        local now = GetTime()
-        if expirationTime - now < thresholdSeconds then
+        local nowTime = GetTime()
+        if expirationTime - nowTime < thresholdSeconds then
             return true
         end
         local refreshAt = expirationTime - thresholdSeconds
         if
-            refreshAt > now
-            and (not EABR._nextDurationRefreshTime or refreshAt < EABR._nextDurationRefreshTime)
+            refreshAt > nowTime
+            and (not REMIND._nextDurationRefreshTime or refreshAt < REMIND._nextDurationRefreshTime)
         then
-            EABR._nextDurationRefreshTime = refreshAt
+            REMIND._nextDurationRefreshTime = refreshAt
         end
     end
     return false
@@ -852,14 +852,14 @@ local NON_SECRET_SPELL_IDS = {
 -- writes through the Set<Name> function built below, which runs them all.
 -- broken: true while an CUI_AuraBuffReminders_*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
-local ns = select(2, ...)
-CludesUI.NewInternals(ns, "_abrInternals", {
+local mod = select(2, ...)
+CludesUI.NewInternals(mod, "_abrInternals", {
     _B = _B,
     AURA_SCAN_LIMIT = AURA_SCAN_LIMIT,
     CacheInstanceInfo = CacheInstanceInfo,
     CursorAttachActive = CursorAttachActive,
     DEFAULT_TEXT_COLOR = DEFAULT_TEXT_COLOR,
-    EABR = EABR,
+    EABR = REMIND,
     EnsureGlowModeMigrated = EnsureGlowModeMigrated,
     GetPlayerClass = GetPlayerClass,
     GetSpecID = GetSpecID,
@@ -880,18 +880,18 @@ CludesUI.NewInternals(ns, "_abrInternals", {
     Tex = Tex,
     texCache = texCache,
     dbSetters = {
-        function(v)
-            db = v
+        function(val)
+            saved = val
         end,
     },
     inCombatSetters = {
-        function(v)
-            _eabrInCombat = v
+        function(val)
+            _eabrInCombat = val
         end,
     },
     outlineSetters = {
-        function(v)
-            _cachedOutline = v
+        function(val)
+            _cachedOutline = val
         end,
     },
     huntersMarkSetters = {},

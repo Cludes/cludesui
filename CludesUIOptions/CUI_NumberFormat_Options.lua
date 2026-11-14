@@ -70,8 +70,8 @@ local function Threshold(valueType)
 end
 
 local function AllStandard()
-    for i = 1, #TYPES do
-        if Precision(TYPES[i]) ~= "standard" then
+    for idx = 1, #TYPES do
+        if Precision(TYPES[idx]) ~= "standard" then
             return false
         end
     end
@@ -90,7 +90,7 @@ local function Apply()
 end
 
 -- Writes one field of a value type; "standard" is stored as nil.
-local function SetTypeField(valueType, key, v)
+local function SetTypeField(valueType, key, val)
     local nf = CludesUI.GetNumberFormatDB(true)
     if not nf then
         return
@@ -98,19 +98,19 @@ local function SetTypeField(valueType, key, v)
     nf.types = nf.types or {}
     local t = nf.types[valueType] or {}
     nf.types[valueType] = t
-    if key == "precision" and v == "standard" then
-        v = nil
+    if key == "precision" and val == "standard" then
+        val = nil
     end
-    t[key] = v
+    t[key] = val
     Apply()
 end
 
-local function SetGlobalField(key, v)
+local function SetGlobalField(key, val)
     local nf = CludesUI.GetNumberFormatDB(true)
     if not nf then
         return
     end
-    nf[key] = v
+    nf[key] = val
     Apply()
 end
 
@@ -170,53 +170,70 @@ local INFO_ICON = [[Interface\AddOns\CludesUI\media\icons\cui-info.png]]
 
 -- A header label and dropdown with the row tooltip on the label; withInfo puts
 -- an (i) after the label that shares the label's tooltip.
-local function HeaderDropdown(hdr, text, tip, w, values, order, getValue, setValue, withInfo)
+local function HeaderDropdown(
+    heading,
+    textValue,
+    tipText,
+    wid,
+    values,
+    sequence,
+    getValue,
+    setValue,
+    withInfo
+)
     local L = CludesUI.L
-    local lbl = CludesUI.MakeFont(hdr, 14, nil, 1, 1, 1, 1)
-    lbl:SetText(L(text))
-    local dd =
-        CludesUI.BuildDropdownControl(hdr, w, hdr:GetFrameLevel() + 5, values, order, getValue, setValue)
-    local info
+    local labelFS = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 1)
+    labelFS:SetText(L(textValue))
+    local dropdown = CludesUI.BuildDropdownControl(
+        heading,
+        wid,
+        heading:GetFrameLevel() + 5,
+        values,
+        sequence,
+        getValue,
+        setValue
+    )
+    local details
     if withInfo then
-        info = hdr:CreateTexture(nil, "OVERLAY")
-        info:SetTexture(INFO_ICON)
-        info:SetVertexColor(1, 1, 1, 0.45)
-        CludesUI.PanelPP.Size(info, 12, 12)
-        info:SetPoint("LEFT", lbl, "RIGHT", 5, 0)
+        details = heading:CreateTexture(nil, "OVERLAY")
+        details:SetTexture(INFO_ICON)
+        details:SetVertexColor(1, 1, 1, 0.45)
+        CludesUI.PanelPP.Size(details, 12, 12)
+        details:SetPoint("LEFT", labelFS, "RIGHT", 5, 0)
     end
-    local hit = CreateFrame("Frame", nil, hdr)
-    hit:SetPoint("TOPLEFT", lbl, "TOPLEFT", 0, 0)
-    hit:SetPoint("BOTTOMRIGHT", info or lbl, "BOTTOMRIGHT", 0, 0)
+    local hit = CreateFrame("Frame", nil, heading)
+    hit:SetPoint("TOPLEFT", labelFS, "TOPLEFT", 0, 0)
+    hit:SetPoint("BOTTOMRIGHT", details or labelFS, "BOTTOMRIGHT", 0, 0)
     hit:SetMouseClickEnabled(false)
     hit:SetMouseMotionEnabled(true)
     hit:SetScript("OnEnter", function()
-        if info then
-            info:SetVertexColor(1, 1, 1, 0.9)
+        if details then
+            details:SetVertexColor(1, 1, 1, 0.9)
         end
-        CludesUI.ShowWidgetTooltip(lbl, tip())
+        CludesUI.ShowWidgetTooltip(labelFS, tipText())
     end)
     hit:SetScript("OnLeave", function()
-        if info then
-            info:SetVertexColor(1, 1, 1, 0.45)
+        if details then
+            details:SetVertexColor(1, 1, 1, 0.45)
         end
         CludesUI.HideWidgetTooltip()
     end)
-    return lbl, dd, info
+    return labelFS, dropdown, details
 end
 
 -- Everything here reads the shown type live, so a type pick only refreshes.
-local function HeaderBuilder(hdr)
-    local PP = CludesUI.PanelPP
+local function HeaderBuilder(heading)
+    local Pix = CludesUI.PanelPP
     local L = CludesUI.L
     local accent = CludesUI.CLUDES_GREEN
-    local y = -16
+    local posY = -16
 
     local labels = {}
-    for i = 1, #TYPES do
-        labels[TYPES[i]] = TYPE_LABELS[TYPES[i]]
+    for idx = 1, #TYPES do
+        labels[TYPES[idx]] = TYPE_LABELS[TYPES[idx]]
     end
     local seg, segH, segRefresh = CludesUI.BuildSegmentedControl({
-        parent = hdr,
+        parent = heading,
         keys = TYPES,
         labels = labels,
         autoWidth = true,
@@ -233,29 +250,29 @@ local function HeaderBuilder(hdr)
             CludesUI:RefreshPage()
         end,
     })
-    seg:SetFrameLevel(hdr:GetFrameLevel() + 5)
-    PP.Point(seg, "TOP", hdr, "TOP", 0, y)
-    y = y - segH - 20
+    seg:SetFrameLevel(heading:GetFrameLevel() + 5)
+    Pix.Point(seg, "TOP", heading, "TOP", 0, posY)
+    posY = posY - segH - 20
 
     -- Preview: one column per value, the raw number small above its result.
     local COL_W = 130
     local results = {}
-    for i = 1, #PREVIEW_VALUES do
-        local v = PREVIEW_VALUES[i]
-        local x = (i - (#PREVIEW_VALUES + 1) / 2) * COL_W
-        local raw = CludesUI.MakeFont(hdr, 11, nil, 1, 1, 1, 0.4)
-        raw:SetText(BreakUpLargeNumbers(v))
-        PP.Point(raw, "TOP", hdr, "TOP", x, y)
-        local res = CludesUI.MakeFont(hdr, 20, nil, accent.r, accent.g, accent.b, 1)
-        PP.Point(res, "TOP", hdr, "TOP", x, y - 16)
-        results[i] = res
+    for idx = 1, #PREVIEW_VALUES do
+        local val = PREVIEW_VALUES[idx]
+        local posX = (idx - (#PREVIEW_VALUES + 1) / 2) * COL_W
+        local raw = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.4)
+        raw:SetText(BreakUpLargeNumbers(val))
+        Pix.Point(raw, "TOP", heading, "TOP", posX, posY)
+        local res = CludesUI.MakeFont(heading, 20, nil, accent.r, accent.g, accent.b, 1)
+        Pix.Point(res, "TOP", heading, "TOP", posX, posY - 16)
+        results[idx] = res
     end
-    y = y - 16 - 24 - 18
+    posY = posY - 16 - 24 - 18
 
     -- Precision (its (i) names the modules and the cut) and threshold of the
     -- shown type, either side of the middle.
     local pLbl, pDD, pInfo = HeaderDropdown(
-        hdr,
+        heading,
         PRECISION_LABELS[selectedType],
         function()
             return L(PRECISION_TIPS[selectedType]) .. "\n\n" .. CludesUI.L("Numbers are cut, not rounded.")
@@ -266,19 +283,19 @@ local function HeaderBuilder(hdr)
         function()
             return Precision(selectedType)
         end,
-        function(v)
-            SetTypeField(selectedType, "precision", v)
+        function(val)
+            SetTypeField(selectedType, "precision", val)
         end,
         true
     )
-    PP.Point(pDD, "TOPRIGHT", hdr, "TOP", -20, y)
+    Pix.Point(pDD, "TOPRIGHT", heading, "TOP", -20, posY)
     -- The label centers on the dropdown; the (i) sits 3px lower to meet the
     -- label's optical middle.
     pLbl:SetPoint("RIGHT", pDD, "LEFT", -(12 + 12 + 5), 0)
     pInfo:ClearAllPoints()
     pInfo:SetPoint("LEFT", pLbl, "RIGHT", 5, -3)
     local tLbl, tDD = HeaderDropdown(
-        hdr,
+        heading,
         "Start Abbreviating At",
         function()
             return L(THRESHOLD_TIP)
@@ -289,14 +306,14 @@ local function HeaderBuilder(hdr)
         function()
             return Threshold(selectedType)
         end,
-        function(v)
-            SetTypeField(selectedType, "threshold", v)
+        function(val)
+            SetTypeField(selectedType, "threshold", val)
         end
     )
-    tLbl:SetPoint("TOPLEFT", hdr, "TOP", 20, y - 8)
+    tLbl:SetPoint("TOPLEFT", heading, "TOP", 20, posY - 8)
     tDD:SetPoint("LEFT", tLbl, "RIGHT", 12, 0)
     -- Locked while the type is on Standard: greyed, with the row lock tooltip.
-    local tLock = CreateFrame("Frame", nil, hdr)
+    local tLock = CreateFrame("Frame", nil, heading)
     tLock:SetPoint("TOPLEFT", tLbl, "TOPLEFT", 0, 0)
     tLock:SetPoint("BOTTOMRIGHT", tDD, "BOTTOMRIGHT", 0, 0)
     tLock:SetFrameLevel(tDD:GetFrameLevel() + 10)
@@ -307,13 +324,13 @@ local function HeaderBuilder(hdr)
     tLock:SetScript("OnLeave", function()
         CludesUI.HideWidgetTooltip()
     end)
-    y = y - 30 - 16
+    posY = posY - 30 - 16
 
     headerRefresh = function()
         local vt = selectedType
         pLbl:SetText(L(PRECISION_LABELS[vt]))
-        for i = 1, #PREVIEW_VALUES do
-            results[i]:SetText(CludesUI.AbbreviateValue(PREVIEW_VALUES[i], vt))
+        for idx = 1, #PREVIEW_VALUES do
+            results[idx]:SetText(CludesUI.AbbreviateValue(PREVIEW_VALUES[idx], vt))
         end
         local locked = Precision(vt) == "standard"
         tLbl:SetAlpha(locked and 0.3 or 1)
@@ -328,7 +345,7 @@ local function HeaderBuilder(hdr)
     end
     headerRefresh()
 
-    return math.abs(y)
+    return math.abs(posY)
 end
 
 function _G._CUI_NumberFormatHeaderBuilder()
@@ -344,10 +361,10 @@ end
 -------------------------------------------------------------------------------
 --  Page builder (dispatched from the Global Settings module registration)
 -------------------------------------------------------------------------------
-function _G._CUI_BuildNumberFormatPage(pageName, parent, yOffset)
+function _G._CUI_BuildNumberFormatPage(pageName, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local y = yOffset
-    local _, h
+    local posY = yOffset
+    local _, hgt
     local vt = selectedType
 
     CludesUI:SetContentHeader(HeaderBuilder)
@@ -376,15 +393,15 @@ function _G._CUI_BuildNumberFormatPage(pageName, parent, yOffset)
         )
     end
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     ---------------------------------------------------------------------------
     --  UNITS (GLOBAL): every type
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "UNITS (GLOBAL)", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "UNITS (GLOBAL)", posY)
+    posY = posY - hgt
 
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "segmented",
         text = "Letter Case",
         tooltip = "Upper or lower case unit letters, for every value type with a Precision other than Standard.",
@@ -394,8 +411,8 @@ function _G._CUI_BuildNumberFormatPage(pageName, parent, yOffset)
             local nf = CludesUI.GetNumberFormatDB()
             return (nf and nf.case == "lower") and "lower" or "upper"
         end,
-        setValue = function(v)
-            SetGlobalField("case", v ~= "upper" and v or nil)
+        setValue = function(val)
+            SetGlobalField("case", val ~= "upper" and val or nil)
         end,
         disabled = function()
             return AllStandard() or CludesUI.NumberFormatUsesGlyphs()
@@ -417,8 +434,8 @@ function _G._CUI_BuildNumberFormatPage(pageName, parent, yOffset)
             local nf = CludesUI.GetNumberFormatDB()
             return (nf and nf.units == "western") and "western" or "auto"
         end,
-        setValue = function(v)
-            SetGlobalField("units", v ~= "auto" and v or nil)
+        setValue = function(val)
+            SetGlobalField("units", val ~= "auto" and val or nil)
         end,
         disabled = function()
             return not CludesUI.LocaleHasNumberAbbreviation()
@@ -426,24 +443,25 @@ function _G._CUI_BuildNumberFormatPage(pageName, parent, yOffset)
         disabledTooltip = "Only East Asian clients have their own units",
         rawTooltip = true,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- A module toggle overriding the shown type, with a jump to it. The toggle
     -- lives on another page, so the row is always built (last, so hiding it
     -- shifts nothing) and aimed and shown in place on every refresh (a type
     -- pick, a cache restore). The inline search leaves it alone: its clear
     -- shows every row it collected.
-    local on, note, nModule, nPage, section, highlight = OverrideNote(vt)
+    local enabled, note, nModule, nPage, section, highlight = OverrideNote(vt)
     local noteRow
-    y, noteRow = CludesUI.BuildLinkRow(parent, y, note, nModule, nPage, section, highlight, { warn = true })
+    posY, noteRow =
+        CludesUI.BuildLinkRow(hostFrame, posY, note, nModule, nPage, section, highlight, { warn = true })
     noteRow._searchIgnore = true
-    noteRow:SetShown(on)
+    noteRow:SetShown(enabled)
     CludesUI.RegisterWidgetRefresh(function()
-        local shown, n, m, p, s, hl = OverrideNote(selectedType)
-        noteRow:Relink(n, m, p, s, hl)
-        noteRow:SetShown(shown)
+        local isShown, num, m, p, s, hl = OverrideNote(selectedType)
+        noteRow:Relink(num, m, p, s, hl)
+        noteRow:SetShown(isShown)
     end)
 
     -- Framework contract: return the positive total content height.
-    return math.abs(y)
+    return math.abs(posY)
 end

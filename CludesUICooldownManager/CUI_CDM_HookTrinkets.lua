@@ -8,24 +8,24 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  for custom frames.
 --  Reads the earlier hook files through ns and ns._hookInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._hookInternals
+local _, mod = ...
+local Inner = mod._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local barDataByKey = ns.barDataByKey
-local _ecmeFC = ns._ecmeFC
+local barDataByKey = mod.barDataByKey
+local _ecmeFC = mod._ecmeFC
 
-local hookFrameData = I.hookFrameData
+local hookFrameData = Inner.hookFrameData
 
 -------------------------------------------------------------------------------
 --  Trinket Frames
 -------------------------------------------------------------------------------
 local _trinketFrames = {}
-ns._trinketFrames = _trinketFrames
+mod._trinketFrames = _trinketFrames
 local _trinketItemCache = { [13] = nil, [14] = nil }
 local _trinketEventFrame = CreateFrame("Frame")
 
@@ -40,11 +40,11 @@ local function GetOrCreateTrinketFrame(slotID)
     f:Hide()
     f:EnableMouse(false)
 
-    local tex = f:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints()
-    ns.CdmOwnIconCrop(tex)
-    f.Icon = tex
-    f._tex = tex
+    local texture = f:CreateTexture(nil, "ARTWORK")
+    texture:SetAllPoints()
+    mod.CdmOwnIconCrop(texture)
+    f.Icon = texture
+    f._tex = texture
 
     local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
     cd:SetAllPoints()
@@ -63,8 +63,8 @@ local function GetOrCreateTrinketFrame(slotID)
     -- the CD-ready glow lit up immediately -- same lag as the item preset frames.
     -- Re-run the trinket CD check at the expiry edge to clear the desaturation.
     cd:SetScript("OnCooldownDone", function()
-        if ns.UpdateTrinketCooldown then
-            ns.UpdateTrinketCooldown(slotID)
+        if mod.UpdateTrinketCooldown then
+            mod.UpdateTrinketCooldown(slotID)
         end
     end)
     f.Cooldown = cd
@@ -98,17 +98,17 @@ local function GetOrCreateTrinketFrame(slotID)
         then
             return
         end
-        local itemID = GetInventoryItemID("player", self._trinketSlot)
-        if itemID then
+        local itemId = GetInventoryItemID("player", self._trinketSlot)
+        if itemId then
             GameTooltip_SetDefaultAnchor(GameTooltip, self)
             -- Prefer the equipped item's link so the tooltip reflects the actual
             -- upgrade/bonus IDs (real item level + stats) rather than the base item.
             -- SetItemByID is only a fallback if no link is available.
-            local link = GetInventoryItemLink("player", self._trinketSlot)
-            if link then
-                GameTooltip:SetHyperlink(link)
+            local itemLink = GetInventoryItemLink("player", self._trinketSlot)
+            if itemLink then
+                GameTooltip:SetHyperlink(itemLink)
             else
-                GameTooltip:SetItemByID(itemID)
+                GameTooltip:SetItemByID(itemId)
             end
             -- Re-assert the cursor anchor after content is set (see helper notes):
             -- the item content-setter can drop the tip's cursor anchor, so without
@@ -142,9 +142,9 @@ local function UpdateTrinketFrame(slotID)
     -- (UpdateTrinketCooldown) so the next event re-pushes and re-derives
     -- the desaturation against fresh settings.
     f._cdMemoStart, f._cdMemoDur = nil, nil
-    local itemID = GetInventoryItemID("player", slotID)
-    _trinketItemCache[slotID] = itemID
-    if not itemID then
+    local itemId = GetInventoryItemID("player", slotID)
+    _trinketItemCache[slotID] = itemId
+    if not itemId then
         f._slotScanPending = nil
         -- An empty read is also what the login window returns before the inventory
         -- has synced: flag it so the PLAYER_ENTERING_WORLD retry sweep re-reads the
@@ -159,19 +159,19 @@ local function UpdateTrinketFrame(slotID)
     -- reads nil for an on-use item, which the passive test below would take as
     -- conclusive and nothing would ever re-scan. Keep the previous state,
     -- request the load and let ITEM_DATA_LOAD_RESULT re-run the scan.
-    if C_Item.IsItemDataCachedByID and not C_Item.IsItemDataCachedByID(itemID) then
+    if C_Item.IsItemDataCachedByID and not C_Item.IsItemDataCachedByID(itemId) then
         f._slotScanPending = true
-        C_Item.RequestLoadItemDataByID(itemID)
+        C_Item.RequestLoadItemDataByID(itemId)
         _trinketEventFrame:RegisterEvent("ITEM_DATA_LOAD_RESULT")
         return
     end
     f._slotScanPending = nil
-    local icon = C_Item.GetItemIconByID(itemID)
-    if icon and f._tex then
-        f._tex:SetTexture(icon)
+    local glyph = C_Item.GetItemIconByID(itemId)
+    if glyph and f._tex then
+        f._tex:SetTexture(glyph)
     end
-    local _, spellID = C_Item.GetItemSpell(itemID)
-    f._trinketSpellID = spellID
+    local _, spellId = C_Item.GetItemSpell(itemId)
+    f._trinketSpellID = spellId
     if slotID ~= 13 and slotID ~= 14 then
         -- User-added equipment slot: the use effect usually comes from an
         -- ENCHANT (engineering tinkers like Nitro Boosts), which exists only
@@ -179,21 +179,21 @@ local function UpdateTrinketFrame(slotID)
         -- trinket path's GetItemSpell/GetItemByID scan can never see it.
         -- Scan the instance tooltip for a localized "Use:" line instead.
         local hasUse = nil
-        local tip = C_TooltipInfo
+        local tipText = C_TooltipInfo
             and C_TooltipInfo.GetInventoryItem
             and C_TooltipInfo.GetInventoryItem("player", slotID)
-        if tip and tip.lines then
+        if tipText and tipText.lines then
             hasUse = false
-            local prefix = ITEM_SPELL_TRIGGER_ONUSE
-            for _, tipLine in ipairs(tip.lines) do
+            local prefixText = ITEM_SPELL_TRIGGER_ONUSE
+            for _, tipLine in ipairs(tipText.lines) do
                 local lt = tipLine.leftText
-                if lt and prefix and lt:sub(1, #prefix) == prefix then
+                if lt and prefixText and lt:sub(1, #prefixText) == prefixText then
                     hasUse = true
                     break
                 end
             end
         end
-        if spellID and spellID > 0 then
+        if spellId and spellId > 0 then
             -- Base item carries its own use spell (on-use gear).
             f._trinketIsOnUse = true
             f._slotScanPending = nil
@@ -209,7 +209,7 @@ local function UpdateTrinketFrame(slotID)
     end
     local isRealOnUse = false
     local scanConclusive = false
-    if spellID and spellID > 0 then
+    if spellId and spellId > 0 then
         local locale = GetLocale()
         if locale == "enUS" or locale == "enGB" then
             -- The "Use: ... (X Min Cooldown)" line is the use spell's
@@ -218,18 +218,18 @@ local function UpdateTrinketFrame(slotID)
             -- would read an on-use trinket as passive. Blizzard's signal is an
             -- empty description until SPELL_TEXT_UPDATE fires for the spell
             -- (nil when the spell record itself is not loaded yet).
-            local desc = C_Spell.GetSpellDescription(spellID)
+            local desc = C_Spell.GetSpellDescription(spellId)
             local descLoaded = desc ~= nil and desc ~= ""
             if not descLoaded then
                 f._slotScanPending = true
                 if C_Spell.RequestLoadSpellData then
-                    C_Spell.RequestLoadSpellData(spellID)
+                    C_Spell.RequestLoadSpellData(spellId)
                 end
                 _trinketEventFrame:RegisterEvent("SPELL_TEXT_UPDATE")
                 _trinketEventFrame:RegisterEvent("SPELL_DATA_LOAD_RESULT")
                 return
             end
-            local tipData = C_TooltipInfo and C_TooltipInfo.GetItemByID(itemID)
+            local tipData = C_TooltipInfo and C_TooltipInfo.GetItemByID(itemId)
             if tipData and tipData.lines then
                 -- Conclusive only once the tooltip actually carries the Use
                 -- line (GetItemSpell only reports on-use spells, so the line
@@ -249,10 +249,10 @@ local function UpdateTrinketFrame(slotID)
                             -- singular so the unit parse sees "2 Min".
                             cdStr = cdStr:gsub("|4(%a+):[^;]*;", "%1")
                             local totalSec = 0
-                            for num, unit in cdStr:gmatch("(%d+)%s*(%a+)") do
+                            for num, unitToken in cdStr:gmatch("(%d+)%s*(%a+)") do
                                 local n = tonumber(num)
                                 if n then
-                                    local u = unit:lower()
+                                    local u = unitToken:lower()
                                     if u == "min" then
                                         totalSec = totalSec + n * 60
                                     elseif u == "sec" then
@@ -271,7 +271,7 @@ local function UpdateTrinketFrame(slotID)
                 if not scanConclusive then
                     f._slotScanPending = true
                     if C_Spell.RequestLoadSpellData then
-                        C_Spell.RequestLoadSpellData(spellID)
+                        C_Spell.RequestLoadSpellData(spellId)
                     end
                     _trinketEventFrame:RegisterEvent("SPELL_TEXT_UPDATE")
                     _trinketEventFrame:RegisterEvent("SPELL_DATA_LOAD_RESULT")
@@ -287,13 +287,13 @@ local function UpdateTrinketFrame(slotID)
         -- Idol), so the slot read as passive and the icon was dropped. Fall
         -- back to the localized "Use:" tooltip line the user-added equipment
         -- slot path above already relies on.
-        local prefix = ITEM_SPELL_TRIGGER_ONUSE
-        local tipData = C_TooltipInfo and C_TooltipInfo.GetItemByID(itemID)
-        if tipData and tipData.lines and prefix then
+        local prefixText = ITEM_SPELL_TRIGGER_ONUSE
+        local tipData = C_TooltipInfo and C_TooltipInfo.GetItemByID(itemId)
+        if tipData and tipData.lines and prefixText then
             scanConclusive = true
             for _, tipLine in ipairs(tipData.lines) do
                 local lt = tipLine.leftText
-                if lt and lt:sub(1, #prefix) == prefix then
+                if lt and lt:sub(1, #prefixText) == prefixText then
                     isRealOnUse = true
                     break
                 end
@@ -304,7 +304,7 @@ local function UpdateTrinketFrame(slotID)
         f._trinketIsOnUse = isRealOnUse
     end
 end
-ns.UpdateTrinketFrame = UpdateTrinketFrame
+mod.UpdateTrinketFrame = UpdateTrinketFrame
 
 -- Keep Colored (On CD) for PRESET frames (trinket slots, racials, potions and
 -- user-injected custom spells). Those never run Blizzard's cooldown desaturation
@@ -314,32 +314,32 @@ ns.UpdateTrinketFrame = UpdateTrinketFrame
 -- cas entry instead, at the two points where they'd grey the icon. Zero-cost
 -- when unused: the session gate is checked first (flipped by AddUserRule during the Fake-Active rebuild, so it survives /reload).
 local function PresetKeepsColor(f)
-    if not ns._cdmAnyNoDesatOnCD then
+    if not mod._cdmAnyNoDesatOnCD then
         return false
     end
     local fc = f and _ecmeFC[f]
-    local sid = fc and fc.spellID
-    if not sid or not ns.GetEffectiveCustomActiveState then
+    local spellRef = fc and fc.spellID
+    if not spellRef or not mod.GetEffectiveCustomActiveState then
         return false
     end
-    local cas = ns.GetEffectiveCustomActiveState(sid)
+    local cas = mod.GetEffectiveCustomActiveState(spellRef)
     return (cas and cas.noDesatOnCD) and true or false
 end
-ns.PresetKeepsColor = PresetKeepsColor
+mod.PresetKeepsColor = PresetKeepsColor
 
 -- Ignore Resource Cost for spells added by Spell ID: their icons are tinted
 -- by our own pass (ns.PaintCustomSpellTint), which reads this instead of the
 -- Blizzard-icon hook. Same cas lookup and session gate shape as above.
-function ns.PresetIgnoresResourceTint(f)
-    if not ns._cdmAnyNoResourceTint then
+function mod.PresetIgnoresResourceTint(f)
+    if not mod._cdmAnyNoResourceTint then
         return false
     end
     local fc = f and _ecmeFC[f]
-    local sid = fc and fc.spellID
-    if not sid or not ns.GetEffectiveCustomActiveState then
+    local spellRef = fc and fc.spellID
+    if not spellRef or not mod.GetEffectiveCustomActiveState then
         return false
     end
-    local cas = ns.GetEffectiveCustomActiveState(sid)
+    local cas = mod.GetEffectiveCustomActiveState(spellRef)
     return (cas and cas.noResourceTint) and true or false
 end
 
@@ -376,7 +376,7 @@ local function UpdateTrinketCooldown(slotID)
         return false
     end
 end
-ns.UpdateTrinketCooldown = UpdateTrinketCooldown
+mod.UpdateTrinketCooldown = UpdateTrinketCooldown
 
 _trinketEventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 _trinketEventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
@@ -388,38 +388,34 @@ local function SlotScanIncomplete(f)
     return (f._trinketSpellID and not f._trinketIsOnUse) or f._slotScanPending or f._slotEmptyRead
 end
 
-_trinketEventFrame:SetScript("OnEvent", function(_, event, arg1, arg2)
-    if
-        event == "ITEM_DATA_LOAD_RESULT"
-        or event == "SPELL_DATA_LOAD_RESULT"
-        or event == "SPELL_TEXT_UPDATE"
-    then
+_trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
+    if evt == "ITEM_DATA_LOAD_RESULT" or evt == "SPELL_DATA_LOAD_RESULT" or evt == "SPELL_TEXT_UPDATE" then
         -- Registered only while a slot scan waits on the item or use-spell
         -- data; a failed load just drops the pending flag (previous state
         -- stands). Item loads match on the cached item id, spell loads and
         -- description arrivals on the frame's use spell.
-        local byItem = event == "ITEM_DATA_LOAD_RESULT"
-        local ok = arg2
-        if event == "SPELL_TEXT_UPDATE" then
-            ok = true
+        local byItem = evt == "ITEM_DATA_LOAD_RESULT"
+        local success = arg2
+        if evt == "SPELL_TEXT_UPDATE" then
+            success = true
         end
         local pending = false
-        for slot, f in pairs(_trinketFrames) do
+        for slotIndex, f in pairs(_trinketFrames) do
             if f._slotScanPending then
                 local key
                 if byItem then
-                    key = _trinketItemCache[slot]
+                    key = _trinketItemCache[slotIndex]
                 else
                     key = f._trinketSpellID
                 end
                 if key == arg1 then
-                    if ok then
-                        UpdateTrinketFrame(slot)
+                    if success then
+                        UpdateTrinketFrame(slotIndex)
                     else
                         f._slotScanPending = nil
                     end
-                    if ns.QueueReanchor then
-                        ns.QueueReanchor()
+                    if mod.QueueReanchor then
+                        mod.QueueReanchor()
                     end
                 end
             end
@@ -432,29 +428,29 @@ _trinketEventFrame:SetScript("OnEvent", function(_, event, arg1, arg2)
             _trinketEventFrame:UnregisterEvent("SPELL_DATA_LOAD_RESULT")
             _trinketEventFrame:UnregisterEvent("SPELL_TEXT_UPDATE")
         end
-    elseif event == "PLAYER_EQUIPMENT_CHANGED" then
+    elseif evt == "PLAYER_EQUIPMENT_CHANGED" then
         if arg1 == 13 or arg1 == 14 or _trinketFrames[arg1] then
             UpdateTrinketFrame(arg1)
-            if ns.QueueReanchor then
-                ns.QueueReanchor()
+            if mod.QueueReanchor then
+                mod.QueueReanchor()
             end
             local f = _trinketFrames[arg1]
             if f and SlotScanIncomplete(f) then
-                local slot = arg1
+                local slotIndex = arg1
                 C_Timer.After(1, function()
-                    UpdateTrinketFrame(slot)
-                    if ns.QueueReanchor then
-                        ns.QueueReanchor()
+                    UpdateTrinketFrame(slotIndex)
+                    if mod.QueueReanchor then
+                        mod.QueueReanchor()
                     end
                 end)
             end
         end
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    elseif evt == "PLAYER_ENTERING_WORLD" then
         UpdateTrinketFrame(13)
         UpdateTrinketFrame(14)
-        for slot in pairs(_trinketFrames) do
-            if slot ~= 13 and slot ~= 14 then
-                UpdateTrinketFrame(slot)
+        for slotIndex in pairs(_trinketFrames) do
+            if slotIndex ~= 13 and slotIndex ~= 14 then
+                UpdateTrinketFrame(slotIndex)
             end
         end
         -- Tooltip data may not be cached yet on login, causing on-use detection to
@@ -467,18 +463,18 @@ _trinketEventFrame:SetScript("OnEvent", function(_, event, arg1, arg2)
         end
         if needsRetry then
             C_Timer.After(2, function()
-                for slot in pairs(_trinketFrames) do
-                    UpdateTrinketFrame(slot)
+                for slotIndex in pairs(_trinketFrames) do
+                    UpdateTrinketFrame(slotIndex)
                 end
-                if ns.QueueReanchor then
-                    ns.QueueReanchor()
+                if mod.QueueReanchor then
+                    mod.QueueReanchor()
                 end
             end)
         end
-    elseif event == "SPELL_UPDATE_COOLDOWN" then
-        for slot, f in pairs(_trinketFrames) do
+    elseif evt == "SPELL_UPDATE_COOLDOWN" then
+        for slotIndex, f in pairs(_trinketFrames) do
             if f._trinketIsOnUse then
-                UpdateTrinketCooldown(slot)
+                UpdateTrinketCooldown(slotIndex)
             end
         end
     end
@@ -509,16 +505,16 @@ do
     local _cdGlowEventsOn = false
     local _cdGlowRetryPending = false
 
-    local _cdGlowUpdateFrame = ns.TakeShell()
+    local _cdGlowUpdateFrame = mod.TakeShell()
     _cdGlowUpdateFrame:Hide()
-    local _cdGlowEventFrame = ns.TakeShell()
+    local _cdGlowEventFrame = mod.TakeShell()
 
-    local function SetGlowEventsRegistered(on)
-        if on == _cdGlowEventsOn then
+    local function SetGlowEventsRegistered(enabled)
+        if enabled == _cdGlowEventsOn then
             return
         end
-        _cdGlowEventsOn = on
-        if on then
+        _cdGlowEventsOn = enabled
+        if enabled then
             _cdGlowEventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
             _cdGlowEventFrame:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
         else
@@ -540,9 +536,9 @@ do
     -- SetDesaturated hook and RefreshCDMIconAppearance). The flush below prunes
     -- entries whose glow or claim went away and unregisters the events once
     -- nothing is watched.
-    function ns.CDGlowWatch(frame)
-        if not _cdGlowWatched[frame] then
-            _cdGlowWatched[frame] = true
+    function mod.CDGlowWatch(widget)
+        if not _cdGlowWatched[widget] then
+            _cdGlowWatched[widget] = true
             SetGlowEventsRegistered(true)
         end
     end
@@ -558,18 +554,18 @@ do
     -- the Fake-Active engine, so its coalesced pass is queued too, only for a
     -- frame that engine has painted (fd._presetCdTouched): a native icon's kick
     -- never wakes the preset sweep.
-    function ns.CdGlowKick(frame)
-        local fd = frame and hookFrameData[frame]
+    function mod.CdGlowKick(widget)
+        local fd = widget and hookFrameData[widget]
         if not fd then
             return
         end
         fd._cdGlowOwed = nil
-        if not _cdGlowWatched[frame] then
-            _cdGlowWatched[frame] = false
+        if not _cdGlowWatched[widget] then
+            _cdGlowWatched[widget] = false
         end
         QueueCDGlowUpdate()
-        if fd._presetCdTouched and ns.FakeActive_QueueCdStateEval then
-            ns.FakeActive_QueueCdStateEval()
+        if fd._presetCdTouched and mod.FakeActive_QueueCdStateEval then
+            mod.FakeActive_QueueCdStateEval()
         end
     end
 
@@ -580,15 +576,15 @@ do
             SetGlowEventsRegistered(false)
             return
         end
-        local hfd = ns._hookFrameData
-        local efc = ns._ecmeFC
-        local RSP = ns.ResolveSpellSettings
+        local hfd = mod._hookFrameData
+        local efc = mod._ecmeFC
+        local RSP = mod.ResolveSpellSettings
         if not hfd or not efc or not RSP then
             return
         end
         -- Settle window: keep current state, retry until the window ends;
         -- the first post-window pass is the authoritative one.
-        if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then
+        if mod._cdmSoundSuppressed and mod._cdmSoundSuppressed() then
             if not _cdGlowRetryPending then
                 _cdGlowRetryPending = true
                 C_Timer.After(1, function()
@@ -598,9 +594,9 @@ do
             end
             return
         end
-        for frame, watched in pairs(_cdGlowWatched) do
-            local fd = hfd[frame]
-            local fc2 = efc[frame]
+        for widget, watched in pairs(_cdGlowWatched) do
+            local fd = hfd[widget]
+            local fc2 = efc[widget]
             local sid2 = fc2 and fc2.spellID
             local bk2 = fc2 and fc2.barKey
             local keep = false
@@ -612,11 +608,11 @@ do
                 and fd.glowOverlay
                 and sid2
                 and bk2
-                and not (ns.PresetHasCdState and ns.PresetHasCdState(frame))
+                and not (mod.PresetHasCdState and mod.PresetHasCdState(widget))
             then
-                local ss2 = RSP(frame, sid2, ns.GetBarSpellData(bk2))
+                local ss2 = RSP(widget, sid2, mod.GetBarSpellData(bk2))
                 -- The glow half of the effect (a hide beside it runs elsewhere).
-                local glow2 = ns.CdStateGlowOf(ss2, frame)
+                local glow2 = mod.CdStateGlowOf(ss2, widget)
                 local plainGlow = glow2 == "pixelGlowReady" or glow2 == "buttonGlowReady"
                 local usableGlow = glow2 == "pixelGlowReadyUsable" or glow2 == "buttonGlowReadyUsable"
                 local onCdGlow = glow2 == "glowOnCD"
@@ -627,7 +623,7 @@ do
                     if fd._cdGlowBoundSid ~= sid2 then
                         fd._cdGlowBoundSid = sid2
                         if fd._cdStateGlowOn then
-                            ns.StopCdGlow(fd)
+                            mod.StopCdGlow(fd)
                             fd._cdStateGlowOn = false
                         end
                     end
@@ -661,19 +657,19 @@ do
                         -- it, and the glow it holds back is kicked through
                         -- here again once that glow ends (ns.CdGlowKick).
                         if not fd._cdStateGlowOn then
-                            local style = ns.CdReadyGlowStyle(glow2, ss2)
-                            local cr, cg, cb = ns.CdReadyGlowColor(style, ss2)
-                            fd._cdStateGlowOn = ns.StartCdGlow(
+                            local look = mod.CdReadyGlowStyle(glow2, ss2)
+                            local cr, cg, cb = mod.CdReadyGlowColor(look, ss2)
+                            fd._cdStateGlowOn = mod.StartCdGlow(
                                 fd,
-                                style,
+                                look,
                                 cr,
                                 cg,
                                 cb,
-                                ns.CdReadyGlowAlpha(ss2)
+                                mod.CdReadyGlowAlpha(ss2)
                             ) ~= nil
                         end
                     elseif fd._cdStateGlowOn then
-                        ns.StopCdGlow(fd)
+                        mod.StopCdGlow(fd)
                         fd._cdStateGlowOn = false
                     end
                 end
@@ -682,14 +678,14 @@ do
                 -- Glow removed, spell unassigned, or frame released back to the pool:
                 -- stop any leftover glow and drop the watch. Events unregister once the
                 -- set drains (checked below and on the next queued flush).
-                _cdGlowWatched[frame] = nil
+                _cdGlowWatched[widget] = nil
                 if fd and fd._cdStateGlowOn then
-                    ns.StopCdGlow(fd)
+                    mod.StopCdGlow(fd)
                     fd._cdStateGlowOn = false
                 end
             elseif not watched then
                 -- One-shot kick (ns.CdGlowKick): evaluated once, now leaves.
-                _cdGlowWatched[frame] = nil
+                _cdGlowWatched[widget] = nil
             end
         end
         if not next(_cdGlowWatched) then
@@ -699,7 +695,7 @@ do
 
     -- One re-evaluation pass on the next frame. Called after rebuilds (FullCDMRebuild)
     -- and by the event listeners; no-ops instantly when nothing is watched.
-    ns.QueueCDGlowResourceCheck = QueueCDGlowUpdate
+    mod.QueueCDGlowResourceCheck = QueueCDGlowUpdate
 
     _cdGlowEventFrame:SetScript("OnEvent", function()
         QueueCDGlowUpdate()
@@ -722,7 +718,7 @@ end
 -- also secret in instanced combat: issecretvalue-first, falling back to 0 (unhasted
 -- 1.5s GCD), which errs toward suppressing the tail slightly early on hasted players.
 local _gcdTailCurves = {}
-function ns.GCDTailAlpha(durObj, normalAlpha)
+function mod.GCDTailAlpha(durObj, normalAlpha)
     normalAlpha = normalAlpha or 0
     if
         not (
@@ -784,8 +780,8 @@ local function ApplySpellDesaturation(f, durObj)
     end
 end
 
-I._trinketFrames, I._trinketItemCache = _trinketFrames, _trinketItemCache
-I.ApplySpellDesaturation = ApplySpellDesaturation
-I.GetOrCreateTrinketFrame, I.PresetKeepsColor = GetOrCreateTrinketFrame, PresetKeepsColor
-I.UpdateTrinketCooldown, I.UpdateTrinketFrame = UpdateTrinketCooldown, UpdateTrinketFrame
-I.broken = false
+Inner._trinketFrames, Inner._trinketItemCache = _trinketFrames, _trinketItemCache
+Inner.ApplySpellDesaturation = ApplySpellDesaturation
+Inner.GetOrCreateTrinketFrame, Inner.PresetKeepsColor = GetOrCreateTrinketFrame, PresetKeepsColor
+Inner.UpdateTrinketCooldown, Inner.UpdateTrinketFrame = UpdateTrinketCooldown, UpdateTrinketFrame
+Inner.broken = false

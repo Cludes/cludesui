@@ -7,22 +7,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The preview box of the options page.
 --  Reads the earlier Player Aura Bars files through ns and ns._pabInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._pabInternals
+local _, mod = ...
+local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local ExpandFamily, PAB, PAB_FxListView = I.ExpandFamily, I.PAB, I.PAB_FxListView
-local PabShapeBorderSize, PabShapedSize = I.PabShapeBorderSize, I.PabShapedSize
-local BuildDispelColorMap, BuildStyle = I.BuildDispelColorMap, I.BuildStyle
-local PV_DISPEL_ICON_ATLAS = I.PV_DISPEL_ICON_ATLAS
-local PV_DISPEL_ICON_POINTS, ComputeGrid = I.PV_DISPEL_ICON_POINTS, I.ComputeGrid
-local DefaultBuffsCfg, DefaultDebuffsCfg = I.DefaultBuffsCfg, I.DefaultDebuffsCfg
-local CornerFor, SetMaybeRefreshPreview = I.CornerFor, I.SetMaybeRefreshPreview
+local ExpandFamily, PAB, PAB_FxListView = Inner.ExpandFamily, Inner.PAB, Inner.PAB_FxListView
+local PabShapeBorderSize, PabShapedSize = Inner.PabShapeBorderSize, Inner.PabShapedSize
+local BuildDispelColorMap, BuildStyle = Inner.BuildDispelColorMap, Inner.BuildStyle
+local PV_DISPEL_ICON_ATLAS = Inner.PV_DISPEL_ICON_ATLAS
+local PV_DISPEL_ICON_POINTS, ComputeGrid = Inner.PV_DISPEL_ICON_POINTS, Inner.ComputeGrid
+local DefaultBuffsCfg, DefaultDebuffsCfg = Inner.DefaultBuffsCfg, Inner.DefaultDebuffsCfg
+local CornerFor, SetMaybeRefreshPreview = Inner.CornerFor, Inner.SetMaybeRefreshPreview
 
 -- Assigned below and handed to the earlier files (SetMaybeRefreshPreview).
 local PAB_MaybeRefreshPreview
@@ -75,15 +75,15 @@ local EXTRA_WORLD_PREVIEW_BUFFS = { 1236998, 1236616, 1239479, 1236994 }
 
 -- Shuffles a fresh copy of `source` (Fisher-Yates), never mutating the source table.
 local function ShuffleCopy(source)
-    local out = {}
+    local result = {}
     for i = 1, #source do
-        out[i] = source[i]
+        result[i] = source[i]
     end
-    for i = #out, 2, -1 do
-        local j = math.random(i)
-        out[i], out[j] = out[j], out[i]
+    for i = #result, 2, -1 do
+        local jdx = math.random(i)
+        result[i], result[jdx] = result[jdx], result[i]
     end
-    return out
+    return result
 end
 
 -- Builds a freshly shuffled copy of the "All Buffs" preview pool. Called ONCE per
@@ -199,15 +199,15 @@ end
 -- Memoized fake-icon texture lookup: C_Spell.GetSpellInfo's iconID, falls back to
 -- the generic question-mark icon.
 local previewIconCache = {}
-local function PreviewSpellIcon(spellID)
-    local cached = previewIconCache[spellID]
+local function PreviewSpellIcon(spellId)
+    local cached = previewIconCache[spellId]
     if cached then
         return cached
     end
-    local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)
-    local icon = (info and info.iconID) or 134400
-    previewIconCache[spellID] = icon
-    return icon
+    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellId)
+    local glyph = (details and details.iconID) or 134400
+    previewIconCache[spellId] = glyph
+    return glyph
 end
 
 -- Weapon-enchant preview cells, leading the bar exactly like the live ones
@@ -234,17 +234,17 @@ local PREVIEW_ENCHANT_SLOTS = { INVSLOT_MAINHAND or 16, INVSLOT_OFFHAND or 17 }
 -- the first element at the leading edge, so main hand ends up adjacent to the
 -- aura run (see BuildEnchantSpec), off hand out at the corner.
 local function PreviewEnchantSlots()
-    local out = {}
+    local result = {}
     for i = #PREVIEW_ENCHANT_SLOTS, 1, -1 do
-        local slot = PREVIEW_ENCHANT_SLOTS[i]
-        if GetInventoryItemTexture("player", slot) then
-            out[#out + 1] = slot
+        local slotIndex = PREVIEW_ENCHANT_SLOTS[i]
+        if GetInventoryItemTexture("player", slotIndex) then
+            result[#result + 1] = slotIndex
         end
     end
-    if #out == 0 then
-        out[1] = PREVIEW_ENCHANT_SLOTS[1]
+    if #result == 0 then
+        result[1] = PREVIEW_ENCHANT_SLOTS[1]
     end
-    return out
+    return result
 end
 
 -- Empty-slot art per weapon slot, for a character with nothing equipped:
@@ -255,12 +255,12 @@ end
 -- same namespaced call).
 local PREVIEW_ENCHANT_SLOT_NAMES =
     { [INVSLOT_MAINHAND or 16] = "MainHandSlot", [INVSLOT_OFFHAND or 17] = "SecondaryHandSlot" }
-local function PreviewEnchantIcon(slot)
-    local tex = GetInventoryItemTexture("player", slot)
+local function PreviewEnchantIcon(slotIndex)
+    local tex = GetInventoryItemTexture("player", slotIndex)
     if tex then
         return tex
     end
-    local name = PREVIEW_ENCHANT_SLOT_NAMES[slot]
+    local name = PREVIEW_ENCHANT_SLOT_NAMES[slotIndex]
     if name and C_PaperDollInfo and C_PaperDollInfo.GetInventorySlotInfo then
         local _, slotTex = C_PaperDollInfo.GetInventorySlotInfo(name)
         if slotTex then
@@ -272,14 +272,14 @@ end
 
 -- Same memoization for the preview's "Name" sort simulation below.
 local previewNameCache = {}
-local function PreviewSpellName(spellID)
-    local cached = previewNameCache[spellID]
+local function PreviewSpellName(spellId)
+    local cached = previewNameCache[spellId]
     if cached then
         return cached
     end
-    local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)
-    local name = (info and info.name) or ""
-    previewNameCache[spellID] = name
+    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellId)
+    local name = (details and details.name) or ""
+    previewNameCache[spellId] = name
     return name
 end
 
@@ -297,42 +297,42 @@ end
 -- Second return: each output entry's ORIGINAL index in `list`. The fake duration and
 -- stack text are keyed by that index (slot.pv in BuildPreviewSlots), so they travel WITH
 -- their icon; keying them by display cell instead left the Expiration sort invisible.
-local function SortPreviewList(list, isBuff, cfg)
-    local method = cfg.sortMethod or "Default"
-    local reverse = cfg.sortDirection == "Reverse"
+local function SortPreviewList(entries, isBuff, conf)
+    local method = conf.sortMethod or "Default"
+    local reverse = conf.sortDirection == "Reverse"
     if method == "Default" then
-        local out, src = {}, {}
-        local n = #list
-        for i = 1, n do
-            local from = reverse and (n - i + 1) or i
-            out[i] = list[from]
+        local result, src = {}, {}
+        local num = #entries
+        for i = 1, num do
+            local from = reverse and (num - i + 1) or i
+            result[i] = entries[from]
             src[i] = from
         end
-        return out, src
+        return result, src
     end
 
     local tagged = {}
-    for i = 1, #list do
-        tagged[i] = { entry = list[i], idx = i }
+    for i = 1, #entries do
+        tagged[i] = { entry = entries[i], idx = i }
     end
 
     if method == "Expiration" then
         table.sort(tagged, function(a, b)
             local da = PREVIEW_DURATIONS[((a.idx - 1) % #PREVIEW_DURATIONS) + 1]
-            local db = PREVIEW_DURATIONS[((b.idx - 1) % #PREVIEW_DURATIONS) + 1]
-            if da ~= db then
+            local saved = PREVIEW_DURATIONS[((b.idx - 1) % #PREVIEW_DURATIONS) + 1]
+            if da ~= saved then
                 if reverse then
-                    return da > db
+                    return da > saved
                 end
-                return da < db
+                return da < saved
             end
             return a.idx < b.idx
         end)
     elseif method == "Name" then
         table.sort(tagged, function(a, b)
             local sa = isBuff and a.entry or a.entry.id
-            local sb = isBuff and b.entry or b.entry.id
-            local na, nb = PreviewSpellName(sa), PreviewSpellName(sb)
+            local scrollBar = isBuff and b.entry or b.entry.id
+            local na, nb = PreviewSpellName(sa), PreviewSpellName(scrollBar)
             if na ~= nb then
                 if reverse then
                     return na > nb
@@ -344,9 +344,10 @@ local function SortPreviewList(list, isBuff, cfg)
     elseif method == "ImportantOnly" then
         table.sort(tagged, function(a, b)
             local sa = isBuff and a.entry or a.entry.id
-            local sb = isBuff and b.entry or b.entry.id
+            local scrollBar = isBuff and b.entry or b.entry.id
             local ia = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(sa)) and 0 or 1
-            local ib = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(sb)) and 0 or 1
+            local ib = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(scrollBar)) and 0
+                or 1
             if ia ~= ib then
                 if reverse then
                     return ia > ib
@@ -357,12 +358,12 @@ local function SortPreviewList(list, isBuff, cfg)
         end)
     end
 
-    local out, src = {}, {}
+    local result, src = {}, {}
     for i = 1, #tagged do
-        out[i] = tagged[i].entry
+        result[i] = tagged[i].entry
         src[i] = tagged[i].idx
     end
-    return out, src
+    return result, src
 end
 
 -- Which bar-detail pane owns the visible preview box (kind: "buff"/"debuff", id:
@@ -377,85 +378,85 @@ local activePreview
 -- index: generated once and reused so re-renders never reshuffle frozen swipe positions.
 local pvCDSeeds = {}
 local function GetPvCDSeed(i)
-    local v = pvCDSeeds[i]
-    if not v then
-        v = 0.2 + math.random() * 0.7
-        pvCDSeeds[i] = v
+    local val = pvCDSeeds[i]
+    if not val then
+        val = 0.2 + math.random() * 0.7
+        pvCDSeeds[i] = val
     end
-    return v
+    return val
 end
 
 -- Layer order matches the live bar exactly (AK's own ApplyStyleToRegions): icon
 -- texture (btn, ARTWORK) below border (child frame, level+1) below duration/stack
 -- text (textHost, child frame, level+2, ABOVE the border).
-local function CreatePreviewIcon(box)
+local function CreatePreviewIcon(boxFrame)
     -- Options preview only: the options frame pool (CludesUI_FramePool.lua)
     -- hands the box's next render these frames back reset to new.
     local Pool = CludesUI._Pool
     local CreateFrame = Pool.CreateFrame
-    local btn = CreateFrame("Frame", nil, box)
-    btn.icon = btn:CreateTexture(nil, "ARTWORK")
-    btn.icon:SetAllPoints()
+    local button = CreateFrame("Frame", nil, boxFrame)
+    button.icon = button:CreateTexture(nil, "ARTWORK")
+    button.icon:SetAllPoints()
     -- "Nothing configured" placeholder: a red X over the icon's flat grey fill,
     -- shown instead of a fake spell icon when the bar's real config would show zero
     -- buffs (Show All Buffs off, no Filters/Extra Spells resolved) -- see
     -- RenderPreviewIcons' noneConfigured check. Reuses the existing close/X media icon.
-    btn.placeholder = btn:CreateTexture(nil, "OVERLAY")
-    btn.placeholder:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
-    btn.placeholder:SetVertexColor(1, 0.2, 0.2, 1)
-    btn.placeholder:Hide()
+    button.placeholder = button:CreateTexture(nil, "OVERLAY")
+    button.placeholder:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
+    button.placeholder:SetVertexColor(1, 0.2, 0.2, 1)
+    button.placeholder:Hide()
     -- Duration-swipe preview: same CooldownFrameTemplate child the live bar's
     -- buttons carry. Created hidden; armed per refresh from the bar's Show Duration
     -- Swipe setting. Created BEFORE the border/text hosts so it renders above the
     -- icon but below both (live ladder).
-    btn.cooldown = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
-    btn.cooldown:SetAllPoints()
-    btn.cooldown:SetDrawEdge(false)
-    btn.cooldown:SetHideCountdownNumbers(true)
-    btn.cooldown:Hide()
+    button.cooldown = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+    button.cooldown:SetAllPoints()
+    button.cooldown:SetDrawEdge(false)
+    button.cooldown:SetHideCountdownNumbers(true)
+    button.cooldown:Hide()
     -- A cooldown the pool dressed before keeps the swipe texture an earlier
     -- dress gave it (the engine's reset keeps a cooldown's settings, and no
     -- getter reads that one back): the first render of this dress applies
     -- the bar's shape or the plain swipe either way. A new cooldown keeps its
     -- template swipe untouched.
-    local cdGen = Pool.Gen and Pool.Gen(btn.cooldown)
+    local cdGen = Pool.Gen and Pool.Gen(button.cooldown)
     if cdGen and cdGen > 1 then
-        btn._cdShapeApplied = false
+        button._cdShapeApplied = false
     end
-    btn.border = CreateFrame("Frame", nil, btn)
+    button.border = CreateFrame("Frame", nil, button)
     -- The border frame is its own secret-safe border state (as the boss preview's
     -- aura border): a pooled frame's reset wipes these keys, so a pixel-grid
     -- change never repaints an earlier dress's look over this one.
-    btn.borderState = btn.border
+    button.borderState = button.border
     -- Dispel-type icon host: a child frame created after the cooldown and the border,
     -- so the icon draws above the swipe and the border like the live button's holder.
     -- A texture on the button itself sits under every child frame whatever its layer,
     -- so the frozen preview swipe covered it.
-    btn.typeHost = CreateFrame("Frame", nil, btn)
-    btn.typeHost:SetAllPoints()
+    button.typeHost = CreateFrame("Frame", nil, button)
+    button.typeHost:SetAllPoints()
     -- Plain preview region, not a real AuraKit button -- masking is unguarded here.
-    btn.shapeMask = btn:CreateMaskTexture()
-    btn.shapeMask:Hide()
-    btn.textHost = CreateFrame("Frame", nil, btn)
-    btn.duration = btn.textHost:CreateFontString(nil, "OVERLAY")
-    btn.stack = btn.textHost:CreateFontString(nil, "OVERLAY")
-    return btn
+    button.shapeMask = button:CreateMaskTexture()
+    button.shapeMask:Hide()
+    button.textHost = CreateFrame("Frame", nil, button)
+    button.duration = button.textHost:CreateFontString(nil, "OVERLAY")
+    button.stack = button.textHost:CreateFontString(nil, "OVERLAY")
+    return button
 end
 
 -- Resolves a bar's live cfg + polarity from its (kind,id) identity, via the same
 -- lookups every other engine-side path uses.
-local function ResolvePreviewCfg(kind, id)
+local function ResolvePreviewCfg(kindOf, ident)
     local s = PAB()
     if not s then
         return nil
     end
-    if id == "default" then
-        local isBuff = kind == "buff"
+    if ident == "default" then
+        local isBuff = kindOf == "buff"
         return (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)), isBuff
-    elseif kind == "buff" then
-        return ns.PAB_GetCustomBuffBar(id), true
+    elseif kindOf == "buff" then
+        return mod.PAB_GetCustomBuffBar(ident), true
     else
-        return ns.PAB_GetCustomDebuffBar(id), false
+        return mod.PAB_GetCustomDebuffBar(ident), false
     end
 end
 
@@ -482,68 +483,68 @@ end
 -- (32/5/1/11/0/11/0) since a size can't be scaled without first resolving what
 -- "unset" means -- keep in sync if BuildStyle's defaults change. Non-size fields
 -- (growDirection, iconsPerRow/maxRows/maxTotal, dispel colors, ...) pass through.
-local function ApplyPreviewScale(cfg, comp)
+local function ApplyPreviewScale(conf, comp)
     if comp == 1 then
-        return cfg
+        return conf
     end
-    local out = {}
-    for k, v in pairs(cfg) do
-        out[k] = v
+    local result = {}
+    for key, val in pairs(conf) do
+        result[key] = val
     end
-    out.iconSize = (cfg.iconSize or 32) * comp
-    out.padding = (cfg.padding or 5) * comp
-    out.rowSpacing = cfg.rowSpacing and (cfg.rowSpacing * comp) or nil
-    out.borderSize = (cfg.borderSize or 1) * comp
+    result.iconSize = (conf.iconSize or 32) * comp
+    result.padding = (conf.padding or 5) * comp
+    result.rowSpacing = conf.rowSpacing and (conf.rowSpacing * comp) or nil
+    result.borderSize = (conf.borderSize or 1) * comp
     -- Textured borders use a discrete 0-4 lookup for edge art. Preserve that raw
     -- key and scale the resolved edge/offset geometry separately; Solid continues
     -- to use the compensated borderSize above.
-    out.borderTextureSizeOverride = cfg.borderSize or 1
-    out.borderTextureScaleOverride = comp
+    result.borderTextureSizeOverride = conf.borderSize or 1
+    result.borderTextureScaleOverride = comp
     -- PabShapeBorderSize is keyed by the raw 0-4 level, so it must run BEFORE scaling
     -- (unlike out.borderSize above) -- resolve the level, then scale the result,
     -- mirroring iconSize's own scale-after-resolve treatment. BuildStyle prefers this
     -- over recomputing from the already-scaled out.borderSize when present.
-    out.shapeBorderSizeOverride = PabShapeBorderSize(cfg.borderSize or 1) * comp
+    result.shapeBorderSizeOverride = PabShapeBorderSize(conf.borderSize or 1) * comp
     -- The exact size (borderSizePx) pairs with the RAW step and texture, so it is
     -- resolved here, before the compensation above, and handed to BuildStyle as
     -- borderPxOverride. Solid scales like borderSize; a textured edge stays raw
     -- because the eight-slice draw scales it by borderTextureScaleOverride itself.
-    local rawTex = cfg.borderTexture
-    local rawPx = CludesUI.BorderPx(cfg.borderSizePx, cfg.borderSize or 1, rawTex)
+    local rawTex = conf.borderTexture
+    local rawPx = CludesUI.BorderPx(conf.borderSizePx, conf.borderSize or 1, rawTex)
     if rawPx then
         local textured = rawTex and rawTex ~= "" and rawTex ~= "solid"
-        out.borderPxOverride = textured and rawPx or (rawPx * comp)
+        result.borderPxOverride = textured and rawPx or (rawPx * comp)
     end
-    out.durationTextSize = (cfg.durationTextSize or 11) * comp
-    out.durationOffsetX = (cfg.durationOffsetX or 0) * comp
-    out.durationOffsetY = (cfg.durationOffsetY or 0) * comp
-    out.dispelIconSize = (cfg.dispelIconSize or 16) * comp
-    out.dispelIconOffsetX = (cfg.dispelIconOffsetX or 0) * comp
-    out.dispelIconOffsetY = (cfg.dispelIconOffsetY or 0) * comp
-    out.stackTextSize = (cfg.stackTextSize or 11) * comp
-    out.stackOffsetX = (cfg.stackOffsetX or 0) * comp
-    out.stackOffsetY = (cfg.stackOffsetY or 0) * comp
+    result.durationTextSize = (conf.durationTextSize or 11) * comp
+    result.durationOffsetX = (conf.durationOffsetX or 0) * comp
+    result.durationOffsetY = (conf.durationOffsetY or 0) * comp
+    result.dispelIconSize = (conf.dispelIconSize or 16) * comp
+    result.dispelIconOffsetX = (conf.dispelIconOffsetX or 0) * comp
+    result.dispelIconOffsetY = (conf.dispelIconOffsetY or 0) * comp
+    result.stackTextSize = (conf.stackTextSize or 11) * comp
+    result.stackOffsetX = (conf.stackOffsetX or 0) * comp
+    result.stackOffsetY = (conf.stackOffsetY or 0) * comp
     -- Icon Effects Per-Filter Size overrides need the same panel-scale compensation
     -- as iconSize: a per-block shallow copy (never mutating the real saved fxList or
     -- its filters/borderColor sub-tables) with only `.size` rescaled, so both the
     -- preview's box footprint (ComputeGrid's MaxIconSizeFor) and the fake-icon
     -- SetSize read the right pixel value.
-    if cfg.fxList then
+    if conf.fxList then
         local scaledFx = {}
-        for i = 1, #cfg.fxList do
-            local e = cfg.fxList[i]
+        for i = 1, #conf.fxList do
+            local e = conf.fxList[i]
             local se = {}
-            for k, v in pairs(e) do
-                se[k] = v
+            for key, val in pairs(e) do
+                se[key] = val
             end
             if se.size then
                 se.size = se.size * comp
             end
             scaledFx[i] = se
         end
-        out.fxList = scaledFx
+        result.fxList = scaledFx
     end
-    return out
+    return result
 end
 
 -- Preview area height budget: Up/Down growth with several icons-per-column makes the
@@ -553,17 +554,17 @@ end
 -- shrinks (extra <= 1); horizontal and short vertical bars are unaffected.
 local MAX_PREVIEW_CONTENT_HEIGHT = 330
 
-local function ScaledPreviewCfg(cfg, isBuff)
+local function ScaledPreviewCfg(conf, isBuff)
     local comp = PreviewScaleFactor()
     local extra = 1
     if isBuff ~= nil then
-        local probe = ApplyPreviewScale(cfg, comp)
+        local probe = ApplyPreviewScale(conf, comp)
         local grid = ComputeGrid(isBuff, probe)
         if grid.height > MAX_PREVIEW_CONTENT_HEIGHT then
             extra = MAX_PREVIEW_CONTENT_HEIGHT / grid.height
         end
     end
-    return ApplyPreviewScale(cfg, comp * extra)
+    return ApplyPreviewScale(conf, comp * extra)
 end
 
 -- Renders (or re-renders in place) the fake icon grid using the bar's CURRENT cfg --
@@ -575,8 +576,8 @@ local function HasAnyTrue(map)
     if not map then
         return false
     end
-    for _, v in pairs(map) do
-        if v then
+    for _, val in pairs(map) do
+        if val then
             return true
         end
     end
@@ -592,15 +593,15 @@ end
 -- (aura filter string/category tokens), so Show All Debuffs OR any Base Filter class
 -- justifies fake filler (mirrors BuildChain's includeCatchAll condition); debuffs CAN
 -- show truly nothing.
-local function HasFillerSource(isBuff, cfg)
+local function HasFillerSource(isBuff, conf)
     if isBuff then
-        return cfg.showAllBuffs ~= false or cfg.hasDuration == true
+        return conf.showAllBuffs ~= false or conf.hasDuration == true
     end
     -- Match All picks that can never match together render nothing.
-    if ns.PAB_DebuffMatchEmpty(cfg) then
+    if mod.PAB_DebuffMatchEmpty(conf) then
         return false
     end
-    return cfg.showAllDebuffs ~= false or cfg.hasDuration == true or HasAnyTrue(cfg.classFilters)
+    return conf.showAllDebuffs ~= false or conf.hasDuration == true or HasAnyTrue(conf.classFilters)
 end
 
 -- BuildPreviewSlots (below) builds one descriptor per icon slot (length `count`).
@@ -620,15 +621,15 @@ end
 -- Preview-only: the real bar shows active aura instances, not an enumeration of
 -- possible spell IDs.
 local function DedupeByIcon(ids)
-    local seenIcons, out = {}, {}
+    local seenIcons, result = {}, {}
     for i = 1, #ids do
-        local icon = PreviewSpellIcon(ids[i])
-        if not seenIcons[icon] then
-            seenIcons[icon] = true
-            out[#out + 1] = ids[i]
+        local glyph = PreviewSpellIcon(ids[i])
+        if not seenIcons[glyph] then
+            seenIcons[glyph] = true
+            result[#result + 1] = ids[i]
         end
     end
-    return out
+    return result
 end
 
 -- ns.PAB_ResolveSpells unions every selected Filter's + Extra Spells' ids into ONE
@@ -638,37 +639,41 @@ end
 -- a source, Extra Spells is one more), so truncation samples a bit of everything.
 -- Deterministic (no math.random) on purpose: unlike the fake pools this must NOT
 -- reshuffle on every live-apply refresh.
-local function BuildMixedRealSpells(cfg)
+local function BuildMixedRealSpells(conf)
     local sources = {}
     -- Broad modes render through the catch-all, so show-lane real icons only exist in
     -- add mode; the hide lane (cfg.negFilters) drops its spells from these sources the
     -- same way the live spells group resolves (PAB_ResolveSpells) -- Extra Spells are
     -- a separate source below and win over the hide lane there too.
-    if cfg.filters and cfg.showAllBuffs == false and cfg.hasDuration ~= true then
+    if conf.filters and conf.showAllBuffs == false and conf.hasDuration ~= true then
         local negSet
-        if cfg.negFilters then
-            for filterId in pairs(cfg.negFilters) do
-                local nf = ns.PAB_GetFilter and ns.PAB_GetFilter(filterId)
+        if conf.negFilters then
+            for filterId in pairs(conf.negFilters) do
+                local nf = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
                 if nf and nf.spells then
-                    for id, on in pairs(nf.spells) do
-                        if on and not ns.PAB_OtherClientSpell(nf, id) then
+                    for ident, enabled in pairs(nf.spells) do
+                        if enabled and not mod.PAB_OtherClientSpell(nf, ident) then
                             negSet = negSet or {}
-                            negSet[id] = true
-                            ExpandFamily(negSet, id, nf.spells)
+                            negSet[ident] = true
+                            ExpandFamily(negSet, ident, nf.spells)
                         end
                     end
                 end
             end
         end
-        local allFilters = ns.PAB_Filters and ns.PAB_Filters()
+        local allFilters = mod.PAB_Filters and mod.PAB_Filters()
         if allFilters then
             for i = 1, #allFilters do
                 local f = allFilters[i]
-                if cfg.filters[f.id] then
+                if conf.filters[f.id] then
                     local ids = {}
-                    for id, on in pairs(f.spells) do
-                        if on and not (negSet and negSet[id]) and not ns.PAB_OtherClientSpell(f, id) then
-                            ids[#ids + 1] = id
+                    for ident, enabled in pairs(f.spells) do
+                        if
+                            enabled
+                            and not (negSet and negSet[ident])
+                            and not mod.PAB_OtherClientSpell(f, ident)
+                        then
+                            ids[#ids + 1] = ident
                         end
                     end
                     if #ids > 0 then
@@ -679,35 +684,35 @@ local function BuildMixedRealSpells(cfg)
             end
         end
     end
-    if cfg.spells and #cfg.spells > 0 then
+    if conf.spells and #conf.spells > 0 then
         local extra = {}
-        for i = 1, #cfg.spells do
-            extra[i] = cfg.spells[i]
+        for i = 1, #conf.spells do
+            extra[i] = conf.spells[i]
         end
         sources[#sources + 1] = extra
     end
 
-    local out = {}
-    local idx = 1
+    local result = {}
+    local position = 1
     while true do
         local addedAny = false
         for s = 1, #sources do
-            local id = sources[s][idx]
-            if id then
-                out[#out + 1] = id
+            local ident = sources[s][position]
+            if ident then
+                result[#result + 1] = ident
                 addedAny = true
             end
         end
         if not addedAny then
             break
         end
-        idx = idx + 1
+        position = position + 1
     end
-    return out
+    return result
 end
 
-local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
-    local hasFiller = HasFillerSource(isBuff, cfg)
+local function BuildPreviewSlots(isBuff, conf, entries, listLen, count)
+    local hasFiller = HasFillerSource(isBuff, conf)
     -- Sort Method/Direction must apply to the REAL extra icons too, not just the fake
     -- filler pool: with All Buffs off the content is mostly/only these real slots, so
     -- skipping them leaves the sort controls looking dead.
@@ -721,7 +726,7 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
     -- content: they are not auras. They do take a cell each, though: Max Icons
     -- counts the whole bar, so the aura slots below are what is left after them.
     local numEnch, enchSlots = 0, nil
-    if isBuff and ns.PAB_EnchantsOn(cfg) then
+    if isBuff and mod.PAB_EnchantsOn(conf) then
         enchSlots = PreviewEnchantSlots()
         numEnch = #enchSlots
     end
@@ -735,7 +740,7 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
     -- still sees the shape the option produces.
     local avail = math.max(0, count - numEnch)
 
-    local mixed = isBuff and DedupeByIcon(BuildMixedRealSpells(cfg)) or nil
+    local mixed = isBuff and DedupeByIcon(BuildMixedRealSpells(conf)) or nil
     local extraIDs, extraSrc
     if mixed then
         local numSelected = math.min(#mixed, avail)
@@ -743,7 +748,7 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
         for i = 1, numSelected do
             selected[i] = mixed[i]
         end
-        extraIDs, extraSrc = SortPreviewList(selected, isBuff, cfg)
+        extraIDs, extraSrc = SortPreviewList(selected, isBuff, conf)
     end
     local numExtra = extraIDs and #extraIDs or 0
     local numFiller = avail - numExtra
@@ -762,15 +767,15 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
             -- drops every subtracted spell, matching what the live catch-all's
             -- excludeSpellIDs removes.
             local subSet
-            if isBuff and (cfg.showAllBuffs ~= false or cfg.hasDuration == true) and cfg.negFilters then
-                for filterId in pairs(cfg.negFilters) do
-                    local f = ns.PAB_GetFilter and ns.PAB_GetFilter(filterId)
+            if isBuff and (conf.showAllBuffs ~= false or conf.hasDuration == true) and conf.negFilters then
+                for filterId in pairs(conf.negFilters) do
+                    local f = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
                     if f and f.spells then
-                        for id, on in pairs(f.spells) do
-                            if on and not ns.PAB_OtherClientSpell(f, id) then
+                        for ident, enabled in pairs(f.spells) do
+                            if enabled and not mod.PAB_OtherClientSpell(f, ident) then
                                 subSet = subSet or {}
-                                subSet[id] = true
-                                ExpandFamily(subSet, id, f.spells)
+                                subSet[ident] = true
+                                ExpandFamily(subSet, ident, f.spells)
                             end
                         end
                     end
@@ -783,24 +788,24 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
             -- already showing instead of pulling different ones from the pool.
             local fillerSelected = {}
             if subSet then
-                local n = 0
+                local num = 0
                 for scan = 1, listLen do
-                    if n >= numFiller then
+                    if num >= numFiller then
                         break
                     end
-                    local e = list[scan]
+                    local e = entries[scan]
                     if not subSet[e] then
-                        n = n + 1
-                        fillerSelected[n] = e
+                        num = num + 1
+                        fillerSelected[num] = e
                     end
                 end
             else
                 for i = 1, numFiller do
-                    fillerSelected[i] = list[((i - 1) % listLen) + 1]
+                    fillerSelected[i] = entries[((i - 1) % listLen) + 1]
                 end
             end
             local fillerSrc
-            fillerSelected, fillerSrc = SortPreviewList(fillerSelected, isBuff, cfg)
+            fillerSelected, fillerSrc = SortPreviewList(fillerSelected, isBuff, conf)
             for i = 1, numFiller do
                 local e = fillerSelected[i]
                 slots[numEnch + numExtra + i] = e and { kind = "fake", entry = e, pv = fillerSrc[i] }
@@ -821,23 +826,23 @@ end
 -- exactly what the live aura buttons can. `e` is nil when no active fx block
 -- matches this icon's category (or for buff/placeholder slots), clearing any fx
 -- left over from a previous render of this reused frame.
-ns.PAB_PREVIEW_GLOW_SPEC = {}
-local function ApplyPreviewFx(btn, e)
+mod.PAB_PREVIEW_GLOW_SPEC = {}
+local function ApplyPreviewFx(button, e)
     local CreateFrame = CludesUI._Pool.CreateFrame -- options preview only (the pool)
     local Glows = CludesUI.Glows
-    local spec = e and Glows.SpecFromPrefix(ns.PAB_PREVIEW_GLOW_SPEC, e, "glow", 1.0, 0.776, 0.376)
-    local gov = btn.fxGlow
-    if spec then
+    local specInfo = e and Glows.SpecFromPrefix(mod.PAB_PREVIEW_GLOW_SPEC, e, "glow", 1.0, 0.776, 0.376)
+    local gov = button.fxGlow
+    if specInfo then
         if not gov then
-            gov = CreateFrame("Frame", nil, btn)
-            gov:SetAllPoints(btn)
-            gov:SetFrameLevel(btn.border:GetFrameLevel() + 2)
+            gov = CreateFrame("Frame", nil, button)
+            gov:SetAllPoints(button)
+            gov:SetFrameLevel(button.border:GetFrameLevel() + 2)
             gov:EnableMouse(false)
-            btn.fxGlow = gov
+            button.fxGlow = gov
         end
         gov:Show()
-        local sz = btn:GetWidth() or 18
-        Glows.StartSpecGlow(gov, spec, sz, btn:GetHeight() or sz, "engine", Glows.PANEL_EXTRA)
+        local sz = button:GetWidth() or 18
+        Glows.StartSpecGlow(gov, specInfo, sz, button:GetHeight() or sz, "engine", Glows.PANEL_EXTRA)
     elseif gov then
         if gov._cuiGlowActive then
             Glows.StopGlow(gov)
@@ -845,23 +850,23 @@ local function ApplyPreviewFx(btn, e)
         gov:Hide()
     end
 
-    local PP = CludesUI.PP
+    local Pix = CludesUI.PP
     local bSize = (e and e.borderSize) or 0
-    if bSize > 0 and PP then
-        local host = btn.fxBorder
-        if not host then
-            host = CreateFrame("Frame", nil, btn)
-            host:SetAllPoints(btn)
-            host:SetFrameLevel(btn.border:GetFrameLevel() + 1)
-            host:EnableMouse(false)
-            PP.CreateBorder(host, 0, 0, 0, 1, 1)
-            btn.fxBorder = host
+    if bSize > 0 and Pix then
+        local hostRegion = button.fxBorder
+        if not hostRegion then
+            hostRegion = CreateFrame("Frame", nil, button)
+            hostRegion:SetAllPoints(button)
+            hostRegion:SetFrameLevel(button.border:GetFrameLevel() + 1)
+            hostRegion:EnableMouse(false)
+            Pix.CreateBorder(hostRegion, 0, 0, 0, 1, 1)
+            button.fxBorder = hostRegion
         end
         local bc = e.borderColor or { r = 0, g = 0, b = 0 }
-        PP.UpdateBorder(host, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
-        host:Show()
-    elseif btn.fxBorder then
-        btn.fxBorder:Hide()
+        Pix.UpdateBorder(hostRegion, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
+        hostRegion:Show()
+    elseif button.fxBorder then
+        button.fxBorder:Hide()
     end
 
     -- Size override is deliberately NOT applied here: it feeds RenderPreviewIcons'
@@ -871,11 +876,11 @@ end
 
 -- `pool` is the box's own stable, pre-shuffled fake-icon pool (shuffled once per box
 -- build for BOTH polarities, see BuildBuffPreviewPool/BuildDebuffPreviewPool).
-local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
-    cfg = ScaledPreviewCfg(cfg, isBuff)
-    local style = BuildStyle(isBuff, cfg)
-    local dcMap = (not isBuff) and BuildDispelColorMap(cfg) or nil
-    local grid = ComputeGrid(isBuff, cfg)
+local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
+    conf = ScaledPreviewCfg(conf, isBuff)
+    local look = BuildStyle(isBuff, conf)
+    local dcMap = (not isBuff) and BuildDispelColorMap(conf) or nil
+    local grid = ComputeGrid(isBuff, conf)
 
     -- The box itself (and the header darken band/divider below it, see
     -- ns.PAB_BuildPreviewBox) is FIXED at its build-time size: divider/box stay put,
@@ -885,29 +890,29 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
     -- corners -- growDirection still decides which edge of that centered block fills
     -- first (matches the live bar's own fill order), it just doesn't move the
     -- box/divider while doing it.
-    local growDir = cfg.growDirection or "LEFT"
-    local wrapDir = cfg.iconWrapDirection or "LEFT"
+    local growDir = conf.growDirection or "LEFT"
+    local wrapDir = conf.iconWrapDirection or "LEFT"
     local centeredVertical = growDir == "CENTER_VERTICAL"
     local vertical = (growDir == "UP" or growDir == "DOWN" or centeredVertical)
     local corner = CornerFor(growDir, wrapDir)
-    local pad = cfg.padding or 5
-    local rowGap = cfg.rowSpacing or 12
-    local iconSize = cfg.iconSize or 32
-    local cols = math.max(1, cfg.iconsPerRow or (isBuff and 11 or 8))
+    local pad = conf.padding or 5
+    local rowGap = conf.rowSpacing or 12
+    local iconSize = conf.iconSize or 32
+    local cols = math.max(1, conf.iconsPerRow or (isBuff and 11 or 8))
     local count = grid.effectiveMax
     -- NOT sorted here (same "select before sort" reasoning as the real extra icons
     -- below): `list` is much larger than `count` (fake pools are 134/66 entries), so
     -- sorting the WHOLE pool before BuildPreviewSlots selects its filler slice would
     -- let a sort change pull a DIFFERENT subset of fake icons into view. BuildPreviewSlots
     -- selects the fixed filler slice from this stable, shuffled-once order FIRST, sorts after.
-    local list = (pool and #pool > 0 and pool) or (isBuff and PREVIEW_BUFF_SPELLS or PREVIEW_DEBUFF_SPELLS)
-    local listLen = #list
+    local entries = (pool and #pool > 0 and pool) or (isBuff and PREVIEW_BUFF_SPELLS or PREVIEW_DEBUFF_SPELLS)
+    local listLen = #entries
     -- Enchant cells are the leading `slots` entries and carry their own kind,
     -- so the packing below needs no separate count of them.
-    local slots = BuildPreviewSlots(isBuff, cfg, list, listLen, count)
+    local slots = BuildPreviewSlots(isBuff, conf, entries, listLen, count)
     -- Enchants are additive leading cells, so the rendered total exceeds the
     -- bar's aura capacity by however many are showing.
-    local total = #slots
+    local sum = #slots
 
     -- Icon Effects Per-Filter preview (debuffs only): deliberately NOT tied to the
     -- bar's own active Base Filters/Show All Debuffs state -- requiring a matching
@@ -919,7 +924,7 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
     -- (the fake pool has no Blizzard boss/role/priority flags to support that anyway).
     local fxBySlot
     if not isBuff then
-        local fxListView = PAB_FxListView(cfg.fxList)
+        local fxListView = PAB_FxListView(conf.fxList)
         if fxListView and #fxListView > 0 then
             local fakeIdx = {}
             for i = 1, #slots do
@@ -932,9 +937,9 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                 fxBySlot = {}
                 for bi = 1, #fxListView do
                     local perBlock = math.min(2, nFake)
-                    for k = 1, perBlock do
-                        local pos = ((bi - 1) * 2 + (k - 1)) % nFake + 1
-                        fxBySlot[fakeIdx[pos]] = fxListView[bi]
+                    for key = 1, perBlock do
+                        local place = ((bi - 1) * 2 + (key - 1)) % nFake + 1
+                        fxBySlot[fakeIdx[place]] = fxListView[bi]
                     end
                 end
             end
@@ -943,7 +948,7 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
 
     -- Enchant cells share the line with the auras (one engine flow, see the
     -- packing block below), so they count toward the wrap.
-    local rows = math.max(1, math.ceil(total / cols))
+    local rowList = math.max(1, math.ceil(sum / cols))
 
     -- Real per-icon flow packing: each slot's OWN actual render size (its fx Size
     -- override, or the bar's base iconSize) drives its own footprint directly, so
@@ -952,13 +957,13 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
     -- worst-case cell grid (which left too much gap around every normal icon). Shape-
     -- expanded the same as the live bar's own button SetSize (BuildStyle/
     -- EnsurePabSizedStyle), so preview spacing/footprint matches the real bar.
-    local slotSize, slotHeight = {}, cfg.iconShape == "cropped" and {} or nil
-    for i = 1, total do
+    local slotSize, slotHeight = {}, conf.iconShape == "cropped" and {} or nil
+    for i = 1, sum do
         local e = fxBySlot and fxBySlot[i]
         local sz = e and tonumber(e.size)
-        slotSize[i] = PabShapedSize((sz and sz > 0) and sz or iconSize, cfg.iconShape)
+        slotSize[i] = PabShapedSize((sz and sz > 0) and sz or iconSize, conf.iconShape)
         if slotHeight then
-            slotHeight[i] = ns.PAB_CroppedHeight(slotSize[i], cfg)
+            slotHeight[i] = mod.PAB_CroppedHeight(slotSize[i], conf)
         end
     end
 
@@ -970,10 +975,10 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
         -- line and row 2 wraps back to the bar's own edge, no per-row indent.
         -- Their cells come out of the aura cap, so the box always fits.
         local runningX, runningY = {}, 0
-        for r = 0, rows - 1 do
+        for r = 0, rowList - 1 do
             runningX[r] = 0
         end
-        for i = 1, total do
+        for i = 1, sum do
             local r = math.floor((i - 1) / cols)
             colOffset[i] = runningX[r] or 0
             runningX[r] = (runningX[r] or 0)
@@ -982,10 +987,10 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
             rowHeight[r] =
                 math.max(rowHeight[r] or 0, (not vertical) and slotHeight and slotHeight[i] or slotSize[i])
         end
-        for r = 0, rows - 1 do
+        for r = 0, rowList - 1 do
             rowWidth[r] = math.max(0, runningX[r] - pad) -- drop the trailing gap
         end
-        for r = 0, rows - 1 do
+        for r = 0, rowList - 1 do
             rowYOffset[r] = runningY
             runningY = runningY + (rowHeight[r] or 0) + rowGap
         end
@@ -994,10 +999,10 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
     -- axis) and "across-lines" (wrap axis) -- screen X/Y only for horizontal growth.
     -- Vertical growth (Up/Down) swaps which maps to X vs Y below.
     local blockW = 0
-    for r = 0, rows - 1 do
+    for r = 0, rowList - 1 do
         blockW = math.max(blockW, rowWidth[r] or 0)
     end
-    local blockH = math.max(0, (rowYOffset[rows - 1] or 0) + (rowHeight[rows - 1] or 0))
+    local blockH = math.max(0, (rowYOffset[rowList - 1] or 0) + (rowHeight[rowList - 1] or 0))
     local halfPrimary, halfCross = blockW / 2, blockH / 2
     local growUp = (growDir == "UP")
     local wrapRight = (wrapDir == "RIGHT")
@@ -1006,17 +1011,17 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
     -- drift from the real bars or inherit a stale wrap in the centered modes.
     local wrapUp = (corner == "BOTTOMLEFT" or corner == "BOTTOMRIGHT")
 
-    for i = 1, math.max(total, #icons) do
-        if i <= total then
-            local btn = icons[i]
-            if not btn then
-                btn = CreatePreviewIcon(box)
-                icons[i] = btn
+    for i = 1, math.max(sum, #icons) do
+        if i <= sum then
+            local button = icons[i]
+            if not button then
+                button = CreatePreviewIcon(boxFrame)
+                icons[i] = button
             end
 
-            local row = math.floor((i - 1) / cols)
+            local rowFrame = math.floor((i - 1) / cols)
             local withinLineStep = colOffset[i]
-            local acrossLinesStep = rowYOffset[row]
+            local acrossLinesStep = rowYOffset[rowFrame]
             -- btn's own anchor point is `corner` (matching growDirection/
             -- iconWrapDirection), placed at an offset from the box's CENTER -- see the
             -- block-centering comment above `local rows = ...`. Vertical growth
@@ -1036,120 +1041,124 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                 btnX = (corner == "TOPRIGHT" or corner == "BOTTOMRIGHT") and (halfPrimary - withinLineStep)
                     or (-halfPrimary + withinLineStep)
             end
-            btn:ClearAllPoints()
-            btn:SetPoint(centeredVertical and "CENTER" or corner, box, "CENTER", btnX, btnY)
-            btn:SetSize(slotSize[i], slotHeight and slotHeight[i] or slotSize[i])
+            button:ClearAllPoints()
+            button:SetPoint(centeredVertical and "CENTER" or corner, boxFrame, "CENTER", btnX, btnY)
+            button:SetSize(slotSize[i], slotHeight and slotHeight[i] or slotSize[i])
 
-            local slot = slots[i]
+            local slotIndex = slots[i]
             local dispel
 
-            if slot.kind == "placeholder" then
+            if slotIndex.kind == "placeholder" then
                 -- Flat grey box + centered red X (see CreatePreviewIcon) instead of a
                 -- fake spell icon -- nothing would actually render on the real bar
                 -- here. Border still draws -- only icon texture and duration/stack
                 -- text are placeholder-specific.
-                btn.icon:SetTexture(nil)
-                btn.icon:SetColorTexture(0.16, 0.16, 0.16, 1)
-                btn.placeholder:ClearAllPoints()
+                button.icon:SetTexture(nil)
+                button.icon:SetColorTexture(0.16, 0.16, 0.16, 1)
+                button.placeholder:ClearAllPoints()
                 local inset = iconSize * 0.2
-                btn.placeholder:SetPoint("TOPLEFT", btn.icon, "TOPLEFT", inset, -inset)
-                btn.placeholder:SetPoint("BOTTOMRIGHT", btn.icon, "BOTTOMRIGHT", -inset, inset)
-                btn.placeholder:Show()
-                btn.textHost:Hide()
+                button.placeholder:SetPoint("TOPLEFT", button.icon, "TOPLEFT", inset, -inset)
+                button.placeholder:SetPoint("BOTTOMRIGHT", button.icon, "BOTTOMRIGHT", -inset, inset)
+                button.placeholder:Show()
+                button.textHost:Hide()
             else
-                btn.placeholder:Hide()
-                btn.textHost:Show()
+                button.placeholder:Hide()
+                button.textHost:Show()
 
-                if slot.kind == "enchant" then
+                if slotIndex.kind == "enchant" then
                     -- Weapon enchant: an ITEM texture, not a spell icon -- the
                     -- live buttons paint the equipped weapon the same way.
-                    btn.icon:SetTexture(PreviewEnchantIcon(slot.slot))
+                    button.icon:SetTexture(PreviewEnchantIcon(slotIndex.slot))
                 else
-                    local spellID
-                    if slot.kind == "extra" then
+                    local spellId
+                    if slotIndex.kind == "extra" then
                         -- Real Extra Spell: always its own actual icon, never folded into
                         -- the fake cycling pool.
-                        spellID = slot.spellID
+                        spellId = slotIndex.spellID
                     else -- "fake"
-                        local entry = slot.entry
-                        spellID = isBuff and entry or entry.id
-                        dispel = (not isBuff) and entry.dispel or nil
+                        local record = slotIndex.entry
+                        spellId = isBuff and record or record.id
+                        dispel = (not isBuff) and record.dispel or nil
                     end
-                    btn.icon:SetTexture(PreviewSpellIcon(spellID))
+                    button.icon:SetTexture(PreviewSpellIcon(spellId))
                 end
                 -- The live icons' texcoords, the shaped fill included (AuraKit).
-                btn.icon:SetTexCoord(CludesUI.AuraKit.IconTexCoord(style))
+                button.icon:SetTexCoord(CludesUI.AuraKit.IconTexCoord(look))
             end
 
             -- Mirrors CludesUI_AuraKit.lua's ApplyStyleToRegions, unguarded (plain regions).
-            local shapeActive = style.iconShape and style.iconShape ~= "none" and style.shapeMaskPath
+            local shapeActive = look.iconShape and look.iconShape ~= "none" and look.shapeMaskPath
             if shapeActive then
-                btn.shapeMask:SetTexture(style.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-                btn.shapeMask:SetAllPoints(btn)
-                btn.shapeMask:Show()
-                if btn._shapeApplied ~= style.iconShape then
-                    pcall(btn.icon.RemoveMaskTexture, btn.icon, btn.shapeMask)
-                    btn.icon:AddMaskTexture(btn.shapeMask)
-                    btn._shapeApplied = style.iconShape
+                button.shapeMask:SetTexture(
+                    look.shapeMaskPath,
+                    "CLAMPTOBLACKADDITIVE",
+                    "CLAMPTOBLACKADDITIVE"
+                )
+                button.shapeMask:SetAllPoints(button)
+                button.shapeMask:Show()
+                if button._shapeApplied ~= look.iconShape then
+                    pcall(button.icon.RemoveMaskTexture, button.icon, button.shapeMask)
+                    button.icon:AddMaskTexture(button.shapeMask)
+                    button._shapeApplied = look.iconShape
                 end
             else
-                if btn._shapeApplied then
-                    pcall(btn.icon.RemoveMaskTexture, btn.icon, btn.shapeMask)
-                    btn._shapeApplied = nil
+                if button._shapeApplied then
+                    pcall(button.icon.RemoveMaskTexture, button.icon, button.shapeMask)
+                    button._shapeApplied = nil
                 end
-                btn.shapeMask:Hide()
+                button.shapeMask:Hide()
             end
 
-            btn.border:SetAllPoints(shapeActive and btn or btn.icon)
-            btn.border:SetFrameLevel(
-                style.border and style.border.behind and math.max(0, btn:GetFrameLevel() - 1)
-                    or (btn:GetFrameLevel() + 1)
+            button.border:SetAllPoints(shapeActive and button or button.icon)
+            button.border:SetFrameLevel(
+                look.border and look.border.behind and math.max(0, button:GetFrameLevel() - 1)
+                    or (button:GetFrameLevel() + 1)
             )
             -- Type-icon host above the border's strip container (+1) and the fx
             -- border/glow hosts (+1/+2), like the live dispel holder clears them.
-            btn.typeHost:SetFrameLevel(btn.border:GetFrameLevel() + 3)
-            local PP = CludesUI and CludesUI.PanelPP
-            if PP and style.border then
-                local br, bg, bb, ba = style.border[1], style.border[2], style.border[3], style.border[4]
+            button.typeHost:SetFrameLevel(button.border:GetFrameLevel() + 3)
+            local Pix = CludesUI and CludesUI.PanelPP
+            if Pix and look.border then
+                local br, backdrop, bb, ba = look.border[1], look.border[2], look.border[3], look.border[4]
                 if dispel and dcMap and dcMap[dispel] then
                     local c = dcMap[dispel]
-                    br, bg, bb, ba = c.r, c.g, c.b, 1
+                    br, backdrop, bb, ba = c.r, c.g, c.b, 1
                 end
-                local size = style.border.size or 1
-                if shapeActive and style.shapeBorderPath and PP.ApplyMaskedShapeBorder then
-                    CludesUI.HideBorderStyle(btn.border)
-                    if btn.borderState and btn.borderState._secretBorderEdges then
-                        for _, tex in pairs(btn.borderState._secretBorderEdges) do
+                local dim = look.border.size or 1
+                if shapeActive and look.shapeBorderPath and Pix.ApplyMaskedShapeBorder then
+                    CludesUI.HideBorderStyle(button.border)
+                    if button.borderState and button.borderState._secretBorderEdges then
+                        for _, tex in pairs(button.borderState._secretBorderEdges) do
                             tex:Hide()
                         end
                     end
-                    PP:ApplyMaskedShapeBorder(
-                        btn.border,
-                        btn.shapeMask,
-                        style.shapeBorderPath,
-                        style.shapeBorderSize or size,
+                    Pix:ApplyMaskedShapeBorder(
+                        button.border,
+                        button.shapeMask,
+                        look.shapeBorderPath,
+                        look.shapeBorderSize or dim,
                         br,
-                        bg,
+                        backdrop,
                         bb,
                         ba
                     )
-                    btn.border:Show()
+                    button.border:Show()
                 else
-                    if PP.HideMaskedShapeBorder then
-                        PP:HideMaskedShapeBorder(btn.border)
-                    elseif btn.border._shapeBorderTex then
-                        btn.border._shapeBorderTex:Hide()
+                    if Pix.HideMaskedShapeBorder then
+                        Pix:HideMaskedShapeBorder(button.border)
+                    elseif button.border._shapeBorderTex then
+                        button.border._shapeBorderTex:Hide()
                     end
-                    local b = style.border
+                    local b = look.border
                     local appliedSize = (b.texture and b.texture ~= "" and b.texture ~= "solid")
-                            and (b.textureSize or size)
-                        or size
+                            and (b.textureSize or dim)
+                        or dim
                     CludesUI.ApplySecretSafeBorderStyle(
-                        btn.border,
-                        btn.borderState,
+                        button.border,
+                        button.borderState,
                         appliedSize,
                         br,
-                        bg,
+                        backdrop,
                         bb,
                         ba,
                         b.texture or "solid",
@@ -1158,98 +1167,113 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                         b.shiftX,
                         b.shiftY,
                         b.addonKey or "unitframes",
-                        b.sizeKey or size,
+                        b.sizeKey or dim,
                         b.edgeScale,
                         b.edgePx
                     )
-                    btn.borderMade = true
+                    button.borderMade = true
                 end
             else
                 if CludesUI.ApplySecretSafeBorderStyle then
-                    CludesUI.ApplySecretSafeBorderStyle(btn.border, btn.borderState, 0, 0, 0, 0, 0, "solid")
-                elseif PP and PP.HideBorder then
-                    PP.HideBorder(btn.border)
+                    CludesUI.ApplySecretSafeBorderStyle(
+                        button.border,
+                        button.borderState,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        "solid"
+                    )
+                elseif Pix and Pix.HideBorder then
+                    Pix.HideBorder(button.border)
                 else
-                    btn.border:Hide()
+                    button.border:Hide()
                 end
-                if PP and PP.HideMaskedShapeBorder then
-                    PP:HideMaskedShapeBorder(btn.border)
-                elseif btn.border._shapeBorderTex then
-                    btn.border._shapeBorderTex:Hide()
+                if Pix and Pix.HideMaskedShapeBorder then
+                    Pix:HideMaskedShapeBorder(button.border)
+                elseif button.border._shapeBorderTex then
+                    button.border._shapeBorderTex:Hide()
                 end
             end
 
             -- Dispel-type indicator icon (style.dispelTypeIcon): the live bar's
             -- engine channel picks the art per aura; here the fake entry's own
             -- dispel token does. Drawn on its own host above the swipe and border.
-            local ti = style.dispelTypeIcon
+            local ti = look.dispelTypeIcon
             if ti and dispel and PV_DISPEL_ICON_ATLAS[dispel] then
-                if not btn.typeIcon then
-                    btn.typeIcon = btn.typeHost:CreateTexture(nil, "OVERLAY", nil, 3)
+                if not button.typeIcon then
+                    button.typeIcon = button.typeHost:CreateTexture(nil, "OVERLAY", nil, 3)
                 end
-                btn.typeIcon:SetAtlas(PV_DISPEL_ICON_ATLAS[dispel])
+                button.typeIcon:SetAtlas(PV_DISPEL_ICON_ATLAS[dispel])
                 -- Geometry from the (panel-scaled) cfg, like iconSize above --
                 -- style carries the live pixel-snapped size, wrong units here.
-                local tiSz = cfg.dispelIconSize or 16
-                btn.typeIcon:SetSize(tiSz, tiSz)
-                btn.typeIcon:ClearAllPoints()
+                local tiSz = conf.dispelIconSize or 16
+                button.typeIcon:SetSize(tiSz, tiSz)
+                button.typeIcon:ClearAllPoints()
                 local tiPt = PV_DISPEL_ICON_POINTS[ti.pos] or "CENTER"
-                btn.typeIcon:SetPoint(tiPt, btn, tiPt, cfg.dispelIconOffsetX or 0, cfg.dispelIconOffsetY or 0)
-                btn.typeIcon:Show()
-            elseif btn.typeIcon then
-                btn.typeIcon:Hide()
+                button.typeIcon:SetPoint(
+                    tiPt,
+                    button,
+                    tiPt,
+                    conf.dispelIconOffsetX or 0,
+                    conf.dispelIconOffsetY or 0
+                )
+                button.typeIcon:Show()
+            elseif button.typeIcon then
+                button.typeIcon:Hide()
             end
 
-            local cdMaskKey = shapeActive and style.iconShape or nil
-            if btn._cdShapeApplied ~= cdMaskKey then
+            local cdMaskKey = shapeActive and look.iconShape or nil
+            if button._cdShapeApplied ~= cdMaskKey then
                 if cdMaskKey then
-                    pcall(btn.cooldown.AddMaskTexture, btn.cooldown, btn.shapeMask)
-                    if btn.cooldown.SetSwipeTexture then
-                        pcall(btn.cooldown.SetSwipeTexture, btn.cooldown, style.shapeMaskPath)
+                    pcall(button.cooldown.AddMaskTexture, button.cooldown, button.shapeMask)
+                    if button.cooldown.SetSwipeTexture then
+                        pcall(button.cooldown.SetSwipeTexture, button.cooldown, look.shapeMaskPath)
                     end
                 else
-                    pcall(btn.cooldown.RemoveMaskTexture, btn.cooldown, btn.shapeMask)
-                    if btn.cooldown.SetSwipeTexture then
-                        pcall(btn.cooldown.SetSwipeTexture, btn.cooldown, "")
+                    pcall(button.cooldown.RemoveMaskTexture, button.cooldown, button.shapeMask)
+                    if button.cooldown.SetSwipeTexture then
+                        pcall(button.cooldown.SetSwipeTexture, button.cooldown, "")
                     end
                 end
-                btn._cdShapeApplied = cdMaskKey
+                button._cdShapeApplied = cdMaskKey
             end
 
-            if slot.kind ~= "placeholder" then
-                btn.textHost:SetAllPoints(btn)
-                btn.textHost:SetFrameLevel(btn:GetFrameLevel() + 2)
+            if slotIndex.kind ~= "placeholder" then
+                button.textHost:SetAllPoints(button)
+                button.textHost:SetFrameLevel(button:GetFrameLevel() + 2)
 
-                btn.duration:ClearAllPoints()
-                btn.duration:SetFont(fontPath, style.durationFontSize or 11, "OUTLINE")
-                btn.duration:SetPoint(
-                    style.durationPoint or "CENTER",
-                    btn,
-                    style.durationRelPoint or "CENTER",
-                    style.durationX or 0,
-                    style.durationY or 0
+                button.duration:ClearAllPoints()
+                button.duration:SetFont(fontFile, look.durationFontSize or 11, "OUTLINE")
+                button.duration:SetPoint(
+                    look.durationPoint or "CENTER",
+                    button,
+                    look.durationRelPoint or "CENTER",
+                    look.durationX or 0,
+                    look.durationY or 0
                 )
-                local dc = style.durationColor
-                btn.duration:SetTextColor(dc and dc.r or 1, dc and dc.g or 1, dc and dc.b or 1)
-                btn.duration:SetShown(not style.hideDurationText)
-                local pv = slot.pv or i
-                btn.duration:SetText(PREVIEW_DURATIONS[((pv - 1) % #PREVIEW_DURATIONS) + 1])
+                local dc = look.durationColor
+                button.duration:SetTextColor(dc and dc.r or 1, dc and dc.g or 1, dc and dc.b or 1)
+                button.duration:SetShown(not look.hideDurationText)
+                local pv = slotIndex.pv or i
+                button.duration:SetText(PREVIEW_DURATIONS[((pv - 1) % #PREVIEW_DURATIONS) + 1])
 
-                btn.stack:ClearAllPoints()
-                btn.stack:SetFont(fontPath, style.stackFontSize or 11, "OUTLINE")
-                btn.stack:SetPoint(
-                    style.stackPoint or "BOTTOMRIGHT",
-                    btn,
-                    style.stackPoint or "BOTTOMRIGHT",
-                    style.stackX or 0,
-                    style.stackY or 0
+                button.stack:ClearAllPoints()
+                button.stack:SetFont(fontFile, look.stackFontSize or 11, "OUTLINE")
+                button.stack:SetPoint(
+                    look.stackPoint or "BOTTOMRIGHT",
+                    button,
+                    look.stackPoint or "BOTTOMRIGHT",
+                    look.stackX or 0,
+                    look.stackY or 0
                 )
-                local sc = style.stackColor
-                btn.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
+                local sc = look.stackColor
+                button.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
                 local stackVal = PREVIEW_STACKS[((pv - 1) % #PREVIEW_STACKS) + 1]
-                btn.stack:SetShown(style.showStacks ~= false and stackVal ~= nil)
+                button.stack:SetShown(look.showStacks ~= false and stackVal ~= nil)
                 if stackVal then
-                    btn.stack:SetText(stackVal)
+                    button.stack:SetText(stackVal)
                 end
             end
 
@@ -1257,11 +1281,11 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
             -- fraction on an hour-long cooldown, so each icon shows a varied
             -- mid-flight state without visibly animating. Reverse per the bar's
             -- Reverse Swipe cog; placeholder slots carry no swipe.
-            local cd = btn.cooldown
+            local cd = button.cooldown
             if cd then
-                if slot.kind ~= "placeholder" and style.hideSwipe ~= true then
+                if slotIndex.kind ~= "placeholder" and look.hideSwipe ~= true then
                     local dur = 3600
-                    cd:SetReverse(style.cooldownReverse ~= false)
+                    cd:SetReverse(look.cooldownReverse ~= false)
                     cd:SetCooldown(GetTime() - dur * (1 - GetPvCDSeed(i)), dur)
                     cd:Show()
                 else
@@ -1272,9 +1296,9 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
 
             -- nil clears any fx left over on a reused icon frame from a previous
             -- render (slot not claimed this pass, or block removed/deactivated).
-            ApplyPreviewFx(btn, fxBySlot and fxBySlot[i])
+            ApplyPreviewFx(button, fxBySlot and fxBySlot[i])
 
-            btn:Show()
+            button:Show()
         elseif icons[i] then
             icons[i]:Hide()
         end
@@ -1307,11 +1331,11 @@ end
 --   id. cfg: the same cfg table the caller already resolved for its own field builders.
 -- Returns the outerFrame-local Y where the preview area ends -- passed straight to
 -- WrapCompensatedBody(outerFrame, returnedY) as the scroll area's top offset.
-function ns.PAB_BuildPreviewBox(outerFrame, fontPath, startY, kind, id, cfg)
+function mod.PAB_BuildPreviewBox(outerFrame, fontFile, startY, kindOf, ident, conf)
     -- Options page only: under the kept manager root the options frame pool
     -- (CludesUI_FramePool.lua) hands the next render these frames back.
     local CreateFrame = CludesUI._Pool.CreateFrame
-    local isBuff = kind == "buff"
+    local isBuff = kindOf == "buff"
     local sy = startY
 
     do
@@ -1340,11 +1364,11 @@ function ns.PAB_BuildPreviewBox(outerFrame, fontPath, startY, kind, id, cfg)
         hdrBody:SetSize(visibleW + padDiff * 2, hdrH)
 
         local TS = CludesUI.TEXT_SECTION or { r = 0.5, g = 0.5, b = 0.5, a = 1 }
-        local label = hdrBody:CreateFontString(nil, "OVERLAY")
-        label:SetFont(fontPath, 12, "")
-        label:SetTextColor(TS.r, TS.g, TS.b, TS.a or 1)
-        label:SetPoint("BOTTOMLEFT", hdrBody, "BOTTOMLEFT", contentPad, 0)
-        label:SetText(CludesUI.L("PREVIEW"))
+        local labelText = hdrBody:CreateFontString(nil, "OVERLAY")
+        labelText:SetFont(fontFile, 12, "")
+        labelText:SetTextColor(TS.r, TS.g, TS.b, TS.a or 1)
+        labelText:SetPoint("BOTTOMLEFT", hdrBody, "BOTTOMLEFT", contentPad, 0)
+        labelText:SetText(CludesUI.L("PREVIEW"))
 
         local BC = CludesUI.BORDER_COLOR or { r = 1, g = 1, b = 1 }
         local sep = hdrBody:CreateTexture(nil, "ARTWORK")
@@ -1358,14 +1382,14 @@ function ns.PAB_BuildPreviewBox(outerFrame, fontPath, startY, kind, id, cfg)
 
     -- Sized from the SCALED cfg (see ScaledPreviewCfg/PreviewScaleFactor) so the
     -- box's footprint matches what RenderPreviewIcons actually draws into it.
-    local grid = ComputeGrid(isBuff, ScaledPreviewCfg(cfg, isBuff))
+    local grid = ComputeGrid(isBuff, ScaledPreviewCfg(conf, isBuff))
     -- +30 (scaled) extra vertical room for duration/stack text above/below the icon
     -- grid -- ComputeGrid's width/height are the icon grid's bounding box only (same
     -- as the real bar), text can render outside it depending on Duration/Stacks Position.
     local boxHeight = grid.height + 30 * PreviewScaleFactor()
-    local box = CreateFrame("Frame", nil, outerFrame)
-    box:SetPoint("TOP", outerFrame, "TOP", 0, sy)
-    box:SetSize(math.max(grid.width, 1), boxHeight)
+    local boxFrame = CreateFrame("Frame", nil, outerFrame)
+    boxFrame:SetPoint("TOP", outerFrame, "TOP", 0, sy)
+    boxFrame:SetSize(math.max(grid.width, 1), boxHeight)
 
     local headerBg = outerFrame._pabPreviewHeaderBg
     if not headerBg then
@@ -1404,11 +1428,11 @@ function ns.PAB_BuildPreviewBox(outerFrame, fontPath, startY, kind, id, cfg)
         pool = BuildDebuffPreviewPool()
     end
     activePreview = {
-        kind = kind,
-        id = id,
-        box = box,
+        kind = kindOf,
+        id = ident,
+        box = boxFrame,
         icons = icons,
-        fontPath = fontPath,
+        fontPath = fontFile,
         pool = pool,
         outerFrame = outerFrame,
         boxTopY = sy,
@@ -1417,9 +1441,9 @@ function ns.PAB_BuildPreviewBox(outerFrame, fontPath, startY, kind, id, cfg)
         divider = divider,
         -- the box's dress (nil off the pool): PAB_MaybeRefreshPreview stands down
         -- once a later render parked the box or dressed it again
-        gen = CludesUI._Pool.Gen(box),
+        gen = CludesUI._Pool.Gen(boxFrame),
     }
-    RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
+    RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
 
     return bottomY
 end
@@ -1429,9 +1453,9 @@ end
 -- PAB_MaybeRefreshPreview resizes the box below. Set on activePreview (not a
 -- standalone module-level var) so a callback from a since-torn-down detail pane can
 -- never fire against the wrong pane's box after a tab switch rebuilds activePreview.
-function ns.PAB_SetPreviewResizeHandler(fn)
+function mod.PAB_SetPreviewResizeHandler(func)
     if activePreview then
-        activePreview.onResize = fn
+        activePreview.onResize = func
     end
 end
 
@@ -1439,14 +1463,14 @@ end
 -- PAB_ReloadCustomBuffBar, PAB_ReloadCustomDebuffBar) so a currently-open preview box
 -- stays in sync with slider drags/dropdown changes without CUI_PlayerAuraBars_
 -- ManagerPages.lua needing to know the preview exists or wrap its ApplyBar() closures.
-PAB_MaybeRefreshPreview = function(kind, id)
-    if not (activePreview and activePreview.kind == kind and activePreview.id == id) then
+PAB_MaybeRefreshPreview = function(kindOf, ident)
+    if not (activePreview and activePreview.kind == kindOf and activePreview.id == ident) then
         return
     end
     -- The page was left: its root waits parked and hidden until its next
     -- render, which builds a new preview, so nothing is drawn into the hidden
     -- box meanwhile (ns._pabRoot is nil only while the root is parked).
-    if not ns._pabRoot then
+    if not mod._pabRoot then
         activePreview = nil
         return
     end
@@ -1459,15 +1483,15 @@ PAB_MaybeRefreshPreview = function(kind, id)
         activePreview = nil
         return
     end
-    local cfg, isBuff = ResolvePreviewCfg(kind, id)
-    if not cfg then
+    local conf, isBuff = ResolvePreviewCfg(kindOf, ident)
+    if not conf then
         return
     end
 
     -- Re-derive the box's footprint from the SAME scaled grid RenderPreviewIcons is
     -- about to draw into, mirroring PAB_BuildPreviewBox's own boxHeight/bottomY math
     -- (kept in sync manually).
-    local grid = ComputeGrid(isBuff, ScaledPreviewCfg(cfg, isBuff))
+    local grid = ComputeGrid(isBuff, ScaledPreviewCfg(conf, isBuff))
     local boxHeight = grid.height + 30 * PreviewScaleFactor()
     activePreview.box:SetSize(math.max(grid.width, 1), boxHeight)
 
@@ -1488,11 +1512,11 @@ PAB_MaybeRefreshPreview = function(kind, id)
         activePreview.box,
         activePreview.icons,
         isBuff,
-        cfg,
+        conf,
         activePreview.fontPath,
         activePreview.pool
     )
 end
 SetMaybeRefreshPreview(PAB_MaybeRefreshPreview)
 
-I.broken = false
+Inner.broken = false

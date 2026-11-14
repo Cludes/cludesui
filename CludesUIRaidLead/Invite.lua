@@ -10,16 +10,16 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  soon as there is someone to convert it with. Auto Promote makes everyone
 --  on the assistant list an assistant when they join, while you lead.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local PARTY_MAX = 5
 
-local function Say(text)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text)
+local function Say(textValue)
+    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
 end
 
 local function Settings()
-    local p = ns.RaidLeadDB()
+    local p = mod.RaidLeadDB()
     p.invites = p.invites or {}
     local s = p.invites
     s.list = s.list or ""
@@ -29,19 +29,19 @@ local function Settings()
     end
     return s
 end
-ns.InviteSettings = Settings
+mod.InviteSettings = Settings
 
 --- Names from a list: split on commas, semicolons and white space.
-function ns.SplitNames(text)
-    local out, seen = {}, {}
-    for name in (text or ""):gmatch("[^,;%s]+") do
+function mod.SplitNames(textValue)
+    local result, seen = {}, {}
+    for name in (textValue or ""):gmatch("[^,;%s]+") do
         local key = name:lower()
         if not seen[key] then
             seen[key] = true
-            out[#out + 1] = name
+            result[#result + 1] = name
         end
     end
-    return out
+    return result
 end
 
 local function InGroup(name)
@@ -74,12 +74,12 @@ local function InviteSome()
 end
 
 --- Invites everyone on the saved list who is not in the group yet.
-function ns.InviteList()
+function mod.InviteList()
     if IsInGroup() and not (UnitIsGroupLeader("player") or UnitIsGroupAssistant("player")) then
         return Say("only the leader or an assistant can invite.")
     end
     wipe(pending)
-    for _, name in ipairs(ns.SplitNames(Settings().list)) do
+    for _, name in ipairs(mod.SplitNames(Settings().list)) do
         if not InGroup(name) then
             pending[#pending + 1] = name
         end
@@ -94,26 +94,26 @@ end
 local promoted = {}
 
 --- Makes everyone on the assistant list who is in the raid an assistant.
-function ns.PromoteList(quiet)
+function mod.PromoteList(quiet)
     if not (IsInRaid() and UnitIsGroupLeader("player")) then
         if not quiet then
             Say("only the raid leader can promote assistants.")
         end
         return
     end
-    local n = 0
-    for _, name in ipairs(ns.SplitNames(Settings().promote)) do
+    local num = 0
+    for _, name in ipairs(mod.SplitNames(Settings().promote)) do
         local short = name:match("^([^%-]+)") or name
         if UnitInRaid(short) and not UnitIsGroupAssistant(short) and not UnitIsGroupLeader(short) then
             if not (quiet and promoted[short:lower()]) then
                 promoted[short:lower()] = true
                 pcall(C_PartyInfo.PromoteToAssistant, short)
-                n = n + 1
+                num = num + 1
             end
         end
     end
     if not quiet then
-        Say(n > 0 and ("promoted " .. n .. ".") or "nobody on the list needed promoting.")
+        Say(num > 0 and ("promoted " .. num .. ".") or "nobody on the list needed promoting.")
     end
 end
 
@@ -125,7 +125,7 @@ events:SetScript("OnEvent", function()
     end
     if Settings().autoPromote then
         C_Timer.After(1, function()
-            ns.PromoteList(true)
+            mod.PromoteList(true)
         end)
     end
 end)

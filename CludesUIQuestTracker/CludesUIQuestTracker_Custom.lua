@@ -14,8 +14,8 @@ end
 -- tracked recipes: untracking, zone auto-track, filters and sorting all live
 -- in our own list (the Forever file's quest tools, read-only).
 -------------------------------------------------------------------------------
-local _, ns = ...
-local EQT = ns.EQT
+local _, mod = ...
+local EQT = mod.EQT
 local IsSecret = CludesUI.IsSecret
 local function Cfg(k)
     return EQT.Cfg(k)
@@ -34,7 +34,7 @@ local UNLOCK_KEY = "EQT_Tracker"
 -- ns.CustomTrackerWanted decides it from the profile's style and pick.
 -- Its spot is customPos (none until one is taken or saved).
 do
-    local qt = ns.QT_DEFAULTS.profile.questTracker
+    local qt = mod.QT_DEFAULTS.profile.questTracker
     qt.customGroupByZone = true
     qt.customWidth = DEF_WIDTH
     qt.customMaxHeight = DEF_HEIGHT
@@ -65,9 +65,9 @@ local WHEEL = 40
 -- Inert until InitCustom registers events (zero cost while off).
 local evt = CreateFrame("Frame")
 
-local frame, header, scroll, child, track, thumb
+local widget, headerFrame, scroll, childFrame, track, thumb
 local lines, used = {}, 0
-local order, zoneOf, seen = {}, {}, {}
+local sequence, zoneOf, seen = {}, {}, {}
 local pending = false
 local stale = false -- skipped a render while hidden
 local fontGen = 1
@@ -93,11 +93,11 @@ local function CharDB()
         all = {}
         CludesUIDB.questTrackerChars = all
     end
-    local guid = UnitGUID("player")
-    local sv = all[guid]
+    local unitGuid = UnitGUID("player")
+    local sv = all[unitGuid]
     if type(sv) ~= "table" then
         sv = {}
-        all[guid] = sv
+        all[unitGuid] = sv
     end
     if type(sv.ctUntracked) ~= "table" then
         sv.ctUntracked = {}
@@ -132,25 +132,25 @@ end
 -- Stable sort of order by listRank, lowest first.
 local function SortByRank()
     wipe(listPos)
-    for i, questID in ipairs(order) do
-        listPos[questID] = i
+    for idx, questID in ipairs(sequence) do
+        listPos[questID] = idx
     end
-    table.sort(order, ByRank)
+    table.sort(sequence, ByRank)
 end
 
 local function BuildList()
-    wipe(order)
+    wipe(sequence)
     wipe(seen)
     wipe(listRank)
-    local db = CharDB()
-    local untracked, pinned = db.ctUntracked, db.ctPinned
+    local saved = CharDB()
+    local untracked, pinned = saved.ctUntracked, saved.ctPinned
     local watched = seen
-    for i = 1, C_QuestLog.GetNumQuestWatches() do
-        local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
+    for idx = 1, C_QuestLog.GetNumQuestWatches() do
+        local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(idx)
         if questID then
             watched[questID] = true
             if not untracked[questID] then
-                order[#order + 1] = questID
+                sequence[#sequence + 1] = questID
             end
         end
     end
@@ -158,18 +158,18 @@ local function BuildList()
     local log
     log, zoneOf = EQT.QuestLogSnapshot()
     local auto = EQT.AutoTrackOn()
-    for _, info in ipairs(log) do
-        local questID = info.questID
-        if questID and not info.isHeader then
-            if pinned[questID] or (auto and EQT.QuestInArea(info, zoneOf[questID])) then
+    for _, details in ipairs(log) do
+        local questID = details.questID
+        if questID and not details.isHeader then
+            if pinned[questID] or (auto and EQT.QuestInArea(details, zoneOf[questID])) then
                 if
                     not watched[questID]
                     and not untracked[questID]
-                    and not info.isHidden
-                    and not info.isTask
-                    and not info.isBounty
+                    and not details.isHidden
+                    and not details.isTask
+                    and not details.isBounty
                 then
-                    order[#order + 1] = questID
+                    sequence[#sequence + 1] = questID
                 end
             elseif untracked[questID] and not watched[questID] then
                 -- An auto-tracked quest untracked here: free again once out of the zone.
@@ -177,14 +177,14 @@ local function BuildList()
             end
         end
     end
-    for i = #order, 1, -1 do
-        if EQT.IsQuestFiltered(order[i]) then
-            table.remove(order, i)
+    for idx = #sequence, 1, -1 do
+        if EQT.IsQuestFiltered(sequence[idx]) then
+            table.remove(sequence, idx)
         end
     end
-    EQT.SortQuestList(order)
+    EQT.SortQuestList(sequence)
     if next(pinned) then
-        for _, questID in ipairs(order) do
+        for _, questID in ipairs(sequence) do
             listRank[questID] = pinned[questID] and 0 or 1
         end
         SortByRank()
@@ -194,12 +194,12 @@ local function BuildList()
     end
     -- Zones in order of their first quest.
     wipe(zoneRank)
-    local n = 0
-    for _, questID in ipairs(order) do
+    local num = 0
+    for _, questID in ipairs(sequence) do
         local z = zoneOf[questID] or ""
         if not zoneRank[z] then
-            n = n + 1
-            zoneRank[z] = n
+            num = num + 1
+            zoneRank[z] = num
         end
         listRank[questID] = zoneRank[z]
     end
@@ -212,11 +212,11 @@ end
 local OnLineClick, OnLineEnter, OnLineLeave, ToggleFocus, SyncItems, HideOverlay, Queue -- defined below
 
 -- Outline and shadow follow the Fonts page's Module Outline.
-local function StyleText(fs, size)
-    CludesUI.PrimeFontShadow(fs, CludesUI.GetFontUseShadow("questTracker") and true or false)
+local function StyleText(fontStr, dim)
+    CludesUI.PrimeFontShadow(fontStr, CludesUI.GetFontUseShadow("questTracker") and true or false)
     local flag = CludesUI.GetFontOutlineFlag("questTracker")
-    if not pcall(fs.SetFont, fs, EQT.GetFont(), size, flag) then
-        fs:SetFont("Fonts/FRIZQT__.TTF", size, flag)
+    if not pcall(fontStr.SetFont, fontStr, EQT.GetFont(), dim, flag) then
+        fontStr:SetFont("Fonts/FRIZQT__.TTF", dim, flag)
     end
 end
 
@@ -229,11 +229,11 @@ local SIZE_KEY = {
 local SIZE_DEF = { zone = 13, quest = 12, recipe = 12, obj = 10 }
 
 -- key: objective identity, so a flash survives re-renders of the same row.
-local function AcquireLine(kind, id, text, x, y, width, key)
+local function AcquireLine(kindOf, ident, textValue, posX, posY, width, key)
     used = used + 1
     local l = lines[used]
     if not l then
-        l = CreateFrame("Button", nil, child)
+        l = CreateFrame("Button", nil, childFrame)
         l:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         l.text = l:CreateFontString(nil, "OVERLAY")
         l.text:SetPoint("TOPLEFT")
@@ -243,22 +243,22 @@ local function AcquireLine(kind, id, text, x, y, width, key)
         l:SetScript("OnLeave", OnLineLeave)
         lines[used] = l
     end
-    if l.kind ~= kind or l.gen ~= fontGen then
-        l.kind, l.gen = kind, fontGen
-        StyleText(l.text, Cfg(SIZE_KEY[kind]) or SIZE_DEF[kind])
-        l:EnableMouse(kind ~= "obj")
+    if l.kind ~= kindOf or l.gen ~= fontGen then
+        l.kind, l.gen = kindOf, fontGen
+        StyleText(l.text, Cfg(SIZE_KEY[kindOf]) or SIZE_DEF[kindOf])
+        l:EnableMouse(kindOf ~= "obj")
         l.lastText = nil
         l.dashW = nil -- a timer bar's indent, measured in this font
     end
-    l.id = id
+    l.id = ident
     if l.flash and l.key ~= key then
         l.flash:Stop()
     end
     l.key = key
-    if l.focus and kind ~= "quest" then
+    if l.focus and kindOf ~= "quest" then
         l.focus:Hide()
     end
-    if l.slots and kind ~= "quest" then
+    if l.slots and kindOf ~= "quest" then
         for _, s in ipairs(l.slots) do
             s:Hide()
         end
@@ -267,12 +267,12 @@ local function AcquireLine(kind, id, text, x, y, width, key)
         l.bar:Hide()
     end
     -- Only a changed row is measured or moved.
-    local wrap = Cfg(kind == "obj" and "customWrapObjectives" or "customWrapTitles") ~= false
-    if l.lastText ~= text or l.lastWidth ~= width or l.lastWrap ~= wrap then
-        l.lastText, l.lastWidth, l.lastWrap = text, width, wrap
+    local wrap = Cfg(kindOf == "obj" and "customWrapObjectives" or "customWrapTitles") ~= false
+    if l.lastText ~= textValue or l.lastWidth ~= width or l.lastWrap ~= wrap then
+        l.lastText, l.lastWidth, l.lastWrap = textValue, width, wrap
         l.text:SetWordWrap(wrap)
         l.text:SetWidth(width)
-        l.text:SetText(text)
+        l.text:SetText(textValue)
         l.lastH = math.ceil(l.text:GetStringHeight())
         -- Font not ready: measure again next pass.
         if l.lastH <= 0 then
@@ -280,10 +280,10 @@ local function AcquireLine(kind, id, text, x, y, width, key)
         end
         l:SetSize(width, l.lastH)
     end
-    if l.lastX ~= x or l.lastY ~= y then
-        l.lastX, l.lastY = x, y
+    if l.lastX ~= posX or l.lastY ~= posY then
+        l.lastX, l.lastY = posX, posY
         l:ClearAllPoints()
-        l:SetPoint("TOPLEFT", child, "TOPLEFT", x, -y)
+        l:SetPoint("TOPLEFT", childFrame, "TOPLEFT", posX, -posY)
     end
     l:Show()
     return l, l.lastH
@@ -359,20 +359,20 @@ local function ZoneRGB()
 end
 EQT.CustomZoneRGB = ZoneRGB
 
-local function ObjectiveRGBA(obj)
+local function ObjectiveRGBA(object)
     local r, g, b = OBJ_RGB.r, OBJ_RGB.g, OBJ_RGB.b
-    if obj.finished then
+    if object.finished then
         r, g, b = DONE_RGB.r, DONE_RGB.g, DONE_RGB.b
     end
     if Cfg("objProgressColor") then
-        local req = obj.numRequired
-        if obj.finished then
+        local req = object.numRequired
+        if object.finished then
             r, g, b = EQT.ProgressRGB(1)
         elseif type(req) == "number" and req > 0 then
-            r, g, b = EQT.ProgressRGB(math.min((obj.numFulfilled or 0) / req, 1))
+            r, g, b = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
         end
     end
-    local a = (obj.finished and Cfg("objDimCompleted")) and (Cfg("objDimAlpha") or 45) / 100 or 1
+    local a = (object.finished and Cfg("objDimCompleted")) and (Cfg("objDimAlpha") or 45) / 100 or 1
     return r, g, b, a
 end
 
@@ -380,11 +380,11 @@ end
 local titleInfo = {}
 
 local function QuestTitle(questID)
-    local title = C_QuestLog.GetTitleForQuestID(questID) or ""
+    local titleText = C_QuestLog.GetTitleForQuestID(questID) or ""
     titleInfo.questID, titleInfo.difficultyLevel = questID, C_QuestLog.GetQuestDifficultyLevel(questID)
-    local prefix = QuestUtilsOverrides.GetQuestTitlePrefix(titleInfo)
+    local prefixText = QuestUtilsOverrides.GetQuestTitlePrefix(titleInfo)
     local tag = QuestUtilsOverrides.GetQuestTagText(questID)
-    return (prefix or "") .. title .. (tag and (" " .. tag) or "")
+    return (prefixText or "") .. titleText .. (tag and (" " .. tag) or "")
 end
 
 -------------------------------------------------------------------------------
@@ -403,18 +403,18 @@ local function BarMode()
 end
 
 local function Hovered()
-    return frame:IsMouseOver() or thumb:GetScript("OnUpdate") ~= nil
+    return widget:IsMouseOver() or thumb:GetScript("OnUpdate") ~= nil
 end
 local function HoverWanted()
     return BarMode() == "hover" or Cfg("customBgHover")
 end
 
 local function BarVisible()
-    local mode = BarMode()
-    if mode == "hidden" then
+    local modeName = BarMode()
+    if modeName == "hidden" then
         return false
     end
-    if mode == "hover" then
+    if modeName == "hover" then
         return Hovered()
     end
     return true
@@ -426,29 +426,29 @@ end
 local FADE_TIME = 0.2
 
 local function ShowBackground(instant)
-    local h = frame.bgHolder
-    frame.topLine:SetShown(Cfg("showTopLine") ~= false)
-    local target = (not Cfg("customBgHover") or Hovered()) and 1 or 0
+    local hgt = widget.bgHolder
+    widget.topLine:SetShown(Cfg("showTopLine") ~= false)
+    local targetUnit = (not Cfg("customBgHover") or Hovered()) and 1 or 0
     if instant or not Cfg("customBgFade") then
-        h.fade:Stop()
-        h.target = target
-        h:SetAlpha(target)
+        hgt.fade:Stop()
+        hgt.target = targetUnit
+        hgt:SetAlpha(targetUnit)
         return
     end
-    if h.target == target then
+    if hgt.target == targetUnit then
         return
     end
-    h.target = target
-    local cur = h:GetAlpha()
-    if h.fade:IsPlaying() then
-        cur = h.from + (h.to - h.from) * h.anim:GetSmoothProgress()
-        h.fade:Stop()
+    hgt.target = targetUnit
+    local current = hgt:GetAlpha()
+    if hgt.fade:IsPlaying() then
+        current = hgt.from + (hgt.to - hgt.from) * hgt.anim:GetSmoothProgress()
+        hgt.fade:Stop()
     end
-    h.from, h.to = cur, target
-    h.anim:SetFromAlpha(cur)
-    h.anim:SetToAlpha(target)
-    h.anim:SetDuration(math.max(FADE_TIME * math.abs(target - cur), 0.01))
-    h.fade:Play()
+    hgt.from, hgt.to = current, targetUnit
+    hgt.anim:SetFromAlpha(current)
+    hgt.anim:SetToAlpha(targetUnit)
+    hgt.anim:SetDuration(math.max(FADE_TIME * math.abs(targetUnit - current), 0.01))
+    hgt.fade:Play()
 end
 
 local function UpdateHover()
@@ -471,16 +471,16 @@ local function UpdateThumb()
         return
     end
     track:SetShown(BarVisible())
-    local cur = math.min(scroll:GetVerticalScroll(), range)
-    scroll:SetVerticalScroll(cur)
+    local current = math.min(scroll:GetVerticalScroll(), range)
+    scroll:SetVerticalScroll(current)
     local thumbH = math.max(20, viewH * viewH / contentH)
     thumb:SetHeight(thumbH)
     thumb:ClearAllPoints()
-    thumb:SetPoint("TOP", track, "TOP", 0, -(viewH - thumbH) * cur / range)
+    thumb:SetPoint("TOP", track, "TOP", 0, -(viewH - thumbH) * current / range)
 end
 
-local function ScrollTo(v)
-    scroll:SetVerticalScroll(math.max(0, math.min(v, MaxScroll())))
+local function ScrollTo(val)
+    scroll:SetVerticalScroll(math.max(0, math.min(val, MaxScroll())))
     HideOverlay()
     UpdateThumb()
     SyncItems()
@@ -497,12 +497,12 @@ local function FocusOnEnter(self)
     )
 end
 
-local function FocusButton(line)
-    local b = line.focus
+local function FocusButton(lineTex)
+    local b = lineTex.focus
     if b then
         return b
     end
-    b = CreateFrame("Button", nil, line)
+    b = CreateFrame("Button", nil, lineTex)
     b.glow = b:CreateTexture(nil, "BACKGROUND")
     b.glow:SetPoint("CENTER")
     b.glow:SetAtlas("UI-QuestPoi-OuterGlow")
@@ -511,11 +511,11 @@ local function FocusButton(line)
     b.ring:SetPoint("CENTER")
     b.icon = b:CreateTexture(nil, "OVERLAY")
     b.icon:SetPoint("CENTER")
-    local hl = b:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetPoint("CENTER")
-    hl:SetAtlas("UI-QuestPoi-InnerGlow")
-    b.hl = hl
-    hl:SetBlendMode("ADD")
+    local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetPoint("CENTER")
+    highlight:SetAtlas("UI-QuestPoi-InnerGlow")
+    b.hl = highlight
+    highlight:SetBlendMode("ADD")
     b:SetScript("OnClick", function(self)
         ToggleFocus(self.id)
     end)
@@ -527,60 +527,60 @@ local function FocusButton(line)
         UpdateHover()
         CludesUI.HideWidgetTooltip()
     end)
-    line.focus = b
+    lineTex.focus = b
     return b
 end
 
-local function ShowFocusButton(line, questID, complete, size)
-    local b = FocusButton(line)
+local function ShowFocusButton(lineTex, questID, complete, dim)
+    local b = FocusButton(lineTex)
     local focused = questID == C_SuperTrack.GetSuperTrackedQuestID()
     b.id = questID
     b:Show()
-    if b.lastSize == size and b.lastFocused == focused and b.lastComplete == complete then
+    if b.lastSize == dim and b.lastFocused == focused and b.lastComplete == complete then
         return
     end
-    b.lastSize, b.lastFocused, b.lastComplete = size, focused, complete
-    b:SetSize(size, size)
-    local art = size * 1.6
+    b.lastSize, b.lastFocused, b.lastComplete = dim, focused, complete
+    b:SetSize(dim, dim)
+    local art = dim * 1.6
     b.ring:SetSize(art, art)
     b.hl:SetSize(art, art)
     b:ClearAllPoints()
-    b:SetPoint("TOPRIGHT", line, "TOPLEFT", -FOCUS_GAP, (size - (Cfg("titleFontSize") or 12)) / 2)
+    b:SetPoint("TOPRIGHT", lineTex, "TOPLEFT", -FOCUS_GAP, (dim - (Cfg("titleFontSize") or 12)) / 2)
     if complete then
         b.ring:SetAtlas("UI-QuestIcon-TurnIn-Normal")
         b.icon:Hide()
     else
         b.ring:SetAtlas(focused and "UI-QuestPoi-QuestNumber-SuperTracked" or "UI-QuestPoi-QuestNumber")
         b.icon:SetAtlas(focused and "Quest-In-Progress-Icon-Brown" or "Quest-In-Progress-Icon-yellow")
-        b.icon:SetSize(size * 0.75, size * 0.75)
+        b.icon:SetSize(dim * 0.75, dim * 0.75)
         b.icon:Show()
     end
     b.glow:SetSize(art * 1.25, art * 1.25)
     b.glow:SetShown(focused)
 end
 
-local function AddObjectives(questID, y, width, x)
+local function AddObjectives(questID, posY, width, posX)
     local gap = Cfg("customObjSpacing") or 1
-    local w = width - x
-    local l, h
+    local wid = width - posX
+    local l, hgt
     if C_QuestLog.IsFailed(questID) then
-        l, h = AcquireLine("obj", questID, "- " .. FAILED, x, y, w)
+        l, hgt = AcquireLine("obj", questID, "- " .. FAILED, posX, posY, wid)
         l.text:SetTextColor(DIM_RED_FONT_COLOR.r, DIM_RED_FONT_COLOR.g, DIM_RED_FONT_COLOR.b, 1)
-        return y + h + gap
+        return posY + hgt + gap
     end
     if C_QuestLog.IsComplete(questID) then
         local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-        local text = logIndex and GetQuestLogCompletionText(logIndex)
+        local textValue = logIndex and GetQuestLogCompletionText(logIndex)
             or C_QuestLog.GetNextWaypointText(questID)
             or QUEST_WATCH_QUEST_READY
-        l, h = AcquireLine("obj", questID, "- " .. text, x, y, w)
+        l, hgt = AcquireLine("obj", questID, "- " .. textValue, posX, posY, wid)
         local r, g, b = EQT.GetCompletedRGB()
         l.text:SetTextColor(r, g, b, 1)
-        return y + h + gap
+        return posY + hgt + gap
     end
     local objectives = C_QuestLog.GetQuestObjectives(questID)
     if not objectives then
-        return y
+        return posY
     end
     -- First sight of a quest records its texts without flashing.
     local prev = Cfg("customFlashUpdates") and prevObj[questID]
@@ -588,24 +588,24 @@ local function AddObjectives(questID, y, width, x)
         prev = {}
         prevObj[questID] = prev
     end
-    for i, obj in ipairs(objectives) do
-        local text = obj.text
-        if text and text ~= "" then
-            if obj.type == "progressbar" then
-                text = text .. " (" .. math.floor(GetQuestProgressBarPercent(questID) or 0) .. "%)"
+    for idx, object in ipairs(objectives) do
+        local textValue = object.text
+        if textValue and textValue ~= "" then
+            if object.type == "progressbar" then
+                textValue = textValue .. " (" .. math.floor(GetQuestProgressBarPercent(questID) or 0) .. "%)"
             end
-            l, h = AcquireLine("obj", questID, "- " .. text, x, y, w, questID * 100 + i)
-            l.text:SetTextColor(ObjectiveRGBA(obj))
+            l, hgt = AcquireLine("obj", questID, "- " .. textValue, posX, posY, wid, questID * 100 + idx)
+            l.text:SetTextColor(ObjectiveRGBA(object))
             if prev then
-                if prev[i] and prev[i] ~= text then
+                if prev[idx] and prev[idx] ~= textValue then
                     Flash(l)
                 end
-                prev[i] = text
+                prev[idx] = textValue
             end
-            y = y + h + gap
+            posY = posY + hgt + gap
         end
     end
-    return y
+    return posY
 end
 
 -------------------------------------------------------------------------------
@@ -634,68 +634,68 @@ local function TimerRGB(pct)
     return 1, pct / 0.33, 0
 end
 
-local function TimerText(left)
-    return "- " .. TIME_REMAINING .. " " .. SecondsToClock(left)
+local function TimerText(leftX)
+    return "- " .. TIME_REMAINING .. " " .. SecondsToClock(leftX)
 end
 
 -- The bar under a timer line: a track in the shared pixel border, made once
 -- per line (AcquireLine hides it).
 local function TimerBar(l)
-    local bar = l.bar
-    if bar then
-        return bar
+    local barFrame = l.bar
+    if barFrame then
+        return barFrame
     end
-    bar = CreateFrame("StatusBar", nil, l)
-    bar:SetHeight(BAR_H)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    bar:SetMinMaxValues(0, 1)
-    local bg = bar:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.15, 0.15, 0.15, 0.8)
-    CludesUI.PP.CreateBorder(bar, 0, 0, 0, 0.9, 1, "OVERLAY", 1)
-    l.bar = bar
-    return bar
+    barFrame = CreateFrame("StatusBar", nil, l)
+    barFrame:SetHeight(BAR_H)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    barFrame:SetMinMaxValues(0, 1)
+    local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.15, 0.15, 0.15, 0.8)
+    CludesUI.PP.CreateBorder(barFrame, 0, 0, 0, 0.9, 1, "OVERLAY", 1)
+    l.bar = barFrame
+    return barFrame
 end
 
 -- Repaints one timer line. False when its new text no longer fits the row it
 -- was laid out in: a full render places it again.
-local function PaintTimer(l, now)
-    local left = timerEnd[l.timerQuest] - now
-    if left < 0 then
-        left = 0
+local function PaintTimer(l, nowTime)
+    local leftX = timerEnd[l.timerQuest] - nowTime
+    if leftX < 0 then
+        leftX = 0
     end
-    local text = TimerText(left)
-    if l.lastText ~= text then
-        l.text:SetText(text)
-        l.lastText = text
+    local textValue = TimerText(leftX)
+    if l.lastText ~= textValue then
+        l.text:SetText(textValue)
+        l.lastText = textValue
         if math.ceil(l.text:GetStringHeight()) ~= l.lastH then
             return false
         end
     end
-    local total = l.timerTotal
-    local pct = total and math.min(left / total, 1) or 1
+    local sum = l.timerTotal
+    local pct = sum and math.min(leftX / sum, 1) or 1
     l.text:SetTextColor(TimerRGB(pct))
-    local bar = total and l.bar
-    if bar then
-        bar:SetWidth(math.max(l.text:GetStringWidth() - l.dashW, 1))
-        bar:SetValue(pct)
+    local barFrame = sum and l.bar
+    if barFrame then
+        barFrame:SetWidth(math.max(l.text:GetStringWidth() - l.dashW, 1))
+        barFrame:SetValue(pct)
         local c = pct > 0.33 and TIMER_FILL or TIMER_LOW
-        bar:SetStatusBarColor(c[1], c[2], c[3])
+        barFrame:SetStatusBarColor(c[1], c[2], c[3])
     end
     return true
 end
 
 -- The next tick lands just after the soonest displayed second changes
 -- (SecondsToClock floors).
-local function ArmTick(now)
+local function ArmTick(nowTime)
     if tickArmed or timerN == 0 then
         return
     end
     local wait = 1
-    for i = 1, timerN do
-        local left = timerEnd[timerLines[i].timerQuest] - now
-        if left > 0 then
-            local frac = left - math.floor(left)
+    for idx = 1, timerN do
+        local leftX = timerEnd[timerLines[idx].timerQuest] - nowTime
+        if leftX > 0 then
+            local frac = leftX - math.floor(leftX)
             if frac < wait then
                 wait = frac
             end
@@ -707,52 +707,53 @@ end
 
 TimerTick = function()
     tickArmed = false
-    if timerN == 0 or not frame then
+    if timerN == 0 or not widget then
         return
     end
     -- Hidden: stop; the show renders again and the tick comes back with it.
-    if not frame:IsShown() then
+    if not widget:IsShown() then
         stale = true
         return
     end
-    local now = GetTime()
-    for i = 1, timerN do
-        if not PaintTimer(timerLines[i], now) then
+    local nowTime = GetTime()
+    for idx = 1, timerN do
+        if not PaintTimer(timerLines[idx], nowTime) then
             Queue()
             return
         end
     end
-    ArmTick(now)
+    ArmTick(nowTime)
 end
 
-local function AddTimer(questID, y, width, x)
+local function AddTimer(questID, posY, width, posX)
     local ends = timerEnd[questID]
     if not ends then
-        return y
+        return posY
     end
-    local now = GetTime()
-    local l, h = AcquireLine("obj", questID, TimerText(math.max(ends - now, 0)), x, y, width - x)
-    y = y + h + (Cfg("customObjSpacing") or 1)
-    local total = C_QuestLog.GetTimeAllowed(questID)
+    local nowTime = GetTime()
+    local l, hgt =
+        AcquireLine("obj", questID, TimerText(math.max(ends - nowTime, 0)), posX, posY, width - posX)
+    posY = posY + hgt + (Cfg("customObjSpacing") or 1)
+    local sum = C_QuestLog.GetTimeAllowed(questID)
     l.timerQuest = questID
-    l.timerTotal = (total and total > 0) and total or nil
+    l.timerTotal = (sum and sum > 0) and sum or nil
     timerN = timerN + 1
     timerLines[timerN] = l
     if l.timerTotal then
-        local bar = TimerBar(l)
+        local barFrame = TimerBar(l)
         if not l.dashW then
             -- The "- " prefix's width in the line's font: the bar starts under the text.
             l.text:SetText("- ")
             l.dashW = l.text:GetStringWidth()
             l.text:SetText(l.lastText)
         end
-        bar:ClearAllPoints()
-        bar:SetPoint("TOPLEFT", l, "BOTTOMLEFT", l.dashW, -1)
-        bar:Show()
-        y = y + BAR_H + 2
+        barFrame:ClearAllPoints()
+        barFrame:SetPoint("TOPLEFT", l, "BOTTOMLEFT", l.dashW, -1)
+        barFrame:Show()
+        posY = posY + BAR_H + 2
     end
-    PaintTimer(l, now)
-    return y
+    PaintTimer(l, nowTime)
+    return posY
 end
 
 -------------------------------------------------------------------------------
@@ -773,13 +774,13 @@ local schematics = {} -- recipe id (negative: recraft) -> its schematic, until t
 
 -- One required reagent slot: "- 2/4 Linen Cloth". A reagent whose item name
 -- has not loaded is left out, asked for once; its load renders the list again.
-local function AddReagent(id, slot, y, width, x)
-    local r = slot.reagents and slot.reagents[1]
+local function AddReagent(ident, slotIndex, posY, width, posX)
+    local r = slotIndex.reagents and slotIndex.reagents[1]
     if not r then
-        return y
+        return posY
     end
     local name
-    if ProfessionsUtil.IsReagentSlotBasicRequired(slot) then
+    if ProfessionsUtil.IsReagentSlotBasicRequired(slotIndex) then
         if r.itemID then
             name = C_Item.GetItemNameByID(r.itemID)
             if not name and nameAsked[r.itemID] ~= false then
@@ -790,74 +791,80 @@ local function AddReagent(id, slot, y, width, x)
                 end
             end
         elseif r.currencyID then
-            local info = C_CurrencyInfo.GetCurrencyInfo(r.currencyID)
-            name = info and info.name
+            local details = C_CurrencyInfo.GetCurrencyInfo(r.currencyID)
+            name = details and details.name
         end
-    elseif ProfessionsUtil.IsReagentSlotModifyingRequired(slot) and slot.slotInfo then
-        name = slot.slotInfo.slotText
+    elseif ProfessionsUtil.IsReagentSlotModifyingRequired(slotIndex) and slotIndex.slotInfo then
+        name = slotIndex.slotInfo.slotText
     end
     if not name then
-        return y
+        return posY
     end
-    local text
-    if slot:IsVariableQuantityReagent(r) then
-        text = PROFESSIONS_TRACKER_REAGENT_RANGE_FORMAT:format(slot:GetVariableQuantityRange(r))
+    local textValue
+    if slotIndex:IsVariableQuantityReagent(r) then
+        textValue = PROFESSIONS_TRACKER_REAGENT_RANGE_FORMAT:format(slotIndex:GetVariableQuantityRange(r))
         reagentState.finished, reagentState.numRequired = false, 0
     else
-        local need = slot:GetQuantityRequired(r)
-        local have = ProfessionsUtil.AccumulateReagentsInPossession(slot.reagents)
-        text = PROFESSIONS_TRACKER_REAGENT_COUNT_FORMAT:format(have, need)
+        local need = slotIndex:GetQuantityRequired(r)
+        local have = ProfessionsUtil.AccumulateReagentsInPossession(slotIndex.reagents)
+        textValue = PROFESSIONS_TRACKER_REAGENT_COUNT_FORMAT:format(have, need)
         reagentState.finished, reagentState.numFulfilled, reagentState.numRequired = have >= need, have, need
     end
-    local l, h =
-        AcquireLine("obj", id, "- " .. PROFESSIONS_TRACKER_REAGENT_FORMAT:format(text, name), x, y, width - x)
+    local l, hgt = AcquireLine(
+        "obj",
+        ident,
+        "- " .. PROFESSIONS_TRACKER_REAGENT_FORMAT:format(textValue, name),
+        posX,
+        posY,
+        width - posX
+    )
     l.text:SetTextColor(ObjectiveRGBA(reagentState))
-    return y + h + (Cfg("customObjSpacing") or 1)
+    return posY + hgt + (Cfg("customObjSpacing") or 1)
 end
 
 -- id: the recipe, negative for a recraft, as Blizzard keys its blocks.
-local function AddRecipeList(list, isRecraft, y, width, titleX, objX)
-    for _, recipeID in ipairs(list) do
-        local id = isRecraft and -recipeID or recipeID
+local function AddRecipeList(entries, isRecraft, posY, width, titleX, objX)
+    for _, recipeID in ipairs(entries) do
+        local ident = isRecraft and -recipeID or recipeID
         -- A recipe's schematic is game data: read once and kept until the
         -- tracked recipes change (names and counts are read on every pass).
-        local schematic = schematics[id]
+        local schematic = schematics[ident]
         if not schematic then
             schematic = ProfessionsUtil.GetRecipeSchematic(recipeID, isRecraft)
-            schematics[id] = schematic
+            schematics[ident] = schematic
         end
         local name = schematic.name or ""
         if isRecraft then
             name = PROFESSIONS_CRAFTING_FORM_RECRAFTING_HEADER:format(name)
         end
-        local l, h = AcquireLine("recipe", id, name, titleX, y, math.max(TITLE_MIN_W, width - titleX))
+        local l, hgt = AcquireLine("recipe", ident, name, titleX, posY, math.max(TITLE_MIN_W, width - titleX))
         l.text:SetTextColor(EQT.GetTitleRGB())
-        y = y + h + 2
+        posY = posY + hgt + 2
         -- Modifying reagent slots first, as Blizzard lists them.
         local slots = schematic.reagentSlotSchematics
-        for _, slot in ipairs(slots) do
-            if ProfessionsUtil.IsReagentSlotModifyingRequired(slot) then
-                y = AddReagent(id, slot, y, width, objX)
+        for _, slotIndex in ipairs(slots) do
+            if ProfessionsUtil.IsReagentSlotModifyingRequired(slotIndex) then
+                posY = AddReagent(ident, slotIndex, posY, width, objX)
             end
         end
-        for _, slot in ipairs(slots) do
+        for _, slotIndex in ipairs(slots) do
             if
-                ProfessionsUtil.IsReagentSlotRequired(slot)
-                and not ProfessionsUtil.IsReagentSlotModifyingRequired(slot)
+                ProfessionsUtil.IsReagentSlotRequired(slotIndex)
+                and not ProfessionsUtil.IsReagentSlotModifyingRequired(slotIndex)
             then
-                y = AddReagent(id, slot, y, width, objX)
+                posY = AddReagent(ident, slotIndex, posY, width, objX)
             end
         end
-        y = y + (Cfg("customQuestSpacing") or 4)
+        posY = posY + (Cfg("customQuestSpacing") or 4)
     end
-    return y
+    return posY
 end
 
 -- The Professions section, after the quests. Its bag and currency events
 -- (reagent counts) are registered only while a recipe is tracked.
-local function AddRecipes(y, width, titleX, objX, collapsed, zr, zg, zb)
-    local list, recrafts = C_TradeSkillUI.GetRecipesTracked(false), C_TradeSkillUI.GetRecipesTracked(true)
-    local any = (list[1] or recrafts[1]) ~= nil
+local function AddRecipes(posY, width, titleX, objX, collapsed, zr, zg, zb)
+    local entries, recrafts = C_TradeSkillUI.GetRecipesTracked(false), C_TradeSkillUI.GetRecipesTracked(true)
+    local any = (entries[1] or recrafts[1]) ~= nil
     if any ~= recipeEvents then
         recipeEvents = any
         if any then
@@ -870,23 +877,23 @@ local function AddRecipes(y, width, titleX, objX, collapsed, zr, zg, zb)
     end
     nameWait = false
     if any then
-        if y > 0 then
-            y = y + 6
+        if posY > 0 then
+            posY = posY + 6
         end
         local shut = collapsed[RECIPE_COLLAPSED]
-        local l, h = AcquireLine(
+        local l, hgt = AcquireLine(
             "zone",
             RECIPE_KEY,
             (shut and "+ " or "") .. PROFESSIONS_TRACKER_HEADER_PROFESSION,
             0,
-            y,
+            posY,
             width
         )
         l.text:SetTextColor(zr, zg, zb, 1)
-        y = y + h + 3
+        posY = posY + hgt + 3
         if not shut then
-            y = AddRecipeList(list, false, y, width, titleX, objX)
-            y = AddRecipeList(recrafts, true, y, width, titleX, objX)
+            posY = AddRecipeList(entries, false, posY, width, titleX, objX)
+            posY = AddRecipeList(recrafts, true, posY, width, titleX, objX)
         end
     end
     if nameWait ~= nameListen then
@@ -897,7 +904,7 @@ local function AddRecipes(y, width, titleX, objX, collapsed, zr, zg, zb)
             evt:UnregisterEvent("ITEM_DATA_LOAD_RESULT")
         end
     end
-    return y
+    return posY
 end
 
 -------------------------------------------------------------------------------
@@ -907,14 +914,14 @@ end
 -- layout change waits for combat to end; buttons keep their spot and item.
 -------------------------------------------------------------------------------
 local itemLayer
-local items, itemWant, itemN = {}, {}, 0 -- itemWant: pooled, first itemN in use
+local itemList, itemWant, itemN = {}, {}, 0 -- itemWant: pooled, first itemN in use
 local cdRegistered = false
 
 -- Tooltip side facing the screen centre, away from the edge.
 local function TooltipSide()
-    local cx = frame:GetCenter()
+    local cx = widget:GetCenter()
     local onLeft = cx
-        and cx * frame:GetEffectiveScale() < UIParent:GetWidth() * UIParent:GetEffectiveScale() / 2
+        and cx * widget:GetEffectiveScale() < UIParent:GetWidth() * UIParent:GetEffectiveScale() / 2
     return onLeft and "ANCHOR_RIGHT" or "ANCHOR_LEFT"
 end
 
@@ -930,8 +937,8 @@ local function UpdateItemCooldown(b)
     end
 end
 
-local function ItemButton(i)
-    local b = items[i]
+local function ItemButton(idx)
+    local b = itemList[idx]
     if b then
         return b
     end
@@ -939,9 +946,9 @@ local function ItemButton(i)
     b:RegisterForClicks("AnyUp")
     b:SetAttribute("type", "item")
     b:SetAttribute("useOnKeyDown", false)
-    local bg = b:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 1)
+    local backdrop = b:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0, 0, 0, 1)
     b.icon = b:CreateTexture(nil, "ARTWORK")
     b.icon:SetPoint("TOPLEFT", 1, -1)
     b.icon:SetPoint("BOTTOMRIGHT", -1, 1)
@@ -964,51 +971,51 @@ local function ItemButton(i)
         UpdateHover()
         GameTooltip:Hide()
     end)
-    items[i] = b
+    itemList[idx] = b
     return b
 end
 
 -- Shows a button for each wanted item whose title row is fully in view.
 function SyncItems()
-    if not itemLayer or (#items == 0 and itemN == 0) then
+    if not itemLayer or (#itemList == 0 and itemN == 0) then
         return
     end
     if InCombatLockdown() then
-        ns.CombatQueue.Defer("EQT_CustomItems", SyncItems)
+        mod.CombatQueue.Defer("EQT_CustomItems", SyncItems)
         return
     end
-    local n = 0
-    local top, bottom = scroll:GetTop(), scroll:GetBottom()
-    if frame:IsVisible() and top then
-        for i = 1, itemN do
-            local w = itemWant[i]
-            local l = w.line
+    local num = 0
+    local topY, bottom = scroll:GetTop(), scroll:GetBottom()
+    if widget:IsVisible() and topY then
+        for idx = 1, itemN do
+            local wid = itemWant[idx]
+            local l = wid.line
             local lt, lr = l:GetTop(), l:GetRight()
-            if lt and lt <= top + 0.5 and lt - w.size >= bottom - 0.5 then
-                n = n + 1
-                local b = ItemButton(n)
+            if lt and lt <= topY + 0.5 and lt - wid.size >= bottom - 0.5 then
+                num = num + 1
+                local b = ItemButton(num)
                 local s = l:GetEffectiveScale() / b:GetEffectiveScale()
-                local x, y, size = (lr + hookW + 4) * s, lt * s, w.size * s
-                if b.lastX ~= x or b.lastY ~= y or b.lastSize ~= size then
-                    b.lastX, b.lastY, b.lastSize = x, y, size
-                    b:SetSize(size, size)
+                local posX, posY, dim = (lr + hookW + 4) * s, lt * s, wid.size * s
+                if b.lastX ~= posX or b.lastY ~= posY or b.lastSize ~= dim then
+                    b.lastX, b.lastY, b.lastSize = posX, posY, dim
+                    b:SetSize(dim, dim)
                     b:ClearAllPoints()
-                    b:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+                    b:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, posY)
                 end
-                if b.itemID ~= w.itemID then
-                    b.itemID = w.itemID
-                    b:SetAttribute("item", "item:" .. w.itemID)
+                if b.itemID ~= wid.itemID then
+                    b.itemID = wid.itemID
+                    b:SetAttribute("item", "item:" .. wid.itemID)
                 end
-                b.questID = w.questID
-                b.icon:SetTexture(w.tex)
-                b.count:SetText((w.charges and w.charges > 1) and w.charges or "")
+                b.questID = wid.questID
+                b.icon:SetTexture(wid.tex)
+                b.count:SetText((wid.charges and wid.charges > 1) and wid.charges or "")
                 UpdateItemCooldown(b)
                 b:Show()
             end
         end
     end
-    for i = n + 1, #items do
-        items[i]:Hide()
+    for idx = num + 1, #itemList do
+        itemList[idx]:Hide()
     end
 end
 
@@ -1024,18 +1031,18 @@ local function RunRowHooks(l, questID)
         slots = {}
         l.slots = slots
     end
-    for i, h in ipairs(rowHooks) do
-        local s = slots[i]
+    for idx, hgt in ipairs(rowHooks) do
+        local s = slots[idx]
         if not s then
             s = CreateFrame("Frame", nil, l)
-            s:SetPoint("TOPLEFT", l, "TOPRIGHT", h.x, 0)
-            s:SetPoint("BOTTOMLEFT", l, "BOTTOMRIGHT", h.x, 0)
-            s:SetWidth(h.width)
-            slots[i] = s
+            s:SetPoint("TOPLEFT", l, "TOPRIGHT", hgt.x, 0)
+            s:SetPoint("BOTTOMLEFT", l, "BOTTOMRIGHT", hgt.x, 0)
+            s:SetWidth(hgt.width)
+            slots[idx] = s
         end
         s:Show()
-        local ok, err = pcall(h.fn, s, questID, l.text)
-        if not ok then
+        local success, err = pcall(hgt.fn, s, questID, l.text)
+        if not success then
             geterrorhandler()(err)
         end
     end
@@ -1043,16 +1050,16 @@ end
 
 local function Render()
     pending = false
-    if not frame then
+    if not widget then
         return
     end
-    if not frame:IsShown() then
+    if not widget:IsShown() then
         stale = true
         return
     end
     stale = false
     HideOverlay()
-    frame:SetMouseMotionEnabled(HoverWanted() and true or false)
+    widget:SetMouseMotionEnabled(HoverWanted() and true or false)
     if not Cfg("customFlashUpdates") then
         wipe(prevObj)
     end
@@ -1061,19 +1068,19 @@ local function Render()
     timerN = 0
     local timers = C_QuestLog.GetQuestTimers()
     if timers then
-        local now = GetTime()
+        local nowTime = GetTime()
         for _, t in ipairs(timers) do
             if t.questID and t.questTimer then
-                timerEnd[t.questID] = now + t.questTimer
+                timerEnd[t.questID] = nowTime + t.questTimer
             end
         end
     end
     BuildList()
     local collapsed = CharDB().ctCollapsed
     local width = (Cfg("customWidth") or DEF_WIDTH) - PAD * 2 - BAR_GAP
-    child:SetWidth(width)
+    childFrame:SetWidth(width)
     used = 0
-    local y = 0
+    local posY = 0
     local itemSize = Cfg("customItemButtons") and (Cfg("titleFontSize") or 12) + 12
     if not collapsed.all then
         local group = Cfg("customGroupByZone")
@@ -1091,50 +1098,50 @@ local function Render()
         local doneOpen = CharDB().ctDoneOpen
         local lastZone
         local zr, zg, zb = ZoneRGB()
-        for _, questID in ipairs(order) do
+        for _, questID in ipairs(sequence) do
             local zone = zoneOf[questID] or OTHER or "Other"
             if group and zone ~= lastZone then
                 lastZone = zone
-                if y > 0 then
-                    y = y + 6
+                if posY > 0 then
+                    posY = posY + 6
                 end
                 local mark = collapsed["z:" .. zone] and "+ " or ""
-                local l, h = AcquireLine("zone", zone, mark .. zone, 0, y, width)
+                local l, hgt = AcquireLine("zone", zone, mark .. zone, 0, posY, width)
                 l.text:SetTextColor(zr, zg, zb, 1)
-                y = y + h + 3
+                posY = posY + hgt + 3
             end
             if not (group and collapsed["z:" .. zone]) then
                 local complete = C_QuestLog.IsComplete(questID) == true
-                local item
+                local itemInfo
                 if itemSize then
                     local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-                    local link, tex, charges, showDone
+                    local itemLink, tex, charges, showDone
                     if logIndex then
-                        link, tex, charges, showDone = GetQuestLogSpecialItemInfo(logIndex)
+                        itemLink, tex, charges, showDone = GetQuestLogSpecialItemInfo(logIndex)
                     end
-                    local itemID = link and tonumber(link:match("item:(%d+)"))
-                    if itemID and (not complete or showDone) then
+                    local itemId = itemLink and tonumber(itemLink:match("item:(%d+)"))
+                    if itemId and (not complete or showDone) then
                         itemN = itemN + 1
-                        item = itemWant[itemN]
-                        if not item then
-                            item = {}
-                            itemWant[itemN] = item
+                        itemInfo = itemWant[itemN]
+                        if not itemInfo then
+                            itemInfo = {}
+                            itemWant[itemN] = itemInfo
                         end
-                        item.itemID, item.tex, item.charges = itemID, tex, charges
-                        item.questID, item.size = questID, itemSize
+                        itemInfo.itemID, itemInfo.tex, itemInfo.charges = itemId, tex, charges
+                        itemInfo.questID, itemInfo.size = questID, itemSize
                     end
                 end
-                local itemW = item and itemSize + 8 or 0
-                if y == 0 then
-                    y = focusRise
+                local itemW = itemInfo and itemSize + 8 or 0
+                if posY == 0 then
+                    posY = focusRise
                 end
-                local top = y
-                local l, h = AcquireLine(
+                local topY = posY
+                local l, hgt = AcquireLine(
                     "quest",
                     questID,
                     QuestTitle(questID),
                     titleX,
-                    y,
+                    posY,
                     math.max(TITLE_MIN_W, width - titleX - itemW - hookW)
                 )
                 l.text:SetTextColor(TitleRGB(questID, complete))
@@ -1146,10 +1153,10 @@ local function Render()
                 elseif l.focus then
                     l.focus:Hide()
                 end
-                if item then
-                    item.line = l
+                if itemInfo then
+                    itemInfo.line = l
                 end
-                y = y + h + 2
+                posY = posY + hgt + 2
                 local shut
                 if complete and collapseDone then
                     shut = not doneOpen[questID]
@@ -1157,40 +1164,40 @@ local function Render()
                     shut = collapsed[questID]
                 end
                 if not shut then
-                    y = AddObjectives(questID, y, width, objX)
+                    posY = AddObjectives(questID, posY, width, objX)
                 end
-                y = AddTimer(questID, y, width, objX)
-                if item then
-                    y = math.max(y, top + itemSize + 2)
+                posY = AddTimer(questID, posY, width, objX)
+                if itemInfo then
+                    posY = math.max(posY, topY + itemSize + 2)
                 end
-                y = y + (Cfg("customQuestSpacing") or 4)
+                posY = posY + (Cfg("customQuestSpacing") or 4)
             end
         end
-        y = AddRecipes(y, width, titleX, objX, collapsed, zr, zg, zb)
+        posY = AddRecipes(posY, width, titleX, objX, collapsed, zr, zg, zb)
     end
-    for i = used + 1, #lines do
-        lines[i]:Hide()
+    for idx = used + 1, #lines do
+        lines[idx]:Hide()
     end
 
     local _, numQuests = C_QuestLog.GetNumQuestLogEntries()
-    header.count:SetText((numQuests or 0) .. "/" .. C_QuestLog.GetMaxNumQuestsCanAccept())
-    header.toggle:SetText(collapsed.all and "+" or "-")
+    headerFrame.count:SetText((numQuests or 0) .. "/" .. C_QuestLog.GetMaxNumQuestsCanAccept())
+    headerFrame.toggle:SetText(collapsed.all and "+" or "-")
 
-    contentH = y
-    child:SetHeight(math.max(y, 1))
+    contentH = posY
+    childFrame:SetHeight(math.max(posY, 1))
     local maxH = Cfg("customMaxHeight") or DEF_HEIGHT
-    local body = y > 0 and (y + PAD) or 0
+    local body = posY > 0 and (posY + PAD) or 0
     -- Unlock Mode shows the whole area the tracker may grow into, so its
     -- mover and Height row match what is being set.
-    local h = CludesUI._unlockActive and maxH or math.min(HEADER_H + body, maxH)
-    viewH = math.max(h - HEADER_H - PAD, 0)
-    frame:SetHeight(h)
+    local hgt = CludesUI._unlockActive and maxH or math.min(HEADER_H + body, maxH)
+    viewH = math.max(hgt - HEADER_H - PAD, 0)
+    widget:SetHeight(hgt)
     -- An Unlock Mode link places the tracker by its centre, from its height:
     -- back onto it in the render that changed the height, as Unlock Mode's own
     -- resize notice is throttled and can skip the last change of a burst (a
     -- quest in a new zone arrives over several renders).
-    if h ~= frame.renderH then
-        frame.renderH = h
+    if hgt ~= widget.renderH then
+        widget.renderH = hgt
         if not CludesUI._unlockActive then
             CludesUI.ReapplyOwnAnchor(UNLOCK_KEY)
         end
@@ -1220,17 +1227,17 @@ EQT.RefreshCustom = Queue
 -- Public: fn(slot, questID, titleFontString) runs for each quest title row on
 -- every render. width (0-64, default 0) is kept free right of the title.
 local HOOK_MAX_W = 64
-function CludesUI.RegisterQuestTrackerRow(id, fn, width)
-    if type(id) ~= "string" or id == "" or type(fn) ~= "function" then
+function CludesUI.RegisterQuestTrackerRow(ident, func, width)
+    if type(ident) ~= "string" or ident == "" or type(func) ~= "function" then
         return false
     end
-    for _, h in ipairs(rowHooks) do
-        if h.id == id then
+    for _, hgt in ipairs(rowHooks) do
+        if hgt.id == ident then
             return false
         end
     end
     width = Clamp(math.floor(tonumber(width) or 0), 0, HOOK_MAX_W)
-    rowHooks[#rowHooks + 1] = { id = id, fn = fn, width = width, x = hookW }
+    rowHooks[#rowHooks + 1] = { id = ident, fn = func, width = width, x = hookW }
     hookW = hookW + width
     Queue()
     return true
@@ -1247,9 +1254,9 @@ CludesUI.RefreshQuestTrackerRows = Queue
 -- through the secure overlay below, whose code edits the watch list.
 -------------------------------------------------------------------------------
 local function Untrack(questID)
-    local db = CharDB()
-    db.ctUntracked[questID] = true
-    db.ctPinned[questID] = nil
+    local saved = CharDB()
+    saved.ctUntracked[questID] = true
+    saved.ctPinned[questID] = nil
     Queue()
 end
 
@@ -1277,8 +1284,8 @@ end
 -- Skin.lua dropped this on retail for tainting the world map's pins; on WoW
 -- Forever taint logs stayed clean, focusing in combat and using map pins.
 function ToggleFocus(questID)
-    local cur = C_SuperTrack.GetSuperTrackedQuestID()
-    C_SuperTrack.SetSuperTrackedQuestID(cur == questID and 0 or questID)
+    local current = C_SuperTrack.GetSuperTrackedQuestID()
+    C_SuperTrack.SetSuperTrackedQuestID(current == questID and 0 or questID)
 end
 
 -- For the details window (Details.lua).
@@ -1290,12 +1297,12 @@ end
 local MENU_OPTS = { fontKey = "questTracker" }
 
 -- The quest's title heads the menu as a disabled row.
-local function ShowMenu(owner, questID)
-    local items =
+local function ShowMenu(ownerFrame, questID)
+    local itemList =
         { { text = C_QuestLog.GetTitleForQuestID(questID) or "", noLoc = true, isDisabled = Disabled } }
     if Cfg("customFocusClick") then
         local focused = C_SuperTrack.GetSuperTrackedQuestID() == questID
-        items[#items + 1] = {
+        itemList[#itemList + 1] = {
             text = focused and STOP_SUPER_TRACK_QUEST or SUPER_TRACK_QUEST,
             noLoc = true,
             onClick = function()
@@ -1303,14 +1310,14 @@ local function ShowMenu(owner, questID)
             end,
         }
     end
-    items[#items + 1] = {
+    itemList[#itemList + 1] = {
         noLoc = true,
         text = CharDB().ctPinned[questID] and CludesUI.L("Unpin") or CludesUI.L("Pin to Top"),
         onClick = function()
             TogglePin(questID)
         end,
     }
-    items[#items + 1] = {
+    itemList[#itemList + 1] = {
         text = OBJECTIVES_STOP_TRACKING,
         noLoc = true,
         onClick = function()
@@ -1318,7 +1325,7 @@ local function ShowMenu(owner, questID)
         end,
     }
     if IsInGroup() and C_QuestLog.IsPushableQuest(questID) then
-        items[#items + 1] = {
+        itemList[#itemList + 1] = {
             text = SHARE_QUEST,
             noLoc = true,
             onClick = function()
@@ -1326,7 +1333,7 @@ local function ShowMenu(owner, questID)
             end,
         }
     end
-    items[#items + 1] = {
+    itemList[#itemList + 1] = {
         text = ABANDON_QUEST_ABBREV,
         noLoc = true,
         onClick = function()
@@ -1336,8 +1343,8 @@ local function ShowMenu(owner, questID)
     -- Wowhead Quest Links: the entry Blizzard's tracker menu gets, after a divider
     -- as there (QuestLinks.lua).
     if EQT.WowheadQuestOK(questID) then
-        items[#items + 1] = "---"
-        items[#items + 1] = {
+        itemList[#itemList + 1] = "---"
+        itemList[#itemList + 1] = {
             text = CludesUI.L("Wowhead Link"),
             noLoc = true,
             onClick = function()
@@ -1345,7 +1352,7 @@ local function ShowMenu(owner, questID)
             end,
         }
     end
-    CludesUI.ShowContextMenu(owner, items, MENU_OPTS)
+    CludesUI.ShowContextMenu(ownerFrame, itemList, MENU_OPTS)
 end
 
 local function ToggleCollapsed(key)
@@ -1354,36 +1361,36 @@ local function ToggleCollapsed(key)
     Queue()
 end
 
-function OnLineClick(self, button)
-    local id = self.id
+function OnLineClick(self, btnFrame)
+    local ident = self.id
     if self.kind == "zone" then
-        ToggleCollapsed("z:" .. id)
+        ToggleCollapsed("z:" .. ident)
     elseif self.kind == "quest" then
-        if button == "RightButton" then
-            ShowMenu(self, id)
+        if btnFrame == "RightButton" then
+            ShowMenu(self, ident)
             return
         end
-        if IsModifiedClick("CHATLINK") and ChatFrameUtil.TryInsertQuestLinkForQuestID(id) then
+        if IsModifiedClick("CHATLINK") and ChatFrameUtil.TryInsertQuestLinkForQuestID(ident) then
             return
         end
         if IsModifiedClick("QUESTWATCHTOGGLE") then
-            Untrack(id)
+            Untrack(ident)
             return
         end
         local action = Cfg("customClickAction") or "collapse"
         if action ~= "collapse" and not IsModifierKeyDown() then
             if action == "details" then
-                EQT.ShowQuestDetails(id)
+                EQT.ShowQuestDetails(ident)
             end
             -- map: the overlay's job; reached only in combat, where it is off.
             return
         end
-        if Cfg("customCollapseCompleted") and C_QuestLog.IsComplete(id) then
+        if Cfg("customCollapseCompleted") and C_QuestLog.IsComplete(ident) then
             local open = CharDB().ctDoneOpen
-            open[id] = not open[id] or nil
+            open[ident] = not open[ident] or nil
             Queue()
         else
-            ToggleCollapsed(id)
+            ToggleCollapsed(ident)
         end
     end
 end
@@ -1407,67 +1414,67 @@ end
 local QUEST_MODULES = { "QuestObjectiveTracker", "CampaignQuestObjectiveTracker" }
 -- The untrack modifier as a secure attribute prefix (a single-modifier binding)
 local UNTRACK_PREFIX = { SHIFT = "shift-", CTRL = "ctrl-", ALT = "alt-" }
-local overlay
+local overlayFrame
 
 -- The header button of Blizzard's block for the quest, if it has one.
 local function BlizzardHeader(questID)
     for _, name in ipairs(QUEST_MODULES) do
         local module = _G[name]
-        local block = module and module.GetExistingBlock and module:GetExistingBlock(questID)
-        if block and block.HeaderButton then
-            return block.HeaderButton
+        local blockData = module and module.GetExistingBlock and module:GetExistingBlock(questID)
+        if blockData and blockData.HeaderButton then
+            return blockData.HeaderButton
         end
     end
 end
 
 -- The header button of Blizzard's block for a tracked recipe (id: negative
 -- for a recraft, as Blizzard keys its blocks), if it has one.
-local function RecipeHeader(id)
+local function RecipeHeader(ident)
     local module = _G.ProfessionsRecipeTracker
-    local block = module and module.GetExistingBlock and module:GetExistingBlock(id)
-    return block and block.HeaderButton
+    local blockData = module and module.GetExistingBlock and module:GetExistingBlock(ident)
+    return blockData and blockData.HeaderButton
 end
 
 local function Overlay()
-    if overlay then
-        return overlay
+    if overlayFrame then
+        return overlayFrame
     end
-    overlay = CreateFrame("Button", nil, itemLayer, "SecureActionButtonTemplate")
-    overlay:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    overlayFrame = CreateFrame("Button", nil, itemLayer, "SecureActionButtonTemplate")
+    overlayFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     -- The clicks set per line (ShowOverlay) go to Blizzard's header; the rest
     -- go to PostClick, our own line click.
-    overlay:SetAttribute("useOnKeyDown", false)
-    overlay:SetScript("PostClick", function(self, button)
+    overlayFrame:SetAttribute("useOnKeyDown", false)
+    overlayFrame:SetScript("PostClick", function(self, btnFrame)
         -- A recipe: Blizzard's recipe block took the click.
         if self.line.kind == "recipe" then
             return
         end
-        if button == "LeftButton" then
-            local prefix = SecureButton_GetModifierPrefix(self)
-            if self:GetAttribute(prefix .. "type1") == "click" then
+        if btnFrame == "LeftButton" then
+            local prefixText = SecureButton_GetModifierPrefix(self)
+            if self:GetAttribute(prefixText .. "type1") == "click" then
                 -- Blizzard's header took it. A quest it untracked also leaves our
                 -- list for good, or zone auto-track would list it again.
-                if prefix ~= "" and not C_QuestLog.GetQuestWatchType(self.line.id) then
+                if prefixText ~= "" and not C_QuestLog.GetQuestWatchType(self.line.id) then
                     Untrack(self.line.id)
                 end
                 return
             end
         end
-        OnLineClick(self.line, button)
+        OnLineClick(self.line, btnFrame)
     end)
-    overlay:SetScript("OnEnter", function(self)
+    overlayFrame:SetScript("OnEnter", function(self)
         OnLineEnter(self.line)
     end)
-    overlay:SetScript("OnLeave", function()
+    overlayFrame:SetScript("OnLeave", function()
         OnLineLeave()
         HideOverlay()
     end)
-    return overlay
+    return overlayFrame
 end
 
 function HideOverlay()
-    if overlay and not InCombatLockdown() then
-        overlay:Hide()
+    if overlayFrame and not InCombatLockdown() then
+        overlayFrame:Hide()
     end
 end
 
@@ -1477,53 +1484,53 @@ local function ShowOverlay(l)
         return
     end
     local recipe = l.kind == "recipe"
-    local header
+    local headerFrame
     if recipe then
-        header = RecipeHeader(l.id)
+        headerFrame = RecipeHeader(l.id)
     else
-        header = BlizzardHeader(l.id)
+        headerFrame = BlizzardHeader(l.id)
     end
-    if not header then
+    if not headerFrame then
         return
     end
-    local top, bottom = math.min(l:GetTop(), scroll:GetTop()), math.max(l:GetBottom(), scroll:GetBottom())
-    if top <= bottom then
+    local topY, bottom = math.min(l:GetTop(), scroll:GetTop()), math.max(l:GetBottom(), scroll:GetBottom())
+    if topY <= bottom then
         return
     end
     local o = Overlay()
     local s = l:GetEffectiveScale() / o:GetEffectiveScale()
     o:ClearAllPoints()
-    o:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", l:GetLeft() * s, top * s)
-    o:SetSize(l:GetWidth() * s, (top - bottom) * s)
+    o:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", l:GetLeft() * s, topY * s)
+    o:SetSize(l:GetWidth() * s, (topY - bottom) * s)
     -- Plain left click: Open Quest Log only. The untrack modifier: always.
     -- A recipe: every left and right click.
     local map = recipe or Cfg("customClickAction") == "map"
     o:SetAttribute("type1", map and "click" or nil)
-    o:SetAttribute("clickbutton1", map and header or nil)
+    o:SetAttribute("clickbutton1", map and headerFrame or nil)
     local untrack = UNTRACK_PREFIX[GetModifiedClick("QUESTWATCHTOGGLE") or ""]
-    for _, prefix in pairs(UNTRACK_PREFIX) do
-        local on = recipe or prefix == untrack
-        o:SetAttribute(prefix .. "type1", on and "click" or nil)
-        o:SetAttribute(prefix .. "clickbutton1", on and header or nil)
+    for _, prefixText in pairs(UNTRACK_PREFIX) do
+        local enabled = recipe or prefixText == untrack
+        o:SetAttribute(prefixText .. "type1", enabled and "click" or nil)
+        o:SetAttribute(prefixText .. "clickbutton1", enabled and headerFrame or nil)
     end
     o:SetAttribute("type2", recipe and "click" or nil)
-    o:SetAttribute("clickbutton2", recipe and header or nil)
+    o:SetAttribute("clickbutton2", recipe and headerFrame or nil)
     o.line = l
     o:Show()
 end
 
 -- One icon line per reward; Blizzard's tooltip helper shows one item, no choices.
 -- Uncached items redraw the tooltip once loaded, if owner still holds it.
-local function AddRewardLine(e, owner)
+local function AddRewardLine(e, ownerFrame)
     if not e.name then
         EQT.OnRewardLoad(e, function()
-            if GameTooltip:IsOwned(owner) then
-                OnLineEnter(owner)
+            if GameTooltip:IsOwned(ownerFrame) then
+                OnLineEnter(ownerFrame)
             end
         end)
         return
     end
-    local text = e.count
+    local textValue = e.count
             and e.count > 1
             and BONUS_OBJECTIVE_REWARD_WITH_COUNT_FORMAT:format(
                 e.texture,
@@ -1533,13 +1540,13 @@ local function AddRewardLine(e, owner)
         or BONUS_OBJECTIVE_REWARD_FORMAT:format(e.texture, e.name)
     local c = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
     if c then
-        GameTooltip:AddLine(text, c.r, c.g, c.b)
+        GameTooltip:AddLine(textValue, c.r, c.g, c.b)
     else
-        GameTooltip:AddLine(text, 1, 1, 1)
+        GameTooltip:AddLine(textValue, 1, 1, 1)
     end
 end
 
-local function AddRewards(questID, owner)
+local function AddRewards(questID, ownerFrame)
     local r = EQT.QuestRewards(questID)
     if not r then
         return
@@ -1553,7 +1560,7 @@ local function AddRewards(questID, owner)
         GameTooltip:AddLine(GetMoneyString(r.money), 1, 1, 1)
     end
     for _, e in ipairs(r.rewards) do
-        AddRewardLine(e, owner)
+        AddRewardLine(e, ownerFrame)
     end
     if #r.choices > 0 then
         GameTooltip:AddLine(
@@ -1564,7 +1571,7 @@ local function AddRewards(questID, owner)
             true
         )
         for _, e in ipairs(r.choices) do
-            AddRewardLine(e, owner)
+            AddRewardLine(e, ownerFrame)
         end
     end
 end
@@ -1584,9 +1591,9 @@ function OnLineEnter(self)
     if IsInGroup() then
         GameTooltip:SetQuestPartyProgress(self.id)
     else
-        local link = GetQuestLink(self.id)
-        if link then
-            GameTooltip:SetHyperlink(link)
+        local itemLink = GetQuestLink(self.id)
+        if itemLink then
+            GameTooltip:SetHyperlink(itemLink)
         else
             GameTooltip:SetText(C_QuestLog.GetTitleForQuestID(self.id) or "")
         end
@@ -1604,28 +1611,28 @@ end
 -- Frame
 -------------------------------------------------------------------------------
 local function ApplyBackground()
-    if not frame then
+    if not widget then
         return
     end
     local c = EQT.DB()
-    frame.bg:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgAlpha or 0.5)
-    frame.topLine:SetColorTexture(EQT.GetLineRGB())
+    widget.bg:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgAlpha or 0.5)
+    widget.topLine:SetColorTexture(EQT.GetLineRGB())
     ShowBackground(true)
     local hr, hg, hb = EQT.GetHeaderRGB()
-    header.text:SetTextColor(hr, hg, hb)
-    header.toggle:SetTextColor(hr, hg, hb)
+    headerFrame.text:SetTextColor(hr, hg, hb)
+    headerFrame.toggle:SetTextColor(hr, hg, hb)
 end
 
 local function RefreshFonts()
-    if not frame then
+    if not widget then
         return
     end
     fontGen = fontGen + 1
-    local size = Cfg("headerFontSize") or 13
-    StyleText(header.text, size)
-    StyleText(header.toggle, size)
-    StyleText(header.count, Cfg("objectiveFontSize") or 10)
-    header.text:SetText(TRACKER_HEADER_QUESTS)
+    local dim = Cfg("headerFontSize") or 13
+    StyleText(headerFrame.text, dim)
+    StyleText(headerFrame.toggle, dim)
+    StyleText(headerFrame.count, Cfg("objectiveFontSize") or 10)
+    headerFrame.text:SetText(TRACKER_HEADER_QUESTS)
     Queue()
 end
 
@@ -1679,31 +1686,31 @@ end
 -- width by the max height): both directions fill one box, from opposite
 -- ends. Unlock Mode hands back CENTER points; the current size places the edge.
 local function Anchored(p)
-    local point, rel = p.point, p.relPoint or p.point
+    local anchorPoint, rel = p.point, p.relPoint or p.point
     local up = GrowsUp()
-    local vy = VY[point]
-    if vy == (up and 0 or 1) or not (HX[point] and HX[rel]) then
+    local vy = VY[anchorPoint]
+    if vy == (up and 0 or 1) or not (HX[anchorPoint] and HX[rel]) then
         return p
     end
-    if OTHER_EDGE[point] then
+    if OTHER_EDGE[anchorPoint] then
         local maxH = Cfg("customMaxHeight") or DEF_HEIGHT
         return {
-            point = OTHER_EDGE[point],
+            point = OTHER_EDGE[anchorPoint],
             relPoint = rel,
             x = p.x or 0,
             y = (p.y or 0) + (up and -maxH or maxH),
         }
     end
-    if not frame then
+    if not widget then
         return p
     end
     local px = UIParent:GetWidth() * HX[rel] + (p.x or 0)
     local py = UIParent:GetHeight() * VY[rel] + (p.y or 0)
-    local left = px - frame:GetWidth() * HX[point]
+    local leftX = px - widget:GetWidth() * HX[anchorPoint]
     if up then
-        return { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = left, y = py - frame:GetHeight() * vy }
+        return { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = leftX, y = py - widget:GetHeight() * vy }
     end
-    return { point = "TOPLEFT", relPoint = "BOTTOMLEFT", x = left, y = py + frame:GetHeight() * (1 - vy) }
+    return { point = "TOPLEFT", relPoint = "BOTTOMLEFT", x = leftX, y = py + widget:GetHeight() * (1 - vy) }
 end
 
 -- The saved spot by the edge the tracker keeps: what Unlock Mode reads and
@@ -1714,8 +1721,8 @@ end
 
 local function Place()
     local p = GrowSpot()
-    frame:ClearAllPoints()
-    frame:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
+    widget:ClearAllPoints()
+    widget:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
     -- Linked to another element in Unlock Mode: back onto that link.
     CludesUI.ReapplyOwnAnchor(UNLOCK_KEY)
     SyncItems()
@@ -1750,53 +1757,56 @@ local function BlizzardPanel()
         return
     end
     local otf = _G.ObjectiveTrackerFrame
-    local left, top, w, h = otf:GetLeft(), otf:GetTop(), otf:GetWidth(), otf:GetHeight()
+    local leftX, topY, wid, hgt = otf:GetLeft(), otf:GetTop(), otf:GetWidth(), otf:GetHeight()
     local scale, ui = otf:GetEffectiveScale(), UIParent:GetEffectiveScale()
-    if not (left and top and w and h and scale and ui) then
+    if not (leftX and topY and wid and hgt and scale and ui) then
         return
     end
-    if IsSecret(left) or IsSecret(top) or IsSecret(w) or IsSecret(h) or IsSecret(scale) then
+    if IsSecret(leftX) or IsSecret(topY) or IsSecret(wid) or IsSecret(hgt) or IsSecret(scale) then
         return
     end
-    if w < 1 or h < 1 or ui <= 0 then
+    if wid < 1 or hgt < 1 or ui <= 0 then
         return
     end
     local s = scale / ui
     if EQT.Blizz() then
-        return left * s, top * s, w * s, h * s
+        return leftX * s, topY * s, wid * s, hgt * s
     end
     local padLeft = Cfg("showQuestIcons") and SKIN_LEFT_ICONS or SKIN_LEFT
-    local panelTop = top
-    local header = otf.HeaderMenu or otf.Header
-    if header and EQT.ShouldHideMasterHeader() then
-        local bottom = header:GetBottom()
-        if bottom and not IsSecret(bottom) and bottom < top then
+    local panelTop = topY
+    local headerFrame = otf.HeaderMenu or otf.Header
+    if headerFrame and EQT.ShouldHideMasterHeader() then
+        local bottom = headerFrame:GetBottom()
+        if bottom and not IsSecret(bottom) and bottom < topY then
             panelTop = bottom
         end
     end
-    return (left - padLeft) * s, panelTop * s, (w + padLeft + SKIN_RIGHT) * s, (h - (top - panelTop)) * s
+    return (leftX - padLeft) * s,
+        panelTop * s,
+        (wid + padLeft + SKIN_RIGHT) * s,
+        (hgt - (topY - panelTop)) * s
 end
 
 -- Takes the spot from Blizzard's tracker, and its width and height while ours
 -- are still the ones a new profile starts on. False while it has no place.
 local function TakeBlizzardSpot()
-    local left, top, w, h = BlizzardPanel()
-    if not left then
+    local leftX, topY, wid, hgt = BlizzardPanel()
+    if not leftX then
         return false
     end
     local c = EQT.DB()
     if (c.customWidth or DEF_WIDTH) == DEF_WIDTH then
-        c.customWidth = Clamp(math.floor(w + 0.5), WIDTH_MIN, WIDTH_MAX)
+        c.customWidth = Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX)
     end
     if (c.customMaxHeight or DEF_HEIGHT) == DEF_HEIGHT then
-        c.customMaxHeight = Clamp(math.floor(h + 0.5), HEIGHT_MIN, HEIGHT_MAX)
+        c.customMaxHeight = Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX)
     end
     -- The panel's top edge; growing up, the bottom edge of the same area.
     c.customPos = Anchored({
         point = "TOPLEFT",
         relPoint = "BOTTOMLEFT",
-        x = math.floor(left + 0.5),
-        y = math.floor(top + 0.5),
+        x = math.floor(leftX + 0.5),
+        y = math.floor(topY + 0.5),
     })
     return true
 end
@@ -1816,9 +1826,9 @@ local function ApplySpot()
             evt:UnregisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
         end
     end
-    frame:SetWidth(Cfg("customWidth") or DEF_WIDTH)
+    widget:SetWidth(Cfg("customWidth") or DEF_WIDTH)
     if CludesUI._unlockActive then
-        frame:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
+        widget:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
     else
         Place()
     end
@@ -1851,13 +1861,13 @@ local function SeedSoon()
 end
 
 local function BuildFrame()
-    frame = CreateFrame("Frame", "CUI_CustomQuestTracker", UIParent)
-    frame:SetFrameStrata("LOW")
-    frame:SetWidth(Cfg("customWidth") or DEF_WIDTH)
-    frame:SetHeight(HEADER_H)
-    frame:SetClampedToScreen(Cfg("forceOnScreen") == true)
-    frame:SetScript("OnShow", function()
-        itemLayer:SetAlpha(frame:GetAlpha())
+    widget = CreateFrame("Frame", "CUI_CustomQuestTracker", UIParent)
+    widget:SetFrameStrata("LOW")
+    widget:SetWidth(Cfg("customWidth") or DEF_WIDTH)
+    widget:SetHeight(HEADER_H)
+    widget:SetClampedToScreen(Cfg("forceOnScreen") == true)
+    widget:SetScript("OnShow", function()
+        itemLayer:SetAlpha(widget:GetAlpha())
         if stale then
             Render()
         else
@@ -1865,7 +1875,7 @@ local function BuildFrame()
         end
     end)
     -- Alpha first: in combat the hide itself waits for combat to end.
-    frame:SetScript("OnHide", function()
+    widget:SetScript("OnHide", function()
         itemLayer:SetAlpha(0)
         SyncItems()
         HideOverlay()
@@ -1873,46 +1883,46 @@ local function BuildFrame()
     -- Item buttons sit outside our frame: they follow its alpha (mouseover fade).
     itemLayer = CreateFrame("Frame", nil, UIParent)
     itemLayer:SetFrameStrata("LOW")
-    itemLayer:SetFrameLevel(frame:GetFrameLevel() + 20)
-    hooksecurefunc(frame, "SetAlpha", function(_, a)
+    itemLayer:SetFrameLevel(widget:GetFrameLevel() + 20)
+    hooksecurefunc(widget, "SetAlpha", function(_, a)
         itemLayer:SetAlpha(a)
     end)
     -- Hover modes only: motion (no clicks) so hover sees the cursor over gaps.
-    frame:SetMouseClickEnabled(false)
-    frame:SetScript("OnEnter", UpdateHover)
-    frame:SetScript("OnLeave", UpdateHover)
-    local holder = CreateFrame("Frame", nil, frame)
-    holder:SetAllPoints()
-    holder:SetFrameLevel(frame:GetFrameLevel())
-    holder.fade = holder:CreateAnimationGroup()
-    holder.fade:SetToFinalAlpha(true)
-    holder.anim = holder.fade:CreateAnimation("Alpha")
-    frame.bgHolder = holder
-    frame.bg = holder:CreateTexture(nil, "BACKGROUND")
-    frame.bg:SetAllPoints()
-    frame.topLine = holder:CreateTexture(nil, "BORDER")
-    frame.topLine:SetPoint("TOPLEFT")
-    frame.topLine:SetPoint("TOPRIGHT")
-    frame.topLine:SetHeight(1)
+    widget:SetMouseClickEnabled(false)
+    widget:SetScript("OnEnter", UpdateHover)
+    widget:SetScript("OnLeave", UpdateHover)
+    local holderFrame = CreateFrame("Frame", nil, widget)
+    holderFrame:SetAllPoints()
+    holderFrame:SetFrameLevel(widget:GetFrameLevel())
+    holderFrame.fade = holderFrame:CreateAnimationGroup()
+    holderFrame.fade:SetToFinalAlpha(true)
+    holderFrame.anim = holderFrame.fade:CreateAnimation("Alpha")
+    widget.bgHolder = holderFrame
+    widget.bg = holderFrame:CreateTexture(nil, "BACKGROUND")
+    widget.bg:SetAllPoints()
+    widget.topLine = holderFrame:CreateTexture(nil, "BORDER")
+    widget.topLine:SetPoint("TOPLEFT")
+    widget.topLine:SetPoint("TOPRIGHT")
+    widget.topLine:SetHeight(1)
 
-    header = CreateFrame("Button", nil, frame)
-    header:SetPoint("TOPLEFT")
-    header:SetPoint("TOPRIGHT")
-    header:SetHeight(HEADER_H)
-    header.text = header:CreateFontString(nil, "OVERLAY")
-    header.text:SetPoint("LEFT", PAD, 0)
-    header.toggle = header:CreateFontString(nil, "OVERLAY")
-    header.toggle:SetPoint("RIGHT", -PAD, 0)
-    header.count = header:CreateFontString(nil, "OVERLAY")
-    header.count:SetPoint("RIGHT", header.toggle, "LEFT", -8, 0)
-    header.count:SetTextColor(1, 1, 1, 0.5)
-    header:SetScript("OnClick", function()
+    headerFrame = CreateFrame("Button", nil, widget)
+    headerFrame:SetPoint("TOPLEFT")
+    headerFrame:SetPoint("TOPRIGHT")
+    headerFrame:SetHeight(HEADER_H)
+    headerFrame.text = headerFrame:CreateFontString(nil, "OVERLAY")
+    headerFrame.text:SetPoint("LEFT", PAD, 0)
+    headerFrame.toggle = headerFrame:CreateFontString(nil, "OVERLAY")
+    headerFrame.toggle:SetPoint("RIGHT", -PAD, 0)
+    headerFrame.count = headerFrame:CreateFontString(nil, "OVERLAY")
+    headerFrame.count:SetPoint("RIGHT", headerFrame.toggle, "LEFT", -8, 0)
+    headerFrame.count:SetTextColor(1, 1, 1, 0.5)
+    headerFrame:SetScript("OnClick", function()
         ToggleCollapsed("all")
     end)
-    header:SetScript("OnEnter", UpdateHover)
-    header:SetScript("OnLeave", UpdateHover)
+    headerFrame:SetScript("OnEnter", UpdateHover)
+    headerFrame:SetScript("OnLeave", UpdateHover)
 
-    scroll = CreateFrame("ScrollFrame", nil, frame)
+    scroll = CreateFrame("ScrollFrame", nil, widget)
     scroll:SetPoint("TOPLEFT", PAD, -HEADER_H)
     scroll:SetPoint("BOTTOMRIGHT", -PAD, PAD)
     scroll:SetClipsChildren(true)
@@ -1920,11 +1930,11 @@ local function BuildFrame()
     scroll:SetScript("OnMouseWheel", function(self, delta)
         ScrollTo(self:GetVerticalScroll() - delta * WHEEL)
     end)
-    child = CreateFrame("Frame", nil, scroll)
-    child:SetSize(1, 1)
-    scroll:SetScrollChild(child)
+    childFrame = CreateFrame("Frame", nil, scroll)
+    childFrame:SetSize(1, 1)
+    scroll:SetScrollChild(childFrame)
 
-    track = CreateFrame("Frame", nil, frame)
+    track = CreateFrame("Frame", nil, widget)
     track:SetWidth(BAR_W)
     track:SetPoint("TOPRIGHT", scroll, "TOPRIGHT", 0, 0)
     track:SetPoint("BOTTOMRIGHT", scroll, "BOTTOMRIGHT", 0, 0)
@@ -1973,8 +1983,8 @@ local function AutoHidden()
         return true
     end
     if instanceType == "raid" then
-        local mode = Cfg("hideInRaidMode")
-        return mode == "always" or (mode ~= "never" and inEncounter)
+        local modeName = Cfg("hideInRaidMode")
+        return modeName == "always" or (modeName ~= "never" and inEncounter)
     end
     return false
 end
@@ -1998,16 +2008,16 @@ local function CanHideInCombat()
     if instanceType == "raid" and Cfg("hideInRaidMode") ~= "never" then
         return true
     end
-    local db = EQT.DB()
-    if CludesUI.VisDependsOnCombat(db, "visibility") then
+    local saved = EQT.DB()
+    if CludesUI.VisDependsOnCombat(saved, "visibility") then
         return true
     end
-    local sel = CludesUI.GetVisibilitySelection(db, "visibility")
+    local sel = CludesUI.GetVisibilitySelection(saved, "visibility")
     if sel.in_raid or sel.in_party or sel.solo then
         return true
     end
     for _, k in ipairs(CludesUI.VIS_OPT_KEYS) do
-        if db[k] and not FIGHT_STATIC[k] then
+        if saved[k] and not FIGHT_STATIC[k] then
             return true
         end
     end
@@ -2019,16 +2029,16 @@ local function Blocked()
 end
 
 local function UpdateVisibility()
-    if not frame then
+    if not widget then
         return
     end
     local vis = not Blocked() and CludesUI.EvalVisibility(EQT.DB())
     if not vis then
-        frame:Hide()
+        widget:Hide()
         return
     end
-    frame:Show()
-    frame:SetAlpha(vis == "mouseover" and 0 or 1)
+    widget:Show()
+    widget:SetAlpha(vis == "mouseover" and 0 or 1)
 end
 
 -------------------------------------------------------------------------------
@@ -2055,18 +2065,18 @@ evt:SetScript("OnEvent", function(_, event, questID, added)
         -- InCombatLockdown() is already true here, but protected writes stay
         -- legal until this handler returns: last chance to hide secure buttons,
         -- which would otherwise stay clickable on a hidden tracker.
-        if overlay then
-            overlay:Hide()
+        if overlayFrame then
+            overlayFrame:Hide()
         end
         if CanHideInCombat() then
-            for _, b in ipairs(items) do
+            for _, b in ipairs(itemList) do
                 b:Hide()
             end
-            ns.CombatQueue.Defer("EQT_CustomItems", SyncItems)
+            mod.CombatQueue.Defer("EQT_CustomItems", SyncItems)
         end
         return
     elseif event == "BAG_UPDATE_COOLDOWN" then
-        for _, b in ipairs(items) do
+        for _, b in ipairs(itemList) do
             if b:IsShown() then
                 UpdateItemCooldown(b)
             end
@@ -2092,11 +2102,11 @@ evt:SetScript("OnEvent", function(_, event, questID, added)
             CharDB().ctUntracked[questID] = nil
         end
     elseif event == "QUEST_REMOVED" and questID then
-        local db = CharDB()
-        db.ctUntracked[questID] = nil
-        db.ctCollapsed[questID] = nil
-        db.ctDoneOpen[questID] = nil
-        db.ctPinned[questID] = nil
+        local saved = CharDB()
+        saved.ctUntracked[questID] = nil
+        saved.ctCollapsed[questID] = nil
+        saved.ctDoneOpen[questID] = nil
+        saved.ctPinned[questID] = nil
         prevObj[questID] = nil
     elseif event == "ENCOUNTER_START" or event == "ENCOUNTER_END" or event == "PLAYER_ENTERING_WORLD" then
         if event == "PLAYER_ENTERING_WORLD" then
@@ -2131,7 +2141,7 @@ function EQT.InitCustom()
         RefreshFonts()
     end
     EQT.ApplyForceOnScreen = function()
-        frame:SetClampedToScreen(Cfg("forceOnScreen") == true)
+        widget:SetClampedToScreen(Cfg("forceOnScreen") == true)
     end
     EQT.ApplyMasterHeaderVisibility = Noop
     EQT.QueueResize = Noop
@@ -2144,7 +2154,7 @@ function EQT.InitCustom()
         evt:RegisterEvent(e)
     end
     CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
-    CludesUI.RegisterMouseoverTarget(frame, function()
+    CludesUI.RegisterMouseoverTarget(widget, function()
         return not Blocked() and CludesUI.VisWantsMouseover(EQT.DB(), "visibility")
     end)
     CludesUI.RegAccent({ type = "callback", fn = EQT.RestyleAll })
@@ -2162,7 +2172,7 @@ function EQT.InitCustom()
             group = "Quest Tracker",
             order = 560,
             getFrame = function()
-                return frame
+                return widget
             end,
             isHidden = function()
                 return not Cfg("enabled")
@@ -2175,27 +2185,30 @@ function EQT.InitCustom()
                 return Cfg("customWidth") or DEF_WIDTH, Cfg("customMaxHeight") or DEF_HEIGHT
             end,
             -- Unlock Mode also calls these with no size, to lay the element out again.
-            setWidth = function(_, w)
-                if w then
-                    EQT.Set("customWidth", Clamp(math.floor(w + 0.5), WIDTH_MIN, WIDTH_MAX))
+            setWidth = function(_, wid)
+                if wid then
+                    EQT.Set("customWidth", Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX))
                 end
-                frame:SetWidth(Cfg("customWidth") or DEF_WIDTH)
+                widget:SetWidth(Cfg("customWidth") or DEF_WIDTH)
                 Queue()
             end,
-            setHeight = function(_, h)
-                if h then
-                    EQT.Set("customMaxHeight", Clamp(math.floor(h + 0.5), HEIGHT_MIN, HEIGHT_MAX))
+            setHeight = function(_, hgt)
+                if hgt then
+                    EQT.Set("customMaxHeight", Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX))
                 end
                 if CludesUI._unlockActive then
-                    frame:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
+                    widget:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
                 end
                 Queue()
             end,
-            savePos = function(_, point, relPoint, x, y)
-                if not point then
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                if not anchorPoint then
                     return
                 end
-                EQT.Set("customPos", Anchored({ point = point, relPoint = relPoint, x = x, y = y }))
+                EQT.Set(
+                    "customPos",
+                    Anchored({ point = anchorPoint, relPoint = relPoint, x = posX, y = posY })
+                )
                 if not CludesUI._unlockActive then
                     Place()
                 end
@@ -2215,9 +2228,9 @@ function EQT.InitCustom()
     -- session takes it back to the height of its quests. A drag leaves the
     -- frame on Unlock Mode's own anchor, so it first goes back onto the edge
     -- it keeps.
-    CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(active)
-        if active then
-            frame:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
+    CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive)
+        if isActive then
+            widget:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
         else
             Place()
         end
@@ -2246,7 +2259,7 @@ function EQT.SetCustomGrowUp(up)
     if p and p.point then
         EQT.Set("customPos", Anchored(p))
     end
-    if frame then
+    if widget then
         ApplySpot()
     end
 end

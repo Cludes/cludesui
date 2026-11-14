@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  desaturation, active state animations, and per-spec profiles.
 --  Does NOT parse secret values works around restricted APIs.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 if
     not (
         CludesUI
@@ -24,7 +24,7 @@ then
     CUI_CLIENT_BLOCKED = true
     return
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the loot roll placement uses the parent's frame placer, the hooks file its frame-data constructor, Talent Conditions the parent's talent check)
-CludesUI._ModuleNS["CludesUICooldownManager"] = ns -- LOD options files read this module ns via the registry
+CludesUI._ModuleNS["CludesUICooldownManager"] = mod -- LOD options files read this module ns via the registry
 
 -- CPU-attribution shell pool: the engine bills a handler's call tree to the addon
 -- whose context created the frame, so frames built later under the parent's dispatch
@@ -33,15 +33,15 @@ CludesUI._ModuleNS["CludesUICooldownManager"] = ns -- LOD options files read thi
 -- events/scripts. No release -- throwaways use CreateFrame directly.
 do
     local pool = {}
-    local n = 47 -- keep above every shell this module takes, with spare
-    for i = 1, n do
-        pool[i] = CreateFrame("Frame")
+    local num = 47 -- keep above every shell this module takes, with spare
+    for idx = 1, num do
+        pool[idx] = CreateFrame("Frame")
     end
-    ns.TakeShell = function()
-        if n > 0 then
-            local f = pool[n]
-            pool[n] = nil
-            n = n - 1
+    mod.TakeShell = function()
+        if num > 0 then
+            local f = pool[num]
+            pool[num] = nil
+            num = num - 1
             return f
         end
         -- Pool exhausted (not expected): falls back to CreateFrame (bills the parent). Bump n above if this ever happens.
@@ -51,13 +51,13 @@ end
 
 -- Run-once-after-combat queue (CludesUI_Ticker.lua). Frame taken in the main
 -- chunk, so drained work bills CooldownManager. Keys are per purpose.
-ns.CombatQueue = CludesUI.NewCombatQueue(ns.TakeShell())
+mod.CombatQueue = CludesUI.NewCombatQueue(mod.TakeShell())
 
 -- Per-addon border texture defaults (same as Action Bars -- same size system)
 CludesUI.RegisterBorderDefaults("cdm", CludesUI.BORDER_DEFAULTS_BUTTONS)
 
 local ECME = CludesUI.Lite.NewAddon("CludesUICooldownManager")
-ns.ECME = ECME
+mod.ECME = ECME
 
 -- Style flags (Global Settings > Style: CludesUI, Blizzard or Classic WoW
 -- UI). Reload-gated: each is read from the profile ONCE (first call with a
@@ -66,133 +66,133 @@ ns.ECME = ECME
 -- prompts for a reload when a switched-to profile carries a different flag.
 -- Every call site is a build/restyle path, never a per-tick one.
 -- The style this module RENDERS on its icons this session: "cui" | "blizzard" | "classic".
-function ns.CdmIconStyle()
-    local v = ns._cdmIconStyle
-    if v == nil then
+function mod.CdmIconStyle()
+    local val = mod._cdmIconStyle
+    if val == nil then
         local p = ECME.db and ECME.db.profile
         if not p then
             return "cui"
         end
-        v = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
-        ns._cdmIconStyle = v
+        val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+        mod._cdmIconStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it.
-        ns._cdmFvIcons = v == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
+        mod._cdmFvIcons = val == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
     end
-    return v
+    return val
 end
 -- Stock-art mode: true for both stock styles (the geometry, gating and chrome they share).
-function ns.CdmBlizzIcons()
-    return ns.CdmIconStyle() ~= "cui"
+function mod.CdmBlizzIcons()
+    return mod.CdmIconStyle() ~= "cui"
 end
-function ns.CdmClassicIcons()
-    return ns.CdmIconStyle() == "classic"
+function mod.CdmClassicIcons()
+    return mod.CdmIconStyle() == "classic"
 end
 -- The style the tracked buff bars render this session, latched the same way.
-function ns.CdmBarStyle()
-    local v = ns._cdmBarStyle
-    if v == nil then
+function mod.CdmBarStyle()
+    local val = mod._cdmBarStyle
+    if val == nil then
         local p = ECME.db and ECME.db.profile
         if not p then
             return "cui"
         end
-        v = (p.useClassicStyleBars and "classic") or (p.useBlizzardStyleBars and "blizzard") or "cui"
-        ns._cdmBarStyle = v
-        ns._cdmFvBars = v == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyleBars == true
+        val = (p.useClassicStyleBars and "classic") or (p.useBlizzardStyleBars and "blizzard") or "cui"
+        mod._cdmBarStyle = val
+        mod._cdmFvBars = val == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyleBars == true
     end
-    return v
+    return val
 end
-function ns.CdmBlizzBars()
-    return ns.CdmBarStyle() ~= "cui"
+function mod.CdmBlizzBars()
+    return mod.CdmBarStyle() ~= "cui"
 end
-function ns.CdmClassicBars()
-    return ns.CdmBarStyle() == "classic"
+function mod.CdmClassicBars()
+    return mod.CdmBarStyle() == "classic"
 end
 -- Blizzard's cooldown viewer art: the rounded icon mask, the bevel ring drawn
 -- around every icon, and the rounded swipe file the viewer's Cooldown uses.
-ns.CDM_BLIZZ_MASK = "UI-HUD-CoolDownManager-Mask"
-ns.CDM_BLIZZ_OVERLAY = "UI-HUD-CoolDownManager-IconOverlay"
-ns.CDM_BLIZZ_SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
+mod.CDM_BLIZZ_MASK = "UI-HUD-CoolDownManager-Mask"
+mod.CDM_BLIZZ_OVERLAY = "UI-HUD-CoolDownManager-IconOverlay"
+mod.CDM_BLIZZ_SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
 -- WoW Forever variant of Blizzard Style on the icons / the tracked buff bars
 -- (latched with the style; false off Forever).
-function ns.CdmIconsForever()
-    if ns._cdmIconStyle == nil then
-        ns.CdmIconStyle()
+function mod.CdmIconsForever()
+    if mod._cdmIconStyle == nil then
+        mod.CdmIconStyle()
     end
-    return ns._cdmFvIcons == true
+    return mod._cdmFvIcons == true
 end
-function ns.CdmBarsForever()
-    if ns._cdmBarStyle == nil then
-        ns.CdmBarStyle()
+function mod.CdmBarsForever()
+    if mod._cdmBarStyle == nil then
+        mod.CdmBarStyle()
     end
-    return ns._cdmFvBars == true
+    return mod._cdmFvBars == true
 end
 -- Blizzard Style ring art: tex:SetAtlas(name) on every client but WoW Forever,
 -- which draws a name it swapped for its own art from the retail sheet
 -- (CludesUI.StockAtlas) unless the WoW Forever look renders (`bars` = the
 -- tracked buff bars' row).
-function ns.CdmStockAtlas(tex, name, bars)
+function mod.CdmStockAtlas(texture, name, barList)
     local fv
-    if bars then
-        fv = ns.CdmBarsForever()
+    if barList then
+        fv = mod.CdmBarsForever()
     else
-        fv = ns.CdmIconsForever()
+        fv = mod.CdmIconsForever()
     end
     if fv then
-        return tex:SetAtlas(name)
+        return texture:SetAtlas(name)
     end
-    return CludesUI.StockAtlas(tex, name)
+    return CludesUI.StockAtlas(texture, name)
 end
 -- Ring inset as a fraction of the icon size (the viewer anchors its 50px
 -- essential icons at -9/+8, i.e. the ring sits proportionally outside the icon).
-ns.CDM_BLIZZ_RING_X = 0.18
-ns.CDM_BLIZZ_RING_Y = 0.16
+mod.CDM_BLIZZ_RING_X = 0.18
+mod.CDM_BLIZZ_RING_Y = 0.16
 -- Classic WoW UI icon art: the vanilla action button ring, a plain 66px
 -- texture on a 36px button centred one pixel low, sized by the icon it rings.
 -- Classic icons are square: no mask, full art, CUI's own square swipe.
-ns.CDM_CLASSIC_RING = "Interface\\Buttons\\UI-Quickslot2"
-ns.CDM_CLASSIC_RING_SCALE = 66 / 36
-ns.CDM_CLASSIC_RING_Y = -1 / 36
+mod.CDM_CLASSIC_RING = "Interface\\Buttons\\UI-Quickslot2"
+mod.CDM_CLASSIC_RING_SCALE = 66 / 36
+mod.CDM_CLASSIC_RING_Y = -1 / 36
 -- Places a classic ring texture round a w x h icon region.
-function ns.CdmPlaceClassicRing(ov, anchor, w, h)
-    ov:ClearAllPoints()
-    ov:SetSize(w * ns.CDM_CLASSIC_RING_SCALE, h * ns.CDM_CLASSIC_RING_SCALE)
-    ov:SetPoint("CENTER", anchor, "CENTER", 0, h * ns.CDM_CLASSIC_RING_Y)
+function mod.CdmPlaceClassicRing(shade, anchorFrame, wid, hgt)
+    shade:ClearAllPoints()
+    shade:SetSize(wid * mod.CDM_CLASSIC_RING_SCALE, hgt * mod.CDM_CLASSIC_RING_SCALE)
+    shade:SetPoint("CENTER", anchorFrame, "CENTER", 0, hgt * mod.CDM_CLASSIC_RING_Y)
 end
 -- The swipe file the latched icon style draws: the viewer's rounded swipe
 -- under Blizzard Style, CUI's square swipe otherwise.
-function ns.CdmSwipeFile()
-    if ns.CdmIconStyle() == "blizzard" then
-        return ns.CDM_BLIZZ_SWIPE
+function mod.CdmSwipeFile()
+    if mod.CdmIconStyle() == "blizzard" then
+        return mod.CDM_BLIZZ_SWIPE
     end
     return "Interface\\AddOns\\CludesUI\\media\\white-square.png"
 end
 -- Creation-time crop for icons on frames we build ourselves (trinkets,
 -- placeholders, custom buffs, item presets): the CUI 8% zoom, or the full art
 -- under a stock style (RefreshCDMIconAppearance re-applies the same rule).
-function ns.CdmOwnIconCrop(tex)
-    if ns.CdmBlizzIcons() then
-        tex:SetTexCoord(0, 1, 0, 1)
+function mod.CdmOwnIconCrop(texture)
+    if mod.CdmBlizzIcons() then
+        texture:SetTexCoord(0, 1, 0, 1)
     else
-        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     end
 end
 
 -- Snap to whole physical pixels at the bar's effective scale (same convert-round-convert approach as the border system).
-local function SnapForScale(x, barScale)
-    if x == 0 then
+local function SnapForScale(posX, barScale)
+    if posX == 0 then
         return 0
     end
-    local PP = CludesUI and CludesUI.PP
-    if PP then
-        return PP.Scale(x)
+    local Pix = CludesUI and CludesUI.PP
+    if Pix then
+        return Pix.Scale(posX)
     end
-    return math.floor(x + 0.5)
+    return math.floor(posX + 0.5)
 end
 
 local floor = math.floor
 local GetTime = GetTime
 
-ns.DEFAULT_MAPPING_NAME = "Buff Name (eg: Divine Purpose)"
+mod.DEFAULT_MAPPING_NAME = "Buff Name (eg: Divine Purpose)"
 
 -------------------------------------------------------------------------------
 --  Shape Constants (shared with action bars)
@@ -232,19 +232,19 @@ local CDM_SHAPES = {
         square = 0.75,
     },
 }
-ns.CDM_SHAPES = CDM_SHAPES
-ns.CDM_SHAPE_MASKS = CDM_SHAPES.masks
-ns.CDM_SHAPE_BORDERS = CDM_SHAPES.borders
-ns.CDM_SHAPE_ZOOM_DEFAULTS = CDM_SHAPES.zoomDefaults
-ns.CDM_SHAPE_EDGE_SCALES = CDM_SHAPES.edgeScales
+mod.CDM_SHAPES = CDM_SHAPES
+mod.CDM_SHAPE_MASKS = CDM_SHAPES.masks
+mod.CDM_SHAPE_BORDERS = CDM_SHAPES.borders
+mod.CDM_SHAPE_ZOOM_DEFAULTS = CDM_SHAPES.zoomDefaults
+mod.CDM_SHAPE_EDGE_SCALES = CDM_SHAPES.edgeScales
 -- Cropped shape, per-bar Adjust Crop (mirrors Nameplates' ns.GetAuraCrop). iconCropPercent is the
 -- per-side trim %, 5-25; unset = 10, which yields exactly the classic fixed crop (height factor
 -- 0.80, 0.10 texcoord trim per side), so bars that never touch it are unchanged. Only called from
 -- "cropped" branches. do/end + ns functions: no new main-chunk locals.
 do
     local CROP_DEFAULT_PCT = 10
-    local function CropPercent(bd)
-        local pct = tonumber(bd and bd.iconCropPercent) or CROP_DEFAULT_PCT
+    local function CropPercent(edge)
+        local pct = tonumber(edge and edge.iconCropPercent) or CROP_DEFAULT_PCT
         if pct < 5 then
             pct = 5
         elseif pct > 25 then
@@ -252,14 +252,14 @@ do
         end
         return pct
     end
-    ns.CdmCropPercent = CropPercent
+    mod.CdmCropPercent = CropPercent
     -- Icon height as a fraction of width.
-    function ns.CdmCropFactor(bd)
-        return 1 - 2 * (CropPercent(bd) / 100)
+    function mod.CdmCropFactor(edge)
+        return 1 - 2 * (CropPercent(edge) / 100)
     end
     -- Vertical texcoord trim per side, added on top of the bar's zoom.
-    function ns.CdmCropTrim(bd)
-        return CropPercent(bd) / 100
+    function mod.CdmCropTrim(edge)
+        return CropPercent(edge) / 100
     end
 end
 
@@ -273,19 +273,19 @@ local _inCombat = false
 
 -- Shared read for other CDM files (Tracking Bars' "Only In Combat" gate). Buffered,
 -- not raw InCombatLockdown(): debounced combat-exit so brief OOC blips don't flash a bar away.
-function ns.CDMInCombat()
+function mod.CDMInCombat()
     return _inCombat
 end
 
 -- Resting alpha for a bar's icons: oocFadeAlpha when enabled+OOC, else barOpacity.
 -- All alpha restores go through this so the fade survives cd-state/buff re-renders.
-local function EffectiveBarAlpha(barData)
-    if barData and barData.oocFadeEnabled and not _inCombat then
-        return barData.oocFadeAlpha or 0.5
+local function EffectiveBarAlpha(barInfo)
+    if barInfo and barInfo.oocFadeEnabled and not _inCombat then
+        return barInfo.oocFadeAlpha or 0.5
     end
-    return (barData and barData.barOpacity) or 1
+    return (barInfo and barInfo.barOpacity) or 1
 end
-ns.EffectiveBarAlpha = EffectiveBarAlpha
+mod.EffectiveBarAlpha = EffectiveBarAlpha
 
 -- Placeholders rendered at alpha 0: "Keep Buffs in Same Place"
 -- (hidePlaceholderIcon) and a hosted "Visibility When Missing: Hidden" slot
@@ -296,16 +296,16 @@ ns.EffectiveBarAlpha = EffectiveBarAlpha
 -- (Blizzard hides its own inactive items instead, so those slots hold no frame
 -- at all). Single predicate so the alpha passes and the mouse passes can never
 -- disagree. Off-by-default flags first: non-users stop at the first field.
-local function IsPlaceholderRenderHidden(icon, barData)
-    if not icon then
+local function IsPlaceholderRenderHidden(glyph, barInfo)
+    if not glyph then
         return false
     end
-    return ((barData and barData.hidePlaceholderIcon) or icon._missingHidden)
-            and icon._isPlaceholderFrame
+    return ((barInfo and barInfo.hidePlaceholderIcon) or glyph._missingHidden)
+            and glyph._isPlaceholderFrame
             and true
         or false
 end
-ns.IsPlaceholderRenderHidden = IsPlaceholderRenderHidden
+mod.IsPlaceholderRenderHidden = IsPlaceholderRenderHidden
 
 -- Multi-charge spell tracking
 local _multiChargeSpells = {}
@@ -336,7 +336,7 @@ local _cdmMouseState = setmetatable({}, { __mode = "k" })
 
 -- Decoration data stored externally by CludesUICdmHooks.lua (loads later).
 local function _getFD(f)
-    return ns._hookFrameData and ns._hookFrameData[f]
+    return mod._hookFrameData and mod._hookFrameData[f]
 end
 
 -- Racial ability data
@@ -385,13 +385,13 @@ if CludesUI.IS_FOREVER then
     -- Each Skyborne variant learns one of the two.
     RACE_RACIALS.Skyborne = { 1259705, 1259686 } -- Read Ley Line, Skysight
 end
-ns.RACE_RACIALS = RACE_RACIALS
+mod.RACE_RACIALS = RACE_RACIALS
 
 -- Where a repopulate another addon requests (CludesUI.RequestCDMRepopulate,
 -- for profile installers) puts this character's racial slot, by racial spell
 -- ID (both clients'): the Cooldowns bar (Blizzard's Essential) or the Utility
 -- bar, at its end. A racial not listed follows Blizzard's layout instead.
-ns.RACIAL_REPOP_BAR = {
+mod.RACIAL_REPOP_BAR = {
     [20572] = "cooldowns",
     [33697] = "cooldowns",
     [33702] = "cooldowns", -- Blood Fury
@@ -411,14 +411,14 @@ ns.RACIAL_REPOP_BAR = {
 
 local ALL_RACIAL_SPELLS = {}
 for _, racials in pairs(RACE_RACIALS) do
-    for _, entry in ipairs(racials) do
-        local sid = type(entry) == "table" and entry[1] or entry
-        ALL_RACIAL_SPELLS[sid] = true
+    for _, record in ipairs(racials) do
+        local spellRef = type(record) == "table" and record[1] or record
+        ALL_RACIAL_SPELLS[spellRef] = true
     end
 end
 -- RPT sync must recognize the racial slot for ANY race so a profile shared across
 -- different-race characters syncs too (NormalizeRacialAssignments remaps the ID at spec build).
-ns.ALL_RACIAL_SPELLS = ALL_RACIAL_SPELLS
+mod.ALL_RACIAL_SPELLS = ALL_RACIAL_SPELLS
 
 local _myRacials = {}
 local _myRacialsSet = {}
@@ -431,17 +431,19 @@ local _activeRacialSpellID = nil
 -- Gift of the Naaru have only one in-book). Re-run at build time too: the spellbook may be unpopulated during early-login OnEnable.
 local function ResolveActiveRacial()
     _activeRacialSpellID = nil
-    for _, sid in ipairs(_myRacials) do
-        local inBook = C_SpellBook and C_SpellBook.IsSpellInSpellBook and C_SpellBook.IsSpellInSpellBook(sid)
+    for _, spellRef in ipairs(_myRacials) do
+        local inBook = C_SpellBook
+            and C_SpellBook.IsSpellInSpellBook
+            and C_SpellBook.IsSpellInSpellBook(spellRef)
         if inBook then
-            _activeRacialSpellID = sid
+            _activeRacialSpellID = spellRef
             break
         end
     end
     if not _activeRacialSpellID then
         _activeRacialSpellID = _myRacials[1]
     end
-    ns._activeRacialSpellID = _activeRacialSpellID
+    mod._activeRacialSpellID = _activeRacialSpellID
     return _activeRacialSpellID
 end
 
@@ -509,46 +511,46 @@ local BUFF_BAR_PRESETS = {
         duration = 18,
     },
 }
-ns.BUFF_BAR_PRESETS = BUFF_BAR_PRESETS
+mod.BUFF_BAR_PRESETS = BUFF_BAR_PRESETS
 
 -- Horde casts Bloodlust (2825), Alliance casts Heroism (32182). UnitFactionGroup
 -- can read nil this early in a client session, and a wrong read baked into the
 -- table would stick for the whole session (a Horde player got the Heroism name,
 -- icon and id in the picker), so OnEnable calls this again once the player loads.
-function ns.RefreshLustPresetFaction()
+function mod.RefreshLustPresetFaction()
     local alliance = UnitFactionGroup("player") == "Alliance"
     local name = alliance and "Heroism" or "Bloodlust"
-    local icon = alliance and "Interface\\Icons\\ability_shaman_heroism"
+    local glyph = alliance and "Interface\\Icons\\ability_shaman_heroism"
         or "Interface\\Icons\\spell_nature_bloodlust"
-    ns._lustPresetSpellID = alliance and 32182 or 2825
+    mod._lustPresetSpellID = alliance and 32182 or 2825
     for _, p in ipairs(BUFF_BAR_PRESETS) do
         if p.key == "bloodlust" then
-            p.name, p.icon = name, icon
+            p.name, p.icon = name, glyph
             -- This character's id leads: everything that stores a preset takes
             -- spellIDs[1], while the membership tests read the whole list.
-            p.spellIDs[1] = ns._lustPresetSpellID
+            p.spellIDs[1] = mod._lustPresetSpellID
             p.spellIDs[2] = alliance and 2825 or 32182
             break
         end
     end
     -- The Tracking Bar list copies name/icon by value at load (spellIDs is the
     -- same table), and is built after this file, so it is absent on the first call.
-    for _, e in ipairs(ns.TBB_POPULAR_BUFFS or {}) do
+    for _, e in ipairs(mod.TBB_POPULAR_BUFFS or {}) do
         if e.key == "bloodlust" then
-            e.name, e.icon = name, icon
+            e.name, e.icon = name, glyph
             break
         end
     end
 end
-ns.RefreshLustPresetFaction()
+mod.RefreshLustPresetFaction()
 
 -- A profile shared between a Horde and an Alliance character keeps whichever lust
 -- id was stored first, so icon art resolves through here instead of off that id.
-function ns.LustPresetIconSpellID(sid)
-    if ns.IsLustPresetSpell and ns.IsLustPresetSpell(sid) then
-        return ns._lustPresetSpellID or sid
+function mod.LustPresetIconSpellID(spellRef)
+    if mod.IsLustPresetSpell and mod.IsLustPresetSpell(spellRef) then
+        return mod._lustPresetSpellID or spellRef
     end
-    return sid
+    return spellRef
 end
 
 -- Item presets for CD/utility bars (potions that track cooldowns). displayOrder is a
@@ -658,7 +660,7 @@ local CDM_ITEM_PRESETS = {
         nativeCategory = 2566,
     },
 }
-ns.CDM_ITEM_PRESETS = CDM_ITEM_PRESETS
+mod.CDM_ITEM_PRESETS = CDM_ITEM_PRESETS
 
 -- WoW Forever: the lust, Time Spiral and current-season potion presets have no
 -- vanilla counterpart, so both lists drop them here, before any reader (the
@@ -682,10 +684,10 @@ if CludesUI.IS_FOREVER then
         lightfused_mana = true,
         demonic_healthstone = true,
     }
-    for _, list in ipairs({ BUFF_BAR_PRESETS, CDM_ITEM_PRESETS }) do
-        for i = #list, 1, -1 do
-            if drop[list[i].key] then
-                table.remove(list, i)
+    for _, entries in ipairs({ BUFF_BAR_PRESETS, CDM_ITEM_PRESETS }) do
+        for idx = #entries, 1, -1 do
+            if drop[entries[idx].key] then
+                table.remove(entries, idx)
             end
         end
     end
@@ -701,7 +703,7 @@ end
 
 -- Pandemic Glow is the Anti-Clip Glow (CUI_CDM_ForeverAntiClip.lua) where auras
 -- carry no time over on a refresh: WoW Forever. The one gate every reader asks.
-ns.CDM_ANTI_CLIP = CludesUI.IS_FOREVER == true
+mod.CDM_ANTI_CLIP = CludesUI.IS_FOREVER == true
 
 -- Built after the WoW Forever drop, so they describe the presets this client offers.
 do
@@ -718,20 +720,20 @@ do
         if p.potFamily then
             families[#families + 1] = { key = p.potFamily, name = p.familyName, preset = p }
         end
-        local cat = p.nativeCategory
-        if cat then
-            local list = nativeKeys[cat]
-            if not list then
-                list = {}
-                nativeKeys[cat] = list
+        local category = p.nativeCategory
+        if category then
+            local entries = nativeKeys[category]
+            if not entries then
+                entries = {}
+                nativeKeys[category] = entries
             end
-            list[#list + 1] = -p.itemID
+            entries[#entries + 1] = -p.itemID
         end
         byKey[-p.itemID] = p
     end
-    ns.COMBAT_POTION_FAMILIES = families
-    ns.CDM_NATIVE_ITEM_KEYS = nativeKeys
-    function ns.ItemPresetForKey(key)
+    mod.COMBAT_POTION_FAMILIES = families
+    mod.CDM_NATIVE_ITEM_KEYS = nativeKeys
+    function mod.ItemPresetForKey(key)
         return byKey[key]
     end
 end
@@ -971,7 +973,7 @@ local DEFAULTS = {
 -- broken: true while a part file loads; a file that fails leaves it set and
 -- the files behind it return at their first lines (same for the Hooks and
 -- Buff Bars tables).
-CludesUI.NewInternals(ns, "_internals", {
+CludesUI.NewInternals(mod, "_internals", {
     _bonusScanSeen = _bonusScanSeen,
     _cdmKeybindCache = _cdmKeybindCache,
     _cdmKeybindRank = _cdmKeybindRank,
@@ -994,8 +996,8 @@ CludesUI.NewInternals(ns, "_internals", {
     ResolveActiveRacial = ResolveActiveRacial,
     SnapForScale = SnapForScale,
     inCombatSetters = {
-        function(v)
-            _inCombat = v
+        function(val)
+            _inCombat = val
         end,
     },
 }, { SetInCombat = "inCombatSetters" })

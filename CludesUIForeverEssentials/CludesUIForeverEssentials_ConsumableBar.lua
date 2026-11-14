@@ -49,7 +49,7 @@ local F =
 local Get, Enabled = F.Get, F.Enabled
 
 local GAP = 3
-local holder
+local holderFrame
 local buttons = {}
 local dirty = true
 
@@ -59,48 +59,48 @@ end
 
 -- subclass -> category order index, for the categories turned on.
 local function WantedSubs()
-    local want = {}
-    for i, c in ipairs(CATEGORIES) do
+    local wanted = {}
+    for idx, c in ipairs(CATEGORIES) do
         if Get(c.key) then
             for _, s in ipairs(c.subs) do
-                want[s] = i
+                wanted[s] = idx
             end
         end
     end
-    return want
+    return wanted
 end
 
 -- The items to show: { {id, order}, ... } in bar order.
 local function Collect()
-    local want, seen, list = WantedSubs(), {}, {}
+    local wanted, seen, entries = WantedSubs(), {}, {}
     for bag = 0, NUM_BAG_SLOTS or 4 do
-        for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local id = C_Container.GetContainerItemID(bag, slot)
-            if id and not seen[id] then
-                seen[id] = true
-                local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(id)
-                local order = classID == Enum.ItemClass.Consumable and want[subID]
-                if order and (subID ~= SUB.other or C_Item.GetItemSpell(id)) then
-                    list[#list + 1] = { id = id, order = order }
+        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident = C_Container.GetContainerItemID(bag, slotIndex)
+            if ident and not seen[ident] then
+                seen[ident] = true
+                local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(ident)
+                local sequence = classID == Enum.ItemClass.Consumable and wanted[subID]
+                if sequence and (subID ~= SUB.other or C_Item.GetItemSpell(ident)) then
+                    entries[#entries + 1] = { id = ident, order = sequence }
                 end
             end
         end
     end
-    table.sort(list, function(a, b)
+    table.sort(entries, function(a, b)
         if a.order ~= b.order then
             return a.order < b.order
         end
         return a.id < b.id
     end)
-    return list
+    return entries
 end
 
-local function Button(i)
-    local b = buttons[i]
+local function Button(idx)
+    local b = buttons[idx]
     if b then
         return b
     end
-    b = CreateFrame("Button", nil, holder, "SecureActionButtonTemplate")
+    b = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
     b:RegisterForClicks("AnyUp", "AnyDown")
     b:SetAttribute("type", "item")
     b.icon = b:CreateTexture(nil, "ARTWORK")
@@ -126,7 +126,7 @@ local function Button(i)
     b:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[i] = b
+    buttons[idx] = b
     return b
 end
 
@@ -134,9 +134,9 @@ end
 local function Paint()
     for _, b in ipairs(buttons) do
         if b:IsShown() and b.itemID then
-            local n = C_Item.GetItemCount(b.itemID, false, true) or 0
-            b.count:SetText(n > 1 and n or (n == 0 and "|cffff40400|r" or ""))
-            b.icon:SetDesaturated(n == 0)
+            local num = C_Item.GetItemCount(b.itemID, false, true) or 0
+            b.count:SetText(num > 1 and num or (num == 0 and "|cffff40400|r" or ""))
+            b.icon:SetDesaturated(num == 0)
             local start, duration, enable = C_Container.GetItemCooldown(b.itemID)
             if start and duration and duration > 1.5 and enable ~= 0 then
                 b.cd:SetCooldown(start, duration)
@@ -149,7 +149,7 @@ end
 
 -- Lays the row out again; out of combat only, the buttons are secure.
 local function Layout()
-    if not holder then
+    if not holderFrame then
         return
     end
     if InCombatLockdown() then
@@ -158,44 +158,44 @@ local function Layout()
         return
     end
     dirty = false
-    local size, max = Get("iconSize"), Get("maxIcons")
-    local list = Enabled() and Collect() or {}
-    local n = math.min(#list, max)
-    for i = 1, n do
-        local id = list[i].id
-        local b = Button(i)
-        b.itemID = id
-        b:SetAttribute("item", "item:" .. id)
-        b.icon:SetTexture(C_Item.GetItemIconByID(id))
-        b:SetSize(size, size)
+    local dim, upper = Get("iconSize"), Get("maxIcons")
+    local entries = Enabled() and Collect() or {}
+    local num = math.min(#entries, upper)
+    for idx = 1, num do
+        local ident = entries[idx].id
+        local b = Button(idx)
+        b.itemID = ident
+        b:SetAttribute("item", "item:" .. ident)
+        b.icon:SetTexture(C_Item.GetItemIconByID(ident))
+        b:SetSize(dim, dim)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holder, "LEFT", (i - 1) * (size + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
         b:Show()
     end
-    for i = n + 1, #buttons do
-        buttons[i]:Hide()
-        buttons[i].itemID = nil
+    for idx = num + 1, #buttons do
+        buttons[idx]:Hide()
+        buttons[idx].itemID = nil
     end
-    holder:SetSize(math.max(1, n) * (size + GAP) - GAP, size)
+    holderFrame:SetSize(math.max(1, num) * (dim + GAP) - GAP, dim)
     Paint()
 end
 
 local function Build()
-    if holder then
-        return holder
+    if holderFrame then
+        return holderFrame
     end
-    holder = CreateFrame("Frame", "CludesUIConsumableBar", UIParent)
-    holder:SetSize(Get("iconSize"), Get("iconSize"))
-    return holder
+    holderFrame = CreateFrame("Frame", "CludesUIConsumableBar", UIParent)
+    holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
+    return holderFrame
 end
 
 local ev = CreateFrame("Frame")
 local queued
-ev:SetScript("OnEvent", function(_, event)
-    if event == "BAG_UPDATE_COOLDOWN" then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "BAG_UPDATE_COOLDOWN" then
         return Paint()
     end
-    if event == "PLAYER_REGEN_ENABLED" and not dirty then
+    if evt == "PLAYER_REGEN_ENABLED" and not dirty then
         return
     end
     if queued then
@@ -217,7 +217,7 @@ local function Apply()
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
         ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
         if not CludesUI._unlockActive and not InCombatLockdown() then
-            F.Place(holder)
+            F.Place(holderFrame)
         end
     else
         ev:UnregisterAllEvents()
@@ -235,11 +235,11 @@ F.Start(Apply, {
         if build then
             Build()
         end
-        return holder
+        return holderFrame
     end,
     size = function()
-        local size = Get("iconSize")
-        return size * 6 + GAP * 5, size
+        local dim = Get("iconSize")
+        return dim * 6 + GAP * 5, dim
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

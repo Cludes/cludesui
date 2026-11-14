@@ -22,7 +22,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  is set once by RescanStanceBarFlag at setup, or by the menu on first use
 --  (monotonic, like the other per-spell gates).
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local MODES = {
     ["in"] = { inside = true },
@@ -41,12 +41,12 @@ local function Parse(value)
         return p
     end
     p = false
-    local mode, id = value:match("^(%a+):([%w_]+)$")
-    local m = mode and MODES[mode]
+    local modeName, ident = value:match("^(%a+):([%w_]+)$")
+    local m = modeName and MODES[modeName]
     local states = m and CludesUI.CLASS_PAGING_STATES[select(2, UnitClass("player"))]
     if states then
         for _, st in ipairs(states) do
-            if st.id == id then
+            if st.id == ident then
                 p = { inside = m.inside, shift = m.shift == true, macro = st.macro .. " 1" }
                 break
             end
@@ -60,22 +60,22 @@ end
 -- Given a frame we inject, nothing: its value lives in customActiveStates and the
 -- Fake-Active engine runs it (as ns.CdStateOf), so a bar-tier value never shows
 -- behind that menu's back.
-function ns.CdmStanceBarOf(settings, frame)
-    if not ns._cdmAnyStanceBar or not settings then
+function mod.CdmStanceBarOf(prefs, widget)
+    if not mod._cdmAnyStanceBar or not prefs then
         return nil
     end
-    if frame and ns.CdmIsInjectedFrame and ns.CdmIsInjectedFrame(frame) then
+    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then
         return nil
     end
-    local v = settings.stanceBarHide
-    if type(v) ~= "string" or not Parse(v) then
+    local val = prefs.stanceBarHide
+    if type(val) ~= "string" or not Parse(val) then
         return nil
     end
-    return v
+    return val
 end
 
 -- hidden, shift for a stored value right now.
-function ns.CdmStanceBarHidden(value)
+function mod.CdmStanceBarHidden(value)
     local p = value and Parse(value)
     if not p then
         return false, false
@@ -90,24 +90,24 @@ end
 -- Stance Bar gate: set ns._cdmAnyStanceBar once if any saved spell (any spec),
 -- bar tier or custom spell / preset has the setting. Same monotonic,
 -- scanned-once contract as the Talent Conditions gate.
-function ns.RescanStanceBarFlag()
-    if ns._cdmAnyStanceBar or ns._stanceBarFlagScanned then
+function mod.RescanStanceBarFlag()
+    if mod._cdmAnyStanceBar or mod._stanceBarFlagScanned then
         return
     end
     if not CludesUIDB then
         return
     end
-    ns._stanceBarFlagScanned = true
+    mod._stanceBarFlagScanned = true
     local function Has(ss)
         if type(rawget(ss, "stanceBarHide")) == "string" then
-            ns._cdmAnyStanceBar = true
+            mod._cdmAnyStanceBar = true
             return true
         end
     end
-    if ns.ForEachSavedSettingsBlock(Has) then
+    if mod.ForEachSavedSettingsBlock(Has) then
         return
     end
-    local cas = ns.GetCustomActiveStates and ns.GetCustomActiveStates()
+    local cas = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
     if cas then
         for _, e in pairs(cas) do
             if type(e) == "table" and Has(e) then

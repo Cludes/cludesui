@@ -5,7 +5,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_GroupFinder_Applications.lua: M+ applications bar in the rail, counts per
 -- session, character and account.
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then
     return
 end -- held back (CludesUIGroupFinder.lua)
@@ -67,15 +67,15 @@ local function TipText()
         scopeHex = CM.HexColor(1, 0.82, 0.3),
         segHex = {},
     }
-    for i, seg in ipairs(SEGMENTS) do
-        tipText.segHex[i] = CM.HexColor(seg.r, seg.g, seg.b)
+    for idx, seg in ipairs(SEGMENTS) do
+        tipText.segHex[idx] = CM.HexColor(seg.r, seg.g, seg.b)
     end
     return tipText
 end
 
 -- Built-in bar textures plus SharedMedia's, built on first use.
 local barTextures, barTexNames, barTexOrder
-function ns.BarTextureTables()
+function mod.BarTextureTables()
     if not barTextures then
         barTextures, barTexNames, barTexOrder = CM.BuildBarTextureTables()
         CM.AppendSharedMediaTextures(barTexNames, barTexOrder, nil, barTextures)
@@ -84,16 +84,16 @@ function ns.BarTextureTables()
 end
 
 local function Cfg()
-    return ns.AppsCfg()
+    return mod.AppsCfg()
 end
 
 local function Get(key, default)
     local c = Cfg()
-    local v = c and c[key]
-    if v == nil then
+    local val = c and c[key]
+    if val == nil then
         return default
     end
-    return v
+    return val
 end
 
 local function On()
@@ -106,7 +106,7 @@ local function TexturePath()
     if key == "none" then
         return nil
     end
-    return CM.ResolveTexturePath((ns.BarTextureTables()), key)
+    return CM.ResolveTexturePath((mod.BarTextureTables()), key)
 end
 
 local function Blank()
@@ -126,7 +126,7 @@ end
 
 local myKey
 local function Store()
-    local a = ns.AppCountsStore()
+    local a = mod.AppCountsStore()
     if type(a.account) ~= "table" then
         a.account = Blank()
     end
@@ -157,7 +157,7 @@ end
 -------------------------------------------------------------------------------
 -- Card
 -------------------------------------------------------------------------------
-local card
+local cardFrame
 local TITLE_SIZE = 12
 
 local function Scope()
@@ -167,13 +167,15 @@ end
 
 -- Counts use the search box font (12 until it's set).
 local function CountFont()
-    local sb = _G.LFGListFrame and _G.LFGListFrame.SearchPanel and _G.LFGListFrame.SearchPanel.SearchBox
-    local path, size
-    if type(sb) == "table" and sb.GetFont then
-        path, size = sb:GetFont()
+    local scrollBar = _G.LFGListFrame
+        and _G.LFGListFrame.SearchPanel
+        and _G.LFGListFrame.SearchPanel.SearchBox
+    local filePath, dim
+    if type(scrollBar) == "table" and scrollBar.GetFont then
+        filePath, dim = scrollBar:GetFont()
     end
-    if path and size and size > 0 then
-        return path, size
+    if filePath and dim and dim > 0 then
+        return filePath, dim
     end
     return CM.GetFontPath(ADDON_NAME), 12
 end
@@ -188,13 +190,13 @@ local function ShowTip(self)
         tipLines[n + 1] = " "
         tipLines[n + 2] = T.scopeHex .. T[scope] .. "|r  " .. CludesUI.Lf("%d applied", c.applied)
         n = n + 2
-        for i, seg in ipairs(SEGMENTS) do
+        for idx, seg in ipairs(SEGMENTS) do
             n = n + 1
-            tipLines[n] = "   " .. T.segHex[i] .. T[seg.key] .. "|r  " .. c[seg.key]
+            tipLines[n] = "   " .. T.segHex[idx] .. T[seg.key] .. "|r  " .. c[seg.key]
         end
     end
-    for i = #tipLines, n + 1, -1 do
-        tipLines[i] = nil
+    for idx = #tipLines, n + 1, -1 do
+        tipLines[idx] = nil
     end
     CM.ShowWidgetTooltip(self, table.concat(tipLines, "\n"), { anchor = "right", justify = "LEFT" })
 end
@@ -206,12 +208,12 @@ end
 local function Place()
     local pve = _G.PVEFrame
     local inset = pve and pve.Inset
-    if not (card and inset) then
+    if not (cardFrame and inset) then
         return
     end
-    local r1, r2, size = -42, -57, 28
-    if ns.Search_Rows then
-        r1, r2, size = ns.Search_Rows()
+    local r1, r2, dim = -42, -57, 28
+    if mod.Search_Rows then
+        r1, r2, dim = mod.Search_Rows()
     end
     local sp = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
     local st, pt = sp and sp:GetTop(), pve:GetTop()
@@ -227,44 +229,44 @@ local function Place()
     if not (il and ir and pl) then
         return
     end
-    local pad = tonumber(ns.Cfg().padding) or 12
+    local pad = tonumber(mod.Cfg().padding) or 12
     local x1, x2 = il - pl + pad, ir - pl - pad
-    card.box:ClearAllPoints()
-    local ac = ns.AppsCfg and ns.AppsCfg()
-    card.title:SetShown(not (ac and ac.showTitle == false))
-    card.box:SetPoint("TOPLEFT", pve, "TOPLEFT", x1, dy + r2)
-    card.box:SetPoint("TOPRIGHT", pve, "TOPLEFT", x2, dy + r2)
-    card.box:SetHeight(size)
-    card.title:ClearAllPoints()
-    card.title:SetPoint("LEFT", pve, "TOPLEFT", x1, dy + r1)
+    cardFrame.box:ClearAllPoints()
+    local ac = mod.AppsCfg and mod.AppsCfg()
+    cardFrame.title:SetShown(not (ac and ac.showTitle == false))
+    cardFrame.box:SetPoint("TOPLEFT", pve, "TOPLEFT", x1, dy + r2)
+    cardFrame.box:SetPoint("TOPRIGHT", pve, "TOPLEFT", x2, dy + r2)
+    cardFrame.box:SetHeight(dim)
+    cardFrame.title:ClearAllPoints()
+    cardFrame.title:SetPoint("LEFT", pve, "TOPLEFT", x1, dy + r1)
 end
 
 local function Layout()
-    if not card then
+    if not cardFrame then
         return
     end
     local npath, nsize = CountFont()
-    CM.ApplyModuleFont(card.title, nil, TITLE_SIZE, ADDON_NAME, "")
+    CM.ApplyModuleFont(cardFrame.title, nil, TITLE_SIZE, ADDON_NAME, "")
     -- The Premade Groups title, same size and colour as ours.
-    local lbl = _G.LFGListFrame
+    local labelFS = _G.LFGListFrame
         and _G.LFGListFrame.CategorySelection
         and _G.LFGListFrame.CategorySelection.Label
-    if lbl and lbl.GetFont then
-        local lpath, lsize, lflags = lbl:GetFont()
-        if not card.lblSize then
-            card.lblSize = lsize
+    if labelFS and labelFS.GetFont then
+        local lpath, lsize, lflags = labelFS:GetFont()
+        if not cardFrame.lblSize then
+            cardFrame.lblSize = lsize
         end
         if lpath then
-            lbl:SetFont(lpath, TITLE_SIZE, lflags)
+            labelFS:SetFont(lpath, TITLE_SIZE, lflags)
         end
-        local r, g, b = lbl:GetTextColor()
+        local r, g, b = labelFS:GetTextColor()
         if r then
-            card.title:SetTextColor(r, g, b, 1)
+            cardFrame.title:SetTextColor(r, g, b, 1)
         end
     end
     local texPath = TexturePath()
-    for i, seg in ipairs(SEGMENTS) do
-        local t = card.segs[i]
+    for idx, seg in ipairs(SEGMENTS) do
+        local t = cardFrame.segs[idx]
         if texPath then
             t:SetTexture(texPath)
             t:SetVertexColor(seg.r, seg.g, seg.b, 1)
@@ -273,122 +275,122 @@ local function Layout()
             t:SetVertexColor(1, 1, 1, 1)
             t:SetTexCoord(0, 1, 0, 1)
         end
-        CM.ApplyModuleFont(card.nums[i], npath, nsize, ADDON_NAME, "OUTLINE")
+        CM.ApplyModuleFont(cardFrame.nums[idx], npath, nsize, ADDON_NAME, "OUTLINE")
     end
-    CM.ApplyModuleFont(card.empty, npath, nsize, ADDON_NAME, "OUTLINE")
+    CM.ApplyModuleFont(cardFrame.empty, npath, nsize, ADDON_NAME, "OUTLINE")
     Place()
 end
 
 local shares = {} -- reused per paint
 local function Refresh()
-    if not (card and card:IsVisible()) then
+    if not (cardFrame and cardFrame:IsVisible()) then
         return
     end
     local c = Counts(Scope())
     -- Split the bar between the shown outcomes so it always fills.
-    local total = 0
-    for i, seg in ipairs(SEGMENTS) do
-        local v = c[seg.key]
-        shares[i] = Get(seg.cfg, true) and v or 0
-        total = total + shares[i]
+    local sum = 0
+    for idx, seg in ipairs(SEGMENTS) do
+        local val = c[seg.key]
+        shares[idx] = Get(seg.cfg, true) and val or 0
+        sum = sum + shares[idx]
     end
-    local bar = card.bar
-    local w = bar:GetWidth() or 0
+    local barFrame = cardFrame.bar
+    local wid = barFrame:GetWidth() or 0
     local textured = TexturePath()
-    local x = 0
-    for i, seg in ipairs(SEGMENTS) do
-        local tex, num = card.segs[i], card.nums[i]
-        local sw = (total > 0) and (w * shares[i] / total) or 0
-        tex:ClearAllPoints()
-        tex:SetPoint("TOPLEFT", bar, "TOPLEFT", x, 0)
-        tex:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", x, 0)
-        tex:SetWidth(math.max(sw, 0.01))
+    local posX = 0
+    for idx, seg in ipairs(SEGMENTS) do
+        local texture, num = cardFrame.segs[idx], cardFrame.nums[idx]
+        local sw = (sum > 0) and (wid * shares[idx] / sum) or 0
+        texture:ClearAllPoints()
+        texture:SetPoint("TOPLEFT", barFrame, "TOPLEFT", posX, 0)
+        texture:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", posX, 0)
+        texture:SetWidth(math.max(sw, 0.01))
         -- Each segment shows its slice of the texture so it reads as one bar.
-        if textured and w > 0 then
-            tex:SetTexCoord(x / w, (x + sw) / w, 0, 1)
+        if textured and wid > 0 then
+            texture:SetTexCoord(posX / wid, (posX + sw) / wid, 0, 1)
         end
-        tex:SetShown(sw >= 0.5)
+        texture:SetShown(sw >= 0.5)
         num:SetFormattedText("%d", c[seg.key])
         num:ClearAllPoints()
-        num:SetPoint("CENTER", tex, "CENTER", 0, 0)
+        num:SetPoint("CENTER", texture, "CENTER", 0, 0)
         num:SetShown(sw >= 0.5 and (num:GetStringWidth() or 0) + 4 <= sw)
-        x = x + sw
+        posX = posX + sw
     end
-    card.empty:SetShown(total == 0) -- nothing counted yet
+    cardFrame.empty:SetShown(sum == 0) -- nothing counted yet
 end
 
 local BuildCardInto
 local function BuildCard()
-    if card then
-        return card
+    if cardFrame then
+        return cardFrame
     end
-    local ok, built = pcall(BuildCardInto)
-    if ok and built then
-        card = built
+    local success, built = pcall(BuildCardInto)
+    if success and built then
+        cardFrame = built
     end
-    if not ok then
+    if not success then
         geterrorhandler()(built)
     end
-    return card
+    return cardFrame
 end
 
 BuildCardInto = function()
-    local host = _G.GroupFinderFrame
+    local hostRegion = _G.GroupFinderFrame
     local pve = _G.PVEFrame
-    if not (host and pve and pve.Inset) then
+    if not (hostRegion and pve and pve.Inset) then
         return nil
     end
 
     -- Build into a local first so a failure never leaves half a card.
-    local card = CreateFrame("Frame", nil, host)
-    card:SetAllPoints(host)
-    card:SetFrameLevel(host:GetFrameLevel() + 5)
+    local cardFrame = CreateFrame("Frame", nil, hostRegion)
+    cardFrame:SetAllPoints(hostRegion)
+    cardFrame:SetFrameLevel(hostRegion:GetFrameLevel() + 5)
 
-    card.title = card:CreateFontString(nil, "OVERLAY")
-    CM.ApplyModuleFont(card.title, nil, 12, ADDON_NAME, "")
-    card.title:SetTextColor(1, 0.82, 0, 1)
-    card.title:SetText(CludesUI.L("M+ Applications"))
+    cardFrame.title = cardFrame:CreateFontString(nil, "OVERLAY")
+    CM.ApplyModuleFont(cardFrame.title, nil, 12, ADDON_NAME, "")
+    cardFrame.title:SetTextColor(1, 0.82, 0, 1)
+    cardFrame.title:SetText(CludesUI.L("M+ Applications"))
 
-    local box = CreateFrame("Frame", nil, card)
-    box:EnableMouse(true)
-    box:SetScript("OnEnter", ShowTip)
-    box:SetScript("OnLeave", HideTip)
-    local bg = box:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.2, 0.2, 0.2, 1)
-    local S = ns.Skin()
-    if S and S.AddBorder then
-        S.AddBorder(box)
+    local boxFrame = CreateFrame("Frame", nil, cardFrame)
+    boxFrame:EnableMouse(true)
+    boxFrame:SetScript("OnEnter", ShowTip)
+    boxFrame:SetScript("OnLeave", HideTip)
+    local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0.2, 0.2, 0.2, 1)
+    local Stl = mod.Skin()
+    if Stl and Stl.AddBorder then
+        Stl.AddBorder(boxFrame)
     else
-        local r, g, b, a = ns.ThemeBorder()
-        CM.MakeBorder(box, r, g, b, a)
+        local r, g, b, a = mod.ThemeBorder()
+        CM.MakeBorder(boxFrame, r, g, b, a)
     end
-    card.box = box
+    cardFrame.box = boxFrame
     local px = CM.PP.mult
-    local bar = CreateFrame("Frame", nil, box)
-    bar:SetPoint("TOPLEFT", box, "TOPLEFT", px, -px)
-    bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -px, px)
-    card.bar = bar
-    card.segs, card.nums = {}, {}
-    for i = 1, #SEGMENTS do
-        card.segs[i] = bar:CreateTexture(nil, "ARTWORK", nil, 1)
-        local num = bar:CreateFontString(nil, "OVERLAY")
+    local barFrame = CreateFrame("Frame", nil, boxFrame)
+    barFrame:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", px, -px)
+    barFrame:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -px, px)
+    cardFrame.bar = barFrame
+    cardFrame.segs, cardFrame.nums = {}, {}
+    for idx = 1, #SEGMENTS do
+        cardFrame.segs[idx] = barFrame:CreateTexture(nil, "ARTWORK", nil, 1)
+        local num = barFrame:CreateFontString(nil, "OVERLAY")
         CM.ApplyModuleFont(num, nil, 12, ADDON_NAME, "OUTLINE")
         num:SetTextColor(1, 1, 1, 1)
         num:SetJustifyH("CENTER")
         num:SetJustifyV("MIDDLE")
-        card.nums[i] = num
+        cardFrame.nums[idx] = num
     end
-    card.empty = bar:CreateFontString(nil, "OVERLAY")
-    CM.ApplyModuleFont(card.empty, nil, 12, ADDON_NAME, "OUTLINE")
-    card.empty:SetTextColor(1, 1, 1, 0.6)
-    card.empty:SetPoint("CENTER", bar, "CENTER", 0, 0)
-    card.empty:SetText(CludesUI.L("N/A"))
-    card.empty:Hide()
-    bar:SetScript("OnSizeChanged", function()
+    cardFrame.empty = barFrame:CreateFontString(nil, "OVERLAY")
+    CM.ApplyModuleFont(cardFrame.empty, nil, 12, ADDON_NAME, "OUTLINE")
+    cardFrame.empty:SetTextColor(1, 1, 1, 0.6)
+    cardFrame.empty:SetPoint("CENTER", barFrame, "CENTER", 0, 0)
+    cardFrame.empty:SetText(CludesUI.L("N/A"))
+    cardFrame.empty:Hide()
+    barFrame:SetScript("OnSizeChanged", function()
         Refresh()
     end)
-    return card
+    return cardFrame
 end
 
 -- Only shown on the Dungeons search, the only category it counts.
@@ -411,45 +413,45 @@ local function SyncCountEvent()
 end
 
 local function Apply()
-    if not ns.Enabled() then
+    if not mod.Enabled() then
         return
     end
     SyncCountEvent()
-    local on = On()
-    local want = on and InDungeonSearch()
-    if want then
+    local enabled = On()
+    local wanted = enabled and InDungeonSearch()
+    if wanted then
         BuildCard()
     end
-    if card then
-        card:SetShown(want)
-        if want then
+    if cardFrame then
+        cardFrame:SetShown(wanted)
+        if wanted then
             Layout()
-        elseif not on and card.lblSize then
+        elseif not enabled and cardFrame.lblSize then
             -- Off: title back to its own size.
-            local lbl = _G.LFGListFrame
+            local labelFS = _G.LFGListFrame
                 and _G.LFGListFrame.CategorySelection
                 and _G.LFGListFrame.CategorySelection.Label
-            local lpath, _, lflags = lbl and lbl:GetFont()
+            local lpath, _, lflags = labelFS and labelFS:GetFont()
             if lpath then
-                lbl:SetFont(lpath, card.lblSize, lflags)
+                labelFS:SetFont(lpath, cardFrame.lblSize, lflags)
             end
         end
     end
     Refresh()
 end
-ns.ApplyApplications = Apply
+mod.ApplyApplications = Apply
 
 -------------------------------------------------------------------------------
 -- Counting
 -------------------------------------------------------------------------------
 local isMythicPlus = {} -- resultID -> is a Mythic+ group
-local function LookUpMythicPlus(id)
-    local info = C_LFGList.GetSearchResultInfo(id)
-    if type(info) ~= "table" or IsSecret(info) or (canaccesstable and not canaccesstable(info)) then
+local function LookUpMythicPlus(ident)
+    local details = C_LFGList.GetSearchResultInfo(ident)
+    if type(details) ~= "table" or IsSecret(details) or (canaccesstable and not canaccesstable(details)) then
         return nil
     end
-    local acts = info.activityIDs
-    local aid = (type(acts) == "table" and not IsSecret(acts)) and acts[1] or info.activityID
+    local acts = details.activityIDs
+    local aid = (type(acts) == "table" and not IsSecret(acts)) and acts[1] or details.activityID
     if type(aid) ~= "number" or IsSecret(aid) then
         return nil
     end
@@ -494,8 +496,8 @@ local function Count(status, oldStatus, resultID)
     Refresh()
 end
 
-function ns.ResetApplications(scope)
-    if not ns.Enabled() then
+function mod.ResetApplications(scope)
+    if not mod.Enabled() then
         return
     end
     local a = Store()
@@ -532,7 +534,7 @@ local function HookPVE()
     end
 end
 
-function ns.Apps_Enable()
+function mod.Apps_Enable()
     local name, realm = UnitFullName("player")
     name = PlainString(name)
     if name then
@@ -543,24 +545,24 @@ function ns.Apps_Enable()
         a.session = Blank()
     end
     -- Follow the search rows when they resize.
-    if ns.Search_Layout then
-        hooksecurefunc(ns, "Search_Layout", Apply)
+    if mod.Search_Layout then
+        hooksecurefunc(mod, "Search_Layout", Apply)
     end
     ev = CreateFrame("Frame")
     ev:RegisterEvent("PLAYER_LOGOUT")
-    ev:SetScript("OnEvent", function(self, event, ...)
-        if event == "LFG_LIST_APPLICATION_STATUS_UPDATED" then
+    ev:SetScript("OnEvent", function(self, evt, ...)
+        if evt == "LFG_LIST_APPLICATION_STATUS_UPDATED" then
             -- Live check: a profile swap can turn the bar off before the next Apply.
             if On() then
-                local id, status, oldStatus = ...
-                Count(PlainString(status), PlainString(oldStatus), id)
+                local ident, status, oldStatus = ...
+                Count(PlainString(status), PlainString(oldStatus), ident)
             end
-        elseif event == "ADDON_LOADED" then
+        elseif evt == "ADDON_LOADED" then
             if (...) == "Blizzard_GroupFinder" then
                 HookPVE()
                 self:UnregisterEvent("ADDON_LOADED")
             end
-        elseif event == "PLAYER_LOGOUT" then
+        elseif evt == "PLAYER_LOGOUT" then
             Store().session.t = time()
         end
     end)

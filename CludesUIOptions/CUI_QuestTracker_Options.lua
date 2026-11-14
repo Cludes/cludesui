@@ -9,11 +9,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Surviving options are: enable, visibility mode, auto-hide rules,
 -- auto-accept / auto-turn-in, quest item hotkey, and skin toggles.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIQuestTracker"] -- module namespace (published by the module at its load)
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIQuestTracker"] -- module namespace (published by the module at its load)
+if not mod then
     return
 end -- module disabled: no options page
-local EQT = ns.EQT
+local EQT = mod.EQT
 
 -- Page reuse: the frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua, the options addon's first file), which hands a
@@ -32,7 +32,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function DB()
+    local function SavedDB()
         local d = _G._CUQT_DB
         if d and d.profile and d.profile.questTracker then
             return d.profile.questTracker
@@ -40,10 +40,10 @@ initFrame:SetScript("OnEvent", function(self)
         return {}
     end
     local function Cfg(k)
-        return DB()[k]
+        return SavedDB()[k]
     end
-    local function Set(k, v)
-        DB()[k] = v
+    local function Set(k, val)
+        SavedDB()[k] = val
     end
 
     local function RefreshAll()
@@ -64,29 +64,29 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
-    local function BuildPage(_, parent, yOffset)
+    local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local PP = CludesUI.PP
-        local y = yOffset
-        local row, h
+        local Pix = CludesUI.PP
+        local posY = yOffset
+        local rowFrame, hgt
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
         end
-        parent._showRowDivider = true
+        hostFrame._showRowDivider = true
         -- WoW Forever: our own tracker frame (latched until reload).
-        local CUSTOM = ns.UseCustomTracker()
+        local CUSTOM = mod.UseCustomTracker()
 
         -- Drag instructions (centered, above settings). Wrapped in a Frame so the
         -- search system collects it as an orphan and auto-hides it during search.
         do
-            local fontPath = CludesUI.GetFontPath() or STANDARD_TEXT_FONT
-            local infoFrame = CreateFrame("Frame", nil, parent)
-            infoFrame:SetSize(parent:GetWidth() or 400, 20)
-            infoFrame:SetPoint("TOP", parent, "TOP", 0, y - 20)
+            local fontFile = CludesUI.GetFontPath() or STANDARD_TEXT_FONT
+            local infoFrame = CreateFrame("Frame", nil, hostFrame)
+            infoFrame:SetSize(hostFrame:GetWidth() or 400, 20)
+            infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, posY - 20)
             infoFrame._isSpacer = true
             local infoLabel = infoFrame:CreateFontString(nil, "OVERLAY")
-            infoLabel:SetFont(fontPath, 15, "")
+            infoLabel:SetFont(fontFile, 15, "")
             infoLabel:SetTextColor(1, 1, 1, 0.75)
             infoLabel:SetPoint("CENTER")
             infoLabel:SetJustifyH("CENTER")
@@ -101,17 +101,18 @@ initFrame:SetScript("OnEvent", function(self)
             -- choice is saved in the quest tracker DB (forceOnScreen) and re-applied at
             -- load by EQT.ApplyForceOnScreen(), so it persists through reload/logout.
             -- Edit Mode is opened so the user can reposition the frame after toggling.
-            local EG = CludesUI.CLUDES_GREEN
-            local fosBtn = CreateFrame("Button", nil, parent)
+            local ACC = CludesUI.CLUDES_GREEN
+            local fosBtn = CreateFrame("Button", nil, hostFrame)
             local fosFS = fosBtn:CreateFontString(nil, "OVERLAY")
-            fosFS:SetFont(fontPath, 15, "")
-            fosFS:SetTextColor(EG.r, EG.g, EG.b, 0.75)
+            fosFS:SetFont(fontFile, 15, "")
+            fosFS:SetTextColor(ACC.r, ACC.g, ACC.b, 0.75)
             fosFS:SetPoint("CENTER")
             local function UpdateForceOnScreenLabel()
-                local on = Cfg("forceOnScreen") == true
+                local enabled = Cfg("forceOnScreen") == true
                 fosFS:SetText(
                     CludesUI.L(
-                        on and "Allow Quest Tracker to be Moved Offscreen" or "Force Quest Tracker on Screen"
+                        enabled and "Allow Quest Tracker to be Moved Offscreen"
+                            or "Force Quest Tracker on Screen"
                     )
                 )
                 fosBtn:SetSize(fosFS:GetStringWidth() + 12, 18)
@@ -119,10 +120,10 @@ initFrame:SetScript("OnEvent", function(self)
             UpdateForceOnScreenLabel()
             fosBtn:SetPoint("TOP", infoLabel, "BOTTOM", 0, -10)
             fosBtn:SetScript("OnEnter", function()
-                fosFS:SetTextColor(EG.r, EG.g, EG.b, 1)
+                fosFS:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
             end)
             fosBtn:SetScript("OnLeave", function()
-                fosFS:SetTextColor(EG.r, EG.g, EG.b, 0.75)
+                fosFS:SetTextColor(ACC.r, ACC.g, ACC.b, 0.75)
             end)
             fosBtn:SetScript("OnClick", function()
                 if InCombatLockdown() then
@@ -137,7 +138,7 @@ initFrame:SetScript("OnEvent", function(self)
                     ShowUIPanel(EditModeManagerFrame)
                 end
             end)
-            y = y - 68
+            posY = posY - 68
         end
 
         -- Stock styles (Blizzard Style / Classic WoW UI) keep Blizzard's own
@@ -150,8 +151,8 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- -- CUSTOM TRACKER (WoW Forever) ------------------------------------
         if CludesUI.IS_FOREVER then
-            _, h = W:SectionHeader(parent, "CUSTOM TRACKER", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "CUSTOM TRACKER", posY)
+            posY = posY - hgt
             local function Off()
                 return not CUSTOM
             end
@@ -160,15 +161,15 @@ initFrame:SetScript("OnEvent", function(self)
             -- the profile asks for (its own pick, else on under the CludesUI
             -- style alone); the tracker in use changes at the reload.
             local zoneRow
-            zoneRow, h = W:DualRow(parent, y, {
+            zoneRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Custom Quest Tracker",
                 tooltip = "Replaces Blizzard's tracker with CludesUI's own quest tracker, which never touches Blizzard's tracker or watch list. On by default under the CludesUI style. Requires a UI reload.",
                 getValue = function()
-                    return ns.CustomTrackerWanted(DB())
+                    return mod.CustomTrackerWanted(SavedDB())
                 end,
-                setValue = function(v)
-                    ns.SetCustomTrackerWanted(DB(), v)
+                setValue = function(val)
+                    mod.SetCustomTrackerWanted(SavedDB(), val)
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Switching quest trackers requires a UI reload to apply.",
@@ -186,13 +187,13 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customGroupByZone") ~= false
                 end,
-                setValue = function(v)
-                    Set("customGroupByZone", v)
+                setValue = function(val)
+                    Set("customGroupByZone", val)
                     RefreshAll()
                     CludesUI:RefreshPage()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Zone header colour, on the Group Quests by Zone slot: Custom
             -- Colored | Accent Colored. With no pick the headers follow the
@@ -270,7 +271,7 @@ initFrame:SetScript("OnEvent", function(self)
                     EQT.SyncPosition()
                 end
             end
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Width",
                 min = wMin,
@@ -281,8 +282,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customWidth") or 260
                 end,
-                setValue = function(v)
-                    Set("customWidth", v)
+                setValue = function(val)
+                    Set("customWidth", val)
                     ApplySize()
                 end,
             }, {
@@ -297,15 +298,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customMaxHeight") or 450
                 end,
-                setValue = function(v)
-                    Set("customMaxHeight", v)
+                setValue = function(val)
+                    Set("customMaxHeight", val)
                     ApplySize()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Grow Direction | Scrollbar
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "segmented",
                 text = "Grow Direction",
                 tooltip = "Which way the tracker grows as quests are added. Up keeps its bottom edge in place.",
@@ -316,8 +317,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customGrowUp") and "UP" or "DOWN"
                 end,
-                setValue = function(v)
-                    EQT.SetCustomGrowUp(v == "UP")
+                setValue = function(val)
+                    EQT.SetCustomGrowUp(val == "UP")
                 end,
             }, {
                 type = "dropdown",
@@ -330,15 +331,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customScrollbar") or "always"
                 end,
-                setValue = function(v)
-                    Set("customScrollbar", v)
+                setValue = function(val)
+                    Set("customScrollbar", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Quest Click | Collapse Completed Quests
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Quest Click",
                 tooltip = "What left-clicking a quest does. Open Quest Details shows CludesUI's own details window and works in combat. Open Quest Log works out of combat only, for quests tracked in the quest log. Ctrl-click still collapses.",
@@ -349,8 +350,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customClickAction") or "collapse"
                 end,
-                setValue = function(v)
-                    Set("customClickAction", v)
+                setValue = function(val)
+                    Set("customClickAction", val)
                     RefreshAll()
                 end,
             }, {
@@ -362,15 +363,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customCollapseCompleted") or false
                 end,
-                setValue = function(v)
-                    Set("customCollapseCompleted", v)
+                setValue = function(val)
+                    Set("customCollapseCompleted", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Quest Spacing | Objective Spacing
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Quest Spacing",
                 min = 0,
@@ -381,8 +382,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customQuestSpacing") or 4
                 end,
-                setValue = function(v)
-                    Set("customQuestSpacing", v)
+                setValue = function(val)
+                    Set("customQuestSpacing", val)
                     RefreshAll()
                 end,
             }, {
@@ -396,15 +397,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customObjSpacing") or 1
                 end,
-                setValue = function(v)
-                    Set("customObjSpacing", v)
+                setValue = function(val)
+                    Set("customObjSpacing", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Quest Focus | Wrap Quest Names
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Quest Focus",
                 tooltip = "Adds a focus button beside each quest, and Focus to its right-click menu. A focused quest gets the map waypoint.",
@@ -413,8 +414,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customFocusClick") or false
                 end,
-                setValue = function(v)
-                    Set("customFocusClick", v)
+                setValue = function(val)
+                    Set("customFocusClick", val)
                     RefreshAll()
                 end,
             }, {
@@ -426,15 +427,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customWrapTitles") ~= false
                 end,
-                setValue = function(v)
-                    Set("customWrapTitles", v)
+                setValue = function(val)
+                    Set("customWrapTitles", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Wrap Objectives | Zone Header Font Size
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Wrap Objectives",
                 tooltip = "Long objectives wrap onto more lines. Off: one line, cut short with ...",
@@ -443,8 +444,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customWrapObjectives") ~= false
                 end,
-                setValue = function(v)
-                    Set("customWrapObjectives", v)
+                setValue = function(val)
+                    Set("customWrapObjectives", val)
                     RefreshAll()
                 end,
             }, {
@@ -458,15 +459,15 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customZoneFontSize") or 13
                 end,
-                setValue = function(v)
-                    Set("customZoneFontSize", v)
+                setValue = function(val)
+                    Set("customZoneFontSize", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Quest Item Buttons | Flash Objective Updates
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Quest Item Buttons",
                 tooltip = "Adds a button beside quests that have a usable item. In combat, buttons stay where they are until combat ends.",
@@ -475,8 +476,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customItemButtons") or false
                 end,
-                setValue = function(v)
-                    Set("customItemButtons", v)
+                setValue = function(val)
+                    Set("customItemButtons", val)
                     RefreshAll()
                 end,
             }, {
@@ -488,28 +489,28 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("customFlashUpdates") or false
                 end,
-                setValue = function(v)
-                    Set("customFlashUpdates", v)
+                setValue = function(val)
+                    Set("customFlashUpdates", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
-            y = y - 10
+            posY = posY - 10
         end
 
         -- -- DISPLAY ---------------------------------------------------------
-        _, h = W:SectionHeader(parent, "DISPLAY", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+        posY = posY - hgt
         if BS then
-            y = BS.Note(parent, y, "questtracker")
+            posY = BS.Note(hostFrame, posY, "questtracker")
         end
 
         -- Row 1: Visibility | Hide When In Raid. The raid-hide dropdown moved up from
         -- the Background Opacity row into the slot the old Visibility Options dropdown
         -- left behind: it answers the same question the Visibility control does.
-        _, h = CludesUI.BuildVisibilityRow(W, parent, y, {
-            getStore = DB,
+        _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+            getStore = SavedDB,
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             onChanged = function()
@@ -527,21 +528,21 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("hideInRaidMode") or "boss"
             end,
-            setValue = function(v)
-                Set("hideInRaidMode", v)
+            setValue = function(val)
+                Set("hideInRaidMode", val)
                 if EQT.UpdateVisibility then
                     EQT.UpdateVisibility()
                 end
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         if not STOCK then
             -- Row 2: Background Opacity (slider + inline color swatch) | Show Top Line.
             -- Show Top Line moved up from the old trailing half-row to close the gap left
             -- by Hide When In Raid; both settings describe the tracker's background chrome.
             local bgRow
-            bgRow, h = W:DualRow(parent, y, {
+            bgRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Background Opacity",
                 min = 0,
@@ -550,8 +551,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("bgAlpha") or 0.5
                 end,
-                setValue = function(v)
-                    Set("bgAlpha", v)
+                setValue = function(val)
+                    Set("bgAlpha", val)
                     if EQT.ApplyBackground then
                         EQT.ApplyBackground()
                     end
@@ -563,19 +564,19 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("showTopLine") ~= false
                 end,
-                setValue = function(v)
-                    Set("showTopLine", v)
+                setValue = function(val)
+                    Set("showTopLine", val)
                     if EQT.ApplyBackground then
                         EQT.ApplyBackground()
                     end
                 end,
             })
             if not CludesUI._prebuilding then
-                local rgn = bgRow._leftRegion
-                local ctrl = rgn._control
+                local region = bgRow._leftRegion
+                local ctrl = region._control
                 -- The custom tracker can hide its background until hovered.
                 if CUSTOM then
-                    CludesUI.BuildInlineCog(rgn, {
+                    CludesUI.BuildInlineCog(region, {
                         title = "Background Settings",
                         rows = {
                             {
@@ -584,8 +585,8 @@ initFrame:SetScript("OnEvent", function(self)
                                 get = function()
                                     return Cfg("customBgHover") or false
                                 end,
-                                set = function(v)
-                                    Set("customBgHover", v)
+                                set = function(val)
+                                    Set("customBgHover", val)
                                     RefreshAll()
                                 end,
                             },
@@ -600,15 +601,15 @@ initFrame:SetScript("OnEvent", function(self)
                                 get = function()
                                     return Cfg("customBgFade") ~= false
                                 end,
-                                set = function(v)
-                                    Set("customBgFade", v)
+                                set = function(val)
+                                    Set("customBgFade", val)
                                 end,
                             },
                         },
                     })
                 end
                 local bgSwatch, bgSwatchRefresh = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     bgRow:GetFrameLevel() + 3,
                     function()
                         return (Cfg("bgR") or 0), (Cfg("bgG") or 0), (Cfg("bgB") or 0)
@@ -624,16 +625,16 @@ initFrame:SetScript("OnEvent", function(self)
                     false,
                     20
                 )
-                PP.Point(bgSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-                rgn._lastInline = bgSwatch
+                Pix.Point(bgSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+                region._lastInline = bgSwatch
                 CludesUI.RegisterWidgetRefresh(function()
                     bgSwatchRefresh()
                 end)
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Row 3: Header Font Size | Title Font Size
-            _, h = W:DualRow(parent, y, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Header Font Size",
                 min = 8,
@@ -642,8 +643,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("headerFontSize") or 13
                 end,
-                setValue = function(v)
-                    Set("headerFontSize", v)
+                setValue = function(val)
+                    Set("headerFontSize", val)
                     RefreshAll()
                 end,
             }, {
@@ -655,17 +656,17 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("titleFontSize") or 12
                 end,
-                setValue = function(v)
-                    Set("titleFontSize", v)
+                setValue = function(val)
+                    Set("titleFontSize", val)
                     RefreshAll()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             -- Row 3b: Objective Font Size | Font
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-                _, h = W:DualRow(parent, y, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "slider",
                     text = "Objective Font Size",
                     min = 8,
@@ -674,8 +675,8 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("objectiveFontSize") or 10
                     end,
-                    setValue = function(v)
-                        Set("objectiveFontSize", v)
+                    setValue = function(val)
+                        Set("objectiveFontSize", val)
                         RefreshAll()
                     end,
                 }, {
@@ -686,8 +687,8 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("font") or "__global"
                     end,
-                    setValue = function(v)
-                        Set("font", v)
+                    setValue = function(val)
+                        Set("font", val)
                         -- The custom tracker restyles live.
                         if CUSTOM then
                             RefreshAll()
@@ -703,7 +704,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                 })
             end
-            y = y - h
+            posY = posY - hgt
         end -- not STOCK
 
         -- Row 4: Show Quest Icons | Hide All Objectives. Both stock styles show
@@ -715,8 +716,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("showQuestIcons") or false
             end,
-            setValue = function(v)
-                Set("showQuestIcons", v)
+            setValue = function(val)
+                Set("showQuestIcons", val)
                 CludesUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Changing quest icons requires a UI reload to apply.",
@@ -730,7 +731,7 @@ initFrame:SetScript("OnEvent", function(self)
             BS.Gate("questtracker", questIconsCfg)
         end
         if not CUSTOM then
-            _, h = W:DualRow(parent, y, questIconsCfg, {
+            _, hgt = W:DualRow(hostFrame, posY, questIconsCfg, {
                 type = "toggle",
                 text = "Hide All Objectives",
                 tooltip = STOCK
@@ -744,8 +745,8 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     return Cfg("hideAllObjectivesHeader") ~= false
                 end,
-                setValue = function(v)
-                    Set("hideAllObjectivesHeader", v)
+                setValue = function(val)
+                    Set("hideAllObjectivesHeader", val)
                     if EQT.ApplyMasterHeaderVisibility then
                         EQT.ApplyMasterHeaderVisibility()
                     end
@@ -754,13 +755,13 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end -- not CUSTOM
 
         if not STOCK then
             -- -- COLORS ----------------------------------------------------------
-            _, h = W:SectionHeader(parent, "COLORS", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "COLORS", posY)
+            posY = posY - hgt
 
             -- `default` must mirror the fallback in the matching Get*RGB()
             -- function in CludesUIQuestTracker_Skin.lua, or the swatch will
@@ -770,39 +771,39 @@ initFrame:SetScript("OnEvent", function(self)
                 { r = "titleR", g = "titleG", b = "titleB" }, { 1.0, 0.910, 0.471 }
             local DONE_KEYS, DONE_DEFAULT =
                 { r = "completedR", g = "completedG", b = "completedB" }, { 0.251, 1.0, 0.349 }
-            local function ColorGetter(keys, default)
+            local function ColorGetter(keyList, default)
                 return function()
-                    return (Cfg(keys.r) or default[1]),
-                        (Cfg(keys.g) or default[2]),
-                        (Cfg(keys.b) or default[3])
+                    return (Cfg(keyList.r) or default[1]),
+                        (Cfg(keyList.g) or default[2]),
+                        (Cfg(keyList.b) or default[3])
                 end
             end
-            local function ColorSetter(keys)
+            local function ColorSetter(keyList)
                 return function(cr, cg, cb)
-                    Set(keys.r, cr)
-                    Set(keys.g, cg)
-                    Set(keys.b, cb)
+                    Set(keyList.r, cr)
+                    Set(keyList.g, cg)
+                    Set(keyList.b, cb)
                     RefreshAll()
                 end
             end
-            local function WireColorSwatch(r, rgn, keys, default)
+            local function WireColorSwatch(r, region, keyList, default)
                 local sw, swRefresh = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     r:GetFrameLevel() + 3,
-                    ColorGetter(keys, default),
-                    ColorSetter(keys),
+                    ColorGetter(keyList, default),
+                    ColorSetter(keyList),
                     false,
                     20
                 )
-                PP.Point(sw, "RIGHT", rgn, "RIGHT", -20, 0)
+                Pix.Point(sw, "RIGHT", region, "RIGHT", -20, 0)
                 CludesUI.RegisterWidgetRefresh(function()
                     swRefresh()
                 end)
             end
             local function MakeColorRow(leftLabel, leftKeys, leftDefault, rightLabel, rightKeys, rightDefault)
                 local r, rowH = W:DualRow(
-                    parent,
-                    y,
+                    hostFrame,
+                    posY,
                     { type = "label", text = leftLabel },
                     { type = "label", text = rightLabel }
                 )
@@ -822,40 +823,40 @@ initFrame:SetScript("OnEvent", function(self)
                 -- tracker reads; its inline swatch, the Title Color, greys out
                 -- while it is on. Retail has no quest title difficulty colors.
                 local r
-                r, h = W:DualRow(parent, y, {
+                r, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Title Difficulty Colors",
                     tooltip = "Colors quest titles by difficulty for your level. This is the game's own option, so its quest log follows it too.",
                     getValue = function()
                         return EQT.TitleDifficultyOn()
                     end,
-                    setValue = function(v)
-                        CludesUI.SetCVar("showQuestDifficultyColor", v and "1" or "0", "CludesUIQuestTracker")
+                    setValue = function(val)
+                        CludesUI.SetCVar(
+                            "showQuestDifficultyColor",
+                            val and "1" or "0",
+                            "CludesUIQuestTracker"
+                        )
                         RefreshAll()
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "Completed Color" })
                 if not CludesUI._prebuilding then
-                    CludesUI.BuildInlineSwatches(
-                        r._leftRegion,
+                    CludesUI.BuildInlineSwatches(r._leftRegion, {
                         {
-                            {
-                                tooltip = "Title Color",
-                                hasAlpha = false,
-                                getValue = ColorGetter(TITLE_KEYS, TITLE_DEFAULT),
-                                setValue = ColorSetter(TITLE_KEYS),
-                            },
+                            tooltip = "Title Color",
+                            hasAlpha = false,
+                            getValue = ColorGetter(TITLE_KEYS, TITLE_DEFAULT),
+                            setValue = ColorSetter(TITLE_KEYS),
                         },
-                        {
-                            disabled = EQT.TitleDifficultyOn,
-                            disabledTooltip = "Title Difficulty Colors",
-                            requireState = "disabled",
-                        }
-                    )
+                    }, {
+                        disabled = EQT.TitleDifficultyOn,
+                        disabledTooltip = "Title Difficulty Colors",
+                        requireState = "disabled",
+                    })
                     WireColorSwatch(r, r._rightRegion, DONE_KEYS, DONE_DEFAULT)
                 end
             else
-                _, h = MakeColorRow(
+                _, hgt = MakeColorRow(
                     "Title Color",
                     TITLE_KEYS,
                     TITLE_DEFAULT,
@@ -864,7 +865,7 @@ initFrame:SetScript("OnEvent", function(self)
                     DONE_DEFAULT
                 )
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Header Color / Line Color: each offers Class Color, Custom Color
             -- (free RGB picker, same swatch behavior as the rows above) and
@@ -872,10 +873,10 @@ initFrame:SetScript("OnEvent", function(self)
             -- lineUseAccent are treated as true until explicitly set to false).
             -- `customDefault` must mirror the fallback baked into the matching
             -- Get*RGB() function in CludesUIQuestTracker_Skin.lua.
-            local function MakeColorModeSwatches(prefix, customDefault)
-                local classKey = prefix .. "ShowClassColor"
-                local accentKey = prefix .. "UseAccent"
-                local rKey, gKey, bKey = prefix .. "R", prefix .. "G", prefix .. "B"
+            local function MakeColorModeSwatches(prefixText, customDefault)
+                local classKey = prefixText .. "ShowClassColor"
+                local accentKey = prefixText .. "UseAccent"
+                local rKey, gKey, bKey = prefixText .. "R", prefixText .. "G", prefixText .. "B"
 
                 local function isClass()
                     return Cfg(classKey) == true
@@ -968,8 +969,8 @@ initFrame:SetScript("OnEvent", function(self)
             do
                 local hClass, hCustom, hAccent = MakeColorModeSwatches("header", { 1.0, 1.0, 1.0 })
                 local r, rowH = W:DualRow(
-                    parent,
-                    y,
+                    hostFrame,
+                    posY,
                     { type = "label", text = "Focused Color" },
                     { type = "multiSwatch", text = "Header Color", swatches = { hClass, hCustom, hAccent } }
                 )
@@ -989,23 +990,23 @@ initFrame:SetScript("OnEvent", function(self)
                         false,
                         20
                     )
-                    PP.Point(sw, "RIGHT", r._leftRegion, "RIGHT", -20, 0)
+                    Pix.Point(sw, "RIGHT", r._leftRegion, "RIGHT", -20, 0)
                     CludesUI.RegisterWidgetRefresh(function()
                         swRefresh()
                     end)
                 end
-                h = rowH
+                hgt = rowH
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Line Color | Color Objectives by Progress (+ color stops cog). The
             -- objective colors are WoW Forever only; retail keeps the spacer.
             do
                 local lClass, lCustom, lAccent = MakeColorModeSwatches("line", { 1.0, 1.0, 1.0 })
                 local r
-                r, h = W:DualRow(
-                    parent,
-                    y,
+                r, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
                     { type = "multiSwatch", text = "Line Color", swatches = { lClass, lCustom, lAccent } },
                     FOREVER
                             and {
@@ -1015,8 +1016,8 @@ initFrame:SetScript("OnEvent", function(self)
                                 getValue = function()
                                     return Cfg("objProgressColor") or false
                                 end,
-                                setValue = function(v)
-                                    Set("objProgressColor", v)
+                                setValue = function(val)
+                                    Set("objProgressColor", val)
                                     RefreshAll()
                                     CludesUI:RefreshPage()
                                 end,
@@ -1024,12 +1025,12 @@ initFrame:SetScript("OnEvent", function(self)
                         or { type = "spacer" }
                 )
                 if FOREVER then
-                    local function Stop(label, name)
+                    local function Stop(labelText, name)
                         local d = EQT.OBJ_STOPS[name]
                         local kr, kg, kb = "obj" .. name .. "R", "obj" .. name .. "G", "obj" .. name .. "B"
                         return {
                             type = "colorpicker",
-                            label = label,
+                            label = labelText,
                             get = function()
                                 return Cfg(kr) or d[1], Cfg(kg) or d[2], Cfg(kb) or d[3]
                             end,
@@ -1055,24 +1056,24 @@ initFrame:SetScript("OnEvent", function(self)
                     })
                 end
             end
-            y = y - h
+            posY = posY - hgt
 
             -- Dim Completed Objectives (+ opacity cog) | blank (WoW Forever only)
             if FOREVER then
-                row, h = W:DualRow(parent, y, {
+                rowFrame, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Dim Completed Objectives",
                     tooltip = "Fades objective lines that are already done.",
                     getValue = function()
                         return Cfg("objDimCompleted") or false
                     end,
-                    setValue = function(v)
-                        Set("objDimCompleted", v)
+                    setValue = function(val)
+                        Set("objDimCompleted", val)
                         RefreshAll()
                         CludesUI:RefreshPage()
                     end,
                 }, CludesUI.BlankRowCfg())
-                CludesUI.BuildInlineCog(row._leftRegion, {
+                CludesUI.BuildInlineCog(rowFrame._leftRegion, {
                     disabled = function()
                         return not Cfg("objDimCompleted")
                     end,
@@ -1088,17 +1089,17 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("objDimAlpha") or 45
                             end,
-                            set = function(v)
-                                Set("objDimAlpha", v)
+                            set = function(val)
+                                Set("objDimAlpha", val)
                                 RefreshAll()
                             end,
                         },
                     },
                 })
-                y = y - h
+                posY = posY - hgt
             end
 
-            y = y - 10
+            posY = posY - 10
         end -- not STOCK
 
         if FOREVER then
@@ -1106,15 +1107,15 @@ initFrame:SetScript("OnEvent", function(self)
             -- Sorting and filters edit the watch list; filtered quests are
             -- untracked and come back once they pass again. They wait behind the
             -- Experimental Quest Tools switch, which warns before it turns on.
-            _, h = W:SectionHeader(parent, "TRACKING", y)
-            y = y - h
+            _, hgt = W:SectionHeader(hostFrame, "TRACKING", posY)
+            posY = posY - hgt
             -- The rows change nothing while the map is open (watch list edits wait
             -- for it to close, CanEditWatches), so the note says so up front.
             -- The custom tracker sorts its own list, so none of that applies there.
             if not CUSTOM then
-                y = CludesUI.BuildNoteRow(
-                    parent,
-                    y,
+                posY = CludesUI.BuildNoteRow(
+                    hostFrame,
+                    posY,
                     "Sorting, filtering and auto-tracking don't update while the map or quest log is open, in combat or in dungeons. Close the map to apply them.",
                     { banner = true }
                 )
@@ -1135,15 +1136,15 @@ initFrame:SetScript("OnEvent", function(self)
             -- it on or off rebuilds the page. The progress rows always show.
             -- The custom tracker needs no switch: it never edits the watch list.
             local toolsOn = CUSTOM or Cfg("questWatchExperimental") == true
-            local function FilterRow(key, label)
+            local function FilterRow(key, labelText)
                 return {
                     type = "toggle",
-                    label = label,
+                    label = labelText,
                     get = function()
                         return Cfg(key) or false
                     end,
-                    set = function(v)
-                        Set(key, v)
+                    set = function(val)
+                        Set(key, val)
                         ApplyWatches()
                     end,
                 }
@@ -1161,8 +1162,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return CUSTOM or Cfg("questWatchExperimental") == true
                 end,
-                setValue = function(v)
-                    if not v then
+                setValue = function(val)
+                    if not val then
                         Set("questWatchExperimental", false)
                         ApplyWatches()
                         CludesUI:RefreshPage(true)
@@ -1198,8 +1199,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("announceProgress") or false
                 end,
-                setValue = function(v)
-                    Set("announceProgress", v)
+                setValue = function(val)
+                    Set("announceProgress", val)
                     ApplyProgress()
                 end,
             }
@@ -1211,8 +1212,8 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("soundObjective") or "none"
                 end,
-                setValue = function(v)
-                    Set("soundObjective", v)
+                setValue = function(val)
+                    Set("soundObjective", val)
                     ApplyProgress()
                 end,
             }
@@ -1224,21 +1225,21 @@ initFrame:SetScript("OnEvent", function(self)
                 getValue = function()
                     return Cfg("soundQuest") or "none"
                 end,
-                setValue = function(v)
-                    Set("soundQuest", v)
+                setValue = function(val)
+                    Set("soundQuest", val)
                     ApplyProgress()
                 end,
             }
 
             if not toolsOn then
                 -- Experimental Quest Tools | Announce Progress, then the two sounds.
-                _, h = W:DualRow(parent, y, expCfg, announceCfg)
-                y = y - h
-                _, h = W:DualRow(parent, y, objSoundCfg, questSoundCfg)
-                y = y - h
+                _, hgt = W:DualRow(hostFrame, posY, expCfg, announceCfg)
+                posY = posY - hgt
+                _, hgt = W:DualRow(hostFrame, posY, objSoundCfg, questSoundCfg)
+                posY = posY - hgt
             else
                 -- Experimental Quest Tools | Sort Quests (+ completed placement cog)
-                row, h = W:DualRow(parent, y, expCfg, {
+                rowFrame, hgt = W:DualRow(hostFrame, posY, expCfg, {
                     type = "dropdown",
                     text = "Sort Quests",
                     tooltip = "Reorders your tracked quests; Quest Log Order lists them as your quest log does.",
@@ -1252,12 +1253,12 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                     order = { "log", "zone", "level", "name", "progress", "type" },
                     getValue = SortModeCfg,
-                    setValue = function(v)
-                        Set("questSortMode", v)
+                    setValue = function(val)
+                        Set("questSortMode", val)
                         ApplyWatches()
                     end,
                 })
-                CludesUI.BuildInlineCog(row._rightRegion, {
+                CludesUI.BuildInlineCog(rowFrame._rightRegion, {
                     title = "Sort Settings",
                     rows = {
                         {
@@ -1268,8 +1269,8 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("questSortCompleted") or "mixed"
                             end,
-                            set = function(v)
-                                Set("questSortCompleted", v)
+                            set = function(val)
+                                Set("questSortCompleted", val)
                                 ApplyWatches()
                             end,
                         },
@@ -1293,25 +1294,25 @@ initFrame:SetScript("OnEvent", function(self)
                             get = function()
                                 return Cfg("questSortThenBy") or "none"
                             end,
-                            set = function(v)
-                                Set("questSortThenBy", v)
+                            set = function(val)
+                                Set("questSortThenBy", val)
                                 ApplyWatches()
                             end,
                         },
                     },
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Filter Quests (+ filters cog) | Auto Track Zone Quests
-                row, h = W:DualRow(parent, y, {
+                rowFrame, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Filter Quests",
                     tooltip = "Untracks quests that match the filters in the cog until they no longer match.",
                     getValue = function()
                         return Cfg("filterEnabled") or false
                     end,
-                    setValue = function(v)
-                        Set("filterEnabled", v)
+                    setValue = function(val)
+                        Set("filterEnabled", val)
                         ApplyWatches()
                         CludesUI:RefreshPage()
                     end,
@@ -1322,12 +1323,12 @@ initFrame:SetScript("OnEvent", function(self)
                     getValue = function()
                         return Cfg("autoTrackZone") or false
                     end,
-                    setValue = function(v)
-                        Set("autoTrackZone", v)
+                    setValue = function(val)
+                        Set("autoTrackZone", val)
                         ApplyWatches()
                     end,
                 })
-                CludesUI.BuildInlineCog(row._leftRegion, {
+                CludesUI.BuildInlineCog(rowFrame._leftRegion, {
                     -- Open while the header button shows too: it turns Filter Quests
                     -- off, and its own row is in here.
                     disabled = function()
@@ -1343,30 +1344,30 @@ initFrame:SetScript("OnEvent", function(self)
                         FilterRow("filterHeaderToggle", "Show Toggle on Quests Header"),
                     },
                 })
-                y = y - h
+                posY = posY - hgt
 
                 -- Announce Progress | Objective Complete Sound, then Quest Complete Sound
-                _, h = W:DualRow(parent, y, announceCfg, objSoundCfg)
-                y = y - h
-                _, h = W:DualRow(parent, y, questSoundCfg, CludesUI.BlankRowCfg())
-                y = y - h
+                _, hgt = W:DualRow(hostFrame, posY, announceCfg, objSoundCfg)
+                posY = posY - hgt
+                _, hgt = W:DualRow(hostFrame, posY, questSoundCfg, CludesUI.BlankRowCfg())
+                posY = posY - hgt
             end
 
-            y = y - 10
+            posY = posY - 10
         end -- FOREVER
 
         -- -- EXTRAS ----------------------------------------------------------
-        _, h = W:SectionHeader(parent, "EXTRAS", y)
-        y = y - h
+        _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Auto Accept Quests",
             getValue = function()
                 return Cfg("autoAccept") or false
             end,
-            setValue = function(v)
-                Set("autoAccept", v)
+            setValue = function(val)
+                Set("autoAccept", val)
                 if EQT.SyncAutoQuests then
                     EQT.SyncAutoQuests()
                 end
@@ -1377,8 +1378,8 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("autoTurnIn") or false
             end,
-            setValue = function(v)
-                Set("autoTurnIn", v)
+            setValue = function(val)
+                Set("autoTurnIn", val)
                 if EQT.SyncAutoQuests then
                     EQT.SyncAutoQuests()
                 end
@@ -1391,8 +1392,8 @@ initFrame:SetScript("OnEvent", function(self)
                 get = function()
                     return Cfg("autoAcceptPreventMulti") ~= false
                 end,
-                set = function(v)
-                    Set("autoAcceptPreventMulti", v)
+                set = function(val)
+                    Set("autoAcceptPreventMulti", val)
                 end,
             },
             -- Hold Shift to Enable and Hold Shift to Skip are opposites: turning one on turns the other off.
@@ -1402,9 +1403,9 @@ initFrame:SetScript("OnEvent", function(self)
                 get = function()
                     return Cfg("autoAcceptShiftEnable") == true
                 end,
-                set = function(v)
-                    Set("autoAcceptShiftEnable", v)
-                    if v then
+                set = function(val)
+                    Set("autoAcceptShiftEnable", val)
+                    if val then
                         Set("autoAcceptShiftSkip", false)
                     end
                 end,
@@ -1415,9 +1416,9 @@ initFrame:SetScript("OnEvent", function(self)
                 get = function()
                     return Cfg("autoAcceptShiftSkip") ~= false
                 end,
-                set = function(v)
-                    Set("autoAcceptShiftSkip", v)
-                    if v then
+                set = function(val)
+                    Set("autoAcceptShiftSkip", val)
+                    if val then
                         Set("autoAcceptShiftEnable", false)
                     end
                 end,
@@ -1428,8 +1429,8 @@ initFrame:SetScript("OnEvent", function(self)
                 get = function()
                     return Cfg("autoAcceptIgnoreTrivial") or false
                 end,
-                set = function(v)
-                    Set("autoAcceptIgnoreTrivial", v)
+                set = function(val)
+                    Set("autoAcceptIgnoreTrivial", val)
                 end,
             },
         }
@@ -1441,17 +1442,17 @@ initFrame:SetScript("OnEvent", function(self)
                 get = function()
                     return Cfg("autoAcceptIgnoreOldExpansion") or false
                 end,
-                set = function(v)
-                    Set("autoAcceptIgnoreOldExpansion", v)
+                set = function(val)
+                    Set("autoAcceptIgnoreOldExpansion", val)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(row._leftRegion, {
+        CludesUI.BuildInlineCog(rowFrame._leftRegion, {
             title = "Auto Accept Settings",
             rows = acceptRows,
         })
 
-        CludesUI.BuildInlineCog(row._rightRegion, {
+        CludesUI.BuildInlineCog(rowFrame._rightRegion, {
             title = "Auto Turn In Settings",
             rows = {
                 {
@@ -1460,9 +1461,9 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("autoTurnInShiftEnable") == true
                     end,
-                    set = function(v)
-                        Set("autoTurnInShiftEnable", v)
-                        if v then
+                    set = function(val)
+                        Set("autoTurnInShiftEnable", val)
+                        if val then
                             Set("autoTurnInShiftSkip", false)
                         end
                     end,
@@ -1473,28 +1474,28 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("autoTurnInShiftSkip") ~= false
                     end,
-                    set = function(v)
-                        Set("autoTurnInShiftSkip", v)
-                        if v then
+                    set = function(val)
+                        Set("autoTurnInShiftSkip", val)
+                        if val then
                             Set("autoTurnInShiftEnable", false)
                         end
                     end,
                 },
             },
         })
-        y = y - h
+        posY = posY - hgt
 
         -- Quest Item Hotkey row
         local kbRow
-        kbRow, h = W:DualRow(parent, y, { type = "label", text = "" }, {
+        kbRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "" }, {
             type = "toggle",
             text = "Wowhead Quest Links",
             tooltip = "Adds a copyable Wowhead link to the right-click menu of quests in the quest tracker and quest log.",
             getValue = function()
                 return Cfg("wowheadQuestLinks") == true
             end,
-            setValue = function(v)
-                Set("wowheadQuestLinks", v)
+            setValue = function(val)
+                Set("wowheadQuestLinks", val)
                 EQT.ApplyQuestLinks()
                 CludesUI:RefreshPage()
             end,
@@ -1512,8 +1513,8 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("wowheadQuestClientLanguage") == true
                     end,
-                    set = function(v)
-                        Set("wowheadQuestClientLanguage", v)
+                    set = function(val)
+                        Set("wowheadQuestClientLanguage", val)
                     end,
                 },
                 {
@@ -1522,48 +1523,48 @@ initFrame:SetScript("OnEvent", function(self)
                     get = function()
                         return Cfg("wowheadQuestComments") == true
                     end,
-                    set = function(v)
-                        Set("wowheadQuestComments", v)
+                    set = function(val)
+                        Set("wowheadQuestComments", val)
                     end,
                 },
             },
         })
         if not CludesUI._prebuilding then
-            local rgn = kbRow._leftRegion
+            local region = kbRow._leftRegion
             local SIDE_PAD = 20
 
-            local label = CludesUI.MakeFont(
-                rgn,
+            local labelText = CludesUI.MakeFont(
+                region,
                 14,
                 nil,
                 CludesUI.TEXT_WHITE_R,
                 CludesUI.TEXT_WHITE_G,
                 CludesUI.TEXT_WHITE_B
             )
-            PP.Point(label, "LEFT", rgn, "LEFT", SIDE_PAD, 0)
-            label:SetText(CludesUI.L("Quest Item Hotkey"))
+            Pix.Point(labelText, "LEFT", region, "LEFT", SIDE_PAD, 0)
+            labelText:SetText(CludesUI.L("Quest Item Hotkey"))
 
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(rgn, {
+            local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
                 w = 120,
                 h = 26,
-                pp = PP,
+                pp = Pix,
                 level = 5,
                 get = function()
                     return Cfg("questItemHotkey")
                 end,
-                set = function(v)
-                    Set("questItemHotkey", v)
+                set = function(val)
+                    Set("questItemHotkey", val)
                     if EQT.ApplyQuestItemHotkey then
                         EQT.ApplyQuestItemHotkey()
                     end
                 end,
             })
-            PP.Point(kbBtn, "RIGHT", rgn, "RIGHT", -SIDE_PAD, 0)
+            Pix.Point(kbBtn, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
             CludesUI.RegisterWidgetRefresh(refresh)
         end
-        y = y - h
+        posY = posY - hgt
 
-        return math.abs(y)
+        return math.abs(posY)
     end
 
     _G._CUBS_BuildQuestTrackerPage = BuildPage
@@ -1572,8 +1573,8 @@ initFrame:SetScript("OnEvent", function(self)
         title = "Quest Tracker",
         description = "Blizzard tracker skin, visibility rules, auto-accept/turn-in, quest-item hotkey.",
         pages = { "Quest Tracker" },
-        buildPage = function(pageName, p, yOffset)
-            return BuildPage(pageName, p, yOffset)
+        buildPage = function(page, p, yOffset)
+            return BuildPage(page, p, yOffset)
         end,
         onReset = function()
             local d = _G._CUQT_DB

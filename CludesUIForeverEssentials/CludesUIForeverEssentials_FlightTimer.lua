@@ -93,7 +93,7 @@ local DEFAULTS = {
 local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
 
 local routes = CludesUI._FlightTimerRoutes
-local bar, events, ticker, hooked
+local barFrame, events, ticker, hooked
 local pending -- destination picked on the flight map, waiting for takeoff
 local flight -- the flight in progress
 
@@ -109,8 +109,8 @@ end
 
 -- How much further a label must sit from a mark of this height, centred on
 -- the track, to clear a track taller than the mark.
-local function Rise(size)
-    return math.max(0, (Get("trackHeight") - size) / 2)
+local function Rise(dim)
+    return math.max(0, (Get("trackHeight") - dim) / 2)
 end
 
 local function Speed()
@@ -135,8 +135,8 @@ end
 -- The time text of flight fl at elapsed seconds: the time left, plus the
 -- full time with Show Total Time.
 local function TimeLeft(fl, elapsed)
-    local left = FormatTime(fl.eta - elapsed)
-    return Get("showTotal") and (left .. " / " .. FormatTime(fl.eta)) or left
+    local leftX = FormatTime(fl.eta - elapsed)
+    return Get("showTotal") and (leftX .. " / " .. FormatTime(fl.eta)) or leftX
 end
 
 local function FillColor()
@@ -151,8 +151,8 @@ local function FillColor()
     if c.fillR then
         return c.fillR, c.fillG, c.fillB
     end
-    local EG = CludesUI.CLUDES_GREEN
-    return EG.r, EG.g, EG.b
+    local ACC = CludesUI.CLUDES_GREEN
+    return ACC.r, ACC.g, ACC.b
 end
 
 -- Sums the stored length of every hop on the way to slot; nil when any hop
@@ -185,37 +185,38 @@ local function RouteInfo(slot)
 end
 
 -- Text in Forever Essentials' font and outline (Fonts page, else the global font).
-local function StyleFont(fs, size)
-    CludesUI.ApplyModuleFont(fs, nil, size, "essentials")
+local function StyleFont(fontStr, dim)
+    CludesUI.ApplyModuleFont(fontStr, nil, dim, "essentials")
 end
 
 -- A mark on the route (an end, a stop, "you"): an icon with a label.
-local function NewMark(parent, texture, w, h)
-    local m = { icon = parent:CreateTexture(nil, "OVERLAY"), label = parent:CreateFontString(nil, "OVERLAY") }
+local function NewMark(hostFrame, texture, wid, hgt)
+    local m =
+        { icon = hostFrame:CreateTexture(nil, "OVERLAY"), label = hostFrame:CreateFontString(nil, "OVERLAY") }
     m.icon:SetTexture(texture)
-    m.icon:SetSize(w, h or w)
+    m.icon:SetSize(wid, hgt or wid)
     m.label:SetWordWrap(false)
     return m
 end
 
 -- text: a string shows icon and label, nil the icon alone, false neither.
-local function ShowMark(m, text)
-    m.icon:SetShown(text ~= false)
+local function ShowMark(m, textValue)
+    m.icon:SetShown(textValue ~= false)
     m.icon:SetAlpha(1)
-    m.label:SetShown(text and true or false)
+    m.label:SetShown(textValue and true or false)
     m.label:SetAlpha(1)
-    if text then
+    if textValue then
         StyleFont(m.label, Get("destSize"))
-        m.label:SetText(text)
+        m.label:SetText(textValue)
     end
 end
 
 -- ShowMark's text for a mark shown only when show; with names off, icon only.
-local function MarkText(show, name, names)
+local function MarkText(show, name, nameList)
     if not show then
         return false
     end
-    return names and (name or "") or nil
+    return nameList and (name or "") or nil
 end
 
 -- Every function below draws into a display b (the bar on screen, or the
@@ -242,8 +243,8 @@ local function ScrollStrip(b, fl, elapsed)
     end
     local flown = elapsed / fl.eta * fl.yards
     for k = 1, #fl.points - 2 do
-        local y = fl.points[k + 1].yards
-        if y and y <= flown then
+        local posY = fl.points[k + 1].yards
+        if posY and posY <= flown then
             b.stops[k].icon:SetAlpha(0.4)
             b.stops[k].label:SetAlpha(0.4)
         end
@@ -255,8 +256,8 @@ end
 -- moment they are reached, and run out to the left.
 local function LayoutRoute(b, fl)
     local points = fl and fl.points
-    local n = points and #points or 0
-    local names = Get("destText") ~= "none"
+    local num = points and #points or 0
+    local nameList = Get("destText") ~= "none"
     local dx, dy = Get("destX"), Get("destY")
     local level = b.track:GetFrameLevel() + 3
     b.over:SetFrameLevel(level)
@@ -265,18 +266,18 @@ local function LayoutRoute(b, fl)
     -- The ends: a dot in the fill colour (Show End Caps) with the node's name
     -- above it; a hidden dot still places its name.
     local caps = Get("showEndCaps")
-    for i = 1, 2 do
-        local m, side = b.ends[i], i == 1 and "LEFT" or "RIGHT"
-        ShowMark(m, MarkText(n > 0, n > 0 and points[i == 1 and 1 or n].name, names))
+    for idx = 1, 2 do
+        local m, sideName = b.ends[idx], idx == 1 and "LEFT" or "RIGHT"
+        ShowMark(m, MarkText(num > 0, num > 0 and points[idx == 1 and 1 or num].name, nameList))
         if not caps then
             m.icon:Hide()
         end
         m.icon:SetVertexColor(FillColor())
         m.label:ClearAllPoints()
-        m.label:SetPoint("BOTTOM" .. side, m.icon, "TOP" .. side, dx, 4 + dy + Rise(PIN_SIZE / 2))
+        m.label:SetPoint("BOTTOM" .. sideName, m.icon, "TOP" .. sideName, dx, 4 + dy + Rise(PIN_SIZE / 2))
         -- Each end name gets at most 47% of the bar's width; a longer one is cut off.
         m.label:SetWidth(Get("width") * 0.47)
-        m.label:SetJustifyH(side)
+        m.label:SetJustifyH(sideName)
     end
 
     -- Where each stop sits comes from its arrival time, known only with route
@@ -284,7 +285,7 @@ local function LayoutRoute(b, fl)
     -- next stop; stops already passed would keep sliding out, so the strip
     -- and "you" go entirely.
     local moving = points and fl.eta and fl.yards and not fl.early
-    local scroll = moving and n > 2
+    local scroll = moving and num > 2
     local clip = b.clip
     clip:SetShown(scroll)
     if scroll then
@@ -305,20 +306,20 @@ local function LayoutRoute(b, fl)
     end
     -- b.stops[k] is the stop at points[k + 1]; leftovers from a longer
     -- route are hidden.
-    for k = 1, math.max(n - 2, #b.stops) do
-        local y = scroll and k <= n - 2 and points[k + 1].yards
+    for k = 1, math.max(num - 2, #b.stops) do
+        local posY = scroll and k <= num - 2 and points[k + 1].yards
         local m = b.stops[k]
-        if y and not m then
+        if posY and not m then
             m = NewMark(clip.strip, STOP_ICON, PIN_SIZE)
             b.stops[k] = m
         end
         if m then
-            ShowMark(m, MarkText(y, y and points[k + 1].name, names))
+            ShowMark(m, MarkText(posY, posY and points[k + 1].name, nameList))
             m.label:ClearAllPoints()
             m.label:SetPoint("TOP", m.icon, "BOTTOM", 0, -4 - Rise(PIN_SIZE))
-            if y then
+            if posY then
                 m.icon:ClearAllPoints()
-                m.icon:SetPoint("CENTER", clip.strip, "CENTER", y / fl.yards * fl.eta * clip.pps, 0)
+                m.icon:SetPoint("CENTER", clip.strip, "CENTER", posY / fl.yards * fl.eta * clip.pps, 0)
             end
         end
     end
@@ -328,43 +329,43 @@ local function LayoutRoute(b, fl)
 
     -- "You are here": a white post at the centre, where each stop is reached;
     -- a direct flight has no stops to reach, so none.
-    ShowMark(b.you, MarkText(scroll, CludesUI.L("You"), names))
-    local icon = b.you.icon
+    ShowMark(b.you, MarkText(scroll, CludesUI.L("You"), nameList))
+    local glyph = b.you.icon
     local height = Get("separatorHeight")
-    local tex, size = Get("borderTexture"), Get("borderSize")
+    local tex, dim = Get("borderTexture"), Get("borderSize")
     if
         scroll
         and Get("showSeparator")
         and Get("customSeparator")
-        and size > 0
+        and dim > 0
         and CludesUI.GetBorderCompanion(tex, "sepV")
     then
         if not b.separatorAnchor then
             b.separatorAnchor = CreateFrame("Frame", nil, b.over)
         end
-        local anchor = b.separatorAnchor
-        anchor:ClearAllPoints()
-        anchor:SetPoint("TOPLEFT", b, "CENTER", 0, height / 2)
-        anchor:SetSize(1, height)
+        local anchorFrame = b.separatorAnchor
+        anchorFrame:ClearAllPoints()
+        anchorFrame:SetPoint("TOPLEFT", b, "CENTER", 0, height / 2)
+        anchorFrame:SetSize(1, height)
         CludesUI.PlaceBorderDividerV(
-            icon,
-            anchor,
+            glyph,
+            anchorFrame,
             false,
             false,
             tex,
-            size,
-            CludesUI.BorderPx(Get("borderSizePx"), size, tex),
+            dim,
+            CludesUI.BorderPx(Get("borderSizePx"), dim, tex),
             b.over:GetEffectiveScale()
         )
-        icon:SetVertexColor(Get("borderR"), Get("borderG"), Get("borderB"), 1)
+        glyph:SetVertexColor(Get("borderR"), Get("borderG"), Get("borderB"), 1)
     else
-        icon:SetTexture(WHITE)
-        icon:SetTexCoord(0, 1, 0, 1)
-        icon:SetVertexColor(1, 1, 1, 1)
-        icon:ClearAllPoints()
-        icon:SetPoint("CENTER", b, "CENTER")
-        icon:SetSize(2, height)
-        icon:SetShown(scroll and Get("showSeparator"))
+        glyph:SetTexture(WHITE)
+        glyph:SetTexCoord(0, 1, 0, 1)
+        glyph:SetVertexColor(1, 1, 1, 1)
+        glyph:ClearAllPoints()
+        glyph:SetPoint("CENTER", b, "CENTER")
+        glyph:SetSize(2, height)
+        glyph:SetShown(scroll and Get("showSeparator"))
     end
     b.you.label:ClearAllPoints()
     b.you.label:SetPoint("BOTTOM", b, "CENTER", 0, math.max(height, Get("trackHeight")) / 2 + 2)
@@ -373,14 +374,14 @@ end
 local RequestLanding -- the early exit button's click; defined with the flight code
 
 -- Separate hosts let size 0 hide the border without hiding the track or button.
-local function StyleBorder(owner, isExit)
-    local PP = CludesUI.PP
-    local host = owner.travelBorder
+local function StyleBorder(ownerFrame, isExit)
+    local Pix = CludesUI.PP
+    local hostRegion = ownerFrame.travelBorder
     if isExit and not Get("exitBorder") then
-        PP.HideBorder(owner)
-        if host then
-            CludesUI.HideBorderStyle(host)
-            host:Hide()
+        Pix.HideBorder(ownerFrame)
+        if hostRegion then
+            CludesUI.HideBorderStyle(hostRegion)
+            hostRegion:Hide()
         end
         return
     end
@@ -392,91 +393,91 @@ local function StyleBorder(owner, isExit)
         custom = Read().borderTexture ~= nil or Get("borderSizePx")
     end
     if not custom then
-        if host then
-            CludesUI.HideBorderStyle(host)
-            host:Hide()
+        if hostRegion then
+            CludesUI.HideBorderStyle(hostRegion)
+            hostRegion:Hide()
         end
-        local size, r, g, b = 1, 0, 0, 0
+        local dim, r, g, b = 1, 0, 0, 0
         if not isExit then
-            local cap = math.floor((Get("trackHeight") / (PP.mult or 1) - 1) / 2)
-            size = math.max(0, math.min(Get("borderSize"), cap))
+            local cap = math.floor((Get("trackHeight") / (Pix.mult or 1) - 1) / 2)
+            dim = math.max(0, math.min(Get("borderSize"), cap))
             r, g, b = Get("borderR"), Get("borderG"), Get("borderB")
         end
-        if PP.GetBorders(owner) then
-            PP.UpdateBorder(owner, size, r, g, b, 1)
+        if Pix.GetBorders(ownerFrame) then
+            Pix.UpdateBorder(ownerFrame, dim, r, g, b, 1)
         else
-            PP.CreateBorder(owner, r, g, b, 1, size, "OVERLAY", 2)
+            Pix.CreateBorder(ownerFrame, r, g, b, 1, dim, "OVERLAY", 2)
         end
-        if size > 0 then
-            PP.ShowBorder(owner)
+        if dim > 0 then
+            Pix.ShowBorder(ownerFrame)
         else
-            PP.HideBorder(owner)
+            Pix.HideBorder(ownerFrame)
         end
         return
     end
-    PP.HideBorder(owner)
-    if not host then
-        host = CreateFrame("Frame", nil, owner)
-        host:SetAllPoints(owner)
-        owner.travelBorder = host
+    Pix.HideBorder(ownerFrame)
+    if not hostRegion then
+        hostRegion = CreateFrame("Frame", nil, ownerFrame)
+        hostRegion:SetAllPoints(ownerFrame)
+        ownerFrame.travelBorder = hostRegion
     end
-    host:SetFrameLevel(
-        Get("borderBehind") and math.max(0, owner:GetFrameLevel() - 1) or owner:GetFrameLevel() + 1
+    hostRegion:SetFrameLevel(
+        Get("borderBehind") and math.max(0, ownerFrame:GetFrameLevel() - 1) or ownerFrame:GetFrameLevel() + 1
     )
-    local size, tex = Get("borderSize"), Get("borderTexture")
-    local prefix = isExit and "exitBorder" or "borderTexture"
+    local dim, tex = Get("borderSize"), Get("borderTexture")
+    local prefixText = isExit and "exitBorder" or "borderTexture"
     CludesUI.ApplyBorderStyle(
-        host,
-        size,
+        hostRegion,
+        dim,
         Get("borderR"),
         Get("borderG"),
         Get("borderB"),
         1,
         tex,
-        Get(prefix .. "Offset"),
-        Get(prefix .. "OffsetY"),
+        Get(prefixText .. "Offset"),
+        Get(prefixText .. "OffsetY"),
         Get("borderTextureShiftX"),
         Get("borderTextureShiftY"),
         nil,
         nil,
         nil,
-        CludesUI.BorderPx(Get("borderSizePx"), size, tex)
+        CludesUI.BorderPx(Get("borderSizePx"), dim, tex)
     )
 end
 
 -- Early exit button right of the bar, built on first enable. Greyed out once a
 -- landing is requested, as Blizzard's leave button does.
 local function StyleExit(b, fl)
-    local btn = b.exit
+    local button = b.exit
     if not Get("earlyExit") then
-        if btn then
-            btn:Hide()
+        if button then
+            button:Hide()
         end
         return
     end
-    if not btn then
-        btn = CreateFrame("Button", nil, b)
-        btn:SetSize(EXIT_SIZE, EXIT_SIZE)
-        btn:SetPoint("LEFT", b, "RIGHT", PIN_SIZE / 2 + 6, 0)
-        btn:SetNormalTexture(EXIT_ICON)
-        btn:GetNormalTexture():SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trim the icon frame
-        btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-        btn:SetScript("OnClick", function()
+    if not button then
+        button = CreateFrame("Button", nil, b)
+        button:SetSize(EXIT_SIZE, EXIT_SIZE)
+        button:SetPoint("LEFT", b, "RIGHT", PIN_SIZE / 2 + 6, 0)
+        button:SetNormalTexture(EXIT_ICON)
+        button:GetNormalTexture():SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trim the icon frame
+        button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+        button:SetScript("OnClick", function()
             RequestLanding(b)
         end)
-        btn:SetScript("OnEnter", function(self)
+        button:SetScript("OnEnter", function(self)
             CludesUI.ShowWidgetTooltip(self, CludesUI.L("Land at the next flight point"))
         end)
-        btn:SetScript("OnLeave", function()
+        button:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        b.exit = btn
+        b.exit = button
     end
-    StyleBorder(btn, true)
+    StyleBorder(button, true)
     local done = fl and fl.early
-    btn:SetEnabled(not done)
-    btn:SetAlpha(done and 0.4 or 1)
-    btn:Show()
+    button:SetEnabled(not done)
+    button:SetAlpha(done and 0.4 or 1)
+    button:Show()
 end
 
 local function StyleBar(b, fl)
@@ -522,8 +523,8 @@ end
 -- An invisible box around the whole display, sized by StyleBar: the unlock
 -- mover takes the frame's own size, so this gives it a grabbable area. The
 -- track is the thin line through its middle.
-local function BuildBar(parent)
-    local b = CreateFrame("Frame", nil, parent)
+local function BuildBar(hostFrame)
+    local b = CreateFrame("Frame", nil, hostFrame)
     local track = CreateFrame("StatusBar", nil, b)
     track:SetPoint("LEFT")
     track:SetPoint("RIGHT")
@@ -556,20 +557,20 @@ local function BuildBar(parent)
 end
 
 local function CreateBar()
-    if bar then
+    if barFrame then
         return
     end
-    bar = BuildBar(UIParent)
-    bar:Hide()
-    StyleBar(bar, flight)
-    F.Place(bar)
+    barFrame = BuildBar(UIParent)
+    barFrame:Hide()
+    StyleBar(barFrame, flight)
+    F.Place(barFrame)
 end
 
 local RefreshPreview -- the options preview's restyle; defined with it below
 
 local function ApplyStyle()
-    if bar then
-        StyleBar(bar, flight)
+    if barFrame then
+        StyleBar(barFrame, flight)
     end
     RefreshPreview()
 end
@@ -578,36 +579,36 @@ end
 -- as CludesUI's widget tooltips: 0.25 s, easing out on show, in on hide.
 local FADE_TIME = 0.25
 local function ShowBar(show)
-    local g = bar.fade
+    local g = barFrame.fade
     if g then
         g:Stop()
     end
     if not Get("fade") then
-        bar:SetAlpha(1)
-        bar:SetShown(show)
+        barFrame:SetAlpha(1)
+        barFrame:SetShown(show)
         return
     end
-    if not show and not bar:IsShown() then
+    if not show and not barFrame:IsShown() then
         return
     end
     if not g then
-        g = bar:CreateAnimationGroup()
+        g = barFrame:CreateAnimationGroup()
         g.alpha = g:CreateAnimation("Alpha")
         g.alpha:SetDuration(FADE_TIME)
         g:SetScript("OnFinished", function(self)
-            bar:SetAlpha(self.to)
+            barFrame:SetAlpha(self.to)
             if self.to == 0 then
-                bar:Hide()
+                barFrame:Hide()
             end
         end)
-        bar.fade = g
+        barFrame.fade = g
     end
-    if show and not bar:IsShown() then
-        bar:SetAlpha(0)
-        bar:Show()
+    if show and not barFrame:IsShown() then
+        barFrame:SetAlpha(0)
+        barFrame:Show()
     end
     g.to = show and 1 or 0
-    g.alpha:SetFromAlpha(bar:GetAlpha())
+    g.alpha:SetFromAlpha(barFrame:GetAlpha())
     g.alpha:SetToAlpha(g.to)
     g.alpha:SetSmoothing(show and "OUT" or "IN")
     g:Play()
@@ -619,7 +620,7 @@ local function EndFlight()
         ticker:Cancel()
         ticker = nil
     end
-    if bar then
+    if barFrame then
         ShowBar(false)
     end
 end
@@ -634,10 +635,10 @@ local function UpdateText()
         flight.early = true
         Land()
     elseif flight.eta then
-        bar.time:SetText(TimeLeft(flight, elapsed))
-        ScrollStrip(bar, flight, elapsed)
+        barFrame.time:SetText(TimeLeft(flight, elapsed))
+        ScrollStrip(barFrame, flight, elapsed)
     else
-        bar.time:SetText(FormatTime(elapsed))
+        barFrame.time:SetText(FormatTime(elapsed))
     end
 end
 
@@ -662,9 +663,9 @@ local function StartFlight(yards, points)
         flight.eta = yards / (Speed() * flight.mult)
     end
     CreateBar()
-    ArmTimer(bar, flight)
+    ArmTimer(barFrame, flight)
     ShowBar(true)
-    StyleBar(bar, flight)
+    StyleBar(barFrame, flight)
     UpdateText()
     if not ticker then
         ticker = C_Timer.NewTicker(1, UpdateText)
@@ -680,10 +681,10 @@ local function Retarget(b, fl)
     local points = fl.points
     if points and fl.yards and fl.eta then
         local flown = (GetTime() - fl.start) / fl.eta * fl.yards
-        for i, p in ipairs(points) do
+        for idx, p in ipairs(points) do
             if p.yards and p.yards > flown then
-                for j = #points, i + 1, -1 do
-                    points[j] = nil
+                for jdx = #points, idx + 1, -1 do
+                    points[jdx] = nil
                 end
                 fl.eta = fl.eta * p.yards / fl.yards
                 fl.yards = p.yards
@@ -709,8 +710,8 @@ Land = function()
     EndFlight()
 end
 
-local function OnEvent(_, event)
-    if event == "PLAYER_CONTROL_LOST" then
+local function OnEvent(_, evt)
+    if evt == "PLAYER_CONTROL_LOST" then
         -- UnitOnTaxi is still false when this fires at takeoff, so a fresh
         -- flight-map click is the signal. A click the server refused leaves
         -- pending behind; a takeoff minutes later must not start a flight from
@@ -720,7 +721,7 @@ local function OnEvent(_, event)
             StartFlight(pending.yards, pending.points)
         end
         pending = nil
-    elseif event == "PLAYER_CONTROL_GAINED" then
+    elseif evt == "PLAYER_CONTROL_GAINED" then
         if flight and not UnitOnTaxi("player") then
             Land()
         end
@@ -741,7 +742,7 @@ local function Apply()
             hooksecurefunc("TakeTaxiNode", OnTakeTaxiNode)
             hooksecurefunc("TaxiRequestEarlyLanding", function()
                 if flight then
-                    Retarget(bar, flight)
+                    Retarget(barFrame, flight)
                     UpdateText()
                 end
             end)
@@ -774,32 +775,32 @@ local preview -- view, bar, the sample route and the flight drawn from it
 local StartPreviewFlight
 
 local function PreviewTick()
-    local v, fl = preview, preview.flight
+    local val, fl = preview, preview.flight
     local elapsed = GetTime() - fl.start
     -- The finished flight holds a moment, then the next one starts.
     if elapsed >= fl.eta + PREVIEW_HOLD then
         return StartPreviewFlight()
     end
     elapsed = math.min(elapsed, fl.eta)
-    v.bar.time:SetText(TimeLeft(fl, elapsed))
-    ScrollStrip(v.bar, fl, elapsed)
+    val.bar.time:SetText(TimeLeft(fl, elapsed))
+    ScrollStrip(val.bar, fl, elapsed)
 end
 
 StartPreviewFlight = function()
-    local v = preview
-    local fl, points = v.flight, v.points
+    local val = preview
+    local fl, points = val.flight, val.points
     -- An early landing cuts the route short: refill it from the full one.
-    for i, p in ipairs(v.route) do
-        points[i] = p
+    for idx, p in ipairs(val.route) do
+        points[idx] = p
     end
-    for i = #v.route + 1, #points do
-        points[i] = nil
+    for idx = #val.route + 1, #points do
+        points[idx] = nil
     end
-    fl.points, fl.yards, fl.start, fl.early = points, v.yards, GetTime(), nil
+    fl.points, fl.yards, fl.start, fl.early = points, val.yards, GetTime(), nil
     fl.eta = PREVIEW_SECONDS
-    fl.lookahead = LOOKAHEAD * PREVIEW_SECONDS / (v.yards / Speed())
-    ArmTimer(v.bar, fl)
-    StyleBar(v.bar, fl)
+    fl.lookahead = LOOKAHEAD * PREVIEW_SECONDS / (val.yards / Speed())
+    ArmTimer(val.bar, fl)
+    StyleBar(val.bar, fl)
     PreviewTick()
 end
 
@@ -834,7 +835,7 @@ local function PreviewLanding()
 end
 
 RequestLanding = function(b)
-    if b == bar then
+    if b == barFrame then
         -- The hook on TaxiRequestEarlyLanding retargets the bar.
         if flight and not flight.early then
             TaxiRequestEarlyLanding()
@@ -846,27 +847,27 @@ end
 
 -- force: draw while the header is still being built (not shown yet).
 RefreshPreview = function(force)
-    local v = preview
-    if not (v and (force or v.view:IsVisible())) then
+    local val = preview
+    if not (val and (force or val.view:IsVisible())) then
         return
     end
     RefreshPreviewNow()
 end
 
 RefreshPreviewNow = function()
-    local v = preview
+    local val = preview
     -- Scaled down when the bar, the time on its left and the early exit
     -- button on its right are wider than the header.
-    local w = Get("width") + 2 * (PIN_SIZE / 2 + 6 + EXIT_SIZE)
-    local pw = v.view:GetParent():GetWidth()
-    local available = (pw > 0 and pw) or v.availableWidth or w + 40
-    local scale = math.min(1, math.max(100, available - 40) / w)
-    v.bar:SetScale(scale)
-    StyleBar(v.bar, v.flight)
-    v.previewHeight = BoxHeight() * scale + 30
-    v.view:SetHeight(v.previewHeight)
-    if v.onHeightChanged then
-        v.onHeightChanged(v.previewHeight)
+    local wid = Get("width") + 2 * (PIN_SIZE / 2 + 6 + EXIT_SIZE)
+    local pw = val.view:GetParent():GetWidth()
+    local available = (pw > 0 and pw) or val.availableWidth or wid + 40
+    local scale = math.min(1, math.max(100, available - 40) / wid)
+    val.bar:SetScale(scale)
+    StyleBar(val.bar, val.flight)
+    val.previewHeight = BoxHeight() * scale + 30
+    val.view:SetHeight(val.previewHeight)
+    if val.onHeightChanged then
+        val.onHeightChanged(val.previewHeight)
     end
 end
 
@@ -875,52 +876,52 @@ end
 -- which drops the hook, so a new dress (Pool.Gen) hooks again; a plain frame
 -- (no Gen) is hooked once.
 local hookedParents = {}
-local function CreateSettingsPreview(parent, availableWidth, onHeightChanged)
-    local v = preview
-    if not v then
+local function CreateSettingsPreview(hostFrame, availableWidth, onHeightChanged)
+    local val = preview
+    if not val then
         local route = PREVIEW_ROUTES[UnitFactionGroup("player")] or PREVIEW_ROUTES.Alliance
-        v = { route = {}, points = {}, flight = {}, yards = 0 }
-        for i = 1, #route, 2 do
-            if i > 1 then
-                v.yards = v.yards + routes[route[i - 2] * 10000 + route[i]]
+        val = { route = {}, points = {}, flight = {}, yards = 0 }
+        for idx = 1, #route, 2 do
+            if idx > 1 then
+                val.yards = val.yards + routes[route[idx - 2] * 10000 + route[idx]]
             end
-            v.route[#v.route + 1] = { name = route[i + 1], yards = v.yards }
+            val.route[#val.route + 1] = { name = route[idx + 1], yards = val.yards }
         end
-        v.view = CreateFrame("Frame", nil, parent)
-        v.bar = BuildBar(v.view)
-        v.bar:SetPoint("CENTER")
-        v.view:SetScript("OnShow", PreviewShow)
-        v.view:SetScript("OnHide", PreviewHide)
-        preview = v
+        val.view = CreateFrame("Frame", nil, hostFrame)
+        val.bar = BuildBar(val.view)
+        val.bar:SetPoint("CENTER")
+        val.view:SetScript("OnShow", PreviewShow)
+        val.view:SetScript("OnHide", PreviewHide)
+        preview = val
         StartPreviewFlight()
     end
     -- Frames outlive a page rebuild, so the view is reused.
-    v.availableWidth, v.onHeightChanged = availableWidth, onHeightChanged
-    v.view:SetParent(parent)
-    v.view:ClearAllPoints()
-    v.view:SetPoint("TOPLEFT")
-    v.view:SetPoint("TOPRIGHT")
-    local dress = POOL.Gen and POOL.Gen(parent) or true
-    if hookedParents[parent] ~= dress then
-        hookedParents[parent] = dress
+    val.availableWidth, val.onHeightChanged = availableWidth, onHeightChanged
+    val.view:SetParent(hostFrame)
+    val.view:ClearAllPoints()
+    val.view:SetPoint("TOPLEFT")
+    val.view:SetPoint("TOPRIGHT")
+    local dress = POOL.Gen and POOL.Gen(hostFrame) or true
+    if hookedParents[hostFrame] ~= dress then
+        hookedParents[hostFrame] = dress
         local lastWidth
-        parent:HookScript("OnSizeChanged", function(_, width)
+        hostFrame:HookScript("OnSizeChanged", function(_, width)
             if width == lastWidth then
                 return
             end
             lastWidth = width
-            if v.view:GetParent() == parent then
+            if val.view:GetParent() == hostFrame then
                 RefreshPreview()
             end
         end)
     end
-    v.view:Show()
+    val.view:Show()
     RefreshPreview(true)
     -- A new frame starts shown, so no OnShow fires for the first open.
-    if v.view:IsVisible() then
+    if val.view:IsVisible() then
         PreviewShow()
     end
-    return v
+    return val
 end
 
 -- Options-page entry points.
@@ -930,7 +931,7 @@ CludesUI._FlightTimer = {
     Apply = Apply,
     ApplyStyle = ApplyStyle,
     ApplyPosition = function()
-        F.Place(bar)
+        F.Place(barFrame)
     end,
     textures = { lookup = BAR_TEXTURES, names = BAR_TEXTURE_NAMES, order = BAR_TEXTURE_ORDER },
     CreateSettingsPreview = CreateSettingsPreview,
@@ -945,7 +946,7 @@ F.Start(Apply, {
         if build then
             CreateBar()
         end
-        return bar
+        return barFrame
     end,
     -- Follows the text around the track.
     height = BoxHeight,

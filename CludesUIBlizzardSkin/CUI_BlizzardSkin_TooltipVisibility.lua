@@ -9,14 +9,14 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Reads CludesUIBlizzardSkin.lua through ns._internals.
 -------------------------------------------------------------------------------
 local _, ns = ...
-local I = ns._internals
+local Inner = ns._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not I or I.last ~= "TooltipAnchor" then
+if not Inner or Inner.last ~= "TooltipAnchor" then
     return
 end
 
-local FFD = I.FFD
+local FFD = Inner.FFD
 
 -------------------------------------------------------------------------------
 --  Show Tooltips (global visibility mode). The "Blizzard Tooltip" dropdown
@@ -70,8 +70,9 @@ do
     end
 
     local function ComparisonStateWatcherNeeded()
-        local mode = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
-        return ComparisonSuppressionModeEnabled() and (mode == "outOfCombat" or mode == "outOfBossCombat")
+        local modeName = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
+        return ComparisonSuppressionModeEnabled()
+            and (modeName == "outOfCombat" or modeName == "outOfBossCombat")
     end
 
     -- Shared decision: should GameTooltip be suppressed right now given the user's "Show
@@ -90,8 +91,8 @@ do
             end
             return false
         end
-        local mode = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
-        if mode == "always" then
+        local modeName = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
+        if modeName == "always" then
             if UpdateStateWatcher and (_comparisonSupportActive or _comparisonStateWatcherRegistered) then
                 UpdateStateWatcher()
             end
@@ -106,11 +107,11 @@ do
         if ShowModifierHeld() then
             return false
         end
-        if mode == "never" then
+        if modeName == "never" then
             return true
-        elseif mode == "outOfCombat" then
+        elseif modeName == "outOfCombat" then
             return InCombatLockdown()
-        elseif mode == "outOfBossCombat" then
+        elseif modeName == "outOfBossCombat" then
             return IsEncounterInProgress()
         end
         return false
@@ -137,12 +138,12 @@ do
     local _comparisonFlagOwned = false
     local _parked = false
     local function GetComparisonState(tooltip, create)
-        local state = FFD[tooltip]
-        if not state and create then
-            state = {}
-            FFD[tooltip] = state
+        local status = FFD[tooltip]
+        if not status and create then
+            status = {}
+            FFD[tooltip] = status
         end
-        return state
+        return status
     end
 
     local function ReadComparisonSuppressionFlag(tooltip)
@@ -159,10 +160,10 @@ do
         if not _comparisonFlagOwned or tooltip ~= GameTooltip then
             return
         end
-        local state = GetComparisonState(tooltip, false)
-        if state then
-            state.comparisonFlagPrevious = nil
-            state.comparisonFlagOwned = nil
+        local status = GetComparisonState(tooltip, false)
+        if status then
+            status.comparisonFlagPrevious = nil
+            status.comparisonFlagOwned = nil
         end
         _comparisonFlagOwned = false
     end
@@ -171,12 +172,12 @@ do
         if not _comparisonFlagOwned or tooltip ~= GameTooltip then
             return
         end
-        local state = GetComparisonState(tooltip, false)
-        if not state or not state.comparisonFlagOwned then
+        local status = GetComparisonState(tooltip, false)
+        if not status or not status.comparisonFlagOwned then
             _comparisonFlagOwned = false
             return
         end
-        if not pcall(WriteComparisonSuppressionFlag, tooltip, state.comparisonFlagPrevious) then
+        if not pcall(WriteComparisonSuppressionFlag, tooltip, status.comparisonFlagPrevious) then
             return
         end
         ForgetComparisonSuppression(tooltip)
@@ -186,15 +187,15 @@ do
         if tooltip ~= GameTooltip then
             return
         end
-        local state = GetComparisonState(tooltip, true)
-        local owned = _comparisonFlagOwned and state.comparisonFlagOwned
+        local status = GetComparisonState(tooltip, true)
+        local owned = _comparisonFlagOwned and status.comparisonFlagOwned
         if not owned then
             local readOK, previous = pcall(ReadComparisonSuppressionFlag, tooltip)
             if not readOK then
                 return
             end
-            state.comparisonFlagPrevious = previous
-            state.comparisonFlagOwned = true
+            status.comparisonFlagPrevious = previous
+            status.comparisonFlagOwned = true
             _comparisonFlagOwned = true
         end
         -- Arm at the default anchor and again from the item pre-call below. Item
@@ -500,15 +501,15 @@ do
     -- frame has an OnEnter that builds nothing (its tip comes from the engine's
     -- mouseover unit on a real hover), so fall back to driving the unit tooltip directly when one is up.
     -- Skip forbidden frames entirely; any access (even GetScript/GetParent) hard-errors.
-    local function IsFrameForbidden(frame)
-        return frame and frame.IsForbidden and frame:IsForbidden()
+    local function IsFrameForbidden(widget)
+        return widget and widget.IsForbidden and widget:IsForbidden()
     end
     -- Skip protected frames; firing their secure OnEnter from insecure code is
     -- ADDON_ACTION_BLOCKED (not pcall-catchable). Nothing is lost: their tips are
     -- built by the secure hover path and revealed via the parked lane, and unit
     -- buttons still land a tip through the mouseover fallback below.
-    local function IsFrameProtected(frame)
-        return frame and frame.IsProtected and frame:IsProtected()
+    local function IsFrameProtected(widget)
+        return widget and widget.IsProtected and widget:IsProtected()
     end
     local function FireHoveredOnEnter()
         local foci = GetMouseFoci()
@@ -518,30 +519,30 @@ do
         end
         if foci then
             for _, focus in ipairs(foci) do
-                local frame = focus
-                while frame and frame ~= WorldFrame and frame ~= UIParent do
-                    if IsFrameForbidden(frame) then
+                local widget = focus
+                while widget and widget ~= WorldFrame and widget ~= UIParent do
+                    if IsFrameForbidden(widget) then
                         break
                     end
-                    if not IsFrameProtected(frame) and frame.GetScript then
-                        local ok, onEnter = pcall(frame.GetScript, frame, "OnEnter")
-                        if ok and onEnter then
-                            pcall(onEnter, frame)
+                    if not IsFrameProtected(widget) and widget.GetScript then
+                        local success, onEnter = pcall(widget.GetScript, widget, "OnEnter")
+                        if success and onEnter then
+                            pcall(onEnter, widget)
                             if GameTooltip:IsShown() then
                                 return
                             end
-                            anchorFrame = frame
+                            anchorFrame = widget
                             break
                         end
                     end
-                    if not frame.GetParent then
+                    if not widget.GetParent then
                         break
                     end
-                    local okParent, parent = pcall(frame.GetParent, frame)
-                    if not okParent or IsFrameForbidden(parent) then
+                    local okParent, hostFrame = pcall(widget.GetParent, widget)
+                    if not okParent or IsFrameForbidden(hostFrame) then
                         break
                     end
-                    frame = parent
+                    widget = hostFrame
                 end
             end
         end
@@ -619,32 +620,32 @@ do
         if not sample and CludesUI._repaintTooltipPreview then
             CludesUI._repaintTooltipPreview()
         end
-        local bar = sample or GameTooltipStatusBar
-        if not bar or not (styled or sample) then
+        local barFrame = sample or GameTooltipStatusBar
+        if not barFrame or not (styled or sample) then
             return
         end
-        local db = CludesUIDB
-        local key = db and db.tooltipHealthStripTexture
-        local path = "Interface\\TargetingFrame\\UI-StatusBar"
+        local saved = CludesUIDB
+        local key = saved and saved.tooltipHealthStripTexture
+        local filePath = "Interface\\TargetingFrame\\UI-StatusBar"
         if key and key ~= "blizzard" then
             if not texLookup then
                 texLookup = CludesUI.BuildBarTextureTables()
             end
-            path = CludesUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
+            filePath = CludesUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
         end
-        bar:SetStatusBarTexture(path)
-        bar:SetHeight(db and db.tooltipHealthStripHeight or 3)
+        barFrame:SetStatusBarTexture(filePath)
+        barFrame:SetHeight(saved and saved.tooltipHealthStripHeight or 3)
     end
 
     if GameTooltipStatusBar then
         -- Re-assert alpha 0 each time Blizzard shows the bar so it can never flash back into view (SetAlpha doesn't call Show, so no recursion).
-        hooksecurefunc(GameTooltipStatusBar, "Show", function(bar)
+        hooksecurefunc(GameTooltipStatusBar, "Show", function(barFrame)
             if _healthStripHidden() then
-                bar:SetAlpha(0)
+                barFrame:SetAlpha(0)
             end
         end)
         CludesUI._applyTooltipHealthStrip()
     end
 end
 
-I.last = "TooltipVisibility"
+Inner.last = "TooltipVisibility"

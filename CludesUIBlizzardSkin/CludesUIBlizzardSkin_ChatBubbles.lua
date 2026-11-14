@@ -1,13 +1,13 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-local _, ns = ...
+local _, mod = ...
 local CUI = _G.CludesUI
 if not CUI then
     return
 end
 
-local PP = CUI.PP
+local Pix = CUI.PP
 
 -- Chat Bubbles (chatBubbles.enabled, default off), configured on the Blizz UI Enhanced
 -- options page. Settings live per profile on the profile root (profile.chatBubbles).
@@ -120,9 +120,9 @@ local function FillDefaults(t)
         return t
     end
     filled[t] = true
-    for k, v in pairs(DEFAULTS) do
-        if t[k] == nil then
-            t[k] = type(v) == "table" and CUI.Lite.DeepCopy(v) or v
+    for key, val in pairs(DEFAULTS) do
+        if t[key] == nil then
+            t[key] = type(val) == "table" and CUI.Lite.DeepCopy(val) or val
         end
     end
     return t
@@ -146,7 +146,7 @@ function CB.DB(create)
     return FillDefaults(t)
 end
 
-local active = false -- events registered and CVars asserted
+local isActive = false -- events registered and CVars asserted
 local suspended = false -- inside an instance, where we never draw
 local ours = {} -- Blizzard bubble frame -> our frame, while both are shown
 -- Side tables keyed by Blizzard's frame, never fields written onto it: every other access to
@@ -158,7 +158,7 @@ local hooked = setmetatable({}, WEAK_KEYS) -- frame -> true, hooks are for the s
 local childOf = setmetatable({}, WEAK_KEYS) -- frame -> its templated child
 -- One frame of ours per engine frame, built on first claim and kept. Blizzard recycles a
 -- small set, so this is bounded by their pool.
-local overlay = setmetatable({}, WEAK_KEYS)
+local overlayFrame = setmetatable({}, WEAK_KEYS)
 -- frame -> the line it last drew, so the same bubble is redrawn when it comes back on screen
 local bound = setmetatable({}, WEAK_KEYS)
 local recent = {} -- chat lines not matched to a bubble yet, oldest first
@@ -176,8 +176,8 @@ local function Cfg()
 end
 
 local function Enabled()
-    local cfg = Cfg()
-    return cfg ~= nil and cfg.enabled == true
+    local conf = Cfg()
+    return conf ~= nil and conf.enabled == true
 end
 
 -------------------------------------------------------------------------------
@@ -203,9 +203,9 @@ local function SafeEq(a, b)
         return false
     end
     _cmpA, _cmpB, _cmpEq = a, b, false
-    local ok = pcall(RawEq)
+    local success = pcall(RawEq)
     _cmpA, _cmpB = nil, nil
-    return ok and _cmpEq == true
+    return success and _cmpEq == true
 end
 
 local _findHay, _findNeedle, _findHit
@@ -223,9 +223,9 @@ local function SafeContains(hay, needle)
         return false
     end
     _findHay, _findNeedle, _findHit = hay, needle, false
-    local ok = pcall(RawFind)
+    local success = pcall(RawFind)
     _findHay, _findNeedle = nil, nil
-    return ok and _findHit == true
+    return success and _findHit == true
 end
 
 local _measureFS, _measureMax, _measureW, _measureH
@@ -239,50 +239,50 @@ local function RawMeasure()
     -- wrap, so the cap has to be applied by hand, while GetStringHeight only counts the
     -- wrapped lines once the width causing the wrap is actually set.
     _measureFS:SetWidth(_measureMax)
-    local w = _measureFS:GetStringWidth()
-    if w > _measureMax then
-        w = _measureMax
+    local wid = _measureFS:GetStringWidth()
+    if wid > _measureMax then
+        wid = _measureMax
     end
-    if w < MIN_WIDTH then
-        w = MIN_WIDTH
+    if wid < MIN_WIDTH then
+        wid = MIN_WIDTH
     end
     -- One pixel of slack: PP.Scale truncates toward zero, so a string whose natural width
     -- sits just above a pixel boundary would be clamped narrower than it measured and wrap a
     -- word it did not need to. Applied BEFORE the height is read, so the height always
     -- describes the width the FontString actually keeps, and reported back instead of the
     -- raw measurement so the frame reserves exactly the room the FontString took.
-    local textW = PP.Scale(w) + PP.mult
+    local textW = Pix.Scale(wid) + Pix.mult
     if textW > _measureMax then
         textW = _measureMax
     end
     _measureFS:SetWidth(textW)
     -- Poking the parent's height forces the widget to re-resolve its layout; without it the
     -- height read below can still answer for the width from before.
-    local parent = _measureFS:GetParent()
-    if parent then
-        parent:SetHeight(10)
+    local hostFrame = _measureFS:GetParent()
+    if hostFrame then
+        hostFrame:SetHeight(10)
     end
-    local h = _measureFS:GetStringHeight()
-    if h < 1 then
-        h = 1
+    local hgt = _measureFS:GetStringHeight()
+    if hgt < 1 then
+        hgt = 1
     end
     -- The same pixel of slack as the width above, for the same reason: PP.Size snaps the
     -- frame down, and a box a hair shorter than the text it wraps reads as a tight background
     -- at non-native UI scale.
-    _measureW, _measureH = textW, PP.Scale(h) + PP.mult
+    _measureW, _measureH = textW, Pix.Scale(hgt) + Pix.mult
 end
 
 -- A secret string can be shown but not measured. Falling back to the full width keeps
 -- the bubble readable instead of collapsing it to nothing.
-local function MeasureText(fs, maxWidth, fallbackHeight)
-    _measureFS, _measureMax = fs, maxWidth
+local function MeasureText(fontStr, maxWidth, fallbackHeight)
+    _measureFS, _measureMax = fontStr, maxWidth
     _measureW, _measureH = nil, nil
-    local ok = pcall(RawMeasure)
+    local success = pcall(RawMeasure)
     _measureFS = nil
-    if not ok or not _measureW or not _measureH then
+    if not success or not _measureW or not _measureH then
         -- The guarded call can die before it sets a width, and a FontString left unconstrained
         -- never wraps at all. Full width is the readable answer either way.
-        fs:SetWidth(maxWidth)
+        fontStr:SetWidth(maxWidth)
         return maxWidth, fallbackHeight
     end
     return _measureW, _measureH
@@ -319,16 +319,16 @@ local function BlizzParts(outer)
         return nil, nil
     end
     _partsOuter, _partsChild, _partsFS = outer, childOf[outer], nil
-    local ok = pcall(RawResolveParts)
-    local child, fs = _partsChild, _partsFS
+    local success = pcall(RawResolveParts)
+    local childFrame, fontStr = _partsChild, _partsFS
     _partsOuter, _partsChild, _partsFS = nil, nil, nil
-    if not ok or not child then
+    if not success or not childFrame then
         return nil, nil
     end
     -- Cached only once the pair actually resolved, so a frame that raised is retried rather
     -- than remembered as broken.
-    childOf[outer] = child
-    return child, fs
+    childOf[outer] = childFrame
+    return childFrame, fontStr
 end
 
 local _readFS, _readOut
@@ -337,14 +337,14 @@ local function RawReadText()
     _readOut = _readFS:GetText()
 end
 
-local function BlizzText(fs)
-    if not fs then
+local function BlizzText(fontStr)
+    if not fontStr then
         return nil
     end
-    _readFS, _readOut = fs, nil
-    local ok = pcall(RawReadText)
+    _readFS, _readOut = fontStr, nil
+    local success = pcall(RawReadText)
     _readFS = nil
-    if not ok then
+    if not success then
         return nil
     end
     return _readOut
@@ -360,14 +360,14 @@ end
 -- channel without us mapping chat events to chat types. Guarded like every other read of a
 -- Blizzard frame, and secret-tested because a restricted one answers with numbers that cannot
 -- be handed to SetTextColor.
-local function BlizzTextColor(fs)
-    if not fs then
+local function BlizzTextColor(fontStr)
+    if not fontStr then
         return nil
     end
-    _colorFS, _colorR, _colorG, _colorB = fs, nil, nil, nil
-    local ok = pcall(RawReadColor)
+    _colorFS, _colorR, _colorG, _colorB = fontStr, nil, nil, nil
+    local success = pcall(RawReadColor)
     _colorFS = nil
-    if not ok then
+    if not success then
         return nil
     end
     -- type() before IsSecret, and neither of them after a "== nil": comparing a secret to nil
@@ -390,11 +390,11 @@ end
 
 -- Guarded because a bubble can be reclassified as forbidden under us on a zone change, and
 -- writing to a forbidden frame raises.
-local function SetBlizzAlpha(child, value)
-    if not child then
+local function SetBlizzAlpha(childFrame, value)
+    if not childFrame then
         return
     end
-    _alphaFrame, _alphaValue = child, value
+    _alphaFrame, _alphaValue = childFrame, value
     pcall(RawSetAlpha)
     _alphaFrame = nil
 end
@@ -411,15 +411,15 @@ end
 -- a file and leaves the FontString with NO font at all, so the NEXT SetText would raise
 -- "Font not set" in Claim, unguarded, from an event handler: Friz stands in then (same
 -- guard shape as CludesUIQoL_MovementAlert.lua).
-local function BubbleFont(fs, path, size, flag)
+local function BubbleFont(fontStr, filePath, dim, flag)
     local shadow = (flag == "")
-    if CUI.GetFontFamily(path, size, flag, shadow) then
-        CUI.SetFontFamily(fs, path, size, flag, shadow)
+    if CUI.GetFontFamily(filePath, dim, flag, shadow) then
+        CUI.SetFontFamily(fontStr, filePath, dim, flag, shadow)
         return
     end
-    CUI.PrimeFontShadow(fs, shadow)
-    if not fs:SetFont(path, size, flag) then
-        fs:SetFont("Fonts\\FRIZQT__.TTF", size, flag)
+    CUI.PrimeFontShadow(fontStr, shadow)
+    if not fontStr:SetFont(filePath, dim, flag) then
+        fontStr:SetFont("Fonts\\FRIZQT__.TTF", dim, flag)
     end
 end
 
@@ -477,8 +477,8 @@ local function ReleaseBlizz(outer)
     ours[outer] = nil
     f:ClearAllPoints()
     f:Hide()
-    local child = BlizzParts(outer)
-    SetBlizzAlpha(child, 1)
+    local childFrame = BlizzParts(outer)
+    SetBlizzAlpha(childFrame, 1)
 end
 
 local function ReleaseAll()
@@ -490,47 +490,47 @@ end
 -- Appearance and geometry in ONE pass, never separately: font size, padding and max width all
 -- feed the measurement, so restyling a live bubble without re-measuring leaves its text
 -- clipped inside a frame still sized for the old settings.
-local function Layout(f, cfg)
+local function Layout(f, conf)
     -- One place decides what a missing setting is worth.
     local d = DEFAULTS
 
-    local bgc = cfg.bgColor or d.bgColor
+    local bgc = conf.bgColor or d.bgColor
     f.bg:SetVertexColor(
         (bgc and bgc.r) or 0,
         (bgc and bgc.g) or 0,
         (bgc and bgc.b) or 0,
-        cfg.background == false and 0 or (cfg.bgAlpha or d.bgAlpha or 0)
+        conf.background == false and 0 or (conf.bgAlpha or d.bgAlpha or 0)
     )
 
-    local bc = cfg.borderColor or d.borderColor
-    local br, bg, bb = (bc and bc.r) or 0, (bc and bc.g) or 0, (bc and bc.b) or 0
+    local bc = conf.borderColor or d.borderColor
+    local br, backdrop, bb = (bc and bc.r) or 0, (bc and bc.g) or 0, (bc and bc.b) or 0
     local ba = (bc and bc.a) or 1
-    local size = cfg.borderSize or d.borderSize or 0
-    if size > 0 then
-        PP.CreateBorder(f, br, bg, bb, ba, size, "OVERLAY", 7)
-        PP.UpdateBorder(f, size, br, bg, bb, ba)
-        PP.ShowBorder(f)
+    local dim = conf.borderSize or d.borderSize or 0
+    if dim > 0 then
+        Pix.CreateBorder(f, br, backdrop, bb, ba, dim, "OVERLAY", 7)
+        Pix.UpdateBorder(f, dim, br, backdrop, bb, ba)
+        Pix.ShowBorder(f)
     else
-        PP.HideBorder(f)
+        Pix.HideBorder(f)
     end
 
-    local fontKey = cfg.font or d.font
-    local path = fontKey ~= "__global" and CUI.ResolveFontName(fontKey)
-    path = path or CUI.GetFontPath() or "Fonts\\FRIZQT__.TTF"
-    local outline = cfg.outline or d.outline
+    local fontKey = conf.font or d.font
+    local filePath = fontKey ~= "__global" and CUI.ResolveFontName(fontKey)
+    filePath = filePath or CUI.GetFontPath() or "Fonts\\FRIZQT__.TTF"
+    local outline = conf.outline or d.outline
     local flag
     if outline == "__global" then
         flag = CUI.GetFontOutlineFlag() or ""
     else
         flag = CUI.OutlineFlagForMode(outline)
     end
-    local fontSize = cfg.fontSize or d.fontSize or 12
-    BubbleFont(f.text, path, fontSize, flag)
-    local tc = cfg.textColor or d.textColor
+    local fontSize = conf.fontSize or d.fontSize or 12
+    BubbleFont(f.text, filePath, fontSize, flag)
+    local tc = conf.textColor or d.textColor
     local tr, tg, tb = (tc and tc.r) or 1, (tc and tc.g) or 1, (tc and tc.b) or 1
     -- Blizzard's own colour when it was asked for AND we managed to read it; the configured
     -- one otherwise, so a bubble whose colour would not come back is still readable.
-    if cfg.followBlizzardColor == true and f.blizzR then
+    if conf.followBlizzardColor == true and f.blizzR then
         tr, tg, tb = f.blizzR, f.blizzG, f.blizzB
     end
     f.text:SetTextColor(tr, tg, tb, 1)
@@ -538,13 +538,13 @@ local function Layout(f, cfg)
     -- Name row: reserves its height on the anchored edge so the two never overlap; the
     -- offsets then move the name freely from there.
     local nameW, nameH = 0, 0
-    local names = cfg.showName
-    if f.speaker and type(names) == "table" and names[f.channel] == true then
-        local nameSize = cfg.nameFontSize or d.nameFontSize
-        BubbleFont(f.name, path, nameSize, flag)
+    local nameList = conf.showName
+    if f.speaker and type(nameList) == "table" and nameList[f.channel] == true then
+        local nameSize = conf.nameFontSize or d.nameFontSize
+        BubbleFont(f.name, filePath, nameSize, flag)
         f.name:SetTextColor(tr, tg, tb, 0.8)
         f.name:SetText(f.speaker)
-        nameW = PP.Scale(f.name:GetUnboundedStringWidth()) + PP.mult
+        nameW = Pix.Scale(f.name:GetUnboundedStringWidth()) + Pix.mult
         nameH = nameSize + 2
         f.name:Show()
     else
@@ -553,30 +553,32 @@ local function Layout(f, cfg)
 
     -- Config numbers that end up as frame geometry go through the pixel grid. maxWidth is a
     -- real width (it clamps the FontString), so it is snapped before the measurement.
-    local padding = cfg.padding or d.padding or 0
-    local maxWidth = PP.Scale(cfg.maxWidth or d.maxWidth or 260)
+    local padding = conf.padding or d.padding or 0
+    local maxWidth = Pix.Scale(conf.maxWidth or d.maxWidth or 260)
 
     -- Three lines, not one: a secret string cannot be measured, and a single-line fallback
     -- cuts a wrapped sentence off. MeasureText leaves the FontString at the width it measured
     -- against, so the frame only has to wrap padding around the result.
-    local w, h = MeasureText(f.text, maxWidth, fontSize * 1.4 * 3)
+    local wid, hgt = MeasureText(f.text, maxWidth, fontSize * 1.4 * 3)
     if nameW > maxWidth then
         nameW = maxWidth
     end
-    if nameW > w then
-        w = nameW
+    if nameW > wid then
+        wid = nameW
     end
-    local anchor = cfg.nameAnchor or d.nameAnchor
-    local bottom = anchor:find("BOTTOM") ~= nil
-    local nx = anchor:find("LEFT") and padding or (anchor:find("RIGHT") and -padding or 0)
+    local anchorFrame = conf.nameAnchor or d.nameAnchor
+    local bottom = anchorFrame:find("BOTTOM") ~= nil
+    local nx = anchorFrame:find("LEFT") and padding or (anchorFrame:find("RIGHT") and -padding or 0)
     local ny = bottom and padding or -padding
     f.name:SetWidth(nameW)
-    f.name:SetJustifyH(anchor:find("LEFT") and "LEFT" or (anchor:find("RIGHT") and "RIGHT" or "CENTER"))
+    f.name:SetJustifyH(
+        anchorFrame:find("LEFT") and "LEFT" or (anchorFrame:find("RIGHT") and "RIGHT" or "CENTER")
+    )
     f.name:ClearAllPoints()
-    PP.Point(f.name, anchor, f, anchor, nx + (cfg.nameOffsetX or 0), ny + (cfg.nameOffsetY or 0))
+    Pix.Point(f.name, anchorFrame, f, anchorFrame, nx + (conf.nameOffsetX or 0), ny + (conf.nameOffsetY or 0))
     f.text:ClearAllPoints()
     f.text:SetPoint("CENTER", f, "CENTER", 0, bottom and nameH / 2 or -nameH / 2)
-    PP.Size(f, w + padding * 2, h + nameH + padding * 2)
+    Pix.Size(f, wid + padding * 2, hgt + nameH + padding * 2)
 end
 
 local _anchorFrame, _anchorTo, _anchorOff
@@ -592,20 +594,20 @@ local _anchorFrame, _anchorTo, _anchorOff
 -- at the time, but RefreshStyle re-anchors whatever is still in "ours" per slider STEP,
 -- arbitrarily long afterwards.
 local function RawAnchor()
-    PP.Point(_anchorFrame, "CENTER", _anchorTo, "CENTER", 0, _anchorOff)
+    Pix.Point(_anchorFrame, "CENTER", _anchorTo, "CENTER", 0, _anchorOff)
 end
 
 -- Answers whether the frame ended up anchored. A false here is not cosmetic: ClearAllPoints has
 -- already run, so a caller that carried on would leave a shown frame with no point at all and,
 -- in Claim's case, blank Blizzard's chrome behind it. Both callers hand the bubble back instead.
-local function Anchor(f, cfg)
+local function Anchor(f, conf)
     local d = DEFAULTS
-    local off = cfg.offsetY or d.offsetY or 0
+    local offset = conf.offsetY or d.offsetY or 0
     f:ClearAllPoints()
-    _anchorFrame, _anchorTo, _anchorOff = f, childOf[f.outer] or f.outer, off
-    local ok = pcall(RawAnchor)
+    _anchorFrame, _anchorTo, _anchorOff = f, childOf[f.outer] or f.outer, offset
+    local success = pcall(RawAnchor)
     _anchorFrame, _anchorTo = nil, nil
-    return ok
+    return success
 end
 
 -------------------------------------------------------------------------------
@@ -620,52 +622,52 @@ end
 -- before containment, which is the fallback for formats Blizzard fills in itself. A bubble
 -- already standing when a line arrived cannot be the bubble that line produced, and a line of
 -- a channel switched off since claims nothing, so an older line of one still on can.
-local function MatchRecent(text, at, cfg)
+local function MatchRecent(textValue, at, conf)
     for i = #recent, 1, -1 do
         local e = recent[i]
-        if e.at <= at and cfg[e.channel] == true and SafeEq(text, e.text) then
+        if e.at <= at and conf[e.channel] == true and SafeEq(textValue, e.text) then
             return i
         end
     end
     for i = #recent, 1, -1 do
         local e = recent[i]
-        if e.at <= at and cfg[e.channel] == true and SafeContains(text, e.text) then
+        if e.at <= at and conf[e.channel] == true and SafeContains(textValue, e.text) then
             return i
         end
     end
     return nil
 end
 
-local function Draw(outer, child, fs, text, line)
-    local cfg = Cfg()
-    if not cfg then
+local function Draw(outer, childFrame, fontStr, textValue, lineTex)
+    local conf = Cfg()
+    if not conf then
         return
     end
 
-    local f = overlay[outer]
+    local f = overlayFrame[outer]
     if not f then
         f = NewBubble()
-        overlay[outer] = f
+        overlayFrame[outer] = f
     end
     f.outer = outer
     ours[outer] = f
-    f.blizzR, f.blizzG, f.blizzB = BlizzTextColor(fs)
-    f.speaker, f.channel = line.speaker, line.channel
-    f.text:SetText(text)
+    f.blizzR, f.blizzG, f.blizzB = BlizzTextColor(fontStr)
+    f.speaker, f.channel = lineTex.speaker, lineTex.channel
+    f.text:SetText(textValue)
     -- Shown at alpha 0 BEFORE Layout, never after: font geometry on a HIDDEN frame is wrong
     -- (the shared tooltip measures the same way for the same reason), and a wrapped line
     -- would land in a frame sized for one.
     f:SetAlpha(0)
     f:Show()
-    Layout(f, cfg)
+    Layout(f, conf)
     -- Before the chrome is blanked: a claim that cannot anchor leaves Blizzard's bubble drawing.
-    if not Anchor(f, cfg) then
+    if not Anchor(f, conf) then
         ReleaseBlizz(outer)
         return
     end
     f:SetAlpha(1)
 
-    SetBlizzAlpha(child, 0)
+    SetBlizzAlpha(childFrame, 0)
 end
 
 -- Draws this bubble if it shows a line of ours: a recent one, which binds it, or the one it
@@ -675,38 +677,38 @@ local function TryClaim(outer)
     if ours[outer] then
         return true
     end
-    local child, fs = BlizzParts(outer)
-    if not child then
+    local childFrame, fontStr = BlizzParts(outer)
+    if not childFrame then
         return false
     end
-    local text = BlizzText(fs)
+    local textValue = BlizzText(fontStr)
     -- type() first, then the secret guard, then the compares. See SafeEq for why the nil
     -- test cannot lead here. A secret string can be shown but never matched.
-    if type(text) ~= "string" then
+    if type(textValue) ~= "string" then
         return false, true
     end
-    if IsSecret(text) then
+    if IsSecret(textValue) then
         return false
     end
-    if text == "" then
+    if textValue == "" then
         return false, true
     end
-    local cfg = Cfg()
-    local idx = MatchRecent(text, shownAt[outer] or 0, cfg)
-    local line
-    if idx then
-        line = table.remove(recent, idx)
+    local conf = Cfg()
+    local position = MatchRecent(textValue, shownAt[outer] or 0, conf)
+    local lineTex
+    if position then
+        lineTex = table.remove(recent, position)
         -- Blizzard's own text, not the chat event's: the client has already formatted it, and
         -- it is what a re-show of this bubble is compared against.
-        line.text = text
-        bound[outer] = line
+        lineTex.text = textValue
+        bound[outer] = lineTex
     else
-        line = bound[outer]
-        if not (line and SafeEq(text, line.text)) or cfg[line.channel] ~= true then
+        lineTex = bound[outer]
+        if not (lineTex and SafeEq(textValue, lineTex.text)) or conf[lineTex.channel] ~= true then
             return false
         end
     end
-    Draw(outer, child, fs, text, line)
+    Draw(outer, childFrame, fontStr, textValue, lineTex)
     return true
 end
 
@@ -746,9 +748,9 @@ end
 -- that one waits for its OnShow.
 local function BlizzShown(outer)
     _shownFrame, _shownOut = outer, false
-    local ok = pcall(RawShown)
+    local success = pcall(RawShown)
     _shownFrame = nil
-    return ok and _shownOut == true
+    return success and _shownOut == true
 end
 
 -- Hooks every bubble the engine lists and claims what it can. Without includeForbidden on
@@ -757,12 +759,12 @@ local function ClaimListed()
     if not C_ChatBubbles or not C_ChatBubbles.GetAllChatBubbles then
         return
     end
-    local ok, list = pcall(C_ChatBubbles.GetAllChatBubbles)
-    if not ok or type(list) ~= "table" then
+    local success, entries = pcall(C_ChatBubbles.GetAllChatBubbles)
+    if not success or type(entries) ~= "table" then
         return
     end
-    for i = 1, #list do
-        local outer = list[i]
+    for i = 1, #entries do
+        local outer = entries[i]
         if outer then
             HookOuter(outer)
             -- First sighting with no stamp: shown before our hook existed on it, so newer
@@ -781,7 +783,7 @@ end
 -- earliest anything in Lua can react to a frame the engine built after we last looked.
 local function Retry()
     retryLeft = retryLeft - 1
-    if not active or suspended or #recent == 0 then
+    if not isActive or suspended or #recent == 0 then
         retryLeft = 0
         return
     end
@@ -804,7 +806,7 @@ end
 -- that matches nothing is not retried: recent lines never expire, so that would re-walk every
 -- bubble each time an unrelated one appears.
 function OnBlizzShow(outer)
-    if not active or suspended then
+    if not isActive or suspended then
         return
     end
     -- Stamped before the early return: a bubble shown while nothing waits must not be claimed
@@ -891,23 +893,23 @@ end
 -- target is the value this switch has to sit at while we hold it, or nil for "we do not need
 -- it", which hands it back. A value rather than a flag, because hiding bubbles inside an
 -- instance means forcing one OFF and not only on.
-local function ApplyCVar(name, target, saved, held)
-    local cur = C_CVar.GetCVar(name)
-    if target then
+local function ApplyCVar(name, targetUnit, saved, held)
+    local current = C_CVar.GetCVar(name)
+    if targetUnit then
         -- Snapshot at the moment we take the CVar over, not once per install: while we were
         -- leaving this channel alone the player may well have changed it themselves, and that
         -- is the value they must get back.
         if not held[name] then
-            saved[name] = cur
+            saved[name] = current
             held[name] = true
         end
-        if cur ~= target then
-            CludesUI.HoldCVar(name, target, "CludesUIBlizzardSkin")
+        if current ~= targetUnit then
+            CludesUI.HoldCVar(name, targetUnit, "CludesUIBlizzardSkin")
         end
     elseif held[name] then
         held[name] = nil
         local prev = saved[name]
-        if prev and cur ~= prev then
+        if prev and current ~= prev then
             CludesUI.ReleaseCVar(name, prev, "CludesUIBlizzardSkin")
         end
     end
@@ -915,8 +917,8 @@ local function ApplyCVar(name, target, saved, held)
 end
 
 local function AssertCVars()
-    local cfg = Cfg()
-    if not cfg then
+    local conf = Cfg()
+    if not conf then
         return
     end
 
@@ -925,7 +927,7 @@ local function AssertCVars()
     -- GetAllChatBubbles(true) lists one: the engine draws a bubble that is forbidden to us,
     -- and a forbidden frame can be neither read nor blanked. Blizzard's own bubbles keep
     -- working there.
-    suspended = cfg.enabled == true and inInst
+    suspended = conf.enabled == true and inInst
 
     if InCombatLockdown() then
         local held = heldCVars
@@ -933,20 +935,20 @@ local function AssertCVars()
         -- combat has nothing to defer. Without this a profile swap in combat would build the
         -- event frame, arm PLAYER_LOGOUT and queue a CVar pass for a player who never switched
         -- the feature on.
-        if cfg.enabled ~= true and not (held and next(held)) then
+        if conf.enabled ~= true and not (held and next(held)) then
             cvarPending = false
             return
         end
         -- Deferred rather than only handled in SetActive: switching things off in combat still
         -- owes the player their CVars back once the fight ends.
         cvarPending = true
-        ns.CombatQueue.Defer("BubbleCVars", FlushCVars)
+        mod.CombatQueue.Defer("BubbleCVars", FlushCVars)
         EnsureFrame():RegisterEvent("PLAYER_LOGOUT")
         return
     end
     cvarPending = false
 
-    if cfg.enabled ~= true then
+    if conf.enabled ~= true then
         RestoreCVars()
         ForgetCVars()
         return
@@ -958,7 +960,7 @@ local function AssertCVars()
     EnsureFrame():RegisterEvent("PLAYER_LOGOUT")
 
     if inInst then
-        if cfg.hideInInstances == true then
+        if conf.hideInInstances == true then
             -- Ours cannot draw here at all, so Blizzard's are the only bubbles an instance
             -- has, and hiding them means holding all three switches at zero for the stay.
             -- The snapshot each one was taken over on is untouched, so the loop below hands
@@ -976,18 +978,18 @@ local function AssertCVars()
     end
 
     for _, name in ipairs(BLIZZ_CVARS) do
-        local want
+        local wanted
         if name == "chatBubblesParty" then
-            want = (cfg.party == true)
+            wanted = (conf.party == true)
         elseif name == "chatBubblesRaid" then
-            want = (cfg.raid == true)
+            wanted = (conf.raid == true)
         else
             -- Blizzard's say/yell/emote/NPC switch: one ticked channel is enough to need it,
             -- and with none of them left we would be holding it on to draw over nothing.
             -- Independent of party and raid, which have switches of their own.
-            want = (cfg.say == true or cfg.yell == true or cfg.npc == true or cfg.emote == true)
+            wanted = (conf.say == true or conf.yell == true or conf.npc == true or conf.emote == true)
         end
-        ApplyCVar(name, want and "1" or nil, saved, held)
+        ApplyCVar(name, wanted and "1" or nil, saved, held)
     end
 end
 
@@ -997,7 +999,7 @@ function FlushCVars()
         AssertCVars()
     end
     -- Only kept while the feature runs; a deferred restore leaves nothing behind.
-    if not cvarPending and not active and eventFrame then
+    if not cvarPending and not isActive and eventFrame then
         eventFrame:UnregisterEvent("PLAYER_LOGOUT")
     end
 end
@@ -1006,8 +1008,8 @@ end
 --  Events
 -------------------------------------------------------------------------------
 
-local function OnEvent(_, event, ...)
-    if event == "PLAYER_LOGOUT" then
+local function OnEvent(_, evt, ...)
+    if evt == "PLAYER_LOGOUT" then
         -- The only hand-back that survives the addon being DISABLED or uninstalled: with
         -- nothing left in game to run AssertCVars, a CVar we forced would keep our value for
         -- good. Both records go with it, so the next login snapshots the player's live values
@@ -1023,7 +1025,7 @@ local function OnEvent(_, event, ...)
         return
     end
 
-    if event == "PLAYER_ENTERING_WORLD" then
+    if evt == "PLAYER_ENTERING_WORLD" then
         AssertCVars()
         -- A loading screen ends every bubble, so no line or binding from before it can still
         -- find one (a stale binding could restyle a recycled frame showing the same text).
@@ -1035,7 +1037,7 @@ local function OnEvent(_, event, ...)
         return
     end
 
-    local channel = EVENT_CHANNEL[event]
+    local channel = EVENT_CHANNEL[evt]
     if not channel then
         return
     end
@@ -1043,12 +1045,12 @@ local function OnEvent(_, event, ...)
         return
     end
 
-    local cfg = Cfg()
-    if not cfg or cfg[channel] ~= true then
+    local conf = Cfg()
+    if not conf or conf[channel] ~= true then
         return
     end
 
-    local text, sender = ...
+    local textValue, sender = ...
     -- Every one of the fourteen events above is declared SecretInChatMessagingLockdown in
     -- Blizzard's own ChatInfoDocumentation, and their "text" payload carries no NeverSecret,
     -- so arg1 IS a secret string whenever that lockdown is in effect -- which is a state of
@@ -1056,7 +1058,7 @@ local function OnEvent(_, event, ...)
     -- world where "suspended" is false. type() first for that reason, then the secret guard;
     -- a "== nil" belt in front of either would raise on exactly the lines it is meant to
     -- protect. See SafeEq.
-    if type(text) ~= "string" or IsSecret(text) then
+    if type(textValue) ~= "string" or IsSecret(textValue) then
         return
     end
 
@@ -1068,21 +1070,21 @@ local function OnEvent(_, event, ...)
     if #recent >= RECENT_MAX then
         table.remove(recent, 1)
     end
-    local line = { text = text, speaker = speaker, channel = channel, at = GetTime() }
-    recent[#recent + 1] = line
+    local lineTex = { text = textValue, speaker = speaker, channel = channel, at = GetTime() }
+    recent[#recent + 1] = lineTex
     -- Claimed right here when the engine built the bubble before dispatching this event,
     -- including the first message of a session, before any frame of theirs is hooked.
     ClaimListed()
     -- Still unmatched: the bubble may land a frame later, or only once its speaker is on
     -- screen, where the OnShow hook finds the line.
-    if recent[#recent] == line then
+    if recent[#recent] == lineTex then
         ScheduleRetry()
     end
 end
 
 local CHAT_EVENTS = {}
-for event in pairs(EVENT_CHANNEL) do
-    CHAT_EVENTS[#CHAT_EVENTS + 1] = event
+for evt in pairs(EVENT_CHANNEL) do
+    CHAT_EVENTS[#CHAT_EVENTS + 1] = evt
 end
 table.sort(CHAT_EVENTS) -- pairs order is not stable; the diff below reads better in one
 
@@ -1091,17 +1093,17 @@ local registeredChat = {} -- event -> true while registered
 -- Only the events whose channel is actually switched on, so a channel nobody enabled costs no
 -- OnEvent dispatch at all. Diffed rather than re-registered wholesale, so a settings pass that
 -- changes nothing touches no events.
-local function SyncChatEvents(cfg)
+local function SyncChatEvents(conf)
     for i = 1, #CHAT_EVENTS do
-        local event = CHAT_EVENTS[i]
-        local want = cfg ~= nil and cfg[EVENT_CHANNEL[event]] == true
-        if want ~= (registeredChat[event] == true) then
-            if want then
-                eventFrame:RegisterEvent(event)
-                registeredChat[event] = true
+        local evt = CHAT_EVENTS[i]
+        local wanted = conf ~= nil and conf[EVENT_CHANNEL[evt]] == true
+        if wanted ~= (registeredChat[evt] == true) then
+            if wanted then
+                eventFrame:RegisterEvent(evt)
+                registeredChat[evt] = true
             else
-                eventFrame:UnregisterEvent(event)
-                registeredChat[event] = nil
+                eventFrame:UnregisterEvent(evt)
+                registeredChat[evt] = nil
             end
         end
     end
@@ -1119,10 +1121,10 @@ local function SetActive(on)
     if not on then
         -- Before EnsureFrame, not after: there is nothing to tear down, and a player who never
         -- switched this on must not pay for an event frame either.
-        if not active then
+        if not isActive then
             return
         end
-        active = false
+        isActive = false
         eventFrame:UnregisterAllEvents()
         wipe(registeredChat)
         wipe(recent)
@@ -1132,8 +1134,8 @@ local function SetActive(on)
     end
 
     EnsureFrame()
-    local firstPass = not active
-    active = true
+    local firstPass = not isActive
+    isActive = true
 
     if firstPass then
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -1143,10 +1145,10 @@ local function SetActive(on)
         -- seen can still flash, so hooking Blizzard's pool up front rather than one frame per
         -- message makes the very first lines after switching on behave like the rest.
         if C_ChatBubbles and C_ChatBubbles.GetAllChatBubbles then
-            local ok, list = pcall(C_ChatBubbles.GetAllChatBubbles)
-            if ok and type(list) == "table" then
-                for i = 1, #list do
-                    local outer = list[i]
+            local success, entries = pcall(C_ChatBubbles.GetAllChatBubbles)
+            if success and type(entries) == "table" then
+                for i = 1, #entries do
+                    local outer = entries[i]
                     if outer then
                         HookOuter(outer)
                         -- Already standing, so a line typed after switching on cannot claim it.
@@ -1177,30 +1179,30 @@ local function UpdatePreview(force)
     if not preview or not (force or preview:IsVisible()) then
         return
     end
-    local cfg = Cfg()
-    local names = cfg.showName
+    local conf = Cfg()
+    local nameList = conf.showName
     preview.channel = "say"
-    preview.speaker = (type(names) == "table" and next(names)) and UnitName("player") or nil
+    preview.speaker = (type(nameList) == "table" and next(nameList)) and UnitName("player") or nil
     if preview.speaker then
-        preview.channel = next(names)
+        preview.channel = next(nameList)
     end
-    Layout(preview, cfg)
+    Layout(preview, conf)
     if previewOnResize then
         previewOnResize(preview:GetHeight())
     end
 end
 
 -- Built lazily the first time the options page asks. onResize gets the bubble height.
-function CB.ShowPreview(parent, onResize)
+function CB.ShowPreview(hostFrame, onResize)
     if not preview then
         preview = NewBubble()
         preview.text:SetText(CludesUI.L("The quick brown fox jumps over the lazy dog."))
     end
-    preview:SetParent(parent)
-    preview:SetFrameStrata(parent:GetFrameStrata())
-    preview:SetFrameLevel(parent:GetFrameLevel() + 5)
+    preview:SetParent(hostFrame)
+    preview:SetFrameStrata(hostFrame:GetFrameStrata())
+    preview:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
     preview:ClearAllPoints()
-    preview:SetPoint("CENTER", parent, "CENTER", 0, 0)
+    preview:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
     preview:Show()
     previewOnResize = nil
     UpdatePreview(true)
@@ -1210,18 +1212,18 @@ end
 
 function CB.RefreshStyle()
     UpdatePreview()
-    if not active or suspended then
+    if not isActive or suspended then
         return
     end
-    local cfg = Cfg()
-    if not cfg then
+    local conf = Cfg()
+    if not conf then
         return
     end
     for _, f in pairs(ours) do
-        Layout(f, cfg)
+        Layout(f, conf)
         -- Same hand-back as in Draw. Clearing the key of the entry we are standing on is
         -- allowed during a pairs traversal, which is what ReleaseAll has always relied on.
-        if not Anchor(f, cfg) then
+        if not Anchor(f, conf) then
             ReleaseBlizz(f.outer)
         end
     end
@@ -1233,13 +1235,13 @@ end
 -- The other four are not seeded, because their switch is one we hold on regardless. Once
 -- seeded we never look again: picks made in our own dropdown are the player's, and an off/on
 -- cycle of the feature must not overwrite them.
-local function SeedChannels(cfg)
-    if not cfg or cfg.seeded == true then
+local function SeedChannels(conf)
+    if not conf or conf.seeded == true then
         return
     end
-    cfg.seeded = true
-    cfg.party = C_CVar.GetCVar("chatBubblesParty") == "1"
-    cfg.raid = C_CVar.GetCVar("chatBubblesRaid") == "1"
+    conf.seeded = true
+    conf.party = C_CVar.GetCVar("chatBubblesParty") == "1"
+    conf.raid = C_CVar.GetCVar("chatBubblesRaid") == "1"
 end
 
 -- The structural pass: anything that can change WHETHER we draw, or which of Blizzard's
@@ -1264,9 +1266,9 @@ function CB.Refresh()
     end
     -- A channel just switched off hands its drawn bubbles straight back to Blizzard. Clearing
     -- the entry being visited is allowed during pairs (ReleaseAll relies on it too).
-    local cfg = Cfg()
+    local conf = Cfg()
     for outer, f in pairs(ours) do
-        if cfg[f.channel] ~= true then
+        if conf[f.channel] ~= true then
             ReleaseBlizz(outer)
         end
     end

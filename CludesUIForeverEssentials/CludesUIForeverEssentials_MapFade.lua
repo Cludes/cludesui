@@ -29,20 +29,20 @@ local dimmed = false -- the background's alpha is ours
 
 -- The game's fade on while ours is; back to what it was after.
 local function HoldGameFade(on)
-    local cfg = F.Read()
-    local cur = C_CVar.GetCVar("mapFade")
+    local conf = F.Read()
+    local current = C_CVar.GetCVar("mapFade")
     if on then
-        cfg = F.Cfg()
-        if cfg.mapFadeWas == nil then
-            cfg.mapFadeWas = cur
+        conf = F.Cfg()
+        if conf.mapFadeWas == nil then
+            conf.mapFadeWas = current
         end
-        if cur and cur ~= "1" then
+        if current and current ~= "1" then
             CludesUI.HoldCVar("mapFade", "1", OWNER)
         end
-    elseif cfg.mapFadeWas ~= nil then
-        local was = cfg.mapFadeWas
-        cfg.mapFadeWas = nil
-        if was and cur ~= was then
+    elseif conf.mapFadeWas ~= nil then
+        local was = conf.mapFadeWas
+        conf.mapFadeWas = nil
+        if was and current ~= was then
             CludesUI.ReleaseCVar("mapFade", was, OWNER)
         end
     end

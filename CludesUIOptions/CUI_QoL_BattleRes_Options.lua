@@ -15,18 +15,18 @@ end -- module disabled: no options page
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local function DB()
-    local fn = _G._CUI_BattleRes_DB
-    return fn and fn() or nil
+local function SavedDB()
+    local func = _G._CUI_BattleRes_DB
+    return func and func() or nil
 end
 
-local function P()
-    local d = DB()
+local function Prm()
+    local d = SavedDB()
     return d and d.profile and d.profile.battleRes
 end
 
 local function Cfg(key, fallback)
-    local p = P()
+    local p = Prm()
     if not p then
         return fallback
     end
@@ -36,10 +36,10 @@ local function Cfg(key, fallback)
     return p[key]
 end
 
-local function Set(key, v)
-    local p = P()
+local function Set(key, val)
+    local p = Prm()
     if p then
-        p[key] = v
+        p[key] = val
     end
 end
 
@@ -68,7 +68,7 @@ local SHAPE_ORDER =
 -- word the dropdown wrote and only on a real change, so a Bloodlust value that
 -- inherits Battle Res (nil) keeps inheriting while the slider merely shows it.
 -- get/set/refresh are the page's accessors (Cfg/Set/Refresh or the BL_ trio).
-local function BorderSizeSliderCfg(get, set, refresh, disabled, disabledTooltip)
+local function BorderSizeSliderCfg(get, group, refresh, disabled, disabledTooltip)
     return {
         type = "slider",
         text = "Border Size",
@@ -80,12 +80,12 @@ local function BorderSizeSliderCfg(get, set, refresh, disabled, disabledTooltip)
         getValue = function()
             return CludesUI.BORDER_STEP_OF_LABEL[get("borderSize") or "thin"] or 1
         end,
-        setValue = function(v)
-            local word = CludesUI.BORDER_LABEL_OF_STEP[math.floor(v + 0.5)] or "thin"
+        setValue = function(val)
+            local word = CludesUI.BORDER_LABEL_OF_STEP[math.floor(val + 0.5)] or "thin"
             if word == (get("borderSize") or "thin") then
                 return
             end
-            set("borderSize", word)
+            group("borderSize", word)
             refresh()
         end,
     }
@@ -172,33 +172,33 @@ local TEXT_ROWS_TIP = "This option requires Display Style to be set to Text"
 -- Settings cog holding one toggle, placed left of the row region's inline
 -- controls (same shape as the Skip Cinematics cog). offFn greys and blocks
 -- it; offReq is the DisabledTooltip requirement shown while blocked.
-local function AttachToggleCog(rgn, title, label, get, set, offFn, offReq)
-    CludesUI.BuildInlineCog(rgn, {
-        title = title,
+local function AttachToggleCog(region, titleText, labelText, get, group, offFn, offReq)
+    CludesUI.BuildInlineCog(region, {
+        title = titleText,
         gap = 9,
-        rows = { { type = "toggle", label = label, get = get, set = set } },
+        rows = { { type = "toggle", label = labelText, get = get, set = group } },
         disabled = offFn,
         disabledTooltip = offReq,
     })
 end
 
-local function BuildBattleResPage(pageName, parent, yOffset)
+local function BuildBattleResPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local PP = CludesUI.PP
-    local y = yOffset
-    local _, h, row
+    local Pix = CludesUI.PP
+    local posY = yOffset
+    local _, hgt, rowFrame
 
     if CludesUI.ClearContentHeader then
         CludesUI:ClearContentHeader()
     end
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     -- -- BATTLE RES ----------------------------------------------------
-    _, h = W:SectionHeader(parent, "BATTLE RES", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "BATTLE RES", posY)
+    posY = posY - hgt
 
     -- Enable + Icon Size
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Enable BattleRes Icon",
         values = VIS_VALUES,
@@ -206,8 +206,8 @@ local function BuildBattleResPage(pageName, parent, yOffset)
         getValue = function()
             return Cfg("visibility") or "MPLUS_AND_RAID"
         end,
-        setValue = function(v)
-            Set("visibility", v)
+        setValue = function(val)
+            Set("visibility", val)
             Refresh()
             CludesUI:RefreshPage()
         end,
@@ -225,15 +225,15 @@ local function BuildBattleResPage(pageName, parent, yOffset)
         getValue = function()
             return Cfg("iconSize") or 40
         end,
-        setValue = function(v)
-            Set("iconSize", v)
+        setValue = function(val)
+            Set("iconSize", val)
             Refresh()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Shape | Border Color
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Icon Shape",
         disabled = function()
@@ -245,8 +245,8 @@ local function BuildBattleResPage(pageName, parent, yOffset)
         getValue = function()
             return Cfg("shape") or "none"
         end,
-        setValue = function(v)
-            Set("shape", v)
+        setValue = function(val)
+            Set("shape", val)
             Refresh()
         end,
     }, {
@@ -258,12 +258,12 @@ local function BuildBattleResPage(pageName, parent, yOffset)
         disabledTooltip = "BattleRes Icon",
         swatches = MakeBorderColorSwatches(),
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Border Size | Icon Zoom
-    row, h = W:DualRow(
-        parent,
-        y,
+    rowFrame, hgt = W:DualRow(
+        hostFrame,
+        posY,
         BorderSizeSliderCfg(Cfg, Set, Refresh, function()
             return Cfg("visibility") == "NEVER"
         end, "BattleRes Icon"),
@@ -290,16 +290,16 @@ local function BuildBattleResPage(pageName, parent, yOffset)
             getValue = function()
                 return Cfg("iconZoom") or 11
             end,
-            setValue = function(v)
-                Set("iconZoom", v)
+            setValue = function(val)
+                Set("iconZoom", val)
                 Refresh()
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
 
     -- Duration Size | Count Size, each with inline cog (X/Y offsets)
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Duration Size",
         disabled = function()
@@ -313,8 +313,8 @@ local function BuildBattleResPage(pageName, parent, yOffset)
         getValue = function()
             return Cfg("durationSize") or 12
         end,
-        setValue = function(v)
-            Set("durationSize", v)
+        setValue = function(val)
+            Set("durationSize", val)
             Refresh()
         end,
     }, {
@@ -331,17 +331,17 @@ local function BuildBattleResPage(pageName, parent, yOffset)
         getValue = function()
             return Cfg("countSize") or 11
         end,
-        setValue = function(v)
-            Set("countSize", v)
+        setValue = function(val)
+            Set("countSize", val)
             Refresh()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Inline RESIZE cogs on Duration Size (left) and Count Size (right): X/Y offsets
     do
-        local function _attachOffsetCog(rgn, popupTitle, xKey, yKey)
-            CludesUI.BuildInlineCog(rgn, {
+        local function _attachOffsetCog(region, popupTitle, xKey, yKey)
+            CludesUI.BuildInlineCog(region, {
                 title = popupTitle,
                 rows = {
                     {
@@ -353,8 +353,8 @@ local function BuildBattleResPage(pageName, parent, yOffset)
                         get = function()
                             return Cfg(xKey) or 0
                         end,
-                        set = function(v)
-                            Set(xKey, v)
+                        set = function(val)
+                            Set(xKey, val)
                             Refresh()
                         end,
                     },
@@ -367,8 +367,8 @@ local function BuildBattleResPage(pageName, parent, yOffset)
                         get = function()
                             return Cfg(yKey) or 0
                         end,
-                        set = function(v)
-                            Set(yKey, v)
+                        set = function(val)
+                            Set(yKey, val)
                             Refresh()
                         end,
                     },
@@ -380,14 +380,14 @@ local function BuildBattleResPage(pageName, parent, yOffset)
                 end,
             })
         end
-        _attachOffsetCog(row._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
-        _attachOffsetCog(row._rightRegion, "Count Position", "countOffsetX", "countOffsetY")
+        _attachOffsetCog(rowFrame._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
+        _attachOffsetCog(rowFrame._rightRegion, "Count Position", "countOffsetX", "countOffsetY")
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    parent:SetHeight(math.abs(y - yOffset))
+    hostFrame:SetHeight(math.abs(posY - yOffset))
 end
 
 _G._CUI_BuildBattleResPage = BuildBattleResPage
@@ -403,15 +403,15 @@ local function SetPreviewHidden(key, hidden)
 end
 
 -- Inline eye left of a row's control: shows/hides that tracker's live preview.
-local function AttachPreviewEye(rgn, key, showTip, hideTip, setOwner, owner)
+local function AttachPreviewEye(region, key, showTip, hideTip, setOwner, ownerFrame)
     local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
     local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-    local eyeBtn = CreateFrame("Button", nil, rgn)
+    local eyeBtn = CreateFrame("Button", nil, region)
     eyeBtn:SetSize(26, 26)
-    eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-    eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
+    eyeBtn:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+    eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
     CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-    rgn._lastInline = eyeBtn
+    region._lastInline = eyeBtn
     local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
     eyeTex:SetAllPoints()
     local function RefreshEye()
@@ -421,9 +421,9 @@ local function AttachPreviewEye(rgn, key, showTip, hideTip, setOwner, owner)
     eyeBtn:SetScript("OnClick", function(self)
         SetPreviewHidden(key, not PreviewHidden(key))
         RefreshEye()
-        local fn = _G[setOwner]
-        if fn then
-            fn((not PreviewHidden(key)) and owner or nil)
+        local func = _G[setOwner]
+        if func then
+            func((not PreviewHidden(key)) and ownerFrame or nil)
         end
         if self:IsMouseOver() then
             self:GetScript("OnEnter")(self)
@@ -441,13 +441,13 @@ end
 
 -- Section-only builder for embedding in the Keys, Logs & Brez tab.
 -- Returns total height consumed.
-_G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
-    local y = yOffset
-    local _, h, row, hdr
+_G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
+    local posY = yOffset
+    local _, hgt, rowFrame, heading
 
-    hdr, h = W:SectionHeader(parent, "BATTLE RES", y)
-    y = y - h
-    CludesUI.BuildSectionUnlockJump(hdr, {
+    heading, hgt = W:SectionHeader(hostFrame, "BATTLE RES", posY)
+    posY = posY - hgt
+    CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_BattleRes",
         disabled = function()
             return Cfg("visibility") == "NEVER"
@@ -462,15 +462,15 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
     -- pages and re-shows the wrapper without re-running this builder, so without it
     -- the preview would arm on the first visit only.
     if not CludesUI._prebuilding and _G._CUI_BattleRes_SetPreviewOwner then
-        _G._CUI_BattleRes_SetPreviewOwner((not PreviewHidden("brez")) and parent or nil)
-        if not parent._brPreviewHooked then
-            parent._brPreviewHooked = true
-            parent:HookScript("OnShow", function()
+        _G._CUI_BattleRes_SetPreviewOwner((not PreviewHidden("brez")) and hostFrame or nil)
+        if not hostFrame._brPreviewHooked then
+            hostFrame._brPreviewHooked = true
+            hostFrame:HookScript("OnShow", function()
                 if _G._CUI_BattleRes_SetPreviewOwner then
-                    _G._CUI_BattleRes_SetPreviewOwner((not PreviewHidden("brez")) and parent or nil)
+                    _G._CUI_BattleRes_SetPreviewOwner((not PreviewHidden("brez")) and hostFrame or nil)
                 end
             end)
-            parent:HookScript("OnHide", function()
+            hostFrame:HookScript("OnHide", function()
                 if _G._CUI_BattleRes_UpdateVisibility then
                     _G._CUI_BattleRes_UpdateVisibility()
                 end
@@ -478,7 +478,7 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
         end
     end
 
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Enable BattleRes Icon",
         values = VIS_VALUES,
@@ -490,8 +490,8 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
         -- only the Never <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
             return Cfg("visibility") ~= "NEVER"
-        end, function(v)
-            Set("visibility", v)
+        end, function(val)
+            Set("visibility", val)
             Refresh()
             CludesUI:RefreshPage()
         end),
@@ -514,85 +514,81 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
         getValue = function()
             return Cfg("iconSize") or 40
         end,
-        setValue = function(v)
-            Set("iconSize", v)
+        setValue = function(val)
+            Set("iconSize", val)
             Refresh()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Rows below are HIDDEN entirely while the icon is set to Never (the
     -- dropdown's DependentSetValue forces the rebuild on flips).
     if Cfg("visibility") ~= "NEVER" then
-        row, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "dropdown",
-                text = "Icon Shape",
-                disabled = TextModeOn,
-                disabledTooltip = ICON_ROWS_TIP,
-                values = SHAPE_VALUES,
-                order = SHAPE_ORDER,
-                getValue = function()
-                    return Cfg("shape") or "none"
-                end,
-                setValue = function(v)
-                    Set("shape", v)
-                    Refresh()
-                end,
-            },
-            {
-                type = "multiSwatch",
-                text = "Border Color",
-                disabled = TextModeOn,
-                disabledTooltip = ICON_ROWS_TIP,
-                swatches = MakeBorderColorSwatches(),
-            }
-        )
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+            type = "dropdown",
+            text = "Icon Shape",
+            disabled = TextModeOn,
+            disabledTooltip = ICON_ROWS_TIP,
+            values = SHAPE_VALUES,
+            order = SHAPE_ORDER,
+            getValue = function()
+                return Cfg("shape") or "none"
+            end,
+            setValue = function(val)
+                Set("shape", val)
+                Refresh()
+            end,
+        }, {
+            type = "multiSwatch",
+            text = "Border Color",
+            disabled = TextModeOn,
+            disabledTooltip = ICON_ROWS_TIP,
+            swatches = MakeBorderColorSwatches(),
+        })
         if not CludesUI._prebuilding then
             AttachPreviewEye(
-                row._leftRegion,
+                rowFrame._leftRegion,
                 "brez",
                 "Show Battle Res preview",
                 "Hide Battle Res preview",
                 "_CUI_BattleRes_SetPreviewOwner",
-                parent
+                hostFrame
             )
         end
-        y = y - h
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, BorderSizeSliderCfg(Cfg, Set, Refresh, TextModeOn, ICON_ROWS_TIP), {
-            type = "slider",
-            text = "Icon Zoom",
-            disabled = function()
-                if TextModeOn() then
-                    return true
-                end
-                local s = Cfg("shape") or "none"
-                return s ~= "none" and s ~= "cropped"
-            end,
-            disabledTooltip = function()
-                if TextModeOn() then
-                    return ICON_ROWS_TIP
-                end
-                return "This option requires Icon Shape to be set to None or Cropped"
-            end,
-            min = 0,
-            max = 20,
-            step = 0.5,
-            isPercent = false,
-            getValue = function()
-                return Cfg("iconZoom") or 11
-            end,
-            setValue = function(v)
-                Set("iconZoom", v)
-                Refresh()
-            end,
-        })
-        y = y - h
+        rowFrame, hgt =
+            W:DualRow(hostFrame, posY, BorderSizeSliderCfg(Cfg, Set, Refresh, TextModeOn, ICON_ROWS_TIP), {
+                type = "slider",
+                text = "Icon Zoom",
+                disabled = function()
+                    if TextModeOn() then
+                        return true
+                    end
+                    local s = Cfg("shape") or "none"
+                    return s ~= "none" and s ~= "cropped"
+                end,
+                disabledTooltip = function()
+                    if TextModeOn() then
+                        return ICON_ROWS_TIP
+                    end
+                    return "This option requires Icon Shape to be set to None or Cropped"
+                end,
+                min = 0,
+                max = 20,
+                step = 0.5,
+                isPercent = false,
+                getValue = function()
+                    return Cfg("iconZoom") or 11
+                end,
+                setValue = function(val)
+                    Set("iconZoom", val)
+                    Refresh()
+                end,
+            })
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Duration Size",
             disabled = TextModeOn,
@@ -604,8 +600,8 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return Cfg("durationSize") or 12
             end,
-            setValue = function(v)
-                Set("durationSize", v)
+            setValue = function(val)
+                Set("durationSize", val)
                 Refresh()
             end,
         }, {
@@ -620,16 +616,16 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return Cfg("countSize") or 11
             end,
-            setValue = function(v)
-                Set("countSize", v)
+            setValue = function(val)
+                Set("countSize", val)
                 Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         do
-            local function _attachOffsetCog(rgn, popupTitle, xKey, yKey)
-                CludesUI.BuildInlineCog(rgn, {
+            local function _attachOffsetCog(region, popupTitle, xKey, yKey)
+                CludesUI.BuildInlineCog(region, {
                     title = popupTitle,
                     rows = {
                         {
@@ -641,8 +637,8 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                             get = function()
                                 return Cfg(xKey) or 0
                             end,
-                            set = function(v)
-                                Set(xKey, v)
+                            set = function(val)
+                                Set(xKey, val)
                                 Refresh()
                             end,
                         },
@@ -655,8 +651,8 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                             get = function()
                                 return Cfg(yKey) or 0
                             end,
-                            set = function(v)
-                                Set(yKey, v)
+                            set = function(val)
+                                Set(yKey, val)
                                 Refresh()
                             end,
                         },
@@ -666,14 +662,14 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                     disabled = TextModeOn,
                 })
             end
-            _attachOffsetCog(row._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
-            _attachOffsetCog(row._rightRegion, "Count Position", "countOffsetX", "countOffsetY")
+            _attachOffsetCog(rowFrame._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
+            _attachOffsetCog(rowFrame._rightRegion, "Count Position", "countOffsetX", "countOffsetY")
         end
 
         -- Display Style (icon vs text) + text-mode appearance. The count / timer
         -- color swatches sit inline on the dropdown, disabled outside text mode.
         local dispRow
-        dispRow, h = W:DualRow(parent, y, {
+        dispRow, hgt = W:DualRow(hostFrame, posY, {
             type = "segmented",
             text = "Display Style",
             tooltip = "Show the tracker as the Rebirth icon or as a compact text line with charges and time until the next one.",
@@ -682,8 +678,8 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return Cfg("displayMode") or "icon"
             end,
-            setValue = function(v)
-                Set("displayMode", v)
+            setValue = function(val)
+                Set("displayMode", val)
                 Refresh()
                 CludesUI:RefreshPage()
             end,
@@ -701,22 +697,22 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return Cfg("textSize") or 14
             end,
-            setValue = function(v)
-                Set("textSize", v)
+            setValue = function(val)
+                Set("textSize", val)
                 Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         if not CludesUI._prebuilding then
-            local rgn = dispRow._leftRegion
+            local region = dispRow._leftRegion
             -- Builds one inline color swatch with the blocking-overlay disabled
             -- state (interactive only while Display Style is Text). Anchored
             -- right-to-left so the visual order matches the "2 | 4:14" line.
             local function MakeInlineTextSwatch(colorKey, tipText, anchorTo)
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
-                    rgn:GetFrameLevel() + 5,
+                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
                     function()
                         local c = Cfg(colorKey)
                         if c then
@@ -731,50 +727,50 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                     nil,
                     20
                 )
-                PP.Point(swatch, "RIGHT", anchorTo, "LEFT", -8, 0)
-                swatch:HookScript("OnEnter", function()
+                Pix.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
+                colorSwatch:HookScript("OnEnter", function()
                     if TextModeOn() then
-                        CludesUI.ShowWidgetTooltip(swatch, tipText)
+                        CludesUI.ShowWidgetTooltip(colorSwatch, tipText)
                     end
                 end)
-                swatch:HookScript("OnLeave", function()
+                colorSwatch:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                local block = CreateFrame("Frame", nil, swatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(swatch, TEXT_ROWS_TIP)
+                local blockData = CreateFrame("Frame", nil, colorSwatch)
+                blockData:SetAllPoints()
+                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                blockData:EnableMouse(true)
+                blockData:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(colorSwatch, TEXT_ROWS_TIP)
                 end)
-                block:SetScript("OnLeave", function()
+                blockData:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateState()
                     updateSwatch()
                     if TextModeOn() then
-                        swatch:SetAlpha(1)
-                        block:Hide()
+                        colorSwatch:SetAlpha(1)
+                        blockData:Hide()
                     else
-                        swatch:SetAlpha(0.3)
-                        block:Show()
+                        colorSwatch:SetAlpha(0.3)
+                        blockData:Show()
                     end
                 end
                 CludesUI.RegisterWidgetRefresh(UpdateState)
                 UpdateState()
-                return swatch
+                return colorSwatch
             end
-            AttachToggleCog(rgn, "Icon Settings", "Desaturate when No Charges", function()
+            AttachToggleCog(region, "Icon Settings", "Desaturate when No Charges", function()
                 return Cfg("desaturateNoCharges") ~= false
-            end, function(v)
-                Set("desaturateNoCharges", v)
+            end, function(val)
+                Set("desaturateNoCharges", val)
                 Refresh()
             end, TextModeOn, ICON_ROWS_TIP)
 
             local timerSwatch =
-                MakeInlineTextSwatch("textTimerColor", "Timer Color", rgn._lastInline or rgn._control)
+                MakeInlineTextSwatch("textTimerColor", "Timer Color", region._lastInline or region._control)
             local countSwatch = MakeInlineTextSwatch("textCountColor", "Count Color", timerSwatch)
-            rgn._lastInline = countSwatch
+            region._lastInline = countSwatch
         end
 
         -- Font | Font Outline: text-display-only controls (the icon's duration /
@@ -790,7 +786,7 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                 ["thick"] = { text = "Thick Outline" },
             }
             local outlineOrder = { "__global", "none", "outline", "thick" }
-            row, h = W:DualRow(parent, y, {
+            rowFrame, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Font",
                 disabled = function()
@@ -802,8 +798,8 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                 getValue = function()
                     return Cfg("font") or "__global"
                 end,
-                setValue = function(v)
-                    Set("font", v)
+                setValue = function(val)
+                    Set("font", val)
                     Refresh()
                 end,
             }, {
@@ -818,19 +814,19 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
                 getValue = function()
                     return Cfg("outlineMode") or "__global"
                 end,
-                setValue = function(v)
-                    Set("outlineMode", v)
+                setValue = function(val)
+                    Set("outlineMode", val)
                     Refresh()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
         end
     end -- close BattleRes hidden-while-Never gate
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return math.abs(y - yOffset)
+    return math.abs(posY - yOffset)
 end
 
 -------------------------------------------------------------------------------
@@ -841,8 +837,8 @@ end
 --  Only the Enable dropdown and position are stored independently per icon.
 -------------------------------------------------------------------------------
 local function BL_DB()
-    local fn = _G._CUI_Bloodlust_DB or _G._CUI_BattleRes_DB
-    return fn and fn() or nil
+    local func = _G._CUI_Bloodlust_DB or _G._CUI_BattleRes_DB
+    return func and func() or nil
 end
 
 local function BL_P()
@@ -891,10 +887,10 @@ local function BL_Cfg(key, fallback)
     return fallback
 end
 
-local function BL_Set(key, v)
+local function BL_Set(key, val)
     local bl = BL_P()
     if bl then
-        bl[key] = v
+        bl[key] = val
     end
 end
 
@@ -967,13 +963,13 @@ end
 
 -- Section-only builder for embedding in the Keys, Logs & Brez tab, directly
 -- below the Battle Res section. Returns total height consumed.
-_G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
-    local y = yOffset
-    local _, h, row, hdr
+_G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
+    local posY = yOffset
+    local _, hgt, rowFrame, heading
 
-    hdr, h = W:SectionHeader(parent, "BLOODLUST TRACKER", y)
-    y = y - h
-    CludesUI.BuildSectionUnlockJump(hdr, {
+    heading, hgt = W:SectionHeader(hostFrame, "BLOODLUST TRACKER", posY)
+    posY = posY - hgt
+    CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_Bloodlust",
         disabled = function()
             return BL_Cfg("visibility") == "NEVER"
@@ -989,15 +985,15 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
     -- pages and re-shows the wrapper without re-running this builder, so without it
     -- the preview would arm on the first visit only.
     if not CludesUI._prebuilding and _G._CUI_Bloodlust_SetPreviewOwner then
-        _G._CUI_Bloodlust_SetPreviewOwner((not PreviewHidden("lust")) and parent or nil)
-        if not parent._blPreviewHooked then
-            parent._blPreviewHooked = true
-            parent:HookScript("OnShow", function()
+        _G._CUI_Bloodlust_SetPreviewOwner((not PreviewHidden("lust")) and hostFrame or nil)
+        if not hostFrame._blPreviewHooked then
+            hostFrame._blPreviewHooked = true
+            hostFrame:HookScript("OnShow", function()
                 if _G._CUI_Bloodlust_SetPreviewOwner then
-                    _G._CUI_Bloodlust_SetPreviewOwner((not PreviewHidden("lust")) and parent or nil)
+                    _G._CUI_Bloodlust_SetPreviewOwner((not PreviewHidden("lust")) and hostFrame or nil)
                 end
             end)
-            parent:HookScript("OnHide", function()
+            hostFrame:HookScript("OnHide", function()
                 if _G._CUI_Bloodlust_UpdateVisibility then
                     _G._CUI_Bloodlust_UpdateVisibility()
                 end
@@ -1005,7 +1001,7 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
         end
     end
 
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Enable Bloodlust Icon",
         values = VIS_VALUES,
@@ -1017,10 +1013,10 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
         -- only the Never <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
             return BL_Cfg("visibility") ~= "NEVER"
-        end, function(v)
+        end, function(val)
             local was = BL_Cfg("visibility") or "NEVER"
-            BL_Set("visibility", v)
-            if was == "NEVER" and v ~= "NEVER" and _G._CUI_Bloodlust_SeedPos then
+            BL_Set("visibility", val)
+            if was == "NEVER" and val ~= "NEVER" and _G._CUI_Bloodlust_SeedPos then
                 _G._CUI_Bloodlust_SeedPos()
             end
             BL_Refresh()
@@ -1040,17 +1036,17 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
         getValue = function()
             return BL_Cfg("iconSize") or 40
         end,
-        setValue = function(v)
-            BL_Set("iconSize", v)
+        setValue = function(val)
+            BL_Set("iconSize", val)
             BL_Refresh()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Rows below are HIDDEN entirely while the icon is set to Never (the
     -- dropdown's DependentSetValue forces the rebuild on flips).
     if BL_Cfg("visibility") ~= "NEVER" then
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Icon Shape",
             values = SHAPE_VALUES,
@@ -1058,8 +1054,8 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return BL_Cfg("shape") or "none"
             end,
-            setValue = function(v)
-                BL_Set("shape", v)
+            setValue = function(val)
+                BL_Set("shape", val)
                 BL_Refresh()
             end,
         }, {
@@ -1069,17 +1065,17 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
         })
         if not CludesUI._prebuilding then
             AttachPreviewEye(
-                row._leftRegion,
+                rowFrame._leftRegion,
                 "lust",
                 "Show Bloodlust preview",
                 "Hide Bloodlust preview",
                 "_CUI_Bloodlust_SetPreviewOwner",
-                parent
+                hostFrame
             )
         end
-        y = y - h
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, BorderSizeSliderCfg(BL_Cfg, BL_Set, BL_Refresh), {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, BorderSizeSliderCfg(BL_Cfg, BL_Set, BL_Refresh), {
             type = "slider",
             text = "Icon Zoom",
             disabled = function()
@@ -1094,14 +1090,14 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return BL_Cfg("iconZoom") or 11
             end,
-            setValue = function(v)
-                BL_Set("iconZoom", v)
+            setValue = function(val)
+                BL_Set("iconZoom", val)
                 BL_Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
-        row, h = W:DualRow(parent, y, {
+        rowFrame, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Duration Size",
             min = 8,
@@ -1111,8 +1107,8 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return BL_Cfg("durationSize") or 12
             end,
-            setValue = function(v)
-                BL_Set("durationSize", v)
+            setValue = function(val)
+                BL_Set("durationSize", val)
                 BL_Refresh()
             end,
         }, {
@@ -1125,12 +1121,12 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             getValue = function()
                 return BL_Cfg("countSize") or 11
             end,
-            setValue = function(v)
-                BL_Set("countSize", v)
+            setValue = function(val)
+                BL_Set("countSize", val)
                 BL_Refresh()
             end,
         })
-        y = y - h
+        posY = posY - hgt
 
         do
             -- disabledFn/disabledText: optional, block the popup + grey the cog while
@@ -1139,8 +1135,16 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             -- something other than the row's own control while keeping rgn as parent
             -- (parenting it to the anchor instead would multiply the cog's disabled
             -- alpha by that anchor's, greying it into invisibility).
-            local function _attachOffsetCog(rgn, popupTitle, xKey, yKey, disabledFn, disabledText, anchorTo)
-                return CludesUI.BuildInlineCog(rgn, {
+            local function _attachOffsetCog(
+                region,
+                popupTitle,
+                xKey,
+                yKey,
+                disabledFn,
+                disabledText,
+                anchorTo
+            )
+                return CludesUI.BuildInlineCog(region, {
                     title = popupTitle,
                     rows = {
                         {
@@ -1152,8 +1156,8 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                             get = function()
                                 return BL_Cfg(xKey) or 0
                             end,
-                            set = function(v)
-                                BL_Set(xKey, v)
+                            set = function(val)
+                                BL_Set(xKey, val)
                                 BL_Refresh()
                             end,
                         },
@@ -1166,8 +1170,8 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                             get = function()
                                 return BL_Cfg(yKey) or 0
                             end,
-                            set = function(v)
-                                BL_Set(yKey, v)
+                            set = function(val)
+                                BL_Set(yKey, val)
                                 BL_Refresh()
                             end,
                         },
@@ -1179,8 +1183,8 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                     disabledTooltip = disabledText,
                 })
             end
-            _attachOffsetCog(row._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
-            _attachOffsetCog(row._rightRegion, "Count Position", "countOffsetX", "countOffsetY")
+            _attachOffsetCog(rowFrame._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
+            _attachOffsetCog(rowFrame._rightRegion, "Count Position", "countOffsetX", "countOffsetY")
 
             -- Show Sated / Show Ready: independent toggles. Sated gates the real lockout
             -- countdown, Ready gates the label shown once that lockout is gone -- either,
@@ -1188,15 +1192,15 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             -- Toggle controls don't self-trigger a refresh pass (unlike sliders/
             -- dropdowns), so without the explicit RefreshPage() the Ready row below
             -- stays stale (not greyed/ungreyed) until something else repaints the page.
-            row, h = W:DualRow(parent, y, {
+            rowFrame, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Show Icon when Sated",
                 tooltip = "Show the Sated/Exhaustion lockout countdown on the icon.",
                 getValue = function()
                     return BL_Cfg("showSated") ~= false
                 end,
-                setValue = function(v)
-                    BL_Set("showSated", v)
+                setValue = function(val)
+                    BL_Set("showSated", val)
                     BL_Refresh()
                     CludesUI:RefreshPage()
                 end,
@@ -1207,19 +1211,19 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                 getValue = function()
                     return BL_Cfg("showReady") == true
                 end,
-                setValue = function(v)
-                    BL_Set("showReady", v)
+                setValue = function(val)
+                    BL_Set("showReady", val)
                     BL_Refresh()
                     CludesUI:RefreshPage()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             if not CludesUI._prebuilding then
-                AttachToggleCog(row._leftRegion, "Sated Settings", "Desaturate when Sated", function()
+                AttachToggleCog(rowFrame._leftRegion, "Sated Settings", "Desaturate when Sated", function()
                     return BL_Cfg("desaturateSated") ~= false
-                end, function(v)
-                    BL_Set("desaturateSated", v)
+                end, function(val)
+                    BL_Set("desaturateSated", val)
                     BL_Refresh()
                 end, function()
                     return BL_Cfg("showSated") == false
@@ -1232,7 +1236,7 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
             local function readyOff()
                 return BL_Cfg("showReady") ~= true
             end
-            row, h = W:DualRow(parent, y, {
+            rowFrame, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Ready Size",
                 disabled = readyOff,
@@ -1244,14 +1248,14 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                 getValue = function()
                     return BL_Cfg("readySize") or 12
                 end,
-                setValue = function(v)
-                    BL_Set("readySize", v)
+                setValue = function(val)
+                    BL_Set("readySize", val)
                     BL_Refresh()
                 end,
             }, { type = "label", text = "" })
-            y = y - h
+            posY = posY - hgt
             do
-                local leftRgn = row._leftRegion
+                local leftRgn = rowFrame._leftRegion
                 -- The offset cog sits beside the slider and the swatch left of it,
                 -- both parented to the row region like the other two.
                 local readyCog = _attachOffsetCog(
@@ -1262,7 +1266,7 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                     readyOff,
                     "Show Icon with Ready Text"
                 )
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     leftRgn,
                     leftRgn:GetFrameLevel() + 5,
                     function()
@@ -1279,23 +1283,26 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
                     false,
                     20
                 )
-                PP.Point(swatch, "RIGHT", readyCog or leftRgn._control, "LEFT", -8, 0)
+                Pix.Point(colorSwatch, "RIGHT", readyCog or leftRgn._control, "LEFT", -8, 0)
                 -- The leftmost item: the label clamp's bound.
-                leftRgn._lastInline = swatch
+                leftRgn._lastInline = colorSwatch
                 CludesUI.RegisterWidgetRefresh(function()
-                    local off = readyOff()
-                    swatch:SetAlpha(off and 0.3 or 1)
+                    local offset = readyOff()
+                    colorSwatch:SetAlpha(offset and 0.3 or 1)
                     updateSwatch()
                 end)
                 -- The slider's own "disabled" already blocks clicks on itself; the
                 -- swatch is a manual inline extra, so it needs the same click-block
                 -- overlay the ActionBars range-colour swatch uses.
-                local readyColorBlock = CreateFrame("Frame", nil, swatch)
+                local readyColorBlock = CreateFrame("Frame", nil, colorSwatch)
                 readyColorBlock:SetAllPoints()
-                readyColorBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                readyColorBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
                 readyColorBlock:EnableMouse(true)
                 readyColorBlock:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Icon with Ready Text"))
+                    CludesUI.ShowWidgetTooltip(
+                        colorSwatch,
+                        CludesUI.DisabledTooltip("Show Icon with Ready Text")
+                    )
                 end)
                 readyColorBlock:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
@@ -1308,8 +1315,8 @@ _G._CUI_BuildBloodlustSection = function(parent, yOffset, W, PP)
         end
     end -- close Bloodlust hidden-while-Never gate
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return math.abs(y - yOffset)
+    return math.abs(posY - yOffset)
 end

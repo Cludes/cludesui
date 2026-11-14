@@ -10,13 +10,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- painter calls ns.WC_Recolor with its fully resolved color every pass and
 -- ns.WC_EngineOn to gate itself.
 
-local _, ns = ...
+local _, mod = ...
 local CludesUI = _G.CludesUI
 
 local PLAYER_CLASS = select(2, UnitClass("player"))
 
 local function FillTexPath()
-    local ERB = ns.ERB
+    local ERB = mod.ERB
     local p = ERB and ERB.db and ERB.db.profile
     local key = (p and p.general and p.general.barTexture) or "none"
     return CludesUI.ResolveTexturePath(_G._CURB_BarTextures, key, "Interface\\Buttons\\WHITE8x8")
@@ -32,7 +32,7 @@ local function FillColor(sp, powerKey)
         local r, g, b = CludesUI.GetDarkModeFill()
         return r or 1, g or 1, b or 1, 1
     end
-    local ERB = ns.ERB
+    local ERB = mod.ERB
     if sp.resourceColored then
         if ERB and ERB.ResolveSecondaryResourceColor then
             local r, g, b = ERB.ResolveSecondaryResourceColor(powerKey)
@@ -55,12 +55,12 @@ local function FillColor(sp, powerKey)
     return 1, 1, 1, 1
 end
 
-function ns.WC_EngineOn(powerKey)
+function mod.WC_EngineOn(powerKey)
     local ewc = _G._EWC
     return (ewc and ewc.EngineOn("erb", powerKey)) or false
 end
 
-function ns.WC_Recolor(powerKey, r, g, b, a)
+function mod.WC_Recolor(powerKey, r, g, b, a)
     local ewc = _G._EWC
     if ewc then
         ewc.Recolor("erb", powerKey, r, g, b, a)
@@ -69,22 +69,22 @@ end
 
 -- Threshold/band inputs, handed raw each paint pass; the core change-gates
 -- with alloc-free compares and renders them as engine-masked range strips.
-function ns.WC_Thresholds(powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
+function mod.WC_Thresholds(powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
     local ewc = _G._EWC
     if ewc and ewc.Thresholds then
-        ewc.Thresholds("erb", powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
+        ewc.Thresholds("erb", powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
     end
 end
 
 -- Called from BuildBars with the resolved secondary build in hand (race-free:
 -- the frame is created, sized and styled by the time this runs). Any power
 -- type other than the two warrior charge buffs parks the overlay.
-function ns.WC_Sync(frame, sp, powerKey, gen)
+function mod.WC_Sync(widget, sp, powerKey, gen)
     local ewc = _G._EWC
     if not ewc or PLAYER_CLASS ~= "WARRIOR" then
         return
     end
-    if not ((powerKey == "WHIRLWIND_STACKS" or powerKey == "SWEEPING_STRIKES") and frame and sp) then
+    if not ((powerKey == "WHIRLWIND_STACKS" or powerKey == "SWEEPING_STRIKES") and widget and sp) then
         ewc.Gate("erb")
         return
     end
@@ -95,22 +95,22 @@ function ns.WC_Sync(frame, sp, powerKey, gen)
     -- proxy, so without this strip the empty portion fell through to the
     -- near-black _barBg and dark mode lost all deduction contrast.
     local ebR, ebG, ebB, ebA = 0.1, 0.1, 0.1, 0.5
-    local ERB2 = ns.ERB
+    local ERB2 = mod.ERB
     if ERB2 and ERB2.PipBgColor then
         -- Background on individual pips hides the full-bar backdrop: composite.
-        ebR, ebG, ebB, ebA = ERB2.PipBgColor(sp, ns.ERB_PipBgOn(sp, false))
+        ebR, ebG, ebB, ebA = ERB2.PipBgColor(sp, mod.ERB_PipBgOn(sp, false))
     end
     local wantText = sp.showText and true or false
     if
         wantText
         and _G._CURB_TextHiddenByForm
-        and ns.ERB
-        and ns.ERB.db
-        and _G._CURB_TextHiddenByForm(ns.ERB.db.profile.secondary)
+        and mod.ERB
+        and mod.ERB.db
+        and _G._CURB_TextHiddenByForm(mod.ERB.db.profile.secondary)
     then
         wantText = false
     end
-    ewc.Sync("erb", frame, powerKey, {
+    ewc.Sync("erb", widget, powerKey, {
         texPath = FillTexPath(),
         r = fr,
         g = fg,
@@ -132,7 +132,7 @@ function ns.WC_Sync(frame, sp, powerKey, gen)
         barBgB = sp.barBgB,
         barBgA = sp.barBgA,
         text = {
-            fontFrom = frame._countText,
+            fontFrom = widget._countText,
             r = sp.textR,
             g = sp.textG,
             b = sp.textB,

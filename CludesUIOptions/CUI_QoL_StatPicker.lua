@@ -37,8 +37,8 @@ local function SetShown(stats, show)
     local old = CludesUI.QoLExtrasGet("secondaryStatsHidden")
     local hidden = {}
     if type(old) == "table" then
-        for k, v in pairs(old) do
-            hidden[k] = v
+        for k, val in pairs(old) do
+            hidden[k] = val
         end
     end
     for _, s in ipairs(stats) do
@@ -48,7 +48,7 @@ local function SetShown(stats, show)
     CludesUI._applySecondaryStats()
 end
 
-local panel
+local panelFrame
 local checks = {} -- one repaint function per stat row
 
 local function RefreshAll()
@@ -58,17 +58,17 @@ local function RefreshAll()
 end
 
 -- A text-only link (All / None / Check All) that brightens on hover.
-local function Link(text, onClick)
-    local b = CreateFrame("Button", nil, panel)
-    local fs = CludesUI.MakeFont(b, 12, "", 1, 1, 1, 0.5)
-    fs:SetText(text)
-    fs:SetPoint("CENTER")
-    b:SetSize(fs:GetStringWidth() + 6, 16)
+local function Link(textValue, onClick)
+    local b = CreateFrame("Button", nil, panelFrame)
+    local fontStr = CludesUI.MakeFont(b, 12, "", 1, 1, 1, 0.5)
+    fontStr:SetText(textValue)
+    fontStr:SetPoint("CENTER")
+    b:SetSize(fontStr:GetStringWidth() + 6, 16)
     b:SetScript("OnEnter", function()
-        fs:SetTextColor(1, 1, 1, 0.9)
+        fontStr:SetTextColor(1, 1, 1, 0.9)
     end)
     b:SetScript("OnLeave", function()
-        fs:SetTextColor(1, 1, 1, 0.5)
+        fontStr:SetTextColor(1, 1, 1, 0.5)
     end)
     b:SetScript("OnClick", function()
         onClick()
@@ -79,40 +79,40 @@ end
 
 local function Build()
     local groups = qns.FvStats.groups
-    local EG = CludesUI.CLUDES_GREEN
+    local ACC = CludesUI.CLUDES_GREEN
 
     -- Groups wrap NUM_COLS to a line; each line is as tall as its longest group.
-    local lineTop, y = {}, CONTENT_TOP
+    local lineTop, posY = {}, CONTENT_TOP
     for first = 1, #groups, NUM_COLS do
-        local n = 0
+        local num = 0
         for gi = first, math.min(first + NUM_COLS - 1, #groups) do
-            n = math.max(n, #groups[gi].stats)
+            num = math.max(num, #groups[gi].stats)
         end
-        lineTop[#lineTop + 1] = y
-        y = y + HEADER_H + n * ITEM_H + GRP_GAP
+        lineTop[#lineTop + 1] = posY
+        posY = posY + HEADER_H + num * ITEM_H + GRP_GAP
     end
 
-    panel = CreateFrame("Frame", nil, CludesUI.OverlayParent())
-    panel:SetFrameStrata("FULLSCREEN_DIALOG") -- above the options panel and its popups
-    panel:SetSize(PAD * 2 + NUM_COLS * COL_W + (NUM_COLS - 1) * COL_GAP, y - GRP_GAP + BOTTOM_H)
-    panel:SetScale(CludesUI.GetPopupScale())
-    panel:SetClampedToScreen(true)
-    panel:EnableMouse(true)
-    panel:Hide()
-    local pf = CludesUI._popupFrames
-    pf[#pf + 1] = { popup = panel }
-    CludesUI.PadHint(panel, "nodepass")
+    panelFrame = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+    panelFrame:SetFrameStrata("FULLSCREEN_DIALOG") -- above the options panel and its popups
+    panelFrame:SetSize(PAD * 2 + NUM_COLS * COL_W + (NUM_COLS - 1) * COL_GAP, posY - GRP_GAP + BOTTOM_H)
+    panelFrame:SetScale(CludesUI.GetPopupScale())
+    panelFrame:SetClampedToScreen(true)
+    panelFrame:EnableMouse(true)
+    panelFrame:Hide()
+    local popFrame = CludesUI._popupFrames
+    popFrame[#popFrame + 1] = { popup = panelFrame }
+    CludesUI.PadHint(panelFrame, "nodepass")
 
-    local panelBg = CludesUI.SolidTex(panel, "BACKGROUND", 0.062, 0.070, 0.082, 1)
+    local panelBg = CludesUI.SolidTex(panelFrame, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     panelBg:SetAllPoints()
-    CludesUI.MakeRoundedBorder(panel, 1, 1, 1, 0.15, panelBg)
+    CludesUI.MakeRoundedBorder(panelFrame, 1, 1, 1, 0.15, panelBg)
 
-    local title = CludesUI.MakeFont(panel, 18, "", 1, 1, 1)
-    title:SetPoint("TOP", panel, "TOP", 0, -20)
-    title:SetText(CludesUI.L("Stats to Show"))
-    local sub = CludesUI.MakeFont(panel, 12, "", 1, 1, 1, 0.45)
-    sub:SetPoint("TOP", title, "BOTTOM", 0, -6)
-    sub:SetText(CludesUI.L("Checked stats show in the on-screen block."))
+    local titleText = CludesUI.MakeFont(panelFrame, 18, "", 1, 1, 1)
+    titleText:SetPoint("TOP", panelFrame, "TOP", 0, -20)
+    titleText:SetText(CludesUI.L("Stats to Show"))
+    local subFrame = CludesUI.MakeFont(panelFrame, 12, "", 1, 1, 1, 0.45)
+    subFrame:SetPoint("TOP", titleText, "BOTTOM", 0, -6)
+    subFrame:SetText(CludesUI.L("Checked stats show in the on-screen block."))
 
     local all = {}
     for _, g in ipairs(groups) do
@@ -123,8 +123,8 @@ local function Build()
     local checkAll = Link(CludesUI.L("Check All"), function()
         SetShown(all, true)
     end)
-    checkAll:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, -62)
-    local sep = CludesUI.SolidTex(panel, "OVERLAY", 1, 1, 1, 0.18)
+    checkAll:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, -62)
+    local sep = CludesUI.SolidTex(panelFrame, "OVERLAY", 1, 1, 1, 0.18)
     sep:SetSize(1, 12)
     sep:SetPoint("LEFT", checkAll, "RIGHT", 10, 0)
     local uncheckAll = Link(CludesUI.L("Uncheck All"), function()
@@ -136,99 +136,100 @@ local function Build()
         local colX = PAD + ((gi - 1) % NUM_COLS) * (COL_W + COL_GAP)
         local grpY = -lineTop[math.floor((gi - 1) / NUM_COLS) + 1]
 
-        local hdr = CludesUI.MakeFont(panel, 13, "", EG.r, EG.g, EG.b)
-        hdr:SetPoint("TOPLEFT", panel, "TOPLEFT", colX, grpY)
-        hdr:SetText(CludesUI.L(g.title))
+        local heading = CludesUI.MakeFont(panelFrame, 13, "", ACC.r, ACC.g, ACC.b)
+        heading:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY)
+        heading:SetText(CludesUI.L(g.title))
         local none = Link(CludesUI.L("None"), function()
             SetShown(g.stats, false)
         end)
-        none:SetPoint("TOPRIGHT", panel, "TOPLEFT", colX + COL_W, grpY - 2)
+        none:SetPoint("TOPRIGHT", panelFrame, "TOPLEFT", colX + COL_W, grpY - 2)
         local allLink = Link(CludesUI.L("All"), function()
             SetShown(g.stats, true)
         end)
         allLink:SetPoint("RIGHT", none, "LEFT", -8, 0)
-        local underline = CludesUI.SolidTex(panel, "ARTWORK", EG.r, EG.g, EG.b, 0.35)
+        local underline = CludesUI.SolidTex(panelFrame, "ARTWORK", ACC.r, ACC.g, ACC.b, 0.35)
         underline:SetSize(COL_W, 1)
-        underline:SetPoint("TOPLEFT", panel, "TOPLEFT", colX, grpY - HEADER_H + 8)
+        underline:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY - HEADER_H + 8)
 
-        for j, s in ipairs(g.stats) do
-            local row = CreateFrame("Button", nil, panel)
-            row:SetSize(COL_W, ITEM_H)
-            row:SetPoint("TOPLEFT", panel, "TOPLEFT", colX, grpY - HEADER_H - (j - 1) * ITEM_H)
-            local box, _, _, applyVisual = CludesUI.BuildCheckboxControl(row, row:GetFrameLevel() + 1)
-            box:ClearAllPoints()
-            box:SetPoint("LEFT", row, "LEFT", 0, 0)
-            local lbl = CludesUI.MakeFont(row, 12, "", 0.85, 0.85, 0.85)
-            lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
-            lbl:SetText(CludesUI.L(s.label))
+        for jdx, s in ipairs(g.stats) do
+            local rowFrame = CreateFrame("Button", nil, panelFrame)
+            rowFrame:SetSize(COL_W, ITEM_H)
+            rowFrame:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY - HEADER_H - (jdx - 1) * ITEM_H)
+            local boxFrame, _, _, applyVisual =
+                CludesUI.BuildCheckboxControl(rowFrame, rowFrame:GetFrameLevel() + 1)
+            boxFrame:ClearAllPoints()
+            boxFrame:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+            local labelFS = CludesUI.MakeFont(rowFrame, 12, "", 0.85, 0.85, 0.85)
+            labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
+            labelFS:SetText(CludesUI.L(s.label))
             local function Apply()
-                applyVisual(IsShown(s.key), row:IsMouseOver())
+                applyVisual(IsShown(s.key), rowFrame:IsMouseOver())
             end
             checks[#checks + 1] = Apply
             local one = { s }
-            row:SetScript("OnClick", function()
+            rowFrame:SetScript("OnClick", function()
                 SetShown(one, not IsShown(s.key))
                 Apply()
             end)
-            row:SetScript("OnEnter", function()
-                lbl:SetTextColor(1, 1, 1, 1)
+            rowFrame:SetScript("OnEnter", function()
+                labelFS:SetTextColor(1, 1, 1, 1)
                 Apply()
             end)
-            row:SetScript("OnLeave", function()
-                lbl:SetTextColor(0.85, 0.85, 0.85, 1)
+            rowFrame:SetScript("OnLeave", function()
+                labelFS:SetTextColor(0.85, 0.85, 0.85, 1)
                 Apply()
             end)
         end
     end
 
     local done = CludesUI.MakeActionButton(
-        panel,
+        panelFrame,
         CludesUI.EXPRESSWAY,
         CludesUI.L("Done"),
-        EG.r,
-        EG.g,
-        EG.b,
+        ACC.r,
+        ACC.g,
+        ACC.b,
         { w = 200 }
     )
-    done:SetPoint("BOTTOM", panel, "BOTTOM", 0, 16)
+    done:SetPoint("BOTTOM", panelFrame, "BOTTOM", 0, 16)
     done:SetScript("OnClick", function()
-        panel:Hide()
+        panelFrame:Hide()
     end)
 
     -- Closes on a click anywhere else: a global mouse-down listener held only
     -- while shown. Clicks fire on mouse up, so the press that opened it has
     -- already passed.
-    panel:SetScript("OnShow", function(self)
+    panelFrame:SetScript("OnShow", function(self)
         self:RegisterEvent("GLOBAL_MOUSE_DOWN")
     end)
-    panel:SetScript("OnHide", function(self)
+    panelFrame:SetScript("OnHide", function(self)
         self:UnregisterEvent("GLOBAL_MOUSE_DOWN")
     end)
-    panel:SetScript("OnEvent", function(self)
+    panelFrame:SetScript("OnEvent", function(self)
         if not self:IsMouseOver() then
             self:Hide()
         end
     end)
-    panel:EnableKeyboard(true)
-    panel:SetScript("OnKeyDown", function(self, key)
+    panelFrame:EnableKeyboard(true)
+    panelFrame:SetScript("OnKeyDown", function(self, key)
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
         if key == "ESCAPE" then
             self:Hide()
         end
     end)
     CludesUI._mainFrame:HookScript("OnHide", function()
-        panel:Hide()
+        panelFrame:Hide()
     end)
-    CludesUI.TrackOverlay(panel)
+    CludesUI.TrackOverlay(panelFrame)
 end
 
-function CludesUI._ShowStatPicker(anchor)
-    if not panel then
+function CludesUI._ShowStatPicker(anchorFrame)
+    if not panelFrame then
         Build()
     end
-    panel:ClearAllPoints()
-    panel:SetPoint("TOP", anchor, "BOTTOM", 0, -5)
+    panelFrame:ClearAllPoints()
+    panelFrame:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -5)
     RefreshAll()
-    panel:Show()
-    panel:Raise()
+    panelFrame:Show()
+    panelFrame:Raise()
 end

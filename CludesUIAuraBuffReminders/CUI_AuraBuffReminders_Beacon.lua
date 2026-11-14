@@ -7,40 +7,40 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Last-used item tracking and the standalone Beacon reminders.
 --  Reads the earlier AuraBuff Reminders files through ns._abrInternals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._abrInternals
+local _, mod = ...
+local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local floor = math.floor
 
-local _B, DEFAULT_TEXT_COLOR, EABR = I._B, I.DEFAULT_TEXT_COLOR, I.EABR
-local GetTextAnchorPoints, Known = I.GetTextAnchorPoints, I.Known
-local ResolveFontPath, SetABRFont, ShortLabel = I.ResolveFontPath, I.SetABRFont, I.ShortLabel
-local Tex, texCache, FLASK_ITEMS, FOOD_ITEMS = I.Tex, I.texCache, I.FLASK_ITEMS, I.FOOD_ITEMS
-local WEAPON_ENCHANT_ITEMS, ApplyGlow = I.WEAPON_ENCHANT_ITEMS, I.ApplyGlow
-local ICON_SIZE, RemoveGlow, LayoutIcons = I.ICON_SIZE, I.RemoveGlow, I.LayoutIcons
-local CursorAttachActive, ReleaseCursorAnchor = I.CursorAttachActive, I.ReleaseCursorAnchor
+local _B, DEFAULT_TEXT_COLOR, REMIND = Inner._B, Inner.DEFAULT_TEXT_COLOR, Inner.EABR
+local GetTextAnchorPoints, Known = Inner.GetTextAnchorPoints, Inner.Known
+local ResolveFontPath, SetABRFont, ShortLabel = Inner.ResolveFontPath, Inner.SetABRFont, Inner.ShortLabel
+local Tex, texCache, FLASK_ITEMS, FOOD_ITEMS = Inner.Tex, Inner.texCache, Inner.FLASK_ITEMS, Inner.FOOD_ITEMS
+local WEAPON_ENCHANT_ITEMS, ApplyGlow = Inner.WEAPON_ENCHANT_ITEMS, Inner.ApplyGlow
+local ICON_SIZE, RemoveGlow, LayoutIcons = Inner.ICON_SIZE, Inner.RemoveGlow, Inner.LayoutIcons
+local CursorAttachActive, ReleaseCursorAnchor = Inner.CursorAttachActive, Inner.ReleaseCursorAnchor
 
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 local cuiPanelOpen = false
-I.panelOpenSetters[#I.panelOpenSetters + 1] = function(v)
-    cuiPanelOpen = v
+Inner.panelOpenSetters[#Inner.panelOpenSetters + 1] = function(val)
+    cuiPanelOpen = val
 end
 local combatAnchor
-I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v)
-    combatAnchor = v
+Inner.combatAnchorSetters[#Inner.combatAnchorSetters + 1] = function(val)
+    combatAnchor = val
 end
 local cursorAnchor
-I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v)
-    cursorAnchor = v
+Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val)
+    cursorAnchor = val
 end
 
 -------------------------------------------------------------------------------
@@ -50,8 +50,8 @@ local TrackItemUse
 do
     local flaskSet, foodSet, weSet = {}, {}, {}
     for _, f in ipairs(FLASK_ITEMS) do
-        for _, id in ipairs(f.items) do
-            flaskSet[id] = true
+        for _, ident in ipairs(f.items) do
+            flaskSet[ident] = true
         end
     end
     for _, f in ipairs(FOOD_ITEMS) do
@@ -60,17 +60,17 @@ do
     for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
         weSet[we.itemID] = true
     end
-    TrackItemUse = function(itemID)
-        if not db or not db.profile then
+    TrackItemUse = function(itemId)
+        if not saved or not saved.profile then
             return
         end
         -- All persistent use-tracking lives in db.profile (this DB layer has no `char` namespace).
-        if flaskSet[itemID] then
-            db.profile.lastUsedFlask = itemID
-        elseif foodSet[itemID] then
-            db.profile.lastUsedFood = itemID
-        elseif weSet[itemID] then
-            db.profile.lastUsedWeaponEnchant = itemID
+        if flaskSet[itemId] then
+            saved.profile.lastUsedFlask = itemId
+        elseif foodSet[itemId] then
+            saved.profile.lastUsedFood = itemId
+        elseif weSet[itemId] then
+            saved.profile.lastUsedWeaponEnchant = itemId
         end
     end
 end
@@ -135,24 +135,24 @@ local function BeaconUpdateOverlayEvents()
     end
 end
 
-local function BeaconMakeIcon(spellID)
+local function BeaconMakeIcon(spellId)
     local f = CreateFrame("Frame", nil, UIParent)
     f:SetSize(ICON_SIZE, ICON_SIZE)
     f:SetFrameStrata("HIGH")
     f:SetFrameLevel(120)
     f:Hide()
-    local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexture(Tex(spellID))
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    f._icon = icon
-    f._spellID = spellID
-    EABR.ApplyIconBorder(f, false)
-    local text = EABR.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
-    text:SetPoint("TOP", f, "BOTTOM", 0, -2)
-    SetABRFont(text, ResolveFontPath(), 11)
-    text:SetTextColor(1, 1, 1, 1)
-    f._text = text
+    local glyph = f:CreateTexture(nil, "ARTWORK")
+    glyph:SetAllPoints()
+    glyph:SetTexture(Tex(spellId))
+    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    f._icon = glyph
+    f._spellID = spellId
+    REMIND.ApplyIconBorder(f, false)
+    local textValue = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", f, "BOTTOM", 0, -2)
+    SetABRFont(textValue, ResolveFontPath(), 11)
+    textValue:SetTextColor(1, 1, 1, 1)
+    f._text = textValue
     return f
 end
 
@@ -163,35 +163,41 @@ local function BeaconLayoutIcons()
     end
 
     -- When cursor-attached, position beacon icons at the cursor anchor
-    local useCursor = db and CursorAttachActive(db.profile.display) and cursorAnchor
+    local useCursor = saved and CursorAttachActive(saved.profile.display) and cursorAnchor
     if useCursor then
         local visIcons = _cursorBeacons
         wipe(visIcons)
-        for _, id in ipairs(_B.ALL or {}) do
-            if _B.iconState and _B.iconState[id] and _B.icons[id] then
-                visIcons[#visIcons + 1] = _B.icons[id]
+        for _, ident in ipairs(_B.ALL or {}) do
+            if _B.iconState and _B.iconState[ident] and _B.icons[ident] then
+                visIcons[#visIcons + 1] = _B.icons[ident]
             end
         end
         _B.onCursor = #visIcons > 0
         if _B.onCursor then
-            local p = db.profile.display
+            local p = saved.profile.display
             local spacing = p.iconSpacing or 8
             local baseScale = p.scale or 1.0
             local sz = floor(ICON_SIZE * baseScale + 0.5)
             local iconH = sz
             if p.iconShape and p.iconShape ~= "none" then
-                sz, iconH = ns.IconDimensions(sz, p)
+                sz, iconH = mod.IconDimensions(sz, p)
             end
             local totalW = (#visIcons * sz) + ((#visIcons - 1) * spacing)
             local startX = -(totalW / 2) + (sz / 2)
-            for i, f in ipairs(visIcons) do
+            for idx, f in ipairs(visIcons) do
                 f:SetSize(sz, iconH)
                 f:SetAlpha(p.opacity or 1.0)
                 f:SetFrameStrata("TOOLTIP")
                 f:SetFrameLevel(9980)
-                EABR.ApplyIconBorder(f, false)
+                REMIND.ApplyIconBorder(f, false)
                 f:ClearAllPoints()
-                f:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (i - 1) * (sz + spacing), -(iconH + 8))
+                f:SetPoint(
+                    "CENTER",
+                    cursorAnchor,
+                    "CENTER",
+                    startX + (idx - 1) * (sz + spacing),
+                    -(iconH + 8)
+                )
             end
             cursorAnchor:Show()
             CludesUI.SetElementVisibility(cursorAnchor, true)
@@ -203,10 +209,10 @@ local function BeaconLayoutIcons()
 
     -- Restore beacon icons to normal strata after leaving cursor mode
     _B.onCursor = false
-    for _, id in ipairs(_B.ALL or {}) do
-        if _B.icons and _B.icons[id] then
-            _B.icons[id]:SetFrameStrata("HIGH")
-            _B.icons[id]:SetFrameLevel(120)
+    for _, ident in ipairs(_B.ALL or {}) do
+        if _B.icons and _B.icons[ident] then
+            _B.icons[ident]:SetFrameStrata("HIGH")
+            _B.icons[ident]:SetFrameLevel(120)
         end
     end
     -- Re-layout main icons to include/exclude beacon icons
@@ -216,7 +222,7 @@ end
 
 local function BeaconApplyGlow(f, show)
     if show then
-        local p = db and db.profile.display
+        local p = saved and saved.profile.display
         local glowType = p and p.glowType or 0
         if glowType > 0 then
             local baseScale = p and p.scale or 1.0
@@ -233,14 +239,14 @@ local function BeaconApplyGlow(f, show)
 end
 
 local function BeaconApplyText(f)
-    local p = db and db.profile.display
+    local p = saved and saved.profile.display
     if p and p.showText then
         local tc = p.textColor or DEFAULT_TEXT_COLOR
-        local fontPath = ResolveFontPath(p.nameFont)
+        local fontFile = ResolveFontPath(p.nameFont)
         local textSize = p.textSize or 11
         local xOff = p.textXOffset or 0
         local yOff = p.textYOffset or -2
-        SetABRFont(f._text, fontPath, textSize)
+        SetABRFont(f._text, fontFile, textSize)
         f._text:ClearAllPoints()
         local tp, ip = GetTextAnchorPoints(p)
         f._text:SetPoint(tp, f, ip, xOff, yOff)
@@ -253,26 +259,26 @@ local function BeaconApplyText(f)
     end
 end
 
-local function BeaconSetVisible(spellID, show)
-    local f = _B.icons[spellID]
+local function BeaconSetVisible(spellId, show)
+    local f = _B.icons[spellId]
     if not f then
         return
     end
     local changed = false
     if show then
-        if not _B.iconState[spellID] then
+        if not _B.iconState[spellId] then
             BeaconApplyText(f)
             f:Show()
-            _B.iconState[spellID] = true
+            _B.iconState[spellId] = true
             BeaconApplyGlow(f, true)
             changed = true
         end
     else
-        if _B.iconState[spellID] then
+        if _B.iconState[spellId] then
             BeaconApplyGlow(f, false)
             f._text:SetText("")
             f:Hide()
-            _B.iconState[spellID] = false
+            _B.iconState[spellId] = false
             changed = true
         end
     end
@@ -301,7 +307,7 @@ local function BeaconRefresh()
         return
     end
 
-    local au = db and db.profile.auras
+    local au = saved and saved.profile.auras
     local enabled = au and au.enabled
 
     local trackBOL = enabled and enabled.bol ~= false and Known(_B.BOL) and not Known(_B.VIRTUE)
@@ -319,7 +325,7 @@ local function BeaconCombatEdge()
     if not _B.isPaladin then
         return
     end
-    local p = db and db.profile.display
+    local p = saved and saved.profile.display
     if p and p.cursorAttach and p.cursorAttachCombatOnly then
         BeaconLayoutIcons()
     end
@@ -369,7 +375,7 @@ _G._CUABR_BeaconRefresh = BeaconRefresh
 
 -- Beacon tracking is retail Holy Paladin; WoW Forever registers nothing here
 -- (BeaconInit is skipped there too, so the handler would only ever return).
-if not EABR.FOREVER then
+if not REMIND.FOREVER then
     _B.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     _B.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     _B.frame:RegisterEvent("SPELLS_CHANGED")
@@ -379,12 +385,12 @@ if not EABR.FOREVER then
     _B.frame:RegisterEvent("GROUP_ROSTER_UPDATE")
     _B.frame:RegisterEvent("PLAYER_LEVEL_CHANGED")
 end
-_B.frame:SetScript("OnEvent", function(_, e, id)
+_B.frame:SetScript("OnEvent", function(_, e, ident)
     if not _B.isPaladin then
         return
     end
     if e == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" or e == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
-        if id == _B.BOL or id == _B.BOF then
+        if ident == _B.BOL or ident == _B.BOF then
             BeaconRefresh()
         end
         return
@@ -405,10 +411,10 @@ _B.frame:SetScript("OnEvent", function(_, e, id)
             texCache[_B.BOL] = nil
             texCache[_B.BOF] = nil
         end
-        for _, sid in ipairs(_B.ALL) do
-            local f = _B.icons[sid]
+        for _, spellRef in ipairs(_B.ALL) do
+            local f = _B.icons[spellRef]
             if f and f._icon then
-                local t = Tex(sid)
+                local t = Tex(spellRef)
                 if t then
                     f._icon:SetTexture(t)
                 end
@@ -420,6 +426,6 @@ _B.frame:SetScript("OnEvent", function(_, e, id)
     BeaconRefresh()
 end)
 
-I.BeaconInit, I.BeaconRefresh, I.TrackItemUse = BeaconInit, BeaconRefresh, TrackItemUse
-I.BeaconCombatEdge = BeaconCombatEdge
-I.broken = false
+Inner.BeaconInit, Inner.BeaconRefresh, Inner.TrackItemUse = BeaconInit, BeaconRefresh, TrackItemUse
+Inner.BeaconCombatEdge = BeaconCombatEdge
+Inner.broken = false

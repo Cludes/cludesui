@@ -15,14 +15,14 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 CUI_NS.unlockParts = CUI_NS.unlockParts or {}
 
 -- Filter text -> lower-case words, nil when there are none.
-local function ParseFilter(text)
-    if type(text) ~= "string" then
+local function ParseFilter(textValue)
+    if type(textValue) ~= "string" then
         return nil
     end
     local words
-    for w in text:lower():gmatch("%S+") do
+    for wid in textValue:lower():gmatch("%S+") do
         words = words or {}
-        words[#words + 1] = w
+        words[#words + 1] = wid
     end
     return words
 end
@@ -32,8 +32,8 @@ local function HasAllWords(words, name)
         return false
     end
     name = name:lower()
-    for i = 1, #words do
-        if not name:find(words[i], 1, true) then
+    for idx = 1, #words do
+        if not name:find(words[idx], 1, true) then
             return false
         end
     end
@@ -42,29 +42,29 @@ end
 
 -- True when the filter keeps an element: no words, or every word (a plain
 -- substring, any case) in its label or in the label as shown (translated).
-local function FilterKeeps(words, label)
+local function FilterKeeps(words, labelText)
     if not words then
         return true
     end
-    if HasAllWords(words, label) then
+    if HasAllWords(words, labelText) then
         return true
     end
-    local shown = CludesUI.L(label)
-    return shown ~= label and HasAllWords(words, shown) or false
+    local isShown = CludesUI.L(labelText)
+    return isShown ~= labelText and HasAllWords(words, isShown) or false
 end
 
-CUI_NS.unlockParts.Filter = function(UM)
-    local movers, blizzOverlays = UM.movers, UM._blizzOwnedOverlays
+CUI_NS.unlockParts.Filter = function(LM)
+    local movers, blizzOverlays = LM.movers, LM._blizzOwnedOverlays
 
     local words, lastKey = nil, ""
 
     local function Hides(key)
-        return words ~= nil and not FilterKeeps(words, UM.GetBarLabel(key))
+        return words ~= nil and not FilterKeeps(words, LM.GetBarLabel(key))
     end
-    UM.FilterHides = Hides -- ghost sync (CUI_UnlockMode_Positions.lua)
+    LM.FilterHides = Hides -- ghost sync (CUI_UnlockMode_Positions.lua)
 
     -- Mover OnShow hook (CreateMover): every show path ends here.
-    function UM.FilterOnShow(m)
+    function LM.FilterOnShow(m)
         if words and Hides(m._barKey) then
             m:Hide()
         end
@@ -73,11 +73,11 @@ CUI_NS.unlockParts.Filter = function(UM)
     -- As the Shift+Right Click hide, without its session flag.
     local function HideMover(m)
         m._hoverPending = false
-        if UM.selectedMover == m then
-            UM.DeselectMover()
+        if LM.selectedMover == m then
+            LM.DeselectMover()
         end
-        if UM.hoveredMover == m then
-            UM.hoveredMover = nil
+        if LM.hoveredMover == m then
+            LM.hoveredMover = nil
         end
         if m._hideOverlayText then
             m._hideOverlayText()
@@ -89,17 +89,17 @@ CUI_NS.unlockParts.Filter = function(UM)
     end
 
     local function Apply()
-        if not UM.isUnlocked then
+        if not LM.isUnlocked then
             return
         end
         -- A pick mode survives the filter (it helps find the target) unless its own mover hides.
-        if UM.pickModeMover and UM.pickMode and Hides(UM.pickModeMover._barKey) then
-            UM.CancelPickMode()
+        if LM.pickModeMover and LM.pickMode and Hides(LM.pickModeMover._barKey) then
+            LM.CancelPickMode()
         end
-        if UM.selectElementPicker and Hides(UM.selectElementPicker._barKey) then
-            UM.CancelPickMode()
+        if LM.selectElementPicker and Hides(LM.selectElementPicker._barKey) then
+            LM.CancelPickMode()
         end
-        local alpha = UM.darkOverlaysEnabled and 1 or UM.MOVER_ALPHA
+        local alpha = LM.darkOverlaysEnabled and 1 or LM.MOVER_ALPHA
         for _, m in pairs(movers) do
             if Hides(m._barKey) then
                 if m:IsShown() then
@@ -112,18 +112,18 @@ CUI_NS.unlockParts.Filter = function(UM)
                 end
             end
         end
-        for label, ov in pairs(blizzOverlays) do
-            if words and not FilterKeeps(words, label) then
-                if ov:IsShown() then
-                    ov._forceCollapse()
-                    ov:Hide()
-                    ov._filterHidden = true
+        for labelText, shade in pairs(blizzOverlays) do
+            if words and not FilterKeeps(words, labelText) then
+                if shade:IsShown() then
+                    shade._forceCollapse()
+                    shade:Hide()
+                    shade._filterHidden = true
                 end
-            elseif ov._filterHidden then
-                ov._filterHidden = nil
-                if not ov._tempHidden then
-                    ov:SetAlpha(1)
-                    ov:Show()
+            elseif shade._filterHidden then
+                shade._filterHidden = nil
+                if not shade._tempHidden then
+                    shade:SetAlpha(1)
+                    shade:Show()
                 end
             end
         end
@@ -144,21 +144,21 @@ CUI_NS.unlockParts.Filter = function(UM)
     end
 
     -- The toolbar's box: applies the typed text and says whether a filter is set.
-    function UM.FilterSet(text)
-        local w = ParseFilter(text)
-        local key = w and table.concat(w, " ") or ""
+    function LM.FilterSet(textValue)
+        local wid = ParseFilter(textValue)
+        local key = wid and table.concat(wid, " ") or ""
         if key ~= lastKey then
-            words, lastKey = w, key
+            words, lastKey = wid, key
             Apply()
         end
         return words ~= nil
     end
 
     -- The toolbar hid (Layout Mode closed, or a combat pause): forget the filter.
-    function UM.FilterReset()
+    function LM.FilterReset()
         words, lastKey = nil, ""
-        for _, ov in pairs(blizzOverlays) do
-            ov._filterHidden = nil
+        for _, shade in pairs(blizzOverlays) do
+            shade._filterHidden = nil
         end
     end
 end

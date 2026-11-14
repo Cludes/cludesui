@@ -15,10 +15,10 @@ end -- module disabled: no options page
 
 -- The preview surface in the content header. Exported so the module's
 -- getHeaderBuilder can hand it back when the page cache outlives its header.
-local function HeaderBuilder(header, width)
+local function HeaderBuilder(headerFrame, width)
     local building = true
-    local view = CludesUI._LootFeed.CreateSettingsPreview(header, width, function(height)
-        if not building and header:IsVisible() and math.abs(header:GetHeight() - height) > 1 then
+    local view = CludesUI._LootFeed.CreateSettingsPreview(headerFrame, width, function(height)
+        if not building and headerFrame:IsVisible() and math.abs(headerFrame:GetHeight() - height) > 1 then
             CludesUI:SetContentHeaderHeightSilent(height)
         end
     end)
@@ -30,21 +30,21 @@ _G._CUI_LootHeaderBuilder = HeaderBuilder
 local STYLES = { BOX = "Box", BAR = "Accent Bar", TRAY = "Icon Tray", TOAST = "Loot Toast" }
 local STYLE_ORDER = { "BOX", "BAR", "TRAY", "TOAST" }
 
-_G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
+_G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local LF = CludesUI._LootFeed
     local BLANK = CludesUI.BlankRowCfg
-    local y = yOffset
-    local _, h, hdr
-    parent._showRowDivider = true
+    local posY = yOffset
+    local _, hgt, heading
+    hostFrame._showRowDivider = true
 
     CludesUI:SetContentHeader(HeaderBuilder)
 
-    local function off()
+    local function offset()
         return not LF.Get("enabled")
     end
     local function itemsOff()
-        return off() or not LF.Get("items")
+        return offset() or not LF.Get("items")
     end
     -- Auction prices count only while the tracker or an item price shows, and
     -- only with the price addon's API at hand.
@@ -55,10 +55,10 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         return not (LF.Get("tracker") or (LF.Get("items") and LF.Get("showPrice")))
     end
     local function auctionOff()
-        return off() or not auctionSource() or pricesUnused()
+        return offset() or not auctionSource() or pricesUnused()
     end
     local function auctionTip()
-        if off() then
+        if offset() then
             return "Loot Feed"
         end
         if not auctionSource() then
@@ -66,12 +66,12 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         end
         return "This option requires Gold per Hour Tracker or Show Item Price to be enabled."
     end
-    local function style()
+    local function look()
         return LF.Get("style")
     end
     -- Loot Toast keeps its gold frame.
     local function borderOff()
-        return off() or style() == "TOAST"
+        return offset() or look() == "TOAST"
     end
     local function noBorderColor()
         return borderOff() or LF.Get("borderSize") == 0
@@ -85,81 +85,77 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
     -- Binds cfg to setting key; apply runs after a change (none: the next row
     -- shown picks it up). Greyed out while the feed is off unless disabled is
     -- given.
-    local function Bind(cfg, key, apply, disabled, disabledTooltip)
-        cfg.disabled, cfg.disabledTooltip = disabled or off, disabledTooltip or "Loot Feed"
-        cfg.getValue = cfg.getValue or function()
+    local function Bind(conf, key, apply, disabled, disabledTooltip)
+        conf.disabled, conf.disabledTooltip = disabled or offset, disabledTooltip or "Loot Feed"
+        conf.getValue = conf.getValue or function()
             return LF.Get(key)
         end
-        cfg.setValue = cfg.setValue
-            or function(v)
-                LF.Cfg()[key] = v
+        conf.setValue = conf.setValue
+            or function(val)
+                LF.Cfg()[key] = val
                 if apply then
                     apply()
                 end
             end
-        return cfg
+        return conf
     end
-    local function Toggle(key, text, tooltip, apply, disabled, disabledTooltip)
+    local function Toggle(key, textValue, tooltip, apply, disabled, disabledTooltip)
         return Bind(
-            { type = "toggle", text = text, tooltip = tooltip },
+            { type = "toggle", text = textValue, tooltip = tooltip },
             key,
             apply,
             disabled,
             disabledTooltip
         )
     end
-    local function Slider(key, text, min, max, tooltip, apply)
+    local function Slider(key, textValue, min, upper, tooltip, apply)
         return Bind(
-            { type = "slider", text = text, tooltip = tooltip, min = min, max = max, step = 1 },
+            { type = "slider", text = textValue, tooltip = tooltip, min = min, max = upper, step = 1 },
             key,
             apply or LF.ApplyStyle
         )
     end
     -- An inline swatch for the prefix .. "R" / "G" / "B" colour.
-    local function Swatch(region, prefix, tooltip, disabled, disabledTooltip)
-        CludesUI.BuildInlineSwatches(
-            region,
+    local function Swatch(regionFrame, prefixText, tooltip, disabled, disabledTooltip)
+        CludesUI.BuildInlineSwatches(regionFrame, {
             {
-                {
-                    tooltip = tooltip,
-                    disabled = disabled,
-                    disabledTooltip = disabledTooltip,
-                    getValue = function()
-                        return LF.Get(prefix .. "R"), LF.Get(prefix .. "G"), LF.Get(prefix .. "B"), 1
-                    end,
-                    setValue = function(r, g, b)
-                        local c = LF.Cfg()
-                        c[prefix .. "R"], c[prefix .. "G"], c[prefix .. "B"] = r, g, b
-                        if prefix == "border" and style() == "BAR" then
-                            c.borderTexture = LF.Get("borderTexture") or "solid"
-                        end
-                        LF.ApplyStyle()
-                    end,
-                },
+                tooltip = tooltip,
+                disabled = disabled,
+                disabledTooltip = disabledTooltip,
+                getValue = function()
+                    return LF.Get(prefixText .. "R"), LF.Get(prefixText .. "G"), LF.Get(prefixText .. "B"), 1
+                end,
+                setValue = function(r, g, b)
+                    local c = LF.Cfg()
+                    c[prefixText .. "R"], c[prefixText .. "G"], c[prefixText .. "B"] = r, g, b
+                    if prefixText == "border" and look() == "BAR" then
+                        c.borderTexture = LF.Get("borderTexture") or "solid"
+                    end
+                    LF.ApplyStyle()
+                end,
             },
-            { disabled = off, disabledTooltip = "Loot Feed" }
-        )
+        }, { disabled = offset, disabledTooltip = "Loot Feed" })
     end
 
     ---------------------------------------------------------------------------
     --  GENERAL
     ---------------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "LOOT FEED", y)
-    y = y - h
+    heading, hgt = W:SectionHeader(hostFrame, "LOOT FEED", posY)
+    posY = posY - hgt
     CludesUI.BuildSectionUnlockJump(
-        hdr,
-        { key = "CUI_LootFeed", disabled = off, disabledTooltip = "Loot Feed" }
+        heading,
+        { key = "CUI_LootFeed", disabled = offset, disabledTooltip = "Loot Feed" }
     )
 
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Loot Feed",
         tooltip = "Shows what you loot and gain as short-lived rows that fade out.",
         getValue = function()
-            return not off()
+            return not offset()
         end,
-        setValue = function(v)
-            LF.Cfg().enabled = v
+        setValue = function(val)
+            LF.Cfg().enabled = val
             Reapply()
         end,
     }, {
@@ -167,17 +163,17 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         text = "Preview",
         buttonText = "Show Samples",
         tooltip = "Shows a sample row for every enabled source.",
-        disabled = off,
+        disabled = offset,
         disabledTooltip = "Loot Feed",
         onClick = function()
             LF.Preview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Bind({ type = "dropdown", text = "Style", values = STYLES, order = STYLE_ORDER }, "style", function()
             LF.ApplyStyle()
             if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
@@ -197,35 +193,35 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             "barWidth",
             LF.ApplyStyle,
             function()
-                return off() or style() == "BOX" or style() == "TOAST"
+                return offset() or look() == "BOX" or look() == "TOAST"
             end,
             function()
-                return off() and "Loot Feed" or "Style"
+                return offset() and "Loot Feed" or "Style"
             end
         )
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  SOURCES
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "SOURCES", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "SOURCES", posY)
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Toggle("items", "Items", "Items you loot or receive.", Reapply),
         Toggle("money", "Money", "Money you loot.", Reapply)
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Toggle(
             "reputation",
             "Reputation",
@@ -234,11 +230,11 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         ),
         Toggle("currency", "Currencies", "Honor, badges and other currencies, with your total.", Reapply)
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Toggle("skills", "Skill Ups", "Weapon and profession skill increases.", Reapply),
         Toggle(
             "rolls",
@@ -247,11 +243,11 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             Reapply
         )
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Toggle("tracker", "Gold per Hour Tracker", "Pins a row with your gold per hour.", function()
             LF.Apply()
             LF.ApplyStyle()
@@ -261,22 +257,22 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             CludesUI:RefreshPage()
         end)
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  ITEMS
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "ITEMS", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "ITEMS", posY)
+    posY = posY - hgt
 
     local qualityValues, qualityOrder = _G._CUI_ItemQualityValues(Enum.ItemQuality.Legendary)
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Bind({
             type = "dropdown",
             text = "Minimum Quality",
@@ -286,8 +282,8 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             getValue = function()
                 return tostring(LF.Get("minQuality"))
             end,
-            setValue = function(v)
-                LF.Cfg().minQuality = tonumber(v)
+            setValue = function(val)
+                LF.Cfg().minQuality = tonumber(val)
                 LF.RefreshPreview()
             end,
         }, nil, nil, itemsOff, "Items"),
@@ -300,11 +296,11 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             "Items"
         )
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Toggle("showPrice", "Show Item Price", "Shows what the looted stack is worth.", function()
             LF.RefreshPreview()
             CludesUI:RefreshPage() -- Use Auctionator Prices greys with it
@@ -318,53 +314,49 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             auctionTip
         )
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  LAYOUT
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "LAYOUT", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Slider("width", "Width", 150, 600),
         Slider("rowHeight", "Row Height", 20, 60, "Tile size in the Icon Tray style.")
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Slider("maxRows", "Max Rows", 1, 12),
         Slider("duration", "Display Time", 1, 30, "Seconds a row stays before it fades out.")
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
-        Bind(
-            {
-                type = "segmented",
-                text = "Grow Direction",
-                values = { UP = "Up", DOWN = "Down" },
-                order = { "UP", "DOWN" },
-            },
-            "grow",
-            LF.ApplyStyle
-        ),
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
+        Bind({
+            type = "segmented",
+            text = "Grow Direction",
+            values = { UP = "Up", DOWN = "Down" },
+            order = { "UP", "DOWN" },
+        }, "grow", LF.ApplyStyle),
         Slider("textSize", "Text Size", 8, 24)
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Slider(
             "spacing",
             "Spacing",
@@ -374,22 +366,22 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         ),
         BLANK()
     )
-    y = y - h
+    posY = posY - hgt
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  DISPLAY
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "DISPLAY", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
+    posY = posY - hgt
 
     local _, textureValues, textureOrder = CludesUI.BuildBarTextureTables()
     local displayRow
-    displayRow, h = W:DualRow(
-        parent,
-        y,
+    displayRow, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Bind(
             { type = "dropdown", text = "Background Texture", values = textureValues, order = textureOrder },
             "bgTexture",
@@ -405,22 +397,22 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             getValue = function()
                 return math.floor(LF.Get("bgA") * 100 + 0.5)
             end,
-            setValue = function(v)
-                LF.Cfg().bgA = v / 100
+            setValue = function(val)
+                LF.Cfg().bgA = val / 100
                 LF.ApplyStyle()
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         Swatch(displayRow._rightRegion, "bg", "Background Color")
     end
 
     local borderValues, borderOrder = CludesUI.GetBorderTextureDropdown()
     local borderRow
-    borderRow, h = W:DualRow(
-        parent,
-        y,
+    borderRow, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Bind(
             {
                 type = "dropdown",
@@ -431,16 +423,16 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
                 getValue = function()
                     return LF.Get("borderTexture") or "solid"
                 end,
-                setValue = function(v)
+                setValue = function(val)
                     local c = LF.Cfg()
-                    c.borderTexture = v
+                    c.borderTexture = val
                     c.borderTextureOffset, c.borderTextureOffsetY = nil, nil
                     c.borderTextureShiftX, c.borderTextureShiftY = nil, nil
-                    local color, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+                    local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
                     c.borderR, c.borderG, c.borderB, c.borderBehind = color.r, color.g, color.b, behind
-                    local size = CludesUI.GetBorderDefaultSize(nil, v)
-                    if size then
-                        c.borderSize = size
+                    local dim = CludesUI.GetBorderDefaultSize(nil, val)
+                    if dim then
+                        c.borderSize = dim
                     end
                     if c.borderSizePx then
                         c.borderSizePx = false
@@ -453,7 +445,7 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             nil,
             borderOff,
             function()
-                return off() and "Loot Feed" or "Style"
+                return offset() and "Loot Feed" or "Style"
             end
         ),
         CludesUI.BorderPxSliderCfg({
@@ -461,14 +453,14 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             tooltip = "0 hides the border.",
             disabled = borderOff,
             disabledTooltip = function()
-                return off() and "Loot Feed" or "Style"
+                return offset() and "Loot Feed" or "Style"
             end,
             getStep = function()
                 return LF.Get("borderSize")
             end,
-            setStep = function(v)
+            setStep = function(val)
                 local c = LF.Cfg()
-                c.borderTexture, c.borderSize = LF.Get("borderTexture") or "solid", v
+                c.borderTexture, c.borderSize = LF.Get("borderTexture") or "solid", val
             end,
             getTex = function()
                 return LF.Get("borderTexture") or "solid"
@@ -476,8 +468,8 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             getPx = function()
                 return LF.Get("borderSizePx")
             end,
-            setPx = function(v)
-                LF.Cfg().borderSizePx = v
+            setPx = function(val)
+                LF.Cfg().borderSizePx = val
             end,
             apply = function()
                 LF.ApplyStyle()
@@ -485,7 +477,7 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
     if not CludesUI._prebuilding then
         local offsetX, offsetY = CludesUI.BorderOffsetCogRows({
             getTex = function()
@@ -500,29 +492,29 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
             getX = function()
                 return LF.Get("borderTextureOffset")
             end,
-            setX = function(v)
-                LF.Cfg().borderTextureOffset = v
+            setX = function(val)
+                LF.Cfg().borderTextureOffset = val
             end,
             getY = function()
                 return LF.Get("borderTextureOffsetY")
             end,
-            setY = function(v)
-                LF.Cfg().borderTextureOffsetY = v
+            setY = function(val)
+                LF.Cfg().borderTextureOffsetY = val
             end,
             apply = LF.ApplyStyle,
         })
-        local function Shift(key, label)
+        local function Shift(key, labelText)
             return {
                 type = "slider",
-                label = label,
+                label = labelText,
                 min = -10,
                 max = 10,
                 step = 1,
                 get = function()
                     return LF.Get(key) or 0
                 end,
-                set = function(v)
-                    LF.Cfg()[key] = v
+                set = function(val)
+                    LF.Cfg()[key] = val
                     LF.ApplyStyle()
                 end,
             }
@@ -530,8 +522,8 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         CludesUI.BuildInlineCog(borderRow._leftRegion, {
             title = "Border Options",
             disabled = function()
-                local tex = LF.Get("borderTexture")
-                return borderOff() or not tex or tex == "solid" or tex == ""
+                local texture = LF.Get("borderTexture")
+                return borderOff() or not texture or texture == "solid" or texture == ""
             end,
             disabledTooltip = "This option requires a textured border.",
             rows = {
@@ -545,8 +537,8 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
                     get = function()
                         return LF.Get("borderBehind")
                     end,
-                    set = function(v)
-                        LF.Cfg().borderBehind = v
+                    set = function(val)
+                        LF.Cfg().borderBehind = val
                         LF.ApplyStyle()
                     end,
                 },
@@ -555,15 +547,15 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
                     label = "Separator",
                     tooltip = "Adds a matching divider beside the icon (Box) or the accent bar (Icon Tray).",
                     hidden = function()
-                        return style() ~= "BOX" and style() ~= "TRAY"
+                        return look() ~= "BOX" and look() ~= "TRAY"
                     end,
                     disabled = function()
                         return LF.Get("borderSize") == 0
-                            or (style() == "TRAY" and LF.Get("barWidth") == 0)
+                            or (look() == "TRAY" and LF.Get("barWidth") == 0)
                             or not CludesUI.GetBorderCompanion(LF.Get("borderTexture"), "sepV")
                     end,
                     disabledTooltip = function()
-                        if style() == "TRAY" and LF.Get("barWidth") == 0 then
+                        if look() == "TRAY" and LF.Get("barWidth") == 0 then
                             return "Accent Bar Width"
                         end
                         return "This option requires a Pixels or Pixels Textured border above size 0."
@@ -571,45 +563,45 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
                     get = function()
                         return LF.Get("separator")
                     end,
-                    set = function(v)
-                        LF.Cfg().separator = v
+                    set = function(val)
+                        LF.Cfg().separator = val
                         LF.ApplyStyle()
                     end,
                 },
             },
         })
         Swatch(borderRow._rightRegion, "border", "Border Color", noBorderColor, function()
-            if off() then
+            if offset() then
                 return "Loot Feed"
             end
-            if style() == "TOAST" then
+            if look() == "TOAST" then
                 return "Style"
             end
             return "Border Size"
         end)
     end
 
-    _, h = W:DualRow(
-        parent,
-        y,
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
         Toggle(
             "qualityBorder",
             "Quality Borders",
             "Colors item rows by item quality.",
             LF.ApplyStyle,
             function()
-                if off() or not LF.Get("items") then
+                if offset() or not LF.Get("items") then
                     return true
                 end
-                return style() ~= "BAR" and style() ~= "TOAST" and LF.Get("borderSize") == 0
+                return look() ~= "BAR" and look() ~= "TOAST" and LF.Get("borderSize") == 0
             end,
             function()
-                return off() and "Loot Feed" or not LF.Get("items") and "Items" or "Border Size"
+                return offset() and "Loot Feed" or not LF.Get("items") and "Items" or "Border Size"
             end
         ),
         BLANK()
     )
-    y = y - h
+    posY = posY - hgt
 
-    return math.abs(y)
+    return math.abs(posY)
 end

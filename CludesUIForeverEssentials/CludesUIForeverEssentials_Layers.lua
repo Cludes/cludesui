@@ -29,16 +29,16 @@ local NPC_KINDS = { Creature = true, Vehicle = true }
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 
-local function LayerOf(guid)
-    if type(guid) ~= "string" or Secret(guid) then
+local function LayerOf(unitGuid)
+    if type(unitGuid) ~= "string" or Secret(unitGuid) then
         return
     end
-    local kind, _, server, _, zone = strsplit("-", guid)
-    if not NPC_KINDS[kind] then
+    local kindOf, _, server, _, zone = strsplit("-", unitGuid)
+    if not NPC_KINDS[kindOf] then
         return
     end
     server, zone = tonumber(server), tonumber(zone)
@@ -49,17 +49,17 @@ local function LayerOf(guid)
 end
 
 local function ZoneMap()
-    local id = C_Map.GetBestMapForUnit("player")
-    local info = id and C_Map.GetMapInfo(id)
-    while info and info.mapType > Enum.UIMapType.Zone and info.parentMapID ~= 0 do
-        id = info.parentMapID
-        info = C_Map.GetMapInfo(id)
+    local ident = C_Map.GetBestMapForUnit("player")
+    local details = ident and C_Map.GetMapInfo(ident)
+    while details and details.mapType > Enum.UIMapType.Zone and details.parentMapID ~= 0 do
+        ident = details.parentMapID
+        details = C_Map.GetMapInfo(ident)
     end
-    return id
+    return ident
 end
 
-local frame, ticker
-local layer, shown, map, inside, refreshAt, wasKey, wasZone, pendingKey, pendingGuid
+local widget, ticker
+local layer, isShown, map, inside, refreshAt, wasKey, wasZone, pendingKey, pendingGuid
 local seen = {}
 
 local function Note(where, key, zone)
@@ -75,8 +75,8 @@ local function Note(where, key, zone)
     if not e then
         if list.n >= SEEN_MAX then
             local oldest
-            for k, v in pairs(list.entries) do
-                if not oldest or v.at < list.entries[oldest].at then
+            for k, val in pairs(list.entries) do
+                if not oldest or val.at < list.entries[oldest].at then
                     oldest = k
                 end
             end
@@ -105,53 +105,53 @@ local function Label(key, zone)
 end
 
 local function Text()
-    local text = ("Layer %s"):format(layer and Label(layer, shown) or "?")
+    local textValue = ("Layer %s"):format(layer and Label(layer, isShown) or "?")
     if refreshAt and Get("countdown") then
-        local left = refreshAt - GetTime()
-        if left <= 0 then
-            return text .. " - changing"
+        local leftX = refreshAt - GetTime()
+        if leftX <= 0 then
+            return textValue .. " - changing"
         end
-        return ("%s - changes in %d:%02d"):format(text, math.floor(left / 60), math.floor(left % 60))
+        return ("%s - changes in %d:%02d"):format(textValue, math.floor(leftX / 60), math.floor(leftX % 60))
     end
-    return text
+    return textValue
 end
 
 local function Update()
-    if not frame then
+    if not widget then
         return
     end
     if not Enabled() or (inside and not CludesUI._unlockActive) then
-        frame:Hide()
+        widget:Hide()
         return
     end
-    CludesUI.Kit.Font(frame.text, Get("size"), "essentials")
-    frame.text:SetText(Text())
-    frame:SetSize(frame.text:GetStringWidth() + 16, Get("size") + 8)
-    frame:Show()
+    CludesUI.Kit.Font(widget.text, Get("size"), "essentials")
+    widget.text:SetText(Text())
+    widget:SetSize(widget.text:GetStringWidth() + 16, Get("size") + 8)
+    widget:Show()
 end
 
 local function Clock()
-    local want = refreshAt and Get("countdown")
-    if want and not ticker then
+    local wanted = refreshAt and Get("countdown")
+    if wanted and not ticker then
         ticker = C_Timer.NewTicker(1, Update)
-    elseif not want and ticker then
+    elseif not wanted and ticker then
         ticker:Cancel()
         ticker = nil
     end
 end
 
-local function Seen(key, zone, guid)
+local function Seen(key, zone, unitGuid)
     if key == layer then
         pendingKey, pendingGuid = nil, nil
         return
     end
     -- A change needs a second, different NPC on the same layer.
-    if key ~= pendingKey or guid == pendingGuid then
-        pendingKey, pendingGuid = key, guid
+    if key ~= pendingKey or unitGuid == pendingGuid then
+        pendingKey, pendingGuid = key, unitGuid
         return
     end
     pendingKey, pendingGuid = nil, nil
-    layer, shown = key, zone
+    layer, isShown = key, zone
     Note(map, key, zone)
     if wasKey and wasKey ~= key and Get("chat") then
         CludesUI.Print(
@@ -165,78 +165,78 @@ local function Seen(key, zone, guid)
     Update()
 end
 
-local function Read(unit, replace)
+local function Read(unitToken, replace)
     if inside or (layer and not replace) then
         return
     end
-    local key, zone = LayerOf(UnitGUID(unit))
+    local key, zone = LayerOf(UnitGUID(unitToken))
     if key then
-        Seen(key, zone, UnitGUID(unit))
+        Seen(key, zone, UnitGUID(unitToken))
     end
 end
 
 local function Forget()
-    layer, shown, pendingKey, pendingGuid = nil, nil, nil, nil
+    layer, isShown, pendingKey, pendingGuid = nil, nil, nil, nil
     Update()
 end
 
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event, unit)
-    if event == "NAME_PLATE_UNIT_ADDED" then
-        if not (layer or Secret(unit)) then
-            Read(unit)
+ev:SetScript("OnEvent", function(_, evt, unitToken)
+    if evt == "NAME_PLATE_UNIT_ADDED" then
+        if not (layer or Secret(unitToken)) then
+            Read(unitToken)
         end
-    elseif event == "PLAYER_TARGET_CHANGED" then
+    elseif evt == "PLAYER_TARGET_CHANGED" then
         Read("target", true)
-    elseif event == "UPDATE_MOUSEOVER_UNIT" then
+    elseif evt == "UPDATE_MOUSEOVER_UNIT" then
         Read("mouseover", true)
-    elseif event == "SHARD_TRANSFER_IMMINENT" then
+    elseif evt == "SHARD_TRANSFER_IMMINENT" then
         refreshAt = GetTime() + (GetEvictionTimeRemaining and GetEvictionTimeRemaining() or 0)
         Clock()
         Update()
-    elseif event == "SHARD_TRANSFER_CANCELLED" then
+    elseif evt == "SHARD_TRANSFER_CANCELLED" then
         refreshAt = nil
         Clock()
         Update()
-    elseif event == "SHARD_TRANSFER" then
+    elseif evt == "SHARD_TRANSFER" then
         refreshAt = nil
         Clock()
-        wasKey, wasZone = layer, shown
+        wasKey, wasZone = layer, isShown
         Forget()
     else
         wasKey, wasZone = nil, nil
         inside = IsInInstance()
         map = ZoneMap()
         Forget()
-        if event == "PLAYER_ENTERING_WORLD" then
+        if evt == "PLAYER_ENTERING_WORLD" then
             Read("target", true)
         end
     end
 end)
 
 local function Build()
-    if frame then
-        return frame
+    if widget then
+        return widget
     end
-    frame = CreateFrame("Frame", "CludesUILayerTracker", UIParent)
-    frame.text = frame:CreateFontString(nil, "OVERLAY")
-    frame.text:SetPoint("CENTER")
-    frame:EnableMouse(true)
-    frame:SetScript("OnEnter", function(self)
-        local info = map and C_Map.GetMapInfo(map)
+    widget = CreateFrame("Frame", "CludesUILayerTracker", UIParent)
+    widget.text = widget:CreateFontString(nil, "OVERLAY")
+    widget.text:SetPoint("CENTER")
+    widget:EnableMouse(true)
+    widget:SetScript("OnEnter", function(self)
+        local details = map and C_Map.GetMapInfo(map)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:SetText(("Layers in %s"):format(info and info.name or "?"), 1, 1, 1)
-        local order = {}
+        GameTooltip:SetText(("Layers in %s"):format(details and details.name or "?"), 1, 1, 1)
+        local sequence = {}
         for _, e in pairs(map and seen[map] and seen[map].entries or {}) do
-            order[#order + 1] = e
+            sequence[#sequence + 1] = e
         end
-        table.sort(order, function(a, b)
+        table.sort(sequence, function(a, b)
             return a.at > b.at
         end)
-        if #order == 0 then
+        if #sequence == 0 then
             GameTooltip:AddLine("Target or mouse over an NPC to read your layer.", 0.6, 0.6, 0.6, true)
         end
-        for _, e in ipairs(order) do
+        for _, e in ipairs(sequence) do
             if e.key == layer then
                 GameTooltip:AddDoubleLine(
                     Label(e.key, e.zone),
@@ -262,26 +262,27 @@ local function Build()
         end
         GameTooltip:Show()
     end)
-    frame:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    frame:Hide()
-    return frame
+    widget:Hide()
+    return widget
 end
 
 local function Apply()
     ev:UnregisterAllEvents()
     if not Enabled() then
-        layer, shown, wasKey, wasZone, refreshAt, pendingKey, pendingGuid = nil, nil, nil, nil, nil, nil, nil
+        layer, isShown, wasKey, wasZone, refreshAt, pendingKey, pendingGuid =
+            nil, nil, nil, nil, nil, nil, nil
         Clock()
-        if frame then
-            frame:Hide()
+        if widget then
+            widget:Hide()
         end
         return
     end
     Build()
     if not CludesUI._unlockActive then
-        F.Place(frame)
+        F.Place(widget)
     end
     for _, e in ipairs({
         "PLAYER_ENTERING_WORLD",
@@ -311,7 +312,7 @@ F.Start(Apply, {
             Build()
             Update()
         end
-        return frame
+        return widget
     end,
     size = function()
         return 160, Get("size") + 8
@@ -323,13 +324,13 @@ F.Start(Apply, {
 -------------------------------------------------------------------------------
 --  Auto-Accept Layer Swap
 -------------------------------------------------------------------------------
-local S = module.Feature("layerSwap", { enabled = false })
+local Stl = module.Feature("layerSwap", { enabled = false })
 local swapEv = CreateFrame("Frame")
 local hooked
 
 local function Accept()
     local prompt = _G.ShardTransferImminentFrame
-    if not (S.Enabled() and IsInGroup() and prompt and prompt:IsShown()) then
+    if not (Stl.Enabled() and IsInGroup() and prompt and prompt:IsShown()) then
         return
     end
     local wasUp = StaticPopup1 and StaticPopup1:IsShown()
@@ -353,8 +354,8 @@ swapEv:SetScript("OnEvent", function()
     Accept()
 end)
 
-S.Start(function()
-    if S.Enabled() then
+Stl.Start(function()
+    if Stl.Enabled() then
         swapEv:RegisterEvent("GROUP_JOINED")
         Hook()
     else
@@ -363,4 +364,4 @@ S.Start(function()
 end)
 
 CludesUI._Layers =
-    { tracker = { Get = Get, Cfg = F.Cfg, Apply = Apply }, swap = { Get = S.Get, Cfg = S.Cfg } }
+    { tracker = { Get = Get, Cfg = F.Cfg, Apply = Apply }, swap = { Get = Stl.Get, Cfg = Stl.Cfg } }

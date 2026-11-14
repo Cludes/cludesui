@@ -10,10 +10,10 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  by spell ID inside an AuraContainer, so the row keeps working in combat,
 --  boss fights and keys. More spell IDs can be added on the settings page.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 -- Spell IDs as the suite's own defensive lists name them (CludesUI_BuffPresets.lua).
-ns.IMMUNITY_DEFAULTS = {
+mod.IMMUNITY_DEFAULTS = {
     642, -- Divine Shield
     1022, -- Blessing of Protection
     204018, -- Blessing of Spellwarding
@@ -22,8 +22,8 @@ ns.IMMUNITY_DEFAULTS = {
     31224, -- Cloak of Shadows
 }
 
-function ns.ImmunitySettings()
-    local p = ns.RaidLeadDB()
+function mod.ImmunitySettings()
+    local p = mod.RaidLeadDB()
     p.immunities = p.immunities or {}
     local s = p.immunities
     if s.enabled == nil then
@@ -36,32 +36,32 @@ end
 
 local function SpellSet()
     local set = {}
-    for _, id in ipairs(ns.IMMUNITY_DEFAULTS) do
-        set[id] = true
+    for _, ident in ipairs(mod.IMMUNITY_DEFAULTS) do
+        set[ident] = true
     end
-    for _, id in ipairs(ns.ImmunitySettings().extra) do
-        set[id] = true
+    for _, ident in ipairs(mod.ImmunitySettings().extra) do
+        set[ident] = true
     end
     return set
 end
 
-local anchor, container, rejected
+local anchorFrame, boxHolder, rejected
 
 local function ApplyPosition()
-    if not anchor or InCombatLockdown() then
+    if not anchorFrame or InCombatLockdown() then
         return
     end
-    local p = ns.ImmunitySettings().pos
-    anchor:ClearAllPoints()
+    local p = mod.ImmunitySettings().pos
+    anchorFrame:ClearAllPoints()
     if p then
-        anchor:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        anchorFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        anchor:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
+        anchorFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
     end
 end
 
 local function Build()
-    if anchor or rejected or InCombatLockdown() then
+    if anchorFrame or rejected or InCombatLockdown() then
         return
     end
     if C_AddOns and not C_AddOns.IsAddOnLoaded("Blizzard_AuraContainer") then
@@ -70,12 +70,12 @@ local function Build()
     if type(AuraContainerSortMethod) ~= "table" then
         return
     end
-    local s = ns.ImmunitySettings()
-    anchor = CreateFrame("Frame", "CludesUIRaidLeadImmunities", UIParent)
-    anchor:SetSize(s.size * 3 + 8, s.size)
+    local s = mod.ImmunitySettings()
+    anchorFrame = CreateFrame("Frame", "CludesUIRaidLeadImmunities", UIParent)
+    anchorFrame:SetSize(s.size * 3 + 8, s.size)
     ApplyPosition()
-    local ok, c = pcall(CreateFrame, "AuraContainer", nil, anchor, "CustomAuraContainerTemplate")
-    if not ok or not c then
+    local success, c = pcall(CreateFrame, "AuraContainer", nil, anchorFrame, "CustomAuraContainerTemplate")
+    if not success or not c then
         rejected = true
         return
     end
@@ -84,21 +84,21 @@ local function Build()
     c:SetFlowLayoutAnchorPoint("TOPLEFT")
     c:SetFlowLayoutGrowthDirection(AnchorUtil.FlowDirection.Right, AnchorUtil.FlowDirection.Down)
     c:SetFlowLayoutPadding(0, 0, 0, 0)
-    c:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
+    c:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, 0)
     local added, err = pcall(c.AddAuraGroup, c, "immunities", "HELPFUL", {
         maxFrameCount = 3,
         sortMethod = AuraContainerSortMethod.Default,
         sortDirection = AuraContainerSortDirection.Normal,
         candidateFilters = { includeSpellIDs = SpellSet() },
-        initializeFrame = function(btn)
-            local icon = btn:CreateTexture(nil, "ARTWORK")
-            icon:SetAllPoints()
-            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            btn:SetIcon(icon)
-            local cd = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
-            cd:SetAllPoints(icon)
+        initializeFrame = function(button)
+            local glyph = button:CreateTexture(nil, "ARTWORK")
+            glyph:SetAllPoints()
+            glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            button:SetIcon(glyph)
+            local cd = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+            cd:SetAllPoints(glyph)
             cd:SetReverse(true)
-            btn:SetDurationCooldown(cd)
+            button:SetDurationCooldown(cd)
         end,
         layout = { elementSpacing = 4, lineSpacing = 4, elementWidth = s.size, elementHeight = s.size },
     })
@@ -108,29 +108,29 @@ local function Build()
         CludesUI.Print("|cff4cc9f0Raid Lead:|r Immunities on You could not be set up: " .. tostring(err))
         return
     end
-    container = c
-    ns.RefreshImmunities()
+    boxHolder = c
+    mod.RefreshImmunities()
 end
 
-function ns.RefreshImmunities()
-    if not container then
+function mod.RefreshImmunities()
+    if not boxHolder then
         return
     end
-    local s = ns.ImmunitySettings()
-    pcall(container.SetAuraGroupCandidateFilters, container, "immunities", { includeSpellIDs = SpellSet() })
+    local s = mod.ImmunitySettings()
+    pcall(boxHolder.SetAuraGroupCandidateFilters, boxHolder, "immunities", { includeSpellIDs = SpellSet() })
     pcall(
-        container.SetAuraGroupLayout,
-        container,
+        boxHolder.SetAuraGroupLayout,
+        boxHolder,
         "immunities",
         { elementSpacing = 4, lineSpacing = 4, elementWidth = s.size, elementHeight = s.size }
     )
     if s.enabled then
-        container:SetUnit("player")
+        boxHolder:SetUnit("player")
     end
-    container:SetEnabled(s.enabled)
+    boxHolder:SetEnabled(s.enabled)
     if not InCombatLockdown() then
-        container:SetShown(s.enabled)
-        anchor:SetSize(s.size * 3 + 8, s.size)
+        boxHolder:SetShown(s.enabled)
+        anchorFrame:SetSize(s.size * 3 + 8, s.size)
     end
 end
 
@@ -143,7 +143,7 @@ ev:SetScript("OnEvent", function()
         return
     end
     Build()
-    if registered or not anchor or not CludesUI.RegisterUnlockElements then
+    if registered or not anchorFrame or not CludesUI.RegisterUnlockElements then
         return
     end
     registered = true
@@ -156,23 +156,23 @@ ev:SetScript("OnEvent", function()
             noAnchorTarget = true,
             noResize = true,
             isHidden = function()
-                return not ns.ImmunitySettings().enabled
+                return not mod.ImmunitySettings().enabled
             end,
             getFrame = function()
-                return anchor
+                return anchorFrame
             end,
             getSize = function()
-                local s = ns.ImmunitySettings()
+                local s = mod.ImmunitySettings()
                 return s.size * 3 + 8, s.size
             end,
-            savePos = function(_, point, relPoint, x, y)
-                ns.ImmunitySettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
+            savePos = function(_, anchorPoint, relPoint, posX, posY)
+                mod.ImmunitySettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
             loadPos = function()
-                return ns.ImmunitySettings().pos
+                return mod.ImmunitySettings().pos
             end,
             clearPos = function()
-                ns.ImmunitySettings().pos = nil
+                mod.ImmunitySettings().pos = nil
             end,
             applyPos = ApplyPosition,
         }),

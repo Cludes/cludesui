@@ -8,7 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the Swiftmend brightness scan over the action buttons. Loads after
 --  CUI_ActionBars_ExtraBars.lua and reads the main file through ns only.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local _G = _G
 local ipairs, pairs = ipairs, pairs
@@ -17,22 +17,22 @@ local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
 local RegisterAttributeDriver = RegisterAttributeDriver
 local GetBindingKey = GetBindingKey
-local EFD = ns.EFD
+local EFD = mod.EFD
 
-local EAB, barButtons = ns.EAB, ns.barButtons
-local LayoutPagingFrame, ResolveBorderThickness = ns.LayoutPagingFrame, ns.ResolveBorderThickness
-local I = ns._internals
+local ABAR, barButtons = mod.EAB, mod.barButtons
+local LayoutPagingFrame, ResolveBorderThickness = mod.LayoutPagingFrame, mod.ResolveBorderThickness
+local Inner = mod._internals
 local BAR_CONFIG, barFrames, hoverStates, _quickKeybindState =
-    I.BAR_CONFIG, I.barFrames, I.hoverStates, I._quickKeybindState
+    Inner.BAR_CONFIG, Inner.barFrames, Inner.hoverStates, Inner._quickKeybindState
 local InitPagingQuickKeybindButton, SyncPagingAlpha, StopFade =
-    I.InitPagingQuickKeybindButton, I.SyncPagingAlpha, I.StopFade
-local SHOWGRID, SetShowGridInsecure = I.SHOWGRID, I.SetShowGridInsecure
+    Inner.InitPagingQuickKeybindButton, Inner.SyncPagingAlpha, Inner.StopFade
+local SHOWGRID, SetShowGridInsecure = Inner.SHOWGRID, Inner.SetShowGridInsecure
 local SafeEnableMouseMotionOnly, ShouldQuickKeybindSurfaceBar =
-    I.SafeEnableMouseMotionOnly, I.ShouldQuickKeybindSurfaceBar
+    Inner.SafeEnableMouseMotionOnly, Inner.ShouldQuickKeybindSurfaceBar
 local EAB_UpdateQuickKeybindButtons -- assigned below, published as ns.EAB_UpdateQuickKeybindButtons
 local _pagingFrame -- set through SetPagingFrame (CUI_ActionBars_Paging.lua)
-I.pagingFrameSetters[#I.pagingFrameSetters + 1] = function(v)
-    _pagingFrame = v
+Inner.pagingFrameSetters[#Inner.pagingFrameSetters + 1] = function(val)
+    _pagingFrame = val
 end
 
 -------------------------------------------------------------------------------
@@ -66,8 +66,8 @@ local function EAB_SetQuickKeybindEffects(btn, show)
 end
 
 EAB_UpdateQuickKeybindButtons = function(show)
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
             for _, btn in ipairs(buttons) do
                 if btn and btn.commandName then
@@ -102,9 +102,9 @@ _quickKeybindState.GetMacroBindingContext = function(command)
         and C_KeyBindings.GetBindingContextForAction(command)
 end
 
-_quickKeybindState.SetOutput = function(text)
+_quickKeybindState.SetOutput = function(textValue)
     if QuickKeybindFrame and QuickKeybindFrame.SetOutputText then
-        QuickKeybindFrame:SetOutputText(text)
+        QuickKeybindFrame:SetOutputText(textValue)
     end
 end
 
@@ -116,14 +116,14 @@ _quickKeybindState.NormalizeMacroBindInput = function(input)
     return input
 end
 
-_quickKeybindState.SetMacroButtonTooltip = function(button)
-    if not button or not button.commandName or not QuickKeybindTooltip then
+_quickKeybindState.SetMacroButtonTooltip = function(btnFrame)
+    if not btnFrame or not btnFrame.commandName or not QuickKeybindTooltip then
         return
     end
-    QuickKeybindTooltip:SetOwner(button, "ANCHOR_RIGHT")
-    GameTooltip_AddHighlightLine(QuickKeybindTooltip, GetBindingName(button.commandName))
+    QuickKeybindTooltip:SetOwner(btnFrame, "ANCHOR_RIGHT")
+    GameTooltip_AddHighlightLine(QuickKeybindTooltip, GetBindingName(btnFrame.commandName))
 
-    local key1 = GetBindingKeyForAction(button.commandName)
+    local key1 = GetBindingKeyForAction(btnFrame.commandName)
     if key1 then
         GameTooltip_AddInstructionLine(QuickKeybindTooltip, key1)
         GameTooltip_AddNormalLine(QuickKeybindTooltip, ESCAPE_TO_UNBIND)
@@ -141,13 +141,13 @@ _quickKeybindState.BindMacroInput = function(input)
     if InCombatLockdown() then
         return
     end
-    local button = _quickKeybindState.hoveredMacroButton
-    if not button then
+    local btnFrame = _quickKeybindState.hoveredMacroButton
+    if not btnFrame then
         return
     end
 
-    _quickKeybindState.UpdateMacroButtonCommand(button)
-    local command = button.commandName
+    _quickKeybindState.UpdateMacroButtonCommand(btnFrame)
+    local command = btnFrame.commandName
     if not command then
         return
     end
@@ -165,7 +165,7 @@ _quickKeybindState.BindMacroInput = function(input)
             SetBinding(old2, nil, context)
         end
         _quickKeybindState.SetOutput(KEY_UNBOUND)
-        _quickKeybindState.SetMacroButtonTooltip(button)
+        _quickKeybindState.SetMacroButtonTooltip(btnFrame)
         return
     end
 
@@ -194,7 +194,7 @@ _quickKeybindState.BindMacroInput = function(input)
         end
     end
 
-    _quickKeybindState.SetMacroButtonTooltip(button)
+    _quickKeybindState.SetMacroButtonTooltip(btnFrame)
 end
 
 _quickKeybindState.GetMacroBindFrame = function()
@@ -205,40 +205,40 @@ _quickKeybindState.GetMacroBindFrame = function()
     -- A plain (insecure) frame we fully own -- never a secure template.
     -- Capturing input on it consumes the keypress, so it never reaches
     -- Blizzard's secure input path (no SetPropagateKeyboardInput, default = consume).
-    local frame = CreateFrame("Frame", nil, UIParent)
-    frame:SetFrameStrata("FULLSCREEN_DIALOG")
-    frame:SetFrameLevel(1000)
-    frame:EnableMouse(true)
-    frame:EnableKeyboard(true)
-    frame:EnableMouseWheel(true)
-    frame:Hide()
+    local widget = CreateFrame("Frame", nil, UIParent)
+    widget:SetFrameStrata("FULLSCREEN_DIALOG")
+    widget:SetFrameLevel(1000)
+    widget:EnableMouse(true)
+    widget:EnableKeyboard(true)
+    widget:EnableMouseWheel(true)
+    widget:Hide()
 
-    frame:SetScript("OnLeave", function(self)
-        local button = self.button
+    widget:SetScript("OnLeave", function(self)
+        local btnFrame = self.button
         self.button = nil
         _quickKeybindState.hoveredMacroButton = nil
         self:Hide()
         if QuickKeybindTooltip then
             QuickKeybindTooltip:Hide()
         end
-        if button then
-            _quickKeybindState.RefreshMacroButton(button)
+        if btnFrame then
+            _quickKeybindState.RefreshMacroButton(btnFrame)
         end
     end)
-    frame:SetScript("OnKeyDown", function(_, key)
+    widget:SetScript("OnKeyDown", function(_, key)
         _quickKeybindState.BindMacroInput(key)
     end)
-    frame:SetScript("OnMouseUp", function(_, mouseButton)
+    widget:SetScript("OnMouseUp", function(_, mouseButton)
         if mouseButton ~= "LeftButton" and mouseButton ~= "RightButton" then
             _quickKeybindState.BindMacroInput(mouseButton)
         end
     end)
-    frame:SetScript("OnMouseWheel", function(_, delta)
+    widget:SetScript("OnMouseWheel", function(_, delta)
         _quickKeybindState.BindMacroInput(delta > 0 and "MOUSEWHEELUP" or "MOUSEWHEELDOWN")
     end)
 
-    _quickKeybindState.macroBindFrame = frame
-    return frame
+    _quickKeybindState.macroBindFrame = widget
+    return widget
 end
 
 -- Controller: while armed over a macro, the overlay also takes Blizzard's
@@ -249,118 +249,118 @@ end
 -- Never while the controller-cursor addon is loaded or the Gamepad interface
 -- style is on: their D-pad and face buttons drive a cursor or the focus and
 -- would bind here instead.
-_quickKeybindState.ArmMacroPad = function(frame)
-    local want = CludesUI.PadNative() and not CludesUI.PadCP() and not CludesUI.PadGamepadUI()
-    if not want and not frame._padOn then
+_quickKeybindState.ArmMacroPad = function(widget)
+    local wanted = CludesUI.PadNative() and not CludesUI.PadCP() and not CludesUI.PadGamepadUI()
+    if not wanted and not widget._padOn then
         return
     end
     -- Binding is out of combat only (BindMacroInput), so is the switch.
     if InCombatLockdown() then
         return
     end
-    if want and not frame._padInit then
-        frame._padInit = true
-        frame:SetScript("OnGamePadButtonDown", function(_, button)
+    if wanted and not widget._padInit then
+        widget._padInit = true
+        widget:SetScript("OnGamePadButtonDown", function(_, btnFrame)
             -- The pointer's click buttons click, as Left/Right do on the mouse.
             if
-                button == GetCVar("GamePadCursorLeftClick")
-                or button == GetCVar("GamePadCursorRightClick")
+                btnFrame == GetCVar("GamePadCursorLeftClick")
+                or btnFrame == GetCVar("GamePadCursorRightClick")
             then
                 return
             end
-            if GetBindingFromClick(button) == "TOGGLEGAMEMENU" then
-                button = "ESCAPE"
+            if GetBindingFromClick(btnFrame) == "TOGGLEGAMEMENU" then
+                btnFrame = "ESCAPE"
             end
-            _quickKeybindState.BindMacroInput(button)
+            _quickKeybindState.BindMacroInput(btnFrame)
         end)
     end
-    frame._padOn = want or nil
-    frame:EnableGamePadButton(want)
+    widget._padOn = wanted or nil
+    widget:EnableGamePadButton(wanted)
 end
 
 _quickKeybindState.HideMacroBindFrame = function()
-    local frame = _quickKeybindState.macroBindFrame
-    if not frame then
+    local widget = _quickKeybindState.macroBindFrame
+    if not widget then
         return
     end
 
-    local button = frame.button
-    frame.button = nil
+    local btnFrame = widget.button
+    widget.button = nil
     _quickKeybindState.hoveredMacroButton = nil
-    frame:Hide()
+    widget:Hide()
     if QuickKeybindTooltip then
         QuickKeybindTooltip:Hide()
     end
-    if button then
-        _quickKeybindState.RefreshMacroButton(button, false)
+    if btnFrame then
+        _quickKeybindState.RefreshMacroButton(btnFrame, false)
     end
 end
 
-_quickKeybindState.UpdateMacroButtonCommand = function(button)
-    if not button or not MacroFrame or not MacroFrame.GetMacroDataIndex or not GetMacroInfo then
+_quickKeybindState.UpdateMacroButtonCommand = function(btnFrame)
+    if not btnFrame or not MacroFrame or not MacroFrame.GetMacroDataIndex or not GetMacroInfo then
         return
     end
 
-    local index
+    local slotPos
     if
-        (button == MacroFrameSelectedMacroButton or button == MacroFrame.SelectedMacroButton)
+        (btnFrame == MacroFrameSelectedMacroButton or btnFrame == MacroFrame.SelectedMacroButton)
         and MacroFrame.GetSelectedIndex
     then
         local selected = MacroFrame:GetSelectedIndex()
         if selected then
-            index = MacroFrame:GetMacroDataIndex(selected)
+            slotPos = MacroFrame:GetMacroDataIndex(selected)
         end
-    elseif button.GetElementData then
-        local data = button:GetElementData()
-        if data then
-            index = MacroFrame:GetMacroDataIndex(data)
+    elseif btnFrame.GetElementData then
+        local payload = btnFrame:GetElementData()
+        if payload then
+            slotPos = MacroFrame:GetMacroDataIndex(payload)
         end
     end
 
-    local name = index and GetMacroInfo(index)
-    button.commandName = name and ("MACRO " .. name) or nil
+    local name = slotPos and GetMacroInfo(slotPos)
+    btnFrame.commandName = name and ("MACRO " .. name) or nil
 end
 
-_quickKeybindState.RefreshMacroButton = function(button, show)
-    if not button then
+_quickKeybindState.RefreshMacroButton = function(btnFrame, show)
+    if not btnFrame then
         return
     end
-    _quickKeybindState.UpdateMacroButtonCommand(button)
+    _quickKeybindState.UpdateMacroButtonCommand(btnFrame)
     if show == nil then
         show = _quickKeybindState.open
     end
-    EAB_SetQuickKeybindEffects(button, show and button:IsShown())
+    EAB_SetQuickKeybindEffects(btnFrame, show and btnFrame:IsShown())
 end
 
 -- On hover (in QKB mode) park the capture overlay over the macro button and arm
 -- its tooltip, so the next key/mouse/wheel press binds to THIS macro.
-_quickKeybindState.SelectMacroButton = function(button)
+_quickKeybindState.SelectMacroButton = function(btnFrame)
     if not _quickKeybindState.open then
         return
     end
-    _quickKeybindState.UpdateMacroButtonCommand(button)
-    if not button.commandName then
+    _quickKeybindState.UpdateMacroButtonCommand(btnFrame)
+    if not btnFrame.commandName then
         return
     end
 
-    _quickKeybindState.hoveredMacroButton = button
+    _quickKeybindState.hoveredMacroButton = btnFrame
 
-    local frame = _quickKeybindState.GetMacroBindFrame()
-    frame.button = button
-    frame:ClearAllPoints()
-    frame:SetAllPoints(button)
-    _quickKeybindState.ArmMacroPad(frame) -- controller buttons, only while armed
-    frame:Show()
+    local widget = _quickKeybindState.GetMacroBindFrame()
+    widget.button = btnFrame
+    widget:ClearAllPoints()
+    widget:SetAllPoints(btnFrame)
+    _quickKeybindState.ArmMacroPad(widget) -- controller buttons, only while armed
+    widget:Show()
 
-    _quickKeybindState.RefreshMacroButton(button, true)
-    if button.QuickKeybindHighlightTexture then
-        button.QuickKeybindHighlightTexture:SetAlpha(1)
+    _quickKeybindState.RefreshMacroButton(btnFrame, true)
+    if btnFrame.QuickKeybindHighlightTexture then
+        btnFrame.QuickKeybindHighlightTexture:SetAlpha(1)
     end
-    _quickKeybindState.SetMacroButtonTooltip(button)
+    _quickKeybindState.SetMacroButtonTooltip(btnFrame)
 end
 
-_quickKeybindState.InitMacroButton = function(button)
-    if not button or EFD(button).qkbMacroHooked or not QuickKeybindButtonTemplateMixin then
+_quickKeybindState.InitMacroButton = function(btnFrame)
+    if not btnFrame or EFD(btnFrame).qkbMacroHooked or not QuickKeybindButtonTemplateMixin then
         return
     end
 
@@ -369,36 +369,36 @@ _quickKeybindState.InitMacroButton = function(button)
     -- key/mouse/wheel input; these hooks only manage hover + visuals. Do NOT
     -- EnableMouseWheel on the Blizzard button -- with no wheel handler it would swallow
     -- scroll and break the macro list; the overlay owns the wheel.
-    if not button.QuickKeybindHighlightTexture then
-        local tex = button:CreateTexture(nil, "OVERLAY")
-        tex:SetAllPoints(button)
-        tex:SetBlendMode("ADD")
-        tex:SetAlpha(0.5)
-        tex:Hide()
-        button.QuickKeybindHighlightTexture = tex
+    if not btnFrame.QuickKeybindHighlightTexture then
+        local texture = btnFrame:CreateTexture(nil, "OVERLAY")
+        texture:SetAllPoints(btnFrame)
+        texture:SetBlendMode("ADD")
+        texture:SetAlpha(0.5)
+        texture:Hide()
+        btnFrame.QuickKeybindHighlightTexture = texture
     end
 
-    button:HookScript("OnShow", function(self)
+    btnFrame:HookScript("OnShow", function(self)
         _quickKeybindState.RefreshMacroButton(self)
     end)
-    button:HookScript("OnHide", function(self)
+    btnFrame:HookScript("OnHide", function(self)
         _quickKeybindState.RefreshMacroButton(self, false)
     end)
-    button:HookScript("OnClick", function(self)
+    btnFrame:HookScript("OnClick", function(self)
         _quickKeybindState.UpdateMacroButtonCommand(self)
         if _quickKeybindState.open then
             _quickKeybindState.SetMacroButtonTooltip(self)
         end
     end)
-    button:HookScript("OnEnter", function(self)
+    btnFrame:HookScript("OnEnter", function(self)
         _quickKeybindState.SelectMacroButton(self)
     end)
-    button:HookScript("OnLeave", function(self)
+    btnFrame:HookScript("OnLeave", function(self)
         -- The overlay sits over the button, so the button's OnLeave fires the
         -- instant we park it. Ignore that case; the overlay's own OnLeave tears
         -- down when the cursor truly leaves.
-        local frame = _quickKeybindState.macroBindFrame
-        if frame and frame:IsShown() and frame.button == self then
+        local widget = _quickKeybindState.macroBindFrame
+        if widget and widget:IsShown() and widget.button == self then
             return
         end
         if _quickKeybindState.hoveredMacroButton == self then
@@ -410,18 +410,18 @@ _quickKeybindState.InitMacroButton = function(button)
         _quickKeybindState.RefreshMacroButton(self)
     end)
 
-    local fd = EFD(button)
+    local fd = EFD(btnFrame)
     fd.qkbMacroHooked = true
-    _quickKeybindState.macroButtons[button] = true
-    _quickKeybindState.RefreshMacroButton(button)
+    _quickKeybindState.macroButtons[btnFrame] = true
+    _quickKeybindState.RefreshMacroButton(btnFrame)
 end
 
 _quickKeybindState.UpdateMacroButtons = function(show)
     if show == false then
         _quickKeybindState.HideMacroBindFrame()
     end
-    for button in pairs(_quickKeybindState.macroButtons) do
-        _quickKeybindState.RefreshMacroButton(button, show)
+    for btnFrame in pairs(_quickKeybindState.macroButtons) do
+        _quickKeybindState.RefreshMacroButton(btnFrame, show)
     end
 end
 
@@ -437,11 +437,11 @@ _quickKeybindState.InitMacroFrame = function()
         return
     end
 
-    _quickKeybindState.macroScrollUpdate = function(frame)
-        if not frame or not frame.GetView or not frame:GetView() then
+    _quickKeybindState.macroScrollUpdate = function(widget)
+        if not widget or not widget.GetView or not widget:GetView() then
             return
         end
-        frame:ForEachFrame(_quickKeybindState.InitMacroButton)
+        widget:ForEachFrame(_quickKeybindState.InitMacroButton)
         _quickKeybindState.UpdateMacroButtons(_quickKeybindState.open)
     end
     C_Timer_After(0, function()
@@ -458,21 +458,21 @@ local function EAB_UpdateQuickKeybindVisibility(show)
         return
     end
 
-    for _, info in ipairs(BAR_CONFIG) do
-        local key = info.key
-        local s = EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars[key]
-        local frame = barFrames[key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local key = details.key
+        local s = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars and ABAR.db.profile.bars[key]
+        local widget = barFrames[key]
 
-        if show and frame and ShouldQuickKeybindSurfaceBar(s) then
-            RegisterAttributeDriver(frame, "state-visibility", "show")
+        if show and widget and ShouldQuickKeybindSurfaceBar(s) then
+            RegisterAttributeDriver(widget, "state-visibility", "show")
             -- Keep the visibility cache in sync with the driver we just set.
             -- Otherwise RefreshRuntimeVisibility on QKB exit sees the stale
             -- pre-QKB string still equal to the recomputed real string and
             -- skips re-registering, leaving conditionally-hidden bars
             -- (notably the Pet Bar on non-pet classes) stuck on "show" until reload.
-            frame._eabLastVisStr = "show"
-            frame:Show()
-            SafeEnableMouseMotionOnly(frame, true)
+            widget._eabLastVisStr = "show"
+            widget:Show()
+            SafeEnableMouseMotionOnly(widget, true)
         end
 
         local buttons = barButtons[key]
@@ -484,7 +484,7 @@ local function EAB_UpdateQuickKeybindVisibility(show)
             end
         end
 
-        if not info.isStance and not info.isPetBar then
+        if not details.isStance and not details.isPetBar then
             if buttons then
                 for _, btn in ipairs(buttons) do
                     if btn then
@@ -500,34 +500,34 @@ local function EAB_UpdateQuickKeybindVisibility(show)
     end)
 
     if show then
-        for _, info in ipairs(BAR_CONFIG) do
-            local key = info.key
-            local s = EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars[key]
-            local frame = barFrames[key]
-            local state = hoverStates[key]
-            if frame and ShouldQuickKeybindSurfaceBar(s) and s.mouseoverEnabled then
-                StopFade(frame, 1)
-                if state then
-                    state.fadeDir = "in"
+        for _, details in ipairs(BAR_CONFIG) do
+            local key = details.key
+            local s = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars and ABAR.db.profile.bars[key]
+            local widget = barFrames[key]
+            local status = hoverStates[key]
+            if widget and ShouldQuickKeybindSurfaceBar(s) and s.mouseoverEnabled then
+                StopFade(widget, 1)
+                if status then
+                    status.fadeDir = "in"
                 end
                 if key == "MainBar" then
                     SyncPagingAlpha(1)
                 end
             end
-            EAB:ApplyAlwaysShowButtons(key)
-            EAB:ApplyClickThroughForBar(key)
+            ABAR:ApplyAlwaysShowButtons(key)
+            ABAR:ApplyClickThroughForBar(key)
         end
     else
         -- Pad verdict back first (the open flag is already down), so the
         -- drivers below compile Hide Bar When Using Gamepad again.
-        EAB._PadSync()
-        EAB:ApplyCombatVisibility()
-        EAB:RefreshRuntimeVisibility()
-        for _, info in ipairs(BAR_CONFIG) do
-            EAB:ApplyAlwaysShowButtons(info.key)
-            EAB:ApplyClickThroughForBar(info.key)
+        ABAR._PadSync()
+        ABAR:ApplyCombatVisibility()
+        ABAR:RefreshRuntimeVisibility()
+        for _, details in ipairs(BAR_CONFIG) do
+            ABAR:ApplyAlwaysShowButtons(details.key)
+            ABAR:ApplyClickThroughForBar(details.key)
         end
-        EAB:RefreshMouseover()
+        ABAR:RefreshMouseover()
     end
 
     if _pagingFrame then
@@ -543,8 +543,8 @@ _quickKeybindState.FinishClose = function()
     EAB_UpdateQuickKeybindVisibility(false)
     -- Restore bar strata if HideDim couldn't (combat-deferred close)
     if _quickKeybindState.strataCache and not InCombatLockdown() then
-        for frame, orig in pairs(_quickKeybindState.strataCache) do
-            frame:SetFrameStrata(orig)
+        for widget, orig in pairs(_quickKeybindState.strataCache) do
+            widget:SetFrameStrata(orig)
         end
         _quickKeybindState.strataCache = nil
     end
@@ -563,11 +563,11 @@ _quickKeybindState.InitButtons = function()
         return
     end
     _quickKeybindState.buttonsInit = true
-    local PP = CludesUI and CludesUI.PP
-    local EG = CludesUI and CludesUI.CLUDES_GREEN
-    for _, info in ipairs(BAR_CONFIG) do
-        if not info.isStance and not info.isPetBar then
-            local buttons = barButtons[info.key]
+    local Pix = CludesUI and CludesUI.PP
+    local ACC = CludesUI and CludesUI.CLUDES_GREEN
+    for _, details in ipairs(BAR_CONFIG) do
+        if not details.isStance and not details.isPetBar then
+            local buttons = barButtons[details.key]
             if buttons then
                 for _, btn in ipairs(buttons) do
                     if btn and btn.commandName then
@@ -584,17 +584,17 @@ _quickKeybindState.InitButtons = function()
                                 if not _quickKeybindState.open then
                                     return
                                 end
-                                if not EG then
+                                if not ACC then
                                     return
                                 end
                                 local fd = EFD(self)
-                                if fd.borders and PP then
-                                    PP.UpdateBorder(self, nil, EG.r, EG.g, EG.b, 0.9)
+                                if fd.borders and Pix then
+                                    Pix.UpdateBorder(self, nil, ACC.r, ACC.g, ACC.b, 0.9)
                                     fd.borderKey = nil
                                 end
-                                local hl = self.HighlightTexture
-                                if hl then
-                                    hl:SetVertexColor(EG.r, EG.g, EG.b, 1)
+                                local highlight = self.HighlightTexture
+                                if highlight then
+                                    highlight:SetVertexColor(ACC.r, ACC.g, ACC.b, 1)
                                 end
                                 fd.qkbHoverActive = true
                             end)
@@ -606,12 +606,12 @@ _quickKeybindState.InitButtons = function()
                                 fd.qkbHoverActive = nil
                                 fd.borderKey = nil
                                 local bk = fd.barKey
-                                if bk and PP then
-                                    EAB:ApplyBordersForBar(bk)
+                                if bk and Pix then
+                                    ABAR:ApplyBordersForBar(bk)
                                 end
-                                local hl = self.HighlightTexture
-                                if hl then
-                                    local p = EAB and EAB.db and EAB.db.profile
+                                local highlight = self.HighlightTexture
+                                if highlight then
+                                    local p = ABAR and ABAR.db and ABAR.db.profile
                                     local useCC = p and p.highlightUseClassColor
                                     local cc = (p and p.highlightCustomColor)
                                         or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
@@ -623,15 +623,15 @@ _quickKeybindState.InitButtons = function()
                                             hr, hg, hb = c2.r, c2.g, c2.b
                                         end
                                     end
-                                    hl:SetVertexColor(hr, hg, hb, 1)
+                                    highlight:SetVertexColor(hr, hg, hb, 1)
                                 end
                                 local bk = EFD(self).barKey
                                 local s = bk
-                                    and EAB.db
-                                    and EAB.db.profile
-                                    and EAB.db.profile.bars
-                                    and EAB.db.profile.bars[bk]
-                                if s and PP then
+                                    and ABAR.db
+                                    and ABAR.db.profile
+                                    and ABAR.db.profile.bars
+                                    and ABAR.db.profile.bars[bk]
+                                if s and Pix then
                                     local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
                                     local cr, cg, cb, ca = c.r, c.g, c.b, c.a or 1
                                     if s.borderClassColor then
@@ -648,9 +648,9 @@ _quickKeybindState.InitButtons = function()
                                         sz = px
                                     end
                                     if sz > 0 then
-                                        PP.UpdateBorder(self, sz, cr, cg, cb, ca)
+                                        Pix.UpdateBorder(self, sz, cr, cg, cb, ca)
                                     else
-                                        PP.HideBorder(self)
+                                        Pix.HideBorder(self)
                                     end
                                 end
                             end)
@@ -676,9 +676,9 @@ _quickKeybindState.GetDimOverlay = function()
     dim:EnableMouse(false)
     dim:SetMouseClickEnabled(false)
     dim:SetMouseMotionEnabled(false)
-    local tex = dim:CreateTexture(nil, "BACKGROUND")
-    tex:SetAllPoints()
-    tex:SetColorTexture(0, 0, 0, 0.40)
+    local texture = dim:CreateTexture(nil, "BACKGROUND")
+    texture:SetAllPoints()
+    texture:SetColorTexture(0, 0, 0, 0.40)
     dim:SetAlpha(0)
     dim:Hide()
     _quickKeybindState.dimFrame = dim
@@ -690,16 +690,16 @@ _quickKeybindState.ShowDim = function()
     dim:Show()
     UIFrameFadeIn(dim, 0.2, dim:GetAlpha(), 1)
     -- Raise action bar frames above the dim
-    for _, info in ipairs(BAR_CONFIG) do
-        local frame = barFrames[info.key]
-        if frame and not InCombatLockdown() then
+    for _, details in ipairs(BAR_CONFIG) do
+        local widget = barFrames[details.key]
+        if widget and not InCombatLockdown() then
             if not _quickKeybindState.strataCache then
                 _quickKeybindState.strataCache = {}
             end
-            if not _quickKeybindState.strataCache[frame] then
-                _quickKeybindState.strataCache[frame] = frame:GetFrameStrata()
+            if not _quickKeybindState.strataCache[widget] then
+                _quickKeybindState.strataCache[widget] = widget:GetFrameStrata()
             end
-            frame:SetFrameStrata("DIALOG")
+            widget:SetFrameStrata("DIALOG")
         end
     end
     if _pagingFrame and not InCombatLockdown() then
@@ -726,8 +726,8 @@ _quickKeybindState.HideDim = function()
     end)
     -- Restore bar strata
     if _quickKeybindState.strataCache and not InCombatLockdown() then
-        for frame, orig in pairs(_quickKeybindState.strataCache) do
-            frame:SetFrameStrata(orig)
+        for widget, orig in pairs(_quickKeybindState.strataCache) do
+            widget:SetFrameStrata(orig)
         end
         _quickKeybindState.strataCache = nil
     end
@@ -745,8 +745,8 @@ _quickKeybindState.Open = function()
     -- Bars hidden by Hide Bar When Using Gamepad come back for binding: the
     -- open flag drops the pad verdict (EAB._PadSync), so they leave the Never
     -- set and surface below like any other runtime-hidden bar.
-    if EAB._padHide then
-        EAB:RefreshRuntimeVisibility()
+    if ABAR._padHide then
+        ABAR:RefreshRuntimeVisibility()
     end
     _quickKeybindState.InitButtons()
     _quickKeybindState.InitMacroFrame()
@@ -772,8 +772,8 @@ local function EAB_QuickKeybindClose()
         -- Mouseover fading is alpha-only and already operates during combat,
         -- so restore that presentation immediately even though secure
         -- visibility drivers still have to wait until combat ends.
-        EAB:RefreshMouseover()
-        ns.CombatQueue.Defer("QuickKeybindClose", function()
+        ABAR:RefreshMouseover()
+        mod.CombatQueue.Defer("QuickKeybindClose", function()
             if _quickKeybindState.closePending then
                 _quickKeybindState.FinishClose()
             elseif _quickKeybindState.open and not (QuickKeybindFrame and QuickKeybindFrame:IsShown()) then
@@ -792,8 +792,8 @@ end
 local _qkbHookFrame = CreateFrame("Frame")
 _qkbHookFrame:RegisterEvent("PLAYER_LOGIN")
 _qkbHookFrame:RegisterEvent("ADDON_LOADED")
-_qkbHookFrame:SetScript("OnEvent", function(self, event, addonName)
-    if event == "PLAYER_LOGIN" then
+_qkbHookFrame:SetScript("OnEvent", function(self, evt, addonName)
+    if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
         C_Timer_After(1, function()
             local qkb = QuickKeybindFrame
@@ -813,14 +813,14 @@ _qkbHookFrame:SetScript("OnEvent", function(self, event, addonName)
                 -- stale closures pointing at an old Lua chunk.
                 local qfd = EFD(qkb)
                 if not qfd.quickKeybindShowHook then
-                    qfd.quickKeybindShowHook = function(frame)
-                        local ffd = EFD(frame)
+                    qfd.quickKeybindShowHook = function(widget)
+                        local ffd = EFD(widget)
                         if ffd.quickKeybindOnShow then
                             ffd.quickKeybindOnShow()
                         end
                     end
-                    qfd.quickKeybindHideHook = function(frame)
-                        local ffd = EFD(frame)
+                    qfd.quickKeybindHideHook = function(widget)
+                        local ffd = EFD(widget)
                         if ffd.quickKeybindOnHide then
                             ffd.quickKeybindOnHide()
                         end
@@ -837,15 +837,14 @@ _qkbHookFrame:SetScript("OnEvent", function(self, event, addonName)
             end
         end)
     elseif
-        event == "ADDON_LOADED" and (addonName == "Blizzard_MacroUI" or addonName == "Blizzard_QuickKeybind")
+        evt == "ADDON_LOADED" and (addonName == "Blizzard_MacroUI" or addonName == "Blizzard_QuickKeybind")
     then
         _quickKeybindState.InitMacroFrame()
         if _quickKeybindState.macroFrameHooked then
             self:UnregisterEvent("ADDON_LOADED")
         end
     end
-end)
--------------------------------------------------------------------------------
+end)-------------------------------------------------------------------------------
 --  Swiftmend Brightness Fix (action bar scan): scans all EABButton slots for
 --  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
 --  rearrangement is covered.
@@ -862,8 +861,8 @@ end)
         if not hook or not iconID then
             return
         end
-        for slot = 1, 180 do
-            local btn = _G["EABButton" .. slot]
+        for slotIndex = 1, 180 do
+            local btn = _G["EABButton" .. slotIndex]
             if btn and btn.icon then
                 local t = btn.icon:GetTexture()
                 if not issecretvalue(t) and t == iconID then
@@ -879,7 +878,7 @@ end)
     if _playerCls ~= "DRUID" then
         return
     end
-    local f = ns.TakeShell()
+    local f = mod.TakeShell()
     f:RegisterEvent("PLAYER_ENTERING_WORLD")
     f:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
     -- Coalesced: one 0.5s rescan window at a time. ACTIONBAR_SLOT_CHANGED can
@@ -898,4 +897,4 @@ end)
     end)
 end)()
 
-ns.EAB_UpdateQuickKeybindButtons = EAB_UpdateQuickKeybindButtons -- called by CUI_ActionBars_ButtonArt.lua
+mod.EAB_UpdateQuickKeybindButtons = EAB_UpdateQuickKeybindButtons -- called by CUI_ActionBars_ButtonArt.lua

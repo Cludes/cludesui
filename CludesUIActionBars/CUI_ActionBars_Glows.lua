@@ -10,7 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CUI_ActionBars_ButtonArt.lua and CUI_ActionBars_Range.lua and reads them
 --  through ns only.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local ipairs, pairs, pcall = ipairs, pairs, pcall
 local floor, min = math.floor, math.min
@@ -18,15 +18,15 @@ local wipe = wipe
 local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
-local PP = CludesUI.PP
-local EFD = ns.EFD
+local Pix = CludesUI.PP
+local EFD = mod.EFD
 
-local EAB, EAB_VTABLE, barButtons = ns.EAB, ns.EAB_VTABLE, ns.barButtons
-local SHAPE_MASKS, SHAPE_BORDERS, SHAPE_BTN_EXPAND = ns.SHAPE_MASKS, ns.SHAPE_BORDERS, ns.SHAPE_BTN_EXPAND
-local I = ns._internals
-local BAR_CONFIG, buttonToBar, barBaseSize = I.BAR_CONFIG, I.buttonToBar, I.barBaseSize
-local SHAPE_EDGE_SCALES = I.SHAPE_EDGE_SCALES
-local GetButtonActionSlot, MaskFrameTextures = I.GetButtonActionSlot, I.MaskFrameTextures
+local ABAR, EAB_VTABLE, barButtons = mod.EAB, mod.EAB_VTABLE, mod.barButtons
+local SHAPE_MASKS, SHAPE_BORDERS, SHAPE_BTN_EXPAND = mod.SHAPE_MASKS, mod.SHAPE_BORDERS, mod.SHAPE_BTN_EXPAND
+local Inner = mod._internals
+local BAR_CONFIG, buttonToBar, barBaseSize = Inner.BAR_CONFIG, Inner.buttonToBar, Inner.barBaseSize
+local SHAPE_EDGE_SCALES = Inner.SHAPE_EDGE_SCALES
+local GetButtonActionSlot, MaskFrameTextures = Inner.GetButtonActionSlot, Inner.MaskFrameTextures
 
 -------------------------------------------------------------------------------
 --  Custom Proc Glow (FlipBook-based, no LibCustomGlow)
@@ -37,7 +37,7 @@ local GetButtonActionSlot, MaskFrameTextures = I.GetButtonActionSlot, I.MaskFram
 -- Loop glow types: the shared glow styles in their shared order (saved procGlowType
 -- values are shared indices).
 local LOOP_GLOW_TYPES = CludesUI.Glows.MakeView({ 1, 2, 3, 4, 5, 6, 7 }).list
-ns.LOOP_GLOW_TYPES = LOOP_GLOW_TYPES
+mod.LOOP_GLOW_TYPES = LOOP_GLOW_TYPES
 
 -- Proc start types: the initial burst animation
 local PROC_START_TYPES = {
@@ -45,13 +45,13 @@ local PROC_START_TYPES = {
     { name = "Blue Proc", atlas = "RotationHelper-ProcStartBlue-Flipbook-2x" },
     { name = "Hide", hide = true },
 }
-ns.PROC_START_TYPES = PROC_START_TYPES
+mod.PROC_START_TYPES = PROC_START_TYPES
 
 -------------------------------------------------------------------------------
 --  Glow Engines provided by shared CludesUI_Glows.lua
 -------------------------------------------------------------------------------
 local _G_Glows = CludesUI.Glows
-ns.Glows = _G_Glows
+mod.Glows = _G_Glows
 
 local function StopAllProceduralGlows(wrapper)
     _G_Glows.StopAllGlows(wrapper)
@@ -59,19 +59,19 @@ end
 
 local _procState = { hooked = false, active = {} }
 
-local function UpdateFlipbook(btn)
-    local region = btn.SpellActivationAlert
-    local fd = EFD(btn)
-    if region and fd.shapeMask and fd.shapeApplied and not EFD(region).shapeMasked then
-        for _, tex in ipairs({ region:GetRegions() }) do
-            if tex and tex.AddMaskTexture then
-                pcall(tex.AddMaskTexture, tex, fd.shapeMask)
+local function UpdateFlipbook(button)
+    local regionFrame = button.SpellActivationAlert
+    local fd = EFD(button)
+    if regionFrame and fd.shapeMask and fd.shapeApplied and not EFD(regionFrame).shapeMasked then
+        for _, texture in ipairs({ regionFrame:GetRegions() }) do
+            if texture and texture.AddMaskTexture then
+                pcall(texture.AddMaskTexture, texture, fd.shapeMask)
             end
         end
-        EFD(region).shapeMasked = true
+        EFD(regionFrame).shapeMasked = true
     end
 
-    local p = EAB.db and EAB.db.profile
+    local p = ABAR.db and ABAR.db.profile
     if not p then
         return
     end
@@ -84,7 +84,7 @@ local function UpdateFlipbook(btn)
     do
         local bk = fd.barKey
         if not bk then
-            local bi = buttonToBar[btn]
+            local bi = buttonToBar[button]
             if bi then
                 bk = bi.barKey
             end
@@ -92,25 +92,25 @@ local function UpdateFlipbook(btn)
         local resolved
         if bk and p.bars and p.bars[bk] then
             local s = p.bars[bk]
-            local base = barBaseSize[bk]
-            local bW = base and base.w or 45
-            local bH = base and base.h or 45
-            local w = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or bW
-            local h = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or bH
-            local shape = ns.AB_LayoutShape(s)
+            local baseValue = barBaseSize[bk]
+            local bW = baseValue and baseValue.w or 45
+            local bH = baseValue and baseValue.h or 45
+            local wid = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or bW
+            local hgt = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or bH
+            local shape = mod.AB_LayoutShape(s)
             if shape ~= "none" and shape ~= "cropped" then
-                w = w + SHAPE_BTN_EXPAND
-                h = h + SHAPE_BTN_EXPAND
+                wid = wid + SHAPE_BTN_EXPAND
+                hgt = hgt + SHAPE_BTN_EXPAND
             end
             if shape == "cropped" then
-                h = h * 0.80
+                hgt = hgt * 0.80
             end
-            _ufBtnW, _ufBtnH = w, h
+            _ufBtnW, _ufBtnH = wid, hgt
             resolved = true
         end
         if not resolved then
-            _ufBtnW = btn:GetWidth() or 45
-            _ufBtnH = btn:GetHeight() or 45
+            _ufBtnW = button:GetWidth() or 45
+            _ufBtnH = button:GetHeight() or 45
         end
     end
 
@@ -118,19 +118,19 @@ local function UpdateFlipbook(btn)
         -- "Default" glow: use our glow library with Modern WoW Glow (#6)
         if not (fd.shapeMask and fd.shapeApplied) then
             if not fd.glowWrapper then
-                local wrapper = CreateFrame("Frame", nil, btn:GetParent() or btn)
-                wrapper:SetAllPoints(btn)
+                local wrapper = CreateFrame("Frame", nil, button:GetParent() or button)
+                wrapper:SetAllPoints(button)
                 wrapper:SetAlpha(0)
                 fd.glowWrapper = wrapper
             end
             local wrapper = fd.glowWrapper
-            wrapper:SetFrameLevel(btn:GetFrameLevel() + 10)
+            wrapper:SetFrameLevel(button:GetFrameLevel() + 10)
             _G_Glows.StopAllGlows(wrapper)
             wrapper:SetAlpha(1)
             wrapper:Show()
             _G_Glows.StartGlow(wrapper, 6, _ufBtnW, 1, 0.788, 0.137, nil, _ufBtnH)
-            if region then
-                region:SetAlpha(0)
+            if regionFrame then
+                regionFrame:SetAlpha(0)
             end
             fd.customizedFlipbook = true
             return
@@ -154,8 +154,8 @@ local function UpdateFlipbook(btn)
     end
     -- Force Shape Glow for custom shapes regardless of user selection
     if fd.shapeMask and fd.shapeApplied then
-        for si, entry in ipairs(LOOP_GLOW_TYPES) do
-            if entry.shapeGlow then
+        for si, record in ipairs(LOOP_GLOW_TYPES) do
+            if record.shapeGlow then
                 loopIdx = si
                 break
             end
@@ -173,12 +173,12 @@ local function UpdateFlipbook(btn)
     end
 
     if not fd.glowWrapper then
-        local wrapper = CreateFrame("Frame", nil, btn:GetParent() or btn)
-        wrapper:SetAllPoints(btn)
+        local wrapper = CreateFrame("Frame", nil, button:GetParent() or button)
+        wrapper:SetAllPoints(button)
         fd.glowWrapper = wrapper
     end
     local wrapper = fd.glowWrapper
-    wrapper:SetFrameLevel(btn:GetFrameLevel() + 10)
+    wrapper:SetFrameLevel(button:GetFrameLevel() + 10)
 
     local wfd = EFD(wrapper)
     if fd.shapeMask and fd.shapeApplied and fd.shapeMaskPath then
@@ -186,8 +186,8 @@ local function UpdateFlipbook(btn)
             wfd.ownMask = wrapper:CreateMaskTexture()
         end
         wfd.ownMask:ClearAllPoints()
-        PP.Point(wfd.ownMask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
-        PP.Point(wfd.ownMask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+        Pix.Point(wfd.ownMask, "TOPLEFT", button, "TOPLEFT", 1, -1)
+        Pix.Point(wfd.ownMask, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
         wfd.ownMask:SetTexture(fd.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         wfd.ownMask:Show()
     elseif wfd.ownMask then
@@ -197,8 +197,8 @@ local function UpdateFlipbook(btn)
     if loopEntry.procedural or loopEntry.buttonGlow or loopEntry.autocast or loopEntry.shapeGlow then
         fd.customizedFlipbook = true
         -- Suppress Blizzard's native flipbook visuals (hide textures, not durations)
-        if region then
-            region:SetAlpha(0)
+        if regionFrame then
+            regionFrame:SetAlpha(0)
         end
 
         StopAllProceduralGlows(wrapper)
@@ -244,7 +244,7 @@ local function UpdateFlipbook(btn)
                 maskPath = maskPath,
                 borderPath = borderPath,
                 shapeMask = fd.shapeMask,
-                anchorFrame = btn,
+                anchorFrame = button,
             })
         end
         if wfd.ownMask then
@@ -254,8 +254,8 @@ local function UpdateFlipbook(btn)
         -- FlipBook styles render on our own wrapper (SetAllPoints on btn) so the
         -- glow matches button size with no scale math; Blizzard's is suppressed.
         fd.customizedFlipbook = true
-        if region then
-            region:SetAlpha(0)
+        if regionFrame then
+            regionFrame:SetAlpha(0)
         end
 
         _G_Glows.StopAllGlows(wrapper)
@@ -266,29 +266,29 @@ local function UpdateFlipbook(btn)
         end
     end
 
-    if region and fd.shapeMask and fd.shapeApplied then
-        MaskFrameTextures(region, fd.shapeMask)
-        EFD(region).shapeMasked = true
+    if regionFrame and fd.shapeMask and fd.shapeApplied then
+        MaskFrameTextures(regionFrame, fd.shapeMask)
+        EFD(regionFrame).shapeMasked = true
     end
 end
 
 -- Resolve the spellID for a button.
 -- Stored on _procState rather than as a file-level local.
-_procState.GetButtonSpellID = function(btn)
-    local slot = GetButtonActionSlot(btn)
-    if not slot or not HasAction or not HasAction(slot) then
+_procState.GetButtonSpellID = function(button)
+    local slotIndex = GetButtonActionSlot(button)
+    if not slotIndex or not HasAction or not HasAction(slotIndex) then
         return nil
     end
-    local actionType, id, subType = GetActionInfo(slot)
+    local actionType, ident, subType = GetActionInfo(slotIndex)
     if actionType == "spell" then
-        return id
+        return ident
     elseif actionType == "macro" then
         if subType == "spell" then
-            return id
+            return ident
         elseif subType == "item" then
             return nil
         end
-        local macroName = GetActionText(slot)
+        local macroName = GetActionText(slotIndex)
         local macroIndex = macroName and GetMacroIndexByName(macroName)
         if macroIndex and macroIndex > 0 then
             if GetMacroItem and GetMacroItem(macroIndex) then
@@ -302,7 +302,7 @@ end
 
 -- Proc glow via SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE events.
 -- Loops all buttons to find matches by spellID.
-function EAB:HookProcGlow()
+function ABAR:HookProcGlow()
     if _procState.hooked then
         return
     end
@@ -310,22 +310,22 @@ function EAB:HookProcGlow()
 
     -- Stock art (Blizzard or Classic): the native glow shows on its own.
     local function IsBlizzStyle()
-        return ns.AB_Style() ~= "cui"
+        return mod.AB_Style() ~= "cui"
     end
 
-    local function ShowGlow(btn)
-        _procState.active[btn] = true
-        UpdateFlipbook(btn)
+    local function ShowGlow(button)
+        _procState.active[button] = true
+        UpdateFlipbook(button)
     end
 
-    local function HideGlow(btn)
-        _procState.active[btn] = nil
-        local gw = EFD(btn).glowWrapper
+    local function HideGlow(button)
+        _procState.active[button] = nil
+        local gw = EFD(button).glowWrapper
         if gw then
             StopAllProceduralGlows(gw)
             gw:Hide()
         end
-        local sa = btn.SpellActivationAlert
+        local sa = button.SpellActivationAlert
         if sa then
             sa:SetAlpha(1)
             sa:Hide()
@@ -336,11 +336,11 @@ function EAB:HookProcGlow()
     -- IsSpellOverlayed ground truth for one button: check ONLY the button's
     -- current spell. A base/override fallback causes false positives (Tempest
     -- glowing because its base Lightning Bolt was overlayed by Stormkeeper).
-    local function UpdateOverlayGlow(btn)
-        local spellID = GetButtonSpellID(btn)
-        if not spellID then
-            if _procState.active[btn] then
-                HideGlow(btn)
+    local function UpdateOverlayGlow(button)
+        local spellId = GetButtonSpellID(button)
+        if not spellId then
+            if _procState.active[button] then
+                HideGlow(button)
             end
             return
         end
@@ -348,14 +348,14 @@ function EAB:HookProcGlow()
         if not ISO then
             return
         end
-        if ISO(spellID) then
-            ShowGlow(btn)
-        elseif _procState.active[btn] then
-            HideGlow(btn)
+        if ISO(spellId) then
+            ShowGlow(button)
+        elseif _procState.active[button] then
+            HideGlow(button)
         end
     end
 
-    local glowFrame = ns.TakeShell()
+    local glowFrame = mod.TakeShell()
     glowFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
     glowFrame:RegisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
     glowFrame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
@@ -371,22 +371,22 @@ function EAB:HookProcGlow()
         _glowRescanPending = false
         _glowLastScan = GetTime()
         -- Clear glows that no longer match, add new ones
-        for btn in pairs(_procState.active) do
-            local id = GetButtonSpellID(btn)
-            if not id or not C_SpellActivationOverlay.IsSpellOverlayed(id) then
-                HideGlow(btn)
+        for button in pairs(_procState.active) do
+            local ident = GetButtonSpellID(button)
+            if not ident or not C_SpellActivationOverlay.IsSpellOverlayed(ident) then
+                HideGlow(button)
             end
         end
         local blizz = IsBlizzStyle()
-        for _, info in ipairs(BAR_CONFIG) do
+        for _, details in ipairs(BAR_CONFIG) do
             -- Dormant bars skip the IsSpellOverlayed walk; their show edge
             -- queues a rescan (ApplyBarDormancy), which runs after the
             -- dormancy map flipped, so a revealed bar is covered here.
-            local buttons = (not ns._eabBarDormant[info.key]) and barButtons[info.key] or nil
+            local buttons = (not mod._eabBarDormant[details.key]) and barButtons[details.key] or nil
             if buttons then
-                for _, btn in ipairs(buttons) do
-                    if btn and (EFD(btn).squared or blizz) and not _procState.active[btn] then
-                        UpdateOverlayGlow(btn)
+                for _, button in ipairs(buttons) do
+                    if button and (EFD(button).squared or blizz) and not _procState.active[button] then
+                        UpdateOverlayGlow(button)
                     end
                 end
             end
@@ -395,19 +395,19 @@ function EAB:HookProcGlow()
     -- Bar-reveal reconcile (ApplyBarDormancy show edge): a proc that fired
     -- while the bar was dormant was skipped by the GLOW_SHOW scan; queue the
     -- same coalesced rescan the slot/page edges use to restore it.
-    ns._eabQueueGlowRescan = function()
+    mod._eabQueueGlowRescan = function()
         if not _glowRescanPending then
             _glowRescanPending = true
             local elapsed = GetTime() - _glowLastScan
             C_Timer_After(elapsed >= 0.25 and 0 or (0.25 - elapsed), GlowRescan)
         end
     end
-    glowFrame:SetScript("OnEvent", function(_, event, arg1)
+    glowFrame:SetScript("OnEvent", function(_, evt, arg1)
         if
-            event == "ACTIONBAR_SLOT_CHANGED"
-            or event == "ACTIONBAR_PAGE_CHANGED"
-            or event == "UPDATE_BONUS_ACTIONBAR"
-            or event == "SPELL_UPDATE_ICON"
+            evt == "ACTIONBAR_SLOT_CHANGED"
+            or evt == "ACTIONBAR_PAGE_CHANGED"
+            or evt == "UPDATE_BONUS_ACTIONBAR"
+            or evt == "SPELL_UPDATE_ICON"
         then
             -- Defer the re-scan: paging may not have finished when the event
             -- fires, so slot->spell mappings are stale. Min 0.25s between
@@ -422,23 +422,27 @@ function EAB:HookProcGlow()
             end
             return
         end
-        local isShow = (event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
+        local isShow = (evt == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW")
         if not isShow then
             -- HIDE: only need to check buttons with active glows (small set).
             -- Collect first to avoid modifying _procState.active during iteration.
             local toHide
-            for btn in pairs(_procState.active) do
-                local id = GetButtonSpellID(btn)
-                if (id and id == arg1) or not id or not C_SpellActivationOverlay.IsSpellOverlayed(id) then
+            for button in pairs(_procState.active) do
+                local ident = GetButtonSpellID(button)
+                if
+                    (ident and ident == arg1)
+                    or not ident
+                    or not C_SpellActivationOverlay.IsSpellOverlayed(ident)
+                then
                     if not toHide then
                         toHide = {}
                     end
-                    toHide[#toHide + 1] = btn
+                    toHide[#toHide + 1] = button
                 end
             end
             if toHide then
-                for i = 1, #toHide do
-                    HideGlow(toHide[i])
+                for idx = 1, #toHide do
+                    HideGlow(toHide[idx])
                 end
             end
         else
@@ -446,14 +450,14 @@ function EAB:HookProcGlow()
             -- skip (nobody can see the glow); the show-edge rescan restores
             -- any proc glow that is still live when the bar reveals.
             local blizz2 = IsBlizzStyle()
-            for _, info in ipairs(BAR_CONFIG) do
-                local buttons = (not ns._eabBarDormant[info.key]) and barButtons[info.key] or nil
+            for _, details in ipairs(BAR_CONFIG) do
+                local buttons = (not mod._eabBarDormant[details.key]) and barButtons[details.key] or nil
                 if buttons then
-                    for _, btn in ipairs(buttons) do
-                        if btn and (EFD(btn).squared or blizz2) then
-                            local id = GetButtonSpellID(btn)
-                            if id and id == arg1 then
-                                ShowGlow(btn)
+                    for _, button in ipairs(buttons) do
+                        if button and (EFD(button).squared or blizz2) then
+                            local ident = GetButtonSpellID(button)
+                            if ident and ident == arg1 then
+                                ShowGlow(button)
                             end
                         end
                     end
@@ -467,15 +471,15 @@ function EAB:HookProcGlow()
     -- (both use SpellActivationAlert) and for Blizzard-styled bars, whose
     -- native glows must show normally.
     if ActionButtonSpellAlertManager and ActionButtonSpellAlertManager.ShowAlert then
-        hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(_, btn)
+        hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(_, button)
             if
-                btn
-                and EFD(btn).squared
+                button
+                and EFD(button).squared
                 and not IsBlizzStyle()
-                and not _procState.active[btn]
-                and btn.SpellActivationAlert
+                and not _procState.active[button]
+                and button.SpellActivationAlert
             then
-                btn.SpellActivationAlert:SetAlpha(0)
+                button.SpellActivationAlert:SetAlpha(0)
             end
         end)
     end
@@ -514,15 +518,16 @@ do
         return GetCVarBool and GetCVarBool("assistedCombatHighlight")
     end
 
-    local function AssistCreate(btn)
-        local ok, hf = pcall(CreateFrame, "Frame", nil, btn, "ActionBarButtonAssistedCombatHighlightTemplate")
-        if not ok or not hf then
+    local function AssistCreate(button)
+        local success, hf =
+            pcall(CreateFrame, "Frame", nil, button, "ActionBarButtonAssistedCombatHighlightTemplate")
+        if not success or not hf then
             return nil
         end
         hf:SetPoint("CENTER")
         -- Above the cooldown swipe, border frame, glowOverlay (+6) and proc
         -- alerts -- same margin the CDM twin uses.
-        hf:SetFrameLevel(btn:GetFrameLevel() + 15)
+        hf:SetFrameLevel(button:GetFrameLevel() + 15)
         -- Freeze on a single flipbook frame until we actually animate (in combat).
         if hf.Flipbook and hf.Flipbook.Anim then
             hf.Flipbook.Anim:Play()
@@ -536,8 +541,8 @@ do
     -- settings of their own (assistGlow*), never the Custom Proc Glow's.
     -- Their colour: the palette's class colour or the picked one; the one
     -- reader for the live buttons and the Animations page preview.
-    ns._AssistCustomGlowColor = function()
-        local p = EAB.db and EAB.db.profile
+    mod._AssistCustomGlowColor = function()
+        local p = ABAR.db and ABAR.db.profile
         local c = p and p.assistGlowColor
         return _G_Glows.ResolveColor(
             _G_Glows.DeriveColorMode(nil, p and p.assistGlowUseClassColor),
@@ -550,8 +555,8 @@ do
         )
     end
 
-    ns._AssistCustomGlowStop = function(btn)
-        local fd = EFD(btn)
+    mod._AssistCustomGlowStop = function(button)
+        local fd = EFD(button)
         local wrapper = fd.assistGlowWrapper
         if wrapper then
             _G_Glows.StopAllGlows(wrapper)
@@ -559,23 +564,23 @@ do
         end
     end
 
-    ns._AssistCustomGlowStart = function(btn, loopIdx, cr, cg, cb, bW, bH)
+    mod._AssistCustomGlowStart = function(button, loopIdx, cr, cg, cb, bW, bH)
         local loopEntry = LOOP_GLOW_TYPES[loopIdx]
         if not loopEntry then
-            ns._AssistCustomGlowStop(btn)
+            mod._AssistCustomGlowStop(button)
             return false
         end
 
-        local fd = EFD(btn)
+        local fd = EFD(button)
         if not fd.assistGlowWrapper then
-            local wrapper = CreateFrame("Frame", nil, btn)
-            wrapper:SetAllPoints(btn)
+            local wrapper = CreateFrame("Frame", nil, button)
+            wrapper:SetAllPoints(button)
             fd.assistGlowWrapper = wrapper
         end
 
         local wrapper = fd.assistGlowWrapper
-        wrapper:SetAllPoints(btn)
-        wrapper:SetFrameLevel(btn:GetFrameLevel() + 15)
+        wrapper:SetAllPoints(button)
+        wrapper:SetFrameLevel(button:GetFrameLevel() + 15)
         wrapper:SetAlpha(1)
 
         local wfd = EFD(wrapper)
@@ -584,8 +589,8 @@ do
                 wfd.ownMask = wrapper:CreateMaskTexture()
             end
             wfd.ownMask:ClearAllPoints()
-            PP.Point(wfd.ownMask, "TOPLEFT", btn, "TOPLEFT", 1, -1)
-            PP.Point(wfd.ownMask, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", -1, 1)
+            Pix.Point(wfd.ownMask, "TOPLEFT", button, "TOPLEFT", 1, -1)
+            Pix.Point(wfd.ownMask, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
             wfd.ownMask:SetTexture(fd.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
             wfd.ownMask:Show()
         elseif wfd.ownMask then
@@ -600,7 +605,7 @@ do
             maskPath = fd.shapeMaskPath or SHAPE_MASKS[fd.shapeName or ""],
             borderPath = SHAPE_BORDERS[fd.shapeName or ""],
             shapeMask = fd.shapeMask,
-            anchorFrame = btn,
+            anchorFrame = button,
         })
         return true
     end
@@ -609,8 +614,8 @@ do
     -- needs it on its own: with the overlay style picked, or with Blizzard
     -- painting its own ring on a hovered button, our ring must go while the
     -- overlay stays up.
-    ns._AssistRingHide = function(btn)
-        local hf = EFD(btn).assistHL
+    mod._AssistRingHide = function(button)
+        local hf = EFD(button).assistHL
         if not hf then
             return
         end
@@ -628,28 +633,28 @@ do
     -- flipbook ring. Created lazily, so nobody on the ring-only default pays
     -- for it.
     -- style: nil/1 = hide, 2 = overlay only, 3 = overlay under the ring.
-    ns._AssistOverlay = function(btn, style)
-        local fd = EFD(btn)
-        local ov = fd.assistOverlay
-        if not style or style == 1 then
-            if ov then
-                ov:Hide()
+    mod._AssistOverlay = function(button, look)
+        local fd = EFD(button)
+        local shade = fd.assistOverlay
+        if not look or look == 1 then
+            if shade then
+                shade:Hide()
             end
             return
         end
-        local p = EAB.db and EAB.db.profile
-        if not ov then
-            ov = CreateFrame("Frame", nil, btn)
-            ov.tex = ov:CreateTexture(nil, "OVERLAY")
-            ov.tex:SetAllPoints(ov)
+        local p = ABAR.db and ABAR.db.profile
+        if not shade then
+            shade = CreateFrame("Frame", nil, button)
+            shade.tex = shade:CreateTexture(nil, "OVERLAY")
+            shade.tex:SetAllPoints(shade)
             -- Rounded corners: the addon's own Curved Square mask, so the tint
             -- follows the button art instead of ending in hard 90-degree
             -- corners. Only used when no button shape mask is in play -- that
             -- one already defines the silhouette.
-            ov.roundMask = ov:CreateMaskTexture()
-            ov.roundMask:SetAllPoints(ov)
-            ov.roundMask:SetTexture(SHAPE_MASKS.csquare, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            fd.assistOverlay = ov
+            shade.roundMask = shade:CreateMaskTexture()
+            shade.roundMask:SetAllPoints(shade)
+            shade.roundMask:SetTexture(SHAPE_MASKS.csquare, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            fd.assistOverlay = shade
         end
         -- Footprint. Alone (style 2) the tint covers exactly the button. Under
         -- the ring (style 3) it grows or shrinks with the ring's outset so the
@@ -658,48 +663,48 @@ do
         -- Cropped Buttons fitting the ring (ns._AssistFit), the tint takes the
         -- same top and bottom pull-in so the two stay flush. Change-guarded: the
         -- rescan runs several times a second while a suggestion is up.
-        local pad = (style == 3) and ((p and p.assistGlowOutset) or 0) or 0
+        local pad = (look == 3) and ((p and p.assistGlowOutset) or 0) or 0
         local padY = pad
-        if style == 3 and fd.cropped and p and p.assistGlowFitCropped then
-            padY = pad - ns._ASSIST_CROP_TRIM / 2
+        if look == 3 and fd.cropped and p and p.assistGlowFitCropped then
+            padY = pad - mod._ASSIST_CROP_TRIM / 2
         end
-        local ofd = EFD(ov)
+        local ofd = EFD(shade)
         if ofd.pad ~= pad or ofd.padY ~= padY then
             ofd.pad, ofd.padY = pad, padY
-            ov:ClearAllPoints()
-            ov:SetPoint("TOPLEFT", btn, "TOPLEFT", -pad, padY)
-            ov:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", pad, -padY)
+            shade:ClearAllPoints()
+            shade:SetPoint("TOPLEFT", button, "TOPLEFT", -pad, padY)
+            shade:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", pad, -padY)
         end
         -- Re-assert: bar layout can change the button's frame level after create.
-        ov:SetFrameLevel(btn:GetFrameLevel() + 14)
+        shade:SetFrameLevel(button:GetFrameLevel() + 14)
         local c = (p and p.assistGlowOverlayColor) or { r = 0.15, g = 0.5, b = 1 }
         local a = (p and p.assistGlowOverlayAlpha) or 30
-        ov.tex:SetColorTexture(c.r or 0.15, c.g or 0.5, c.b or 1, a / 100)
+        shade.tex:SetColorTexture(c.r or 0.15, c.g or 0.5, c.b or 1, a / 100)
         -- Custom button shapes win over the rounded corners: a circle mask must
         -- not end up as a rounded square. Keyed on the mask OBJECT, not a
         -- boolean -- a shape change swaps the mask, and the stale one has to be
         -- removed before the new one goes on. Applied to the tint texture
         -- directly rather than via MaskFrameTextures: that walks GetRegions(),
         -- which here would also hand the mask to our own roundMask region.
-        local want = (fd.shapeMask and fd.shapeApplied) and fd.shapeMask or ov.roundMask
-        if ofd.shapeMasked ~= want then
+        local wanted = (fd.shapeMask and fd.shapeApplied) and fd.shapeMask or shade.roundMask
+        if ofd.shapeMasked ~= wanted then
             if ofd.shapeMasked then
-                pcall(ov.tex.RemoveMaskTexture, ov.tex, ofd.shapeMasked)
+                pcall(shade.tex.RemoveMaskTexture, shade.tex, ofd.shapeMasked)
             end
-            pcall(ov.tex.AddMaskTexture, ov.tex, want)
-            ofd.shapeMasked = want
+            pcall(shade.tex.AddMaskTexture, shade.tex, wanted)
+            ofd.shapeMasked = wanted
         end
-        ov:Show()
+        shade:Show()
     end
 
     -- Full teardown of everything we paint for one button. Also un-fades
     -- Blizzard's own ring: the overlay-only style parks it at alpha 0, and a
     -- button that stops being the suggestion (or the CVar going off) must not
     -- leave it invisible for whoever shows it next.
-    local function AssistHide(btn)
-        local fd = EFD(btn)
+    local function AssistHide(button)
+        local fd = EFD(button)
         if fd.assistCustomActive then
-            ns._AssistCustomGlowStop(btn)
+            mod._AssistCustomGlowStop(button)
             fd.assistCustomActive = nil
             fd.assistCustomType = nil
             fd.assistCustomMask = nil
@@ -707,9 +712,9 @@ do
             fd.assistCustomW, fd.assistCustomH = nil, nil
             fd.assistCustomR, fd.assistCustomG, fd.assistCustomB = nil, nil, nil
         end
-        ns._AssistRingHide(btn)
-        ns._AssistOverlay(btn)
-        local bf = btn.AssistedCombatHighlightFrame
+        mod._AssistRingHide(button)
+        mod._AssistOverlay(button)
+        local bf = button.AssistedCombatHighlightFrame
         if bf then
             bf:SetAlpha(1)
         end
@@ -722,11 +727,11 @@ do
     -- above zero: SetScale(0) is invalid, and a large negative outset on a
     -- small button would otherwise reach it.
     -- Stored on ns rather than as a local.
-    ns._AssistScale = function(btn)
-        local w = btn:GetWidth() or 45
-        local p = EAB.db and EAB.db.profile
+    mod._AssistScale = function(button)
+        local wid = button:GetWidth() or 45
+        local p = ABAR.db and ABAR.db.profile
         local outset = (p and p.assistGlowOutset) or 0
-        local s = (w + outset * 2) / 45
+        local s = (wid + outset * 2) / 45
         if s < 0.05 then
             s = 0.05
         end
@@ -750,10 +755,10 @@ do
     -- the ring (the caller then skips the width scale).
     -- The fitted ring's height trim: 2 px pulled in at the top and at the
     -- bottom. The Ring + Overlay tint reads it too, to stay flush.
-    ns._ASSIST_CROP_TRIM = 4
-    ns._AssistFit = function(btn, ring, cropped)
-        local p = EAB.db and EAB.db.profile
-        local rfd = ns._eabFD[ring]
+    mod._ASSIST_CROP_TRIM = 4
+    mod._AssistFit = function(button, ring, cropped)
+        local p = ABAR.db and ABAR.db.profile
+        local rfd = mod._eabFD[ring]
         if not (cropped and p and p.assistGlowFitCropped) then
             if rfd and rfd.fitW then
                 rfd.fitW, rfd.fitH = nil, nil
@@ -774,22 +779,22 @@ do
             end
         end
         local outset = p.assistGlowOutset or 0
-        local w = btn:GetWidth() + outset * 2
-        local h = btn:GetHeight() + outset * 2 - ns._ASSIST_CROP_TRIM
-        if w < 1 then
-            w = 1
+        local wid = button:GetWidth() + outset * 2
+        local hgt = button:GetHeight() + outset * 2 - mod._ASSIST_CROP_TRIM
+        if wid < 1 then
+            wid = 1
         end
-        if h < 1 then
-            h = 1
+        if hgt < 1 then
+            hgt = 1
         end
         if ring:GetScale() ~= 1 then
             ring:SetScale(1)
         end
-        if rfd.fitW ~= w or rfd.fitH ~= h then
-            rfd.fitW, rfd.fitH = w, h
-            ring:SetSize(w, h)
+        if rfd.fitW ~= wid or rfd.fitH ~= hgt then
+            rfd.fitW, rfd.fitH = wid, hgt
+            ring:SetSize(wid, hgt)
             if fb and rfd.fbW and rfd.origW > 0 and rfd.origH > 0 then
-                fb:SetSize(rfd.fbW * w / rfd.origW, rfd.fbH * h / rfd.origH)
+                fb:SetSize(rfd.fbW * wid / rfd.origW, rfd.fbH * hgt / rfd.origH)
             end
         end
         return true
@@ -799,9 +804,9 @@ do
     -- Owns the "Blizzard already draws its own ring here" case too (it used to
     -- live at the call site): the overlay is ours either way, so the two
     -- decisions have to be made together.
-    local function AssistShow(btn)
-        local fd = EFD(btn)
-        local p = EAB.db and EAB.db.profile
+    local function AssistShow(button)
+        local fd = EFD(button)
+        local p = ABAR.db and ABAR.db.profile
         local customType = (p and p.assistGlowType) or 0
         if customType < 1 or customType > #LOOP_GLOW_TYPES or not LOOP_GLOW_TYPES[customType] then
             customType = 0
@@ -809,29 +814,29 @@ do
 
         if customType > 0 and _assistInCombat then
             if fd.shapeMask and fd.shapeApplied then
-                for si, entry in ipairs(LOOP_GLOW_TYPES) do
-                    if entry.shapeGlow then
+                for si, record in ipairs(LOOP_GLOW_TYPES) do
+                    if record.shapeGlow then
                         customType = si
                         break
                     end
                 end
             end
-            local ov = fd.assistOverlay
-            if ov and ov:IsShown() then
-                ns._AssistOverlay(btn)
+            local shade = fd.assistOverlay
+            if shade and shade:IsShown() then
+                mod._AssistOverlay(button)
             end
             local hf = fd.assistHL
             if hf and hf:IsShown() then
-                ns._AssistRingHide(btn)
+                mod._AssistRingHide(button)
             end
 
-            local bf = btn.AssistedCombatHighlightFrame
+            local bf = button.AssistedCombatHighlightFrame
             if bf then
                 bf:SetAlpha(0)
             end
 
-            local cr, cg, cb = ns._AssistCustomGlowColor()
-            local bW, bH = btn:GetWidth() or 45, btn:GetHeight() or 45
+            local cr, cg, cb = mod._AssistCustomGlowColor()
+            local bW, bH = button:GetWidth() or 45, button:GetHeight() or 45
             if
                 fd.assistCustomActive
                 and fd.assistCustomType == customType
@@ -848,7 +853,7 @@ do
                 return
             end
 
-            if ns._AssistCustomGlowStart(btn, customType, cr, cg, cb, bW, bH) then
+            if mod._AssistCustomGlowStart(button, customType, cr, cg, cb, bW, bH) then
                 fd.assistCustomActive = true
                 fd.assistCustomType = customType
                 fd.assistCustomW, fd.assistCustomH = bW, bH
@@ -860,26 +865,26 @@ do
         end
 
         if fd.assistCustomActive then
-            ns._AssistCustomGlowStop(btn)
+            mod._AssistCustomGlowStop(button)
             fd.assistCustomActive = nil
             fd.assistCustomType = nil
             fd.assistCustomMask = nil
             fd.assistCustomShapeMask = nil
             fd.assistCustomW, fd.assistCustomH = nil, nil
             fd.assistCustomR, fd.assistCustomG, fd.assistCustomB = nil, nil, nil
-            local bf = btn.AssistedCombatHighlightFrame
+            local bf = button.AssistedCombatHighlightFrame
             if bf then
                 bf:SetAlpha(1)
             end
         end
 
-        local style = (p and p.assistGlowStyle) or 1
+        local look = (p and p.assistGlowStyle) or 1
         -- A custom glow runs in combat only: outside it, Blizzard's frozen ring.
-        if customType > 0 or style == 0 then
-            style = 1
+        if customType > 0 or look == 0 then
+            look = 1
         end
 
-        ns._AssistOverlay(btn, style)
+        mod._AssistOverlay(button, look)
 
         -- Blizzard may show its own ring on a hovered button (candidate
         -- re-add). Defer to it so two identical shines never stack, but keep it
@@ -887,12 +892,12 @@ do
         -- fade it rather than Hide() it: their manager re-shows it, so a Hide
         -- would just be undone. Alpha is re-asserted on every pass, so it
         -- self-corrects when the style changes back.
-        local bf = btn.AssistedCombatHighlightFrame
+        local bf = button.AssistedCombatHighlightFrame
         if bf and bf:IsShown() then
-            ns._AssistRingHide(btn)
-            bf:SetAlpha(style == 2 and 0 or 1)
-            if fd.squared and not ns._AssistFit(btn, bf, fd.cropped) then
-                local s = ns._AssistScale(btn)
+            mod._AssistRingHide(button)
+            bf:SetAlpha(look == 2 and 0 or 1)
+            if fd.squared and not mod._AssistFit(button, bf, fd.cropped) then
+                local s = mod._AssistScale(button)
                 if bf:GetScale() ~= s then
                     bf:SetScale(s)
                 end
@@ -900,24 +905,24 @@ do
             return
         end
 
-        if style == 2 then
-            ns._AssistRingHide(btn)
+        if look == 2 then
+            mod._AssistRingHide(button)
             return
         end
 
         local hf = fd.assistHL
         if not hf then
-            hf = AssistCreate(btn)
+            hf = AssistCreate(button)
             if not hf then
                 return
             end
             fd.assistHL = hf
         end
-        if not ns._AssistFit(btn, hf, fd.cropped) then
-            hf:SetScale(ns._AssistScale(btn))
+        if not mod._AssistFit(button, hf, fd.cropped) then
+            hf:SetScale(mod._AssistScale(button))
         end
         -- Re-assert: bar layout can change the button's frame level after create.
-        hf:SetFrameLevel(btn:GetFrameLevel() + 15)
+        hf:SetFrameLevel(button:GetFrameLevel() + 15)
         hf:Show()
         if hf.Flipbook and hf.Flipbook.Anim then
             if _assistInCombat then
@@ -932,28 +937,28 @@ do
     -- AssistedCombatManager:GetActionButtonSpellForAssistedHighlight.
     -- Attribute first: secure paging writes "action", the authoritative slot
     -- (see ForceCooldownPaint); btn.action is a derived mirror.
-    local function ButtonSpell(btn)
-        local action = btn.GetAttribute and btn:GetAttribute("action")
+    local function ButtonSpell(button)
+        local action = button.GetAttribute and button:GetAttribute("action")
         if action == nil then
-            action = btn.action
+            action = button.action
         end
         if action == nil then
             return nil
         end
-        local atype, id, subType = GetActionInfo(action)
+        local atype, ident, subType = GetActionInfo(action)
         if atype == "spell" and subType ~= "assistedcombat" then
-            return id
+            return ident
         elseif atype == "macro" and subType == "spell" then
-            return id
+            return ident
         end
         return nil
     end
 
     local function UpdateAssistHighlights()
         if not AssistCVarOn() then
-            for btn in pairs(_assistGlowed) do
-                AssistHide(btn)
-                _assistGlowed[btn] = nil
+            for button in pairs(_assistGlowed) do
+                AssistHide(button)
+                _assistGlowed[button] = nil
             end
             return
         end
@@ -967,24 +972,24 @@ do
             -- guards item/macro pseudo-ids out of GetBaseSpell.
             local GetBaseSpell = C_Spell and C_Spell.GetBaseSpell
             local suggestedBase = (GetBaseSpell and GetBaseSpell(suggested)) or suggested
-            for _, info in ipairs(BAR_CONFIG) do
-                if not info.isStance and not info.isPetBar then
-                    local buttons = barButtons[info.key]
+            for _, details in ipairs(BAR_CONFIG) do
+                if not details.isStance and not details.isPetBar then
+                    local buttons = barButtons[details.key]
                     if buttons then
-                        for i = 1, #buttons do
-                            local btn = buttons[i]
-                            if btn and btn:IsShown() then
-                                local sid = ButtonSpell(btn)
-                                if sid then
-                                    local match = (sid == suggested) or (sid == suggestedBase)
-                                    if not match and GetBaseSpell and sid > 0 then
-                                        match = GetBaseSpell(sid) == suggestedBase
+                        for idx = 1, #buttons do
+                            local button = buttons[idx]
+                            if button and button:IsShown() then
+                                local spellRef = ButtonSpell(button)
+                                if spellRef then
+                                    local match = (spellRef == suggested) or (spellRef == suggestedBase)
+                                    if not match and GetBaseSpell and spellRef > 0 then
+                                        match = GetBaseSpell(spellRef) == suggestedBase
                                     end
                                     if match then
                                         -- AssistShow owns the style decision and
                                         -- the defer-to-Blizzard's-own-ring case.
-                                        AssistShow(btn)
-                                        newSet[btn] = true
+                                        AssistShow(button)
+                                        newSet[button] = true
                                     end
                                 end
                             end
@@ -993,14 +998,14 @@ do
                 end
             end
         end
-        for btn in pairs(_assistGlowed) do
-            if not newSet[btn] then
-                AssistHide(btn)
+        for button in pairs(_assistGlowed) do
+            if not newSet[button] then
+                AssistHide(button)
             end
         end
         _assistGlowed = newSet
     end
-    ns.UpdateAssistHighlights = UpdateAssistHighlights
+    mod.UpdateAssistHighlights = UpdateAssistHighlights
 
     -- Coalesced re-run: OnActionChanged fires per button on page swaps and in
     -- SLOT_CHANGED storms dozens of times per second (mouseover-conditional
@@ -1024,7 +1029,7 @@ do
             UpdateAssistHighlights()
         end)
     end
-    ns.QueueAssistRescan = QueueAssistRescan
+    mod.QueueAssistRescan = QueueAssistRescan
 
     local function SyncAssistCombat()
         local inCombat = (InCombatLockdown() or UnitAffectingCombat("player")) and true or false
@@ -1032,17 +1037,17 @@ do
         _assistInCombat = inCombat
         -- Exposed for the per-button rotation hook (different scope), which
         -- re-freezes Blizzard's swirl after its UpdateState calls.
-        ns._assistCombatState = _assistInCombat
+        mod._assistCombatState = _assistInCombat
         -- A custom glow runs in combat only (the frozen ring stands in outside
         -- it), so its buttons are painted again on the edge; the stock styles
         -- only start or stop their flipbook below.
-        local p = EAB.db and EAB.db.profile
+        local p = ABAR.db and ABAR.db.profile
         local repaint = changed and ((p and p.assistGlowType) or 0) > 0
-        for btn in pairs(_assistGlowed) do
+        for button in pairs(_assistGlowed) do
             if repaint then
-                AssistShow(btn)
+                AssistShow(button)
             end
-            local hf = EFD(btn).assistHL
+            local hf = EFD(button).assistHL
             if hf and hf:IsShown() and hf.Flipbook and hf.Flipbook.Anim then
                 if _assistInCombat then
                     if not hf.Flipbook.Anim:IsPlaying() then
@@ -1084,12 +1089,12 @@ do
                 QueueAssistRescan()
             end, "EAB_AssistHighlight_Action")
         end
-        local cf = ns.TakeShell()
-        cf:RegisterEvent("PLAYER_REGEN_ENABLED")
-        cf:RegisterEvent("PLAYER_REGEN_DISABLED")
-        cf:RegisterEvent("PLAYER_ENTERING_WORLD")
-        cf:SetScript("OnEvent", function(_, event)
-            if event == "PLAYER_ENTERING_WORLD" then
+        local castFrame = mod.TakeShell()
+        castFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        castFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        castFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        castFrame:SetScript("OnEvent", function(_, evt)
+            if evt == "PLAYER_ENTERING_WORLD" then
                 SyncAssistCombat()
                 UpdateAssistHighlights()
             else
@@ -1101,52 +1106,52 @@ do
     InstallAssistHook()
 end
 
-function EAB:RefreshProcGlows()
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+function ABAR:RefreshProcGlows()
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and _procState.active[btn] then
-                    UpdateFlipbook(btn)
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button and _procState.active[button] then
+                    UpdateFlipbook(button)
                 end
             end
         end
     end
 end
 
-function EAB:ScanExistingProcs()
+function ABAR:ScanExistingProcs()
     local found = 0
-    local total = 0
-    local blizz = ns.AB_Style() ~= "cui"
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    local sum = 0
+    local blizz = mod.AB_Style() ~= "cui"
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and (EFD(btn).squared or blizz) then
-                    total = total + 1
-                    local spellID = _procState.GetButtonSpellID(btn)
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button and (EFD(button).squared or blizz) then
+                    sum = sum + 1
+                    local spellId = _procState.GetButtonSpellID(button)
                     local ISO = C_SpellActivationOverlay and C_SpellActivationOverlay.IsSpellOverlayed
-                    local overlayed = spellID and ISO and ISO(spellID)
-                    if not overlayed and spellID and ISO then
+                    local overlayed = spellId and ISO and ISO(spellId)
+                    if not overlayed and spellId and ISO then
                         if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
-                            local ovr = C_SpellBook.FindSpellOverrideByID(spellID)
-                            if ovr and ovr > 0 and ovr ~= spellID then
+                            local ovr = C_SpellBook.FindSpellOverrideByID(spellId)
+                            if ovr and ovr > 0 and ovr ~= spellId then
                                 overlayed = ISO(ovr)
                             end
                         end
                         if not overlayed and C_Spell and C_Spell.GetBaseSpell then
-                            local base = C_Spell.GetBaseSpell(spellID)
-                            if base and base > 0 and base ~= spellID then
-                                overlayed = ISO(base)
+                            local baseValue = C_Spell.GetBaseSpell(spellId)
+                            if baseValue and baseValue > 0 and baseValue ~= spellId then
+                                overlayed = ISO(baseValue)
                             end
                         end
                     end
                     if overlayed then
                         found = found + 1
-                        _procState.active[btn] = true
-                        UpdateFlipbook(btn)
+                        _procState.active[button] = true
+                        UpdateFlipbook(button)
                     end
                 end
             end
@@ -1157,8 +1162,8 @@ end
 local EDGE_TEXTURE = "Interface\\AddOns\\CludesUIActionBars\\Media\\edge.png"
 
 local function GetClassColor()
-    local _, class = UnitClass("player")
-    local c = RAID_CLASS_COLORS[class]
+    local _, classFile = UnitClass("player")
+    local c = RAID_CLASS_COLORS[classFile]
     if c then
         return c.r, c.g, c.b
     end
@@ -1210,9 +1215,9 @@ local function EnforceShapeEdgeSingle(cd, edgeScale, useCircular)
     end
 end
 
-local function EnforceShapeEdge(btn)
-    local efd = EFD(btn)
-    if not btn or not efd.shapeApplied then
+local function EnforceShapeEdge(button)
+    local efd = EFD(button)
+    if not button or not efd.shapeApplied then
         return
     end
     local shapeName = efd.shapeName
@@ -1221,22 +1226,22 @@ local function EnforceShapeEdge(btn)
     end
     local edgeScale = SHAPE_EDGE_SCALES[shapeName] or 0.60
     local useCircular = (shapeName ~= "square" and shapeName ~= "csquare")
-    EnforceShapeEdgeSingle(btn.cooldown, edgeScale, useCircular)
-    EnforceShapeEdgeSingle(btn.chargeCooldown, edgeScale, useCircular)
+    EnforceShapeEdgeSingle(button.cooldown, edgeScale, useCircular)
+    EnforceShapeEdgeSingle(button.chargeCooldown, edgeScale, useCircular)
 end
 
-local function ApplyButtonCooldownEdge(btn, edgeSize, cr, cg, cb, ca)
+local function ApplyButtonCooldownEdge(button, edgeSize, cr, cg, cb, ca)
     -- Square/csquare use the user's edge size; other shapes force 1.0
     -- since EnforceShapeEdge will override with per-shape scale anyway.
-    local efd = EFD(btn)
+    local efd = EFD(button)
     local sn = efd.shapeApplied and efd.shapeName
     local sz = edgeSize
     if sn and sn ~= "square" and sn ~= "csquare" then
         sz = 1.0
     end
-    ApplySingleCooldownEdge(btn.cooldown, sz, cr, cg, cb, ca)
-    ApplySingleCooldownEdge(btn.chargeCooldown, sz, cr, cg, cb, ca)
-    EnforceShapeEdge(btn)
+    ApplySingleCooldownEdge(button.cooldown, sz, cr, cg, cb, ca)
+    ApplySingleCooldownEdge(button.chargeCooldown, sz, cr, cg, cb, ca)
+    EnforceShapeEdge(button)
 end
 
 -- Hook to re-apply edge settings whenever Blizzard resets a cooldown.
@@ -1251,7 +1256,7 @@ local _cdEdge = {
 
 local function _FlushCDPatch()
     _cdEdge.timerScheduled = false
-    local p = EAB.db and EAB.db.profile
+    local p = ABAR.db and ABAR.db.profile
     if not p then
         wipe(_cdEdge.pending)
         _cdEdge.pendingCount = 0
@@ -1259,26 +1264,26 @@ local function _FlushCDPatch()
     end
     local cr, cg, cb, ca = ResolveCooldownEdgeColor(p)
     local baseSz = p.cooldownEdgeSize or 2.1
-    for cdFrame, btn in pairs(_cdEdge.pending) do
+    for cdFrame, button in pairs(_cdEdge.pending) do
         if cdFrame and not cdFrame:IsForbidden() then
             local sz = baseSz
-            local bfd = EFD(btn)
+            local bfd = EFD(button)
             local sn = bfd.shapeApplied and bfd.shapeName
             if sn and sn ~= "square" and sn ~= "csquare" then
                 sz = 1.0
             end
             ApplySingleCooldownEdge(cdFrame, sz, cr, cg, cb, ca)
             if bfd.shapeMaskPath and bfd.shapeApplied then
-                local mask = bfd.shapeMask
-                if mask then
-                    pcall(cdFrame.RemoveMaskTexture, cdFrame, mask)
-                    pcall(cdFrame.AddMaskTexture, cdFrame, mask)
+                local maskTex = bfd.shapeMask
+                if maskTex then
+                    pcall(cdFrame.RemoveMaskTexture, cdFrame, maskTex)
+                    pcall(cdFrame.AddMaskTexture, cdFrame, maskTex)
                 end
                 if cdFrame.SetSwipeTexture then
                     pcall(cdFrame.SetSwipeTexture, cdFrame, bfd.shapeMaskPath)
                 end
             end
-            EnforceShapeEdge(btn)
+            EnforceShapeEdge(button)
             EFD(cdFrame).edgeDone = true
         end
     end
@@ -1286,14 +1291,14 @@ local function _FlushCDPatch()
     _cdEdge.pendingCount = 0
 end
 
-local function HookButtonCooldownEdge(btn)
-    if not btn or not EFD(btn).squared then
+local function HookButtonCooldownEdge(button)
+    if not button or not EFD(button).squared then
         return
     end
-    if EFD(btn).cdEdgeHooked then
+    if EFD(button).cdEdgeHooked then
         return
     end
-    EFD(btn).cdEdgeHooked = true
+    EFD(button).cdEdgeHooked = true
 
     local function OnSetCooldown(cdFrame)
         -- Cooldown edge patch (skip if edge was already applied to this frame)
@@ -1301,7 +1306,7 @@ local function HookButtonCooldownEdge(btn)
             if not _cdEdge.pending[cdFrame] then
                 _cdEdge.pendingCount = _cdEdge.pendingCount + 1
             end
-            _cdEdge.pending[cdFrame] = btn
+            _cdEdge.pending[cdFrame] = button
             if not _cdEdge.timerScheduled then
                 _cdEdge.timerScheduled = true
                 C_Timer_After(0, _FlushCDPatch)
@@ -1311,8 +1316,8 @@ local function HookButtonCooldownEdge(btn)
         -- SetCooldown). Skip only when BOTH cooldown frames carry the applied
         -- stamp (set by ApplyToFrame, cleared on settings change): the charge
         -- cooldown can appear after the main one is already stamped.
-        local chargeCd = btn.chargeCooldown
-        local mainNeeds = not (btn.cooldown and EFD(btn.cooldown).cdFontStamp)
+        local chargeCd = button.chargeCooldown
+        local mainNeeds = not (button.cooldown and EFD(button.cooldown).cdFontStamp)
         local chargeNeeds = chargeCd and not EFD(chargeCd).cdFontStamp
         if mainNeeds or chargeNeeds then
             -- A cooldown showing no countdown numbers has no FontString for
@@ -1328,7 +1333,7 @@ local function HookButtonCooldownEdge(btn)
                 (mainNeeds and numbersOn)
                 or (chargeNeeds and EFD(chargeCd).rechargeNumbersHidden == false)
             then
-                EAB_VTABLE.CooldownFonts.pending[btn] = true
+                EAB_VTABLE.CooldownFonts.pending[button] = true
                 if not EAB_VTABLE.CooldownFonts.timerScheduled then
                     EAB_VTABLE.CooldownFonts.timerScheduled = true
                     C_Timer_After(0, EAB_VTABLE.CooldownFonts.FlushPatch)
@@ -1337,11 +1342,11 @@ local function HookButtonCooldownEdge(btn)
         end
     end
 
-    if btn.cooldown and btn.cooldown.SetCooldown then
-        hooksecurefunc(btn.cooldown, "SetCooldown", OnSetCooldown)
+    if button.cooldown and button.cooldown.SetCooldown then
+        hooksecurefunc(button.cooldown, "SetCooldown", OnSetCooldown)
     end
-    if btn.chargeCooldown and btn.chargeCooldown.SetCooldown then
-        hooksecurefunc(btn.chargeCooldown, "SetCooldown", OnSetCooldown)
+    if button.chargeCooldown and button.chargeCooldown.SetCooldown then
+        hooksecurefunc(button.chargeCooldown, "SetCooldown", OnSetCooldown)
     end
 end
 
@@ -1351,23 +1356,27 @@ EAB_VTABLE.CooldownFonts.timerScheduled = false
 function EAB_VTABLE.CooldownFonts.FlushPatch()
     EAB_VTABLE.CooldownFonts.timerScheduled = false
 
-    for btn in pairs(EAB_VTABLE.CooldownFonts.pending) do
-        local info = buttonToBar[btn]
-        local barKey = info and info.barKey
-        local s = barKey and EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars[barKey]
+    for button in pairs(EAB_VTABLE.CooldownFonts.pending) do
+        local details = buttonToBar[button]
+        local barId = details and details.barKey
+        local s = barId
+            and ABAR.db
+            and ABAR.db.profile
+            and ABAR.db.profile.bars
+            and ABAR.db.profile.bars[barId]
         if s then
-            local fontPath, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(s)
-            EAB_VTABLE.CooldownFonts.ApplyToButton(btn, fontPath, cdSize, cdOX, cdOY, cdColor, cdFit)
+            local fontFile, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(s)
+            EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
         end
-        EAB_VTABLE.CooldownFonts.pending[btn] = nil
+        EAB_VTABLE.CooldownFonts.pending[button] = nil
     end
 end
 
-function EAB_VTABLE.CooldownFonts.HookButton(btn)
-    if not btn or EFD(btn).cdFontsHooked then
+function EAB_VTABLE.CooldownFonts.HookButton(button)
+    if not button or EFD(button).cdFontsHooked then
         return
     end
-    EFD(btn).cdFontsHooked = true
+    EFD(button).cdFontsHooked = true
     -- Piggybacks on HookButtonCooldownEdge rather than a second hooksecurefunc
     -- on the same SetCooldown: that hook already fires on every SetCooldown and
     -- queues the font patch. If it has not run yet, it picks fonts up when it does.
@@ -1378,20 +1387,20 @@ local function HookCooldownEdge()
         return
     end
     _cdEdge.hooked = true
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and EFD(btn).squared then
-                    HookButtonCooldownEdge(btn)
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button and EFD(button).squared then
+                    HookButtonCooldownEdge(button)
                 end
             end
         end
     end
 end
 
-function EAB:ApplyCooldownEdge()
+function ABAR:ApplyCooldownEdge()
     if not self.db.profile.squareIcons then
         return
     end
@@ -1399,20 +1408,20 @@ function EAB:ApplyCooldownEdge()
     local p = self.db.profile
     local cr, cg, cb, ca = ResolveCooldownEdgeColor(p)
     local sz = p.cooldownEdgeSize or 2.1
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and EFD(btn).squared then
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button and EFD(button).squared then
                     -- Clear edge cache so the hook re-applies on next cooldown
-                    if btn.cooldown then
-                        EFD(btn.cooldown).edgeDone = nil
+                    if button.cooldown then
+                        EFD(button.cooldown).edgeDone = nil
                     end
-                    if btn.chargeCooldown then
-                        EFD(btn.chargeCooldown).edgeDone = nil
+                    if button.chargeCooldown then
+                        EFD(button.chargeCooldown).edgeDone = nil
                     end
-                    ApplyButtonCooldownEdge(btn, sz, cr, cg, cb, ca)
+                    ApplyButtonCooldownEdge(button, sz, cr, cg, cb, ca)
                 end
             end
         end
@@ -1420,20 +1429,20 @@ function EAB:ApplyCooldownEdge()
 end
 
 function EAB_VTABLE.CooldownFonts.HookAll()
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn then
-                    EAB_VTABLE.CooldownFonts.HookButton(btn)
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button then
+                    EAB_VTABLE.CooldownFonts.HookButton(button)
                 end
             end
         end
     end
 end
 
-function EAB:ApplyMiscTextures()
+function ABAR:ApplyMiscTextures()
     local p = self.db.profile
 
     -- Color the "other" button textures (CheckedTexture, NewActionTexture,
@@ -1451,18 +1460,18 @@ function EAB:ApplyMiscTextures()
             end
         end
     end
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and EFD(btn).squared then
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button and EFD(button).squared then
                     -- Do NOT color CheckedTexture or Border Blizzard uses
                     -- these for item rarity borders (green/blue/purple) on
                     -- active trinkets / equipped items.
-                    if btn.NewActionTexture then
-                        btn.NewActionTexture:SetDesaturated(true)
-                        btn.NewActionTexture:SetVertexColor(cr, cg, cb, ca)
+                    if button.NewActionTexture then
+                        button.NewActionTexture:SetDesaturated(true)
+                        button.NewActionTexture:SetVertexColor(cr, cg, cb, ca)
                     end
                 end
             end
@@ -1482,38 +1491,38 @@ end
 -- barKey: "Show as Border" (Spell Cast Highlight cog) holds the fill at 0 on
 -- the bars where the button's border copy stands in for it (ns._ixElig, kept
 -- current by every pass that can change it while the option is on).
-function EAB:GetCheckedAlpha(barKey)
+function ABAR:GetCheckedAlpha(barId)
     local p = self.db.profile
     if p.showCastHighlight == false then
         return 0
     end
-    if barKey and p.castHighlightBorder and ns._ixElig[barKey] then
+    if barId and p.castHighlightBorder and mod._ixElig[barId] then
         return 0
     end
     return 1
 end
 
-function EAB:ApplyCheckedTextures()
+function ABAR:ApplyCheckedTextures()
     local p = self.db.profile
-    local _, _, ixOn = ns._ixRolesOn(p)
-    local ixEver = ns._ixEver
-    for _, info in ipairs(BAR_CONFIG) do
-        local buttons = barButtons[info.key]
+    local _, _, ixOn = mod._ixRolesOn(p)
+    local ixEver = mod._ixEver
+    for _, details in ipairs(BAR_CONFIG) do
+        local buttons = barButtons[details.key]
         if buttons then
-            local s = p.bars[info.key]
+            local s = p.bars[details.key]
             -- Eligibility first: GetCheckedAlpha reads it.
-            local ixBar = ixOn and ns._ixBarEligible(info.key)
-            local a = self:GetCheckedAlpha(info.key)
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and btn.CheckedTexture then
-                    btn.CheckedTexture:SetAlpha(a)
+            local ixBar = ixOn and mod._ixBarEligible(details.key)
+            local a = self:GetCheckedAlpha(details.key)
+            for idx = 1, #buttons do
+                local button = buttons[idx]
+                if button and button.CheckedTexture then
+                    button.CheckedTexture:SetAlpha(a)
                 end
-                if btn then
+                if button then
                     if ixBar then
-                        ns._ixRole(btn, s, "ixCast", true)
+                        mod._ixRole(button, s, "ixCast", true)
                     elseif ixEver then
-                        ns._ixRole(btn, s, "ixCast", false)
+                        mod._ixRole(button, s, "ixCast", false)
                     end
                 end
             end
@@ -1525,21 +1534,21 @@ end
 -- logic the dispatcher's per-tick + CVAR_UPDATE paths use; called when the
 -- "Cooldown Numbers" cog toggle flips so the change is immediate (a DB
 -- toggle does not fire CVAR_UPDATE). Cached per chargeCd, so it is near-free.
-function EAB:RefreshChargeRechargeNumbers()
-    for _, info in ipairs(BAR_CONFIG) do
-        if not info.isStance and not info.isPetBar then
-            local buttons = barButtons[info.key]
+function ABAR:RefreshChargeRechargeNumbers()
+    for _, details in ipairs(BAR_CONFIG) do
+        if not details.isStance and not details.isPetBar then
+            local buttons = barButtons[details.key]
             if buttons then
-                for _, btn in ipairs(buttons) do
-                    local chargeCd = btn.chargeCooldown
+                for _, button in ipairs(buttons) do
+                    local chargeCd = button.chargeCooldown
                     if chargeCd then
-                        local action = btn:GetAttribute("action")
-                        local ok = action and HasAction(action)
-                        ns.UpdateChargeNumbersVisibility(
-                            btn,
+                        local action = button:GetAttribute("action")
+                        local success = action and HasAction(action)
+                        mod.UpdateChargeNumbersVisibility(
+                            button,
                             chargeCd,
-                            ok and C_ActionBar.GetActionCooldown(action) or nil,
-                            ok and C_ActionBar.GetActionCharges(action) or nil
+                            success and C_ActionBar.GetActionCooldown(action) or nil,
+                            success and C_ActionBar.GetActionCharges(action) or nil
                         )
                     end
                 end

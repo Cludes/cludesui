@@ -42,9 +42,9 @@ local foreverKicksByClass = {
     },
 }
 
-local function InList(list, value)
-    for i = 1, #list do
-        if list[i] == value then
+local function InList(entries, value)
+    for idx = 1, #entries do
+        if entries[idx] == value then
             return true
         end
     end
@@ -104,12 +104,12 @@ local function RefreshKickAbility()
     end
     local petHit, playerHit
     -- Retail entries are bare spell ids; Forever entries are rank groups.
-    for i = 1, #classKicks do
-        local entry = classKicks[i]
-        local isGroup = type(entry) == "table"
-        if not isGroup or KickGroupFormOk(entry) then
-            for j = 1, isGroup and #entry or 1 do
-                local spellId = isGroup and entry[j] or entry
+    for idx = 1, #classKicks do
+        local record = classKicks[idx]
+        local isGroup = type(record) == "table"
+        if not isGroup or KickGroupFormOk(record) then
+            for jdx = 1, isGroup and #record or 1 do
+                local spellId = isGroup and record[jdx] or record
                 local bank = KickBank(spellId)
                 if bank == "pet" then
                     petHit = spellId
@@ -204,20 +204,20 @@ local function InstallMenuClassifierFix()
         if which ~= "PET" and which ~= "OTHERPET" and which ~= "OTHERBATTLEPET" then
             return
         end
-        local unit = contextData and contextData.unit
-        if type(unit) ~= "string" then
+        local unitToken = contextData and contextData.unit
+        if type(unitToken) ~= "string" then
             return
         end
-        local lu = unit:lower()
+        local lu = unitToken:lower()
         local isRaidToken = lu:match("^raid[0-9]+$") ~= nil
         if not isRaidToken and not lu:match("^party[0-9]+$") then
             return
         end
-        local guid = UnitGUID(unit)
-        if issecretvalue and issecretvalue(guid) then
+        local unitGuid = UnitGUID(unitToken)
+        if issecretvalue and issecretvalue(unitGuid) then
             return
         end
-        if type(guid) ~= "string" or not guid:find("^Player%-") then
+        if type(unitGuid) ~= "string" or not unitGuid:find("^Player%-") then
             return
         end
         reopening = true
@@ -225,17 +225,17 @@ local function InstallMenuClassifierFix()
         -- flag lets CludesUI_MenuFallbacks.lua swap the protected items of
         -- THIS (tainted) menu only for its secure replacements, and the call
         -- after the open docks its Set Focus / Follow strip to the menu.
-        CludesUI._menuReopenUnit = unit
+        CludesUI._menuReopenUnit = unitToken
         -- FRESH context table, never the inbound one: OpenMenu ENRICHES its
         -- contextData in place (playerLocation/accountInfo) and asserts those
         -- fields are nil on entry -- re-passing the first open's table throws
         -- "assertion failed" at UnitPopupShared:53 (field-caught 2026-08-14;
         -- the live misfire classifies as OTHERBATTLEPET, same field capture).
-        UnitPopup_OpenMenu(isRaidToken and "RAID_PLAYER" or "PARTY", { unit = unit })
+        UnitPopup_OpenMenu(isRaidToken and "RAID_PLAYER" or "PARTY", { unit = unitToken })
         CludesUI._menuReopenUnit = nil
         reopening = false
         if CludesUI._ShowReopenedMenuExtras then
-            CludesUI._ShowReopenedMenuExtras(unit)
+            CludesUI._ShowReopenedMenuExtras(unitToken)
         end
     end)
 end
@@ -252,28 +252,28 @@ local proxyCounter = 0
 -- Create (once) and return the hidden SecureActionButton proxy for a unit button.
 -- Use this when wiring a SPECIFIC click/key binding to the menu -- it does NOT
 -- touch the frame's own type attributes (so it won't clobber other bindings).
-function CludesUI.GetSecureMenuProxy(frame)
-    if not frame then
+function CludesUI.GetSecureMenuProxy(widget)
+    if not widget then
         return
     end
     InstallMenuClassifierFix()
-    local proxy = menuProxies[frame]
+    local proxy = menuProxies[widget]
     if not proxy then
         local proxyName
         proxyCounter = proxyCounter + 1
         proxyName = "CUISecureMenuProxy" .. proxyCounter
-        proxy = CreateFrame("Button", proxyName, frame, "SecureActionButtonTemplate")
+        proxy = CreateFrame("Button", proxyName, widget, "SecureActionButtonTemplate")
         -- The menu's owner: WoW Forever's Gamepad interface style places the
         -- menu beside the owner's rect, which an unanchored frame does not have.
-        proxy:SetAllPoints(frame)
+        proxy:SetAllPoints(widget)
         proxy:SetAlpha(0)
         proxy:EnableMouse(false) -- never catches real mouse; only the secure click delegate reaches it
         proxy:RegisterForClicks("AnyUp")
         proxy:SetAttribute("type", "togglemenu")
         -- The secure resolver looks up type by BUTTON SUFFIX (RightButton -> type2);
         -- the bare "type" may not fall back, so set every button explicitly.
-        for i = 1, 5 do
-            proxy:SetAttribute("type" .. i, "togglemenu")
+        for idx = 1, 5 do
+            proxy:SetAttribute("type" .. idx, "togglemenu")
         end
         menuMacros[proxy] = "/click " .. proxyName
         proxy:SetAttribute("useparent-unit", true)
@@ -281,7 +281,7 @@ function CludesUI.GetSecureMenuProxy(frame)
         -- SecureActionButton_OnClick's clickAction gate skips the menu action on the
         -- up-click when ActionButtonUseKeyDown is on (the delegate fires an up).
         proxy:SetAttribute("useOnKeyDown", false)
-        menuProxies[frame] = proxy
+        menuProxies[widget] = proxy
     end
     return proxy
 end
@@ -293,54 +293,54 @@ end
 -- dropped. Routing those through this ungated SecureActionButton proxy restores
 -- them. Used only for non-left-click target bindings (see ClickCast).
 local targetProxies = setmetatable({}, { __mode = "k" })
-function CludesUI.GetSecureTargetProxy(frame)
-    if not frame then
+function CludesUI.GetSecureTargetProxy(widget)
+    if not widget then
         return
     end
-    local proxy = targetProxies[frame]
+    local proxy = targetProxies[widget]
     if not proxy then
         local proxyName
         proxyCounter = proxyCounter + 1
         proxyName = "CUISecureTargetProxy" .. proxyCounter
-        proxy = CreateFrame("Button", proxyName, frame, "SecureActionButtonTemplate")
+        proxy = CreateFrame("Button", proxyName, widget, "SecureActionButtonTemplate")
         proxy:SetSize(1, 1)
         proxy:SetAlpha(0)
         proxy:EnableMouse(false) -- never catches real mouse; only the secure click delegate reaches it
         proxy:RegisterForClicks("AnyUp")
         proxy:SetAttribute("type", "target")
         -- type looked up by button SUFFIX (RightButton -> type2); set every button.
-        for i = 1, 5 do
-            proxy:SetAttribute("type" .. i, "target")
+        for idx = 1, 5 do
+            proxy:SetAttribute("type" .. idx, "target")
         end
         proxy:SetAttribute("useparent-unit", true)
         -- Act on the up-click regardless of the "cast on key down" CVar (same
         -- clickAction gate that bit the menu proxy).
         proxy:SetAttribute("useOnKeyDown", false)
-        targetProxies[frame] = proxy
+        targetProxies[widget] = proxy
     end
     return proxy
 end
 
 -- The macrotext that opens a unit button's secure menu (every binding that
 -- routes to the menu must use this, never a hand-built "/click <proxy>").
-function CludesUI.GetSecureMenuMacro(frame)
-    local proxy = CludesUI.GetSecureMenuProxy(frame)
+function CludesUI.GetSecureMenuMacro(widget)
+    local proxy = CludesUI.GetSecureMenuProxy(widget)
     return proxy and menuMacros[proxy]
 end
 
 -- Route a unit button's default RIGHT-CLICK to the secure menu proxy via the
 -- macro transport. Clears any specific type2 so the wildcard governs.
-function CludesUI.AttachSecureUnitMenu(frame)
-    if not frame then
+function CludesUI.AttachSecureUnitMenu(widget)
+    if not widget then
         return
     end
-    local proxy = CludesUI.GetSecureMenuProxy(frame)
-    frame:SetAttribute("type2", nil)
+    local proxy = CludesUI.GetSecureMenuProxy(widget)
+    widget:SetAttribute("type2", nil)
     -- Macro transport instead of the "click" action: the 12.1 click action
     -- crashes on a Blizzard typo (see above).
-    frame:SetAttribute("*type2", "macro")
-    frame:SetAttribute("*macrotext2", menuMacros[proxy])
-    frame:SetAttribute("*clickbutton2", nil)
+    widget:SetAttribute("*type2", "macro")
+    widget:SetAttribute("*macrotext2", menuMacros[proxy])
+    widget:SetAttribute("*clickbutton2", nil)
     return proxy
 end
 

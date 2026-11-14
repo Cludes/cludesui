@@ -22,19 +22,19 @@ local MANA = Enum.PowerType.Mana
 local RULE = 5
 local LINE_H = 3
 
-local holder, bar, line, text
+local holderFrame, barFrame, lineTex, textValue
 local lastMana, ruleEnds
 
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
+local function Secret(val)
+    return issecretvalue and issecretvalue(val)
 end
 
 local function UsesMana()
-    local max = UnitPowerMax("player", MANA)
-    return not Secret(max) and max and max > 0
+    local upper = UnitPowerMax("player", MANA)
+    return not Secret(upper) and upper and upper > 0
 end
 
 -- Druid in a form whose bar is not mana, or Always Show for a mana user.
@@ -45,80 +45,80 @@ local function Wanted()
     if CludesUI._unlockActive or Get("always") then
         return true
     end
-    local _, class = UnitClass("player")
-    return class == "DRUID" and UnitPowerType("player") ~= MANA
+    local _, classFile = UnitClass("player")
+    return classFile == "DRUID" and UnitPowerType("player") ~= MANA
 end
 
 local function Build()
-    if holder then
-        return holder
+    if holderFrame then
+        return holderFrame
     end
-    holder = CreateFrame("Frame", "CludesUIManaBar", UIParent)
-    bar = CreateFrame("StatusBar", nil, holder)
-    bar:SetPoint("TOPLEFT")
-    bar:SetPoint("TOPRIGHT")
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    holderFrame = CreateFrame("Frame", "CludesUIManaBar", UIParent)
+    barFrame = CreateFrame("StatusBar", nil, holderFrame)
+    barFrame:SetPoint("TOPLEFT")
+    barFrame:SetPoint("TOPRIGHT")
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local c = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
-    bar:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
-    CludesUI.Kit.Panel(bar, 0.85)
-    text = bar:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(text, 10, "essentials")
-    text:SetPoint("CENTER")
-    line = CreateFrame("StatusBar", nil, holder)
-    line:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    line:GetStatusBarTexture():SetVertexColor(1, 1, 1, 0.9)
-    line:SetMinMaxValues(0, RULE)
-    line:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 0, -1)
-    line:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 0, -1)
-    line:SetHeight(LINE_H)
-    line:Hide()
-    return holder
+    barFrame:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
+    CludesUI.Kit.Panel(barFrame, 0.85)
+    textValue = barFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(textValue, 10, "essentials")
+    textValue:SetPoint("CENTER")
+    lineTex = CreateFrame("StatusBar", nil, holderFrame)
+    lineTex:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    lineTex:GetStatusBarTexture():SetVertexColor(1, 1, 1, 0.9)
+    lineTex:SetMinMaxValues(0, RULE)
+    lineTex:SetPoint("TOPLEFT", barFrame, "BOTTOMLEFT", 0, -1)
+    lineTex:SetPoint("TOPRIGHT", barFrame, "BOTTOMRIGHT", 0, -1)
+    lineTex:SetHeight(LINE_H)
+    lineTex:Hide()
+    return holderFrame
 end
 
 local function Layout()
-    if not holder then
+    if not holderFrame then
         return
     end
-    holder:SetSize(Get("width"), Get("height") + LINE_H + 1)
-    bar:SetHeight(Get("height"))
+    holderFrame:SetSize(Get("width"), Get("height") + LINE_H + 1)
+    barFrame:SetHeight(Get("height"))
 end
 
 local function UpdateMana()
-    if not holder then
+    if not holderFrame then
         return
     end
     if not Wanted() then
-        holder:Hide()
+        holderFrame:Hide()
         return
     end
-    holder:Show()
-    local cur, max = UnitPower("player", MANA), UnitPowerMax("player", MANA)
-    bar:SetMinMaxValues(0, max)
-    bar:SetValue(cur)
-    if Secret(cur) or Secret(max) then
-        text:SetText("")
+    holderFrame:Show()
+    local current, upper = UnitPower("player", MANA), UnitPowerMax("player", MANA)
+    barFrame:SetMinMaxValues(0, upper)
+    barFrame:SetValue(current)
+    if Secret(current) or Secret(upper) then
+        textValue:SetText("")
         lastMana = nil
         return
     end
-    text:SetText(("%d / %d"):format(cur, max))
-    if Get("fiveSecond") and lastMana and cur < lastMana then
+    textValue:SetText(("%d / %d"):format(current, upper))
+    if Get("fiveSecond") and lastMana and current < lastMana then
         ruleEnds = GetTime() + RULE
-        line:Show()
+        lineTex:Show()
     end
-    lastMana = cur
+    lastMana = current
 end
 
 local function Tick()
-    if not (ruleEnds and line) then
+    if not (ruleEnds and lineTex) then
         return
     end
-    local left = ruleEnds - GetTime()
-    if left <= 0 or not Get("fiveSecond") then
+    local leftX = ruleEnds - GetTime()
+    if leftX <= 0 or not Get("fiveSecond") then
         ruleEnds = nil
-        line:Hide()
+        lineTex:Hide()
         return
     end
-    line:SetValue(left)
+    lineTex:SetValue(leftX)
 end
 
 local ev = CreateFrame("Frame")
@@ -138,7 +138,7 @@ local function Apply()
             ticker = C_Timer.NewTicker(0.05, Tick)
         end
         if not CludesUI._unlockActive then
-            F.Place(holder)
+            F.Place(holderFrame)
         end
     else
         ev:UnregisterAllEvents()
@@ -146,8 +146,8 @@ local function Apply()
             ticker:Cancel()
             ticker = nil
         end
-        if holder then
-            holder:Hide()
+        if holderFrame then
+            holderFrame:Hide()
         end
     end
     UpdateMana()
@@ -165,7 +165,7 @@ F.Start(Apply, {
             Layout()
             UpdateMana()
         end
-        return holder
+        return holderFrame
     end,
     size = function()
         return Get("width"), Get("height") + LINE_H + 1

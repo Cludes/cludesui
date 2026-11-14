@@ -46,88 +46,88 @@ local CAT_ONLY = { [5225] = true }
 local CAT_FORM = 1 -- GetShapeshiftFormID() in Cat Form
 
 local GAP = 4
-local holder
+local holderFrame
 local buttons = {}
 local dirty = true
 
-local function Known(id)
+local function Known(ident)
     if C_SpellBook and C_SpellBook.IsSpellKnown then
-        return C_SpellBook.IsSpellKnown(id)
+        return C_SpellBook.IsSpellKnown(ident)
     end
-    return IsSpellKnown and IsSpellKnown(id) or false
+    return IsSpellKnown and IsSpellKnown(ident) or false
 end
 
 -- [spellID] = true for each tracking that is on, and whether the list was read.
 local function ActiveTracking()
     local on, listed = {}, {}
-    local n = C_Minimap and C_Minimap.GetNumTrackingTypes and C_Minimap.GetNumTrackingTypes() or 0
-    for i = 1, n do
-        local a, _, c, _, _, f = C_Minimap.GetTrackingInfo(i)
-        local spellID, active
+    local num = C_Minimap and C_Minimap.GetNumTrackingTypes and C_Minimap.GetNumTrackingTypes() or 0
+    for idx = 1, num do
+        local a, _, c, _, _, f = C_Minimap.GetTrackingInfo(idx)
+        local spellId, isActive
         if type(a) == "table" then
-            spellID, active = a.spellID, a.active
+            spellId, isActive = a.spellID, a.active
         else
-            spellID, active = f, c
+            spellId, isActive = f, c
         end
-        if spellID then
-            listed[spellID] = true
-            if active then
-                on[spellID] = true
+        if spellId then
+            listed[spellId] = true
+            if isActive then
+                on[spellId] = true
             end
         end
     end
     return on, listed
 end
 
-local function HasBuff(id)
-    local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-    return ok and aura ~= nil
+local function HasBuff(ident)
+    local success, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
+    return success and aura ~= nil
 end
 
 -- The spells to remind about now, in list order.
 local function Missing()
     local on, listed = ActiveTracking()
-    local cat = GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM
-    local out = {}
-    local function Consider(id)
-        if not Known(id) or on[id] then
+    local category = GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM
+    local result = {}
+    local function Consider(ident)
+        if not Known(ident) or on[ident] then
             return
         end
-        if CAT_ONLY[id] and not cat then
+        if CAT_ONLY[ident] and not category then
             return
         end
-        if not listed[id] and HasBuff(id) then
+        if not listed[ident] and HasBuff(ident) then
             return
         end
-        out[#out + 1] = id
+        result[#result + 1] = ident
     end
-    for _, id in ipairs(SPELLS) do
-        Consider(id)
+    for _, ident in ipairs(SPELLS) do
+        Consider(ident)
     end
     if Get("gathering") then
-        for _, id in ipairs(GATHERING) do
-            Consider(id)
+        for _, ident in ipairs(GATHERING) do
+            Consider(ident)
         end
     end
-    return out
+    return result
 end
 
 local function Build()
-    if holder then
-        return holder
+    if holderFrame then
+        return holderFrame
     end
-    holder = CreateFrame("Frame", "CludesUITrackingReminder", UIParent)
-    holder:SetSize(Get("iconSize"), Get("iconSize"))
-    RegisterStateDriver(holder, "visibility", "[combat] hide; show")
-    return holder
+    holderFrame = CreateFrame("Frame", "CludesUITrackingReminder", UIParent)
+    holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
+    RegisterStateDriver(holderFrame, "visibility", "[combat] hide; show")
+    return holderFrame
 end
 
-local function Button(i)
-    local b = buttons[i]
+local function Button(idx)
+    local b = buttons[idx]
     if b then
         return b
     end
-    b = CreateFrame("Button", nil, holder, "SecureActionButtonTemplate")
+    b = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
     b:RegisterForClicks("AnyUp", "AnyDown")
     b:SetAttribute("type", "spell")
     b.icon = b:CreateTexture(nil, "ARTWORK")
@@ -149,13 +149,13 @@ local function Button(i)
     b:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[i] = b
+    buttons[idx] = b
     return b
 end
 
 -- Lays the row out again. Out of combat only: the buttons are secure.
 local function Refresh()
-    if not holder then
+    if not holderFrame then
         return
     end
     if InCombatLockdown() then
@@ -163,23 +163,23 @@ local function Refresh()
         return
     end
     dirty = false
-    local size = Get("iconSize")
-    local list = Enabled() and Missing() or {}
-    for i, id in ipairs(list) do
-        local b = Button(i)
-        b.spellID = id
-        b:SetAttribute("spell", id)
-        b.icon:SetTexture(C_Spell.GetSpellTexture(id))
-        b:SetSize(size, size)
+    local dim = Get("iconSize")
+    local entries = Enabled() and Missing() or {}
+    for idx, ident in ipairs(entries) do
+        local b = Button(idx)
+        b.spellID = ident
+        b:SetAttribute("spell", ident)
+        b.icon:SetTexture(C_Spell.GetSpellTexture(ident))
+        b:SetSize(dim, dim)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holder, "LEFT", (i - 1) * (size + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
         b:Show()
     end
-    for i = #list + 1, #buttons do
-        buttons[i]:Hide()
-        buttons[i].spellID = nil
+    for idx = #entries + 1, #buttons do
+        buttons[idx]:Hide()
+        buttons[idx].spellID = nil
     end
-    holder:SetSize(math.max(1, #list) * (size + GAP) - GAP, size)
+    holderFrame:SetSize(math.max(1, #entries) * (dim + GAP) - GAP, dim)
 end
 
 local ev = CreateFrame("Frame")
@@ -191,8 +191,8 @@ local EVENTS = {
     "PLAYER_ENTERING_WORLD",
 }
 local queued
-ev:SetScript("OnEvent", function(_, event)
-    if event == "PLAYER_REGEN_ENABLED" and not dirty then
+ev:SetScript("OnEvent", function(_, evt)
+    if evt == "PLAYER_REGEN_ENABLED" and not dirty then
         return
     end
     -- Aura and spell events come in bursts: one layout once they settle.
@@ -214,7 +214,7 @@ local function Apply()
         end
         ev:RegisterUnitEvent("UNIT_AURA", "player")
         if not CludesUI._unlockActive and not InCombatLockdown() then
-            F.Place(holder)
+            F.Place(holderFrame)
         end
     else
         ev:UnregisterAllEvents()
@@ -233,11 +233,11 @@ F.Start(Apply, {
         if build then
             Build()
         end
-        return holder
+        return holderFrame
     end,
     size = function()
-        local size = Get("iconSize")
-        return size * 3 + GAP * 2, size
+        local dim = Get("iconSize")
+        return dim * 3 + GAP * 2, dim
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

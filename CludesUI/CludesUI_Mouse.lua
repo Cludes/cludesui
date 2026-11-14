@@ -56,24 +56,24 @@ local AFK_AFTER = 30 -- long-still: fast watch drops to slow
 -- Fresh coordinates on demand (event handlers, batch region checks). Also
 -- refreshes rawX/rawY so tick subscribers see the newest sample.
 function M.Get()
-    local x, y = GetCursorPosition()
-    if x ~= M.rawX or y ~= M.rawY then
-        M.rawX, M.rawY = x, y
+    local posX, posY = GetCursorPosition()
+    if posX ~= M.rawX or posY ~= M.rawY then
+        M.rawX, M.rawY = posX, posY
         stillSince = GetTime()
     end
     return M.rawX, M.rawY
 end
 
 local function OnRenderFrame(elapsed)
-    local x, y = GetCursorPosition()
-    local moved = (x ~= M.rawX or y ~= M.rawY)
+    local posX, posY = GetCursorPosition()
+    local moved = (posX ~= M.rawX or posY ~= M.rawY)
     if moved then
-        M.rawX, M.rawY = x, y
+        M.rawX, M.rawY = posX, posY
         stillSince = GetTime()
     end
     local anyAlways = false
     for _, s in pairs(frameSubs) do
-        s.fn(x, y, moved, elapsed)
+        s.fn(posX, posY, moved, elapsed)
         if not s.motionOnly then
             anyAlways = true
         end
@@ -91,9 +91,9 @@ local function WatchBody()
     -- fresh for Tier B subscribers AND doubles as Tier A's motion watch --
     -- the first moved sample re-arms the per-frame path.
     if not frameArmed then
-        local x, y = GetCursorPosition()
-        if x ~= M.rawX or y ~= M.rawY then
-            M.rawX, M.rawY = x, y
+        local posX, posY = GetCursorPosition()
+        if posX ~= M.rawX or posY ~= M.rawY then
+            M.rawX, M.rawY = posX, posY
             stillSince = GetTime()
             if frameCount > 0 then
                 frameArmed = true
@@ -115,16 +115,16 @@ local function WatchBody()
     -- interval (<=150ms) of catch-up, then per-frame glue resumes; motion
     -- within the 30s window always re-arms at the fast ~50ms. Tier B
     -- accumulators read tickerInterval, so they stay exact through swaps.
-    local want
+    local wanted
     if frameCount > 0 and (frameArmed or (GetTime() - stillSince) <= AFK_AFTER) then
-        want = WATCH_FAST
+        wanted = WATCH_FAST
     else
-        want = WATCH_SLOW
+        wanted = WATCH_SLOW
     end
-    if want ~= tickerInterval and ticker then
+    if wanted ~= tickerInterval and ticker then
         ticker.Stop()
-        tickerInterval = want
-        ticker.Start(want)
+        tickerInterval = wanted
+        ticker.Start(wanted)
     end
     return (frameCount + tickCount) > 0 -- falsy = self-stop at zero subs
 end
@@ -139,17 +139,17 @@ local function EnsureTicker()
         end
         return
     end
-    local want = (frameCount > 0) and WATCH_FAST or WATCH_SLOW
+    local wanted = (frameCount > 0) and WATCH_FAST or WATCH_SLOW
     if not ticker then
-        tickerInterval = want
-        ticker = Tick.NewAnimTicker(watchHost, WatchBody, want)
+        tickerInterval = wanted
+        ticker = Tick.NewAnimTicker(watchHost, WatchBody, wanted)
         ticker.Start()
         return
     end
-    if want ~= tickerInterval then
+    if wanted ~= tickerInterval then
         ticker.Stop()
-        tickerInterval = want
-        ticker.Start(want)
+        tickerInterval = wanted
+        ticker.Start(wanted)
     else
         ticker.Start()
     end
@@ -158,14 +158,14 @@ end
 -- Tier A. fn(cx, cy, moved, elapsed) per render frame while armed. Same key
 -- replaces. motionOnly subscribers park with the cursor; others hold the
 -- driver until unsubscribed (transient animators must unsubscribe when done).
-function M.SubscribeFrame(key, fn, motionOnly)
-    if not key or type(fn) ~= "function" then
+function M.SubscribeFrame(key, func, motionOnly)
+    if not key or type(func) ~= "function" then
         return
     end
     if not frameSubs[key] then
         frameCount = frameCount + 1
     end
-    frameSubs[key] = { fn = fn, motionOnly = motionOnly and true or false }
+    frameSubs[key] = { fn = func, motionOnly = motionOnly and true or false }
     if not frameArmed then
         frameArmed = true
         stillSince = GetTime()
@@ -189,17 +189,17 @@ end
 
 -- Tier B. fn(rawX, rawY) every `interval` seconds (multiples of the watch
 -- cadence). Same key replaces and keeps the accumulator.
-function M.SubscribeTick(key, interval, fn)
-    if not key or type(fn) ~= "function" then
+function M.SubscribeTick(key, interval, func)
+    if not key or type(func) ~= "function" then
         return
     end
     local s = tickSubs[key]
     if s then
-        s.fn = fn
+        s.fn = func
         s.interval = interval or WATCH_SLOW
     else
         tickCount = tickCount + 1
-        tickSubs[key] = { fn = fn, interval = interval or WATCH_SLOW, acc = 0 }
+        tickSubs[key] = { fn = func, interval = interval or WATCH_SLOW, acc = 0 }
     end
     EnsureTicker()
 end

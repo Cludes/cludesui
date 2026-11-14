@@ -35,11 +35,11 @@ local HOVER_FADE, SHIFT_FADE = 0.5, 0.15 -- seconds to fade for Auto Hide / whil
 local ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 local LOGO = "Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png"
 
-CUI_NS.unlockParts.Bar = function(UM)
-    local ns = CUI_NS
+CUI_NS.unlockParts.Bar = function(LM)
+    local mod = CUI_NS
     local L = CludesUI.L
-    local movers = UM.movers
-    local FONT = UM.FONT_PATH
+    local movers = LM.movers
+    local FONT = LM.FONT_PATH
 
     local autoHide = false -- the Auto Hide toggle: not saved, off at every login
 
@@ -76,22 +76,22 @@ CUI_NS.unlockParts.Bar = function(UM)
             name = "Grid Lines",
             tip = "Shows a grid to line elements up. Click to switch between dimmed, bright and off.",
             level = function()
-                return UM.gridMode == "bright" and 1 or (UM.gridMode == "dimmed" and 0.5 or 0)
+                return LM.gridMode == "bright" and 1 or (LM.gridMode == "dimmed" and 0.5 or 0)
             end,
             state = function()
-                return UM.gridMode == "bright" and "Bright"
-                    or (UM.gridMode == "dimmed" and "Dimmed" or "Disabled")
+                return LM.gridMode == "bright" and "Bright"
+                    or (LM.gridMode == "dimmed" and "Dimmed" or "Disabled")
             end,
             click = function()
-                UM.CycleGridMode()
+                LM.CycleGridMode()
                 if CludesUIDB then
-                    CludesUIDB.unlockGridMode = UM.gridMode
+                    CludesUIDB.unlockGridMode = LM.gridMode
                 end
-                local grid = UM.gridFrame
+                local grid = LM.gridFrame
                 if not grid then
                     return
                 end
-                if UM.gridMode == "disabled" then
+                if LM.gridMode == "disabled" then
                     grid:Hide()
                 else
                     grid:Rebuild()
@@ -100,20 +100,20 @@ CUI_NS.unlockParts.Bar = function(UM)
             end,
         })
 
-        local level, state = OnOff(function()
-            return UM.snapEnabled
+        local level, status = OnOff(function()
+            return LM.snapEnabled
         end)
         Add({
             icon = "magnet.png",
             caption = "Snap",
             name = "Snap Elements",
             level = level,
-            state = state,
+            state = status,
             tip = "Dragged elements snap to the edges and centers of the closest element.",
             click = function()
-                UM.snapEnabled = not UM.snapEnabled
+                LM.snapEnabled = not LM.snapEnabled
                 if CludesUIDB then
-                    CludesUIDB.unlockSnapEnabled = UM.snapEnabled
+                    CludesUIDB.unlockSnapEnabled = LM.snapEnabled
                 end
                 for _, m in pairs(movers) do
                     if m._refreshSnapDD then
@@ -123,52 +123,52 @@ CUI_NS.unlockParts.Bar = function(UM)
             end,
         })
 
-        level, state = OnOff(function()
-            return UM.darkOverlaysEnabled
+        level, status = OnOff(function()
+            return LM.darkOverlaysEnabled
         end)
         Add({
             icon = "dark-overlay.png",
             caption = "Overlays",
             name = "Dark Overlays",
             level = level,
-            state = state,
+            state = status,
             tip = "Gives every element a dark background with its name. Turn it off to see the real elements underneath.",
             click = function()
-                UM.darkOverlaysEnabled = not UM.darkOverlaysEnabled
-                UM.ApplyDarkOverlays()
+                LM.darkOverlaysEnabled = not LM.darkOverlaysEnabled
+                LM.ApplyDarkOverlays()
             end,
         })
 
-        level, state = OnOff(function()
-            return UM.flashlightEnabled
+        level, status = OnOff(function()
+            return LM.flashlightEnabled
         end)
         Add({
             icon = "flashlight.png",
             caption = "Cursor Light",
             name = "Cursor Light",
             level = level,
-            state = state,
+            state = status,
             tip = "Lights up the grid lines around the cursor. Needs the grid lines to be on.",
             click = function()
-                UM.flashlightEnabled = not UM.flashlightEnabled
+                LM.flashlightEnabled = not LM.flashlightEnabled
             end,
         })
 
-        level, state = OnOff(function()
-            return UM.coordsEnabled
+        level, status = OnOff(function()
+            return LM.coordsEnabled
         end)
         Add({
             icon = "coordinates.png",
             caption = "Coordinates",
             name = "Coordinates",
             level = level,
-            state = state,
+            state = status,
             tip = "Always shows every element's position, not only while it is hovered, dragged or selected.",
             click = function()
-                UM.coordsEnabled = not UM.coordsEnabled
+                LM.coordsEnabled = not LM.coordsEnabled
                 for _, m in pairs(movers) do
                     if m._coordFS then
-                        if UM.coordsEnabled then
+                        if LM.coordsEnabled then
                             if m.UpdateCoordText then
                                 m:UpdateCoordText()
                             end
@@ -180,7 +180,7 @@ CUI_NS.unlockParts.Bar = function(UM)
             end,
         })
 
-        level, state = OnOff(function()
+        level, status = OnOff(function()
             return autoHide
         end)
         Add({
@@ -188,7 +188,7 @@ CUI_NS.unlockParts.Bar = function(UM)
             caption = "Auto Hide",
             name = "Auto Hide",
             level = level,
-            state = state,
+            state = status,
             tip = "Hides this bar until the cursor reaches it at the top of the screen, except over an element. Hold Shift to hide it any time.",
             click = function()
                 autoHide = not autoHide
@@ -223,40 +223,40 @@ CUI_NS.unlockParts.Bar = function(UM)
     --  UM.CreateBar(parent): builds the bar once and returns it (hidden, waiting
     --  above the screen for the open animation to drop it in).
     -------------------------------------------------------------------------------
-    function UM.CreateBar(parent)
-        if UM.hudFrame then
-            return UM.hudFrame
+    function LM.CreateBar(hostFrame)
+        if LM.hudFrame then
+            return LM.hudFrame
         end
 
         -- Saved choices. Grid defaults to dimmed, snapping to on.
-        local db = CludesUIDB
-        UM.gridMode = db and db.unlockGridMode or "dimmed"
-        UM.snapEnabled = not (db and db.unlockSnapEnabled == false)
+        local saved = CludesUIDB
+        LM.gridMode = saved and saved.unlockGridMode or "dimmed"
+        LM.snapEnabled = not (saved and saved.unlockSnapEnabled == false)
 
         -- One bar unit is one physical pixel at size 100%; a very low UI scale gets a little more.
-        local base = GetScreenWidth() / (GetPhysicalScreenSize())
+        local baseValue = GetScreenWidth() / (GetPhysicalScreenSize())
         if UIParent:GetEffectiveScale() < 0.6 then
-            base = base * 1.08
+            baseValue = baseValue * 1.08
         end
-        local size = math.max(SIZE_MIN, math.min(SIZE_MAX, db and db.unlockBannerScale or SIZE_MIN))
+        local dim = math.max(SIZE_MIN, math.min(SIZE_MAX, saved and saved.unlockBannerScale or SIZE_MIN))
 
-        local bar = CreateFrame("Frame", nil, parent)
-        UM.hudFrame = bar
-        bar:SetFrameStrata("TOOLTIP")
-        bar:SetFrameLevel(900)
-        bar:SetSize(400, BAR_H)
-        bar:SetScale(base * size)
-        bar:EnableMouse(false) -- only its controls take the mouse
-        bar:SetPoint("TOP", UIParent, "TOP", 0, DROP_H * base)
-        bar._dropH = DROP_H
+        local barFrame = CreateFrame("Frame", nil, hostFrame)
+        LM.hudFrame = barFrame
+        barFrame:SetFrameStrata("TOOLTIP")
+        barFrame:SetFrameLevel(900)
+        barFrame:SetSize(400, BAR_H)
+        barFrame:SetScale(baseValue * dim)
+        barFrame:EnableMouse(false) -- only its controls take the mouse
+        barFrame:SetPoint("TOP", UIParent, "TOP", 0, DROP_H * baseValue)
+        barFrame._dropH = DROP_H
 
         local outlines = {} -- pixel-seated outlines, re-seated when the bar lands or changes size
-        function bar._refitOutlines()
-            if not bar:IsVisible() then
+        function barFrame._refitOutlines()
+            if not barFrame:IsVisible() then
                 return
             end
-            for i = 1, #outlines do
-                outlines[i]:Fit()
+            for idx = 1, #outlines do
+                outlines[idx]:Fit()
             end
         end
         local controls = {} -- everything that takes the mouse (cut while the bar is faded out)
@@ -265,51 +265,51 @@ CUI_NS.unlockParts.Bar = function(UM)
         -- A control's tooltip: under the bar, starting at the control's left edge
         -- unless that would run off the right of the screen. Not while the
         -- first-open tip covers that spot.
-        local function Tip(owner, text, justify)
-            if UM.unlockTipFrame and UM.unlockTipFrame:IsShown() then
+        local function Tip(ownerFrame, textValue, justify)
+            if LM.unlockTipFrame and LM.unlockTipFrame:IsShown() then
                 return
             end
-            local toUI = owner:GetEffectiveScale() / UIParent:GetEffectiveScale()
-            local side = (owner:GetLeft() * toUI + 250 > UIParent:GetRight()) and "RIGHT" or "LEFT"
-            CludesUI.ShowWidgetTooltip(owner, text, {
-                anchorPoint = "TOP" .. side,
-                anchorTo = "BOTTOM" .. side,
+            local toUI = ownerFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            local sideName = (ownerFrame:GetLeft() * toUI + 250 > UIParent:GetRight()) and "RIGHT" or "LEFT"
+            CludesUI.ShowWidgetTooltip(ownerFrame, textValue, {
+                anchorPoint = "TOP" .. sideName,
+                anchorTo = "BOTTOM" .. sideName,
                 justify = justify,
                 -- Its top sits just under the strip, whatever the control's height.
                 anchorY = -(
                         BAR_H
                         + 1
-                        + (owner._tall and (FACE_Y - CAPTION_H / 2) or FACE_Y)
-                        - owner:GetHeight() / 2
-                    ) * bar:GetScale(),
+                        + (ownerFrame._tall and (FACE_Y - CAPTION_H / 2) or FACE_Y)
+                        - ownerFrame:GetHeight() / 2
+                    ) * barFrame:GetScale(),
             })
         end
-        UM.ShowBarTip = Tip
+        LM.ShowBarTip = Tip
 
         ---------------------------------------------------------------------------
         --  The strip: a dark plate across the whole screen, an accent line along
         --  its bottom edge and a soft glow under that.
         ---------------------------------------------------------------------------
-        local function Span(tex, top, height)
-            tex:SetPoint("TOP", bar, "TOP", 0, top)
-            tex:SetPoint("LEFT", UIParent, "LEFT")
-            tex:SetPoint("RIGHT", UIParent, "RIGHT")
-            tex:SetHeight(height)
+        local function Span(texture, topY, height)
+            texture:SetPoint("TOP", barFrame, "TOP", 0, topY)
+            texture:SetPoint("LEFT", UIParent, "LEFT")
+            texture:SetPoint("RIGHT", UIParent, "RIGHT")
+            texture:SetHeight(height)
         end
-        local plate = bar:CreateTexture(nil, "BACKGROUND")
-        Span(plate, 0, BAR_H)
-        plate:SetColorTexture(0.035, 0.043, 0.052, 0.95)
-        local sheen = bar:CreateTexture(nil, "BACKGROUND", nil, 1)
+        local backing = barFrame:CreateTexture(nil, "BACKGROUND")
+        Span(backing, 0, BAR_H)
+        backing:SetColorTexture(0.035, 0.043, 0.052, 0.95)
+        local sheen = barFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
         Span(sheen, 0, BAR_H)
         sheen:SetColorTexture(1, 1, 1, 1)
         sheen:SetGradient("VERTICAL", CreateColor(1, 1, 1, 0), CreateColor(1, 1, 1, 0.04))
-        local line = bar:CreateTexture(nil, "ARTWORK", nil, 2)
-        Span(line, -(BAR_H - 2), 2)
-        local glow = bar:CreateTexture(nil, "ARTWORK", nil, 1)
+        local lineTex = barFrame:CreateTexture(nil, "ARTWORK", nil, 2)
+        Span(lineTex, -(BAR_H - 2), 2)
+        local glow = barFrame:CreateTexture(nil, "ARTWORK", nil, 1)
         Span(glow, -BAR_H, 14)
         glow:SetColorTexture(1, 1, 1, 1)
         repaint[#repaint + 1] = function(r, g, b)
-            line:SetColorTexture(r, g, b, 0.9)
+            lineTex:SetColorTexture(r, g, b, 0.9)
             glow:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.2))
         end
 
@@ -317,37 +317,37 @@ CUI_NS.unlockParts.Bar = function(UM)
         --  Makers
         ---------------------------------------------------------------------------
         -- A square plate with a 2px-corner outline on host; returns the outline.
-        local function Plate(host)
-            local bg = host:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(1, 1, 1, 0.04)
-            local brd = CludesUI.MakeRoundedBorder(host, 1, 1, 1, 0.12, bg, 2)
+        local function Plate(hostRegion)
+            local backdrop = hostRegion:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            backdrop:SetColorTexture(1, 1, 1, 0.04)
+            local brd = CludesUI.MakeRoundedBorder(hostRegion, 1, 1, 1, 0.12, backdrop, 2)
             outlines[#outlines + 1] = brd
             return brd
         end
 
-        local function Control(kind, w, h)
-            local c = CreateFrame(kind, nil, bar)
-            c:SetSize(w, h)
-            c:SetFrameLevel(bar:GetFrameLevel() + 2)
+        local function Control(kindOf, wid, hgt)
+            local c = CreateFrame(kindOf, nil, barFrame)
+            c:SetSize(wid, hgt)
+            c:SetFrameLevel(barFrame:GetFrameLevel() + 2)
             controls[#controls + 1] = c
             return c
         end
 
         -- A toggle: icon on a square face, caption under it. The face fills and
         -- gains a bottom cap in the accent colour by the toggle's level.
-        local function MakeToggle(def)
-            local caption = bar:CreateFontString(nil, "OVERLAY")
+        local function MakeToggle(spec_def)
+            local caption = barFrame:CreateFontString(nil, "OVERLAY")
             caption:SetFont(FONT, CAPTION_SZ, "OUTLINE, SLUG")
-            caption:SetText(L(def.caption))
-            local btn = Control(
+            caption:SetText(L(spec_def.caption))
+            local button = Control(
                 "Button",
                 math.max(CHIP, math.ceil(caption:GetStringWidth() or CHIP) + 4),
                 CHIP + CAPTION_H
             )
-            btn._tall = true
-            caption:SetParent(btn)
-            local face = CreateFrame("Frame", nil, btn)
+            button._tall = true
+            caption:SetParent(button)
+            local face = CreateFrame("Frame", nil, button)
             face:SetSize(CHIP, CHIP)
             face:SetPoint("TOP")
             caption:SetPoint("TOP", face, "BOTTOM", 0, -3)
@@ -358,23 +358,23 @@ CUI_NS.unlockParts.Bar = function(UM)
             cap:SetPoint("BOTTOMLEFT", 1, 1)
             cap:SetPoint("BOTTOMRIGHT", -1, 1)
             cap:SetHeight(2)
-            local icon = face:CreateTexture(nil, "OVERLAY")
-            icon:SetSize(CHIP_ICON, CHIP_ICON)
-            icon:SetPoint("CENTER")
-            icon:SetTexture(ICONS .. def.icon)
+            local glyph = face:CreateTexture(nil, "OVERLAY")
+            glyph:SetSize(CHIP_ICON, CHIP_ICON)
+            glyph:SetPoint("CENTER")
+            glyph:SetTexture(ICONS .. spec_def.icon)
 
             local hover = false
             local function Paint()
                 local r, g, b = Accent()
-                local lv = def.level()
+                local lv = spec_def.level()
                 wash:SetColorTexture(r, g, b, 0.16 * lv)
                 cap:SetColorTexture(r, g, b, lv)
                 if lv > 0 then
-                    icon:SetVertexColor(r, g, b)
+                    glyph:SetVertexColor(r, g, b)
                 else
-                    icon:SetVertexColor(1, 1, 1)
+                    glyph:SetVertexColor(1, 1, 1)
                 end
-                icon:SetAlpha(hover and 1 or (lv > 0 and 0.9 or 0.45))
+                glyph:SetAlpha(hover and 1 or (lv > 0 and 0.9 or 0.45))
                 if hover then
                     brd:SetColor(1, 1, 1, 0.35)
                     caption:SetTextColor(1, 1, 1, 0.95)
@@ -388,140 +388,140 @@ CUI_NS.unlockParts.Bar = function(UM)
             end
             local function ShowTip()
                 Tip(
-                    btn,
+                    button,
                     CludesUI.HexColor(Accent())
-                        .. L(def.name)
+                        .. L(spec_def.name)
                         .. "|r  "
-                        .. L(def.state())
+                        .. L(spec_def.state())
                         .. "\n"
-                        .. L(def.tip)
+                        .. L(spec_def.tip)
                 )
             end
-            btn:SetScript("OnEnter", function()
+            button:SetScript("OnEnter", function()
                 hover = true
                 Paint()
                 ShowTip()
             end)
-            btn:SetScript("OnLeave", function()
+            button:SetScript("OnLeave", function()
                 hover = false
                 Paint()
                 CludesUI.HideWidgetTooltip()
             end)
-            btn:SetScript("OnClick", function()
-                def.click()
+            button:SetScript("OnClick", function()
+                spec_def.click()
                 Paint()
                 if hover then
                     ShowTip()
                 end -- the state word changed
             end)
             repaint[#repaint + 1] = Paint
-            return btn
+            return button
         end
 
         -- A small square button showing an icon or a character.
-        local function MakeChip(w, h, iconFile, char)
-            local btn = Control("Button", w, h)
-            local brd = Plate(btn)
+        local function MakeChip(wid, hgt, iconFile, char)
+            local button = Control("Button", wid, hgt)
+            local brd = Plate(button)
             local mark
             if iconFile then
-                mark = btn:CreateTexture(nil, "OVERLAY")
+                mark = button:CreateTexture(nil, "OVERLAY")
                 mark:SetSize(CHIP_ICON, CHIP_ICON)
                 mark:SetPoint("CENTER")
                 mark:SetTexture(ICONS .. iconFile)
             else
-                mark = btn:CreateFontString(nil, "OVERLAY")
+                mark = button:CreateFontString(nil, "OVERLAY")
                 mark:SetFont(FONT, 16, "")
                 mark:SetPoint("CENTER")
                 mark:SetText(char)
             end
-            btn._off = false
-            function btn.Paint(hover)
-                local a = btn._off and 0.2 or (hover and 0.95 or 0.6)
+            button._off = false
+            function button.Paint(hover)
+                local a = button._off and 0.2 or (hover and 0.95 or 0.6)
                 if iconFile then
                     mark:SetAlpha(a)
                 else
                     mark:SetTextColor(1, 1, 1, a)
                 end
-                brd:SetColor(1, 1, 1, (hover and not btn._off) and 0.35 or 0.12)
+                brd:SetColor(1, 1, 1, (hover and not button._off) and 0.35 or 0.12)
             end
-            btn:SetScript("OnEnter", function()
-                btn.Paint(true)
+            button:SetScript("OnEnter", function()
+                button.Paint(true)
             end)
-            btn:SetScript("OnLeave", function()
-                btn.Paint(false)
+            button:SetScript("OnLeave", function()
+                button.Paint(false)
             end)
-            btn.Paint(false)
-            return btn
+            button.Paint(false)
+            return button
         end
 
         -- A text button: grey outline, or the accent colour for the primary one.
-        local function MakeTextButton(text, w, primary, onClick)
-            local btn = Control("Button", w, BTN_H)
-            local bg = btn:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.3, bg, 2)
+        local function MakeTextButton(textValue, wid, primary, onClick)
+            local button = Control("Button", wid, BTN_H)
+            local backdrop = button:CreateTexture(nil, "BACKGROUND")
+            backdrop:SetAllPoints()
+            local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.3, backdrop, 2)
             outlines[#outlines + 1] = brd
-            local label = btn:CreateFontString(nil, "OVERLAY")
-            label:SetFont(FONT, 10, "OUTLINE, SLUG")
-            label:SetPoint("CENTER")
-            label:SetText(L(text))
+            local labelText = button:CreateFontString(nil, "OVERLAY")
+            labelText:SetFont(FONT, 10, "OUTLINE, SLUG")
+            labelText:SetPoint("CENTER")
+            labelText:SetText(L(textValue))
             local hover = false
             local function Paint()
                 local r, g, b = 1, 1, 1
                 if primary then
                     r, g, b = Accent()
                 end
-                bg:SetColorTexture(r, g, b, hover and 0.14 or 0.06)
+                backdrop:SetColorTexture(r, g, b, hover and 0.14 or 0.06)
                 brd:SetColor(r, g, b, hover and (primary and 1 or 0.5) or (primary and 0.7 or 0.3))
-                label:SetTextColor(r, g, b, hover and 1 or (primary and 0.9 or 0.7))
+                labelText:SetTextColor(r, g, b, hover and 1 or (primary and 0.9 or 0.7))
             end
-            btn:SetScript("OnEnter", function()
+            button:SetScript("OnEnter", function()
                 hover = true
                 Paint()
             end)
-            btn:SetScript("OnLeave", function()
+            button:SetScript("OnLeave", function()
                 hover = false
                 Paint()
             end)
-            btn:SetScript("OnClick", onClick)
+            button:SetScript("OnClick", onClick)
             repaint[#repaint + 1] = Paint
-            return btn
+            return button
         end
 
         ---------------------------------------------------------------------------
         --  The controls
         ---------------------------------------------------------------------------
         -- Brand: the logo (the open animation's emblem flies onto it) and the title.
-        local brand = CreateFrame("Frame", nil, bar)
+        local brand = CreateFrame("Frame", nil, barFrame)
         local logo = brand:CreateTexture(nil, "ARTWORK")
         logo:SetSize(LOGO_SZ, LOGO_SZ)
         logo:SetPoint("LEFT")
         logo:SetTexture(LOGO)
-        local title = brand:CreateFontString(nil, "OVERLAY")
-        title:SetFont(FONT, 13, "OUTLINE, SLUG")
-        title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
-        title:SetTextColor(1, 1, 1, 0.92)
-        title:SetText(L("LAYOUT MODE"))
-        brand:SetSize(LOGO_SZ + 8 + math.ceil(title:GetStringWidth() or 90), CHIP)
-        bar._badgeLogo = logo
+        local titleText = brand:CreateFontString(nil, "OVERLAY")
+        titleText:SetFont(FONT, 13, "OUTLINE, SLUG")
+        titleText:SetPoint("LEFT", logo, "RIGHT", 8, 0)
+        titleText:SetTextColor(1, 1, 1, 0.92)
+        titleText:SetText(L("LAYOUT MODE"))
+        brand:SetSize(LOGO_SZ + 8 + math.ceil(titleText:GetStringWidth() or 90), CHIP)
+        barFrame._badgeLogo = logo
         repaint[#repaint + 1] = function(r, g, b)
             logo:SetVertexColor(r, g, b, 1)
         end
 
-        local left = { brand, "|" }
-        for i = 1, #TOGGLES do
-            left[#left + 1] = MakeToggle(TOGGLES[i])
+        local leftX = { brand, "|" }
+        for idx = 1, #TOGGLES do
+            leftX[#leftX + 1] = MakeToggle(TOGGLES[idx])
         end
 
         -- Element filter: a funnel that focuses the box, the box, and its clear button.
         local funnel = MakeChip(CHIP, CHIP, "filter.png")
-        local box = Control("Frame", BOX_MIN, BTN_H)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        local boxFrame = Control("Frame", BOX_MIN, BTN_H)
+        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(CludesUI.SL_INPUT_R, CludesUI.SL_INPUT_G, CludesUI.SL_INPUT_B, 0.9)
-        local boxBrd = CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.2, boxBg, 2)
+        local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.2, boxBg, 2)
         outlines[#outlines + 1] = boxBrd
-        local edit = CreateFrame("EditBox", nil, box)
+        local edit = CreateFrame("EditBox", nil, boxFrame)
         edit:SetAllPoints()
         edit:SetAutoFocus(false)
         edit:SetFont(FONT, 11, "")
@@ -529,14 +529,14 @@ CUI_NS.unlockParts.Bar = function(UM)
         edit:SetTextInsets(6, 18, 0, 0)
         edit:SetMaxLetters(40)
         controls[#controls + 1] = edit
-        local hint = box:CreateFontString(nil, "OVERLAY")
+        local hint = boxFrame:CreateFontString(nil, "OVERLAY")
         hint:SetFont(FONT, 10, "")
-        hint:SetPoint("LEFT", box, "LEFT", 6, 0)
+        hint:SetPoint("LEFT", boxFrame, "LEFT", 6, 0)
         hint:SetTextColor(1, 1, 1, 0.35)
         hint:SetText(L("Filter elements..."))
-        local clear = CreateFrame("Button", nil, box)
+        local clear = CreateFrame("Button", nil, boxFrame)
         clear:SetSize(16, 16)
-        clear:SetPoint("RIGHT", box, "RIGHT", -2, 0)
+        clear:SetPoint("RIGHT", boxFrame, "RIGHT", -2, 0)
         clear:SetFrameLevel(edit:GetFrameLevel() + 2)
         clear:Hide()
         controls[#controls + 1] = clear
@@ -606,15 +606,15 @@ CUI_NS.unlockParts.Bar = function(UM)
             end
         end)
         edit:SetScript("OnTextChanged", function(self)
-            local text = self:GetText() or ""
-            hint:SetShown(text == "")
-            clear:SetShown(text ~= "")
-            filtering = UM.FilterSet(text)
+            local textValue = self:GetText() or ""
+            hint:SetShown(textValue == "")
+            clear:SetShown(textValue ~= "")
+            filtering = LM.FilterSet(textValue)
             PaintFilter()
         end)
-        left[#left + 1] = "|"
-        left[#left + 1] = funnel
-        left[#left + 1] = box
+        leftX[#leftX + 1] = "|"
+        leftX[#leftX + 1] = funnel
+        leftX[#leftX + 1] = boxFrame
 
         local help = MakeChip(CHIP, CHIP, "cui-info.png")
         help:SetScript("OnEnter", function(self)
@@ -626,10 +626,10 @@ CUI_NS.unlockParts.Bar = function(UM)
             CludesUI.HideWidgetTooltip()
         end)
         local exit = MakeTextButton("Exit", 60, false, function()
-            ns.RequestClose(false)
+            mod.RequestClose(false)
         end)
         local save = MakeTextButton("Save & Exit", 92, true, function()
-            ns.RequestClose(true)
+            mod.RequestClose(true)
         end)
         local smaller = MakeChip(SIZE_CHIP, SIZE_CHIP, nil, "-")
         local bigger = MakeChip(SIZE_CHIP, SIZE_CHIP, nil, "+")
@@ -642,37 +642,37 @@ CUI_NS.unlockParts.Bar = function(UM)
         --  box gives up its width first when the row does not fit (limit: the
         --  widest the row may be, in bar units; nil = no limit).
         ---------------------------------------------------------------------------
-        local function Place(list, side)
-            local x, first, groupGap = PAD, true, false
-            for _, c in ipairs(list) do
+        local function Place(entries, sideName)
+            local posX, first, groupGap = PAD, true, false
+            for _, c in ipairs(entries) do
                 if c == "|" then
                     groupGap = true
                 else
                     if not first then
-                        x = x + (groupGap and GROUP_GAP or (c == box and BOX_GAP or GAP))
+                        posX = posX + (groupGap and GROUP_GAP or (c == boxFrame and BOX_GAP or GAP))
                     end
                     first, groupGap = false, false
                     -- A toggle is taller by its caption: its face sits on the centre line.
-                    local y = c._tall and (FACE_Y - CAPTION_H / 2) or FACE_Y
+                    local posY = c._tall and (FACE_Y - CAPTION_H / 2) or FACE_Y
                     c:ClearAllPoints()
-                    if side == "LEFT" then
-                        c:SetPoint("LEFT", bar, "TOPLEFT", x, y)
+                    if sideName == "LEFT" then
+                        c:SetPoint("LEFT", barFrame, "TOPLEFT", posX, posY)
                     else
-                        c:SetPoint("RIGHT", bar, "TOPRIGHT", -x, y)
+                        c:SetPoint("RIGHT", barFrame, "TOPRIGHT", -posX, posY)
                     end
-                    x = x + c:GetWidth()
+                    posX = posX + c:GetWidth()
                 end
             end
-            return x
+            return posX
         end
         local function Layout(limit)
-            box:SetWidth(BOX_MAX)
-            local need = Place(left, "LEFT") + GROUP_GAP + Place(right, "RIGHT")
+            boxFrame:SetWidth(BOX_MAX)
+            local need = Place(leftX, "LEFT") + GROUP_GAP + Place(right, "RIGHT")
             if limit and need > limit then
-                box:SetWidth(BOX_MIN)
-                need = Place(left, "LEFT") + GROUP_GAP + Place(right, "RIGHT")
+                boxFrame:SetWidth(BOX_MIN)
+                need = Place(leftX, "LEFT") + GROUP_GAP + Place(right, "RIGHT")
             end
-            bar:SetWidth(math.ceil(need))
+            barFrame:SetWidth(math.ceil(need))
             return need
         end
 
@@ -683,25 +683,25 @@ CUI_NS.unlockParts.Bar = function(UM)
         local fitMax = SIZE_MAX
         local zone -- the hover zone, made below
         local function Shown()
-            return math.min(size, math.max(SIZE_MIN, math.floor(fitMax / SIZE_STEP + 0.001) * SIZE_STEP))
+            return math.min(dim, math.max(SIZE_MIN, math.floor(fitMax / SIZE_STEP + 0.001) * SIZE_STEP))
         end
         local function ApplySize()
             local s = Shown()
-            bar:SetScale(base * s)
-            bar:ClearAllPoints()
-            bar:SetPoint("TOP", UIParent, "TOP", 0, 0)
+            barFrame:SetScale(baseValue * s)
+            barFrame:ClearAllPoints()
+            barFrame:SetPoint("TOP", UIParent, "TOP", 0, 0)
             if zone then
-                zone:SetHeight((BAR_H + 2) * base * s)
+                zone:SetHeight((BAR_H + 2) * baseValue * s)
             end
             smaller._off = s <= SIZE_MIN + 0.001
             bigger._off = s >= SIZE_MAX - 0.001 or s + SIZE_STEP > fitMax + 0.001
             smaller.Paint(false)
             bigger.Paint(false)
-            bar._refitOutlines()
+            barFrame._refitOutlines()
         end
         local function Step(dir)
             local s = math.max(SIZE_MIN, math.min(SIZE_MAX, Shown() + dir * SIZE_STEP))
-            size = s
+            dim = s
             if CludesUIDB then
                 CludesUIDB.unlockBannerScale = s
             end
@@ -719,32 +719,32 @@ CUI_NS.unlockParts.Bar = function(UM)
         end)
         -- The fit only changes with the screen, so it runs each time the bar shows.
         local function Fit()
-            local limit = GetScreenWidth() / base
+            local limit = GetScreenWidth() / baseValue
             fitMax = limit / Layout(limit)
-            bar:SetScale(base * Shown())
+            barFrame:SetScale(baseValue * Shown())
             smaller._off = Shown() <= SIZE_MIN + 0.001
             bigger._off = Shown() >= SIZE_MAX - 0.001 or Shown() + SIZE_STEP > fitMax + 0.001
             smaller.Paint(false)
             bigger.Paint(false)
         end
-        bar._applySize = ApplySize
+        barFrame._applySize = ApplySize
 
         ---------------------------------------------------------------------------
         --  Colour
         ---------------------------------------------------------------------------
-        function UM.PaintBanner()
+        function LM.PaintBanner()
             local r, g, b = Accent()
-            for i = 1, #repaint do
-                repaint[i](r, g, b)
+            for idx = 1, #repaint do
+                repaint[idx](r, g, b)
             end
         end
         CludesUI.RegAccent({
             type = "callback",
             fn = function()
-                UM.PaintBanner()
+                LM.PaintBanner()
             end,
         })
-        UM.PaintBanner()
+        LM.PaintBanner()
 
         ---------------------------------------------------------------------------
         --  Fading. Holding Shift fades the bar out so what is under it can be
@@ -752,51 +752,51 @@ CUI_NS.unlockParts.Bar = function(UM)
         --  screen within the bar's width and not on an element. While faded out,
         --  its controls let the mouse through.
         ---------------------------------------------------------------------------
-        zone = CreateFrame("Frame", nil, parent) -- other addons stack under this (GetUnlockModeTopBarAnchor)
+        zone = CreateFrame("Frame", nil, hostFrame) -- other addons stack under this (GetUnlockModeTopBarAnchor)
         zone:SetFrameStrata("FULLSCREEN_DIALOG")
-        zone:SetFrameLevel(parent:GetFrameLevel() + 56)
+        zone:SetFrameLevel(hostFrame:GetFrameLevel() + 56)
         zone:SetPoint("TOPLEFT", UIParent, "TOPLEFT")
         zone:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT")
-        zone:SetHeight((BAR_H + 2) * base * Shown())
+        zone:SetHeight((BAR_H + 2) * baseValue * Shown())
         zone:EnableMouse(false)
         zone:Hide()
-        bar._hoverZone = zone
+        barFrame._hoverZone = zone
 
         local alpha, cut = 1, false
-        local function CutMouse(on)
-            if on == cut then
+        local function CutMouse(enabled)
+            if enabled == cut then
                 return
             end
-            cut = on
-            for i = 1, #controls do
-                local c = controls[i]
-                if on then
+            cut = enabled
+            for idx = 1, #controls do
+                local c = controls[idx]
+                if enabled then
                     -- Disabling the mouse fires no OnLeave: clear the hover look by hand.
                     local leave = c:GetScript("OnLeave")
                     if leave then
                         leave(c)
                     end
                 end
-                c:EnableMouse(not on)
+                c:EnableMouse(not enabled)
             end
         end
 
         -- Is the cursor on a Layout Mode element (not the bar, not a menu's click catcher)?
         -- Read again only when the cursor moved or the mouse cut changed.
         local seenX, seenY, seenCut, seenHit
-        local function OverElement(x, y)
-            if x == seenX and y == seenY and cut == seenCut then
+        local function OverElement(posX, posY)
+            if posX == seenX and posY == seenY and cut == seenCut then
                 return seenHit
             end
-            seenX, seenY, seenCut, seenHit = x, y, cut, false
+            seenX, seenY, seenCut, seenHit = posX, posY, cut, false
             local f = GetMouseFoci()[1]
             while f do
                 if f.IsForbidden and f:IsForbidden() then
                     return false
                 end
                 local up = f:GetParent()
-                if up == UM.unlockFrame then
-                    seenHit = f ~= bar and not f._umCatcher
+                if up == LM.unlockFrame then
+                    seenHit = f ~= barFrame and not f._umCatcher
                     return seenHit
                 end
                 f = up
@@ -804,7 +804,7 @@ CUI_NS.unlockParts.Bar = function(UM)
             return false
         end
 
-        bar:SetScript("OnUpdate", function(self, dt)
+        barFrame:SetScript("OnUpdate", function(self, dt)
             local typing = edit:HasFocus()
             local shift = IsShiftKeyDown() and not typing -- capitals in the filter are not a hide
             CutMouse(shift or (autoHide and alpha == 0))
@@ -826,32 +826,36 @@ CUI_NS.unlockParts.Bar = function(UM)
                 return
             end
             zone:Show()
-            local x, y = GetCursorPosition()
+            local posX, posY = GetCursorPosition()
             local ui = UIParent:GetEffectiveScale()
-            local want = typing
-            if not want and y / ui >= UIParent:GetHeight() - zone:GetHeight() then
+            local wanted = typing
+            if not wanted and posY / ui >= UIParent:GetHeight() - zone:GetHeight() then
                 local s, l, r = self:GetEffectiveScale(), self:GetLeft(), self:GetRight()
-                local drag = UM.selectedMover and UM.selectedMover._dragging
-                want = l ~= nil and x >= l * s and x <= r * s and not drag and not OverElement(x, y)
+                local drag = LM.selectedMover and LM.selectedMover._dragging
+                wanted = l ~= nil
+                    and posX >= l * s
+                    and posX <= r * s
+                    and not drag
+                    and not OverElement(posX, posY)
             end
-            alpha = math.max(0, math.min(1, alpha + (want and dt or -dt) / HOVER_FADE))
+            alpha = math.max(0, math.min(1, alpha + (wanted and dt or -dt) / HOVER_FADE))
             self:SetAlpha(alpha)
         end)
 
-        bar:SetScript("OnShow", function()
+        barFrame:SetScript("OnShow", function()
             Fit()
-            UM.PaintBanner()
+            LM.PaintBanner()
         end)
         -- Closing Layout Mode (or a combat pause) hides the bar: start clean next time,
         -- and drop a tooltip one of its controls left showing.
-        bar:SetScript("OnHide", function()
+        barFrame:SetScript("OnHide", function()
             edit:ClearFocus()
             edit:SetText("")
-            UM.FilterReset()
+            LM.FilterReset()
             filtering = false
-            local owner = CludesUI._WidgetTooltipOwner()
-            for i = 1, #controls do
-                if controls[i] == owner then
+            local ownerFrame = CludesUI._WidgetTooltipOwner()
+            for idx = 1, #controls do
+                if controls[idx] == ownerFrame then
                     CludesUI.HideWidgetTooltip(true)
                     break
                 end
@@ -859,12 +863,12 @@ CUI_NS.unlockParts.Bar = function(UM)
         end)
 
         Fit()
-        bar:Hide()
-        return bar
+        barFrame:Hide()
+        return barFrame
     end
 
     -- Stable anchor for other addons that stack controls under the bar.
     function CludesUI:GetUnlockModeTopBarAnchor()
-        return UM.hudFrame and UM.hudFrame._hoverZone
+        return LM.hudFrame and LM.hudFrame._hoverZone
     end
 end

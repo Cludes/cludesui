@@ -9,19 +9,20 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  (CUI_UnitFrames_Init.lua, CUI_UnitFrames_Reload.lua). Reads the main
 --  file through ns and ns._internals; db is set through I.dbSetters.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local math_floor = math.floor
 local issecretvalue = issecretvalue
-local PP = CludesUI.PP
+local Pix = CludesUI.PP
 local MakeBorder = CludesUI.MakeBorder
 
-local I = ns._internals
-local frames = I.frames
-local ClassPowerEntry, DruidNeedsCatForm, InCatForm = I.ClassPowerEntry, I.DruidNeedsCatForm, I.InCatForm
-local db
-I.dbSetters[#I.dbSetters + 1] = function(v)
-    db = v
+local Inner = mod._internals
+local frameList = Inner.frames
+local ClassPowerEntry, DruidNeedsCatForm, InCatForm =
+    Inner.ClassPowerEntry, Inner.DruidNeedsCatForm, Inner.InCatForm
+local saved
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
+    saved = val
 end
 
 -- Fixed child-born shells for the class-power event driver and castbar watcher. The
@@ -30,10 +31,10 @@ end
 -- bills a handler's entire call tree to the addon whose context created the frame, so
 -- drivers recreated there would bill the parent's CPU row. Creating them ONCE here
 -- (child main chunk) and reconfiguring per build keeps every rebuild attribution-safe.
-ns._cpDriver = CreateFrame("Frame")
-ns._cpDriver:Hide()
-ns._cpCastWatcher = CreateFrame("Frame")
-ns._cpCastWatcher:Hide()
+mod._cpDriver = CreateFrame("Frame")
+mod._cpDriver:Hide()
+mod._cpCastWatcher = CreateFrame("Frame")
+mod._cpCastWatcher:Hide()
 
 -- 10 Hz anim tickers for the two class-power polls. A per-frame OnUpdate that
 -- early-outs to a 0.1s cadence still pays a full Lua entry every render frame (pure
@@ -42,17 +43,17 @@ ns._cpCastWatcher:Hide()
 -- AnimationGroup is the engine's entry object and bills its creation context. Bodies
 -- read a swappable ns function so per-build closures stay per-build; a ticker runs only
 -- between Start()/Stop() and pauses while its host is hidden.
-ns._cpDriverTick = CludesUI.Tick.NewAnimTicker(ns._cpDriver, function()
-    local fn = ns._cpTickFn
-    if fn then
-        fn()
+mod._cpDriverTick = CludesUI.Tick.NewAnimTicker(mod._cpDriver, function()
+    local func = mod._cpTickFn
+    if func then
+        func()
     end
     return true
 end, 0.1)
-ns._cpWatchTick = CludesUI.Tick.NewAnimTicker(ns._cpCastWatcher, function()
-    local fn = ns._cpWatchFn
-    if fn then
-        fn()
+mod._cpWatchTick = CludesUI.Tick.NewAnimTicker(mod._cpCastWatcher, function()
+    local func = mod._cpWatchFn
+    if func then
+        func()
     end
     return true
 end, 0.1)
@@ -67,13 +68,13 @@ local cpPipPool = {}
 
 -- Silences and hides every child of the parked row (the engine-slot overlay's
 -- proxy included) without building a table of them.
-local function ParkChildren(child, ...)
-    if not child then
+local function ParkChildren(childFrame, ...)
+    if not childFrame then
         return
     end
-    child:UnregisterAllEvents()
-    child:SetScript("OnEvent", nil)
-    child:Hide()
+    childFrame:UnregisterAllEvents()
+    childFrame:SetScript("OnEvent", nil)
+    childFrame:Hide()
     return ParkChildren(...)
 end
 
@@ -83,31 +84,31 @@ local function DestroyCustomClassPower()
     if _G._EWC then
         _G._EWC.Gate("uf")
     end
-    ns._cpTickFn = nil
-    ns._cpDriverTick.Stop()
-    ns._cpWatchFn = nil
-    ns._cpWatchTick.Stop()
-    local container = frames._customClassPower
-    if container then
-        container:Hide()
-        ParkChildren(container:GetChildren())
-        frames._customClassPower = nil
+    mod._cpTickFn = nil
+    mod._cpDriverTick.Stop()
+    mod._cpWatchFn = nil
+    mod._cpWatchTick.Stop()
+    local boxHolder = frameList._customClassPower
+    if boxHolder then
+        boxHolder:Hide()
+        ParkChildren(boxHolder:GetChildren())
+        frameList._customClassPower = nil
     end
 end
 
-local function CreateCustomClassPower(playerFrame, style)
+local function CreateCustomClassPower(playerFrame, look)
     local _, playerClass = UnitClass("player")
-    local entry = ClassPowerEntry(playerClass)
-    if not entry then
+    local record = ClassPowerEntry(playerClass)
+    if not record then
         return nil
     end
 
     -- Resolve spec-specific entries (table with specID keys)
     local powerType, customMax, isCustom, renderMode
-    if type(entry) == "table" then
-        local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
-        local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
-        local specEntry = specID and entry[specID]
+    if type(record) == "table" then
+        local specInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
+        local specID = specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
+        local specEntry = specID and record[specID]
         if not specEntry then
             return nil
         end
@@ -127,7 +128,7 @@ local function CreateCustomClassPower(playerFrame, style)
             isCustom = false
         end
     else
-        powerType = entry
+        powerType = record
         isCustom = false
     end
     local isBarMode = (renderMode == "bar")
@@ -175,20 +176,20 @@ local function CreateCustomClassPower(playerFrame, style)
         end
     end
 
-    local isModern = (style == "modern")
-    local isCircle = (style == "circles")
-    local sizeAdj = db.profile.player.classPowerSize or 8
-    local spacingAdj = db.profile.player.classPowerSpacing or 2
+    local isModern = (look == "modern")
+    local isCircle = (look == "circles")
+    local sizeAdj = saved.profile.player.classPowerSize or 8
+    local spacingAdj = saved.profile.player.classPowerSpacing or 2
     local pipSize = isModern and sizeAdj or (isCircle and (sizeAdj + 6) or (sizeAdj + 12))
     local pipH = isModern and math.max(3, math.floor(sizeAdj * 0.375))
         or (isCircle and (sizeAdj + 6) or sizeAdj)
     local gap = spacingAdj
     local pad = isModern and 0 or 4
     -- Snap all dimensions to physical pixel boundaries
-    pipSize = PP.Scale(pipSize)
-    pipH = PP.Scale(pipH)
-    gap = PP.Scale(gap)
-    pad = PP.Scale(pad)
+    pipSize = Pix.Scale(pipSize)
+    pipH = Pix.Scale(pipH)
+    gap = Pix.Scale(gap)
+    pad = Pix.Scale(pad)
     -- For bar-mode resources (stagger), "maxPower" is a raw game value (e.g. player max
     -- HP) and doesn't drive layout width. Use a 5-pip equivalent so the bar matches the
     -- visual footprint of Chi / Combo Points etc.
@@ -198,41 +199,41 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- The row is reused across builds (see cpContainer): a parked one goes back
     -- to the state a new frame starts in, then is configured like one.
-    local container = cpContainer
-    if container then
-        container:SetParent(UIParent)
-        container:ClearAllPoints()
-        container:SetAlpha(1)
-        container:Show()
-        container._repositionForWidth = nil
+    local boxHolder = cpContainer
+    if boxHolder then
+        boxHolder:SetParent(UIParent)
+        boxHolder:ClearAllPoints()
+        boxHolder:SetAlpha(1)
+        boxHolder:Show()
+        boxHolder._repositionForWidth = nil
     else
-        container = CreateFrame("Frame", nil, UIParent)
-        cpContainer = container
+        boxHolder = CreateFrame("Frame", nil, UIParent)
+        cpContainer = boxHolder
     end
-    PP.Size(container, totalW, totalH)
-    container:SetFrameStrata("MEDIUM")
-    container:SetFrameLevel(10)
+    Pix.Size(boxHolder, totalW, totalH)
+    boxHolder:SetFrameStrata("MEDIUM")
+    boxHolder:SetFrameLevel(10)
 
     -- Background color behind all pips (spans left edge of first pip to right edge of last pip)
-    local bgCol = db.profile.player.classPowerBgColor or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
-    local containerBg = container._bg
+    local bgCol = saved.profile.player.classPowerBgColor or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
+    local containerBg = boxHolder._bg
     if not containerBg then
-        containerBg = container:CreateTexture(nil, "BACKGROUND")
+        containerBg = boxHolder:CreateTexture(nil, "BACKGROUND")
         containerBg:SetAllPoints()
-        container._bg = containerBg
+        boxHolder._bg = containerBg
     end
     containerBg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
 
     -- Empty pip color (shown when pip is not filled)
-    local emptyCol = db.profile.player.classPowerEmptyColor or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
+    local emptyCol = saved.profile.player.classPowerEmptyColor or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
 
     -- Border: non-modern styles only, built on first use and shown per style
     if not isModern then
         if not cpBorder then
-            cpBorder = MakeBorder(container, 0, 0, 0, 0.8)
+            cpBorder = MakeBorder(boxHolder, 0, 0, 0, 0.8)
         end
-        cpBorder._frame:SetFrameLevel(container:GetFrameLevel() + 1)
-        cpBorder.edges:SetFrameLevel(container:GetFrameLevel() + 2)
+        cpBorder._frame:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
+        cpBorder.edges:SetFrameLevel(boxHolder:GetFrameLevel() + 2)
         cpBorder._frame:Show()
     elseif cpBorder then
         cpBorder._frame:Hide()
@@ -241,24 +242,24 @@ local function CreateCustomClassPower(playerFrame, style)
     -- 1px inset bottom border for "above" position (matches frame border color)
     -- Must be on a separate overlay frame at a higher frame level than pip child frames,
     -- because child frames always render over parent textures regardless of draw layer.
-    local cpBdrOverlay = container._bottomBdrFrame
+    local cpBdrOverlay = boxHolder._bottomBdrFrame
     if not cpBdrOverlay then
-        cpBdrOverlay = CreateFrame("Frame", nil, container)
+        cpBdrOverlay = CreateFrame("Frame", nil, boxHolder)
         cpBdrOverlay:SetAllPoints()
         local cpBottomBdr = cpBdrOverlay:CreateTexture(nil, "OVERLAY", nil, 7)
         cpBottomBdr:SetHeight(1)
-        PP.Point(cpBottomBdr, "BOTTOMLEFT", cpBdrOverlay, "BOTTOMLEFT", 0, 0)
-        PP.Point(cpBottomBdr, "BOTTOMRIGHT", cpBdrOverlay, "BOTTOMRIGHT", 0, 0)
-        container._bottomBdr = cpBottomBdr
-        container._bottomBdrFrame = cpBdrOverlay
+        Pix.Point(cpBottomBdr, "BOTTOMLEFT", cpBdrOverlay, "BOTTOMLEFT", 0, 0)
+        Pix.Point(cpBottomBdr, "BOTTOMRIGHT", cpBdrOverlay, "BOTTOMRIGHT", 0, 0)
+        boxHolder._bottomBdr = cpBottomBdr
+        boxHolder._bottomBdrFrame = cpBdrOverlay
     end
-    cpBdrOverlay:SetFrameLevel(container:GetFrameLevel() + 20)
+    cpBdrOverlay:SetFrameLevel(boxHolder:GetFrameLevel() + 20)
     cpBdrOverlay:Hide() -- shown only when position is "above"
 
-    local useClassColor = db.profile.player.classPowerClassColor ~= false
+    local useClassColor = saved.profile.player.classPowerClassColor ~= false
     local cr, cg, cb
     if not useClassColor then
-        local cc = db.profile.player.classPowerCustomColor or { r = 1, g = 0.82, b = 0 }
+        local cc = saved.profile.player.classPowerCustomColor or { r = 1, g = 0.82, b = 0 }
         cr, cg, cb = cc.r, cc.g, cc.b
     else
         -- Pull from CUI global color system: resource color > class color
@@ -277,24 +278,24 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- The pip at this index from the pool (built on first use), configured for
     -- this build as a new one starts: shown, fill shown, no secret overlay up.
-    local function MakePip(parent, index)
-        local pip = cpPipPool[index]
-        if not pip then
-            pip = CreateFrame("Frame", nil, parent)
-            pip._empty = pip:CreateTexture(nil, "ARTWORK", nil, 0)
-            pip._empty:SetAllPoints()
-            pip._fill = pip:CreateTexture(nil, "ARTWORK", nil, 1)
-            pip._fill:SetAllPoints()
-            cpPipPool[index] = pip
+    local function MakePip(hostFrame, slotPos)
+        local pipTex = cpPipPool[slotPos]
+        if not pipTex then
+            pipTex = CreateFrame("Frame", nil, hostFrame)
+            pipTex._empty = pipTex:CreateTexture(nil, "ARTWORK", nil, 0)
+            pipTex._empty:SetAllPoints()
+            pipTex._fill = pipTex:CreateTexture(nil, "ARTWORK", nil, 1)
+            pipTex._fill:SetAllPoints()
+            cpPipPool[slotPos] = pipTex
         end
-        pip:SetFrameLevel(parent:GetFrameLevel() + 1)
-        PP.Size(pip, pipSize, pipH)
-        local x = (index - 1) * (pipSize + gap) + pad / 2
-        pip:ClearAllPoints()
-        PP.Point(pip, "LEFT", parent, "LEFT", x, 0)
+        pipTex:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
+        Pix.Size(pipTex, pipSize, pipH)
+        local posX = (slotPos - 1) * (pipSize + gap) + pad / 2
+        pipTex:ClearAllPoints()
+        Pix.Point(pipTex, "LEFT", hostFrame, "LEFT", posX, 0)
 
         -- Empty bar color (visible when pip is not filled)
-        local pipEmpty = pip._empty
+        local pipEmpty = pipTex._empty
         if isCircle then
             pipEmpty:SetTexture("Interface\\COMMON\\Indicator-Gray")
             pipEmpty:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
@@ -304,7 +305,7 @@ local function CreateCustomClassPower(playerFrame, style)
         end
 
         -- Fill color (on top of empty)
-        local pipFill = pip._fill
+        local pipFill = pipTex._fill
         if isCircle then
             pipFill:SetTexture("Interface\\COMMON\\Indicator-Gray")
             pipFill:SetVertexColor(cr, cg, cb, 1)
@@ -314,13 +315,13 @@ local function CreateCustomClassPower(playerFrame, style)
         end
         pipFill:Show()
 
-        local sb = pip._secretBar
-        if sb then
-            sb:SetFrameLevel(pip:GetFrameLevel() + 1)
-            sb:Hide()
+        local scrollBar = pipTex._secretBar
+        if scrollBar then
+            scrollBar:SetFrameLevel(pipTex:GetFrameLevel() + 1)
+            scrollBar:Hide()
         end
-        pip:Show()
-        return pip
+        pipTex:Show()
+        return pipTex
     end
 
     local pips = {}
@@ -335,15 +336,15 @@ local function CreateCustomClassPower(playerFrame, style)
         local inset = pad / 2
         staggerBar = cpStaggerBar
         if not staggerBar then
-            staggerBar = CreateFrame("StatusBar", nil, container)
+            staggerBar = CreateFrame("StatusBar", nil, boxHolder)
             staggerBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
             staggerBar:GetStatusBarTexture():SetHorizTile(false)
             cpStaggerBar = staggerBar
         end
-        staggerBar:SetFrameLevel(container:GetFrameLevel() + 1)
+        staggerBar:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
         staggerBar:ClearAllPoints()
-        PP.Point(staggerBar, "TOPLEFT", container, "TOPLEFT", inset, 0)
-        PP.Point(staggerBar, "BOTTOMRIGHT", container, "BOTTOMRIGHT", -inset, 0)
+        Pix.Point(staggerBar, "TOPLEFT", boxHolder, "TOPLEFT", inset, 0)
+        Pix.Point(staggerBar, "BOTTOMRIGHT", boxHolder, "BOTTOMRIGHT", -inset, 0)
         staggerBar:SetMinMaxValues(0, maxPower)
         staggerBar:SetValue(0)
         staggerBar:GetStatusBarTexture():SetVertexColor(0.2, 0.8, 0.2, 1)
@@ -351,17 +352,17 @@ local function CreateCustomClassPower(playerFrame, style)
         staggerBar._lastMax, staggerBar._colorSet = nil, nil
         staggerBar._lastR, staggerBar._lastG, staggerBar._lastB = nil, nil, nil
         staggerBar:Show()
-        container._staggerBar = staggerBar
+        boxHolder._staggerBar = staggerBar
         for i = 1, #cpPipPool do
             cpPipPool[i]:Hide()
         end
     else
-        container._staggerBar = nil
+        boxHolder._staggerBar = nil
         if cpStaggerBar then
             cpStaggerBar:Hide()
         end
         for i = 1, maxPower do
-            pips[i] = MakePip(container, i)
+            pips[i] = MakePip(boxHolder, i)
         end
         -- Pooled pips past this build's count stay hidden until a regrown max takes them.
         for i = maxPower + 1, #cpPipPool do
@@ -392,22 +393,22 @@ local function CreateCustomClassPower(playerFrame, style)
                 end
                 staggerBar:SetValue(stagger)
                 local pct = stagger / maxHP
-                local sr, sg, sb
+                local sr, sg, scrollBar
                 if pct >= 0.6 then
-                    sr, sg, sb = 1.0, 0.2, 0.2
+                    sr, sg, scrollBar = 1.0, 0.2, 0.2
                 elseif pct >= 0.3 then
-                    sr, sg, sb = 1.0, 0.85, 0.2
+                    sr, sg, scrollBar = 1.0, 0.85, 0.2
                 else
-                    sr, sg, sb = 0.2, 0.8, 0.2
+                    sr, sg, scrollBar = 0.2, 0.8, 0.2
                 end
-                if staggerBar._lastR ~= sr or staggerBar._lastG ~= sg or staggerBar._lastB ~= sb then
-                    staggerBar._lastR, staggerBar._lastG, staggerBar._lastB = sr, sg, sb
-                    staggerBar:GetStatusBarTexture():SetVertexColor(sr, sg, sb, 1)
+                if staggerBar._lastR ~= sr or staggerBar._lastG ~= sg or staggerBar._lastB ~= scrollBar then
+                    staggerBar._lastR, staggerBar._lastG, staggerBar._lastB = sr, sg, scrollBar
+                    staggerBar:GetStatusBarTexture():SetVertexColor(sr, sg, scrollBar, 1)
                 end
             elseif powerType == "SOUL_FRAGMENTS_DEVOURER" then
-                local cur, maxC = 0, customMax or 50
+                local current, maxC = 0, customMax or 50
                 if CludesUI and CludesUI.GetSoulFragments then
-                    cur, maxC = CludesUI.GetSoulFragments()
+                    current, maxC = CludesUI.GetSoulFragments()
                     if not maxC or maxC <= 0 then
                         maxC = customMax or 50
                     end
@@ -416,7 +417,7 @@ local function CreateCustomClassPower(playerFrame, style)
                     staggerBar._lastMax = maxC
                     staggerBar:SetMinMaxValues(0, maxC)
                 end
-                staggerBar:SetValue(cur or 0)
+                staggerBar:SetValue(current or 0)
                 -- Use class color (DH)
                 if not staggerBar._colorSet then
                     staggerBar._colorSet = true
@@ -432,16 +433,16 @@ local function CreateCustomClassPower(playerFrame, style)
             end
             return
         end
-        local cur, max
+        local current, upper
         if isCustom then
             -- Custom resource: use CludesUI tracker functions
             if powerType == "SOUL_FRAGMENTS_VENGEANCE" then
-                cur = C_Spell and C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(228477) or 0
-                max = 6
+                current = C_Spell and C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(228477) or 0
+                upper = 6
             elseif powerType == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-                cur, max = CludesUI.GetMaelstromWeapon()
+                current, upper = CludesUI.GetMaelstromWeapon()
             elseif powerType == "TIP_OF_THE_SPEAR" and CludesUI and CludesUI.GetTipOfTheSpear then
-                cur, max = CludesUI.GetTipOfTheSpear()
+                current, upper = CludesUI.GetTipOfTheSpear()
             elseif powerType == "WHIRLWIND_STACKS" or powerType == "SWEEPING_STRIKES" then
                 -- Engine slot owns the display (CludesUI_WarriorCharges):
                 -- the true count fills the overlay bar C-side; legacy pips
@@ -454,22 +455,22 @@ local function CreateCustomClassPower(playerFrame, style)
                 return
             elseif powerType == "ICICLES" then
                 -- Frost Mage Icicles: stack count from the Icicles aura (205473).
-                local count = 0
+                local total = 0
                 if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
                     local aura = C_UnitAuras.GetPlayerAuraBySpellID(205473)
                     if aura then
-                        count = aura.applications or aura.charges or aura.points or 0
-                        if count > 5 then
-                            count = 5
+                        total = aura.applications or aura.charges or aura.points or 0
+                        if total > 5 then
+                            total = 5
                         end
                     end
                 end
-                cur, max = count, 5
+                current, upper = total, 5
             else
-                cur, max = 0, maxPower
+                current, upper = 0, maxPower
             end
-            if not max or max <= 0 then
-                max = maxPower
+            if not upper or upper <= 0 then
+                upper = maxPower
             end
         else
             -- Forever combo points belong to the target, and UnitPower still
@@ -478,19 +479,19 @@ local function CreateCustomClassPower(playerFrame, style)
             -- gcp=0 on the swap), with no later power event to correct it.
             -- Blizzard's own ComboFrame reads GetComboPoints for the same reason.
             if CludesUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints and GetComboPoints then
-                cur = GetComboPoints("player", "target") or 0
+                current = GetComboPoints("player", "target") or 0
             else
-                cur = UnitPower("player", powerType) or 0
+                current = UnitPower("player", powerType) or 0
             end
-            max = UnitPowerMax("player", powerType) or maxPower
+            upper = UnitPowerMax("player", powerType) or maxPower
 
             -- Handle runes specially (count available runes)
             if powerType == Enum.PowerType.Runes then
-                cur = 0
-                for i = 1, max do
+                current = 0
+                for i = 1, upper do
                     local start, duration, ready = GetRuneCooldown(i)
                     if ready then
-                        cur = cur + 1
+                        current = current + 1
                     end
                 end
             end
@@ -500,32 +501,32 @@ local function CreateCustomClassPower(playerFrame, style)
         -- #pips only ever grows (hidden pips stay in the table), so it stops
         -- matching once max shrinks and regrows to a previously-seen value,
         -- leaving the high pips stuck hidden and the container stuck narrow.
-        if max ~= shownPipCount and max > 0 then
+        if upper ~= shownPipCount and upper > 0 then
             for _, p in ipairs(pips) do
                 p:Hide()
             end
-            local newTotalW = max * pipSize + (max - 1) * gap + pad
-            container:SetWidth(newTotalW)
-            for i = 1, max do
+            local newTotalW = upper * pipSize + (upper - 1) * gap + pad
+            boxHolder:SetWidth(newTotalW)
+            for i = 1, upper do
                 if not pips[i] then
-                    pips[i] = MakePip(container, i)
+                    pips[i] = MakePip(boxHolder, i)
                 end
-                local x = (i - 1) * (pipSize + gap) + pad / 2
+                local posX = (i - 1) * (pipSize + gap) + pad / 2
                 pips[i]:ClearAllPoints()
-                PP.Point(pips[i], "TOPLEFT", container, "TOPLEFT", x, 0)
-                PP.Size(pips[i], pipSize, pipH)
+                Pix.Point(pips[i], "TOPLEFT", boxHolder, "TOPLEFT", posX, 0)
+                Pix.Size(pips[i], pipSize, pipH)
                 pips[i]:Show()
             end
-            shownPipCount = max
+            shownPipCount = upper
             -- Only "above" stretches the row across the health bar (see
             -- PositionClassPowerBar); every other position keeps the natural pip
             -- width laid out just above.
             if
                 isModern
-                and (db.profile.player.classPowerPosition or "top") == "above"
-                and container._repositionForWidth
+                and (saved.profile.player.classPowerPosition or "top") == "above"
+                and boxHolder._repositionForWidth
             then
-                container._repositionForWidth(db.profile.player.frameWidth or 181)
+                boxHolder._repositionForWidth(saved.profile.player.frameWidth or 181)
             end
         end
 
@@ -533,20 +534,20 @@ local function CreateCustomClassPower(playerFrame, style)
         -- classifies depends on the client, and combo points come back secret on
         -- Forever. Classifying the value itself keeps the compare below legal
         -- whatever the resource, at the cost of one test per update.
-        if isSecretResource or issecretvalue(cur) then
+        if isSecretResource or issecretvalue(current) then
             -- Secret-value path: use StatusBar overlays per pip
             for i = 1, #pips do
                 if pips[i] then
                     if not pips[i]._secretBar then
-                        local sb = CreateFrame("StatusBar", nil, pips[i])
-                        sb:SetAllPoints(pips[i]._fill or pips[i])
-                        sb:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-                        sb:SetStatusBarColor(cr, cg, cb, 1)
-                        sb:SetFrameLevel(pips[i]:GetFrameLevel() + 1)
-                        pips[i]._secretBar = sb
+                        local scrollBar = CreateFrame("StatusBar", nil, pips[i])
+                        scrollBar:SetAllPoints(pips[i]._fill or pips[i])
+                        scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+                        scrollBar:SetStatusBarColor(cr, cg, cb, 1)
+                        scrollBar:SetFrameLevel(pips[i]:GetFrameLevel() + 1)
+                        pips[i]._secretBar = scrollBar
                     end
                     pips[i]._secretBar:SetMinMaxValues(i - 1, i)
-                    pips[i]._secretBar:SetValue(cur)
+                    pips[i]._secretBar:SetValue(current)
                     pips[i]._secretBar:SetStatusBarColor(cr, cg, cb, 1)
                     pips[i]._secretBar:Show()
                     -- Hide normal fill; StatusBar replaces it
@@ -563,7 +564,7 @@ local function CreateCustomClassPower(playerFrame, style)
                         pips[i]._secretBar:Hide()
                     end
                     if pips[i]._fill then
-                        if i <= cur then
+                        if i <= current then
                             pips[i]._fill:Show()
                         else
                             pips[i]._fill:Hide()
@@ -576,12 +577,12 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- Event driver: the shared child-born shell (see ns._cpDriver above), fully reset
     -- here since the previous spec's build may have left registrations or a poll on it.
-    local eventFrame = ns._cpDriver
+    local eventFrame = mod._cpDriver
     eventFrame:UnregisterAllEvents()
     eventFrame:SetScript("OnEvent", nil)
-    ns._cpTickFn = nil
-    ns._cpDriverTick.Stop()
-    eventFrame:SetParent(container)
+    mod._cpTickFn = nil
+    mod._cpDriverTick.Stop()
+    eventFrame:SetParent(boxHolder)
     eventFrame:Show()
     if isCustom then
         -- Per-resource event registration: only register what each resource actually
@@ -602,8 +603,8 @@ local function CreateCustomClassPower(playerFrame, style)
             -- 10 Hz poll on the shared anim ticker (see ns._cpDriverTick):
             -- same cadence as the old OnUpdate accumulator without the
             -- per-render-frame entry tax.
-            ns._cpTickFn = UpdatePips
-            ns._cpDriverTick.Start()
+            mod._cpTickFn = UpdatePips
+            mod._cpDriverTick.Start()
         end
 
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -639,18 +640,16 @@ local function CreateCustomClassPower(playerFrame, style)
             eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
             eventFrame:RegisterEvent("COMBO_TARGET_CHANGED")
         end
-        eventFrame:SetScript("OnEvent", function(_, event, unit)
-            if
-                druidFormToggle and (event == "UPDATE_SHAPESHIFT_FORM" or event == "PLAYER_ENTERING_WORLD")
-            then
-                container:SetShown(InCatForm())
+        eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
+            if druidFormToggle and (evt == "UPDATE_SHAPESHIFT_FORM" or evt == "PLAYER_ENTERING_WORLD") then
+                boxHolder:SetShown(InCatForm())
             end
             if
-                event == "PLAYER_ENTERING_WORLD"
-                or event == "RUNE_POWER_UPDATE"
-                or event == "PLAYER_TARGET_CHANGED"
-                or event == "COMBO_TARGET_CHANGED"
-                or (unit == "player")
+                evt == "PLAYER_ENTERING_WORLD"
+                or evt == "RUNE_POWER_UPDATE"
+                or evt == "PLAYER_TARGET_CHANGED"
+                or evt == "COMBO_TARGET_CHANGED"
+                or (unitToken == "player")
             then
                 UpdatePips()
             end
@@ -659,60 +658,60 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- Form-toggled druids start hidden unless already in cat form
     if DruidNeedsCatForm(playerClass, powerType) and not InCatForm() then
-        container:Hide()
+        boxHolder:Hide()
     end
 
     UpdatePips()
-    container._updatePips = UpdatePips
-    container._pips = pips
-    container._pipSize = pipSize
-    container._pipH = pipH
-    container._gap = gap
-    container._pad = pad
+    boxHolder._updatePips = UpdatePips
+    boxHolder._pips = pips
+    boxHolder._pipSize = pipSize
+    boxHolder._pipH = pipH
+    boxHolder._gap = gap
+    boxHolder._pad = pad
     -- Stash for the engine-slot warrior charge overlay (ns._WCUF_Sync below):
     -- power identity, style gate and the resolved look, so the sync adapter
     -- never re-derives them.
-    container._powerType = powerType
-    container._style = style
-    container._cpR, container._cpG, container._cpB = cr, cg, cb
-    container._emptyCol = emptyCol
-    container._sepCol = bgCol
+    boxHolder._powerType = powerType
+    boxHolder._style = look
+    boxHolder._cpR, boxHolder._cpG, boxHolder._cpB = cr, cg, cb
+    boxHolder._emptyCol = emptyCol
+    boxHolder._sepCol = bgCol
 
     -- Reposition pips to fill a given width (for "above" position)
     -- Uses Snap() to round all positions to physical pixel boundaries
     -- so gaps between pips are guaranteed identical.
-    container._repositionForWidth = function(targetW)
+    boxHolder._repositionForWidth = function(targetW)
         -- shownPipCount, not #pips: the table is a high-water mark, so a shrunk
         -- max would divide the width by the old pip count and leave a gap.
-        local n = shownPipCount
-        if n <= 0 then
+        local num = shownPipCount
+        if num <= 0 then
             return
         end
-        local efs = container:GetEffectiveScale()
+        local efs = boxHolder:GetEffectiveScale()
         if efs <= 0 then
             efs = 1
         end
-        local function Snap(v)
-            return math_floor(v * efs + 0.5) / efs
+        local function Snap(val)
+            return math_floor(val * efs + 0.5) / efs
         end
         local intW = math_floor(targetW)
         local gapPx = Snap(gap)
-        local totalGapW = (n - 1) * gapPx
+        local totalGapW = (num - 1) * gapPx
         local totalPipW = intW - totalGapW
-        local basePipW = totalPipW / n
-        for i = 1, n do
+        local basePipW = totalPipW / num
+        for i = 1, num do
             local leftEdge = Snap((i - 1) * (basePipW + gapPx))
             local rightEdge = Snap((i - 1) * (basePipW + gapPx) + basePipW)
-            local w = rightEdge - leftEdge
+            local wid = rightEdge - leftEdge
             pips[i]:ClearAllPoints()
-            pips[i]:SetSize(w, pipH)
-            pips[i]:SetPoint("TOPLEFT", container, "TOPLEFT", leftEdge, 0)
+            pips[i]:SetSize(wid, pipH)
+            pips[i]:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", leftEdge, 0)
         end
-        container:SetWidth(intW)
-        container:SetHeight(pipH)
+        boxHolder:SetWidth(intW)
+        boxHolder:SetHeight(pipH)
     end
 
-    return container
+    return boxHolder
 end
 
 -- Warrior charge buffs: hand the engine-slot module (ResourceBars) the built
@@ -722,45 +721,45 @@ end
 -- keeps the legacy pips too -- a continuous engine fill cannot render per-pip
 -- circle sprites. Called at the class-power call sites AFTER
 -- PositionClassPowerBar, so "above" stretching has already settled the width.
-ns._WCUF_Sync = function(container)
+mod._WCUF_Sync = function(boxHolder)
     local ewc = _G._EWC
-    if not (ewc and container) then
+    if not (ewc and boxHolder) then
         return
     end
-    local powerType = container._powerType
+    local powerType = boxHolder._powerType
     if
         (powerType ~= "WHIRLWIND_STACKS" and powerType ~= "SWEEPING_STRIKES")
-        or container._style == "circles"
+        or boxHolder._style == "circles"
     then
         ewc.Gate("uf")
         return
     end
-    local position = db.profile.player.classPowerPosition or "top"
-    local stretched = (container._style == "modern" and position == "above") and container:GetWidth() or nil
-    ewc.Sync("uf", container, powerType, {
+    local position = saved.profile.player.classPowerPosition or "top"
+    local stretched = (boxHolder._style == "modern" and position == "above") and boxHolder:GetWidth() or nil
+    ewc.Sync("uf", boxHolder, powerType, {
         texPath = "Interface\\Buttons\\WHITE8x8",
-        r = container._cpR,
-        g = container._cpG,
-        b = container._cpB,
+        r = boxHolder._cpR,
+        g = boxHolder._cpG,
+        b = boxHolder._cpB,
         a = 1,
         ori = "HORIZONTAL",
         sep = {
-            r = container._sepCol and container._sepCol.r or 0.082,
-            g = container._sepCol and container._sepCol.g or 0.082,
-            b = container._sepCol and container._sepCol.b or 0.082,
-            a = container._sepCol and container._sepCol.a or 1,
-            w = container._gap or 2,
-            cellW = container._pipSize,
-            gap = container._gap,
-            pad = container._pad,
+            r = boxHolder._sepCol and boxHolder._sepCol.r or 0.082,
+            g = boxHolder._sepCol and boxHolder._sepCol.g or 0.082,
+            b = boxHolder._sepCol and boxHolder._sepCol.b or 0.082,
+            a = boxHolder._sepCol and boxHolder._sepCol.a or 1,
+            w = boxHolder._gap or 2,
+            cellW = boxHolder._pipSize,
+            gap = boxHolder._gap,
+            pad = boxHolder._pad,
             stretch = stretched,
-            empty = container._emptyCol,
-            emptyInset = (container._pad or 0) / 2,
+            empty = boxHolder._emptyCol,
+            emptyInset = (boxHolder._pad or 0) / 2,
         },
     })
     -- After arming: stash the live color for the queued build's bake and the
     -- out-of-restriction live-recolor path (opts colors are the belt).
-    ewc.Recolor("uf", powerType, container._cpR or 1, container._cpG or 1, container._cpB or 1, 1)
+    ewc.Recolor("uf", powerType, boxHolder._cpR or 1, boxHolder._cpG or 1, boxHolder._cpB or 1, 1)
 end
 
 -- Custom enemy reaction colors: override the shared reaction/tapped color table from
@@ -768,16 +767,16 @@ end
 -- FACTION_BAR_COLORS when unset, so this is idempotent and reset-safe (re-applies the
 -- active profile's colors on profile swap). Hostile = reactions 1-3, Neutral = 4, Friendly = 5-8.
 local function ApplyEnemyColors()
-    if not (ns.Colors and ns.Colors.reaction and FACTION_BAR_COLORS) then
+    if not (mod.Colors and mod.Colors.reaction and FACTION_BAR_COLORS) then
         return
     end
-    local ec = (db and db.profile and db.profile.enemyColors) or {}
+    local ec = (saved and saved.profile and saved.profile.enemyColors) or {}
     local function setIdx(idx, custom)
         local f = FACTION_BAR_COLORS[idx]
         local r = (custom and custom.r) or (f and f.r) or 1
         local g = (custom and custom.g) or (f and f.g) or 1
         local b = (custom and custom.b) or (f and f.b) or 1
-        ns.Colors.reaction[idx] = CreateColor(r, g, b)
+        mod.Colors.reaction[idx] = CreateColor(r, g, b)
     end
     for i = 1, 3 do
         setIdx(i, ec.hostile)
@@ -787,10 +786,10 @@ local function ApplyEnemyColors()
         setIdx(i, ec.friendly)
     end
     local tc = ec.tapped
-    ns.Colors.tapped = CreateColor((tc and tc.r) or 0.6, (tc and tc.g) or 0.6, (tc and tc.b) or 0.6)
-    ns.Engine.ForceAll("OnShow")
+    mod.Colors.tapped = CreateColor((tc and tc.r) or 0.6, (tc and tc.g) or 0.6, (tc and tc.b) or 0.6)
+    mod.Engine.ForceAll("OnShow")
 end
-ns.ApplyEnemyColors = ApplyEnemyColors
+mod.ApplyEnemyColors = ApplyEnemyColors
 
-I.CreateCustomClassPower, I.DestroyCustomClassPower = CreateCustomClassPower, DestroyCustomClassPower
-I.ApplyEnemyColors = ApplyEnemyColors
+Inner.CreateCustomClassPower, Inner.DestroyCustomClassPower = CreateCustomClassPower, DestroyCustomClassPower
+Inner.ApplyEnemyColors = ApplyEnemyColors

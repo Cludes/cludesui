@@ -9,8 +9,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  navigation maps to. Shared helpers come from ns._ABO_OptEnv, the
 --  per-build helpers from ctx.
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIActionBars"]
-if not ns then
+local mod = CludesUI._ModuleNS["CludesUIActionBars"]
+if not mod then
     return
 end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
@@ -19,20 +19,24 @@ end -- module disabled: no options page
 -- parent this is CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local function BuildBarAppearance(parent, y, ctx)
-    local env = ns._ABO_OptEnv
-    local EAB, EndCapsCtl, GROUP_BAR_ORDER, InCombatLockdown, PP =
-        env.EAB, env.EndCapsCtl, env.GROUP_BAR_ORDER, env.InCombatLockdown, env.PP
+local function BuildBarAppearance(hostFrame, posY, context)
+    local environ = mod._ABO_OptEnv
+    local ABAR, EndCapsCtl, GROUP_BAR_ORDER, InCombatLockdown, Pix =
+        environ.EAB, environ.EndCapsCtl, environ.GROUP_BAR_ORDER, environ.InCombatLockdown, environ.PP
     local SB, SECTION_ICON_APPEARANCE, SECTION_TEXT, SelectedKey =
-        env.SB, env.SECTION_ICON_APPEARANCE, env.SECTION_TEXT, env.SelectedKey
+        environ.SB, environ.SECTION_ICON_APPEARANCE, environ.SECTION_TEXT, environ.SelectedKey
     local SHORT_LABELS, ShownBorderDefaults, TEXT_ANCHOR_DROPDOWN_ORDER, TEXT_ANCHOR_LABELS =
-        env.SHORT_LABELS, env.ShownBorderDefaults, env.TEXT_ANCHOR_DROPDOWN_ORDER, env.TEXT_ANCHOR_LABELS
-    local BgDisabled, SGet, SSeedTextOffsets, SSet = ctx.BgDisabled, ctx.SGet, ctx.SSeedTextOffsets, ctx.SSet
+        environ.SHORT_LABELS,
+        environ.ShownBorderDefaults,
+        environ.TEXT_ANCHOR_DROPDOWN_ORDER,
+        environ.TEXT_ANCHOR_LABELS
+    local BgDisabled, SGet, SSeedTextOffsets, SSet =
+        context.BgDisabled, context.SGet, context.SSeedTextOffsets, context.SSet
     local SSetColor, SUpdatePreview, SUpdatePreviewAndResize, SVal =
-        ctx.SSetColor, ctx.SUpdatePreview, ctx.SUpdatePreviewAndResize, ctx.SVal
-    local W = ctx.W
-    local _, h
-    local row
+        context.SSetColor, context.SUpdatePreview, context.SUpdatePreviewAndResize, context.SVal
+    local Widgets = context.W
+    local _, hgt
+    local rowFrame
     -- Row / section references for click-navigation (returned to BuildSharedBarSettings)
     local iconsSectionHeader, textSectionHeader
     local keybindRow, chargesRow
@@ -43,33 +47,33 @@ local function BuildBarAppearance(parent, y, ctx)
     -- those labels, and the labels of the rows it stands in for, are the
     -- entry's search text. barKey (optional) is the bar a hit opens, in place
     -- of the bar being built.
-    local function RowSearch(label, words, barKey)
+    local function RowSearch(labelText, words, barId)
         if not CludesUI._RegisterSearchEntry then
             return
         end
-        local text = {}
-        for i = 1, #words do
-            local s = words[i]
-            text[#text + 1] = s
+        local textValue = {}
+        for idx = 1, #words do
+            local s = words[idx]
+            textValue[#textValue + 1] = s
             local loc = CludesUI.L(s)
             if loc ~= s then
-                text[#text + 1] = loc
+                textValue[#textValue + 1] = loc
             end
         end
-        local labelLoc = CludesUI.L(label)
-        local section = parent._currentSection and parent._currentSection._sectionName
+        local labelLoc = CludesUI.L(labelText)
+        local section = hostFrame._currentSection and hostFrame._currentSection._sectionName
         if type(section) ~= "string" then
             section = nil
         end
         local sel = CludesUI._buildingSelector
         local setter, selKey = sel and sel.setter, sel and sel.key
-        if barKey then
-            setter, selKey = CludesUI._setActionBarKey, barKey
+        if barId then
+            setter, selKey = CludesUI._setActionBarKey, barId
         end
         CludesUI._RegisterSearchEntry(
-            label,
-            labelLoc ~= label and labelLoc or nil,
-            table.concat(text, " "),
+            labelText,
+            labelLoc ~= labelText and labelLoc or nil,
+            table.concat(textValue, " "),
             CludesUI._buildingModule,
             CludesUI._buildingPage,
             section,
@@ -81,10 +85,10 @@ local function BuildBarAppearance(parent, y, ctx)
     -- carries the row text and its tooltip. Its getter runs `reads`, which
     -- reads every key the checklist writes, so the Spec Overrides gold walk
     -- marks the slot while one of them is overridden.
-    local function ChecklistCfg(text, tooltip, reads)
+    local function ChecklistCfg(textValue, tooltip, reads)
         return {
             type = "dropdown",
-            text = text,
+            text = textValue,
             tooltip = tooltip,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -100,7 +104,7 @@ local function BuildBarAppearance(parent, y, ctx)
     -- The checklist in `rgn` (a half built from ChecklistCfg). Spec Overrides
     -- see each click as it happens (the slot's capture); onMenuClosed runs
     -- each time its open menu hides. The search prebuild builds none.
-    local function BuildChecklist(rgn, items, get, set, onMenuClosed)
+    local function BuildChecklist(rgn, itemList, get, group, onMenuClosed)
         if CludesUI._prebuilding then
             return
         end
@@ -111,9 +115,9 @@ local function BuildBarAppearance(parent, y, ctx)
             rgn,
             170,
             rgn:GetFrameLevel() + 2,
-            items,
+            itemList,
             get,
-            set,
+            group,
             nil,
             nil,
             nil,
@@ -121,7 +125,7 @@ local function BuildBarAppearance(parent, y, ctx)
             onMenuClosed,
             { notifyWrites = true, dimLocked = true }
         )
-        PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
+        Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
         rgn._control = cbDD
         rgn._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
@@ -130,9 +134,9 @@ local function BuildBarAppearance(parent, y, ctx)
     -------------------------------------------------------------------
     --  APPEARANCE
     -------------------------------------------------------------------
-    iconsSectionHeader, h = W:SectionHeader(parent, SECTION_ICON_APPEARANCE, y)
-    y = y - h
-    y = CludesUI.BlizzStyle.Note(parent, y, "actionbars")
+    iconsSectionHeader, hgt = Widgets:SectionHeader(hostFrame, SECTION_ICON_APPEARANCE, posY)
+    posY = posY - hgt
+    posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "actionbars")
 
     -- Stock mode (Blizzard Style or Classic WoW UI): the shared gate.
     local function BlizzStyleOn()
@@ -187,8 +191,8 @@ local function BuildBarAppearance(parent, y, ctx)
                 disabled = BlizzStyleOn,
                 disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
                 requireState = "disabled",
-                values = ns.BORDER_THICKNESS_LABELS,
-                order = ns.BORDER_THICKNESS_ORDER,
+                values = mod.BORDER_THICKNESS_LABELS,
+                order = mod.BORDER_THICKNESS_ORDER,
                 itemDisabled = function(val)
                     if ShapeIsCustom() and (val == "thin" or val == "normal" or val == "heavy") then
                         return true
@@ -206,19 +210,19 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(v)
                     SSet("borderThickness", v, function(k)
-                        local entry = ns.BORDER_THICKNESS[v]
-                        if entry then
-                            local shape = EAB.db.profile.bars[k].buttonShape or "none"
+                        local record = mod.BORDER_THICKNESS[v]
+                        if record then
+                            local shape = ABAR.db.profile.bars[k].buttonShape or "none"
                             if shape ~= "none" and shape ~= "cropped" then
-                                EAB.db.profile.bars[k].shapeBorderSize = entry.shape
-                                EAB.db.profile.bars[k].shapeBorderEnabled = entry.shape > 0
+                                ABAR.db.profile.bars[k].shapeBorderSize = record.shape
+                                ABAR.db.profile.bars[k].shapeBorderEnabled = record.shape > 0
                             else
-                                EAB.db.profile.bars[k].borderSize = entry.regular
-                                EAB.db.profile.bars[k].borderEnabled = entry.regular > 0
+                                ABAR.db.profile.bars[k].borderSize = record.regular
+                                ABAR.db.profile.bars[k].borderEnabled = record.regular > 0
                             end
                         end
-                        EAB:ApplyBordersForBar(k)
-                        EAB:ApplyShapesForBar(k)
+                        ABAR:ApplyBordersForBar(k)
+                        ABAR:ApplyShapesForBar(k)
                     end)
                     SUpdatePreview()
                 end,
@@ -232,19 +236,19 @@ local function BuildBarAppearance(parent, y, ctx)
                 -- The step the buttons render with (ResolveBorderThickness's regular
                 -- column): an unknown or numeric thickness is thin.
                 getStep = function()
-                    local entry = ns.BORDER_THICKNESS[SGet("borderThickness") or "thin"]
-                        or ns.BORDER_THICKNESS.thin
-                    return entry.regular
+                    local record = mod.BORDER_THICKNESS[SGet("borderThickness") or "thin"]
+                        or mod.BORDER_THICKNESS.thin
+                    return record.regular
                 end,
                 -- Exactly what the dropdown wrote for a non-custom shape: the label and its mirrors.
                 setStep = function(step)
                     local s = SB()
-                    local label = CludesUI.BORDER_LABEL_OF_STEP[step]
-                    s.borderThickness = label
-                    local entry = ns.BORDER_THICKNESS[label]
-                    if entry then
-                        s.borderSize = entry.regular
-                        s.borderEnabled = entry.regular > 0
+                    local labelText = CludesUI.BORDER_LABEL_OF_STEP[step]
+                    s.borderThickness = labelText
+                    local record = mod.BORDER_THICKNESS[labelText]
+                    if record then
+                        s.borderSize = record.regular
+                        s.borderEnabled = record.regular > 0
                     end
                 end,
                 getTex = function()
@@ -258,16 +262,16 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 apply = function()
                     local k = SelectedKey()
-                    EAB:ApplyBordersForBar(k)
-                    EAB:ApplyShapesForBar(k)
+                    ABAR:ApplyBordersForBar(k)
+                    ABAR:ApplyShapesForBar(k)
                     CludesUI:RefreshPage()
                     SUpdatePreview()
                 end,
             })
         end
-        abBsRow, h = W:DualRow(
-            parent,
-            y,
+        abBsRow, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             CludesUI.BlizzStyle.Gate("actionbars", {
                 type = "dropdown",
                 text = "Border Style",
@@ -293,34 +297,34 @@ local function BuildBarAppearance(parent, y, ctx)
                         defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
                     end
                     SSet("borderTexture", v, function(k)
-                        EAB.db.profile.bars[k].borderTextureOffset = nil
-                        EAB.db.profile.bars[k].borderTextureOffsetY = nil
-                        EAB.db.profile.bars[k].borderTextureShiftX = nil
-                        EAB.db.profile.bars[k].borderTextureShiftY = nil
+                        ABAR.db.profile.bars[k].borderTextureOffset = nil
+                        ABAR.db.profile.bars[k].borderTextureOffsetY = nil
+                        ABAR.db.profile.bars[k].borderTextureShiftX = nil
+                        ABAR.db.profile.bars[k].borderTextureShiftY = nil
                         -- A style pick resets the size to the style's default: a set exact size goes with it (false travels, nil would not).
-                        if EAB.db.profile.bars[k].borderThicknessPx then
-                            EAB.db.profile.bars[k].borderThicknessPx = false
+                        if ABAR.db.profile.bars[k].borderThicknessPx then
+                            ABAR.db.profile.bars[k].borderThicknessPx = false
                         end
                         local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
-                        EAB.db.profile.bars[k].borderColor = { r = _bcol.r, g = _bcol.g, b = _bcol.b, a = 1 }
-                        EAB.db.profile.bars[k].borderClassColor = false
-                        EAB.db.profile.bars[k].borderBehind = _bbehind
+                        ABAR.db.profile.bars[k].borderColor = { r = _bcol.r, g = _bcol.g, b = _bcol.b, a = 1 }
+                        ABAR.db.profile.bars[k].borderClassColor = false
+                        ABAR.db.profile.bars[k].borderBehind = _bbehind
                         if defTh then
-                            EAB.db.profile.bars[k].borderThickness = defTh
-                            local entry = ns.BORDER_THICKNESS[defTh]
-                            if entry then
-                                local shape = EAB.db.profile.bars[k].buttonShape or "none"
+                            ABAR.db.profile.bars[k].borderThickness = defTh
+                            local record = mod.BORDER_THICKNESS[defTh]
+                            if record then
+                                local shape = ABAR.db.profile.bars[k].buttonShape or "none"
                                 if shape ~= "none" and shape ~= "cropped" then
-                                    EAB.db.profile.bars[k].shapeBorderSize = entry.shape
-                                    EAB.db.profile.bars[k].shapeBorderEnabled = entry.shape > 0
+                                    ABAR.db.profile.bars[k].shapeBorderSize = record.shape
+                                    ABAR.db.profile.bars[k].shapeBorderEnabled = record.shape > 0
                                 else
-                                    EAB.db.profile.bars[k].borderSize = entry.regular
-                                    EAB.db.profile.bars[k].borderEnabled = entry.regular > 0
+                                    ABAR.db.profile.bars[k].borderSize = record.regular
+                                    ABAR.db.profile.bars[k].borderEnabled = record.regular > 0
                                 end
                             end
                         end
-                        EAB:ApplyBordersForBar(k)
-                        EAB:ApplyShapesForBar(k)
+                        ABAR:ApplyBordersForBar(k)
+                        ABAR:ApplyShapesForBar(k)
                     end)
                     SUpdatePreview()
                     -- Full rebuild: the Width/Height Offset row exists only for a textured style.
@@ -329,7 +333,7 @@ local function BuildBarAppearance(parent, y, ctx)
             }),
             CludesUI.BlizzStyle.Gate("actionbars", sizeCfg)
         )
-        y = y - h
+        posY = posY - hgt
         -- Width Offset | Height Offset: the textured border's outward offsets, their
         -- own row while a textured style is selected (Solid has none; the style
         -- setter rebuilds the page). Shown = the override, else the "actionbars"
@@ -347,7 +351,7 @@ local function BuildBarAppearance(parent, y, ctx)
                         return SGet("borderTexture") or "solid"
                     end,
                     getStep = function()
-                        return (ns.ResolveBorderThickness(SB()))
+                        return (mod.ResolveBorderThickness(SB()))
                     end,
                     getSizeKey = function()
                         return SGet("borderThickness") or "thin"
@@ -368,18 +372,18 @@ local function BuildBarAppearance(parent, y, ctx)
                         SB().borderTextureOffsetY = v
                     end,
                     apply = function()
-                        EAB:ApplyBordersForBar(SelectedKey())
+                        ABAR:ApplyBordersForBar(SelectedKey())
                         CludesUI:RefreshPage()
                         SUpdatePreview()
                     end,
                 })
-                _, h = W:DualRow(
-                    parent,
-                    y,
+                _, hgt = Widgets:DualRow(
+                    hostFrame,
+                    posY,
                     CludesUI.BlizzStyle.Gate("actionbars", ocfgL),
                     CludesUI.BlizzStyle.Gate("actionbars", ocfgR)
                 )
-                y = y - h
+                posY = posY - hgt
             end
         end
         do
@@ -390,7 +394,7 @@ local function BuildBarAppearance(parent, y, ctx)
             local function ButtonBorderDefaults()
                 local tex = SGet("borderTexture") or "solid"
                 local th = SGet("borderThickness") or "thin"
-                local step, px = ns.ResolveBorderThickness(SB())
+                local step, px = mod.ResolveBorderThickness(SB())
                 return ShownBorderDefaults(tex, th, step, px)
             end
             local cogBtn = CludesUI.BuildInlineCog(rgn, {
@@ -419,7 +423,7 @@ local function BuildBarAppearance(parent, y, ctx)
                                 v = nil
                             end
                             SSet("borderTextureShiftX", v, function(k)
-                                EAB:ApplyBordersForBar(k)
+                                ABAR:ApplyBordersForBar(k)
                             end)
                             SUpdatePreview()
                         end,
@@ -444,7 +448,7 @@ local function BuildBarAppearance(parent, y, ctx)
                                 v = nil
                             end
                             SSet("borderTextureShiftY", v, function(k)
-                                EAB:ApplyBordersForBar(k)
+                                ABAR:ApplyBordersForBar(k)
                             end)
                             SUpdatePreview()
                         end,
@@ -457,7 +461,7 @@ local function BuildBarAppearance(parent, y, ctx)
                         end,
                         set = function(v)
                             SSet("borderBehind", v == false and nil or v, function(k)
-                                EAB:ApplyBordersForBar(k)
+                                ABAR:ApplyBordersForBar(k)
                             end)
                             SUpdatePreview()
                             CludesUI:RefreshPage()
@@ -492,7 +496,7 @@ local function BuildBarAppearance(parent, y, ctx)
                         end,
                         set = function(v)
                             SSet("borderAboveEffects", v and true or false, function(k)
-                                EAB:ApplyBordersForBar(k)
+                                ABAR:ApplyBordersForBar(k)
                             end)
                             SUpdatePreview()
                         end,
@@ -522,18 +526,18 @@ local function BuildBarAppearance(parent, y, ctx)
                 local bc = SB().borderColor
                 local bcc = SB().borderClassColor
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    EAB.db.profile.bars[key].borderTexture = bt
-                    EAB.db.profile.bars[key].borderTextureOffset = ox
-                    EAB.db.profile.bars[key].borderTextureOffsetY = oy
-                    EAB.db.profile.bars[key].borderTextureShiftX = sx
-                    EAB.db.profile.bars[key].borderTextureShiftY = sy
-                    EAB.db.profile.bars[key].borderBehind = bh
-                    EAB.db.profile.bars[key].borderAboveEffects = ba
+                    ABAR.db.profile.bars[key].borderTexture = bt
+                    ABAR.db.profile.bars[key].borderTextureOffset = ox
+                    ABAR.db.profile.bars[key].borderTextureOffsetY = oy
+                    ABAR.db.profile.bars[key].borderTextureShiftX = sx
+                    ABAR.db.profile.bars[key].borderTextureShiftY = sy
+                    ABAR.db.profile.bars[key].borderBehind = bh
+                    ABAR.db.profile.bars[key].borderAboveEffects = ba
                     if bc then
-                        EAB.db.profile.bars[key].borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
+                        ABAR.db.profile.bars[key].borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
                     end
-                    EAB.db.profile.bars[key].borderClassColor = bcc
-                    EAB:ApplyBordersForBar(key)
+                    ABAR.db.profile.bars[key].borderClassColor = bcc
+                    ABAR:ApplyBordersForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
@@ -546,25 +550,25 @@ local function BuildBarAppearance(parent, y, ctx)
                 local bh = SB().borderBehind or false
                 local ba = SB().borderAboveEffects or false
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].borderTexture or "solid") ~= bt then
+                    if (ABAR.db.profile.bars[key].borderTexture or "solid") ~= bt then
                         return false
                     end
-                    if EAB.db.profile.bars[key].borderTextureOffset ~= ox then
+                    if ABAR.db.profile.bars[key].borderTextureOffset ~= ox then
                         return false
                     end
-                    if EAB.db.profile.bars[key].borderTextureOffsetY ~= oy then
+                    if ABAR.db.profile.bars[key].borderTextureOffsetY ~= oy then
                         return false
                     end
-                    if EAB.db.profile.bars[key].borderTextureShiftX ~= sx then
+                    if ABAR.db.profile.bars[key].borderTextureShiftX ~= sx then
                         return false
                     end
-                    if EAB.db.profile.bars[key].borderTextureShiftY ~= sy then
+                    if ABAR.db.profile.bars[key].borderTextureShiftY ~= sy then
                         return false
                     end
-                    if (EAB.db.profile.bars[key].borderBehind or false) ~= bh then
+                    if (ABAR.db.profile.bars[key].borderBehind or false) ~= bh then
                         return false
                     end
-                    if (EAB.db.profile.bars[key].borderAboveEffects or false) ~= ba then
+                    if (ABAR.db.profile.bars[key].borderAboveEffects or false) ~= ba then
                         return false
                     end
                 end
@@ -590,18 +594,18 @@ local function BuildBarAppearance(parent, y, ctx)
                     local bc = SB().borderColor
                     local bcc = SB().borderClassColor
                     for _, key in ipairs(checkedKeys) do
-                        EAB.db.profile.bars[key].borderTexture = bt
-                        EAB.db.profile.bars[key].borderTextureOffset = ox
-                        EAB.db.profile.bars[key].borderTextureOffsetY = oy
-                        EAB.db.profile.bars[key].borderTextureShiftX = sx
-                        EAB.db.profile.bars[key].borderTextureShiftY = sy
-                        EAB.db.profile.bars[key].borderBehind = bh
-                        EAB.db.profile.bars[key].borderAboveEffects = ba
+                        ABAR.db.profile.bars[key].borderTexture = bt
+                        ABAR.db.profile.bars[key].borderTextureOffset = ox
+                        ABAR.db.profile.bars[key].borderTextureOffsetY = oy
+                        ABAR.db.profile.bars[key].borderTextureShiftX = sx
+                        ABAR.db.profile.bars[key].borderTextureShiftY = sy
+                        ABAR.db.profile.bars[key].borderBehind = bh
+                        ABAR.db.profile.bars[key].borderAboveEffects = ba
                         if bc then
-                            EAB.db.profile.bars[key].borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
+                            ABAR.db.profile.bars[key].borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
                         end
-                        EAB.db.profile.bars[key].borderClassColor = bcc
-                        EAB:ApplyBordersForBar(key)
+                        ABAR.db.profile.bars[key].borderClassColor = bcc
+                        ABAR:ApplyBordersForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -628,11 +632,11 @@ local function BuildBarAppearance(parent, y, ctx)
             false,
             20
         )
-        PP.Point(classBorderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        Pix.Point(classBorderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
         classBorderSwatch:SetScript("OnClick", function()
             SSet("borderClassColor", true, function(k)
-                EAB:ApplyBordersForBar(k)
-                EAB:ApplyShapesForBar(k)
+                ABAR:ApplyBordersForBar(k)
+                ABAR:ApplyShapesForBar(k)
             end)
             SUpdatePreview()
             CludesUI:RefreshPage()
@@ -656,18 +660,18 @@ local function BuildBarAppearance(parent, y, ctx)
             end,
             function(r, g, b)
                 SSetColor("borderColor", r, g, b, nil, function(k)
-                    EAB:ApplyBordersForBar(k)
-                    EAB:ApplyShapesForBar(k)
+                    ABAR:ApplyBordersForBar(k)
+                    ABAR:ApplyShapesForBar(k)
                 end)
                 SSetColor("shapeBorderColor", r, g, b, nil, function(k)
-                    EAB:ApplyShapesForBar(k)
+                    ABAR:ApplyShapesForBar(k)
                 end)
                 SUpdatePreview()
             end,
             false,
             20
         )
-        PP.Point(customSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
+        Pix.Point(customSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
         customSwatch:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
         end)
@@ -680,8 +684,8 @@ local function BuildBarAppearance(parent, y, ctx)
         customSwatch:SetScript("OnClick", function(self, ...)
             if SGet("borderClassColor") then
                 SSet("borderClassColor", false, function(k)
-                    EAB:ApplyBordersForBar(k)
-                    EAB:ApplyShapesForBar(k)
+                    ABAR:ApplyBordersForBar(k)
+                    ABAR:ApplyShapesForBar(k)
                 end)
                 SUpdatePreview()
                 CludesUI:RefreshPage()
@@ -721,33 +725,33 @@ local function BuildBarAppearance(parent, y, ctx)
                 local c = SB().borderColor
                 local cc = SB().borderClassColor
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    EAB.db.profile.bars[key].borderThickness = th
+                    ABAR.db.profile.bars[key].borderThickness = th
                     do
-                        local t = EAB.db.profile.bars[key]
+                        local t = ABAR.db.profile.bars[key]
                         local v = thPx
                         if v == nil and t.borderThicknessPx ~= nil then
                             v = false
                         end
                         t.borderThicknessPx = v
                     end
-                    local entry = ns.BORDER_THICKNESS[th]
-                    if entry then
-                        local shape = EAB.db.profile.bars[key].buttonShape or "none"
+                    local record = mod.BORDER_THICKNESS[th]
+                    if record then
+                        local shape = ABAR.db.profile.bars[key].buttonShape or "none"
                         if shape ~= "none" and shape ~= "cropped" then
-                            EAB.db.profile.bars[key].shapeBorderSize = entry.shape
-                            EAB.db.profile.bars[key].shapeBorderEnabled = entry.shape > 0
+                            ABAR.db.profile.bars[key].shapeBorderSize = record.shape
+                            ABAR.db.profile.bars[key].shapeBorderEnabled = record.shape > 0
                         else
-                            EAB.db.profile.bars[key].borderSize = entry.regular
-                            EAB.db.profile.bars[key].borderEnabled = entry.regular > 0
+                            ABAR.db.profile.bars[key].borderSize = record.regular
+                            ABAR.db.profile.bars[key].borderEnabled = record.regular > 0
                         end
                     end
                     if c then
-                        EAB.db.profile.bars[key].borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
-                        EAB.db.profile.bars[key].shapeBorderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+                        ABAR.db.profile.bars[key].borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+                        ABAR.db.profile.bars[key].shapeBorderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
                     end
-                    EAB.db.profile.bars[key].borderClassColor = cc
-                    EAB:ApplyBordersForBar(key)
-                    EAB:ApplyShapesForBar(key)
+                    ABAR.db.profile.bars[key].borderClassColor = cc
+                    ABAR:ApplyBordersForBar(key)
+                    ABAR:ApplyShapesForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
@@ -758,16 +762,16 @@ local function BuildBarAppearance(parent, y, ctx)
                 local c = SB().borderColor
                 local cr, cg, cb, ca = c and c.r or 0, c and c.g or 0, c and c.b or 0, c and c.a or 1
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].borderThickness or "thin") ~= th then
+                    if (ABAR.db.profile.bars[key].borderThickness or "thin") ~= th then
                         return false
                     end
-                    if (EAB.db.profile.bars[key].borderThicknessPx or false) ~= thPx then
+                    if (ABAR.db.profile.bars[key].borderThicknessPx or false) ~= thPx then
                         return false
                     end
-                    if (EAB.db.profile.bars[key].borderClassColor or false) ~= cc then
+                    if (ABAR.db.profile.bars[key].borderClassColor or false) ~= cc then
                         return false
                     end
-                    local bc = EAB.db.profile.bars[key].borderColor
+                    local bc = ABAR.db.profile.bars[key].borderColor
                     if
                         (bc and bc.r or 0) ~= cr
                         or (bc and bc.g or 0) ~= cg
@@ -794,33 +798,34 @@ local function BuildBarAppearance(parent, y, ctx)
                     local c = SB().borderColor
                     local cc = SB().borderClassColor
                     for _, key in ipairs(checkedKeys) do
-                        EAB.db.profile.bars[key].borderThickness = th
+                        ABAR.db.profile.bars[key].borderThickness = th
                         do
-                            local t = EAB.db.profile.bars[key]
+                            local t = ABAR.db.profile.bars[key]
                             local v = thPx
                             if v == nil and t.borderThicknessPx ~= nil then
                                 v = false
                             end
                             t.borderThicknessPx = v
                         end
-                        local entry = ns.BORDER_THICKNESS[th]
-                        if entry then
-                            local shape = EAB.db.profile.bars[key].buttonShape or "none"
+                        local record = mod.BORDER_THICKNESS[th]
+                        if record then
+                            local shape = ABAR.db.profile.bars[key].buttonShape or "none"
                             if shape ~= "none" and shape ~= "cropped" then
-                                EAB.db.profile.bars[key].shapeBorderSize = entry.shape
-                                EAB.db.profile.bars[key].shapeBorderEnabled = entry.shape > 0
+                                ABAR.db.profile.bars[key].shapeBorderSize = record.shape
+                                ABAR.db.profile.bars[key].shapeBorderEnabled = record.shape > 0
                             else
-                                EAB.db.profile.bars[key].borderSize = entry.regular
-                                EAB.db.profile.bars[key].borderEnabled = entry.regular > 0
+                                ABAR.db.profile.bars[key].borderSize = record.regular
+                                ABAR.db.profile.bars[key].borderEnabled = record.regular > 0
                             end
                         end
                         if c then
-                            EAB.db.profile.bars[key].borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
-                            EAB.db.profile.bars[key].shapeBorderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+                            ABAR.db.profile.bars[key].borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+                            ABAR.db.profile.bars[key].shapeBorderColor =
+                                { r = c.r, g = c.g, b = c.b, a = c.a }
                         end
-                        EAB.db.profile.bars[key].borderClassColor = cc
-                        EAB:ApplyBordersForBar(key)
-                        EAB:ApplyShapesForBar(key)
+                        ABAR.db.profile.bars[key].borderClassColor = cc
+                        ABAR:ApplyBordersForBar(key)
+                        ABAR:ApplyShapesForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -829,9 +834,9 @@ local function BuildBarAppearance(parent, y, ctx)
     end
 
     local classColorBorderRow
-    classColorBorderRow, h = W:DualRow(
-        parent,
-        y,
+    classColorBorderRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("actionbars", {
             type = "dropdown",
             text = "Custom Button Shape",
@@ -857,38 +862,38 @@ local function BuildBarAppearance(parent, y, ctx)
             end,
             setValue = function(v)
                 -- Set icon zoom BEFORE shapes: ApplyShapesForBar -> ApplyShapeToButton reads the new value.
-                SSet("iconZoom", ns.SHAPE_ZOOM_DEFAULTS[v] or 5.5)
+                SSet("iconZoom", mod.SHAPE_ZOOM_DEFAULTS[v] or 5.5)
                 SSet("buttonShape", v, function(k)
                     -- Reset border thickness to the default for the new shape mode
                     if v ~= "none" and v ~= "cropped" then
-                        EAB.db.profile.bars[k].borderThickness = ns.BORDER_THICKNESS_DEFAULT_SHAPE
-                        local entry = ns.BORDER_THICKNESS[ns.BORDER_THICKNESS_DEFAULT_SHAPE]
-                        EAB.db.profile.bars[k].shapeBorderSize = entry.shape
-                        EAB.db.profile.bars[k].shapeBorderEnabled = true
+                        ABAR.db.profile.bars[k].borderThickness = mod.BORDER_THICKNESS_DEFAULT_SHAPE
+                        local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_SHAPE]
+                        ABAR.db.profile.bars[k].shapeBorderSize = record.shape
+                        ABAR.db.profile.bars[k].shapeBorderEnabled = true
                     else
-                        EAB.db.profile.bars[k].borderThickness = ns.BORDER_THICKNESS_DEFAULT_REGULAR
-                        local entry = ns.BORDER_THICKNESS[ns.BORDER_THICKNESS_DEFAULT_REGULAR]
-                        EAB.db.profile.bars[k].borderSize = entry.regular
-                        EAB.db.profile.bars[k].borderEnabled = true
+                        ABAR.db.profile.bars[k].borderThickness = mod.BORDER_THICKNESS_DEFAULT_REGULAR
+                        local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_REGULAR]
+                        ABAR.db.profile.bars[k].borderSize = record.regular
+                        ABAR.db.profile.bars[k].borderEnabled = true
                     end
                     -- Default keybind/count text for cropped vs normal (offsets keep a
                     -- positioned text's corner spacing)
                     if v == "cropped" then
-                        EAB.db.profile.bars[k].keybindFontSize = 11
-                        EAB.db.profile.bars[k].countFontSize = 11
-                        EAB.ApplyShapeTextOffsets(EAB.db.profile.bars[k], 0, 1, 0, -1)
+                        ABAR.db.profile.bars[k].keybindFontSize = 11
+                        ABAR.db.profile.bars[k].countFontSize = 11
+                        ABAR.ApplyShapeTextOffsets(ABAR.db.profile.bars[k], 0, 1, 0, -1)
                     else
-                        EAB.db.profile.bars[k].keybindFontSize = 12
-                        EAB.db.profile.bars[k].countFontSize = 12
-                        EAB.ApplyShapeTextOffsets(EAB.db.profile.bars[k], 0, 0, 0, 0)
+                        ABAR.db.profile.bars[k].keybindFontSize = 12
+                        ABAR.db.profile.bars[k].countFontSize = 12
+                        ABAR.ApplyShapeTextOffsets(ABAR.db.profile.bars[k], 0, 0, 0, 0)
                     end
-                    EAB:ApplyShapesForBar(k)
-                    EAB:ApplyPaddingForBar(k)
-                    EAB:ApplyBordersForBar(k)
-                    EAB:ApplyFontsForBar(k)
-                    EAB:ApplyIconBackgroundForBar(k)
+                    ABAR:ApplyShapesForBar(k)
+                    ABAR:ApplyPaddingForBar(k)
+                    ABAR:ApplyBordersForBar(k)
+                    ABAR:ApplyFontsForBar(k)
+                    ABAR:ApplyIconBackgroundForBar(k)
                 end)
-                EAB:RefreshProcGlows()
+                ABAR:RefreshProcGlows()
                 SUpdatePreview()
                 -- Full rebuild: the Border Size slot is a dropdown for a custom shape
                 -- and the pixel slider otherwise, and only a rebuild swaps it.
@@ -905,18 +910,18 @@ local function BuildBarAppearance(parent, y, ctx)
             disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             getValue = function()
-                return SVal("iconZoom", EAB.db.profile.iconZoom or 5.5)
+                return SVal("iconZoom", ABAR.db.profile.iconZoom or 5.5)
             end,
             setValue = function(v)
                 SSet("iconZoom", v, function(k)
-                    EAB:ApplyBordersForBar(k)
-                    EAB:ApplyShapesForBar(k)
+                    ABAR:ApplyBordersForBar(k)
+                    ABAR:ApplyShapesForBar(k)
                 end)
                 SUpdatePreview()
             end,
         })
     )
-    y = y - h
+    posY = posY - hgt
     do
         local rgn = classColorBorderRow._leftRegion
         CludesUI.BuildSyncIcon({
@@ -925,42 +930,42 @@ local function BuildBarAppearance(parent, y, ctx)
             onClick = function()
                 local v = SGet("buttonShape") or "none"
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local bs = EAB.db.profile.bars[key]
-                    bs.iconZoom = ns.SHAPE_ZOOM_DEFAULTS[v] or 5.5
+                    local bs = ABAR.db.profile.bars[key]
+                    bs.iconZoom = mod.SHAPE_ZOOM_DEFAULTS[v] or 5.5
                     bs.buttonShape = v
                     if v ~= "none" and v ~= "cropped" then
-                        bs.borderThickness = ns.BORDER_THICKNESS_DEFAULT_SHAPE
-                        local entry = ns.BORDER_THICKNESS[ns.BORDER_THICKNESS_DEFAULT_SHAPE]
-                        bs.shapeBorderSize = entry.shape
+                        bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_SHAPE
+                        local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_SHAPE]
+                        bs.shapeBorderSize = record.shape
                         bs.shapeBorderEnabled = true
                     else
-                        bs.borderThickness = ns.BORDER_THICKNESS_DEFAULT_REGULAR
-                        local entry = ns.BORDER_THICKNESS[ns.BORDER_THICKNESS_DEFAULT_REGULAR]
-                        bs.borderSize = entry.regular
+                        bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_REGULAR
+                        local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_REGULAR]
+                        bs.borderSize = record.regular
                         bs.borderEnabled = true
                     end
                     if v == "cropped" then
                         bs.keybindFontSize = 11
                         bs.countFontSize = 11
-                        EAB.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
+                        ABAR.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
                     else
                         bs.keybindFontSize = 12
                         bs.countFontSize = 12
-                        EAB.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
+                        ABAR.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
                     end
-                    EAB:ApplyShapesForBar(key)
-                    EAB:ApplyPaddingForBar(key)
-                    EAB:ApplyBordersForBar(key)
-                    EAB:ApplyFontsForBar(key)
+                    ABAR:ApplyShapesForBar(key)
+                    ABAR:ApplyPaddingForBar(key)
+                    ABAR:ApplyBordersForBar(key)
+                    ABAR:ApplyFontsForBar(key)
                 end
-                EAB:RefreshProcGlows()
+                ABAR:RefreshProcGlows()
                 SUpdatePreview()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
                 local v = SGet("buttonShape") or "none"
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].buttonShape or "none") ~= v then
+                    if (ABAR.db.profile.bars[key].buttonShape or "none") ~= v then
                         return false
                     end
                 end
@@ -978,35 +983,35 @@ local function BuildBarAppearance(parent, y, ctx)
                 onApply = function(checkedKeys)
                     local v = SGet("buttonShape") or "none"
                     for _, key in ipairs(checkedKeys) do
-                        local bs = EAB.db.profile.bars[key]
-                        bs.iconZoom = ns.SHAPE_ZOOM_DEFAULTS[v] or 5.5
+                        local bs = ABAR.db.profile.bars[key]
+                        bs.iconZoom = mod.SHAPE_ZOOM_DEFAULTS[v] or 5.5
                         bs.buttonShape = v
                         if v ~= "none" and v ~= "cropped" then
-                            bs.borderThickness = ns.BORDER_THICKNESS_DEFAULT_SHAPE
-                            local entry = ns.BORDER_THICKNESS[ns.BORDER_THICKNESS_DEFAULT_SHAPE]
-                            bs.shapeBorderSize = entry.shape
+                            bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_SHAPE
+                            local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_SHAPE]
+                            bs.shapeBorderSize = record.shape
                             bs.shapeBorderEnabled = true
                         else
-                            bs.borderThickness = ns.BORDER_THICKNESS_DEFAULT_REGULAR
-                            local entry = ns.BORDER_THICKNESS[ns.BORDER_THICKNESS_DEFAULT_REGULAR]
-                            bs.borderSize = entry.regular
+                            bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_REGULAR
+                            local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_REGULAR]
+                            bs.borderSize = record.regular
                             bs.borderEnabled = true
                         end
                         if v == "cropped" then
                             bs.keybindFontSize = 11
                             bs.countFontSize = 11
-                            EAB.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
+                            ABAR.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
                         else
                             bs.keybindFontSize = 12
                             bs.countFontSize = 12
-                            EAB.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
+                            ABAR.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
                         end
-                        EAB:ApplyShapesForBar(key)
-                        EAB:ApplyPaddingForBar(key)
-                        EAB:ApplyBordersForBar(key)
-                        EAB:ApplyFontsForBar(key)
+                        ABAR:ApplyShapesForBar(key)
+                        ABAR:ApplyPaddingForBar(key)
+                        ABAR:ApplyBordersForBar(key)
+                        ABAR:ApplyFontsForBar(key)
                     end
-                    EAB:RefreshProcGlows()
+                    ABAR:RefreshProcGlows()
                     SUpdatePreview()
                     CludesUI:RefreshPage()
                 end,
@@ -1020,18 +1025,18 @@ local function BuildBarAppearance(parent, y, ctx)
             region = rgn,
             tooltip = "Apply Icon Zoom to all Bars",
             onClick = function()
-                local v = SB().iconZoom or EAB.db.profile.iconZoom or 5.5
+                local v = SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    EAB.db.profile.bars[key].iconZoom = v
-                    EAB:ApplyBordersForBar(key)
-                    EAB:ApplyShapesForBar(key)
+                    ABAR.db.profile.bars[key].iconZoom = v
+                    ABAR:ApplyBordersForBar(key)
+                    ABAR:ApplyShapesForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = SB().iconZoom or EAB.db.profile.iconZoom or 5.5
+                local v = SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].iconZoom or EAB.db.profile.iconZoom or 5.5) ~= v then
+                    if (ABAR.db.profile.bars[key].iconZoom or ABAR.db.profile.iconZoom or 5.5) ~= v then
                         return false
                     end
                 end
@@ -1047,11 +1052,11 @@ local function BuildBarAppearance(parent, y, ctx)
                     return SelectedKey()
                 end,
                 onApply = function(checkedKeys)
-                    local v = SB().iconZoom or EAB.db.profile.iconZoom or 5.5
+                    local v = SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
                     for _, key in ipairs(checkedKeys) do
-                        EAB.db.profile.bars[key].iconZoom = v
-                        EAB:ApplyBordersForBar(key)
-                        EAB:ApplyShapesForBar(key)
+                        ABAR.db.profile.bars[key].iconZoom = v
+                        ABAR:ApplyBordersForBar(key)
+                        ABAR:ApplyShapesForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -1061,9 +1066,9 @@ local function BuildBarAppearance(parent, y, ctx)
 
     -- Icon Background | Blizzard Icon Background
     local slotBgRow
-    slotBgRow, h = W:DualRow(
-        parent,
-        y,
+    slotBgRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         CludesUI.BlizzStyle.Gate("actionbars", {
             type = "slider",
             text = "Icon Background",
@@ -1074,15 +1079,15 @@ local function BuildBarAppearance(parent, y, ctx)
             disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
             requireState = "disabled",
             getValue = function()
-                local v = EAB.db.profile.slotBgOpacity
+                local v = ABAR.db.profile.slotBgOpacity
                 if v == nil then
                     v = 50
                 end
                 return v
             end,
             setValue = function(v)
-                EAB.db.profile.slotBgOpacity = v
-                EAB:ApplySlotBackgroundColor()
+                ABAR.db.profile.slotBgOpacity = v
+                ABAR:ApplySlotBackgroundColor()
             end,
         }),
         {
@@ -1090,25 +1095,25 @@ local function BuildBarAppearance(parent, y, ctx)
             text = "Blizzard Icon Background",
             tooltip = "Shows Blizzard's slot art on empty slots.",
             getValue = function()
-                return EAB.db.profile.showBlizzIconBg or false
+                return ABAR.db.profile.showBlizzIconBg or false
             end,
             setValue = function(v)
-                EAB.db.profile.showBlizzIconBg = v
-                for _, info in ipairs(ns.BAR_CONFIG or {}) do
-                    EAB:ApplyIconBackgroundForBar(info.key)
+                ABAR.db.profile.showBlizzIconBg = v
+                for _, details in ipairs(mod.BAR_CONFIG or {}) do
+                    ABAR:ApplyIconBackgroundForBar(details.key)
                 end
                 CludesUI:RefreshPage()
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
     do
         local rgn = slotBgRow._rightRegion
         CludesUI.BuildInlineCog(rgn, {
             title = "Icon Background",
             anchorTo = rgn._control,
             disabled = function()
-                return not (EAB.db.profile.showBlizzIconBg or false)
+                return not (ABAR.db.profile.showBlizzIconBg or false)
             end,
             disabledTooltip = "Blizzard Icon Background",
             rows = {
@@ -1120,12 +1125,12 @@ local function BuildBarAppearance(parent, y, ctx)
                     step = 1,
                     tooltip = "Controls the opacity of the Blizzard icon slot background texture.",
                     get = function()
-                        return math.floor((EAB.db.profile.blizzIconBgAlpha or 1) * 100 + 0.5)
+                        return math.floor((ABAR.db.profile.blizzIconBgAlpha or 1) * 100 + 0.5)
                     end,
                     set = function(v)
-                        EAB.db.profile.blizzIconBgAlpha = v / 100
-                        for _, info in ipairs(ns.BAR_CONFIG or {}) do
-                            EAB:ApplyIconBackgroundForBar(info.key)
+                        ABAR.db.profile.blizzIconBgAlpha = v / 100
+                        for _, details in ipairs(mod.BAR_CONFIG or {}) do
+                            ABAR:ApplyIconBackgroundForBar(details.key)
                         end
                     end,
                 },
@@ -1139,7 +1144,7 @@ local function BuildBarAppearance(parent, y, ctx)
             if BlizzStyleOn() then
                 return true
             end
-            local v = EAB.db.profile.slotBgOpacity
+            local v = ABAR.db.profile.slotBgOpacity
             if v == nil then
                 v = 50
             end
@@ -1149,17 +1154,17 @@ local function BuildBarAppearance(parent, y, ctx)
             rgn,
             slotBgRow:GetFrameLevel() + 3,
             function()
-                local c = EAB.db.profile.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
+                local c = ABAR.db.profile.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
                 return c.r, c.g, c.b, 1
             end,
             function(r, g, b)
-                EAB.db.profile.slotBgColor = { r = r, g = g, b = b }
-                EAB:ApplySlotBackgroundColor()
+                ABAR.db.profile.slotBgColor = { r = r, g = g, b = b }
+                ABAR:ApplySlotBackgroundColor()
             end,
             false,
             20
         )
-        PP.Point(sbgSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
+        Pix.Point(sbgSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
         rgn._lastInline = sbgSwatch
         sbgSwatch:SetAlpha(SbgOff() and 0.15 or 1)
         local sbgOrigClick = sbgSwatch:GetScript("OnClick")
@@ -1218,28 +1223,28 @@ local function BuildBarAppearance(parent, y, ctx)
             setValue = function(v)
                 SB().bgPadX, SB().bgPadY = nil, nil
                 SSet("bgPadding", v, function(k)
-                    EAB:ApplyBackgroundForBar(k)
+                    ABAR:ApplyBackgroundForBar(k)
                 end)
                 SUpdatePreview()
             end,
         }
     end
-    local function BarBgSpacingSync(region)
-        local function CurrentSpacing(settings)
-            if settings.bgPadding ~= nil then
-                return settings.bgPadding
+    local function BarBgSpacingSync(regionFrame)
+        local function CurrentSpacing(prefs)
+            if prefs.bgPadding ~= nil then
+                return prefs.bgPadding
             end
-            return math.max(settings.bgPadX or 0, settings.bgPadY or 0)
+            return math.max(prefs.bgPadX or 0, prefs.bgPadY or 0)
         end
         local function ApplySpacingTo(key)
-            local target = EAB.db.profile.bars[key]
-            target.bgPadding = CurrentSpacing(SB())
-            target.bgPadX = nil
-            target.bgPadY = nil
-            EAB:ApplyBackgroundForBar(key)
+            local targetUnit = ABAR.db.profile.bars[key]
+            targetUnit.bgPadding = CurrentSpacing(SB())
+            targetUnit.bgPadX = nil
+            targetUnit.bgPadY = nil
+            ABAR:ApplyBackgroundForBar(key)
         end
         CludesUI.BuildSyncIcon({
-            region = region,
+            region = regionFrame,
             tooltip = "Apply Bar Background Spacing to all Bars",
             onClick = function()
                 for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -1250,14 +1255,14 @@ local function BuildBarAppearance(parent, y, ctx)
             isSynced = function()
                 local spacing = CurrentSpacing(SB())
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if CurrentSpacing(EAB.db.profile.bars[key]) ~= spacing then
+                    if CurrentSpacing(ABAR.db.profile.bars[key]) ~= spacing then
                         return false
                     end
                 end
                 return true
             end,
             flashTargets = function()
-                return { region }
+                return { regionFrame }
             end,
             multiApply = {
                 elementKeys = GROUP_BAR_ORDER,
@@ -1278,11 +1283,11 @@ local function BuildBarAppearance(parent, y, ctx)
     -- Bar Background's other rows: Spacing last, unless it sits beside Bar
     -- Background (the WoW Forever look).
     local function BuildBarBackgroundRows(capsForever)
-        local function BackgroundOpacity(settings)
-            if settings.bgOpacity ~= nil then
-                return settings.bgOpacity
+        local function BackgroundOpacity(prefs)
+            if prefs.bgOpacity ~= nil then
+                return prefs.bgOpacity
             end
-            local color = settings.bgColor
+            local color = prefs.bgColor
             return ((color and color.a) or 0.5) * 100
         end
 
@@ -1290,7 +1295,7 @@ local function BuildBarAppearance(parent, y, ctx)
         -- the selected bar (its SectionToggleSetValue rebuilds the page on a flip).
         if SVal("bgEnabled", false) then
             local bgColorRow
-            bgColorRow, h = W:DualRow(parent, y, {
+            bgColorRow, hgt = Widgets:DualRow(hostFrame, posY, {
                 type = "colorpicker",
                 text = "Background Color",
                 hasAlpha = false,
@@ -1303,7 +1308,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 setValue = function(r, g, b)
                     local old = SGet("bgColor") or { a = 0.5 }
                     SSetColor("bgColor", r, g, b, old.a or 0.5, function(k)
-                        EAB:ApplyBackgroundForBar(k)
+                        ABAR:ApplyBackgroundForBar(k)
                     end)
                     SUpdatePreview()
                 end,
@@ -1320,29 +1325,29 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(v)
                     SSet("bgOpacity", v, function(k)
-                        EAB:ApplyBackgroundForBar(k)
+                        ABAR:ApplyBackgroundForBar(k)
                     end)
                     SUpdatePreview()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             do
-                local region = bgColorRow._leftRegion
+                local regionFrame = bgColorRow._leftRegion
                 local function ApplyColorTo(key)
                     local source = SGet("bgColor") or { r = 0, g = 0, b = 0, a = 0.5 }
-                    local target = EAB.db.profile.bars[key]
-                    local old = target.bgColor
-                    target.bgColor = {
+                    local targetUnit = ABAR.db.profile.bars[key]
+                    local old = targetUnit.bgColor
+                    targetUnit.bgColor = {
                         r = source.r,
                         g = source.g,
                         b = source.b,
                         a = (old and old.a) or source.a or 0.5,
                     }
-                    EAB:ApplyBackgroundForBar(key)
+                    ABAR:ApplyBackgroundForBar(key)
                 end
                 CludesUI.BuildSyncIcon({
-                    region = region,
+                    region = regionFrame,
                     tooltip = "Apply Background Color to all Bars",
                     onClick = function()
                         for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -1353,15 +1358,19 @@ local function BuildBarAppearance(parent, y, ctx)
                     isSynced = function()
                         local color = SGet("bgColor") or { r = 0, g = 0, b = 0 }
                         for _, key in ipairs(GROUP_BAR_ORDER) do
-                            local target = EAB.db.profile.bars[key].bgColor or { r = 0, g = 0, b = 0 }
-                            if target.r ~= color.r or target.g ~= color.g or target.b ~= color.b then
+                            local targetUnit = ABAR.db.profile.bars[key].bgColor or { r = 0, g = 0, b = 0 }
+                            if
+                                targetUnit.r ~= color.r
+                                or targetUnit.g ~= color.g
+                                or targetUnit.b ~= color.b
+                            then
                                 return false
                             end
                         end
                         return true
                     end,
                     flashTargets = function()
-                        return { region }
+                        return { regionFrame }
                     end,
                     multiApply = {
                         elementKeys = GROUP_BAR_ORDER,
@@ -1380,14 +1389,14 @@ local function BuildBarAppearance(parent, y, ctx)
             end
 
             do
-                local region = bgColorRow._rightRegion
+                local regionFrame = bgColorRow._rightRegion
                 local function ApplyOpacityTo(key)
-                    local target = EAB.db.profile.bars[key]
-                    target.bgOpacity = BackgroundOpacity(SB())
-                    EAB:ApplyBackgroundForBar(key)
+                    local targetUnit = ABAR.db.profile.bars[key]
+                    targetUnit.bgOpacity = BackgroundOpacity(SB())
+                    ABAR:ApplyBackgroundForBar(key)
                 end
                 CludesUI.BuildSyncIcon({
-                    region = region,
+                    region = regionFrame,
                     tooltip = "Apply Background Opacity to all Bars",
                     onClick = function()
                         for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -1398,14 +1407,14 @@ local function BuildBarAppearance(parent, y, ctx)
                     isSynced = function()
                         local opacity = BackgroundOpacity(SB())
                         for _, key in ipairs(GROUP_BAR_ORDER) do
-                            if BackgroundOpacity(EAB.db.profile.bars[key]) ~= opacity then
+                            if BackgroundOpacity(ABAR.db.profile.bars[key]) ~= opacity then
                                 return false
                             end
                         end
                         return true
                     end,
                     flashTargets = function()
-                        return { region }
+                        return { regionFrame }
                     end,
                     multiApply = {
                         elementKeys = GROUP_BAR_ORDER,
@@ -1426,9 +1435,9 @@ local function BuildBarAppearance(parent, y, ctx)
             do
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local bgBorderRow
-                bgBorderRow, h = W:DualRow(
-                    parent,
-                    y,
+                bgBorderRow, hgt = Widgets:DualRow(
+                    hostFrame,
+                    posY,
                     {
                         type = "dropdown",
                         text = "Background Border Style",
@@ -1442,18 +1451,18 @@ local function BuildBarAppearance(parent, y, ctx)
                         setValue = function(v)
                             local color, behind = CludesUI.GetBorderStyleSelectDefaults(v)
                             SSet("bgBorderTexture", v, function(k)
-                                local settings = EAB.db.profile.bars[k]
-                                settings.bgBorderOffsetX = nil
-                                settings.bgBorderOffsetY = nil
-                                settings.bgBorderShiftX = nil
-                                settings.bgBorderShiftY = nil
+                                local prefs = ABAR.db.profile.bars[k]
+                                prefs.bgBorderOffsetX = nil
+                                prefs.bgBorderOffsetY = nil
+                                prefs.bgBorderShiftX = nil
+                                prefs.bgBorderShiftY = nil
                                 -- A style pick resets the border: a set exact size goes with it (false travels, nil would not).
-                                if settings.bgBorderThicknessPx then
-                                    settings.bgBorderThicknessPx = false
+                                if prefs.bgBorderThicknessPx then
+                                    prefs.bgBorderThicknessPx = false
                                 end
-                                settings.bgBorderBehind = behind
-                                settings.bgBorderColor = { r = color.r, g = color.g, b = color.b, a = 1 }
-                                EAB:ApplyBackgroundForBar(k)
+                                prefs.bgBorderBehind = behind
+                                prefs.bgBorderColor = { r = color.r, g = color.g, b = color.b, a = 1 }
+                                ABAR:ApplyBackgroundForBar(k)
                             end)
                             SUpdatePreview()
                             -- Full rebuild: the Width/Height Offset row exists only for a textured style.
@@ -1467,8 +1476,8 @@ local function BuildBarAppearance(parent, y, ctx)
                         -- The step ApplyBackgroundForBar renders with: a thickness with no
                         -- entry (unknown, or the number an old SharedMedia pick stored) is 0, hidden.
                         getStep = function()
-                            local entry = ns.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
-                            return entry and entry.regular or 0
+                            local record = mod.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
+                            return record and record.regular or 0
                         end,
                         setStep = function(step)
                             SB().bgBorderThickness = CludesUI.BORDER_LABEL_OF_STEP[step]
@@ -1483,13 +1492,13 @@ local function BuildBarAppearance(parent, y, ctx)
                             SB().bgBorderThicknessPx = v
                         end,
                         apply = function()
-                            EAB:ApplyBackgroundForBar(SelectedKey())
+                            ABAR:ApplyBackgroundForBar(SelectedKey())
                             CludesUI:RefreshPage()
                             SUpdatePreview()
                         end,
                     })
                 )
-                y = y - h
+                posY = posY - hgt
 
                 -- Background Border Width Offset | Height Offset: the textured border's
                 -- outward offsets, their own row while a textured style is selected
@@ -1507,8 +1516,8 @@ local function BuildBarAppearance(parent, y, ctx)
                                 return SVal("bgBorderTexture", "solid")
                             end,
                             getStep = function()
-                                local entry = ns.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
-                                return entry and entry.regular or 0
+                                local record = mod.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
+                                return record and record.regular or 0
                             end,
                             getSizeKey = function()
                                 return SVal("bgBorderThickness", "none")
@@ -1529,38 +1538,38 @@ local function BuildBarAppearance(parent, y, ctx)
                                 SB().bgBorderOffsetY = v
                             end,
                             apply = function()
-                                EAB:ApplyBackgroundForBar(SelectedKey())
+                                ABAR:ApplyBackgroundForBar(SelectedKey())
                                 CludesUI:RefreshPage()
                                 SUpdatePreview()
                             end,
                         })
                         ocfgL.text = "Background Border Width Offset"
                         ocfgR.text = "Background Border Height Offset"
-                        _, h = W:DualRow(parent, y, ocfgL, ocfgR)
-                        y = y - h
+                        _, hgt = Widgets:DualRow(hostFrame, posY, ocfgL, ocfgR)
+                        posY = posY - hgt
                     end
                 end
 
                 do
-                    local region = bgBorderRow._rightRegion
+                    local regionFrame = bgBorderRow._rightRegion
                     local borderSwatch, refreshBorder = CludesUI.BuildColorSwatch(
-                        region,
-                        region:GetFrameLevel() + 5,
+                        regionFrame,
+                        regionFrame:GetFrameLevel() + 5,
                         function()
                             local c = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
                             return c.r, c.g, c.b, c.a
                         end,
                         function(r, g, b, a)
                             SSetColor("bgBorderColor", r, g, b, a, function(k)
-                                EAB:ApplyBackgroundForBar(k)
+                                ABAR:ApplyBackgroundForBar(k)
                             end)
                             SUpdatePreview()
                         end,
                         true,
                         20
                     )
-                    PP.Point(borderSwatch, "RIGHT", region._control, "LEFT", -12, 0)
-                    region._lastInline = borderSwatch
+                    Pix.Point(borderSwatch, "RIGHT", regionFrame._control, "LEFT", -12, 0)
+                    regionFrame._lastInline = borderSwatch
                     CludesUI.RegisterWidgetRefresh(function()
                         local disabled = BgDisabled() or SVal("bgBorderThickness", "none") == "none"
                         borderSwatch:SetAlpha(disabled and 0.15 or 1)
@@ -1569,26 +1578,26 @@ local function BuildBarAppearance(parent, y, ctx)
                 end
 
                 do
-                    local region = bgBorderRow._rightRegion
+                    local regionFrame = bgBorderRow._rightRegion
                     local function ApplySizeTo(key)
                         local source = SB()
-                        local target = EAB.db.profile.bars[key]
-                        target.bgBorderThickness = source.bgBorderThickness
+                        local targetUnit = ABAR.db.profile.bars[key]
+                        targetUnit.bgBorderThickness = source.bgBorderThickness
                         do
                             local v = source.bgBorderThicknessPx
-                            if v == nil and target.bgBorderThicknessPx ~= nil then
+                            if v == nil and targetUnit.bgBorderThicknessPx ~= nil then
                                 v = false
                             end
-                            target.bgBorderThicknessPx = v
+                            targetUnit.bgBorderThicknessPx = v
                         end
                         local color = source.bgBorderColor
                         if color then
-                            target.bgBorderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
+                            targetUnit.bgBorderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
                         end
-                        EAB:ApplyBackgroundForBar(key)
+                        ABAR:ApplyBackgroundForBar(key)
                     end
                     CludesUI.BuildSyncIcon({
-                        region = region,
+                        region = regionFrame,
                         tooltip = "Apply Background Border Size and Color to all Bars",
                         onClick = function()
                             for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -1601,14 +1610,14 @@ local function BuildBarAppearance(parent, y, ctx)
                             local thicknessPx = SGet("bgBorderThicknessPx") or false -- nil and false render alike
                             local color = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
                             for _, key in ipairs(GROUP_BAR_ORDER) do
-                                local target = EAB.db.profile.bars[key]
-                                if (target.bgBorderThickness or "none") ~= thickness then
+                                local targetUnit = ABAR.db.profile.bars[key]
+                                if (targetUnit.bgBorderThickness or "none") ~= thickness then
                                     return false
                                 end
-                                if (target.bgBorderThicknessPx or false) ~= thicknessPx then
+                                if (targetUnit.bgBorderThicknessPx or false) ~= thicknessPx then
                                     return false
                                 end
-                                local targetColor = target.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
+                                local targetColor = targetUnit.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
                                 if
                                     targetColor.r ~= color.r
                                     or targetColor.g ~= color.g
@@ -1621,7 +1630,7 @@ local function BuildBarAppearance(parent, y, ctx)
                             return true
                         end,
                         flashTargets = function()
-                            return { region }
+                            return { regionFrame }
                         end,
                         multiApply = {
                             elementKeys = GROUP_BAR_ORDER,
@@ -1640,22 +1649,22 @@ local function BuildBarAppearance(parent, y, ctx)
                 end
 
                 do
-                    local region = bgBorderRow._leftRegion
+                    local regionFrame = bgBorderRow._leftRegion
                     -- The offsets/shifts the background border renders with when none is
                     -- set: its registry defaults (looked up as before), scaled to an exact
                     -- size when one is set, as ApplyBackgroundForBar draws them.
                     local function BgBorderDefaults()
                         local texture = SVal("bgBorderTexture", "solid")
                         local thickness = SVal("bgBorderThickness", "thin")
-                        local entry = ns.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
-                        local step = entry and entry.regular or 0
+                        local record = mod.BORDER_THICKNESS[SVal("bgBorderThickness", "none")]
+                        local step = record and record.regular or 0
                         local px = CludesUI.BorderPx(SGet("bgBorderThicknessPx"), step, texture)
                         return ShownBorderDefaults(texture, thickness, step, px)
                     end
-                    local offsetButton = CludesUI.BuildInlineCog(region, {
-                        anchorTo = region._control,
+                    local offsetButton = CludesUI.BuildInlineCog(regionFrame, {
+                        anchorTo = regionFrame._control,
                         title = "Border Options",
-                        captureRegion = region,
+                        captureRegion = regionFrame,
                         rows = {
                             {
                                 type = "slider",
@@ -1678,7 +1687,7 @@ local function BuildBarAppearance(parent, y, ctx)
                                         v = nil
                                     end
                                     SSet("bgBorderShiftX", v, function(k)
-                                        EAB:ApplyBackgroundForBar(k)
+                                        ABAR:ApplyBackgroundForBar(k)
                                     end)
                                     SUpdatePreview()
                                 end,
@@ -1703,7 +1712,7 @@ local function BuildBarAppearance(parent, y, ctx)
                                         v = nil
                                     end
                                     SSet("bgBorderShiftY", v, function(k)
-                                        EAB:ApplyBackgroundForBar(k)
+                                        ABAR:ApplyBackgroundForBar(k)
                                     end)
                                     SUpdatePreview()
                                 end,
@@ -1716,7 +1725,7 @@ local function BuildBarAppearance(parent, y, ctx)
                                 end,
                                 set = function(v)
                                     SSet("bgBorderBehind", v, function(k)
-                                        EAB:ApplyBackgroundForBar(k)
+                                        ABAR:ApplyBackgroundForBar(k)
                                     end)
                                     SUpdatePreview()
                                 end,
@@ -1733,20 +1742,20 @@ local function BuildBarAppearance(parent, y, ctx)
                 end
 
                 do
-                    local region = bgBorderRow._leftRegion
+                    local regionFrame = bgBorderRow._leftRegion
                     local function ApplyStyleTo(key)
                         local source = SB()
-                        local target = EAB.db.profile.bars[key]
-                        target.bgBorderTexture = source.bgBorderTexture
-                        target.bgBorderOffsetX = source.bgBorderOffsetX
-                        target.bgBorderOffsetY = source.bgBorderOffsetY
-                        target.bgBorderShiftX = source.bgBorderShiftX
-                        target.bgBorderShiftY = source.bgBorderShiftY
-                        target.bgBorderBehind = source.bgBorderBehind
-                        EAB:ApplyBackgroundForBar(key)
+                        local targetUnit = ABAR.db.profile.bars[key]
+                        targetUnit.bgBorderTexture = source.bgBorderTexture
+                        targetUnit.bgBorderOffsetX = source.bgBorderOffsetX
+                        targetUnit.bgBorderOffsetY = source.bgBorderOffsetY
+                        targetUnit.bgBorderShiftX = source.bgBorderShiftX
+                        targetUnit.bgBorderShiftY = source.bgBorderShiftY
+                        targetUnit.bgBorderBehind = source.bgBorderBehind
+                        ABAR:ApplyBackgroundForBar(key)
                     end
                     CludesUI.BuildSyncIcon({
-                        region = region,
+                        region = regionFrame,
                         tooltip = "Apply Background Border Style to all Bars",
                         onClick = function()
                             for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -1757,32 +1766,35 @@ local function BuildBarAppearance(parent, y, ctx)
                         isSynced = function()
                             local source = SB()
                             for _, key in ipairs(GROUP_BAR_ORDER) do
-                                local target = EAB.db.profile.bars[key]
+                                local targetUnit = ABAR.db.profile.bars[key]
                                 if
-                                    (target.bgBorderTexture or "solid") ~= (source.bgBorderTexture or "solid")
+                                    (targetUnit.bgBorderTexture or "solid")
+                                    ~= (source.bgBorderTexture or "solid")
                                 then
                                     return false
                                 end
-                                if target.bgBorderOffsetX ~= source.bgBorderOffsetX then
+                                if targetUnit.bgBorderOffsetX ~= source.bgBorderOffsetX then
                                     return false
                                 end
-                                if target.bgBorderOffsetY ~= source.bgBorderOffsetY then
+                                if targetUnit.bgBorderOffsetY ~= source.bgBorderOffsetY then
                                     return false
                                 end
-                                if target.bgBorderShiftX ~= source.bgBorderShiftX then
+                                if targetUnit.bgBorderShiftX ~= source.bgBorderShiftX then
                                     return false
                                 end
-                                if target.bgBorderShiftY ~= source.bgBorderShiftY then
+                                if targetUnit.bgBorderShiftY ~= source.bgBorderShiftY then
                                     return false
                                 end
-                                if (target.bgBorderBehind or false) ~= (source.bgBorderBehind or false) then
+                                if
+                                    (targetUnit.bgBorderBehind or false) ~= (source.bgBorderBehind or false)
+                                then
                                     return false
                                 end
                             end
                             return true
                         end,
                         flashTargets = function()
-                            return { region }
+                            return { regionFrame }
                         end,
                         multiApply = {
                             elementKeys = GROUP_BAR_ORDER,
@@ -1802,7 +1814,7 @@ local function BuildBarAppearance(parent, y, ctx)
             end
 
             local bgMultiplierRow
-            bgMultiplierRow, h = W:DualRow(parent, y, {
+            bgMultiplierRow, hgt = Widgets:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Multiplier X",
                 min = 1,
@@ -1815,7 +1827,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(v)
                     SSet("bgMultiplierX", v, function(k)
-                        EAB:ApplyBackgroundForBar(k)
+                        ABAR:ApplyBackgroundForBar(k)
                     end)
                     SUpdatePreviewAndResize()
                 end,
@@ -1832,75 +1844,69 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(v)
                     SSet("bgMultiplierY", v, function(k)
-                        EAB:ApplyBackgroundForBar(k)
+                        ABAR:ApplyBackgroundForBar(k)
                     end)
                     SUpdatePreviewAndResize()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
 
             do
-                local region = bgMultiplierRow._leftRegion
-                CludesUI.BuildInlineCog(
-                    region,
-                    {
-                        anchorTo = region._control,
-                        title = "Multiplier X Settings",
-                        captureRegion = region,
-                        rows = {
-                            {
-                                type = "dropdown",
-                                label = "Growth Direction",
-                                values = { left = "Left", right = "Right" },
-                                order = { "left", "right" },
-                                get = function()
-                                    return SVal("bgExpandDirectionX", "right")
-                                end,
-                                set = function(v)
-                                    SSet("bgExpandDirectionX", v, function(k)
-                                        EAB:ApplyBackgroundForBar(k)
-                                    end)
-                                    SUpdatePreviewAndResize()
-                                end,
-                            },
+                local regionFrame = bgMultiplierRow._leftRegion
+                CludesUI.BuildInlineCog(regionFrame, {
+                    anchorTo = regionFrame._control,
+                    title = "Multiplier X Settings",
+                    captureRegion = regionFrame,
+                    rows = {
+                        {
+                            type = "dropdown",
+                            label = "Growth Direction",
+                            values = { left = "Left", right = "Right" },
+                            order = { "left", "right" },
+                            get = function()
+                                return SVal("bgExpandDirectionX", "right")
+                            end,
+                            set = function(v)
+                                SSet("bgExpandDirectionX", v, function(k)
+                                    ABAR:ApplyBackgroundForBar(k)
+                                end)
+                                SUpdatePreviewAndResize()
+                            end,
                         },
-                    }
-                )
+                    },
+                })
             end
 
             do
-                local region = bgMultiplierRow._rightRegion
-                CludesUI.BuildInlineCog(
-                    region,
-                    {
-                        anchorTo = region._control,
-                        title = "Multiplier Y Settings",
-                        captureRegion = region,
-                        rows = {
-                            {
-                                type = "dropdown",
-                                label = "Growth Direction",
-                                values = { up = "Up", down = "Down" },
-                                order = { "up", "down" },
-                                get = function()
-                                    return SVal("bgExpandDirectionY", "up")
-                                end,
-                                set = function(v)
-                                    SSet("bgExpandDirectionY", v, function(k)
-                                        EAB:ApplyBackgroundForBar(k)
-                                    end)
-                                    SUpdatePreviewAndResize()
-                                end,
-                            },
+                local regionFrame = bgMultiplierRow._rightRegion
+                CludesUI.BuildInlineCog(regionFrame, {
+                    anchorTo = regionFrame._control,
+                    title = "Multiplier Y Settings",
+                    captureRegion = regionFrame,
+                    rows = {
+                        {
+                            type = "dropdown",
+                            label = "Growth Direction",
+                            values = { up = "Up", down = "Down" },
+                            order = { "up", "down" },
+                            get = function()
+                                return SVal("bgExpandDirectionY", "up")
+                            end,
+                            set = function(v)
+                                SSet("bgExpandDirectionY", v, function(k)
+                                    ABAR:ApplyBackgroundForBar(k)
+                                end)
+                                SUpdatePreviewAndResize()
+                            end,
                         },
-                    }
-                )
+                    },
+                })
             end
 
             if not capsForever then
                 local spacingRow
-                spacingRow, h = W:DualRow(parent, y, BarBgSpacingCfg(), CludesUI.BlankRowCfg())
-                y = y - h
+                spacingRow, hgt = Widgets:DualRow(hostFrame, posY, BarBgSpacingCfg(), CludesUI.BlankRowCfg())
+                posY = posY - hgt
                 BarBgSpacingSync(spacingRow._leftRegion)
             end
         end -- bgEnabled section gate
@@ -1914,27 +1920,27 @@ local function BuildBarAppearance(parent, y, ctx)
             store = SB,
             label = "End Caps",
             vertical = function()
-                return not EAB:GetOrientationForBar(SelectedKey())
+                return not ABAR:GetOrientationForBar(SelectedKey())
             end,
             write = function(k, v)
                 if k then
                     SSet(k, v, function(bk)
-                        EAB:ApplyPaddingForBar(bk)
+                        ABAR:ApplyPaddingForBar(bk)
                     end)
                     SUpdatePreviewAndResize()
                 else
-                    EAB:ApplyPaddingForBar(SelectedKey())
+                    ABAR:ApplyPaddingForBar(SelectedKey())
                     SUpdatePreviewAndResize()
                     CludesUI:RefreshPage()
                 end
                 if SelectedKey() == "MainBar" then
-                    ns.AB_CapsSpanApply()
+                    mod.AB_CapsSpanApply()
                 end
             end,
             copyApply = function(key)
-                EAB:ApplyPaddingForBar(key)
+                ABAR:ApplyPaddingForBar(key)
                 if key == "MainBar" then
-                    ns.AB_CapsSpanApply()
+                    mod.AB_CapsSpanApply()
                 end
             end,
             syncKeys = GROUP_BAR_ORDER,
@@ -1949,7 +1955,7 @@ local function BuildBarAppearance(parent, y, ctx)
             -- Section gate: its other rows are hidden (not grayed) while off; the wrapper forces the page rebuild.
             setValue = CludesUI.SectionToggleSetValue(function(v)
                 SSet("bgEnabled", v, function(k)
-                    EAB:ApplyBackgroundForBar(k)
+                    ABAR:ApplyBackgroundForBar(k)
                 end)
                 SUpdatePreview()
             end),
@@ -1961,45 +1967,45 @@ local function BuildBarAppearance(parent, y, ctx)
                 "Bar Frame",
                 { "Show the frame and dividers behind the bar's buttons.", "Show Bar Background" }
             )
-            capsRow, h = W:DualRow(parent, y, CAPS.Cfg(), {
+            capsRow, hgt = Widgets:DualRow(hostFrame, posY, CAPS.Cfg(), {
                 type = "toggle",
                 text = "Bar Frame",
                 tooltip = "Show the frame and dividers behind the bar's buttons.",
                 getValue = function()
-                    return ns.AB_ForeverBg(SelectedKey())
+                    return mod.AB_ForeverBg(SelectedKey())
                 end,
                 setValue = function(v)
                     SSet("foreverBarBg", v and true or false, function(k)
-                        EAB:ApplyPaddingForBar(k)
+                        ABAR:ApplyPaddingForBar(k)
                     end)
                     SUpdatePreviewAndResize()
                 end,
             })
-            y = y - h
+            posY = posY - hgt
             CAPS.Build(capsRow._leftRegion)
             do
                 local rgn = capsRow._rightRegion
                 local function BgTo(key, v)
-                    local d = EAB.db.profile.bars[key]
+                    local d = ABAR.db.profile.bars[key]
                     if d then
                         d.foreverBarBg = v
-                        EAB:ApplyPaddingForBar(key)
+                        ABAR:ApplyPaddingForBar(key)
                     end
                 end
                 CludesUI.BuildSyncIcon({
                     region = rgn,
                     tooltip = "Apply Bar Frame to all Bars",
                     onClick = function()
-                        local v = ns.AB_ForeverBg(SelectedKey())
+                        local v = mod.AB_ForeverBg(SelectedKey())
                         for _, key in ipairs(GROUP_BAR_ORDER) do
                             BgTo(key, v)
                         end
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local v = ns.AB_ForeverBg(SelectedKey())
+                        local v = mod.AB_ForeverBg(SelectedKey())
                         for _, key in ipairs(GROUP_BAR_ORDER) do
-                            if ns.AB_ForeverBg(key) ~= v then
+                            if mod.AB_ForeverBg(key) ~= v then
                                 return false
                             end
                         end
@@ -2015,7 +2021,7 @@ local function BuildBarAppearance(parent, y, ctx)
                             return SelectedKey()
                         end,
                         onApply = function(checkedKeys)
-                            local v = ns.AB_ForeverBg(SelectedKey())
+                            local v = mod.AB_ForeverBg(SelectedKey())
                             for _, key in ipairs(checkedKeys) do
                                 BgTo(key, v)
                             end
@@ -2026,42 +2032,43 @@ local function BuildBarAppearance(parent, y, ctx)
             end
             local bgOn = SVal("bgEnabled", false)
             local bgRow
-            bgRow, h = W:DualRow(parent, y, bgCfg, bgOn and BarBgSpacingCfg() or CludesUI.BlankRowCfg())
-            y = y - h
+            bgRow, hgt =
+                Widgets:DualRow(hostFrame, posY, bgCfg, bgOn and BarBgSpacingCfg() or CludesUI.BlankRowCfg())
+            posY = posY - hgt
             bgRgn = bgRow._leftRegion
             if bgOn then
                 BarBgSpacingSync(bgRow._rightRegion)
             end
         else
-            capsRow, h = W:DualRow(parent, y, CAPS.Cfg(), bgCfg)
-            y = y - h
+            capsRow, hgt = Widgets:DualRow(hostFrame, posY, CAPS.Cfg(), bgCfg)
+            posY = posY - hgt
             CAPS.Build(capsRow._leftRegion)
             bgRgn = capsRow._rightRegion
         end
         do
-            local region = bgRgn
+            local regionFrame = bgRgn
             CludesUI.BuildSyncIcon({
-                region = region,
+                region = regionFrame,
                 tooltip = "Apply Bar Background Enable to all Bars",
                 onClick = function()
                     local enabled = SVal("bgEnabled", false)
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        EAB.db.profile.bars[key].bgEnabled = enabled
-                        EAB:ApplyBackgroundForBar(key)
+                        ABAR.db.profile.bars[key].bgEnabled = enabled
+                        ABAR:ApplyBackgroundForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
                     local enabled = SVal("bgEnabled", false)
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (EAB.db.profile.bars[key].bgEnabled or false) ~= enabled then
+                        if (ABAR.db.profile.bars[key].bgEnabled or false) ~= enabled then
                             return false
                         end
                     end
                     return true
                 end,
                 flashTargets = function()
-                    return { region }
+                    return { regionFrame }
                 end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
@@ -2072,8 +2079,8 @@ local function BuildBarAppearance(parent, y, ctx)
                     onApply = function(checkedKeys)
                         local enabled = SVal("bgEnabled", false)
                         for _, key in ipairs(checkedKeys) do
-                            EAB.db.profile.bars[key].bgEnabled = enabled
-                            EAB:ApplyBackgroundForBar(key)
+                            ABAR.db.profile.bars[key].bgEnabled = enabled
+                            ABAR:ApplyBackgroundForBar(key)
                         end
                         CludesUI:RefreshPage()
                     end,
@@ -2086,31 +2093,28 @@ local function BuildBarAppearance(parent, y, ctx)
     -------------------------------------------------------------------
     --  EFFECTS
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "EFFECTS", y)
-    y = y - h
+    _, hgt = Widgets:SectionHeader(hostFrame, "EFFECTS", posY)
+    posY = posY - hgt
 
     -- Desaturate on Cooldown | Alpha on Cooldown
-    RowSearch(
-        "Alpha on Cooldown",
-        {
-            "Dims action button icons to this opacity while on cooldown (100 = off), using the same detection as Desaturate on Cooldown.",
-            "Alpha when on CD",
-        }
-    )
-    _, h = W:DualRow(parent, y, {
+    RowSearch("Alpha on Cooldown", {
+        "Dims action button icons to this opacity while on cooldown (100 = off), using the same detection as Desaturate on Cooldown.",
+        "Alpha when on CD",
+    })
+    _, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Desaturate on Cooldown",
         -- setValue runs a one-shot catch-up sweep: cooldown repaints happen on edges only, so an icon grey at uncheck time would stay grey.
         tooltip = "Desaturates (grays out) action button icons while the ability is on cooldown. GCD-only cooldowns are excluded.",
         getValue = function()
-            return EAB.db.profile.desaturateOnCooldown or false
+            return ABAR.db.profile.desaturateOnCooldown or false
         end,
         setValue = function(v)
-            local p = EAB.db.profile
+            local p = ABAR.db.profile
             local was = p.desaturateOnCooldown or false
             p.desaturateOnCooldown = v
-            if was ~= (v or false) and EAB._DesatSettingChanged then
-                EAB._DesatSettingChanged(v and true or false)
+            if was ~= (v or false) and ABAR._DesatSettingChanged then
+                ABAR._DesatSettingChanged(v and true or false)
             end
         end,
     }, {
@@ -2121,27 +2125,24 @@ local function BuildBarAppearance(parent, y, ctx)
         step = 5,
         tooltip = "Dims action button icons to this opacity while on cooldown (100 = off), using the same detection as Desaturate on Cooldown.",
         getValue = function()
-            return EAB.db.profile.alphaWhenOnCD or 100
+            return ABAR.db.profile.alphaWhenOnCD or 100
         end,
         setValue = function(v)
-            EAB.db.profile.alphaWhenOnCD = v
-            if EAB.ApplyCDAlphaAll then
-                EAB:ApplyCDAlphaAll()
+            ABAR.db.profile.alphaWhenOnCD = v
+            if ABAR.ApplyCDAlphaAll then
+                ABAR:ApplyCDAlphaAll()
             end
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Out of Range Coloring | Cooldown Swipe Opacity
-    RowSearch(
-        "Cooldown Swipe Opacity",
-        {
-            "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its colour.",
-            "CD Swipe Opacity",
-        }
-    )
+    RowSearch("Cooldown Swipe Opacity", {
+        "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its colour.",
+        "CD Swipe Opacity",
+    })
     local rangeSwipeRow
-    rangeSwipeRow, h = W:DualRow(parent, y, {
+    rangeSwipeRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Out of Range Coloring",
         getValue = function()
@@ -2149,7 +2150,7 @@ local function BuildBarAppearance(parent, y, ctx)
         end,
         setValue = function(v)
             SSet("outOfRangeColoring", v, function()
-                EAB:ApplyRangeColoring()
+                ABAR:ApplyRangeColoring()
             end)
             CludesUI:RefreshPage()
         end,
@@ -2162,16 +2163,16 @@ local function BuildBarAppearance(parent, y, ctx)
         trackWidth = 120,
         tooltip = "Opacity of the cooldown swipe (the dark radial sweep); use the swatch to set its colour.",
         getValue = function()
-            return EAB.db.profile.cdSwipeAlpha or 80
+            return ABAR.db.profile.cdSwipeAlpha or 80
         end,
         setValue = function(v)
-            EAB.db.profile.cdSwipeAlpha = v
-            if EAB.ApplyCooldownSwipeColor then
-                EAB:ApplyCooldownSwipeColor()
+            ABAR.db.profile.cdSwipeAlpha = v
+            if ABAR.ApplyCooldownSwipeColor then
+                ABAR:ApplyCooldownSwipeColor()
             end
         end,
     })
-    y = y - h
+    posY = posY - hgt
     do
         local rgn = rangeSwipeRow._leftRegion
         CludesUI.BuildSyncIcon({
@@ -2181,18 +2182,18 @@ local function BuildBarAppearance(parent, y, ctx)
                 local v = SB().outOfRangeColoring or false
                 local c = SB().outOfRangeColor
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    EAB.db.profile.bars[key].outOfRangeColoring = v
+                    ABAR.db.profile.bars[key].outOfRangeColoring = v
                     if c then
-                        EAB.db.profile.bars[key].outOfRangeColor = { r = c.r, g = c.g, b = c.b }
+                        ABAR.db.profile.bars[key].outOfRangeColor = { r = c.r, g = c.g, b = c.b }
                     end
                 end
-                EAB:ApplyRangeColoring()
+                ABAR:ApplyRangeColoring()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
                 local v = SB().outOfRangeColoring or false
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].outOfRangeColoring or false) ~= v then
+                    if (ABAR.db.profile.bars[key].outOfRangeColoring or false) ~= v then
                         return false
                     end
                 end
@@ -2211,12 +2212,12 @@ local function BuildBarAppearance(parent, y, ctx)
                     local v = SB().outOfRangeColoring or false
                     local c = SB().outOfRangeColor
                     for _, key in ipairs(checkedKeys) do
-                        EAB.db.profile.bars[key].outOfRangeColoring = v
+                        ABAR.db.profile.bars[key].outOfRangeColoring = v
                         if c then
-                            EAB.db.profile.bars[key].outOfRangeColor = { r = c.r, g = c.g, b = c.b }
+                            ABAR.db.profile.bars[key].outOfRangeColor = { r = c.r, g = c.g, b = c.b }
                         end
                     end
-                    EAB:ApplyRangeColoring()
+                    ABAR:ApplyRangeColoring()
                     CludesUI:RefreshPage()
                 end,
             },
@@ -2233,7 +2234,7 @@ local function BuildBarAppearance(parent, y, ctx)
         end
         local rangeColorSet = function(r, g, b)
             SSetColor("outOfRangeColor", r, g, b, nil, function()
-                EAB:ApplyRangeColoring()
+                ABAR:ApplyRangeColoring()
             end)
         end
         local rangeSwatch, rangeUpdateSwatch = CludesUI.BuildColorSwatch(
@@ -2244,7 +2245,7 @@ local function BuildBarAppearance(parent, y, ctx)
             false,
             20
         )
-        PP.Point(rangeSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
+        Pix.Point(rangeSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
         leftRgn._lastInline = rangeSwatch
 
         local function RangeDisabled()
@@ -2252,8 +2253,8 @@ local function BuildBarAppearance(parent, y, ctx)
         end
 
         CludesUI.RegisterWidgetRefresh(function()
-            local off = RangeDisabled()
-            rangeSwatch:SetAlpha(off and 0.3 or 1)
+            local offset = RangeDisabled()
+            rangeSwatch:SetAlpha(offset and 0.3 or 1)
             rangeUpdateSwatch()
         end)
         rangeSwatch:SetAlpha(RangeDisabled() and 0.3 or 1)
@@ -2277,47 +2278,50 @@ local function BuildBarAppearance(parent, y, ctx)
     do
         local rgn = rangeSwipeRow._rightRegion
         local ctrl = rgn._control
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
             rgn,
             rangeSwipeRow:GetFrameLevel() + 5,
             function()
-                local c = EAB.db.profile.cdSwipeColor or {}
+                local c = ABAR.db.profile.cdSwipeColor or {}
                 return c.r or 0, c.g or 0, c.b or 0
             end,
             function(r, g, b)
-                EAB.db.profile.cdSwipeColor = { r = r, g = g, b = b }
-                if EAB.ApplyCooldownSwipeColor then
-                    EAB:ApplyCooldownSwipeColor()
+                ABAR.db.profile.cdSwipeColor = { r = r, g = g, b = b }
+                if ABAR.ApplyCooldownSwipeColor then
+                    ABAR:ApplyCooldownSwipeColor()
                 end
             end,
             false,
             20
         )
-        PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
-        rgn._lastInline = swatch
+        Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        rgn._lastInline = colorSwatch
         -- Canonical inline-swatch pattern: auto-disable at 0 opacity (invisible swipe has no visible colour).
         local function SwipeDisabled()
-            return (EAB.db.profile.cdSwipeAlpha or 80) == 0
+            return (ABAR.db.profile.cdSwipeAlpha or 80) == 0
         end
-        local block = CreateFrame("Frame", nil, swatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
-        block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Set Cooldown Swipe Opacity above 0"))
+        local blockData = CreateFrame("Frame", nil, colorSwatch)
+        blockData:SetAllPoints()
+        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        blockData:EnableMouse(true)
+        blockData:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(
+                colorSwatch,
+                CludesUI.DisabledTooltip("Set Cooldown Swipe Opacity above 0")
+            )
         end)
-        block:SetScript("OnLeave", function()
+        blockData:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         CludesUI.RegisterWidgetRefresh(function()
             updateSwatch()
-            local off = SwipeDisabled()
-            swatch:SetAlpha(off and 0.3 or 1)
-            block:SetShown(off)
+            local offset = SwipeDisabled()
+            colorSwatch:SetAlpha(offset and 0.3 or 1)
+            blockData:SetShown(offset)
         end)
         local off0 = SwipeDisabled()
-        swatch:SetAlpha(off0 and 0.3 or 1)
-        block:SetShown(off0)
+        colorSwatch:SetAlpha(off0 and 0.3 or 1)
+        blockData:SetShown(off0)
     end
 
     -- Hide Charge Count at 0 | Item Information: Item Rank (this bar's) and
@@ -2326,40 +2330,37 @@ local function BuildBarAppearance(parent, y, ctx)
     -- saved false, not nil, as WoW Forever defaults it on; the Blizzard and
     -- Classic styles draw their own, so it locks under them).
     do
-        RowSearch(
-            "Item Information",
-            {
-                "Item details shown on action buttons.",
-                "Item Rank",
-                "Equipped Item Color",
-                "Show Item Rank",
-                "Show Equipped Item Color",
-            }
-        )
+        RowSearch("Item Information", {
+            "Item details shown on action buttons.",
+            "Item Rank",
+            "Equipped Item Color",
+            "Show Item Rank",
+            "Show Equipped Item Color",
+        })
         local itemRow
-        itemRow, h = W:DualRow(
-            parent,
-            y,
+        itemRow, hgt = Widgets:DualRow(
+            hostFrame,
+            posY,
             {
                 type = "toggle",
                 text = "Hide Charge Count at 0",
                 tooltip = "Hide the charge number on action buttons when it reaches 0, instead of showing a 0. The number returns as soon as a charge or item comes back.",
                 getValue = function()
-                    return EAB.db.profile.hideZeroCount or false
+                    return ABAR.db.profile.hideZeroCount or false
                 end,
                 setValue = function(v)
-                    EAB.db.profile.hideZeroCount = v or nil
-                    if EAB.RefreshAllCounts then
-                        EAB:RefreshAllCounts()
+                    ABAR.db.profile.hideZeroCount = v or nil
+                    if ABAR.RefreshAllCounts then
+                        ABAR:RefreshAllCounts()
                     end
                 end,
             },
             ChecklistCfg("Item Information", "Item details shown on action buttons.", function()
                 local _ = SB().showRankIcon
-                _ = EAB.db.profile.showEquippedBorder
+                _ = ABAR.db.profile.showEquippedBorder
             end)
         )
-        y = y - h
+        posY = posY - hgt
         BuildChecklist(itemRow._rightRegion, {
             {
                 key = "rank",
@@ -2379,7 +2380,7 @@ local function BuildBarAppearance(parent, y, ctx)
             if k == "rank" then
                 return SGet("showRankIcon") or false
             end
-            return EAB.db.profile.showEquippedBorder or false
+            return ABAR.db.profile.showEquippedBorder or false
         end, function(k, v)
             if k == "rank" then
                 SSet("showRankIcon", v)
@@ -2387,8 +2388,8 @@ local function BuildBarAppearance(parent, y, ctx)
                     _G._CUAB_Apply()
                 end
             else
-                EAB.db.profile.showEquippedBorder = v and true or false
-                EAB:ApplyEquippedBorder()
+                ABAR.db.profile.showEquippedBorder = v and true or false
+                ABAR:ApplyEquippedBorder()
             end
         end)
         -- The Apply link copies Item Rank alone: Equipped Item Color is one
@@ -2401,7 +2402,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 onClick = function()
                     local v = SB().showRankIcon or false
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        EAB.db.profile.bars[key].showRankIcon = v
+                        ABAR.db.profile.bars[key].showRankIcon = v
                     end
                     if _G._CUAB_Apply then
                         _G._CUAB_Apply()
@@ -2411,7 +2412,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 isSynced = function()
                     local v = SB().showRankIcon or false
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (EAB.db.profile.bars[key].showRankIcon or false) ~= v then
+                        if (ABAR.db.profile.bars[key].showRankIcon or false) ~= v then
                             return false
                         end
                     end
@@ -2429,7 +2430,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     onApply = function(checkedKeys)
                         local v = SB().showRankIcon or false
                         for _, key in ipairs(checkedKeys) do
-                            EAB.db.profile.bars[key].showRankIcon = v
+                            ABAR.db.profile.bars[key].showRankIcon = v
                         end
                         if _G._CUAB_Apply then
                             _G._CUAB_Apply()
@@ -2443,47 +2444,44 @@ local function BuildBarAppearance(parent, y, ctx)
 
     -- One Button Assist Icon | blank
     local obaRow
-    obaRow, h = W:DualRow(parent, y, {
+    obaRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "One Button Assist Icon",
         getValue = function()
-            return EAB.db.profile.obaIconEnabled ~= false
+            return ABAR.db.profile.obaIconEnabled ~= false
         end,
         setValue = function(v)
-            EAB.db.profile.obaIconEnabled = v
-            if ns.RefreshAssistSpinners then
-                ns.RefreshAssistSpinners()
+            ABAR.db.profile.obaIconEnabled = v
+            if mod.RefreshAssistSpinners then
+                mod.RefreshAssistSpinners()
             end
         end,
     }, CludesUI.BlankRowCfg())
-    y = y - h
+    posY = posY - hgt
     do
         local rgn = obaRow._leftRegion
-        CludesUI.BuildInlineCog(
-            rgn,
-            {
-                anchorTo = rgn._control,
-                title = "One Button Assist Icon",
-                rows = {
-                    {
-                        type = "slider",
-                        label = "Icon Outset",
-                        min = 0,
-                        max = 30,
-                        step = 1,
-                        get = function()
-                            return EAB.db.profile.obaIconOutset or 9
-                        end,
-                        set = function(v)
-                            EAB.db.profile.obaIconOutset = v
-                            if ns.RefreshAssistSpinners then
-                                ns.RefreshAssistSpinners()
-                            end
-                        end,
-                    },
+        CludesUI.BuildInlineCog(rgn, {
+            anchorTo = rgn._control,
+            title = "One Button Assist Icon",
+            rows = {
+                {
+                    type = "slider",
+                    label = "Icon Outset",
+                    min = 0,
+                    max = 30,
+                    step = 1,
+                    get = function()
+                        return ABAR.db.profile.obaIconOutset or 9
+                    end,
+                    set = function(v)
+                        ABAR.db.profile.obaIconOutset = v
+                        if mod.RefreshAssistSpinners then
+                            mod.RefreshAssistSpinners()
+                        end
+                    end,
                 },
-            }
-        )
+            },
+        })
     end
 
     -------------------------------------------------------------------
@@ -2492,19 +2490,19 @@ local function BuildBarAppearance(parent, y, ctx)
     -------------------------------------------------------------------
     do
         local selKey = SelectedKey()
-        local _bkp = ns.EAB_VTABLE and ns.EAB_VTABLE.BAR_KEY_TO_PAGE
+        local _bkp = mod.EAB_VTABLE and mod.EAB_VTABLE.BAR_KEY_TO_PAGE
         local showPaging = selKey and _bkp and _bkp[selKey]
         if showPaging then
-            _, h = W:SectionHeader(parent, "BEHAVIOR & PAGING", y)
-            y = y - h
+            _, hgt = Widgets:SectionHeader(hostFrame, "BEHAVIOR & PAGING", posY)
+            posY = posY - hgt
         else
-            _, h = W:SectionHeader(parent, "BEHAVIOR", y)
-            y = y - h
+            _, hgt = Widgets:SectionHeader(hostFrame, "BEHAVIOR", posY)
+            posY = posY - hgt
         end
 
         -- Click Through | Disable Tooltips
         local behaviorRow
-        behaviorRow, h = W:DualRow(parent, y, {
+        behaviorRow, hgt = Widgets:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Click Through",
             getValue = function()
@@ -2512,7 +2510,7 @@ local function BuildBarAppearance(parent, y, ctx)
             end,
             setValue = function(v)
                 SSet("clickThrough", v, function(k)
-                    EAB:ApplyClickThroughForBar(k)
+                    ABAR:ApplyClickThroughForBar(k)
                 end)
                 -- Its Apply link compares this toggle.
                 CludesUI:RefreshPage()
@@ -2527,12 +2525,12 @@ local function BuildBarAppearance(parent, y, ctx)
                 SSet("disableTooltips", v)
             end,
         })
-        y = y - h
+        posY = posY - hgt
         do
             local rgn = behaviorRow._leftRegion
             local function CopyTo(key, v)
-                EAB.db.profile.bars[key].clickThrough = v
-                EAB:ApplyClickThroughForBar(key)
+                ABAR.db.profile.bars[key].clickThrough = v
+                ABAR:ApplyClickThroughForBar(key)
             end
             CludesUI.BuildSyncIcon({
                 region = rgn,
@@ -2547,7 +2545,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 isSynced = function()
                     local v = SB().clickThrough or false
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (EAB.db.profile.bars[key].clickThrough or false) ~= v then
+                        if (ABAR.db.profile.bars[key].clickThrough or false) ~= v then
                             return false
                         end
                     end
@@ -2580,14 +2578,14 @@ local function BuildBarAppearance(parent, y, ctx)
                 onClick = function()
                     local v = SB().disableTooltips or false
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        EAB.db.profile.bars[key].disableTooltips = v
+                        ABAR.db.profile.bars[key].disableTooltips = v
                     end
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
                     local v = SB().disableTooltips or false
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (EAB.db.profile.bars[key].disableTooltips or false) ~= v then
+                        if (ABAR.db.profile.bars[key].disableTooltips or false) ~= v then
                             return false
                         end
                     end
@@ -2605,7 +2603,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     onApply = function(checkedKeys)
                         local v = SB().disableTooltips or false
                         for _, key in ipairs(checkedKeys) do
-                            EAB.db.profile.bars[key].disableTooltips = v
+                            ABAR.db.profile.bars[key].disableTooltips = v
                         end
                         CludesUI:RefreshPage()
                     end,
@@ -2615,7 +2613,7 @@ local function BuildBarAppearance(parent, y, ctx)
 
         if showPaging then
             local _, playerClass = UnitClass("player")
-            local EAB_VT = ns.EAB_VTABLE or {}
+            local EAB_VT = mod.EAB_VTABLE or {}
             local PG_STATES = EAB_VT.PAGING_STATES or {}
             local BKP = EAB_VT.BAR_KEY_TO_PAGE or {}
 
@@ -2656,7 +2654,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 return tostring(v)
             end
             local function SetPagingVal(stateId, val)
-                local bars = EAB.db.profile.bars[selKey]
+                local bars = ABAR.db.profile.bars[selKey]
                 if not bars.paging then
                     bars.paging = {}
                 end
@@ -2678,22 +2676,22 @@ local function BuildBarAppearance(parent, y, ctx)
                 if not anySet then
                     bars.paging = {}
                 end
-                if ns.RebuildBarPaging then
-                    ns.RebuildBarPaging(selKey)
+                if mod.RebuildBarPaging then
+                    mod.RebuildBarPaging(selKey)
                 end
             end
 
             local isMain = selKey == "MainBar"
             local function RebuildPaging(k)
-                if ns.RebuildBarPaging then
-                    ns.RebuildBarPaging(k)
+                if mod.RebuildBarPaging then
+                    mod.RebuildBarPaging(k)
                 end
             end
 
-            local function PagingDropdown(stateId, text)
+            local function PagingDropdown(stateId, textValue)
                 return {
                     type = "dropdown",
-                    text = text,
+                    text = textValue,
                     values = pagingValues,
                     order = pagingOrder,
                     getValue = function()
@@ -2875,8 +2873,8 @@ local function BuildBarAppearance(parent, y, ctx)
                             s.showPagingArrows = false
                             s.pagingArrowsWhilePaged = (v == "paged")
                         end
-                        if ns.LayoutPagingFrame then
-                            ns.LayoutPagingFrame()
+                        if mod.LayoutPagingFrame then
+                            mod.LayoutPagingFrame()
                         end
                         SUpdatePreviewAndResize()
                         CludesUI:RefreshPage()
@@ -2916,25 +2914,22 @@ local function BuildBarAppearance(parent, y, ctx)
                 words[#words + 1] = "Target Paging"
                 words[#words + 1] = "Modifier/Target Paging"
                 RowSearch("Paging Options", words, "MainBar")
-                RowSearch(
-                    "Paging Arrows",
-                    {
-                        "When Action Bar 1's paging arrows show.",
-                        "Never",
-                        "Always",
-                        "While Paged",
-                        "Show Arrows on Right",
-                        "Skip Visible Bars When Paging",
-                        "Show While Paged",
-                    },
-                    "MainBar"
-                )
+                RowSearch("Paging Arrows", {
+                    "When Action Bar 1's paging arrows show.",
+                    "Never",
+                    "Always",
+                    "While Paged",
+                    "Show Arrows on Right",
+                    "Skip Visible Bars When Paging",
+                    "Show While Paged",
+                }, "MainBar")
             end
             local pagingRow
-            for i = 1, #slots, 2 do
+            for idx = 1, #slots, 2 do
                 local r
-                r, h = W:DualRow(parent, y, slots[i], slots[i + 1] or CludesUI.BlankRowCfg())
-                y = y - h
+                r, hgt =
+                    Widgets:DualRow(hostFrame, posY, slots[idx], slots[idx + 1] or CludesUI.BlankRowCfg())
+                posY = posY - hgt
                 pagingRow = pagingRow or r
             end
             BuildChecklist(pagingRow._leftRegion, pagingItems, PagingGet, PagingSet, PagingMenuClosed)
@@ -2942,8 +2937,8 @@ local function BuildBarAppearance(parent, y, ctx)
             if isMain then
                 local rRgn = pagingRow._rightRegion
                 local function RelayoutArrows()
-                    if ns.LayoutPagingFrame then
-                        ns.LayoutPagingFrame()
+                    if mod.LayoutPagingFrame then
+                        mod.LayoutPagingFrame()
                     end
                 end
                 -- The cog's settings join the slot's capture, so the Spec
@@ -2979,7 +2974,7 @@ local function BuildBarAppearance(parent, y, ctx)
                             end,
                             set = function(v)
                                 SSet("skipVisiblePagingBars", v, function()
-                                    ns.RefreshPagingCycleMacros()
+                                    mod.RefreshPagingCycleMacros()
                                 end)
                             end,
                         },
@@ -2989,14 +2984,14 @@ local function BuildBarAppearance(parent, y, ctx)
         end
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     -------------------------------------------------------------------
     --  TEXT
     -------------------------------------------------------------------
-    textSectionHeader, h = W:SectionHeader(parent, SECTION_TEXT, y)
-    y = y - h
+    textSectionHeader, hgt = Widgets:SectionHeader(hostFrame, SECTION_TEXT, posY)
+    posY = posY - hgt
 
     -- Each row's left control turns its text on or off. While it is off, the
     -- right half greys out: the size slider, its offsets cog and its colour.
@@ -3021,7 +3016,7 @@ local function BuildBarAppearance(parent, y, ctx)
     -- Blizzard's countdownForCooldowns CVar and is never stored in our DB;
     -- the CVar is written only on an actual user flip.
     local cdTextRow
-    cdTextRow, h = W:DualRow(parent, y, {
+    cdTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Cooldown Numbers",
         tooltip = "Toggles Blizzard's cooldown numbers setting.",
@@ -3050,12 +3045,12 @@ local function BuildBarAppearance(parent, y, ctx)
         end,
         setValue = function(v)
             SSet("cooldownFontSize", v, function(k)
-                EAB:ApplyCooldownFontsForBar(k)
+                ABAR:ApplyCooldownFontsForBar(k)
             end)
             SUpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     -- Inline cog: Cooldown Numbers (left). Holds the charge-spell recharge toggle
     -- (our feature, DB-saved); dimmed when the CVar is off, since no numbers show then.
     do
@@ -3071,11 +3066,11 @@ local function BuildBarAppearance(parent, y, ctx)
                     label = "Charge Recharge Numbers",
                     tooltip = "Show the recharge countdown on charge spells while a charge is still banked. When off, the recharge timer only appears at 0 charges (Blizzard default).",
                     get = function()
-                        return EAB.db.profile.showChargeRechargeNumbers ~= false
+                        return ABAR.db.profile.showChargeRechargeNumbers ~= false
                     end,
                     set = function(v)
-                        EAB.db.profile.showChargeRechargeNumbers = v
-                        EAB:RefreshChargeRechargeNumbers()
+                        ABAR.db.profile.showChargeRechargeNumbers = v
+                        ABAR:RefreshChargeRechargeNumbers()
                     end,
                 },
             },
@@ -3096,13 +3091,13 @@ local function BuildBarAppearance(parent, y, ctx)
                 local ft = s.cooldownFontFit or false
                 for _, key in ipairs(GROUP_BAR_ORDER) do
                     if c then
-                        EAB.db.profile.bars[key].cooldownTextColor = { r = c.r, g = c.g, b = c.b }
+                        ABAR.db.profile.bars[key].cooldownTextColor = { r = c.r, g = c.g, b = c.b }
                     end
-                    EAB.db.profile.bars[key].cooldownFontSize = sz
-                    EAB.db.profile.bars[key].cooldownTextXOffset = ox
-                    EAB.db.profile.bars[key].cooldownTextYOffset = oy
-                    EAB.db.profile.bars[key].cooldownFontFit = ft
-                    EAB:ApplyCooldownFontsForBar(key)
+                    ABAR.db.profile.bars[key].cooldownFontSize = sz
+                    ABAR.db.profile.bars[key].cooldownTextXOffset = ox
+                    ABAR.db.profile.bars[key].cooldownTextYOffset = oy
+                    ABAR.db.profile.bars[key].cooldownFontFit = ft
+                    ABAR:ApplyCooldownFontsForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
@@ -3114,7 +3109,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 local oy = s.cooldownTextYOffset or 0
                 local ft = s.cooldownFontFit or false
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = EAB.db.profile.bars[key]
+                    local b = ABAR.db.profile.bars[key]
                     if (b.cooldownFontSize or 12) ~= sz then
                         return false
                     end
@@ -3154,13 +3149,13 @@ local function BuildBarAppearance(parent, y, ctx)
                     local ft = s.cooldownFontFit or false
                     for _, key in ipairs(checkedKeys) do
                         if c then
-                            EAB.db.profile.bars[key].cooldownTextColor = { r = c.r, g = c.g, b = c.b }
+                            ABAR.db.profile.bars[key].cooldownTextColor = { r = c.r, g = c.g, b = c.b }
                         end
-                        EAB.db.profile.bars[key].cooldownFontSize = sz
-                        EAB.db.profile.bars[key].cooldownTextXOffset = ox
-                        EAB.db.profile.bars[key].cooldownTextYOffset = oy
-                        EAB.db.profile.bars[key].cooldownFontFit = ft
-                        EAB:ApplyCooldownFontsForBar(key)
+                        ABAR.db.profile.bars[key].cooldownFontSize = sz
+                        ABAR.db.profile.bars[key].cooldownTextXOffset = ox
+                        ABAR.db.profile.bars[key].cooldownTextYOffset = oy
+                        ABAR.db.profile.bars[key].cooldownFontFit = ft
+                        ABAR:ApplyCooldownFontsForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -3186,7 +3181,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("cooldownTextXOffset", v, function(k)
-                            EAB:ApplyCooldownFontsForBar(k)
+                            ABAR:ApplyCooldownFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3202,7 +3197,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("cooldownTextYOffset", v, function(k)
-                            EAB:ApplyCooldownFontsForBar(k)
+                            ABAR:ApplyCooldownFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3216,7 +3211,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("cooldownFontFit", v and true or false, function(k)
-                            EAB:ApplyCooldownFontsForBar(k)
+                            ABAR:ApplyCooldownFontsForBar(k)
                         end)
                     end,
                 },
@@ -3234,7 +3229,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(r, g, b)
                     SSetColor("cooldownTextColor", r, g, b, nil, function(k)
-                        EAB:ApplyCooldownFontsForBar(k)
+                        ABAR:ApplyCooldownFontsForBar(k)
                     end)
                     SUpdatePreview()
                 end,
@@ -3250,9 +3245,9 @@ local function BuildBarAppearance(parent, y, ctx)
         { "Which counts show on this bar's buttons.", "Charges", "Stacks", "Item Count" }
     )
     RowSearch("Charge Text Size", { "Charges Text Size" })
-    chargesRow, h = W:DualRow(
-        parent,
-        y,
+    chargesRow, hgt = Widgets:DualRow(
+        hostFrame,
+        posY,
         ChecklistCfg("Charge Numbers", "Which counts show on this bar's buttons.", function()
             local s = SB()
             local _ = s.hideChargeCount
@@ -3273,13 +3268,13 @@ local function BuildBarAppearance(parent, y, ctx)
             end,
             setValue = function(v)
                 SSet("countFontSize", v, function(k)
-                    EAB:ApplyFontsForBar(k)
+                    ABAR:ApplyFontsForBar(k)
                 end)
                 SUpdatePreview()
             end,
         }
     )
-    y = y - h
+    posY = posY - hgt
     BuildChecklist(chargesRow._leftRegion, {
         { key = "hideChargeCount", label = "Charges", tooltip = "The charges a spell has left." },
         {
@@ -3296,7 +3291,7 @@ local function BuildBarAppearance(parent, y, ctx)
         return not SGet(k)
     end, function(k, v)
         SSet(k, (not v) and true or nil, function(bk)
-            EAB:RefreshCountVisibility(bk)
+            ABAR:RefreshCountVisibility(bk)
         end)
         SUpdatePreview()
     end)
@@ -3314,13 +3309,13 @@ local function BuildBarAppearance(parent, y, ctx)
                 local an = s.countAnchor
                 for _, key in ipairs(GROUP_BAR_ORDER) do
                     if c then
-                        EAB.db.profile.bars[key].countFontColor = { r = c.r, g = c.g, b = c.b }
+                        ABAR.db.profile.bars[key].countFontColor = { r = c.r, g = c.g, b = c.b }
                     end
-                    EAB.db.profile.bars[key].countFontSize = sz
-                    EAB.db.profile.bars[key].countOffsetX = ox
-                    EAB.db.profile.bars[key].countOffsetY = oy
-                    EAB.db.profile.bars[key].countAnchor = an or false
-                    EAB:ApplyFontsForBar(key)
+                    ABAR.db.profile.bars[key].countFontSize = sz
+                    ABAR.db.profile.bars[key].countOffsetX = ox
+                    ABAR.db.profile.bars[key].countOffsetY = oy
+                    ABAR.db.profile.bars[key].countAnchor = an or false
+                    ABAR:ApplyFontsForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
@@ -3331,7 +3326,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 local ox = s.countOffsetX or 0
                 local oy = s.countOffsetY or 0
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = EAB.db.profile.bars[key]
+                    local b = ABAR.db.profile.bars[key]
                     if (b.countFontSize or 12) ~= sz then
                         return false
                     end
@@ -3371,13 +3366,13 @@ local function BuildBarAppearance(parent, y, ctx)
                     local an = s.countAnchor
                     for _, key in ipairs(checkedKeys) do
                         if c then
-                            EAB.db.profile.bars[key].countFontColor = { r = c.r, g = c.g, b = c.b }
+                            ABAR.db.profile.bars[key].countFontColor = { r = c.r, g = c.g, b = c.b }
                         end
-                        EAB.db.profile.bars[key].countFontSize = sz
-                        EAB.db.profile.bars[key].countOffsetX = ox
-                        EAB.db.profile.bars[key].countOffsetY = oy
-                        EAB.db.profile.bars[key].countAnchor = an or false
-                        EAB:ApplyFontsForBar(key)
+                        ABAR.db.profile.bars[key].countFontSize = sz
+                        ABAR.db.profile.bars[key].countOffsetX = ox
+                        ABAR.db.profile.bars[key].countOffsetY = oy
+                        ABAR.db.profile.bars[key].countAnchor = an or false
+                        ABAR:ApplyFontsForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -3401,10 +3396,10 @@ local function BuildBarAppearance(parent, y, ctx)
                         return SVal("countAnchor", "default")
                     end,
                     set = function(v)
-                        local anchor = v ~= "default" and v or nil
-                        SSeedTextOffsets("count", "countAnchor", "countOffsetX", "countOffsetY", anchor)
-                        SSet("countAnchor", anchor or false, function(k)
-                            EAB:ApplyFontsForBar(k)
+                        local anchorFrame = v ~= "default" and v or nil
+                        SSeedTextOffsets("count", "countAnchor", "countOffsetX", "countOffsetY", anchorFrame)
+                        SSet("countAnchor", anchorFrame or false, function(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3420,7 +3415,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("countOffsetX", v, function(k)
-                            EAB:ApplyFontsForBar(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3436,7 +3431,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("countOffsetY", v, function(k)
-                            EAB:ApplyFontsForBar(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3455,7 +3450,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(r, g, b)
                     SSetColor("countFontColor", r, g, b, nil, function(k)
-                        EAB:ApplyFontsForBar(k)
+                        ABAR:ApplyFontsForBar(k)
                     end)
                     SUpdatePreview()
                 end,
@@ -3465,7 +3460,7 @@ local function BuildBarAppearance(parent, y, ctx)
 
     -- Keybind Text | Keybind Text Size
     RowSearch("Keybind Text", { "Hide Keybind Text" })
-    row, h = W:DualRow(parent, y, {
+    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Keybind Text",
         -- Shows the inverse of hideKeybind, the stored setting.
@@ -3474,7 +3469,7 @@ local function BuildBarAppearance(parent, y, ctx)
         end,
         setValue = function(v)
             SSet("hideKeybind", not v, function(k)
-                EAB:ApplyFontsForBar(k)
+                ABAR:ApplyFontsForBar(k)
             end)
             SUpdatePreview()
         end,
@@ -3492,30 +3487,30 @@ local function BuildBarAppearance(parent, y, ctx)
         end,
         setValue = function(v)
             SSet("keybindFontSize", v, function(k)
-                EAB:ApplyFontsForBar(k)
+                ABAR:ApplyFontsForBar(k)
             end)
             SUpdatePreview()
         end,
     })
-    y = y - h
-    keybindRow = row
+    posY = posY - hgt
+    keybindRow = rowFrame
     do
-        local rgn = row._leftRegion
+        local rgn = rowFrame._leftRegion
         CludesUI.BuildSyncIcon({
             region = rgn,
             tooltip = "Apply Keybind Visibility to all Bars",
             onClick = function()
                 local v = SB().hideKeybind
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    EAB.db.profile.bars[key].hideKeybind = v
-                    EAB:ApplyFontsForBar(key)
+                    ABAR.db.profile.bars[key].hideKeybind = v
+                    ABAR:ApplyFontsForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
                 local v = SB().hideKeybind or false
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].hideKeybind or false) ~= v then
+                    if (ABAR.db.profile.bars[key].hideKeybind or false) ~= v then
                         return false
                     end
                 end
@@ -3533,8 +3528,8 @@ local function BuildBarAppearance(parent, y, ctx)
                 onApply = function(checkedKeys)
                     local v = SB().hideKeybind
                     for _, key in ipairs(checkedKeys) do
-                        EAB.db.profile.bars[key].hideKeybind = v
-                        EAB:ApplyFontsForBar(key)
+                        ABAR.db.profile.bars[key].hideKeybind = v
+                        ABAR:ApplyFontsForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -3555,13 +3550,13 @@ local function BuildBarAppearance(parent, y, ctx)
                 local an = s.keybindAnchor
                 for _, key in ipairs(GROUP_BAR_ORDER) do
                     if c then
-                        EAB.db.profile.bars[key].keybindFontColor = { r = c.r, g = c.g, b = c.b }
+                        ABAR.db.profile.bars[key].keybindFontColor = { r = c.r, g = c.g, b = c.b }
                     end
-                    EAB.db.profile.bars[key].keybindFontSize = sz
-                    EAB.db.profile.bars[key].keybindOffsetX = ox
-                    EAB.db.profile.bars[key].keybindOffsetY = oy
-                    EAB.db.profile.bars[key].keybindAnchor = an or false
-                    EAB:ApplyFontsForBar(key)
+                    ABAR.db.profile.bars[key].keybindFontSize = sz
+                    ABAR.db.profile.bars[key].keybindOffsetX = ox
+                    ABAR.db.profile.bars[key].keybindOffsetY = oy
+                    ABAR.db.profile.bars[key].keybindAnchor = an or false
+                    ABAR:ApplyFontsForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
@@ -3572,7 +3567,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 local ox = s.keybindOffsetX or 0
                 local oy = s.keybindOffsetY or 0
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = EAB.db.profile.bars[key]
+                    local b = ABAR.db.profile.bars[key]
                     if (b.keybindFontSize or 12) ~= sz then
                         return false
                     end
@@ -3612,13 +3607,13 @@ local function BuildBarAppearance(parent, y, ctx)
                     local an = s.keybindAnchor
                     for _, key in ipairs(checkedKeys) do
                         if c then
-                            EAB.db.profile.bars[key].keybindFontColor = { r = c.r, g = c.g, b = c.b }
+                            ABAR.db.profile.bars[key].keybindFontColor = { r = c.r, g = c.g, b = c.b }
                         end
-                        EAB.db.profile.bars[key].keybindFontSize = sz
-                        EAB.db.profile.bars[key].keybindOffsetX = ox
-                        EAB.db.profile.bars[key].keybindOffsetY = oy
-                        EAB.db.profile.bars[key].keybindAnchor = an or false
-                        EAB:ApplyFontsForBar(key)
+                        ABAR.db.profile.bars[key].keybindFontSize = sz
+                        ABAR.db.profile.bars[key].keybindOffsetX = ox
+                        ABAR.db.profile.bars[key].keybindOffsetY = oy
+                        ABAR.db.profile.bars[key].keybindAnchor = an or false
+                        ABAR:ApplyFontsForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -3642,17 +3637,17 @@ local function BuildBarAppearance(parent, y, ctx)
                         return SVal("keybindAnchor", "default")
                     end,
                     set = function(v)
-                        local anchor = v ~= "default" and v or nil
+                        local anchorFrame = v ~= "default" and v or nil
                         SSeedTextOffsets(
                             "keybind",
                             "keybindAnchor",
                             "keybindOffsetX",
                             "keybindOffsetY",
-                            anchor
+                            anchorFrame
                         )
                         -- Default is stored false, not nil: profile sync copies only keys that exist.
-                        SSet("keybindAnchor", anchor or false, function(k)
-                            EAB:ApplyFontsForBar(k)
+                        SSet("keybindAnchor", anchorFrame or false, function(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3668,7 +3663,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("keybindOffsetX", v, function(k)
-                            EAB:ApplyFontsForBar(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3684,7 +3679,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("keybindOffsetY", v, function(k)
-                            EAB:ApplyFontsForBar(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3703,7 +3698,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(r, g, b)
                     SSetColor("keybindFontColor", r, g, b, nil, function(k)
-                        EAB:ApplyFontsForBar(k)
+                        ABAR:ApplyFontsForBar(k)
                     end)
                     SUpdatePreview()
                 end,
@@ -3714,7 +3709,7 @@ local function BuildBarAppearance(parent, y, ctx)
     -- Macro Text | Macro Text Size
     RowSearch("Macro Text", { "Hide Macro Text" })
     local macroRow
-    macroRow, h = W:DualRow(parent, y, {
+    macroRow, hgt = Widgets:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Macro Text",
         -- Shows the inverse of hideMacroText, the stored setting.
@@ -3723,7 +3718,7 @@ local function BuildBarAppearance(parent, y, ctx)
         end,
         setValue = function(v)
             SSet("hideMacroText", not v, function(k)
-                EAB:ApplyFontsForBar(k)
+                ABAR:ApplyFontsForBar(k)
             end)
             SUpdatePreview()
         end,
@@ -3741,12 +3736,12 @@ local function BuildBarAppearance(parent, y, ctx)
         end,
         setValue = function(v)
             SSet("macroFontSize", v, function(k)
-                EAB:ApplyFontsForBar(k)
+                ABAR:ApplyFontsForBar(k)
             end)
             SUpdatePreview()
         end,
     })
-    y = y - h
+    posY = posY - hgt
     do
         local rgn = macroRow._leftRegion
         CludesUI.BuildSyncIcon({
@@ -3755,15 +3750,15 @@ local function BuildBarAppearance(parent, y, ctx)
             onClick = function()
                 local v = SB().hideMacroText
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    EAB.db.profile.bars[key].hideMacroText = v
-                    EAB:ApplyFontsForBar(key)
+                    ABAR.db.profile.bars[key].hideMacroText = v
+                    ABAR:ApplyFontsForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
                 local v = SB().hideMacroText or false
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (EAB.db.profile.bars[key].hideMacroText or false) ~= v then
+                    if (ABAR.db.profile.bars[key].hideMacroText or false) ~= v then
                         return false
                     end
                 end
@@ -3781,8 +3776,8 @@ local function BuildBarAppearance(parent, y, ctx)
                 onApply = function(checkedKeys)
                     local v = SB().hideMacroText
                     for _, key in ipairs(checkedKeys) do
-                        EAB.db.profile.bars[key].hideMacroText = v
-                        EAB:ApplyFontsForBar(key)
+                        ABAR.db.profile.bars[key].hideMacroText = v
+                        ABAR:ApplyFontsForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -3803,13 +3798,13 @@ local function BuildBarAppearance(parent, y, ctx)
                 local an = s.macroAnchor
                 for _, key in ipairs(GROUP_BAR_ORDER) do
                     if c then
-                        EAB.db.profile.bars[key].macroFontColor = { r = c.r, g = c.g, b = c.b }
+                        ABAR.db.profile.bars[key].macroFontColor = { r = c.r, g = c.g, b = c.b }
                     end
-                    EAB.db.profile.bars[key].macroFontSize = sz
-                    EAB.db.profile.bars[key].macroOffsetX = ox
-                    EAB.db.profile.bars[key].macroOffsetY = oy
-                    EAB.db.profile.bars[key].macroAnchor = an or false
-                    EAB:ApplyFontsForBar(key)
+                    ABAR.db.profile.bars[key].macroFontSize = sz
+                    ABAR.db.profile.bars[key].macroOffsetX = ox
+                    ABAR.db.profile.bars[key].macroOffsetY = oy
+                    ABAR.db.profile.bars[key].macroAnchor = an or false
+                    ABAR:ApplyFontsForBar(key)
                 end
                 CludesUI:RefreshPage()
             end,
@@ -3820,7 +3815,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 local ox = s.macroOffsetX or 0
                 local oy = s.macroOffsetY or 0
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = EAB.db.profile.bars[key]
+                    local b = ABAR.db.profile.bars[key]
                     if (b.macroFontSize or 12) ~= sz then
                         return false
                     end
@@ -3860,13 +3855,13 @@ local function BuildBarAppearance(parent, y, ctx)
                     local an = s.macroAnchor
                     for _, key in ipairs(checkedKeys) do
                         if c then
-                            EAB.db.profile.bars[key].macroFontColor = { r = c.r, g = c.g, b = c.b }
+                            ABAR.db.profile.bars[key].macroFontColor = { r = c.r, g = c.g, b = c.b }
                         end
-                        EAB.db.profile.bars[key].macroFontSize = sz
-                        EAB.db.profile.bars[key].macroOffsetX = ox
-                        EAB.db.profile.bars[key].macroOffsetY = oy
-                        EAB.db.profile.bars[key].macroAnchor = an or false
-                        EAB:ApplyFontsForBar(key)
+                        ABAR.db.profile.bars[key].macroFontSize = sz
+                        ABAR.db.profile.bars[key].macroOffsetX = ox
+                        ABAR.db.profile.bars[key].macroOffsetY = oy
+                        ABAR.db.profile.bars[key].macroAnchor = an or false
+                        ABAR:ApplyFontsForBar(key)
                     end
                     CludesUI:RefreshPage()
                 end,
@@ -3890,10 +3885,10 @@ local function BuildBarAppearance(parent, y, ctx)
                         return SVal("macroAnchor", "default")
                     end,
                     set = function(v)
-                        local anchor = v ~= "default" and v or nil
-                        SSeedTextOffsets("macro", "macroAnchor", "macroOffsetX", "macroOffsetY", anchor)
-                        SSet("macroAnchor", anchor or false, function(k)
-                            EAB:ApplyFontsForBar(k)
+                        local anchorFrame = v ~= "default" and v or nil
+                        SSeedTextOffsets("macro", "macroAnchor", "macroOffsetX", "macroOffsetY", anchorFrame)
+                        SSet("macroAnchor", anchorFrame or false, function(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3909,7 +3904,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("macroOffsetX", v, function(k)
-                            EAB:ApplyFontsForBar(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3925,7 +3920,7 @@ local function BuildBarAppearance(parent, y, ctx)
                     end,
                     set = function(v)
                         SSet("macroOffsetY", v, function(k)
-                            EAB:ApplyFontsForBar(k)
+                            ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
                     end,
@@ -3944,7 +3939,7 @@ local function BuildBarAppearance(parent, y, ctx)
                 end,
                 setValue = function(r, g, b)
                     SSetColor("macroFontColor", r, g, b, nil, function(k)
-                        EAB:ApplyFontsForBar(k)
+                        ABAR:ApplyFontsForBar(k)
                     end)
                     SUpdatePreview()
                 end,
@@ -3952,11 +3947,11 @@ local function BuildBarAppearance(parent, y, ctx)
         }, { disabled = TextOff.macro, disabledTooltip = "Macro Text" })
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
-    return y, iconsSectionHeader, textSectionHeader, keybindRow, chargesRow, classColorBorderRow
+    return posY, iconsSectionHeader, textSectionHeader, keybindRow, chargesRow, classColorBorderRow
 end
 
 -- Used by CUI_ActionBars_Options.lua
-ns.ABO_BuildBarAppearance = BuildBarAppearance
+mod.ABO_BuildBarAppearance = BuildBarAppearance

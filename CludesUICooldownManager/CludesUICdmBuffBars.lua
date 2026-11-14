@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Tracked spells must be assigned to a CDM bar so Blizzard computes all
 --  active-state, duration and stack data. Zero independent aura calls.
 --------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local ceil = math.ceil
 local floor = math.floor
@@ -17,23 +17,23 @@ local pcall = pcall
 
 -- Glow helpers (from main CDM file)
 local function StartGlow(...)
-    if ns.StartNativeGlow then
-        return ns.StartNativeGlow(...)
+    if mod.StartNativeGlow then
+        return mod.StartNativeGlow(...)
     end
 end
 local function StopGlow(...)
-    if ns.StopNativeGlow then
-        return ns.StopNativeGlow(...)
+    if mod.StopNativeGlow then
+        return mod.StopNativeGlow(...)
     end
 end
 
 -- Weak-keyed external store for Blizzard bar FontString refs: never write custom properties onto Blizzard StatusBar frames (taint).
 local _blizzBarFS = setmetatable({}, { __mode = "k" })
-local function BBFS(bar)
-    local d = _blizzBarFS[bar]
+local function BBFS(barFrame)
+    local d = _blizzBarFS[barFrame]
     if not d then
         d = {}
-        _blizzBarFS[bar] = d
+        _blizzBarFS[barFrame] = d
     end
     return d
 end
@@ -42,9 +42,9 @@ end
 --  Textures
 -------------------------------------------------------------------------------
 local TBB_TEXTURES, TBB_TEXTURE_NAMES, TBB_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
-ns.TBB_TEXTURES = TBB_TEXTURES
-ns.TBB_TEXTURE_ORDER = TBB_TEXTURE_ORDER
-ns.TBB_TEXTURE_NAMES = TBB_TEXTURE_NAMES
+mod.TBB_TEXTURES = TBB_TEXTURES
+mod.TBB_TEXTURE_ORDER = TBB_TEXTURE_ORDER
+mod.TBB_TEXTURE_NAMES = TBB_TEXTURE_NAMES
 
 -------------------------------------------------------------------------------
 --  Shared Helpers
@@ -64,18 +64,18 @@ local function FormatTime(remaining)
     return format("%.1f", remaining)
 end
 
-local function SetFont(fs, size)
-    CludesUI.ApplyModuleFont(fs, nil, size, "cdm")
+local function SetFont(fontStr, dim)
+    CludesUI.ApplyModuleFont(fontStr, nil, dim, "cdm")
 end
 
-local function SetTBBTextColor(fs, cfg, prefix)
-    if not fs or not cfg then
+local function SetTBBTextColor(fontStr, conf, prefixText)
+    if not fontStr or not conf then
         return
     end
-    local r = cfg[prefix .. "TextR"]
-    local g = cfg[prefix .. "TextG"]
-    local b = cfg[prefix .. "TextB"]
-    local a = cfg[prefix .. "TextA"]
+    local r = conf[prefixText .. "TextR"]
+    local g = conf[prefixText .. "TextG"]
+    local b = conf[prefixText .. "TextB"]
+    local a = conf[prefixText .. "TextA"]
     if r == nil then
         r = 1
     end
@@ -88,7 +88,7 @@ local function SetTBBTextColor(fs, cfg, prefix)
     if a == nil then
         a = 0.9
     end
-    fs:SetTextColor(r, g, b, a)
+    fontStr:SetTextColor(r, g, b, a)
 end
 
 -------------------------------------------------------------------------------
@@ -96,8 +96,8 @@ end
 -------------------------------------------------------------------------------
 local _pandemicState = {} -- frame -> true when in pandemic
 local _pandemicHooked = {} -- frame -> true once hooks are installed
-ns._pandemicState = _pandemicState
-ns._pandemicHooked = _pandemicHooked
+mod._pandemicState = _pandemicState
+mod._pandemicHooked = _pandemicHooked
 
 -- Hook bodies live at FILE SCOPE on purpose: hooksecurefunc callbacks bill CPU to the
 -- addon whose execution context CREATED the closure (same rule as frames); a login-installed
@@ -105,17 +105,17 @@ ns._pandemicHooked = _pandemicHooked
 -- this file's main chunk, they bill CooldownManager no matter which path installs them.
 local function _PandemicShow(self)
     _pandemicState[self] = true
-    ns._btDirty = true
-    if ns.ArmBuffTicker then
-        ns.ArmBuffTicker()
+    mod._btDirty = true
+    if mod.ArmBuffTicker then
+        mod.ArmBuffTicker()
     end
     -- Hide Blizzard's PandemicIcon unless "Blizzard Default" (-1). Custom glow styles (>0) replace it; None (0/false) suppresses it.
-    local fc = ns._ecmeFC and ns._ecmeFC[self]
+    local fc = mod._ecmeFC and mod._ecmeFC[self]
     local bk = fc and fc.barKey
     if bk then
-        local bd = ns.barDataByKey and ns.barDataByKey[bk]
-        local style = bd and bd.pandemicGlow and bd.pandemicGlowStyle
-        if not style or style ~= -1 then
+        local edge = mod.barDataByKey and mod.barDataByKey[bk]
+        local look = edge and edge.pandemicGlow and edge.pandemicGlowStyle
+        if not look or look ~= -1 then
             if self.PandemicIcon then
                 self.PandemicIcon:Hide()
             end
@@ -125,25 +125,25 @@ end
 
 local function _PandemicHide(self)
     _pandemicState[self] = nil
-    ns._btDirty = true
-    if ns.ArmBuffTicker then
-        ns.ArmBuffTicker()
+    mod._btDirty = true
+    if mod.ArmBuffTicker then
+        mod.ArmBuffTicker()
     end
 end
 
 -- Installed LAZILY from the buff tick, per icon, only when that icon's bar uses a
 -- custom pandemic style (style ~= -1); idempotent. Default "Blizzard Default" hooks nothing, costs zero.
-function ns.HookPandemicState(frame)
-    if not frame or _pandemicHooked[frame] then
+function mod.HookPandemicState(widget)
+    if not widget or _pandemicHooked[widget] then
         return
     end
-    if not frame.ShowPandemicStateFrame then
+    if not widget.ShowPandemicStateFrame then
         return
     end
-    _pandemicHooked[frame] = true
-    hooksecurefunc(frame, "ShowPandemicStateFrame", _PandemicShow)
-    if frame.HidePandemicStateFrame then
-        hooksecurefunc(frame, "HidePandemicStateFrame", _PandemicHide)
+    _pandemicHooked[widget] = true
+    hooksecurefunc(widget, "ShowPandemicStateFrame", _PandemicShow)
+    if widget.HidePandemicStateFrame then
+        hooksecurefunc(widget, "HidePandemicStateFrame", _PandemicHide)
     end
 end
 
@@ -156,55 +156,55 @@ local _scanLast, _scanResult = 0, false
 -- the cap included). 12.1.5 answers directly; 12.1.0 derives it as Blizzard's
 -- own viewer did there (refreshed duration minus base duration). nil when
 -- neither API exists or the answer is secret: the caller then uses 30%.
-local function CarryOver(unit, auraInstanceID)
+local function CarryOver(unitToken, auraInstanceID)
     local U = C_UnitAuras
-    local ok, carry
+    local success, carry
     if U.GetRefreshCarryOverDuration then
-        ok, carry = pcall(U.GetRefreshCarryOverDuration, unit, auraInstanceID)
+        success, carry = pcall(U.GetRefreshCarryOverDuration, unitToken, auraInstanceID)
     elseif U.GetRefreshExtendedDuration and U.GetAuraBaseDuration then
-        local ok1, ext = pcall(U.GetRefreshExtendedDuration, unit, auraInstanceID)
-        local ok2, base = pcall(U.GetAuraBaseDuration, unit, auraInstanceID)
-        if ok1 and ok2 and ext and base and not issecretvalue(ext) and not issecretvalue(base) then
-            ok, carry = true, ext - base
+        local ok1, ext = pcall(U.GetRefreshExtendedDuration, unitToken, auraInstanceID)
+        local ok2, baseValue = pcall(U.GetAuraBaseDuration, unitToken, auraInstanceID)
+        if ok1 and ok2 and ext and baseValue and not issecretvalue(ext) and not issecretvalue(baseValue) then
+            success, carry = true, ext - baseValue
         end
     end
-    if ok and carry and not issecretvalue(carry) then
+    if success and carry and not issecretvalue(carry) then
         return carry
     end
 end
 -- Pandemic fallback for auras Blizzard never flags (currently only Lifebloom).
 -- bar._isLifebloom is cached on our own frame; the call site skips entirely once a
 -- bar is known not to be Lifebloom, so only Lifebloom reaches the throttled scan.
-local function LifebloomPandemic(bar, blzChild)
+local function LifebloomPandemic(barFrame, blzChild)
     -- Resolve identity once. Spell data can be late-loading, so leave the flag nil (retry next frame) until both names resolve.
-    if bar._isLifebloom == nil then
+    if barFrame._isLifebloom == nil then
         if not _lbName then
             _lbName = C_Spell.GetSpellName(LIFEBLOOM_SPELL_ID)
         end
-        local sid = ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(blzChild)
-        local sName = sid and C_Spell.GetSpellName(sid)
+        local spellRef = mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(blzChild)
+        local sName = spellRef and C_Spell.GetSpellName(spellRef)
         if not (_lbName and sName) then
             return false
         end
-        bar._isLifebloom = (_lbName == sName)
+        barFrame._isLifebloom = (_lbName == sName)
     end
-    if not bar._isLifebloom then
+    if not barFrame._isLifebloom then
         return false
     end
 
     -- Throttle the unit scan to 10/sec; return the cached result if throttled.
-    local now = GetTime()
-    if (now - _scanLast) < 0.1 then
+    local nowTime = GetTime()
+    if (nowTime - _scanLast) < 0.1 then
         return _scanResult
     end
 
     local result = false
-    local function check(unit)
-        if not UnitExists(unit) then
+    local function check(unitToken)
+        if not UnitExists(unitToken) then
             return
         end
-        local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unit, _lbName, "HELPFUL|PLAYER")
-        if not ok or not aura then
+        local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unitToken, _lbName, "HELPFUL|PLAYER")
+        if not success or not aura then
             return
         end
         local dur, exp = aura.duration, aura.expirationTime
@@ -218,10 +218,10 @@ local function LifebloomPandemic(bar, blzChild)
         if dur <= 0 then
             return
         end
-        local remaining = exp - now
+        local remaining = exp - nowTime
         -- The carry-over equals the remaining time once inside the window and
         -- the cap before it (a hair of slack for the two clock reads).
-        local carry = aura.auraInstanceID and CarryOver(unit, aura.auraInstanceID)
+        local carry = aura.auraInstanceID and CarryOver(unitToken, aura.auraInstanceID)
         if carry then
             if carry > 0 and remaining <= carry + 0.05 then
                 result = true
@@ -235,22 +235,22 @@ local function LifebloomPandemic(bar, blzChild)
     check("player")
     if not result then
         if IsInRaid() then
-            for i = 1, GetNumGroupMembers() do
-                check("raid" .. i)
+            for idx = 1, GetNumGroupMembers() do
+                check("raid" .. idx)
                 if result then
                     break
                 end
             end
         elseif IsInGroup() then
-            for i = 1, GetNumGroupMembers() do
-                check("party" .. i)
+            for idx = 1, GetNumGroupMembers() do
+                check("party" .. idx)
                 if result then
                     break
                 end
             end
         end
     end
-    _scanLast, _scanResult = now, result
+    _scanLast, _scanResult = nowTime, result
     return result
 end
 
@@ -259,19 +259,19 @@ end
 -------------------------------------------------------------------------------
 local TBB_POPULAR_BUFFS = {}
 do
-    local presets = ns.BUFF_BAR_PRESETS
+    local presets = mod.BUFF_BAR_PRESETS
     if presets then
         for _, p in ipairs(presets) do
-            local entry = {}
-            for k, v in pairs(p) do
-                entry[k] = v
+            local record = {}
+            for key, val in pairs(p) do
+                record[key] = val
             end
-            entry.customDuration = p.duration -- compat alias
-            TBB_POPULAR_BUFFS[#TBB_POPULAR_BUFFS + 1] = entry
+            record.customDuration = p.duration -- compat alias
+            TBB_POPULAR_BUFFS[#TBB_POPULAR_BUFFS + 1] = record
         end
     end
 end
-ns.TBB_POPULAR_BUFFS = TBB_POPULAR_BUFFS
+mod.TBB_POPULAR_BUFFS = TBB_POPULAR_BUFFS
 
 -------------------------------------------------------------------------------
 --  Default Bar Config
@@ -385,18 +385,18 @@ local TBB_DEFAULT_BAR = {
     pandemicGlowThickness = 2,
     pandemicGlowSpeed = 4,
 }
-ns.TBB_DEFAULT_BAR = TBB_DEFAULT_BAR
+mod.TBB_DEFAULT_BAR = TBB_DEFAULT_BAR
 
 -------------------------------------------------------------------------------
 --  Data Access
 -------------------------------------------------------------------------------
-function ns.GetTrackedBuffBars()
+function mod.GetTrackedBuffBars()
     -- TBB is spec-specific and per-profile: specProfiles[specKey] under the active profile's bucket.
-    local specKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
+    local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     if not specKey then
         return { selectedBar = 1, bars = {} }
     end
-    local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
+    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     if not sp then
         return { selectedBar = 1, bars = {} }
     end
@@ -468,20 +468,20 @@ function ns.GetTrackedBuffBars()
 end
 
 -- The name the player gave a bar (Name Text Settings), or nil when it has none.
-function ns.TBBCustomName(cfg)
-    local n = cfg.customName
-    if n and n ~= "" then
-        return n
+function mod.TBBCustomName(conf)
+    local num = conf.customName
+    if num and num ~= "" then
+        return num
     end
 end
 
-function ns.GetTBBPositions()
+function mod.GetTBBPositions()
     -- Spec-specific, stored alongside trackedBuffBars in the active profile's per-spec bucket.
-    local specKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
+    local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     if not specKey then
         return {}
     end
-    local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
+    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     if not sp or not sp[specKey] then
         return {}
     end
@@ -497,7 +497,7 @@ end
 -- that value keeps its own copy and adds a setter; a place that assigns it
 -- calls Set<Name> (built below), which runs them all. ECME is set this way
 -- during BuildTrackedBuffBars (ECME.db is not ready at file load).
-CludesUI.NewInternals(ns, "_buffBarInternals", {
+CludesUI.NewInternals(mod, "_buffBarInternals", {
     _blizzBarFS = _blizzBarFS,
     _classB = _classB,
     _classG = _classG,

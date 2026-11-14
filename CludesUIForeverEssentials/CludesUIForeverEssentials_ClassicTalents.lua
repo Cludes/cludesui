@@ -48,7 +48,7 @@ local ARROW_LEFT = { 0.5, 1, 0 }
 -- Settings live in CludesUIDB.classicTalents; unset keys read these.
 local F = module.Feature("classicTalents", { enabled = false })
 
-local win, toggle
+local window, toggle
 local microLayer -- the click layer over the micro menu's Talents button (see Setup)
 local route -- CUI_TalentsRoute (see Setup)
 local trees = {} -- { groupID, name, nodes = { nodeID, ... } } in tree order
@@ -79,14 +79,14 @@ end
 
 local function ReadTrees()
     wipe(trees)
-    local list
-    configID, treeID, list = CludesUI.ForeverTalentTrees()
-    if not list then
+    local entries
+    configID, treeID, entries = CludesUI.ForeverTalentTrees()
+    if not entries then
         return
     end
-    for i, t in ipairs(list) do
+    for idx, t in ipairs(entries) do
         t.name = ShortName(t.groupID) or t.name
-        trees[i] = t
+        trees[idx] = t
     end
     if tree > #trees then
         tree = 1
@@ -98,18 +98,18 @@ local function Grid(nodes)
     return CludesUI.TalentTreeGrid(configID, nodes)
 end
 
-local function SpellOf(info)
-    local entryID = info.activeEntry and info.activeEntry.entryID or info.entryIDs[1]
-    local entry = entryID and C_Traits.GetEntryInfo(configID, entryID)
-    local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
-    if not def then
+local function SpellOf(details)
+    local entryID = details.activeEntry and details.activeEntry.entryID or details.entryIDs[1]
+    local record = entryID and C_Traits.GetEntryInfo(configID, entryID)
+    local spec_def = record and record.definitionID and C_Traits.GetDefinitionInfo(record.definitionID)
+    if not spec_def then
         return
     end
-    local icon = def.overrideIcon
-    if not icon or icon == 0 then
-        icon = def.spellID and C_Spell.GetSpellTexture(def.spellID)
+    local glyph = spec_def.overrideIcon
+    if not glyph or glyph == 0 then
+        glyph = spec_def.spellID and C_Spell.GetSpellTexture(spec_def.spellID)
     end
-    return def.spellID, icon
+    return spec_def.spellID, glyph
 end
 
 -------------------------------------------------------------------------------
@@ -131,12 +131,12 @@ local function TalentLeave()
 end
 
 -- Left click stages a point; right click takes back one staged here.
-local function TalentClick(b, button)
+local function TalentClick(b, btnFrame)
     local nodeID = b.nodeID
     if not nodeID then
         return
     end
-    if button == "RightButton" then
+    if btnFrame == "RightButton" then
         if (staged[nodeID] or 0) > 0 and C_Traits.RefundRank(configID, nodeID) then
             staged[nodeID] = staged[nodeID] - 1
         end
@@ -146,8 +146,8 @@ local function TalentClick(b, button)
     QueuePaint()
 end
 
-local function NewTalent(parent)
-    local b = CreateFrame("Button", nil, parent)
+local function NewTalent(hostFrame)
+    local b = CreateFrame("Button", nil, hostFrame)
     b:SetSize(SIZE, SIZE)
     b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     b.icon = b:CreateTexture(nil, "ARTWORK")
@@ -172,17 +172,17 @@ end
 
 -- Gold when full, green while it holds points or can take the first one, else
 -- grey with no rank.
-local function FillTalent(b, nodeID, cell)
-    local info = cell.info
-    local spellID, icon = SpellOf(info)
-    b.nodeID, b.spellID = nodeID, spellID
+local function FillTalent(b, nodeID, cellFrame)
+    local details = cellFrame.info
+    local spellId, glyph = SpellOf(details)
+    b.nodeID, b.spellID = nodeID, spellId
     b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", LEFT + cell.col * STEP, -(TOP + cell.row * STEP))
-    b.icon:SetTexture(icon)
-    local rank = info.activeRank
-    local open = rank > 0 or (unspent > 0 and info.canPurchaseRank)
+    b:SetPoint("TOPLEFT", LEFT + cellFrame.col * STEP, -(TOP + cellFrame.row * STEP))
+    b.icon:SetTexture(glyph)
+    local rank = details.activeRank
+    local open = rank > 0 or (unspent > 0 and details.canPurchaseRank)
     b.icon:SetDesaturated(not open)
-    if rank >= info.maxRanks then
+    if rank >= details.maxRanks then
         b.slot:SetVertexColor(1, 0.82, 0)
         b.rank:SetTextColor(1, 0.82, 0)
     elseif open then
@@ -198,41 +198,47 @@ local function FillTalent(b, nodeID, cell)
 end
 
 -- One piece of a sheet: its lit row, or the unlit one half a sheet lower.
-local function Piece(pool, n, parent, sheet, coords, lit)
-    local tex = pool[n]
-    if not tex then
-        tex = parent:CreateTexture(nil, "ARTWORK")
-        tex:SetTexture(ART .. sheet)
-        pool[n] = tex
+local function Piece(pool, num, hostFrame, sheet, coords, lit)
+    local texture = pool[num]
+    if not texture then
+        texture = hostFrame:CreateTexture(nil, "ARTWORK")
+        texture:SetTexture(ART .. sheet)
+        pool[num] = texture
     end
-    local top = coords[3] + (lit and 0 or 0.5)
-    tex:SetTexCoord(coords[1], coords[2], top, top + 0.5)
-    tex:ClearAllPoints()
-    tex:Show()
-    return tex
+    local topY = coords[3] + (lit and 0 or 0.5)
+    texture:SetTexCoord(coords[1], coords[2], topY, topY + 0.5)
+    texture:ClearAllPoints()
+    texture:Show()
+    return texture
 end
 
 -- A line and an arrow from a talent to the one it unlocks, when the two share
 -- a column or a row.
-local function Link(n, from, to, lit)
-    local x, y = LEFT + from.col * STEP, -(TOP + from.row * STEP)
+local function Link(num, from, to, lit)
+    local posX, posY = LEFT + from.col * STEP, -(TOP + from.row * STEP)
     if from.col == to.col and to.row > from.row then
-        local line = Piece(win.lines, n, win.canvas, "UI-TalentBranches", BRANCH_DOWN, lit)
-        line:SetSize(SIZE, (to.row - from.row) * STEP - SIZE)
-        line:SetPoint("TOPLEFT", x, y - SIZE)
-        local arrow = Piece(win.arrows, n, win.above, "UI-TalentArrows", ARROW_TOP, lit)
+        local lineTex = Piece(window.lines, num, window.canvas, "UI-TalentBranches", BRANCH_DOWN, lit)
+        lineTex:SetSize(SIZE, (to.row - from.row) * STEP - SIZE)
+        lineTex:SetPoint("TOPLEFT", posX, posY - SIZE)
+        local arrow = Piece(window.arrows, num, window.above, "UI-TalentArrows", ARROW_TOP, lit)
         arrow:SetSize(SIZE, SIZE)
-        arrow:SetPoint("TOPLEFT", x, y - (to.row - from.row) * STEP + SIZE / 2)
+        arrow:SetPoint("TOPLEFT", posX, posY - (to.row - from.row) * STEP + SIZE / 2)
     elseif from.row == to.row and to.col ~= from.col then
         local right = to.col > from.col
         local span = math.abs(to.col - from.col) * STEP - SIZE
-        local line = Piece(win.lines, n, win.canvas, "UI-TalentBranches", BRANCH_RIGHT, lit)
-        line:SetSize(span, SIZE)
-        line:SetPoint("TOPLEFT", right and x + SIZE or x - span, y)
-        local arrow =
-            Piece(win.arrows, n, win.above, "UI-TalentArrows", right and ARROW_RIGHT or ARROW_LEFT, lit)
+        local lineTex = Piece(window.lines, num, window.canvas, "UI-TalentBranches", BRANCH_RIGHT, lit)
+        lineTex:SetSize(span, SIZE)
+        lineTex:SetPoint("TOPLEFT", right and posX + SIZE or posX - span, posY)
+        local arrow = Piece(
+            window.arrows,
+            num,
+            window.above,
+            "UI-TalentArrows",
+            right and ARROW_RIGHT or ARROW_LEFT,
+            lit
+        )
         arrow:SetSize(SIZE, SIZE)
-        arrow:SetPoint("TOPLEFT", right and x + span + SIZE / 2 or x - span - SIZE / 2, y)
+        arrow:SetPoint("TOPLEFT", right and posX + span + SIZE / 2 or posX - span - SIZE / 2, posY)
     else
         return false
     end
@@ -247,10 +253,10 @@ local function HasStaged()
 end
 
 local function PaintBackground()
-    local _, class = UnitClass("player")
-    local name = BACKGROUNDS[class] and BACKGROUNDS[class][tree]
-    for corner, tex in pairs(win.bg) do
-        tex:SetTexture(name and ART .. name .. "-" .. corner or nil)
+    local _, classFile = UnitClass("player")
+    local name = BACKGROUNDS[classFile] and BACKGROUNDS[classFile][tree]
+    for corner, texture in pairs(window.bg) do
+        texture:SetTexture(name and ART .. name .. "-" .. corner or nil)
     end
 end
 
@@ -258,60 +264,60 @@ Paint = function()
     local t = trees[tree]
     local currency = treeID and C_Traits.GetTreeCurrencyInfo(configID, treeID, false)[1]
     unspent = currency and currency.quantity or 0
-    local cells, rows = Grid(t and t.nodes or {})
+    local cells, rowList = Grid(t and t.nodes or {})
     local used = 0
-    for nodeID, cell in pairs(cells) do
+    for nodeID, cellFrame in pairs(cells) do
         used = used + 1
-        local b = win.talents[used]
+        local b = window.talents[used]
         if not b then
-            b = NewTalent(win.canvas)
-            win.talents[used] = b
+            b = NewTalent(window.canvas)
+            window.talents[used] = b
         end
-        FillTalent(b, nodeID, cell)
+        FillTalent(b, nodeID, cellFrame)
     end
-    for i = used + 1, #win.talents do
-        win.talents[i]:Hide()
+    for idx = used + 1, #window.talents do
+        window.talents[idx]:Hide()
     end
 
     local links = 0
-    for _, cell in pairs(cells) do
-        for _, edge in ipairs(cell.info.visibleEdges) do
+    for _, cellFrame in pairs(cells) do
+        for _, edge in ipairs(cellFrame.info.visibleEdges) do
             local to = cells[edge.targetNode]
-            if to and Link(links + 1, cell, to, edge.isActive) then
+            if to and Link(links + 1, cellFrame, to, edge.isActive) then
                 links = links + 1
             end
         end
     end
-    for i = links + 1, #win.lines do
-        win.lines[i]:Hide()
+    for idx = links + 1, #window.lines do
+        window.lines[idx]:Hide()
     end
-    for i = links + 1, #win.arrows do
-        win.arrows[i]:Hide()
+    for idx = links + 1, #window.arrows do
+        window.arrows[idx]:Hide()
     end
-    win.canvas:SetSize(VIEW_W, math.max(VIEW_H, TOP * 2 + (rows - 1) * STEP + SIZE))
+    window.canvas:SetSize(VIEW_W, math.max(VIEW_H, TOP * 2 + (rowList - 1) * STEP + SIZE))
 
-    for i, tab in ipairs(win.tabs) do
-        local data = trees[i]
-        tab:SetShown(data ~= nil)
-        if data then
-            tab.text:SetText(data.name)
-            local on = i == tree
-            for _, tex in ipairs(tab.active) do
-                tex:SetShown(on)
+    for idx, tabButton in ipairs(window.tabs) do
+        local payload = trees[idx]
+        tabButton:SetShown(payload ~= nil)
+        if payload then
+            tabButton.text:SetText(payload.name)
+            local on = idx == tree
+            for _, texture in ipairs(tabButton.active) do
+                texture:SetShown(on)
             end
-            for _, tex in ipairs(tab.inactive) do
-                tex:SetShown(not on)
+            for _, texture in ipairs(tabButton.inactive) do
+                texture:SetShown(not on)
             end
             local c = on and HIGHLIGHT_FONT_COLOR or NORMAL_FONT_COLOR
-            tab.text:SetTextColor(c.r, c.g, c.b)
-            tab.text:SetPoint("CENTER", 0, on and 4 or 2)
+            tabButton.text:SetTextColor(c.r, c.g, c.b)
+            tabButton.text:SetPoint("CENTER", 0, on and 4 or 2)
         end
     end
     local group = t and C_Traits.GetGroupCurrencyInfo(configID, { t.groupID })[1]
     local spent = group and group.currencyInfos[1] and group.currencyInfos[1].spent or 0
     -- The numbers are white beside their gold labels.
     local white = HIGHLIGHT_FONT_COLOR
-    win.spent:SetText(
+    window.spent:SetText(
         t
                 and CludesUI.Lf(
                     "Points spent in %1$s Talents: %2$s",
@@ -320,8 +326,8 @@ Paint = function()
                 )
             or ""
     )
-    win.points:SetText(CludesUI.Lf("Talent Points: %s", white:WrapTextInColorCode(unspent)))
-    win.learn:SetEnabled(HasStaged())
+    window.points:SetText(CludesUI.Lf("Talent Points: %s", white:WrapTextInColorCode(unspent)))
+    window.learn:SetEnabled(HasStaged())
     PaintBackground()
 end
 
@@ -333,7 +339,7 @@ end
 -- One repaint for a click and the burst of events it sets off.
 local function Repaint()
     queued = nil
-    if win:IsShown() then
+    if window:IsShown() then
         Refresh()
     end
 end
@@ -359,8 +365,8 @@ end
 -- loadout, so the save half of the commit failed with an error while the
 -- points were kept.
 local function SavedConfigID()
-    local spec = C_SpecializationInfo.GetSpecialization()
-    local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
+    local specInfo = C_SpecializationInfo.GetSpecialization()
+    local specID = specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
     if not specID then
         return nil
     end
@@ -392,8 +398,8 @@ local EVENTS = {
 
 -- Listens only while open. Closing drops the points staged here.
 local function WinShown(f)
-    for _, event in ipairs(EVENTS) do
-        f:RegisterEvent(event)
+    for _, evt in ipairs(EVENTS) do
+        f:RegisterEvent(evt)
     end
     PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
     Refresh()
@@ -408,149 +414,149 @@ end
 -- A tab's art in three pieces (20 px ends, a stretched middle). The selected
 -- tab's art is 3 px taller and starts 5 px higher, so it joins the window.
 local TAB_ENDS = 0.15625
-local function TabArt(tab, file, height, rise, bottom)
-    local left = tab:CreateTexture(nil, "BACKGROUND")
-    left:SetTexture("Interface\\PaperDollInfoFrame\\" .. file)
-    left:SetTexCoord(0, TAB_ENDS, 0, bottom)
-    left:SetSize(20, height)
-    left:SetPoint("TOPLEFT", 0, rise)
-    local right = tab:CreateTexture(nil, "BACKGROUND")
+local function TabArt(tabButton, file, height, rise, bottom)
+    local leftX = tabButton:CreateTexture(nil, "BACKGROUND")
+    leftX:SetTexture("Interface\\PaperDollInfoFrame\\" .. file)
+    leftX:SetTexCoord(0, TAB_ENDS, 0, bottom)
+    leftX:SetSize(20, height)
+    leftX:SetPoint("TOPLEFT", 0, rise)
+    local right = tabButton:CreateTexture(nil, "BACKGROUND")
     right:SetTexture("Interface\\PaperDollInfoFrame\\" .. file)
     right:SetTexCoord(1 - TAB_ENDS, 1, 0, bottom)
     right:SetSize(20, height)
     right:SetPoint("TOPRIGHT", 0, rise)
-    local middle = tab:CreateTexture(nil, "BACKGROUND")
+    local middle = tabButton:CreateTexture(nil, "BACKGROUND")
     middle:SetTexture("Interface\\PaperDollInfoFrame\\" .. file)
     middle:SetTexCoord(TAB_ENDS, 1 - TAB_ENDS, 0, bottom)
-    middle:SetPoint("TOPLEFT", left, "TOPRIGHT")
+    middle:SetPoint("TOPLEFT", leftX, "TOPRIGHT")
     middle:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
-    return { left, middle, right }
+    return { leftX, middle, right }
 end
 
-local function NewTab(i)
-    local tab = CreateFrame("Button", nil, win)
-    tab:SetSize(108, 32)
-    tab:SetPoint("TOPLEFT", win, "BOTTOMLEFT", 12 + (i - 1) * 104, 78)
-    tab.inactive = TabArt(tab, "UI-Character-InActiveTab", 32, 0, 1)
-    tab.active = TabArt(tab, "UI-Character-ActiveTab", 35, 5, 0.546875)
-    tab.text = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    tab.text:SetPoint("CENTER", 0, 2)
-    tab.text:SetWidth(92)
-    tab.text:SetWordWrap(false)
-    tab:SetScript("OnClick", function()
-        if i == tree then
+local function NewTab(idx)
+    local tabButton = CreateFrame("Button", nil, window)
+    tabButton:SetSize(108, 32)
+    tabButton:SetPoint("TOPLEFT", window, "BOTTOMLEFT", 12 + (idx - 1) * 104, 78)
+    tabButton.inactive = TabArt(tabButton, "UI-Character-InActiveTab", 32, 0, 1)
+    tabButton.active = TabArt(tabButton, "UI-Character-ActiveTab", 35, 5, 0.546875)
+    tabButton.text = tabButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    tabButton.text:SetPoint("CENTER", 0, 2)
+    tabButton.text:SetWidth(92)
+    tabButton.text:SetWordWrap(false)
+    tabButton:SetScript("OnClick", function()
+        if idx == tree then
             return
         end
-        tree = i
-        win.scroll:SetVerticalScroll(0)
+        tree = idx
+        window.scroll:SetVerticalScroll(0)
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
         Paint()
     end)
-    return tab
+    return tabButton
 end
 
 local function Build()
-    if win then
+    if window then
         return
     end
-    win = CreateFrame("Frame", "CUI_ClassicTalents", UIParent)
-    win:Hide()
-    win:SetSize(384, 512)
-    win:SetFrameStrata("MEDIUM")
-    win:SetToplevel(true)
-    win:EnableMouse(true)
-    win:SetHitRectInsets(0, 30, 0, 70)
+    window = CreateFrame("Frame", "CUI_ClassicTalents", UIParent)
+    window:Hide()
+    window:SetSize(384, 512)
+    window:SetFrameStrata("MEDIUM")
+    window:SetToplevel(true)
+    window:EnableMouse(true)
+    window:SetHitRectInsets(0, 30, 0, 70)
 
-    local portrait = win:CreateTexture(nil, "BACKGROUND")
+    local portrait = window:CreateTexture(nil, "BACKGROUND")
     portrait:SetSize(60, 60)
     portrait:SetPoint("TOPLEFT", 7, -6)
-    win.portrait = portrait
+    window.portrait = portrait
     for _, part in ipairs({
         { "Interface\\PaperDollInfoFrame\\UI-Character-General-TopLeft", "TOPLEFT", 256 },
         { "Interface\\PaperDollInfoFrame\\UI-Character-General-TopRight", "TOPRIGHT", 128 },
         { ART .. "UI-TalentFrame-BotLeft", "BOTTOMLEFT", 256 },
         { ART .. "UI-TalentFrame-BotRight", "BOTTOMRIGHT", 128 },
     }) do
-        local tex = win:CreateTexture(nil, "ARTWORK")
-        tex:SetTexture(part[1])
-        tex:SetSize(part[3], 256)
-        tex:SetPoint(part[2])
+        local texture = window:CreateTexture(nil, "ARTWORK")
+        texture:SetTexture(part[1])
+        texture:SetSize(part[3], 256)
+        texture:SetPoint(part[2])
     end
-    local title = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("CENTER", 6, 230)
-    title:SetText(TALENTS)
+    local titleText = window:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetPoint("CENTER", 6, 230)
+    titleText:SetText(TALENTS)
 
     -- The tree's background, over the frame art and behind the scrolling
     -- talents: 320 x 331 in four pieces.
-    win.bg = {}
+    window.bg = {}
     for _, part in ipairs({
         { "TopLeft", 0, 0, 256, 256 },
         { "TopRight", 256, 0, 64, 256 },
         { "BottomLeft", 0, -256, 256, 75 },
         { "BottomRight", 256, -256, 64, 75 },
     }) do
-        local tex = win:CreateTexture(nil, "ARTWORK", nil, 1)
-        tex:SetSize(part[4], part[5])
-        tex:SetPoint("TOPLEFT", 23 + part[2], -77 + part[3])
+        local texture = window:CreateTexture(nil, "ARTWORK", nil, 1)
+        texture:SetSize(part[4], part[5])
+        texture:SetPoint("TOPLEFT", 23 + part[2], -77 + part[3])
         if part[5] < 256 then
-            tex:SetTexCoord(0, 1, 0, part[5] / 128)
+            texture:SetTexCoord(0, 1, 0, part[5] / 128)
         end
-        win.bg[part[1]] = tex
+        window.bg[part[1]] = texture
     end
 
-    win.scroll = CreateFrame("ScrollFrame", nil, win, "UIPanelScrollFrameTemplate")
-    win.scroll:SetSize(VIEW_W, VIEW_H)
-    win.scroll:SetPoint("TOPRIGHT", -65, -77)
-    win.canvas = CreateFrame("Frame", nil, win.scroll)
-    win.canvas:SetSize(VIEW_W, VIEW_H)
-    win.scroll:SetScrollChild(win.canvas)
+    window.scroll = CreateFrame("ScrollFrame", nil, window, "UIPanelScrollFrameTemplate")
+    window.scroll:SetSize(VIEW_W, VIEW_H)
+    window.scroll:SetPoint("TOPRIGHT", -65, -77)
+    window.canvas = CreateFrame("Frame", nil, window.scroll)
+    window.canvas:SetSize(VIEW_W, VIEW_H)
+    window.scroll:SetScrollChild(window.canvas)
     -- Arrowheads lie over the talent they point at.
-    win.above = CreateFrame("Frame", nil, win.canvas)
-    win.above:SetAllPoints()
-    win.above:SetFrameLevel(win.canvas:GetFrameLevel() + 5)
+    window.above = CreateFrame("Frame", nil, window.canvas)
+    window.above:SetAllPoints()
+    window.above:SetFrameLevel(window.canvas:GetFrameLevel() + 5)
 
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("CENTER", win, "TOPRIGHT", -44, -25)
+    local close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
+    close:SetPoint("CENTER", window, "TOPRIGHT", -44, -25)
 
     -- The bordered bar the points-spent line sits in: the input box border,
     -- two 8 px ends and a stretched middle.
-    local bar = {}
-    for i, part in ipairs({ { 0, 0.0625 }, { 0.0625, 0.9375 }, { 0.9375, 1 } }) do
-        bar[i] = win:CreateTexture(nil, "ARTWORK", nil, 2)
-        bar[i]:SetTexture("Interface\\Common\\Common-Input-Border")
-        bar[i]:SetTexCoord(part[1], part[2], 0, 0.625)
+    local barFrame = {}
+    for idx, part in ipairs({ { 0, 0.0625 }, { 0.0625, 0.9375 }, { 0.9375, 1 } }) do
+        barFrame[idx] = window:CreateTexture(nil, "ARTWORK", nil, 2)
+        barFrame[idx]:SetTexture("Interface\\Common\\Common-Input-Border")
+        barFrame[idx]:SetTexCoord(part[1], part[2], 0, 0.625)
     end
-    bar[1]:SetSize(8, 20)
-    bar[1]:SetPoint("TOPLEFT", win, "TOP", -117, -48)
-    bar[3]:SetSize(8, 20)
-    bar[3]:SetPoint("TOPRIGHT", win, "TOP", 129, -48)
-    bar[2]:SetPoint("TOPLEFT", bar[1], "TOPRIGHT")
-    bar[2]:SetPoint("BOTTOMRIGHT", bar[3], "BOTTOMLEFT")
-    win.spent = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    win.spent:SetPoint("CENTER", bar[2])
-    win.points = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    win.learn = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
-    win.learn:SetSize(86, 20)
-    win.learn:SetPoint("BOTTOMRIGHT", -40, 81)
-    win.learn:SetText(LEARN)
-    win.learn:SetScript("OnClick", Learn)
-    win.points:SetPoint("RIGHT", win.learn, "LEFT", -10, 0)
+    barFrame[1]:SetSize(8, 20)
+    barFrame[1]:SetPoint("TOPLEFT", window, "TOP", -117, -48)
+    barFrame[3]:SetSize(8, 20)
+    barFrame[3]:SetPoint("TOPRIGHT", window, "TOP", 129, -48)
+    barFrame[2]:SetPoint("TOPLEFT", barFrame[1], "TOPRIGHT")
+    barFrame[2]:SetPoint("BOTTOMRIGHT", barFrame[3], "BOTTOMLEFT")
+    window.spent = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    window.spent:SetPoint("CENTER", barFrame[2])
+    window.points = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    window.learn = CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
+    window.learn:SetSize(86, 20)
+    window.learn:SetPoint("BOTTOMRIGHT", -40, 81)
+    window.learn:SetText(LEARN)
+    window.learn:SetScript("OnClick", Learn)
+    window.points:SetPoint("RIGHT", window.learn, "LEFT", -10, 0)
 
-    win.tabs, win.talents, win.lines, win.arrows = {}, {}, {}, {}
-    for i = 1, 3 do
-        win.tabs[i] = NewTab(i)
+    window.tabs, window.talents, window.lines, window.arrows = {}, {}, {}, {}
+    for idx = 1, 3 do
+        window.tabs[idx] = NewTab(idx)
     end
 
-    win:SetScript("OnShow", WinShown)
-    win:SetScript("OnHide", WinHidden)
-    win:SetScript("OnEvent", function(_, event)
+    window:SetScript("OnShow", WinShown)
+    window:SetScript("OnHide", WinHidden)
+    window:SetScript("OnEvent", function(_, evt)
         -- A learn or a change made elsewhere: what was staged here is gone.
-        if event == "TRAIT_CONFIG_UPDATED" or event == "ACTIVE_COMBAT_CONFIG_CHANGED" then
+        if evt == "TRAIT_CONFIG_UPDATED" or evt == "ACTIVE_COMBAT_CONFIG_CHANGED" then
             wipe(staged)
         end
         QueuePaint()
     end)
-    CludesUI.RegisterEscapeClose(win, { cursor = true })
+    CludesUI.RegisterEscapeClose(window, { cursor = true })
     if CludesUI._ShifterAdopt then
         CludesUI._ShifterAdopt("CUI_ClassicTalents")
     end
@@ -560,34 +566,34 @@ end
 -- closed, hanging from the book (the Shifter may have moved it); at the left of
 -- the screen without one. A spot saved in the Shifter wins over all of these.
 local function Place()
-    if not win then
+    if not window then
         return
     end
     local book = CUI_ClassicSpellbook
-    win:ClearAllPoints()
+    window:ClearAllPoints()
     if not book then
-        win:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -104)
+        window:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -104)
     elseif book:IsShown() then
-        win:SetPoint("TOPLEFT", book, "TOPRIGHT", GAP, 0)
+        window:SetPoint("TOPLEFT", book, "TOPRIGHT", GAP, 0)
     else
-        win:SetPoint("TOPLEFT", book, "TOPLEFT")
+        window:SetPoint("TOPLEFT", book, "TOPLEFT")
     end
 end
 
 local function Close()
-    if win then
-        win:Hide()
+    if window then
+        window:Hide()
     end
 end
 
 local function Toggle()
     Build()
-    if win:IsShown() then
-        win:Hide()
+    if window:IsShown() then
+        window:Hide()
     else
-        SetPortraitTexture(win.portrait, "player")
+        SetPortraitTexture(window.portrait, "player")
         Place()
-        win:Show()
+        window:Show()
     end
 end
 
@@ -620,9 +626,9 @@ local function Bind()
         toggle:SetScript("OnClick", Toggle)
         toggle:SetScript("OnEvent", Bind)
     end
-    local target = on and toggle or _G.TalentMicroButton
-    if route and route:GetAttribute("clickbutton") ~= target then
-        route:SetAttribute("clickbutton", target)
+    local targetUnit = on and toggle or _G.TalentMicroButton
+    if route and route:GetAttribute("clickbutton") ~= targetUnit then
+        route:SetAttribute("clickbutton", targetUnit)
     end
     if not toggle then
         return
@@ -634,20 +640,20 @@ local function Bind()
         end
     else
         toggle:UnregisterAllEvents()
-        if win then
-            win:Hide()
+        if window then
+            window:Hide()
         end
     end
     if microLayer then
         microLayer:SetShown(on)
     end
-    local keys = on and table.concat({ GetBindingKey("TOGGLETALENTS") }, " ") or ""
-    if keys == boundKeys then
+    local keyList = on and table.concat({ GetBindingKey("TOGGLETALENTS") }, " ") or ""
+    if keyList == boundKeys then
         return
     end
-    boundKeys = keys
+    boundKeys = keyList
     ClearOverrideBindings(toggle)
-    for key in keys:gmatch("%S+") do
+    for key in keyList:gmatch("%S+") do
         SetOverrideBindingClick(toggle, true, key, TOGGLE_NAME)
     end
 end

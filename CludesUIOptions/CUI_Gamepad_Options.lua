@@ -28,19 +28,19 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- Action Bars module ns once its profile exists.
 local function ABNS()
-    local ns = CludesUI.ModuleNS(AB_FOLDER)
-    local EAB = ns and ns.EAB
-    if EAB and EAB.db then
-        return ns
+    local mod = CludesUI.ModuleNS(AB_FOLDER)
+    local ABAR = mod and mod.EAB
+    if ABAR and ABAR.db then
+        return mod
     end
     return nil
 end
 
 -- Unit Frames player unit settings.
 local function UFPlayer()
-    local ns = CludesUI.ModuleNS(UF_FOLDER)
-    local db = ns and ns.db
-    return db and db.profile.player
+    local mod = CludesUI.ModuleNS(UF_FOLDER)
+    local saved = mod and mod.db
+    return saved and saved.profile.player
 end
 
 -- Resource Bars cast bar settings.
@@ -48,8 +48,8 @@ local function RBCast()
     if not CludesUI.ModuleNS(RB_FOLDER) then
         return nil
     end
-    local db = _G._CURB_AceDB
-    return db and db.profile.castBar
+    local saved = _G._CURB_AceDB
+    return saved and saved.profile.castBar
 end
 
 -------------------------------------------------------------------------------
@@ -59,21 +59,21 @@ end
 -- Every bar the runtime can hide, in the Action Bars dropdown order (the
 -- visibility-only entries, such as the Micro Menu, Bag Bar and data bars,
 -- never take the setting).
-local function BarItems(ns)
-    local items = {}
-    local order, labels, visOnly = ns.BAR_DROPDOWN_ORDER, ns.BAR_DROPDOWN_VALUES, ns.VISIBILITY_ONLY
-    for i = 1, #order do
-        local key = order[i]
+local function BarItems(mod)
+    local itemList = {}
+    local sequence, labels, visOnly = mod.BAR_DROPDOWN_ORDER, mod.BAR_DROPDOWN_VALUES, mod.VISIBILITY_ONLY
+    for idx = 1, #sequence do
+        local key = sequence[idx]
         if not visOnly[key] then
-            items[#items + 1] = { key = key, label = labels[key] or key }
+            itemList[#itemList + 1] = { key = key, label = labels[key] or key }
         end
     end
-    return items
+    return itemList
 end
 
 local function BarSettings(key)
-    local ns = ABNS()
-    return ns and ns.EAB.db.profile.bars[key]
+    local mod = ABNS()
+    return mod and mod.EAB.db.profile.bars[key]
 end
 
 local function BarHidden(key)
@@ -81,38 +81,38 @@ local function BarHidden(key)
     return (s and s.gamepadHideBar == true) or false
 end
 
-local function SetBarHidden(key, v)
+local function SetBarHidden(key, val)
     local s = BarSettings(key)
     if not s then
         return
     end
-    s.gamepadHideBar = v and true or false
-    local EAB = ABNS().EAB
+    s.gamepadHideBar = val and true or false
+    local ABAR = ABNS().EAB
     -- Controller verdict first: the Never map and the drivers read it.
-    EAB._PadSync()
-    EAB:RefreshRuntimeVisibility()
+    ABAR._PadSync()
+    ABAR:RefreshRuntimeVisibility()
 end
 
 -------------------------------------------------------------------------------
 --  Page builder (dispatched from the Global Settings module registration)
 -------------------------------------------------------------------------------
-function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
+function _G._CUI_BuildGamepadPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local BLANK = CludesUI.BlankRowCfg
-    local y = yOffset
-    local _, h
+    local posY = yOffset
+    local _, hgt
     -- WoW Forever: the page follows its Gamepad interface style, not a connected controller.
     local FV = CludesUI.IS_FOREVER == true
 
-    parent._showRowDivider = true
+    hostFrame._showRowDivider = true
 
     -- Intro: sized host + single TOPLEFT point (the search geometry
     -- contract). Chrome only, so the search index pass skips it.
     if not CludesUI._prebuilding then
-        local introHost = CreateFrame("Frame", nil, parent)
-        PP.Size(introHost, parent:GetWidth() - CludesUI.CONTENT_PAD * 2, 44)
-        PP.Point(introHost, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y - 20)
+        local introHost = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 44)
+        Pix.Point(introHost, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 20)
         local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
         intro:SetPoint("TOPLEFT", introHost, "TOPLEFT", 0, -2)
         intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
@@ -136,20 +136,20 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
             )
         end
     end
-    y = y - 48
+    posY = posY - 48
 
     ---------------------------------------------------------------------------
     --  ACTION BARS
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "ACTION BARS", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "ACTION BARS", posY)
+    posY = posY - hgt
 
     local abNS = ABNS()
     -- The checklist replaces this placeholder dropdown (DualRow only builds
     -- plain widgets); the placeholder keeps the label, its tooltip and the
     -- disabled state while Action Bars is not loaded.
     local barRow
-    barRow, h = W:DualRow(parent, y, {
+    barRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Hide Action Bars",
         tooltip = FV
@@ -166,48 +166,48 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
         end,
         disabledTooltip = "Action Bars",
     }, BLANK())
-    y = y - h
+    posY = posY - hgt
 
     if abNS and not CludesUI._prebuilding then
-        local rgn = barRow._leftRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = barRow._leftRegion
+        if region._control then
+            region._control:Hide()
         end
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+            region,
             210,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             BarItems(abNS),
             BarHidden,
             SetBarHidden
         )
-        PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = cbDD
-        rgn._lastInline = nil
+        Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = cbDD
+        region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
 
         -- Chrome only (no search entry), so the index pass skips it too.
-        y = CludesUI.BuildNoteRow(
-            parent,
-            y,
+        posY = CludesUI.BuildNoteRow(
+            hostFrame,
+            posY,
             "Hidden bars still show in Quick Keybind mode so you can bind them."
         )
     elseif abNS then
         -- The index pass still steps past the note (BuildNoteRow's 34px row)
         -- so the rows below index at their live positions.
-        y = y - 34
+        posY = posY - 34
     end
 
-    _, h = W:Spacer(parent, y, 20)
-    y = y - h
+    _, hgt = W:Spacer(hostFrame, posY, 20)
+    posY = posY - hgt
 
     ---------------------------------------------------------------------------
     --  CAST BARS
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "CAST BARS", y)
-    y = y - h
+    _, hgt = W:SectionHeader(hostFrame, "CAST BARS", posY)
+    posY = posY - hgt
 
-    _, h = W:DualRow(parent, y, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Hide Unit Frames Cast Bar",
         tooltip = FV
@@ -217,12 +217,12 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
             local p = UFPlayer()
             return (p and p.castbarGamepadHide == true) or false
         end,
-        setValue = function(v)
+        setValue = function(val)
             local p = UFPlayer()
             if not p then
                 return
             end
-            p.castbarGamepadHide = v and true or false
+            p.castbarGamepadHide = val and true or false
             CludesUI.ModuleNS(UF_FOLDER).UF_ApplyGamepadCastbar()
         end,
         -- Our player cast bar exists only on the CludesUI player frame
@@ -250,12 +250,12 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
             local cb = RBCast()
             return (cb and cb.gamepadHide == true) or false
         end,
-        setValue = function(v)
+        setValue = function(val)
             local cb = RBCast()
             if not cb then
                 return
             end
-            cb.gamepadHide = v and true or false
+            cb.gamepadHide = val and true or false
             CludesUI.ModuleNS(RB_FOLDER).RB_ApplyGamepadCastbar()
         end,
         disabled = function()
@@ -269,8 +269,8 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
             return "This option requires the cast bar in Resource & Cast Bars to be enabled"
         end,
     })
-    y = y - h
+    posY = posY - hgt
 
     -- Framework contract: return the positive total content height.
-    return math.abs(y)
+    return math.abs(posY)
 end

@@ -7,9 +7,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  guides, position memory, return-to-options flow. Elements from any addon
 --  register via CludesUI:RegisterUnlockElements().
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
-ns = ns.__cuiCoreNS or ns -- standalone builds: the core's own table (CludesUI.lua)
-local EAB = ns.EAB -- may be nil if loaded by a non-ActionBars addon
+local ADDON_NAME, mod = ...
+mod = mod.__cuiCoreNS or mod -- standalone builds: the core's own table (CludesUI.lua)
+local ABAR = mod.EAB -- may be nil if loaded by a non-ActionBars addon
 
 -------------------------------------------------------------------------------
 --  Registration API -- on the CludesUI global so ALL addons share one
@@ -67,23 +67,23 @@ if not CludesUI._unlockModeListeners then
 end
 
 if not CludesUI.RegisterUnlockModeListener then
-    function CludesUI:RegisterUnlockModeListener(owner, listener)
-        self._unlockModeListeners[owner] = listener
+    function CludesUI:RegisterUnlockModeListener(ownerFrame, listener)
+        self._unlockModeListeners[ownerFrame] = listener
         if self._unlockModeSessionActive then
             pcall(listener, true)
         end
     end
 
-    function CludesUI:UnregisterUnlockModeListener(owner)
-        self._unlockModeListeners[owner] = nil
+    function CludesUI:UnregisterUnlockModeListener(ownerFrame)
+        self._unlockModeListeners[ownerFrame] = nil
     end
 
     function CludesUI:IsUnlockModeActive()
         return self._unlockModeSessionActive == true
     end
 
-    function CludesUI:_NotifyUnlockModeListeners(active, closeAction)
-        self._unlockModeSessionActive = active == true
+    function CludesUI:_NotifyUnlockModeListeners(isActive, closeAction)
+        self._unlockModeSessionActive = isActive == true
         for _, listener in pairs(self._unlockModeListeners) do
             pcall(listener, self._unlockModeSessionActive, closeAction)
         end
@@ -101,8 +101,8 @@ CludesUI._unlockModeLoaded = true
 -- the default) or with Shift / Ctrl / Alt held ("shiftscroll" /
 -- "controlscroll" / "altscroll").
 function CludesUI.GetUnlockOverlapMethod()
-    local db = CludesUIDB
-    return (db and db.unlockOverlapMethod) or "scroll"
+    local saved = CludesUIDB
+    return (saved and saved.unlockOverlapMethod) or "scroll"
 end
 -- Each method's label: the Global Settings dropdown and the top bar's controls
 -- help (CUI_UnlockMode_Session.lua) read it, each through L().
@@ -123,8 +123,8 @@ if not CludesUI.ReapplyOwnAnchor then
         if not CludesUIDB or not CludesUIDB.unlockAnchors then
             return
         end
-        local info = CludesUIDB.unlockAnchors[key]
-        if not info or not info.target then
+        local details = CludesUIDB.unlockAnchors[key]
+        if not details or not details.target then
             return
         end
 
@@ -133,21 +133,21 @@ if not CludesUI.ReapplyOwnAnchor then
         if childElem and childElem.ownsPosition then
             return
         end
-        local targetElem = elems and elems[info.target]
+        local targetElem = elems and elems[details.target]
         local childBar = childElem and childElem.getFrame and childElem.getFrame(key)
-        local targetBar = targetElem and targetElem.getFrame and targetElem.getFrame(info.target)
+        local targetBar = targetElem and targetElem.getFrame and targetElem.getFrame(details.target)
         if not childBar or not targetBar then
             return
         end
-        if info.mode == "POINT" then
-            ns.PointAnchors.EarlyApply(key, info, childBar, targetBar)
+        if details.mode == "POINT" then
+            mod.PointAnchors.EarlyApply(key, details, childBar, targetBar)
             return
         end
         if not targetBar:GetLeft() then
             return
         end
 
-        local side = info.side
+        local sideName = details.side
         local uiS = UIParent:GetEffectiveScale()
         local tS = targetBar:GetEffectiveScale()
         local cS = childBar:GetEffectiveScale()
@@ -163,34 +163,34 @@ if not CludesUI.ReapplyOwnAnchor then
         local cH = (childBar:GetHeight() or 50) * cS / uiS
 
         local cx, cy
-        if info.offsetX and info.offsetY then
-            if side == "LEFT" then
-                cx = tL + info.offsetX - cW / 2
-                cy = tCY + info.offsetY
-            elseif side == "RIGHT" then
-                cx = tR + info.offsetX + cW / 2
-                cy = tCY + info.offsetY
-            elseif side == "TOP" then
-                cx = tCX + info.offsetX
-                cy = tT + info.offsetY + cH / 2
-            elseif side == "BOTTOM" then
-                cx = tCX + info.offsetX
-                cy = tB + info.offsetY - cH / 2
+        if details.offsetX and details.offsetY then
+            if sideName == "LEFT" then
+                cx = tL + details.offsetX - cW / 2
+                cy = tCY + details.offsetY
+            elseif sideName == "RIGHT" then
+                cx = tR + details.offsetX + cW / 2
+                cy = tCY + details.offsetY
+            elseif sideName == "TOP" then
+                cx = tCX + details.offsetX
+                cy = tT + details.offsetY + cH / 2
+            elseif sideName == "BOTTOM" then
+                cx = tCX + details.offsetX
+                cy = tB + details.offsetY - cH / 2
             else
-                cx = tCX + info.offsetX
-                cy = tCY + info.offsetY
+                cx = tCX + details.offsetX
+                cy = tCY + details.offsetY
             end
         else
-            if side == "LEFT" then
+            if sideName == "LEFT" then
                 cx = tL - cW / 2
                 cy = tCY
-            elseif side == "RIGHT" then
+            elseif sideName == "RIGHT" then
                 cx = tR + cW / 2
                 cy = tCY
-            elseif side == "TOP" then
+            elseif sideName == "TOP" then
                 cx = tCX
                 cy = tT + cH / 2
-            elseif side == "BOTTOM" then
+            elseif sideName == "BOTTOM" then
                 cx = tCX
                 cy = tB - cH / 2
             else
@@ -265,45 +265,45 @@ if not CludesUI.NotifyElementResized then
 
         local elems = CludesUI._unlockRegisteredElements
         local elem = elems and elems[key]
-        local frame = elem and elem.getFrame and elem.getFrame(key)
-        if not frame or not frame:GetCenter() then
+        local widget = elem and elem.getFrame and elem.getFrame(key)
+        if not widget or not widget:GetCenter() then
             return
         end
 
-        local pos
+        local place
         if elem and elem.loadPosition then
-            pos = elem.loadPosition(key)
+            place = elem.loadPosition(key)
         else
             local eab = CludesUI.Lite
                 and CludesUI.Lite.GetAddon
                 and CludesUI.Lite.GetAddon("CludesUIActionBars", true)
-            local db = eab and eab.db and eab.db.profile and eab.db.profile.barPositions
-            pos = db and db[key]
+            local saved = eab and eab.db and eab.db.profile and eab.db.profile.barPositions
+            place = saved and saved[key]
         end
-        if not pos or pos.point ~= "CENTER" or pos.relPoint ~= "CENTER" then
+        if not place or place.point ~= "CENTER" or place.relPoint ~= "CENTER" then
             return
         end
 
-        local cx, cy = pos.x or 0, pos.y or 0
-        local fw = frame:GetWidth() or 0
-        local fh = frame:GetHeight() or 0
+        local cx, cy = place.x or 0, place.y or 0
+        local fw = widget:GetWidth() or 0
+        local fh = widget:GetHeight() or 0
         -- Raw fw/2, fh/2 (not floor): odd-dimension frames with integer+0.5 centers
         -- reverse to exact pixel edges; floor() loses the .5 (1px drift).
-        local anchor, adjX, adjY
+        local anchorFrame, adjX, adjY
         if growDir == "RIGHT" then
-            anchor = "LEFT"
+            anchorFrame = "LEFT"
             adjX = cx - fw / 2
             adjY = cy
         elseif growDir == "LEFT" then
-            anchor = "RIGHT"
+            anchorFrame = "RIGHT"
             adjX = cx + fw / 2
             adjY = cy
         elseif growDir == "DOWN" then
-            anchor = "TOP"
+            anchorFrame = "TOP"
             adjX = cx
             adjY = cy + fh / 2
         elseif growDir == "UP" then
-            anchor = "BOTTOM"
+            anchorFrame = "BOTTOM"
             adjX = cx
             adjY = cy - fh / 2
         else
@@ -312,8 +312,8 @@ if not CludesUI.NotifyElementResized then
 
         -- No explicit snap: cx +/- dim/2 reproduces the pixel-aligned edge within float epsilon; snapping can round the wrong way (1px drift/reload).
         pcall(function()
-            CludesUI.ClearFramePoints(frame)
-            CludesUI.SetFramePoint(frame, anchor, UIParent, "CENTER", adjX, adjY)
+            CludesUI.ClearFramePoints(widget)
+            CludesUI.SetFramePoint(widget, anchorFrame, UIParent, "CENTER", adjX, adjY)
         end)
     end
 end
@@ -416,19 +416,19 @@ do
     local function NoSave() end
 
     local elements = {}
-    for key, def in pairs(EDGES) do
+    for key, spec_def in pairs(EDGES) do
         local f = CreateFrame("Frame", nil, UIParent)
-        if def[6] == "W" then
+        if spec_def[6] == "W" then
             f:SetWidth(1)
         else
             f:SetHeight(1)
         end
-        f:SetPoint(def[1], UIParent, def[2], 0, 0)
-        f:SetPoint(def[3], UIParent, def[4], 0, 0)
+        f:SetPoint(spec_def[1], UIParent, spec_def[2], 0, 0)
+        f:SetPoint(spec_def[3], UIParent, spec_def[4], 0, 0)
         strips[key] = f
         elements[#elements + 1] = {
             key = key,
-            label = def[5],
+            label = spec_def[5],
             getFrame = GetStrip,
             savePosition = NoSave,
             isHidden = IsHidden,
@@ -460,7 +460,7 @@ end
 -- (PLAYER_LOGIN / CDM setup / unlock-mode open / EnsureLoaded). Own slot, not
 -- _deferredInits: login must run this WITHOUT loading the options addon.
 CludesUI._unlockCoreInit = function()
-    local UM = {} -- unlock state and late-bound functions shared across the unlock files
+    local LM = {} -- unlock state and late-bound functions shared across the unlock files
     local floor = math.floor
     local abs = math.abs
     local min = math.min
@@ -474,30 +474,30 @@ CludesUI._unlockCoreInit = function()
     end
 
     -- Pixel-perfect snap: round a value to the nearest physical pixel boundary.
-    local PP = CludesUI and CludesUI.PP
-    local function pxSnap(x)
-        if not PP then
-            return round(x)
+    local Pix = CludesUI and CludesUI.PP
+    local function pxSnap(posX)
+        if not Pix then
+            return round(posX)
         end
-        local m = PP.mult or 1
+        local m = Pix.mult or 1
         if m == 1 then
-            return round(x)
+            return round(posX)
         end
-        return round(x / m) * m
+        return round(posX / m) * m
     end
 
     -- WaitForSize: defer callback one frame so the layout engine has flushed.
-    local function WaitForSize(frame, callback)
+    local function WaitForSize(widget, callback)
         C_Timer.After(0, callback)
     end
 
     -- Blank or restore a bar frame's alpha around a resize. Action Bars tracks the
     -- alpha of the bars it fades instead of reading it back, so it is told.
-    function CludesUI._UnlockSetBarAlpha(frame, a)
-        frame:SetAlpha(a)
+    function CludesUI._UnlockSetBarAlpha(widget, a)
+        widget:SetAlpha(a)
         local note = CludesUI._EABNoteAlpha
         if note then
-            note(frame, a)
+            note(widget, a)
         end
     end
 
@@ -524,19 +524,19 @@ CludesUI._unlockCoreInit = function()
     -- After a setWidth/setHeight rebuild snaps the bar to its stored position mid-unlock,
     -- re-place it at the mover's current screen position (else resizing makes it jump).
     -- On CludesUI to avoid an upvalue in CreateMover (Lua 5.1 limit: 60).
-    function CludesUI.RepositionBarToMover(barKey)
-        if not UM.isUnlocked then
+    function CludesUI.RepositionBarToMover(barId)
+        if not LM.isUnlocked then
             return
         end
-        if CludesUI.IsPointAnchored(barKey) then
-            CludesUI.ReapplyOwnAnchor(barKey)
+        if CludesUI.IsPointAnchored(barId) then
+            CludesUI.ReapplyOwnAnchor(barId)
             return
         end
-        local m = UM.movers[barKey]
+        local m = LM.movers[barId]
         if not m then
             return
         end
-        local bar = UM.GetBarFrame(barKey)
+        local bar = LM.GetBarFrame(barId)
         if not bar then
             return
         end
@@ -574,13 +574,13 @@ CludesUI._unlockCoreInit = function()
     local TRANSITION_DUR = 0.35 -- seconds for the open/close fade-in
 
     -- Movable bar keys (action bars + stance + micro + bag); populated by EAB if loaded, else empty.
-    local BAR_LOOKUP = ns.BAR_LOOKUP or {}
-    local ALL_BAR_ORDER = ns.BAR_DROPDOWN_ORDER or {}
-    local VISIBILITY_ONLY = ns.VISIBILITY_ONLY or {}
+    local BAR_LOOKUP = mod.BAR_LOOKUP or {}
+    local ALL_BAR_ORDER = mod.BAR_DROPDOWN_ORDER or {}
+    local VISIBILITY_ONLY = mod.VISIBILITY_ONLY or {}
 
     local function GetVisibilityOnly()
         -- Read lazily so child addons have time to populate ns.VISIBILITY_ONLY
-        return ns.VISIBILITY_ONLY or VISIBILITY_ONLY
+        return mod.VISIBILITY_ONLY or VISIBILITY_ONLY
     end
 
     -- Local aliases for the shared registration tables
@@ -610,19 +610,19 @@ CludesUI._unlockCoreInit = function()
     -------------------------------------------------------------------------------
     --  State
     -------------------------------------------------------------------------------
-    UM.unlockFrame = nil -- the full-screen overlay
-    UM.gridFrame = nil -- grid line container
+    LM.unlockFrame = nil -- the full-screen overlay
+    LM.gridFrame = nil -- grid line container
     local guidePool = {} -- reusable alignment guide lines
     local movers = {} -- { [barKey] = moverFrame }
-    UM.isUnlocked = false
+    LM.isUnlocked = false
     function CludesUI.IsUnlockModeActive()
-        return UM.isUnlocked
+        return LM.isUnlocked
     end
-    UM.gridMode = "dimmed" -- "disabled", "dimmed", "bright"
-    UM.snapEnabled = true -- magnet/snap state (runtime); must precede SnapPosition
+    LM.gridMode = "dimmed" -- "disabled", "dimmed", "bright"
+    LM.snapEnabled = true -- magnet/snap state (runtime); must precede SnapPosition
     local lockAnimFrame -- lock assembly animation (close)
-    UM.openAnimFrame = nil -- lock animation frame (open)
-    UM.logoFadeFrame = nil -- the 2s logo+title fade-out timer frame
+    LM.openAnimFrame = nil -- lock animation frame (open)
+    LM.logoFadeFrame = nil -- the 2s logo+title fade-out timer frame
     local pendingPositions = {} -- { [barKey] = {point,relPoint,x,y} } -- unsaved changes
     local snapshotPositions = {} -- original positions captured when unlock mode opens
     local snapshotAnchors = {} -- original anchor data captured when unlock mode opens
@@ -633,10 +633,10 @@ CludesUI._unlockCoreInit = function()
     -- Spec-override banner refresh = CludesUI._unlockRefreshSpecOvMarks (namespace
     -- field, not local: deferred-init function is at Lua 5.1's 200-local cap). Layer
     -- banking is a wholesale harvest at CommitPositions.
-    UM.hasChanges = false -- true if user dragged anything this session
-    UM.combatSuspended = false -- true if unlock mode was auto-closed by combat
+    LM.hasChanges = false -- true if user dragged anything this session
+    LM.combatSuspended = false -- true if unlock mode was auto-closed by combat
     local preCombatChanges = false -- the session's change mark when combat hid it
-    UM.objTrackerWasVisible = false -- track objective tracker state for restore
+    LM.objTrackerWasVisible = false -- track objective tracker state for restore
 
     -- Grid mode helpers
     local GRID_ALPHA_DIMMED = 0.15
@@ -648,46 +648,46 @@ CludesUI._unlockCoreInit = function()
     local GRID_HUD_OFF = 0.30 -- matches HUD_OFF_ALPHA
 
     local function GridBaseAlpha()
-        return UM.gridMode == "bright" and GRID_ALPHA_BRIGHT or GRID_ALPHA_DIMMED
+        return LM.gridMode == "bright" and GRID_ALPHA_BRIGHT or GRID_ALPHA_DIMMED
     end
     local function GridCenterAlpha()
-        return UM.gridMode == "bright" and GRID_CENTER_BRIGHT or GRID_CENTER_DIMMED
+        return LM.gridMode == "bright" and GRID_CENTER_BRIGHT or GRID_CENTER_DIMMED
     end
     local function GridHudAlpha()
-        if UM.gridMode == "bright" then
+        if LM.gridMode == "bright" then
             return GRID_HUD_BRIGHT
         end
-        if UM.gridMode == "dimmed" then
+        if LM.gridMode == "dimmed" then
             return GRID_HUD_DIMMED
         end
         return GRID_HUD_OFF
     end
     local function GridLabelText()
-        if UM.gridMode == "bright" then
+        if LM.gridMode == "bright" then
             return "Grid Lines\nBright"
         end
-        if UM.gridMode == "dimmed" then
+        if LM.gridMode == "dimmed" then
             return "Grid Lines\nDimmed"
         end
         return "Grid Lines\nDisabled"
     end
     local function CycleGridMode()
-        if UM.gridMode == "dimmed" then
-            UM.gridMode = "bright"
-        elseif UM.gridMode == "bright" then
-            UM.gridMode = "disabled"
+        if LM.gridMode == "dimmed" then
+            LM.gridMode = "bright"
+        elseif LM.gridMode == "bright" then
+            LM.gridMode = "disabled"
         else
-            UM.gridMode = "dimmed"
+            LM.gridMode = "dimmed"
         end
     end
-    UM.flashlightEnabled = false -- cursor flashlight toggle
-    UM.darkOverlaysEnabled = true -- dark overlay backgrounds on movers
-    UM.coordsEnabled = false -- show coordinates for all elements at all times
+    LM.flashlightEnabled = false -- cursor flashlight toggle
+    LM.darkOverlaysEnabled = true -- dark overlay backgrounds on movers
+    LM.coordsEnabled = false -- show coordinates for all elements at all times
     local _blizzOwnedOverlays = {} -- info overlays for Blizzard-controlled elements
-    UM.unlockTipFrame = nil -- one-time "how to use" tip frame
-    UM.selectedMover = nil -- currently selected mover frame (for arrow key nudging)
-    UM.arrowKeyFrame = nil -- invisible frame that captures arrow key input
-    UM.selectElementPicker = nil -- mover currently in "Select Element" pick mode (nil = off)
+    LM.unlockTipFrame = nil -- one-time "how to use" tip frame
+    LM.selectedMover = nil -- currently selected mover frame (for arrow key nudging)
+    LM.arrowKeyFrame = nil -- invisible frame that captures arrow key input
+    LM.selectElementPicker = nil -- mover currently in "Select Element" pick mode (nil = off)
     local SELECT_ELEMENT_ALPHA = 0.50 -- overlay alpha during select-element pick mode
     local SELECT_ELEMENT_FADE = 0.50 -- seconds for the fade transition
 
@@ -705,23 +705,23 @@ CludesUI._unlockCoreInit = function()
             CludesUI._pendingActionBarSelect = key
         end
     end
-    local function SelectUnitFrame(unit)
+    local function SelectUnitFrame(unitToken)
         return function()
             -- Direct setter (if init already ran) + pending flag (consumed at page build)
             if CludesUI._setUnitFrameUnit then
-                CludesUI._setUnitFrameUnit(unit)
+                CludesUI._setUnitFrameUnit(unitToken)
             end
-            CludesUI._pendingUnitSelect = unit
+            CludesUI._pendingUnitSelect = unitToken
         end
     end
     -- Mini-frame pre-select factory (ToT/FoT/Pet/Boss live on "Mini Frames" with
     -- their own dropdown). On CludesUI, not file-local, to avoid a local in this limit-sensitive deferred function.
-    CludesUI._SelectMiniUnit = function(unit)
+    CludesUI._SelectMiniUnit = function(unitToken)
         return function()
             if CludesUI._setMiniUnit then
-                CludesUI._setMiniUnit(unit)
+                CludesUI._setMiniUnit(unitToken)
             end
-            CludesUI._pendingMiniSelect = unit
+            CludesUI._pendingMiniSelect = unitToken
         end
     end
     -- Capture entries registered before this deferred body runs (DataBars writes
@@ -1102,22 +1102,22 @@ CludesUI._unlockCoreInit = function()
         ["TBB_"] = { module = "CludesUICooldownManager", page = "Tracking Bars" },
     }
     if CludesUI._elemMapPre then
-        for k, v in pairs(CludesUI._elemMapPre) do
+        for k, val in pairs(CludesUI._elemMapPre) do
             if CludesUI._ELEMENT_SETTINGS_MAP[k] == nil then
-                CludesUI._ELEMENT_SETTINGS_MAP[k] = v
+                CludesUI._ELEMENT_SETTINGS_MAP[k] = val
             end
         end
         CludesUI._elemMapPre = nil
     end
 
     -- Width Match / Height Match / Anchor To pick modes: only one active at a time; picker mover stored here.
-    UM.pickMode = nil -- nil, "widthMatch", "heightMatch", "anchorTo"
-    UM.pickModeMover = nil -- the mover that initiated the pick mode
-    UM.hoveredMover = nil -- the currently expanded mover (only one at a time)
-    UM.anchorDropdownFrame = nil -- lazy-created dropdown for anchor direction selection
-    UM.anchorDropdownCatcher = nil -- click-catcher behind anchor dropdown
-    UM.growDropdownFrame = nil -- lazy-created dropdown for grow direction selection
-    UM.growDropdownCatcher = nil -- click-catcher behind grow dropdown
+    LM.pickMode = nil -- nil, "widthMatch", "heightMatch", "anchorTo"
+    LM.pickModeMover = nil -- the mover that initiated the pick mode
+    LM.hoveredMover = nil -- the currently expanded mover (only one at a time)
+    LM.anchorDropdownFrame = nil -- lazy-created dropdown for anchor direction selection
+    LM.anchorDropdownCatcher = nil -- click-catcher behind anchor dropdown
+    LM.growDropdownFrame = nil -- lazy-created dropdown for grow direction selection
+    LM.growDropdownCatcher = nil -- click-catcher behind grow dropdown
 
     -- Cursor speed tracking for hover intent detection (stored on CludesUI to avoid upvalue pressure)
     CludesUI._unlockCursorX = 0
@@ -1132,68 +1132,68 @@ CludesUI._unlockCoreInit = function()
     --  the addon's private namespace and take it from their own file, never
     --  through UM: a public slot would let another addon wrap a part and reach it.
     -------------------------------------------------------------------------------
-    UM.EAB, UM.floor, UM.abs = EAB, floor, abs
-    UM.min, UM.max, UM.sqrt, UM.sin = min, max, sqrt, sin
-    UM.round, UM.PP, UM.DeferMoverSync, UM.FONT_PATH = round, PP, DeferMoverSync, FONT_PATH
-    UM.GRID_SPACING = GRID_SPACING
-    UM.SNAP_THRESH, UM.MOVER_ALPHA, UM.MOVER_HOVER, UM.MOVER_DRAG =
+    LM.EAB, LM.floor, LM.abs = ABAR, floor, abs
+    LM.min, LM.max, LM.sqrt, LM.sin = min, max, sqrt, sin
+    LM.round, LM.PP, LM.DeferMoverSync, LM.FONT_PATH = round, Pix, DeferMoverSync, FONT_PATH
+    LM.GRID_SPACING = GRID_SPACING
+    LM.SNAP_THRESH, LM.MOVER_ALPHA, LM.MOVER_HOVER, LM.MOVER_DRAG =
         SNAP_THRESH, MOVER_ALPHA, MOVER_HOVER, MOVER_DRAG
-    UM.BAR_LOOKUP, UM.ALL_BAR_ORDER, UM.GetVisibilityOnly = BAR_LOOKUP, ALL_BAR_ORDER, GetVisibilityOnly
-    UM.registeredElements, UM.registeredOrder, UM.RebuildRegisteredOrder, UM.guidePool =
+    LM.BAR_LOOKUP, LM.ALL_BAR_ORDER, LM.GetVisibilityOnly = BAR_LOOKUP, ALL_BAR_ORDER, GetVisibilityOnly
+    LM.registeredElements, LM.registeredOrder, LM.RebuildRegisteredOrder, LM.guidePool =
         registeredElements, registeredOrder, RebuildRegisteredOrder, guidePool
-    UM.movers, UM.lockAnimFrame, UM.pendingPositions, UM.snapshotPositions =
+    LM.movers, LM.lockAnimFrame, LM.pendingPositions, LM.snapshotPositions =
         movers, lockAnimFrame, pendingPositions, snapshotPositions
-    UM.snapshotAnchors, UM.snapshotSizes, UM.snapshotWidthMatch, UM.snapshotHeightMatch =
+    LM.snapshotAnchors, LM.snapshotSizes, LM.snapshotWidthMatch, LM.snapshotHeightMatch =
         snapshotAnchors, snapshotSizes, snapshotWidthMatch, snapshotHeightMatch
-    UM.snapshotGrowDirs, UM.GridBaseAlpha, UM.GridCenterAlpha, UM.GridHudAlpha =
+    LM.snapshotGrowDirs, LM.GridBaseAlpha, LM.GridCenterAlpha, LM.GridHudAlpha =
         snapshotGrowDirs, GridBaseAlpha, GridCenterAlpha, GridHudAlpha
-    UM.GridLabelText, UM.CycleGridMode, UM._blizzOwnedOverlays, UM.SELECT_ELEMENT_ALPHA =
+    LM.GridLabelText, LM.CycleGridMode, LM._blizzOwnedOverlays, LM.SELECT_ELEMENT_ALPHA =
         GridLabelText, CycleGridMode, _blizzOwnedOverlays, SELECT_ELEMENT_ALPHA
-    UM.SELECT_ELEMENT_FADE = SELECT_ELEMENT_FADE
-    ns.unlockParts.Anchors(UM)
-    ns.unlockParts.Positions(UM)
-    ns.unlockParts.Tools(UM)
-    ns.unlockParts.PointPicker(UM)
-    ns.unlockParts.Movers(UM)
-    ns.unlockParts.Session(UM)
-    ns.unlockParts.Filter(UM)
-    ns.unlockParts.Bar(UM)
-    local HideAllGuidesAndHighlight, DeselectMover = UM.HideAllGuidesAndHighlight, UM.DeselectMover
-    local SortMoverFrameLevels, HideBlizzOwnedOverlays = UM.SortMoverFrameLevels, UM.HideBlizzOwnedOverlays
+    LM.SELECT_ELEMENT_FADE = SELECT_ELEMENT_FADE
+    mod.unlockParts.Anchors(LM)
+    mod.unlockParts.Positions(LM)
+    mod.unlockParts.Tools(LM)
+    mod.unlockParts.PointPicker(LM)
+    mod.unlockParts.Movers(LM)
+    mod.unlockParts.Session(LM)
+    mod.unlockParts.Filter(LM)
+    mod.unlockParts.Bar(LM)
+    local HideAllGuidesAndHighlight, DeselectMover = LM.HideAllGuidesAndHighlight, LM.DeselectMover
+    local SortMoverFrameLevels, HideBlizzOwnedOverlays = LM.SortMoverFrameLevels, LM.HideBlizzOwnedOverlays
 
     -------------------------------------------------------------------------------
     --  Close Unlock Mode -- routes through save/discard logic
     -------------------------------------------------------------------------------
-    function ns.CloseUnlockMode(afterFn)
-        if not UM.isUnlocked then
+    function mod.CloseUnlockMode(afterFn)
+        if not LM.isUnlocked then
             if afterFn then
                 afterFn()
             end
             return
         end
-        ns.RequestClose(false, afterFn) -- triggers popup if there are unsaved changes
+        mod.RequestClose(false, afterFn) -- triggers popup if there are unsaved changes
     end
 
     -- Expose for the options page BuildUnlockPage
     -- ns.OpenUnlockMode and ns.CloseUnlockMode are already defined above as
     -- function ns.OpenUnlockMode() and function ns.CloseUnlockMode()
-    ns.CloseUnlockMode = ns.CloseUnlockMode
+    mod.CloseUnlockMode = mod.CloseUnlockMode
 
     -- Expose on the global CludesUI so SelectPage can intercept "Unlock Mode"
     if CludesUI then
-        CludesUI._openUnlockMode = ns.OpenUnlockMode
+        CludesUI._openUnlockMode = mod.OpenUnlockMode
         function CludesUI:OpenUnlockMode()
-            ns.OpenUnlockMode()
+            mod.OpenUnlockMode()
         end
     end
 
     -- Toggle helper + active flag alias used by options pages
     if CludesUI and not CludesUI.ToggleUnlockMode then
         function CludesUI:ToggleUnlockMode()
-            if UM.isUnlocked then
-                ns.CloseUnlockMode()
+            if LM.isUnlocked then
+                mod.CloseUnlockMode()
             else
-                ns.OpenUnlockMode()
+                mod.OpenUnlockMode()
             end
         end
         -- Options pages read _unlockActive (set by Open/Close above) since isUnlocked is local.
@@ -1203,14 +1203,14 @@ CludesUI._unlockCoreInit = function()
     -- close unlock mode first (with save flow), then re-show the panel after.
     if CludesUI and CludesUI.RegisterOnShow then
         CludesUI:RegisterOnShow(function()
-            if UM.isUnlocked then
+            if LM.isUnlocked then
                 -- Hide the panel immediately -- it shouldn't show during unlock mode
-                local panel = CludesUI._mainFrame
-                if panel then
-                    panel:Hide()
+                local panelFrame = CludesUI._mainFrame
+                if panelFrame then
+                    panelFrame:Hide()
                 end
                 -- Close unlock mode, then re-open the panel after
-                ns.CloseUnlockMode(function()
+                mod.CloseUnlockMode(function()
                     CludesUI:Toggle()
                 end)
             end
@@ -1222,14 +1222,14 @@ CludesUI._unlockCoreInit = function()
     --  preserves all pending changes; leaving combat re-opens with the same state.
     -------------------------------------------------------------------------------
     local function SuspendForCombat()
-        if not UM.isUnlocked then
+        if not LM.isUnlocked then
             return
         end
-        if UM.PointPicker.Active() then
-            UM.CancelPickMode()
+        if LM.PointPicker.Active() then
+            LM.CancelPickMode()
         end
-        UM.combatSuspended = true
-        preCombatChanges = UM.hasChanges and true or false
+        LM.combatSuspended = true
+        preCombatChanges = LM.hasChanges and true or false
         if CludesUI._HideFallbackGhosts then
             CludesUI._HideFallbackGhosts()
         end
@@ -1238,7 +1238,7 @@ CludesUI._unlockCoreInit = function()
         end
 
         -- Restore objective tracker
-        if UM.objTrackerWasVisible then
+        if LM.objTrackerWasVisible then
             local objTracker = _G.ObjectiveTrackerFrame
             if objTracker then
                 objTracker:SetAlpha(1)
@@ -1259,7 +1259,7 @@ CludesUI._unlockCoreInit = function()
         end
 
         -- Hide unlock UI without clearing state
-        UM.isUnlocked = false
+        LM.isUnlocked = false
         CludesUI._unlockActive = false
         CludesUI._unlockModeActive = false
 
@@ -1277,29 +1277,29 @@ CludesUI._unlockCoreInit = function()
             pcall(_G._CUDR_UpdateVisibility)
         end
 
-        if UM.unlockFrame then
-            UM.unlockFrame:SetScript("OnUpdate", nil)
-            UM.unlockFrame:Hide()
+        if LM.unlockFrame then
+            LM.unlockFrame:SetScript("OnUpdate", nil)
+            LM.unlockFrame:Hide()
         end
-        if UM.logoFadeFrame then
-            UM.logoFadeFrame:SetScript("OnUpdate", nil)
-            UM.logoFadeFrame:Hide()
+        if LM.logoFadeFrame then
+            LM.logoFadeFrame:SetScript("OnUpdate", nil)
+            LM.logoFadeFrame:Hide()
         end
-        if UM.openAnimFrame then
-            UM.openAnimFrame:Hide()
+        if LM.openAnimFrame then
+            LM.openAnimFrame:Hide()
         end
         if lockAnimFrame then
             lockAnimFrame:Hide()
         end
-        if UM.gridFrame then
-            UM.gridFrame:Hide()
+        if LM.gridFrame then
+            LM.gridFrame:Hide()
         end
-        if UM.hudFrame then
-            UM.hudFrame:Hide()
+        if LM.hudFrame then
+            LM.hudFrame:Hide()
         end
-        if UM.unlockTipFrame then
-            UM.unlockTipFrame:SetScript("OnUpdate", nil)
-            UM.unlockTipFrame:Hide()
+        if LM.unlockTipFrame then
+            LM.unlockTipFrame:SetScript("OnUpdate", nil)
+            LM.unlockTipFrame:Hide()
         end
         DeselectMover()
         for _, m in pairs(movers) do
@@ -1307,20 +1307,20 @@ CludesUI._unlockCoreInit = function()
         end
         HideAllGuidesAndHighlight()
         HideBlizzOwnedOverlays()
-        if UM.arrowKeyFrame then
-            UM.arrowKeyFrame:Hide()
+        if LM.arrowKeyFrame then
+            LM.arrowKeyFrame:Hide()
         end
-        UM.selectedMover = nil
-        UM.selectElementPicker = nil
+        LM.selectedMover = nil
+        LM.selectElementPicker = nil
 
         -- Restore action bar alpha from saved settings (so bars are usable during combat)
-        if EAB and EAB.RefreshMouseover then
-            EAB:RefreshMouseover()
+        if ABAR and ABAR.RefreshMouseover then
+            ABAR:RefreshMouseover()
         end
     end
 
     local function ResumeAfterCombat()
-        if not UM.combatSuspended then
+        if not LM.combatSuspended then
             return
         end
         -- A pull again inside the resume delay: stay suspended, so the end of that
@@ -1328,15 +1328,15 @@ CludesUI._unlockCoreInit = function()
         if InCombatLockdown() then
             return
         end
-        UM.combatSuspended = false
+        LM.combatSuspended = false
 
         -- Nothing can be edited while the session is hidden: whatever moved during
         -- the fight (bars rebuilding, anchored elements following them) is not a
         -- change of the user's, so the session keeps the mark it had before.
-        UM.hasChanges = preCombatChanges
+        LM.hasChanges = preCombatChanges
 
         -- Re-enter unlock mode but skip snapshot/reset since we preserved state
-        UM.isUnlocked = true
+        LM.isUnlocked = true
         CludesUI._unlockActive = true
         CludesUI._unlockModeActive = true
         if CludesUI._RefreshFallbackGhosts then
@@ -1361,7 +1361,7 @@ CludesUI._unlockCoreInit = function()
         -- Re-hide objective tracker
         local objTracker = _G.ObjectiveTrackerFrame
         if objTracker and objTracker:IsShown() then
-            UM.objTrackerWasVisible = true
+            LM.objTrackerWasVisible = true
             objTracker:SetAlpha(0)
             if objTracker.EnableMouse then
                 pcall(objTracker.EnableMouse, objTracker, false)
@@ -1378,21 +1378,21 @@ CludesUI._unlockCoreInit = function()
         end
 
         -- Re-show unlock UI
-        if UM.arrowKeyFrame then
-            UM.arrowKeyFrame:Show()
+        if LM.arrowKeyFrame then
+            LM.arrowKeyFrame:Show()
         end
-        if UM.unlockFrame then
-            UM.unlockFrame:Show()
-            UM.unlockFrame:SetAlpha(1)
+        if LM.unlockFrame then
+            LM.unlockFrame:Show()
+            LM.unlockFrame:SetAlpha(1)
         end
-        if UM.gridFrame and UM.gridMode ~= "disabled" then
-            UM.gridFrame:Show()
+        if LM.gridFrame and LM.gridMode ~= "disabled" then
+            LM.gridFrame:Show()
         end
-        if UM.hudFrame then
-            UM.hudFrame:Show()
+        if LM.hudFrame then
+            LM.hudFrame:Show()
             -- A combat cut mid-animation left the badge waiting for the emblem.
-            if UM.hudFrame._badgeLogo then
-                UM.hudFrame._badgeLogo:SetAlpha(1)
+            if LM.hudFrame._badgeLogo then
+                LM.hudFrame._badgeLogo:SetAlpha(1)
             end
         end
 
@@ -1417,15 +1417,15 @@ CludesUI._unlockCoreInit = function()
         for _, m in pairs(movers) do
             m:Sync()
             if m:IsShown() then
-                m:SetAlpha(UM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
+                m:SetAlpha(LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
             end
         end
         SortMoverFrameLevels()
-        if UM.unlockFrame and UM.unlockFrame._anchorLineDriver then
-            UM.unlockFrame._anchorLineDriver:Show()
+        if LM.unlockFrame and LM.unlockFrame._anchorLineDriver then
+            LM.unlockFrame._anchorLineDriver:Show()
         end
-        if UM.unlockFrame and UM.unlockFrame._anchorLineFrame then
-            UM.unlockFrame._anchorLineFrame:Show()
+        if LM.unlockFrame and LM.unlockFrame._anchorLineFrame then
+            LM.unlockFrame._anchorLineFrame:Show()
         end
         -- Deferred: re-apply CENTER anchor to all bar frames so resizes grow
         -- symmetrically from center rather than from whatever corner anchor
@@ -1443,10 +1443,10 @@ CludesUI._unlockCoreInit = function()
         local combatFrame = CreateFrame("Frame")
         combatFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
         combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        combatFrame:SetScript("OnEvent", function(_, event)
-            if event == "PLAYER_REGEN_DISABLED" then
+        combatFrame:SetScript("OnEvent", function(_, evt)
+            if evt == "PLAYER_REGEN_DISABLED" then
                 SuspendForCombat()
-            elseif event == "PLAYER_REGEN_ENABLED" then
+            elseif evt == "PLAYER_REGEN_ENABLED" then
                 -- Small delay to let combat lockdown fully clear
                 C_Timer.After(0.5, ResumeAfterCombat)
             end

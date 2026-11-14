@@ -7,7 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Zero-overhead event dispatch (direct frame handlers, no CallbackHandler)
 --  Reads existing AceDB SavedVariables format -- no migration needed
 --------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 
 local CUILite = {}
 CludesUI = CludesUI or {}
@@ -32,12 +32,12 @@ CludesUI.PANEL_SCALE_MIN, CludesUI.PANEL_SCALE_MAX = 0.75, 2.00
 
 -- Nearest 5% step to v, inside the range. Ties round up (harmless: the panel reads
 -- large rather than small, which is the direction this whole seed exists to fix).
-function CludesUI.SnapPanelScale(v)
-    if type(v) ~= "number" or v ~= v then
+function CludesUI.SnapPanelScale(val)
+    if type(val) ~= "number" or val ~= val then
         return 1.00
     end
-    v = math.floor(v * 20 + 0.5) / 20
-    return math.max(CludesUI.PANEL_SCALE_MIN, math.min(CludesUI.PANEL_SCALE_MAX, v))
+    val = math.floor(val * 20 + 0.5) / 20
+    return math.max(CludesUI.PANEL_SCALE_MIN, math.min(CludesUI.PANEL_SCALE_MAX, val))
 end
 
 -- Lua APIs
@@ -78,10 +78,10 @@ local function GetOrCreateEventFrame(addon)
     end
     local f = CreateFrame("Frame")
     f._handlers = {}
-    f:SetScript("OnEvent", function(self, event, ...)
-        local handler = self._handlers[event]
+    f:SetScript("OnEvent", function(self, evt, ...)
+        local handler = self._handlers[evt]
         if handler then
-            handler(addon, event, ...)
+            handler(addon, evt, ...)
         end
     end)
     addon._eventFrame = f
@@ -144,16 +144,16 @@ function CUILite._RegisterEvent(self, eventname, callback)
         -- they resolve the method on the addon at dispatch time.
         handler = callback
     elseif type(callback) == "string" then
-        handler = function(addon, event, ...)
+        handler = function(addon, evt, ...)
             if addon[callback] then
-                addon[callback](addon, event, ...)
+                addon[callback](addon, evt, ...)
             end
         end
     else
         -- No callback: look for self:EVENT_NAME
-        handler = function(addon, event, ...)
+        handler = function(addon, evt, ...)
             if addon[eventname] then
-                addon[eventname](addon, event, ...)
+                addon[eventname](addon, evt, ...)
             end
         end
     end
@@ -182,17 +182,17 @@ end
 -- We read from that same structure so existing settings carry over.
 --------------------------------------------------------------------------------
 
-local function DeepMergeDefaults(dest, src)
+local function DeepMergeDefaults(dest, source)
     -- Merge src into dest, only filling in keys that don't exist yet
-    for k, v in pairs(src) do
-        if type(v) == "table" then
-            if type(dest[k]) ~= "table" then
-                dest[k] = {}
+    for key, val in pairs(source) do
+        if type(val) == "table" then
+            if type(dest[key]) ~= "table" then
+                dest[key] = {}
             end
-            DeepMergeDefaults(dest[k], v)
+            DeepMergeDefaults(dest[key], val)
         else
-            if dest[k] == nil then
-                dest[k] = v
+            if dest[key] == nil then
+                dest[key] = val
             end
         end
     end
@@ -201,26 +201,26 @@ end
 -- Expose for use by the profile system when applying old snapshots
 CUILite.DeepMergeDefaults = DeepMergeDefaults
 
-local function StripDefaults(db, defaults)
+local function StripDefaults(saved, defaultSet)
     -- Remove values that match defaults (for clean SavedVariables on logout)
-    for k, v in pairs(defaults) do
-        if type(v) == "table" and type(db[k]) == "table" then
-            StripDefaults(db[k], v)
+    for key, val in pairs(defaultSet) do
+        if type(val) == "table" and type(saved[key]) == "table" then
+            StripDefaults(saved[key], val)
             -- Keep empty array entries; DeepMergeDefaults fills them on login.
-            if not next(db[k]) and type(k) ~= "number" then
-                db[k] = nil
+            if not next(saved[key]) and type(key) ~= "number" then
+                saved[key] = nil
             end
-        elseif db[k] == v then
-            db[k] = nil
+        elseif saved[key] == val then
+            saved[key] = nil
         end
     end
 end
 
-local function DeepCopy(src)
-    if type(src) ~= "table" then
-        return src
+local function DeepCopy(source)
+    if type(source) ~= "table" then
+        return source
     end
-    return CopyTable(src)
+    return CopyTable(source)
 end
 
 CUILite.DeepCopy = DeepCopy
@@ -265,7 +265,7 @@ end
 -- @param svName  Global SavedVariables name (string), e.g. "CludesUIActionBarsDB"
 -- @param defaults  Table with a .profile sub-table of default values
 -- @param defaultToCharKey  (ignored, kept for call-site compat)
-function CUILite.NewDB(svName, defaults, defaultToCharKey)
+function CUILite.NewDB(svName, defaultSet, defaultToCharKey)
     -- Derive the addon folder name from the SV name (strip trailing "DB")
     local folder = svName:match("^(.+)DB$") or svName
 
@@ -304,14 +304,14 @@ function CUILite.NewDB(svName, defaults, defaultToCharKey)
     end
 
     -- Merge defaults into profile (fills missing keys only)
-    local profileDefaults = defaults and defaults.profile
+    local profileDefaults = defaultSet and defaultSet.profile
     if profileDefaults then
         DeepMergeDefaults(profile, profileDefaults)
         -- Validate: if any top-level default sub-table is missing or wrong
         -- type after merge, the profile is corrupt. Wipe and re-merge.
         local corrupt = false
-        for k, v in pairs(profileDefaults) do
-            if type(v) == "table" and type(profile[k]) ~= "table" then
+        for key, val in pairs(profileDefaults) do
+            if type(val) == "table" and type(profile[key]) ~= "table" then
                 corrupt = true
                 break
             end
@@ -334,18 +334,18 @@ function CUILite.NewDB(svName, defaults, defaultToCharKey)
     end
 
     -- Build the db object
-    local db = {
+    local saved = {
         sv = CludesUIDB,
         svName = svName,
         folder = folder,
         profile = profile,
         _profileName = profileName,
-        _defaults = defaults,
+        _defaults = defaultSet,
         _profileDefaults = profileDefaults,
     }
 
     --- Reset the current profile to defaults.
-    function db:ResetProfile()
+    function saved:ResetProfile()
         wipe(self.profile)
         if self._profileDefaults then
             DeepMergeDefaults(self.profile, self._profileDefaults)
@@ -353,16 +353,16 @@ function CUILite.NewDB(svName, defaults, defaultToCharKey)
     end
 
     -- Register for logout cleanup
-    tinsert(dbRegistry, db)
+    tinsert(dbRegistry, saved)
 
     -- Created before the owning addon's SavedVariables loaded: the real
     -- saved table will replace CludesUIDB momentarily, so queue this db
     -- for the in-place re-root at ADDON_LOADED (see _preSVDBs above).
     if IS_STANDALONE and not _svLoaded then
-        tinsert(_preSVDBs, db)
+        tinsert(_preSVDBs, saved)
     end
 
-    return db
+    return saved
 end
 
 --------------------------------------------------------------------------------
@@ -392,11 +392,11 @@ logoutFrame:SetScript("OnEvent", function()
     local activeProfile = CludesUIDB and CludesUIDB.activeProfile or "Default"
     local profileData = CludesUIDB and CludesUIDB.profiles and CludesUIDB.profiles[activeProfile]
     if profileData and profileData.addons then
-        for _, db in pairs(dbRegistry) do
-            if db._profileDefaults and db.profile then
-                local stripped = DeepCopy(db.profile)
-                StripDefaults(stripped, db._profileDefaults)
-                profileData.addons[db.folder] = stripped
+        for _, saved in pairs(dbRegistry) do
+            if saved._profileDefaults and saved.profile then
+                local stripped = DeepCopy(saved.profile)
+                StripDefaults(stripped, saved._profileDefaults)
+                profileData.addons[saved.folder] = stripped
             end
         end
     end
@@ -459,21 +459,21 @@ local function RerootPreSVDBs()
     if not profileData.addons then
         profileData.addons = {}
     end
-    for _, db in ipairs(_preSVDBs) do
-        if type(profileData.addons[db.folder]) ~= "table" then
-            profileData.addons[db.folder] = {}
+    for _, saved in ipairs(_preSVDBs) do
+        if type(profileData.addons[saved.folder]) ~= "table" then
+            profileData.addons[saved.folder] = {}
         end
-        local profile = profileData.addons[db.folder]
-        if db._profileDefaults then
-            DeepMergeDefaults(profile, db._profileDefaults)
+        local profile = profileData.addons[saved.folder]
+        if saved._profileDefaults then
+            DeepMergeDefaults(profile, saved._profileDefaults)
         end
-        db.sv = CludesUIDB
-        db._profileName = profileName
-        db.profile = profile
-        if _G[db.svName] and type(_G[db.svName]) == "table" then
-            wipe(_G[db.svName])
+        saved.sv = CludesUIDB
+        saved._profileName = profileName
+        saved.profile = profile
+        if _G[saved.svName] and type(_G[saved.svName]) == "table" then
+            wipe(_G[saved.svName])
         else
-            _G[db.svName] = {}
+            _G[saved.svName] = {}
         end
     end
     wipe(_preSVDBs)
@@ -519,19 +519,19 @@ end
 --- pre-SavedVariables db built (a standalone's file-scope NewDB), with no saved
 --- data loaded over it -- a fresh account, whatever the stand-in holds.
 function CUILite.StoreFromBeforeLoad()
-    local db = _preSVDBs[1]
-    return db ~= nil and db.sv == CludesUIDB
+    local saved = _preSVDBs[1]
+    return saved ~= nil and saved.sv == CludesUIDB
 end
 
 local lifecycleFrame = CreateFrame("Frame")
 lifecycleFrame:RegisterEvent("ADDON_LOADED")
 lifecycleFrame:RegisterEvent("PLAYER_LOGIN")
-lifecycleFrame:SetScript("OnEvent", function(self, event, arg1)
-    if event == "ADDON_LOADED" then
+lifecycleFrame:SetScript("OnEvent", function(self, evt, arg1)
+    if evt == "ADDON_LOADED" then
         if arg1 == ADDON_NAME then
             _parentDBRef = CludesUIDB
-            for i = 1, #_svLoadedHooks do
-                safecall(_svLoadedHooks[i])
+            for idx = 1, #_svLoadedHooks do
+                safecall(_svLoadedHooks[idx])
             end
             wipe(_svLoadedHooks)
             if IS_STANDALONE then
@@ -549,7 +549,7 @@ lifecycleFrame:SetScript("OnEvent", function(self, event, arg1)
             -- on its next logout (its TOC no longer declares the variable).
             CludesUIDB = _parentDBRef
         end
-    elseif event == "PLAYER_LOGIN" then
+    elseif evt == "PLAYER_LOGIN" then
         _dbGuardArmed = false
     end
 
@@ -585,7 +585,7 @@ lifecycleFrame:SetScript("OnEvent", function(self, event, arg1)
     --     loading screen anyway, so there is no in-combat secure window to
     --     preserve for them.
     if IsLoggedIn() and #enableQueue > 0 then
-        if event == "PLAYER_LOGIN" then
+        if evt == "PLAYER_LOGIN" then
             FlushEnableQueue()
         elseif not lifecycleFrame._enableFlushQueued then
             lifecycleFrame._enableFlushQueued = true

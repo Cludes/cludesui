@@ -62,13 +62,13 @@ local function EnsureSoon(delay)
 end
 
 local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event, name)
-    if event == "PLAYER_REGEN_ENABLED" then
+ev:SetScript("OnEvent", function(_, evt, name)
+    if evt == "PLAYER_REGEN_ENABLED" then
         if pending then
             pending = false
             Ensure()
         end
-    elseif event == "CVAR_UPDATE" then
+    elseif evt == "CVAR_UPDATE" then
         if not applying and type(name) == "string" and WATCHED[name:lower()] then
             EnsureSoon(1)
         end
@@ -99,9 +99,9 @@ end
 
 -- The options toggle marks a switch to off, so the setting is written back to
 -- 0 even when it was turned on in an earlier session.
-local function SetEnabled(v)
-    F.Cfg().enabled = v and true or false
-    F.Cfg().switchedOff = (not v) or nil
+local function SetEnabled(val)
+    F.Cfg().enabled = val and true or false
+    F.Cfg().switchedOff = (not val) or nil
     Apply()
 end
 

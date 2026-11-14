@@ -17,18 +17,18 @@ end
 -- offers every function used here. A call that fails later turns the bridge
 -- off for the session and hides its buttons, instead of reporting each row.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local _, mod = ...
 
 local SIZE, WIDTH = 14, 16 -- the button, and the room it takes right of a title
 local BOX = "QuestLog-icon-ticksquare" -- the quest log's tracking box, which the button matches
 local ORIGIN = "CludesUI's quest tracker" -- names the button in that addon's own debug log
 
 local function Install()
-    if not ns.UseCustomTracker() then
+    if not mod.UseCustomTracker() then
         return
     end
-    local env, spoken = _G.VoiceOver, _G.Spoken
-    local ui = type(env) == "table" and rawget(env, "QuestOverlayUI")
+    local environ, spoken = _G.VoiceOver, _G.Spoken
+    local ui = type(environ) == "table" and rawget(environ, "QuestOverlayUI")
     if
         type(ui) ~= "table"
         or type(spoken) ~= "table"
@@ -44,19 +44,19 @@ local function Install()
 
     local buttons = {} -- slot -> its button
     local voiced = {} -- questID -> whether the addon shows Play for it
-    local off = false
+    local offset = false
 
     local function Voiced(questID)
-        local v = voiced[questID]
-        if v == nil then
-            v = ui:ShowsTrackerButton(questID) and true or false
-            voiced[questID] = v
+        local val = voiced[questID]
+        if val == nil then
+            val = ui:ShowsTrackerButton(questID) and true or false
+            voiced[questID] = val
         end
-        return v
+        return val
     end
 
-    local function Dress(slot, questID)
-        local b = buttons[slot]
+    local function Dress(slotIndex, questID)
+        local b = buttons[slotIndex]
         if not Voiced(questID) then
             if b then
                 b:Hide()
@@ -64,10 +64,10 @@ local function Install()
             return
         end
         if not b then
-            b = CreateFrame("Button", nil, slot)
+            b = CreateFrame("Button", nil, slotIndex)
             b:SetSize(SIZE, SIZE)
             b:SetHitRectInsets(1, 1, 1, 1)
-            b:SetPoint("TOPRIGHT", slot, "TOPRIGHT", 0, 0)
+            b:SetPoint("TOPRIGHT", slotIndex, "TOPRIGHT", 0, 0)
             spoken:DressBoxButton(b)
             b:SetBox(BOX, SIZE, SIZE)
             -- Its glyph follows the addon's queue (play, stop, replay).
@@ -77,7 +77,7 @@ local function Install()
             back:SetPoint("TOPLEFT", 1, -1)
             back:SetPoint("BOTTOMRIGHT", -1, 1)
             back:SetColorTexture(0, 0, 0, 0.6)
-            buttons[slot] = b
+            buttons[slotIndex] = b
         end
         -- Bound again only when the pooled row shows another quest: a binding
         -- sets new scripts.
@@ -89,12 +89,12 @@ local function Install()
         b:Show()
     end
 
-    local function Row(slot, questID)
-        if off then
+    local function Row(slotIndex, questID)
+        if offset then
             return
         end
-        if not pcall(Dress, slot, questID) then
-            off = true
+        if not pcall(Dress, slotIndex, questID) then
+            offset = true
             for _, b in pairs(buttons) do
                 b:Hide()
             end

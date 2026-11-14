@@ -92,8 +92,8 @@ local BAGS_DEFAULTS = {
         bagListSectionValue = false,
     },
 }
-local db = CludesUI.Lite.NewDB("CludesUIBagsDB", BAGS_DEFAULTS)
-CludesUI._bagsDB = db
+local saved = CludesUI.Lite.NewDB("CludesUIBagsDB", BAGS_DEFAULTS)
+CludesUI._bagsDB = saved
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
@@ -103,7 +103,7 @@ initFrame:SetScript("OnEvent", function(self)
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    local p = db.profile
+    local p = saved.profile
 
     -- The bank grouping dropdowns were replaced by two toggles. Convert the
     -- short-lived string keys once, then drop them.
@@ -166,14 +166,14 @@ initFrame:SetScript("OnEvent", function(self)
         local cats = _G.CUI_CategoryManager:GetCategories()
         local migrated = {}
         local changed = false
-        for k, v in pairs(dc) do
-            if type(k) == "number" then
-                if cats[k] then
-                    migrated[cats[k]._defaultName] = v
+        for key, val in pairs(dc) do
+            if type(key) == "number" then
+                if cats[key] then
+                    migrated[cats[key]._defaultName] = val
                 end
                 changed = true
             else
-                migrated[k] = v
+                migrated[key] = val
             end
         end
         if changed then

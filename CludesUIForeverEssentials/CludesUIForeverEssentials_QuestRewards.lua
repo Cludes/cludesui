@@ -30,29 +30,29 @@ local coins = setmetatable({}, { __mode = "k" }) -- reward button -> our coin
 
 -- A choice button's item and count: its link, or its item ID while the client
 -- has no link for it yet (not cached), so it still counts as missing.
-local function ChoiceItem(button)
-    local i = button:GetID()
+local function ChoiceItem(btnFrame)
+    local idx = btnFrame:GetID()
     if QuestInfoFrame.questLog then
-        local _, _, count, _, _, itemID = GetQuestLogChoiceInfo(i)
-        return GetQuestLogItemLink("choice", i) or itemID, count or 1
+        local _, _, total, _, _, itemId = GetQuestLogChoiceInfo(idx)
+        return GetQuestLogItemLink("choice", idx) or itemId, total or 1
     end
-    local _, _, count, _, _, itemID = GetQuestItemInfo("choice", i)
-    return GetQuestItemLink("choice", i) or itemID, count or 1
+    local _, _, total, _, _, itemId = GetQuestItemInfo("choice", idx)
+    return GetQuestItemLink("choice", idx) or itemId, total or 1
 end
 
-local function Coin(button)
-    local coin = coins[button]
+local function Coin(btnFrame)
+    local coin = coins[btnFrame]
     if coin then
         return coin
     end
-    local holder = CreateFrame("Frame", nil, button)
-    holder:SetAllPoints()
-    holder:SetFrameLevel(button:GetFrameLevel() + 2)
-    coin = holder:CreateTexture(nil, "OVERLAY")
+    local holderFrame = CreateFrame("Frame", nil, btnFrame)
+    holderFrame:SetAllPoints()
+    holderFrame:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
+    coin = holderFrame:CreateTexture(nil, "OVERLAY")
     coin:SetTexture(PURSE)
     coin:SetSize(18, 18)
-    coin:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, 0)
-    coins[button] = coin
+    coin:SetPoint("BOTTOMRIGHT", btnFrame, "BOTTOMRIGHT", 2, 0)
+    coins[btnFrame] = coin
     return coin
 end
 
@@ -83,15 +83,15 @@ function Update()
         return
     end
     local best, bestValue, missing = nil, 0, false
-    for _, button in ipairs(rewards.RewardButtons) do
-        if button:IsShown() and button.type == "choice" and button.objectType == "item" then
-            local item, count = ChoiceItem(button)
-            if item then
-                local sellPrice = select(11, C_Item.GetItemInfo(item))
+    for _, btnFrame in ipairs(rewards.RewardButtons) do
+        if btnFrame:IsShown() and btnFrame.type == "choice" and btnFrame.objectType == "item" then
+            local itemInfo, total = ChoiceItem(btnFrame)
+            if itemInfo then
+                local sellPrice = select(11, C_Item.GetItemInfo(itemInfo))
                 if not sellPrice then
                     missing = true
-                elseif sellPrice * count > bestValue then
-                    best, bestValue = button, sellPrice * count
+                elseif sellPrice * total > bestValue then
+                    best, bestValue = btnFrame, sellPrice * total
                 end
             end
         end

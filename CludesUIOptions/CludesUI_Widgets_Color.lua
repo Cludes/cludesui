@@ -17,7 +17,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local CreateFrame = CludesUI._Pool.CreateFrame
     local PoolGen = CludesUI._Pool.Gen
     local PoolIsIdle = CludesUI._Pool.IsIdle
-    local PP = CludesUI.PanelPP
+    local Pix = CludesUI.PanelPP
     local MakeFont = CludesUI.MakeFont
     local RowBg = CludesUI.RowBg
     local RegisterWidgetRefresh = CludesUI.RegisterWidgetRefresh
@@ -44,23 +44,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -------------------------------------------------------------------------------
     --  HSV RGB Conversion Helpers
     -------------------------------------------------------------------------------
-    local function HSVtoRGB(h, s, v)
-        local c = v * s
-        local x = c * (1 - math.abs((h / 60) % 2 - 1))
-        local m = v - c
+    local function HSVtoRGB(hgt, s, val)
+        local c = val * s
+        local posX = c * (1 - math.abs((hgt / 60) % 2 - 1))
+        local m = val - c
         local r, g, b
-        if h < 60 then
-            r, g, b = c, x, 0
-        elseif h < 120 then
-            r, g, b = x, c, 0
-        elseif h < 180 then
-            r, g, b = 0, c, x
-        elseif h < 240 then
-            r, g, b = 0, x, c
-        elseif h < 300 then
-            r, g, b = x, 0, c
+        if hgt < 60 then
+            r, g, b = c, posX, 0
+        elseif hgt < 120 then
+            r, g, b = posX, c, 0
+        elseif hgt < 180 then
+            r, g, b = 0, c, posX
+        elseif hgt < 240 then
+            r, g, b = 0, posX, c
+        elseif hgt < 300 then
+            r, g, b = posX, 0, c
         else
-            r, g, b = c, 0, x
+            r, g, b = c, 0, posX
         end
         return r + m, g + m, b + m
     end
@@ -69,19 +69,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local mx = math.max(r, g, b)
         local mn = math.min(r, g, b)
         local d = mx - mn
-        local h, s, v
-        v = mx
+        local hgt, s, val
+        val = mx
         s = (mx == 0) and 0 or (d / mx)
         if d == 0 then
-            h = 0
+            hgt = 0
         elseif mx == r then
-            h = 60 * (((g - b) / d) % 6)
+            hgt = 60 * (((g - b) / d) % 6)
         elseif mx == g then
-            h = 60 * (((b - r) / d) + 2)
+            hgt = 60 * (((b - r) / d) + 2)
         else
-            h = 60 * (((r - g) / d) + 4)
+            hgt = 60 * (((r - g) / d) + 4)
         end
-        return h, s, v
+        return hgt, s, val
     end
 
     -------------------------------------------------------------------------------
@@ -99,18 +99,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return CludesUIDB.colorPicker
     end
     local function GetRecentColorsDB()
-        local db = GetPickerDB()
-        if not db.recentColors then
-            db.recentColors = {}
+        local saved = GetPickerDB()
+        if not saved.recentColors then
+            saved.recentColors = {}
         end
-        return db.recentColors
+        return saved.recentColors
     end
     local function GetFavoritesDB()
-        local db = GetPickerDB()
-        if not db.favorites then
-            db.favorites = {}
+        local saved = GetPickerDB()
+        if not saved.favorites then
+            saved.favorites = {}
         end
-        return db.favorites
+        return saved.favorites
     end
     local function ColorKey(r, g, b)
         return string.format(
@@ -121,16 +121,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         )
     end
     local function RecordRecentColor(r, g, b)
-        local db = GetRecentColorsDB()
+        local saved = GetRecentColorsDB()
         local key = ColorKey(r, g, b)
-        for i = #db, 1, -1 do
-            if ColorKey(db[i][1], db[i][2], db[i][3]) == key then
-                table.remove(db, i)
+        for idx = #saved, 1, -1 do
+            if ColorKey(saved[idx][1], saved[idx][2], saved[idx][3]) == key then
+                table.remove(saved, idx)
             end
         end
-        table.insert(db, 1, { r, g, b })
-        while #db > PICKER_MAX_SWATCHES do
-            table.remove(db)
+        table.insert(saved, 1, { r, g, b })
+        while #saved > PICKER_MAX_SWATCHES do
+            table.remove(saved)
         end
     end
     local function IsFavorite(r, g, b)
@@ -143,17 +143,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return false
     end
     local function ToggleFavorite(r, g, b)
-        local db = GetFavoritesDB()
+        local saved = GetFavoritesDB()
         local key = ColorKey(r, g, b)
-        for i = #db, 1, -1 do
-            if ColorKey(db[i][1], db[i][2], db[i][3]) == key then
-                table.remove(db, i)
+        for idx = #saved, 1, -1 do
+            if ColorKey(saved[idx][1], saved[idx][2], saved[idx][3]) == key then
+                table.remove(saved, idx)
                 return false
             end
         end
-        table.insert(db, 1, { r, g, b })
-        while #db > PICKER_MAX_SWATCHES do
-            table.remove(db)
+        table.insert(saved, 1, { r, g, b })
+        while #saved > PICKER_MAX_SWATCHES do
+            table.remove(saved)
         end
         return true
     end
@@ -182,90 +182,90 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local hasOpacity = false
         local updating = false
 
-        local popup = CreateFrame("Frame", "CludesUIColorPicker", UIParent)
-        popup:SetSize(BASE_W, POPUP_H)
-        popup:SetPoint("CENTER")
-        popup:SetFrameStrata("FULLSCREEN_DIALOG")
-        popup:SetFrameLevel(400)
-        popup:SetClampedToScreen(true)
-        popup:SetMovable(true)
-        popup:EnableMouse(true)
-        popup:Hide()
+        local dialog = CreateFrame("Frame", "CludesUIColorPicker", UIParent)
+        dialog:SetSize(BASE_W, POPUP_H)
+        dialog:SetPoint("CENTER")
+        dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+        dialog:SetFrameLevel(400)
+        dialog:SetClampedToScreen(true)
+        dialog:SetMovable(true)
+        dialog:EnableMouse(true)
+        dialog:Hide()
 
         -- Click-off close via GLOBAL_MOUSE_DOWN (non-blocking: preserves hover/click on every other frame)
         local clickOffFrame = CreateFrame("Frame")
         clickOffFrame:Hide()
-        clickOffFrame:SetScript("OnEvent", function(_, event)
-            if event == "GLOBAL_MOUSE_DOWN" then
-                if popup:IsShown() and not popup:IsMouseOver() then
+        clickOffFrame:SetScript("OnEvent", function(_, evt)
+            if evt == "GLOBAL_MOUSE_DOWN" then
+                if dialog:IsShown() and not dialog:IsMouseOver() then
                     if cancelFunc then
                         cancelFunc()
                     end
-                    popup:Hide()
+                    dialog:Hide()
                 end
             end
         end)
-        popup:HookScript("OnShow", function()
+        dialog:HookScript("OnShow", function()
             -- Defer registration one frame so the mouse-down that opened the popup doesn't immediately trigger click-outside-to-close.
             C_Timer.After(0, function()
-                if popup:IsShown() then
+                if dialog:IsShown() then
                     clickOffFrame:RegisterEvent("GLOBAL_MOUSE_DOWN")
                     clickOffFrame:Show()
                 end
             end)
         end)
-        popup:HookScript("OnHide", function()
+        dialog:HookScript("OnHide", function()
             clickOffFrame:UnregisterEvent("GLOBAL_MOUSE_DOWN")
             clickOffFrame:Hide()
         end)
 
-        local bg = popup:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0.062, 0.070, 0.082, 1)
+        local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
 
-        CludesUI.MakeRoundedBorder(popup, BORDER_R, BORDER_G, BORDER_B, 0.15, bg)
+        CludesUI.MakeRoundedBorder(dialog, BORDER_R, BORDER_G, BORDER_B, 0.15, backdrop)
 
         -- Title bar (draggable)
-        local titleBar = CreateFrame("Frame", nil, popup)
+        local titleBar = CreateFrame("Frame", nil, dialog)
         titleBar:SetHeight(28)
         titleBar:SetPoint("TOPLEFT")
         titleBar:SetPoint("TOPRIGHT")
         titleBar:EnableMouse(true)
         titleBar:RegisterForDrag("LeftButton")
         titleBar:SetScript("OnDragStart", function()
-            popup:StartMoving()
+            dialog:StartMoving()
         end)
         titleBar:SetScript("OnDragStop", function()
-            popup:StopMovingOrSizing()
+            dialog:StopMovingOrSizing()
         end)
         -- House look: an accent cap, a header band (to just above the colour
         -- field) with a hairline under it, and the title on its left.
-        local band = popup:CreateTexture(nil, "BACKGROUND", nil, 2)
+        local band = dialog:CreateTexture(nil, "BACKGROUND", nil, 2)
         band:SetColorTexture(1, 1, 1, 0.035)
         band:SetPoint("TOPLEFT")
         band:SetPoint("TOPRIGHT")
         band:SetHeight(44)
-        local bandLine = popup:CreateTexture(nil, "ARTWORK")
+        local bandLine = dialog:CreateTexture(nil, "ARTWORK")
         bandLine:SetColorTexture(1, 1, 1, 0.08)
         bandLine:SetPoint("TOPLEFT", band, "BOTTOMLEFT")
         bandLine:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT")
         bandLine:SetHeight(1)
-        local cap = popup:CreateTexture(nil, "ARTWORK", nil, 1)
+        local cap = dialog:CreateTexture(nil, "ARTWORK", nil, 1)
         cap:SetPoint("TOPLEFT")
         cap:SetPoint("TOPRIGHT")
         cap:SetHeight(2)
-        popup:HookScript("OnShow", function()
+        dialog:HookScript("OnShow", function()
             local c = CludesUI.CLUDES_GREEN
             cap:SetColorTexture(c.r, c.g, c.b, 0.9)
         end)
         local titleLbl = MakeFont(titleBar, 13, nil, 1, 1, 1)
-        titleLbl:SetPoint("LEFT", popup, "TOPLEFT", PAD, -24)
+        titleLbl:SetPoint("LEFT", dialog, "TOPLEFT", PAD, -24)
         titleLbl:SetText(CludesUI.L("Color Picker"):upper())
 
-        local closeBtn = CreateFrame("Button", nil, popup)
+        local closeBtn = CreateFrame("Button", nil, dialog)
         closeBtn:SetSize(25, 25)
-        closeBtn:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -13, -12)
-        closeBtn:SetFrameLevel(popup:GetFrameLevel() + 5)
+        closeBtn:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -13, -12)
+        closeBtn:SetFrameLevel(dialog:GetFrameLevel() + 5)
         -- The rounded outline around the plain X (the old art had a square box drawn in).
         local closeBrd = CludesUI.MakeRoundedBorder(closeBtn, 1, 1, 1, 0.40)
         local closeIcon = closeBtn:CreateTexture(nil, "ARTWORK")
@@ -287,15 +287,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if cancelFunc then
                 cancelFunc()
             end
-            popup:Hide()
+            dialog:Hide()
         end)
 
         -- Getters kept Blizzard-API-compatible
         local outR, outG, outB, outA = 1, 1, 1, 1
-        function popup:GetColorRGB()
+        function dialog:GetColorRGB()
             return outR, outG, outB
         end
-        function popup:GetColorAlpha()
+        function dialog:GetColorAlpha()
             return outA
         end
 
@@ -344,9 +344,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             updating = false
         end
 
-        local svPad = CreateFrame("Frame", nil, popup)
+        local svPad = CreateFrame("Frame", nil, dialog)
         svPad:SetSize(SV_SIZE, SV_SIZE)
-        svPad:SetPoint("TOPLEFT", popup, "TOPLEFT", PAD, -(PAD_TOP + 28))
+        svPad:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, -(PAD_TOP + 28))
         svPad:EnableMouse(true)
 
         local svHue = svPad:CreateTexture(nil, "BACKGROUND")
@@ -389,21 +389,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         chR:SetSize(ARM, 1)
         chR:SetColorTexture(1, 1, 1, 0.9)
 
-        UpdateSVPadHue = function(h)
-            local r, g, b = HSVtoRGB(h, 1, 1)
+        UpdateSVPadHue = function(hgt)
+            local r, g, b = HSVtoRGB(hgt, 1, 1)
             svHue:SetColorTexture(r, g, b, 1)
         end
-        UpdateSVCrosshair = function(s, v)
-            local x = s * SV_SIZE
-            local y = -(1 - v) * SV_SIZE
+        UpdateSVCrosshair = function(s, val)
+            local posX = s * SV_SIZE
+            local posY = -(1 - val) * SV_SIZE
             chT:ClearAllPoints()
-            chT:SetPoint("BOTTOM", svPad, "TOPLEFT", x, y + 2)
+            chT:SetPoint("BOTTOM", svPad, "TOPLEFT", posX, posY + 2)
             chB:ClearAllPoints()
-            chB:SetPoint("TOP", svPad, "TOPLEFT", x, y - 2)
+            chB:SetPoint("TOP", svPad, "TOPLEFT", posX, posY - 2)
             chL:ClearAllPoints()
-            chL:SetPoint("RIGHT", svPad, "TOPLEFT", x - 2, y)
+            chL:SetPoint("RIGHT", svPad, "TOPLEFT", posX - 2, posY)
             chR:ClearAllPoints()
-            chR:SetPoint("LEFT", svPad, "TOPLEFT", x + 2, y)
+            chR:SetPoint("LEFT", svPad, "TOPLEFT", posX + 2, posY)
         end
 
         local svDragging = false
@@ -411,13 +411,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local cx, cy = GetCursorPosition()
             local scale = svPad:GetEffectiveScale()
             cx, cy = cx / scale, cy / scale
-            local left, bottom = svPad:GetLeft(), svPad:GetBottom()
-            local s = math.max(0, math.min(1, (cx - left) / SV_SIZE))
-            local v = math.max(0, math.min(1, (cy - bottom) / SV_SIZE))
-            return s, v
+            local leftX, bottom = svPad:GetLeft(), svPad:GetBottom()
+            local s = math.max(0, math.min(1, (cx - leftX) / SV_SIZE))
+            local val = math.max(0, math.min(1, (cy - bottom) / SV_SIZE))
+            return s, val
         end
-        svPad:SetScript("OnMouseDown", function(self, btn)
-            if btn == "LeftButton" then
+        svPad:SetScript("OnMouseDown", function(self, button)
+            if button == "LeftButton" then
                 svDragging = true
                 currentS, currentV = SVFromCursor()
                 UpdateAllControls()
@@ -439,7 +439,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             self:SetScript("OnUpdate", nil)
         end)
 
-        local hueBar = CreateFrame("Frame", nil, popup)
+        local hueBar = CreateFrame("Frame", nil, dialog)
         hueBar:SetSize(BAR_W, SV_SIZE)
         hueBar:SetPoint("TOPLEFT", svPad, "TOPRIGHT", BAR_GAP, 0)
         hueBar:EnableMouse(true)
@@ -455,16 +455,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         }
         local segH = SV_SIZE / 6
         local hueMask
-        for i = 1, 6 do
+        for idx = 1, 6 do
             local seg = hueBar:CreateTexture(nil, "BACKGROUND")
             seg:SetSize(BAR_W, segH)
-            seg:SetPoint("TOPLEFT", hueBar, "TOPLEFT", 0, -(i - 1) * segH)
+            seg:SetPoint("TOPLEFT", hueBar, "TOPLEFT", 0, -(idx - 1) * segH)
             seg:SetColorTexture(1, 1, 1, 1)
-            local top, bot = HUE_COLORS[i], HUE_COLORS[i + 1]
+            local topY, bot = HUE_COLORS[idx], HUE_COLORS[idx + 1]
             seg:SetGradient(
                 "VERTICAL",
                 CreateColor(bot[1], bot[2], bot[3], 1),
-                CreateColor(top[1], top[2], top[3], 1)
+                CreateColor(topY[1], topY[2], topY[3], 1)
             )
             -- One rounded mask over the whole bar for all six segments.
             if hueMask then
@@ -483,9 +483,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         hueInd:SetSize(BAR_W + 4, 2)
         hueInd:SetColorTexture(1, 1, 1, 1)
 
-        UpdateHueIndicator = function(h)
+        UpdateHueIndicator = function(hgt)
             hueInd:ClearAllPoints()
-            hueInd:SetPoint("CENTER", hueBar, "TOPLEFT", BAR_W / 2, -(h / 360) * SV_SIZE)
+            hueInd:SetPoint("CENTER", hueBar, "TOPLEFT", BAR_W / 2, -(hgt / 360) * SV_SIZE)
         end
 
         local hueDragging = false
@@ -494,8 +494,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             cy = cy / hueBar:GetEffectiveScale()
             return math.max(0, math.min(1, (hueBar:GetTop() - cy) / SV_SIZE)) * 360
         end
-        hueBar:SetScript("OnMouseDown", function(self, btn)
-            if btn == "LeftButton" then
+        hueBar:SetScript("OnMouseDown", function(self, button)
+            if button == "LeftButton" then
                 hueDragging = true
                 currentH = HueFromCursor()
                 UpdateAllControls()
@@ -517,7 +517,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             self:SetScript("OnUpdate", nil)
         end)
 
-        local alphaBar = CreateFrame("Frame", nil, popup)
+        local alphaBar = CreateFrame("Frame", nil, dialog)
         alphaBar:SetSize(BAR_W, SV_SIZE)
         alphaBar:SetPoint("TOPLEFT", hueBar, "TOPRIGHT", BAR_GAP, 0)
         alphaBar:EnableMouse(true)
@@ -531,12 +531,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local CK = 10 -- coarse checkerboard cell: 2 cols x 20 rows = 40 textures
         local ckCols = math.ceil(BAR_W / CK)
         local ckRows = math.ceil(SV_SIZE / CK)
-        for row = 0, ckRows - 1 do
-            for col = 0, ckCols - 1 do
-                local c = ((row + col) % 2 == 0) and 0.3 or 0.15
+        for rowFrame = 0, ckRows - 1 do
+            for column = 0, ckCols - 1 do
+                local c = ((rowFrame + column) % 2 == 0) and 0.3 or 0.15
                 local ck = alphaBar:CreateTexture(nil, "BACKGROUND")
                 ck:SetSize(CK, CK)
-                ck:SetPoint("TOPLEFT", alphaBar, "TOPLEFT", col * CK, -row * CK)
+                ck:SetPoint("TOPLEFT", alphaBar, "TOPLEFT", column * CK, -rowFrame * CK)
                 ck:SetColorTexture(c, c, c, 1)
                 if alphaMask then
                     ck:AddMaskTexture(alphaMask)
@@ -567,8 +567,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             cy = cy / alphaBar:GetEffectiveScale()
             return 1 - math.max(0, math.min(1, (alphaBar:GetTop() - cy) / SV_SIZE))
         end
-        alphaBar:SetScript("OnMouseDown", function(self, btn)
-            if btn == "LeftButton" then
+        alphaBar:SetScript("OnMouseDown", function(self, button)
+            if button == "LeftButton" then
                 alphaDragging = true
                 currentA = AlphaFromCursor()
                 UpdateAllControls()
@@ -598,13 +598,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             CludesUI.PadHint(hueBar, "nodeignore")
             CludesUI.PadHint(alphaBar, "nodeignore")
             CludesUI.PadHint(titleBar, "nodepass")
-            popup.CloseButton = closeBtn
+            dialog.CloseButton = closeBtn
         end
 
         ---------------------------------------------------------------------------
         --  Right column: New, Prev, Hex#, OK
         ---------------------------------------------------------------------------
-        local rightCol = CreateFrame("Frame", nil, popup)
+        local rightCol = CreateFrame("Frame", nil, dialog)
         rightCol:SetSize(RIGHT_W, SV_SIZE)
         rightCol:SetPoint("TOPLEFT", alphaBar, "TOPRIGHT", RIGHT_GAP, 0)
 
@@ -705,7 +705,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if cancelFunc then
                 cancelFunc()
             end
-            popup:Hide()
+            dialog:Hide()
         end)
         hexBox:SetScript("OnEditFocusLost", function()
             if not hexEscaping then
@@ -767,11 +767,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         -- Parse the box and apply as alpha. commit=true snaps back to the live value when unparseable (Enter/focus loss).
         local function ApplyOpacityText(commit)
-            local n = tonumber(opacityBox:GetText())
-            if n then
-                n = math.max(0, math.min(100, math.floor(n + 0.5)))
-                currentA = n / 100
-                lastOpacityPct = n
+            local num = tonumber(opacityBox:GetText())
+            if num then
+                num = math.max(0, math.min(100, math.floor(num + 0.5)))
+                currentA = num / 100
+                lastOpacityPct = num
                 UpdateAllControls()
                 FireCallbacks()
                 return true
@@ -793,7 +793,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if cancelFunc then
                 cancelFunc()
             end
-            popup:Hide()
+            dialog:Hide()
         end)
         opacityBox:SetScript("OnEditFocusLost", function()
             if not opacityEscaping then
@@ -816,21 +816,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local okBtn = CreateFrame("Button", nil, rightCol)
         okBtn:SetSize(RIGHT_W, 21)
         okBtn:SetPoint("BOTTOMLEFT", rightCol, "BOTTOMLEFT", 0, 0)
-        okBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        okBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         local _confirmed = false
         MakeStyledButton(okBtn, "OK", 10, RB_COLOURS, function()
             RecordRecentColor(HSVtoRGB(currentH, currentS, currentV))
             -- Fire on OK even when nothing changed, to confirm the selection
             FireCallbacks()
             _confirmed = true
-            popup:Hide()
+            dialog:Hide()
         end)
 
         -- Cancel text above OK button
         local cancelBtn = CreateFrame("Button", nil, rightCol)
         cancelBtn:SetSize(RIGHT_W, 14)
         cancelBtn:SetPoint("BOTTOM", okBtn, "TOP", 0, 5)
-        cancelBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
+        cancelBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         local cancelText = cancelBtn:CreateFontString(nil, "OVERLAY")
         cancelText:SetFont(EXPRESSWAY, 10, "")
         cancelText:SetPoint("CENTER")
@@ -844,7 +844,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         cancelBtn:SetScript("OnClick", function()
             _confirmed = false
-            popup:Hide()
+            dialog:Hide()
         end)
 
         ---------------------------------------------------------------------------
@@ -854,15 +854,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local SWATCH_SZ = 19
         local SWATCH_SPACING = 4
 
-        local function MakeSwatchBtn(parent, isFavorites)
-            local btn = CreateFrame("Button", nil, parent)
-            btn:SetSize(SWATCH_SZ, SWATCH_SZ)
-            btn:SetFrameLevel(parent:GetFrameLevel() + 2)
-            local tex = btn:CreateTexture(nil, "ARTWORK")
-            tex:SetAllPoints()
-            btn._tex = tex
-            CludesUI.RoundBody(btn, tex)
-            btn:SetScript("OnEnter", function(self)
+        local function MakeSwatchBtn(hostFrame, isFavorites)
+            local button = CreateFrame("Button", nil, hostFrame)
+            button:SetSize(SWATCH_SZ, SWATCH_SZ)
+            button:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
+            local texture = button:CreateTexture(nil, "ARTWORK")
+            texture:SetAllPoints()
+            button._tex = texture
+            CludesUI.RoundBody(button, texture)
+            button:SetScript("OnEnter", function(self)
                 local c = self._color
                 if not c then
                     return
@@ -878,11 +878,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- Anchor on the hovered swatch so the tooltip sits directly above it (default placement is BOTTOM -> anchor TOP).
                 ShowWidgetTooltip(self, "|cff" .. hex .. "#|r" .. hex .. "\n" .. hint)
             end)
-            btn:SetScript("OnLeave", function()
+            button:SetScript("OnLeave", function()
                 HideWidgetTooltip()
             end)
-            btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-            btn:SetScript("OnClick", function(self, mouseButton)
+            button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            button:SetScript("OnClick", function(self, mouseButton)
                 local c = self._color
                 if not c then
                     return
@@ -898,27 +898,27 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     FireCallbacks()
                 end
             end)
-            btn:Hide()
-            return btn
+            button:Hide()
+            return button
         end
 
-        local favLbl = MakeFont(popup, 10, nil, 1, 1, 1)
+        local favLbl = MakeFont(dialog, 10, nil, 1, 1, 1)
         favLbl:SetAlpha(TEXT_DIM_A)
         favLbl:SetPoint("TOPLEFT", svPad, "BOTTOMLEFT", 0, -10)
         favLbl:SetText(CludesUI.L("Favorites"))
 
-        local favRow = CreateFrame("Frame", nil, popup)
+        local favRow = CreateFrame("Frame", nil, dialog)
         favRow:SetSize(BASE_W - PAD - PAD_RIGHT, SWATCH_SZ)
         favRow:SetPoint("TOPLEFT", favLbl, "BOTTOMLEFT", 0, -3)
         favRow._label = favLbl
         favRow._isFavorites = true
 
-        local rcLbl = MakeFont(popup, 10, nil, 1, 1, 1)
+        local rcLbl = MakeFont(dialog, 10, nil, 1, 1, 1)
         rcLbl:SetAlpha(TEXT_DIM_A)
         rcLbl:SetPoint("TOPLEFT", favRow, "BOTTOMLEFT", 0, -8)
         rcLbl:SetText(CludesUI.L("Recent Colors"))
 
-        local rcRow = CreateFrame("Frame", nil, popup)
+        local rcRow = CreateFrame("Frame", nil, dialog)
         rcRow:SetSize(BASE_W - PAD - PAD_RIGHT, SWATCH_SZ)
         rcRow:SetPoint("TOPLEFT", rcLbl, "BOTTOMLEFT", 0, -3)
         rcRow._label = rcLbl
@@ -926,26 +926,26 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local favSwatches, rcSwatches = {}, {}
 
-        local function PopulateSwatchRow(swatchPool, row, data)
-            local count = math.min(#data, PICKER_MAX_SWATCHES)
-            for i = 1, math.max(count, #swatchPool) do
-                local btn = swatchPool[i]
-                if not btn then
-                    btn = MakeSwatchBtn(row, row._isFavorites)
-                    swatchPool[i] = btn
+        local function PopulateSwatchRow(swatchPool, rowFrame, payload)
+            local total = math.min(#payload, PICKER_MAX_SWATCHES)
+            for idx = 1, math.max(total, #swatchPool) do
+                local button = swatchPool[idx]
+                if not button then
+                    button = MakeSwatchBtn(rowFrame, rowFrame._isFavorites)
+                    swatchPool[idx] = button
                 end
-                if i <= count then
-                    btn._color = data[i]
-                    btn._tex:SetColorTexture(data[i][1], data[i][2], data[i][3], 1)
-                    btn:Show()
-                    btn:ClearAllPoints()
-                    if i == 1 then
-                        btn:SetPoint("LEFT", row, "LEFT", 0, 0)
+                if idx <= total then
+                    button._color = payload[idx]
+                    button._tex:SetColorTexture(payload[idx][1], payload[idx][2], payload[idx][3], 1)
+                    button:Show()
+                    button:ClearAllPoints()
+                    if idx == 1 then
+                        button:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
                     else
-                        btn:SetPoint("LEFT", swatchPool[i - 1], "RIGHT", SWATCH_SPACING, 0)
+                        button:SetPoint("LEFT", swatchPool[idx - 1], "RIGHT", SWATCH_SPACING, 0)
                     end
                 else
-                    btn:Hide()
+                    button:Hide()
                 end
             end
         end
@@ -957,7 +957,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- Controller cursor: the swatch that opened the picker (set only when it opened under that cursor).
         local padOpener
-        popup:SetScript("OnHide", function()
+        dialog:SetScript("OnHide", function()
             CludesUI._colorPickerOpen = false
             if not _confirmed and cancelFunc then
                 cancelFunc()
@@ -972,8 +972,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local checks = CludesUI._deferredDriftChecks
             CludesUI._deferredDriftChecks = nil
             if checks then
-                for fn in pairs(checks) do
-                    fn()
+                for func in pairs(checks) do
+                    func()
                 end
             end
             -- Re-evaluate widget state (sync icons, disabled overlays) now the picked color is committed. Fast path: no rebuild.
@@ -987,18 +987,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
         end)
-        CludesUI.RegisterEscapeClose(popup)
+        CludesUI.RegisterEscapeClose(dialog)
 
-        function popup:Open(info, anchorFrame)
-            if popup:IsShown() and cancelFunc then
+        function dialog:Open(details, anchorFrame)
+            if dialog:IsShown() and cancelFunc then
                 cancelFunc()
             end
-            swatchFunc = info.swatchFunc
-            opacityFunc = info.opacityFunc
-            cancelFunc = info.cancelFunc
-            hasOpacity = info.hasOpacity or false
-            local r, g, b = info.r or 0, info.g or 0, info.b or 0
-            local a = info.opacity or 1
+            swatchFunc = details.swatchFunc
+            opacityFunc = details.opacityFunc
+            cancelFunc = details.cancelFunc
+            hasOpacity = details.hasOpacity or false
+            local r, g, b = details.r or 0, details.g or 0, details.b or 0
+            local a = details.opacity or 1
             prevR, prevG, prevB, prevA = r, g, b, a
             currentH, currentS, currentV = RGBtoHSV(r, g, b)
             currentA = hasOpacity and a or 1
@@ -1007,23 +1007,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             rightCol:ClearAllPoints()
             if hasOpacity then
                 alphaBar:Show()
-                popup:SetWidth(BASE_W)
+                dialog:SetWidth(BASE_W)
                 rightCol:SetPoint("TOPLEFT", alphaBar, "TOPRIGHT", RIGHT_GAP, 0)
                 rightCol:SetHeight(SV_SIZE + OPACITY_BLOCK_H)
                 opacityLbl:Show()
                 opacityBox:Show()
             else
                 alphaBar:Hide()
-                popup:SetWidth(BASE_W_NO_ALPHA)
+                dialog:SetWidth(BASE_W_NO_ALPHA)
                 rightCol:SetPoint("TOPLEFT", hueBar, "TOPRIGHT", RIGHT_GAP, 0)
                 rightCol:SetHeight(SV_SIZE)
                 opacityLbl:Hide()
                 opacityBox:Hide()
             end
-            popup:ClearAllPoints()
+            dialog:ClearAllPoints()
             -- Horizontally centered on the cursor; vertical placement flips if needed
             local cx, cy = GetCursorPosition()
-            local scale = popup:GetEffectiveScale()
+            local scale = dialog:GetEffectiveScale()
             cx, cy = cx / scale, cy / scale
             -- Controller cursor: the hidden pointer is nowhere near the swatch it pressed.
             if anchorFrame and CludesUI.PadCursorShown() then
@@ -1034,22 +1034,22 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     cx, cy = ax * r, ay * r
                 end
             end
-            local pw = popup:GetWidth()
-            local ph = popup:GetHeight()
-            local x = cx - pw * 0.5
-            local y = cy - 30 -- popup top 30px below the cursor
+            local pw = dialog:GetWidth()
+            local ph = dialog:GetHeight()
+            local posX = cx - pw * 0.5
+            local posY = cy - 30 -- popup top 30px below the cursor
             -- Flip above the cursor if that would drop below the options window
             local mainFrame = CludesUI._mainFrame
             if mainFrame and mainFrame:IsShown() then
                 local mBot = mainFrame:GetBottom()
-                if mBot and (y - ph) < mBot then
-                    y = cy + 30 + ph -- popup bottom 30px above the cursor
+                if mBot and (posY - ph) < mBot then
+                    posY = cy + 30 + ph -- popup bottom 30px above the cursor
                 end
             end
-            popup:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+            dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, posY)
             CludesUI._colorPickerOpen = true
             RefreshSwatchRows()
-            popup:Show()
+            dialog:Show()
             UpdateAllControls()
             -- Controller cursor: into the picker, on OK (its first stop would be the close box).
             if CludesUI.PadCursorShown() then
@@ -1058,14 +1058,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         -- Spec Overrides auto-capture: color picker edits attribute to the slot whose swatch opened it.
-        popup._cuiOptionsPopup = true
-        CludesUI._colorPickerPopup = popup
-        return popup
+        dialog._cuiOptionsPopup = true
+        CludesUI._colorPickerPopup = dialog
+        return dialog
     end
 
-    function CludesUI:ShowColorPicker(info, anchorFrame)
-        local popup = self._colorPickerPopup or BuildColorPickerPopup()
-        popup:Open(info, anchorFrame)
+    function CludesUI:ShowColorPicker(details, anchorFrame)
+        local dialog = self._colorPickerPopup or BuildColorPickerPopup()
+        dialog:Open(details, anchorFrame)
     end
 
     -- Shared color swatch: border + fill + UpdateSwatch + OnClick. Returns swatch (Button), UpdateSwatch (function), caller positions it. Border textures are deferred until first show to keep page builds light.
@@ -1093,12 +1093,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end
         local SWATCH_SZ = overrideSize or 24
-        local swatch = CreateFrame("Button", nil, parentFrame)
-        PP.Size(swatch, SWATCH_SZ, SWATCH_SZ)
-        swatch:SetFrameLevel(baseLevel)
+        local colorSwatch = CreateFrame("Button", nil, parentFrame)
+        Pix.Size(colorSwatch, SWATCH_SZ, SWATCH_SZ)
+        colorSwatch:SetFrameLevel(baseLevel)
 
         -- Color fill: 1 texture, always created immediately
-        local sFill = swatch:CreateTexture(nil, "ARTWORK")
+        local sFill = colorSwatch:CreateTexture(nil, "ARTWORK")
         sFill:SetAllPoints()
 
         local borderBuilt = false
@@ -1110,7 +1110,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             borderBuilt = true
             -- The rounded outline sits on a pixel layer (1 px at every Window
             -- Scale) on the swatch's edge; the fill takes the same shape.
-            CludesUI.MakeRoundedBorder(swatch, 1, 1, 1, 1, sFill)
+            CludesUI.MakeRoundedBorder(colorSwatch, 1, 1, 1, 1, sFill)
         end
 
         local function UpdateSwatch()
@@ -1125,25 +1125,25 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         -- Border builds lazily on first show, or now if already visible
-        swatch:HookScript("OnShow", function()
+        colorSwatch:HookScript("OnShow", function()
             if not borderBuilt then
                 BuildBorder()
             end
         end)
-        if swatch:IsVisible() then
+        if colorSwatch:IsVisible() then
             BuildBorder()
         end
 
-        swatch:SetScript("OnClick", function()
+        colorSwatch:SetScript("OnClick", function()
             local r, g, b, a = getValue()
             r, g, b, a = r or 0, g or 0, b or 0, a or 1
             local snapR, snapG, snapB, snapA = r, g, b, a
             -- The dress the picker opens on. A page rebuild while the picker is
             -- open (page reuse) can dress this swatch again for another use, or
             -- leave it idle; what shows then is that rebuild's own paint.
-            local openGen = PoolGen(swatch)
+            local openGen = PoolGen(colorSwatch)
             local function SameDress()
-                return PoolGen(swatch) == openGen and not PoolIsIdle(swatch)
+                return PoolGen(colorSwatch) == openGen and not PoolIsIdle(colorSwatch)
             end
             -- The slot the picker writes for, taken as it opens (Spec Overrides):
             -- every write names it, whatever a rebuild has made of the swatch
@@ -1161,12 +1161,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return same and SameDress()
             end
             local function OnColorChanged()
-                local popup = CludesUI._colorPickerPopup
-                if not popup then
+                local dialog = CludesUI._colorPickerPopup
+                if not dialog then
                     return
                 end
-                local cr, cg, cb = popup:GetColorRGB()
-                local ca = hasAlpha and popup:GetColorAlpha() or 1
+                local cr, cg, cb = dialog:GetColorRGB()
+                local ca = hasAlpha and dialog:GetColorAlpha() or 1
                 if SameDress() then
                     sFill:SetColorTexture(cr, cg, cb, ca)
                 end
@@ -1174,7 +1174,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     UpdateSwatch()
                 end
             end
-            local info = {
+            local details = {
                 swatchFunc = function()
                     OnColorChanged()
                 end,
@@ -1192,7 +1192,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 g = g,
                 b = b,
             }
-            CludesUI:ShowColorPicker(info, swatch)
+            CludesUI:ShowColorPicker(details, colorSwatch)
         end)
 
         -- Spec Overrides capture: an inline swatch belongs to its hosting slot (options files pass the DualRow half-region as parent), so it joins that slot's capture group. AddCaptureAccessor dedupes by getValue identity, so factory-built swatches whose accessors are stashed separately never double.
@@ -1205,7 +1205,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             })
         end
 
-        return swatch, UpdateSwatch
+        return colorSwatch, UpdateSwatch
     end
 
     -- default/custom/class color swatch trio; callers track a mode string. opts:
@@ -1219,17 +1219,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --   hasAlpha, overrideSize -> forwarded to BuildColorSwatch
     -- Returns customSwatch, defaultSwatch, classSwatch, Update.
     local DEFAULT_UNTINTED_R, DEFAULT_UNTINTED_G, DEFAULT_UNTINTED_B = 1.0, 0.788, 0.137
-    local function BuildTrioColorSwatch(parentFrame, baseLevel, opts)
+    local function BuildTrioColorSwatch(parentFrame, baseLevel, options)
         local customSwatch, updateCustom = BuildColorSwatch(parentFrame, baseLevel, function()
-            local r, g, b = opts.getCustomRGB()
+            local r, g, b = options.getCustomRGB()
             return r, g, b, 1
         end, function(r, g, b)
-            opts.setCustomRGB(r, g, b)
-            opts.setMode("custom")
-            if opts.onChange then
-                opts.onChange()
+            options.setCustomRGB(r, g, b)
+            options.setMode("custom")
+            if options.onChange then
+                options.onChange()
             end
-        end, opts.hasAlpha, opts.overrideSize)
+        end, options.hasAlpha, options.overrideSize)
         customSwatch:HookScript("OnEnter", function()
             ShowWidgetTooltip(customSwatch, "Custom Color")
         end)
@@ -1239,10 +1239,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Suite-wide multiSwatch convention: clicking an INACTIVE custom swatch only selects custom mode; the picker opens on a second click while custom is already active.
         customSwatch._eabOrigClick = customSwatch:GetScript("OnClick")
         customSwatch:SetScript("OnClick", function(self)
-            if opts.getMode() ~= "custom" then
-                opts.setMode("custom")
-                if opts.onChange then
-                    opts.onChange()
+            if options.getMode() ~= "custom" then
+                options.setMode("custom")
+                if options.onChange then
+                    options.onChange()
                 end
                 return
             end
@@ -1253,11 +1253,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local defaultSwatch = BuildColorSwatch(parentFrame, baseLevel, function()
             return DEFAULT_UNTINTED_R, DEFAULT_UNTINTED_G, DEFAULT_UNTINTED_B, 1
-        end, function() end, opts.hasAlpha, opts.overrideSize)
+        end, function() end, options.hasAlpha, options.overrideSize)
         defaultSwatch:SetScript("OnClick", function()
-            opts.setMode("default")
-            if opts.onChange then
-                opts.onChange()
+            options.setMode("default")
+            if options.onChange then
+                options.onChange()
             end
         end)
         defaultSwatch:SetScript("OnEnter", function()
@@ -1268,15 +1268,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
 
         local classSwatch
-        if opts.hasClassColor then
+        if options.hasClassColor then
             classSwatch = BuildColorSwatch(parentFrame, baseLevel, function()
                 local cc = CludesUI.GetClassColor(CludesUI._playerClass)
                 return cc.r, cc.g, cc.b, 1
-            end, function() end, opts.hasAlpha, opts.overrideSize)
+            end, function() end, options.hasAlpha, options.overrideSize)
             classSwatch:SetScript("OnClick", function()
-                opts.setMode("class")
-                if opts.onChange then
-                    opts.onChange()
+                options.setMode("class")
+                if options.onChange then
+                    options.onChange()
                 end
             end)
             classSwatch:SetScript("OnEnter", function()
@@ -1288,20 +1288,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         local function Update()
-            local disabled = opts.disabled and opts.disabled()
-            local mode = opts.getMode()
+            local disabled = options.disabled and options.disabled()
+            local modeName = options.getMode()
             if disabled then
-                local a = opts.disabledAlpha or 0.3
+                local a = options.disabledAlpha or 0.3
                 customSwatch:SetAlpha(a)
                 defaultSwatch:SetAlpha(a)
                 if classSwatch then
                     classSwatch:SetAlpha(a)
                 end
             else
-                customSwatch:SetAlpha(mode == "custom" and 1 or 0.3)
-                defaultSwatch:SetAlpha(mode == "default" and 1 or 0.3)
+                customSwatch:SetAlpha(modeName == "custom" and 1 or 0.3)
+                defaultSwatch:SetAlpha(modeName == "default" and 1 or 0.3)
                 if classSwatch then
-                    classSwatch:SetAlpha(mode == "class" and 1 or 0.3)
+                    classSwatch:SetAlpha(modeName == "class" and 1 or 0.3)
                 end
             end
             updateCustom()
@@ -1313,30 +1313,30 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     end
 
     -- Color Picker row (swatch that opens the CludesUI picker popup)
-    function WidgetFactory:ColorPicker(parent, text, yOffset, getValue, setValue, hasAlpha)
+    function WidgetFactory:ColorPicker(hostFrame, textValue, yOffset, getValue, setValue, hasAlpha)
         local ROW_H = 50
-        local frame = CreateFrame("Frame", nil, parent)
-        PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
 
-        RowBg(frame, parent)
-        TagOptionRow(frame, parent, text)
+        RowBg(widget, hostFrame)
+        TagOptionRow(widget, hostFrame, textValue)
 
-        local label = MakeFont(frame, 14, nil, TEXT_WHITE.r, TEXT_WHITE.g, TEXT_WHITE.b)
-        PP.Point(label, "LEFT", frame, "LEFT", 20, 0)
-        label:SetText(CludesUI.L(text))
+        local labelText = MakeFont(widget, 14, nil, TEXT_WHITE.r, TEXT_WHITE.g, TEXT_WHITE.b)
+        Pix.Point(labelText, "LEFT", widget, "LEFT", 20, 0)
+        labelText:SetText(CludesUI.L(textValue))
 
-        local swatch, UpdateSwatch =
-            BuildColorSwatch(frame, frame:GetFrameLevel() + 1, getValue, setValue, hasAlpha)
-        PP.Point(swatch, "RIGHT", frame, "RIGHT", -20, 0)
+        local colorSwatch, UpdateSwatch =
+            BuildColorSwatch(widget, widget:GetFrameLevel() + 1, getValue, setValue, hasAlpha)
+        Pix.Point(colorSwatch, "RIGHT", widget, "RIGHT", -20, 0)
 
         -- Public refresh so external code can update the swatch after bar changes
-        frame.RefreshSwatch = UpdateSwatch
+        widget.RefreshSwatch = UpdateSwatch
         RegisterWidgetRefresh(function()
             UpdateSwatch()
         end)
 
-        return frame, ROW_H
+        return widget, ROW_H
     end
 
     CludesUI.BuildColorSwatch = BuildColorSwatch

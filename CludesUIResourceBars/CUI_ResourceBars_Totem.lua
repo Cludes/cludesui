@@ -7,22 +7,22 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  The totem bar.
 --  Reads the earlier Resource Bars files through ns and ns._internals.
 -------------------------------------------------------------------------------
-local _, ns = ...
-local I = ns._internals
+local _, mod = ...
+local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
 local UnitClass, InCombatLockdown = UnitClass, InCombatLockdown
 
-local ERB, GetRBFont, _totemBorderOverlays = I.ERB, I.GetRBFont, I._totemBorderOverlays
-local SetTotemBarFrame = I.SetTotemBarFrame
+local ERB, GetRBFont, _totemBorderOverlays = Inner.ERB, Inner.GetRBFont, Inner._totemBorderOverlays
+local SetTotemBarFrame = Inner.SetTotemBarFrame
 
 local totemBarFrame
-I.totemBarFrameSetters[#I.totemBarFrameSetters + 1] = function(v)
-    totemBarFrame = v
+Inner.totemBarFrameSetters[#Inner.totemBarFrameSetters + 1] = function(val)
+    totemBarFrame = val
 end
 
 local _totemHooked = false
@@ -72,9 +72,9 @@ local function GetCooldownNumberFS(cd)
     if not (cd and cd.GetRegions) then
         return nil
     end
-    for _, region in ipairs({ cd:GetRegions() }) do
-        if region.GetObjectType and region:GetObjectType() == "FontString" then
-            return region
+    for _, regionFrame in ipairs({ cd:GetRegions() }) do
+        if regionFrame.GetObjectType and regionFrame:GetObjectType() == "FontString" then
+            return regionFrame
         end
     end
     return nil
@@ -90,9 +90,9 @@ local function LayoutTotemBar()
     end
 
     local spacing = tb.spacing or 2
-    local PP = CludesUI and CludesUI.PP
-    if PP and PP.Snap then
-        spacing = PP.Snap(spacing)
+    local Pix = CludesUI and CludesUI.PP
+    if Pix and Pix.Snap then
+        spacing = Pix.Snap(spacing)
     end
     local iconSize = tb.iconSize or 30
     local vertical = (tb.orientation == "VERTICAL")
@@ -142,15 +142,15 @@ local function LayoutTotemBar()
         cache.buttons = buttons
     end
     local count = 0
-    for _, child in ipairs({ TotemFrame:GetChildren() }) do
-        if child:IsShown() and child.Icon and child:GetObjectType() == "Button" then
+    for _, childFrame in ipairs({ TotemFrame:GetChildren() }) do
+        if childFrame:IsShown() and childFrame.Icon and childFrame:GetObjectType() == "Button" then
             count = count + 1
-            buttons[count] = child
+            buttons[count] = childFrame
         end
     end
     -- Trim stale entries
-    for i = count + 1, #buttons do
-        buttons[i] = nil
+    for idx = count + 1, #buttons do
+        buttons[idx] = nil
     end
 
     -- CENTER grow: re-anchor TotemFrame so the icon group is centred. `total` is
@@ -160,8 +160,8 @@ local function LayoutTotemBar()
     -- Without it the group sits at iconScale of the intended shift, off-centre by
     -- an error that grows with every extra totem.
     if _growDir == "CENTER" and count > 0 then
-        local total = count * iconSize + math.max(0, count - 1) * spacing
-        local half = (iconScale > 0) and (total / (2 * iconScale)) or (total / 2)
+        local sum = count * iconSize + math.max(0, count - 1) * spacing
+        local half = (iconScale > 0) and (sum / (2 * iconScale)) or (sum / 2)
         TotemFrame:ClearAllPoints()
         if vertical then
             TotemFrame:SetPoint("TOP", totemBarFrame, "CENTER", 0, half)
@@ -174,59 +174,59 @@ local function LayoutTotemBar()
     local zoom = 0.055
     local timerSize = tb.timerSize or 11
     local scaledTimerSize = math.max(6, math.floor(timerSize / iconScale + 0.5))
-    local fontPath = GetRBFont()
+    local fontFile = GetRBFont()
     local outlineMode = CludesUI.GetFontOutlineFlag("resourceBars")
 
     wipe(_totemActiveSet)
-    for i, btn in ipairs(buttons) do
-        _totemActiveSet[btn] = true
+    for idx, button in ipairs(buttons) do
+        _totemActiveSet[button] = true
 
-        btn:ClearAllPoints()
-        if i == 1 then
+        button:ClearAllPoints()
+        if idx == 1 then
             if vertical then
                 local a = (_growDir == "UP") and "BOTTOM" or "TOP"
-                btn:SetPoint(a, TotemFrame, a, 0, 0)
+                button:SetPoint(a, TotemFrame, a, 0, 0)
             else
                 local a = (_growDir == "LEFT") and "RIGHT" or "LEFT"
-                btn:SetPoint(a, TotemFrame, a, 0, 0)
+                button:SetPoint(a, TotemFrame, a, 0, 0)
             end
         elseif vertical then
             if _growDir == "UP" then
-                btn:SetPoint("BOTTOM", buttons[i - 1], "TOP", 0, scaledSpacing)
+                button:SetPoint("BOTTOM", buttons[idx - 1], "TOP", 0, scaledSpacing)
             else
-                btn:SetPoint("TOP", buttons[i - 1], "BOTTOM", 0, -scaledSpacing)
+                button:SetPoint("TOP", buttons[idx - 1], "BOTTOM", 0, -scaledSpacing)
             end
         elseif _growDir == "LEFT" then
-            btn:SetPoint("RIGHT", buttons[i - 1], "LEFT", -scaledSpacing, 0)
+            button:SetPoint("RIGHT", buttons[idx - 1], "LEFT", -scaledSpacing, 0)
         else
-            btn:SetPoint("LEFT", buttons[i - 1], "RIGHT", scaledSpacing, 0)
+            button:SetPoint("LEFT", buttons[idx - 1], "RIGHT", scaledSpacing, 0)
         end
 
         -- Hide Blizzard's circular border
-        if btn.Border then
-            btn.Border:Hide()
+        if button.Border then
+            button.Border:Hide()
         end
 
         -- Make Icon frame fill the entire button
-        if btn.Icon then
-            btn.Icon:ClearAllPoints()
-            btn.Icon:SetAllPoints(btn)
+        if button.Icon then
+            button.Icon:ClearAllPoints()
+            button.Icon:SetAllPoints(button)
         end
 
         -- Square the icon: remove circular mask
-        if btn.Icon and btn.Icon.Texture and btn.Icon.TextureMask then
-            btn.Icon.Texture:RemoveMaskTexture(btn.Icon.TextureMask)
-            btn.Icon.TextureMask:Hide()
+        if button.Icon and button.Icon.Texture and button.Icon.TextureMask then
+            button.Icon.Texture:RemoveMaskTexture(button.Icon.TextureMask)
+            button.Icon.TextureMask:Hide()
         end
         -- Square the cooldown swipe to match the squared icon: drop the
         -- circular mask, reset to the default (square) swipe texture, and use
         -- a non-circular edge so the radial sweep fills the corners. Removing
         -- the mask alone is not enough; the swipe texture must be reset too or
         -- it stays cropped to the old circular shape.
-        if btn.Icon and btn.Icon.Cooldown then
-            local cd = btn.Icon.Cooldown
-            if btn.Icon.TextureMask then
-                pcall(cd.RemoveMaskTexture, cd, btn.Icon.TextureMask)
+        if button.Icon and button.Icon.Cooldown then
+            local cd = button.Icon.Cooldown
+            if button.Icon.TextureMask then
+                pcall(cd.RemoveMaskTexture, cd, button.Icon.TextureMask)
             end
             if cd.SetSwipeTexture then
                 pcall(cd.SetSwipeTexture, cd, "")
@@ -243,46 +243,46 @@ local function LayoutTotemBar()
         end
 
         -- Apply icon zoom crop
-        if btn.Icon and btn.Icon.Texture then
-            btn.Icon.Texture:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+        if button.Icon and button.Icon.Texture then
+            button.Icon.Texture:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
 
         -- Timer: show the icon cooldown's native countdown number instead of
         -- Blizzard's "Xs" Duration string. The number is C-rendered from the
         -- cooldown (secret-safe, no "s" suffix); we restyle only its FontString
         -- region, so nothing reads the protected duration value.
-        if btn.Duration then
-            btn.Duration:SetTextColor(0, 0, 0, 0) -- hide the "Xs" text
+        if button.Duration then
+            button.Duration:SetTextColor(0, 0, 0, 0) -- hide the "Xs" text
         end
-        local cd = btn.Icon and btn.Icon.Cooldown
+        local cd = button.Icon and button.Icon.Cooldown
         if cd and cd.SetHideCountdownNumbers then
             cd:SetHideCountdownNumbers(not tb.showTimer)
             if tb.showTimer then
                 local cdText = GetCooldownNumberFS(cd)
                 if cdText then
-                    cdText:SetFont(fontPath, scaledTimerSize, outlineMode)
+                    cdText:SetFont(fontFile, scaledTimerSize, outlineMode)
                     cdText:SetTextColor(1, 1, 1, 1)
                 end
             end
         end
 
         -- Border overlay (our own frame in the button's scale space)
-        local overlay = _totemBorderOverlays[btn]
-        if not overlay then
-            overlay = CreateFrame("Frame", nil, btn)
-            _totemBorderOverlays[btn] = overlay
+        local overlayFrame = _totemBorderOverlays[button]
+        if not overlayFrame then
+            overlayFrame = CreateFrame("Frame", nil, button)
+            _totemBorderOverlays[button] = overlayFrame
         end
         -- "Show Behind": +3 in front of the icon, level-1 behind it.
-        overlay:SetFrameLevel(
-            tb.borderBehind and math.max(0, btn:GetFrameLevel() - 1) or (btn:GetFrameLevel() + 3)
+        overlayFrame:SetFrameLevel(
+            tb.borderBehind and math.max(0, button:GetFrameLevel() - 1) or (button:GetFrameLevel() + 3)
         )
-        overlay:ClearAllPoints()
-        overlay:SetAllPoints(btn.Icon or btn)
-        overlay:Show()
+        overlayFrame:ClearAllPoints()
+        overlayFrame:SetAllPoints(button.Icon or button)
+        overlayFrame:Show()
         local bs = tb.borderSize or 0
         local texKey = tb.borderTexture or "solid"
         CludesUI.ApplyBorderStyle(
-            overlay,
+            overlayFrame,
             bs,
             tb.borderR or 0,
             tb.borderG or 0,
@@ -301,9 +301,9 @@ local function LayoutTotemBar()
     end
 
     -- Hide overlays for buttons no longer active (O(n) via set lookup)
-    for btn, overlay in pairs(_totemBorderOverlays) do
-        if not _totemActiveSet[btn] then
-            overlay:Hide()
+    for button, overlayFrame in pairs(_totemBorderOverlays) do
+        if not _totemActiveSet[button] then
+            overlayFrame:Hide()
         end
     end
 
@@ -329,9 +329,9 @@ local function BuildTotemBar()
     -- enabledClasses nil = disabled; table with class keys = enabled for those classes
     local ec = tb.enabledClasses
     local _, classFile = UnitClass("player")
-    local active = ec and classFile and ec[classFile]
+    local isActive = ec and classFile and ec[classFile]
 
-    if not active then
+    if not isActive then
         if totemBarFrame then
             CludesUI.SetElementVisibility(totemBarFrame, false)
         end
@@ -379,12 +379,12 @@ local function BuildTotemBar()
             -- imported absolute pos and anchor resolve to different positions.
             local anchored = CludesUI.IsUnlockAnchored("ERB_TotemBar")
             if not (anchored and totemBarFrame:GetLeft()) then
-                local PP = CludesUI and CludesUI.PP
+                local Pix = CludesUI and CludesUI.PP
                 local px, py = tb.unlockPos.x or 0, tb.unlockPos.y or 0
-                if PP and PP.SnapForES then
+                if Pix and Pix.SnapForES then
                     local es = totemBarFrame:GetEffectiveScale()
-                    px = PP.SnapForES(px, es)
-                    py = PP.SnapForES(py, es)
+                    px = Pix.SnapForES(px, es)
+                    py = Pix.SnapForES(py, es)
                 end
                 totemBarFrame:ClearAllPoints()
                 totemBarFrame:SetPoint(
@@ -436,5 +436,5 @@ local function BuildTotemBar()
     LayoutTotemBar()
 end
 
-I.BuildTotemBar = BuildTotemBar
-I.broken = false
+Inner.BuildTotemBar = BuildTotemBar
+Inner.broken = false

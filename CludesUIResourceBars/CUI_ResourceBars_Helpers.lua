@@ -6,15 +6,15 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Registers the Resource Bars module with CludesUI
 --  Pages: Class, Power and Health Bars | Cast Bar | Unlock Mode
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ...
+local ADDON_NAME, mod = ...
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place), read through this local and never through
 -- the public slot.
 local POOL = CludesUI._Pool
 
-local function DB()
-    local db = _G._CURB_AceDB
-    return db and db.profile
+local function SavedDB()
+    local saved = _G._CURB_AceDB
+    return saved and saved.profile
 end
 
 -- A threshold card is shadowed when an earlier card with the same talent gate covers an
@@ -23,35 +23,35 @@ end
 -- shadowed. Spec-overlap mirrors the popup's SpecsConflict (a concrete spec shared, or
 -- both "All Specs"); an All-Specs card and a spec-specific card do not shadow each
 -- other since the resolver prioritises the specific one.
-ns._CURB_IsThresholdCardShadowed = function(entries, idx)
-    local cur = entries and entries[idx]
-    if not cur or not cur.specIDs then
+mod._CURB_IsThresholdCardShadowed = function(entries, position)
+    local current = entries and entries[position]
+    if not current or not current.specIDs then
         return false
     end
     -- WoW Forever: the class resolves as one spec (ns.ForeverThresholdPick; nil
     -- = All Specs only), so a live card naming specs of the player's class, none
     -- of them that one, never applies on this character.
     if CludesUI.IS_FOREVER then
-        local pick = ns.ForeverThresholdPick(entries)
-        if not ns.ThresholdCardLiveFor(cur, pick) then
-            for _, s in ipairs(cur.specIDs) do
-                if CludesUI.IsPlayerSpec(s) and ns.ThresholdCardLiveFor(cur, s) then
+        local pick = mod.ForeverThresholdPick(entries)
+        if not mod.ThresholdCardLiveFor(current, pick) then
+            for _, s in ipairs(current.specIDs) do
+                if CludesUI.IsPlayerSpec(s) and mod.ThresholdCardLiveFor(current, s) then
                     return true
                 end
             end
         end
     end
-    local curGate = cur.talentSpellID
+    local curGate = current.talentSpellID
     local curAll, curSet = false, {}
-    for _, s in ipairs(cur.specIDs) do
+    for _, s in ipairs(current.specIDs) do
         if s == 0 then
             curAll = true
         else
             curSet[s] = true
         end
     end
-    for j = 1, idx - 1 do
-        local o = entries[j]
+    for jdx = 1, position - 1 do
+        local o = entries[jdx]
         if o and o.specIDs and o.talentSpellID == curGate then
             for _, s in ipairs(o.specIDs) do
                 if s == 0 then
@@ -70,36 +70,36 @@ end
 -- The unlock-mode open/close cycle leaves these overlays with an undefined rect, so the
 -- frame and its regions draw nothing even though it still exists. Capture the overlay's
 -- own anchors + height at build time, then on show re-assert them one frame later
-ns.ERB_OverlayHealOnShow = function(ov, obg, olbl, bgAlpha)
+mod.ERB_OverlayHealOnShow = function(shade, obg, olbl, bgAlpha)
     local txt = olbl:GetText() or ""
     local pts = {}
-    for p = 1, ov:GetNumPoints() do
-        pts[p] = { ov:GetPoint(p) }
+    for p = 1, shade:GetNumPoints() do
+        pts[p] = { shade:GetPoint(p) }
     end
-    local ovH = ov:GetHeight()
-    ov:SetScript("OnShow", function()
+    local ovH = shade:GetHeight()
+    shade:SetScript("OnShow", function()
         -- An overlay of the options page pool dressed again before the next
         -- frame belongs to another build by then: the heal leaves it alone.
-        local gen = POOL.Gen and POOL.Gen(ov)
+        local gen = POOL.Gen and POOL.Gen(shade)
         C_Timer.After(0, function()
-            if POOL.Gen and POOL.Gen(ov) ~= gen then
+            if POOL.Gen and POOL.Gen(shade) ~= gen then
                 return
             end
-            if not ov:IsVisible() then
+            if not shade:IsVisible() then
                 return
             end
             if #pts > 0 then
-                ov:ClearAllPoints()
+                shade:ClearAllPoints()
                 for p = 1, #pts do
-                    ov:SetPoint(unpack(pts[p]))
+                    shade:SetPoint(unpack(pts[p]))
                 end
             end
             if ovH and ovH > 0 then
-                ov:SetHeight(ovH)
+                shade:SetHeight(ovH)
             end
             obg:SetColorTexture(13 / 255, 17 / 255, 25 / 255, bgAlpha or 0.96)
             obg:ClearAllPoints()
-            obg:SetAllPoints(ov)
+            obg:SetAllPoints(shade)
             olbl:ClearAllPoints()
             olbl:SetPoint("CENTER")
             olbl:SetText("")
@@ -112,7 +112,7 @@ end
 -- Advanced, its Simple controls are being ignored right now. Cover them with
 -- a click-to-Advanced hint so edits here aren't silently lost
 -- sectionKey: "health" | "primary" | "secondary".
-ns.ERB_SimpleOverrideOverlay = function(parent, topY, botY, sectionKey)
+mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
     if not topY then
         return
     end
@@ -121,19 +121,19 @@ ns.ERB_SimpleOverrideOverlay = function(parent, topY, botY, sectionKey)
     end
     local EGc = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local CPAD = CludesUI.CONTENT_PAD or 45
-    local PP = CludesUI.PanelPP or CludesUI.PP
+    local Pix = CludesUI.PanelPP or CludesUI.PP
     -- On an options page (an options page pool host) the overlay is pooled
     -- with the page.
-    local ov = POOL.CreateFrame("Button", nil, parent)
+    local shade = POOL.CreateFrame("Button", nil, hostFrame)
     -- Anchor via PP so it lines up with the section header/rows.
-    PP.Point(ov, "TOPLEFT", parent, "TOPLEFT", CPAD, topY)
-    PP.Point(ov, "TOPRIGHT", parent, "TOPRIGHT", -CPAD, topY)
-    PP.Point(ov, "BOTTOMLEFT", parent, "TOPLEFT", CPAD, botY)
-    ov:SetFrameLevel(parent:GetFrameLevel() + 50)
-    local obg = ov:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(shade, "TOPLEFT", hostFrame, "TOPLEFT", CPAD, topY)
+    Pix.Point(shade, "TOPRIGHT", hostFrame, "TOPRIGHT", -CPAD, topY)
+    Pix.Point(shade, "BOTTOMLEFT", hostFrame, "TOPLEFT", CPAD, botY)
+    shade:SetFrameLevel(hostFrame:GetFrameLevel() + 50)
+    local obg = shade:CreateTexture(nil, "BACKGROUND")
     obg:SetAllPoints()
     obg:SetColorTexture(13 / 255, 17 / 255, 25 / 255, 0.9)
-    local olbl = CludesUI.MakeFont(ov, 12, nil, 1, 1, 1)
+    local olbl = CludesUI.MakeFont(shade, 12, nil, 1, 1, 1)
     olbl:SetPoint("CENTER")
     olbl:SetTextColor(1, 1, 1, 0.7)
     olbl:SetText(
@@ -141,22 +141,24 @@ ns.ERB_SimpleOverrideOverlay = function(parent, topY, botY, sectionKey)
             .. "   \226\128\148   "
             .. CludesUI.L("click to edit")
     )
-    ns.ERB_OverlayHealOnShow(ov, obg, olbl, 0.9)
-    ov:SetScript("OnEnter", function()
+    mod.ERB_OverlayHealOnShow(shade, obg, olbl, 0.9)
+    shade:SetScript("OnEnter", function()
         olbl:SetTextColor(EGc.r, EGc.g, EGc.b, 1)
     end)
-    ov:SetScript("OnLeave", function()
+    shade:SetScript("OnLeave", function()
         olbl:SetTextColor(1, 1, 1, 0.7)
     end)
-    ov:SetScript("OnClick", function()
-        local p = DB()
+    shade:SetScript("OnClick", function()
+        local p = SavedDB()
         if not p then
             return
         end
-        local idx = GetSpecialization and GetSpecialization()
-        local cur = idx and C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(idx)
-        if cur then
-            p.advancedSelectedSpec = cur
+        local position = GetSpecialization and GetSpecialization()
+        local current = position
+            and C_SpecializationInfo
+            and C_SpecializationInfo.GetSpecializationInfo(position)
+        if current then
+            p.advancedSelectedSpec = current
         end
         p.barDisplayMode = "advanced"
         CludesUI:RefreshPage(true)
@@ -167,17 +169,17 @@ end
 
 local barTypeSpecs = _G._CURB_BAR_TYPE_SPECS or {}
 -- bar-type spec lookup
-ns.IsSpecBarType = function(specID)
+mod.IsSpecBarType = function(specID)
     if specID == 0 then
-        return ns.IsBarTypeSecondary()
+        return mod.IsBarTypeSecondary()
     end
     return barTypeSpecs[specID] or false
 end
-ns.IsEntryBarType = function(entry)
-    if not entry or not entry.specIDs or #entry.specIDs == 0 then
+mod.IsEntryBarType = function(record)
+    if not record or not record.specIDs or #record.specIDs == 0 then
         return false
     end
-    return ns.IsSpecBarType(entry.specIDs[1])
+    return mod.IsSpecBarType(record.specIDs[1])
 end
 local SpecName = function(specID)
     if specID == 0 then
@@ -202,26 +204,26 @@ local SpecName = function(specID)
     end
     return name or ("Spec " .. specID)
 end
-ns.EntryLabel = function(entry)
-    if not entry or not entry.specIDs or #entry.specIDs == 0 then
+mod.EntryLabel = function(record)
+    if not record or not record.specIDs or #record.specIDs == 0 then
         return "Unknown"
     end
-    if entry.specIDs[1] == 0 then
+    if record.specIDs[1] == 0 then
         return "All Specs"
     end
-    local names = {}
+    local nameList = {}
     -- WoW Forever: a class the card holds whole reads as the class; a partial
     -- class lists its specs, so cards for different specs stay distinct.
     if CludesUI.IS_FOREVER then
         local held, done = {}, {}
-        for _, sid in ipairs(entry.specIDs) do
-            held[sid] = true
+        for _, spellRef in ipairs(record.specIDs) do
+            held[spellRef] = true
         end
-        for _, sid in ipairs(entry.specIDs) do
-            local token = CludesUI.SpecClassOf(sid)
+        for _, spellRef in ipairs(record.specIDs) do
+            local token = CludesUI.SpecClassOf(spellRef)
             local classIDs = CludesUI.ForeverClassSpecIDs(token)
             if not classIDs then
-                names[#names + 1] = SpecName(sid)
+                nameList[#nameList + 1] = SpecName(spellRef)
             elseif not done[token] then
                 done[token] = true
                 local whole = true
@@ -232,34 +234,34 @@ ns.EntryLabel = function(entry)
                     end
                 end
                 if whole then
-                    names[#names + 1] = CludesUI.ForeverClassName(token)
+                    nameList[#nameList + 1] = CludesUI.ForeverClassName(token)
                 else
                     for i = 1, #classIDs do
                         if held[classIDs[i]] then
-                            names[#names + 1] = SpecName(classIDs[i])
+                            nameList[#nameList + 1] = SpecName(classIDs[i])
                         end
                     end
                 end
             end
         end
-        return table.concat(names, ", ")
+        return table.concat(nameList, ", ")
     end
-    for _, sid in ipairs(entry.specIDs) do
-        names[#names + 1] = SpecName(sid)
+    for _, spellRef in ipairs(record.specIDs) do
+        nameList[#nameList + 1] = SpecName(spellRef)
     end
-    return table.concat(names, ", ")
+    return table.concat(nameList, ", ")
 end
 
 -- Helper: returns true if the current class/spec uses a bar-type secondary (no pips)
-ns.IsBarTypeSecondary = function()
-    local _, cf = UnitClass("player")
-    local spec = C_SpecializationInfo.GetSpecialization()
+mod.IsBarTypeSecondary = function()
+    local _, castFrame = UnitClass("player")
+    local specInfo = C_SpecializationInfo.GetSpecialization()
     local gsr = _G._CURB_GetSecondaryResource
-    local info = gsr and gsr()
-    if info and info.power == "IRONFUR_BAR" then
+    local details = gsr and gsr()
+    if details and details.power == "IRONFUR_BAR" then
         return true
     end -- Guardian Ironfur bar
-    if info and info.power == "IGNOREPAIN_BAR" then
+    if details and details.power == "IGNOREPAIN_BAR" then
         return true
     end -- Prot Warrior Ignore Pain bar
     -- WoW Forever: no bar-type class resource exists there (the runtime never
@@ -267,23 +269,23 @@ ns.IsBarTypeSecondary = function()
     if CludesUI.IS_FOREVER then
         return false
     end
-    if cf == "DRUID" and spec == 1 then
+    if castFrame == "DRUID" and specInfo == 1 then
         return true
     end -- Balance (Astral Power bar)
-    if cf == "SHAMAN" and spec == 1 then
+    if castFrame == "SHAMAN" and specInfo == 1 then
         return true
     end -- Elemental
-    if cf == "PRIEST" and spec == 3 then
+    if castFrame == "PRIEST" and specInfo == 3 then
         return true
     end -- Shadow
-    if cf == "MONK" and spec == 1 then
+    if castFrame == "MONK" and specInfo == 1 then
         return true
     end -- Brewmaster
-    if cf == "HUNTER" and (spec == 1 or spec == 2) then
+    if castFrame == "HUNTER" and (specInfo == 1 or specInfo == 2) then
         return true
     end -- BM / MM Focus bar
-    if cf == "DEMONHUNTER" and spec then
-        local specID = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(spec)
+    if castFrame == "DEMONHUNTER" and specInfo then
+        local specID = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
         if specID == 1480 then
             return true
         end -- Devourer
@@ -294,7 +296,7 @@ end
 -- Two cards collide in the resolver only if they share a spec context: a common
 -- non-zero specID, OR both are All Specs (0). (A spec-specific card and an All-Specs
 -- card sit in different resolver tiers, so they never collide.)
-ns.SpecsConflict = function(aIDs, bIDs)
+mod.SpecsConflict = function(aIDs, bIDs)
     if not aIDs or not bIDs then
         return false
     end
@@ -322,21 +324,21 @@ end
 -- means on, for migrated entries), it has hash lines, or when multi-band coloring
 -- replaces it. The band fallbacks mirror ResolveThresholdSpecEntry's
 -- ResolveBandConfig: both the enable flag and the band list fall back to the bar table.
-local function ThresholdEntryConfigured(bd, entry)
-    if entry.thresholdEnabled ~= false then
+local function ThresholdEntryConfigured(edge, record)
+    if record.thresholdEnabled ~= false then
         return true
     end
-    if entry.hashValues and entry.hashValues ~= "" then
+    if record.hashValues and record.hashValues ~= "" then
         return true
     end
-    local multi = entry.multiBandEnabled
+    local multi = record.multiBandEnabled
     if multi == nil then
-        multi = bd.multiBandEnabled
+        multi = edge.multiBandEnabled
     end
     if not multi then
         return false
     end
-    local bands = (entry.bands and #entry.bands > 0) and entry.bands or bd.bands
+    local bands = (record.bands and #record.bands > 0) and record.bands or edge.bands
     return (bands and #bands > 0) and true or false
 end
 
@@ -345,48 +347,48 @@ end
 -- (legacy druid form-mode lists) name no spec. Returns nil when nothing is
 -- configured, else the comma-joined name list plus whether one of those entries
 -- applies to the spec being played.
-ns.ThresholdNoticeInfo = function(bd)
-    local entries = bd and bd.thresholdSpecs
+mod.ThresholdNoticeInfo = function(edge)
+    local entries = edge and edge.thresholdSpecs
     if not entries or #entries == 0 then
         return nil
     end
     local activeSpecID = _G._CURB_ResolveSpecIDCached and _G._CURB_ResolveSpecIDCached()
     -- WoW Forever: the spec the thresholds resolve as (ns.ForeverThresholdPick; nil = All Specs only).
     if CludesUI.IS_FOREVER then
-        activeSpecID = ns.ForeverThresholdPick(entries)
+        activeSpecID = mod.ForeverThresholdPick(entries)
     end
-    local names, seen, active = {}, {}, false
-    for _, entry in ipairs(entries) do
-        if ThresholdEntryConfigured(bd, entry) then
-            local label, hitsActive
-            if entry.specIDs and #entry.specIDs > 0 then
-                label = ns.EntryLabel(entry)
-                for _, sid in ipairs(entry.specIDs) do
-                    if sid == 0 or sid == activeSpecID then
+    local nameList, seen, isActive = {}, {}, false
+    for _, record in ipairs(entries) do
+        if ThresholdEntryConfigured(edge, record) then
+            local labelText, hitsActive
+            if record.specIDs and #record.specIDs > 0 then
+                labelText = mod.EntryLabel(record)
+                for _, spellRef in ipairs(record.specIDs) do
+                    if spellRef == 0 or spellRef == activeSpecID then
                         hitsActive = true
                         break
                     end
                 end
             end
-            if label and not seen[label] then
-                seen[label] = true
-                names[#names + 1] = label
+            if labelText and not seen[labelText] then
+                seen[labelText] = true
+                nameList[#nameList + 1] = labelText
             end
             if hitsActive then
-                active = true
+                isActive = true
             end
         end
     end
-    if #names == 0 then
+    if #nameList == 0 then
         return nil
     end
-    return table.concat(names, ", "), active
+    return table.concat(nameList, ", "), isActive
 end
 
 -- Enumerate every choosable talent in the active loadout (class + spec trees),
 -- returning a name-sorted list of { spellID, name }. Returns {} when traits
 -- aren't available yet. Only the active loadout is enumerable by the API.
-ns.GetLoadoutTalents = function()
+mod.GetLoadoutTalents = function()
     local talents = {}
     local configID = C_ClassTalents
         and C_ClassTalents.GetActiveConfigID
